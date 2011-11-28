@@ -1,0 +1,2 @@
+namespace ALM_NS {
+}
