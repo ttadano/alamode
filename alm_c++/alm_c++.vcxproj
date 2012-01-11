@@ -67,10 +67,15 @@
   <ItemGroup>
     <ClCompile Include="alm.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="memory.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alamode.h" />
+    <ClInclude Include="files.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="memory.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
