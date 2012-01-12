@@ -33,10 +33,14 @@ int main(int argc, char **argv)
 	cin >> lavec[2][0] >> lavec[2][1] >> lavec[2][2];
 	// Read Cutoff Radius for each species
 	//	vector<vector<double>> rcs(nkd, vector<int>(3));
-	rcs = new double*[nkd];
-	for (int i = 0; i < nkd; i++){
-		rcs[i] = new double[3];
-	}
+//	rcs = new double*[nkd];
+//	for (int i = 0; i < nkd; i++){
+//		rcs[i] = new double[3];
+//	}
+
+	Memory memory;
+	//rcs = mem1.create_d2_array(nkd, 3, rcs);
+	rcs = memory.create(nkd, 3);
 	for (int i = 0; i < nkd; i++){
 		cin >> rcs[i][0] >> rcs[i][1] >> rcs[i][2];
 	}
@@ -62,6 +66,7 @@ int main(int argc, char **argv)
 	}
 	cin >> str2;
 	cout << str2 << endl;
+	cout << rcs[0][0] << endl;
 	cin.get();
 	cin.get();
 	cin.get();
