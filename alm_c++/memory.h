@@ -13,8 +13,27 @@ namespace ALM_NS {
         //		int **create_i2_array(int, int);
         //	void destroy_i2_array();
 
-
-        //template <typename T>
+        // 2d-array allocation
+        template <typename T>
+        T **allocate(T **&arr, int n1, int n2){
+            arr = new T *[n1];
+            arr[0] = new T [n1 * n2];
+            for (int i = 1; i < n1; i++){
+                arr[i] = arr[0] + i * n2;
+            }
+            return arr;
+        }
+        template <typename T>
+        void deallocate(T **&arr){
+            delete arr[0];
+            delete arr;
+        }
+        template <typename T>
+        void deallocate(T ***&arr){
+            delete arr[0][0];
+            delete arr[0];
+            delete arr;
+        }
         //		double **create(int n1, int n2){
         //	bigint nlen = ((bigint) sizeof(T)) * n1 * n2;
         //		double **arr = new double*[n1];

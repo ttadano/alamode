@@ -2,15 +2,24 @@
 
 #ifndef ALM_ALAMODE_HEADER
 #define ALM_ALAMODE_HEADER
-#include "mpi.h"
 
 namespace ALM_NS {
 
     class ALM {
     public:
         class Memory *memory;
-        ALM(int, char **, MPI_Comm);
+        class Input *input;
+        class System *system;
+        class Interaction *interaction;
+        class Symmetry *symmetry;
+        class Files *files;
+        class Error *error;
+        class Timer *timer;
+        ALM(int, char **);
         ~ALM();
+        void create();
+        void initialize();
+        void finalize();
 
     };
 }

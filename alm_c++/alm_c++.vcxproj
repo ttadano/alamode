@@ -66,13 +66,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="alamode.cpp" />
+    <ClCompile Include="files.cpp" />
+    <ClCompile Include="input.cpp" />
+    <ClCompile Include="interaction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
+    <ClCompile Include="mics.cpp" />
+    <ClCompile Include="symmetry.cpp" />
+    <ClCompile Include="system.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alamode.h" />
+    <ClInclude Include="constants.h" />
+    <ClInclude Include="files.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="interactions.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="pointers.h" />
+    <ClInclude Include="symmetry.h" />
+    <ClInclude Include="system.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

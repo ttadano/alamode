@@ -1,12 +1,47 @@
 #include "memory.h"
 #include "alamode.h"
-#include "mpi.h"
+#include "interactions.h"
+#include "symmetry.h"
+#include "input.h"
+#include "system.h"
+#include "files.h"
 #include <iostream>
 
 using namespace ALM_NS;
 
-ALM::ALM(int narg, char **arg, MPI_Comm communicator)
+ALM::ALM(int narg, char **arg)
 {
-   	memory = new Memory(this);
-    std::cout << "OK" << std::endl;
+    input = new Input(this, narg, arg);
+    create();
+    input->sparce_input();
+    initialize();
+    finalize();
+}
+
+void ALM::create()
+{
+    memory = new Memory(this);
+    files = new Files(this);
+    system = new System(this);
+    interaction = new Interaction(this);
+    symmetry = new Symmetry(this);
+}
+
+void ALM::initialize()
+{
+    system->init();
+}
+ALM::~ALM()
+{
+    finalize();
+    delete input;
+}
+
+void ALM::finalize()
+{
+    delete memory;
+    delete files;
+    delete interaction;
+    delete symmetry;
+    delete system;
 }
