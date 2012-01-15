@@ -2,6 +2,7 @@
 #include "system.h"
 #include "memory.h"
 #include "constants.h"
+#include <Eigen/Core>
 
 using namespace ALM_NS;
 
@@ -164,6 +165,4 @@ bool Symmetry::is_ortho(int rot[3][3], double aa[3][3], double bb[3][3])
             rot2[i][j] = static_cast<double>(rot[i][j]);
         }
     }
-
-
 }
