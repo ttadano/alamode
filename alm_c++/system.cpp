@@ -1,6 +1,7 @@
 #include "system.h"
 #include "constants.h"
 #include <iostream>
+#include <iomanip>
 
 using namespace ALM_NS;
 
@@ -31,6 +32,17 @@ void System::init(){
         std::cout << std::endl;
     }
     std::cout << std::endl;
+
+    std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
+    for (int i = 0; i < nat; i++) {
+        std::cout << std::setw(5) << i + 1;
+        std::cout << " " << xcoord[0][i];
+        std::cout << " " << xcoord[1][i];
+        std::cout << " " << xcoord[2][i];
+        std::cout << " " << kd[i] << std::endl;
+    }
+    std::cout << std::endl;
+    std::cout << "Number of input data: " << ndata << std::endl;
 }
 
 void System::recips(double vec[3][3], double inverse[3][3])

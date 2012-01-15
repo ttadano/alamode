@@ -11,6 +11,7 @@ namespace ALM_NS {
         Files(class ALM *);
         ~Files();
 
+        void init();
         void openfiles();
         void closefiles();
         void setfilenames();

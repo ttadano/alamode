@@ -1,10 +1,9 @@
-#include "memory.h"
-#include "alamode.h"
 #include "interactions.h"
 #include "symmetry.h"
 #include "input.h"
 #include "system.h"
 #include "files.h"
+#include "memory.h"
 #include <iostream>
 
 using namespace ALM_NS;
@@ -30,6 +29,8 @@ void ALM::create()
 void ALM::initialize()
 {
     system->init();
+    files->init();
+    symmetry->init();
 }
 ALM::~ALM()
 {
