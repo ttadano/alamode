@@ -4,12 +4,14 @@
 #include "system.h"
 #include "files.h"
 #include "memory.h"
+#include "timer.h"
 #include <iostream>
 
 using namespace ALM_NS;
 
 ALM::ALM(int narg, char **arg)
 {
+    timer = new Timer(this);
     input = new Input(this, narg, arg);
     create();
     input->sparce_input();
@@ -36,6 +38,7 @@ ALM::~ALM()
 {
     finalize();
     delete input;
+    delete timer;
 }
 
 void ALM::finalize()

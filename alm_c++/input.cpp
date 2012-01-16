@@ -67,6 +67,7 @@ void Input::sparce_input()
     files->file_force = force_file;
     system->ndata = ndata;
     interaction-> rcs = rcs;
+    symmetry->multiply_data = multiply_data;
 
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++){

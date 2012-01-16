@@ -2,6 +2,7 @@
 #include "constants.h"
 #include <iostream>
 #include <iomanip>
+#include "timer.h"
 
 using namespace ALM_NS;
 
@@ -12,7 +13,6 @@ System::~System() {}
 void System::init(){
 
     recips(lavec, rlavec);
-
 
     std::cout.setf(std::ios::scientific);
 
@@ -43,6 +43,10 @@ void System::init(){
     }
     std::cout << std::endl;
     std::cout << "Number of input data: " << ndata << std::endl;
+
+    std::cout.unsetf(std::ios::scientific);
+    timer->print_elapsed();
+
 }
 
 void System::recips(double vec[3][3], double inverse[3][3])
