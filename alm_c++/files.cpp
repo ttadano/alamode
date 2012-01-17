@@ -18,9 +18,11 @@ void Files::setfilenames()
 
 void Files::openfiles()
 {
-    ofs_log.open(file_log, std::ios::out);
+   // ofs_log.open(file_log, std::ios::out);
     ofs_fcs.open(file_fcs, std::ios::out);
+    if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
     ofs_premd.open(file_premd, std::ios::out);
+    if(!ofs_premd) error->exit("openfiles", "cannot open premd file");
    
     ifs_disp.open(file_disp, std::ios::in);
     if(!ifs_disp) error->exit("openfiles", "cannot open disp file");

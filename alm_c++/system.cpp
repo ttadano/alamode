@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include "timer.h"
+#include "memory.h"
 
 using namespace ALM_NS;
 
@@ -36,9 +37,9 @@ void System::init(){
     std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
     for (int i = 0; i < nat; i++) {
         std::cout << std::setw(5) << i + 1;
-        std::cout << " " << xcoord[0][i];
-        std::cout << " " << xcoord[1][i];
-        std::cout << " " << xcoord[2][i];
+        std::cout << " " << xcoord[i][0];
+        std::cout << " " << xcoord[i][1];
+        std::cout << " " << xcoord[i][2];
         std::cout << " " << kd[i] << std::endl;
     }
     std::cout << std::endl;
@@ -72,4 +73,23 @@ void System::recips(double vec[3][3], double inverse[3][3])
     inverse[2][0] = (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]) * factor;
     inverse[2][1] = (vec[0][1] * vec[2][0] - vec[0][0] * vec[2][1]) * factor;
     inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
+}
+
+void System::frac2cart(double **xf)
+{
+    double **x_tmp;
+    memory->allocate(x_tmp, nat, 3);
+
+    for (int i = 0; i < nat; i++){
+        for (int j = 0; j < 3; j++){
+        x_tmp[i][j] = lavec[j][0] * xf[i][0] + lavec[j][1] * xf[i][1] + lavec[j][2] * xf[i][2];
+        }
+    }
+    for (int i = 0; i < nat; i++){
+        for (int j = 0; j < 3; j++){
+            xf[i][j] = x_tmp[i][j];   
+        }
+    }
+    memory->deallocate(x_tmp);
+
 }

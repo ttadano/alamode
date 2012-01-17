@@ -1,4 +1,4 @@
-#include "interactions.h"
+#include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
 #include "system.h"
@@ -33,6 +33,7 @@ void ALM::initialize()
     system->init();
     files->init();
     symmetry->init();
+    interaction->init();
 }
 ALM::~ALM()
 {

@@ -3,7 +3,7 @@
 #include <string>
 #include "memory.h"
 #include "files.h"
-#include "interactions.h"
+#include "interaction.h"
 #include "system.h"
 #include "symmetry.h"
 
@@ -20,6 +20,7 @@ void Input::sparce_input()
     string disp_file, force_file;
 	int nat, nkd, nsym, nnp, ndata;
 	int *kd;
+    bool is_periodic[3];
 	bool multiply_data, constraint;
 	double eps;
 	double lavec[3][3];
@@ -37,6 +38,7 @@ void Input::sparce_input()
 	cin >> lavec[2][0] >> lavec[2][1] >> lavec[2][2];
 	// Read Cutoff Radius for each species
     memory->allocate(rcs,nkd,3);
+    memory->allocate(interaction->rcs, nkd, 3);
 	for (int i = 0; i < nkd; i++){
 		cin >> rcs[i][0] >> rcs[i][1] >> rcs[i][2];
 	}
@@ -45,6 +47,7 @@ void Input::sparce_input()
 	cin >> disp_file;
 	cin >> force_file;
 	cin >> multiply_data >> constraint;
+    cin >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];
 	// Read species mass
 	kdname = new string[nkd];
 	masskd = new double[nkd];
@@ -53,9 +56,9 @@ void Input::sparce_input()
 	}
 	// Read atomic coordinates
 	kd = new int[nat];
-    memory->allocate(xeq, 3, nat);
+    memory->allocate(xeq, nat, 3);
 	for (int i = 0; i < nat; i++){
-		cin >> kd[i] >> xeq[0][i] >> xeq[1][i] >> xeq[2][i];
+		cin >> kd[i] >> xeq[i][0] >> xeq[i][1] >> xeq[i][2];
 	}
 
     files->job_title = job_title;
@@ -66,8 +69,14 @@ void Input::sparce_input()
     files->file_disp = disp_file;
     files->file_force = force_file;
     system->ndata = ndata;
-    interaction-> rcs = rcs;
+    for (int i = 0; i < nkd; i++){
+        for (int j = 0; j < 3; j++){
+        interaction->rcs[i][j] = rcs[i][j];
+        }
+    }
     symmetry->multiply_data = multiply_data;
+
+    for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
 
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++){
@@ -82,11 +91,11 @@ void Input::sparce_input()
     }
 
     system->kd = new int[nat];
-    memory->allocate(system->xcoord, 3, nat);
+    memory->allocate(system->xcoord, nat, 3);
     for (int i = 0; i < nat; i++){
         system->kd[i] = kd[i];
         for (int j = 0; j < 3; j++){
-            system->xcoord[j][i] = xeq[j][i];
+            system->xcoord[i][j] = xeq[i][j];
         }
     }
      delete masskd;
