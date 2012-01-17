@@ -21,9 +21,17 @@ namespace ALM_NS {
         int nneib;
         double ***xcrd;
 
+        template <typename T>
+        T maxval(int, T *);
+        template <typename T>
+        T maxval(int, int, T **);
+        template <typename T>
+        T maxval(int, int, int, T ***);
+
     private:
         int nsize[3];
         void calc_distlist(int, double **);
+        void search_interactions();
     };
 }
 

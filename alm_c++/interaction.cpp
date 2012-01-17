@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "system.h"
 #include "error.h"
+#include "symmetry.h"
 #include <iostream>
 #include <iomanip>
 #include <Eigen/core>
@@ -42,23 +43,23 @@ void Interaction::init()
 
     std::cout << std::endl << "Periodicity Flags (0: Non-Periodic, else: Periodic)" << std::endl;
     std::cout << "a axis: " << std::setw(3) << is_periodic[0] << std::endl
-    << "b axis: " << std::setw(3) << is_periodic[1] << std::endl
-    << "c axis: " << std::setw(3) << is_periodic[2] << std::endl << std::endl;
+        << "b axis: " << std::setw(3) << is_periodic[1] << std::endl
+        << "c axis: " << std::setw(3) << is_periodic[2] << std::endl << std::endl;
 
- //   Eigen::MatrixXd xfrac(nat, 3);
+    //   Eigen::MatrixXd xfrac(nat, 3);
 
- //   for (i = 0; i < nat; i++){
- //       for (j = 0; j < 3; j++){
- //           xfrac(i,j) = system->xcoord[i][j];
- //       }
- //   }
+    //   for (i = 0; i < nat; i++){
+    //       for (j = 0; j < 3; j++){
+    //           xfrac(i,j) = system->xcoord[i][j];
+    //       }
+    //   }
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
     memory->allocate(xcrd, nneib, nat, 3);
     memory->allocate(distlist, nat, nat);
     //  calc_distlist(nat, xfrac);
     calc_distlist(nat, system->xcoord);
 
-
+    search_interactions();
 }
 
 double Interaction::distance(double *x1, double *x2)
@@ -122,4 +123,120 @@ void Interaction::calc_distlist(int nat, double **xf)
             }
         }
     }
+}
+
+void Interaction::search_interactions()
+{
+
+    int icell;
+    int i, j, k;
+    int iat, jat;
+    int order;
+
+    double dist;
+
+    int natmin = symmetry->natmin;
+    int nat = system->nat;
+
+    int nint_uniq[3] = {0, 0, 0};
+    int ***countint;
+    int ***intpairs;
+    int **ninter;
+
+    memory->allocate(countint, nat, natmin, 3);
+    memory->allocate(intpairs, nat*natmin, 3, 2);
+    memory->allocate(ninter, natmin, 3);
+
+    for (i = 0; i < nat; i++){
+        for (j = 0; j < natmin; j++){
+            for (k = 0; k < 3; k++){
+                countint[i][j][k] = 0;
+            }
+        }
+    }
+
+    for (i = 0; i < nat*natmin; i++){
+        for (j = 0; j < 3; j++){
+            intpairs[i][j][0] = 0;
+            intpairs[i][j][1] = 0;
+        }
+    }
+
+    for (i = 0; i < natmin; i++){
+        for (j = 0; j < 3; j++){
+            ninter[i][j] = 0;
+        }
+    }
+
+    for (icell = 0; icell < nneib; icell++){
+        for (i = 0; i < natmin; i++){
+
+            iat = symmetry->map_p2s[i][0] - 1;
+
+            for (jat = 0; jat < nat; jat++){
+
+                dist = distance(xcrd[0][iat], xcrd[icell][jat]);
+
+                for (order = 0; order < 3; order++){
+
+                    if(dist < rcs[system->kd[iat] - 1][order] + rcs[system->kd[jat] - 1][order]) {
+
+                        if(!countint[jat][i][order]) {
+                            intpairs[nint_uniq[order]][order][0] = iat;
+                            intpairs[nint_uniq[order]][order][1] = jat;
+                            nint_uniq[order]++;
+                            ninter[i][order]++;
+                        }
+                        countint[jat][i][order]++;
+                    }
+                }
+            }
+        }
+    }
+
+     if(maxval(nat, natmin, 3, countint) > 1) {
+         error->warn("search_interactions", "Duplicate interaction exits");
+     }
+}
+
+template <typename T>
+T Interaction::maxval(int n, T *arr)
+{
+    T tmp;
+    tmp = arr[0];
+
+    for (int i = 0; i < n; i++) {
+        tmp = std::max<T>(tmp, arr[i]);
+    }
+    return tmp;
+}
+
+template <typename T>
+T Interaction::maxval(int n1, int n2, T **arr)
+{
+    T tmp;
+    tmp = arr[0][0];
+
+    for (int i = 0; i < n1; i++) {
+        for (int j = 0; j < n2; j++){
+            tmp = std::max<T>(tmp, arr[i][j]);
+        } 
+    }
+    return tmp;
+}
+
+template <typename T>
+T Interaction::maxval(int n1, int n2, int n3, T ***arr)
+{
+    T tmp;
+    tmp = arr[0][0][0];
+
+    for (int i = 0; i < n1; i++) {
+        for (int j = 0; j < n2; j++){
+            for (int k = 0; k < n3; k++){
+                tmp = std::max<T>(tmp, arr[i][j][k]);
+            } 
+        }
+    }
+    return tmp;
 }
