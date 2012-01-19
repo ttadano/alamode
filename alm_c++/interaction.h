@@ -19,6 +19,7 @@ namespace ALM_NS {
         bool is_periodic[3];
 
         int nneib;
+        int maxorder;
         double ***xcrd;
 
         template <typename T>

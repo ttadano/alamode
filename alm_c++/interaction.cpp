@@ -8,12 +8,16 @@
 #include <iostream>
 #include <iomanip>
 #include <Eigen/core>
-
+#include <vector>
+#include <algorithm>
+#include <boost/algorithm/combination.hpp>
+#include "combination.h"
 
 using namespace ALM_NS;
 
 Interaction::Interaction(ALM *alm) : Pointers(alm) {
     nsize[0] = nsize[1] = nsize[2] = 1;
+    maxorder = 3;
 }
 
 Interaction::~Interaction() {}
@@ -60,6 +64,8 @@ void Interaction::init()
     calc_distlist(nat, system->xcoord);
 
     search_interactions();
+
+
 }
 
 double Interaction::distance(double *x1, double *x2)
@@ -138,40 +144,42 @@ void Interaction::search_interactions()
     int natmin = symmetry->natmin;
     int nat = system->nat;
 
-    int nint_uniq[3] = {0, 0, 0};
     int ***countint;
     int ***intpairs;
     int **ninter;
 
-    memory->allocate(countint, nat, natmin, 3);
-    memory->allocate(intpairs, nat*natmin, 3, 2);
-    memory->allocate(ninter, natmin, 3);
+    memory->allocate(countint, natmin, nat, maxorder);
+    memory->allocate(intpairs, natmin, maxorder, nat);
+    memory->allocate(ninter, natmin, maxorder);
 
-    for (i = 0; i < nat; i++){
-        for (j = 0; j < natmin; j++){
-            for (k = 0; k < 3; k++){
-                countint[i][j][k] = 0;
+    // initialize arrays
+    for (i = 0; i < natmin; ++i){
+        for (j = 0; j < nat; ++j){
+            for (order = 0; order < maxorder; ++order){
+                countint[i][j][order] = 0;
             }
         }
     }
 
-    for (i = 0; i < nat*natmin; i++){
-        for (j = 0; j < 3; j++){
-            intpairs[i][j][0] = 0;
-            intpairs[i][j][1] = 0;
+    for (i = 0; i < natmin; ++i){
+        for (order = 0; order < maxorder; ++order){
+            for (j = 0; j < nat; ++j){
+                intpairs[i][order][j] = 0;
+            }
         }
     }
 
     for (i = 0; i < natmin; i++){
-        for (j = 0; j < 3; j++){
-            ninter[i][j] = 0;
+        for (order = 0; order < maxorder; ++order){
+            ninter[i][order] = 0;
         }
     }
+    ///
 
     for (icell = 0; icell < nneib; icell++){
         for (i = 0; i < natmin; i++){
 
-            iat = symmetry->map_p2s[i][0] - 1;
+            iat = symmetry->map_p2s[i][0] - 1; //index of an atom in the primitive cell
 
             for (jat = 0; jat < nat; jat++){
 
@@ -181,22 +189,82 @@ void Interaction::search_interactions()
 
                     if(dist < rcs[system->kd[iat] - 1][order] + rcs[system->kd[jat] - 1][order]) {
 
-                        if(!countint[jat][i][order]) {
-                            intpairs[nint_uniq[order]][order][0] = iat;
-                            intpairs[nint_uniq[order]][order][1] = jat;
-                            nint_uniq[order]++;
-                            ninter[i][order]++;
+                        if(!countint[i][jat][order]) {
+                            intpairs[i][order][ninter[i][order]] = jat;
+                            ++ninter[i][order];
                         }
-                        countint[jat][i][order]++;
+                        ++countint[i][jat][order];
                     }
                 }
             }
         }
     }
+    std::cout << "OK" << std::endl;
+    if(maxval(natmin, nat, order, countint) > 1) {
+        error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
+    }
 
-     if(maxval(nat, natmin, 3, countint) > 1) {
-         error->warn("search_interactions", "Duplicate interaction exits");
-     }
+#ifdef _DEBUG
+    for (i = 0; i < natmin; i++){
+        iat = symmetry->map_p2s[i][0];
+        for (j = 0; j < nat; j++){
+            std::cout << std::setw(5) << iat << std::setw(5) << j + 1; 
+            for (order = 0; order < maxorder; ++order){
+                std::cout << std::setw(3) << countint[i][j][order];
+            }
+            std::cout << std::endl;
+        }
+    }
+#endif
+
+    std::vector<int> intlist;
+    std::vector<int> intnew;
+    std::string str_order[3];
+
+    str_order[0] = "HARMONIC";
+    str_order[1] = "ANHARM3 ";
+    str_order[2] = "ANHARM4 ";
+
+    intlist.clear();
+    for(i = 0; i < natmin; ++i){
+
+        iat = symmetry->map_p2s[i][0] - 1;
+        for(order = 0; order < maxorder; ++order){
+            for(j = 0; j < ninter[i][order]; ++j){
+                intlist.push_back(intpairs[i][order][j]);
+            }
+            std::sort(intlist.begin(), intlist.end());
+
+#ifdef _DEBUG
+            for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
+                std::cout << std::setw(5) << iat + 1 << std::setw(7) << *it + 1<< std::endl;
+            }
+#endif
+            int id = 0;
+            std::cout << "Atom " << std::setw(5) << iat + 1 << std::endl;
+            std::cout << "Order: " << str_order[order] << " interact with atoms ..." << std::endl;
+            for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
+                std::cout << std::setw(5) << *it + 1;
+                if(!(++id%15)) std::cout << std::endl;
+            }
+            std::cout << std::endl;
+            std::cout << "Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl;
+         if (order > 0) {
+                CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
+   //             CombinationWithRepetition<int> g(&intlist[0], &intlist[ninter[i][order]], order+1);
+                do{
+                    std::vector<int> data = g.now();
+                    std::cout << std::setw(5) << data[0];
+                    for(unsigned int isize = 1; isize < data.size() ; ++isize){
+                        std::cout << std::setw(5) << data[isize];
+                    }
+                    std::cout << std::endl;
+                }while(g.next());
+                std::cout << g.size() << " g.size" << std::endl;
+            }
+            intlist.clear();
+        }
+    }
 }
 
 template <typename T>
