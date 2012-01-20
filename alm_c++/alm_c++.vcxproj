@@ -92,6 +92,7 @@
     <ClInclude Include="files.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="interaction.h" />
+    <ClInclude Include="listcomparison.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="pointers.h" />
     <ClInclude Include="symmetry.h" />

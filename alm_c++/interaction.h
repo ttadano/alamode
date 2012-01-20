@@ -23,6 +23,11 @@ namespace ALM_NS {
         double ***xcrd;
 
         template <typename T>
+        void insort(int, T *);
+
+        bool is_incutoff(int, int *);
+
+        template <typename T>
         T maxval(int, T *);
         template <typename T>
         T maxval(int, int, T **);

@@ -10,8 +10,8 @@
 #include <Eigen/core>
 #include <vector>
 #include <algorithm>
-#include <boost/algorithm/combination.hpp>
 #include "combination.h"
+#include "listcomparison.h"
 
 using namespace ALM_NS;
 
@@ -226,10 +226,12 @@ void Interaction::search_interactions()
     str_order[2] = "ANHARM4 ";
 
     intlist.clear();
-    for(i = 0; i < natmin; ++i){
+    for(order = 0; order < maxorder; ++order){
+        std::set<IntList> listset;
+        for(i = 0; i < natmin; ++i){
 
-        iat = symmetry->map_p2s[i][0] - 1;
-        for(order = 0; order < maxorder; ++order){
+            iat = symmetry->map_p2s[i][0] - 1;
+
             for(j = 0; j < ninter[i][order]; ++j){
                 intlist.push_back(intpairs[i][order][j]);
             }
@@ -249,23 +251,110 @@ void Interaction::search_interactions()
             }
             std::cout << std::endl;
             std::cout << "Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl;
-         if (order > 0) {
+
+            int *intarr;        
+            intarr = new int [order + 2];
+
+            if(order == 0){
+                for(unsigned int ielem = 0; ielem < intlist.size(); ++ielem){
+                    intarr[0] = iat;
+                    intarr[1] = intlist[ielem];
+                    insort(order+2, intarr);
+
+                    //        list_tmp.clean();
+                    //       list_tmp.iarray.push_back(intarr[0]);
+                    //      list_tmp.iarray.push_back(intarr[1]);
+                    //       std::cout << "TEST " << list_tmp.iarray[0] << " " << list_tmp.iarray[1] ;
+                    listset.insert(IntList(order+2, intarr));
+                    std::cout << "SIZE " <<  listset.size() << std::endl;
+                }
+            } else if (order > 0) {
                 CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
-   //             CombinationWithRepetition<int> g(&intlist[0], &intlist[ninter[i][order]], order+1);
-                do{
+                do {
                     std::vector<int> data = g.now();
-                    std::cout << std::setw(5) << data[0];
+                    intarr[0] = iat;
+                    intarr[1] = data[0];
+                    //                    std::cout << std::setw(5) << data[0];
                     for(unsigned int isize = 1; isize < data.size() ; ++isize){
-                        std::cout << std::setw(5) << data[isize];
+                        intarr[isize + 1] = data[isize];
+                        //                       std::cout << std::setw(5) << data[isize];
                     }
-                    std::cout << std::endl;
-                }while(g.next());
-                std::cout << g.size() << " g.size" << std::endl;
+                    //std::cout << std::endl;
+                    if(!is_incutoff(order+2, intarr)) continue;
+                    insort(order+2, intarr);
+                    //                    for(int mm = 0; mm < order + 2; ++mm){
+                    //                        std::cout << std::setw(5) << intarr[mm];
+                    //                    }
+                    //                    std::cout << std::setw(3) << is_incutoff(order+2, intarr);
+                    //                    std::cout << std::endl;
+
+                } while(g.next());
             }
             intlist.clear();
+            delete intarr;
+
+
+        }
+
+        for (std::set<IntList>::iterator p = listset.begin(); p != listset.end(); ++p){
+            std::cout << *p;
+            std::cout << "OK" << std::endl;
         }
     }
 }
+
+
+bool Interaction::is_incutoff(int n, int *atomnumlist)
+{
+    int i, j;
+    double **dist_tmp;
+    double tmp;
+    int *min_neib;
+    int ncheck = n - 1;
+
+    memory->allocate(dist_tmp, nneib, ncheck);
+    min_neib = new int [ncheck];
+
+    // distance from a reference atom[0] in the original cell
+    // to atom number atom[j](j > 0) in the neighboring cells.
+    for (i = 0; i < nneib; ++i){
+        for (j = 0; j < ncheck; ++j){
+            dist_tmp[i][j] = distance(xcrd[0][atomnumlist[0]], xcrd[i][atomnumlist[j+1]]);
+        }
+    }
+
+    // find the indecis of neighboring cells which minimize the distances.
+    for (i = 0; i < ncheck; ++i){
+
+        tmp = dist_tmp[0][i];
+        min_neib[i] = 0;
+
+        for (j = 1; j < nneib; ++j){
+            if(dist_tmp[j][i] < tmp) {
+                tmp = dist_tmp[j][i];
+                min_neib[i] = j;
+            }
+        }
+    }
+
+    // judge whether or not the given atom list interact with each other
+    for (i = 0; i < ncheck; ++i){
+        for (j =  i + 1; j < ncheck; ++j){
+
+            tmp = distance(xcrd[min_neib[i]][atomnumlist[i + 1]], xcrd[min_neib[j]][atomnumlist[j + 1]]);
+            if(tmp > rcs[system->kd[atomnumlist[i + 1]] - 1][ncheck - 1] + rcs[system->kd[atomnumlist[j + 1]] - 1][ncheck - 1]){
+                memory->deallocate(dist_tmp);
+                delete min_neib;
+                return false;
+            }
+        }
+    }
+
+    memory->deallocate(dist_tmp);
+    delete min_neib;
+    return true;
+}
+
 
 template <typename T>
 T Interaction::maxval(int n, T *arr)
@@ -307,4 +396,19 @@ T Interaction::maxval(int n1, int n2, int n3, T ***arr)
         }
     }
     return tmp;
+}
+
+template <typename T>
+void Interaction::insort(int n, T *arr)
+{
+    int i, j;
+    T tmp;
+
+    for (i = 1; i < n; ++i){
+        tmp = arr[i];
+        for (j = i - 1; j >= 0 && arr[j] > tmp; --j){
+            arr[j + 1] = arr[j];
+        }
+        arr[j + 1] = tmp;
+    }
 }
