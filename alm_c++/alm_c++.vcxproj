@@ -74,12 +74,12 @@
   <ItemGroup>
     <ClCompile Include="alamode.cpp" />
     <ClCompile Include="error.cpp" />
+    <ClCompile Include="fcs.cpp" />
     <ClCompile Include="files.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="interaction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
-    <ClCompile Include="mics.cpp" />
     <ClCompile Include="symmetry.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
@@ -89,6 +89,7 @@
     <ClInclude Include="combination.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="error.h" />
+    <ClInclude Include="fcs.h" />
     <ClInclude Include="files.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="interaction.h" />
@@ -98,6 +99,9 @@
     <ClInclude Include="symmetry.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

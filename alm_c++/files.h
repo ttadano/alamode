@@ -23,8 +23,13 @@ namespace ALM_NS {
         std::string file_disp, file_force;
         std::string file_disp_sym, file_force_sym;
 
+        std::string file_int;
+
         std::ofstream ofs_log;
         std::ofstream ofs_fcs, ofs_premd;
+
+        std::ofstream ofs_int;
+        std::ifstream ifs_int;
 
         std::ifstream ifs_disp, ifs_force;
         std::ofstream ofs_disp_sym, ofs_force_sym;

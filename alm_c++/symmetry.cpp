@@ -326,28 +326,41 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 
     //  sym_crt = new Eigen::Matrix3d [nsym];
 
-    for (i = 0; i < 3; i++){
-        for (j = 0; j < 3; j++){
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
             aa(i,j) = lavec[i][j];
             bb(i,j) = rlavec[i][j];
         }
     }
 
-    for (int isym = 0; isym < nsym; isym++) {
+    for (int isym = 0; isym < nsym; ++isym) {
 
-        for (i = 0; i < 3; i++){
-            for (j = 0; j < 3; j++){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
                 sym_tmp(i,j) = static_cast<double>(symrel_int[isym][i][j]);
             }
         }
         sym_crt = (aa * (sym_tmp * bb.transpose())) / (2.0 * pi);
 
-        for (i = 0; i < 3; i++){
-            for (j = 0; j < 3; j++){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
                 symrel[isym][i][j] = sym_crt(i,j);
             }
         }
     }
+
+#ifdef _DEBUG
+
+    std::cout << "Symmetry Operations in Cartesian Coordinate" << std::endl;
+    for (int isym = 0; isym < nsym; ++isym){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                std::cout << std::setw(8) << symrel[isym][i][j];    
+            }
+        }
+        std::cout << std::endl;
+    }
+#endif
 }
 
 void Symmetry::pure_translations()
@@ -390,7 +403,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 
     for(iat = 0; iat < nat; iat++){
         for(isym = 0; isym < nsym; isym++){
-            map_sym[iat][isym] = 0;
+            map_sym[iat][isym] = -1;
         }
     }
 
@@ -414,11 +427,11 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 
                 dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
                 if(dist < 1.0e-10) {
-                    map_sym[iat][isym] = jat + 1;
+                    map_sym[iat][isym] = jat;
                     break;
                 }
             }
-            if (map_sym[iat][isym] == 0) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
+            if (map_sym[iat][isym] == -1) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
         }
     }
     memory->deallocate(xnew);    
@@ -436,7 +449,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
         for (i = 0; i < ntran; i++){
             atomnum_translated = map_sym[iat][symnum_tran[i]];
             map_p2s[jat][i] = atomnum_translated;
-            is_checked[atomnum_translated - 1] = true;
+            is_checked[atomnum_translated] = true;
         }
         jat++;
     }
@@ -446,8 +459,8 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     for (iat = 0; iat < natmin; iat++){
         for (i  = 0; i < ntran; i++){
             atomnum_translated = map_p2s[iat][i];
-            map_s2p[atomnum_translated - 1].atom_num = iat + 1;
-            map_s2p[atomnum_translated - 1].tran_num = i + 1;
+            map_s2p[atomnum_translated].atom_num = iat;
+            map_s2p[atomnum_translated].tran_num = i;
         }
     }
 }
@@ -480,8 +493,8 @@ void Symmetry::data_multiplier(int nat, int ndata)
         for (itran = 0; itran < ntran; itran++){
             for (j = 0; j < nat; j++){
                 for (k = 0; k < 3; k++){
-                    u_sym[itran][map_sym[j][symnum_tran[itran]] - 1][k] = u[j][k];
-                    f_sym[itran][map_sym[j][symnum_tran[itran]] - 1][k] = f[j][k];
+                    u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[j][k];
+                    f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[j][k];
                 }
             }
         }

@@ -16,6 +16,7 @@ namespace ALM_NS {
           symmetry(ptr->symmetry),
           files(ptr->files),
           error(ptr->error),
+          fcs(ptr->fcs),
           timer(ptr->timer) {}
           virtual ~Pointers(){}
     protected:
@@ -24,6 +25,7 @@ namespace ALM_NS {
         Input *&input;
         System *&system;
         Interaction *&interaction;
+        Fcs *&fcs;
         Symmetry *&symmetry;
         Files *&files;
         Error *&error;

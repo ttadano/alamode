@@ -5,7 +5,7 @@
 #include "files.h"
 #include "memory.h"
 #include "timer.h"
-#include <iostream>
+#include "fcs.h"
 
 using namespace ALM_NS;
 
@@ -25,6 +25,7 @@ void ALM::create()
     files = new Files(this);
     system = new System(this);
     interaction = new Interaction(this);
+    fcs = new Fcs(this);
     symmetry = new Symmetry(this);
 }
 
@@ -34,6 +35,7 @@ void ALM::initialize()
     files->init();
     symmetry->init();
     interaction->init();
+    fcs->init();
 }
 ALM::~ALM()
 {
@@ -47,6 +49,7 @@ void ALM::finalize()
     delete memory;
     delete files;
     delete interaction;
+    delete fcs;
     delete symmetry;
     delete system;
 }

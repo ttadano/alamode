@@ -11,6 +11,7 @@ namespace ALM_NS {
         class Input *input;
         class System *system;
         class Interaction *interaction;
+        class Fcs *fcs;
         class Symmetry *symmetry;
         class Files *files;
         class Error *error;

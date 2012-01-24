@@ -14,6 +14,7 @@ void Files::setfilenames()
     file_premd = job_title + ".premd";
     file_disp_sym = file_disp + ".SYM";
     file_force_sym = file_force + ".SYM";
+    file_int = job_title + ".pairs";
 }
 
 void Files::openfiles()
@@ -28,6 +29,8 @@ void Files::openfiles()
     if(!ifs_disp) error->exit("openfiles", "cannot open disp file");
     ifs_force.open(file_force, std::ios::in);
     if(!ifs_force) error->exit("openfiles", "cannot open force file");
+
+  
 }
 
 void Files::closefiles()

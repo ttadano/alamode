@@ -12,6 +12,7 @@
 #include <algorithm>
 #include "combination.h"
 #include "listcomparison.h"
+#include "files.h"
 
 using namespace ALM_NS;
 
@@ -60,12 +61,15 @@ void Interaction::init()
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
     memory->allocate(xcrd, nneib, nat, 3);
     memory->allocate(distlist, nat, nat);
-    //  calc_distlist(nat, xfrac);
+
     calc_distlist(nat, system->xcoord);
+
+    files->ofs_int.open(files->file_int, std::ios::out);
+    if(!files->ofs_int) error->exit("openfiles", "cannot open int file");
 
     search_interactions();
 
-
+    files->ofs_int.close();
 }
 
 double Interaction::distance(double *x1, double *x2)
@@ -179,7 +183,7 @@ void Interaction::search_interactions()
     for (icell = 0; icell < nneib; icell++){
         for (i = 0; i < natmin; i++){
 
-            iat = symmetry->map_p2s[i][0] - 1; //index of an atom in the primitive cell
+            iat = symmetry->map_p2s[i][0]; //index of an atom in the primitive cell
 
             for (jat = 0; jat < nat; jat++){
 
@@ -218,7 +222,6 @@ void Interaction::search_interactions()
 #endif
 
     std::vector<int> intlist;
-    std::vector<int> intnew;
     std::string str_order[3];
 
     str_order[0] = "HARMONIC";
@@ -227,11 +230,15 @@ void Interaction::search_interactions()
 
     intlist.clear();
     for(order = 0; order < maxorder; ++order){
+        
         std::set<IntList> listset;
+        
         for(i = 0; i < natmin; ++i){
 
-            iat = symmetry->map_p2s[i][0] - 1;
-
+            if(ninter[i][order] == 0) continue; // no interaction atoms
+            
+            iat = symmetry->map_p2s[i][0];
+                        
             for(j = 0; j < ninter[i][order]; ++j){
                 intlist.push_back(intpairs[i][order][j]);
             }
@@ -242,6 +249,7 @@ void Interaction::search_interactions()
                 std::cout << std::setw(5) << iat + 1 << std::setw(7) << *it + 1<< std::endl;
             }
 #endif
+            // write atoms inside the cutoff radius
             int id = 0;
             std::cout << "Atom " << std::setw(5) << iat + 1 << std::endl;
             std::cout << "Order: " << str_order[order] << " interact with atoms ..." << std::endl;
@@ -255,54 +263,44 @@ void Interaction::search_interactions()
             int *intarr;        
             intarr = new int [order + 2];
 
-            if(order == 0){
-                for(unsigned int ielem = 0; ielem < intlist.size(); ++ielem){
-                    intarr[0] = iat;
-                    intarr[1] = intlist[ielem];
-                    insort(order+2, intarr);
+            if(intlist.size() > 0) {
+                if(order == 0){
+                    for(unsigned int ielem = 0; ielem < intlist.size(); ++ielem){
+                        intarr[0] = iat;
+                        intarr[1] = intlist[ielem];
+                        insort(order+2, intarr);
 
-                    //        list_tmp.clean();
-                    //       list_tmp.iarray.push_back(intarr[0]);
-                    //      list_tmp.iarray.push_back(intarr[1]);
-                    //       std::cout << "TEST " << list_tmp.iarray[0] << " " << list_tmp.iarray[1] ;
-                    listset.insert(IntList(order+2, intarr));
-                    std::cout << "SIZE " <<  listset.size() << std::endl;
-                }
-            } else if (order > 0) {
-                CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
-                do {
-                    std::vector<int> data = g.now();
-                    intarr[0] = iat;
-                    intarr[1] = data[0];
-                    //                    std::cout << std::setw(5) << data[0];
-                    for(unsigned int isize = 1; isize < data.size() ; ++isize){
-                        intarr[isize + 1] = data[isize];
-                        //                       std::cout << std::setw(5) << data[isize];
+                        listset.insert(IntList(order + 2, intarr));
                     }
-                    //std::cout << std::endl;
-                    if(!is_incutoff(order+2, intarr)) continue;
-                    insort(order+2, intarr);
-                    //                    for(int mm = 0; mm < order + 2; ++mm){
-                    //                        std::cout << std::setw(5) << intarr[mm];
-                    //                    }
-                    //                    std::cout << std::setw(3) << is_incutoff(order+2, intarr);
-                    //                    std::cout << std::endl;
+                } else if (order > 0) {
+                    CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
+                    do {
+                        std::vector<int> data = g.now();
+                        intarr[0] = iat;
+                        intarr[1] = data[0];
+                        for(unsigned int isize = 1; isize < data.size() ; ++isize){
+                            intarr[isize + 1] = data[isize];
+                        }
 
-                } while(g.next());
+                        if(!is_incutoff(order+2, intarr)) continue;
+                        insort(order+2, intarr);
+
+                        listset.insert(IntList(order + 2, intarr));
+
+                    } while(g.next());
+                }
             }
             intlist.clear();
             delete intarr;
 
-
         }
-
+        // write interaction pairs of atoms to pairs files
+        files->ofs_int << listset.size() << std::endl;
         for (std::set<IntList>::iterator p = listset.begin(); p != listset.end(); ++p){
-            std::cout << *p;
-            std::cout << "OK" << std::endl;
+            files->ofs_int << *p;
         }
     }
 }
-
 
 bool Interaction::is_incutoff(int n, int *atomnumlist)
 {

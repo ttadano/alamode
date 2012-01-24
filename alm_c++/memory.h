@@ -25,15 +25,15 @@ namespace ALM_NS {
         }
         template <typename T>
         void deallocate(T **&arr){
-            delete arr[0];
-            delete arr;
+            delete [] arr[0];
+            delete [] arr;
         }
 
         template <typename T>
         void deallocate(T ***&arr){
-            delete arr[0][0];
-            delete arr[0];
-            delete arr;
+            delete [] arr[0][0];
+            delete [] arr[0];
+            delete [] arr;
         }
 
         template <typename T>
