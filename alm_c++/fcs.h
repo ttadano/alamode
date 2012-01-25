@@ -8,25 +8,32 @@
 
 namespace ALM_NS {
 
-    class FcSet{
+    class FcProperty {
     public:
-        class FcList {
-        public:
-            std::vector<int> elems;
-            double coef;
+        std::vector<int> elems;
+        double coef;
 
-            FcList();
-            FcList(const int n, const double c, const int *arr)
-            {
-                coef = c;
-                for (int i = 0; i < n; ++i){
-                    elems.push_back(arr[i]);
-                }
-            }    
-        };
-
-        std::vector<FcList> *fcset;
+        FcProperty();
+        FcProperty(const int n, const double c, const int *arr)
+        {
+            coef = c;
+            for (int i = 0; i < n; ++i){
+                elems.push_back(arr[i]);
+            }
+        }    
     };
+
+    //class FcSet {
+    //public:
+    //    std::vector<FcProperty> fc_property;
+
+    //    FcSet();
+    //    FcSet(std::vector<FcProperty> fc_tmp){
+    //        for (std::vector<FcProperty>::iterator iter = fc_tmp.begin(); iter != fc_tmp.end(); ++iter){
+    //            fc_property.push_back(*iter);
+    //        }
+    //    }
+    //};
 
 
     class Fcs: protected Pointers{
@@ -36,8 +43,12 @@ namespace ALM_NS {
 
         void init();
 
-        //        std::vector<Pairs> *pairs;
+        int *nzero;
+
         std::set<IntList> *pairs;
+        std::vector<int> *ndup;
+        std::vector<FcProperty> *fc_set;
+
     private:
         int *nints;
         void read_pairs(int);
@@ -47,7 +58,10 @@ namespace ALM_NS {
         double coef_sym(const int, const int, const int *, const int *);
         void get_xyzcomponent(int, int **);
         bool is_ascending(const int, const int *);
-       };
+        void sort_tail(const int, int *); 
+
+        std::string easyvizint(const int);
+    };
 
 }
 

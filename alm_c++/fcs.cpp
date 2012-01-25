@@ -7,6 +7,9 @@
 #include "symmetry.h"
 #include <cmath>
 #include <boost/algorithm/combination.hpp>
+#include <string>
+#include <boost/lexical_cast.hpp>
+#include "system.h"
 
 using namespace ALM_NS;
 
@@ -19,10 +22,25 @@ void Fcs::init(){
     int maxorder = interaction->maxorder;
 
     nints = new int [maxorder];
-    //    pairs = new std::vector<Pairs>[maxorder];
     pairs = new std::set<IntList>[maxorder];
+    nzero = new int [maxorder];
+    for(i = 0; i < maxorder; ++i) nzero[i] = 0;
+
     read_pairs(maxorder);
+
+    fc_set = new std::vector<FcProperty> [maxorder];
+    ndup = new std::vector<int> [maxorder];
     generate_fclists(maxorder);
+
+    std::cout << std::endl;
+    for(i = 0; i < maxorder; ++i){
+        std::cout << "Number of " << interaction->str_order[i] << " FCs: " << ndup[i].size() << std::endl;
+    }
+    std::cout << std::endl;
+    for(i = 0; i < maxorder; ++i){
+        std::cout << "Number of symmetrically-zero FCs for " << interaction->str_order[i] << " : " << nzero[i] << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 void Fcs::read_pairs(int maxorder)
@@ -46,89 +64,145 @@ void Fcs::read_pairs(int maxorder)
             //       pairs[order].push_back(Pairs(order + 2, pair_tmp));
             pairs[order].insert(IntList(order + 2, pair_tmp));
         }
-        delete pair_tmp;
-        std::cout << pairs[order].size() << std::endl;
+        delete [] pair_tmp;
+        //   std::cout << pairs[order].size() << std::endl;
     }
 }
 
 void Fcs::generate_fclists(int maxorder)
 {
-    int i, j;
+    int i;
     int order;
     int i_prim;
     int *atmn, *atmn_mapped;
     int *ind, *ind_mapped;
+    int *ind_tmp;
     int nxyz;
     IntList list_tmp;
 
     double c_tmp;
+    bool is_zero;
 
     int **xyzcomponent;
 
     atmn = new int [maxorder];
     atmn_mapped = new int [maxorder];
-    ind = new int  [maxorder];
+    ind = new int [maxorder];
     ind_mapped = new int [maxorder];
+    ind_tmp = new int [maxorder-1];
 
     for(order = 0; order < maxorder; ++order){
+
+        fc_set[order].clear();
+        ndup[order].clear();
 
         nxyz = static_cast<int>(pow(static_cast<long double>(3), order + 2));
 
         memory->allocate(xyzcomponent, nxyz, order + 2);
-        for (i = 0; i < nxyz; ++i){
-            std::cout << std::setw(10) << &xyzcomponent[i][0] << std::setw(10) << &xyzcomponent[i][1] << std::endl;
-        }
         get_xyzcomponent(order + 2, xyzcomponent);
-        memory->deallocate(xyzcomponent);
-        exit(1);
-        std::cout << "OK" << std::endl;
 
-        for(std::set<IntList>::iterator iter = pairs[order].begin(); iter != pairs[order].end(); ++iter){
+        std::set<IntList> list_found;
+        IntList list_tmp;
+
+        for (std::set<IntList>::iterator iter = pairs[order].begin(); iter != pairs[order].end(); ++iter){
 
             list_tmp = *iter;
-            for (i = 0; i < order + 2; ++i){
-                atmn[i] = list_tmp.iarray[i];
-            }
+            for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
 
             for (int i1 = 0; i1 < nxyz; ++i1){
-                for (i = 0; i < order + 2; ++i){
-                    ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
-                }
+                for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
 
-                if(!is_ascending(order + 2, ind)) continue;
+                if (!is_ascending(order + 2, ind)) continue;
+
                 i_prim = min_inprim(order + 2, ind);
                 std::swap(ind[0], ind[i_prim]);
+                sort_tail(order + 2, ind);
 
-                // search symmetrycally-dependent parameter set
+                is_zero = false;
+
+                if(list_found.find(IntList(order + 2, ind)) != list_found.end()) continue; // already exits!
+
+                // search symmetrically-dependent parameter set
 
                 int ndeps = 0;
 
-                for(int isym = 0; isym < symmetry->nsym; ++isym){
-                    for(i = 0; i < order + 2; ++i){
-                        atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
-                    }
+                for (int isym = 0; isym < symmetry->nsym; ++isym){
 
-                    if(!is_inprim(order + 2, atmn_mapped)) continue;
+                    for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
+                    if (!is_inprim(order + 2, atmn_mapped)) continue;
 
                     for (int i2 = 0; i2 < nxyz; ++i2){
                         c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
-                        if(abs(c_tmp) > 1.0e-8) {
-                            for (i = 0; i < order + 2; ++i){
-                                ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
-                            }
+                        if (abs(c_tmp) > 1.0e-12) {
+                            for (i = 0; i < order + 2; ++i) ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
 
                             i_prim = min_inprim(order + 2, ind_mapped);
                             std::swap(ind_mapped[0], ind_mapped[i_prim]);
-                            ++ndeps;
+                            sort_tail(order + 2, ind_mapped);
+
+                            if (!is_zero){
+                                bool zeroflag = true;
+                                for (i = 0; i < order + 2; ++i){
+                                    zeroflag = zeroflag & (ind[i] == ind_mapped[i]);
+                                }
+                                zeroflag = zeroflag & (abs(c_tmp + 1.0) < 1.0e-8);
+                                is_zero = zeroflag;
+                            }
+
+                            // add to found list (set) and fcset (vector) if the created is new one.
+
+                            if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()){
+                                list_found.insert(IntList(order + 2, ind_mapped));
+
+                                fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped));
+                                ++ndeps;
+                            }
                         }
                     }
+                } // close symmetry loop
+
+                if(is_zero){
+                    for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
+                    ++nzero[order];
+                } else {             
+                    ndup[order].push_back(ndeps);  
                 }
-                //           std::cout << "ndeps" << ndeps << std::endl;
-            }
+
+            } // close xyz component loop
+        } // close atom number loop (iterator)
+
+        /*     std::cout << "ORDER: " << order << " Size: " << ndup[order].size() << std::endl;
+        for(unsigned int m = 0; m < ndup[order].size(); ++m){
+        std::cout << "ORDER: " << order << std::setw(5) << ndup[order][m] << std::endl;
         }
+        std::cout << "ORDER: " << order << " nzero " << nzero[order]<< std::endl;
+
+        std::cout << "**ORDER = " << order << " **" << std::endl;
+        std::cout << "Number of Parameters = " << ndup[order].size() << std::endl;
+
+        int mmm = 0;
+        for (unsigned int m = 0; m < ndup[order].size(); ++m){
+        std::cout << "#" << m << " ndup = " << ndup[order][m] << std::endl;
+        for (unsigned int mm = 0; mm < ndup[order][m]; ++mm){
+        for (i = 0; i < order + 2; ++i){
+        std::cout << std::setw(6) << easyvizint(fc_set[order][mmm].elems[i]);    
+        }
+        std::cout << std::endl;
+        ++mmm;
+        } 
+        std::cout << std::endl;
+        }
+        */
+
         memory->deallocate(xyzcomponent);
-        std::cout << "OK2" << std::endl;
-    }
+        list_found.clear();
+    } //close order loop
+
+    delete [] atmn;
+    delete [] atmn_mapped;
+    delete [] ind;
+    delete [] ind_mapped;
+    delete [] ind_tmp;
 }
 
 double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *arr2)
@@ -140,8 +214,6 @@ double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *
         tmp *= symmetry->symrel[symnum][arr2[i]][arr1[i]];
     }
     return tmp;
-
-    //   if(symnum == 0) std::cout << symmetry->symrel[0][0][0] * symmetry->symrel[0][0][0] << std::endl;
 }
 
 bool Fcs::is_ascending(const int n, const int *arr)
@@ -152,19 +224,44 @@ bool Fcs::is_ascending(const int n, const int *arr)
     }
     return true;
 }
+
 int Fcs::min_inprim(const int n, const int *arr)
 {
     int i, j, atmnum;
     int natmin = symmetry->natmin;
+    int minloc;
+    int *ind;
+
+    ind = new int [n];
 
     for (i = 0; i < n; ++i){
+
+        ind[i] = system->nat;
         atmnum = arr[i] / 3;
+
         for (j = 0; j < natmin; ++j){
-            if(symmetry->map_p2s[j][0] == atmnum) return i; 
+            if (symmetry->map_p2s[j][0] == atmnum) {
+                ind[i] = arr[i];
+                continue;
+            }
         }
     }
-    // this cannot happen
-    error->exit("min_inprim", "no indecis in the primitive cell");
+
+    int minval = ind[0];
+    minloc = 0;
+
+    for (i = 0; i < n; ++i){
+        if(ind[i] < minval){
+            minval = ind[i];
+            minloc = i;
+        }
+    }
+
+    delete [] ind;
+    return minloc;
+
+    //// this cannot happen
+    //error->exit("min_inprim", "no indecis in the primitive cell");
 }
 
 bool Fcs::is_inprim(const int n, const int *arr)
@@ -200,10 +297,44 @@ void Fcs::get_xyzcomponent(int n, int **xyz)
     do {
         xyz[m][0] = v[0];
         for (i = 1; i < n; ++i) xyz[m][i] = v[i];
-        for (i = 0; i < n; ++i) {
-            std::cout << std::setw(10) << &xyz[m][i];
-        }
-        std::cout << std::endl;
         ++m;
     } while(boost::next_partial_permutation(v.begin(), v.begin() + n, v.end()));
+}
+
+void Fcs::sort_tail(const int n, int *arr){
+
+    int i, m;
+
+    m = n - 1;
+    int *ind_tmp;
+
+    ind_tmp = new int [m];
+
+    for (i = 0; i < m; ++i){
+        ind_tmp[i] = arr[i + 1];
+    }
+
+    interaction->insort(m, ind_tmp);
+
+    for (i = 0; i < m; ++i){
+        arr[i + 1] = ind_tmp[i];
+    }
+
+    delete [] ind_tmp;
+}
+
+std::string Fcs::easyvizint(const int n)
+{
+    int atmn;
+    int crdn;
+    atmn = n / 3 + 1;
+    crdn = n % 3;
+    std::string str_crd[3] = {"x", "y", "z"};
+    std::string str_tmp;
+
+    //   str_tmp = std::to_string(static_cast<long double>(atmn));
+    str_tmp = boost::lexical_cast<std::string>(atmn);
+    str_tmp += str_crd[crdn];
+
+    return  str_tmp;
 }

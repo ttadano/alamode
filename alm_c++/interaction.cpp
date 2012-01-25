@@ -13,6 +13,7 @@
 #include "combination.h"
 #include "listcomparison.h"
 #include "files.h"
+#include <boost/lexical_cast.hpp>
 
 using namespace ALM_NS;
 
@@ -29,17 +30,22 @@ void Interaction::init()
     int nat = system->nat;
     int nkd = system->nkd;
 
+    str_order = new std::string [maxorder];
+    set_ordername();
+
     std::cout << "Cutoff Radii (Bohr Unit.)" << std::endl;
-    std::cout << std::setw(8) << "Species" 
-        << std::setw(9) << "HARMONIC"
-        << std::setw(9) << "ANHARM3"
-        << std::setw(9) << "ANHARM4" << std::endl;
+    std::cout << std::setw(8) << "Species";
+    for (i = 0; i < maxorder; ++i){
+        std::cout << std::setw(9) << str_order[i];
+    }
+    std::cout << std::endl;
 
     for (i = 0; i < nkd; i++){
-        std::cout << std::setw(8) << i + 1 
-            << std::setw(9) << rcs[i][0] 
-        << std::setw(9) << rcs[i][1] 
-        << std::setw(9) << rcs[i][2] << std::endl;
+        std::cout << std::setw(8) << i + 1;
+        for (j = 0; j < maxorder; ++j){
+          std::cout << std::setw(9) << rcs[i][j];
+        }
+     std::cout << std::endl;
     }
 
     for (i = 0; i < 3; i++){
@@ -51,13 +57,6 @@ void Interaction::init()
         << "b axis: " << std::setw(3) << is_periodic[1] << std::endl
         << "c axis: " << std::setw(3) << is_periodic[2] << std::endl << std::endl;
 
-    //   Eigen::MatrixXd xfrac(nat, 3);
-
-    //   for (i = 0; i < nat; i++){
-    //       for (j = 0; j < 3; j++){
-    //           xfrac(i,j) = system->xcoord[i][j];
-    //       }
-    //   }
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
     memory->allocate(xcrd, nneib, nat, 3);
     memory->allocate(distlist, nat, nat);
@@ -81,7 +80,6 @@ double Interaction::distance(double *x1, double *x2)
     return dist;
 }
 
-//void Interaction::calc_distlist(int nat, Eigen::MatrixXd xf)
 void Interaction::calc_distlist(int nat, double **xf)
 {
     int icell = 0;
@@ -90,7 +88,6 @@ void Interaction::calc_distlist(int nat, double **xf)
 
     for (i = 0; i < nat; i++){
         for (j = 0; j < 3; j++){
-            //        xcrd[0][i][j] = xf(i,j);
             xcrd[0][i][j] = xf[i][j];
         }
     }
@@ -102,9 +99,6 @@ void Interaction::calc_distlist(int nat, double **xf)
 
                 icell++;
                 for (i = 0; i < nat; i++){
-                    //            xcrd[icell][i][0] = xf(i,0) + static_cast<double>(isize);
-                    //           xcrd[icell][i][1] = xf(i,1) + static_cast<double>(jsize);
-                    //          xcrd[icell][i][2] = xf(i,2) + static_cast<double>(ksize);
                     xcrd[icell][i][0] = xf[i][0] + static_cast<double>(isize);
                     xcrd[icell][i][1] = xf[i][1] + static_cast<double>(jsize);
                     xcrd[icell][i][2] = xf[i][2] + static_cast<double>(ksize);
@@ -203,7 +197,7 @@ void Interaction::search_interactions()
             }
         }
     }
-    std::cout << "OK" << std::endl;
+
     if(maxval(natmin, nat, order, countint) > 1) {
         error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
     }
@@ -222,23 +216,20 @@ void Interaction::search_interactions()
 #endif
 
     std::vector<int> intlist;
-    std::string str_order[3];
-
-    str_order[0] = "HARMONIC";
-    str_order[1] = "ANHARM3 ";
-    str_order[2] = "ANHARM4 ";
 
     intlist.clear();
     for(order = 0; order < maxorder; ++order){
-        
+
         std::set<IntList> listset;
-        
+
+        std::cout << std::endl << "***" << str_order[order] << "***" << std::endl;
+
         for(i = 0; i < natmin; ++i){
 
             if(ninter[i][order] == 0) continue; // no interaction atoms
-            
+
             iat = symmetry->map_p2s[i][0];
-                        
+
             for(j = 0; j < ninter[i][order]; ++j){
                 intlist.push_back(intpairs[i][order][j]);
             }
@@ -251,14 +242,14 @@ void Interaction::search_interactions()
 #endif
             // write atoms inside the cutoff radius
             int id = 0;
-            std::cout << "Atom " << std::setw(5) << iat + 1 << std::endl;
-            std::cout << "Order: " << str_order[order] << " interact with atoms ..." << std::endl;
+            std::cout << "Atom " << std::setw(5) << iat + 1  << " interacts with atoms ... " << std::endl;
+    //        std::cout << "Order: " << str_order[order] << " interact with atoms ..." << std::endl;
             for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
                 std::cout << std::setw(5) << *it + 1;
                 if(!(++id%15)) std::cout << std::endl;
             }
             std::cout << std::endl;
-            std::cout << "Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl;
+            std::cout << "Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl << std::endl;
 
             int *intarr;        
             intarr = new int [order + 2];
@@ -291,7 +282,7 @@ void Interaction::search_interactions()
                 }
             }
             intlist.clear();
-            delete intarr;
+            delete [] intarr;
 
         }
         // write interaction pairs of atoms to pairs files
@@ -342,71 +333,26 @@ bool Interaction::is_incutoff(int n, int *atomnumlist)
             tmp = distance(xcrd[min_neib[i]][atomnumlist[i + 1]], xcrd[min_neib[j]][atomnumlist[j + 1]]);
             if(tmp > rcs[system->kd[atomnumlist[i + 1]] - 1][ncheck - 1] + rcs[system->kd[atomnumlist[j + 1]] - 1][ncheck - 1]){
                 memory->deallocate(dist_tmp);
-                delete min_neib;
+                delete [] min_neib;
                 return false;
             }
         }
     }
 
     memory->deallocate(dist_tmp);
-    delete min_neib;
+    delete [] min_neib;
     return true;
 }
 
+void Interaction::set_ordername(){
 
-template <typename T>
-T Interaction::maxval(int n, T *arr)
-{
-    T tmp;
-    tmp = arr[0];
+    std::string strnum;
 
-    for (int i = 0; i < n; i++) {
-        tmp = std::max<T>(tmp, arr[i]);
+    str_order[0] = "HARMONIC";
+
+    for (int i = 1;  i < maxorder; ++i){
+        strnum = boost::lexical_cast<std::string>(i+2);
+        str_order[i] = "ANHARM" + strnum;
     }
-    return tmp;
-}
 
-template <typename T>
-T Interaction::maxval(int n1, int n2, T **arr)
-{
-    T tmp;
-    tmp = arr[0][0];
-
-    for (int i = 0; i < n1; i++) {
-        for (int j = 0; j < n2; j++){
-            tmp = std::max<T>(tmp, arr[i][j]);
-        } 
-    }
-    return tmp;
-}
-
-template <typename T>
-T Interaction::maxval(int n1, int n2, int n3, T ***arr)
-{
-    T tmp;
-    tmp = arr[0][0][0];
-
-    for (int i = 0; i < n1; i++) {
-        for (int j = 0; j < n2; j++){
-            for (int k = 0; k < n3; k++){
-                tmp = std::max<T>(tmp, arr[i][j][k]);
-            } 
-        }
-    }
-    return tmp;
-}
-
-template <typename T>
-void Interaction::insort(int n, T *arr)
-{
-    int i, j;
-    T tmp;
-
-    for (i = 1; i < n; ++i){
-        tmp = arr[i];
-        for (j = i - 1; j >= 0 && arr[j] > tmp; --j){
-            arr[j + 1] = arr[j];
-        }
-        arr[j + 1] = tmp;
-    }
 }

@@ -8,12 +8,6 @@ namespace ALM_NS {
     public:
         Memory(class ALM *);
 
-        //		double **create_d2_array(int, int, double **);
-        //		void destroy_d2_array();
-        //		int **create_i2_array(int, int);
-        //	void destroy_i2_array();
-
-        // 2d-array allocation
         template <typename T>
         T **allocate(T **&arr, int n1, int n2){
             arr = new T *[n1];
@@ -49,14 +43,6 @@ namespace ALM_NS {
             }
             return arr;
         }
-        //		double **create(int n1, int n2){
-        //	bigint nlen = ((bigint) sizeof(T)) * n1 * n2;
-        //		double **arr = new double*[n1];
-        //	for (int i = 0; i < n1; i++){
-        //	arr[i] = new double[n2];
-        //}
-        //		return arr;
-        //	}
     };
 }
 
