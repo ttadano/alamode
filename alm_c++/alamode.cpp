@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "timer.h"
 #include "fcs.h"
+#include "fitting.h"
 
 using namespace ALM_NS;
 
@@ -16,6 +17,7 @@ ALM::ALM(int narg, char **arg)
     create();
     input->sparce_input();
     initialize();
+    fitting->fitmain();
     finalize();
 }
 

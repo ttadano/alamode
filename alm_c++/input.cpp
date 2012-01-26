@@ -6,6 +6,7 @@
 #include "interaction.h"
 #include "system.h"
 #include "symmetry.h"
+#include "error.h"
 
 using namespace ALM_NS;
 
@@ -27,6 +28,7 @@ void Input::sparce_input()
 	double **rcs, **xeq;
 	string *kdname;
 	double *masskd, *mass;
+    int maxorder;
 	// Read Job prefix
 	cin >> job_title;
 	// Read nat and nkd
@@ -37,10 +39,16 @@ void Input::sparce_input()
 	cin >> lavec[1][0] >> lavec[1][1] >> lavec[1][2];
 	cin >> lavec[2][0] >> lavec[2][1] >> lavec[2][2];
 	// Read Cutoff Radius for each species
-    memory->allocate(rcs,nkd,3);
-    memory->allocate(interaction->rcs, nkd, 3);
-	for (int i = 0; i < nkd; i++){
-		cin >> rcs[i][0] >> rcs[i][1] >> rcs[i][2];
+    cin >> maxorder;
+    if(maxorder < 1) error->exit("sparce_input", "maxorder has to be a positive integer");
+    interaction->maxorder = maxorder;
+    memory->allocate(rcs,nkd,maxorder);
+    memory->allocate(interaction->rcs, nkd, maxorder);
+	for (int i = 0; i < nkd; ++i){
+        for (int j = 0; j < maxorder; ++j){
+        cin >> rcs[i][j];
+        }
+//		cin >> rcs[i][0] >> rcs[i][1] >> rcs[i][2];
 	}
 	cin >> ndata;
 	cin >> eps;
@@ -70,7 +78,7 @@ void Input::sparce_input()
     files->file_force = force_file;
     system->ndata = ndata;
     for (int i = 0; i < nkd; i++){
-        for (int j = 0; j < 3; j++){
+        for (int j = 0; j < maxorder; j++){
         interaction->rcs[i][j] = rcs[i][j];
         }
     }
@@ -98,7 +106,7 @@ void Input::sparce_input()
             system->xcoord[i][j] = xeq[i][j];
         }
     }
-     delete masskd;
-     delete kd;
+     delete [] masskd;
+     delete [] kd;
      memory->deallocate(xeq);
 }

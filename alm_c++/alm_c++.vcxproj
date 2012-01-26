@@ -76,6 +76,7 @@
     <ClCompile Include="error.cpp" />
     <ClCompile Include="fcs.cpp" />
     <ClCompile Include="files.cpp" />
+    <ClCompile Include="fitting.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="interaction.cpp" />
     <ClCompile Include="main.cpp" />
@@ -91,6 +92,7 @@
     <ClInclude Include="error.h" />
     <ClInclude Include="fcs.h" />
     <ClInclude Include="files.h" />
+    <ClInclude Include="fitting.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="interaction.h" />
     <ClInclude Include="listcomparison.h" />

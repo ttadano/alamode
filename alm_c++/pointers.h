@@ -14,6 +14,7 @@ namespace ALM_NS {
               system(ptr->system),
           interaction(ptr->interaction),
           symmetry(ptr->symmetry),
+          fitting(ptr->fitting),
           files(ptr->files),
           error(ptr->error),
           fcs(ptr->fcs),
@@ -27,6 +28,7 @@ namespace ALM_NS {
         Interaction *&interaction;
         Fcs *&fcs;
         Symmetry *&symmetry;
+        Fitting *&fitting;
         Files *&files;
         Error *&error;
         Timer *&timer;

@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include "listcomparison.h"
+#include <algorithm>
 
 namespace ALM_NS {
 
@@ -36,6 +37,10 @@ namespace ALM_NS {
     //};
 
 
+    inline bool operator<(const FcProperty a, const FcProperty b){
+        return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
+    }
+
     class Fcs: protected Pointers{
     public:
         Fcs(class ALM *);
@@ -55,6 +60,7 @@ namespace ALM_NS {
         void generate_fclists(int);
         int min_inprim(const int, const int *);
         bool is_inprim(const int, const int *);
+        bool is_inprim(const int);
         double coef_sym(const int, const int, const int *, const int *);
         void get_xyzcomponent(int, int **);
         bool is_ascending(const int, const int *);

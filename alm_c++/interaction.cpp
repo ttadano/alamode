@@ -19,7 +19,7 @@ using namespace ALM_NS;
 
 Interaction::Interaction(ALM *alm) : Pointers(alm) {
     nsize[0] = nsize[1] = nsize[2] = 1;
-    maxorder = 3;
+ //   maxorder = 3;
 }
 
 Interaction::~Interaction() {}
@@ -183,7 +183,7 @@ void Interaction::search_interactions()
 
                 dist = distance(xcrd[0][iat], xcrd[icell][jat]);
 
-                for (order = 0; order < 3; order++){
+                for (order = 0; order < maxorder; order++){
 
                     if(dist < rcs[system->kd[iat] - 1][order] + rcs[system->kd[jat] - 1][order]) {
 

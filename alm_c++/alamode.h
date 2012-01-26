@@ -13,6 +13,7 @@ namespace ALM_NS {
         class Interaction *interaction;
         class Fcs *fcs;
         class Symmetry *symmetry;
+        class Fitting *fitting;
         class Files *files;
         class Error *error;
         class Timer *timer;
