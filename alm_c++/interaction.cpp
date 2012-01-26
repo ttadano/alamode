@@ -19,7 +19,6 @@ using namespace ALM_NS;
 
 Interaction::Interaction(ALM *alm) : Pointers(alm) {
     nsize[0] = nsize[1] = nsize[2] = 1;
- //   maxorder = 3;
 }
 
 Interaction::~Interaction() {}

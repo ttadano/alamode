@@ -29,6 +29,7 @@ void ALM::create()
     interaction = new Interaction(this);
     fcs = new Fcs(this);
     symmetry = new Symmetry(this);
+    fitting = new Fitting(this);
 }
 
 void ALM::initialize()
@@ -54,4 +55,5 @@ void ALM::finalize()
     delete fcs;
     delete symmetry;
     delete system;
+    delete fitting;
 }

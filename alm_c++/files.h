@@ -33,7 +33,7 @@ namespace ALM_NS {
 
         std::ifstream ifs_disp, ifs_force;
         std::ofstream ofs_disp_sym, ofs_force_sym;
-
+        std::ifstream ifs_disp_sym, ifs_force_sym;
     };
 }
 #endif

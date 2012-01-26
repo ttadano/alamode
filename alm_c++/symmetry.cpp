@@ -515,4 +515,9 @@ void Symmetry::data_multiplier(int nat, int ndata)
     files->ofs_force_sym.close();
     std::cout << "Symmetrycally equivalent displacements and forces data are" << std::endl;
     std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+
+    memory->deallocate(u);
+    memory->deallocate(f);
+    memory->deallocate(u_sym);
+    memory->deallocate(f_sym);
 }

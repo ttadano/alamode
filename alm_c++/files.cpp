@@ -29,8 +29,6 @@ void Files::openfiles()
     if(!ifs_disp) error->exit("openfiles", "cannot open disp file");
     ifs_force.open(file_force, std::ios::in);
     if(!ifs_force) error->exit("openfiles", "cannot open force file");
-
-  
 }
 
 void Files::closefiles()

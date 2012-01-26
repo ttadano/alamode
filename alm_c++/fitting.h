@@ -10,6 +10,9 @@ namespace ALM_NS {
         ~Fitting();
 
         void fitmain();
+
+        double **amat;
+        double *fsum;
     };
 
 }
