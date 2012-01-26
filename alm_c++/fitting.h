@@ -13,6 +13,8 @@ namespace ALM_NS {
 
         double **amat;
         double *fsum;
+    private:
+        int inprim_index(const int);
     };
 
 }
