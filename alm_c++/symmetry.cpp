@@ -16,10 +16,17 @@ using namespace ALM_NS;
 Symmetry::Symmetry(ALM *alm) : Pointers(alm) 
 {
     file_sym = "SYMM_INFO";
-    maxsym = 10000;
+    maxsym = 50000;
 }
 
-Symmetry::~Symmetry() {}
+Symmetry::~Symmetry() {
+    memory->deallocate(tnons);
+    memory->deallocate(symrel_int);
+    memory->deallocate(symrel);
+    memory->deallocate(map_sym);
+    memory->deallocate(map_p2s);
+    delete [] map_s2p;
+}
 
 void Symmetry::init()
 {
@@ -45,9 +52,17 @@ void Symmetry::init()
     genmaps(nat, system->xcoord, map_sym, map_p2s, map_s2p);
 
     std::cout << std::endl;
-    for (int i = 0; i < ntran; i++){
-        std::cout << "Cell " << std::setw(6) << i + 1 << " contains atoms ..." << std::endl;
-        for (int j = 0; j < natmin; j++)  std::cout << std::setw(5) << map_p2s[j][i];
+    std::cout << "**Cell-Atom Correspondens Below**" << std::endl;
+    std::cout << std::setw(6) << "CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
+
+    for (int i = 0; i < ntran; ++i){
+        std::cout << std::setw(6) << i + 1 << " | ";
+        for (int j = 0; j < natmin; ++j)  {
+            std::cout << std::setw(5) << map_p2s[j][i];
+            if((j + 1)%5 == 0) {
+                std::cout << std::endl << "       | ";
+            }
+        }
         std::cout << std::endl;
     }
     std::cout << std::endl;

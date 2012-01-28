@@ -9,7 +9,6 @@ Files::~Files() {}
 
 void Files::setfilenames()
 {
-    file_log = job_title + ".alm";
     file_fcs = job_title + ".fcs";
     file_premd = job_title + ".premd";
     file_disp_sym = file_disp + ".SYM";
@@ -19,7 +18,6 @@ void Files::setfilenames()
 
 void Files::openfiles()
 {
-   // ofs_log.open(file_log, std::ios::out);
     ofs_fcs.open(file_fcs, std::ios::out);
     if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
     ofs_premd.open(file_premd, std::ios::out);

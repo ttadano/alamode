@@ -7,6 +7,7 @@
 #include "system.h"
 #include "symmetry.h"
 #include "error.h"
+#include "fitting.h"
 
 using namespace ALM_NS;
 
@@ -83,6 +84,7 @@ void Input::sparce_input()
         }
     }
     symmetry->multiply_data = multiply_data;
+    fitting->constraint = constraint;
 
     for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
 

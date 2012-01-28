@@ -14,6 +14,7 @@
 #include "listcomparison.h"
 #include "files.h"
 #include <boost/lexical_cast.hpp>
+#include "timer.h"
 
 using namespace ALM_NS;
 
@@ -21,7 +22,10 @@ Interaction::Interaction(ALM *alm) : Pointers(alm) {
     nsize[0] = nsize[1] = nsize[2] = 1;
 }
 
-Interaction::~Interaction() {}
+Interaction::~Interaction() {
+    memory->deallocate(xcrd);
+    memory->deallocate(distlist);
+}
 
 void Interaction::init()
 {
@@ -68,6 +72,8 @@ void Interaction::init()
     search_interactions();
 
     files->ofs_int.close();
+
+    timer->print_elapsed();
 }
 
 double Interaction::distance(double *x1, double *x2)
@@ -132,7 +138,7 @@ void Interaction::search_interactions()
 {
 
     int icell;
-    int i, j, k;
+    int i, j;
     int iat, jat;
     int order;
 
@@ -166,23 +172,23 @@ void Interaction::search_interactions()
         }
     }
 
-    for (i = 0; i < natmin; i++){
+    for (i = 0; i < natmin; ++i){
         for (order = 0; order < maxorder; ++order){
             ninter[i][order] = 0;
         }
     }
     ///
 
-    for (icell = 0; icell < nneib; icell++){
-        for (i = 0; i < natmin; i++){
+    for (icell = 0; icell < nneib; ++icell){
+        for (i = 0; i < natmin; ++i){
 
             iat = symmetry->map_p2s[i][0]; //index of an atom in the primitive cell
 
-            for (jat = 0; jat < nat; jat++){
+            for (jat = 0; jat < nat; ++jat){
 
                 dist = distance(xcrd[0][iat], xcrd[icell][jat]);
 
-                for (order = 0; order < maxorder; order++){
+                for (order = 0; order < maxorder; ++order){
 
                     if(dist < rcs[system->kd[iat] - 1][order] + rcs[system->kd[jat] - 1][order]) {
 
@@ -290,6 +296,10 @@ void Interaction::search_interactions()
             files->ofs_int << *p;
         }
     }
+
+    memory->deallocate(countint);
+    memory->deallocate(intpairs);
+    memory->deallocate(ninter);
 }
 
 bool Interaction::is_incutoff(int n, int *atomnumlist)

@@ -16,9 +16,8 @@ namespace ALM_NS {
         void closefiles();
         void setfilenames();
 
-  //  private:
         std::string job_title;
-        std::string file_log, file_fcs, file_premd;
+        std::string file_fcs, file_premd;
 
         std::string file_disp, file_force;
         std::string file_disp_sym, file_force_sym;

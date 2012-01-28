@@ -54,6 +54,8 @@ namespace ALM_NS {
         std::vector<int> *ndup;
         std::vector<FcProperty> *fc_set;
 
+        std::string easyvizint(const int);
+
     private:
         int *nints;
         void read_pairs(int);
@@ -66,7 +68,7 @@ namespace ALM_NS {
         bool is_ascending(const int, const int *);
         void sort_tail(const int, int *); 
 
-        std::string easyvizint(const int);
+        
     };
 
 }
