@@ -13,11 +13,21 @@ namespace ALM_NS {
     public:
         std::vector<int> elems;
         double coef;
+        int mother;
 
         FcProperty();
-        FcProperty(const int n, const double c, const int *arr)
+        FcProperty(const FcProperty &obj){
+            coef = obj.coef;
+            mother = obj.mother;
+            for (std::vector<int>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it){
+                elems.push_back(*it);
+            }
+        };
+
+        FcProperty(const int n, const double c, const int *arr, const int m)
         {
             coef = c;
+            mother = m;
             for (int i = 0; i < n; ++i){
                 elems.push_back(arr[i]);
             }
@@ -55,6 +65,8 @@ namespace ALM_NS {
         std::vector<FcProperty> *fc_set;
 
         std::string easyvizint(const int);
+        void get_xyzcomponent(int, int **);
+        void sort_tail(const int, int *); 
 
     private:
         int *nints;
@@ -64,11 +76,11 @@ namespace ALM_NS {
         bool is_inprim(const int, const int *);
         bool is_inprim(const int);
         double coef_sym(const int, const int, const int *, const int *);
-        void get_xyzcomponent(int, int **);
-        bool is_ascending(const int, const int *);
-        void sort_tail(const int, int *); 
 
+        bool is_ascending(const int, const int *);
         
+
+
     };
 
 }

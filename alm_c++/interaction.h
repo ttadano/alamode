@@ -24,6 +24,9 @@ namespace ALM_NS {
         int maxorder;
         double ***xcrd;
 
+        int ***intpairs;
+        int **ninter;
+
         bool is_incutoff(int, int *);
 
         template <typename T>

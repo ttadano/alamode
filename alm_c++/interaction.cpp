@@ -148,8 +148,6 @@ void Interaction::search_interactions()
     int nat = system->nat;
 
     int ***countint;
-    int ***intpairs;
-    int **ninter;
 
     memory->allocate(countint, natmin, nat, maxorder);
     memory->allocate(intpairs, natmin, maxorder, nat);
@@ -298,8 +296,8 @@ void Interaction::search_interactions()
     }
 
     memory->deallocate(countint);
-    memory->deallocate(intpairs);
-    memory->deallocate(ninter);
+  //  memory->deallocate(intpairs);
+  //  memory->deallocate(ninter);
 }
 
 bool Interaction::is_incutoff(int n, int *atomnumlist)

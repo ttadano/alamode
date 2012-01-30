@@ -105,6 +105,8 @@ void Fcs::generate_fclists(int maxorder)
 
     int **xyzcomponent;
 
+    int nmother;
+
     std::cout << "Generating Symmetrically-Independent Parameters ..." << std::endl;
 
     atmn = new int [maxorder + 1];
@@ -123,6 +125,7 @@ void Fcs::generate_fclists(int maxorder)
 
         fc_set[order].clear();
         ndup[order].clear();
+        nmother = 0;
 
         nxyz = static_cast<int>(pow(static_cast<long double>(3), order + 2));
 
@@ -182,7 +185,7 @@ void Fcs::generate_fclists(int maxorder)
                             if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()){
                                 list_found.insert(IntList(order + 2, ind_mapped));
 
-                                fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped));
+                                fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped, nmother));
                                 ++ndeps;
 
                                 // Add equivalent interaction list (permutation) if there are two or more indices
@@ -197,7 +200,7 @@ void Fcs::generate_fclists(int maxorder)
                                         for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                         std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
                                         sort_tail(order + 2, ind_mapped_tmp);
-                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped_tmp));
+                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped_tmp, nmother));
                                         ++ndeps;
 
                                         is_searched[ind_mapped[i]] = true;
@@ -214,34 +217,35 @@ void Fcs::generate_fclists(int maxorder)
                     for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
                     ++nzero[order];
                 } else {             
-                    ndup[order].push_back(ndeps);  
+                    ndup[order].push_back(ndeps);
+                    ++nmother;
                 }
 
             } // close xyz component loop
         } // close atom number loop (iterator)
 
-        //std::cout << "ORDER: " << order << " Size: " << ndup[order].size() << std::endl;
-        //for(unsigned int m = 0; m < ndup[order].size(); ++m){
-        //    std::cout << "ORDER: " << order << std::setw(5) << ndup[order][m] << std::endl;
-        //}
-        //std::cout << "ORDER: " << order << " nzero " << nzero[order]<< std::endl;
+        /*std::cout << "ORDER: " << order << " Size: " << ndup[order].size() << std::endl;
+        for(unsigned int m = 0; m < ndup[order].size(); ++m){
+            std::cout << "ORDER: " << order << std::setw(5) << ndup[order][m] << std::endl;
+        }
+        std::cout << "ORDER: " << order << " nzero " << nzero[order]<< std::endl;
 
-        //std::cout << "**ORDER = " << order << " **" << std::endl;
-        //std::cout << "Number of Parameters = " << ndup[order].size() << std::endl;
+        std::cout << "**ORDER = " << order << " **" << std::endl;
+        std::cout << "Number of Parameters = " << ndup[order].size() << std::endl;
 
-        //int mmm = 0;
-        //for (unsigned int m = 0; m < ndup[order].size(); ++m){
-        //    std::cout << "#" << m << " ndup = " << ndup[order][m] << std::endl;
-        //    for (unsigned int mm = 0; mm < ndup[order][m]; ++mm){
-        //        for (i = 0; i < order + 2; ++i){
-        //            std::cout << std::setw(6) << easyvizint(fc_set[order][mmm].elems[i]);    
-        //        }
-        //        std::cout << std::endl;
-        //        ++mmm;
-        //    } 
-        //    std::cout << std::endl;
-        //}
-
+        int mmm = 0;
+        for (unsigned int m = 0; m < ndup[order].size(); ++m){
+            std::cout << "#" << m << " ndup = " << ndup[order][m] << std::endl;
+            for (unsigned int mm = 0; mm < ndup[order][m]; ++mm){
+                for (i = 0; i < order + 2; ++i){
+                    std::cout << std::setw(6) << easyvizint(fc_set[order][mmm].elems[i]);    
+                }
+                std::cout << " " << fc_set[order][mmm].mother << std::endl;
+                ++mmm;
+            } 
+            std::cout << std::endl;
+        }
+*/
         memory->deallocate(xyzcomponent);
         list_found.clear();
     } //close order loop
