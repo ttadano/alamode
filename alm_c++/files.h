@@ -1,9 +1,9 @@
 #ifndef ALM_FILES_HEADER
 #define ALM_FILES_HEADER
 
-#include "pointers.h"
 #include <string>
 #include <fstream>
+#include "pointers.h"
 
 namespace ALM_NS {
     class Files : protected Pointers {
@@ -12,9 +12,8 @@ namespace ALM_NS {
         ~Files();
 
         void init();
-        void openfiles();
-        void closefiles();
-        void setfilenames();
+        void openfile(std::string, std::ifstream);
+        void openfile(std::string, std::ofstream);
 
         std::string job_title;
         std::string file_fcs, file_premd;
@@ -33,6 +32,11 @@ namespace ALM_NS {
         std::ifstream ifs_disp, ifs_force;
         std::ofstream ofs_disp_sym, ofs_force_sym;
         std::ifstream ifs_disp_sym, ifs_force_sym;
+
+    private:
+        void openfiles();
+        void closefiles();
+        void setfilenames();
     };
 }
 #endif

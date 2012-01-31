@@ -40,5 +40,5 @@ double const Timer::elapsed()
 
 void Timer::print_elapsed()
 {
-    std::cout << std::endl << "Time Elapsed: " <<  elapsed() << " sec." << std::endl << std::endl;
+    std::cout << std::endl << "Time Elapsed: " << elapsed() << " sec." << std::endl << std::endl;
 }

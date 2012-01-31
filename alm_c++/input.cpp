@@ -28,7 +28,7 @@ void Input::sparce_input()
 	double lavec[3][3];
 	double **rcs, **xeq;
 	string *kdname;
-	double *masskd, *mass;
+	double *masskd;
     int maxorder;
 	// Read Job prefix
 	cin >> job_title;
@@ -49,7 +49,6 @@ void Input::sparce_input()
         for (int j = 0; j < maxorder; ++j){
         cin >> rcs[i][j];
         }
-//		cin >> rcs[i][0] >> rcs[i][1] >> rcs[i][2];
 	}
 	cin >> ndata;
 	cin >> eps;
@@ -58,13 +57,13 @@ void Input::sparce_input()
 	cin >> multiply_data >> constraint;
     cin >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];
 	// Read species mass
-	kdname = new string[nkd];
-	masskd = new double[nkd];
+    memory->allocate(kdname, nkd);
+    memory->allocate(masskd, nkd);
 	for (int i = 0; i < nkd; i++){
 		cin >> kdname[i] >> masskd[i];
 	}
 	// Read atomic coordinates
-	kd = new int[nat];
+    memory->allocate(kd, nat);
     memory->allocate(xeq, nat, 3);
 	for (int i = 0; i < nat; i++){
 		cin >> kd[i] >> xeq[i][0] >> xeq[i][1] >> xeq[i][2];
@@ -108,7 +107,7 @@ void Input::sparce_input()
             system->xcoord[i][j] = xeq[i][j];
         }
     }
-     delete [] masskd;
-     delete [] kd;
+     memory->deallocate(masskd);
+     memory->deallocate(kd);
      memory->deallocate(xeq);
 }

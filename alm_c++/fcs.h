@@ -34,18 +34,6 @@ namespace ALM_NS {
         }    
     };
 
-    //class FcSet {
-    //public:
-    //    std::vector<FcProperty> fc_property;
-
-    //    FcSet();
-    //    FcSet(std::vector<FcProperty> fc_tmp){
-    //        for (std::vector<FcProperty>::iterator iter = fc_tmp.begin(); iter != fc_tmp.end(); ++iter){
-    //            fc_property.push_back(*iter);
-    //        }
-    //    }
-    //};
-
 
     inline bool operator<(const FcProperty a, const FcProperty b){
         return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());

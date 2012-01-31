@@ -1,3 +1,6 @@
+#include <cmath>
+#include <iostream>
+#include <iomanip>
 #include "symmetry.h"
 #include "system.h"
 #include "memory.h"
@@ -6,10 +9,6 @@
 #include "error.h"
 #include "files.h"
 #include <Eigen/Core>
-#include <cmath>
-#include <iostream>
-#include <iomanip>
-//#include <algorithm>
 
 using namespace ALM_NS;
 
@@ -25,7 +24,8 @@ Symmetry::~Symmetry() {
     memory->deallocate(symrel);
     memory->deallocate(map_sym);
     memory->deallocate(map_p2s);
-    delete [] map_s2p;
+    memory->deallocate(map_s2p);
+    //delete [] map_s2p;
 }
 
 void Symmetry::init()
@@ -48,7 +48,8 @@ void Symmetry::init()
 
     memory->allocate(map_sym, nat, nsym);
     memory->allocate(map_p2s, natmin, ntran);
-    map_s2p = new Maps[nat];
+    memory->allocate(map_s2p, nat);
+    //map_s2p = new Maps[nat];
     genmaps(nat, system->xcoord, map_sym, map_p2s, map_s2p);
 
     std::cout << std::endl;
@@ -88,15 +89,15 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
         ofs_sym << nsym << std::endl;
         ofs_sym << nnp << std::endl;
 
-        for (i = 0; i < nsym; i++){
+        for (i = 0; i < nsym; ++i){
             ofs_sym << std::setw(4) << rot[i][0][0] << std::setw(4) <<rot[i][0][1] << std::setw(4) << rot[i][0][2]
             << std::setw(4) << rot[i][1][0] << std::setw(4) << rot[i][1][1] << std::setw(4) << rot[i][1][2] 
             << std::setw(4) << rot[i][2][0] << std::setw(4) << rot[i][2][1] << std::setw(4) << rot[i][2][2] 
             << std::setw(7) << tran_int[i][0] << std::setw(4) << tran_int[i][1] << std::setw(4) << tran_int[i][2] << std::endl;
         }
 
-        for(i = 0; i < nsym; i++){
-            for (j = 0; j <3; j++){
+        for(i = 0; i < nsym; ++i){
+            for (j = 0; j <3; ++j){
                 tran[i][j] = static_cast<double>(tran_int[i][j]) / static_cast<double>(nnp);
             }
         }
@@ -106,8 +107,8 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
     else if(nsym == 1) {
         // Just identity operation.
 
-        for (i = 0; i < 3; i++){
-            for (j = 0; j < 3; j++){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
                 if(i == j) {
                     rot[0][i][j] = 1;
                 } else {
@@ -126,13 +127,13 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
         if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
         memory->allocate(tran_int, nsym, 3);
 
-        for (i = 0; i < nsym; i++) {
+        for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot[i][0][0] >> rot[i][0][1] >> rot[i][0][2]
             >> rot[i][1][0] >> rot[i][1][1] >> rot[i][1][2] 
             >> rot[i][2][0] >> rot[i][2][1] >> rot[i][2][2]
             >> tran_int[i][0] >> tran_int[i][1] >> tran_int[i][2];
 
-            for (j = 0; j < 3; j++){
+            for (j = 0; j < 3; ++j){
                 tran[i][j] = static_cast<double>(tran_int[i][j])/static_cast<double>(nnp);
             }
         }
@@ -155,8 +156,8 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
     Eigen::Matrix3d amat, bmat;
     Eigen::Matrix3d rot2;
 
-    for (i = 0; i < 3; i++){
-        for (j = 0; j < 3; j++){
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
 
             amat(i,j) = aa[i][j];
             bmat(i,j) = bb[i][j];
@@ -175,15 +176,15 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
     int rot_tmp[3][3], rot_reciprocal[3][3];
     int tran_tmp[3];
 
-    for (m11 = -1; m11 <= 1; m11++){
-        for (m12 = -1; m12 <= 1; m12++) {
-            for (m13 = -1; m13 <= 1; m13++){
-                for (m21 = -1; m21 <= 1; m21++){
-                    for (m22 = -1; m22 <= 1; m22++){
-                        for (m23 = -1; m23 <= 1; m23++){
-                            for (m31 = -1; m31 <= 1; m31++){
-                                for (m32 = -1; m32 <= 1; m32++){
-                                    for (m33 = -1; m33 <= 1; m33++){
+    for (m11 = -1; m11 <= 1; ++m11){
+        for (m12 = -1; m12 <= 1; ++m12) {
+            for (m13 = -1; m13 <= 1; ++m13){
+                for (m21 = -1; m21 <= 1; ++m21){
+                    for (m22 = -1; m22 <= 1; ++m22){
+                        for (m23 = -1; m23 <= 1; ++m23){
+                            for (m31 = -1; m31 <= 1; ++m31){
+                                for (m32 = -1; m32 <= 1; ++m32){
+                                    for (m33 = -1; m33 <= 1; ++m33){
 
                                         det = m11 * (m22 * m33 - m32 * m23)
                                             - m21 * (m12 * m33 - m32 * m13)
@@ -212,17 +213,17 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
                                         rot_reciprocal[2][1] = (m13 * m21 - m11 * m23) / det ;
                                         rot_reciprocal[2][2] = (m11 * m22 - m12 * m21) / det ;
 
-                                        for (i = 0; i < 3; i++) {
-                                            for (j = 0; j < 3; j++){
+                                        for (i = 0; i < 3; ++i) {
+                                            for (j = 0; j < 3; ++j){
                                                 rot2(i,j) = static_cast<double>(rot_reciprocal[i][j]);
                                             }
                                         }
 
                                         if(!is_ortho(rot2, amat, bmat)) continue;
 
-                                        for (np1 = 0; np1 < nnp; np1++){
-                                            for (np2 = 0; np2 < nnp; np2++){
-                                                for (np3 = 0; np3 < nnp; np3++){
+                                        for (np1 = 0; np1 < nnp; ++np1){
+                                            for (np2 = 0; np2 < nnp; ++np2){
+                                                for (np3 = 0; np3 < nnp; ++np3){
 
                                                     if(m11 == 1 && m12 == 0 && m13 ==0 &&
                                                         m21 == 0 && m22 == 1 && m23 == 0 &&
@@ -235,10 +236,10 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
 
                                                     if(!is_invariant(rot2, nat, kd, x, tran_tmp, nnp)) continue;
 
-                                                    nsym++;
+                                                    ++nsym;
 
-                                                    for (i = 0; i < 3; i++){
-                                                        for (j = 0; j < 3; j++){
+                                                    for (i = 0; i < 3; ++i){
+                                                        for (j = 0; j < 3; ++j){
                                                             rot[nsym - 1][i][j] = rot_tmp[i][j];
                                                         }
                                                         tran_int[nsym - 1][i] = tran_tmp[i];
@@ -264,16 +265,6 @@ bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix
     Eigen::Matrix3d sat, unit;
 
     double tmp;
-    double const flag = 1.0e-16;
-
-    // upcasting
-    //   for (i = 0; i < 3; i++){
-    //      for (j = 0; j < 3; j++){
-    //         amat(i,j) = aa[i][j];
-    //        bmat(i,j) = bb[i][j];
-    //       rot2(i,j) = static_cast<double>(rot[i][j]);
-    //  }
-    // }
 
     sat = rot * amat.transpose();
     unit = (sat.transpose() * (bmat.transpose() * (bmat * sat)));
@@ -284,7 +275,7 @@ bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix
         + pow(unit(1,0), 2) + pow(unit(1,2), 2)
         + pow(unit(2,0), 2) + pow(unit(2,1), 2);
 
-    if(tmp > flag) {
+    if(tmp > eps) {
         return false;
     } else {
         return true;
@@ -293,17 +284,15 @@ bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix
 
 bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, int tran[3], int nnp)
 {
-    bool value = true;
-    double const flag = 1.0e-12;
-    double tmp_norm;
 
     int i, j, k, l;
-
     Eigen::Vector3d wsi, usi, vsi, tmp;
 
-    for (i = 0; i < nat; i++){
+    bool value = true;
 
-        for (j = 0; j < 3; j++){   
+    for (i = 0; i < nat; ++i){
+
+        for (j = 0; j < 3; ++j){   
             wsi(j) = x[i][j] - static_cast<double>(tran[j]) / nnp;
         }
 
@@ -311,18 +300,17 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
 
         l = -1;
 
-        for (j = 0; j < nat; j++){
+        for (j = 0; j < nat; ++j){
 
             if(kd[j] == kd[i]) {
 
-                for (k = 0; k < 3; k++) { 
+                for (k = 0; k < 3; ++k) { 
                     vsi(k) = x[j][k]; 
                     tmp(k) = fmod(abs(usi(k) - vsi(k)), 1.0);
                     tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
                 }
 
-                tmp_norm = tmp.dot(tmp);
-                if (tmp_norm < flag) l = j;
+                if (tmp.dot(tmp) < eps12) l = j;
             }
         }
 
@@ -338,8 +326,6 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
     int i, j;
     Eigen::Matrix3d aa, bb, sym_tmp;
     Eigen::Matrix3d sym_crt;
-
-    //  sym_crt = new Eigen::Matrix3d [nsym];
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
@@ -380,10 +366,12 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 
 void Symmetry::pure_translations()
 {
+    int i;
+
     ntran = 0;
-    for(int i = 0; i < nsym; i++){
+    for(i = 0; i < nsym; ++i){
         if(symrel_int[i][0][0] == 1 && symrel_int[i][1][1] == 1 && symrel_int[i][2][2] == 1) {
-            ntran++;
+            ++ntran;
         }
     }
 
@@ -391,7 +379,7 @@ void Symmetry::pure_translations()
 
     if(ntran > 1) {
         std::cout << "Given system is not primitive cell;" << std::endl;
-        std::cout << ntran << " translation operations exist." << std::endl;
+        std::cout << std::setw(8) <<  ntran << " translation operations exist." << std::endl;
     } else {
         std::cout << "Given system is a primitive cell." << std::endl;
     }
@@ -400,7 +388,7 @@ void Symmetry::pure_translations()
     symnum_tran = new int[ntran];
     int isym = 0;
 
-    for (int i = 0; i < nsym; i++){
+    for (i = 0; i < nsym; ++i){
         if(symrel_int[i][0][0] == 1 && symrel_int[i][1][1] == 1 && symrel_int[i][2][2] == 1) {
             symnum_tran[isym++] = i; 
         }
@@ -416,32 +404,32 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 
     memory->allocate(xnew, nat, 3);
 
-    for(iat = 0; iat < nat; iat++){
+    for(iat = 0; iat < nat; ++iat){
         for(isym = 0; isym < nsym; isym++){
             map_sym[iat][isym] = -1;
         }
     }
 
-    for (isym = 0; isym < nsym; isym++){
+    for (isym = 0; isym < nsym; ++isym){
 
-        for (iat = 0; iat < nat; iat++){
+        for (iat = 0; iat < nat; ++iat){
 
-            for (i = 0; i < 3; i++){
+            for (i = 0; i < 3; ++i){
                 xnew[iat][i] = static_cast<double>(symrel_int[isym][i][0]) * x[iat][0] 
                 + static_cast<double>(symrel_int[isym][i][1]) * x[iat][1] 
                 + static_cast<double>(symrel_int[isym][i][2]) * x[iat][2] 
                 + tnons[isym][i];
             }
 
-            for (jat = 0; jat < nat; jat++){
+            for (jat = 0; jat < nat; ++jat){
 
-                for (i = 0; i < 3; i++){
+                for (i = 0; i < 3; ++i){
                     tmp[i] = fmod(abs(xnew[iat][i] - x[jat][i]), 1.0);
                     tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
                 }
 
                 dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-                if(dist < 1.0e-10) {
+                if(dist < eps10) {
                     map_sym[iat][isym] = jat;
                     break;
                 }
@@ -452,27 +440,27 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     memory->deallocate(xnew);    
 
     bool *is_checked;
-    is_checked = new bool[nat];
+    memory->allocate(is_checked, nat);
 
-    for (i = 0; i < nat; i++) is_checked[i] = false;
+    for (i = 0; i < nat; ++i) is_checked[i] = false;
 
     jat = 0;
     int atomnum_translated;
-    for (iat = 0; iat < nat; iat++){
+    for (iat = 0; iat < nat; ++iat){
 
         if(is_checked[iat]) continue;
-        for (i = 0; i < ntran; i++){
+        for (i = 0; i < ntran; ++i){
             atomnum_translated = map_sym[iat][symnum_tran[i]];
             map_p2s[jat][i] = atomnum_translated;
             is_checked[atomnum_translated] = true;
         }
-        jat++;
+        ++jat;
     }
 
-    delete is_checked;
+    memory->deallocate(is_checked);
 
-    for (iat = 0; iat < natmin; iat++){
-        for (i  = 0; i < ntran; i++){
+    for (iat = 0; iat < natmin; ++iat){
+        for (i  = 0; i < ntran; ++i){
             atomnum_translated = map_p2s[iat][i];
             map_s2p[atomnum_translated].atom_num = iat;
             map_s2p[atomnum_translated].tran_num = i;
@@ -498,24 +486,24 @@ void Symmetry::data_multiplier(int nat, int ndata)
     if(!files->ofs_disp_sym) error->exit("data_multiplier", "cannot open file_disp"); 
     if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
-    for (i = 0; i < ndata; i++){
-        for (j = 0; j < nat; j++){
+    for (i = 0; i < ndata; ++i){
+        for (j = 0; j < nat; ++j){
             files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
             files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
         }
 
 
-        for (itran = 0; itran < ntran; itran++){
-            for (j = 0; j < nat; j++){
-                for (k = 0; k < 3; k++){
+        for (itran = 0; itran < ntran; ++itran){
+            for (j = 0; j < nat; ++j){
+                for (k = 0; k < 3; ++k){
                     u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[j][k];
                     f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[j][k];
                 }
             }
         }
 
-        for (itran = 0; itran < ntran; itran++){
-            for (j = 0; j < nat; j++){
+        for (itran = 0; itran < ntran; ++itran){
+            for (j = 0; j < nat; ++j){
                 files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
                 files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
                 files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));

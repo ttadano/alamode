@@ -1,20 +1,18 @@
-// interaction.cpp
-
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
+#include <boost/lexical_cast.hpp>
 #include "interaction.h"
 #include "memory.h"
 #include "system.h"
 #include "error.h"
 #include "symmetry.h"
-#include <iostream>
-#include <iomanip>
-#include <Eigen/core>
-#include <vector>
-#include <algorithm>
 #include "combination.h"
 #include "listcomparison.h"
 #include "files.h"
-#include <boost/lexical_cast.hpp>
 #include "timer.h"
+#include <Eigen/core>
 
 using namespace ALM_NS;
 
@@ -25,6 +23,7 @@ Interaction::Interaction(ALM *alm) : Pointers(alm) {
 Interaction::~Interaction() {
     memory->deallocate(xcrd);
     memory->deallocate(distlist);
+    memory->deallocate(str_order);
 }
 
 void Interaction::init()
@@ -33,7 +32,7 @@ void Interaction::init()
     int nat = system->nat;
     int nkd = system->nkd;
 
-    str_order = new std::string [maxorder];
+    memory->allocate(str_order, maxorder);
     set_ordername();
 
     std::cout << "Cutoff Radii (Bohr Unit.)" << std::endl;
@@ -43,7 +42,7 @@ void Interaction::init()
     }
     std::cout << std::endl;
 
-    for (i = 0; i < nkd; i++){
+    for (i = 0; i < nkd; ++i){
         std::cout << std::setw(8) << i + 1;
         for (j = 0; j < maxorder; ++j){
           std::cout << std::setw(9) << rcs[i][j];
@@ -51,7 +50,7 @@ void Interaction::init()
      std::cout << std::endl;
     }
 
-    for (i = 0; i < 3; i++){
+    for (i = 0; i < 3; ++i){
         if(!is_periodic[i]) nsize[i] = 0;
     }
 
@@ -91,19 +90,19 @@ void Interaction::calc_distlist(int nat, double **xf)
     int i, j;
     int isize, jsize, ksize;
 
-    for (i = 0; i < nat; i++){
-        for (j = 0; j < 3; j++){
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
             xcrd[0][i][j] = xf[i][j];
         }
     }
 
-    for (isize = -nsize[0]; isize <= nsize[0] ; isize++){
-        for (jsize = -nsize[1]; jsize <= nsize[1] ; jsize++){
-            for (ksize = -nsize[2]; ksize <= nsize[2] ; ksize++){
+    for (isize = -nsize[0]; isize <= nsize[0] ; ++isize){
+        for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize){
+            for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize){
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
 
-                icell++;
-                for (i = 0; i < nat; i++){
+                ++icell;
+                for (i = 0; i < nat; ++i){
                     xcrd[icell][i][0] = xf[i][0] + static_cast<double>(isize);
                     xcrd[icell][i][1] = xf[i][1] + static_cast<double>(jsize);
                     xcrd[icell][i][2] = xf[i][2] + static_cast<double>(ksize);
@@ -112,20 +111,20 @@ void Interaction::calc_distlist(int nat, double **xf)
         }
     }
 
-    for (icell = 0; icell < nneib; icell++) system->frac2cart(xcrd[icell]);
+    for (icell = 0; icell < nneib; ++icell) system->frac2cart(xcrd[icell]);
 
     double dist_tmp;
 
-    for (i = 0; i < nat; i++){
-        for (j = i; j < nat; j++){
+    for (i = 0; i < nat; ++i){
+        for (j = i; j < nat; ++j){
             distlist[i][j] = distance(xcrd[0][i], xcrd[0][j]);
             distlist[j][i] = distlist[i][j];
         }
     }
 
-    for (icell = 1; icell < nneib; icell++){
-        for (i = 0; i < nat; i++){
-            for (j = i; j < nat; j++){
+    for (icell = 1; icell < nneib; ++icell){
+        for (i = 0; i < nat; ++i){
+            for (j = i; j < nat; ++j){
                 dist_tmp = distance(xcrd[0][i], xcrd[icell][j]);
                 distlist[i][j] = std::min<double>(dist_tmp, distlist[i][j]);
                 distlist[j][i] = std::min<double>(dist_tmp, distlist[j][i]);
@@ -136,7 +135,6 @@ void Interaction::calc_distlist(int nat, double **xf)
 
 void Interaction::search_interactions()
 {
-
     int icell;
     int i, j;
     int iat, jat;
@@ -255,7 +253,7 @@ void Interaction::search_interactions()
             std::cout << "Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl << std::endl;
 
             int *intarr;        
-            intarr = new int [order + 2];
+            memory->allocate(intarr, order + 2);
 
             if(intlist.size() > 0) {
                 if(order == 0){
@@ -285,8 +283,7 @@ void Interaction::search_interactions()
                 }
             }
             intlist.clear();
-            delete [] intarr;
-
+            memory->deallocate(intarr);
         }
         // write interaction pairs of atoms to pairs files
         files->ofs_int << listset.size() << std::endl;
@@ -296,8 +293,6 @@ void Interaction::search_interactions()
     }
 
     memory->deallocate(countint);
-  //  memory->deallocate(intpairs);
-  //  memory->deallocate(ninter);
 }
 
 bool Interaction::is_incutoff(int n, int *atomnumlist)
@@ -309,7 +304,7 @@ bool Interaction::is_incutoff(int n, int *atomnumlist)
     int ncheck = n - 1;
 
     memory->allocate(dist_tmp, nneib, ncheck);
-    min_neib = new int [ncheck];
+    memory->allocate(min_neib, ncheck);
 
     // distance from a reference atom[0] in the original cell
     // to atom number atom[j](j > 0) in the neighboring cells.
@@ -340,14 +335,14 @@ bool Interaction::is_incutoff(int n, int *atomnumlist)
             tmp = distance(xcrd[min_neib[i]][atomnumlist[i + 1]], xcrd[min_neib[j]][atomnumlist[j + 1]]);
             if(tmp > rcs[system->kd[atomnumlist[i + 1]] - 1][ncheck - 1] + rcs[system->kd[atomnumlist[j + 1]] - 1][ncheck - 1]){
                 memory->deallocate(dist_tmp);
-                delete [] min_neib;
+                memory->deallocate(min_neib);
                 return false;
             }
         }
     }
 
     memory->deallocate(dist_tmp);
-    delete [] min_neib;
+    memory->deallocate(min_neib);
     return true;
 }
 

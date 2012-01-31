@@ -1,16 +1,17 @@
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <boost/algorithm/combination.hpp>
+#include <boost/lexical_cast.hpp>
 #include "files.h"
 #include "interaction.h"
 #include "error.h"
 #include "memory.h"
-#include <iostream>
 #include "fcs.h"
 #include "symmetry.h"
-#include <cmath>
-#include <boost/algorithm/combination.hpp>
-#include <string>
-#include <boost/lexical_cast.hpp>
 #include "system.h"
 #include "timer.h"
+#include "constants.h"
 
 using namespace ALM_NS;
 
@@ -21,10 +22,11 @@ void Fcs::init(){
 
     int i;
     int maxorder = interaction->maxorder;
+    memory->allocate(nints, maxorder);
+    memory->allocate(pairs, maxorder);
+    memory->allocate(nzero, maxorder);
 
-    nints = new int [maxorder];
-    pairs = new std::set<IntList>[maxorder];
-    nzero = new int [maxorder];
+
     for(i = 0; i < maxorder; ++i) nzero[i] = 0;
 
     read_pairs(maxorder);
@@ -35,16 +37,14 @@ void Fcs::init(){
 
     std::cout << std::endl;
     for(i = 0; i < maxorder; ++i){
-        std::cout << "Number of " << std::setw(9) << interaction->str_order[i] << " FCs: " << ndup[i].size() << std::endl;
-    }
-    std::cout << std::endl;
-    for(i = 0; i < maxorder; ++i){
-        std::cout << "Number of symmetrically-zero FCs for " << std::setw(9) << interaction->str_order[i] << ": " << nzero[i] << std::endl;
+        std::cout << "Number of " << std::setw(9) << interaction->str_order[i] << " FCs (nzero): " << ndup[i].size();
+        std::cout << " ( " << nzero[i] << " ) " << std::endl;
     }
     std::cout << std::endl;
 
     // sort fc_set
 
+    std::cout << "Sorting interaction arrays ...";
     for(int order = 0; order < maxorder; ++order){
         if(ndup[order].size() > 0) {
             std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
@@ -57,11 +57,11 @@ void Fcs::init(){
             }
         }
     }
+    std::cout << " done." << std::endl;
 
-    delete [] nints;
-    delete [] pairs;
-    delete [] nzero;
-
+    memory->deallocate(nints);
+    memory->deallocate(pairs);
+    memory->deallocate(nzero);
     timer->print_elapsed();
 }
 
@@ -78,20 +78,24 @@ void Fcs::read_pairs(int maxorder)
         files->ifs_int >> nints[order];
         if(nints[order] == 0) continue;
 
-        pair_tmp = new int [order + 2];
+        memory->allocate(pair_tmp, order + 2);
+
         for(i = 0; i < nints[order]; ++i){
             for(j = 0; j < order + 2; ++j){
                 files->ifs_int >> pair_tmp[j];
             }
             pairs[order].insert(IntList(order + 2, pair_tmp));
         }
-        delete [] pair_tmp;
+        memory->deallocate(pair_tmp);
     }
+
+    files->ifs_int.close();
 }
 
 void Fcs::generate_fclists(int maxorder)
 {
     int i, j;
+    int i1, i2;
     int order;
     int i_prim;
     int *atmn, *atmn_mapped;
@@ -101,27 +105,28 @@ void Fcs::generate_fclists(int maxorder)
     IntList list_tmp;
 
     double c_tmp;
-    bool is_zero;
 
     int **xyzcomponent;
 
     int nmother;
+    int nat = system->nat;
+
+    bool is_zero;
+    bool *is_searched;
 
     std::cout << "Generating Symmetrically-Independent Parameters ..." << std::endl;
 
-    atmn = new int [maxorder + 1];
-    atmn_mapped = new int [maxorder + 1];
-    ind = new int [maxorder + 1];
-    ind_mapped = new int [maxorder + 1];
-    ind_tmp = new int [maxorder-1];
-
-    ind_mapped_tmp = new int [maxorder + 1];
-
-    int nat = system->nat;
-    bool *is_searched;
-    is_searched = new bool[3 * nat];    
+    memory->allocate(atmn, maxorder + 1);
+    memory->allocate(atmn_mapped, maxorder + 1);
+    memory->allocate(ind, maxorder + 1);
+    memory->allocate(ind_mapped, maxorder + 1);
+    memory->allocate(ind_tmp, maxorder - 1);
+    memory->allocate(ind_mapped_tmp, maxorder + 1);
+    memory->allocate(is_searched, 3 * nat);
 
     for(order = 0; order < maxorder; ++order){
+
+        std::cout << std::setw(8) << interaction->str_order[order] << " ...";
 
         fc_set[order].clear();
         ndup[order].clear();
@@ -133,14 +138,13 @@ void Fcs::generate_fclists(int maxorder)
         get_xyzcomponent(order + 2, xyzcomponent);
 
         std::set<IntList> list_found;
-        IntList list_tmp;
 
         for (std::set<IntList>::iterator iter = pairs[order].begin(); iter != pairs[order].end(); ++iter){
 
-            list_tmp = *iter;
+            IntList list_tmp = *iter;
             for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
 
-            for (int i1 = 0; i1 < nxyz; ++i1){
+            for (i1 = 0; i1 < nxyz; ++i1){
                 for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
 
                 if (!is_ascending(order + 2, ind)) continue;
@@ -162,9 +166,9 @@ void Fcs::generate_fclists(int maxorder)
                     for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
 
-                    for (int i2 = 0; i2 < nxyz; ++i2){
+                    for (i2 = 0; i2 < nxyz; ++i2){
                         c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
-                        if (abs(c_tmp) > 1.0e-12) {
+                        if (abs(c_tmp) > eps12) {
                             for (i = 0; i < order + 2; ++i) ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
 
                             i_prim = min_inprim(order + 2, ind_mapped);
@@ -176,7 +180,7 @@ void Fcs::generate_fclists(int maxorder)
                                 for (i = 0; i < order + 2; ++i){
                                     zeroflag = zeroflag & (ind[i] == ind_mapped[i]);
                                 }
-                                zeroflag = zeroflag & (abs(c_tmp + 1.0) < 1.0e-8);
+                                zeroflag = zeroflag & (abs(c_tmp + 1.0) < eps8);
                                 is_zero = zeroflag;
                             }
 
@@ -226,7 +230,7 @@ void Fcs::generate_fclists(int maxorder)
 
         /*std::cout << "ORDER: " << order << " Size: " << ndup[order].size() << std::endl;
         for(unsigned int m = 0; m < ndup[order].size(); ++m){
-            std::cout << "ORDER: " << order << std::setw(5) << ndup[order][m] << std::endl;
+        std::cout << "ORDER: " << order << std::setw(5) << ndup[order][m] << std::endl;
         }
         std::cout << "ORDER: " << order << " nzero " << nzero[order]<< std::endl;
 
@@ -235,28 +239,29 @@ void Fcs::generate_fclists(int maxorder)
 
         int mmm = 0;
         for (unsigned int m = 0; m < ndup[order].size(); ++m){
-            std::cout << "#" << m << " ndup = " << ndup[order][m] << std::endl;
-            for (unsigned int mm = 0; mm < ndup[order][m]; ++mm){
-                for (i = 0; i < order + 2; ++i){
-                    std::cout << std::setw(6) << easyvizint(fc_set[order][mmm].elems[i]);    
-                }
-                std::cout << " " << fc_set[order][mmm].mother << std::endl;
-                ++mmm;
-            } 
-            std::cout << std::endl;
+        std::cout << "#" << m << " ndup = " << ndup[order][m] << std::endl;
+        for (unsigned int mm = 0; mm < ndup[order][m]; ++mm){
+        for (i = 0; i < order + 2; ++i){
+        std::cout << std::setw(6) << easyvizint(fc_set[order][mmm].elems[i]);    
         }
-*/
+        std::cout << " " << fc_set[order][mmm].mother << std::endl;
+        ++mmm;
+        } 
+        std::cout << std::endl;
+        }
+        */
         memory->deallocate(xyzcomponent);
         list_found.clear();
+        std::cout << ".. done. " << std::endl;
     } //close order loop
 
-    delete [] atmn;
-    delete [] atmn_mapped;
-    delete [] ind;
-    delete [] ind_mapped;
-    delete [] ind_tmp;
-    delete [] ind_mapped_tmp;
-    delete [] is_searched;
+    memory->deallocate(atmn);
+    memory->deallocate(atmn_mapped);
+    memory->deallocate(ind);
+    memory->deallocate(ind_mapped);
+    memory->deallocate(ind_tmp);
+    memory->deallocate(ind_mapped_tmp);
+    memory->deallocate(is_searched);
 
     std::cout << "Finished !" << std::endl;
 }
@@ -288,7 +293,7 @@ int Fcs::min_inprim(const int n, const int *arr)
     int minloc;
     int *ind;
 
-    ind = new int [n];
+    memory->allocate(ind, n);
 
     for (i = 0; i < n; ++i){
 
@@ -313,11 +318,8 @@ int Fcs::min_inprim(const int n, const int *arr)
         }
     }
 
-    delete [] ind;
+    memory->deallocate(ind);
     return minloc;
-
-    //// this cannot happen
-    //error->exit("min_inprim", "no indecis in the primitive cell");
 }
 
 bool Fcs::is_inprim(const int n, const int *arr)
@@ -378,7 +380,7 @@ void Fcs::sort_tail(const int n, int *arr){
     m = n - 1;
     int *ind_tmp;
 
-    ind_tmp = new int [m];
+    memory->allocate(ind_tmp, m);
 
     for (i = 0; i < m; ++i){
         ind_tmp[i] = arr[i + 1];
@@ -390,7 +392,7 @@ void Fcs::sort_tail(const int n, int *arr){
         arr[i + 1] = ind_tmp[i];
     }
 
-    delete [] ind_tmp;
+    memory->deallocate(ind_tmp);
 }
 
 std::string Fcs::easyvizint(const int n)

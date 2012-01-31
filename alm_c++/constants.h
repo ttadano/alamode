@@ -14,5 +14,8 @@ static const double time_ry = h_planck / (2.0 * pi) / Ryd;
 static const double Hz_to_kayser = 1.0e-2 / (2.0 * pi * c_light);
 static const double Bohr_in_Angstrom = 0.529;
 static const double eps = DBL_EPSILON;
+static const double eps12 = 1.0e-12;
+static const double eps10 = 1.0e-10;
+static const double eps8 = 1.0e-8;
 
 #endif

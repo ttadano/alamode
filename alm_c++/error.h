@@ -1,6 +1,7 @@
 #ifndef ALM_ERROR_HEADER
 #define ALM_ERROR_HEADER
 
+#include <string>
 #include "pointers.h"
 
 namespace ALM_NS {

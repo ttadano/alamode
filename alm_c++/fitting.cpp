@@ -1,3 +1,8 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <set>
+#include <boost/lexical_cast.hpp>
 #include "fitting.h"
 #include "files.h"
 #include "error.h"
@@ -6,13 +11,9 @@
 #include "system.h"
 #include "fcs.h"
 #include "interaction.h"
-#include <iostream>
-#include <string>
-#include <vector>
-#include <boost/lexical_cast.hpp>
 #include "timer.h"
-#include <set>
 #include "combination.h"
+#include "constants.h"
 
 using namespace ALM_NS;
 
@@ -43,11 +44,11 @@ void Fitting::fitmain()
     for(i = 0; i < maxorder; ++i){
         N += fcs->ndup[i].size();
     }
-    std::cout << "Number of Parameters : " << N << std::endl;
+    std::cout << "Total Number of Parameters : " << N << std::endl;
     M = 3 * natmin * ndata * ntran;
 
     memory->allocate(amat, M, N);
-    fsum = new double [M];
+    memory->allocate(fsum, M);
 
     // calculate matrix elements for fitting
     calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
@@ -65,7 +66,7 @@ void Fitting::fitmain()
     wrtfcs(fsum);
 
     memory->deallocate(amat);
-    delete [] fsum;
+    memory->deallocate(fsum);
 
     timer->print_elapsed();
 }
@@ -83,11 +84,11 @@ void Fitting::fit_without_constraints(int M, int N)
     LWORK = 3 * std::min<int>(M, N) + std::max<int>(2*std::min<int>(M, N), std::max<int>(M, N));
     LWORK = 2 * LWORK;
 
-    WORK = new double [LWORK];
-    S = new double [N];
+    memory->allocate(WORK, LWORK);
+    memory->allocate(S, N);
 
     // transpose matrix A
-    amat_mod = new double [M * N];
+    memory->allocate(amat_mod, M * N);
     k = 0;
     for (j = 0; j < N; ++j){
         for(i = 0; i < M; ++i){
@@ -116,9 +117,9 @@ void Fitting::fit_without_constraints(int M, int N)
         std::cout << "Fitting Error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
     }
 
-    delete [] amat_mod;
-    delete [] WORK;
-    delete [] S;
+    memory->deallocate(amat_mod);
+    memory->deallocate(WORK);
+    memory->deallocate(S);
 }
 
 void Fitting::fit_with_constraints(int M, int N)
@@ -137,9 +138,9 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     double **f;
     int *ind;
 
-    std::cout << "Calculation of Matrix Elements for Direct Fitting Started" << std::endl << std::endl;
+    std::cout << "Calculation of Matrix Elements for Direct Fitting Started ...";
 
-    ind = new int [maxorder + 1];
+    memory->allocate(ind, maxorder + 1);
 
     for (i = 0; i < M; ++i){
         for (j = 0; j < N; ++j){
@@ -195,10 +196,6 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[itran][fcs->fc_set[order][mm].elems[j]];
                         }
-                        /*for(j = 0; j < order + 2; ++j){
-                        std::cout << std::setw(5) << ind[j];
-                        }
-                        std::cout << std::setw(6) << gamma(order + 2, ind) << std::endl;*/
                         amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
                         ++mm;
                     }
@@ -209,11 +206,11 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
             idata += 3 * natmin;
         }
     }
+    memory->deallocate(ind);
     memory->deallocate(u);
     memory->deallocate(f);
-    delete [] ind;
 
-    std::cout << "Finished !" << std::endl;
+    std::cout << " Finished !" << std::endl;
 }
 
 void Fitting::translational_invariance()
@@ -222,32 +219,36 @@ void Fitting::translational_invariance()
     // create constraint matrix arising from translational invariance.
     // might be a little tricky. (hard to follow)
 
+    int i, j;
+    int iat, jat, icrd, jcrd;
     int order;
     int maxorder = interaction->maxorder;
-    int i, j;
-    std::set<FcProperty> list_found;
-    int *ind;
-    std::vector<int> intlist;
-    int nxyz, nmaxpairs;
-    int **xyzcomponent;
-    int **atmcomponent;
-                                    std::set<FcProperty>::iterator iter_found;
 
+    int *ind;
+    int *intarr, *intarr_copy;
+    int **xyzcomponent;
+
+    int nxyz;
     int natmin = symmetry->natmin;
     int nat = system->nat;
-    int iat;
 
     double *arr_constraint;
-    int *intarr, *intarr_copy;
 
-    std::cout << "Start generating constraints for translational invariance" << std::endl;
+    std::vector<int> intlist;
+    std::set<FcProperty> list_found;
+    std::set<FcProperty>::iterator iter_found;
+
+    std::cout << "Start generating constraints for translational invariance ..." << std::endl;
 
     //FcProperty list_tmp;
 
-    ind = new int [maxorder + 1];
-    const_translation = new std::set<Constraint> [maxorder];
+    memory->allocate(ind, maxorder + 1);
+    memory->allocate(const_translation, maxorder);
+    // const_translation = new std::set<Constraint> [maxorder];
 
     for (order = 0; order < maxorder; ++order){
+
+        std::cout << std::setw(8) << interaction->str_order[order] << " ...";
 
         // make interaction list
 
@@ -274,12 +275,10 @@ void Fitting::translational_invariance()
         int nparams = fcs->ndup[order].size();
 
         const_translation[order].clear();
-        arr_constraint = new double [nparams];
-        int ncon = 0;
-        intarr = new int [order + 2];
-        intarr_copy = new int [order + 2];
 
-        //std::cout << "ORDER = " << order << " nxyz = " << nxyz << " nparams = " << nparams<<std::endl;
+        memory->allocate(arr_constraint, nparams);
+        memory->allocate(intarr, order + 2);
+        memory->allocate(intarr_copy, order + 2);
 
         for(i = 0; i < natmin; ++i){
 
@@ -288,16 +287,16 @@ void Fitting::translational_invariance()
             // generate atom pairs for each order
 
             if(order == 0){
-                for(int icrd = 0; icrd < 3; ++icrd){
+                for(icrd = 0; icrd < 3; ++icrd){
 
                     intarr[0] = 3 * iat + icrd;
 
-                    for (int jcrd = 0; jcrd < 3; ++jcrd){
+                    for (jcrd = 0; jcrd < 3; ++jcrd){
 
                         // Reset the temporary array for next constraint
                         for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
 
-                        for (int jat = 0; jat < 3 * nat; jat += 3){
+                        for (jat = 0; jat < 3 * nat; jat += 3){
                             intarr[1] = jat + jcrd;
 
                             iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
@@ -309,7 +308,6 @@ void Fitting::translational_invariance()
                             }
                         }
                         if(!is_allzero(nparams,arr_constraint)){
-                            ++ncon;
                             // add to constraint list
                             const_translation[order].insert(Constraint(nparams, arr_constraint));
                         }
@@ -332,51 +330,31 @@ void Fitting::translational_invariance()
                     }
 
                     if(!interaction->is_incutoff(order + 1, intarr)) continue;
-                    for(int ixyz = 0; ixyz < nxyz; ++ixyz){
-                        std::cout << "ixyz = " << std::setw(4) << ixyz;
-                        for(j = 0; j< order + 1; ++j){
-                        std::cout << std::setw(4) <<xyzcomponent[ixyz][j];
-                        }
-                        std::cout << std::endl;
-                    }
 
                     for(int ixyz = 0; ixyz < nxyz; ++ixyz){
-                        for(j = 0; j < order + 1; ++j){
-                            intarr_copy[j] = 3 * intarr[j] + xyzcomponent[ixyz][j];
-                        }
                         for(int jcrd = 0; jcrd < 3; ++jcrd){
 
                             // Reset the temporary array for next constraint
                             for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
 
                             for(int jat = 0; jat < 3 * nat; jat += 3){
+                                intarr[order + 1] = jat / 3;
 
+                                if(!interaction->is_incutoff(order + 2, intarr)) continue;
+
+                                for(j = 0; j < order + 1; ++j)  intarr_copy[j] = 3 * intarr[j] + xyzcomponent[ixyz][j];
                                 intarr_copy[order + 1] = jat + jcrd;
-                             //   fcs->sort_tail(order + 2, intarr_copy);
 
-                                for(j = 0; j < order + 2; ++j){
-                                std::cout << std::setw(5) << intarr_copy[j];
-                                }
-                                std::cout << std::endl;
+                                fcs->sort_tail(order + 2, intarr_copy);
 
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr_copy, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
-                                    arr_constraint[arrtmp.mother] += arrtmp.coef;
-
-                                    // debug output
-                                    /*std::cout << std::setw(5) << ncon;
-                                    for(j = 0; j < order + 2; ++j){
-                                    std::cout << std::setw(5) << arrtmp.elems[j];
-                                    }
-                                    std::cout << std::setw(5) << arrtmp.coef << std::setw(5) << arrtmp.mother;
-                                    std::cout << " ixyz = " << ixyz << " jat = " << jat << " jcrd = " << jcrd << std::endl;*/
-                                }
+                                    arr_constraint[arrtmp.mother] += arrtmp.coef;                                
+                                } 
 
                             }
-                            std::cout << std::endl;
                             if(!is_allzero(nparams,arr_constraint)){
-                                ++ncon;
                                 const_translation[order].insert(Constraint(nparams, arr_constraint));
                             }
                         }
@@ -388,38 +366,34 @@ void Fitting::translational_invariance()
         }
 
         memory->deallocate(xyzcomponent);
-        std::cout << std::setw(8) << interaction->str_order[order] << " finished." << std::endl;
-        std::cout << "Number of Constraints : " << const_translation[order].size() << std::endl;
+        memory->deallocate(arr_constraint);
+        memory->deallocate(intarr);
+        memory->deallocate(intarr_copy);
 
-
-        for(std::set<Constraint>::iterator pp = const_translation[order].begin(); pp != const_translation[order].end(); ++pp){
-            Constraint const_tmp = *pp;
-            for(j = 0; j < nparams; ++j){
-                std::cout << std::setw(5) << const_tmp.w_const[j];
-            }
-            std::cout << std::endl;
-        }
-        delete [] arr_constraint;
-        delete [] intarr;
-        delete [] intarr_copy;
+        std::cout << " done." << std::endl;
     }
-    delete [] ind;
+    memory->deallocate(ind);
+
+    std::cout << "Finished !" << std::endl << std::endl;
+    for(order = 0;  order < maxorder; ++order){
+        std::cout << "Number of Constraints for" << std::setw(9) << interaction->str_order[order] << " : " << const_translation[order].size() << std::endl;
+    }
+    std::cout << std::endl;
 }
+
 
 bool Fitting::is_allzero(const int n, const double *arr){
 
     for(int i = 0; i < n; ++i){
-        if(std::abs(arr[i]) > 1.0e-10) {
+        if(std::abs(arr[i]) > eps10) {
             return false;
         }
     }
     return true;
-
 }
 
 int Fitting::inprim_index(const int n)
 {
-
     int atmn = n / 3;
     int crdn = n % 3;
 
@@ -436,8 +410,9 @@ void Fitting::wrtfcs(const double *params)
     int i, j, k, l, m;
 
     int maxorder = interaction->maxorder;
-    std::string *str_fcs; 
-    str_fcs = new std::string [maxorder];
+    std::string *str_fcs;
+
+    memory->allocate(str_fcs, maxorder);
 
     std::string str_tmp;
 
@@ -519,7 +494,7 @@ void Fitting::wrtfcs(const double *params)
         }
     }
 
-    delete [] str_fcs;
+    memory->deallocate(str_fcs);
 
     std::cout << "Force Constants are written to file: " << files->file_fcs << std::endl;
 }
@@ -530,8 +505,8 @@ double Fitting::gamma(const int n, const int *arr)
     int i;
     int ind_front, nsame_to_front;
 
-    arr_tmp = new int [n];
-    nsame = new int [n];
+    memory->allocate(arr_tmp, n);
+    memory->allocate(nsame, n);
 
     for (i = 0; i < n; ++i) {
         arr_tmp[i] = arr[i];
@@ -565,8 +540,8 @@ double Fitting::gamma(const int n, const int *arr)
         denom *= factorial(nsame[i]);
     }
 
-    delete [] arr_tmp;
-    delete [] nsame;
+    memory->deallocate(arr_tmp);
+    memory->deallocate(nsame);
 
     return static_cast<double>(nsame_to_front) / static_cast<double>(denom);
 }

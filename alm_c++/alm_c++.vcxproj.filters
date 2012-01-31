@@ -18,9 +18,6 @@
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="memory.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="alamode.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -49,6 +46,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="fitting.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="memory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
