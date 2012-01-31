@@ -12,41 +12,21 @@ namespace ALM_NS {
         std::vector<double> w_const;
 
         Constraint();
+        Constraint(const Constraint &a){
+            for(std::vector<double>::const_iterator p = a.w_const.begin(); p != a.w_const.end(); ++p){
+                w_const.push_back(*p);
+            }
+        }
         Constraint(const int n, const double *arr){
             for(int i = 0; i < n; ++i){
-            w_const.push_back(arr[i]);
+                w_const.push_back(arr[i]);
             }
-        
         }
-    
     };
 
-   inline bool operator<(const Constraint a, const Constraint b){
+    inline bool operator<(const Constraint a, const Constraint b){
         return std::lexicographical_compare(a.w_const.begin(), a.w_const.end(), b.w_const.begin(), b.w_const.end());
-   }
-
-   /* inline bool operator<(const Constraint a, const Constraint b){
-        std::vector<double>::const_iterator aiter = a.w_const.begin(), biter = b.w_const.begin();
-        do {
-            if(*aiter > *biter + 1.0e-15){
-            return false;
-            ++aiter;
-            ++biter;
-            }
-        } while(aiter != a.w_const.end() && biter != b.w_const.end());
-
-        aiter = a.w_const.begin();
-        biter = b.w_const.begin();
-
-        do {
-            if(std::abs(*aiter - *biter) > 1.0e-15){
-                return true;
-                ++aiter;
-                ++biter;
-            }
-        } while(aiter != a.w_const.end() && biter != b.w_const.end());
-        return false;
-    }*/
+    }
 
     class Fitting: protected Pointers {
     public:
@@ -56,7 +36,7 @@ namespace ALM_NS {
         void fitmain();
 
         int constraint;
-   
+
     private:
 
         int inprim_index(const int);
@@ -70,16 +50,22 @@ namespace ALM_NS {
 
         void translational_invariance();
         void rotational_invariance();
+        void calc_constraint_matrix(const int, int &);
         bool is_allzero(const int, const double *);
 
         double **amat;
         double *fsum;
+
+        double **cmat;
+        double *fsum2;
         std::set<Constraint> *const_translation;
     };
 
     extern "C" void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,	
         double *b, int *ldb, double *s, double *rcond, int *rank,
         double *work,	int *lwork, int *info);
+    extern "C" void dgetrf_(int *m, int *n, double *a, int *lda, int *ipiv,
+        int *info);
 
 }
 #endif

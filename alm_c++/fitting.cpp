@@ -14,6 +14,7 @@
 #include "timer.h"
 #include "combination.h"
 #include "constants.h"
+#include <Eigen/Dense>
 
 using namespace ALM_NS;
 
@@ -124,8 +125,117 @@ void Fitting::fit_without_constraints(int M, int N)
 
 void Fitting::fit_with_constraints(int M, int N)
 {
+    int maxorder = interaction->maxorder;
     std::cout << "Entering Fitting Routine: QRD with constraints" << std::endl << std::endl;
+    memory->allocate(const_translation, maxorder);
+
     translational_invariance();
+
+    int P;
+
+    calc_constraint_matrix(N, P);
+
+    std::cout << "Total number of constraints: " << P << std::endl;
+
+    memory->deallocate(const_translation);
+}
+
+
+void Fitting::calc_constraint_matrix(const int N, int &P){
+
+    int i, j;
+    int maxorder = interaction->maxorder;
+    int order;
+    int icol, irow;
+
+    int nrow, ncol;
+
+    int *nrank, *nparam;
+
+    double *arr_tmp;
+
+    std::vector<Constraint> *const_vec;
+
+    memory->allocate(nrank, maxorder);
+    memory->allocate(nparam, maxorder);
+    memory->allocate(const_vec, maxorder);
+
+    std::cout << "Removing redundunt constraints ...";
+
+    using namespace Eigen;
+
+    for(order = 0; order < maxorder; ++order){
+
+        const_vec[order].clear();
+
+        nrow = fcs->ndup[order].size();
+        ncol = const_translation[order].size();
+
+        nparam[order] = nrow;
+
+        memory->allocate(arr_tmp, nrow);
+
+        MatrixXd mat_tmp(nrow, ncol);
+        icol = 0;
+
+        for (std::set<Constraint>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
+            Constraint const_now = *p;
+            for (i = 0; i < nrow; ++i){
+                mat_tmp(i, icol) = const_now.w_const[i];
+            }
+            ++icol;
+        }
+
+        FullPivLU<MatrixXd> lu_decomp(mat_tmp);
+        nrank[order] = lu_decomp.rank();
+        MatrixXd c_reduced = lu_decomp.image(mat_tmp);
+
+        for(icol = 0; icol < nrank[order]; ++icol){
+            for(irow = 0; irow < nrow; ++irow){
+                arr_tmp[irow] = c_reduced(irow, icol);
+            }
+
+            const_vec[order].push_back(Constraint(nrow, arr_tmp));
+        }
+        memory->deallocate(arr_tmp);
+    }
+
+    std::cout << " done." << std::endl << std::endl;
+
+    P = 0;
+    for (order = 0; order < maxorder; ++order){
+        P += nrank[order];
+        std::cout << "Rank of the constraint matrix for order = " << order << ": " << const_vec[order].size() << std::endl;
+    }
+
+    memory->allocate(cmat, P, N);
+    memory->allocate(fsum2, P);
+
+    for(i = 0; i < P; ++i){
+        for(j = 0; j < N; ++j){
+            cmat[i][j] = 0.0;
+        }
+        fsum2[i] = 0.0;
+    }
+
+    irow = 0;
+    icol = 0;
+
+    for(order = 0; order < maxorder; ++order){
+
+        for(std::vector<Constraint>::iterator it = const_vec[order].begin(); it != const_vec[order].end(); ++it){
+            Constraint const_now = *it;
+
+            for(i = 0; i < nparam[order]; ++i){
+                cmat[irow][i + icol] = const_now.w_const[i];
+            }
+            ++irow;
+        }
+        icol += nparam[order];
+    }
+
+    memory->deallocate(nrank);
+    memory->deallocate(const_vec);
 }
 
 
@@ -243,7 +353,7 @@ void Fitting::translational_invariance()
     //FcProperty list_tmp;
 
     memory->allocate(ind, maxorder + 1);
-    memory->allocate(const_translation, maxorder);
+
     // const_translation = new std::set<Constraint> [maxorder];
 
     for (order = 0; order < maxorder; ++order){
