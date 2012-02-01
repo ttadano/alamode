@@ -33,8 +33,8 @@ namespace ALM_NS {
         Fitting(class ALM *);
         ~Fitting();
 
-        void fitmain();
-
+        void fitmain();       
+        int rank(const int, const int, double **);
         int constraint;
 
     private:
@@ -56,16 +56,18 @@ namespace ALM_NS {
         double **amat;
         double *fsum;
 
-        double **cmat;
-        double *fsum2;
+        double **const_mat;
+        double *const_rhs;
         std::set<Constraint> *const_translation;
     };
 
     extern "C" void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,	
         double *b, int *ldb, double *s, double *rcond, int *rank,
-        double *work,	int *lwork, int *info);
-    extern "C" void dgetrf_(int *m, int *n, double *a, int *lda, int *ipiv,
-        int *info);
+        double *work, int *lwork, int *info);
+    
+    extern "C" void dgglse_(int *m, int *n, int *p, double *a, int *lda,
+        double *b, int *ldb, double *c, double *d, double *x,
+        double *work, int *lwork, int *info);
 
 }
 #endif

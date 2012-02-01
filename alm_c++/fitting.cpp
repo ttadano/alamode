@@ -55,7 +55,7 @@ void Fitting::fitmain()
     calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
     timer->print_elapsed();
 
-    // fitting with singular value decomposition
+    // fitting with singular value decomposition or QR-Decomposition
     if(constraint == 0) {
         fit_without_constraints(M, N);
     } else {
@@ -125,18 +125,121 @@ void Fitting::fit_without_constraints(int M, int N)
 
 void Fitting::fit_with_constraints(int M, int N)
 {
+    int i, j, k;
+    int nrank;
+    int P, order, Pmax;
+    double **mat_tmp;
+
     int maxorder = interaction->maxorder;
+
+    double f_square, f_residual;
+
     std::cout << "Entering Fitting Routine: QRD with constraints" << std::endl << std::endl;
     memory->allocate(const_translation, maxorder);
 
+    // generate constraints for translational invariance
+
     translational_invariance();
 
-    int P;
+    // construct constraint matrix
+
+    Pmax = 0;
+    for (order = 0; order < maxorder; ++order){
+        Pmax += const_translation[order].size();
+    }
+    memory->allocate(const_mat, Pmax, N);
+    memory->allocate(const_rhs, Pmax);
 
     calc_constraint_matrix(N, P);
 
     std::cout << "Total number of constraints: " << P << std::endl;
 
+    memory->allocate(mat_tmp, (M + P), N);
+    k = 0;
+
+    for(i = 0; i < M; ++i){
+        for(j = 0; j < N; ++j){
+            mat_tmp[k][j] = amat[i][j];
+        }
+        ++k;
+    }
+    for(i = 0; i < P; ++i){
+        for(j = 0; j < N; ++j){
+            mat_tmp[k][j] = const_mat[i][j];
+        }
+        ++k;
+    }
+
+    nrank = rank(M+P, N, mat_tmp);
+    memory->deallocate(mat_tmp);
+
+    if(nrank != N){
+        std::cout << std::endl;
+        std::cout << "!!WARNING: rank ( (A) ) ! = N" << std::endl;
+        std::cout << "                ( (B) )      " << std::endl;
+        std::cout << "rank = " << nrank << " N = " << N << std::endl;
+        std::cout << "This must be a problem when solving equality constrained LSE problem with DGGLSE." << std::endl;
+        std::cout << "Please change the cutoff radius or {u,f} data." << std::endl << std::endl;
+    }
+
+    f_square = 0.0;
+    for (i = 0; i < M; ++i){
+        f_square += std::pow(fsum[i], 2);
+    }
+
+    std::cout << "QR-Decomposition Started ...";
+
+    double *amat_mod, *cmat_mod;
+    memory->allocate(amat_mod, M * N);
+    memory->allocate(cmat_mod, P * N);
+
+    // transpose matrix A and C
+    k = 0;
+    for(j = 0; j < N; ++j){
+        for(i = 0; i < M; ++i){
+            amat_mod[k++] = amat[i][j];
+        }
+    }
+    k = 0;
+    for (j = 0; j < N; ++j){
+        for(i = 0; i < P; ++i){
+            cmat_mod[k++] = const_mat[i][j];
+        }
+    }
+
+    // Fitting
+
+    int LWORK = P + std::min<int>(M, N) + 100 * std::max<int>(M, N);
+    int INFO;
+    double *WORK, *x;
+    memory->allocate(WORK, LWORK);
+    memory->allocate(x, N);
+
+    dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum, const_rhs, x, WORK, &LWORK, &INFO);
+
+    memory->deallocate(amat_mod);
+    memory->deallocate(cmat_mod);
+    memory->deallocate(WORK);
+
+
+    std::cout << " finished. " << std::endl;
+
+    f_residual = 0.0;
+    for (i = N - P; i < M; ++i){
+        f_residual += std::pow(fsum[i], 2);
+    }
+    std::cout << std::endl << "Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
+    std::cout << "Fitting Error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
+
+    // copy fcs to fsum
+
+    for(i = 0; i < N; ++i){
+        fsum[i] = x[i];
+    }
+
+    memory->deallocate(x);
+    memory->deallocate(const_mat);
+    memory->deallocate(const_rhs);
     memory->deallocate(const_translation);
 }
 
@@ -208,14 +311,11 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
         std::cout << "Rank of the constraint matrix for order = " << order << ": " << const_vec[order].size() << std::endl;
     }
 
-    memory->allocate(cmat, P, N);
-    memory->allocate(fsum2, P);
-
     for(i = 0; i < P; ++i){
         for(j = 0; j < N; ++j){
-            cmat[i][j] = 0.0;
+            const_mat[i][j] = 0.0;
         }
-        fsum2[i] = 0.0;
+        const_rhs[i] = 0.0;
     }
 
     irow = 0;
@@ -227,7 +327,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
             Constraint const_now = *it;
 
             for(i = 0; i < nparam[order]; ++i){
-                cmat[irow][i + icol] = const_now.w_const[i];
+                const_mat[irow][i + icol] = const_now.w_const[i];
             }
             ++irow;
         }
@@ -325,7 +425,6 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
 void Fitting::translational_invariance()
 {
-
     // create constraint matrix arising from translational invariance.
     // might be a little tricky. (hard to follow)
 
@@ -491,7 +590,6 @@ void Fitting::translational_invariance()
     std::cout << std::endl;
 }
 
-
 bool Fitting::is_allzero(const int n, const double *arr){
 
     for(int i = 0; i < n; ++i){
@@ -606,7 +704,7 @@ void Fitting::wrtfcs(const double *params)
 
     memory->deallocate(str_fcs);
 
-    std::cout << "Force Constants are written to file: " << files->file_fcs << std::endl;
+    std::cout << std::endl << "Force Constants are written to file: " << files->file_fcs << std::endl;
 }
 
 double Fitting::gamma(const int n, const int *arr)
@@ -663,4 +761,21 @@ int Fitting::factorial(const int n)
     }else{
         return n * factorial(n - 1);
     }
+}
+
+int Fitting::rank(const int m, const int n, double **mat)
+{
+
+    Eigen::MatrixXd mat_tmp(m, n);
+
+    int i, j;
+
+    for(i = 0; i < m; ++i){
+        for(j = 0; j < n; ++j){
+            mat_tmp(i,j) = mat[i][j];
+        }
+    }
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(mat_tmp);
+
+    return qr.rank();
 }
