@@ -50,7 +50,7 @@ void Fcs::init(){
             std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
             int nbegin = ndup[order][0];
             int nend;
-            for(int mm = 1; mm < ndup[order].size(); ++mm){
+            for(unsigned int mm = 1; mm < ndup[order].size(); ++mm){
                 nend  = nbegin + ndup[order][mm];
                 std::sort(fc_set[order].begin() + nbegin, fc_set[order].begin() + nend);
                 nbegin += ndup[order][mm];

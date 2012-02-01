@@ -1,6 +1,7 @@
 #ifndef ALM_TIMER_HEADER
 #define ALM_TIMER_HEADER
 
+#include <string>
 #include "pointers.h"
 
 #if defined(WIN32) || defined(_WIN32)
@@ -19,6 +20,7 @@ namespace ALM_NS {
         void reset();
         double elapsed();
         void print_elapsed();
+        std::string DataAndTime();
 
     private:
 #if defined(WIN32) || defined(_WIN32)

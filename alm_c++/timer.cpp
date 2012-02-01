@@ -1,6 +1,8 @@
 #include "timer.h"
+#include <string>
 #include <iostream>
 #include <iomanip>
+#include <ctime>
 
 using namespace ALM_NS;
 
@@ -41,4 +43,27 @@ double Timer::elapsed()
 void Timer::print_elapsed()
 {
     std::cout << std::endl << "Time Elapsed: " << elapsed() << " sec." << std::endl << std::endl;
+}
+
+
+std::string Timer::DataAndTime()
+{
+    time_t current;
+    std::time(&current);
+
+#if defined(WIN32) || defined(_WIN32)
+    errno_t err_t;
+    struct tm local;
+
+    char str_now[32];
+
+    err_t = localtime_s(&local, &current);
+    err_t = asctime_s(str_now, 32, &local);
+    return str_now;
+#else
+     struct tm *local;
+    local = std::localtime(&current);
+
+    return asctime(local);
+#endif
 }

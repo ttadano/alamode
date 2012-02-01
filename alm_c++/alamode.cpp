@@ -1,3 +1,4 @@
+#include <iostream>
 #include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
@@ -7,18 +8,22 @@
 #include "timer.h"
 #include "fcs.h"
 #include "fitting.h"
+#include "timer.h"
 
 using namespace ALM_NS;
 
 ALM::ALM(int narg, char **arg)
 {
     timer = new Timer(this);
+
+    std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     input = new Input(this, narg, arg);
     create();
     input->sparce_input();
     initialize();
     fitting->fitmain();
     finalize();
+    std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
 }
 
 void ALM::create()

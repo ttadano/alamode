@@ -19,8 +19,6 @@ void Files::setfilenames()
 
 void Files::openfiles()
 {
-  ofs_fcs.open(file_fcs.c_str(), std::ios::out);
-    if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
     ofs_premd.open(file_premd.c_str(), std::ios::out);
     if(!ofs_premd) error->exit("openfiles", "cannot open premd file");
    
@@ -32,8 +30,6 @@ void Files::openfiles()
 
 void Files::closefiles()
 {
-    ofs_log.close();
-    ofs_fcs.close();
     ofs_premd.close();
 
     ifs_disp.close();

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -264,7 +265,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     memory->allocate(nparam, maxorder);
     memory->allocate(const_vec, maxorder);
 
-    std::cout << "Removing redundunt constraints ...";
+    std::cout << "Removing redundant constraints ...";
 
     using namespace Eigen;
 
@@ -306,11 +307,13 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
 
     std::cout << " done." << std::endl << std::endl;
 
+    std::cout << "Rank of the constraint matrices for each order ..." << std::endl;
     P = 0;
     for (order = 0; order < maxorder; ++order){
         P += nrank[order];
-        std::cout << "Rank of the constraint matrix for order = " << order << ": " << const_vec[order].size() << std::endl;
+        std::cout << std::setw(9) << interaction->str_order[order] << ": " << const_vec[order].size() << std::endl;
     }
+    std::cout << std::endl;
 
     for(i = 0; i < P; ++i){
         for(j = 0; j < N; ++j){
@@ -629,23 +632,26 @@ void Fitting::wrtfcs(const double *params)
 
     std::string str_tmp;
 
+    std::ofstream ofs_fcs;
+    ofs_fcs.open(files->file_fcs.c_str(), std::ios::out);
+    if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
+
     for (i = 0; i < maxorder; ++i){
         str_fcs[i] = "*FC" + boost::lexical_cast<std::string>(i + 2);
     }
 
-    files->ofs_fcs <<  "********************Force Constants (FCs)********************" << std::endl;
-    files->ofs_fcs <<  "!     Force Constants will be printed in atomic unit        !" << std::endl;
-    files->ofs_fcs <<  "!     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc. !" << std::endl;
-    files->ofs_fcs <<  "!     FC?: Ry/a0^?                                          !" << std::endl;
-    files->ofs_fcs <<  "!     a0= Bohr radius                                       !" << std::endl;
-    files->ofs_fcs << "*************************************************************"  << std::endl << std::endl;
-    files->ofs_fcs << "---------------Symmetrically Independent FCs---------------" << std::endl;
-    files->ofs_fcs << " Global No." << "  Local No." << "            FCs" << "            Pairs" << std::endl;
+    ofs_fcs <<  "********************Force Constants (FCs)********************" << std::endl;
+    ofs_fcs <<  "!     Force Constants will be printed in atomic unit        !" << std::endl;
+    ofs_fcs <<  "!     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc. !" << std::endl;
+    ofs_fcs <<  "!     FC?: Ry/a0^?                                          !" << std::endl;
+    ofs_fcs <<  "!     a0= Bohr radius                                       !" << std::endl;
+    ofs_fcs << "*************************************************************"  << std::endl << std::endl;
+    ofs_fcs << "---------------Symmetrically Independent FCs---------------" << std::endl;
+    ofs_fcs << " Global No." << "  Local No." << "            FCs" << "            Pairs" << std::endl;
 
     k = 0;
 
-
-    files->ofs_fcs.setf(std::ios::scientific);
+    ofs_fcs.setf(std::ios::scientific);
 
     for (i = 0; i < maxorder; ++i){
 
@@ -653,15 +659,15 @@ void Fitting::wrtfcs(const double *params)
 
         if(fcs->ndup[i].size() > 0) {
 
-            files->ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
+            ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
 
             for (j = 0; j < fcs->ndup[i].size(); ++j){
 
-                files->ofs_fcs << std::setw(6) << k + 1 << std::setw(6) << j + 1 << std::setw(16) <<  params[k];
+                ofs_fcs << std::setw(6) << k + 1 << std::setw(6) << j + 1 << std::setw(16) <<  params[k];
                 for (l = 0; l < i + 2; ++l){
-                    files->ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[i][m].elems[l]);    
+                    ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[i][m].elems[l]);    
                 }
-                files->ofs_fcs << std::endl;
+                ofs_fcs << std::endl;
                 m += fcs->ndup[i][j];
                 ++k;
             }
@@ -672,7 +678,7 @@ void Fitting::wrtfcs(const double *params)
         str_fcs[i] = "**FC" + boost::lexical_cast<std::string>(i + 2);
     }
 
-    files->ofs_fcs << std::endl << std::endl
+    ofs_fcs << std::endl << std::endl
         << "---------------All FCs below---------------" << std::endl;
 
     int ip = 0;
@@ -683,24 +689,24 @@ void Fitting::wrtfcs(const double *params)
         id = 0;
 
         if(fcs->ndup[i].size() > 0){
-            files->ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
+            ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
 
             for (unsigned int iuniq = 0; iuniq < fcs->ndup[i].size(); ++iuniq){
 
                 str_tmp = "# FC" + boost::lexical_cast<std::string>(i + 2) + "_";
                 str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
 
-                files->ofs_fcs << str_tmp << std::setw(6) << fcs->ndup[i][iuniq] << std::setw(16) << params[ip] << std::endl;
+                ofs_fcs << str_tmp << std::setw(6) << fcs->ndup[i][iuniq] << std::setw(16) << params[ip] << std::endl;
 
                 for (j = 0; j < fcs->ndup[i][iuniq]; ++j){
-                    files->ofs_fcs << std::setw(5) << j + 1 << std::setw(16) << fcs->fc_set[i][id].coef;
+                    ofs_fcs << std::setw(5) << j + 1 << std::setw(16) << fcs->fc_set[i][id].coef;
                     for (k = 0; k < i + 2; ++k){
-                        files->ofs_fcs << std::setw(6) << fcs->easyvizint(fcs->fc_set[i][id].elems[k]);
+                        ofs_fcs << std::setw(6) << fcs->easyvizint(fcs->fc_set[i][id].elems[k]);
                     }
-                    files->ofs_fcs << std::endl;
+                    ofs_fcs << std::endl;
                     ++id;
                 }
-                files->ofs_fcs << std::endl;
+                ofs_fcs << std::endl;
                 ++ip;
             }
 
@@ -708,6 +714,7 @@ void Fitting::wrtfcs(const double *params)
     }
 
     memory->deallocate(str_fcs);
+    ofs_fcs.close();
 
     std::cout << std::endl << "Force Constants are written to file: " << files->file_fcs << std::endl;
 }
