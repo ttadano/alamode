@@ -33,7 +33,7 @@ void Symmetry::init()
 
     memory->allocate(tnons, maxsym, 3);
     memory->allocate(symrel_int, maxsym, 3, 3);
-
+    
     gensym(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord,
         system->kd, symrel_int, tnons);
 
@@ -83,7 +83,7 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
         int **tran_int;
         memory->allocate(tran_int, maxsym, 3);
         findsym(nat, nnp, kd, aa, bb, x, nsym, rot, tran_int);
-
+      
         ofs_sym.open(file_sym.c_str(), std::ios::out);
         ofs_sym << nsym << std::endl;
         ofs_sym << nnp << std::endl;
@@ -289,10 +289,13 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
 
     bool value = true;
 
+    std::cout << rot << std::endl << std::endl;
+    std::cout << std::setw(3) << tran[0] << std::setw(3) << tran[1] << std::setw(3) << tran[2] << std::endl << std::endl;
+
     for (i = 0; i < nat; ++i){
 
         for (j = 0; j < 3; ++j){   
-            wsi(j) = x[i][j] - static_cast<double>(tran[j]) / nnp;
+	  wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
         }
 
         usi = rot * wsi;
@@ -304,19 +307,19 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
             if(kd[j] == kd[i]) {
 
                 for (k = 0; k < 3; ++k) { 
-                    vsi(k) = x[j][k]; 
+                    vsi(k) = x[j][k];
                     tmp(k) = fmod(abs(usi(k) - vsi(k)), 1.0);
                     tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
                 }
-
-                if (tmp.dot(tmp) < eps12) l = j;
+		double diff = tmp.dot(tmp);
+                if (diff < eps12) l = j;
             }
         }
 
         if(l == -1) value = false;
 
     }
-
+    std::cout << value<< std::endl<< std::endl;
     return value;
 }
 
