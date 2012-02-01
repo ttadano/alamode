@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <new>
+#include <cstdlib>
 #include "pointers.h"
 
 namespace ALM_NS {

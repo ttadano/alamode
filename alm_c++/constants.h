@@ -2,6 +2,7 @@
 #define ALM_CONSTANTS_HEADER
 
 #include <cfloat>
+#include <cmath>
 
 static const double pi = 4.0*atan(1.0);
 static const double amu = 1.660538782e-27;

@@ -24,10 +24,10 @@ Fitting::~Fitting() {}
 
 void Fitting::fitmain()
 {
-    files->ifs_disp_sym.open(files->file_disp_sym, std::ios::in | std::ios::binary);
+  files->ifs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::in | std::ios::binary);
     if(!files->ifs_disp_sym) error->exit("fitmain", "cannot open file disp_sym");
 
-    files->ifs_force_sym.open(files->file_force_sym, std::ios::in | std::ios::binary);
+    files->ifs_force_sym.open(files->file_force_sym.c_str(), std::ios::in | std::ios::binary);
     if(!files->ifs_force_sym) error->exit("fitmain", "cannot open file force_sym");
 
 
@@ -602,15 +602,19 @@ bool Fitting::is_allzero(const int n, const double *arr){
 
 int Fitting::inprim_index(const int n)
 {
+  int in;
     int atmn = n / 3;
     int crdn = n % 3;
 
     for (int i = 0; i < symmetry->natmin; ++i){
         if(symmetry->map_p2s[i][0] == atmn){
-            return 3 * i + crdn;
+	  in = 3 * i + crdn;
+	  break;
+	  //   return 3 * i + crdn;
         }
     }
-    error->exit("inprim_index", "This cannot happen");
+    // error->exit("inprim_index", "This cannot happen");
+    return in;
 }
 
 void Fitting::wrtfcs(const double *params)

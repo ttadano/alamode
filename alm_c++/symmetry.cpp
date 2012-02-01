@@ -25,7 +25,6 @@ Symmetry::~Symmetry() {
     memory->deallocate(map_sym);
     memory->deallocate(map_p2s);
     memory->deallocate(map_s2p);
-    //delete [] map_s2p;
 }
 
 void Symmetry::init()
@@ -49,7 +48,7 @@ void Symmetry::init()
     memory->allocate(map_sym, nat, nsym);
     memory->allocate(map_p2s, natmin, ntran);
     memory->allocate(map_s2p, nat);
-    //map_s2p = new Maps[nat];
+
     genmaps(nat, system->xcoord, map_sym, map_p2s, map_s2p);
 
     std::cout << std::endl;
@@ -85,7 +84,7 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
         memory->allocate(tran_int, maxsym, 3);
         findsym(nat, nnp, kd, aa, bb, x, nsym, rot, tran_int);
 
-        ofs_sym.open(file_sym, std::ios::out);
+        ofs_sym.open(file_sym.c_str(), std::ios::out);
         ofs_sym << nsym << std::endl;
         ofs_sym << nnp << std::endl;
 
@@ -121,7 +120,7 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
     else {
         int nsym2;
         int **tran_int;
-        ifs_sym.open(file_sym);
+        ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2 >> nnp;
 
         if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
@@ -480,8 +479,8 @@ void Symmetry::data_multiplier(int nat, int ndata)
     memory->allocate(u_sym, ntran, nat, 3);
     memory->allocate(f_sym, ntran, nat, 3);
 
-    files->ofs_disp_sym.open(files->file_disp_sym, std::ios::out | std::ios::binary);
-    files->ofs_force_sym.open(files->file_force_sym, std::ios::out | std::ios::binary);
+    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
+    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
 
     if(!files->ofs_disp_sym) error->exit("data_multiplier", "cannot open file_disp"); 
     if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");

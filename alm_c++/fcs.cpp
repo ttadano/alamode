@@ -71,7 +71,7 @@ void Fcs::read_pairs(int maxorder)
     int i, j, order;
     int *pair_tmp;
 
-    files->ifs_int.open(files->file_int, std::ios::out);
+    files->ifs_int.open(files->file_int.c_str(), std::ios::out);
     if(!files->ifs_int) error->exit("read_pairs", "cannot open file_int");
 
     for(order = 0; order < maxorder; ++order){

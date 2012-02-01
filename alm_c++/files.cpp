@@ -19,14 +19,14 @@ void Files::setfilenames()
 
 void Files::openfiles()
 {
-    ofs_fcs.open(file_fcs, std::ios::out);
+  ofs_fcs.open(file_fcs.c_str(), std::ios::out);
     if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
-    ofs_premd.open(file_premd, std::ios::out);
+    ofs_premd.open(file_premd.c_str(), std::ios::out);
     if(!ofs_premd) error->exit("openfiles", "cannot open premd file");
    
-    ifs_disp.open(file_disp, std::ios::in);
+    ifs_disp.open(file_disp.c_str(), std::ios::in);
     if(!ifs_disp) error->exit("openfiles", "cannot open disp file");
-    ifs_force.open(file_force, std::ios::in);
+    ifs_force.open(file_force.c_str(), std::ios::in);
     if(!ifs_force) error->exit("openfiles", "cannot open force file");
 }
 

@@ -2,7 +2,7 @@
 #define ALM_SYMMETRY_HEADER
 
 #include "pointers.h"
-#include <Eigen/core>
+#include <Eigen/Core>
 #include <string>
 #include <fstream>
 

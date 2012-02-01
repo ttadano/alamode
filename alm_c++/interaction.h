@@ -1,8 +1,10 @@
 #ifndef ALM_INTERACTION_HEADER
 #define ALM_INTERACTION_HEADER
 
+#include <string>
 #include "pointers.h"
-#include <Eigen/core>
+
+//#include <Eigen/Core>
 
 namespace ALM_NS {
     class Interaction: protected Pointers {

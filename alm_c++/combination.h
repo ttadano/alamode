@@ -13,6 +13,7 @@ namespace ALM_NS
         std::vector<TYPE> vec;
         unsigned int ndim;
 
+
     public:
         template<class InputIter>
         CombinationWithRepetition(InputIter begin, InputIter end, const unsigned int n){
@@ -25,7 +26,9 @@ namespace ALM_NS
 
             vec.clear();
 
-            for(std::set<TYPE>::iterator iter = set_tmp.begin(); iter != set_tmp.end(); ++iter){
+	    //          for(std::set<TYPE>::iterator iter2 = set_tmp.begin(); iter2 != set_tmp.end(); ++iter2){
+	    typename std::set<TYPE>::iterator iter;
+          for(iter = set_tmp.begin(); iter != set_tmp.end(); ++iter){
                 for (unsigned int i = 0; i < ndim; i++) {
                     vec.push_back(*iter);
                 }

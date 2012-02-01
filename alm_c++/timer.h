@@ -17,7 +17,7 @@ namespace ALM_NS {
         ~Timer();
 
         void reset();
-        double const elapsed();
+        double elapsed();
         void print_elapsed();
 
     private:

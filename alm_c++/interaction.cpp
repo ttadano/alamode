@@ -12,7 +12,7 @@
 #include "listcomparison.h"
 #include "files.h"
 #include "timer.h"
-#include <Eigen/core>
+#include <Eigen/Core>
 
 using namespace ALM_NS;
 
@@ -65,7 +65,7 @@ void Interaction::init()
 
     calc_distlist(nat, system->xcoord);
 
-    files->ofs_int.open(files->file_int, std::ios::out);
+    files->ofs_int.open(files->file_int.c_str(), std::ios::out);
     if(!files->ofs_int) error->exit("openfiles", "cannot open int file");
 
     search_interactions();

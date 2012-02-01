@@ -25,14 +25,14 @@ void Timer::reset()
 #endif
 }
 
-double const Timer::elapsed()
+double Timer::elapsed()
 {
 #if defined(WIN32) || defined(_WIN32)
     LARGE_INTEGER time_now;
     QueryPerformanceCounter(&time_now);
     return static_cast<double>(time_now.QuadPart - time_ref.QuadPart) / static_cast<double>(frequency.QuadPart);
 #else
-    timeval stopTime;
+    timeval time_now;
     gettimeofday(&time_now, NULL);
     return (time_now.tv_sec - time_ref.tv_sec) + (time_now.tv_usec - time_ref.tv_usec) * 1.0e-6;
 #endif
