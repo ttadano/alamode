@@ -11,6 +11,6 @@ int main(int argc, char **argv)
 
     ALM *alm = new ALM(argc, argv);
     
-    std::cout << "Bye! :)";
+    std::cout << "Bye! :)" << std::endl;
     return 0;
 }

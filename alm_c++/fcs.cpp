@@ -168,7 +168,7 @@ void Fcs::generate_fclists(int maxorder)
 
                     for (i2 = 0; i2 < nxyz; ++i2){
                         c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
-                        if (abs(c_tmp) > eps12) {
+                        if (std::abs(c_tmp) > eps12) {
                             for (i = 0; i < order + 2; ++i) ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
 
                             i_prim = min_inprim(order + 2, ind_mapped);
@@ -180,7 +180,7 @@ void Fcs::generate_fclists(int maxorder)
                                 for (i = 0; i < order + 2; ++i){
                                     zeroflag = zeroflag & (ind[i] == ind_mapped[i]);
                                 }
-                                zeroflag = zeroflag & (abs(c_tmp + 1.0) < eps8);
+                                zeroflag = zeroflag & (std::abs(c_tmp + 1.0) < eps8);
                                 is_zero = zeroflag;
                             }
 

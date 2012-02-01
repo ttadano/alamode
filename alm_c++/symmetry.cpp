@@ -289,9 +289,6 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
 
     bool value = true;
 
-    std::cout << rot << std::endl << std::endl;
-    std::cout << std::setw(3) << tran[0] << std::setw(3) << tran[1] << std::setw(3) << tran[2] << std::endl << std::endl;
-
     for (i = 0; i < nat; ++i){
 
         for (j = 0; j < 3; ++j){   
@@ -308,7 +305,9 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
 
                 for (k = 0; k < 3; ++k) { 
                     vsi(k) = x[j][k];
-                    tmp(k) = fmod(abs(usi(k) - vsi(k)), 1.0);
+                    tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
+		    // need to specify std to specify floating point operation
+		    // especially for intel compiler (there was no problem in MSVC)
                     tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
                 }
 		double diff = tmp.dot(tmp);
@@ -319,7 +318,6 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
         if(l == -1) value = false;
 
     }
-    std::cout << value<< std::endl<< std::endl;
     return value;
 }
 
@@ -426,7 +424,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
             for (jat = 0; jat < nat; ++jat){
 
                 for (i = 0; i < 3; ++i){
-                    tmp[i] = fmod(abs(xnew[iat][i] - x[jat][i]), 1.0);
+		  tmp[i] = fmod(std::abs(xnew[iat][i] - x[jat][i]), 1.0);
                     tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
                 }
 

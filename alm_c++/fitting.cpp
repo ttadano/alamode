@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <set>
@@ -593,7 +594,7 @@ void Fitting::translational_invariance()
 bool Fitting::is_allzero(const int n, const double *arr){
 
     for(int i = 0; i < n; ++i){
-        if(std::abs(arr[i]) > eps10) {
+      if(std::abs(arr[i]) > eps10) {
             return false;
         }
     }
