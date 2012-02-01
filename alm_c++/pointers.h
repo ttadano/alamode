@@ -1,4 +1,4 @@
-﻿#ifndef ALM_POINTERS_HEADER
+#ifndef ALM_POINTERS_HEADER
 #define ALM_POINTERS_HEADER
 
 #include "alamode.h"

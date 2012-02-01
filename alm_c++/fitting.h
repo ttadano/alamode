@@ -1,4 +1,4 @@
-﻿#ifndef ALM_FITTING_HEADER
+#ifndef ALM_FITTING_HEADER
 #define ALM_FITTING_HEADER
 
 #include "pointers.h"

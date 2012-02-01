@@ -1,4 +1,4 @@
-﻿#ifndef ALM_SYSTEM_HEADER
+#ifndef ALM_SYSTEM_HEADER
 #define ALM_SYSTEM_HEADER
 
 #include "pointers.h"

@@ -1,4 +1,4 @@
-﻿#include "memory.h"
+#include "memory.h"
 
 using namespace ALM_NS;
 

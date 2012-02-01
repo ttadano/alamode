@@ -1,4 +1,4 @@
-﻿#ifndef ALM_CONSTANTS_HEADER
+#ifndef ALM_CONSTANTS_HEADER
 #define ALM_CONSTANTS_HEADER
 
 #include <cfloat>

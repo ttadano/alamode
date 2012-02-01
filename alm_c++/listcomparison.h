@@ -29,7 +29,7 @@ namespace ALM_NS
         }
     };
 
-    // 以下の演算子は inlineオプションをつけないと何故か多重定義判定されてしまいコンパイルできない．
+    // inline options below are necessary for successful compilation. (why?)
 
     inline bool operator<(const IntList a, const IntList b){
         return std::lexicographical_compare(a.iarray.begin(), a.iarray.end(), b.iarray.begin(), b.iarray.end());

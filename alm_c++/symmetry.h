@@ -1,4 +1,4 @@
-﻿#ifndef ALM_SYMMETRY_HEADER
+#ifndef ALM_SYMMETRY_HEADER
 #define ALM_SYMMETRY_HEADER
 
 #include "pointers.h"

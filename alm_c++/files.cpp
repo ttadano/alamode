@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "files.h"
 #include "error.h"
 

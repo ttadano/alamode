@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <string>
 #include <cmath>
 #include <boost/algorithm/combination.hpp>

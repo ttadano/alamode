@@ -1,4 +1,4 @@
-﻿#include <cmath>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include "symmetry.h"
