@@ -1,4 +1,4 @@
-#include "interaction.h"
+﻿#include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
 #include "system.h"

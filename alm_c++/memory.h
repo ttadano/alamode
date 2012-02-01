@@ -1,4 +1,4 @@
-#ifndef ALM_MEMORY_HEADER
+﻿#ifndef ALM_MEMORY_HEADER
 #define ALM_MEMORY_HEADER
 
 #include <iostream>

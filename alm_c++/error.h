@@ -1,4 +1,4 @@
-#ifndef ALM_ERROR_HEADER
+﻿#ifndef ALM_ERROR_HEADER
 #define ALM_ERROR_HEADER
 
 #include <string>

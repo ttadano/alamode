@@ -1,4 +1,4 @@
-#ifndef ALM_INTERACTION_HEADER
+﻿#ifndef ALM_INTERACTION_HEADER
 #define ALM_INTERACTION_HEADER
 
 #include "pointers.h"

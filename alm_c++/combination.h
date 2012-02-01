@@ -1,4 +1,4 @@
-#ifndef ALM_COMBINATION_HEADER
+﻿#ifndef ALM_COMBINATION_HEADER
 #define ALM_COMBINATION_HEADER
 
 #include<vector>

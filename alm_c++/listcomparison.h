@@ -1,4 +1,4 @@
-#ifndef ALM_LISTCOMPARISON_HEADER
+﻿#ifndef ALM_LISTCOMPARISON_HEADER
 #define ALM_LISTCOMPARISON_HEADER
 
 #include <vector>
@@ -29,7 +29,7 @@ namespace ALM_NS
         }
     };
 
-    // �ȉ��̉��Z�q�� inline�I�v�V���������Ȃ��Ɖ��̂����d��`���肳��Ă��܂��R���p�C���ł��Ȃ��D
+    // 以下の演算子は inlineオプションをつけないと何故か多重定義判定されてしまいコンパイルできない．
 
     inline bool operator<(const IntList a, const IntList b){
         return std::lexicographical_compare(a.iarray.begin(), a.iarray.end(), b.iarray.begin(), b.iarray.end());

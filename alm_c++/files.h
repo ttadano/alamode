@@ -1,4 +1,4 @@
-#ifndef ALM_FILES_HEADER
+﻿#ifndef ALM_FILES_HEADER
 #define ALM_FILES_HEADER
 
 #include <string>

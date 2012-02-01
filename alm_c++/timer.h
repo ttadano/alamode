@@ -1,4 +1,4 @@
-#ifndef ALM_TIMER_HEADER
+﻿#ifndef ALM_TIMER_HEADER
 #define ALM_TIMER_HEADER
 
 #include "pointers.h"

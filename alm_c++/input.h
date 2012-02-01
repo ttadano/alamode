@@ -1,4 +1,4 @@
-#ifndef ALM_INPUT_HEADER
+﻿#ifndef ALM_INPUT_HEADER
 #define ALM_INPUT_HEADER
 
 #include "pointers.h"

@@ -1,4 +1,4 @@
-// main.cpp 
+﻿// main.cpp 
 
 #include "alamode.h"
 #include <iostream>

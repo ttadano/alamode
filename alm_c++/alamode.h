@@ -1,4 +1,4 @@
-/* Declaration of pointers used in the whole program. */
+﻿/* Declaration of pointers used in the whole program. */
 
 #ifndef ALM_ALAMODE_HEADER
 #define ALM_ALAMODE_HEADER
