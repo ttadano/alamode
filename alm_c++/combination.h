@@ -26,9 +26,8 @@ namespace ALM_NS
 
             vec.clear();
 
-	    //          for(std::set<TYPE>::iterator iter2 = set_tmp.begin(); iter2 != set_tmp.end(); ++iter2){
-	    typename std::set<TYPE>::iterator iter;
-          for(iter = set_tmp.begin(); iter != set_tmp.end(); ++iter){
+            typename std::set<TYPE>::iterator iter;
+            for(iter = set_tmp.begin(); iter != set_tmp.end(); ++iter){
                 for (unsigned int i = 0; i < ndim; i++) {
                     vec.push_back(*iter);
                 }
@@ -44,16 +43,16 @@ namespace ALM_NS
         }
 
         unsigned int size() const{
-        unsigned int n = vec.size() / ndim;
-        unsigned int r = ndim;
-        return factorial(n + r - 1, n - 1) / factorial(r);
+            unsigned int n = vec.size() / ndim;
+            unsigned int r = ndim;
+            return factorial(n + r - 1, n - 1) / factorial(r);
         }
 
     private:
         unsigned int factorial(const unsigned int max, const unsigned int min = 1) const{
-        unsigned int result = 1;
-        for(unsigned int i = min + 1; i <= max; ++i) result *= i;
-        return result;
+            unsigned int result = 1;
+            for(unsigned int i = min + 1; i <= max; ++i) result *= i;
+            return result;
         }
     };
 
