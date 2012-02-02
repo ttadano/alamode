@@ -820,6 +820,24 @@ int Fitting::getRankEigen(int m, int p, int n)
     return qr.rank();
 }
 */
+
+//int Fitting::rank(int m, int n, double *mat)
+//{
+//    int LWORK = 10 * n;
+//    int INFO;
+//    double *WORK, *TAU;
+//    int lda = m;
+//    
+//    int nmin = std::min<int>(m, n);
+//
+//    memory->allocate(WORK, LWORK);
+//    memory->allocate(TAU, n);
+//
+//    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
+//
+//
+//}
+
 int Fitting::rank(int m, int n, double *mat)
 {
     int i;
@@ -831,16 +849,18 @@ int Fitting::rank(int m, int n, double *mat)
     double *s, *WORK;
     double u[1], vt[1];
 
-    memory->allocate(IWORK, 8 * std::min<int>(m, n));
+    int nmin = std::min<int>(m, n);
+
+    memory->allocate(IWORK, 8 * nmin);
     memory->allocate(WORK, LWORK);
-    memory->allocate(s, std::min<int>(m, n));
+    memory->allocate(s, nmin);
 
     char mode[]  = "N";
 
     dgesdd_(mode, &m, &n, mat, &m, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO); 
 
     int rank = 0;
-    for(i = 0; i < std::min<int>(m, n); ++i){
+    for(i = 0; i < nmin; ++i){
         if(s[i] > eps12) ++rank;
     }
 

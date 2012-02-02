@@ -63,17 +63,23 @@ namespace ALM_NS {
         std::set<Constraint> *const_translation;
     };
 
-    extern "C" void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,	
+    extern "C" {
+        
+        void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,	
         double *b, int *ldb, double *s, double *rcond, int *rank,
         double *work, int *lwork, int *info);
-
-    extern "C" void dgglse_(int *m, int *n, int *p, double *a, int *lda,
+       
+        void dgglse_(int *m, int *n, int *p, double *a, int *lda,
         double *b, int *ldb, double *c, double *d, double *x,
         double *work, int *lwork, int *info);
 
-    extern "C" void dgesdd_(const char *jobz, int *m, int *n, double *a, int *lda,
+        void dgesdd_(const char *jobz, int *m, int *n, double *a, int *lda,
         double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
         int *lwork, int *iwork, int *info);
+
+        void dgeqrf_(int *m, int *n, double *a, double *tau,
+            double *work, int *lwork, int *info);
+    }
 
 }
 #endif
