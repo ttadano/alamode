@@ -167,13 +167,14 @@ void Fitting::fit_with_constraints(int M, int N)
 
     for(j = 0; j < N; ++j){
         for(i = 0; i < P; ++i){
-
             mat_tmp[k++] = const_mat[i][j];
         }
     }
 
     nrank = rank((M+P), N, mat_tmp);
     memory->deallocate(mat_tmp);
+
+   // nrank = getRankEigen(M, P, N);
 
     if(nrank != N){
         std::cout << std::endl;
@@ -790,9 +791,38 @@ int Fitting::factorial(const int n)
 //    return qr.rank();
 //}
 
+
+/* unsuccessful
+int Fitting::getRankEigen(int m, int p, int n)
+{
+    using namespace Eigen;
+    MatrixXd mat(m + p, n);
+
+
+    int i, j;
+    int k = 0;
+    for(i = 0; i < m; ++i){
+        for(j = 0; j < n; ++j){
+            mat(k, j) = amat[i][j];
+        }
+        ++k;
+    }
+    std::cout <<"OK";
+
+    for(i = 0; i < p; ++i){
+        for(j = 0; j < n; ++j){
+            mat(k, j) = const_mat[i][j];
+        }
+        ++k;
+    }
+    std::cout <<"OK";
+    ColPivHouseholderQR<MatrixXd> qr(mat);
+    return qr.rank();
+}
+*/
 int Fitting::rank(int m, int n, double *mat)
 {
-    int i, j;
+    int i;
 
     int LWORK = 10 * m;
     int INFO;
@@ -800,18 +830,6 @@ int Fitting::rank(int m, int n, double *mat)
     int ldu = 1, ldvt = 1;
     double *s, *WORK;
     double u[1], vt[1];
-
-   //  double *mat_tmp;
-
-    /*memory->allocate(mat_tmp, m * n);
-
-    int k = 0;
-    for(i = 0; i < n; ++i){
-    for(j = 0; j < m; ++j){
-    mat_tmp[k++] = mat[j][i];
-    }
-    }*/
-
 
     memory->allocate(IWORK, 8 * std::min<int>(m, n));
     memory->allocate(WORK, LWORK);
@@ -826,11 +844,9 @@ int Fitting::rank(int m, int n, double *mat)
         if(s[i] > eps12) ++rank;
     }
 
-    //memory->deallocate(mat_tmp);
     memory->deallocate(IWORK);
     memory->deallocate(s);
 
     return rank;
-
 }
 
