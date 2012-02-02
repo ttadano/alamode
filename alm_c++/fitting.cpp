@@ -614,10 +614,8 @@ int Fitting::inprim_index(const int n)
         if(symmetry->map_p2s[i][0] == atmn){
 	  in = 3 * i + crdn;
 	  break;
-	  //   return 3 * i + crdn;
         }
     }
-    // error->exit("inprim_index", "This cannot happen");
     return in;
 }
 
@@ -777,8 +775,9 @@ int Fitting::factorial(const int n)
 
 int Fitting::rank(const int m, const int n, double **mat)
 {
-
-    Eigen::MatrixXd mat_tmp(m, n);
+  using namespace Eigen;
+ 
+    MatrixXd mat_tmp(m, n);
 
     int i, j;
 
@@ -787,7 +786,6 @@ int Fitting::rank(const int m, const int n, double **mat)
             mat_tmp(i,j) = mat[i][j];
         }
     }
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(mat_tmp);
-
+    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
     return qr.rank();
 }

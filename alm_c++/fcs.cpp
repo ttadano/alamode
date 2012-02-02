@@ -205,6 +205,7 @@ void Fcs::generate_fclists(int maxorder)
                                         std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
                                         sort_tail(order + 2, ind_mapped_tmp);
                                         fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped_tmp, nmother));
+
                                         ++ndeps;
 
                                         is_searched[ind_mapped[i]] = true;
@@ -297,7 +298,7 @@ int Fcs::min_inprim(const int n, const int *arr)
 
     for (i = 0; i < n; ++i){
 
-        ind[i] = system->nat;
+      ind[i] = 3 * system->nat;
         atmnum = arr[i] / 3;
 
         for (j = 0; j < natmin; ++j){

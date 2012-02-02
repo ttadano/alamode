@@ -244,7 +244,6 @@ void Interaction::search_interactions()
             // write atoms inside the cutoff radius
             int id = 0;
             std::cout << "Atom " << std::setw(5) << iat + 1  << " interacts with atoms ... " << std::endl;
-    //        std::cout << "Order: " << str_order[order] << " interact with atoms ..." << std::endl;
             for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
                 std::cout << std::setw(5) << *it + 1;
                 if(!(++id%15)) std::cout << std::endl;

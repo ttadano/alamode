@@ -58,7 +58,7 @@ void Symmetry::init()
     for (int i = 0; i < ntran; ++i){
         std::cout << std::setw(6) << i + 1 << " | ";
         for (int j = 0; j < natmin; ++j)  {
-            std::cout << std::setw(5) << map_p2s[j][i];
+            std::cout << std::setw(5) << map_p2s[j][i] + 1;
             if((j + 1)%5 == 0) {
                 std::cout << std::endl << "       | ";
             }
@@ -75,7 +75,7 @@ void Symmetry::init()
 void Symmetry::gensym(int nat, int &nsym, int nnp,
     double aa[3][3], double bb[3][3], double **x, int *kd, int ***rot, double **tran)
 {
-    int i, j;
+  int i, j, k;
 
     if(nsym == 0) {
         // Automatically find symmetries.
@@ -89,10 +89,18 @@ void Symmetry::gensym(int nat, int &nsym, int nnp,
         ofs_sym << nnp << std::endl;
 
         for (i = 0; i < nsym; ++i){
-            ofs_sym << std::setw(4) << rot[i][0][0] << std::setw(4) <<rot[i][0][1] << std::setw(4) << rot[i][0][2]
-            << std::setw(4) << rot[i][1][0] << std::setw(4) << rot[i][1][1] << std::setw(4) << rot[i][1][2] 
-            << std::setw(4) << rot[i][2][0] << std::setw(4) << rot[i][2][1] << std::setw(4) << rot[i][2][2] 
-            << std::setw(7) << tran_int[i][0] << std::setw(4) << tran_int[i][1] << std::setw(4) << tran_int[i][2] << std::endl;
+	  for (j = 0; j < 3; ++j){
+	    for(k = 0; k < 3; ++k){
+	      ofs_sym << std::setw(4) << rot[i][j][k];
+	    }
+
+	    }
+
+	  ofs_sym << std::setw(7) << " ";
+	  for(j = 0; j < 3; ++j){
+	    ofs_sym << tran_int[i][j] << std::setw(4);
+	  }
+	  ofs_sym << std::endl;
         }
 
         for(i = 0; i < nsym; ++i){
