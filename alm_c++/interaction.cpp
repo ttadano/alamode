@@ -227,7 +227,10 @@ void Interaction::search_interactions()
 
         for(i = 0; i < natmin; ++i){
 
-            if(ninter[i][order] == 0) continue; // no interaction atoms
+	  if(ninter[i][order] == 0) {
+	    std::cout << "No interacting atoms! ... skipped" << std::endl;
+	    continue; // no interaction atoms
+	  }
 
             iat = symmetry->map_p2s[i][0];
 

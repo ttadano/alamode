@@ -353,7 +353,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     double **f;
     int *ind;
 
-    std::cout << "Calculation of Matrix Elements for Direct Fitting Started ...";
+    std::cout << "Calculation of Matrix Elements for Direct Fitting Started ..." << std::endl;
 
     memory->allocate(ind, maxorder + 1);
 
@@ -361,7 +361,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
         for (j = 0; j < N; ++j){
             amat[i][j] = 0.0;
         }
-        fsum[j] = 0.0;
+        fsum[i] = 0.0;
     }
 
     memory->allocate(u, ntran, 3 * nat);
@@ -411,6 +411,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[itran][fcs->fc_set[order][mm].elems[j]];
                         }
+			//	std::cout << "k = " << k << " iparam = " << iparam << std::endl;
                         amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
                         ++mm;
                     }
@@ -464,6 +465,14 @@ void Fitting::translational_invariance()
 
         std::cout << std::setw(8) << interaction->str_order[order] << " ...";
 
+        const_translation[order].clear();
+        int nparams = fcs->ndup[order].size();
+
+	if(nparams == 0) {
+	  std::cout << " skipped."<< std::endl;
+	  continue;
+	}
+
         // make interaction list
 
         list_found.clear();
@@ -484,11 +493,6 @@ void Fitting::translational_invariance()
         memory->allocate(xyzcomponent, nxyz, order + 1);
         fcs->get_xyzcomponent(order + 1, xyzcomponent);
 
-        // number of parameters
-
-        int nparams = fcs->ndup[order].size();
-
-        const_translation[order].clear();
 
         memory->allocate(arr_constraint, nparams);
         memory->allocate(intarr, order + 2);
