@@ -26,7 +26,7 @@ Fitting::~Fitting() {}
 
 void Fitting::fitmain()
 {
-  files->ifs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::in | std::ios::binary);
+    files->ifs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::in | std::ios::binary);
     if(!files->ifs_disp_sym) error->exit("fitmain", "cannot open file disp_sym");
 
     files->ifs_force_sym.open(files->file_force_sym.c_str(), std::ios::in | std::ios::binary);
@@ -130,7 +130,7 @@ void Fitting::fit_with_constraints(int M, int N)
     int i, j, k;
     int nrank;
     int P, order, Pmax;
-    double **mat_tmp;
+    double *mat_tmp;
 
     int maxorder = interaction->maxorder;
 
@@ -156,23 +156,23 @@ void Fitting::fit_with_constraints(int M, int N)
 
     std::cout << "Total number of constraints: " << P << std::endl;
 
-    memory->allocate(mat_tmp, (M + P), N);
+    memory->allocate(mat_tmp, (M + P) * N);
     k = 0;
 
-    for(i = 0; i < M; ++i){
-        for(j = 0; j < N; ++j){
-            mat_tmp[k][j] = amat[i][j];
+    for(j = 0; j < N; ++j){
+        for(i = 0; i < M; ++i){
+            mat_tmp[k++] = amat[i][j];
         }
-        ++k;
-    }
-    for(i = 0; i < P; ++i){
-        for(j = 0; j < N; ++j){
-            mat_tmp[k][j] = const_mat[i][j];
-        }
-        ++k;
     }
 
-    nrank = rank(M+P, N, mat_tmp);
+    for(j = 0; j < N; ++j){
+        for(i = 0; i < P; ++i){
+
+            mat_tmp[k++] = const_mat[i][j];
+        }
+    }
+
+    nrank = rank((M+P), N, mat_tmp);
     memory->deallocate(mat_tmp);
 
     if(nrank != N){
@@ -597,7 +597,7 @@ void Fitting::translational_invariance()
 bool Fitting::is_allzero(const int n, const double *arr){
 
     for(int i = 0; i < n; ++i){
-      if(std::abs(arr[i]) > eps10) {
+        if(std::abs(arr[i]) > eps10) {
             return false;
         }
     }
@@ -606,14 +606,14 @@ bool Fitting::is_allzero(const int n, const double *arr){
 
 int Fitting::inprim_index(const int n)
 {
-  int in;
+    int in;
     int atmn = n / 3;
     int crdn = n % 3;
 
     for (int i = 0; i < symmetry->natmin; ++i){
         if(symmetry->map_p2s[i][0] == atmn){
-	  in = 3 * i + crdn;
-	  break;
+            in = 3 * i + crdn;
+            break;
         }
     }
     return in;
@@ -773,19 +773,64 @@ int Fitting::factorial(const int n)
     }
 }
 
-int Fitting::rank(const int m, const int n, double **mat)
-{
-  using namespace Eigen;
- 
-    MatrixXd mat_tmp(m, n);
+//int Fitting::rank(const int m, const int n, double **mat)
+//{
+//  using namespace Eigen;
+// 
+//    MatrixXd mat_tmp(m, n);
+//
+//    int i, j;
+//
+//    for(i = 0; i < m; ++i){
+//        for(j = 0; j < n; ++j){
+//            mat_tmp(i,j) = mat[i][j];
+//        }
+//    }
+//    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
+//    return qr.rank();
+//}
 
+int Fitting::rank(int m, int n, double *mat)
+{
     int i, j;
 
-    for(i = 0; i < m; ++i){
-        for(j = 0; j < n; ++j){
-            mat_tmp(i,j) = mat[i][j];
-        }
+    int LWORK = 10 * m;
+    int INFO;
+    int *IWORK;
+    int ldu = 1, ldvt = 1;
+    double *s, *WORK;
+    double u[1], vt[1];
+
+   //  double *mat_tmp;
+
+    /*memory->allocate(mat_tmp, m * n);
+
+    int k = 0;
+    for(i = 0; i < n; ++i){
+    for(j = 0; j < m; ++j){
+    mat_tmp[k++] = mat[j][i];
     }
-    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
-    return qr.rank();
+    }*/
+
+
+    memory->allocate(IWORK, 8 * std::min<int>(m, n));
+    memory->allocate(WORK, LWORK);
+    memory->allocate(s, std::min<int>(m, n));
+
+    char mode[]  = "N";
+
+    dgesdd_(mode, &m, &n, mat, &m, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO); 
+
+    int rank = 0;
+    for(i = 0; i < std::min<int>(m, n); ++i){
+        if(s[i] > eps12) ++rank;
+    }
+
+    //memory->deallocate(mat_tmp);
+    memory->deallocate(IWORK);
+    memory->deallocate(s);
+
+    return rank;
+
 }
+
