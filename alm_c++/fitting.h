@@ -4,6 +4,7 @@
 #include "pointers.h"
 #include <vector>
 #include <set>
+#include <string>
 
 namespace ALM_NS {
 
@@ -33,11 +34,14 @@ namespace ALM_NS {
         Fitting(class ALM *);
         ~Fitting();
 
-        void fitmain();       
+        void fitmain();
        // int rank(const int, const int, double **);
         int rank(int, int, double *);
         // int getRankEigen(const int, const int,const  int);
         int constraint;
+        std::string fc2_file;
+
+        double *params;
 
     private:
 

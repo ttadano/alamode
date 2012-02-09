@@ -24,6 +24,9 @@ Interaction::~Interaction() {
     memory->deallocate(xcrd);
     memory->deallocate(distlist);
     memory->deallocate(str_order);
+    memory->deallocate(ninter);
+    memory->deallocate(intpairs);
+    memory->deallocate(relvec);
 }
 
 void Interaction::init()
@@ -45,9 +48,9 @@ void Interaction::init()
     for (i = 0; i < nkd; ++i){
         std::cout << std::setw(8) << i + 1;
         for (j = 0; j < maxorder; ++j){
-          std::cout << std::setw(9) << rcs[i][j];
+            std::cout << std::setw(9) << rcs[i][j];
         }
-     std::cout << std::endl;
+        std::cout << std::endl;
     }
 
     for (i = 0; i < 3; ++i){
@@ -71,7 +74,6 @@ void Interaction::init()
     search_interactions();
 
     files->ofs_int.close();
-
     timer->print_elapsed();
 }
 
@@ -127,7 +129,7 @@ void Interaction::calc_distlist(int nat, double **xf)
             for (j = i; j < nat; ++j){
                 dist_tmp = distance(xcrd[0][i], xcrd[icell][j]);
                 distlist[i][j] = std::min<double>(dist_tmp, distlist[i][j]);
-                distlist[j][i] = std::min<double>(dist_tmp, distlist[j][i]);
+                distlist[j][i] = distlist[i][j];
             }
         }
     }
@@ -150,6 +152,7 @@ void Interaction::search_interactions()
     memory->allocate(countint, natmin, nat, maxorder);
     memory->allocate(intpairs, natmin, maxorder, nat);
     memory->allocate(ninter, natmin, maxorder);
+    memory->allocate(relvec, natmin, maxorder, nat, 3);
 
     // initialize arrays
     for (i = 0; i < natmin; ++i){
@@ -190,6 +193,11 @@ void Interaction::search_interactions()
 
                         if(!countint[i][jat][order]) {
                             intpairs[i][order][ninter[i][order]] = jat;
+
+                            // store relative vectors for molecular dynamics simulation
+                            for(j = 0; j < 3; ++j){
+                                relvec[i][order][ninter[i][order]][j] = xcrd[icell][jat][j] - xcrd[0][iat][j];
+                            }
                             ++ninter[i][order];
                         }
                         ++countint[i][jat][order];
@@ -227,10 +235,10 @@ void Interaction::search_interactions()
 
         for(i = 0; i < natmin; ++i){
 
-	  if(ninter[i][order] == 0) {
-	    std::cout << "No interacting atoms! ... skipped" << std::endl;
-	    continue; // no interaction atoms
-	  }
+            if(ninter[i][order] == 0) {
+                std::cout << "No interacting atoms! ... skipped" << std::endl;
+                continue; // no interaction atoms
+            }
 
             iat = symmetry->map_p2s[i][0];
 

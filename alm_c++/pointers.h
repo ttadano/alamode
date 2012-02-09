@@ -18,6 +18,7 @@ namespace ALM_NS {
           files(ptr->files),
           error(ptr->error),
           fcs(ptr->fcs),
+          writes(ptr->writes),
           timer(ptr->timer) {}
           virtual ~Pointers(){}
     protected:
@@ -30,6 +31,7 @@ namespace ALM_NS {
         Symmetry *&symmetry;
         Fitting *&fitting;
         Files *&files;
+        Writes *&writes;
         Error *&error;
         Timer *&timer;
     };

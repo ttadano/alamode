@@ -16,7 +16,7 @@ namespace ALM_NS {
         void openfile(std::string, std::ofstream);
 
         std::string job_title;
-        std::string file_fcs, file_premd;
+        std::string file_fcs, file_info;
 
         std::string file_disp, file_force;
         std::string file_disp_sym, file_force_sym;

@@ -15,6 +15,7 @@ namespace ALM_NS {
         class Symmetry *symmetry;
         class Fitting *fitting;
         class Files *files;
+        class Writes *writes;
         class Error *error;
         class Timer *timer;
         ALM(int, char **);

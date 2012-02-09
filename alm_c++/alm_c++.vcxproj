@@ -51,6 +51,7 @@
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>"C:\lapack"</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4307;4308</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -90,6 +91,7 @@
     <ClCompile Include="symmetry.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
+    <ClCompile Include="writes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alamode.h" />
@@ -107,6 +109,7 @@
     <ClInclude Include="symmetry.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />
+    <ClInclude Include="writes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

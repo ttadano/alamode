@@ -28,6 +28,7 @@ namespace ALM_NS {
 
         int ***intpairs;
         int **ninter;
+        double ****relvec;
 
         bool is_incutoff(int, int *);
 

@@ -22,7 +22,9 @@ using namespace ALM_NS;
 
 Fitting::Fitting(ALM *alm): Pointers(alm){}
 
-Fitting::~Fitting() {}
+Fitting::~Fitting() {
+    memory->deallocate(params);
+}
 
 void Fitting::fitmain()
 {
@@ -64,9 +66,11 @@ void Fitting::fitmain()
         fit_with_constraints(M, N);
     }
 
-    // write force constants to file
+    // copy force constants to public valiable "params"
 
-    wrtfcs(fsum);
+    memory->allocate(params, N);
+
+    for(i = 0; i < N; ++i)    params[i] = fsum[i];
 
     memory->deallocate(amat);
     memory->deallocate(fsum);
@@ -149,12 +153,25 @@ void Fitting::fit_with_constraints(int M, int N)
     for (order = 0; order < maxorder; ++order){
         Pmax += const_translation[order].size();
     }
+
+    if(constraint == 2){
+        Pmax -= const_translation[0].size();
+        Pmax += fcs->ndup[0].size();
+
+    }
     memory->allocate(const_mat, Pmax, N);
     memory->allocate(const_rhs, Pmax);
 
     calc_constraint_matrix(N, P);
 
     std::cout << "Total number of constraints: " << P << std::endl;
+
+    //for(i = 0; i < P; ++i){
+    //    for(j = 0; j < N; ++j){
+    //    std::cout << std::setw(4) << const_mat[i][j];
+    //    }
+    //    std::cout << std::setw(10) << const_rhs[i] << std::endl;
+    //}
 
     memory->allocate(mat_tmp, (M + P) * N);
     k = 0;
@@ -173,8 +190,6 @@ void Fitting::fit_with_constraints(int M, int N)
 
     nrank = rank((M+P), N, mat_tmp);
     memory->deallocate(mat_tmp);
-
-   // nrank = getRankEigen(M, P, N);
 
     if(nrank != N){
         std::cout << std::endl;
@@ -246,7 +261,6 @@ void Fitting::fit_with_constraints(int M, int N)
     memory->deallocate(const_translation);
 }
 
-
 void Fitting::calc_constraint_matrix(const int N, int &P){
 
     int i, j;
@@ -316,6 +330,12 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     }
     std::cout << std::endl;
 
+    if(constraint == 2) {
+        std::cout << "Harmonic Force Constants will be fixed to the values in the given reference file: " << fc2_file << std::endl;
+        std::cout << "Constraint Matrix for Harmonic fcs will be updated." << std::endl << std::endl;
+        P =  P - nrank[0] + nparam[0];
+    }
+
     for(i = 0; i < P; ++i){
         for(j = 0; j < N; ++j){
             const_mat[i][j] = 0.0;
@@ -323,10 +343,46 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
         const_rhs[i] = 0.0;
     }
 
+    int minorder= 0;
+
     irow = 0;
     icol = 0;
 
-    for(order = 0; order < maxorder; ++order){
+    if(constraint == 2){
+        std::ifstream ifs_fc2;
+        ifs_fc2.open(fc2_file.c_str(), std::ios::in);
+        if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
+        
+        bool is_found = false;
+
+        int nparam_harmonic;
+        std::string str_tmp;
+        while(!ifs_fc2.eof())
+        {
+            std::getline(ifs_fc2, str_tmp);
+            
+            if(str_tmp == "##HARMONIC FORCE CONSTANTS")
+            {
+                ifs_fc2 >> nparam_harmonic;
+                if(nparam_harmonic != nparam[0]) error->exit("calc_constraint_matrix", "Number of fc2 not the same");
+
+                is_found = true;
+
+                for (i = 0; i < nparam[0]; ++i){
+                    const_mat[i][i] = 1.0;
+                    ifs_fc2 >> const_rhs[i];
+                }
+                break;
+            }
+        }
+        minorder = 1;
+        irow += nparam[0];
+        icol += nparam[0];
+        ifs_fc2.close();
+        if(!is_found) error->exit("calc_constraint_matrix", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");
+    }
+
+    for(order = minorder; order < maxorder; ++order){
 
         for(std::vector<Constraint>::iterator it = const_vec[order].begin(); it != const_vec[order].end(); ++it){
             Constraint const_now = *it;
@@ -411,7 +467,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[itran][fcs->fc_set[order][mm].elems[j]];
                         }
-			//	std::cout << "k = " << k << " iparam = " << iparam << std::endl;
+                        //	std::cout << "k = " << k << " iparam = " << iparam << std::endl;
                         amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
                         ++mm;
                     }
@@ -468,10 +524,10 @@ void Fitting::translational_invariance()
         const_translation[order].clear();
         int nparams = fcs->ndup[order].size();
 
-	if(nparams == 0) {
-	  std::cout << " skipped."<< std::endl;
-	  continue;
-	}
+        if(nparams == 0) {
+            std::cout << " skipped."<< std::endl;
+            continue;
+        }
 
         // make interaction list
 
@@ -624,104 +680,6 @@ int Fitting::inprim_index(const int n)
     return in;
 }
 
-void Fitting::wrtfcs(const double *params)
-{
-    int i, j, k, l, m;
-
-    int maxorder = interaction->maxorder;
-    std::string *str_fcs;
-
-    memory->allocate(str_fcs, maxorder);
-
-    std::string str_tmp;
-
-    std::ofstream ofs_fcs;
-    ofs_fcs.open(files->file_fcs.c_str(), std::ios::out);
-    if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
-
-    for (i = 0; i < maxorder; ++i){
-        str_fcs[i] = "*FC" + boost::lexical_cast<std::string>(i + 2);
-    }
-
-    ofs_fcs <<  "********************Force Constants (FCs)********************" << std::endl;
-    ofs_fcs <<  "!     Force Constants will be printed in atomic unit        !" << std::endl;
-    ofs_fcs <<  "!     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc. !" << std::endl;
-    ofs_fcs <<  "!     FC?: Ry/a0^?                                          !" << std::endl;
-    ofs_fcs <<  "!     a0= Bohr radius                                       !" << std::endl;
-    ofs_fcs << "*************************************************************"  << std::endl << std::endl;
-    ofs_fcs << "---------------Symmetrically Independent FCs---------------" << std::endl;
-    ofs_fcs << " Global No." << "  Local No." << "            FCs" << "            Pairs" << std::endl;
-
-    k = 0;
-
-    ofs_fcs.setf(std::ios::scientific);
-
-    for (i = 0; i < maxorder; ++i){
-
-        m = 0;
-
-        if(fcs->ndup[i].size() > 0) {
-
-            ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
-
-            for (j = 0; j < fcs->ndup[i].size(); ++j){
-
-                ofs_fcs << std::setw(6) << k + 1 << std::setw(6) << j + 1 << std::setw(16) <<  params[k];
-                for (l = 0; l < i + 2; ++l){
-                    ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[i][m].elems[l]);    
-                }
-                ofs_fcs << std::endl;
-                m += fcs->ndup[i][j];
-                ++k;
-            }
-        }
-    }
-
-    for (i = 0; i < maxorder; ++i){
-        str_fcs[i] = "**FC" + boost::lexical_cast<std::string>(i + 2);
-    }
-
-    ofs_fcs << std::endl << std::endl
-        << "---------------All FCs below---------------" << std::endl;
-
-    int ip = 0;
-    int id;
-
-    for (i = 0; i < maxorder; ++i){
-
-        id = 0;
-
-        if(fcs->ndup[i].size() > 0){
-            ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
-
-            for (unsigned int iuniq = 0; iuniq < fcs->ndup[i].size(); ++iuniq){
-
-                str_tmp = "# FC" + boost::lexical_cast<std::string>(i + 2) + "_";
-                str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
-
-                ofs_fcs << str_tmp << std::setw(6) << fcs->ndup[i][iuniq] << std::setw(16) << params[ip] << std::endl;
-
-                for (j = 0; j < fcs->ndup[i][iuniq]; ++j){
-                    ofs_fcs << std::setw(5) << j + 1 << std::setw(16) << fcs->fc_set[i][id].coef;
-                    for (k = 0; k < i + 2; ++k){
-                        ofs_fcs << std::setw(6) << fcs->easyvizint(fcs->fc_set[i][id].elems[k]);
-                    }
-                    ofs_fcs << std::endl;
-                    ++id;
-                }
-                ofs_fcs << std::endl;
-                ++ip;
-            }
-
-        }
-    }
-
-    memory->deallocate(str_fcs);
-    ofs_fcs.close();
-
-    std::cout << std::endl << "Force Constants are written to file: " << files->file_fcs << std::endl;
-}
-
 double Fitting::gamma(const int n, const int *arr)
 {
     int *arr_tmp, *nsame;
@@ -799,29 +757,29 @@ int Fitting::factorial(const int n)
 /* unsuccessful
 int Fitting::getRankEigen(int m, int p, int n)
 {
-    using namespace Eigen;
-    MatrixXd mat(m + p, n);
+using namespace Eigen;
+MatrixXd mat(m + p, n);
 
 
-    int i, j;
-    int k = 0;
-    for(i = 0; i < m; ++i){
-        for(j = 0; j < n; ++j){
-            mat(k, j) = amat[i][j];
-        }
-        ++k;
-    }
-    std::cout <<"OK";
+int i, j;
+int k = 0;
+for(i = 0; i < m; ++i){
+for(j = 0; j < n; ++j){
+mat(k, j) = amat[i][j];
+}
+++k;
+}
+std::cout <<"OK";
 
-    for(i = 0; i < p; ++i){
-        for(j = 0; j < n; ++j){
-            mat(k, j) = const_mat[i][j];
-        }
-        ++k;
-    }
-    std::cout <<"OK";
-    ColPivHouseholderQR<MatrixXd> qr(mat);
-    return qr.rank();
+for(i = 0; i < p; ++i){
+for(j = 0; j < n; ++j){
+mat(k, j) = const_mat[i][j];
+}
+++k;
+}
+std::cout <<"OK";
+ColPivHouseholderQR<MatrixXd> qr(mat);
+return qr.rank();
 }
 */
 

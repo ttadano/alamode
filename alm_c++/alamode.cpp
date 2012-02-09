@@ -9,6 +9,7 @@
 #include "fcs.h"
 #include "fitting.h"
 #include "timer.h"
+#include "writes.h"
 
 using namespace ALM_NS;
 
@@ -22,6 +23,7 @@ ALM::ALM(int narg, char **arg)
     input->sparce_input();
     initialize();
     fitting->fitmain();
+    writes->writeall();
     finalize();
     std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
 }
@@ -35,6 +37,7 @@ void ALM::create()
     fcs = new Fcs(this);
     symmetry = new Symmetry(this);
     fitting = new Fitting(this);
+    writes = new Writes(this);
 }
 
 void ALM::initialize()
@@ -61,4 +64,5 @@ void ALM::finalize()
     delete symmetry;
     delete system;
     delete fitting;
+    delete writes;
 }

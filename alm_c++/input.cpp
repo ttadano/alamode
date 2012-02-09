@@ -19,12 +19,12 @@ void Input::sparce_input()
 {
     using namespace std;
     string job_title;
-    string disp_file, force_file;
+    string disp_file, force_file, fc2_file;
 	int nat, nkd, nsym, nnp, ndata;
 	int *kd;
     bool is_periodic[3];
-	bool multiply_data, constraint;
-	double eps;
+	bool multiply_data;
+    int constraint_flag;
 	double lavec[3][3];
 	double **rcs, **xeq;
 	string *kdname;
@@ -51,10 +51,15 @@ void Input::sparce_input()
         }
 	}
 	cin >> ndata;
-	cin >> eps;
 	cin >> disp_file;
 	cin >> force_file;
-	cin >> multiply_data >> constraint;
+	cin >> multiply_data >> constraint_flag;
+
+    if(constraint_flag == 2) {
+        cin >> fc2_file;
+        fitting->fc2_file = fc2_file;
+    }
+
     cin >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];
 	// Read species mass
     memory->allocate(kdname, nkd);
@@ -83,7 +88,7 @@ void Input::sparce_input()
         }
     }
     symmetry->multiply_data = multiply_data;
-    fitting->constraint = constraint;
+    fitting->constraint = constraint_flag;
 
     for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
 
