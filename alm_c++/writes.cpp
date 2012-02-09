@@ -22,7 +22,7 @@ void Writes::writeall()
     wrtfcs();
 
 
-    ofs_info.open(files->file_info, std::ios::out);
+    ofs_info.open(files->file_info.c_str(), std::ios::out);
     if(!ofs_info) error->exit("writeall", "cannot open file_info");
 
     wrtmisc();
