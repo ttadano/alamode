@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "alm_c++", "alm_c++\alm_c++.vcxproj", "{4426849D-712A-4A5C-A9A0-06476CB9FF7A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "phonons", "phonons\phonons.vcxproj", "{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -27,6 +29,16 @@ Global
 		{4426849D-712A-4A5C-A9A0-06476CB9FF7A}.Release|Mixed Platforms.Build.0 = Release|Win32
 		{4426849D-712A-4A5C-A9A0-06476CB9FF7A}.Release|Win32.ActiveCfg = Release|Win32
 		{4426849D-712A-4A5C-A9A0-06476CB9FF7A}.Release|Win32.Build.0 = Release|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Debug|Win32.Build.0 = Debug|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Release|Any CPU.ActiveCfg = Release|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Release|Win32.ActiveCfg = Release|Win32
+		{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
