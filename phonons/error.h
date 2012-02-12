@@ -1,5 +1,4 @@
-#ifndef ALM_ERROR_HEADER
-#define ALM_ERROR_HEADER
+#pragma once
 
 #include <string>
 #include "pointers.h"
@@ -15,5 +14,3 @@ namespace PHON_NS {
         void exit(const char *, const char *, int);
     };
 }
-
-#endif

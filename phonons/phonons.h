@@ -1,5 +1,4 @@
-#ifndef PHON_PHONONS_HEADER
-#define PHON_PHONONS_HEADER
+#pragma once
 
 namespace PHON_NS
 {
@@ -17,4 +16,3 @@ namespace PHON_NS
         void destroy_pointers();
     };
 }
-#endif

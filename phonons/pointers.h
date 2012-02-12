@@ -1,5 +1,4 @@
-#ifndef PHON_POINTERS_HEADER
-#define PHON_POINTERS_HEADER
+#pragma once
 
 #include "phonons.h"
 
@@ -22,4 +21,3 @@ namespace PHON_NS {
         Timer *&timer;
     };
 }
-#endif

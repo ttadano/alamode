@@ -1,5 +1,4 @@
-#ifndef PHON_INPUT_HEADER
-#define PHON_INPUT_HEADER
+#pragma once
 
 #include "pointers.h"
 
@@ -11,5 +10,3 @@ namespace PHON_NS {
         void sparce_input();
     };
 }
-
-#endif

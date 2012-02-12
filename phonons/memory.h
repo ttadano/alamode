@@ -1,5 +1,4 @@
-#ifndef ALM_MEMORY_HEADER
-#define ALM_MEMORY_HEADER
+#pragma once
 
 #include <iostream>
 #include <new>
@@ -142,5 +141,3 @@ namespace PHON_NS {
         }
     };
 }
-
-#endif
