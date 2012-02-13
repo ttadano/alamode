@@ -235,6 +235,9 @@ void Writes::wrtmisc(){
         }
         ofs_info << std::endl;
 
+        // this sorting is necessary for linking to molecular dynamics program.
+        std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
+        
         id = 0;
         for(i = 0; i < fcs->ndup[order].size(); ++i){
             for(j = 0; j < fcs->ndup[order][i]; ++j){
