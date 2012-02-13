@@ -200,6 +200,8 @@ void Writes::wrtmisc(){
     int id;
 
     int ip = 0;
+    int ishift = 0;
+
     memory->allocate(ncount, 3*symmetry->natmin);
 
     ofs_info << "##FORCE CONSTANTS" << std::endl;
@@ -235,22 +237,34 @@ void Writes::wrtmisc(){
         }
         ofs_info << std::endl;
 
+      
+        //id = 0;
+        //for(i = 0; i < fcs->ndup[order].size(); ++i){
+        //    for(j = 0; j < fcs->ndup[order][i]; ++j){
+        //        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ip]*fcs->fc_set[order][id].coef << std::endl;
+        //        for(k = 0; k < order + 2; ++k){
+        //            ofs_info << std::setw(5) << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
+        //        }
+        //        ofs_info << std::endl;
+        //        ++id;
+        //    }
+        //    ++ip;
+        //}
+
         // this sorting is necessary for linking to molecular dynamics program.
         std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
-        
-        id = 0;
-        for(i = 0; i < fcs->ndup[order].size(); ++i){
-            for(j = 0; j < fcs->ndup[order][i]; ++j){
-                ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ip]*fcs->fc_set[order][id].coef << std::endl;
-                for(k = 0; k < order + 2; ++k){
-                    ofs_info << std::setw(5) << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
-                }
-                ofs_info << std::endl;
-                ++id;
+
+        for(std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it){
+            FcProperty fctmp = *it;
+            ip = fctmp.mother + ishift;
+            ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ip]*fctmp.coef << std::endl;
+            for(k = 0; k < order + 2; ++k){
+                ofs_info << std::setw(5) << fcs->easyvizint(fctmp.elems[k]);
             }
-            ++ip;
+            ofs_info << std::endl;
         }
 
+        ishift += fcs->ndup[order].size();
     }
     memory->deallocate(ncount);
 
