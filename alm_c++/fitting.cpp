@@ -352,7 +352,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
         std::ifstream ifs_fc2;
         ifs_fc2.open(fc2_file.c_str(), std::ios::in);
         if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
-        
+
         bool is_found = false;
 
         int nparam_harmonic;
@@ -360,7 +360,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
         while(!ifs_fc2.eof())
         {
             std::getline(ifs_fc2, str_tmp);
-            
+
             if(str_tmp == "##HARMONIC FORCE CONSTANTS")
             {
                 ifs_fc2 >> nparam_harmonic;
@@ -403,16 +403,14 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
 void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin,
     const int ntran, const int ndata, const int maxorder)
 {
-    int i, j, k, order;
-    int itran, iat;
+    int i, j;
+    int itran;
     double **u;
     double **f;
-    int *ind;
+    int ncycle;
+    int irow;
 
     std::cout << "Calculation of Matrix Elements for Direct Fitting Started ..." << std::endl;
-
-    memory->allocate(ind, maxorder + 1);
-
     for (i = 0; i < M; ++i){
         for (j = 0; j < N; ++j){
             amat[i][j] = 0.0;
@@ -420,43 +418,55 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
         fsum[i] = 0.0;
     }
 
-    memory->allocate(u, ntran, 3 * nat);
-    memory->allocate(f, ntran, 3 * nat);
+    ncycle = ntran * ndata;
+    memory->allocate(u, ncycle, 3 * nat);
+    memory->allocate(f, ncycle, 3 * nat);
 
-    int im = 0;
-    int idata = 0;
-    double amat_tmp;
-
-    int iparam = 0;
+    // read all displacement-force data set
 
     for(int data = 0; data < ndata; ++data){
-        for (itran = 0; itran < ntran; ++itran){
+        for(itran = 0; itran < ntran; ++itran){
 
-            // read displacement and force
+            irow = data * ntran + itran;
 
             for(i = 0; i < nat; ++i){
                 for(j = 0; j < 3; ++j){
-                    files->ifs_disp_sym.read((char *) &u[itran][3 * i + j], sizeof(double));
-                    files->ifs_force_sym.read((char *) &f[itran][3 * i + j], sizeof(double));
+                    files->ifs_disp_sym.read((char *) &u[irow][3 * i + j], sizeof(double));
+                    files->ifs_force_sym.read((char *) &f[irow][3 * i + j], sizeof(double));
                 }
             }
+        }
+    }
 
-            // construct r.h.s. vector B
+#pragma omp parallel private(irow, i, j)
+    { 
+        int *ind;
+        int mm, order, iat, k;
+        int im, idata, iparam;
+        double amat_tmp;
 
+        memory->allocate(ind, maxorder + 1);
+
+#pragma omp for
+        for(irow = 0; irow < ncycle; ++irow){
+
+            // generate r.h.s vector B
             for (i = 0; i < natmin; ++i){
                 iat = symmetry->map_p2s[i][0];
                 for (j = 0; j < 3; ++j){
-                    fsum[im++] = f[itran][3 * iat + j];
+                    im = 3 * i + j + 3 * natmin * irow;
+                    fsum[im] = f[irow][3 * iat + j];
                 }
             }
 
-            //construct l.h.s. matrix A
+            // generate l.h.s. matrix A
 
+            idata = 3 * natmin * irow;
             iparam = 0;
 
             for(order = 0; order < maxorder; ++order){
 
-                int mm = 0;
+                mm = 0;
 
                 for(std::vector<int>::iterator iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter){
                     for (i = 0; i < *iter; ++i){
@@ -465,20 +475,20 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
                         amat_tmp = 1.0;
                         for(j = 1; j < order + 2; ++j){
                             ind[j] = fcs->fc_set[order][mm].elems[j];
-                            amat_tmp *= u[itran][fcs->fc_set[order][mm].elems[j]];
+                            amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
                         }
-                        //	std::cout << "k = " << k << " iparam = " << iparam << std::endl;
                         amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
                 }
             }
-
-            idata += 3 * natmin;
         }
+
+        memory->deallocate(ind);
+
     }
-    memory->deallocate(ind);
+
     memory->deallocate(u);
     memory->deallocate(f);
 
