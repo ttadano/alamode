@@ -4,7 +4,7 @@
 	${CXX} ${CXXFLAGS} -c $<
 
 CXX = icpc
-CXXFLAGS = -O2 -xSSE4.1 -vec-report1 
+CXXFLAGS = -O2 -xSSE4.1 -vec-report1 -openmp -openmp-report1
 LDFLAGS = -mkl
 
 PROG = alm_c++
