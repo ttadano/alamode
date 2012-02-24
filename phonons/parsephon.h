@@ -7,6 +7,6 @@ namespace PHON_NS {
     public:
         Input(class PHON *, int, char **);
         ~Input();
-        void sparce_input();
+        void parce_input();
     };
 }

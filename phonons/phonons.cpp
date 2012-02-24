@@ -1,7 +1,7 @@
 #include "phonons.h"
 #include <iostream>
 #include "timer.h"
-#include "input.h"
+#include "parsephon.h"
 #include "memory.h"
 #include "error.h"
 
@@ -12,7 +12,7 @@ PHON::PHON(int narg, char **arg)
     std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     input = new Input(this, narg, arg);
     create_pointers();
-    input->sparce_input();
+    input->parce_input();
     destroy_pointers();
 
     std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;

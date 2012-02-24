@@ -20,7 +20,7 @@ ALM::ALM(int narg, char **arg)
     std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     input = new Input(this, narg, arg);
     create();
-    input->sparce_input();
+    input->parce_input();
     initialize();
     fitting->fitmain();
     writes->writeall();

@@ -61,7 +61,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="error.cpp" />
-    <ClCompile Include="input.cpp" />
+    <ClCompile Include="parsephon.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="phonons.cpp" />
@@ -69,7 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="error.h" />
-    <ClInclude Include="input.h" />
+    <ClInclude Include="parsephon.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="phonons.h" />
     <ClInclude Include="pointers.h" />

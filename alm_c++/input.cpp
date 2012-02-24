@@ -15,7 +15,7 @@ Input::Input(ALM *alm, int narg, char **arg): Pointers(alm) {}
 
 Input::~Input() {}
 
-void Input::sparce_input()
+void Input::parce_input()
 {
     using namespace std;
     string job_title;

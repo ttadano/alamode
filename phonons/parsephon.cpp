@@ -1,4 +1,4 @@
-#include "input.h"
+#include "parsephon.h"
 #include <iostream>
 #include <string>
 
@@ -8,7 +8,7 @@ Input::Input(PHON *phon, int narg, char **arg): Pointers(phon) {}
 
 Input::~Input() {}
 
-void Input::sparce_input()
+void Input::parce_input()
 {
     using namespace std;
     string job_title, mode;

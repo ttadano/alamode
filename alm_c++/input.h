@@ -8,7 +8,7 @@ namespace ALM_NS {
     public:
         Input(class ALM *, int, char **);
         ~Input();
-        void sparce_input();
+        void parce_input();
     };
 }
 
