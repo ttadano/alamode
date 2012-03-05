@@ -8,6 +8,9 @@ namespace PHON_NS
         class Error *error;
         class Timer *timer;
         class Input *input;
+        class System *system;
+        class Kpoint *kpoint;
+        class Fcs_phonon *fcs_phonon;
 
         PHON(int, char**);
         ~PHON();

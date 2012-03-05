@@ -11,6 +11,9 @@ namespace PHON_NS {
               memory(ptr->memory),
           error(ptr->error),
           input(ptr->input),
+          system(ptr->system),
+          kpoint(ptr->kpoint),
+          fcs_phonon(ptr->fcs_phonon),
           timer(ptr->timer) {}
           virtual ~Pointers(){}
     protected:
@@ -18,6 +21,9 @@ namespace PHON_NS {
         Memory *&memory;
         Error *&error;
         Input *&input;
+        System *&system;
+        Kpoint *&kpoint;
+        Fcs_phonon *&fcs_phonon;
         Timer *&timer;
     };
 }

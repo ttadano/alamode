@@ -8,5 +8,7 @@ namespace PHON_NS {
         Input(class PHON *, int, char **);
         ~Input();
         void parce_input();
+    private:
+        void read_input_dispersion();
     };
 }
