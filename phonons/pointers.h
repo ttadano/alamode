@@ -14,6 +14,7 @@ namespace PHON_NS {
           system(ptr->system),
           kpoint(ptr->kpoint),
           fcs_phonon(ptr->fcs_phonon),
+          dynamical(ptr->dynamical),
           timer(ptr->timer) {}
           virtual ~Pointers(){}
     protected:
@@ -24,6 +25,7 @@ namespace PHON_NS {
         System *&system;
         Kpoint *&kpoint;
         Fcs_phonon *&fcs_phonon;
+        Dynamical *&dynamical;
         Timer *&timer;
     };
 }

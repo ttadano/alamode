@@ -29,7 +29,6 @@ void Fcs_phonon::setup()
     }
 
     load_fc2();
-
 }
 
 void Fcs_phonon::load_fc2()

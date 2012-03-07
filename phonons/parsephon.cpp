@@ -3,6 +3,7 @@
 #include "system.h"
 #include "kpoint.h"
 #include "fcs_phonon.h"
+#include "dynamical.h"
 #include <iostream>
 #include <string>
 
@@ -61,6 +62,8 @@ void Input::read_input_dispersion()
         system->lavec_p[i][j] = lavec[i][j];
         }
     }
+
+    dynamical->eigenvectors = eigenvectors;
 
     fcs_phonon->file_fcs = file_fcs;
     kpoint->kpoint_mode = kpoint_mode;

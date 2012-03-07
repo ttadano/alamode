@@ -166,7 +166,12 @@ void System::recips(double vec[3][3], double inverse[3][3])
 void System::rotvec(double mat[3][3], double vec_in[3], double vec_out[3])
 {
     unsigned int i;
+    double vec_tmp[3];
+
     for (i = 0; i < 3; ++i){
-        vec_out[i] = mat[i][0] * vec_in[0] + mat[i][1] * vec_in[1] + mat[i][2] * vec_in[2];
+        vec_tmp[i] = vec_in[i];
+    }
+    for (i = 0; i < 3; ++i){
+        vec_out[i] = mat[i][0] * vec_tmp[0] + mat[i][1] * vec_tmp[1] + mat[i][2] * vec_tmp[2];
     }
 }

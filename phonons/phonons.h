@@ -11,6 +11,7 @@ namespace PHON_NS
         class System *system;
         class Kpoint *kpoint;
         class Fcs_phonon *fcs_phonon;
+        class Dynamical *dynamical;
 
         PHON(int, char**);
         ~PHON();

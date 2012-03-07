@@ -57,9 +57,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>libblas.lib;liblapack.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>"C:\lapack"</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dynamical.cpp" />
     <ClCompile Include="error.cpp" />
     <ClCompile Include="fcs_phonon.cpp" />
     <ClCompile Include="kpoint.cpp" />
@@ -71,6 +74,7 @@
     <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dynamical.h" />
     <ClInclude Include="error.h" />
     <ClInclude Include="fcs_phonon.h" />
     <ClInclude Include="kpoint.h" />

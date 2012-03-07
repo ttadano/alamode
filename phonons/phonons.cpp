@@ -7,6 +7,7 @@
 #include "system.h"
 #include "kpoint.h"
 #include "fcs_phonon.h"
+#include "dynamical.h"
 
 using namespace PHON_NS;
 
@@ -16,9 +17,14 @@ PHON::PHON(int narg, char **arg)
     input = new Input(this, narg, arg);
     create_pointers();
     input->parce_input();
-    kpoint->read_kpoints();
+
+    kpoint->kpoint_setups();
     system->setup();
     fcs_phonon->setup();
+
+    dynamical->calc_dynamical_matrix();
+    dynamical->diagonalize_dynamical();
+
     destroy_pointers();
 
     std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
@@ -32,6 +38,7 @@ void PHON::create_pointers()
   system = new System(this);
   kpoint = new Kpoint(this);
   fcs_phonon = new Fcs_phonon(this);
+  dynamical = new Dynamical(this);
 }
 
 void PHON::destroy_pointers()
@@ -41,4 +48,5 @@ void PHON::destroy_pointers()
     delete system;
     delete kpoint;
     delete fcs_phonon;
+    delete dynamical;
 }

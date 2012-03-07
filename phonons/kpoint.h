@@ -9,7 +9,7 @@ namespace PHON_NS {
         Kpoint(class PHON *);
         ~Kpoint();
 
-      void read_kpoints();
+      void kpoint_setups();
 
       int kpoint_mode;
       unsigned int nkmax;
@@ -20,6 +20,8 @@ namespace PHON_NS {
       double **xk;
 
     private:
+        void gen_kpoints_band();
+        void gen_kmesh();
         std::string **kp_symbol;
         double ***kp_bound;
         unsigned int *nkp;
