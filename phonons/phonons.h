@@ -12,6 +12,7 @@ namespace PHON_NS
         class Kpoint *kpoint;
         class Fcs_phonon *fcs_phonon;
         class Dynamical *dynamical;
+        class Writes *writes;
 
         PHON(int, char**);
         ~PHON();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pointers.h"
+#include <string>
 
 namespace PHON_NS {
     class Input: protected Pointers {
@@ -8,7 +9,10 @@ namespace PHON_NS {
         Input(class PHON *, int, char **);
         ~Input();
         void parce_input();
+
+        std::string job_title;
+
     private:
-        void read_input_dispersion();
+        void read_input_phonons();
     };
 }

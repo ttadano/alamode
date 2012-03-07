@@ -4,6 +4,7 @@
 #include "kpoint.h"
 #include "fcs_phonon.h"
 #include "dynamical.h"
+#include "write_phonons.h"
 #include <iostream>
 #include <string>
 
@@ -16,13 +17,13 @@ Input::~Input() {}
 void Input::parce_input()
 {
     using namespace std;
-    string job_title, mode;
+    string mode;
 
     cin >> job_title;
     cin >> mode;
-    if(mode == "dispersion") {
+    if(mode == "phonons") {
         cout << "Calculation of PHONONS" << endl << endl;
-        read_input_dispersion();
+        read_input_phonons();
     } else if (mode == "boltzmann"){
         cout << "Calculation of Thermal Conductivity" << endl << endl;
         error->exit("parse_input", "Sorry :( Boltzmann is not supported yet");
@@ -31,7 +32,7 @@ void Input::parce_input()
     }
 }
 
-void Input::read_input_dispersion()
+void Input::read_input_phonons()
 {
     using namespace std;
 
@@ -59,11 +60,18 @@ void Input::read_input_dispersion()
 
     for (i = 0; i < 3; ++i){
         for(j = 0; j < 3; ++j){
-        system->lavec_p[i][j] = lavec[i][j];
+            system->lavec_p[i][j] = lavec[i][j];
         }
     }
 
     dynamical->eigenvectors = eigenvectors;
+    writes->writeanime = writeanime;
+    dynamical->nonanalytic = nonanalytic;
+
+    if(nonanalytic) {
+        dynamical->file_born = file_born;
+        dynamical->na_sigma = na_sigma;
+    }
 
     fcs_phonon->file_fcs = file_fcs;
     kpoint->kpoint_mode = kpoint_mode;

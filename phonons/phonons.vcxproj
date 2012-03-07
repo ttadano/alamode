@@ -72,6 +72,7 @@
     <ClCompile Include="phonons.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
+    <ClCompile Include="writes_phonons.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dynamical.h" />
@@ -84,6 +85,7 @@
     <ClInclude Include="pointers.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />
+    <ClInclude Include="write_phonons.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

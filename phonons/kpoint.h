@@ -18,6 +18,7 @@ namespace PHON_NS {
       unsigned int npath, nk;
 
       double **xk;
+      double *kaxis;
 
     private:
         void gen_kpoints_band();

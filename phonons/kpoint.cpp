@@ -1,6 +1,7 @@
 #include "kpoint.h"
 #include "memory.h"
 #include "error.h"
+#include "system.h"
 #include <iostream>
 
 using namespace PHON_NS;
@@ -10,6 +11,7 @@ Kpoint::Kpoint(PHON *phon): Pointers(phon) {
 }
 
 Kpoint::~Kpoint() {
+
 }
 
 void Kpoint::kpoint_setups()
@@ -41,7 +43,42 @@ void Kpoint::kpoint_setups()
         };
         memory->allocate(xk, nk, 3);
         gen_kpoints_band();
+        memory->deallocate(kp_bound);
 
+        double **xk_c, tmp[3];
+        memory->allocate(kaxis, nk);
+        memory->allocate(xk_c, nk, 3);
+
+        for (i = 0; i < nk; ++i){
+            system->rotvec(system->rlavec_p, xk[i], xk_c[i]);
+            for (unsigned int j = 0; j < 3; ++j){
+            }
+        }
+
+        unsigned int j, k;
+        unsigned int ik;
+
+        ik = 0;
+
+        for (i = 0; i < npath; ++i){
+            for (j = 0; j < nkp[i]; ++j){
+                if(j == 0){
+                    if(ik == 0) {
+                        kaxis[ik] = 0.0;
+                    } else {
+                        kaxis[ik] = kaxis[ik - 1];
+                    }
+                } else {
+                    for (k = 0; k < 3; ++k){
+                        tmp[k] = xk_c[ik][k] - xk_c[ik - 1][k];
+                    }
+                    kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+                }                
+                ++ik;
+            }
+        }
+
+        memory->deallocate(nkp);
         break;
     case 2:
         std::cout << "kpoint_mode = 2: DOS calculation" << std::endl;
@@ -56,10 +93,6 @@ void Kpoint::kpoint_setups()
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
     }
     std::cout << "Number of k-points: " << nk << std::endl << std::endl;
-
-    /*for (i = 0; i < nk; ++i){
-    std::cout << "ik = " << i << xk[i][0] << xk[i][1] << xk[i][2] << std::endl;
-    }*/
 }
 
 void Kpoint::gen_kpoints_band()

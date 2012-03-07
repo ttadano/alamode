@@ -8,6 +8,7 @@
 #include "kpoint.h"
 #include "fcs_phonon.h"
 #include "dynamical.h"
+#include "write_phonons.h"
 
 using namespace PHON_NS;
 
@@ -18,12 +19,14 @@ PHON::PHON(int narg, char **arg)
     create_pointers();
     input->parce_input();
 
-    kpoint->kpoint_setups();
     system->setup();
+    kpoint->kpoint_setups();
     fcs_phonon->setup();
 
     dynamical->calc_dynamical_matrix();
     dynamical->diagonalize_dynamical();
+
+    writes->write_phonon_info();
 
     destroy_pointers();
 
@@ -39,6 +42,7 @@ void PHON::create_pointers()
   kpoint = new Kpoint(this);
   fcs_phonon = new Fcs_phonon(this);
   dynamical = new Dynamical(this);
+  writes = new Writes(this);
 }
 
 void PHON::destroy_pointers()
@@ -49,4 +53,5 @@ void PHON::destroy_pointers()
     delete kpoint;
     delete fcs_phonon;
     delete dynamical;
+    delete writes;
 }

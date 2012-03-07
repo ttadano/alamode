@@ -2,6 +2,7 @@
 
 #include "pointers.h"
 #include <complex>
+#include <string>
 
 namespace PHON_NS {
     class Dynamical: protected Pointers {
@@ -13,7 +14,9 @@ namespace PHON_NS {
         void diagonalize_dynamical();
 
         unsigned int neval;
-        bool eigenvectors;
+        bool eigenvectors, nonanalytic;
+        std::string file_born;
+        double na_sigma;
 
         double **eval_phonon;
         std::complex<double> ***dymat;
