@@ -10,9 +10,7 @@
 
 using namespace PHON_NS;
 
-Dos::Dos(PHON *phon): Pointers(phon){
-    Kayser2_to_Ry = amu_ry * std::pow(time_ry, 2) / std::pow(Hz_to_kayser, 2);
-}
+Dos::Dos(PHON *phon): Pointers(phon){}
 
 Dos::~Dos(){
     if(flag_dos) {
@@ -42,6 +40,7 @@ void Dos::setup()
 void Dos::calc_dos()
 {
     int i;
+    unsigned int j, k;
 
     for (i = 0; i < n_energy; ++i){
         energy_dos[i] = emin + delta_e * static_cast<double>(i);
@@ -57,15 +56,12 @@ void Dos::calc_dos()
     prepare_tetrahedron(nkx, nky, nkz);
 
     unsigned int neval = dynamical->neval;
-   // double **eval = dynamical->eval_phonon;
     double **eval;
     memory->allocate(eval, nk, neval);
-
-    double Ry_to_kayser = std::pow(Hz_to_kayser, 2) / (amu_ry * std::pow(time_ry, 2));
     
-    for (i = 0; i < nk; ++i){
-        for (unsigned int j = 0; j < neval; ++j){
-            eval[i][j] = writes->in_kayser(dynamical->eval_phonon[i][j]);
+    for (j = 0; j < nk; ++j){
+        for (k = 0; k < neval; ++k){
+            eval[j][k] = writes->in_kayser(dynamical->eval_phonon[j][k]);
         }
     }
     for (i = 0; i < n_energy; ++i){
@@ -100,9 +96,6 @@ double Dos::dos_integration(const unsigned int neval, const unsigned int ntetra,
             e2 = e_tetra[1];
             e3 = e_tetra[2];
             e4 = e_tetra[3];
-
-           /* std::cout << e1 << " " << e2 << " " << e3 << " " << e4 << std::endl;
-            std::cout << "e = " << e << std::endl;*/
 
             if (e3 <= e && e < e4){
                 dos_ret += f_ntetra*(3.0*std::pow((e4 - e), 2) / ((e4 - e1)*(e4 - e2)*(e4 - e3)));

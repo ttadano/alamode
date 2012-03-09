@@ -24,7 +24,6 @@ namespace PHON_NS
 
         unsigned int ntetra;
         int **tetras;
-        double Kayser2_to_Ry;
     };
 
 }
