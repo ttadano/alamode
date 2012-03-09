@@ -68,7 +68,6 @@ void Dos::calc_dos()
             eval[i][j] = writes->in_kayser(dynamical->eval_phonon[i][j]);
         }
     }
-
     for (i = 0; i < n_energy; ++i){
         dos_phonon[i] = dos_integration(neval, ntetra, eval, energy_dos[i]);
     }
