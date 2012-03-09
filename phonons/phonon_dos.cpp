@@ -4,6 +4,7 @@
 #include "error.h"
 #include "memory.h"
 #include "dynamical.h"
+#include "write_phonons.h"
 #include <algorithm>
 #include <vector>
 
@@ -56,14 +57,24 @@ void Dos::calc_dos()
     prepare_tetrahedron(nkx, nky, nkz);
 
     unsigned int neval = dynamical->neval;
-    double **eval = dynamical->eval_phonon;
+   // double **eval = dynamical->eval_phonon;
+    double **eval;
+    memory->allocate(eval, nk, neval);
 
+    double Ry_to_kayser = std::pow(Hz_to_kayser, 2) / (amu_ry * std::pow(time_ry, 2));
+    
+    for (i = 0; i < nk; ++i){
+        for (unsigned int j = 0; j < neval; ++j){
+            eval[i][j] = writes->in_kayser(dynamical->eval_phonon[i][j]);
+        }
+    }
 
     for (i = 0; i < n_energy; ++i){
-        dos_phonon[i] = dos_integration(neval, ntetra, eval, std::pow(energy_dos[i],2)*Kayser2_to_Ry);
+        dos_phonon[i] = dos_integration(neval, ntetra, eval, energy_dos[i]);
     }
 
     memory->deallocate(tetras);
+    memory->deallocate(eval);
 }
 
 double Dos::dos_integration(const unsigned int neval, const unsigned int ntetra, double **eval, const double e)
