@@ -51,9 +51,9 @@ void Input::read_input_phonons()
         cin >> lavec[i][0] >> lavec[i][1] >> lavec[i][2];
     }
     cin >> file_fcs;
-    cin >> kpoint_mode >> nkmax;
 
     cin >> eigenvectors >> writeanime >> nonanalytic;
+    cin >> kpoint_mode;
     if(nonanalytic) cin >> file_born >> na_sigma;
 
     // distribute input parameters to each class

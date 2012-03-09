@@ -65,13 +65,22 @@ void Writes::write_phonon_bands()
 
 void Writes::write_phonon_dos()
 {
+    int i;
     std::ofstream ofs_dos;
 
     file_bands = input->job_title + ".dos";
     ofs_dos.open(file_bands.c_str(), std::ios::out);
     if(!ofs_dos) error->exit("write_phonon_dos", "cannot open file_dos");
-    ofs_dos.close();
 
+
+    ofs_dos << "# Energy [cm^-1], population" << std::endl;
+    ofs_dos.setf(std::ios::scientific);
+
+    for (i = 0; i < dos->n_energy; ++i){
+        ofs_dos << std::setw(15) << dos->energy_dos[i] << std::setw(15) << dos->dos_phonon[i] << std::endl;
+    } 
+
+    ofs_dos.close();
 }
 
 void Writes::write_mode_anime()
@@ -81,8 +90,8 @@ void Writes::write_mode_anime()
     file_anime = input->job_title + ".axsf";
     ofs_anime.open(file_anime.c_str(), std::ios::out);
     if(!ofs_anime) error->exit("write_mode_anime", "cannot open file_anime");
+    
     ofs_anime.close();
-
 }
 
 double Writes::in_kayser(const double x)
