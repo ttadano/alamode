@@ -12,7 +12,6 @@ namespace PHON_NS {
       void kpoint_setups();
 
       int kpoint_mode;
-      unsigned int nkmax;
       unsigned int nkx, nky, nkz;
       
       unsigned int npath, nk;

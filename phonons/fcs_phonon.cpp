@@ -78,13 +78,15 @@ void Fcs_phonon::load_fc2()
 
 unsigned int Fcs_phonon::coordinate_index(const char char_coord)
 {
+  unsigned int m;
     if(char_coord == 'x'){
-        return 0;
+      m = 0;
     } else if (char_coord == 'y'){
-        return 1;
+      m = 1;
     } else if (char_coord == 'z'){
-        return 2;
+      m = 2;
     } else {
         error->exit("coordinate_index", "invalid char_coord", char_coord);
     }
+    return m;
 }

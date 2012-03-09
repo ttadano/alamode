@@ -39,7 +39,6 @@ void Input::read_input_phonons()
     string file_fcs;
     double lavec[3][3];
     int kpoint_mode;
-    unsigned int nkmax;
     bool eigenvectors, writeanime, nonanalytic;
 
     string file_born;
@@ -75,6 +74,5 @@ void Input::read_input_phonons()
 
     fcs_phonon->file_fcs = file_fcs;
     kpoint->kpoint_mode = kpoint_mode;
-    kpoint->nkmax = nkmax;
 
 }

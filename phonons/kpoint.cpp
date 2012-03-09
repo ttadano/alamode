@@ -4,6 +4,7 @@
 #include "system.h"
 #include "phonon_dos.h"
 #include <iostream>
+#include <cmath>
 
 using namespace PHON_NS;
 
