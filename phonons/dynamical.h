@@ -15,6 +15,7 @@ namespace PHON_NS {
 
         unsigned int neval;
         bool eigenvectors, nonanalytic;
+
         std::string file_born;
         double na_sigma;
 

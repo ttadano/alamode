@@ -44,6 +44,8 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>"C:\lapack"</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libblas.lib;liblapack.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -70,6 +72,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="phonons.cpp" />
+    <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="writes_phonons.cpp" />
@@ -82,6 +85,7 @@
     <ClInclude Include="parsephon.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="phonons.h" />
+    <ClInclude Include="phonon_dos.h" />
     <ClInclude Include="pointers.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />

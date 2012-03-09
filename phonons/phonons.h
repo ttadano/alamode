@@ -13,6 +13,7 @@ namespace PHON_NS
         class Fcs_phonon *fcs_phonon;
         class Dynamical *dynamical;
         class Writes *writes;
+        class Dos *dos;
 
         PHON(int, char**);
         ~PHON();

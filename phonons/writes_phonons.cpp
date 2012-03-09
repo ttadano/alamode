@@ -4,6 +4,7 @@
 #include "kpoint.h"
 #include "parsephon.h"
 #include "error.h"
+#include "phonon_dos.h"
 #include "../alm_c++/constants.h"
 #include <iomanip>
 #include <fstream>
@@ -22,7 +23,7 @@ void Writes::write_phonon_info()
         write_phonon_bands();
     }
 
-    if(dynamical->eigenvectors) {
+    if(dos->flag_dos) {
         write_phonon_dos();
     }
 

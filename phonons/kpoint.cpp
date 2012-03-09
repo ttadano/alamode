@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "error.h"
 #include "system.h"
+#include "phonon_dos.h"
 #include <iostream>
 
 using namespace PHON_NS;
@@ -11,7 +12,7 @@ Kpoint::Kpoint(PHON *phon): Pointers(phon) {
 }
 
 Kpoint::~Kpoint() {
-
+    memory->deallocate(xk);
 }
 
 void Kpoint::kpoint_setups()
@@ -88,6 +89,11 @@ void Kpoint::kpoint_setups()
 
         double emin, emax, delta_e;
         std::cin >> emin >> emax >> delta_e;
+        dos->emin = emin;
+        dos->emax = emax;
+        dos->delta_e = delta_e;
+
+        gen_kmesh();
         break;
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
