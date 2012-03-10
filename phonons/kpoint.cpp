@@ -4,6 +4,7 @@
 #include "system.h"
 #include "phonon_dos.h"
 #include <iostream>
+#include <iomanip>
 #include <cmath>
 
 using namespace PHON_NS;
@@ -100,6 +101,13 @@ void Kpoint::kpoint_setups()
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
     }
     std::cout << "Number of k-points: " << nk << std::endl << std::endl;
+
+    /*    for (i = 0; i < nk; ++i){
+      for(unsigned int j = 0; j < 3; ++j){
+	std::cout << std::setw(15) << xk[i][j]; 
+      }
+      std::cout << std::endl;
+      } */
 }
 
 void Kpoint::gen_kpoints_band()
@@ -115,7 +123,7 @@ void Kpoint::gen_kpoints_band()
         }
         for(j = 0; j < nkp[i]; ++j){
             for(k = 0; k < 3; ++k){
-                xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i]);
+                xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
             }
             ++ik;
         }

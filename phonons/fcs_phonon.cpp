@@ -15,11 +15,11 @@ void Fcs_phonon::setup()
 {
     unsigned int nat = system->nat;
     unsigned int natmin = system->natmin;
-    memory->allocate(fc2, nat, natmin, 3, 3);
+    memory->allocate(fc2, natmin, nat, 3, 3);
 
     unsigned int i, j, icrd, jcrd;
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < natmin; ++j){
+    for (i = 0; i < natmin; ++i){
+        for (j = 0; j < nat; ++j){
             for (icrd = 0; icrd < 3; ++icrd){
                 for (jcrd = 0; jcrd < 3; ++jcrd){
                     fc2[i][j][icrd][jcrd] = 0.0;
@@ -68,7 +68,8 @@ void Fcs_phonon::load_fc2()
                 jcrd = coordinate_index(str2[len2 - 1]);
 
                 inatmin = system->map_s2p[iat].atom_num;
-                fc2[jat][inatmin][jcrd][icrd] = fc2_tmp;
+                fc2[inatmin][jat][icrd][jcrd] = fc2_tmp;
+		//                fc2[jat][inatmin][jcrd][icrd] = fc2_tmp;
 
             }
         }

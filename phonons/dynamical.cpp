@@ -5,6 +5,7 @@
 #include <complex>
 #include "../alm_c++/constants.h"
 #include "fcs_phonon.h"
+#include <iomanip>
 
 using namespace PHON_NS;
 
@@ -25,7 +26,7 @@ void Dynamical::calc_dynamical_matrix()
     unsigned int nk = kpoint->nk;
     unsigned int i, j, ik;
 
-    // hermitize dynamical matrix
+    // Hermitize dynamical matrix
 
     for (ik = 0; ik < nk; ++ik){
         for (i = 0; i < neval; ++i){
@@ -97,12 +98,12 @@ void Dynamical::calc_analytic()
                 for(icrd = 0; icrd < 3; ++icrd){
                     vec[icrd] /= 2.0 * pi;
                 }
-
+							 
                 for (ik = 0; ik < nk; ++ik){
                     phase[ik] = 2.0 * pi * (vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2]);
                     for (icrd = 0; icrd < 3; ++icrd){
                         for (jcrd = 0; jcrd < 3; ++jcrd){
-                            ctmp[ik][icrd][jcrd] += fcs_phonon->fc2[atm_s2][i][icrd][jcrd] * std::exp(im * phase[ik]);
+                            ctmp[ik][icrd][jcrd] += fcs_phonon->fc2[i][atm_s2][icrd][jcrd] * std::exp(im * phase[ik]);
                         }
                     }
                 }
@@ -115,8 +116,30 @@ void Dynamical::calc_analytic()
                     }
                 }
             }
+
         }
     }
+
+#ifdef _DEBUG
+    for(ik = 0; ik < nk; ++ik){
+      std::cout << "D" << std::endl;
+      for (icrd = 0; icrd < 6; ++icrd){
+	for (jcrd = 0; jcrd < 6; ++jcrd){
+	  std::cout << "(" << std::setw(15) << std::scientific << real(dymat[ik][icrd][jcrd]);
+	  std::cout << std::setw(15) << std::scientific << imag(dymat[ik][icrd][jcrd]) << ") ";
+	}
+	std::cout << std::endl;
+      }
+      std::cout << "D - D^{\\dagger}" << std::endl;
+      for (icrd = 0; icrd < 6; ++icrd){
+	for (jcrd = 0; jcrd < 6; ++jcrd){
+	  std::cout << "(" << std::setw(15) << std::scientific << real(dymat[ik][icrd][jcrd]) -real(dymat[ik][jcrd][icrd]) ;
+	  std::cout << std::setw(15) << std::scientific << imag(dymat[ik][icrd][jcrd]) + imag(dymat[ik][jcrd][icrd]) << ") ";
+	}
+	std::cout << std::endl;
+      }
+    } 
+#endif
 
     memory->deallocate(ctmp);
     memory->deallocate(phase);
@@ -157,7 +180,7 @@ void Dynamical::diagonalize_dynamical()
         k = 0;
         for(i = 0; i < neval; ++i){
             for (j = 0; j < neval; ++j){
-                amat[k++] = dymat[ik][j][i];
+                amat[k++] = dymat[ik][i][j];
             }
         }
 
@@ -175,7 +198,7 @@ void Dynamical::diagonalize_dynamical()
             k = 0;
             for(i = 0; i < neval; ++i){
                 for (j = 0; j < neval; ++j){
-                    dymat[ik][j][i] = amat[k++];
+                    dymat[ik][i][j] = amat[k++];
                 }
             }
         }

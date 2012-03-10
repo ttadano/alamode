@@ -30,6 +30,10 @@ void Writes::write_phonon_info()
     if(writeanime) {
         write_mode_anime();
     }
+
+    if(dynamical->eigenvectors) {
+      write_eigenvectors();
+    }
 }
 
 void Writes::write_phonon_bands()
@@ -92,6 +96,59 @@ void Writes::write_mode_anime()
     if(!ofs_anime) error->exit("write_mode_anime", "cannot open file_anime");
     
     ofs_anime.close();
+}
+
+void Writes::write_eigenvectors()
+{
+  std::ofstream ofs_evec;
+  file_evec = input->job_title + ".evec";
+  ofs_evec.open(file_evec.c_str(), std::ios::out);
+  if(!ofs_evec) error->exit("write_eigenvectors", "cannot open file_evec");
+  
+  ofs_evec.setf(std::ios::scientific);
+  unsigned int i, j, k;
+
+  ofs_evec << "Lattice vectors of the primitive lattice" << std::endl;
+
+  for (i = 0; i < 3; ++i){
+    for (j = 0; j < 3; ++j){
+      ofs_evec << std::setw(15) << system->lavec_p[i][j];
+    }
+    ofs_evec << std::endl;
+  }
+
+  ofs_evec << std::endl;
+
+  for (i = 0; i < 3; ++i){
+    for (j = 0; j < 3; ++j){
+      ofs_evec << std::setw(15) << system->rlavec_p[i][j];
+    }
+    ofs_evec << std::endl;
+  }
+
+  unsigned int nk = kpoint->nk;
+  unsigned int neval = dynamical->neval;
+  ofs_evec << "Modes and k-points information below" << std::endl;
+  ofs_evec << std::setw(10) << neval;
+  ofs_evec << std::setw(10) << nk << std::endl;
+
+  for (i = 0; i < nk; ++i){
+      ofs_evec << "#" << std::setw(10) << i + 1;
+      for (j = 0; j < 3; ++j){
+	ofs_evec << std::setw(15) << kpoint->xk[i][j];
+      }
+      ofs_evec << std::endl;
+      for (j = 0; j < neval; ++j){
+	ofs_evec << std::setw(15) << dynamical->eval_phonon[i][j] << std::endl;
+
+	for (k = 0; k < neval; ++k){
+	  ofs_evec << std::setw(15) << real(dynamical->dymat[i][j][k]);
+	  ofs_evec << std::setw(15) << imag(dynamical->dymat[i][j][k]) << std::endl;
+	}
+	ofs_evec << std::endl;
+      }
+  }
+  ofs_evec.close();
 }
 
 double Writes::in_kayser(const double x)
