@@ -60,6 +60,7 @@ void Dynamical::calc_analytic()
 
     std::complex<double> ***ctmp;
     std::complex<double> im(0.0, 1.0);
+    std::complex<double> exp_phase;
 
     double vec[3];
 
@@ -95,15 +96,18 @@ void Dynamical::calc_analytic()
                 system->rotvec(system->lavec_s, vec, vec);
                 system->rotvec(system->rlavec_p, vec, vec);
 
-                for(icrd = 0; icrd < 3; ++icrd){
+              /*  for(icrd = 0; icrd < 3; ++icrd){
                     vec[icrd] /= 2.0 * pi;
-                }
-							 
+                }*/
+
                 for (ik = 0; ik < nk; ++ik){
-                    phase[ik] = 2.0 * pi * (vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2]);
+                   // phase[ik] = 2.0 * pi * (vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2]);
+                    phase[ik] = vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2];
+                    exp_phase = std::exp(im * phase[ik]);
+
                     for (icrd = 0; icrd < 3; ++icrd){
                         for (jcrd = 0; jcrd < 3; ++jcrd){
-                            ctmp[ik][icrd][jcrd] += fcs_phonon->fc2[i][atm_s2][icrd][jcrd] * std::exp(im * phase[ik]);
+                            ctmp[ik][icrd][jcrd] += fcs_phonon->fc2[i][atm_s2][icrd][jcrd] * exp_phase;
                         }
                     }
                 }
