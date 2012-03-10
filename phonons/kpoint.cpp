@@ -54,8 +54,6 @@ void Kpoint::kpoint_setups()
 
         for (i = 0; i < nk; ++i){
             system->rotvec(system->rlavec_p, xk[i], xk_c[i]);
-            for (unsigned int j = 0; j < 3; ++j){
-            }
         }
 
         unsigned int j, k;
