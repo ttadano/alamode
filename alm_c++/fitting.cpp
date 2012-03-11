@@ -81,21 +81,32 @@ void Fitting::fitmain()
         std::cout << "Total number of constraints: " << P << std::endl;
     }
 
-    if (nskip == 0){
-        // calculate matrix elements for fitting
-        calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
-        timer->print_elapsed();
+    // Calculate matrix elements for fitting
 
-        // fitting with singular value decomposition or QR-Decomposition
+    calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
+    timer->print_elapsed();
+
+    if (nskip == 0){
+
+        // Fitting with singular value decomposition or QR-Decomposition
+
+        int M_Start = 3 * natmin * ntran * (nstart - 1);
+        int M_End   = 3 * natmin * ntran * nend;
+
         if(constraint == 0) {
-            fit_without_constraints(M, N);
+            fit_without_constraints(N, M_Start, M_End);
         } else {
-            fit_with_constraints(M, N, P);
+            fit_with_constraints(N, M_Start, M_End, P);
         }
     } else {
+        if (constraint == 0) {
+            error->exit("fitmain", "nskip has to be 0 when constraint = 0");
+        } else {
+            fit_consecutively(N, P, natmin, ntran, ndata, nstart, nend, nskip);
+        }
     }
 
-    // copy force constants to public valiable "params"
+    // Copy force constants to public valiable "params"
 
     memory->allocate(params, N);
 
@@ -112,14 +123,16 @@ void Fitting::fitmain()
     timer->print_elapsed();
 }
 
-void Fitting::fit_without_constraints(int M, int N)
+void Fitting::fit_without_constraints(int N, int M_Start, int M_End)
 {
     int i, j, k;
     int nrhs = 1, nrank, INFO, LWORK;
     double *WORK, *S, *amat_mod;
     double rcond = -1.0;
     double f_square = 0.0;
+    double *fsum2;
 
+    int M = M_End - M_Start;
 
     std::cout << "Entering Fitting Routine: SVD without constraints" << std::endl << std::endl;
 
@@ -131,18 +144,22 @@ void Fitting::fit_without_constraints(int M, int N)
 
     // transpose matrix A
     memory->allocate(amat_mod, M * N);
+    memory->allocate(fsum2, M);
+
     k = 0;
     for (j = 0; j < N; ++j){
-        for(i = 0; i < M; ++i){
+        for(i = M_Start; i < M_End; ++i){
             amat_mod[k++] = amat[i][j];
         }
     }
-    for (i = 0; i < M; ++i){
+    j = 0;
+    for (i = M_Start; i < M_End; ++i){
+        fsum2[j++] = fsum[i];
         f_square += std::pow(fsum[i], 2);
     }
 
     // fitting with singular value decomposition
-    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
+    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
     std::cout << "Finished !" << std::endl << std::endl;
 
@@ -153,34 +170,43 @@ void Fitting::fit_without_constraints(int M, int N)
     if(nrank == N) {
         double f_residual = 0.0;
         for (i = N; i < M; ++i){
-            f_residual += std::pow(fsum[i], 2);
+            f_residual += std::pow(fsum2[i], 2);
         }
         std::cout << std::endl << "Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
         std::cout << "Fitting Error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
     }
 
+    for (i = 0; i < N; ++i){
+        fsum[i] = fsum2[i];
+    }
+    memory->deallocate(fsum2);
     memory->deallocate(amat_mod);
     memory->deallocate(WORK);
     memory->deallocate(S);
 }
 
-void Fitting::fit_with_constraints(int M, int N, int P)
+void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P)
 {
     int i, j, k;
     int nrank;
     double *mat_tmp;
 
-    int maxorder = interaction->maxorder;
+    //    int maxorder = interaction->maxorder;
 
     double f_square, f_residual;
+    double *fsum2;
+
+    int M = M_End - M_Start;
 
     std::cout << "Entering Fitting Routine: QRD with constraints" << std::endl << std::endl;
 
     memory->allocate(mat_tmp, (M + P) * N);
+    memory->allocate(fsum2, M);
+
     k = 0;
 
     for(j = 0; j < N; ++j){
-        for(i = 0; i < M; ++i){
+        for(i = M_Start; i < M_End; ++i){
             mat_tmp[k++] = amat[i][j];
         }
     }
@@ -204,7 +230,9 @@ void Fitting::fit_with_constraints(int M, int N, int P)
     }
 
     f_square = 0.0;
-    for (i = 0; i < M; ++i){
+    j = 0;
+    for (i = M_Start; i < M_End; ++i){
+        fsum2[j++] = fsum[i];
         f_square += std::pow(fsum[i], 2);
     }
 
@@ -217,7 +245,7 @@ void Fitting::fit_with_constraints(int M, int N, int P)
     // transpose matrix A and C
     k = 0;
     for(j = 0; j < N; ++j){
-        for(i = 0; i < M; ++i){
+        for(i = M_Start; i < M_End; ++i){
             amat_mod[k++] = amat[i][j];
         }
     }
@@ -236,7 +264,7 @@ void Fitting::fit_with_constraints(int M, int N, int P)
     memory->allocate(WORK, LWORK);
     memory->allocate(x, N);
 
-    dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum, const_rhs, x, WORK, &LWORK, &INFO);
+    dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, const_rhs, x, WORK, &LWORK, &INFO);
 
     memory->deallocate(amat_mod);
     memory->deallocate(cmat_mod);
@@ -247,10 +275,10 @@ void Fitting::fit_with_constraints(int M, int N, int P)
 
     f_residual = 0.0;
     for (i = N - P; i < M; ++i){
-        f_residual += std::pow(fsum[i], 2);
+        f_residual += std::pow(fsum2[i], 2);
     }
     std::cout << std::endl << "Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
-    std::cout << "Fitting Error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
+    std::cout << "Fitting Error (%) : "<< std::sqrt(f_residual/f_square) * 100.0 << std::endl;
 
     // copy fcs to fsum
 
@@ -259,6 +287,119 @@ void Fitting::fit_with_constraints(int M, int N, int P)
     }
 
     memory->deallocate(x);
+    memory->deallocate(fsum2);
+}
+
+void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran, const int ndata,
+    const int nstart, const int nend, const int nskip)
+{
+    int i, j, k;
+    int iend;
+    int M_Start, M_End;
+    int mset = 3 * natmin * ntran;
+
+    M_Start = mset * (nstart - 1);
+
+    int M;
+
+    std::string file_fcs_sequence;
+    file_fcs_sequence = files->job_title + ".fcs_sequence";
+
+    std::ofstream ofs_fcs_seq;
+    ofs_fcs_seq.open(file_fcs_sequence, std::ios::out);
+    if(!ofs_fcs_seq) error->exit("fit_consecutively", "cannot open file_fcs_sequence");
+
+    ofs_fcs_seq.setf(std::ios::scientific);
+
+    double f_residual, f_square;
+    double *fsum2;
+    int INFO;
+    double *WORK, *x;
+    double *amat_mod, *cmat_mod;
+    double *const_tmp;
+
+    memory->allocate(x, N);
+    memory->allocate(cmat_mod, P * N);
+    memory->allocate(const_tmp, P);
+
+    k = 0;
+    for (j = 0; j < N; ++j){
+        for(i = 0; i < P; ++i){
+            cmat_mod[k++] = const_mat[i][j];
+        }
+    }
+
+    std::cout << "nskip != 0: Consecutive Fitting Started!!" << std::endl;
+    std::cout << "Relative errors and FCS are stored in file: " << file_fcs_sequence << std::endl;
+
+    ofs_fcs_seq << "# Relative Error(%), FCS..." ;
+
+    for (i = 0; i < interaction->maxorder; ++i){
+        ofs_fcs_seq << fcs->ndup[i].size();
+    }
+    ofs_fcs_seq << std::endl;
+
+    for (iend = nstart; iend <= nend; iend += nskip){
+
+        M_End = mset * iend;
+        M = M_End - M_Start;
+
+        memory->allocate(fsum2, M);
+
+        f_square = 0.0;
+        j = 0;
+        for (i = M_Start; i < M_End; ++i){
+            fsum2[j++] = fsum[i];
+            f_square += std::pow(fsum[i], 2);
+        }
+
+        memory->allocate(amat_mod, M * N);
+
+        // Transpose matrix A
+        k = 0;
+        for(j = 0; j < N; ++j){
+            for(i = M_Start; i < M_End; ++i){
+                amat_mod[k++] = amat[i][j];
+            }
+        }
+
+        for (i = 0; i < P; ++i){
+            const_tmp[i] = const_rhs[i];
+        }
+
+        // Fitting
+
+        int LWORK = P + std::min<int>(M, N) + 100 * std::max<int>(M, N);
+        memory->allocate(WORK, LWORK);
+
+        dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, const_tmp, x, WORK, &LWORK, &INFO);
+
+        memory->deallocate(amat_mod);
+        memory->deallocate(WORK);
+
+        f_residual = 0.0;
+        for (i = N - P; i < M; ++i){
+            f_residual += std::pow(fsum2[i], 2);
+        }
+
+        ofs_fcs_seq << 100.0 * std::sqrt(f_residual/f_square);
+
+        for (i = 0; i < N; ++i){
+            ofs_fcs_seq << std::setw(15) << x[i];
+        }
+        ofs_fcs_seq << std::endl;
+        memory->deallocate(fsum2);
+    }
+
+    for (i = 0; i < N; ++i){
+        fsum[i] = x[i];
+    }
+
+    memory->deallocate(cmat_mod);
+    memory->deallocate(const_tmp);
+    memory->deallocate(x);
+
+    ofs_fcs_seq.close();
 }
 
 void Fitting::calc_constraint_matrix(const int N, int &P){
@@ -395,7 +536,6 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     memory->deallocate(const_vec);
 }
 
-
 void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin,
     const int ntran, const int ndata, const int maxorder)
 {
@@ -490,6 +630,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
     std::cout << " Finished !" << std::endl;
 }
+
 
 void Fitting::translational_invariance()
 {
