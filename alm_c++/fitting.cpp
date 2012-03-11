@@ -322,20 +322,13 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran,
     memory->allocate(cmat_mod, P * N);
     memory->allocate(const_tmp, P);
 
-    k = 0;
-    for (j = 0; j < N; ++j){
-        for(i = 0; i < P; ++i){
-            cmat_mod[k++] = const_mat[i][j];
-        }
-    }
-
     std::cout << "nskip != 0: Consecutive Fitting Started!!" << std::endl;
     std::cout << "Relative errors and FCS are stored in file: " << file_fcs_sequence << std::endl;
 
     ofs_fcs_seq << "# Relative Error(%), FCS..." ;
 
     for (i = 0; i < interaction->maxorder; ++i){
-        ofs_fcs_seq << fcs->ndup[i].size();
+        ofs_fcs_seq << std::setw(10) << fcs->ndup[i].size();
     }
     ofs_fcs_seq << std::endl;
 
@@ -360,6 +353,13 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran,
         for(j = 0; j < N; ++j){
             for(i = M_Start; i < M_End; ++i){
                 amat_mod[k++] = amat[i][j];
+            }
+        }
+
+        k = 0;
+        for (j = 0; j < N; ++j){
+            for(i = 0; i < P; ++i){
+                cmat_mod[k++] = const_mat[i][j];
             }
         }
 

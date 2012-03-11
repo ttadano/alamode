@@ -47,6 +47,7 @@ void System::init(){
     }
     std::cout << std::endl;
     std::cout << "Number of input data: " << ndata << std::endl;
+    std::cout << "nstart = " << nstart << ", nend = " << nend << ", nskip = " << nskip << std::endl;
 
     std::cout.unsetf(std::ios::scientific);
     timer->print_elapsed();
