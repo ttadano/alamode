@@ -306,7 +306,7 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran,
     file_fcs_sequence = files->job_title + ".fcs_sequence";
 
     std::ofstream ofs_fcs_seq;
-    ofs_fcs_seq.open(file_fcs_sequence, std::ios::out);
+    ofs_fcs_seq.open(file_fcs_sequence.c_str(), std::ios::out);
     if(!ofs_fcs_seq) error->exit("fit_consecutively", "cannot open file_fcs_sequence");
 
     ofs_fcs_seq.setf(std::ios::scientific);
