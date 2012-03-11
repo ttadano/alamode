@@ -34,15 +34,17 @@ void Fitting::fitmain()
     files->ifs_force_sym.open(files->file_force_sym.c_str(), std::ios::in | std::ios::binary);
     if(!files->ifs_force_sym) error->exit("fitmain", "cannot open file force_sym");
 
-
     int ntran = symmetry->ntran;
     int nat = system->nat;
     int natmin = symmetry->natmin;
 
     int i;
     int ndata = system->ndata;
+    int nstart = system->nstart;
+    int nend = system->nend;
+    int nskip = system->nskip;
 
-    int N, M;
+    int N, M, P;
     int maxorder = interaction->maxorder;
 
     N = 0;
@@ -55,15 +57,42 @@ void Fitting::fitmain()
     memory->allocate(amat, M, N);
     memory->allocate(fsum, M);
 
-    // calculate matrix elements for fitting
-    calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
-    timer->print_elapsed();
+    if (constraint != 0){
 
-    // fitting with singular value decomposition or QR-Decomposition
-    if(constraint == 0) {
-        fit_without_constraints(M, N);
+        // Generate constraint matrix
+
+        int Pmax, order;
+
+        memory->allocate(const_translation, maxorder);
+        translational_invariance();
+
+        Pmax = 0;
+        for (order = 0; order < maxorder; ++order){
+            Pmax += const_translation[order].size();
+        }
+        if(constraint == 2){
+            Pmax -= const_translation[0].size();
+            Pmax += fcs->ndup[0].size();
+        }
+        memory->allocate(const_mat, Pmax, N);
+        memory->allocate(const_rhs, Pmax);
+
+        calc_constraint_matrix(N, P);
+        std::cout << "Total number of constraints: " << P << std::endl;
+    }
+
+    if (nskip == 0){
+        // calculate matrix elements for fitting
+        calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
+        timer->print_elapsed();
+
+        // fitting with singular value decomposition or QR-Decomposition
+        if(constraint == 0) {
+            fit_without_constraints(M, N);
+        } else {
+            fit_with_constraints(M, N, P);
+        }
     } else {
-        fit_with_constraints(M, N);
     }
 
     // copy force constants to public valiable "params"
@@ -75,6 +104,11 @@ void Fitting::fitmain()
     memory->deallocate(amat);
     memory->deallocate(fsum);
 
+    if (constraint != 0){
+        memory->deallocate(const_mat);
+        memory->deallocate(const_rhs);
+        memory->deallocate(const_translation);
+    }
     timer->print_elapsed();
 }
 
@@ -85,6 +119,7 @@ void Fitting::fit_without_constraints(int M, int N)
     double *WORK, *S, *amat_mod;
     double rcond = -1.0;
     double f_square = 0.0;
+
 
     std::cout << "Entering Fitting Routine: SVD without constraints" << std::endl << std::endl;
 
@@ -129,11 +164,10 @@ void Fitting::fit_without_constraints(int M, int N)
     memory->deallocate(S);
 }
 
-void Fitting::fit_with_constraints(int M, int N)
+void Fitting::fit_with_constraints(int M, int N, int P)
 {
     int i, j, k;
     int nrank;
-    int P, order, Pmax;
     double *mat_tmp;
 
     int maxorder = interaction->maxorder;
@@ -141,37 +175,6 @@ void Fitting::fit_with_constraints(int M, int N)
     double f_square, f_residual;
 
     std::cout << "Entering Fitting Routine: QRD with constraints" << std::endl << std::endl;
-    memory->allocate(const_translation, maxorder);
-
-    // generate constraints for translational invariance
-
-    translational_invariance();
-
-    // construct constraint matrix
-
-    Pmax = 0;
-    for (order = 0; order < maxorder; ++order){
-        Pmax += const_translation[order].size();
-    }
-
-    if(constraint == 2){
-        Pmax -= const_translation[0].size();
-        Pmax += fcs->ndup[0].size();
-
-    }
-    memory->allocate(const_mat, Pmax, N);
-    memory->allocate(const_rhs, Pmax);
-
-    calc_constraint_matrix(N, P);
-
-    std::cout << "Total number of constraints: " << P << std::endl;
-
-    //for(i = 0; i < P; ++i){
-    //    for(j = 0; j < N; ++j){
-    //    std::cout << std::setw(4) << const_mat[i][j];
-    //    }
-    //    std::cout << std::setw(10) << const_rhs[i] << std::endl;
-    //}
 
     memory->allocate(mat_tmp, (M + P) * N);
     k = 0;
@@ -256,9 +259,6 @@ void Fitting::fit_with_constraints(int M, int N)
     }
 
     memory->deallocate(x);
-    memory->deallocate(const_mat);
-    memory->deallocate(const_rhs);
-    memory->deallocate(const_translation);
 }
 
 void Fitting::calc_constraint_matrix(const int N, int &P){
@@ -267,13 +267,9 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     int maxorder = interaction->maxorder;
     int order;
     int icol, irow;
-
     int nrow, ncol;
-
     int *nrank, *nparam;
-
     double *arr_tmp;
-
     std::vector<Constraint> *const_vec;
 
     memory->allocate(nrank, maxorder);

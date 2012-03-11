@@ -15,7 +15,7 @@ namespace ALM_NS {
      
         
         int nat, nkd;
-        int ndata;
+        int ndata, nstart, nend, nskip;
         int *kd;
         double lavec[3][3], rlavec[3][3];
         double *mass_kd, *mass;

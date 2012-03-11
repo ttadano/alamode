@@ -48,7 +48,7 @@ namespace ALM_NS {
         int inprim_index(const int);
         void wrtfcs(const double *);
         void fit_without_constraints(int, int);
-        void fit_with_constraints(int, int);
+        void fit_with_constraints(int, int, int);
         void calc_matrix_elements(const int, const int, const int, 
             const int, const int, const int, const int);
         double gamma(const int, const int *);

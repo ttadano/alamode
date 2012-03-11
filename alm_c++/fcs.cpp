@@ -26,7 +26,6 @@ void Fcs::init(){
     memory->allocate(pairs, maxorder);
     memory->allocate(nzero, maxorder);
 
-
     for(i = 0; i < maxorder; ++i) nzero[i] = 0;
 
     read_pairs(maxorder);
