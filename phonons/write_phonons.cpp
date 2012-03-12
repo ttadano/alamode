@@ -138,6 +138,7 @@ void Writes::write_mode_anime()
     unsigned int ik, imode;
     double norm;
     std::complex<double> evec_tmp;
+    unsigned int m;
     i = 0;
 
     for (ik = 0; ik < nk; ++ik){
@@ -154,13 +155,16 @@ void Writes::write_mode_anime()
             norm *= force_factor / static_cast<double>(natmin);
 
             for (j = 0; j < natmin; ++j){
+
+                m = system->map_p2s[j][0];
+                
                 ofs_anime << std::setw(10) << kd_tmp[j];
 
                 for (k = 0; k < 3; ++k){
                     ofs_anime << std::setw(15) << xmod[j][k];
                 }
                 for (k = 0; k < 3; ++k){
-                    ofs_anime << std::setw(15) << dynamical->dymat[ik][imode][3 * j + k].real() / norm;
+                    ofs_anime << std::setw(15) << dynamical->dymat[ik][imode][3 * j + k].real() / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
