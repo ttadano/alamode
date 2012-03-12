@@ -6,6 +6,7 @@
 #include "error.h"
 #include "phonon_dos.h"
 #include "../alm_c++/constants.h"
+#include "memory.h"
 #include <iomanip>
 #include <fstream>
 
@@ -94,6 +95,82 @@ void Writes::write_mode_anime()
     file_anime = input->job_title + ".axsf";
     ofs_anime.open(file_anime.c_str(), std::ios::out);
     if(!ofs_anime) error->exit("write_mode_anime", "cannot open file_anime");
+
+    ofs_anime.setf(std::ios::scientific);
+
+    unsigned int i, j, k;
+    unsigned int natmin = system->natmin;
+    unsigned int nk = kpoint->nk;
+
+    double force_factor = 100.0;
+
+    double **xmod;
+    std::string *kd_tmp;
+
+    memory->allocate(xmod, natmin, 3);
+    memory->allocate(kd_tmp, natmin);
+
+
+    ofs_anime << "ANIMSTEPS " << 3 * natmin * nk << std::endl;
+    ofs_anime << "CRYSTAL" << std::endl;
+    ofs_anime << "PRIMVEC" << std::endl;
+
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
+            ofs_anime << std::setw(15) << system->lavec_p[i][j];
+        }
+        ofs_anime << std::endl;
+    }
+
+    for (i = 0; i < natmin; ++i){
+        k = system->map_p2s[i][0];
+        for (j = 0; j < 3; ++j){
+            xmod[i][j] = system->xr_p[k][j];
+        }
+        system->rotvec(system->lavec_p, xmod[i], xmod[i]);
+
+        for (j = 0; j < 3; ++j){
+            xmod[i][j] *= Bohr_in_Angstrom;
+        }
+        kd_tmp[i] = system->symbol_kd[system->kd[k]];
+    }
+
+    unsigned int ik, imode;
+    double norm;
+    std::complex<double> evec_tmp;
+    i = 0;
+
+    for (ik = 0; ik < nk; ++ik){
+        for (imode = 0; imode < 3 * natmin; ++imode){
+            ofs_anime << "PRIMCOORD" << std::setw(10) << i + 1 << std::endl;
+            ofs_anime << std::setw(10) << natmin << " 1" << std::endl;
+            norm = 0.0;
+
+            for (j = 0; j < 3 * natmin; ++j){
+                evec_tmp = dynamical->dymat[ik][imode][j];
+                norm += std::pow(evec_tmp.real(), 2) + std::pow(evec_tmp.imag(), 2);
+            }
+            
+            norm *= force_factor / static_cast<double>(natmin);
+
+            for (j = 0; j < natmin; ++j){
+                ofs_anime << kd_tmp[j];
+
+                for (k = 0; k < 3; ++k){
+                    ofs_anime << std::setw(15) << xmod[j][k];
+                }
+                for (k = 0; k < 3; ++k){
+                    ofs_anime << std::setw(15) << std::abs(dynamical->dymat[ik][imode][k]) / norm;
+                }
+                ofs_anime << std::endl;
+            }
+
+            ++i;
+        }
+    }
+
+    memory->deallocate(xmod);
+    memory->deallocate(kd_tmp);
 
     ofs_anime.close();
 }
