@@ -160,7 +160,7 @@ void Writes::write_mode_anime()
                     ofs_anime << std::setw(15) << xmod[j][k];
                 }
                 for (k = 0; k < 3; ++k){
-                    ofs_anime << std::setw(15) << std::abs(dynamical->dymat[ik][imode][k]) / norm;
+                    ofs_anime << std::setw(15) << dynamical->dymat[ik][imode][3 * j + k].real() / norm;
                 }
                 ofs_anime << std::endl;
             }
