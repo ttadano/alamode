@@ -75,7 +75,7 @@
     <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
-    <ClCompile Include="writes_phonons.cpp" />
+    <ClCompile Include="write_phonons.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dynamical.h" />

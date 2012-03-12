@@ -45,10 +45,10 @@
     <ClCompile Include="dynamical.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="writes_phonons.cpp">
+    <ClCompile Include="phonon_dos.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="phonon_dos.cpp">
+    <ClCompile Include="write_phonons.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

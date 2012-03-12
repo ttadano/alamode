@@ -145,7 +145,7 @@ void Writes::write_eigenvectors()
 	  ofs_evec << std::setw(15) << real(dynamical->dymat[i][j][k]);
 	  ofs_evec << std::setw(15) << imag(dynamical->dymat[i][j][k]) << std::endl;
 	}
-	ofs_evec << std::endl;
+	ofs_evec << std::endl << std::endl;
       }
   }
   ofs_evec.close();
