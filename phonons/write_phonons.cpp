@@ -125,9 +125,9 @@ void Writes::write_mode_anime()
     for (i = 0; i < natmin; ++i){
         k = system->map_p2s[i][0];
         for (j = 0; j < 3; ++j){
-            xmod[i][j] = system->xr_p[k][j];
+            xmod[i][j] = system->xc[k][j];
         }
-        system->rotvec(system->lavec_p, xmod[i], xmod[i]);
+       // system->rotvec(system->lavec_p, xmod[i], xmod[i]);
 
         for (j = 0; j < 3; ++j){
             xmod[i][j] *= Bohr_in_Angstrom;
@@ -142,8 +142,8 @@ void Writes::write_mode_anime()
 
     for (ik = 0; ik < nk; ++ik){
         for (imode = 0; imode < 3 * natmin; ++imode){
-            ofs_anime << "PRIMCOORD" << std::setw(10) << i + 1 << std::endl;
-            ofs_anime << std::setw(10) << natmin << " 1" << std::endl;
+            ofs_anime << "PRIMCOORD " << std::setw(10) << i + 1 << std::endl;
+            ofs_anime << std::setw(10) << natmin << std::setw(10) << 1 << std::endl;
             norm = 0.0;
 
             for (j = 0; j < 3 * natmin; ++j){
@@ -154,7 +154,7 @@ void Writes::write_mode_anime()
             norm *= force_factor / static_cast<double>(natmin);
 
             for (j = 0; j < natmin; ++j){
-                ofs_anime << kd_tmp[j];
+                ofs_anime << std::setw(10) << kd_tmp[j];
 
                 for (k = 0; k < 3; ++k){
                     ofs_anime << std::setw(15) << xmod[j][k];
