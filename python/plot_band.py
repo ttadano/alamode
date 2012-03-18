@@ -74,7 +74,7 @@ plt.yticks(fontsize=14)
 plt.grid('on', which='major')
 
 legend(loc='lower right')
-
+plt.savefig('band_tmp.png', dpi=300, transparent=True)
 show()
 
 

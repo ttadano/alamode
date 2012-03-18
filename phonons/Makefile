@@ -10,7 +10,7 @@ LDFLAGS = -mkl
 PROG = phonons
 
 CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
-	main.cpp memory.cpp system.cpp timer.cpp writes_phonons.cpp kpoint.cpp phonon_dos.cpp
+	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp phonon_dos.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
