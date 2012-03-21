@@ -4,7 +4,7 @@
 Script for generating animation video of
 temperature change obtained from MD simulations.
 
-Usage:animete_T.py filename npoint ymin, ymax
+Usage:animete_T.py filename npoint ymin ymax fps
 
 """
 from scipy import *
@@ -18,6 +18,7 @@ if __name__ == '__main__':
     npoint = int(sys.argv[2])
     ymin = float(sys.argv[3])
     ymax = float(sys.argv[4])
+    fps = sys.argv[5]
 
     T = loadtxt(file_T)
 
@@ -42,7 +43,8 @@ if __name__ == '__main__':
         files.append(fname)
 
     print 'Making movie animation.mpg - this make take a while'
-    os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=10 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg")
+    command = "mencoder 'mf://_tmp*.png' -mf type=png:fps=" + fps + " -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg"
+    os.system(command)
 
     print
     print 'Removing temporary png files'
