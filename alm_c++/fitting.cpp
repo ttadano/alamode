@@ -583,7 +583,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
         memory->allocate(ind, maxorder + 1);
 
-#pragma omp for
+#pragma omp for schedule(guided)
         for(irow = 0; irow < ncycle; ++irow){
 
             // generate r.h.s vector B
