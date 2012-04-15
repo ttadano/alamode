@@ -56,7 +56,7 @@ void Writes::wrtfcs()
     ofs_fcs <<  "!     a0= Bohr radius                                       !" << std::endl;
     ofs_fcs << "*************************************************************"  << std::endl << std::endl;
     ofs_fcs << "---------------Symmetrically Independent FCs---------------" << std::endl;
-    ofs_fcs << " Global No." << "  Local No." << "            FCs" << "            Pairs" << std::endl;
+    ofs_fcs << " Global No." << "  Local No." << "            FCs" << "            Pairs"  << "        Distance (for IFC2)"<< std::endl;
 
     k = 0;
 
@@ -75,6 +75,9 @@ void Writes::wrtfcs()
                 ofs_fcs << std::setw(6) << k + 1 << std::setw(6) << j + 1 << std::setw(16) <<  fitting->params[k];
                 for (l = 0; l < i + 2; ++l){
                     ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[i][m].elems[l]);    
+                }
+                if(i==0) {
+                ofs_fcs << std::setw(15) << interaction->distlist[fcs->fc_set[i][m].elems[0]/3][fcs->fc_set[i][m].elems[1]/3];
                 }
                 ofs_fcs << std::endl;
                 m += fcs->ndup[i][j];
