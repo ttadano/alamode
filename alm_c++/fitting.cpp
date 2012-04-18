@@ -66,6 +66,9 @@ void Fitting::fitmain()
         memory->allocate(const_translation, maxorder);
         translational_invariance();
 
+        memory->allocate(const_rotation, maxorder);
+        rotational_invariance();
+
         Pmax = 0;
         for (order = 0; order < maxorder; ++order){
             Pmax += const_translation[order].size();
@@ -658,11 +661,7 @@ void Fitting::translational_invariance()
 
     std::cout << "Start generating constraints for translational invariance ..." << std::endl;
 
-    //FcProperty list_tmp;
-
     memory->allocate(ind, maxorder + 1);
-
-    // const_translation = new std::set<Constraint> [maxorder];
 
     for (order = 0; order < maxorder; ++order){
 
@@ -695,7 +694,6 @@ void Fitting::translational_invariance()
         nxyz = static_cast<int>(pow(static_cast<long double>(3), order + 1));
         memory->allocate(xyzcomponent, nxyz, order + 1);
         fcs->get_xyzcomponent(order + 1, xyzcomponent);
-
 
         memory->allocate(arr_constraint, nparams);
         memory->allocate(intarr, order + 2);
@@ -800,6 +798,11 @@ void Fitting::translational_invariance()
         std::cout << "Number of Constraints for" << std::setw(9) << interaction->str_order[order] << " : " << const_translation[order].size() << std::endl;
     }
     std::cout << std::endl;
+}
+
+void Fitting::rotational_invariance()
+{
+    std::cout << "Start generating constraint matrix for rotational invariance..." << std::endl;
 }
 
 bool Fitting::is_allzero(const int n, const double *arr){

@@ -67,6 +67,7 @@ namespace ALM_NS {
         double **const_mat;
         double *const_rhs;
         std::set<Constraint> *const_translation;
+        std::set<Constraint> *const_rotation;
     };
 
     extern "C" {
