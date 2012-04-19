@@ -50,6 +50,18 @@ void System::init(){
     std::cout << "nstart = " << nstart << ", nend = " << nend << ", nskip = " << nskip << std::endl;
 
     std::cout.unsetf(std::ios::scientific);
+
+    // generate cartesian coordinate
+
+    memory->allocate(x_cartesian, nat, 3);
+    
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+        x_cartesian[i][j] = xcoord[i][j];
+        }
+    }
+    frac2cart(x_cartesian);
+
     timer->print_elapsed();
 
 }

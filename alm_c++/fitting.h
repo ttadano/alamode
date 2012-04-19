@@ -56,6 +56,8 @@ namespace ALM_NS {
         double gamma(const int, const int *);
         int factorial(const int);
 
+        int levi_civita(const int, const int, const int);
+
         void translational_invariance();
         void rotational_invariance();
         void calc_constraint_matrix(const int, int &);

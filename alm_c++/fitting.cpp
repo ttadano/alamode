@@ -634,7 +634,6 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     std::cout << " Finished !" << std::endl;
 }
 
-
 void Fitting::translational_invariance()
 {
     // create constraint matrix arising from translational invariance.
@@ -802,7 +801,142 @@ void Fitting::translational_invariance()
 
 void Fitting::rotational_invariance()
 {
+
+    // a first implemention of complicated constraints
+    // 2012.4.19
+
     std::cout << "Start generating constraint matrix for rotational invariance..." << std::endl;
+
+    int i, j;
+    int iat, jat;
+    int icrd;
+    int order;
+    int maxorder = interaction->maxorder;
+    int natmin = symmetry->natmin;
+    int nat = system->nat;
+    int *ind;
+    int nxyz;
+    int **xyzcomponent;
+    int mu, nu;
+    int nparams;
+
+    double *arr_constraint;
+    int *intarr;
+    std::set<FcProperty> list_found;
+    std::set<FcProperty> list_found_last;
+    std::set<FcProperty>::iterator iter_found;
+
+    std::vector<int> intlist, intlist_last;
+
+    memory->allocate(ind, maxorder + 1);
+
+    for (order = 0; order < maxorder ; ++order){
+
+        if (order == 0) {
+            std::cout << "Constraint beteen " << std::setw(8) << "1st-order IFCs (which are zero) and " 
+                << std::setw(8) << interaction->str_order[order] << " ...";
+            nparams = fcs->ndup[order].size();
+            memory->allocate(arr_constraint, nparams);
+        } else {
+            std::cout << "Constraint between " << std::setw(8) << interaction->str_order[order] << " and "
+                << std::setw(8) << interaction->str_order[order + 1] << " ...";
+            nparams = fcs->ndup[order].size() + fcs->ndup[order - 1].size();
+            memory->allocate(arr_constraint, nparams);
+        }
+
+        const_rotation[order].clear();
+
+        list_found.clear();
+        list_found_last.clear();
+
+        memory->allocate(intarr, order + 2);
+
+        for(std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
+            FcProperty list_tmp = *p; // using copy constructor
+            for (i = 0; i < order + 2; ++i){
+                ind[i] = list_tmp.elems[i];
+            }
+            if(list_found.find(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother)) != list_found.end()) {
+                error->exit("translational invariance", "Duplicate interaction list found");
+            }
+            list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
+        }
+
+        nxyz = static_cast<int>(pow(static_cast<double>(3), order + 1));
+        memory->allocate(xyzcomponent, nxyz, order + 1);
+        fcs->get_xyzcomponent(order + 1, xyzcomponent);
+
+        for (i = 0; i < natmin; ++i){
+
+            iat = symmetry->map_p2s[i][0];
+
+            for (j = 0; j < interaction->ninter[i][order]; ++j){
+                intlist.push_back(interaction->intpairs[i][order][j]);
+            }
+            if (order > 0) {
+                for (j = 0; j < interaction->ninter[i][order - 1]; ++j){
+                    intlist_last.push_back(interaction->intpairs[i][order - 1][j]);
+                }
+            }
+            std::sort(intlist.begin(), intlist.end());
+            std::sort(intlist_last.begin(), intlist_last.end());
+
+            if (order == 0){
+
+                // special treatment for harmonic force constants
+
+                for (icrd = 0; icrd < 3; ++icrd){
+
+                    intarr[0] = 3 * iat + icrd;
+
+                    for (mu = 0; mu < 3; ++mu){
+                        for (nu = 0; nu < 3; ++nu){
+
+                            if (mu == nu) continue;
+
+                            // clear history
+                            for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
+
+                            for (jat = 0; jat < nat; ++jat){
+
+                                intarr[1] = 3 * jat + mu;
+                                iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
+                                if(iter_found != list_found.end()){
+                                    FcProperty arrtmp = *iter_found;
+                                    arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
+                                }
+
+                                intarr[1] = 3 * jat + nu;
+                                iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
+                                if(iter_found != list_found.end()){
+                                    FcProperty arrtmp = *iter_found;
+                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                             
+                                }
+                            }
+
+                            if(!is_allzero(nparams,arr_constraint)){
+                                // add to constraint list
+                                const_rotation[order].insert(Constraint(nparams, arr_constraint));
+                            }
+                        }
+                    }
+
+                }
+
+            }
+        }
+
+        std::cout << const_rotation[order].size() << std::endl;
+        for(std::set<Constraint>::iterator p = const_rotation[order].begin(); p != const_rotation[order].end(); ++p){
+            Constraint const_tmp = *p;
+            for (j = 0; j < nparams; ++j){
+                std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
+            }
+            std::cout << std::endl;
+        }
+        std::cout << " done" << std::endl;
+    }
+
 }
 
 bool Fitting::is_allzero(const int n, const double *arr){
@@ -884,6 +1018,12 @@ int Fitting::factorial(const int n)
     }else{
         return n * factorial(n - 1);
     }
+}
+
+int Fitting::levi_civita(const int i, const int j, const int k)
+{
+    int epsilon = (j - i) * (k - i) * (k - j) / 2;
+    return epsilon;
 }
 
 //int Fitting::rank(const int m, const int n, double **mat)
