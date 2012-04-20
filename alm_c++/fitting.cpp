@@ -815,13 +815,14 @@ void Fitting::rotational_invariance()
     int natmin = symmetry->natmin;
     int nat = system->nat;
     int *ind;
-    int nxyz;
+    int nxyz, nxyz_last;
     int **xyzcomponent;
     int mu, nu;
     int nparams;
+    int ixyz;
 
     double *arr_constraint;
-    int *intarr;
+    int *interaction_index, *interaction_atom;
     std::set<FcProperty> list_found;
     std::set<FcProperty> list_found_last;
     std::set<FcProperty>::iterator iter_found;
@@ -838,8 +839,8 @@ void Fitting::rotational_invariance()
             nparams = fcs->ndup[order].size();
             memory->allocate(arr_constraint, nparams);
         } else {
-            std::cout << "Constraint between " << std::setw(8) << interaction->str_order[order] << " and "
-                << std::setw(8) << interaction->str_order[order + 1] << " ...";
+            std::cout << "Constraint between " << std::setw(8) << interaction->str_order[order - 1] << " and "
+                << std::setw(8) << interaction->str_order[order] << " ...";
             nparams = fcs->ndup[order].size() + fcs->ndup[order - 1].size();
             memory->allocate(arr_constraint, nparams);
         }
@@ -849,9 +850,10 @@ void Fitting::rotational_invariance()
         list_found.clear();
         list_found_last.clear();
 
-        memory->allocate(intarr, order + 2);
+        memory->allocate(interaction_atom, order + 2);
+        memory->allocate(interaction_index, order + 2);
 
-        for(std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
+        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
             FcProperty list_tmp = *p; // using copy constructor
             for (i = 0; i < order + 2; ++i){
                 ind[i] = list_tmp.elems[i];
@@ -862,24 +864,16 @@ void Fitting::rotational_invariance()
             list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
         }
 
-        nxyz = static_cast<int>(pow(static_cast<double>(3), order + 1));
-        memory->allocate(xyzcomponent, nxyz, order + 1);
-        fcs->get_xyzcomponent(order + 1, xyzcomponent);
+        if (order > 0) {
+            nxyz = static_cast<int>(pow(static_cast<double>(3), order));
+      //      nxyz_last = static_cast<int>(pow(static_cast<double>(3), order));
+            memory->allocate(xyzcomponent, nxyz, order);
+            fcs->get_xyzcomponent(order, xyzcomponent);
+        }
 
         for (i = 0; i < natmin; ++i){
 
             iat = symmetry->map_p2s[i][0];
-
-            for (j = 0; j < interaction->ninter[i][order]; ++j){
-                intlist.push_back(interaction->intpairs[i][order][j]);
-            }
-            if (order > 0) {
-                for (j = 0; j < interaction->ninter[i][order - 1]; ++j){
-                    intlist_last.push_back(interaction->intpairs[i][order - 1][j]);
-                }
-            }
-            std::sort(intlist.begin(), intlist.end());
-            std::sort(intlist_last.begin(), intlist_last.end());
 
             if (order == 0){
 
@@ -887,7 +881,7 @@ void Fitting::rotational_invariance()
 
                 for (icrd = 0; icrd < 3; ++icrd){
 
-                    intarr[0] = 3 * iat + icrd;
+                    interaction_index[0] = 3 * iat + icrd;
 
                     for (mu = 0; mu < 3; ++mu){
                         for (nu = 0; nu < 3; ++nu){
@@ -895,19 +889,20 @@ void Fitting::rotational_invariance()
                             if (mu == nu) continue;
 
                             // clear history
+
                             for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
 
                             for (jat = 0; jat < nat; ++jat){
 
-                                intarr[1] = 3 * jat + mu;
-                                iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
+                                interaction_index[1] = 3 * jat + mu;
+                                iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
                                     arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
                                 }
 
-                                intarr[1] = 3 * jat + nu;
-                                iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
+                                interaction_index[1] = 3 * jat + nu;
+                                iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
                                     arr_constraint[arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                             
@@ -920,6 +915,56 @@ void Fitting::rotational_invariance()
                             }
                         }
                     }
+
+                }
+
+            } else {
+
+                // constraint between force constants of different orders
+
+                for (j = 0; j < interaction->ninter[i][order]; ++j){
+                    intlist.push_back(interaction->intpairs[i][order][j]);
+                }
+                for (j = 0; j < interaction->ninter[i][order - 1]; ++j){
+                    intlist_last.push_back(interaction->intpairs[i][order - 1][j]);
+                }
+                std::sort(intlist.begin(), intlist.end());
+                std::sort(intlist_last.begin(), intlist_last.end());
+
+                for (icrd = 0; icrd < 3; ++icrd){
+
+                    interaction_index[0] = 3 * iat + icrd;
+
+                    CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order);
+                    // loop for interacting pairs
+                    do {
+                        std::vector<int> data = g.now();
+
+                        std::cout << "order = " <<  order << std::endl;
+                        for (unsigned int idata = 0; idata < data.size(); ++idata){
+                            std::cout << std::setw(5) << data[idata];
+                            interaction_atom[idata + 1] = data[idata];
+                        }
+                        std::cout << std::endl;
+
+                        for (int ixyz = 0; ixyz < nxyz; ++ixyz){
+                        
+                            for (j = 0; j < order + 1; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent[ixyz][j];
+
+                    
+                        for (mu = 0; mu < 3; ++mu){
+                            for (nu = 0; nu < 3; ++nu){
+                            
+                                if (mu == nu) continue;
+
+
+
+                            }
+                        }
+
+                    }
+
+                    } while(g.next());
 
                 }
 
@@ -936,7 +981,8 @@ void Fitting::rotational_invariance()
         }
         std::cout << " done" << std::endl;
     }
-
+    memory->deallocate(interaction_index);
+    memory->deallocate(interaction_atom);
 }
 
 bool Fitting::is_allzero(const int n, const double *arr){
