@@ -15,6 +15,8 @@ namespace ALM_NS
 
 
     public:
+        CombinationWithRepetition(){};
+
         template<class InputIter>
         CombinationWithRepetition(InputIter begin, InputIter end, const unsigned int n){
 

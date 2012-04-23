@@ -67,6 +67,7 @@ void Interaction::init()
     memory->allocate(distlist, nat, nat);
 
     calc_distlist(nat, system->xcoord);
+    calc_minvec();
 
     files->ofs_int.open(files->file_int.c_str(), std::ios::out);
     if(!files->ofs_int) error->exit("openfiles", "cannot open int file");
@@ -354,6 +355,81 @@ bool Interaction::is_incutoff(int n, int *atomnumlist)
     memory->deallocate(dist_tmp);
     memory->deallocate(min_neib);
     return true;
+}
+
+void Interaction::calc_minvec()
+{
+
+    int i, j, k;
+    int isize, jsize, ksize;
+    int nat = system->nat;
+    int natmin = symmetry->natmin;
+    int iat;
+    double **x0 = system->xcoord;
+    double **x;
+    double **x_neib;
+    double dist;
+    double **dist_tmp;
+
+    memory->allocate(minvec, natmin, nat, 3);
+    memory->allocate(x, nat, 3);
+    memory->allocate(x_neib, nat, 3);
+    memory->allocate(dist_tmp, natmin, nat);
+
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            x[i][j] = x0[i][j];
+        }
+    }
+    system->frac2cart(x);
+
+    for (i = 0; i < natmin; ++i){
+
+        iat = symmetry->map_p2s[i][0];
+
+        for (j = 0; j < nat; ++j){
+            dist_tmp[i][j] = distance(x[iat], x[j]);
+            for (k = 0; k < 3; ++k){
+                minvec[i][j][k] = x[j][k] - x[iat][k];
+            }
+        }
+    }
+    
+    for (isize = -nsize[0]; isize <= nsize[0] ; ++isize){
+        for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize){
+            for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize){
+                if (isize == 0 && jsize == 0 && ksize == 0) continue;
+
+                for (i = 0; i < nat; ++i){
+                    x_neib[i][0] = x0[i][0] + static_cast<double>(isize);
+                    x_neib[i][1] = x0[i][1] + static_cast<double>(jsize);
+                    x_neib[i][2] = x0[i][2] + static_cast<double>(ksize);
+                }
+
+                system->frac2cart(x_neib);
+
+                for (i = 0; i < natmin; ++i){
+
+                    iat = symmetry->map_p2s[i][0];
+                    
+                    for (j = 0; j < nat; ++j){
+
+                        dist = distance(x[iat], x_neib[j]);
+
+                        // if a closer path found
+                        if(dist < dist_tmp[i][j]) {
+                            dist_tmp[i][j] = dist;
+                            for (k = 0; k < 3; ++k) minvec[i][j][k] = x_neib[j][k] - x[iat][k];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    memory->deallocate(x);
+    memory->deallocate(x_neib);
+    memory->deallocate(dist_tmp);
 }
 
 void Interaction::set_ordername(){

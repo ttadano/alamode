@@ -803,9 +803,12 @@ void Fitting::rotational_invariance()
 {
 
     // a first implemention of complicated constraints
-    // 2012.4.19
+    // 2012.4.23
 
     std::cout << "Start generating constraint matrix for rotational invariance..." << std::endl;
+
+    std::ofstream ofs_constraint;
+    ofs_constraint.open("CONSTRAINT", std::ios::out);
 
     int i, j;
     int iat, jat;
@@ -814,23 +817,26 @@ void Fitting::rotational_invariance()
     int maxorder = interaction->maxorder;
     int natmin = symmetry->natmin;
     int nat = system->nat;
-    int *ind;
-    int ixyz, nxyz;
-    int **xyzcomponent;
     int mu, nu;
+    int ixyz, nxyz;
+    int mu_lambda, lambda;
+    int levi_factor;
+
+    int *ind;
+    int **xyzcomponent;
     int *nparams, nparam_sub;
-    double *arr_constraint;
     int *interaction_index, *interaction_atom;
     int *interaction_tmp;
 
-    int mu_lambda;
-    int levi_factor;
+    double *arr_constraint;
+
+    std::vector<int> interaction_list, interaction_list_old, interaction_list_now;
 
     std::set<FcProperty> list_found;
     std::set<FcProperty> list_found_last;
     std::set<FcProperty>::iterator iter_found;
 
-    std::vector<int> intlist, intlist_last;
+    CombinationWithRepetition<int> g;
 
     memory->allocate(ind, maxorder + 1);
     memory->allocate(nparams, maxorder);
@@ -841,52 +847,36 @@ void Fitting::rotational_invariance()
 
         if (order == 0) {
             std::cout << "Constraint beteen " << std::setw(8) << "1st-order IFCs (which are zero) and " 
-                << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+                      << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
             nparam_sub = nparams[order];
         } else {
             std::cout << "Constraint between " << std::setw(8) << interaction->str_order[order - 1] << " and "
-                << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+                      << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
             nparam_sub = nparams[order] + nparams[order - 1];
         }
 
         memory->allocate(arr_constraint, nparam_sub);
         const_rotation[order].clear();
 
-        list_found.clear();
-        list_found_last.clear();
-
         memory->allocate(interaction_atom, order + 2);
         memory->allocate(interaction_index, order + 2);
         memory->allocate(interaction_tmp, order + 2);
 
+	if (order > 0) {
+            list_found_last = list_found;
+            nxyz = static_cast<int>(pow(static_cast<double>(3), order));
+            memory->allocate(xyzcomponent, nxyz, order);
+            fcs->get_xyzcomponent(order, xyzcomponent);
+        }
+
+        list_found.clear();
 
         for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
             FcProperty list_tmp = *p; // using copy constructor
             for (i = 0; i < order + 2; ++i){
                 ind[i] = list_tmp.elems[i];
             }
-            if(list_found.find(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother)) != list_found.end()) {
-                error->exit("rotational invariance", "Duplicate interaction list found");
-            }
             list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
-        }
-
-        if (order > 0) {
-            nxyz = static_cast<int>(pow(static_cast<double>(3), order));
-            //      nxyz_last = static_cast<int>(pow(static_cast<double>(3), order));
-            memory->allocate(xyzcomponent, nxyz, order);
-            fcs->get_xyzcomponent(order, xyzcomponent);
-
-            for (std::vector<FcProperty>::iterator p = fcs->fc_set[order - 1].begin(); p != fcs->fc_set[order - 1].end(); ++p){
-                FcProperty list_tmp = *p; // using copy constructor
-                for (i = 0; i < order + 1; ++i){
-                    ind[i] = list_tmp.elems[i];
-                }
-                if(list_found_last.find(FcProperty(order + 1, list_tmp.coef, ind, list_tmp.mother)) != list_found_last.end()) {
-                    error->exit("rotational invariance", "Duplicate interaction list found");
-                }
-                list_found_last.insert(FcProperty(order + 1, list_tmp.coef, ind, list_tmp.mother));
-            }
         }
 
         for (i = 0; i < natmin; ++i){
@@ -916,14 +906,17 @@ void Fitting::rotational_invariance()
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
-                                    arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
+//                                    arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
+                                    arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];                       
+//                                    std::cout << interaction->minvec[i][jat][nu] << std::endl;
                                 }
 
                                 interaction_index[1] = 3 * jat + nu;
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
-                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                             
+//                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                             
+                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];                             
                                 }
                             }
 
@@ -931,24 +924,26 @@ void Fitting::rotational_invariance()
                                 // add to constraint list
                                 const_rotation[order].insert(Constraint(nparam_sub, arr_constraint));
                             }
-                        }
-                    }
+
+                        } // nu
+                    }  // mu
                 }
             } else {
 
                 // constraint between force constants of different orders
 
-                intlist.clear();
-                intlist_last.clear();
+                interaction_list_old.clear();
+                interaction_list_now.clear();
 
                 for (j = 0; j < interaction->ninter[i][order]; ++j){
-                    intlist.push_back(interaction->intpairs[i][order][j]);
+                    interaction_list_now.push_back(interaction->intpairs[i][order][j]);
                 }
                 for (j = 0; j < interaction->ninter[i][order - 1]; ++j){
-                    intlist_last.push_back(interaction->intpairs[i][order - 1][j]);
+                    interaction_list_old.push_back(interaction->intpairs[i][order - 1][j]);
                 }
-                std::sort(intlist.begin(), intlist.end());
-                std::sort(intlist_last.begin(), intlist_last.end());
+
+                std::sort(interaction_list_now.begin(), interaction_list_now.end());
+                std::sort(interaction_list_old.begin(), interaction_list_old.end());
 
                 interaction_atom[0] = iat;
 
@@ -956,263 +951,174 @@ void Fitting::rotational_invariance()
 
                     interaction_index[0] = 3 * iat + icrd;
 
-                    CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order);
-                    
+                    CombinationWithRepetition<int> g_now(interaction_list_now.begin(), interaction_list_now.end(), order);
+                    CombinationWithRepetition<int> g_old(interaction_list_old.begin(), interaction_list_old.end(), order);
 
-                    // loop for interacting pairs
+// from m-th order to (m-1)-th order and
+// from (m-1)-th order to m-th order
+// 2-different directions to find all constraints
 
-                    do {
-                        std::vector<int> data = g.now();
+                    for (unsigned int direction = 0; direction < 2; ++direction){
 
-                        for (unsigned int idata = 0; idata < data.size(); ++idata)  interaction_atom[idata + 1] = data[idata];
-
-                        for (ixyz = 0; ixyz < nxyz; ++ixyz){
-
-                            for (j = 0; j < order + 1; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent[ixyz][j];
-
-                            for (mu = 0; mu < 3; ++mu){
-                                for (nu = 0; nu < 3; ++nu){
-
-                                    if (mu == nu) continue;
-
-                                    // Search for a new constraint below
-
-                                    for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
-
-                                    std::cout << "-------------------------------------------------------------" << std::endl;
-                                    std::cout << "New m_1 a_1 ... m_N a_N, mu_1 ... mu_N, mu, nu" << std::endl;
-                                    for (j = 0; j < order + 1; ++j){
-                                        std::cout << std::setw(10) << fcs->easyvizint(interaction_index[j]);
-                                    }
-                                    std::cout << ", mu = " << mu << ", nu = " << nu << std::endl;
-                                    std::cout << "Entering loop for m_N+1, a_N+1" << std::endl;
-                                    std::cout << "********************************" << std::endl;
-
-                                    for (jat = 0; jat < nat; ++jat){
-
-                                        interaction_atom[order + 1] = jat;
-                                        if(!interaction->is_incutoff(order + 2, interaction_atom)) continue;
-
-                                        interaction_index[order + 1] = 3 * jat + mu;
-                                        for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
-
-                                        std::cout << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
-                                        fcs->sort_tail(order + 2, interaction_tmp);
-
-                                        iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
-                                        if(iter_found != list_found.end()){
-                                            FcProperty arrtmp = *iter_found;
-                                            std::cout << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " <<std::setw(15) << arrtmp.coef * system->x_cartesian[jat][nu] << std::endl;
-                                            arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
-                                        } else {
-                                            std::cout <<" --> Not Found!" << std::endl;
-                                        }
-
-                                        interaction_index[order + 1] = 3 * jat + nu;
-                                        for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
-
-                                        std::cout << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
-                                        fcs->sort_tail(order + 2, interaction_tmp);
-
-                                        iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
-                                        if(iter_found != list_found.end()){
-                                            FcProperty arrtmp = *iter_found;
-                                            std::cout << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " <<std::setw(15) << -arrtmp.coef * system->x_cartesian[jat][mu] << std::endl;
-                                            arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                                
-                                        } else {
-                                            std::cout << " --> Not Found!" << std::endl;
-                                        }
-                                    }
-                                    std::cout << "********************************" << std::endl;
-                                    std::cout << "Loop for lambda start" << std::endl;
-
-                                    for (j = 0; j < order + 1; ++j){
-
-                                        std::cout << "lambda = " << j << std::endl;
-
-                                        mu_lambda = interaction_index[j] % 3;
-                                   
-
-                                        for (jcrd = 0; jcrd < 3; ++jcrd){
-
-                                            for (int k = 0; k < order + 1; ++k) interaction_tmp[k] = interaction_index[k];
-
-                                            interaction_tmp[j] = 3*(interaction_index[j] / 3) + jcrd;
-
-                                            levi_factor = 0;
-
-                                            for (int l = 0; l < 3; ++l){
-                                                levi_factor += levi_civita(l, mu, nu)*levi_civita(l, mu_lambda, jcrd); 
-                                            }
-
-                                            /*std::cout << "#!" << "(" << std::setw(5) << mu << "," << std::setw(5) << mu_lambda << ")"
-                                            << "(" << std::setw(5) << nu << "," << std::setw(5) << jcrd << ") - "
-                                            << "(" << std::setw(5) << nu << "," << std::setw(5) << mu_lambda << ")"
-                                            << "(" << std::setw(5) << mu << "," << std::setw(5) << jcrd << ")" << " = " << levi_factor << std::endl; */
-
-                                            if(levi_factor == 0) continue;
-
-                                            std::cout << "mu_lambda = " << jcrd << ":";
-                                            for (int k = 0; k < order + 1; ++k){
-                                                std::cout << std::setw(10) << fcs->easyvizint(interaction_tmp[k]);
-                                            }
-
-                                            fcs->sort_tail(order + 1, interaction_tmp);
-
-                                            iter_found = list_found_last.find(FcProperty(order + 1, 1.0, interaction_tmp, 1));
-                                            if(iter_found != list_found_last.end()){
-                                                FcProperty arrtmp = *iter_found;
-                                                std::cout << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " <<std::setw(15) << arrtmp.coef * static_cast<double>(levi_factor) << std::endl;
-                                                arr_constraint[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);                                
-                                            } else {
-                                                std::cout << " --> Not Found!" << std::endl;
-
-                                            }
-                                        }
-                                    }
-
-                                    if(!is_allzero(nparam_sub,arr_constraint)){
-                                        // add to constraint list
-                                        
-                                        const_rotation[order].insert(Constraint(nparam_sub, arr_constraint));
-                                        std::cout << "!!NEW CONSTRAINT!! : order = " << order << ", # " << const_rotation[order].size() << std::endl;
-                                    }
-                                }
-                            }
-
+                        if(direction == 0) {
+                            g = g_now;
+                        } else {
+                            g = g_old;
                         }
 
-                    } while(g.next());
+                        // loop for the interacting pairs
 
-                    // exchange interaction list and search again
+                        do {
+                            std::vector<int> data = g.now();
 
-                    CombinationWithRepetition<int> g_last(intlist_last.begin(), intlist_last.end(), order);
+                            for (unsigned int idata = 0; idata < data.size(); ++idata)  interaction_atom[idata + 1] = data[idata];
 
-                    do {
-                        std::vector<int> data = g_last.now();
+                            for (ixyz = 0; ixyz < nxyz; ++ixyz){
 
-                        for (unsigned int idata = 0; idata < data.size(); ++idata)  interaction_atom[idata + 1] = data[idata];
+                                for (j = 0; j < order + 1; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent[ixyz][j];
 
-                        for (ixyz = 0; ixyz < nxyz; ++ixyz){
+                                for (mu = 0; mu < 3; ++mu){
+                                    for (nu = 0; nu < 3; ++nu){
 
-                            for (j = 0; j < order + 1; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent[ixyz][j];
+                                        if (mu == nu) continue;
 
-                            for (mu = 0; mu < 3; ++mu){
-                                for (nu = 0; nu < 3; ++nu){
+                                        // Search for a new constraint below
 
-                                    if (mu == nu) continue;
+                                        for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
-                                    for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
-
-                                    std::cout << "-------------------------------------------------------------" << std::endl;
-                                    std::cout << "New m_1 a_1 ... m_N a_N, mu_1 ... mu_N, mu, nu" << std::endl;
-                                    for (j = 0; j < order + 1; ++j){
-                                        std::cout << std::setw(10) << fcs->easyvizint(interaction_index[j]);
-                                    }
-                                    std::cout << ", mu = " << mu << ", nu = " << nu << std::endl;
-                                    std::cout << "Entering loop for m_N+1, a_N+1" << std::endl;
-                                    std::cout << "********************************" << std::endl;
-
-                                    for (jat = 0; jat < nat; ++jat){
-
-                                        interaction_atom[order + 1] = jat;
-                                        if(!interaction->is_incutoff(order + 2, interaction_atom)) continue;
-
-                                        interaction_index[order + 1] = 3 * jat + mu;
-                                        for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
-
-                                        std::cout << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
-                                        fcs->sort_tail(order + 2, interaction_tmp);
-
-                                        iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
-                                        if(iter_found != list_found.end()){
-                                            FcProperty arrtmp = *iter_found;
-                                            std::cout << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " <<std::setw(15) << arrtmp.coef * system->x_cartesian[jat][nu] << std::endl;
-                                            arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
-                                        } else {
-                                            std::cout <<" --> Not Found!" << std::endl;
+                                        ofs_constraint << "-------------------------------------------------------------" << std::endl;
+                                        ofs_constraint << "New m_1 a_1 ... m_N a_N, mu_1 ... mu_N, mu, nu" << std::endl;
+                                        for (j = 0; j < order + 1; ++j){
+                                            ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_index[j]);
                                         }
+                                        ofs_constraint << ", mu = " << mu << ", nu = " << nu << std::endl;
+                                        ofs_constraint << "Entering loop for m_N+1, a_N+1" << std::endl;
+                                        ofs_constraint << "********************************" << std::endl;
 
-                                        interaction_index[order + 1] = 3 * jat + nu;
-                                        for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
+                                        // loop for m_{N+1}, a_{N+1}
+                                        for (jat = 0; jat < nat; ++jat){ 
+                                        
+                                            interaction_atom[order + 1] = jat;
+                                            if(!interaction->is_incutoff(order + 2, interaction_atom)) continue;
 
-                                        std::cout << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
-                                        fcs->sort_tail(order + 2, interaction_tmp);
+                                            interaction_index[order + 1] = 3 * jat + mu;
+                                            for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
 
-                                        iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
-                                        if(iter_found != list_found.end()){
-                                            FcProperty arrtmp = *iter_found;
-                                            std::cout << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " <<std::setw(15) << -arrtmp.coef * system->x_cartesian[jat][mu] << std::endl;
-                                            arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                                
-                                        } else {
-                                            std::cout << " --> Not Found!" << std::endl;
-                                        }
-                                    }
-                                    std::cout << "********************************" << std::endl;
-                                    std::cout << "Loop for lambda start" << std::endl;
+                                            ofs_constraint << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
+                                            fcs->sort_tail(order + 2, interaction_tmp);
 
-                                    for (j = 0; j < order + 1; ++j){
-
-                                        std::cout << "lambda = " << j << std::endl;
-
-                                        mu_lambda = interaction_index[j] % 3;
-                                   
-
-                                        for (jcrd = 0; jcrd < 3; ++jcrd){
-
-                                            for (int k = 0; k < order + 1; ++k) interaction_tmp[k] = interaction_index[k];
-
-                                            interaction_tmp[j] = 3*(interaction_index[j] / 3) + jcrd;
-
-                                            levi_factor = 0;
-
-                                            for (int l = 0; l < 3; ++l){
-                                                levi_factor += levi_civita(l, mu, nu)*levi_civita(l, mu_lambda, jcrd); 
-                                            }
-
-                                            /*std::cout << "#!" << "(" << std::setw(5) << mu << "," << std::setw(5) << mu_lambda << ")"
-                                            << "(" << std::setw(5) << nu << "," << std::setw(5) << jcrd << ") - "
-                                            << "(" << std::setw(5) << nu << "," << std::setw(5) << mu_lambda << ")"
-                                            << "(" << std::setw(5) << mu << "," << std::setw(5) << jcrd << ")" << " = " << levi_factor << std::endl; */
-
-                                            if(levi_factor == 0) continue;
-
-                                            std::cout << "mu_lambda = " << jcrd << ":";
-                                            for (int k = 0; k < order + 1; ++k){
-                                                std::cout << std::setw(10) << fcs->easyvizint(interaction_tmp[k]);
-                                            }
-
-                                            fcs->sort_tail(order + 1, interaction_tmp);
-
-                                            iter_found = list_found_last.find(FcProperty(order + 1, 1.0, interaction_tmp, 1));
-                                            if(iter_found != list_found_last.end()){
+                                            iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
+                                            if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
-                                                std::cout << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " <<std::setw(15) << arrtmp.coef * static_cast<double>(levi_factor) << std::endl;
-                                                arr_constraint[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);                                
+                                                ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
+                                                    //                                                        << std::setw(15) << arrtmp.coef * (system->x_cartesian[jat][nu] - system->x_cartesian[iat][nu]) << std::endl;
+//                                                arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];
+                                                        << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
+                                                arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
                                             } else {
-                                                std::cout << " --> Not Found!" << std::endl;
+                                                ofs_constraint <<" --> Not Found!" << std::endl;
+                                            }
 
+                                            interaction_index[order + 1] = 3 * jat + nu;
+                                            for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
+
+                                            ofs_constraint << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
+                                            fcs->sort_tail(order + 2, interaction_tmp);
+
+                                            iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
+                                            if(iter_found != list_found.end()){
+                                                FcProperty arrtmp = *iter_found;
+                                                ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
+//                                                               << std::setw(15) << -arrtmp.coef * (system->x_cartesian[jat][mu] - system->x_cartesian[iat][mu]) << std::endl;
+//                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];
+                                                        << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
+                                                arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
+                                            } else {
+                                                ofs_constraint << " --> Not Found!" << std::endl;
                                             }
                                         }
-                                    }
+                                        ofs_constraint << "********************************" << std::endl;
+                                        ofs_constraint << "Loop for lambda start" << std::endl;
 
-                                    if(!is_allzero(nparam_sub,arr_constraint)){
-                                        // add to constraint list
-                                        const_rotation[order].insert(Constraint(nparam_sub, arr_constraint));
-                                        std::cout << "!!NEW CONSTRAINT!! : order = " << order << ", # " << const_rotation[order].size() << std::endl;
-                                    }
+                                        for (lambda = 0; lambda < order + 1; ++lambda){
 
+                                            ofs_constraint << "lambda = " << lambda << std::endl;
 
-                                } // nu
-                            } // mu
-                        } // ixyz
-                   
+                                            mu_lambda = interaction_index[lambda] % 3;
+                                   
+                                            for (jcrd = 0; jcrd < 3; ++jcrd){
 
-                    } while(g_last.next());
+                                                for (j = 0; j < order + 1; ++j) interaction_tmp[j] = interaction_index[j];
 
-                }
+                                                interaction_tmp[lambda] = 3 * (interaction_index[lambda] / 3) + jcrd;
 
+                                                levi_factor = 0;
+
+                                                for (j = 0; j < 3; ++j){
+                                                    levi_factor += levi_civita(j, mu, nu)*levi_civita(j, mu_lambda, jcrd); 
+                                                }
+
+                                                /*ofs_constraint << "#!" << "(" << std::setw(5) << mu << "," << std::setw(5) << mu_lambda << ")"
+                                                  << "(" << std::setw(5) << nu << "," << std::setw(5) << jcrd << ") - "
+                                                  << "(" << std::setw(5) << nu << "," << std::setw(5) << mu_lambda << ")"
+                                                  << "(" << std::setw(5) << mu << "," << std::setw(5) << jcrd << ")" << " = " << levi_factor << std::endl; */
+
+                                                if(levi_factor == 0) continue;
+
+                                                ofs_constraint << "mu_lambda = " << jcrd << ":";
+                                                for (j = 0; j < order + 1; ++j){
+                                                    ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_tmp[j]);
+                                                }
+
+                                                fcs->sort_tail(order + 1, interaction_tmp);
+
+                                                iter_found = list_found_last.find(FcProperty(order + 1, 1.0, interaction_tmp, 1));
+                                                if(iter_found != list_found_last.end()){
+                                                    FcProperty arrtmp = *iter_found;
+                                                    ofs_constraint << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " 
+                                                                   << std::setw(15) << arrtmp.coef * static_cast<double>(levi_factor) << std::endl;
+                                                    arr_constraint[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);                                
+                                                } else {
+                                                    ofs_constraint << " --> Not Found!" << std::endl;
+
+                                                }
+                                            }
+                                        }
+
+                                        if(!is_allzero(nparam_sub,arr_constraint)){
+
+                                            // add to constraint list
+                                        
+                                            const_rotation[order].insert(Constraint(nparam_sub, arr_constraint));
+                                            ofs_constraint << "!!NEW CONSTRAINT!! : order = " << order << ", # " 
+                                                           << const_rotation[order].size() << std::endl;
+
+                                            for(j = 0; j < nparam_sub; ++j){
+                                                if(std::abs(arr_constraint[j]) > eps10) {
+                                                    ofs_constraint << "index = " << std::setw(5) <<  j << ": " 
+                                                                   << std::setw(5) << arr_constraint[j] << std::endl;
+                                                }
+                                            }
+                                        }
+
+                                    } // nu
+                                } // mu
+
+                            } // ixyz
+
+                        } while(g.next());
+
+                    } // direction
+                } // icrd
             }
+
+            // additional constraint for harmonic force constants
+
+            if(maxorder == 1) {
+                
+                
+            }
+
         }
 
         std::cout << const_rotation[order].size() << std::endl;
@@ -1363,22 +1269,22 @@ return qr.rank();
 }
 */
 
-//int Fitting::rank(int m, int n, double *mat)
-//{
-//    int LWORK = 10 * n;
-//    int INFO;
-//    double *WORK, *TAU;
-//    int lda = m;
-//    
-//    int nmin = std::min<int>(m, n);
-//
-//    memory->allocate(WORK, LWORK);
-//    memory->allocate(TAU, n);
-//
-//    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
-//
-//
-//}
+ //int Fitting::rank(int m, int n, double *mat)
+ //{
+ //    int LWORK = 10 * n;
+ //    int INFO;
+ //    double *WORK, *TAU;
+ //    int lda = m;
+ //    
+ //    int nmin = std::min<int>(m, n);
+ //
+ //    memory->allocate(WORK, LWORK);
+ //    memory->allocate(TAU, n);
+ //
+ //    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
+ //
+ //
+ //}
 
 int Fitting::rank(int m, int n, double *mat)
 {

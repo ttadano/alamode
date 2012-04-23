@@ -30,6 +30,8 @@ namespace ALM_NS {
         int **ninter;
         double ****relvec;
 
+        double ***minvec;
+
         bool is_incutoff(int, int *);
 
         template <typename T>
@@ -94,6 +96,7 @@ namespace ALM_NS {
         void calc_distlist(int, double **);
         void search_interactions();
         void set_ordername();
+        void calc_minvec();
     };
 }
 
