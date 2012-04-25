@@ -907,8 +907,7 @@ void Fitting::rotational_invariance()
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
 //                                    arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
-                                    arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];                       
-//                                    std::cout << interaction->minvec[i][jat][nu] << std::endl;
+                                    arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
                                 }
 
                                 interaction_index[1] = 3 * jat + nu;
@@ -1011,8 +1010,8 @@ void Fitting::rotational_invariance()
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
                                                 ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
-                                                    //                                                        << std::setw(15) << arrtmp.coef * (system->x_cartesian[jat][nu] - system->x_cartesian[iat][nu]) << std::endl;
-//                                                arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];
+                                      /* << std::setw(15) << arrtmp.coef * (system->x_cartesian[jat][nu] - system->x_cartesian[iat][nu]) << std::endl;
+                                      arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu]; */
                                                         << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
                                             } else {
@@ -1029,8 +1028,8 @@ void Fitting::rotational_invariance()
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
                                                 ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
-//                                                               << std::setw(15) << -arrtmp.coef * (system->x_cartesian[jat][mu] - system->x_cartesian[iat][mu]) << std::endl;
-//                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];
+                                       /*  << std::setw(15) << -arrtmp.coef * (system->x_cartesian[jat][mu] - system->x_cartesian[iat][mu]) << std::endl;
+                                           arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];*/
                                                         << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
                                             } else {
