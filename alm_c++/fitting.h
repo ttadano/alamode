@@ -18,8 +18,8 @@ namespace ALM_NS {
                 w_const.push_back(*p);
             }
         }
-        Constraint(const int n, const double *arr){
-            for(int i = 0; i < n; ++i){
+        Constraint(const int n, const double *arr, const int nshift=0){
+            for(int i = nshift; i < n; ++i){
                 w_const.push_back(arr[i]);
             }
         }
@@ -61,7 +61,7 @@ namespace ALM_NS {
         void translational_invariance();
         void rotational_invariance();
         void calc_constraint_matrix(const int, int &);
-        bool is_allzero(const int, const double *);
+        bool is_allzero(const int, const double *, const int nshift = 0);
 
         double **amat;
         double *fsum;
@@ -69,7 +69,10 @@ namespace ALM_NS {
         double **const_mat;
         double *const_rhs;
         std::set<Constraint> *const_translation;
-        std::set<Constraint> *const_rotation;
+        std::set<Constraint> *const_rotation_self;
+        std::set<Constraint> *const_rotation_cross;
+
+        void remove_redundant_rows(const int, std::set<Constraint> &);
     };
 
     extern "C" {

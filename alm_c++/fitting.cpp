@@ -66,14 +66,17 @@ void Fitting::fitmain()
         memory->allocate(const_translation, maxorder);
         translational_invariance();
 
-        memory->allocate(const_rotation, maxorder);
+        memory->allocate(const_rotation_self, maxorder);
+        memory->allocate(const_rotation_cross, maxorder);
         rotational_invariance();
 
         Pmax = 0;
         for (order = 0; order < maxorder; ++order){
+            //   Pmax += const_translation[order].size() + const_rotation[order].size();
             Pmax += const_translation[order].size();
         }
         if(constraint == 2){
+            //    Pmax -= const_translation[0].size() + const_rotation[0].size();
             Pmax -= const_translation[0].size();
             Pmax += fcs->ndup[0].size();
         }
@@ -113,7 +116,7 @@ void Fitting::fitmain()
 
     memory->allocate(params, N);
 
-    for(i = 0; i < N; ++i)    params[i] = fsum[i];
+    for(i = 0; i < N; ++i) params[i] = fsum[i];
 
     memory->deallocate(amat);
     memory->deallocate(fsum);
@@ -122,6 +125,8 @@ void Fitting::fitmain()
         memory->deallocate(const_mat);
         memory->deallocate(const_rhs);
         memory->deallocate(const_translation);
+        memory->deallocate(const_rotation_self);
+        memory->deallocate(const_rotation_cross);
     }
     timer->print_elapsed();
 }
@@ -788,6 +793,7 @@ void Fitting::translational_invariance()
         memory->deallocate(intarr);
         memory->deallocate(intarr_copy);
 
+        remove_redundant_rows(nparams, const_translation[order]);
         std::cout << " done." << std::endl;
     }
     memory->deallocate(ind);
@@ -798,6 +804,7 @@ void Fitting::translational_invariance()
     }
     std::cout << std::endl;
 }
+
 
 void Fitting::rotational_invariance()
 {
@@ -829,6 +836,7 @@ void Fitting::rotational_invariance()
     int *interaction_tmp;
 
     double *arr_constraint;
+    double *arr_constraint_self;
 
     std::vector<int> interaction_list, interaction_list_old, interaction_list_now;
 
@@ -841,28 +849,32 @@ void Fitting::rotational_invariance()
     memory->allocate(ind, maxorder + 1);
     memory->allocate(nparams, maxorder);
 
-    for (order = 0; order < maxorder ; ++order){
+    for (order = 0; order < maxorder; ++order) {
+        const_rotation_self[order].clear();
+        const_rotation_cross[order].clear();
+    }
+
+    for (order = 0; order < maxorder; ++order){
 
         nparams[order] = fcs->ndup[order].size();
 
         if (order == 0) {
             std::cout << "Constraint beteen " << std::setw(8) << "1st-order IFCs (which are zero) and " 
-                      << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+                << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
             nparam_sub = nparams[order];
         } else {
             std::cout << "Constraint between " << std::setw(8) << interaction->str_order[order - 1] << " and "
-                      << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+                << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
             nparam_sub = nparams[order] + nparams[order - 1];
         }
 
         memory->allocate(arr_constraint, nparam_sub);
-        const_rotation[order].clear();
-
+        memory->allocate(arr_constraint_self, nparams[order]);
         memory->allocate(interaction_atom, order + 2);
         memory->allocate(interaction_index, order + 2);
         memory->allocate(interaction_tmp, order + 2);
 
-	if (order > 0) {
+        if (order > 0) {
             list_found_last = list_found;
             nxyz = static_cast<int>(pow(static_cast<double>(3), order));
             memory->allocate(xyzcomponent, nxyz, order);
@@ -906,7 +918,7 @@ void Fitting::rotational_invariance()
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
-//                                    arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
+                                    //                                    arr_constraint[arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu];                                
                                     arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
                                 }
 
@@ -914,14 +926,14 @@ void Fitting::rotational_invariance()
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;
-//                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                             
+                                    //                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];                             
                                     arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];                             
                                 }
                             }
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
                                 // add to constraint list
-                                const_rotation[order].insert(Constraint(nparam_sub, arr_constraint));
+                                const_rotation_self[order].insert(Constraint(nparam_sub, arr_constraint));
                             }
 
                         } // nu
@@ -953,9 +965,9 @@ void Fitting::rotational_invariance()
                     CombinationWithRepetition<int> g_now(interaction_list_now.begin(), interaction_list_now.end(), order);
                     CombinationWithRepetition<int> g_old(interaction_list_old.begin(), interaction_list_old.end(), order);
 
-// from m-th order to (m-1)-th order and
-// from (m-1)-th order to m-th order
-// 2-different directions to find all constraints
+                    // from m-th order to (m-1)-th order and
+                    // from (m-1)-th order to m-th order
+                    // 2-different directions to find all constraints
 
                     for (unsigned int direction = 0; direction < 2; ++direction){
 
@@ -996,7 +1008,7 @@ void Fitting::rotational_invariance()
 
                                         // loop for m_{N+1}, a_{N+1}
                                         for (jat = 0; jat < nat; ++jat){ 
-                                        
+
                                             interaction_atom[order + 1] = jat;
                                             if(!interaction->is_incutoff(order + 2, interaction_atom)) continue;
 
@@ -1010,9 +1022,9 @@ void Fitting::rotational_invariance()
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
                                                 ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
-                                      /* << std::setw(15) << arrtmp.coef * (system->x_cartesian[jat][nu] - system->x_cartesian[iat][nu]) << std::endl;
-                                      arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu]; */
-                                                        << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
+                                                    /* << std::setw(15) << arrtmp.coef * (system->x_cartesian[jat][nu] - system->x_cartesian[iat][nu]) << std::endl;
+                                                    arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu]; */
+                                                    << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
                                             } else {
                                                 ofs_constraint <<" --> Not Found!" << std::endl;
@@ -1028,9 +1040,9 @@ void Fitting::rotational_invariance()
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
                                                 ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
-                                       /*  << std::setw(15) << -arrtmp.coef * (system->x_cartesian[jat][mu] - system->x_cartesian[iat][mu]) << std::endl;
-                                           arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];*/
-                                                        << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
+                                                    /*  << std::setw(15) << -arrtmp.coef * (system->x_cartesian[jat][mu] - system->x_cartesian[iat][mu]) << std::endl;
+                                                    arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];*/
+                                                    << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
                                             } else {
                                                 ofs_constraint << " --> Not Found!" << std::endl;
@@ -1044,7 +1056,7 @@ void Fitting::rotational_invariance()
                                             ofs_constraint << "lambda = " << lambda << std::endl;
 
                                             mu_lambda = interaction_index[lambda] % 3;
-                                   
+
                                             for (jcrd = 0; jcrd < 3; ++jcrd){
 
                                                 for (j = 0; j < order + 1; ++j) interaction_tmp[j] = interaction_index[j];
@@ -1058,9 +1070,9 @@ void Fitting::rotational_invariance()
                                                 }
 
                                                 /*ofs_constraint << "#!" << "(" << std::setw(5) << mu << "," << std::setw(5) << mu_lambda << ")"
-                                                  << "(" << std::setw(5) << nu << "," << std::setw(5) << jcrd << ") - "
-                                                  << "(" << std::setw(5) << nu << "," << std::setw(5) << mu_lambda << ")"
-                                                  << "(" << std::setw(5) << mu << "," << std::setw(5) << jcrd << ")" << " = " << levi_factor << std::endl; */
+                                                << "(" << std::setw(5) << nu << "," << std::setw(5) << jcrd << ") - "
+                                                << "(" << std::setw(5) << nu << "," << std::setw(5) << mu_lambda << ")"
+                                                << "(" << std::setw(5) << mu << "," << std::setw(5) << jcrd << ")" << " = " << levi_factor << std::endl; */
 
                                                 if(levi_factor == 0) continue;
 
@@ -1075,7 +1087,7 @@ void Fitting::rotational_invariance()
                                                 if(iter_found != list_found_last.end()){
                                                     FcProperty arrtmp = *iter_found;
                                                     ofs_constraint << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " 
-                                                                   << std::setw(15) << arrtmp.coef * static_cast<double>(levi_factor) << std::endl;
+                                                        << std::setw(15) << arrtmp.coef * static_cast<double>(levi_factor) << std::endl;
                                                     arr_constraint[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);                                
                                                 } else {
                                                     ofs_constraint << " --> Not Found!" << std::endl;
@@ -1087,15 +1099,19 @@ void Fitting::rotational_invariance()
                                         if(!is_allzero(nparam_sub,arr_constraint)){
 
                                             // add to constraint list
-                                        
-                                            const_rotation[order].insert(Constraint(nparam_sub, arr_constraint));
-                                            ofs_constraint << "!!NEW CONSTRAINT!! : order = " << order << ", # " 
-                                                           << const_rotation[order].size() << std::endl;
+
+                                            if(is_allzero(nparam_sub, arr_constraint, nparams[order - 1])){
+                                                const_rotation_self[order - 1].insert(Constraint(nparams[order - 1], arr_constraint));                                      
+                                            } else if (is_allzero(nparams[order - 1], arr_constraint)) {
+                                                const_rotation_self[order].insert(Constraint(nparam_sub, arr_constraint, nparams[order - 1]));
+                                            } else {
+                                                const_rotation_cross[order].insert(Constraint(nparam_sub, arr_constraint)); 
+                                            }
 
                                             for(j = 0; j < nparam_sub; ++j){
                                                 if(std::abs(arr_constraint[j]) > eps10) {
                                                     ofs_constraint << "index = " << std::setw(5) <<  j << ": " 
-                                                                   << std::setw(5) << arr_constraint[j] << std::endl;
+                                                        << std::setw(5) << arr_constraint[j] << std::endl;
                                                 }
                                             }
                                         }
@@ -1114,29 +1130,89 @@ void Fitting::rotational_invariance()
             // additional constraint for harmonic force constants
 
             if(maxorder == 1) {
-                
-                
+                // hogehoge suru zo
+
             }
 
         }
 
-        std::cout << const_rotation[order].size() << std::endl;
-        for(std::set<Constraint>::iterator p = const_rotation[order].begin(); p != const_rotation[order].end(); ++p){
+        std::cout << " done" << std::endl;
+    }
+
+    for (order = 0; order < maxorder; ++order) {
+        remove_redundant_rows(nparam_sub, const_rotation_cross[order]);
+        remove_redundant_rows(nparams[order], const_rotation_self[order]);
+
+        std::cout << const_rotation_self[order].size() << std::endl;
+        for(std::set<Constraint>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
+            Constraint const_tmp = *p;
+            for (j = 0; j < nparams[order]; ++j){
+                std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
+            }
+            std::cout << std::endl;
+        }
+        if (order == 0) {
+            nparam_sub = nparams[order];
+        } else {
+        nparam_sub = nparams[order] + nparams[order - 1];
+        }
+        std::cout << const_rotation_cross[order].size() << std::endl;
+        for(std::set<Constraint>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p){
             Constraint const_tmp = *p;
             for (j = 0; j < nparam_sub; ++j){
                 std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
             }
             std::cout << std::endl;
         }
-        std::cout << " done" << std::endl;
     }
+
     memory->deallocate(interaction_index);
     memory->deallocate(interaction_atom);
 }
 
-bool Fitting::is_allzero(const int n, const double *arr){
+void Fitting::remove_redundant_rows(const int n, std::set<Constraint> &Constraint_Set)
+{
+    using namespace Eigen;
 
-    for(int i = 0; i < n; ++i){
+    int nrow = n;
+    int ncol = Constraint_Set.size();
+    double *arr_tmp;
+
+    if(ncol > 0) {
+        memory->allocate(arr_tmp, nrow);
+        MatrixXd mat_tmp(nrow, ncol);
+
+        int icol = 0;
+
+        for (std::set<Constraint>::iterator p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p){
+            Constraint const_now = *p;
+            for (int i = 0; i < nrow; ++i){
+                mat_tmp(i, icol) = const_now.w_const[i];
+            }
+            ++icol;
+        }
+
+        FullPivLU<MatrixXd> lu_decomp(mat_tmp);
+        int nrank = lu_decomp.rank();
+        MatrixXd c_reduced = lu_decomp.image(mat_tmp);
+
+        Constraint_Set.clear();
+
+        for(icol = 0; icol < nrank; ++icol){
+            for(int irow = 0; irow < nrow; ++irow){
+                arr_tmp[irow] = c_reduced(irow, icol);
+            }
+
+            Constraint_Set.insert(Constraint(nrow, arr_tmp));
+        }
+
+        memory->deallocate(arr_tmp);
+    }
+}
+
+bool Fitting::is_allzero(const int n, const double *arr, const int nshift){
+
+    for(int i = nshift; i < n; ++i){
         if(std::abs(arr[i]) > eps10) {
             return false;
         }
@@ -1268,22 +1344,22 @@ return qr.rank();
 }
 */
 
- //int Fitting::rank(int m, int n, double *mat)
- //{
- //    int LWORK = 10 * n;
- //    int INFO;
- //    double *WORK, *TAU;
- //    int lda = m;
- //    
- //    int nmin = std::min<int>(m, n);
- //
- //    memory->allocate(WORK, LWORK);
- //    memory->allocate(TAU, n);
- //
- //    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
- //
- //
- //}
+//int Fitting::rank(int m, int n, double *mat)
+//{
+//    int LWORK = 10 * n;
+//    int INFO;
+//    double *WORK, *TAU;
+//    int lda = m;
+//    
+//    int nmin = std::min<int>(m, n);
+//
+//    memory->allocate(WORK, LWORK);
+//    memory->allocate(TAU, n);
+//
+//    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
+//
+//
+//}
 
 int Fitting::rank(int m, int n, double *mat)
 {
