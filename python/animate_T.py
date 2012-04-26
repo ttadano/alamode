@@ -19,31 +19,52 @@ if __name__ == '__main__':
     ymin = float(sys.argv[3])
     ymax = float(sys.argv[4])
     fps = sys.argv[5]
+    dt = float(sys.argv[4])
 
-    T = loadtxt(file_T)
-
-    xmin = 0
-    xmax = T[npoint-1,0]
-
-    nrow, ncol = np.shape(T)
-
-    ndata = nrow / npoint
+    ifs = open(file_T)
+    ipoint = 0
+    iframe = 0
+    x = []
+    temperature = []
     files = []
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    for i in range(ndata):
-        ax.cla()
-        ax.axis([xmin, xmax, ymin, ymax])
-        ax.plot(T[i*npoint:(i+1)*npoint - 1,0], T[i*npoint:(i+1)*npoint - 1,1])
-        fname = '_tmp%04d.png' % i
-        print 'Saving frame', fname
-        fig.savefig(fname)
-        files.append(fname)
+    xmin = 0
+    xmax = None
+
+    for line in ifs:
+        if line.strip().startswith("#"):
+            continue
+        
+        ipoint += 1
+        a, b = line.split()
+        x.append(float(a))
+        temperature.append(float(b))
+
+        if ipoint == npoint:
+            if xmax == None:
+                xmax = x[npoint - 1]
+
+            ax.cla()
+            ax.axis([xmin, xmax, ymin, ymax])
+            ax.plot(x, temperature)
+            time_str = 't = ' + str((iframe + 1) * dt) + ' ps'
+            plt.text((xmax - xmin)*0.75, (ymax - ymin)*0.8, time_str)
+            fname = '_tmp%05d.png' % iframe
+            print 'Saving frame', fname
+            fig.savefig(fname)
+            files.append(fname)
+            iframe += 1
+            ipoint = 0
+
+            # Clear history
+            x = []
+            temperature = []
 
     print 'Making movie animation.mpg - this make take a while'
-    command = "mencoder 'mf://_tmp*.png' -mf type=png:fps=" + fps + " -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg"
+    command = "mencoder 'mf://_tmp*.png' -mf type=png:fps=" + fps + " -ovc lavc -lavcopts vcodec=mpeg4:threads=4:vbitrate=1500 -oac copy -o animation.mp4"
     os.system(command)
 
     print
