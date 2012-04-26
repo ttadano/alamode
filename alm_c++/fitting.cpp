@@ -805,12 +805,11 @@ void Fitting::translational_invariance()
     std::cout << std::endl;
 }
 
-
 void Fitting::rotational_invariance()
 {
 
-    // a first implemention of complicated constraints
-    // 2012.4.23
+    // A first implemention of complicated constraints
+    // 2012.4.26
 
     std::cout << "Start generating constraint matrix for rotational invariance..." << std::endl;
 
@@ -825,12 +824,12 @@ void Fitting::rotational_invariance()
     int natmin = symmetry->natmin;
     int nat = system->nat;
     int mu, nu;
-    int ixyz, nxyz;
+    int ixyz, nxyz, nxyz2;
     int mu_lambda, lambda;
     int levi_factor;
 
     int *ind;
-    int **xyzcomponent;
+    int **xyzcomponent, **xyzcomponent2;
     int *nparams, nparam_sub;
     int *interaction_index, *interaction_atom;
     int *interaction_tmp;
@@ -896,6 +895,12 @@ void Fitting::rotational_invariance()
             iat = symmetry->map_p2s[i][0];
 
             if (order == 0){
+
+                 interaction_list_now.clear();
+                for (j = 0; j < interaction->ninter[i][order]; ++j){
+                    interaction_list_now.push_back(interaction->intpairs[i][order][j]);
+                }
+                std::sort(interaction_list_now.begin(), interaction_list_now.end());
 
                 // special treatment for harmonic force constants
 
@@ -1127,34 +1132,99 @@ void Fitting::rotational_invariance()
                 } // icrd
             }
 
-            // additional constraint for harmonic force constants
+            // additional constraint for the last order
 
-            if(maxorder == 1) {
-                // hogehoge suru zo
+            if (order == maxorder - 1) {
 
+                nxyz2 = static_cast<int>(pow(static_cast<double>(3), order + 1));
+                memory->allocate(xyzcomponent2, nxyz2, order + 1);
+                fcs->get_xyzcomponent(order + 1, xyzcomponent2);
+
+                CombinationWithRepetition<int> g_now(interaction_list_now.begin(), interaction_list_now.end(), order + 1);
+                do {
+
+                    std::vector<int> data = g_now.now();
+
+                    for (unsigned int idata = 0; idata < data.size(); ++idata)  interaction_atom[idata + 1] = data[idata];
+                    
+                    for (ixyz = 0; ixyz < nxyz2; ++ixyz){
+
+                        for (j = 0; j < order + 1; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent2[ixyz][j];
+                        for (j = 0; j < order + 2; ++j){
+                            ofs_constraint << "#$$ i_1 .. i_N = " << std::setw(5) << fcs->easyvizint(interaction_index[j]);
+                        }
+                        ofs_constraint << std::endl;
+
+                        for (mu = 0; mu < 3; ++mu){
+                            for (nu = 0; nu < 3; ++nu){
+
+                                ofs_constraint << "#$$ mu = " << mu << " nu = " << nu << std::endl;
+
+                                if (mu == nu) continue;
+
+                                for (j = 0; j < nparams[order]; ++j) arr_constraint_self[j] = 0.0;
+
+                                for (lambda = 0; lambda < order + 2; ++lambda){
+
+                                    mu_lambda = interaction_index[lambda] % 3;
+
+                                    for (jcrd = 0; jcrd < 3; ++jcrd){
+
+                                        for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
+
+                                        interaction_tmp[lambda] = 3 * (interaction_index[lambda] / 3) + jcrd;
+
+                                        levi_factor = 0;
+
+                                        for (j = 0; j < 3; ++j){
+                                            levi_factor += levi_civita(j, mu, nu)*levi_civita(j, mu_lambda, jcrd); 
+                                        }
+
+                                        if(levi_factor == 0) continue;
+
+                                        fcs->sort_tail(order + 2, interaction_tmp);
+
+                                        iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
+                                        if(iter_found != list_found.end()){
+                                            FcProperty arrtmp = *iter_found;
+                                            arr_constraint_self[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);                                
+                                        }
+                                    } // jcrd
+                                } // lambda
+
+                                if(!is_allzero(nparams[order], arr_constraint_self)){
+                                    const_rotation_self[order].insert(Constraint(nparams[order], arr_constraint_self));         
+                                }
+
+                            } // nu
+                        } // mu
+
+                    } // ixyz
+
+
+                } while(g_now.next());
+
+                memory->deallocate(xyzcomponent2);
             }
 
         }
 
         std::cout << " done" << std::endl;
+        memory->deallocate(arr_constraint);
+        memory->deallocate(arr_constraint_self);
+        memory->deallocate(interaction_tmp);
+        memory->deallocate(interaction_index);
+        memory->deallocate(interaction_atom);
     }
 
     for (order = 0; order < maxorder; ++order) {
         remove_redundant_rows(nparam_sub, const_rotation_cross[order]);
         remove_redundant_rows(nparams[order], const_rotation_self[order]);
 
-        std::cout << const_rotation_self[order].size() << std::endl;
-        for(std::set<Constraint>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
-            Constraint const_tmp = *p;
-            for (j = 0; j < nparams[order]; ++j){
-                std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
-            }
-            std::cout << std::endl;
-        }
-        if (order == 0) {
+     /*   if (order == 0) {
             nparam_sub = nparams[order];
         } else {
-        nparam_sub = nparams[order] + nparams[order - 1];
+            nparam_sub = nparams[order] + nparams[order - 1];
         }
         std::cout << const_rotation_cross[order].size() << std::endl;
         for(std::set<Constraint>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p){
@@ -1164,10 +1234,19 @@ void Fitting::rotational_invariance()
             }
             std::cout << std::endl;
         }
-    }
 
-    memory->deallocate(interaction_index);
-    memory->deallocate(interaction_atom);
+        std::cout << const_rotation_self[order].size() << std::endl;
+        for(std::set<Constraint>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
+            Constraint const_tmp = *p;
+            for (j = 0; j < nparams[order]; ++j){
+                std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
+            }
+            std::cout << std::endl;
+        }
+        */
+    }
+    memory->deallocate(ind);
+    memory->deallocate(nparams);
 }
 
 void Fitting::remove_redundant_rows(const int n, std::set<Constraint> &Constraint_Set)
