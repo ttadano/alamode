@@ -1,5 +1,4 @@
-#ifndef ALM_INTERACTION_HEADER
-#define ALM_INTERACTION_HEADER
+#pragma once
 
 #include <string>
 #include "pointers.h"
@@ -99,5 +98,3 @@ namespace ALM_NS {
         void calc_minvec();
     };
 }
-
-#endif

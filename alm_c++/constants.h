@@ -1,5 +1,4 @@
-#ifndef ALM_CONSTANTS_HEADER
-#define ALM_CONSTANTS_HEADER
+#pragma once
 
 #include <cfloat>
 #include <cmath>
@@ -18,5 +17,3 @@ static const double eps = DBL_EPSILON;
 static const double eps12 = 1.0e-12;
 static const double eps10 = 1.0e-10;
 static const double eps8 = 1.0e-8;
-
-#endif

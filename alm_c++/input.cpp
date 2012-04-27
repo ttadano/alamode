@@ -8,6 +8,7 @@
 #include "symmetry.h"
 #include "error.h"
 #include "fitting.h"
+#include "constraint.h"
 
 using namespace ALM_NS;
 
@@ -69,7 +70,8 @@ void Input::parce_input()
     cin >> multiply_data >> constraint_flag;
     if(constraint_flag == 2) {
         cin >> fc2_file;
-        fitting->fc2_file = fc2_file;
+       // fitting->fc2_file = fc2_file;
+        constraint->fc2_file = fc2_file;
     }
 
     cin >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];
@@ -107,7 +109,8 @@ void Input::parce_input()
         }
     }
     symmetry->multiply_data = multiply_data;
-    fitting->constraint_mode = constraint_flag;
+    constraint->constraint_mode = constraint_flag;
+   // fitting->constraint_mode = constraint_flag;
 
     for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
 

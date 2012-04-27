@@ -1,5 +1,4 @@
-#ifndef ALM_INPUT_HEADER
-#define ALM_INPUT_HEADER
+#pragma once
 
 #include "pointers.h"
 
@@ -11,5 +10,3 @@ namespace ALM_NS {
         void parce_input();
     };
 }
-
-#endif

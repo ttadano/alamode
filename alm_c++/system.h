@@ -1,5 +1,4 @@
-#ifndef ALM_SYSTEM_HEADER
-#define ALM_SYSTEM_HEADER
+#pragma once
 
 #include "pointers.h"
 #include <string>
@@ -25,4 +24,3 @@ namespace ALM_NS {
 
     };
 }
-#endif

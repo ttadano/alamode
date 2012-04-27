@@ -1,5 +1,4 @@
-#ifndef ALM_SYMMETRY_HEADER
-#define ALM_SYMMETRY_HEADER
+#pragma once
 
 #include "pointers.h"
 #include <Eigen/Core>
@@ -92,4 +91,3 @@ namespace ALM_NS {
 
     
 }
-#endif

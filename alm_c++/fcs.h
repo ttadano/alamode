@@ -1,5 +1,4 @@
-#ifndef ALM_FCS_HEADER
-#define ALM_FCS_HEADER
+#pragma once
 
 #include "pointers.h"
 #include <vector>
@@ -72,5 +71,3 @@ namespace ALM_NS {
     };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef ALM_COMBINATION_HEADER
-#define ALM_COMBINATION_HEADER
+#pragma once
 
 #include<vector>
 #include<set>
@@ -59,5 +58,3 @@ namespace ALM_NS
     };
 
 }
-
-#endif

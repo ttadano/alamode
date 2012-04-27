@@ -81,6 +81,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="alamode.cpp" />
+    <ClCompile Include="constraint.cpp" />
     <ClCompile Include="error.cpp" />
     <ClCompile Include="fcs.cpp" />
     <ClCompile Include="files.cpp" />
@@ -98,6 +99,7 @@
     <ClInclude Include="alamode.h" />
     <ClInclude Include="combination.h" />
     <ClInclude Include="constants.h" />
+    <ClInclude Include="constraint.h" />
     <ClInclude Include="error.h" />
     <ClInclude Include="fcs.h" />
     <ClInclude Include="files.h" />

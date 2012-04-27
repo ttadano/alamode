@@ -1,7 +1,6 @@
 /* Declaration of pointers used in the whole program. */
 
-#ifndef ALM_ALAMODE_HEADER
-#define ALM_ALAMODE_HEADER
+#pragma once
 
 namespace ALM_NS {
 
@@ -14,6 +13,7 @@ namespace ALM_NS {
         class Fcs *fcs;
         class Symmetry *symmetry;
         class Fitting *fitting;
+        class Constraint *constraint;
         class Files *files;
         class Writes *writes;
         class Error *error;
@@ -26,5 +26,3 @@ namespace ALM_NS {
 
     };
 }
-
-#endif

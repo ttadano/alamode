@@ -1,5 +1,4 @@
-#ifndef ALM_FILES_HEADER
-#define ALM_FILES_HEADER
+#pragma once
 
 #include <string>
 #include <fstream>
@@ -38,4 +37,3 @@ namespace ALM_NS {
         void setfilenames();
     };
 }
-#endif

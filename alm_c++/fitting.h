@@ -1,5 +1,4 @@
-#ifndef ALM_FITTING_HEADER
-#define ALM_FITTING_HEADER
+#pragma once
 
 #include "pointers.h"
 #include <vector>
@@ -7,27 +6,6 @@
 #include <string>
 
 namespace ALM_NS {
-
-    class ConstraintClass {
-    public:
-        std::vector<double> w_const;
-
-        ConstraintClass();
-        ConstraintClass(const ConstraintClass &a){
-            for(std::vector<double>::const_iterator p = a.w_const.begin(); p != a.w_const.end(); ++p){
-                w_const.push_back(*p);
-            }
-        }
-        ConstraintClass(const int n, const double *arr, const int nshift=0){
-            for(int i = nshift; i < n; ++i){
-                w_const.push_back(arr[i]);
-            }
-        }
-    };
-
-    inline bool operator<(const ConstraintClass a, const ConstraintClass b){
-        return std::lexicographical_compare(a.w_const.begin(), a.w_const.end(), b.w_const.begin(), b.w_const.end());
-    }
 
     class Fitting: protected Pointers {
     public:
@@ -38,8 +16,8 @@ namespace ALM_NS {
        // int rank(const int, const int, double **);
         int rank(int, int, double *);
         // int getRankEigen(const int, const int,const  int);
-        int constraint_mode;
-        std::string fc2_file;
+     //   int constraint_mode;
+      //  std::string fc2_file;
 
         double *params;
 
@@ -54,25 +32,10 @@ namespace ALM_NS {
         void calc_matrix_elements(const int, const int, const int, 
             const int, const int, const int, const int);
         double gamma(const int, const int *);
-        int factorial(const int);
-
-        int levi_civita(const int, const int, const int);
-
-        void translational_invariance();
-        void rotational_invariance();
-        void calc_constraint_matrix(const int, int &);
-        bool is_allzero(const int, const double *, const int nshift = 0);
-
+        int factorial(const int);       
+      
         double **amat;
-        double *fsum;
-
-        double **const_mat;
-        double *const_rhs;
-        std::set<ConstraintClass> *const_translation;
-        std::set<ConstraintClass> *const_rotation_self;
-        std::set<ConstraintClass> *const_rotation_cross;
-
-        void remove_redundant_rows(const int, std::set<ConstraintClass> &);
+        double *fsum;       
     };
 
     extern "C" {
@@ -94,4 +57,3 @@ namespace ALM_NS {
     }
 
 }
-#endif

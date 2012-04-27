@@ -1,5 +1,4 @@
-#ifndef ALM_LISTCOMPARISON_HEADER
-#define ALM_LISTCOMPARISON_HEADER
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -44,5 +43,3 @@ namespace ALM_NS
         return s;
     }
 }
-
-#endif

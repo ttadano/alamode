@@ -1,5 +1,4 @@
-#ifndef ALM_POINTERS_HEADER
-#define ALM_POINTERS_HEADER
+#pragma once
 
 #include "alamode.h"
 
@@ -15,6 +14,7 @@ namespace ALM_NS {
           interaction(ptr->interaction),
           symmetry(ptr->symmetry),
           fitting(ptr->fitting),
+          constraint(ptr->constraint),
           files(ptr->files),
           error(ptr->error),
           fcs(ptr->fcs),
@@ -30,10 +30,10 @@ namespace ALM_NS {
         Fcs *&fcs;
         Symmetry *&symmetry;
         Fitting *&fitting;
+        Constraint *&constraint;
         Files *&files;
         Writes *&writes;
         Error *&error;
         Timer *&timer;
     };
 }
-#endif

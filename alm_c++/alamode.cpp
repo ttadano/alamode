@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "fcs.h"
 #include "fitting.h"
+#include "constraint.h"
 #include "timer.h"
 #include "writes.h"
 
@@ -22,6 +23,7 @@ ALM::ALM(int narg, char **arg)
     create();
     input->parce_input();
     initialize();
+    constraint->setup();
     fitting->fitmain();
     writes->writeall();
     finalize();
@@ -37,6 +39,7 @@ void ALM::create()
     fcs = new Fcs(this);
     symmetry = new Symmetry(this);
     fitting = new Fitting(this);
+    constraint = new Constraint(this);
     writes = new Writes(this);
 }
 
@@ -64,5 +67,6 @@ void ALM::finalize()
     delete symmetry;
     delete system;
     delete fitting;
+    delete constraint;
     delete writes;
 }

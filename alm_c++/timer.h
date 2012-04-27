@@ -1,5 +1,4 @@
-#ifndef ALM_TIMER_HEADER
-#define ALM_TIMER_HEADER
+#pragma once
 
 #include <string>
 #include "pointers.h"
@@ -31,4 +30,3 @@ namespace ALM_NS {
 #endif
     };
 }
-#endif
