@@ -39,6 +39,11 @@ void Constraint::setup(){
 
         memory->allocate(const_rotation_self, maxorder);
         memory->allocate(const_rotation_cross, maxorder);
+
+        for (order = 0; order < maxorder; ++order){
+            const_rotation_self[order].clear();
+            const_rotation_cross[order].clear();
+        }
         rotational_invariance();
 
         Pmax = 0;
