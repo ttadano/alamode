@@ -107,7 +107,7 @@ void Input::parce_input()
         }
     }
     symmetry->multiply_data = multiply_data;
-    fitting->constraint = constraint_flag;
+    fitting->constraint_mode = constraint_flag;
 
     for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
 

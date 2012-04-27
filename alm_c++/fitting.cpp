@@ -57,7 +57,7 @@ void Fitting::fitmain()
     memory->allocate(amat, M, N);
     memory->allocate(fsum, M);
 
-    if (constraint != 0){
+    if (constraint_mode != 0){
 
         // Generate constraint matrix
 
@@ -75,7 +75,7 @@ void Fitting::fitmain()
             //   Pmax += const_translation[order].size() + const_rotation[order].size();
             Pmax += const_translation[order].size();
         }
-        if(constraint == 2){
+        if(constraint_mode == 2){
             //    Pmax -= const_translation[0].size() + const_rotation[0].size();
             Pmax -= const_translation[0].size();
             Pmax += fcs->ndup[0].size();
@@ -99,13 +99,13 @@ void Fitting::fitmain()
         int M_Start = 3 * natmin * ntran * (nstart - 1);
         int M_End   = 3 * natmin * ntran * nend;
 
-        if(constraint == 0) {
+        if(constraint_mode == 0) {
             fit_without_constraints(N, M_Start, M_End);
         } else {
             fit_with_constraints(N, M_Start, M_End, P);
         }
     } else {
-        if (constraint == 0) {
+        if (constraint_mode == 0) {
             error->exit("fitmain", "nskip has to be 0 when constraint = 0");
         } else {
             fit_consecutively(N, P, natmin, ntran, ndata, nstart, nend, nskip);
@@ -121,7 +121,7 @@ void Fitting::fitmain()
     memory->deallocate(amat);
     memory->deallocate(fsum);
 
-    if (constraint != 0){
+    if (constraint_mode != 0){
         memory->deallocate(const_mat);
         memory->deallocate(const_rhs);
         memory->deallocate(const_translation);
@@ -475,7 +475,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     }
     std::cout << std::endl;
 
-    if(constraint == 2) {
+    if(constraint_mode == 2) {
         std::cout << "Harmonic Force Constants will be fixed to the values in the given reference file: " << fc2_file << std::endl;
         std::cout << "Constraint Matrix for Harmonic fcs will be updated." << std::endl << std::endl;
         P =  P - nrank[0] + nparam[0];
@@ -493,7 +493,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     irow = 0;
     icol = 0;
 
-    if(constraint == 2){
+    if(constraint_mode == 2){
         std::ifstream ifs_fc2;
         ifs_fc2.open(fc2_file.c_str(), std::ios::in);
         if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");

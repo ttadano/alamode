@@ -38,7 +38,7 @@ namespace ALM_NS {
        // int rank(const int, const int, double **);
         int rank(int, int, double *);
         // int getRankEigen(const int, const int,const  int);
-        int constraint;
+        int constraint_mode;
         std::string fc2_file;
 
         double *params;
