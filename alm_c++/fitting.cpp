@@ -183,13 +183,11 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P)
         }
     }
 
-    std::cout << "OK1";
     for(j = 0; j < N; ++j){
         for(i = 0; i < P; ++i){
             mat_tmp[k++] = constraint->const_mat[i][j];
         }
     }
-    std::cout << "OK2";
 
     nrank = rank((M+P), N, mat_tmp);
     memory->deallocate(mat_tmp);

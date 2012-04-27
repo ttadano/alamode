@@ -12,7 +12,12 @@
 using namespace ALM_NS;
 
 Constraint::Constraint(ALM *alm) : Pointers(alm){};
-Constraint::~Constraint() {};
+Constraint::~Constraint() {
+    if (constraint_mode != 0) {
+        memory->deallocate(const_mat);
+        memory->deallocate(const_rhs);
+    }
+};
 
 void Constraint::setup(){
 
@@ -23,8 +28,6 @@ void Constraint::setup(){
         int i;
         int maxorder = interaction->maxorder;
         int Pmax, order;
-
-
         int N = 0;
 
         for(i = 0; i < maxorder; ++i){
@@ -54,8 +57,6 @@ void Constraint::setup(){
         calc_constraint_matrix(N, P);
         std::cout << "Total number of constraints: " << P << std::endl;
 
-//        memory->deallocate(const_mat);
-//        memory->deallocate(const_rhs);
         memory->deallocate(const_translation);
         memory->deallocate(const_rotation_self);
         memory->deallocate(const_rotation_cross);
@@ -530,8 +531,8 @@ void Constraint::rotational_invariance()
                     CombinationWithRepetition<int> g_now(interaction_list_now.begin(), interaction_list_now.end(), order);
                     CombinationWithRepetition<int> g_old(interaction_list_old.begin(), interaction_list_old.end(), order);
 
-                    // from m-th order to (m-1)-th order and
-                    // from (m-1)-th order to m-th order
+                    // m    -th order --> (m-1)-th order
+                    // (m-1)-th order -->     m-th order
                     // 2-different directions to find all constraints
 
                     for (unsigned int direction = 0; direction < 2; ++direction){
@@ -722,8 +723,8 @@ void Constraint::rotational_invariance()
                 } // icrd
             }
 
-            // additional constraint for the last order
-            // All IFCs above maxorder-th order are neglected.
+            // Additional constraint for the last order.s
+            // All IFCs over maxorder-th order are neglected.
 
             if (order == maxorder - 1) {
 
