@@ -419,7 +419,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
     int nrow, ncol;
     int *nrank, *nparam;
     double *arr_tmp;
-    std::vector<Constraint> *const_vec;
+    std::vector<ConstraintClass> *const_vec;
 
     memory->allocate(nrank, maxorder);
     memory->allocate(nparam, maxorder);
@@ -443,8 +443,8 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
         MatrixXd mat_tmp(nrow, ncol);
         icol = 0;
 
-        for (std::set<Constraint>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
-            Constraint const_now = *p;
+        for (std::set<ConstraintClass>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
+            ConstraintClass const_now = *p;
             for (i = 0; i < nrow; ++i){
                 mat_tmp(i, icol) = const_now.w_const[i];
             }
@@ -460,7 +460,7 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
                 arr_tmp[irow] = c_reduced(irow, icol);
             }
 
-            const_vec[order].push_back(Constraint(nrow, arr_tmp));
+            const_vec[order].push_back(ConstraintClass(nrow, arr_tmp));
         }
         memory->deallocate(arr_tmp);
     }
@@ -529,8 +529,8 @@ void Fitting::calc_constraint_matrix(const int N, int &P){
 
     for(order = minorder; order < maxorder; ++order){
 
-        for(std::vector<Constraint>::iterator it = const_vec[order].begin(); it != const_vec[order].end(); ++it){
-            Constraint const_now = *it;
+        for(std::vector<ConstraintClass>::iterator it = const_vec[order].begin(); it != const_vec[order].end(); ++it){
+            ConstraintClass const_now = *it;
 
             for(i = 0; i < nparam[order]; ++i){
                 const_mat[irow][i + icol] = const_now.w_const[i];
@@ -732,7 +732,7 @@ void Fitting::translational_invariance()
                         }
                         if(!is_allzero(nparams,arr_constraint)){
                             // add to constraint list
-                            const_translation[order].insert(Constraint(nparams, arr_constraint));
+                            const_translation[order].insert(ConstraintClass(nparams, arr_constraint));
                         }
                     }
                 }
@@ -777,7 +777,7 @@ void Fitting::translational_invariance()
 
                             }
                             if(!is_allzero(nparams,arr_constraint)){
-                                const_translation[order].insert(Constraint(nparams, arr_constraint));
+                                const_translation[order].insert(ConstraintClass(nparams, arr_constraint));
                             }
                         }
                     }
@@ -859,11 +859,11 @@ void Fitting::rotational_invariance()
         nparams[order] = fcs->ndup[order].size();
 
         if (order == 0) {
-            std::cout << "Constraint beteen " << std::setw(8) << "1st-order IFCs (which are zero) and " 
+            std::cout << "Constraints between " << std::setw(8) << "1st-order IFCs (which are zero) and " 
                 << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
             nparam_sub = nparams[order];
         } else {
-            std::cout << "Constraint between " << std::setw(8) << interaction->str_order[order - 1] << " and "
+            std::cout << "Constraints between " << std::setw(8) << interaction->str_order[order - 1] << " and "
                 << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
             nparam_sub = nparams[order] + nparams[order - 1];
         }
@@ -943,7 +943,7 @@ void Fitting::rotational_invariance()
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
                                 // Add to constraint list
-                                const_rotation_self[order].insert(Constraint(nparam_sub, arr_constraint));
+                                const_rotation_self[order].insert(ConstraintClass(nparam_sub, arr_constraint));
                             }
 
                         } // nu
@@ -1138,11 +1138,11 @@ void Fitting::rotational_invariance()
                                             // Add to the appropriate set
 
                                             if(is_allzero(nparam_sub, arr_constraint, nparams[order - 1])){
-                                                const_rotation_self[order - 1].insert(Constraint(nparams[order - 1], arr_constraint));                                      
+                                                const_rotation_self[order - 1].insert(ConstraintClass(nparams[order - 1], arr_constraint));                                      
                                             } else if (is_allzero(nparams[order - 1], arr_constraint)) {
-                                                const_rotation_self[order].insert(Constraint(nparam_sub, arr_constraint, nparams[order - 1]));
+                                                const_rotation_self[order].insert(ConstraintClass(nparam_sub, arr_constraint, nparams[order - 1]));
                                             } else {
-                                                const_rotation_cross[order].insert(Constraint(nparam_sub, arr_constraint)); 
+                                                const_rotation_cross[order].insert(ConstraintClass(nparam_sub, arr_constraint)); 
                                             }
 #ifdef _DEBUG
                                             for(j = 0; j < nparam_sub; ++j){
@@ -1234,7 +1234,7 @@ void Fitting::rotational_invariance()
                                     } // lambda
 
                                     if(!is_allzero(nparams[order], arr_constraint_self)){
-                                        const_rotation_self[order].insert(Constraint(nparams[order], arr_constraint_self));         
+                                        const_rotation_self[order].insert(ConstraintClass(nparams[order], arr_constraint_self));         
                                     }
 
                                 } // nu
@@ -1273,8 +1273,8 @@ void Fitting::rotational_invariance()
         nparam_sub = nparams[order] + nparams[order - 1];
         }
         std::cout << const_rotation_cross[order].size() << std::endl;
-        for(std::set<Constraint>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p){
-        Constraint const_tmp = *p;
+        for(std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p){
+        ConstraintClass const_tmp = *p;
         for (j = 0; j < nparam_sub; ++j){
         std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
         }
@@ -1282,8 +1282,8 @@ void Fitting::rotational_invariance()
         }
 
         std::cout << const_rotation_self[order].size() << std::endl;
-        for(std::set<Constraint>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
-        Constraint const_tmp = *p;
+        for(std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
+        ConstraintClass const_tmp = *p;
         for (j = 0; j < nparams[order]; ++j){
         std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
         }
@@ -1295,7 +1295,7 @@ void Fitting::rotational_invariance()
     memory->deallocate(nparams);
 }
 
-void Fitting::remove_redundant_rows(const int n, std::set<Constraint> &Constraint_Set)
+void Fitting::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set)
 {
     using namespace Eigen;
 
@@ -1309,8 +1309,8 @@ void Fitting::remove_redundant_rows(const int n, std::set<Constraint> &Constrain
 
         int icol = 0;
 
-        for (std::set<Constraint>::iterator p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p){
-            Constraint const_now = *p;
+        for (std::set<ConstraintClass>::iterator p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p){
+            ConstraintClass const_now = *p;
             for (int i = 0; i < nrow; ++i){
                 mat_tmp(i, icol) = const_now.w_const[i];
             }
@@ -1328,7 +1328,7 @@ void Fitting::remove_redundant_rows(const int n, std::set<Constraint> &Constrain
                 arr_tmp[irow] = c_reduced(irow, icol);
             }
 
-            Constraint_Set.insert(Constraint(nrow, arr_tmp));
+            Constraint_Set.insert(ConstraintClass(nrow, arr_tmp));
         }
 
         memory->deallocate(arr_tmp);

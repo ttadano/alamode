@@ -8,24 +8,24 @@
 
 namespace ALM_NS {
 
-    class Constraint {
+    class ConstraintClass {
     public:
         std::vector<double> w_const;
 
-        Constraint();
-        Constraint(const Constraint &a){
+        ConstraintClass();
+        ConstraintClass(const ConstraintClass &a){
             for(std::vector<double>::const_iterator p = a.w_const.begin(); p != a.w_const.end(); ++p){
                 w_const.push_back(*p);
             }
         }
-        Constraint(const int n, const double *arr, const int nshift=0){
+        ConstraintClass(const int n, const double *arr, const int nshift=0){
             for(int i = nshift; i < n; ++i){
                 w_const.push_back(arr[i]);
             }
         }
     };
 
-    inline bool operator<(const Constraint a, const Constraint b){
+    inline bool operator<(const ConstraintClass a, const ConstraintClass b){
         return std::lexicographical_compare(a.w_const.begin(), a.w_const.end(), b.w_const.begin(), b.w_const.end());
     }
 
@@ -68,11 +68,11 @@ namespace ALM_NS {
 
         double **const_mat;
         double *const_rhs;
-        std::set<Constraint> *const_translation;
-        std::set<Constraint> *const_rotation_self;
-        std::set<Constraint> *const_rotation_cross;
+        std::set<ConstraintClass> *const_translation;
+        std::set<ConstraintClass> *const_rotation_self;
+        std::set<ConstraintClass> *const_rotation_cross;
 
-        void remove_redundant_rows(const int, std::set<Constraint> &);
+        void remove_redundant_rows(const int, std::set<ConstraintClass> &);
     };
 
     extern "C" {
