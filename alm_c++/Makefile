@@ -9,7 +9,7 @@ LDFLAGS = -mkl
 
 PROG = alm_c++
 
-CXXSRC= alamode.cpp error.cpp fcs.cpp files.cpp fitting.cpp input.cpp interaction.cpp \
+CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp fitting.cpp input.cpp interaction.cpp \
 	main.cpp memory.cpp symmetry.cpp system.cpp timer.cpp writes.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
