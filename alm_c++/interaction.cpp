@@ -419,7 +419,10 @@ void Interaction::calc_minvec()
                         // if a closer path found
                         if(dist < dist_tmp[i][j]) {
                             dist_tmp[i][j] = dist;
-                            for (k = 0; k < 3; ++k) minvec[i][j][k] = x_neib[j][k] - x[iat][k];
+                            for (k = 0; k < 3; ++k) {
+                                minvec[i][j][k] = x_neib[j][k];
+                             //   minvec[i][j][k] = x_neib[j][k] - x[iat][k];
+                            }
                         }
                     }
                 }
