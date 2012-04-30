@@ -68,9 +68,8 @@ void Input::parce_input()
     cin >> force_file;
 
     cin >> multiply_data >> constraint_flag;
-    if(constraint_flag == 2 || constraint_flag == 4) {
+    if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
         cin >> fc2_file;
-       // fitting->fc2_file = fc2_file;
         constraint->fc2_file = fc2_file;
     }
 
@@ -110,7 +109,6 @@ void Input::parce_input()
     }
     symmetry->multiply_data = multiply_data;
     constraint->constraint_mode = constraint_flag;
-   // fitting->constraint_mode = constraint_flag;
 
     for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
 

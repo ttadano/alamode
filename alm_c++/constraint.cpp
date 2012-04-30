@@ -16,6 +16,7 @@ Constraint::Constraint(ALM *alm) : Pointers(alm){
     impose_inv_R = false;
     fix_harmonic = false;
     exist_constraint = true;
+    exclude_last_R = true;
 };
 Constraint::~Constraint() {
     if (constraint_mode != 0) {
@@ -46,6 +47,17 @@ void Constraint::setup(){
         impose_inv_R = true;
         fix_harmonic = true;
         break;
+    case 5:
+        impose_inv_T = true;
+        impose_inv_R = true;
+        exclude_last_R = false;
+        break;
+    case 6:
+        impose_inv_T = true;
+        impose_inv_R = true;
+        fix_harmonic = true;
+        exclude_last_R = false;
+        break;
     default:
         error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
         break;
@@ -75,7 +87,7 @@ void Constraint::setup(){
         if (impose_inv_T) {
             translational_invariance();
         }
-        if(impose_inv_R) {
+        if (impose_inv_R) {
             rotational_invariance();
         }
 
@@ -88,6 +100,7 @@ void Constraint::setup(){
             std::cout << std::setw(5) << const_rotation_cross[order].size();
             std::cout << std::endl;
         }
+        std::cout << std::endl;
 
         memory->allocate(const_self, maxorder);
         for (order = 0; order < maxorder; ++order) const_self[order].clear();
@@ -120,6 +133,9 @@ void Constraint::setup(){
 
             memory->deallocate(arr_tmp);
             remove_redundant_rows(nparam, const_self[order]);
+
+            const_translation[order].clear();
+            const_rotation_self[order].clear();
         }
 
         std::cout << "After Reduction (Constraint Self, Constraint Cross)" << std::endl;
@@ -129,12 +145,13 @@ void Constraint::setup(){
             std::cout << std::setw(5) << const_rotation_cross[order].size();
             std::cout << std::endl;
         }
+        std::cout << "******************************" << std::endl << std::endl;
 
         Pmax = 0;
         for (order = 0; order < maxorder; ++order){
             Pmax += const_self[order].size() + const_rotation_cross[order].size();
         }
-        if(fix_harmonic){
+        if (fix_harmonic){
             Pmax -= const_self[0].size();
             Pmax += fcs->ndup[0].size();
         }
@@ -159,7 +176,6 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     int icol, irow;
     double *arr_tmp;
     std::set<ConstraintClass> const_total;
-
 
     std::cout << "Generating Constraint Matrix ...";
 
@@ -263,14 +279,12 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         }
         ++irow;
     }
-
     const_total.clear();
 }
 
 void Constraint::translational_invariance()
 {
-    // create constraint matrix arising from translational invariance.
-    // might be a little tricky. (hard to follow)
+    // Create constraint matrix arising from the translational invariance.
 
     int i, j;
     int iat, jat, icrd, jcrd;
@@ -307,11 +321,11 @@ void Constraint::translational_invariance()
             continue;
         }
 
-        // make interaction list
+        // Make interaction list
 
         list_found.clear();
         for(std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
-            FcProperty list_tmp = *p; //using copy constructor
+            FcProperty list_tmp = *p; // Using copy constructor
             for (i = 0; i < order + 2; ++i){
                 ind[i] = list_tmp.elems[i];
             }
@@ -321,7 +335,7 @@ void Constraint::translational_invariance()
             list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
         }
 
-        // generate xyz component for each order
+        // Generate xyz component for each order
 
         nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 1));
         memory->allocate(xyzcomponent, nxyz, order + 1);
@@ -431,8 +445,7 @@ void Constraint::translational_invariance()
 void Constraint::rotational_invariance()
 {
 
-    // A first implemention of complicated constraints
-    // 2012.4.26
+    // Create constraints for the rotational invariance
 
     std::cout << "Start generating constraint matrix for rotational invariance..." << std::endl;
 
@@ -473,11 +486,6 @@ void Constraint::rotational_invariance()
     memory->allocate(ind, maxorder + 1);
     memory->allocate(nparams, maxorder);
 
-    for (order = 0; order < maxorder; ++order) {
-        const_rotation_self[order].clear();
-        const_rotation_cross[order].clear();
-    }
-
     for (order = 0; order < maxorder; ++order){
 
         nparams[order] = fcs->ndup[order].size();
@@ -508,7 +516,7 @@ void Constraint::rotational_invariance()
         list_found.clear();
 
         for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
-            FcProperty list_tmp = *p; // using copy constructor
+            FcProperty list_tmp = *p; // Using copy constructor
             for (i = 0; i < order + 2; ++i){
                 ind[i] = list_tmp.elems[i];
             }
@@ -529,7 +537,7 @@ void Constraint::rotational_invariance()
                 }
                 std::sort(interaction_list_now.begin(), interaction_list_now.end());
 
-                // special treatment for harmonic force constants
+                // Special treatment for harmonic force constants
 
                 for (icrd = 0; icrd < 3; ++icrd){
 
@@ -575,7 +583,7 @@ void Constraint::rotational_invariance()
                 }
             } else {
 
-                // constraint between force constants of different orders
+                // Constraint between different orders
 
                 interaction_list_old.clear();
                 interaction_list_now.clear();
@@ -611,7 +619,7 @@ void Constraint::rotational_invariance()
                             interaction_list = interaction_list_old;
                         }
 
-                        // loop for the interacting pairs
+                        // Loop for the interacting pairs
 
                         do {
                             std::vector<int> data = g.now();
@@ -641,7 +649,7 @@ void Constraint::rotational_invariance()
                                         ofs_constraint << "********************************" << std::endl;
 #endif
 
-                                        // loop for m_{N+1}, a_{N+1}
+                                        // Loop for m_{N+1}, a_{N+1}
                                         for (std::vector<int>::iterator iter_list = interaction_list.begin(); iter_list != interaction_list.end(); ++iter_list){
                                             jat = *iter_list;
 
@@ -667,8 +675,6 @@ void Constraint::rotational_invariance()
                                                     << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
 #endif
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
-
-
                                             } else {
 #ifdef _DEBUG
                                                 ofs_constraint <<" --> Not Found!" << std::endl;
@@ -706,7 +712,6 @@ void Constraint::rotational_invariance()
 #endif
 
                                         for (lambda = 0; lambda < order + 1; ++lambda){
-
 #ifdef _DEBUG
                                             ofs_constraint << "lambda = " << lambda << std::endl;
 #endif
@@ -724,11 +729,6 @@ void Constraint::rotational_invariance()
                                                 for (j = 0; j < 3; ++j){
                                                     levi_factor += levi_civita(j, mu, nu)*levi_civita(j, mu_lambda, jcrd); 
                                                 }
-
-                                                /*ofs_constraint << "#!" << "(" << std::setw(5) << mu << "," << std::setw(5) << mu_lambda << ")"
-                                                << "(" << std::setw(5) << nu << "," << std::setw(5) << jcrd << ") - "
-                                                << "(" << std::setw(5) << nu << "," << std::setw(5) << mu_lambda << ")"
-                                                << "(" << std::setw(5) << mu << "," << std::setw(5) << jcrd << ")" << " = " << levi_factor << std::endl; */
 
                                                 if(levi_factor == 0) continue;
 #ifdef _DEBUG
@@ -789,10 +789,10 @@ void Constraint::rotational_invariance()
                 } // icrd
             }
 
-            // Additional constraint for the last order.s
+            // Additional constraint for the last order.
             // All IFCs over maxorder-th order are neglected.
 
-            if (order == maxorder - 1) {
+            if (order == maxorder - 1 && !exclude_last_R) {
 
                 nxyz2 = static_cast<int>(pow(static_cast<double>(3), order + 1));
                 memory->allocate(xyzcomponent2, nxyz2, order + 1);
@@ -890,31 +890,10 @@ void Constraint::rotational_invariance()
     for (order = 0; order < maxorder; ++order) {
         remove_redundant_rows(nparam_sub, const_rotation_cross[order]);
         remove_redundant_rows(nparams[order], const_rotation_self[order]);
-
-        /*   if (order == 0) {
-        nparam_sub = nparams[order];
-        } else {
-        nparam_sub = nparams[order] + nparams[order - 1];
-        }
-        std::cout << const_rotation_cross[order].size() << std::endl;
-        for(std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p){
-        ConstraintClass const_tmp = *p;
-        for (j = 0; j < nparam_sub; ++j){
-        std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
-        }
-        std::cout << std::endl;
-        }
-
-        std::cout << const_rotation_self[order].size() << std::endl;
-        for(std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
-        ConstraintClass const_tmp = *p;
-        for (j = 0; j < nparams[order]; ++j){
-        std::cout << std::setw(15) << std::scientific << const_tmp.w_const[j];
-        }
-        std::cout << std::endl;
-        }
-        */
     }
+    
+    std::cout << std::endl;
+    
     memory->deallocate(ind);
     memory->deallocate(nparams);
 }

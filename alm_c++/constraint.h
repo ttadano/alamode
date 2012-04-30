@@ -48,7 +48,7 @@ namespace ALM_NS
     private:
 
         bool fix_harmonic;
-        bool impose_inv_T, impose_inv_R;
+        bool impose_inv_T, impose_inv_R, exclude_last_R;
         
         std::set<ConstraintClass> *const_translation;
         std::set<ConstraintClass> *const_rotation_self;
