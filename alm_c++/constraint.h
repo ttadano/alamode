@@ -43,17 +43,24 @@ namespace ALM_NS
         double **const_mat;
         double *const_rhs;
 
+        bool exist_constraint;
+
     private:
+
+        bool fix_harmonic;
+        bool impose_inv_T, impose_inv_R;
+        
+        std::set<ConstraintClass> *const_translation;
+        std::set<ConstraintClass> *const_rotation_self;
+        std::set<ConstraintClass> *const_rotation_cross;
+
+        std::set<ConstraintClass> *const_self;
 
         int levi_civita(const int, const int, const int);
 
         void translational_invariance();
         void rotational_invariance();
         void calc_constraint_matrix(const int, int &);
-        
-        std::set<ConstraintClass> *const_translation;
-        std::set<ConstraintClass> *const_rotation_self;
-        std::set<ConstraintClass> *const_rotation_cross;
 
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &);

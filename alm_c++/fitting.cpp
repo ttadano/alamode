@@ -71,16 +71,17 @@ void Fitting::fitmain()
         int M_Start = 3 * natmin * ntran * (nstart - 1);
         int M_End   = 3 * natmin * ntran * nend;
 
-        if(constraint->constraint_mode == 0) {
-            fit_without_constraints(N, M_Start, M_End);
-        } else {
+        if(constraint->exist_constraint) {
             fit_with_constraints(N, M_Start, M_End, P);
-        }
-    } else {
-        if (constraint->constraint_mode == 0) {
-            error->exit("fitmain", "nskip has to be 0 when constraint = 0");
         } else {
+             fit_without_constraints(N, M_Start, M_End);
+        }
+
+    } else {
+        if(constraint->exist_constraint){
             fit_consecutively(N, P, natmin, ntran, ndata, nstart, nend, nskip);
+        } else {
+            error->exit("fitmain", "nskip has to be 0 when constraint_mode = 0");
         }
     }
 

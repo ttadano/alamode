@@ -11,7 +11,12 @@
 
 using namespace ALM_NS;
 
-Constraint::Constraint(ALM *alm) : Pointers(alm){};
+Constraint::Constraint(ALM *alm) : Pointers(alm){
+    impose_inv_T = false;
+    impose_inv_R = false;
+    fix_harmonic = false;
+    exist_constraint = true;
+};
 Constraint::~Constraint() {
     if (constraint_mode != 0) {
         memory->deallocate(const_mat);
@@ -21,9 +26,32 @@ Constraint::~Constraint() {
 
 void Constraint::setup(){
 
-    if (constraint_mode != 0){
+    switch (constraint_mode) {
+    case 0: // do nothing
+        exist_constraint = false;
+        break;
+    case 1: 
+        impose_inv_T = true;
+        break;
+    case 2:
+        impose_inv_T = true;
+        fix_harmonic = true;
+        break;
+    case 3:
+        impose_inv_T = true;
+        impose_inv_R = true;
+        break;
+    case 4:
+        impose_inv_T = true;
+        impose_inv_R = true;
+        fix_harmonic = true;
+        break;
+    default:
+        error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
+        break;
+    }
 
-        // Generate constraint matrix
+    if (exist_constraint){
 
         int i;
         int maxorder = interaction->maxorder;
@@ -35,25 +63,79 @@ void Constraint::setup(){
         }
 
         memory->allocate(const_translation, maxorder);
-        translational_invariance();
-
         memory->allocate(const_rotation_self, maxorder);
         memory->allocate(const_rotation_cross, maxorder);
 
         for (order = 0; order < maxorder; ++order){
+            const_translation[order].clear();
             const_rotation_self[order].clear();
             const_rotation_cross[order].clear();
         }
-        rotational_invariance();
+
+        if (impose_inv_T) {
+            translational_invariance();
+        }
+        if(impose_inv_R) {
+            rotational_invariance();
+        }
+
+        std::cout << "*** Constraint Information ***" << std::endl;
+        std::cout << "Number of Constraints (Translational, Rotational Self, Rotational Cross)" << std::endl;
+        for (order = 0; order < maxorder; ++order){
+            std::cout << std::setw(8) << interaction->str_order[order];
+            std::cout << std::setw(5) << const_translation[order].size();
+            std::cout << std::setw(5) << const_rotation_self[order].size();
+            std::cout << std::setw(5) << const_rotation_cross[order].size();
+            std::cout << std::endl;
+        }
+
+        memory->allocate(const_self, maxorder);
+        for (order = 0; order < maxorder; ++order) const_self[order].clear();
+
+        int nparam;
+        double *arr_tmp;
+
+        // Merge translational and rotational invariance excluding order-crossing constraints
+
+        for (order = 0; order < maxorder; ++order){
+
+            nparam = fcs->ndup[order].size();
+            memory->allocate(arr_tmp, nparam);
+
+            for (std::set<ConstraintClass>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
+
+                ConstraintClass const_pointer = *p;
+
+                for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+                const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+            }
+
+            for (std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
+
+                ConstraintClass const_pointer = *p;
+
+                for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+                const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+            }
+
+            memory->deallocate(arr_tmp);
+            remove_redundant_rows(nparam, const_self[order]);
+        }
+
+        std::cout << "After Reduction (Constraint Self, Constraint Cross)" << std::endl;
+        for (order = 0; order < maxorder; ++order){
+            std::cout << std::setw(8) << interaction->str_order[order];
+            std::cout << std::setw(5) << const_self[order].size();
+            std::cout << std::setw(5) << const_rotation_cross[order].size();
+            std::cout << std::endl;
+        }
 
         Pmax = 0;
         for (order = 0; order < maxorder; ++order){
-            //   Pmax += const_translation[order].size() + const_rotation[order].size();
-            Pmax += const_translation[order].size();
+            Pmax += const_self[order].size() + const_rotation_cross[order].size();
         }
-        if(constraint_mode == 2){
-            //    Pmax -= const_translation[0].size() + const_rotation[0].size();
-            Pmax -= const_translation[0].size();
+        if(fix_harmonic){
+            Pmax -= const_self[0].size();
             Pmax += fcs->ndup[0].size();
         }
         memory->allocate(const_mat, Pmax, N);
@@ -65,6 +147,7 @@ void Constraint::setup(){
         memory->deallocate(const_translation);
         memory->deallocate(const_rotation_self);
         memory->deallocate(const_rotation_cross);
+        memory->deallocate(const_self);
     }
 }
 
@@ -74,69 +157,57 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     int maxorder = interaction->maxorder;
     int order;
     int icol, irow;
-    int nrow, ncol;
-    int *nrank, *nparam;
     double *arr_tmp;
-    std::vector<ConstraintClass> *const_vec;
+    std::set<ConstraintClass> const_total;
 
-    memory->allocate(nrank, maxorder);
-    memory->allocate(nparam, maxorder);
-    memory->allocate(const_vec, maxorder);
 
-    std::cout << "Removing redundant constraints ...";
+    std::cout << "Generating Constraint Matrix ...";
 
-    using namespace Eigen;
+    const_total.clear();
+    memory->allocate(arr_tmp, N);
 
-    for(order = 0; order < maxorder; ++order){
+    int nshift  = 0;
+    int nshift2 = 0;
 
-        const_vec[order].clear();
-
-        nrow = fcs->ndup[order].size();
-        ncol = const_translation[order].size();
-
-        nparam[order] = nrow;
-
-        memory->allocate(arr_tmp, nrow);
-
-        MatrixXd mat_tmp(nrow, ncol);
-        icol = 0;
-
-        for (std::set<ConstraintClass>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
-            ConstraintClass const_now = *p;
-            for (i = 0; i < nrow; ++i){
-                mat_tmp(i, icol) = const_now.w_const[i];
-            }
-            ++icol;
-        }
-
-        FullPivLU<MatrixXd> lu_decomp(mat_tmp);
-        nrank[order] = lu_decomp.rank();
-        MatrixXd c_reduced = lu_decomp.image(mat_tmp);
-
-        for(icol = 0; icol < nrank[order]; ++icol){
-            for(irow = 0; irow < nrow; ++irow){
-                arr_tmp[irow] = c_reduced(irow, icol);
-            }
-
-            const_vec[order].push_back(ConstraintClass(nrow, arr_tmp));
-        }
-        memory->deallocate(arr_tmp);
-    }
-
-    std::cout << " done." << std::endl << std::endl;
-
-    std::cout << "Rank of the constraint matrices for each order ..." << std::endl;
-    P = 0;
     for (order = 0; order < maxorder; ++order){
-        P += nrank[order];
-        std::cout << std::setw(9) << interaction->str_order[order] << ": " << const_vec[order].size() << std::endl;
-    }
-    std::cout << std::endl;
+        int nparam = fcs->ndup[order].size();
 
-    if(constraint_mode == 2) {
+        if (order > 0 || !fix_harmonic) {
+            for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
+
+            for (std::set<ConstraintClass>::iterator p = const_self[order].begin(); p != const_self[order].end(); ++p){
+                ConstraintClass const_now = *p;
+                for (i = 0; i < nparam; ++i){
+                    arr_tmp[nshift + i] = const_now.w_const[i];
+                }
+                const_total.insert(ConstraintClass(N, arr_tmp));
+            }
+        }
+        // order-crossing constraints
+
+        if (order > 0) {
+            int nparam2 = fcs->ndup[order - 1].size() + fcs->ndup[order].size();
+            for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
+            for (std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p){
+                ConstraintClass const_now = *p;
+                for (i = 0; i < nparam2; ++i){
+                    arr_tmp[nshift2 + i] = const_now.w_const[i];
+                }
+                const_total.insert(ConstraintClass(N, arr_tmp));
+            }
+            nshift2 += fcs->ndup[order - 1].size();
+        }
+        nshift += nparam;
+    }
+
+    remove_redundant_rows(N, const_total);
+    
+    P = const_total.size();
+
+    if(fix_harmonic) {
         std::cout << "Harmonic Force Constants will be fixed to the values in the given reference file: " << fc2_file << std::endl;
         std::cout << "Constraint Matrix for Harmonic fcs will be updated." << std::endl << std::endl;
-        P =  P - nrank[0] + nparam[0];
+        P += fcs->ndup[0].size();
     }
 
     for(i = 0; i < P; ++i){
@@ -146,19 +217,20 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         const_rhs[i] = 0.0;
     }
 
-    int minorder= 0;
-
     irow = 0;
     icol = 0;
 
-    if(constraint_mode == 2){
+    if(fix_harmonic){
+        
         std::ifstream ifs_fc2;
         ifs_fc2.open(fc2_file.c_str(), std::ios::in);
         if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
 
         bool is_found = false;
 
-        int nparam_harmonic;
+        int nparam_harmonic_ref;
+        int nparam_harmonic = fcs->ndup[0].size();
+
         std::string str_tmp;
         while(!ifs_fc2.eof())
         {
@@ -166,40 +238,33 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
 
             if(str_tmp == "##HARMONIC FORCE CONSTANTS")
             {
-                ifs_fc2 >> nparam_harmonic;
-                if(nparam_harmonic != nparam[0]) error->exit("calc_constraint_matrix", "Number of fc2 not the same");
+                ifs_fc2 >> nparam_harmonic_ref;
+                if(nparam_harmonic_ref != nparam_harmonic) error->exit("calc_constraint_matrix", "Number of fc2 not the same");
 
                 is_found = true;
 
-                for (i = 0; i < nparam[0]; ++i){
+                for (i = 0; i < nparam_harmonic; ++i){
                     const_mat[i][i] = 1.0;
                     ifs_fc2 >> const_rhs[i];
                 }
                 break;
             }
         }
-        minorder = 1;
-        irow += nparam[0];
-        icol += nparam[0];
+        irow += nparam_harmonic;
+        icol += nparam_harmonic;
         ifs_fc2.close();
         if(!is_found) error->exit("calc_constraint_matrix", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");
     }
 
-    for(order = minorder; order < maxorder; ++order){
-
-        for(std::vector<ConstraintClass>::iterator it = const_vec[order].begin(); it != const_vec[order].end(); ++it){
-            ConstraintClass const_now = *it;
-
-            for(i = 0; i < nparam[order]; ++i){
-                const_mat[irow][i + icol] = const_now.w_const[i];
-            }
-            ++irow;
+    for (std::set<ConstraintClass>::iterator p = const_total.begin(); p != const_total.end(); ++p){
+        ConstraintClass const_now = *p;
+        for (i = 0; i < N; ++i){
+            const_mat[irow][i] = const_now.w_const[i];
         }
-        icol += nparam[order];
+        ++irow;
     }
 
-    memory->deallocate(nrank);
-    memory->deallocate(const_vec);
+    const_total.clear();
 }
 
 void Constraint::translational_invariance()
@@ -234,7 +299,7 @@ void Constraint::translational_invariance()
 
         std::cout << std::setw(8) << interaction->str_order[order] << " ...";
 
-        const_translation[order].clear();
+
         int nparams = fcs->ndup[order].size();
 
         if(nparams == 0) {
@@ -361,10 +426,6 @@ void Constraint::translational_invariance()
     memory->deallocate(ind);
 
     std::cout << "Finished !" << std::endl << std::endl;
-    for(order = 0;  order < maxorder; ++order){
-        std::cout << "Number of Translational Constraints for" << std::setw(9) << interaction->str_order[order] << " : " << const_translation[order].size() << std::endl;
-    }
-    std::cout << std::endl;
 }
 
 void Constraint::rotational_invariance()
@@ -423,11 +484,11 @@ void Constraint::rotational_invariance()
 
         if (order == 0) {
             std::cout << "Constraints between " << std::setw(8) << "1st-order IFCs (which are zero) and " 
-                << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+                << std::setw(8) << interaction->str_order[order] << " ...";
             nparam_sub = nparams[order];
         } else {
             std::cout << "Constraints between " << std::setw(8) << interaction->str_order[order - 1] << " and "
-                << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+                << std::setw(8) << interaction->str_order[order] << " ...";
             nparam_sub = nparams[order] + nparams[order - 1];
         }
 

@@ -68,7 +68,7 @@ void Input::parce_input()
     cin >> force_file;
 
     cin >> multiply_data >> constraint_flag;
-    if(constraint_flag == 2) {
+    if(constraint_flag == 2 || constraint_flag == 4) {
         cin >> fc2_file;
        // fitting->fc2_file = fc2_file;
         constraint->fc2_file = fc2_file;
