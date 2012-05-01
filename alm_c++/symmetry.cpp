@@ -295,120 +295,6 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
     memory->deallocate(arr_trans);
 }
 
-//void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][3],
-//    double **x, int &nsym, int ***rot, int **tran_int)
-//{
-//    // Symmetry Finder (originally from TAPP code)
-//
-//    int i, j;
-//
-//    int m11, m12, m13, m21, m22, m23, m31, m32, m33;
-//    int det, np1, np2, np3;
-//
-//    Eigen::Matrix3d amat, bmat;
-//    Eigen::Matrix3d rot2;
-//
-//    for (i = 0; i < 3; ++i){
-//        for (j = 0; j < 3; ++j){
-//
-//            amat(i,j) = aa[i][j];
-//            bmat(i,j) = bb[i][j];
-//
-//            if(i == j) {
-//                rot[0][i][j] = 1;
-//            } else {
-//                rot[0][i][j] = 0;
-//            }
-//        }
-//        tran_int[0][i] = 0;
-//    }
-//
-//    nsym = 1;
-//
-//    int rot_tmp[3][3], rot_reciprocal[3][3];
-//    int tran_tmp[3];
-//
-//    for (m11 = -1; m11 <= 1; ++m11){
-//        for (m12 = -1; m12 <= 1; ++m12) {
-//            for (m13 = -1; m13 <= 1; ++m13){
-//                for (m21 = -1; m21 <= 1; ++m21){
-//                    for (m22 = -1; m22 <= 1; ++m22){
-//                        for (m23 = -1; m23 <= 1; ++m23){
-//                            for (m31 = -1; m31 <= 1; ++m31){
-//                                for (m32 = -1; m32 <= 1; ++m32){
-//                                    for (m33 = -1; m33 <= 1; ++m33){
-//
-//                                        det = m11 * (m22 * m33 - m32 * m23)
-//                                            - m21 * (m12 * m33 - m32 * m13)
-//                                            + m31 * (m12 * m23 - m22 * m13);
-//
-//
-//                                        if (det != 1 && det != -1) continue;
-//
-//                                        rot_tmp[0][0] = m11;
-//                                        rot_tmp[0][1] = m12;
-//                                        rot_tmp[0][2] = m13;
-//                                        rot_tmp[1][0] = m21;
-//                                        rot_tmp[1][1] = m22;
-//                                        rot_tmp[1][2] = m23;
-//                                        rot_tmp[2][0] = m31;
-//                                        rot_tmp[2][1] = m32;
-//                                        rot_tmp[2][2] = m33;
-//
-//                                        rot_reciprocal[0][0] = (m22 * m33 - m23 * m32) / det ;
-//                                        rot_reciprocal[0][1] = (m23 * m31 - m21 * m33) / det ;
-//                                        rot_reciprocal[0][2] = (m21 * m32 - m22 * m31) / det ;
-//                                        rot_reciprocal[1][0] = (m32 * m13 - m33 * m12) / det ;
-//                                        rot_reciprocal[1][1] = (m33 * m11 - m31 * m13) / det ;
-//                                        rot_reciprocal[1][2] = (m31 * m12 - m32 * m11) / det ;
-//                                        rot_reciprocal[2][0] = (m12 * m23 - m13 * m22) / det ;
-//                                        rot_reciprocal[2][1] = (m13 * m21 - m11 * m23) / det ;
-//                                        rot_reciprocal[2][2] = (m11 * m22 - m12 * m21) / det ;
-//
-//                                        for (i = 0; i < 3; ++i) {
-//                                            for (j = 0; j < 3; ++j){
-//                                                rot2(i,j) = static_cast<double>(rot_reciprocal[i][j]);
-//                                            }
-//                                        }
-//
-//                                        if(!is_ortho(rot2, amat, bmat)) continue;
-//
-//                                        for (np1 = 0; np1 < nnp; ++np1){
-//                                            for (np2 = 0; np2 < nnp; ++np2){
-//                                                for (np3 = 0; np3 < nnp; ++np3){
-//
-//                                                    if(m11 == 1 && m12 == 0 && m13 ==0 &&
-//                                                        m21 == 0 && m22 == 1 && m23 == 0 &&
-//                                                        m31 == 0 && m32 == 0 && m33 == 1 &&
-//                                                        np1 == 0 && np2 == 0 && np3 == 0) continue;
-//
-//                                                    tran_tmp[0] = np1;
-//                                                    tran_tmp[1] = np2;
-//                                                    tran_tmp[2] = np3;
-//
-//                                                    if(!is_invariant(rot2, nat, kd, x, tran_tmp, nnp)) continue;
-//
-//                                                    ++nsym;
-//
-//                                                    for (i = 0; i < 3; ++i){
-//                                                        for (j = 0; j < 3; ++j){
-//                                                            rot[nsym - 1][i][j] = rot_tmp[i][j];
-//                                                        }
-//                                                        tran_int[nsym - 1][i] = tran_tmp[i];
-//                                                    }
-//                                                }
-//                                            }
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
 
 bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix3d bmat)
 {
@@ -509,7 +395,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
     for (int isym = 0; isym < nsym; ++isym){
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
-	      std::cout << std::setw(8) << symrel[isym][i][j];    
+                std::cout << std::setw(8) << symrel[isym][i][j];    
             }
         }
         std::cout << std::endl;
@@ -707,30 +593,30 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
 
-	m11 = symm_tmp.symop[0];
-	m12 = symm_tmp.symop[1];
-	m13 = symm_tmp.symop[2];
-	m21 = symm_tmp.symop[3];
-	m22 = symm_tmp.symop[4];
-	m23 = symm_tmp.symop[5];
-	m31 = symm_tmp.symop[6];
-	m32 = symm_tmp.symop[7];
-	m33 = symm_tmp.symop[8];
+        m11 = symm_tmp.symop[0];
+        m12 = symm_tmp.symop[1];
+        m13 = symm_tmp.symop[2];
+        m21 = symm_tmp.symop[3];
+        m22 = symm_tmp.symop[4];
+        m23 = symm_tmp.symop[5];
+        m31 = symm_tmp.symop[6];
+        m32 = symm_tmp.symop[7];
+        m33 = symm_tmp.symop[8];
 
-	det = m11 * (m22 * m33 - m32 * m23)
-	  - m21 * (m12 * m33 - m32 * m13)
-	  + m31 * (m12 * m23 - m22 * m13);
+        det = m11 * (m22 * m33 - m32 * m23)
+            - m21 * (m12 * m33 - m32 * m13)
+            + m31 * (m12 * m23 - m22 * m13);
 
-	rot(0,0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
-	rot(0,1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
-	rot(0,2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
-	rot(1,0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
-	rot(1,1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
-	rot(1,2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
-	rot(2,0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
-	rot(2,1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
-	rot(2,2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
-	
+        rot(0,0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
+        rot(0,1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
+        rot(0,2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
+        rot(1,0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
+        rot(1,1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
+        rot(1,2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
+        rot(2,0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
+        rot(2,1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
+        rot(2,2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
+
         for (i = 9; i < 12; ++i){
             tran[i - 9] = symm_tmp.symop[i];
         }
@@ -743,62 +629,62 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
             usi = rot * wsi;
 
-	    l = -1;
+            l = -1;
 
-	    for (j = 0; j < nat; ++j){
+            for (j = 0; j < nat; ++j){
                 for (k = 0; k < 3; ++k) {
-		  vsi(k) = x[j][k];
-		  tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
-		  // need "std" to specify floating point operation
-		  // especially for intel compiler (there was no problem in MSVC)
-		  tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
+                    vsi(k) = x[j][k];
+                    tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
+                    // need "std" to specify floating point operation
+                    // especially for intel compiler (there was no problem in MSVC)
+                    tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
                 }
                 double diff = tmp.dot(tmp);
                 if (diff < eps12) l = j;
-	    }
+            }
 
             for (j = 0; j < 3; ++j){
                 x_symm[l][j] = usi(j);
-		do {
-		  if (x_symm[l][j] < 0.0) {
-		    x_symm[l][j] += 1.0;
-		  } else if (x_symm[l][j] > 1.0){
-		    x_symm[l][j] -= 1.0;
-		  }
-		} while(x_symm[l][j] < 0.0 || x_symm[l][j] > 1.0);
-	    }
+                do {
+                    if (x_symm[l][j] < 0.0) {
+                        x_symm[l][j] += 1.0;
+                    } else if (x_symm[l][j] > 1.0){
+                        x_symm[l][j] -= 1.0;
+                    }
+                } while(x_symm[l][j] < 0.0 || x_symm[l][j] > 1.0);
+            }
 
-       }
+        }
 
         for (i = 0; i < nat; ++i){
             for (j = 0; j < 3; ++j){
-	      std::cout << std::setw(15) << std::fixed << x_symm[i][j];
+                std::cout << std::setw(15) << std::fixed << x_symm[i][j];
             }
-	    std::cout << " ( ";
+            std::cout << " ( ";
             for (j = 0; j < 3; ++j){
-	      std::cout << std::setw(15) << std::scientific << x_symm[i][j]-x[i][j];
+                std::cout << std::setw(15) << std::scientific << x_symm[i][j]-x[i][j];
             }
-	    std::cout << " )" << std::endl;
+            std::cout << " )" << std::endl;
 
-	    for (j = 0; j < 3; ++j){
-	      x_avg[i][j] += x_symm[i][j];
-	    }
+            for (j = 0; j < 3; ++j){
+                x_avg[i][j] += x_symm[i][j];
+            }
         }
 
     }
-    
+
     for (i = 0; i < nat; ++i){
-      for (j = 0; j < 3; ++j){
-	x_avg[i][j] /= static_cast<double>(SymmList.size());
-      }
+        for (j = 0; j < 3; ++j){
+            x_avg[i][j] /= static_cast<double>(SymmList.size());
+        }
     }
 
     std::cout << "Symmetrically Averaged Coordinate" << std::endl;
     for (i = 0; i < nat; ++i){
-      for (j = 0; j < 3; ++j){
-	std::cout << std::setw(15) << std::fixed << std::setprecision(9) << x_avg[i][j];
-      }
-      std::cout << std::endl;
+        for (j = 0; j < 3; ++j){
+            std::cout << std::setw(15) << std::fixed << std::setprecision(9) << x_avg[i][j];
+        }
+        std::cout << std::endl;
     }
     std::cout << std::endl;
 

@@ -1,10 +1,27 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "pointers.h"
 
 
 namespace ALM_NS {
+    class InteractionCluster {
+    public:
+        std::vector<double> x;
+
+        InteractionCluster();
+        InteractionCluster(const double *arr){
+            for (int i = 0; i < 3; ++i){
+                x.push_back(arr[i]);
+            }
+        }
+    };
+
+    inline bool operator<(const InteractionCluster a, const InteractionCluster b){
+        return std::lexicographical_compare(a.x.begin(), a.x.end(), b.x.begin(), b.x.end());
+    }
+
     class Interaction: protected Pointers {
     public:
         Interaction(class ALM *);

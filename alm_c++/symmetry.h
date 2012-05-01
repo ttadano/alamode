@@ -62,7 +62,7 @@ namespace ALM_NS {
         int *symnum_tran;
         double ***symrel;
         double **tnons;
-
+        
         int **map_sym;
         int **map_p2s;
         class Maps {

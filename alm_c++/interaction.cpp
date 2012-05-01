@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <vector>
 #include <algorithm>
+#include <set>
 #include <boost/lexical_cast.hpp>
 #include "interaction.h"
 #include "memory.h"
@@ -374,6 +375,10 @@ void Interaction::calc_minvec()
     double **dist_tmp;
     double x_center[3];
 
+    std::set<InteractionCluster> xset;
+
+    xset.clear();
+
     memory->allocate(minvec, natmin, nat, 3);
     memory->allocate(x_neib, nat, 3);
     memory->allocate(dist_tmp, natmin, nat);
@@ -395,7 +400,7 @@ void Interaction::calc_minvec()
             for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize){
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
 
-		++icell;	
+                ++icell;	
 
                 for (i = 0; i < nat; ++i){
                     x_neib[icell][i][0] = x0[i][0] + static_cast<double>(isize);
@@ -403,32 +408,35 @@ void Interaction::calc_minvec()
                     x_neib[icell][i][2] = x0[i][2] + static_cast<double>(ksize);
                 }
                 system->frac2cart(x_neib[icell]);
-	    }
-	}
+            }
+        }
     }
 
     for (i = 0;	i < natmin; ++i){
-	  iat = symmetry->map_p2s[i][0];
-	  for (j = 0; j < ninter[i][0]; ++j){
-		jat = intpairs[i][0][j];
-		dist_tmp[i][jat] = distance(x_neib[0][iat], x_neib[0][jat]);
-		minloc[i][jat] = 0;
-		for (icell = 1; icell < nneib; ++icell){
-		      dist = distance(x_neib[0][iat], x_neib[icell][jat]);
-		      if (dist < dist_tmp[i][jat]){
-			    dist_tmp[i][jat] = dist;
-			    minloc[i][jat] = icell;
-		      }
-		      
-		}
-	  }
+        iat = symmetry->map_p2s[i][0];
+        for (j = 0; j < ninter[i][0]; ++j){
+            jat = intpairs[i][0][j];
+            dist_tmp[i][jat] = distance(x_neib[0][iat], x_neib[0][jat]);
+            minloc[i][jat] = 0;
+            for (icell = 1; icell < nneib; ++icell){
+                dist = distance(x_neib[0][iat], x_neib[icell][jat]);
+                if (dist < dist_tmp[i][jat]){
+                    dist_tmp[i][jat] = dist;
+                    minloc[i][jat] = icell;
+                }
+
+            }
+        }
     }
 
     for (i = 0; i < natmin; ++i){
-	  for (j = 0; j < ninter[i][0]; ++j){
-		jat = intpairs[i][0][j];
-	  }
+        for (j = 0; j < ninter[i][0]; ++j){
+            jat = intpairs[i][0][j];
+            xset.insert(InteractionCluster(x_neib[minloc[i][jat]][jat]));
+        }
     }
+
+    std::cout << "size of the cluster : " << xset.size() << std::endl;
 
     // Calculate center of the system
 
@@ -449,8 +457,8 @@ void Interaction::calc_minvec()
 
         iat = symmetry->map_p2s[i][0];
 
-	for (j = 0; j < ninter[i][0]; ++j){
-	      jat = intpairs[i][0][j];
+        for (j = 0; j < ninter[i][0]; ++j){
+            jat = intpairs[i][0][j];
             for (k = 0; k < 3; ++k){
                 minvec[i][jat][k] = x_neib[minloc[i][jat]][jat][k] - x_center[k];
             }
@@ -459,7 +467,7 @@ void Interaction::calc_minvec()
 
 #ifdef _DEBUG
     std::cout << "Relative Coordinate From Center of the System" << std::endl;
-    
+
     for (i = 0; i < nat; ++i){
         std::cout << std::setw(5) << i + 1;
         for (j = 0; j < 3; ++j){
