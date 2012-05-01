@@ -436,17 +436,6 @@ void Interaction::calc_minvec()
         }
     }
 
-    std::cout << "size of the cluster : " << xset.size() << std::endl;
-    for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
-        InteractionCluster x_tmp = *p;
-        for (i = 0; i < 3; ++i){
-            std::cout << std::setw(15) << x_tmp.x[i];
-        }
-        std::cout << std::endl;
-    }
-
-    // Calculate center of the system
-
     for (i = 0; i < 3; ++i) x_center[i] = 0.0;
 
     for (i = 0; i < natmin; ++i){
@@ -459,6 +448,21 @@ void Interaction::calc_minvec()
     }
 
     for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
+
+    for (i = 0; i < 3; ++i) x_center[i] = 0.0;
+
+
+    std::cout << "Size of the cluster : " << xset.size() << std::endl;
+    for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
+        InteractionCluster x_tmp = *p;
+        for (i = 0; i < 3; ++i){
+            std::cout << std::setw(15) << x_tmp.x[i];
+            x_center[i] += x_tmp.x[i];
+        }
+        std::cout << std::endl;
+    }
+
+    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(xset.size());
 
     for (i = 0; i < natmin; ++i){
 
