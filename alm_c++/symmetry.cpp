@@ -161,6 +161,10 @@ void Symmetry::gensym(int nat, int &nsym, int nnp, double aa[3][3], double bb[3]
         }
         ifs_sym.close();
     }
+
+#ifdef _DEBUG
+    print_symmetrized_coordinate(x);
+#endif
 }
 
 void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][3], double **x)
@@ -672,4 +676,52 @@ void Symmetry::data_multiplier(int nat, int ndata)
     memory->deallocate(f);
     memory->deallocate(u_sym);
     memory->deallocate(f_sym);
+}
+
+void Symmetry::print_symmetrized_coordinate(double **x)
+{
+    int i, j;
+
+    double **x_symm;
+    int nat = system->nat;
+
+    Eigen::Matrix3d rot;
+    Eigen::Vector3d wsi, usi;
+
+    int tran[3];
+
+    memory->allocate(x_symm, nat, 3);
+
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            x_symm[i][j] = 0.0;
+        }
+    }
+
+    for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
+        SymmetryOperation symm_tmp = *p;
+        for (i = 0; i < 9; ++i){
+            rot(i / 3, i % 3) = static_cast<double>(symm_tmp.symop[i]);
+        }
+        for (i = 9; i < 12; ++i){
+            tran[i - 9] = symm_tmp.symop[i];
+        }
+
+
+        for (i = 0; i < nat; ++i){
+
+            for (j = 0; j < 3; ++j){   
+                wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
+            }
+
+            usi = rot * wsi;
+
+            for (j = 0; j < 3; ++j){
+                x_symm[i][j] = usi(j);
+            }
+
+       }
+    }
+
+    memory->deallocate(x_symm);
 }

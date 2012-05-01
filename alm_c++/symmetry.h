@@ -86,6 +86,8 @@ namespace ALM_NS {
         void pure_translations();
         void data_multiplier(int, int);
 
+        void print_symmetrized_coordinate(double **);
+
         std::vector<SymmetryOperation> SymmList;
     };
 
