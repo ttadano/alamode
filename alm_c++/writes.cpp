@@ -33,6 +33,7 @@ void Writes::writeall()
 void Writes::wrtfcs()
 {
     int i, j, k, l, m;
+    unsigned int ui;
 
     int maxorder = interaction->maxorder;
     std::string *str_fcs;
@@ -70,9 +71,9 @@ void Writes::wrtfcs()
 
             ofs_fcs << std::endl << std::setw(6) << str_fcs[i] << std::endl;
 
-            for (j = 0; j < fcs->ndup[i].size(); ++j){
+            for (ui = 0; ui < fcs->ndup[i].size(); ++ui){
 
-                ofs_fcs << std::setw(6) << k + 1 << std::setw(6) << j + 1 << std::setw(16) <<  fitting->params[k];
+                ofs_fcs << std::setw(6) << k + 1 << std::setw(6) << ui + 1 << std::setw(16) <<  fitting->params[k];
                 for (l = 0; l < i + 2; ++l){
                     ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[i][m].elems[l]);    
                 }
@@ -80,7 +81,7 @@ void Writes::wrtfcs()
                 ofs_fcs << std::setw(15) << interaction->distlist[fcs->fc_set[i][m].elems[0]/3][fcs->fc_set[i][m].elems[1]/3];
                 }
                 ofs_fcs << std::endl;
-                m += fcs->ndup[i][j];
+                m += fcs->ndup[i][ui];
                 ++k;
             }
         }
@@ -135,9 +136,9 @@ void Writes::wrtmisc(){
 
     // write miscellaneous information to file_info 
     // for subsequent calculations (phonons, md, alm)
-    unsigned int i, j;
 
-
+    int i, j;
+    unsigned int ui;
 
     ofs_info << "##SYSTEM INFO" << std::endl;
     ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
@@ -171,8 +172,8 @@ void Writes::wrtmisc(){
     ofs_info << "##HARMONIC FORCE CONSTANTS" << std::endl;
     ofs_info << fcs->ndup[0].size() << std::endl;
 
-    for(i = 0; i < fcs->ndup[0].size(); ++i){
-        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[i] << std::endl;
+    for(ui = 0; ui < fcs->ndup[0].size(); ++ui){
+        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ui] << std::endl;
     }
 
     int k, iat;
@@ -222,8 +223,8 @@ void Writes::wrtmisc(){
 
         id = 0;
 
-        for(i = 0; i < fcs->ndup[order].size(); ++i){
-            for(j = 0; j < fcs->ndup[order][i]; ++j){
+        for(ui = 0; ui < fcs->ndup[order].size(); ++ui){
+            for(j = 0; j < fcs->ndup[order][ui]; ++j){
                 ind_tmp = fcs->fc_set[order][id].elems[0];
                 for(k = 0; k < symmetry->natmin; ++k){
                     if(ind_tmp / 3 == symmetry->map_p2s[k][0]) {
