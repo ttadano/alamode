@@ -509,7 +509,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
     for (int isym = 0; isym < nsym; ++isym){
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
-                std::cout << std::setw(8) << symrel[isym][i][j];    
+	      std::cout << std::setw(8) << symrel[isym][i][j];    
             }
         }
         std::cout << std::endl;
@@ -680,21 +680,24 @@ void Symmetry::data_multiplier(int nat, int ndata)
 
 void Symmetry::print_symmetrized_coordinate(double **x)
 {
-    int i, j;
+    int i, j, k, l;
     int isym = 0;
-    double **x_symm;
+    double **x_symm, **x_avg;
     int nat = system->nat;
+    int m11, m12, m13, m21, m22, m23, m31, m32, m33;
+    int det;
 
     Eigen::Matrix3d rot;
-    Eigen::Vector3d wsi, usi;
+    Eigen::Vector3d wsi, usi, vsi, tmp;
 
     int tran[3];
 
     memory->allocate(x_symm, nat, 3);
+    memory->allocate(x_avg, nat, 3);
 
     for (i = 0; i < nat; ++i){
         for (j = 0; j < 3; ++j){
-            x_symm[i][j] = 0.0;
+            x_avg[i][j] = 0.0;
         }
     }
 
@@ -703,13 +706,34 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
-        for (i = 0; i < 9; ++i){
-            rot(i / 3, i % 3) = static_cast<double>(symm_tmp.symop[i]);
-        }
+
+	m11 = symm_tmp.symop[0];
+	m12 = symm_tmp.symop[1];
+	m13 = symm_tmp.symop[2];
+	m21 = symm_tmp.symop[3];
+	m22 = symm_tmp.symop[4];
+	m23 = symm_tmp.symop[5];
+	m31 = symm_tmp.symop[6];
+	m32 = symm_tmp.symop[7];
+	m33 = symm_tmp.symop[8];
+
+	det = m11 * (m22 * m33 - m32 * m23)
+	  - m21 * (m12 * m33 - m32 * m13)
+	  + m31 * (m12 * m23 - m22 * m13);
+
+	rot(0,0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
+	rot(0,1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
+	rot(0,2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
+	rot(1,0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
+	rot(1,1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
+	rot(1,2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
+	rot(2,0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
+	rot(2,1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
+	rot(2,2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
+	
         for (i = 9; i < 12; ++i){
             tran[i - 9] = symm_tmp.symop[i];
         }
-
 
         for (i = 0; i < nat; ++i){
 
@@ -719,20 +743,67 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
             usi = rot * wsi;
 
+	    l = -1;
+
+	    for (j = 0; j < nat; ++j){
+                for (k = 0; k < 3; ++k) {
+		  vsi(k) = x[j][k];
+		  tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
+		  // need "std" to specify floating point operation
+		  // especially for intel compiler (there was no problem in MSVC)
+		  tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
+                }
+                double diff = tmp.dot(tmp);
+                if (diff < eps12) l = j;
+	    }
+
             for (j = 0; j < 3; ++j){
-                x_symm[i][j] = usi(j);
-            }
+                x_symm[l][j] = usi(j);
+		do {
+		  if (x_symm[l][j] < 0.0) {
+		    x_symm[l][j] += 1.0;
+		  } else if (x_symm[l][j] > 1.0){
+		    x_symm[l][j] -= 1.0;
+		  }
+		} while(x_symm[l][j] < 0.0 || x_symm[l][j] > 1.0);
+	    }
 
        }
 
         for (i = 0; i < nat; ++i){
-            for (j = 0; j < 3; ++i){
-            std::cout << std::setw(15) << x_symm[i][j];
+            for (j = 0; j < 3; ++j){
+	      std::cout << std::setw(15) << std::fixed << x_symm[i][j];
             }
-            std::cout << std::endl;
+	    std::cout << " ( ";
+            for (j = 0; j < 3; ++j){
+	      std::cout << std::setw(15) << std::scientific << x_symm[i][j]-x[i][j];
+            }
+	    std::cout << " )" << std::endl;
+
+	    for (j = 0; j < 3; ++j){
+	      x_avg[i][j] += x_symm[i][j];
+	    }
         }
 
     }
+    
+    for (i = 0; i < nat; ++i){
+      for (j = 0; j < 3; ++j){
+	x_avg[i][j] /= static_cast<double>(SymmList.size());
+      }
+    }
+
+    std::cout << "Symmetrically Averaged Coordinate" << std::endl;
+    for (i = 0; i < nat; ++i){
+      for (j = 0; j < 3; ++j){
+	std::cout << std::setw(15) << std::fixed << std::setprecision(9) << x_avg[i][j];
+      }
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout.setf(std::ios::floatfield);
 
     memory->deallocate(x_symm);
+    memory->deallocate(x_avg);
 }

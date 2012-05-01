@@ -68,12 +68,12 @@ void Interaction::init()
     memory->allocate(distlist, nat, nat);
 
     calc_distlist(nat, system->xcoord);
-    calc_minvec();
 
     files->ofs_int.open(files->file_int.c_str(), std::ios::out);
     if(!files->ofs_int) error->exit("openfiles", "cannot open int file");
 
     search_interactions();
+    calc_minvec();
 
     files->ofs_int.close();
     timer->print_elapsed();
@@ -297,7 +297,7 @@ void Interaction::search_interactions()
             intlist.clear();
             memory->deallocate(intarr);
         }
-        // write interaction pairs of atoms to pairs files
+        // Write interaction pairs of atoms to pairs files
         files->ofs_int << listset.size() << std::endl;
         for (std::set<IntList>::iterator p = listset.begin(); p != listset.end(); ++p){
             files->ofs_int << *p;
@@ -365,60 +365,94 @@ void Interaction::calc_minvec()
     int isize, jsize, ksize;
     int nat = system->nat;
     int natmin = symmetry->natmin;
-    int iat;
+    int iat, jat;
+    int nneib, icell;
+    int **minloc;
     double **x0 = system->xcoord;
-    double **x;
-    double **x_neib;
+    double ***x_neib;
     double dist;
     double **dist_tmp;
-
     double x_center[3];
 
     memory->allocate(minvec, natmin, nat, 3);
-    memory->allocate(x, nat, 3);
     memory->allocate(x_neib, nat, 3);
     memory->allocate(dist_tmp, natmin, nat);
+    memory->allocate(minloc, natmin, nat);
+
+    nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
+    memory->allocate(x_neib, nneib, nat, 3);
 
     for (i = 0; i < nat; ++i){
         for (j = 0; j < 3; ++j){
-            x[i][j] = x0[i][j];
+            x_neib[0][i][j] = x0[i][j];
         }
     }
-    system->frac2cart(x);
+    system->frac2cart(x_neib[0]);
+
+    icell = 0;
+    for (isize = -nsize[0]; isize <= nsize[0] ; ++isize){
+        for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize){
+            for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize){
+                if (isize == 0 && jsize == 0 && ksize == 0) continue;
+
+		++icell;	
+
+                for (i = 0; i < nat; ++i){
+                    x_neib[icell][i][0] = x0[i][0] + static_cast<double>(isize);
+                    x_neib[icell][i][1] = x0[i][1] + static_cast<double>(jsize);
+                    x_neib[icell][i][2] = x0[i][2] + static_cast<double>(ksize);
+                }
+                system->frac2cart(x_neib[icell]);
+	    }
+	}
+    }
+
+    for (i = 0;	i < natmin; ++i){
+	  iat = symmetry->map_p2s[i][0];
+	  for (j = 0; j < ninter[i][0]; ++j){
+		jat = intpairs[i][0][j];
+		dist_tmp[i][jat] = distance(x_neib[0][iat], x_neib[0][jat]);
+		minloc[i][jat] = 0;
+		for (icell = 1; icell < nneib; ++icell){
+		      dist = distance(x_neib[0][iat], x_neib[icell][jat]);
+		      if (dist < dist_tmp[i][jat]){
+			    dist_tmp[i][jat] = dist;
+			    minloc[i][jat] = icell;
+		      }
+		      
+		}
+	  }
+    }
+
+    for (i = 0; i < natmin; ++i){
+	  for (j = 0; j < ninter[i][0]; ++j){
+		jat = intpairs[i][0][j];
+	  }
+    }
 
     // Calculate center of the system
 
-    for (i = 0; i < 3;  ++i) x_center[i] = 0.0;
-
-/*    for (i = 0; i < natmin; ++i){
-
-        iat = symmetry->map_p2s[i][0];
-
-        for (j = 0; j < 3; ++j){
-            x_center[j] += x[iat][j];
-        }
-    }
-
-    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
-*/
-
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
-            x_center[j] += x[i][j];
-        }
-    }
-    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(nat);
-    
+    for (i = 0; i < 3; ++i) x_center[i] = 0.0;
 
     for (i = 0; i < natmin; ++i){
 
         iat = symmetry->map_p2s[i][0];
 
-        for (j = 0; j < nat; ++j){
-            dist_tmp[i][j] = distance(x[iat], x[j]);
+        for (j = 0; j < 3; ++j){
+            x_center[j] += x_neib[0][iat][j];
+        }
+    }
+
+    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
+
+    for (i = 0; i < natmin; ++i){
+
+        iat = symmetry->map_p2s[i][0];
+
+	for (j = 0; j < ninter[i][0]; ++j){
+	      jat = intpairs[i][0][j];
             for (k = 0; k < 3; ++k){
-//                minvec[i][j][k] = x[j][k] - x[iat][k];
-                minvec[i][j][k] = x[j][k] - x_center[k];
+                minvec[i][jat][k] = x_neib[minloc[i][jat]][jat][k] - x_center[k];
             }
         }
     }
@@ -434,44 +468,7 @@ void Interaction::calc_minvec()
         std::cout << std::endl;
     }
 #endif
-    
-    for (isize = -nsize[0]; isize <= nsize[0] ; ++isize){
-        for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize){
-            for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize){
-                if (isize == 0 && jsize == 0 && ksize == 0) continue;
-
-                for (i = 0; i < nat; ++i){
-                    x_neib[i][0] = x0[i][0] + static_cast<double>(isize);
-                    x_neib[i][1] = x0[i][1] + static_cast<double>(jsize);
-                    x_neib[i][2] = x0[i][2] + static_cast<double>(ksize);
-                }
-
-                system->frac2cart(x_neib);
-
-                for (i = 0; i < natmin; ++i){
-
-                    iat = symmetry->map_p2s[i][0];
-                    
-                    for (j = 0; j < nat; ++j){
-
-                        dist = distance(x[iat], x_neib[j]);
-
-                        // if a closer path found
-                        if(dist < dist_tmp[i][j]) {
-                            dist_tmp[i][j] = dist;
-                            for (k = 0; k < 3; ++k) {
-//                                minvec[i][j][k] = x_neib[j][k];
-                                minvec[i][j][k] = x_neib[j][k] - x_center[k];
-//                                minvec[i][j][k] = x_neib[j][k] - x[iat][k];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    memory->deallocate(x);
+    memory->deallocate(minloc);
     memory->deallocate(x_neib);
     memory->deallocate(dist_tmp);
 }

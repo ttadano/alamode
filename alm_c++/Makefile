@@ -3,8 +3,8 @@
 .cpp.o:
 	${CXX} ${CXXFLAGS} -c $<
 
-CXX = icpc
-CXXFLAGS = -O2 -xSSE4.1 -vec-report1 -openmp -openmp-report1 -D_DEBUG
+CXX = icpc -I /home/stsune/tadano/include
+CXXFLAGS = -O2 -xSSE4.1 -vec-report1 -openmp -openmp-report1
 LDFLAGS = -mkl
 
 PROG = alm_c++

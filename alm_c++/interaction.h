@@ -3,7 +3,6 @@
 #include <string>
 #include "pointers.h"
 
-//#include <Eigen/Core>
 
 namespace ALM_NS {
     class Interaction: protected Pointers {

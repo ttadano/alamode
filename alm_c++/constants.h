@@ -17,3 +17,4 @@ static const double eps = DBL_EPSILON;
 static const double eps12 = 1.0e-12;
 static const double eps10 = 1.0e-10;
 static const double eps8 = 1.0e-8;
+static const double eps6 = 1.0e-6;

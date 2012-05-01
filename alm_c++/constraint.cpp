@@ -545,11 +545,11 @@ void Constraint::rotational_invariance()
 
                     for (mu = 0; mu < 3; ++mu){
 
-                        if (interaction->is_periodic[mu]) continue;
+		      //                        if (interaction->is_periodic[mu]) continue;
 
                         for (nu = 0; nu < 3; ++nu){
 
-                            if(interaction->is_periodic[nu]) continue;
+			  //                            if(interaction->is_periodic[nu]) continue;
 
                             if (mu == nu) continue;
 
@@ -596,6 +596,10 @@ void Constraint::rotational_invariance()
                                     ofs_constraint << "////" << std::endl;
 #endif
                             }
+
+			    /* for (j = 0; j < nparam_sub; ++j){
+			      if(std::abs(arr_constraint[j])< 1.0e-6) arr_constraint[j] = 0.0;
+			      }*/
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
                                 // Add to constraint list
@@ -965,6 +969,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
         }
 
         FullPivLU<MatrixXd> lu_decomp(mat_tmp);
+	lu_decomp.setThreshold(eps6);
         int nrank = lu_decomp.rank();
         MatrixXd c_reduced = lu_decomp.image(mat_tmp);
 
