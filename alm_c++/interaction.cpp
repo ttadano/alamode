@@ -437,6 +437,13 @@ void Interaction::calc_minvec()
     }
 
     std::cout << "size of the cluster : " << xset.size() << std::endl;
+    for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
+        InteractionCluster x_tmp = *p;
+        for (i = 0; i < 3; ++i){
+            std::cout << std::setw(15) << x_tmp.x[i];
+        }
+        std::cout << std::endl;
+    }
 
     // Calculate center of the system
 
