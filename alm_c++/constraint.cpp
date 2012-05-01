@@ -544,7 +544,12 @@ void Constraint::rotational_invariance()
                     interaction_index[0] = 3 * iat + icrd;
 
                     for (mu = 0; mu < 3; ++mu){
+
+                        if (interaction->is_periodic[mu]) continue;
+
                         for (nu = 0; nu < 3; ++nu){
+
+                            if(interaction->is_periodic[nu]) continue;
 
                             if (mu == nu) continue;
 
@@ -557,9 +562,19 @@ void Constraint::rotational_invariance()
                                 jat = *iter_list;
                                 interaction_index[1] = 3 * jat + mu;
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
+
+                                ofs_constraint << "****" << std::endl;
+
                                 if(iter_found != list_found.end()){
+
                                     FcProperty arrtmp = *iter_found;              
                                     arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
+#ifdef _DEBUG
+                                    for (j = 0; j < 2; ++j){
+                                        ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_index[j]);
+                                    }
+                                    ofs_constraint << std::setw(3) << arrtmp.mother << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
+#endif
                                 }
 
                                 // Exchange mu <--> nu and repeat again. 
@@ -570,7 +585,14 @@ void Constraint::rotational_invariance()
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;                        
                                     arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];                             
+#ifdef _DEBUG
+                                    for (j = 0; j < 2; ++j){
+                                        ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_index[j]);
+                                    }
+                                    ofs_constraint << std::setw(3) << arrtmp.mother << std::setw(15) << -arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
+#endif
                                 }
+                                    ofs_constraint << "////" << std::endl;
                             }
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
@@ -631,7 +653,12 @@ void Constraint::rotational_invariance()
                                 for (j = 0; j < order; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent[ixyz][j];
 
                                 for (mu = 0; mu < 3; ++mu){
+
+                                    if (interaction->is_periodic[mu]) continue;
+
                                     for (nu = 0; nu < 3; ++nu){
+
+                                        if (interaction->is_periodic[nu]) continue;
 
                                         if (mu == nu) continue;
 
@@ -822,9 +849,14 @@ void Constraint::rotational_invariance()
 #endif
 
                             for (mu = 0; mu < 3; ++mu){
+                                
+                                if (interaction->is_periodic[mu]) continue;
+
                                 for (nu = 0; nu < 3; ++nu){
 
                                     //   ofs_constraint << "#$$ mu = " << mu << " nu = " << nu << std::endl;
+
+                                    if (interaction->is_periodic[nu]) continue;
 
                                     if (mu == nu) continue;
 
@@ -891,6 +923,16 @@ void Constraint::rotational_invariance()
         remove_redundant_rows(nparam_sub, const_rotation_cross[order]);
         remove_redundant_rows(nparams[order], const_rotation_self[order]);
     }
+
+#ifdef _DEBUG
+    for (std::set<ConstraintClass>::iterator p = const_rotation_self[0].begin(); p != const_rotation_self[0].end(); ++p){
+        ConstraintClass const_now = *p;
+        for (i = 0; i < fcs->ndup[0].size(); ++i) {
+            ofs_constraint << std::setw(15) << const_now.w_const[i];
+        }
+        ofs_constraint << std::endl;
+    }
+#endif
     
     std::cout << std::endl;
     

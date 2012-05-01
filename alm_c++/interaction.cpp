@@ -371,6 +371,8 @@ void Interaction::calc_minvec()
     double dist;
     double **dist_tmp;
 
+    double x_center[3];
+
     memory->allocate(minvec, natmin, nat, 3);
     memory->allocate(x, nat, 3);
     memory->allocate(x_neib, nat, 3);
@@ -383,6 +385,22 @@ void Interaction::calc_minvec()
     }
     system->frac2cart(x);
 
+    // Calculate center of the system
+
+    for (i = 0; i < 3;  ++i) x_center[i] = 0.0;
+
+    for (i = 0; i < natmin; ++i){
+
+        iat = symmetry->map_p2s[i][0];
+
+        for (j = 0; j < 3; ++j){
+            x_center[j] += x[iat][j];
+        }
+    }
+
+    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
+
+
     for (i = 0; i < natmin; ++i){
 
         iat = symmetry->map_p2s[i][0];
@@ -390,7 +408,8 @@ void Interaction::calc_minvec()
         for (j = 0; j < nat; ++j){
             dist_tmp[i][j] = distance(x[iat], x[j]);
             for (k = 0; k < 3; ++k){
-                minvec[i][j][k] = x[j][k] - x[iat][k];
+//                minvec[i][j][k] = x[j][k] - x[iat][k];
+                minvec[i][j][k] = x[j][k] - x_center[k];
             }
         }
     }
@@ -420,8 +439,9 @@ void Interaction::calc_minvec()
                         if(dist < dist_tmp[i][j]) {
                             dist_tmp[i][j] = dist;
                             for (k = 0; k < 3; ++k) {
-                                minvec[i][j][k] = x_neib[j][k];
-                             //   minvec[i][j][k] = x_neib[j][k] - x[iat][k];
+//                                minvec[i][j][k] = x_neib[j][k];
+                                minvec[i][j][k] = x_neib[j][k] - x_center[k];
+//                                minvec[i][j][k] = x_neib[j][k] - x[iat][k];
                             }
                         }
                     }
