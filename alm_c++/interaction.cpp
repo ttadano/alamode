@@ -58,7 +58,8 @@ void Interaction::init()
     }
 
     std::cout << std::endl << "Periodicity Flags (0: Non-Periodic, else: Periodic)" << std::endl;
-    std::cout << "a axis: " << std::setw(3) << is_periodic[0] << std::endl
+    std::cout 
+        << "a axis: " << std::setw(3) << is_periodic[0] << std::endl
         << "b axis: " << std::setw(3) << is_periodic[1] << std::endl
         << "c axis: " << std::setw(3) << is_periodic[2] << std::endl << std::endl;
 

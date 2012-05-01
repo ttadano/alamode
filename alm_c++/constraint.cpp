@@ -562,9 +562,9 @@ void Constraint::rotational_invariance()
                                 jat = *iter_list;
                                 interaction_index[1] = 3 * jat + mu;
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
-
+#ifdef _DEBUG
                                 ofs_constraint << "****" << std::endl;
-
+#endif
                                 if(iter_found != list_found.end()){
 
                                     FcProperty arrtmp = *iter_found;              
@@ -592,7 +592,9 @@ void Constraint::rotational_invariance()
                                     ofs_constraint << std::setw(3) << arrtmp.mother << std::setw(15) << -arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
 #endif
                                 }
+#ifdef _DEBUG
                                     ofs_constraint << "////" << std::endl;
+#endif
                             }
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
