@@ -414,6 +414,18 @@ void Interaction::calc_minvec()
             }
         }
     }
+
+#ifdef _DEBUG
+    std::cout << "Relative Coordinate From Center of the System" << std::endl;
+    
+    for (i = 0; i < nat; ++i){
+        std::cout << std::setw(5) << i + 1;
+        for (j = 0; j < 3; ++j){
+            std::cout << std::setw(15) << minvec[0][i][j];
+        }
+        std::cout << std::endl;
+    }
+#endif
     
     for (isize = -nsize[0]; isize <= nsize[0] ; ++isize){
         for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize){
