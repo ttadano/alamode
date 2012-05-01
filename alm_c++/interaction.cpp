@@ -390,7 +390,7 @@ void Interaction::calc_minvec()
 
     for (i = 0; i < 3;  ++i) x_center[i] = 0.0;
 
-    for (i = 0; i < natmin; ++i){
+/*    for (i = 0; i < natmin; ++i){
 
         iat = symmetry->map_p2s[i][0];
 
@@ -400,7 +400,15 @@ void Interaction::calc_minvec()
     }
 
     for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
+*/
 
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            x_center[j] += x[i][j];
+        }
+    }
+    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(nat);
+    
 
     for (i = 0; i < natmin; ++i){
 
