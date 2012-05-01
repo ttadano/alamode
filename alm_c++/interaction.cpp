@@ -449,20 +449,35 @@ void Interaction::calc_minvec()
 
     for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
 
-    for (i = 0; i < 3; ++i) x_center[i] = 0.0;
+        for (i = 0; i < 3; ++i) x_center[i] = 0.0;
 
-
+#ifdef _DEBUG
     std::cout << "Size of the cluster : " << xset.size() << std::endl;
     for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
         InteractionCluster x_tmp = *p;
         for (i = 0; i < 3; ++i){
             std::cout << std::setw(15) << x_tmp.x[i];
-            x_center[i] += x_tmp.x[i];
         }
         std::cout << std::endl;
     }
+#endif
 
-    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(xset.size());
+    for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
+        InteractionCluster x_tmp = *p;
+        for (i = 0; i < 3; ++i){
+            x_center[i] += x_tmp.x[i];
+        }
+    }
+
+    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(xset.size()); 
+
+#ifdef _DEBUG
+    std::cout << "Coordinate of the center" << std::endl;
+    for (i = 0; i < 3; ++i) {
+      std::cout << std::setw(15) << x_center[i];
+    }
+    std::cout << std::endl;
+#endif
 
     for (i = 0; i < natmin; ++i){
 
@@ -479,12 +494,17 @@ void Interaction::calc_minvec()
 #ifdef _DEBUG
     std::cout << "Relative Coordinate From Center of the System" << std::endl;
 
-    for (i = 0; i < nat; ++i){
-        std::cout << std::setw(5) << i + 1;
-        for (j = 0; j < 3; ++j){
-            std::cout << std::setw(15) << minvec[0][i][j];
+    for (i = 0; i < natmin; ++i){
+      iat = symmetry->map_p2s[i][0];
+      std::cout << std::setw(5) << iat + 1 << std::endl;
+      for (j = 0; j < ninter[i][0]; ++j) {
+	jat = intpairs[i][0][j];
+        for (k = 0; k < 3; ++k){
+	  std::cout << std::setw(18) << std::scientific << minvec[i][jat][k];
         }
-        std::cout << std::endl;
+	std::cout << std::endl;
+      }
+      std::cout << std::endl;
     }
 #endif
     memory->deallocate(minloc);
