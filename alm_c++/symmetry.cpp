@@ -681,7 +681,7 @@ void Symmetry::data_multiplier(int nat, int ndata)
 void Symmetry::print_symmetrized_coordinate(double **x)
 {
     int i, j;
-
+    int isym = 0;
     double **x_symm;
     int nat = system->nat;
 
@@ -700,6 +700,9 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
     for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
         SymmetryOperation symm_tmp = *p;
+
+        ++isym;
+        std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
         for (i = 0; i < 9; ++i){
             rot(i / 3, i % 3) = static_cast<double>(symm_tmp.symop[i]);
         }
@@ -721,6 +724,14 @@ void Symmetry::print_symmetrized_coordinate(double **x)
             }
 
        }
+
+        for (i = 0; i < nat; ++i){
+            for (j = 0; j < 3; ++i){
+            std::cout << std::setw(15) << x_symm[i][j];
+            }
+            std::cout << std::endl;
+        }
+
     }
 
     memory->deallocate(x_symm);
