@@ -20,6 +20,12 @@ Writes::~Writes(){};
 
 void Writes::write_phonon_info()
 {
+    if (nbands < 0 || nbands > 3 * system->natmin) {
+        std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
+        std::cout << "All modes will be printed." << std::endl;    
+        nbands =  3 * system->natmin;
+    }
+
     if(kpoint->kpoint_mode == 1){
         write_phonon_bands();
     }
@@ -52,14 +58,12 @@ void Writes::write_phonon_bands()
     double *kaxis = kpoint->kaxis;
     double **eval = dynamical->eval_phonon;
 
-    unsigned int neval = 3 * system->natmin;
-
     ofs_bands << "# k-axis, Eigenvalues [cm^-1]" << std::endl;
     ofs_bands.setf(std::ios::fixed);
 
     for (i = 0; i < nk; ++i){
         ofs_bands << std::setw(8) << kaxis[i];
-        for (j = 0; j < neval; ++j){
+        for (j = 0; j < nbands; ++j){
             ofs_bands << std::setw(12) << in_kayser(eval[i][j]);
         }
         ofs_bands << std::endl;
@@ -110,13 +114,7 @@ void Writes::write_mode_anime()
     memory->allocate(xmod, natmin, 3);
     memory->allocate(kd_tmp, natmin);
 
-    if (nbands < 0 || nbands > 3 * natmin) {
-        std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
-        std::cout << "All modes will be printed." << std::endl;    
-        nbands =  3 * natmin;
-    }
-
-    ofs_anime << "ANIMSTEPS " << 3 * natmin * nk << std::endl;
+    ofs_anime << "ANIMSTEPS " << nbands * nk << std::endl;
     ofs_anime << "CRYSTAL" << std::endl;
     ofs_anime << "PRIMVEC" << std::endl;
 
@@ -215,7 +213,7 @@ void Writes::write_eigenvectors()
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     ofs_evec << "Modes and k-points information below" << std::endl;
-    ofs_evec << std::setw(10) << neval;
+    ofs_evec << std::setw(10) << nbands;
     ofs_evec << std::setw(10) << nk << std::endl;
 
     for (i = 0; i < nk; ++i){
@@ -224,7 +222,7 @@ void Writes::write_eigenvectors()
             ofs_evec << std::setw(15) << kpoint->xk[i][j];
         }
         ofs_evec << std::endl;
-        for (j = 0; j < neval; ++j){
+        for (j = 0; j < nbands; ++j){
             ofs_evec << std::setw(15) << dynamical->eval_phonon[i][j] << std::endl;
 
             for (k = 0; k < neval; ++k){
