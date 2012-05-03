@@ -506,6 +506,7 @@ void Interaction::calc_minvec()
       }
       std::cout << std::endl;
     }
+    std::cout.unsetf(std::ios::scientific);
 #endif
     memory->deallocate(minloc);
     memory->deallocate(x_neib);

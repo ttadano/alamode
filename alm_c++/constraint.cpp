@@ -121,6 +121,12 @@ void Constraint::setup(){
 
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+#ifdef _DEBUG
+                for (i = 0; i < nparam; ++i){
+                    std::cout << " " << arr_tmp[i];
+                }
+                std::cout << std::endl;
+#endif
             }
 
             for (std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
@@ -129,11 +135,33 @@ void Constraint::setup(){
 
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+
+#ifdef _DEBUG
+                for (i = 0; i < nparam; ++i){
+                    std::cout << " " << arr_tmp[i];
+                }
+                std::cout << std::endl;
+#endif
             }
 
-            memory->deallocate(arr_tmp);
-            remove_redundant_rows(nparam, const_self[order]);
+            remove_redundant_rows(nparam, const_self[order], eps8);
 
+#ifdef _DEBUG
+            for (std::set<ConstraintClass>::iterator p = const_self[order].begin(); p != const_self[order].end(); ++p){
+
+                ConstraintClass const_pointer = *p;
+
+                for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+                const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+
+                for (i = 0; i < nparam; ++i){
+                    std::cout << " " << arr_tmp[i];
+                }
+                std::cout << std::endl;
+
+            }
+#endif
+            memory->deallocate(arr_tmp);
             const_translation[order].clear();
             const_rotation_self[order].clear();
         }
@@ -216,7 +244,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         nshift += nparam;
     }
 
-    remove_redundant_rows(N, const_total);
+    remove_redundant_rows(N, const_total, eps8);
     
     P = const_total.size();
 
@@ -434,7 +462,7 @@ void Constraint::translational_invariance()
         memory->deallocate(intarr);
         memory->deallocate(intarr_copy);
 
-        remove_redundant_rows(nparams, const_translation[order]);
+        remove_redundant_rows(nparams, const_translation[order], eps8);
         std::cout << " done." << std::endl;
     }
     memory->deallocate(ind);
@@ -545,13 +573,17 @@ void Constraint::rotational_invariance()
 
                     for (mu = 0; mu < 3; ++mu){
 
-		      //                        if (interaction->is_periodic[mu]) continue;
+                        //    if (interaction->is_periodic[mu]) continue;
+//                        if (mu == 0) continue;
 
                         for (nu = 0; nu < 3; ++nu){
 
-			  //                            if(interaction->is_periodic[nu]) continue;
+//                            if(interaction->is_periodic[nu]) continue;
+//                            if (nu == 0) continue;
 
                             if (mu == nu) continue;
+//                            if (mu == 0 && nu == 1) continue;
+//                            if (mu == 1 && nu == 0) continue;
 
                             // Clear history
 
@@ -926,8 +958,8 @@ void Constraint::rotational_invariance()
     } // order
 
     for (order = 0; order < maxorder; ++order) {
-        remove_redundant_rows(nparam_sub, const_rotation_cross[order]);
-        remove_redundant_rows(nparams[order], const_rotation_self[order]);
+        remove_redundant_rows(nparam_sub, const_rotation_cross[order], eps6);
+        remove_redundant_rows(nparams[order], const_rotation_self[order], eps6);
     }
 
 #ifdef _DEBUG
@@ -946,7 +978,7 @@ void Constraint::rotational_invariance()
     memory->deallocate(nparams);
 }
 
-void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set)
+void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set, const double tolerance)
 {
     using namespace Eigen;
 
@@ -969,7 +1001,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
         }
 
         FullPivLU<MatrixXd> lu_decomp(mat_tmp);
-	lu_decomp.setThreshold(eps6);
+	lu_decomp.setThreshold(tolerance);
         int nrank = lu_decomp.rank();
         MatrixXd c_reduced = lu_decomp.image(mat_tmp);
 

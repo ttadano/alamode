@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include "pointers.h"
+#include "constants.h"
 
 namespace ALM_NS
 {
@@ -63,7 +64,7 @@ namespace ALM_NS
         void calc_constraint_matrix(const int, int &);
 
         bool is_allzero(const int, const double *, const int nshift = 0);
-        void remove_redundant_rows(const int, std::set<ConstraintClass> &);
+        void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);
     };
 
 }
