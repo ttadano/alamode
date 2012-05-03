@@ -28,7 +28,7 @@ namespace ALM_NS {
         ~Interaction();
         void init();
 
-        double **rcs;
+        double ***rcs;
         double **distlist;
 
         double distance(double *, double *);

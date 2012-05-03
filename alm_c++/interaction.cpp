@@ -32,7 +32,7 @@ Interaction::~Interaction() {
 
 void Interaction::init()
 {
-    int i, j;
+    int i, j, k;
     int nat = system->nat;
     int nkd = system->nkd;
 
@@ -46,12 +46,13 @@ void Interaction::init()
     }
     std::cout << std::endl;
 
-    for (i = 0; i < nkd; ++i){
-        std::cout << std::setw(8) << i + 1;
-        for (j = 0; j < maxorder; ++j){
-            std::cout << std::setw(9) << rcs[i][j];
+    for (i = 0; i < maxorder; ++i){
+        for (j = 0; j < nkd; ++j){
+            for (k = 0; k < nkd; ++k){
+                std::cout << std::setw(9) << rcs[i][j][k];
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 
     for (i = 0; i < 3; ++i){
@@ -192,7 +193,7 @@ void Interaction::search_interactions()
 
                 for (order = 0; order < maxorder; ++order){
 
-                    if(dist < rcs[system->kd[iat] - 1][order] + rcs[system->kd[jat] - 1][order]) {
+                    if(dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
 
                         if(!countint[i][jat][order]) {
                             intpairs[i][order][ninter[i][order]] = jat;
@@ -346,7 +347,7 @@ bool Interaction::is_incutoff(int n, int *atomnumlist)
         for (j =  i + 1; j < ncheck; ++j){
 
             tmp = distance(xcrd[min_neib[i]][atomnumlist[i + 1]], xcrd[min_neib[j]][atomnumlist[j + 1]]);
-            if(tmp > rcs[system->kd[atomnumlist[i + 1]] - 1][ncheck - 1] + rcs[system->kd[atomnumlist[j + 1]] - 1][ncheck - 1]){
+            if(tmp > rcs[ncheck - 1][system->kd[atomnumlist[i + 1]] - 1][system->kd[atomnumlist[j + 1]] - 1]){
                 memory->deallocate(dist_tmp);
                 memory->deallocate(min_neib);
                 return false;
@@ -438,19 +439,6 @@ void Interaction::calc_minvec()
 
     for (i = 0; i < 3; ++i) x_center[i] = 0.0;
 
-    for (i = 0; i < natmin; ++i){
-
-        iat = symmetry->map_p2s[i][0];
-
-        for (j = 0; j < 3; ++j){
-            x_center[j] += x_neib[0][iat][j];
-        }
-    }
-
-    for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(natmin);
-
-        for (i = 0; i < 3; ++i) x_center[i] = 0.0;
-
 #ifdef _DEBUG
     std::cout << "Size of the cluster : " << xset.size() << std::endl;
     for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
@@ -471,10 +459,12 @@ void Interaction::calc_minvec()
 
     for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(xset.size()); 
 
+    // It was found that the result does not depend on x_center.
+
 #ifdef _DEBUG
     std::cout << "Coordinate of the center" << std::endl;
     for (i = 0; i < 3; ++i) {
-      std::cout << std::setw(15) << x_center[i];
+        std::cout << std::setw(15) << x_center[i];
     }
     std::cout << std::endl;
 #endif
@@ -495,16 +485,16 @@ void Interaction::calc_minvec()
     std::cout << "Relative Coordinate From Center of the System" << std::endl;
 
     for (i = 0; i < natmin; ++i){
-      iat = symmetry->map_p2s[i][0];
-      std::cout << std::setw(5) << iat + 1 << std::endl;
-      for (j = 0; j < ninter[i][0]; ++j) {
-	jat = intpairs[i][0][j];
-        for (k = 0; k < 3; ++k){
-	  std::cout << std::setw(18) << std::scientific << minvec[i][jat][k];
+        iat = symmetry->map_p2s[i][0];
+        std::cout << std::setw(5) << iat + 1 << std::endl;
+        for (j = 0; j < ninter[i][0]; ++j) {
+            jat = intpairs[i][0][j];
+            for (k = 0; k < 3; ++k){
+                std::cout << std::setw(18) << std::scientific << minvec[i][jat][k];
+            }
+            std::cout << std::endl;
         }
-	std::cout << std::endl;
-      }
-      std::cout << std::endl;
+        std::cout << std::endl;
     }
     std::cout.unsetf(std::ios::scientific);
 #endif

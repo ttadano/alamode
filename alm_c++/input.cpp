@@ -18,6 +18,8 @@ Input::~Input() {}
 
 void Input::parce_input()
 {
+    int i, j, k;
+
     using namespace std;
     string job_title;
     string disp_file, force_file, fc2_file;
@@ -29,18 +31,18 @@ void Input::parce_input()
     bool multiply_data;
     int constraint_flag;
     double lavec[3][3];
-    double **rcs, **xeq;
+    double ***rcs, **xeq;
     string *kdname;
     double *masskd;
     int maxorder;
-    
+
     // Read Job prefix
     cin >> job_title;
-    
+
     // Read nat and nkd
     cin >> nat >> nkd;
     cin >> nsym >> nnp;
-    
+
     // Read lattice vector in Bohr unit
     cin >> lavec[0][0] >> lavec[0][1] >> lavec[0][2];
     cin >> lavec[1][0] >> lavec[1][1] >> lavec[1][2];
@@ -50,11 +52,19 @@ void Input::parce_input()
     cin >> maxorder;
     if(maxorder < 1) error->exit("parce_input", "maxorder has to be a positive integer");
     interaction->maxorder = maxorder;
-    memory->allocate(rcs,nkd,maxorder);
-    memory->allocate(interaction->rcs, nkd, maxorder);
-    for (int i = 0; i < nkd; ++i){
-        for (int j = 0; j < maxorder; ++j){
-            cin >> rcs[i][j];
+    memory->allocate(rcs, maxorder, nkd, nkd);
+    memory->allocate(interaction->rcs, maxorder, nkd, nkd);
+    
+    for (i = 0; i < maxorder; ++i){
+        for (j = 0; j < nkd; ++j){
+            for (k = 0; k < nkd; ++k){
+                cin >> rcs[i][j][k];
+            }
+        }
+        for (j = 0; j < nkd; ++j) {
+            for (k = j + 1; k < nkd; ++k){
+            if (rcs[j][k] != rcs[k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", k + 1);
+            }
         }
     }
 
@@ -84,14 +94,14 @@ void Input::parce_input()
     // Read species mass
     memory->allocate(kdname, nkd);
     memory->allocate(masskd, nkd);
-    for (int i = 0; i < nkd; i++){
+    for (i = 0; i < nkd; ++i){
         cin >> kdname[i] >> masskd[i];
     }
 
     // Read atomic coordinates
     memory->allocate(kd, nat);
     memory->allocate(xeq, nat, 3);
-    for (int i = 0; i < nat; i++){
+    for (i = 0; i < nat; ++i){
         cin >> kd[i] >> xeq[i][0] >> xeq[i][1] >> xeq[i][2];
     }
 
@@ -108,33 +118,35 @@ void Input::parce_input()
     system->nend = nend;
     system->nskip = nskip;
 
-    for (int i = 0; i < nkd; i++){
-        for (int j = 0; j < maxorder; j++){
-            interaction->rcs[i][j] = rcs[i][j];
+    for (i = 0; i < maxorder; ++i){
+        for (j = 0; j < nkd; ++j) {
+            for (k = 0; k < nkd; ++k){
+                interaction->rcs[i][j][k] = rcs[i][j][k];
+            }
         }
     }
     symmetry->multiply_data = multiply_data;
     constraint->constraint_mode = constraint_flag;
 
-    for (int i = 0; i < 3; i++) interaction->is_periodic[i] = is_periodic[i];
+    for (i = 0; i < 3; ++i) interaction->is_periodic[i] = is_periodic[i];
 
-    for (int i = 0; i < 3; i++){
-        for (int j = 0; j < 3; j++){
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
             system->lavec[i][j] = lavec[i][j];
         }
     }
     system->kdname = new string[nkd];
     system->mass_kd = new double[nkd];
-    for (int i = 0; i < nkd; i++){
+    for (int i = 0; i < nkd; ++i){
         system->kdname[i] = kdname[i];
         system->mass_kd[i] = masskd[i];
     }
 
     system->kd = new int[nat];
     memory->allocate(system->xcoord, nat, 3);
-    for (int i = 0; i < nat; i++){
+    for (i = 0; i < nat; ++i){
         system->kd[i] = kd[i];
-        for (int j = 0; j < 3; j++){
+        for (j = 0; j < 3; ++j){
             system->xcoord[i][j] = xeq[i][j];
         }
     }
