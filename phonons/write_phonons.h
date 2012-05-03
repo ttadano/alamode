@@ -14,6 +14,7 @@ namespace PHON_NS
         bool writeanime;
 
         double in_kayser(const double);
+        int nbands;
 
     private:
 

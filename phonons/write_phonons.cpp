@@ -110,6 +110,11 @@ void Writes::write_mode_anime()
     memory->allocate(xmod, natmin, 3);
     memory->allocate(kd_tmp, natmin);
 
+    if (nbands < 0 || nbands > 3 * natmin) {
+        std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
+        std::cout << "All modes will be printed." << std::endl;    
+        nbands =  3 * natmin;
+    }
 
     ofs_anime << "ANIMSTEPS " << 3 * natmin * nk << std::endl;
     ofs_anime << "CRYSTAL" << std::endl;
@@ -127,7 +132,7 @@ void Writes::write_mode_anime()
         for (j = 0; j < 3; ++j){
             xmod[i][j] = system->xc[k][j];
         }
-       // system->rotvec(system->lavec_p, xmod[i], xmod[i]);
+        // system->rotvec(system->lavec_p, xmod[i], xmod[i]);
 
         for (j = 0; j < 3; ++j){
             xmod[i][j] *= Bohr_in_Angstrom;
@@ -142,7 +147,7 @@ void Writes::write_mode_anime()
     i = 0;
 
     for (ik = 0; ik < nk; ++ik){
-        for (imode = 0; imode < 3 * natmin; ++imode){
+        for (imode = 0; imode < nbands; ++imode){
             ofs_anime << "PRIMCOORD " << std::setw(10) << i + 1 << std::endl;
             ofs_anime << std::setw(10) << natmin << std::setw(10) << 1 << std::endl;
             norm = 0.0;
@@ -151,13 +156,13 @@ void Writes::write_mode_anime()
                 evec_tmp = dynamical->dymat[ik][imode][j];
                 norm += std::pow(evec_tmp.real(), 2) + std::pow(evec_tmp.imag(), 2);
             }
-            
+
             norm *= force_factor / static_cast<double>(natmin);
 
             for (j = 0; j < natmin; ++j){
 
                 m = system->map_p2s[j][0];
-                
+
                 ofs_anime << std::setw(10) << kd_tmp[j];
 
                 for (k = 0; k < 3; ++k){

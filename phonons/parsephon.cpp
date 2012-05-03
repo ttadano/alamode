@@ -40,6 +40,7 @@ void Input::read_input_phonons()
     double lavec[3][3];
     int kpoint_mode;
     bool eigenvectors, writeanime, nonanalytic;
+    int nbands;
 
     string file_born;
     double na_sigma;
@@ -52,6 +53,7 @@ void Input::read_input_phonons()
     cin >> file_fcs;
 
     cin >> eigenvectors >> writeanime >> nonanalytic;
+    cin >> nbands;
     cin >> kpoint_mode;
     if(nonanalytic) cin >> file_born >> na_sigma;
 
@@ -66,6 +68,7 @@ void Input::read_input_phonons()
     dynamical->eigenvectors = eigenvectors;
     writes->writeanime = writeanime;
     dynamical->nonanalytic = nonanalytic;
+    writes->nbands = nbands;
 
     if(nonanalytic) {
         dynamical->file_born = file_born;
