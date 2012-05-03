@@ -503,7 +503,7 @@ void Constraint::rotational_invariance()
     double *arr_constraint;
     double *arr_constraint_self;
 
-    bool **valid_rotation_axis;
+    bool valid_rotation_axis[3][3];
 
     std::vector<int> interaction_list, interaction_list_old, interaction_list_now;
 
@@ -513,7 +513,6 @@ void Constraint::rotational_invariance()
 
     CombinationWithRepetition<int> g;
 
-    memory->allocate(valid_rotation_axis, 3, 3);
     setup_rotation_axis(valid_rotation_axis);
 
     memory->allocate(ind, maxorder + 1);
@@ -965,7 +964,6 @@ void Constraint::rotational_invariance()
 
     memory->deallocate(ind);
     memory->deallocate(nparams);
-    memory->deallocate(valid_rotation_axis);
 }
 
 void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set, const double tolerance)
@@ -1026,7 +1024,7 @@ bool Constraint::is_allzero(const int n, const double *arr, const int nshift){
     return true;
 }
 
-void Constraint::setup_rotation_axis(bool **flag)
+void Constraint::setup_rotation_axis(bool flag[3][3])
 {
     unsigned int mu, nu;
 
@@ -1039,6 +1037,7 @@ void Constraint::setup_rotation_axis(bool **flag)
             }
         }
     }
+    std::sort(rotation_axis.begin(), rotation_axis.end());
 
     if (rotation_axis == "x") {
         flag[0][1] = false;
@@ -1055,13 +1054,13 @@ void Constraint::setup_rotation_axis(bool **flag)
         flag[2][0] = false;
         flag[1][2] = false;
         flag[2][1] = false;
-    } else if (rotation_axis == "xy" || rotation_axis == "yx") {
+    } else if (rotation_axis == "xy") {
         flag[0][1] = false;
         flag[1][0] = false;
-    } else if (rotation_axis == "yz" || rotation_axis == "zy") {
+    } else if (rotation_axis == "yz"){
         flag[1][2] = false;
         flag[2][1] = false;
-    } else if (rotation_axis == "zx" || rotation_axis == "xz") {
+    } else if (rotation_axis == "xz") {
         flag[0][2] = false;
         flag[2][0] = false;
     } else if (rotation_axis == "xyz") {
