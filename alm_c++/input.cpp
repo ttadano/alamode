@@ -21,6 +21,7 @@ void Input::parce_input()
     using namespace std;
     string job_title;
     string disp_file, force_file, fc2_file;
+    string rotation_axis;
     int nat, nkd, nsym, nnp;
     int ndata, nstart, nend, nskip;
     int *kd;
@@ -71,6 +72,11 @@ void Input::parce_input()
     if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
         cin >> fc2_file;
         constraint->fc2_file = fc2_file;
+    }
+
+    if(constraint_flag >= 3) {
+        cin >> rotation_axis;
+        constraint->rotation_axis = rotation_axis;
     }
 
     cin >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];

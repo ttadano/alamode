@@ -45,6 +45,7 @@ namespace ALM_NS
         double *const_rhs;
 
         bool exist_constraint;
+        std::string rotation_axis;
 
     private:
 
@@ -62,6 +63,8 @@ namespace ALM_NS
         void translational_invariance();
         void rotational_invariance();
         void calc_constraint_matrix(const int, int &);
+
+        void setup_rotation_axis(bool **);
 
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);

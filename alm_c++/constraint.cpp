@@ -245,7 +245,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     }
 
     remove_redundant_rows(N, const_total, eps8);
-    
+
     P = const_total.size();
 
     if(fix_harmonic) {
@@ -265,7 +265,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     icol = 0;
 
     if(fix_harmonic){
-        
+
         std::ifstream ifs_fc2;
         ifs_fc2.open(fc2_file.c_str(), std::ios::in);
         if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
@@ -503,6 +503,8 @@ void Constraint::rotational_invariance()
     double *arr_constraint;
     double *arr_constraint_self;
 
+    bool **valid_rotation_axis;
+
     std::vector<int> interaction_list, interaction_list_old, interaction_list_now;
 
     std::set<FcProperty> list_found;
@@ -510,6 +512,9 @@ void Constraint::rotational_invariance()
     std::set<FcProperty>::iterator iter_found;
 
     CombinationWithRepetition<int> g;
+
+    memory->allocate(valid_rotation_axis, 3, 3);
+    setup_rotation_axis(valid_rotation_axis);
 
     memory->allocate(ind, maxorder + 1);
     memory->allocate(nparams, maxorder);
@@ -573,17 +578,9 @@ void Constraint::rotational_invariance()
 
                     for (mu = 0; mu < 3; ++mu){
 
-                        //    if (interaction->is_periodic[mu]) continue;
-//                        if (mu == 0) continue;
-
                         for (nu = 0; nu < 3; ++nu){
 
-//                            if(interaction->is_periodic[nu]) continue;
-//                            if (nu == 0) continue;
-
-                            if (mu == nu) continue;
-//                            if (mu == 0 && nu == 1) continue;
-//                            if (mu == 1 && nu == 0) continue;
+                             if(!valid_rotation_axis[mu][nu]) continue;
 
                             // Clear history
 
@@ -625,13 +622,13 @@ void Constraint::rotational_invariance()
 #endif
                                 }
 #ifdef _DEBUG
-                                    ofs_constraint << "////" << std::endl;
+                                ofs_constraint << "////" << std::endl;
 #endif
                             }
 
-			    /* for (j = 0; j < nparam_sub; ++j){
-			      if(std::abs(arr_constraint[j])< 1.0e-6) arr_constraint[j] = 0.0;
-			      }*/
+                            /* for (j = 0; j < nparam_sub; ++j){
+                            if(std::abs(arr_constraint[j])< 1.0e-6) arr_constraint[j] = 0.0;
+                            }*/
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
                                 // Add to constraint list
@@ -692,13 +689,9 @@ void Constraint::rotational_invariance()
 
                                 for (mu = 0; mu < 3; ++mu){
 
-                                    if (interaction->is_periodic[mu]) continue;
+                                        for (nu = 0; nu < 3; ++nu){
 
-                                    for (nu = 0; nu < 3; ++nu){
-
-                                        if (interaction->is_periodic[nu]) continue;
-
-                                        if (mu == nu) continue;
+                                        if (!valid_rotation_axis[mu][nu]) continue;
 
                                         // Search for a new constraint below
 
@@ -887,16 +880,12 @@ void Constraint::rotational_invariance()
 #endif
 
                             for (mu = 0; mu < 3; ++mu){
-                                
-                                if (interaction->is_periodic[mu]) continue;
 
-                                for (nu = 0; nu < 3; ++nu){
+                                  for (nu = 0; nu < 3; ++nu){
 
                                     //   ofs_constraint << "#$$ mu = " << mu << " nu = " << nu << std::endl;
 
-                                    if (interaction->is_periodic[nu]) continue;
-
-                                    if (mu == nu) continue;
+                                    if (!valid_rotation_axis[mu][nu]) continue;
 
                                     for (j = 0; j < nparams[order]; ++j) arr_constraint_self[j] = 0.0;
 
@@ -971,11 +960,12 @@ void Constraint::rotational_invariance()
         ofs_constraint << std::endl;
     }
 #endif
-    
+
     std::cout << std::endl;
-    
+
     memory->deallocate(ind);
     memory->deallocate(nparams);
+    memory->deallocate(valid_rotation_axis);
 }
 
 void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set, const double tolerance)
@@ -1001,7 +991,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
         }
 
         FullPivLU<MatrixXd> lu_decomp(mat_tmp);
-	lu_decomp.setThreshold(tolerance);
+        lu_decomp.setThreshold(tolerance);
         int nrank = lu_decomp.rank();
         MatrixXd c_reduced = lu_decomp.image(mat_tmp);
 
@@ -1034,4 +1024,49 @@ bool Constraint::is_allzero(const int n, const double *arr, const int nshift){
         }
     }
     return true;
+}
+
+void Constraint::setup_rotation_axis(bool **flag)
+{
+    unsigned int mu, nu;
+
+    for (mu = 0; mu < 3; ++mu){
+        for (nu = 0; nu < 3; ++nu) {
+            if (mu == nu ) {
+                flag[mu][nu] = false;
+            } else {
+                flag[mu][nu] = true;
+            }
+        }
+    }
+
+    if (rotation_axis == "x") {
+        flag[0][1] = false;
+        flag[1][0] = false;
+        flag[0][2] = false;
+        flag[2][0] = false;
+    } else if (rotation_axis == "y") {
+        flag[0][1] = false;
+        flag[1][0] = false;
+        flag[1][2] = false;
+        flag[2][1] = false;
+    } else if (rotation_axis == "z") {
+        flag[0][2] = false;
+        flag[2][0] = false;
+        flag[1][2] = false;
+        flag[2][1] = false;
+    } else if (rotation_axis == "xy" || rotation_axis == "yx") {
+        flag[0][1] = false;
+        flag[1][0] = false;
+    } else if (rotation_axis == "yz" || rotation_axis == "zy") {
+        flag[1][2] = false;
+        flag[2][1] = false;
+    } else if (rotation_axis == "zx" || rotation_axis == "xz") {
+        flag[0][2] = false;
+        flag[2][0] = false;
+    } else if (rotation_axis == "xyz") {
+        // do nothing
+    } else {
+        error->warn("setup_rotation_axis", "Invalid rotation_axis. Default value(xyz) will be used.");
+    }
 }
