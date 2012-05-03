@@ -39,20 +39,17 @@ void Interaction::init()
     memory->allocate(str_order, maxorder);
     set_ordername();
 
-    std::cout << "Cutoff Radii (Bohr Unit.)" << std::endl;
-    std::cout << std::setw(8) << "Species";
-    for (i = 0; i < maxorder; ++i){
-        std::cout << std::setw(9) << str_order[i];
-    }
-    std::cout << std::endl;
+    std::cout << "*** Cutoff Radii Matrix in Bohr Unit. (nkd x nkd matrix) ***" << std::endl;
 
     for (i = 0; i < maxorder; ++i){
+        std::cout << std::setw(9) << str_order[i] << std::endl; 
         for (j = 0; j < nkd; ++j){
             for (k = 0; k < nkd; ++k){
                 std::cout << std::setw(9) << rcs[i][j][k];
             }
             std::cout << std::endl;
         }
+        std::cout << std::endl;
     }
 
     for (i = 0; i < 3; ++i){

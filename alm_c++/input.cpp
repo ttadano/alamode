@@ -63,7 +63,7 @@ void Input::parce_input()
         }
         for (j = 0; j < nkd; ++j) {
             for (k = j + 1; k < nkd; ++k){
-            if (rcs[j][k] != rcs[k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", k + 1);
+            if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", k + 1);
             }
         }
     }
