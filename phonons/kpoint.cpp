@@ -21,6 +21,8 @@ void Kpoint::kpoint_setups()
 {
     unsigned int i;
 
+    if (phon->mode == "boltzmann") kpoint_mode = 3;
+
     switch (kpoint_mode){
     case 0:
         std::cout << "kpoint_mode = 0: calculation on given k-points" << std::endl;
@@ -95,17 +97,18 @@ void Kpoint::kpoint_setups()
 
         gen_kmesh();
         break;
+    case 3:
+        std::cout << "kpoint_mode = 3: Uniform k-point grid for Boltzmann" << std::endl;
+        std::cin >> nkx >> nky >> nkz;
+        nk = nkx * nky * nkz;
+        memory->allocate(xk, nk, 3);
+        gen_kmesh();
+        break;
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
     }
     std::cout << "Number of k-points: " << nk << std::endl << std::endl;
 
-    /*    for (i = 0; i < nk; ++i){
-      for(unsigned int j = 0; j < 3; ++j){
-	std::cout << std::setw(15) << xk[i][j]; 
-      }
-      std::cout << std::endl;
-      } */
 }
 
 void Kpoint::gen_kpoints_band()

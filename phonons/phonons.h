@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 namespace PHON_NS
 {
@@ -20,5 +21,7 @@ namespace PHON_NS
 
         void create_pointers();
         void destroy_pointers();
+
+        std::string mode;
     };
 }

@@ -19,18 +19,36 @@ PHON::PHON(int narg, char **arg)
     input = new Input(this, narg, arg);
     create_pointers();
     input->parce_input();
-    
-    system->setup();
-    kpoint->kpoint_setups();
-    fcs_phonon->setup();
-    dos->setup();
 
-    dynamical->calc_dynamical_matrix();
-    dynamical->diagonalize_dynamical();
+    if (mode == "phonons") {
+        system->setup();
+        kpoint->kpoint_setups();
+        fcs_phonon->setup();
+        dos->setup();
 
-    if(dos->flag_dos) dos->calc_dos();
-    
-    writes->write_phonon_info();
+        dynamical->calc_dynamical_matrix();
+        dynamical->diagonalize_dynamical();
+
+        if(dos->flag_dos) dos->calc_dos();
+
+        writes->write_phonon_info();
+    } else {
+        system->setup();
+        kpoint->kpoint_setups();
+        fcs_phonon->setup();
+        dynamical->setup_dynamical();
+
+        int n = dynamical->neval;
+        double *eval;
+        memory->allocate(eval, n);
+        for (int j = 0; j < kpoint->nk; ++j){
+        dynamical->eval_k(eval, kpoint->xk[j]);
+        for (int i = 0; i < n; ++i){
+        std::cout << eval[i] << std::endl;
+        }
+        std::cout << std::endl;
+        }
+    }
 
     destroy_pointers();
 
@@ -63,4 +81,5 @@ void PHON::destroy_pointers()
     delete dynamical;
     delete writes;
     delete dos;
+
 }

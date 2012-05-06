@@ -7,6 +7,7 @@
 #include "write_phonons.h"
 #include <iostream>
 #include <string>
+#include <algorithm>
 
 using namespace PHON_NS;
 
@@ -21,12 +22,17 @@ void Input::parce_input()
 
     cin >> job_title;
     cin >> mode;
+    transform(mode.begin(), mode.end(), mode.begin(), tolower);
+
+    phon->mode = mode;
+
     if(mode == "phonons") {
         cout << "Calculation of PHONONS" << endl << endl;
         read_input_phonons();
     } else if (mode == "boltzmann"){
         cout << "Calculation of Thermal Conductivity" << endl << endl;
-        error->exit("parse_input", "Sorry :( Boltzmann is not supported yet");
+        error->warn("parse_input", "Sorry :( Boltzmann is still under implementation");
+        read_input_boltzmann();
     } else {
         error->exit("parse_input", "invalid mode");
     }
@@ -78,4 +84,26 @@ void Input::read_input_phonons()
     fcs_phonon->file_fcs = file_fcs;
     kpoint->kpoint_mode = kpoint_mode;
 
+}
+
+void Input::read_input_boltzmann()
+{
+    using namespace std;
+
+    string file_fcs;
+    double lavec[3][3];
+
+    unsigned int i, j;
+
+    for (i = 0; i < 3; ++i) {
+        cin >> lavec[i][0] >> lavec[i][1] >> lavec[i][2];
+    }
+    cin >> file_fcs;
+
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
+        system->lavec_p[i][j] = lavec[i][j];
+        }
+    }
+    fcs_phonon->file_fcs = file_fcs;
 }

@@ -22,8 +22,12 @@ namespace PHON_NS {
         double **eval_phonon;
         std::complex<double> ***dymat;
 
+        void eval_k(double *, double *);
+        void setup_dynamical();
+
     private:
         void calc_analytic();
+        void calc_analytic_k(std::complex<double> **, double *);
         void calc_nonanalytic();
         double fold(double);
     };
