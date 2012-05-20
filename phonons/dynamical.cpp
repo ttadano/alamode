@@ -58,10 +58,7 @@ void Dynamical::eval_k(double *eval_out, double *xk_in) {
     memory->allocate(RWORK, 3*neval - 2);
     memory->allocate(WORK, LWORK);
 
-   // double *eval;
     std::complex<double> *amat;
-
-   // memory->allocate(eval, neval);
     memory->allocate(amat, neval * neval);
 
     unsigned int k = 0;

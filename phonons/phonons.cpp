@@ -81,5 +81,4 @@ void PHON::destroy_pointers()
     delete dynamical;
     delete writes;
     delete dos;
-
 }

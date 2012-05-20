@@ -255,9 +255,10 @@ void Interaction::search_interactions()
 #endif
             // write atoms inside the cutoff radius
             int id = 0;
-            std::cout << "Atom " << std::setw(5) << iat + 1  << " interacts with atoms ... " << std::endl;
+            std::cout << "Atom " << std::setw(5) << iat + 1  
+                << "(" << std::setw(3) << system->kdname[system->kd[iat]-1] << ")" << " interacts with atoms ... " << std::endl;
             for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
-                std::cout << std::setw(5) << *it + 1;
+                std::cout << std::setw(5) << *it + 1 << "(" << std::setw(3) << system->kdname[system->kd[*it]-1] << ")";
                 if(!(++id%15)) std::cout << std::endl;
             }
             std::cout << std::endl;
