@@ -18,6 +18,7 @@ namespace ALM_NS {
         // int getRankEigen(const int, const int,const  int);
 
         double *params;
+        unsigned int nboot;
 
     private:
 
@@ -29,11 +30,14 @@ namespace ALM_NS {
             const int, const int, const int, const int);
         void calc_matrix_elements(const int, const int, const int, 
             const int, const int, const int, const int);
+        void fit_bootstrap(int, int, int, int, int, int, int);
+ //       void calc_covariance(const int, const int);
         double gamma(const int, const int *);
         int factorial(const int);       
       
         double **amat;
-        double *fsum;       
+        double *fsum;
+ //       double **varcovar;
     };
 
     extern "C" {

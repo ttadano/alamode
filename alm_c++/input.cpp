@@ -35,6 +35,7 @@ void Input::parce_input()
     string *kdname;
     double *masskd;
     int maxorder;
+    unsigned int nboot;
 
     // Read Job prefix
     cin >> job_title;
@@ -54,7 +55,7 @@ void Input::parce_input()
     interaction->maxorder = maxorder;
     memory->allocate(rcs, maxorder, nkd, nkd);
     memory->allocate(interaction->rcs, maxorder, nkd, nkd);
-    
+
     for (i = 0; i < maxorder; ++i){
         for (j = 0; j < nkd; ++j){
             for (k = 0; k < nkd; ++k){
@@ -63,7 +64,7 @@ void Input::parce_input()
         }
         for (j = 0; j < nkd; ++j) {
             for (k = j + 1; k < nkd; ++k){
-            if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", k + 1);
+                if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", k + 1);
             }
         }
     }
@@ -74,7 +75,12 @@ void Input::parce_input()
         || nstart > ndata || nend > ndata || nstart > nend) {
             error->exit("parce_input", "ndata, nstart, nend are not consistent with each other");
     }
-    if(nskip < 0) error->exit("parce_input", "nskip has to be a non-negative integer");
+    if(nskip < -1) error->exit("parce_input", "nskip has to be larger than -2.");
+    if(nskip == -1) {
+        cin >> nboot;
+        if(nboot <= 0) error->exit("parce_input", "nboot has to be a positive integer");
+        fitting->nboot = nboot;
+    }
     cin >> disp_file;
     cin >> force_file;
 

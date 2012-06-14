@@ -18,6 +18,7 @@
 #include "constants.h"
 #include "constraint.h"
 #include <Eigen/Dense>
+#include <cstdlib>
 
 using namespace ALM_NS;
 
@@ -64,6 +65,14 @@ void Fitting::fitmain()
     calc_matrix_elements(M, N, nat, natmin, ntran, ndata, maxorder);
     timer->print_elapsed();
 
+    /*
+    // Calculate Hessian Matrix of Amat
+
+    std::cout << "Calculating Covariance Matrix for error estimation" << std::endl;
+    memory->allocate(varcovar, N, N);
+    calc_covariance(M, N);
+    timer->print_elapsed(); */
+
     if (nskip == 0){
 
         // Fitting with singular value decomposition or QR-Decomposition
@@ -74,14 +83,20 @@ void Fitting::fitmain()
         if(constraint->exist_constraint) {
             fit_with_constraints(N, M_Start, M_End, P);
         } else {
-             fit_without_constraints(N, M_Start, M_End);
+            fit_without_constraints(N, M_Start, M_End);
         }
 
-    } else {
+    } else if (nskip > 0) {
         if(constraint->exist_constraint){
             fit_consecutively(N, P, natmin, ntran, ndata, nstart, nend, nskip);
         } else {
             error->exit("fitmain", "nskip has to be 0 when constraint_mode = 0");
+        }
+    } else {
+        if(constraint->exist_constraint){
+            fit_bootstrap(N, P, natmin, ntran, ndata, nstart, nend);
+        } else {
+
         }
     }
 
@@ -147,6 +162,12 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End)
         }
         std::cout << std::endl << "Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
         std::cout << "Fitting Error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
+
+        /*   for (i = 0; i < N; ++i) {
+        for (j = 0; j < N; ++j){
+        varcovar[i][j] *= f_residual/double(M-N);
+        }
+        } */
     }
 
     for (i = 0; i < N; ++i){
@@ -263,6 +284,112 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P)
     memory->deallocate(fsum2);
 }
 
+void Fitting::fit_bootstrap(int N, int P, int natmin, int ntran, int ndata, int nstart, int nend)
+{
+    int i, j, k, l;
+    int M_Start, M_End;
+    int mset = 3 * natmin * ntran;
+    unsigned int iboot;
+
+    M_Start = mset * (nstart - 1);
+    M_End   = mset * nend;
+
+    int M = M_End - M_Start;
+    int ndata_used = nend - nstart + 1;
+
+    std::string file_fcs_bootstrap;
+    file_fcs_bootstrap = files->job_title + ".fcs_bootstrap";
+
+    std::ofstream ofs_fcs_boot;
+    ofs_fcs_boot.open(file_fcs_bootstrap.c_str(), std::ios::out);
+    if(!ofs_fcs_boot) error->exit("fit_bootstrap", "cannot open file_fcs_bootstrap");
+
+    ofs_fcs_boot.setf(std::ios::scientific);
+
+    double f_residual, f_square;
+    double *fsum2;
+    int INFO;
+    double *WORK, *x;
+    double *amat_mod, *cmat_mod;
+    double *const_tmp;
+
+    int *rnd_index;
+    int iloc;
+
+    memory->allocate(x, N);
+    memory->allocate(cmat_mod, P * N);
+    memory->allocate(const_tmp, P);
+
+    std::cout << "nskip = -1: Bootstrap Fitting Started!!" << std::endl;
+    std::cout << "Relative errors and FCS are stored in file: " << file_fcs_bootstrap << std::endl;
+
+    ofs_fcs_boot << "# Relative Error(%), FCS..." ;
+
+    for (i = 0; i < interaction->maxorder; ++i){
+        ofs_fcs_boot << std::setw(10) << fcs->ndup[i].size();
+    }
+    ofs_fcs_boot << std::endl;
+
+    memory->allocate(fsum2, M);
+    memory->allocate(amat_mod, N * M);
+    memory->allocate(rnd_index, ndata_used);
+
+    int LWORK = P + std::min<int>(M, N) + 100 * std::max<int>(M, N);
+    memory->allocate(WORK, LWORK);
+
+    for (iboot = 0; iboot < nboot; ++iboot) {
+        for (i = 0; i < ndata_used; ++i){
+            rnd_index[i] = nstart - 1 + std::rand() % ndata_used; // random number uniformely distributed in [nstart, nend]
+        }
+
+        f_square = 0.0;
+        k = 0;
+        for (i = 0; i < ndata_used; ++i){
+            iloc = rnd_index[i];
+            for (j = iloc * mset; j < (iloc + 1) * mset; ++j){
+                fsum2[k++] = fsum[j];
+                f_square += std::pow(fsum[j], 2);
+            }
+        }
+        l = 0;
+        for(j = 0; j < N; ++j){
+            for(i = 0; i < ndata_used; ++i){
+                iloc = rnd_index[i];
+                for (k = iloc * mset; k < (iloc + 1) * mset; ++k){
+                    amat_mod[l++] = amat[k][j];
+                }
+            }
+        }
+
+        k = 0;
+        for (j = 0; j < N; ++j){
+            for(i = 0; i < P; ++i){
+                cmat_mod[k++] = constraint->const_mat[i][j];
+            }
+        }
+
+        for (i = 0; i < P; ++i){
+            const_tmp[i] = constraint->const_rhs[i];
+        }     
+
+        dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, const_tmp, x, WORK, &LWORK, &INFO);
+
+        f_residual = 0.0;
+        for (i = N - P; i < M; ++i){
+            f_residual += std::pow(fsum2[i], 2);
+        }
+
+        ofs_fcs_boot << 100.0 * std::sqrt(f_residual/f_square);
+
+        for (i = 0; i < N; ++i){
+            ofs_fcs_boot << std::setw(15) << x[i];
+        }
+        ofs_fcs_boot << std::endl;
+    }
+
+    std::cout << "Bootstrap Fitting Finished" << std::endl;
+}
+
 void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran, const int ndata,
     const int nstart, const int nend, const int nskip)
 {
@@ -374,7 +501,6 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran,
 
     ofs_fcs_seq.close();
 }
-
 
 void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin,
     const int ntran, const int ndata, const int maxorder)
@@ -543,8 +669,6 @@ int Fitting::factorial(const int n)
     }
 }
 
-
-
 //int Fitting::rank(const int m, const int n, double **mat)
 //{
 //  using namespace Eigen;
@@ -641,3 +765,25 @@ int Fitting::rank(int m, int n, double *mat)
     return rank;
 }
 
+/*
+void Fitting::calc_covariance(int m, int n)
+{
+Eigen::MatrixXd Atmp(m, n), Hess(n, n);
+int i, j;
+
+for (i = 0; i < m; ++i){
+for (j = 0; j < n; ++j){
+Atmp(i,j) = amat[i][j];
+}
+}
+
+Hess = (Atmp.transpose()*Atmp).inverse();
+
+for (i = 0; i < n; ++i){
+for (j = 0; j < n; ++j){
+varcovar[i][j] = Hess(i, j);
+}
+}
+
+}
+*/
