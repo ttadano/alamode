@@ -19,6 +19,11 @@
 #include "constraint.h"
 #include <Eigen/Dense>
 #include <cstdlib>
+#include <time.h>
+
+#ifdef _INTEL
+#include "mkl_vsl.h"
+#endif
 
 using namespace ALM_NS;
 
@@ -340,10 +345,24 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ntran, int ndata, int 
     int LWORK = P + std::min<int>(M, N) + 100 * std::max<int>(M, N);
     memory->allocate(WORK, LWORK);
 
+    // Initialize the random number generator
+    // Use Intel MKL VSL if available
+
+#ifdef _INTEL
+    VSLStreamStatePtr stream;
+    vslNewStream(&steram, VSL_BRNG_SFMT19937, (unsigned int)time(NULL));
+#else
+    std::srand((unsigned int)time(NULL));
+#endif
+
     for (iboot = 0; iboot < nboot; ++iboot) {
+#ifdef _INTEL
+        viRngUniform(VSL_METHOD_IUNIFORM_STD, stream, ndata_used, rnd_index, nstart - 1, nstart + ndata_used);
+#else
         for (i = 0; i < ndata_used; ++i){
             rnd_index[i] = nstart - 1 + std::rand() % ndata_used; // random number uniformely distributed in [nstart, nend]
         }
+#endif
 
         f_square = 0.0;
         k = 0;
