@@ -18,16 +18,26 @@
 #include "constants.h"
 #include "constraint.h"
 #include <Eigen/Dense>
-#include <cstdlib>
 #include <time.h>
 
-#ifdef _INTEL
+#ifdef _VSL
 #include "mkl_vsl.h"
+
+#else
+#include <cstdlib>
 #endif
 
 using namespace ALM_NS;
 
-Fitting::Fitting(ALM *alm): Pointers(alm){}
+Fitting::Fitting(ALM *alm): Pointers(alm){
+    seed = (unsigned int) time(NULL);
+#ifdef _VSL
+    brng = VSL_BRNG_MT19937;
+    vslNewStream(&stream, brng, seed);
+#else
+    std::srand(seed);
+#endif
+}
 
 Fitting::~Fitting() {
     memory->deallocate(params);
@@ -347,16 +357,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ntran, int ndata, int 
 
     // Initialize the random number generator
     // Use Intel MKL VSL if available
-
-#ifdef _INTEL
-    VSLStreamStatePtr stream;
-    vslNewStream(&steram, VSL_BRNG_SFMT19937, (unsigned int)time(NULL));
-#else
-    std::srand((unsigned int)time(NULL));
-#endif
-
     for (iboot = 0; iboot < nboot; ++iboot) {
-#ifdef _INTEL
+#ifdef _VSL
         viRngUniform(VSL_METHOD_IUNIFORM_STD, stream, ndata_used, rnd_index, nstart - 1, nstart + ndata_used);
 #else
         for (i = 0; i < ndata_used; ++i){

@@ -4,6 +4,9 @@
 #include <vector>
 #include <set>
 #include <string>
+#ifdef _VSL
+#include "mkl_vsl.h"
+#endif
 
 namespace ALM_NS {
 
@@ -20,6 +23,12 @@ namespace ALM_NS {
         double *params;
         unsigned int nboot;
 
+#ifdef _VSL
+        VSLStreamStatePtr stream;
+        int brng;
+#endif
+        unsigned int seed;
+
     private:
 
         int inprim_index(const int);
@@ -31,13 +40,11 @@ namespace ALM_NS {
         void calc_matrix_elements(const int, const int, const int, 
             const int, const int, const int, const int);
         void fit_bootstrap(int, int, int, int, int, int, int);
- //       void calc_covariance(const int, const int);
         double gamma(const int, const int *);
         int factorial(const int);       
       
         double **amat;
         double *fsum;
- //       double **varcovar;
     };
 
     extern "C" {
