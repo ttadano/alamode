@@ -94,9 +94,12 @@ void Fitting::fitmain()
         }
     } else {
         if(constraint->exist_constraint){
+            int M_Start = 3 * natmin * ntran * (nstart - 1);
+            int M_End   = 3 * natmin * ntran * nend;
             fit_bootstrap(N, P, natmin, ntran, ndata, nstart, nend);
+            fit_with_constraints(N, M_Start, M_End, P);
         } else {
-
+            error->exit("fitmain", "bootstrap analysis for LSE without constraint is not supported yet");
         }
     }
 
