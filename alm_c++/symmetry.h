@@ -55,6 +55,7 @@ namespace ALM_NS {
 
         int nsym, nnp;
         int ntran, natmin;
+        int nsym_s, ntran_s, natmin_s; // for reference system (supercell?)
 
         bool multiply_data;
 
@@ -65,12 +66,13 @@ namespace ALM_NS {
         
         int **map_sym;
         int **map_p2s;
+        int **map_p2s_s;
         class Maps {
         public:
             int atom_num;
             int tran_num;
         };
-        Maps *map_s2p;
+        Maps *map_s2p, *map_s2p_s;
 
         void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
 

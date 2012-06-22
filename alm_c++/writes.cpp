@@ -78,7 +78,7 @@ void Writes::wrtfcs()
                     ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[i][m].elems[l]);    
                 }
                 if(i==0) {
-                ofs_fcs << std::setw(15) << interaction->distlist[fcs->fc_set[i][m].elems[0]/3][fcs->fc_set[i][m].elems[1]/3];
+                    ofs_fcs << std::setw(15) << interaction->distlist[fcs->fc_set[i][m].elems[0]/3][fcs->fc_set[i][m].elems[1]/3];
                 }
                 ofs_fcs << std::endl;
                 m += fcs->ndup[i][ui];
@@ -158,7 +158,7 @@ void Writes::wrtmisc(){
     ofs_info << std::setw(6) << system->nat << std::setw(6) << symmetry->natmin << std::setw(6) << symmetry->ntran << std::endl;
     ofs_info << std::setw(11) << "'Atoms'" << std::setw(11) << "'Species'" 
         << std::setw(75) <<  "'Atomic Coordinates (Fractional)'                      " 
-        << std::setw(15) << "'TRANSLATION'" << std::setw(15) << "'IN THE CELL'" << std::endl;
+        << std::setw(15) << "'TRANSLATION'" << std::setw(15) << "'INDEX IN THE CELL'" << std::endl;
     for(i = 0; i < system->nat; ++i){
         ofs_info << std::setw(11) << i + 1 << std::setw(11) << system->kd[i];
         for(j = 0; j < 3; ++j){
@@ -168,15 +168,23 @@ void Writes::wrtmisc(){
             << std::setw(15) << symmetry->map_s2p[i].atom_num + 1 << std::endl;
     }
 
-
     ofs_info << "##HARMONIC FORCE CONSTANTS" << std::endl;
     ofs_info << fcs->ndup[0].size() << std::endl;
 
-    for(ui = 0; ui < fcs->ndup[0].size(); ++ui){
-        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ui] << std::endl;
-    }
+    int iat;
+    int k = 0;
+    int ihead= 0;
 
-    int k, iat;
+    for (ui = 0; ui < fcs->ndup[0].size(); ++ui){
+
+        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) <<  fitting->params[k];
+        for (i = 0; i < 2; ++i){
+            ofs_info << std::setw(7) << fcs->fc_set[0][ihead].elems[i];    
+        }
+        ofs_info << std::endl;
+        ihead += fcs->ndup[0][ui];
+        ++k;
+    }
 
     ofs_info << "##INTERACTION LISTS" << std::endl;
     ofs_info << "Interaction List and Reference Vectors(Cartesian) for each order" << std::endl;
@@ -241,7 +249,7 @@ void Writes::wrtmisc(){
         }
         ofs_info << std::endl;
 
-      
+
         //id = 0;
         //for(i = 0; i < fcs->ndup[order].size(); ++i){
         //    for(j = 0; j < fcs->ndup[order][i]; ++j){

@@ -265,7 +265,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     icol = 0;
 
     if(fix_harmonic){
-
+/*
         std::ifstream ifs_fc2;
         ifs_fc2.open(fc2_file.c_str(), std::ios::in);
         if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
@@ -297,7 +297,10 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         irow += nparam_harmonic;
         icol += nparam_harmonic;
         ifs_fc2.close();
-        if(!is_found) error->exit("calc_constraint_matrix", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");
+        if(!is_found) error->exit("calc_constraint_matrix", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");*/
+        system->load_reference_system();
+        irow += fcs->ndup[0].size();
+        icol += fcs->ndup[0].size();
     }
 
     for (std::set<ConstraintClass>::iterator p = const_total.begin(); p != const_total.end(); ++p){

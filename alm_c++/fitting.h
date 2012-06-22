@@ -21,6 +21,7 @@ namespace ALM_NS {
         // int getRankEigen(const int, const int,const  int);
 
         double *params;
+        double *fc2_ref;
         unsigned int nboot;
 
 #ifdef _VSL
