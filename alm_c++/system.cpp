@@ -240,6 +240,10 @@ void System::load_reference_system()
         if(!map_found) error->exit("load_reference_system", "Could not find an equivalent atom for atom ", iat + 1);
     }
 
+    for (iat = 0; iat < nat_s; ++iat){
+        std::cout << "i = " << iat + 1 << " " << map_ref[iat] + 1 << std::endl;
+    }
+
     memory->deallocate(xtmp);
     memory->deallocate(xdiff);
 
@@ -265,14 +269,50 @@ void System::load_reference_system()
             memory->allocate(intpair_tmp, nparam_harmonic_ref, 2);
 
             for (i = 0; i < nparam_harmonic_ref; ++i){
-                ifs_fc2 >> fitting->fc2_ref[i] >> intpair_tmp[i][0] >> intpair_tmp[i][1];           
+                ifs_fc2 >> fitting->fc2_ref[i] >> intpair_tmp[i][0] >> intpair_tmp[i][1];
+            }
+
+            std::set<FcProperty> list_found;
+            std::set<FcProperty>::iterator iter_found;
+            int *ind;
+            memory->allocate(ind, 2);
+
+            list_found.clear();
+            for(std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p){
+                FcProperty list_tmp = *p; // Using copy constructor
+                for (i = 0; i < 2; ++i){
+                    ind[i] = list_tmp.elems[i];
+                }
+                list_found.insert(FcProperty(2, list_tmp.coef, ind, list_tmp.mother));
             }
 
             for (i = 0; i < nparam_harmonic; ++i){
                 constraint->const_mat[i][i] = 1.0;
-                 constraint->const_rhs[i] = fitting->fc2_ref[i];
             }
+            std::cout << "Mapping infomation of harmonic force constants below:" << std::endl;
+
+            for (i = 0; i < nparam_harmonic_ref; ++i){
+
+                for (int j = 0; j < 2; ++j){
+                    ind[j] = 3 * map_ref[intpair_tmp[i][j] / 3] + intpair_tmp[i][j] % 3;
+                }
+                std::cout << "Original " << intpair_tmp[i][0] << " " << intpair_tmp[i][1] << std::endl;
+                std::cout << "New      " << ind[0] << " " << ind[1] << std::endl;
+
+                iter_found = list_found.find(FcProperty(2, 1.0, ind, 1));
+                if(iter_found == list_found.end()) {
+                    error->exit("load_reference_system", "Cannot find equivalent force constant, number: ", i + 1);
+                }
+
+                FcProperty arrtmp = *iter_found;
+                std::cout << i + 1 << "-->" << arrtmp.mother + 1 << std::endl;
+                constraint->const_rhs[arrtmp.mother] = fitting->fc2_ref[i];
+            }
+            std::cout << "Mapping information end." << std::endl << std::endl;
+
             memory->deallocate(intpair_tmp);
+            memory->deallocate(ind);
+            list_found.clear();
         }
     }
 
