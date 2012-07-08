@@ -22,13 +22,13 @@ void Input::parce_input()
 
     using namespace std;
     string job_title;
-    string disp_file, force_file, fc2_file;
+    string disp_file, force_file, fc2_file, refsys_file;
     string rotation_axis;
     int nat, nkd, nsym, nnp;
     int ndata, nstart, nend, nskip;
     int *kd;
     bool is_periodic[3];
-    bool multiply_data;
+    int multiply_data;
     int constraint_flag;
     double lavec[3][3];
     double ***rcs, **xeq;
@@ -84,7 +84,9 @@ void Input::parce_input()
     cin >> disp_file;
     cin >> force_file;
 
-    cin >> multiply_data >> constraint_flag;
+    cin >> multiply_data;
+    if (multiply_data == 2) cin >> refsys_file;
+    cin >> constraint_flag;
     if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
         cin >> fc2_file;
         constraint->fc2_file = fc2_file;
@@ -132,6 +134,7 @@ void Input::parce_input()
         }
     }
     symmetry->multiply_data = multiply_data;
+    if(multiply_data == 2) symmetry->refsys_file = refsys_file;
     constraint->constraint_mode = constraint_flag;
 
     for (i = 0; i < 3; ++i) interaction->is_periodic[i] = is_periodic[i];

@@ -57,7 +57,7 @@ namespace ALM_NS {
         int ntran, natmin;
         int nsym_s, ntran_s, natmin_s; // for reference system (supercell?)
 
-        bool multiply_data;
+        int multiply_data;
 
         int ***symrel_int;
         int *symnum_tran;
@@ -77,7 +77,7 @@ namespace ALM_NS {
         void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
 
 
-        std::string file_sym;
+        std::string file_sym, refsys_file;
         std::ofstream ofs_sym;
         std::ifstream ifs_sym;
 
@@ -86,7 +86,7 @@ namespace ALM_NS {
         bool is_invariant(Eigen::Matrix3d, int, int*, double **, int[3], int);
         void symop_in_cart(double [3][3], double[3][3]);
         void pure_translations();
-        void data_multiplier(int, int);
+        void data_multiplier(int, int, int);
 
         void print_symmetrized_coordinate(double **);
 

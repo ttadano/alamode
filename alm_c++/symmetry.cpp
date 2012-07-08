@@ -86,7 +86,7 @@ void Symmetry::init()
     }
     std::cout << std::endl;
 
-    if(multiply_data) data_multiplier(nat, system->ndata);
+    if(multiply_data) data_multiplier(nat, system->ndata, multiply_data);
 
     timer->print_elapsed();
 }
@@ -507,7 +507,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     }
 }
 
-void Symmetry::data_multiplier(int nat, int ndata)
+void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 {
     int i, j, k, itran;
     double **u, **f;
@@ -525,30 +525,66 @@ void Symmetry::data_multiplier(int nat, int ndata)
     if(!files->ofs_disp_sym) error->exit("data_multiplier", "cannot open file_disp"); 
     if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
-    for (i = 0; i < ndata; ++i){
-        for (j = 0; j < nat; ++j){
-            files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-            files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+    if(multiply_data == 2) 
+    { 
+        std::ifstream ifs_refsys;
+        ifs_refsys.open(refsys_file, std::ios::in);
+        if(!ifs_refsys) error->exit("data_multiplier", "cannot open refsys_file");
+
+        double lavec_ref[3][3];
+        int nat_ref;
+
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                ifs_refsys >> lavec_ref[i][j];
+            }
         }
+        ifs_refsys >> nat_ref;
 
+        double **x_ref, *xtmp;
+        memory->allocate(x_ref, nat_ref, 3);
 
-        for (itran = 0; itran < ntran; ++itran){
-            for (j = 0; j < nat; ++j){
-                for (k = 0; k < 3; ++k){
-                    u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[j][k];
-                    f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[j][k];
-                }
+        for (i = 0; i < nat_ref; ++i){
+            for (j = 0; j < 3; ++j){
+                ifs_refsys >> x_ref[i][j];
             }
         }
 
-        for (itran = 0; itran < ntran; ++itran){
+        memory->allocate(xtmp, 3);
+
+        for (i = 0; i < nat_ref; ++i){
+        system->rotvec(xtmp, x_ref[i], lavec_ref);
+        system->rotvec(xtmp, xtmp, system->rlavec);
+        }
+
+
+    }
+    else {
+        for (i = 0; i < ndata; ++i){
             for (j = 0; j < nat; ++j){
-                files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
-                files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
-                files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
-                files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
-                files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
-                files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
+                files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
+                files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+            }
+
+
+            for (itran = 0; itran < ntran; ++itran){
+                for (j = 0; j < nat; ++j){
+                    for (k = 0; k < 3; ++k){
+                        u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[j][k];
+                        f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[j][k];
+                    }
+                }
+            }
+
+            for (itran = 0; itran < ntran; ++itran){
+                for (j = 0; j < nat; ++j){
+                    files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
+                    files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
+                    files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
+                    files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
+                    files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
+                    files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
+                }
             }
         }
     }

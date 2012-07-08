@@ -29,5 +29,7 @@ namespace ALM_NS {
 
         int *map_ref;
         void rotvec(double [3], double [3], double [3][3]);
+    private:
+        unsigned int coordinate_index(const char);
     };
 }
