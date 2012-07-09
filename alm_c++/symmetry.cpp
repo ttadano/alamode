@@ -513,16 +513,13 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
     double **u, **f;
     double ***u_sym, ***f_sym;
 
-    memory->allocate(u, nat, 3);
-    memory->allocate(f, nat, 3);
-
     memory->allocate(u_sym, ntran, nat, 3);
     memory->allocate(f_sym, ntran, nat, 3);
 
     files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
     files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
 
-    if(!files->ofs_disp_sym) error->exit("data_multiplier", "cannot open file_disp"); 
+    if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
     if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
     if(multiply_data == 2) 
@@ -531,7 +528,9 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
         ifs_refsys.open(refsys_file, std::ios::in);
         if(!ifs_refsys) error->exit("data_multiplier", "cannot open refsys_file");
 
-        double lavec_ref[3][3];
+        double lavec_ref[3][3], rlavec_ref[3][3];
+
+        system->recips(lavec_ref, rlavec_ref);
         int nat_ref;
 
         for (i = 0; i < 3; ++i){
@@ -541,25 +540,95 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
         }
         ifs_refsys >> nat_ref;
 
-        double **x_ref, *xtmp;
+        int *kd_ref, *map_ref;
+        double **x_ref, *xtmp, *xdiff;
+
+        memory->allocate(kd_ref, nat_ref);
         memory->allocate(x_ref, nat_ref, 3);
 
         for (i = 0; i < nat_ref; ++i){
+            ifs_refsys >> kd_ref[i];
             for (j = 0; j < 3; ++j){
                 ifs_refsys >> x_ref[i][j];
             }
         }
+        ifs_refsys.close();
 
-        memory->allocate(xtmp, 3);
+        memory->allocate(xtmp , 3);
+        memory->allocate(xdiff, 3);
+        memory->allocate(map_ref, nat);
 
-        for (i = 0; i < nat_ref; ++i){
-        system->rotvec(xtmp, x_ref[i], lavec_ref);
-        system->rotvec(xtmp, xtmp, system->rlavec);
+        bool map_found;
+        int iat, jat, icrd, jcrd;
+        double dist;
+
+        for (iat = 0; iat < nat; ++iat){
+            map_found = false;
+
+            system->rotvec(xtmp, system->xcoord[iat], system->lavec);
+            system->rotvec(xtmp, xtmp, rlavec_ref);
+
+            for (icrd = 0; icrd < 3; ++icrd) xtmp[icrd] /= 2.0 * pi;
+
+            for (jat = 0; jat < nat_ref; ++jat){
+                for (jcrd = 0; jcrd < 3; ++jcrd){
+                    xdiff[icrd] = xtmp[icrd] - x_ref[jat][jcrd];
+                    xdiff[icrd] = std::fmod(xdiff[icrd], 1.0);
+                }
+                dist = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
+
+                if(dist < eps12 && kd_ref[jat] == system->kd[iat]){
+                    map_ref[iat] = jat;
+                    map_found = true;
+                    break;
+                }
+            }
+            if(!map_found) error->exit("data_multiplier", "Cannot find equivalent atoms for atom", iat + 1);
         }
 
+        memory->deallocate(kd_ref);
+        memory->deallocate(xtmp);
+        memory->deallocate(xdiff);
 
+
+        memory->allocate(u, nat_ref, 3);
+        memory->allocate(f, nat_ref, 3);
+
+        for (i = 0; i < ndata; ++i){
+            for (j = 0; j < nat_ref; ++j){
+                files->ifs_disp  >> u[j][0] >> u[j][1] >> u[j][2];
+                files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+            }
+
+            for (itran = 0; itran < ntran; ++itran){
+                for (j = 0; j < nat; ++j){
+                    for (k = 0; k < 3; ++k){
+                        u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[map_ref[j]][k];
+                        f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[map_ref[j]][k];
+                    }
+                }
+            }
+
+            for (itran = 0; itran < ntran; ++itran){
+                for (j = 0; j < nat; ++j){
+                    files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
+                    files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
+                    files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
+                    files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
+                    files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
+                    files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
+                }
+            }
+        }
+
+        memory->deallocate(map_ref);
     }
     else {
+
+
+        memory->allocate(u, nat, 3);
+        memory->allocate(f, nat, 3);
+
         for (i = 0; i < ndata; ++i){
             for (j = 0; j < nat; ++j){
                 files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
