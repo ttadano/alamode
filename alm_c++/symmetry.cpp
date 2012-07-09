@@ -524,13 +524,13 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
     if(multiply_data == 2) 
     { 
+        std::cout << "**Displacement-force data will be expanded to the bigger supercell**" << std::endl << std::endl;
+
         std::ifstream ifs_refsys;
-        ifs_refsys.open(refsys_file, std::ios::in);
+        ifs_refsys.open(refsys_file.c_str(), std::ios::in);
         if(!ifs_refsys) error->exit("data_multiplier", "cannot open refsys_file");
 
         double lavec_ref[3][3], rlavec_ref[3][3];
-
-        system->recips(lavec_ref, rlavec_ref);
         int nat_ref;
 
         for (i = 0; i < 3; ++i){
@@ -538,6 +538,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
                 ifs_refsys >> lavec_ref[i][j];
             }
         }
+        system->recips(lavec_ref, rlavec_ref);
         ifs_refsys >> nat_ref;
 
         int *kd_ref, *map_ref;
@@ -568,12 +569,14 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
             system->rotvec(xtmp, system->xcoord[iat], system->lavec);
             system->rotvec(xtmp, xtmp, rlavec_ref);
 
-            for (icrd = 0; icrd < 3; ++icrd) xtmp[icrd] /= 2.0 * pi;
-
+            for (icrd = 0; icrd < 3; ++icrd) { 
+                xtmp[icrd] /= 2.0 * pi;
+            }
+            
             for (jat = 0; jat < nat_ref; ++jat){
                 for (jcrd = 0; jcrd < 3; ++jcrd){
-                    xdiff[icrd] = xtmp[icrd] - x_ref[jat][jcrd];
-                    xdiff[icrd] = std::fmod(xdiff[icrd], 1.0);
+                    xdiff[jcrd] = xtmp[jcrd] - x_ref[jat][jcrd];
+                    xdiff[jcrd] = std::fmod(xdiff[jcrd], 1.0);
                 }
                 dist = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
 
@@ -589,7 +592,6 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
         memory->deallocate(kd_ref);
         memory->deallocate(xtmp);
         memory->deallocate(xdiff);
-
 
         memory->allocate(u, nat_ref, 3);
         memory->allocate(f, nat_ref, 3);
