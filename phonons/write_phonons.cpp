@@ -120,7 +120,7 @@ void Writes::write_mode_anime()
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
-            ofs_anime << std::setw(15) << system->lavec_p[i][j]*Bohr_in_Angstrom;
+            ofs_anime << std::setw(15) << system->lavec_p[j][i]*Bohr_in_Angstrom;
         }
         ofs_anime << std::endl;
     }
@@ -196,7 +196,7 @@ void Writes::write_eigenvectors()
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
-            ofs_evec << std::setw(15) << system->lavec_p[i][j];
+            ofs_evec << std::setw(15) << system->lavec_p[j][i];
         }
         ofs_evec << std::endl;
     }

@@ -55,7 +55,7 @@ void Kpoint::kpoint_setups()
         memory->allocate(xk_c, nk, 3);
 
         for (i = 0; i < nk; ++i){
-            system->rotvec(system->rlavec_p, xk[i], xk_c[i]);
+            system->rotvec(xk_c[i], xk[i], system->rlavec_p);
         }
 
         unsigned int j, k;

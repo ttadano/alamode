@@ -54,7 +54,7 @@ void Input::read_input_phonons()
     unsigned int i, j;
 
     for (i = 0; i < 3; ++i){
-        cin >> lavec[i][0] >> lavec[i][1] >> lavec[i][2];
+        cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
     cin >> file_fcs;
 
@@ -96,7 +96,7 @@ void Input::read_input_boltzmann()
     unsigned int i, j;
 
     for (i = 0; i < 3; ++i) {
-        cin >> lavec[i][0] >> lavec[i][1] >> lavec[i][2];
+        cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
     cin >> file_fcs;
 

@@ -40,10 +40,10 @@ void System::init(){
     std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
     for (i = 0; i < nat; ++i) {
         std::cout << std::setw(5) << i + 1;
-        std::cout << " " << xcoord[i][0];
-        std::cout << " " << xcoord[i][1];
-        std::cout << " " << xcoord[i][2];
-        std::cout << " " << kd[i] << std::endl;
+        std::cout << std::setw(15) << xcoord[i][0];
+        std::cout << std::setw(15) << xcoord[i][1];
+        std::cout << std::setw(15) << xcoord[i][2];
+        std::cout << std::setw(5) << kd[i] << std::endl;
     }
     std::cout << std::endl;
     std::cout << "Number of input data: " << ndata << std::endl;
@@ -63,7 +63,6 @@ void System::init(){
     frac2cart(x_cartesian);
 
     timer->print_elapsed();
-
 }
 
 void System::recips(double aa[3][3], double bb[3][3])

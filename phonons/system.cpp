@@ -27,11 +27,11 @@ void System::setup()
     memory->allocate(xc, nat, 3);
 
     for (i = 0; i < nat; ++i){
-        rotvec(lavec_s, xr_s[i], xc[i]);
+        rotvec(xc[i], xr_s[i], lavec_s);
     }
 
     for (i = 0; i < nat; ++i){
-        rotvec(rlavec_s, xc[i], xr_p[i]);
+        rotvec(xr_p[i], xc[i], rlavec_s);
         for(j = 0; j < 3; ++j){
             xr_p[i][j] /=  2.0 * pi;
         }
@@ -41,36 +41,29 @@ void System::setup()
     std::cout.setf(std::ios::scientific);
 
     std::cout << " *Super Cell* " << std::endl << std::endl;
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
-            std::cout << " " << lavec_s[i][j];
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
-            std::cout << " " << rlavec_s[i][j];
-        }
-        std::cout << std::endl;
-    }
+    std::cout << " " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
+    std::cout << " " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
+    std::cout << " " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
     std::cout << std::endl;
 
+    std::cout << " " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
+    std::cout << " " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
+    std::cout << " " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
+    std::cout << std::endl << std::endl;
+
     std::cout << " *Primitive Cell* " << std::endl << std::endl;
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
-            std::cout << " " << lavec_p[i][j];
-        }
-        std::cout << std::endl;
-    }
+
+    std::cout << " *Super Cell* " << std::endl << std::endl;
+    std::cout << " " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
+    std::cout << " " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
+    std::cout << " " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
     std::cout << std::endl;
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
-            std::cout << " " << rlavec_p[i][j];
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+
+    std::cout << " " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
+    std::cout << " " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
+    std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
+    std::cout << std::endl << std::endl;
+    
     std::cout << " Number of Atoms: " << nat << std::endl;
 
     memory->allocate(mass, nat);
@@ -99,7 +92,7 @@ void System::load_system_info()
             std::getline(ifs_fcs, str_tmp);
 
             for (i = 0; i < 3; ++i){
-                ifs_fcs >> lavec_s[i][0] >> lavec_s[i][1] >> lavec_s[i][2];
+                ifs_fcs >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
             ifs_fcs.ignore();
             std::getline(ifs_fcs, str_tmp);
@@ -163,7 +156,7 @@ void System::recips(double vec[3][3], double inverse[3][3])
     inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
 }
 
-void System::rotvec(double mat[3][3], double vec_in[3], double vec_out[3])
+void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3])
 {
     unsigned int i;
     double vec_tmp[3];

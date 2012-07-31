@@ -113,8 +113,8 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                     vec[icrd] = fold(vec[icrd]);
                 }
 
-                system->rotvec(system->lavec_s, vec, vec);
-                system->rotvec(system->rlavec_p, vec, vec);
+                system->rotvec(vec, vec, system->lavec_s);
+                system->rotvec(vec, vec, system->rlavec_p);
 
 
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
@@ -216,8 +216,8 @@ void Dynamical::calc_analytic()
                     vec[icrd] = fold(vec[icrd]);
                 }
 
-                system->rotvec(system->lavec_s, vec, vec);
-                system->rotvec(system->rlavec_p, vec, vec);
+                system->rotvec(vec, vec, system->lavec_s);
+                system->rotvec(vec, vec, system->rlavec_p);
 
                 /*  for(icrd = 0; icrd < 3; ++icrd){
                 vec[icrd] /= 2.0 * pi;
