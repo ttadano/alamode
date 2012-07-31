@@ -259,7 +259,7 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
                                                 rot2(i,j) = static_cast<double>(rot_reciprocal[i][j]);
                                             }
                                         }
-
+                                        
                                         if(!is_ortho(rot2, amat, bmat)) continue;
 
 #pragma omp parallel for private(np1, np2, np3)
@@ -303,8 +303,8 @@ bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix
 
     double tmp;
 
-    sat = rot * amat;
-    unit = (sat.transpose() * (bmat.transpose() * (bmat * sat)));
+    sat = rot * amat.transpose();
+    unit = (sat.transpose() * (bmat * (bmat.transpose() * sat)));
     unit /= pow(pi2, 2);
 
     tmp = pow((unit(0,0) - 1.0), 2) + pow((unit(1,1) - 1.0), 2) + pow((unit(2,2) - 1.0), 2)
@@ -333,7 +333,7 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, i
             wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
         }
 
-        usi = rot * wsi;
+        usi = rot.transpose() * wsi;
 
         l = -1;
 
@@ -516,11 +516,11 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
     memory->allocate(u_sym, ntran, nat, 3);
     memory->allocate(f_sym, ntran, nat, 3);
 
-//   files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
-//   files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
+    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
+    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
 
-    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out);
-    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out);
+//    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out);
+//    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out);
     if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
     if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
@@ -614,7 +614,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
                 }
             }
 
-/*            for (itran = 0; itran < ntran; ++itran){
+            for (itran = 0; itran < ntran; ++itran){
                 for (j = 0; j < nat; ++j){
                     files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
                     files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
@@ -624,8 +624,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
                     files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
                 }
             } 
-*/
-            for (itran = 0; itran < ntran; ++itran){
+
+/*            for (itran = 0; itran < ntran; ++itran){
                 for (j = 0; j < nat; ++j){
                     for (k = 0; k < 3; ++k){
                         files->ofs_disp_sym << " " << u_sym[itran][j][k];
@@ -635,6 +635,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
                     files->ofs_force_sym << std::endl;
                 }
             }
+*/
         }
         error->exit("hoge", "hoge");
         memory->deallocate(map_ref);
