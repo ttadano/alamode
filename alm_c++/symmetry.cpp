@@ -34,8 +34,7 @@ void Symmetry::init()
     int nat = system->nat;
 
     SymmList.clear();
-    gensym(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord,
-        system->kd);
+    gensym(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord, system->kd);
 
     memory->allocate(tnons, nsym, 3);
     memory->allocate(symrel_int, nsym, 3, 3);
@@ -510,15 +509,18 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 {
     int i, j, k, itran;
+    int n_map;
     double **u, **f;
     double ***u_sym, ***f_sym;
 
     memory->allocate(u_sym, ntran, nat, 3);
     memory->allocate(f_sym, ntran, nat, 3);
 
-    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
-    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
+//   files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
+//   files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
 
+    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out);
+    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out);
     if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
     if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
@@ -605,13 +607,14 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
             for (itran = 0; itran < ntran; ++itran){
                 for (j = 0; j < nat; ++j){
                     for (k = 0; k < 3; ++k){
-                        u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[map_ref[j]][k];
-                        f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[map_ref[j]][k];
+                        n_map = map_sym[j][symnum_tran[itran]];
+                        u_sym[itran][n_map][k] = u[map_ref[j]][k];
+                        f_sym[itran][n_map][k] = f[map_ref[j]][k];
                     }
                 }
             }
 
-            for (itran = 0; itran < ntran; ++itran){
+/*            for (itran = 0; itran < ntran; ++itran){
                 for (j = 0; j < nat; ++j){
                     files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
                     files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
@@ -620,9 +623,20 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
                     files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
                     files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
                 }
+            } 
+*/
+            for (itran = 0; itran < ntran; ++itran){
+                for (j = 0; j < nat; ++j){
+                    for (k = 0; k < 3; ++k){
+                        files->ofs_disp_sym << " " << u_sym[itran][j][k];
+                        files->ofs_force_sym << " " << f_sym[itran][j][k];
+                    }
+                    files->ofs_disp_sym << std::endl;
+                    files->ofs_force_sym << std::endl;
+                }
             }
         }
-
+        error->exit("hoge", "hoge");
         memory->deallocate(map_ref);
     }
     else {
@@ -641,8 +655,9 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
             for (itran = 0; itran < ntran; ++itran){
                 for (j = 0; j < nat; ++j){
                     for (k = 0; k < 3; ++k){
-                        u_sym[itran][map_sym[j][symnum_tran[itran]]][k] = u[j][k];
-                        f_sym[itran][map_sym[j][symnum_tran[itran]]][k] = f[j][k];
+                        n_map = map_sym[j][symnum_tran[itran]];
+                        u_sym[itran][n_map][k] = u[j][k];
+                        f_sym[itran][n_map][k] = f[j][k];
                     }
                 }
             }
