@@ -26,20 +26,15 @@ void System::init(){
     std::cout.setf(std::ios::scientific);
 
     std::cout << "Lattice Vector" << std::endl;
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
-            std::cout <<  " " << lavec[i][j] ;
-        }
-        std::cout << std::endl;
-    }
+    std::cout << " " << lavec[0][0] << " " << lavec[1][0] << " " << lavec[2][0] << " : a1" << std::endl;
+    std::cout << " " << lavec[0][1] << " " << lavec[1][1] << " " << lavec[2][1] << " : a2" << std::endl;
+    std::cout << " " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
+    std::cout << std::endl;
 
-    std::cout << std::endl << "Reciprocal Lattice Vector" << std::endl;    
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
-            std::cout <<  " " << rlavec[i][j] ;
-        }
-        std::cout << std::endl;
-    }
+    std::cout << std::endl << "Reciprocal Lattice Vector" << std::endl;
+    std::cout << " " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
+    std::cout << " " << rlavec[1][0] << " " << rlavec[1][1] << " " << rlavec[1][2] << " : b2" << std::endl;
+    std::cout << " " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
     std::cout << std::endl;
 
     std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
@@ -71,15 +66,30 @@ void System::init(){
 
 }
 
-void System::recips(double vec[3][3], double inverse[3][3])
+void System::recips(double aa[3][3], double bb[3][3])
 {
+    /*
+    Calculate Reciprocal Lattice Vectors
+
+    Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
+
+    BB = 2 Pi AA^{-1},
+       = t(b1, b2, b3)
+                     
+         (b11 b12 b13)
+       = (b21 b22 b23)
+         (b31 b32 b33),
+
+    b1 = t(b11, b12, b13) etc.
+    */
+
     double det;
-    det = vec[0][0] * vec[1][1] * vec[2][2] 
-    + vec[1][0] * vec[2][1] * vec[0][2] 
-    + vec[2][0] * vec[0][1] * vec[1][2]
-    - vec[0][0] * vec[2][1] * vec[1][2] 
-    - vec[2][0] * vec[1][1] * vec[0][2]
-    - vec[1][0] * vec[0][1] * vec[2][2];
+    det = aa[0][0] * aa[1][1] * aa[2][2] 
+    + aa[1][0] * aa[2][1] * aa[0][2] 
+    + aa[2][0] * aa[0][1] * aa[1][2]
+    - aa[0][0] * aa[2][1] * aa[1][2] 
+    - aa[2][0] * aa[1][1] * aa[0][2]
+    - aa[1][0] * aa[0][1] * aa[2][2];
 
     if(det < eps12) {
         error->exit("recips", "Lattice Vector is singular");
@@ -87,38 +97,37 @@ void System::recips(double vec[3][3], double inverse[3][3])
 
     double factor = 2.0 * pi / det;
 
-    inverse[0][0] = (vec[1][1] * vec[2][2] - vec[1][2] * vec[2][1]) * factor;
-    inverse[0][1] = (vec[0][2] * vec[2][1] - vec[0][1] * vec[2][2]) * factor;
-    inverse[0][2] = (vec[0][1] * vec[1][2] - vec[0][2] * vec[1][1]) * factor;
+    bb[0][0] = (aa[1][1] * aa[2][2] - aa[1][2] * aa[2][1]) * factor;
+    bb[0][1] = (aa[0][2] * aa[2][1] - aa[0][1] * aa[2][2]) * factor;
+    bb[0][2] = (aa[0][1] * aa[1][2] - aa[0][2] * aa[1][1]) * factor;
 
-    inverse[1][0] = (vec[1][2] * vec[2][0] - vec[1][0] * vec[2][2]) * factor;
-    inverse[1][1] = (vec[0][0] * vec[2][2] - vec[0][2] * vec[2][0]) * factor;
-    inverse[1][2] = (vec[0][2] * vec[1][0] - vec[0][0] * vec[1][2]) * factor;
+    bb[1][0] = (aa[1][2] * aa[2][0] - aa[1][0] * aa[2][2]) * factor;
+    bb[1][1] = (aa[0][0] * aa[2][2] - aa[0][2] * aa[2][0]) * factor;
+    bb[1][2] = (aa[0][2] * aa[1][0] - aa[0][0] * aa[1][2]) * factor;
 
-    inverse[2][0] = (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]) * factor;
-    inverse[2][1] = (vec[0][1] * vec[2][0] - vec[0][0] * vec[2][1]) * factor;
-    inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
+    bb[2][0] = (aa[1][0] * aa[2][1] - aa[1][1] * aa[2][0]) * factor;
+    bb[2][1] = (aa[0][1] * aa[2][0] - aa[0][0] * aa[2][1]) * factor;
+    bb[2][2] = (aa[0][0] * aa[1][1] - aa[0][1] * aa[1][0]) * factor;
 }
 
 void System::frac2cart(double **xf)
 {
+    // x_cartesian = A x_fractional
+
     int i, j;
 
-    double **x_tmp;
-    memory->allocate(x_tmp, nat, 3);
+    double *x_tmp;
+    memory->allocate(x_tmp, 3);
 
     for (i = 0; i < nat; ++i){
+
+        rotvec(x_tmp, xf[i], lavec);
+        
         for (j = 0; j < 3; ++j){
-            x_tmp[i][j] = lavec[j][0] * xf[i][0] + lavec[j][1] * xf[i][1] + lavec[j][2] * xf[i][2];
-        }
-    }
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
-            xf[i][j] = x_tmp[i][j];   
+            xf[i][j] = x_tmp[j];
         }
     }
     memory->deallocate(x_tmp);
-
 }
 
 void System::rotvec(double y[3], double x[3], double A[3][3]){
@@ -160,7 +169,7 @@ void System::load_reference_system()
 
             std::getline(ifs_fc2, str_tmp);
             for (i = 0; i < 3; ++i){
-                ifs_fc2 >> lavec_s[i][0] >> lavec_s[i][1] >> lavec_s[i][2];
+                ifs_fc2 >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
             ifs_fc2.ignore();
             std::getline(ifs_fc2, str_tmp);

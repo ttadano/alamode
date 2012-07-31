@@ -45,9 +45,21 @@ void Input::parce_input()
     cin >> nsym >> nnp;
 
     // Read lattice vector in Bohr unit
-    cin >> lavec[0][0] >> lavec[0][1] >> lavec[0][2];
-    cin >> lavec[1][0] >> lavec[1][1] >> lavec[1][2];
-    cin >> lavec[2][0] >> lavec[2][1] >> lavec[2][2];
+    /*
+    In this program, lattice vectors a1, a2, a3 and 
+    matrix lavec are related to each other as follows:
+
+    lavec = (a1, a2, a3)  
+
+      (a11 a12 a13)
+    = (a21 a22 a23)
+      (a31 a32 a33) , that is
+
+    a1 = t(a11, a21, a31) etc.
+    */
+    cin >> lavec[0][0] >> lavec[1][0] >> lavec[2][0]; // a1
+    cin >> lavec[0][1] >> lavec[1][1] >> lavec[2][1]; // a2
+    cin >> lavec[0][2] >> lavec[1][2] >> lavec[2][2]; // a3
 
     // Read Cutoff Radius for each species
     cin >> maxorder;

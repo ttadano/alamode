@@ -144,7 +144,7 @@ void Writes::wrtmisc(){
     ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
     for (j = 0; j < 3; ++j){
         for(i = 0; i < 3; ++i){
-            ofs_info <<  std::setw(15) << system->lavec[j][i];
+            ofs_info <<  std::setw(15) << system->lavec[i][j]; // be careful to the transpose of (i,j)
         }
         ofs_info << std::endl;
     }

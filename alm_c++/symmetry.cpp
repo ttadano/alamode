@@ -303,7 +303,7 @@ bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix
 
     double tmp;
 
-    sat = rot * amat.transpose();
+    sat = rot * amat;
     unit = (sat.transpose() * (bmat.transpose() * (bmat * sat)));
     unit /= pow(pi2, 2);
 
@@ -379,7 +379,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
                 sym_tmp(i,j) = static_cast<double>(symrel_int[isym][i][j]);
             }
         }
-        sym_crt = (aa * (sym_tmp * bb.transpose())) / (2.0 * pi);
+        sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
@@ -537,7 +537,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
-                ifs_refsys >> lavec_ref[i][j];
+                ifs_refsys >> lavec_ref[j][i];
             }
         }
         system->recips(lavec_ref, rlavec_ref);
@@ -639,8 +639,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
         error->exit("hoge", "hoge");
         memory->deallocate(map_ref);
     }
-    else {
 
+    else {
 
         memory->allocate(u, nat, 3);
         memory->allocate(f, nat, 3);
