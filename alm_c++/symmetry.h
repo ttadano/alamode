@@ -76,6 +76,7 @@ namespace ALM_NS {
 
         void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
 
+        bool *sym_available;
 
         std::string file_sym, refsys_file;
         std::ofstream ofs_sym;
@@ -89,6 +90,7 @@ namespace ALM_NS {
         void data_multiplier(int, int, int);
 
         void print_symmetrized_coordinate(double **);
+        void symop_availability_check(double ***, bool *, const int, int &);
 
         std::vector<SymmetryOperation> SymmList;
     };

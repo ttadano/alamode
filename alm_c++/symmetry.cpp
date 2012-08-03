@@ -30,7 +30,7 @@ Symmetry::~Symmetry() {
 
 void Symmetry::init()
 {
-    int i, j;
+    int i, j, k;
     int nat = system->nat;
 
     SymmList.clear();
@@ -60,6 +60,26 @@ void Symmetry::init()
 
     memory->allocate(symrel, nsym, 3, 3);
     symop_in_cart(system->lavec, system->rlavec);
+
+    memory->allocate(sym_available, nsym);
+    int nsym_fc;
+    symop_availability_check(symrel, sym_available, nsym, nsym_fc);
+
+    std::cout << "Among " << nsym << " symmetries, " << nsym_fc << " symmetries will be used to reduce the number of parameters." << std::endl;
+    std::cout << "Used symmetry operations (rotational part in cartesian coordinate only) are printed below:" << std::endl;
+
+    for (i = 0; i < nsym; ++i){
+        if (sym_available[i]) {
+        std::cout << std::setw(5) << i + 1;
+        for (j = 0; j < 3; ++j){
+            for (k = 0; k < 3; ++k){
+            std::cout << std::setw(4) << symrel[i][j][k];
+            }
+        }
+        std::cout << std::endl;
+        }
+    }
+    std::cout << std::endl;
 
     pure_translations();
 
@@ -293,7 +313,6 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
     std::sort(SymmList.begin() + 1, SymmList.end());
     memory->deallocate(arr_trans);
 }
-
 
 bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix3d bmat)
 {
@@ -815,4 +834,29 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
     memory->deallocate(x_symm);
     memory->deallocate(x_avg);
+}
+
+void Symmetry::symop_availability_check(double ***rot, bool *flag, const int n, int &nsym_fc)
+{
+    int i, j, k;
+    int nfinite;
+
+    nsym_fc = 0;
+
+    for (i = 0; i < nsym; ++i){
+    
+        nfinite = 0;
+        for (j = 0; j < 3; ++j){
+            for (k = 0; k < 3; ++k){
+            if(std::abs(rot[i][j][k]) > eps12) ++nfinite;
+            }
+        }
+
+        if (nfinite == 3){
+        ++nsym_fc;
+        flag[i] = true;
+        } else {
+        flag[i] = false;
+        }
+    }
 }

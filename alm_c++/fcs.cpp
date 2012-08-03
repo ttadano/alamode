@@ -113,6 +113,8 @@ void Fcs::generate_fclists(int maxorder)
     bool is_zero;
     bool *is_searched;
 
+    bool *sym_available;
+
     std::cout << "Generating Symmetrically-Independent Parameters ..." << std::endl;
 
     memory->allocate(atmn, maxorder + 1);
@@ -154,13 +156,15 @@ void Fcs::generate_fclists(int maxorder)
 
                 is_zero = false;
 
-                if(list_found.find(IntList(order + 2, ind)) != list_found.end()) continue; // already exits!
+                if(list_found.find(IntList(order + 2, ind)) != list_found.end()) continue; // Already exits!
 
-                // search symmetrically-dependent parameter set
+                // Search symmetrically-dependent parameter set
 
                 int ndeps = 0;
 
                 for (int isym = 0; isym < symmetry->nsym; ++isym){
+
+                    if(!symmetry->sym_available[isym]) continue;
 
                     for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
@@ -183,7 +187,7 @@ void Fcs::generate_fclists(int maxorder)
                                 is_zero = zeroflag;
                             }
 
-                            // add to found list (set) and fcset (vector) if the created is new one.
+                            // Add to found list (set) and fcset (vector) if the created is new one.
 
                             if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()){
                                 list_found.insert(IntList(order + 2, ind_mapped));
@@ -351,7 +355,7 @@ bool Fcs::is_inprim(const int n){
 
 void Fcs::get_xyzcomponent(int n, int **xyz)
 {
-    // return xyz component for the given order using boost algorithm library
+    // Return xyz component for the given order using boost algorithm library
 
     std::vector<int> v;
     int i;
