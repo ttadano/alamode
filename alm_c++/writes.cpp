@@ -116,6 +116,7 @@ void Writes::wrtfcs()
         ofs_fcs << std::endl;  
     }
 
+    ofs_fcs.unsetf(std::ios::showpos);
 
     for (i = 0; i < maxorder; ++i){
         str_fcs[i] = "**FC" + boost::lexical_cast<std::string>(i + 2);
