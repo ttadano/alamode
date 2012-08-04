@@ -7,6 +7,7 @@
 #include "files.h"
 #include "fcs.h"
 #include "fitting.h"
+#include "constraint.h"
 #include <boost/lexical_cast.hpp>
 #include <fstream>
 
@@ -20,7 +21,6 @@ Writes::~Writes() {}
 void Writes::writeall()
 {
     wrtfcs();
-
 
     ofs_info.open(files->file_info.c_str(), std::ios::out);
     if(!ofs_info) error->exit("writeall", "cannot open file_info");
@@ -56,6 +56,10 @@ void Writes::wrtfcs()
     ofs_fcs <<  "!     FC?: Ry/a0^?                                          !" << std::endl;
     ofs_fcs <<  "!     a0= Bohr radius                                       !" << std::endl;
     ofs_fcs << "*************************************************************"  << std::endl << std::endl;
+
+
+
+
     ofs_fcs << "---------------Symmetrically Independent FCs---------------" << std::endl;
     ofs_fcs << " Global No." << "  Local No." << "            FCs" << "            Pairs"  << "        Distance (for IFC2)"<< std::endl;
 
@@ -86,6 +90,32 @@ void Writes::wrtfcs()
             }
         }
     }
+
+    ofs_fcs << std::endl;
+
+    if (constraint->extra_constraint_from_symmetry) {
+        ofs_fcs << "---------------Constraint from Crystal Symmetry---------------" << std::endl;
+        for (i = 0; i < maxorder; ++i){
+            int nparam = fcs->ndup[i].size();
+
+
+            for (std::set<ConstraintClass>::iterator p = constraint->const_symmetry[i].begin(); p != constraint->const_symmetry[i].end(); ++p){
+                ofs_fcs << "  0 = ";
+                ConstraintClass const_pointer = *p;
+                for (j = 0; j < nparam; ++j){
+                    if (std::abs(const_pointer.w_const[j]) > eps8) {
+                        str_tmp = "(FC" + boost::lexical_cast<std::string>(i + 2) + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
+                        ofs_fcs << std::setw(15) << std::showpos << const_pointer.w_const[j];
+                        ofs_fcs << std::setw(12) << std::left << str_tmp;
+                    }
+                }
+                ofs_fcs << std::endl;
+            }
+            ofs_fcs << std::endl;
+        }
+        ofs_fcs << std::endl;  
+    }
+
 
     for (i = 0; i < maxorder; ++i){
         str_fcs[i] = "**FC" + boost::lexical_cast<std::string>(i + 2);
@@ -134,7 +164,7 @@ void Writes::wrtfcs()
 
 void Writes::wrtmisc(){
 
-    // write miscellaneous information to file_info 
+    // Write miscellaneous information to file_info 
     // for subsequent calculations (phonons, md, alm)
 
     int i, j;
@@ -144,7 +174,7 @@ void Writes::wrtmisc(){
     ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
     for (j = 0; j < 3; ++j){
         for(i = 0; i < 3; ++i){
-            ofs_info <<  std::setw(15) << system->lavec[i][j]; // be careful to the transpose of (i,j)
+            ofs_info <<  std::setw(15) << system->lavec[i][j]; // Be careful to the transpose of (i,j)
         }
         ofs_info << std::endl;
     }
@@ -263,7 +293,7 @@ void Writes::wrtmisc(){
         //    ++ip;
         //}
 
-        // this sorting is necessary for linking to molecular dynamics program.
+        // This sorting is necessary for linking to molecular dynamics program.
         std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
 
         for(std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it){

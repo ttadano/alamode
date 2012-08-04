@@ -45,7 +45,9 @@ namespace ALM_NS
         double *const_rhs;
 
         bool exist_constraint;
+        bool extra_constraint_from_symmetry;
         std::string rotation_axis;
+        std::set<ConstraintClass> *const_symmetry;
 
     private:
 
@@ -57,11 +59,12 @@ namespace ALM_NS
         std::set<ConstraintClass> *const_rotation_cross;
 
         std::set<ConstraintClass> *const_self;
-
+       
         int levi_civita(const int, const int, const int);
 
         void translational_invariance();
         void rotational_invariance();
+        void constraint_from_symmetry();
         void calc_constraint_matrix(const int, int &);
 
         void setup_rotation_axis(bool [3][3]);
@@ -69,5 +72,4 @@ namespace ALM_NS
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);
     };
-
 }

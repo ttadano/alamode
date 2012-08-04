@@ -22,6 +22,7 @@ Constraint::~Constraint() {
     if (constraint_mode != 0) {
         memory->deallocate(const_mat);
         memory->deallocate(const_rhs);
+        memory->deallocate(const_symmetry);
     }
 };
 
@@ -77,11 +78,13 @@ void Constraint::setup(){
         memory->allocate(const_translation, maxorder);
         memory->allocate(const_rotation_self, maxorder);
         memory->allocate(const_rotation_cross, maxorder);
+        memory->allocate(const_symmetry, maxorder);
 
         for (order = 0; order < maxorder; ++order){
             const_translation[order].clear();
             const_rotation_self[order].clear();
             const_rotation_cross[order].clear();
+            const_symmetry[order].clear();
         }
 
         if (impose_inv_T) {
@@ -89,6 +92,11 @@ void Constraint::setup(){
         }
         if (impose_inv_R) {
             rotational_invariance();
+        }
+        extra_constraint_from_symmetry = false;
+        constraint_from_symmetry();
+        for (order = 0; order < maxorder; ++order){
+            if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
         }
 
         std::cout << "*** Constraint Information ***" << std::endl;
@@ -101,6 +109,17 @@ void Constraint::setup(){
             std::cout << std::endl;
         }
         std::cout << std::endl;
+
+        if(extra_constraint_from_symmetry){
+            std::cout << "There are additional constraints from crystal symmetry." << std::endl;
+            std::cout << "The number of the constraints of each order:" << std::endl;
+            for (order = 0; order < maxorder; ++order){
+                std::cout << std::setw(8) << interaction->str_order[order];
+                std::cout << std::setw(5) << const_symmetry[order].size();
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
 
         memory->allocate(const_self, maxorder);
         for (order = 0; order < maxorder; ++order) const_self[order].clear();
@@ -121,12 +140,6 @@ void Constraint::setup(){
 
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
-#ifdef _DEBUG
-                for (i = 0; i < nparam; ++i){
-                    std::cout << " " << arr_tmp[i];
-                }
-                std::cout << std::endl;
-#endif
             }
 
             for (std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
@@ -135,32 +148,18 @@ void Constraint::setup(){
 
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
-
-#ifdef _DEBUG
-                for (i = 0; i < nparam; ++i){
-                    std::cout << " " << arr_tmp[i];
-                }
-                std::cout << std::endl;
-#endif
             }
 
-            remove_redundant_rows(nparam, const_self[order], eps8);
-
-#ifdef _DEBUG
-            for (std::set<ConstraintClass>::iterator p = const_self[order].begin(); p != const_self[order].end(); ++p){
+            for (std::set<ConstraintClass>::iterator p = const_symmetry[order].begin(); p != const_symmetry[order].end(); ++p){
 
                 ConstraintClass const_pointer = *p;
 
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
-
-                for (i = 0; i < nparam; ++i){
-                    std::cout << " " << arr_tmp[i];
-                }
-                std::cout << std::endl;
-
             }
-#endif
+
+            remove_redundant_rows(nparam, const_self[order], eps8);
+
             memory->deallocate(arr_tmp);
             const_translation[order].clear();
             const_rotation_self[order].clear();
@@ -265,40 +264,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     icol = 0;
 
     if(fix_harmonic){
-/*
-        std::ifstream ifs_fc2;
-        ifs_fc2.open(fc2_file.c_str(), std::ios::in);
-        if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
-
-        bool is_found = false;
-
-        int nparam_harmonic_ref;
-        int nparam_harmonic = fcs->ndup[0].size();
-
-        std::string str_tmp;
-        while(!ifs_fc2.eof())
-        {
-            std::getline(ifs_fc2, str_tmp);
-
-            if(str_tmp == "##HARMONIC FORCE CONSTANTS")
-            {
-                ifs_fc2 >> nparam_harmonic_ref;
-                if(nparam_harmonic_ref != nparam_harmonic) error->exit("calc_constraint_matrix", "Number of fc2 not the same");
-
-                is_found = true;
-
-                for (i = 0; i < nparam_harmonic; ++i){
-                    const_mat[i][i] = 1.0;
-                    ifs_fc2 >> const_rhs[i];
-                }
-                break;
-            }
-        }
-        irow += nparam_harmonic;
-        icol += nparam_harmonic;
-        ifs_fc2.close();
-        if(!is_found) error->exit("calc_constraint_matrix", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");*/
         system->load_reference_system();
+
         irow += fcs->ndup[0].size();
         icol += fcs->ndup[0].size();
     }
@@ -311,6 +278,104 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         ++irow;
     }
     const_total.clear();
+}
+
+void Constraint::constraint_from_symmetry()
+{
+    // Create constraint matrices arising from the crystal symmetry.
+
+    int i;
+    int isym, ixyz;
+    int order;
+    int maxorder = interaction->maxorder;
+    int nxyz;
+
+    int *ind;
+    int **xyzcomponent;
+    int nparams;
+    int i_prim;
+
+    int *atm_index, *atm_index_symm;
+    int *xyz_index;
+
+    double c_tmp;
+    double *arr_constraint;
+
+    std::set<FcProperty> list_found;
+    std::set<FcProperty>::iterator iter_found;
+
+    memory->allocate(ind, maxorder + 1);
+    memory->allocate(atm_index, maxorder + 1);
+    memory->allocate(atm_index_symm, maxorder + 1);
+    memory->allocate(xyz_index, maxorder + 1);
+
+    for (order = 0; order < maxorder; ++order){
+
+        nparams = fcs->ndup[order].size();
+
+        if (nparams == 0) continue; // No parameters ... skip!
+
+        // Generate temporary list of parameters
+        list_found.clear();
+        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
+            FcProperty list_tmp = *p; // Using copy constructor
+            for (i = 0; i < order + 2; ++i) ind[i] = list_tmp.elems[i];
+            list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
+        }
+
+        nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
+        memory->allocate(xyzcomponent, nxyz, order + 2);
+        fcs->get_xyzcomponent(order + 2, xyzcomponent);
+
+        memory->allocate(arr_constraint, nparams);
+
+        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
+            FcProperty list_tmp = *p; // Using copy constructor
+            for (i = 0; i < order + 2; ++i){
+                atm_index[i] = list_tmp.elems[i] / 3;
+                xyz_index[i] = list_tmp.elems[i] % 3;
+            }
+
+            for (isym = 0; isym < symmetry->nsym; ++isym) {      
+
+                if(symmetry->sym_available[isym]) continue;
+
+                for (i = 0; i < order + 2; ++i) atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
+                if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
+
+                for (i = 0; i < nparams; ++i) arr_constraint[i] = 0.0;
+
+                arr_constraint[list_tmp.mother] = -list_tmp.coef;
+
+                for (ixyz = 0; ixyz < nxyz; ++ixyz) {
+                    for (i = 0; i < order + 2; ++i) ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
+
+                    i_prim = fcs->min_inprim(order + 2, ind);
+                    std::swap(ind[0], ind[i_prim]);
+                    fcs->sort_tail(order + 2, ind);
+
+                    iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
+                    if(iter_found != list_found.end()) {
+                        c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
+                        arr_constraint[(*iter_found).mother] += (*iter_found).coef * c_tmp;
+                    }
+                }
+
+                if(!is_allzero(nparams, arr_constraint)){
+                    const_symmetry[order].insert(ConstraintClass(nparams, arr_constraint));
+                }
+
+            }        
+        }
+        memory->deallocate(xyzcomponent);
+        memory->deallocate(arr_constraint);
+        remove_redundant_rows(nparams, const_symmetry[order], eps8);
+    }
+
+    memory->deallocate(ind);
+    memory->deallocate(atm_index);
+    memory->deallocate(atm_index_symm);
+    memory->deallocate(xyz_index);
 }
 
 void Constraint::translational_invariance()
@@ -329,6 +394,7 @@ void Constraint::translational_invariance()
     int nxyz;
     int natmin = symmetry->natmin;
     int nat = system->nat;
+    int nparams;
 
     double *arr_constraint;
 
@@ -344,10 +410,9 @@ void Constraint::translational_invariance()
 
         std::cout << std::setw(8) << interaction->str_order[order] << " ...";
 
+        nparams = fcs->ndup[order].size();
 
-        int nparams = fcs->ndup[order].size();
-
-        if(nparams == 0) {
+        if (nparams == 0) {
             std::cout << "No parameters! ... skipped."<< std::endl;
             continue;
         }
@@ -355,12 +420,12 @@ void Constraint::translational_invariance()
         // Make interaction list
 
         list_found.clear();
-        for(std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
+        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
             FcProperty list_tmp = *p; // Using copy constructor
             for (i = 0; i < order + 2; ++i){
                 ind[i] = list_tmp.elems[i];
             }
-            if(list_found.find(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother)) != list_found.end()) {
+            if (list_found.find(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother)) != list_found.end()) {
                 error->exit("translational invariance", "Duplicate interaction list found");
             }
             list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
@@ -376,14 +441,14 @@ void Constraint::translational_invariance()
         memory->allocate(intarr     , order + 2);
         memory->allocate(intarr_copy, order + 2);
 
-        for(i = 0; i < natmin; ++i){
+        for (i = 0; i < natmin; ++i){
 
             iat = symmetry->map_p2s[i][0];
 
-            // generate atom pairs for each order
+            // Generate atom pairs for each order
 
-            if(order == 0){
-                for(icrd = 0; icrd < 3; ++icrd){
+            if (order == 0){
+                for (icrd = 0; icrd < 3; ++icrd){
 
                     intarr[0] = 3 * iat + icrd;
 
@@ -398,12 +463,12 @@ void Constraint::translational_invariance()
                             iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
 
                             // corresponding fcs found.
-                            if(iter_found != list_found.end()){
+                            if (iter_found != list_found.end()){
                                 FcProperty arrtmp = *iter_found;
                                 arr_constraint[arrtmp.mother] += arrtmp.coef;
                             }
                         }
-                        if(!is_allzero(nparams,arr_constraint)){
+                        if (!is_allzero(nparams,arr_constraint)){
                             // add to constraint list
                             const_translation[order].insert(ConstraintClass(nparams, arr_constraint));
                         }
@@ -582,7 +647,7 @@ void Constraint::rotational_invariance()
 
                         for (nu = 0; nu < 3; ++nu){
 
-                             if(!valid_rotation_axis[mu][nu]) continue;
+                            if(!valid_rotation_axis[mu][nu]) continue;
 
                             // Clear history
 
@@ -593,19 +658,10 @@ void Constraint::rotational_invariance()
                                 jat = *iter_list;
                                 interaction_index[1] = 3 * jat + mu;
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
-#ifdef _DEBUG
-                                ofs_constraint << "****" << std::endl;
-#endif
-                                if(iter_found != list_found.end()){
 
+                                if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;              
                                     arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
-#ifdef _DEBUG
-                                    for (j = 0; j < 2; ++j){
-                                        ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_index[j]);
-                                    }
-                                    ofs_constraint << std::setw(3) << arrtmp.mother << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
-#endif
                                 }
 
                                 // Exchange mu <--> nu and repeat again. 
@@ -615,22 +671,9 @@ void Constraint::rotational_invariance()
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;                        
-                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];                             
-#ifdef _DEBUG
-                                    for (j = 0; j < 2; ++j){
-                                        ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_index[j]);
-                                    }
-                                    ofs_constraint << std::setw(3) << arrtmp.mother << std::setw(15) << -arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
-#endif
+                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
                                 }
-#ifdef _DEBUG
-                                ofs_constraint << "////" << std::endl;
-#endif
                             }
-
-                            /* for (j = 0; j < nparam_sub; ++j){
-                            if(std::abs(arr_constraint[j])< 1.0e-6) arr_constraint[j] = 0.0;
-                            }*/
 
                             if(!is_allzero(nparam_sub,arr_constraint)){
                                 // Add to constraint list
@@ -691,23 +734,13 @@ void Constraint::rotational_invariance()
 
                                 for (mu = 0; mu < 3; ++mu){
 
-                                        for (nu = 0; nu < 3; ++nu){
+                                    for (nu = 0; nu < 3; ++nu){
 
                                         if (!valid_rotation_axis[mu][nu]) continue;
 
                                         // Search for a new constraint below
 
                                         for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
-#ifdef _DEBUG
-                                        ofs_constraint << "-------------------------------------------------------------" << std::endl;
-                                        ofs_constraint << "New m_1 a_1 ... m_N a_N, mu_1 ... mu_N, mu, nu" << std::endl;
-                                        for (j = 0; j < order + 1; ++j){
-                                            ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_index[j]);
-                                        }
-                                        ofs_constraint << ", mu = " << mu << ", nu = " << nu << std::endl;
-                                        ofs_constraint << "Entering loop for m_N+1, a_N+1" << std::endl;
-                                        ofs_constraint << "********************************" << std::endl;
-#endif
 
                                         // Loop for m_{N+1}, a_{N+1}
                                         for (std::vector<int>::iterator iter_list = interaction_list.begin(); iter_list != interaction_list.end(); ++iter_list){
@@ -720,61 +753,30 @@ void Constraint::rotational_invariance()
 
                                             interaction_index[order + 1] = 3 * jat + mu;
                                             for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
-#ifdef _DEBUG
-                                            ofs_constraint << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
-#endif
+
                                             fcs->sort_tail(order + 2, interaction_tmp);
 
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
-#ifdef _DEBUG
-                                                ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
-                                                    /* << std::setw(15) << arrtmp.coef * (system->x_cartesian[jat][nu] - system->x_cartesian[iat][nu]) << std::endl;
-                                                    arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * system->x_cartesian[jat][nu]; */
-                                                    << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][nu] << std::endl;
-#endif
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
-                                            } else {
-#ifdef _DEBUG
-                                                ofs_constraint <<" --> Not Found!" << std::endl;
-#endif
                                             }
 
                                             // Exchange mu <--> nu and repeat again.
 
                                             interaction_index[order + 1] = 3 * jat + nu;
                                             for (j = 0; j < order + 2; ++j) interaction_tmp[j] = interaction_index[j];
-#ifdef _DEBUG
-                                            ofs_constraint << "m_N+1 a_N+1 = " << std::setw(5) << fcs->easyvizint(interaction_index[order + 1]);
-#endif
+
                                             fcs->sort_tail(order + 2, interaction_tmp);
 
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
-#ifdef _DEBUG
-                                                ofs_constraint << " --> Index = " << std::setw(10) << nparams[order - 1] + arrtmp.mother << ", Coefficient = " 
-                                                    /*  << std::setw(15) << -arrtmp.coef * (system->x_cartesian[jat][mu] - system->x_cartesian[iat][mu]) << std::endl;
-                                                    arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * system->x_cartesian[jat][mu];*/
-                                                    << std::setw(15) << arrtmp.coef * interaction->minvec[i][jat][mu] << std::endl;
-#endif
                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
-                                            } else {
-#ifdef _DEBUG
-                                                ofs_constraint << " --> Not Found!" << std::endl;
-#endif
                                             }
                                         }
-#ifdef _DEBUG
-                                        ofs_constraint << "********************************" << std::endl;
-                                        ofs_constraint << "Loop for lambda start" << std::endl;
-#endif
 
                                         for (lambda = 0; lambda < order + 1; ++lambda){
-#ifdef _DEBUG
-                                            ofs_constraint << "lambda = " << lambda << std::endl;
-#endif
 
                                             mu_lambda = interaction_index[lambda] % 3;
 
@@ -791,28 +793,14 @@ void Constraint::rotational_invariance()
                                                 }
 
                                                 if(levi_factor == 0) continue;
-#ifdef _DEBUG
-                                                ofs_constraint << "mu_lambda = " << jcrd << ":";
-                                                for (j = 0; j < order + 1; ++j){
-                                                    ofs_constraint << std::setw(10) << fcs->easyvizint(interaction_tmp[j]);
-                                                }
-#endif
 
                                                 fcs->sort_tail(order + 1, interaction_tmp);
 
                                                 iter_found = list_found_last.find(FcProperty(order + 1, 1.0, interaction_tmp, 1));
                                                 if(iter_found != list_found_last.end()){
                                                     FcProperty arrtmp = *iter_found;
-#ifdef _DEBUG
-                                                    ofs_constraint << " --> Index = " << std::setw(10) << arrtmp.mother << ", Coefficient = " 
-                                                        << std::setw(15) << arrtmp.coef * static_cast<double>(levi_factor) << std::endl;
-#endif
                                                     arr_constraint[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);                                
-                                                } else {
-#ifdef _DEBUG
-                                                    ofs_constraint << " --> Not Found!" << std::endl;
-#endif
-                                                }
+                                                } 
                                             }
                                         }
 
@@ -828,14 +816,6 @@ void Constraint::rotational_invariance()
                                             } else {
                                                 const_rotation_cross[order].insert(ConstraintClass(nparam_sub, arr_constraint)); 
                                             }
-#ifdef _DEBUG
-                                            for(j = 0; j < nparam_sub; ++j){
-                                                if(std::abs(arr_constraint[j]) > eps10) {
-                                                    ofs_constraint << "index = " << std::setw(5) <<  j << ": " 
-                                                        << std::setw(5) << arr_constraint[j] << std::endl;
-                                                }
-                                            }
-#endif
                                         }
 
                                     } // nu
@@ -871,19 +851,11 @@ void Constraint::rotational_invariance()
 
                         for (ixyz = 0; ixyz < nxyz2; ++ixyz){
 
-
-
                             for (j = 0; j < order + 1; ++j) interaction_index[j + 1] = 3 * interaction_atom[j + 1] + xyzcomponent2[ixyz][j];
-#ifdef _DEBUG
-                            for (j = 0; j < order + 2; ++j){
-                                ofs_constraint << "#$$ i_1 .. i_N = " << std::setw(5) << fcs->easyvizint(interaction_index[j]);
-                            }
-                            ofs_constraint << std::endl;
-#endif
 
                             for (mu = 0; mu < 3; ++mu){
 
-                                  for (nu = 0; nu < 3; ++nu){
+                                for (nu = 0; nu < 3; ++nu){
 
                                     //   ofs_constraint << "#$$ mu = " << mu << " nu = " << nu << std::endl;
 
@@ -953,16 +925,6 @@ void Constraint::rotational_invariance()
         remove_redundant_rows(nparams[order], const_rotation_self[order], eps6);
     }
 
-#ifdef _DEBUG
-    for (std::set<ConstraintClass>::iterator p = const_rotation_self[0].begin(); p != const_rotation_self[0].end(); ++p){
-        ConstraintClass const_now = *p;
-        for (i = 0; i < fcs->ndup[0].size(); ++i) {
-            ofs_constraint << std::setw(15) << const_now.w_const[i];
-        }
-        ofs_constraint << std::endl;
-    }
-#endif
-
     std::cout << std::endl;
 
     memory->deallocate(ind);
@@ -1015,7 +977,6 @@ int Constraint::levi_civita(const int i, const int j, const int k)
     int epsilon = (j - i) * (k - i) * (k - j) / 2;
     return epsilon;
 }
-
 
 bool Constraint::is_allzero(const int n, const double *arr, const int nshift){
 

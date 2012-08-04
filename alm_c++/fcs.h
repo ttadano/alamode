@@ -55,15 +55,15 @@ namespace ALM_NS {
         void get_xyzcomponent(int, int **);
         void sort_tail(const int, int *); 
 
+        bool is_inprim(const int, const int *);
+        bool is_inprim(const int);
+        int min_inprim(const int, const int *);
+        double coef_sym(const int, const int, const int *, const int *);
+
     private:
         int *nints;
         void read_pairs(int);
         void generate_fclists(int);
-        int min_inprim(const int, const int *);
-        bool is_inprim(const int, const int *);
-        bool is_inprim(const int);
-        double coef_sym(const int, const int, const int *, const int *);
-
         bool is_ascending(const int, const int *);
         
 

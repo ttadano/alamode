@@ -113,8 +113,6 @@ void Fcs::generate_fclists(int maxorder)
     bool is_zero;
     bool *is_searched;
 
-    bool *sym_available;
-
     std::cout << "Generating Symmetrically-Independent Parameters ..." << std::endl;
 
     memory->allocate(atmn, maxorder + 1);
