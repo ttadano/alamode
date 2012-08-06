@@ -19,7 +19,7 @@ if __name__ == '__main__':
     ymin = float(sys.argv[3])
     ymax = float(sys.argv[4])
     fps = sys.argv[5]
-    dt = float(sys.argv[4])
+    dt = float(sys.argv[6])
 
     ifs = open(file_T)
     ipoint = 0
@@ -46,12 +46,14 @@ if __name__ == '__main__':
         if ipoint == npoint:
             if xmax == None:
                 xmax = x[npoint - 1]
+                xstr = (xmax - xmin)*0.75
+                ystr = (ymax + ymin)*0.5 + (ymax - ymin)*0.2
 
             ax.cla()
             ax.axis([xmin, xmax, ymin, ymax])
             ax.plot(x, temperature)
             time_str = 't = ' + str((iframe + 1) * dt) + ' ps'
-            plt.text((xmax - xmin)*0.75, (ymax - ymin)*0.8, time_str)
+            plt.text(xstr, ystr, time_str)
             fname = '_tmp%05d.png' % iframe
             print 'Saving frame', fname
             fig.savefig(fname)

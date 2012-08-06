@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <boost/algorithm/string.hpp>
 
 using namespace PHON_NS;
 
@@ -22,7 +23,8 @@ void Input::parce_input()
 
     cin >> job_title;
     cin >> mode;
-    transform(mode.begin(), mode.end(), mode.begin(), tolower);
+    boost::to_lower(mode);
+//    transform(mode.begin(), mode.end(), mode.begin(), tolower);
 
     phon->mode = mode;
 
