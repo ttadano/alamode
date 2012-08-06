@@ -19,14 +19,16 @@ namespace PHON_NS
     private:
 
         void write_phonon_bands();
+        void write_phonon_vel();
         void write_phonon_dos();
         void write_mode_anime();
-	void write_eigenvectors();
+	    void write_eigenvectors();
 
         double Ry_to_kayser;
 
         std::string file_bands, file_dos;
         std::string file_anime, file_evec;
+        std::string file_vel;
     
     };
 }

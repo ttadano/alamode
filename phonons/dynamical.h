@@ -12,6 +12,7 @@ namespace PHON_NS {
 
         void calc_dynamical_matrix();
         void diagonalize_dynamical();
+        void diagonalize_dynamical_all();
 
         unsigned int neval;
         bool eigenvectors, nonanalytic;
@@ -20,9 +21,9 @@ namespace PHON_NS {
         double na_sigma;
 
         double **eval_phonon;
-        std::complex<double> ***dymat;
-
-        void eval_k(double *, double *);
+        std::complex<double> ***evec_phonon;
+        
+        void eval_k(double *, double *, std::complex<double> **, bool);
         void setup_dynamical();
 
     private:
@@ -30,6 +31,8 @@ namespace PHON_NS {
         void calc_analytic_k(std::complex<double> **, double *);
         void calc_nonanalytic();
         double fold(double);
+        char UPLO;
+        std::complex<double> ***dymat;
     };
 
     extern "C" {

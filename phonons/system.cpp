@@ -64,7 +64,7 @@ void System::setup()
     std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
     std::cout << std::endl << std::endl;
     
-    std::cout << " Number of Atoms: " << nat << std::endl;
+    std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
     memory->allocate(mass, nat);
     for (i = 0; i < nat; ++i){

@@ -24,7 +24,6 @@ void Input::parce_input()
     cin >> job_title;
     cin >> mode;
     boost::to_lower(mode);
-//    transform(mode.begin(), mode.end(), mode.begin(), tolower);
 
     phon->mode = mode;
 

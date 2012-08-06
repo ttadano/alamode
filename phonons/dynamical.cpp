@@ -9,26 +9,30 @@
 
 using namespace PHON_NS;
 
-Dynamical::Dynamical(PHON *phon): Pointers(phon){}
+Dynamical::Dynamical(PHON *phon): Pointers(phon){
+    eigenvectors = false;
+}
 
 Dynamical::~Dynamical(){}
-
 
 void Dynamical::setup_dynamical()
 {
     neval = 3 * system->natmin;
+    UPLO = 'U';
 }
 
-void Dynamical::eval_k(double *eval_out, double *xk_in) {
+void Dynamical::eval_k(double *xk_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
-    // Calculate phonon energy for the given k-point
+    // Calculate phonon energy for the specific k-point given in fractional basis
 
-    int i, j;
+
+    unsigned int i, j;
 
     std::complex<double> **dymat_k;
     std::complex<double> **dymat_tmp, **dymat_transpose;
 
     memory->allocate(dymat_k, neval, neval);
+
     calc_analytic_k(dymat_k, xk_in);
 
     memory->allocate(dymat_tmp, neval, neval);
@@ -49,7 +53,7 @@ void Dynamical::eval_k(double *eval_out, double *xk_in) {
     memory->deallocate(dymat_tmp);
     memory->deallocate(dymat_transpose);
 
-    char JOBZ = 'N', UPLO = 'U';
+    char JOBZ;
     int INFO, LWORK;
     double *RWORK;
     std::complex<double> *WORK;
@@ -69,7 +73,25 @@ void Dynamical::eval_k(double *eval_out, double *xk_in) {
         }
     }
 
+    memory->deallocate(dymat_k);
+
+    if (require_evec) {
+        JOBZ = 'V';
+    } else {
+        JOBZ = 'N';
+    }
+
+    // Perform diagonalization
     zheev_(&JOBZ, &UPLO, &n, amat, &n, eval_out, WORK, &LWORK, RWORK, &INFO);
+
+    if (eigenvectors && require_evec){
+        k = 0;
+        for(i = 0; i < neval; ++i){
+            for (j = 0; j < neval; ++j){
+                evec_out[i][j] = amat[k++];
+            }
+        }
+    }
 
     memory->deallocate(RWORK);
     memory->deallocate(WORK);
@@ -136,8 +158,35 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
     }
 }
 
+void Dynamical::diagonalize_dynamical_all()
+{
+    unsigned int ik;
+    unsigned int nk = kpoint->nk;
+    bool require_evec; 
+
+    memory->allocate(eval_phonon, nk, neval);
+
+    if (eigenvectors) {
+        require_evec = true;
+        memory->allocate(evec_phonon, nk, neval, neval);
+    } else {
+        require_evec = false;
+        memory->allocate(evec_phonon, nk, 1, 1);
+    }
+
+    // Calculate phonon eigenvalues and eigenvectors for all k-points
+    
+    for (ik = 0; ik < nk; ++ik){
+        eval_k(kpoint->xk[ik], eval_phonon[ik], evec_phonon[ik], require_evec);
+    }
+}
+
+
 void Dynamical::calc_dynamical_matrix()
 {
+
+    // Calculate dynamical matrix of all k-points
+
     neval = 3 * system->natmin;
     memory->allocate(dymat, kpoint->nk, neval, neval);
     calc_analytic();

@@ -15,6 +15,7 @@ namespace PHON_NS {
           kpoint(ptr->kpoint),
           fcs_phonon(ptr->fcs_phonon),
           dynamical(ptr->dynamical),
+          phonon_velocity(ptr->phonon_velocity),
           writes(ptr->writes),
           dos(ptr->dos),
           timer(ptr->timer) {}
@@ -28,6 +29,7 @@ namespace PHON_NS {
         Kpoint *&kpoint;
         Fcs_phonon *&fcs_phonon;
         Dynamical *&dynamical;
+        Phonon_velocity *&phonon_velocity;
         Writes *&writes;
         Dos *&dos;
         Timer *&timer;

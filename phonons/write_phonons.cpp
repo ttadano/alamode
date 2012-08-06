@@ -5,6 +5,7 @@
 #include "parsephon.h"
 #include "error.h"
 #include "phonon_dos.h"
+#include "phonon_velocity.h"
 #include "../alm_c++/constants.h"
 #include "memory.h"
 #include <iomanip>
@@ -28,6 +29,7 @@ void Writes::write_phonon_info()
 
     if(kpoint->kpoint_mode == 1){
         write_phonon_bands();
+        write_phonon_vel();
     }
 
     if(dos->flag_dos) {
@@ -72,6 +74,36 @@ void Writes::write_phonon_bands()
     ofs_bands.close();
 }
 
+void Writes::write_phonon_vel()
+{
+    std::ofstream ofs_vel;
+
+    file_vel = input->job_title + ".phvel";
+    ofs_vel.open(file_vel.c_str(), std::ios::out);
+    if(!ofs_vel) error->exit("write_phonon_vel", "cannot open file_vel");
+
+        unsigned int i, j;
+
+    unsigned int nk = kpoint->nk;
+
+    double *kaxis = kpoint->kaxis;
+    double **eval = dynamical->eval_phonon;
+
+    ofs_vel << "# k-axis, Velocity [Ry Bohr]" << std::endl;
+    ofs_vel.setf(std::ios::fixed);
+
+    for (i = 0; i < nk; ++i){
+        ofs_vel << std::setw(8) << kaxis[i];
+        for (j = 0; j < nbands; ++j){
+            ofs_vel << std::setw(12) << phonon_velocity->phvel[i][j];
+        }
+        ofs_vel << std::endl;
+    }
+
+    ofs_vel.close();
+}
+
+
 void Writes::write_phonon_dos()
 {
     int i;
@@ -80,7 +112,6 @@ void Writes::write_phonon_dos()
     file_bands = input->job_title + ".dos";
     ofs_dos.open(file_bands.c_str(), std::ios::out);
     if(!ofs_dos) error->exit("write_phonon_dos", "cannot open file_dos");
-
 
     ofs_dos << "# Energy [cm^-1], population" << std::endl;
     ofs_dos.setf(std::ios::scientific);
@@ -151,7 +182,7 @@ void Writes::write_mode_anime()
             norm = 0.0;
 
             for (j = 0; j < 3 * natmin; ++j){
-                evec_tmp = dynamical->dymat[ik][imode][j];
+                evec_tmp = dynamical->evec_phonon[ik][imode][j];
                 norm += std::pow(evec_tmp.real(), 2) + std::pow(evec_tmp.imag(), 2);
             }
 
@@ -167,7 +198,7 @@ void Writes::write_mode_anime()
                     ofs_anime << std::setw(15) << xmod[j][k];
                 }
                 for (k = 0; k < 3; ++k){
-                    ofs_anime << std::setw(15) << dynamical->dymat[ik][imode][3 * j + k].real() / (std::sqrt(system->mass[m]) * norm);
+                    ofs_anime << std::setw(15) << dynamical->evec_phonon[ik][imode][3 * j + k].real() / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -226,8 +257,8 @@ void Writes::write_eigenvectors()
             ofs_evec << std::setw(15) << dynamical->eval_phonon[i][j] << std::endl;
 
             for (k = 0; k < neval; ++k){
-                ofs_evec << std::setw(15) << real(dynamical->dymat[i][j][k]);
-                ofs_evec << std::setw(15) << imag(dynamical->dymat[i][j][k]) << std::endl;
+                ofs_evec << std::setw(15) << real(dynamical->evec_phonon[i][j][k]);
+                ofs_evec << std::setw(15) << imag(dynamical->evec_phonon[i][j][k]) << std::endl;
             }
             ofs_evec << std::endl;
         }

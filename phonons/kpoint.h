@@ -17,6 +17,7 @@ namespace PHON_NS {
       unsigned int npath, nk;
 
       double **xk;
+      double **kpoint_direction;
       double *kaxis;
 
     private:

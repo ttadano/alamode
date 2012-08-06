@@ -8,6 +8,7 @@
 #include "kpoint.h"
 #include "fcs_phonon.h"
 #include "dynamical.h"
+#include "phonon_velocity.h"
 #include "write_phonons.h"
 #include "phonon_dos.h"
 
@@ -26,28 +27,39 @@ PHON::PHON(int narg, char **arg)
         fcs_phonon->setup();
         dos->setup();
 
-        dynamical->calc_dynamical_matrix();
-        dynamical->diagonalize_dynamical();
+        dynamical->setup_dynamical();
+        dynamical->diagonalize_dynamical_all();
+      //  dynamical->calc_dynamical_matrix();
+      //  dynamical->diagonalize_dynamical();
+
+        // Calculate the group velocity of phonons along given direction in
+        // the reciprocal space.
+        if(kpoint->kpoint_mode == 1) phonon_velocity->calc_phonon_vel_band();
 
         if(dos->flag_dos) dos->calc_dos();
 
         writes->write_phonon_info();
+
+        memory->deallocate(dynamical->evec_phonon);
+        memory->deallocate(dynamical->eval_phonon);
+
     } else {
         system->setup();
         kpoint->kpoint_setups();
         fcs_phonon->setup();
         dynamical->setup_dynamical();
 
-        int n = dynamical->neval;
+   /*     int n = dynamical->neval;
         double *eval;
         memory->allocate(eval, n);
         for (int j = 0; j < kpoint->nk; ++j){
-        dynamical->eval_k(eval, kpoint->xk[j]);
-        for (int i = 0; i < n; ++i){
-        std::cout << eval[i] << std::endl;
+            dynamical->eval_k(eval, kpoint->xk[j]);
+            for (int i = 0; i < n; ++i){
+                std::cout << eval[i] << std::endl;
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
-        }
+        */
     }
 
     destroy_pointers();
@@ -67,6 +79,7 @@ void PHON::create_pointers()
     kpoint = new Kpoint(this);
     fcs_phonon = new Fcs_phonon(this);
     dynamical = new Dynamical(this);
+    phonon_velocity = new Phonon_velocity(this);
     writes = new Writes(this);
     dos = new Dos(this);
 }
@@ -79,6 +92,7 @@ void PHON::destroy_pointers()
     delete kpoint;
     delete fcs_phonon;
     delete dynamical;
+    delete phonon_velocity;
     delete writes;
     delete dos;
 }

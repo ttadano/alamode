@@ -25,17 +25,18 @@ void Kpoint::kpoint_setups()
 
     switch (kpoint_mode){
     case 0:
-        std::cout << "kpoint_mode = 0: calculation on given k-points" << std::endl;
+        std::cout << " kpoint_mode = 0: calculation on given k-points" << std::endl;
         std::cin >> nk;
         memory->allocate(xk, nk, 3);
+
         for(i = 0; i < nk; ++i){
             std::cin >> xk[i][0] >> xk[i][1] >> xk[i][2];
         };
         break;
     case 1:
-        std::cout << "kpoint_mode = 1: band structure calculation" << std::endl;
+        std::cout << " kpoint_mode = 1: band structure calculation" << std::endl;
         std::cin >> npath;
-        std::cout << "Number of paths: " << npath << std::endl;
+        std::cout << " Number of paths: " << npath << std::endl;
         memory->allocate(kp_symbol, npath, 2);
         memory->allocate(kp_bound, npath, 2, 3);
         memory->allocate(nkp, npath);
@@ -47,6 +48,8 @@ void Kpoint::kpoint_setups()
             nk += nkp[i];
         };
         memory->allocate(xk, nk, 3);
+        memory->allocate(kpoint_direction, nk, 3);
+
         gen_kpoints_band();
         memory->deallocate(kp_bound);
 
@@ -81,10 +84,12 @@ void Kpoint::kpoint_setups()
             }
         }
 
+        memory->deallocate(xk_c);
         memory->deallocate(nkp);
+        
         break;
     case 2:
-        std::cout << "kpoint_mode = 2: DOS calculation" << std::endl;
+        std::cout << " kpoint_mode = 2: DOS calculation" << std::endl;
         std::cin >> nkx >> nky >> nkz;
         nk = nkx * nky * nkz;
         memory->allocate(xk, nk, 3);
@@ -98,7 +103,7 @@ void Kpoint::kpoint_setups()
         gen_kmesh();
         break;
     case 3:
-        std::cout << "kpoint_mode = 3: Uniform k-point grid for Boltzmann" << std::endl;
+        std::cout << " kpoint_mode = 3: Uniform k-point grid for Boltzmann" << std::endl;
         std::cin >> nkx >> nky >> nkz;
         nk = nkx * nky * nkz;
         memory->allocate(xk, nk, 3);
@@ -107,7 +112,7 @@ void Kpoint::kpoint_setups()
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
     }
-    std::cout << "Number of k-points: " << nk << std::endl << std::endl;
+    std::cout << " Number of k-points: " << nk << std::endl << std::endl;
 
 }
 
@@ -115,16 +120,26 @@ void Kpoint::gen_kpoints_band()
 {
     unsigned int i, j, k;
     double xk_s[3], xk_e[3];
+    double xk_direction[3], norm;
     unsigned int ik = 0;
 
     for (i = 0; i < npath; ++i){
         for (j = 0; j < 3; ++j){
             xk_s[j] = kp_bound[i][0][j];
             xk_e[j] = kp_bound[i][1][j];
+            xk_direction[j] = xk_e[j] - xk_s[j];
         }
+
+        system->rotvec(xk_direction, xk_direction, system->rlavec_p);
+        norm = std::pow(xk_direction[0], 2) + std::pow(xk_direction[1], 2) + std::pow(xk_direction[2], 2);
+        norm = std::sqrt(norm);
+
+        for (j = 0; j < 3; ++j) xk_direction[j] /= norm;
+
         for(j = 0; j < nkp[i]; ++j){
             for(k = 0; k < 3; ++k){
                 xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
+                kpoint_direction[ik][k] = xk_direction[k];
             }
             ++ik;
         }
