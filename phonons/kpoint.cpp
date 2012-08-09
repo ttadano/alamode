@@ -23,7 +23,10 @@ void Kpoint::kpoint_setups()
 
     if (phon->mode == "boltzmann") kpoint_mode = 3;
 
+    std::cout << "**k-points**" << std::endl;
+
     switch (kpoint_mode){
+
     case 0:
         std::cout << " kpoint_mode = 0: calculation on given k-points" << std::endl;
         std::cin >> nk;
@@ -33,6 +36,7 @@ void Kpoint::kpoint_setups()
             std::cin >> xk[i][0] >> xk[i][1] >> xk[i][2];
         };
         break;
+
     case 1:
         std::cout << " kpoint_mode = 1: band structure calculation" << std::endl;
         std::cin >> npath;
@@ -44,7 +48,7 @@ void Kpoint::kpoint_setups()
         nk = 0;
         for (i = 0; i < npath; ++i){
             std::cin >> kp_symbol[i][0] >> kp_bound[i][0][0] >> kp_bound[i][0][1] >> kp_bound[i][0][2]
-            >> kp_symbol[i][1] >> kp_bound[i][1][0] >> kp_bound[i][1][1] >> kp_bound[i][1][2] >> nkp[i];
+                     >> kp_symbol[i][1] >> kp_bound[i][1][0] >> kp_bound[i][1][1] >> kp_bound[i][1][2] >> nkp[i];
             nk += nkp[i];
         };
         memory->allocate(xk, nk, 3);
@@ -64,28 +68,37 @@ void Kpoint::kpoint_setups()
         unsigned int j, k;
         unsigned int ik;
 
+        std::cout.setf(std::ios::fixed);
         ik = 0;
-
+        std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
+        std::cout << " kpval";
         for (i = 0; i < npath; ++i){
             for (j = 0; j < nkp[i]; ++j){
-                if(j == 0){
+                if (j == 0){
                     if(ik == 0) {
                         kaxis[ik] = 0.0;
                     } else {
                         kaxis[ik] = kaxis[ik - 1];
                     }
+                    std::cout << std::setw(10) << kaxis[ik];
                 } else {
                     for (k = 0; k < 3; ++k){
                         tmp[k] = xk_c[ik][k] - xk_c[ik - 1][k];
                     }
                     kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
-                }                
+                }
                 ++ik;
             }
         }
 
+        std::cout << std::setw(10) << kaxis[ik - 1];
+        std::cout << std::endl;
+        std::cout << " ----------------------------------------" << std::endl;
+
         memory->deallocate(xk_c);
         memory->deallocate(nkp);
+
+        std::cout.setf(std::ios::scientific);
         
         break;
     case 2:

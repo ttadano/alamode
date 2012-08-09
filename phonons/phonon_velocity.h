@@ -15,5 +15,6 @@ namespace PHON_NS {
    
     private:
         double diff(double *, const unsigned int, double);
+        double freq(const double);
     };
 }

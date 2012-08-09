@@ -82,27 +82,25 @@ void Writes::write_phonon_vel()
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if(!ofs_vel) error->exit("write_phonon_vel", "cannot open file_vel");
 
-        unsigned int i, j;
-
+    unsigned int i, j;
     unsigned int nk = kpoint->nk;
 
     double *kaxis = kpoint->kaxis;
     double **eval = dynamical->eval_phonon;
 
-    ofs_vel << "# k-axis, Velocity [Ry Bohr]" << std::endl;
+    ofs_vel << "# k-axis, |Velocity| [Ry Bohr]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
     for (i = 0; i < nk; ++i){
         ofs_vel << std::setw(8) << kaxis[i];
         for (j = 0; j < nbands; ++j){
-            ofs_vel << std::setw(12) << phonon_velocity->phvel[i][j];
+            ofs_vel << std::setw(12) << std::abs(phonon_velocity->phvel[i][j]);
         }
         ofs_vel << std::endl;
     }
 
     ofs_vel.close();
 }
-
 
 void Writes::write_phonon_dos()
 {

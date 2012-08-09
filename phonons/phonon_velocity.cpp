@@ -4,7 +4,10 @@
 #include "dynamical.h"
 #include "system.h"
 #include "error.h"
+#include "write_phonons.h"
+#include "../alm_c++/constants.h"
 #include <complex>
+#include <iomanip>
 
 
 using namespace PHON_NS;
@@ -24,7 +27,7 @@ void Phonon_velocity::calc_phonon_vel_band()
     double *xk_tmp;
     double **omega_shift, *omega_tmp;
 
-    double h = 1.0e-5;
+    double h = 1.0e-4;
 
     std::complex<double> **evec_tmp;
 
@@ -42,7 +45,6 @@ void Phonon_velocity::calc_phonon_vel_band()
     for (ik = 0; ik < nk; ++ik){
 
         // Represent the given kpoint in cartesian coordinate
-        
         system->rotvec(xk_tmp, kpoint->xk[ik], system->rlavec_p);
 
         if (ndiff == 2) {
@@ -62,13 +64,15 @@ void Phonon_velocity::calc_phonon_vel_band()
 
             // Move back to fractional basis
             
-            system->rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p);      
+            system->rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p);
+            for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
+
             dynamical->eval_k(xk_shift[idiff], omega_shift[idiff], evec_tmp, false); 
         }
 
         for (i = 0; i < n; ++i){
             for (idiff = 0; idiff < ndiff; ++idiff){
-               omega_tmp[idiff] = omega_shift[idiff][i];
+                omega_tmp[idiff] = freq(omega_shift[idiff][i]);
             }
             phvel[ik][i] = diff(omega_tmp, ndiff, h);
         }
@@ -86,17 +90,29 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
 
 }
 
-double Phonon_velocity::diff(double *f, const unsigned int ndiff, double h)
+double Phonon_velocity::diff(double *f, const unsigned int n, double h)
 {
     double df;
 
-    if (ndiff == 2) {
+    if (n == 2) {
 
         df = (f[1] - f[0]) / (2.0 * h);
 
     } else {
-    error->exit("diff", "ndiff > 2 is not supported yet.");
+    error->exit("diff", "Numerical differentiation of n > 2 is not supported yet.");
     }
 
     return df;
 }
+
+double Phonon_velocity::freq(const double x) 
+{
+    if (x >= 0.0) {
+        return std::sqrt(x);
+    } else {
+        return std::sqrt(-x);
+    }
+}
+
+
+
