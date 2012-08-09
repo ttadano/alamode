@@ -62,16 +62,17 @@ void Kpoint::kpoint_setups()
         memory->allocate(xk_c, nk, 3);
 
         for (i = 0; i < nk; ++i){
-            system->rotvec(xk_c[i], xk[i], system->rlavec_p);
+            system->rotvec(xk_c[i], xk[i], system->rlavec_p, 'T');
         }
 
         unsigned int j, k;
         unsigned int ik;
 
-        std::cout.setf(std::ios::fixed);
         ik = 0;
         std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
         std::cout << " kpval";
+        std::cout.unsetf(std::ios::scientific);
+
         for (i = 0; i < npath; ++i){
             for (j = 0; j < nkp[i]; ++j){
                 if (j == 0){
@@ -143,7 +144,7 @@ void Kpoint::gen_kpoints_band()
             xk_direction[j] = xk_e[j] - xk_s[j];
         }
 
-        system->rotvec(xk_direction, xk_direction, system->rlavec_p);
+        system->rotvec(xk_direction, xk_direction, system->rlavec_p, 'T');
         norm = std::pow(xk_direction[0], 2) + std::pow(xk_direction[1], 2) + std::pow(xk_direction[2], 2);
         norm = std::sqrt(norm);
 

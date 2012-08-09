@@ -17,10 +17,12 @@ namespace PHON_NS
         int n_energy;
         double *energy_dos;
         double *dos_phonon;
+        double *pdos_phonon;
 
     private:
         void prepare_tetrahedron(const int, const int, const int);
-        double dos_integration(const unsigned int, const unsigned int, double **,const double);
+        double dos_integration(const unsigned int, const unsigned int, double **, const double);
+        double pdos_integration(const unsigned int, const unsigned int, double **, double **, const double);
 
         unsigned int ntetra;
         int **tetras;

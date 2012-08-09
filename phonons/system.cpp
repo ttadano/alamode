@@ -63,7 +63,7 @@ void System::setup()
     std::cout << " " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
     std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
     std::cout << std::endl << std::endl;
-    
+
     std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
     memory->allocate(mass, nat);
@@ -156,15 +156,30 @@ void System::recips(double vec[3][3], double inverse[3][3])
     inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
 }
 
-void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3])
+void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char mode)
 {
+    // Perform matrix x vector multiplication. 
+    //
+    // vec_out = mat      * vec_in   (mode = 'N')
+    //          (mat)^{t} * vec_in   (mode = 'T')
+    //
+
     unsigned int i;
     double vec_tmp[3];
 
     for (i = 0; i < 3; ++i){
         vec_tmp[i] = vec_in[i];
     }
-    for (i = 0; i < 3; ++i){
-        vec_out[i] = mat[i][0] * vec_tmp[0] + mat[i][1] * vec_tmp[1] + mat[i][2] * vec_tmp[2];
+
+    if (mode == 'N') {
+        for (i = 0; i < 3; ++i){
+            vec_out[i] = mat[i][0] * vec_tmp[0] + mat[i][1] * vec_tmp[1] + mat[i][2] * vec_tmp[2];
+        }
+    } else if (mode == 'T'){
+        for (i = 0; i < 3; ++i){
+            vec_out[i] = mat[0][i] * vec_tmp[0] + mat[1][i] * vec_tmp[1] + mat[2][i] * vec_tmp[2];
+        }
+    } else {
+        error->exit("rotvec", "invalid input valiable for mode");
     }
 }

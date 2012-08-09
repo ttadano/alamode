@@ -29,7 +29,7 @@ namespace PHON_NS {
         std::string *symbol_kd;
         double *mass_kd, *mass;
 
-        void rotvec(double [3], double [3], double [3][3]);
+        void rotvec(double [3], double [3], double [3][3], char mode = 'N');
 
     private:
         void load_system_info();

@@ -13,6 +13,7 @@ namespace PHON_NS {
           input(ptr->input),
           system(ptr->system),
           kpoint(ptr->kpoint),
+          integration(ptr->integration),
           fcs_phonon(ptr->fcs_phonon),
           dynamical(ptr->dynamical),
           phonon_velocity(ptr->phonon_velocity),
@@ -27,6 +28,7 @@ namespace PHON_NS {
         Input *&input;
         System *&system;
         Kpoint *&kpoint;
+        Integration *&integration;
         Fcs_phonon *&fcs_phonon;
         Dynamical *&dynamical;
         Phonon_velocity *&phonon_velocity;

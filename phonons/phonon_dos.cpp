@@ -34,6 +34,10 @@ void Dos::setup()
         n_energy = static_cast<int>((emax - emin) / delta_e);
         memory->allocate(energy_dos, n_energy);
         memory->allocate(dos_phonon, n_energy);
+
+        if (dynamical->eigenvectors) {
+          memory->allocate(pdos_phonon, n_energy);
+        }
     }
 }
 

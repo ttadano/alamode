@@ -11,6 +11,7 @@ namespace PHON_NS
         class Input *input;
         class System *system;
         class Kpoint *kpoint;
+        class Integration *integration;
         class Fcs_phonon *fcs_phonon;
         class Dynamical *dynamical;
         class Phonon_velocity *phonon_velocity;

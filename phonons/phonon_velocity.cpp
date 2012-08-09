@@ -45,7 +45,7 @@ void Phonon_velocity::calc_phonon_vel_band()
     for (ik = 0; ik < nk; ++ik){
 
         // Represent the given kpoint in cartesian coordinate
-        system->rotvec(xk_tmp, kpoint->xk[ik], system->rlavec_p);
+        system->rotvec(xk_tmp, kpoint->xk[ik], system->rlavec_p, 'T');
 
         if (ndiff == 2) {
             // central difference
@@ -64,7 +64,7 @@ void Phonon_velocity::calc_phonon_vel_band()
 
             // Move back to fractional basis
             
-            system->rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p);
+            system->rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p, 'T');
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
             dynamical->eval_k(xk_shift[idiff], omega_shift[idiff], evec_tmp, false); 
