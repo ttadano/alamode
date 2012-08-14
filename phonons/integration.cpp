@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 using namespace PHON_NS;
 
@@ -124,8 +125,6 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
     double frac3 = 1.0/3.0;
     double f_ntetra = 1.0 / static_cast<double>(ntetra);
     double g, vol, vol_tot;
-
-    double sum1;
   
     tetra_pair pair;
     

@@ -9,7 +9,7 @@ namespace PHON_NS {
         ~Phonon_velocity();
 
        void calc_phonon_vel_band();
-       void phonon_vel_k(double *, double**);
+       void phonon_vel_k(double *, double **);
 
        double **phvel;
    
