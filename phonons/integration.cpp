@@ -14,7 +14,6 @@ Integration::Integration(PHON *phon): Pointers(phon) {}
 
 Integration::~Integration(){};
 
-
 void Integration::setup_integration()
 {
     unsigned int nk = kpoint->nk;

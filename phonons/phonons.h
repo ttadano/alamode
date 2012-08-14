@@ -16,6 +16,7 @@ namespace PHON_NS
         class Dynamical *dynamical;
         class Phonon_velocity *phonon_velocity;
         class Phonon_thermodynamics *phonon_thermodynamics;
+        class Relaxation *relaxation;
         class Writes *writes;
         class Dos *dos;
 

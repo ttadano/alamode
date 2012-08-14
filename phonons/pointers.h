@@ -18,6 +18,7 @@ namespace PHON_NS {
           dynamical(ptr->dynamical),
           phonon_velocity(ptr->phonon_velocity),
           phonon_thermodynamics(ptr->phonon_thermodynamics),
+          relaxation(ptr->relaxation),
           writes(ptr->writes),
           dos(ptr->dos),
           timer(ptr->timer) {}
@@ -34,6 +35,7 @@ namespace PHON_NS {
         Dynamical *&dynamical;
         Phonon_velocity *&phonon_velocity;
         Phonon_thermodynamics *&phonon_thermodynamics;
+        Relaxation *&relaxation;
         Writes *&writes;
         Dos *&dos;
         Timer *&timer;

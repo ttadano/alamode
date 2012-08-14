@@ -87,6 +87,7 @@
     <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="phonon_thermodynamics.cpp" />
     <ClCompile Include="phonon_velocity.cpp" />
+    <ClCompile Include="relaxation.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="write_phonons.cpp" />
@@ -104,6 +105,7 @@
     <ClInclude Include="phonon_thermodynamics.h" />
     <ClInclude Include="phonon_velocity.h" />
     <ClInclude Include="pointers.h" />
+    <ClInclude Include="relaxation.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="write_phonons.h" />
