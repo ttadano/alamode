@@ -11,6 +11,7 @@
 #include "phonon_velocity.h"
 #include "write_phonons.h"
 #include "phonon_dos.h"
+#include "integration.h"
 
 using namespace PHON_NS;
 
@@ -29,14 +30,15 @@ PHON::PHON(int narg, char **arg)
 
         dynamical->setup_dynamical();
         dynamical->diagonalize_dynamical_all();
-      //  dynamical->calc_dynamical_matrix();
-      //  dynamical->diagonalize_dynamical();
 
         // Calculate the group velocity of phonons along given direction in
         // the reciprocal space.
         if (kpoint->kpoint_mode == 1) phonon_velocity->calc_phonon_vel_band();
 
-        if (dos->flag_dos) dos->calc_dos();
+        if (dos->flag_dos) {
+            integration->setup_integration();
+            dos->calc_dos();
+        }
 
         writes->write_phonon_info();
 
@@ -52,15 +54,15 @@ PHON::PHON(int narg, char **arg)
         fcs_phonon->setup();
         dynamical->setup_dynamical();
 
-   /*     int n = dynamical->neval;
+        /*     int n = dynamical->neval;
         double *eval;
         memory->allocate(eval, n);
         for (int j = 0; j < kpoint->nk; ++j){
-            dynamical->eval_k(eval, kpoint->xk[j]);
-            for (int i = 0; i < n; ++i){
-                std::cout << eval[i] << std::endl;
-            }
-            std::cout << std::endl;
+        dynamical->eval_k(eval, kpoint->xk[j]);
+        for (int i = 0; i < n; ++i){
+        std::cout << eval[i] << std::endl;
+        }
+        std::cout << std::endl;
         }
         */
     }
@@ -82,6 +84,7 @@ void PHON::create_pointers()
     kpoint = new Kpoint(this);
     fcs_phonon = new Fcs_phonon(this);
     dynamical = new Dynamical(this);
+    integration = new Integration(this);
     phonon_velocity = new Phonon_velocity(this);
     writes = new Writes(this);
     dos = new Dos(this);
@@ -95,6 +98,7 @@ void PHON::destroy_pointers()
     delete kpoint;
     delete fcs_phonon;
     delete dynamical;
+    delete integration;
     delete phonon_velocity;
     delete writes;
     delete dos;

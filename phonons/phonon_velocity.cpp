@@ -31,6 +31,8 @@ void Phonon_velocity::calc_phonon_vel_band()
 
     std::complex<double> **evec_tmp;
 
+    memory->allocate(evec_tmp, 1, 1);
+
     std::cout << "Calculating group velocities of phonon along given k-path ..." << std::endl;
 
     memory->allocate(phvel, nk, n);
@@ -81,6 +83,8 @@ void Phonon_velocity::calc_phonon_vel_band()
     memory->deallocate(omega_shift);
     memory->deallocate(xk_shift);
     memory->deallocate(xk_tmp);
+
+    memory->deallocate(evec_tmp);
 
     std::cout << "..done!" << std::endl;
 }

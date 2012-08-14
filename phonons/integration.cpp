@@ -1,6 +1,11 @@
 #include "integration.h"
 #include "kpoint.h"
 #include "memory.h"
+#include "system.h"
+#include "error.h"
+#include <iomanip>
+#include <vector>
+#include <algorithm>
 
 using namespace PHON_NS;
 
@@ -16,7 +21,8 @@ void Integration::setup_integration()
     unsigned int nky = kpoint->nky;
     unsigned int nkz = kpoint->nkz;
 
-    unsigned int ntetra = 6 * nk;
+    ntetra = 6 * nk;
+
     memory->allocate(tetras, ntetra, 4);
     prepare_tetrahedron(nkx, nky, nkz); 
 }
@@ -100,19 +106,169 @@ void Integration::prepare_tetrahedron(const int nk1, const int nk2, const int nk
 double Integration::do_tetrahedron(double *energy, double *f, const double e_ref)
 {
     /*
-     This function returns the summation of the given function f_{k}
-     over the k-points which have the energy "e_ref" using the tetrahedron method.
-  
-     Ret(e_ref) = \int f(k) \delta(e_ref - energy(k))
+    This function returns the summation of the given function f_{k}
+    over the k-points which have the energy "e_ref" using the tetrahedron method.
+
+    Ret(e_ref) = \int f(k) \delta(e_ref - energy(k))
 
     */
 
+    unsigned int i, j;
+    int knum;
+
     double ret = 0.0;
+    double e1, e2, e3, e4;
+    double I1, I2, I3, I4;
+    double f1, f2, f3, f4;
 
+    double frac3 = 1.0/3.0;
+    double f_ntetra = 1.0 / static_cast<double>(ntetra);
+    double g, vol, vol_tot;
 
+    double sum1;
+  
+    tetra_pair pair;
+    
+    vol_tot = 0.0;
+
+    for (i = 0; i < ntetra; ++i){
+
+        tetra_data.clear();
+
+        for (j = 0; j < 4; ++j){
+            knum = tetras[i][j];
+            pair.e = energy[knum];
+            pair.f = f[knum];
+            tetra_data.push_back(pair);
+        }
+
+        std::sort(tetra_data.begin(), tetra_data.end());
+
+        e1 = tetra_data[0].e;
+        e2 = tetra_data[1].e;
+        e3 = tetra_data[2].e;
+        e4 = tetra_data[3].e;
+
+        f1 = tetra_data[0].f;
+        f2 = tetra_data[1].f;
+        f3 = tetra_data[2].f;
+        f4 = tetra_data[3].f;
+
+        vol = volume(tetras[i]);
+        vol_tot += vol;
+
+        if (e3 <= e_ref && e_ref < e4){
+            g = 3.0 * std::pow(e4 - e_ref, 2)/ ((e4 - e1)*(e4 - e2)*(e4 - e3));
+
+            I1 = frac3 * fij(e1, e4, e_ref);
+            I2 = frac3 * fij(e2, e4, e_ref);
+            I3 = frac3 * fij(e3, e4, e_ref);
+            I4 = frac3 * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
+           
+            ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+
+        } else if (e2 <= e_ref && e_ref < e3) {
+            g =  3.0 * ((e2 - e1) + 2.0*(e_ref - e2) - (e4 + e3 - e2 - e1)*std::pow((e_ref - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
+
+            I1 = frac3 * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (g * (e4 - e1));
+            I2 = frac3 * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (g * (e4 - e1));
+            I3 = frac3 * fij(e3, e2, e_ref) + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (g * (e4 - e1));
+            I4 = frac3 * fij(e4, e1, e_ref) + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (g * (e4 - e1));
+
+            ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+
+        } else if (e1 <= e_ref && e_ref < e2) {
+            g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
+
+            I1 = frac3 * (fij(e1, e2, e_ref) + fij(e1, e3, e_ref) + fij(e1, e4, e_ref));
+            I2 = frac3 * fij(e2, e1, e_ref);
+            I3 = frac3 * fij(e3, e1, e_ref);
+            I4 = frac3 * fij(e4, e1, e_ref);
+
+            ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+
+        }
+    }
+
+    return ret/vol_tot;
+}
+
+double Integration::dos_integration(double *energy, const double e_ref)
+{
+    double dos_ret = 0.0;
+
+    unsigned int i, j;
+    std::vector<double> e_tetra;
+    double e1, e2, e3, e4;
+    double vol, vol_tot;
+    double f_ntetra = 1.0 / static_cast<double>(ntetra);
+
+    vol_tot = 0.0;
+
+    for (i = 0; i < ntetra; ++i){
+        e_tetra.clear();
+        for (j = 0; j < 4; ++j){
+            e_tetra.push_back(energy[tetras[i][j]]);
+        }
+        std::sort(e_tetra.begin(), e_tetra.end());
+
+        e1 = e_tetra[0];
+        e2 = e_tetra[1];
+        e3 = e_tetra[2];
+        e4 = e_tetra[3];
+
+        vol = volume(tetras[i]);
+        vol_tot += vol;
+
+        if (e3 <= e_ref && e_ref < e4){
+            dos_ret += vol*(3.0*std::pow((e4 - e_ref), 2) / ((e4 - e1)*(e4 - e2)*(e4 - e3)));
+        } else if (e2 <= e_ref && e_ref < e3) {
+            dos_ret += vol*3.0*((e2 - e1) + 2.0*(e_ref - e2) - (e4 + e3 - e2 - e1)*std::pow((e_ref - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
+        } else if (e1 <= e_ref && e_ref < e2) {
+            dos_ret += vol*3.0*std::pow((e_ref - e1), 2) / ((e2 - e1)*(e3 - e1)*(e4 - e1));
+        }
+    }
+
+    return dos_ret/vol_tot;   
+}
+
+double Integration::volume(int *klist)
+{
+    int i;
+    double k1[3], k2[3], k3[3];
+    double vol;
+
+    for (i = 0; i < 3; ++i){
+        k1[i] = refold(kpoint->xk[klist[1]][i] - kpoint->xk[klist[0]][i]);
+        k2[i] = refold(kpoint->xk[klist[2]][i] - kpoint->xk[klist[0]][i]);
+        k3[i] = refold(kpoint->xk[klist[3]][i] - kpoint->xk[klist[0]][i]);
+    }
+
+    system->rotvec(k1, k1, system->rlavec_p, 'T');
+    system->rotvec(k2, k2, system->rlavec_p, 'T');
+    system->rotvec(k3, k3, system->rlavec_p, 'T');
+
+    vol = std::abs(k1[0]*(k2[1]*k3[2] - k2[2]*k3[1]) 
+        + k1[1]*(k2[2]*k3[0] - k2[0]*k3[2]) 
+        + k1[2]*(k2[0]*k3[1] - k2[1]*k3[0]));
+
+    return vol;
 }
 
 double Integration::fij(const double ei, const double ej, const double e)
 {
     return (e - ej) / (ei - ej);
+}
+
+double Integration::refold(double x)
+{
+    if (std::abs(x) > 0.5){
+        if (x < 0.0) {
+            return x + 1.0;
+        } else {
+            return x - 1.0;
+        }
+    } else {
+        return x;
+    }
 }

@@ -104,21 +104,36 @@ void Writes::write_phonon_vel()
 
 void Writes::write_phonon_dos()
 {
-    int i;
+    int i, iat;
     std::ofstream ofs_dos;
 
     file_bands = input->job_title + ".dos";
     ofs_dos.open(file_bands.c_str(), std::ios::out);
     if(!ofs_dos) error->exit("write_phonon_dos", "cannot open file_dos");
 
-    ofs_dos << "# Energy [cm^-1], population" << std::endl;
+    ofs_dos << "# Energy [cm^-1], TOTAL-DOS";
+    if (dynamical->eigenvectors){
+        ofs_dos << ", Atom Projected-DOS";   
+    }
+    ofs_dos << std::endl;
     ofs_dos.setf(std::ios::scientific);
 
     for (i = 0; i < dos->n_energy; ++i){
-        ofs_dos << std::setw(15) << dos->energy_dos[i] << std::setw(15) << dos->dos_phonon[i] << std::endl;
+        ofs_dos << std::setw(15) << dos->energy_dos[i] << std::setw(15) << dos->dos_phonon[i];
+        if(dynamical->eigenvectors) {
+            for (iat = 0; iat < system->natmin; ++iat){
+                ofs_dos << std::setw(15) << dos->pdos_phonon[iat][i];
+            }
+        }
+        ofs_dos << std::endl;
     } 
-
     ofs_dos.close();
+
+    std::cout << std::endl << "Total DOS ";
+    if(dynamical->eigenvectors) {
+        std::cout << "and atom projected-DOS ";
+    }
+    std::cout << "are printed in the file: " << file_bands << std::endl << std::endl;
 }
 
 void Writes::write_mode_anime()
