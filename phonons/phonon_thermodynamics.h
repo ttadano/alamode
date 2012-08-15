@@ -11,5 +11,6 @@ namespace PHON_NS {
         double T_to_Ryd;
 
         double Cv(const double, const double);
+        double fB(const double, const double);
     };
 }

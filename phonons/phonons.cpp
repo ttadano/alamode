@@ -27,7 +27,7 @@ PHON::PHON(int narg, char **arg)
     if (mode == "phonons") {
         system->setup();
         kpoint->kpoint_setups();
-        fcs_phonon->setup();
+        fcs_phonon->setup(mode);
         dos->setup();
 
         dynamical->setup_dynamical();
@@ -55,11 +55,15 @@ PHON::PHON(int narg, char **arg)
     } else if (mode == "boltzmann") {
         system->setup();
         kpoint->kpoint_setups();
-        fcs_phonon->setup();
+        fcs_phonon->setup(mode);
         dynamical->setup_dynamical();
 
         integration->setup_integration();
         relaxation->setup_relaxation();
+
+        dynamical->diagonalize_dynamical_all();
+        relaxation->calc_V3();
+
 
         /*     int n = dynamical->neval;
         double *eval;

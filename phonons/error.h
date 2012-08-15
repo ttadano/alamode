@@ -9,8 +9,8 @@ namespace PHON_NS {
         Error(class PHON *);
         ~Error();
 
-        void exit(const char *, const char *);
         void warn(const char *, const char *);
+        void exit(const char *, const char *);        
         void exit(const char *, const char *, int);
     };
 }
