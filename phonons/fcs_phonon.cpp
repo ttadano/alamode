@@ -7,6 +7,7 @@
 #include <string>
 #include <fstream>
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
 
 using namespace PHON_NS;
 
@@ -97,10 +98,12 @@ void Fcs_phonon::load_fcs()
 
     double val;
 
-    unsigned int *atmn, *crdn;
-    std::string *str_int;
-    unsigned int *len;
+    unsigned int atmn, crdn;
+    std::string str_int;
+    unsigned int len;
     unsigned int *ind;
+
+    std::vector<unsigned int> ivec;
 
     bool flag_found;
     std::ifstream ifs_fcs;
@@ -112,10 +115,6 @@ void Fcs_phonon::load_fcs()
     memory->allocate(flag_str, maxorder);
     ifs_fcs.open(file_fcs.c_str(), std::ios::in);
 
-    memory->allocate(atmn, maxorder + 1);
-    memory->allocate(crdn, maxorder + 1);
-    memory->allocate(str_int, maxorder + 1);
-    memory->allocate(len, maxorder + 1);
     memory->allocate(ind, maxorder + 1);
 
     for (iorder = 0; iorder < maxorder; ++iorder){
@@ -144,17 +143,24 @@ void Fcs_phonon::load_fcs()
                 for (ifcs = 0; ifcs < nfcs; ++ifcs){
 
                     ifs_fcs >> val;
+                    ivec.clear();
 
                     for (i = 0; i < iorder + 2; ++i){
-                        ifs_fcs >> str_int[i];
-                        len[i] = str_int[i].size();
-                        atmn[i] = atoi(str_int[i].substr(0, len[i] - 1).c_str()) - 1;
-                        crdn[i] = coordinate_index(str_int[i][len[i] - 1]);
-                        ind[i] = 3 * atmn[i] + crdn[i];
+                        ifs_fcs >> str_int;
+                        len = str_int.size();
+                        atmn = atoi(str_int.substr(0, len - 1).c_str()) - 1;
+                        crdn = coordinate_index(str_int[len - 1]);
+                        ind[i] = 3 * atmn + crdn;
+                        ivec.push_back(ind[i]);
                     }
+
                     if (std::abs(val) > eps) {
-                        force_constant[iorder].push_back(FcsClass(iorder + 2, val, ind));
+
                         fcs_set[iorder].insert(FcsClass(iorder + 2, val, ind));
+
+                        do {
+                            force_constant[iorder].push_back(FcsClass(val, ivec));
+                        } while (std::next_permutation(ivec.begin() + 1, ivec.end()));            
                     }
                 }
             }
@@ -168,12 +174,7 @@ void Fcs_phonon::load_fcs()
 
     ifs_fcs.close();
 
-    memory->deallocate(atmn);
-    memory->deallocate(crdn);
-    memory->deallocate(len);
     memory->deallocate(ind);
-    memory->deallocate(str_int);
-
     std::cout << "Done !" << std::endl;
 }
 

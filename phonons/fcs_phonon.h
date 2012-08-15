@@ -12,7 +12,7 @@ namespace PHON_NS {
         std::vector<unsigned int> elems;
         double fcs_val;
 
-        FcsClass();
+        FcsClass(){};
         FcsClass(const FcsClass &obj){
             fcs_val = obj.fcs_val;
             for (std::vector<unsigned int>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it){
@@ -27,6 +27,15 @@ namespace PHON_NS {
                 elems.push_back(arr[i]);
             }
         }
+        
+        FcsClass(const double val, const std::vector<unsigned int> vec)
+        {
+            fcs_val = val;
+            for (std::vector<unsigned int>::const_iterator it = vec.begin(); it != vec.end(); ++it){
+                elems.push_back(*it);
+            }
+        }
+        
     };
 
     inline bool operator<(const FcsClass a, const FcsClass b){

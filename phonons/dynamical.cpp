@@ -15,10 +15,14 @@ Dynamical::Dynamical(PHON *phon): Pointers(phon){
 
 Dynamical::~Dynamical(){}
 
-void Dynamical::setup_dynamical()
+void Dynamical::setup_dynamical(std::string mode)
 {
     neval = 3 * system->natmin;
     UPLO = 'U';
+
+    if (mode == "boltzmann") {
+        eigenvectors = true;
+    }
 }
 
 void Dynamical::eval_k(double *xk_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
@@ -175,7 +179,7 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
-    
+
     for (ik = 0; ik < nk; ++ik){
         eval_k(kpoint->xk[ik], eval_phonon[ik], evec_phonon[ik], require_evec);
     }

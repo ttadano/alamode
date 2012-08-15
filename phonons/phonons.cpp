@@ -25,12 +25,13 @@ PHON::PHON(int narg, char **arg)
     input->parce_input();
 
     if (mode == "phonons") {
+
         system->setup();
         kpoint->kpoint_setups();
         fcs_phonon->setup(mode);
         dos->setup();
 
-        dynamical->setup_dynamical();
+        dynamical->setup_dynamical(mode);
         dynamical->diagonalize_dynamical_all();
 
         // Calculate the group velocity of phonons along given direction in
@@ -53,10 +54,11 @@ PHON::PHON(int narg, char **arg)
         integration->finish_integration();
 
     } else if (mode == "boltzmann") {
+
         system->setup();
         kpoint->kpoint_setups();
         fcs_phonon->setup(mode);
-        dynamical->setup_dynamical();
+        dynamical->setup_dynamical(mode);
 
         integration->setup_integration();
         relaxation->setup_relaxation();

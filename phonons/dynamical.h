@@ -24,7 +24,7 @@ namespace PHON_NS {
         std::complex<double> ***evec_phonon;
         
         void eval_k(double *, double *, std::complex<double> **, bool);
-        void setup_dynamical();
+        void setup_dynamical(std::string);
 
     private:
         void calc_analytic();
