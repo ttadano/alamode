@@ -26,11 +26,13 @@ namespace PHON_NS {
         void eval_k(double *, double *, std::complex<double> **, bool);
         void setup_dynamical(std::string);
 
+        double fold(double);
+
     private:
         void calc_analytic();
         void calc_analytic_k(std::complex<double> **, double *);
         void calc_nonanalytic();
-        double fold(double);
+        
         char UPLO;
         std::complex<double> ***dymat;
     };

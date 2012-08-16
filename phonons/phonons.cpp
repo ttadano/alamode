@@ -64,20 +64,10 @@ PHON::PHON(int narg, char **arg)
         relaxation->setup_relaxation();
 
         dynamical->diagonalize_dynamical_all();
-        relaxation->calc_V3();
+        relaxation->calc_ReciprocalV();
+     //   relaxation->calc_selfenergy(100.0);
+        phonon_thermodynamics->test_fB(100.0);
 
-
-        /*     int n = dynamical->neval;
-        double *eval;
-        memory->allocate(eval, n);
-        for (int j = 0; j < kpoint->nk; ++j){
-        dynamical->eval_k(eval, kpoint->xk[j]);
-        for (int i = 0; i < n; ++i){
-        std::cout << eval[i] << std::endl;
-        }
-        std::cout << std::endl;
-        }
-        */
     } else {
         error->exit("phonons", "invalid mode");
     }

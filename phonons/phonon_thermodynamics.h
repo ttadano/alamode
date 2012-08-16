@@ -12,5 +12,7 @@ namespace PHON_NS {
 
         double Cv(const double, const double);
         double fB(const double, const double);
+
+        void test_fB(const double);
     };
 }

@@ -15,6 +15,7 @@ static const double Hz_to_kayser = 1.0e-2 / (2.0 * pi * c_light);
 static const double Bohr_in_Angstrom = 0.52917721092;
 static const double k_Boltzmann = 1.3806488e-23; // J/K
 static const double eps = DBL_EPSILON;
+static const double eps15 = 1.0e-15;
 static const double eps12 = 1.0e-12;
 static const double eps10 = 1.0e-10;
 static const double eps8 = 1.0e-8;

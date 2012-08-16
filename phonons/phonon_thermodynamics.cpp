@@ -1,6 +1,10 @@
 #include "phonon_thermodynamics.h"
 #include "pointers.h"
 #include "../alm_c++/constants.h"
+#include "kpoint.h"
+#include "dynamical.h"
+#include "phonon_velocity.h"
+#include <iostream>
 
 using namespace PHON_NS;
 
@@ -32,4 +36,25 @@ double Phonon_thermodynamics::fB(const double omega, const double T)
         x = omega / (T_to_Ryd * T);
         return 1.0 / (exp(x) - 1.0);
     }
+}
+
+void Phonon_thermodynamics::test_fB(const double T)
+{
+
+    unsigned int i, j;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+
+    unsigned int nks;
+
+    double omega;
+    nks = nk * ns;
+
+    for (i = 0; i < nk; ++i){
+        for (j = 0; j < ns; ++j){
+            omega = phonon_velocity->freq(dynamical->eval_phonon[i][j]);
+           std::cout << "omega = " << omega << " ,fB = " << fB(omega, T) << std::endl;
+        }
+    }
+
 }
