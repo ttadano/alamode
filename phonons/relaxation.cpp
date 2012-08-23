@@ -14,7 +14,7 @@ using namespace PHON_NS;
 
 Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
-    epsilon = 1.0e-8;
+    epsilon = 1.0e-12;
 }
 
 Relaxation::~Relaxation(){};
@@ -129,6 +129,12 @@ void Relaxation::calc_ReciprocalV()
                                 
                                 mass_prod = 1.0 / std::sqrt(system->mass[atmn[0]] * system->mass[atmn[1]] * system->mass[atmn[2]]);
 
+                           /*
+                                std::cout << "v3 = " << (*it).fcs_val << std::endl;
+                                std::cout << "eval's = " << dynamical->evec_phonon[k1][b1][3 * system->map_s2p[atmn[0]].atom_num + crdn[0]]
+                                    << " " << dynamical->evec_phonon[k2][b2][3 * system->map_s2p[atmn[1]].atom_num + crdn[1]] 
+                                    << " " << dynamical->evec_phonon[k3][b3][3 * system->map_s2p[atmn[2]].atom_num + crdn[2]] << std::endl;
+                                    */
                                 prod += mass_prod * (*it).fcs_val * std::exp(im * phase)
                                     * dynamical->evec_phonon[k1][b1][3 * system->map_s2p[atmn[0]].atom_num + crdn[0]]
                                 * dynamical->evec_phonon[k2][b2][3 * system->map_s2p[atmn[1]].atom_num + crdn[1]]
@@ -170,7 +176,7 @@ void Relaxation::calc_selfenergy(const double T)
 
     nks = nk * nband;
 
-    for (i = 0; i < nks; ++i) tau[i] = 0.0;
+    for (i = 0; i < nks; ++i) self_E[i] = 0.0;
 
     for (std::vector<ReciprocalVs>::iterator it = V[0].begin(); it != V[0].end(); ++it){
         ReciprocalVs obj = *it;
@@ -188,6 +194,18 @@ void Relaxation::calc_selfenergy(const double T)
             
             n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
             n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
+
+            /*
+             std::cout << "w's = " << omega[0] << " " << omega[1] << " " << omega[2] << std::endl;
+            std::cout << "w0 + w1 + w2 = " << omega[0] + omega[1] + omega[2] << std::endl;
+            std::cout << "w0 - w1 - w2 = " << omega[0] - omega[1] - omega[2] << std::endl;
+            std::cout << "w0 - w1 + w2 = " << omega[0] - omega[1] + omega[2] << std::endl;
+            std::cout << "w0 + w1 - w2 = " << omega[0] + omega[1] - omega[2] << std::endl;
+            std::cout << "n1 = " << n1 << " , n2 = " << n2 << std::endl;
+            std::cout << "|v3|^2 = " << v_norm << std::endl;
+            std::cout << "omega_prod = " << omega_prod << std::endl;
+            std::cout << std::endl;
+            */
 
             self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] += std::pow(0.5, 4) * fcell / omega_prod * v_norm
                 * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
