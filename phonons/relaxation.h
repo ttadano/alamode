@@ -38,6 +38,9 @@ namespace PHON_NS {
         void calc_selfenergy(const double);
 
         double *tau;
+        std::complex<double> *self_E;
+
+        void test_delta(const double);
 
     private:
         std::vector<ReciprocalVs> *V;

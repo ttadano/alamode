@@ -65,8 +65,9 @@ PHON::PHON(int narg, char **arg)
 
         dynamical->diagonalize_dynamical_all();
         relaxation->calc_ReciprocalV();
-     //   relaxation->calc_selfenergy(100.0);
-        phonon_thermodynamics->test_fB(100.0);
+        relaxation->calc_selfenergy(100.0);
+        //    phonon_thermodynamics->test_fB(1000.0);
+//        relaxation->test_delta(100);
 
     } else {
         error->exit("phonons", "invalid mode");

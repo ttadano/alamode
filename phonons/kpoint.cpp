@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <set>
 
 using namespace PHON_NS;
 
@@ -122,6 +123,8 @@ void Kpoint::kpoint_setups()
         nk = nkx * nky * nkz;
         memory->allocate(xk, nk, 3);
         gen_kmesh();
+        memory->allocate(knum_minus, nk);
+        gen_nkminus();
         break;
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
@@ -165,11 +168,12 @@ void Kpoint::gen_kmesh()
     unsigned int ix, iy, iz, ik;
     unsigned int i;
     double **xkr, xk_tmp;
+
     memory->allocate(xkr, nk, 3);
 
-    for(ix = 0; ix < nkx; ++ix){
-        for(iy = 0; iy < nky; ++iy){
-            for(iz = 0; iz < nkz; ++iz){
+    for (ix = 0; ix < nkx; ++ix){
+        for (iy = 0; iy < nky; ++iy){
+            for (iz = 0; iz < nkz; ++iz){
                 ik = iz + iy * nkz + ix * nkz * nky;
                 xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nkx);
                 xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nky);
@@ -178,9 +182,9 @@ void Kpoint::gen_kmesh()
         }
     }
 
-    for(ik = 0; ik < nk; ++ik){
-        for(i = 0; i < 3; ++i){
-            if(xkr[ik][i] >= 0.5){
+    for (ik = 0; ik < nk; ++ik){
+        for (i = 0; i < 3; ++i){
+            if (xkr[ik][i] >= 0.5){
                 xk_tmp = 1.0;
             } else {
                 xk_tmp = 0.0;
@@ -189,4 +193,56 @@ void Kpoint::gen_kmesh()
         }
     }
     memory->deallocate(xkr);
+}
+
+void Kpoint::gen_nkminus()
+{
+    unsigned int i;
+    unsigned int ik, jk;
+    double xk_tmp, norm;
+    std::vector<KpointList> ksets;
+    std::set<KpointList>::iterator it;
+    std::vector<double> ktmp;
+    bool found_same;
+
+    ksets.clear();
+
+    for (ik = 0; ik < nk; ++ik){
+
+        ktmp.clear();
+
+        ktmp.push_back(xk[ik][0]);
+        ktmp.push_back(xk[ik][1]);
+        ktmp.push_back(xk[ik][2]);
+
+        ksets.push_back(KpointList(ik, ktmp));
+    }
+    
+    for (ik = 0; ik < nk; ++ik){
+        
+        found_same = false;
+        
+        ktmp.clear();
+        ktmp.push_back(-xk[ik][0]);
+        ktmp.push_back(-xk[ik][1]);
+        ktmp.push_back(-xk[ik][2]);
+        
+        for (std::vector<KpointList>::const_iterator it = ksets.begin(); it != ksets.end(); ++it){
+            norm = std::pow(std::fmod(ktmp[0]-(*it).kval[0], 1.0), 2) 
+                + std::pow(std::fmod(ktmp[1]-(*it).kval[1], 1.0), 2) 
+                + std::pow(std::fmod(ktmp[2]-(*it).kval[2], 1.0), 2);
+
+            if (std::sqrt(norm) < eps12) {
+                knum_minus[ik] = (*it).knum;
+                found_same = true;
+                break;
+            } 
+        }
+
+        if (!found_same) {
+            error->exit("gen_nkminus", "k-point of the inverse point is not found");
+        }
+    }
+
+    ksets.clear();
 }

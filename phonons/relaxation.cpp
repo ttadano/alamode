@@ -16,6 +16,7 @@ Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
     epsilon = 1.0e-8;
 }
+
 Relaxation::~Relaxation(){};
 
 
@@ -25,6 +26,7 @@ void Relaxation::setup_relaxation()
     unsigned int nband = dynamical->neval;
 
     memory->allocate(V, 1);
+    memory->allocate(self_E, nk*nband);
     memory->allocate(tau, nk*nband);
 }
 
@@ -44,10 +46,13 @@ void Relaxation::calc_ReciprocalV()
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
 
+    unsigned int atm_p1, atm_s1, atm_s2;
+
     double mass_prod, omega_prod;
+    double vec1[3], vec2[3];
 
     std::complex<double> prod, prod_tmp;
-
+    std::complex<double> phase;
 
     std::cout << std::endl;
     std::cout << "Calculating force constants in reciprocal space .." << std::endl;
@@ -63,7 +68,6 @@ void Relaxation::calc_ReciprocalV()
     double xk_tmp[3], xk_norm;
 
     std::complex<double> exp_sum;
-
     std::vector<unsigned int> ks_tmp;
 
 
@@ -105,19 +109,33 @@ void Relaxation::calc_ReciprocalV()
                                     atmn[i] = ind[i] / 3;
                                     crdn[i] = ind[i] % 3;
                                 }
+                                
+                                atm_p1 = system->map_p2s[0][system->map_s2p[atmn[0]].tran_num];
+                                atm_s1 = system->map_p2s[0][system->map_s2p[atmn[1]].tran_num];
+                                atm_s2 = system->map_p2s[0][system->map_s2p[atmn[2]].tran_num];
 
+                                for (i = 0; i < 3; ++i){
+                                    vec1[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_p1][i];
+                                    vec2[i] = system->xr_s[atm_s2][i] - system->xr_s[atm_p1][i];
+                                }
+                                
+                                system->rotvec(vec1, vec1, system->lavec_s);
+                                system->rotvec(vec1, vec1, system->rlavec_p);
+                                system->rotvec(vec2, vec2, system->lavec_s);
+                                system->rotvec(vec2, vec2, system->rlavec_p);
+
+                                phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
+                                    + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
+                                
                                 mass_prod = 1.0 / std::sqrt(system->mass[atmn[0]] * system->mass[atmn[1]] * system->mass[atmn[2]]);
 
-                                prod += mass_prod * (*it).fcs_val 
+                                prod += mass_prod * (*it).fcs_val * std::exp(im * phase)
                                     * dynamical->evec_phonon[k1][b1][3 * system->map_s2p[atmn[0]].atom_num + crdn[0]]
                                 * dynamical->evec_phonon[k2][b2][3 * system->map_s2p[atmn[1]].atom_num + crdn[1]]
                                 * dynamical->evec_phonon[k3][b3][3 * system->map_s2p[atmn[2]].atom_num + crdn[2]];
                             }
 
                             if (std::norm(prod) > eps12){
-                               // omega_prod = dynamical->eval_phonon[k1][b1] * dynamical->eval_phonon[k2][b2] * dynamical->eval_phonon[k3][b3];
-                               // prod *= std::pow(0.5, 1.5) * std::sqrt(fcell / omega_prod);
-
                                 V[0].push_back(ReciprocalVs(prod, ks_tmp));
                             }
                         }
@@ -141,7 +159,7 @@ void Relaxation::calc_selfenergy(const double T)
 
     unsigned int *ind, *knum, *snum;
     double *omega, omega_prod;
-
+    double n1, n2;
     
     double fcell = 1.0 / static_cast<double>(system->ntran);
 
@@ -159,7 +177,6 @@ void Relaxation::calc_selfenergy(const double T)
         v_norm = std::norm(obj.v);
 
         do {
-
             for (i = 0; i < 3; ++i){
                 ind[i] = obj.ks[i];
                 knum[i] = ind[i] / nband;
@@ -169,23 +186,39 @@ void Relaxation::calc_selfenergy(const double T)
 
             omega_prod = omega[0] * omega[1] * omega[2];
             
-            tau[ind[0]] += std::pow(0.5, 3) * fcell / omega_prod
-                * (v_norm
-                * ( -(phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0) * delta_lorentz(omega[0] + omega[1] + omega[2])
-                    +(phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0) * delta_lorentz(omega[0] - omega[1] - omega[2])
-                    -(phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T)) * delta_lorentz(omega[0] - omega[1] + omega[2])
-                    +(phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T)) * delta_lorentz(omega[0] + omega[1] - omega[2]))).real();
+            n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
+            n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
+
+            self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] += std::pow(0.5, 4) * fcell / omega_prod * v_norm
+                * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
+                  - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
+                  + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
+                  - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
 
         } while (std::next_permutation(obj.ks.begin(), obj.ks.end()));
 
     }
 
     for (i = 0; i < nks; ++i){
-    std::cout << "i = " << i << " " << tau[i] << std::endl;
+    std::cout << "i = " << i << " " << self_E[i] << std::endl;
     }
 }
 
 std::complex<double> Relaxation::delta_lorentz(const double omega)
 {
     return 1.0 / (omega - im*epsilon);
+}
+
+void Relaxation::test_delta(const double T)
+{
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+ 
+    int i, j;
+    double omega;
+
+    for (i = -1000; i <= 1000; ++i){
+        omega = static_cast<double>(i) * 0.1;
+        std::cout << "omega = " << omega << ", delta(omega)= " << delta_lorentz(omega).real() << " " << delta_lorentz(omega).imag() << std::endl;
+    }
 }

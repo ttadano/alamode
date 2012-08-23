@@ -34,7 +34,7 @@ double Phonon_thermodynamics::fB(const double omega, const double T)
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);
-        return 1.0 / (exp(x) - 1.0);
+        return 1.0 / (std::exp(x) - 1.0);
     }
 }
 
@@ -45,15 +45,12 @@ void Phonon_thermodynamics::test_fB(const double T)
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
-    unsigned int nks;
-
     double omega;
-    nks = nk * ns;
 
     for (i = 0; i < nk; ++i){
         for (j = 0; j < ns; ++j){
             omega = phonon_velocity->freq(dynamical->eval_phonon[i][j]);
-           std::cout << "omega = " << omega << " ,fB = " << fB(omega, T) << std::endl;
+            std::cout << "omega = " << omega / (T_to_Ryd * T) << " ,fB = " << fB(omega, T) << std::endl;
         }
     }
 
