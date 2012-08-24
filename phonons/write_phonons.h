@@ -11,6 +11,7 @@ namespace PHON_NS
         Writes(class PHON *);
         ~Writes();
         void write_phonon_info();
+        void write_selfenergy();
         bool writeanime;
 
         double in_kayser(const double);

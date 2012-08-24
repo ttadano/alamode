@@ -9,12 +9,16 @@
 #include <algorithm>
 #include "phonon_thermodynamics.h"
 #include "phonon_velocity.h"
+#include <fstream>
+#include "parsephon.h"
+#include "error.h"
 
 using namespace PHON_NS;
 
 Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
-    epsilon = 1.0e-12;
+    epsilon = 2.5/Hz_to_kayser*time_ry;
+    std::cout << "epsilon = " << epsilon << std::endl;
 }
 
 Relaxation::~Relaxation(){};
@@ -28,6 +32,14 @@ void Relaxation::setup_relaxation()
     memory->allocate(V, 1);
     memory->allocate(self_E, nk*nband);
     memory->allocate(tau, nk*nband);
+}
+
+void Relaxation::finish_relaxation()
+{
+    V[0].clear();
+    memory->deallocate(V);
+    memory->deallocate(self_E);
+    memory->deallocate(tau);
 }
 
 void Relaxation::calc_ReciprocalV()
@@ -109,7 +121,7 @@ void Relaxation::calc_ReciprocalV()
                                     atmn[i] = ind[i] / 3;
                                     crdn[i] = ind[i] % 3;
                                 }
-                                
+
                                 atm_p1 = system->map_p2s[0][system->map_s2p[atmn[0]].tran_num];
                                 atm_s1 = system->map_p2s[0][system->map_s2p[atmn[1]].tran_num];
                                 atm_s2 = system->map_p2s[0][system->map_s2p[atmn[2]].tran_num];
@@ -118,32 +130,24 @@ void Relaxation::calc_ReciprocalV()
                                     vec1[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_p1][i];
                                     vec2[i] = system->xr_s[atm_s2][i] - system->xr_s[atm_p1][i];
                                 }
-                                
+
                                 system->rotvec(vec1, vec1, system->lavec_s);
                                 system->rotvec(vec1, vec1, system->rlavec_p);
                                 system->rotvec(vec2, vec2, system->lavec_s);
                                 system->rotvec(vec2, vec2, system->rlavec_p);
 
                                 phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
-                                    + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
-                                
+                                + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
+
                                 mass_prod = 1.0 / std::sqrt(system->mass[atmn[0]] * system->mass[atmn[1]] * system->mass[atmn[2]]);
 
-                           /*
-                                std::cout << "v3 = " << (*it).fcs_val << std::endl;
-                                std::cout << "eval's = " << dynamical->evec_phonon[k1][b1][3 * system->map_s2p[atmn[0]].atom_num + crdn[0]]
-                                    << " " << dynamical->evec_phonon[k2][b2][3 * system->map_s2p[atmn[1]].atom_num + crdn[1]] 
-                                    << " " << dynamical->evec_phonon[k3][b3][3 * system->map_s2p[atmn[2]].atom_num + crdn[2]] << std::endl;
-                                    */
                                 prod += mass_prod * (*it).fcs_val * std::exp(im * phase)
                                     * dynamical->evec_phonon[k1][b1][3 * system->map_s2p[atmn[0]].atom_num + crdn[0]]
                                 * dynamical->evec_phonon[k2][b2][3 * system->map_s2p[atmn[1]].atom_num + crdn[1]]
                                 * dynamical->evec_phonon[k3][b3][3 * system->map_s2p[atmn[2]].atom_num + crdn[2]];
                             }
-
-                            if (std::norm(prod) > eps12){
-                                V[0].push_back(ReciprocalVs(prod, ks_tmp));
-                            }
+                            // Add to list
+                            V[0].push_back(ReciprocalVs(prod, ks_tmp));
                         }
                     }
                 }
@@ -155,7 +159,54 @@ void Relaxation::calc_ReciprocalV()
 }
 
 
-void Relaxation::calc_selfenergy(const double T)
+void Relaxation::calc_selfenergy()
+{
+    double Tmin, Tmax, dT;
+
+    Tmin = 1.0;
+    Tmax = 1000.0;
+    dT= 1.0;
+
+    unsigned int NT= static_cast<unsigned int>((Tmax - Tmin) / dT);
+
+    unsigned int i;
+
+    unsigned int nband = dynamical->neval;
+    unsigned int nk = kpoint->nk;
+
+    unsigned int nks = nband*nk;
+
+    unsigned int iks;
+    double T;
+    std::string file_selfenergy;
+
+    std::ofstream ofs_selfenergy;
+    file_selfenergy = input->job_title + ".selfE";
+    ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
+    if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
+
+
+    ofs_selfenergy << "#Temperature, k-point, branch, Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1]" << std::endl;
+    ofs_selfenergy.setf(std::ios::scientific);
+
+    for (i = 0; i < NT; ++i){
+        T = Tmin + dT * static_cast<double>(i);
+        calc_selfenergy_at_T(T);
+        for (iks = 0; iks < nks; ++iks){
+            ofs_selfenergy << std::setw(5) << T;
+            ofs_selfenergy << std::setw(5) << iks / nband;
+            ofs_selfenergy << std::setw(5) << iks % nband;
+            ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].real()/time_ry*Hz_to_kayser; 
+            ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].imag()/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::endl;
+        }
+        ofs_selfenergy << std::endl;
+    }
+    ofs_selfenergy.close();
+
+}
+
+void Relaxation::calc_selfenergy_at_T(const double T)
 {
     unsigned int i;
     unsigned int nk = kpoint->nk;
@@ -166,7 +217,7 @@ void Relaxation::calc_selfenergy(const double T)
     unsigned int *ind, *knum, *snum;
     double *omega, omega_prod;
     double n1, n2;
-    
+
     double fcell = 1.0 / static_cast<double>(system->ntran);
 
     memory->allocate(ind, 3);
@@ -191,12 +242,12 @@ void Relaxation::calc_selfenergy(const double T)
             }
 
             omega_prod = omega[0] * omega[1] * omega[2];
-            
+
             n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
             n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
 
             /*
-             std::cout << "w's = " << omega[0] << " " << omega[1] << " " << omega[2] << std::endl;
+            std::cout << "w's = " << omega[0] << " " << omega[1] << " " << omega[2] << std::endl;
             std::cout << "w0 + w1 + w2 = " << omega[0] + omega[1] + omega[2] << std::endl;
             std::cout << "w0 - w1 - w2 = " << omega[0] - omega[1] - omega[2] << std::endl;
             std::cout << "w0 - w1 + w2 = " << omega[0] - omega[1] + omega[2] << std::endl;
@@ -207,18 +258,15 @@ void Relaxation::calc_selfenergy(const double T)
             std::cout << std::endl;
             */
 
-            self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] += std::pow(0.5, 4) * fcell / omega_prod * v_norm
+            self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] 
+            += std::pow(0.5, 4) * fcell / omega_prod * v_norm
                 * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
-                  - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
-                  + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
-                  - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
+                - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
+                + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
+                - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
 
         } while (std::next_permutation(obj.ks.begin(), obj.ks.end()));
 
-    }
-
-    for (i = 0; i < nks; ++i){
-    std::cout << "i = " << i << " " << self_E[i] << std::endl;
     }
 }
 
@@ -231,7 +279,7 @@ void Relaxation::test_delta(const double T)
 {
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
- 
+
     int i, j;
     double omega;
 

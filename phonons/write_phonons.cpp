@@ -10,11 +10,13 @@
 #include "memory.h"
 #include <iomanip>
 #include <fstream>
+#include "relaxation.h"
 
 using namespace PHON_NS;
 
 Writes::Writes(PHON *phon): Pointers(phon){
-    Ry_to_kayser = std::pow(Hz_to_kayser, 2) / (amu_ry * std::pow(time_ry, 2));
+  //  Ry_to_kayser = std::pow(Hz_to_kayser, 2) / (amu_ry * std::pow(time_ry, 2));
+    Ry_to_kayser = std::pow(Hz_to_kayser, 2) / std::pow(time_ry, 2);
 };
 
 Writes::~Writes(){};
@@ -88,13 +90,15 @@ void Writes::write_phonon_vel()
     double *kaxis = kpoint->kaxis;
     double **eval = dynamical->eval_phonon;
 
-    ofs_vel << "# k-axis, |Velocity| [Ry Bohr]" << std::endl;
+    double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
+
+    ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
     for (i = 0; i < nk; ++i){
         ofs_vel << std::setw(8) << kaxis[i];
         for (j = 0; j < nbands; ++j){
-            ofs_vel << std::setw(12) << std::abs(phonon_velocity->phvel[i][j]);
+            ofs_vel << std::setw(15) << std::abs(phonon_velocity->phvel[i][j]*Ry_to_SI_vel);
         }
         ofs_vel << std::endl;
     }
@@ -290,4 +294,33 @@ double Writes::in_kayser(const double x)
     } else {
         return std::sqrt(val);
     }
+}
+
+void Writes::write_selfenergy()
+{
+    unsigned int nband = dynamical->neval;
+    unsigned int nk = kpoint->nk;
+
+    unsigned int nks = nband*nk;
+
+    unsigned int iks;
+    std::string file_selfenergy;
+
+    std::ofstream ofs_selfenergy;
+    file_selfenergy = input->job_title + ".selfE";
+    ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
+    if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
+
+
+    ofs_selfenergy << "#k-point, branch, Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1]" << std::endl;
+    ofs_selfenergy.setf(std::ios::scientific);
+
+    for (iks = 0; iks < nks; ++iks){
+        ofs_selfenergy << std::setw(5) << iks / nband;
+        ofs_selfenergy << std::setw(5) << iks % nband;
+        ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].real()/time_ry*Hz_to_kayser; 
+        ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].imag()/time_ry*Hz_to_kayser;
+        ofs_selfenergy << std::endl;
+    }
+    ofs_selfenergy.close();
 }

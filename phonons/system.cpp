@@ -66,9 +66,11 @@ void System::setup()
 
     std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
+    // Atomic masses in Rydberg unit
+
     memory->allocate(mass, nat);
     for (i = 0; i < nat; ++i){
-        mass[i] = mass_kd[kd[i]];
+        mass[i] = mass_kd[kd[i]]*amu_ry;
     }
 }
 

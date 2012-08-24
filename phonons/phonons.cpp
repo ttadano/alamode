@@ -50,9 +50,9 @@ PHON::PHON(int narg, char **arg)
         if (kpoint->kpoint_mode == 1) {
             memory->deallocate(phonon_velocity->phvel);
         }
-
-        integration->finish_integration();
-
+        if (dos->flag_dos) {
+            integration->finish_integration();
+        }
     } else if (mode == "boltzmann") {
 
         system->setup();
@@ -65,9 +65,13 @@ PHON::PHON(int narg, char **arg)
 
         dynamical->diagonalize_dynamical_all();
         relaxation->calc_ReciprocalV();
-        relaxation->calc_selfenergy(100.0);
-        //    phonon_thermodynamics->test_fB(1000.0);
-//        relaxation->test_delta(100);
+        relaxation->calc_selfenergy();
+   //     phonon_thermodynamics->test_fB(1000.0);
+        //        relaxation->test_delta(100);
+
+     //   writes->write_selfenergy();
+        integration->finish_integration();
+        relaxation->finish_relaxation();
 
     } else {
         error->exit("phonons", "invalid mode");

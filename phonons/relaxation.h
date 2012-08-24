@@ -34,8 +34,10 @@ namespace PHON_NS {
         ~Relaxation();
 
         void setup_relaxation();
+        void finish_relaxation();
         void calc_ReciprocalV();
-        void calc_selfenergy(const double);
+        void calc_selfenergy();
+        void calc_selfenergy_at_T(const double);
 
         double *tau;
         std::complex<double> *self_E;
