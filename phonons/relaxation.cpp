@@ -80,12 +80,12 @@ void Relaxation::calc_ReciprocalV()
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
 
-    class ks {
+    class ClassKS {
     public:
         unsigned int ks1, ks2, ks3;
     };
-    std::vector<ks> kslist;
-    ks ks_tmp;
+    std::vector<ClassKS> kslist;
+    ClassKS ks_tmp;
     unsigned int ks_arr[3];
 
     unsigned int nkp;
