@@ -7,40 +7,40 @@
 
 namespace PHON_NS {
 
+    struct Triplet {
+        unsigned int atom, cell, xyz;
+    };
+
     class FcsClass {
     public:
-        std::vector<unsigned int> elems;
+        std::vector<Triplet> elems;
         double fcs_val;
 
         FcsClass(){};
         FcsClass(const FcsClass &obj){
             fcs_val = obj.fcs_val;
-            for (std::vector<unsigned int>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it){
+            for (std::vector<Triplet>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it){
                 elems.push_back(*it);
             }
         }
 
-        FcsClass(const unsigned int n, const double val, const unsigned int *arr)
+        FcsClass(const unsigned int n, const double val, const Triplet *arr)
         {
             fcs_val = val;
             for (unsigned int i = 0; i < n; ++i){
                 elems.push_back(arr[i]);
             }
         }
-        
-        FcsClass(const double val, const std::vector<unsigned int> vec)
+
+        FcsClass(const double val, const std::vector<Triplet> vec)
         {
             fcs_val = val;
-            for (std::vector<unsigned int>::const_iterator it = vec.begin(); it != vec.end(); ++it){
+            for (std::vector<Triplet>::const_iterator it = vec.begin(); it != vec.end(); ++it){
                 elems.push_back(*it);
             }
         }
-        
-    };
 
-    inline bool operator<(const FcsClass a, const FcsClass b){
-        return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
-    }
+    };
 
     class Fcs_phonon: protected Pointers {
     public:
@@ -52,7 +52,6 @@ namespace PHON_NS {
         std::string file_fcs;
         double ****fc2;
         std::vector<FcsClass> *force_constant;
-        std::set<FcsClass> *fcs_set;
 
     private:
         void load_fc2();

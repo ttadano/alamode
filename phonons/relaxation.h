@@ -57,6 +57,8 @@ namespace PHON_NS {
         std::complex<double> delta_lorentz(const double);
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
+        double **vec_s;
+        double *mass_p;
         double epsilon;
         double mat_convert[3][3];
         double freq2(const double);

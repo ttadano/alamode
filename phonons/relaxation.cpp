@@ -18,8 +18,8 @@ using namespace PHON_NS;
 Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
     epsilon = 2.5/Hz_to_kayser*time_ry;
-//    epsilon = 2.5*1.0e-1/Hz_to_kayser*time_ry;
-//    std::cout << "epsilon = " << epsilon << std::endl;
+    //    epsilon = 2.5*1.0e-1/Hz_to_kayser*time_ry;
+    //    std::cout << "epsilon = " << epsilon << std::endl;
 }
 
 Relaxation::~Relaxation(){};
@@ -39,9 +39,22 @@ void Relaxation::setup_relaxation()
         for (j = 0; j < 3; ++j){
             mat_convert[i][j] = 0.0;
             for (k = 0; k < 3; ++k){
-                mat_convert[i][j] += system->lavec_s[i][k] * system->rlavec_p[k][j]; 
+                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s[k][j]; 
             }
         }
+    }
+
+    memory->allocate(vec_s, system->ntran, 3);
+    memory->allocate(mass_p, system->natmin);
+
+    for (i = 0; i < system->ntran; ++i){
+        for (j = 0; j < 3; ++j){
+            vec_s[i][j] = system->xr_s[system->map_p2s[0][i]][j];
+        }
+    }
+
+    for (i = 0; i < system->natmin; ++i){
+        mass_p[i] = system->mass[system->map_p2s[i][0]];
     }
 }
 
@@ -51,6 +64,8 @@ void Relaxation::finish_relaxation()
     memory->deallocate(V);
     memory->deallocate(self_E);
     memory->deallocate(tau);
+    memory->deallocate(vec_s);
+    memory->deallocate(mass_p);
 }
 
 void Relaxation::calc_ReciprocalV()
@@ -71,8 +86,6 @@ void Relaxation::calc_ReciprocalV()
 
     std::cout << std::endl;
     std::cout << "Calculating force constants in reciprocal space .." << std::endl;
-
-    double omega[3], omega_prod;
 
     for (k1 = 0; k1 < nk; ++k1){
         for (k2 = 0; k2 < nk; ++k2){
@@ -120,10 +133,8 @@ void Relaxation::calc_ReciprocalV()
 std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int ks2, const unsigned int ks3)
 {
     unsigned int i;
-    unsigned int ind[3], atmn[3], crdn[3];
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
-    unsigned int atm_p1, atm_s1, atm_s2;
     unsigned int nband = dynamical->neval;
 
     double mass_prod, phase, omega_prod;
@@ -142,53 +153,34 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
     b1 = ks1 % nband;
     b2 = ks2 % nband;
     b3 = ks3 % nband;
-    
+
     omega[0] = freq2(dynamical->eval_phonon[k1][b1]);
     omega[1] = freq2(dynamical->eval_phonon[k2][b2]);
     omega[2] = freq2(dynamical->eval_phonon[k3][b3]);
     omega_prod = omega[0] * omega[1] * omega[2];
 
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
-
-        for (i = 0; i < 3; ++i) {
-            ind[i] = (*it).elems[i];
-            atmn[i] = ind[i] / 3;
-            crdn[i] = ind[i] % 3;
-        }
-        
-        atm_p1 = system->map_p2s[0][system->map_s2p[atmn[0]].tran_num];
-        atm_s1 = system->map_p2s[0][system->map_s2p[atmn[1]].tran_num];
-        atm_s2 = system->map_p2s[0][system->map_s2p[atmn[2]].tran_num];
-
+        FcsClass fcs = *it;
+ 
         for (i = 0; i < 3; ++i){
-            vec1[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_p1][i];
-            vec2[i] = system->xr_s[atm_s2][i] - system->xr_s[atm_p1][i];
+            vec1[i] = vec_s[fcs.elems[1].cell][i] - vec_s[fcs.elems[0].cell][i];
+            vec2[i] = vec_s[fcs.elems[2].cell][i] - vec_s[fcs.elems[0].cell][i];
             vec1[i] = dynamical->fold(vec1[i]);
             vec2[i] = dynamical->fold(vec2[i]);
         }
 
-        system->rotvec(vec1, vec1, system->lavec_s);
-        system->rotvec(vec1, vec1, system->rlavec_p);
-        system->rotvec(vec2, vec2, system->lavec_s);
-        system->rotvec(vec2, vec2, system->rlavec_p);
-/*
         system->rotvec(vec1, vec1, mat_convert);
         system->rotvec(vec2, vec2, mat_convert);
-*/
-        phase = vec1[0] * kpoint->xk[k2][0] 
-              + vec1[1] * kpoint->xk[k2][1] 
-              + vec1[2] * kpoint->xk[k2][2]
-              + vec2[0] * kpoint->xk[k3][0] 
-              + vec2[1] * kpoint->xk[k3][1]  
-              + vec2[2] * kpoint->xk[k3][2];
-
-        mass_prod = system->mass[atmn[0]] * system->mass[atmn[1]] * system->mass[atmn[2]];
+        
+        phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
+              + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
+   
+        mass_prod = mass_p[fcs.elems[0].atom] * mass_p[fcs.elems[1].atom] * mass_p[fcs.elems[2].atom];
 
         ret += (*it).fcs_val * std::exp(im * phase) / std::sqrt(mass_prod)
-            * dynamical->evec_phonon[k1][b1][3 * system->map_s2p[atmn[0]].atom_num + crdn[0]]
-            * dynamical->evec_phonon[k2][b2][3 * system->map_s2p[atmn[1]].atom_num + crdn[1]]
-            * dynamical->evec_phonon[k3][b3][3 * system->map_s2p[atmn[2]].atom_num + crdn[2]];
-
+            * dynamical->evec_phonon[k1][b1][3 * fcs.elems[0].atom + fcs.elems[0].xyz]
+            * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
+            * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
     }
 
     return ret/std::sqrt(omega_prod);
@@ -250,12 +242,10 @@ void Relaxation::calc_selfenergy_at_T(const double T)
     double v_norm;
 
     unsigned int *ind, *knum, *snum;
-    double *omega, omega_prod;
+    double *omega;
     double n1, n2;
 
     double fcell = 1.0 / static_cast<double>(system->ntran);
-
-    unsigned int iks;
 
     memory->allocate(ind, 3);
     memory->allocate(knum, 3);
@@ -281,22 +271,24 @@ void Relaxation::calc_selfenergy_at_T(const double T)
             n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
             n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
 
+            /*
             iks = nband * kpoint->knum_minus[knum[0]] + snum[0];
             if (iks >= 3 && iks <= 5) {
-                std::cout << "knum = " << iks;
-                std::cout << " ,-k1s1, k2s2, k3s3 = ";
-                std::cout << std::setw(5) << knum[0] << std::setw(5) << snum[0];
-                std::cout << std::setw(5) << knum[1] << std::setw(5) << snum[1];
-                std::cout << std::setw(5) << knum[2] << std::setw(5) << snum[2];
-                std::cout << std::setw(15) << obj.v.real();
-                std::cout << std::setw(15) << obj.v.imag() << std::endl;
+            std::cout << "knum = " << iks;
+            std::cout << " ,-k1s1, k2s2, k3s3 = ";
+            std::cout << std::setw(5) << knum[0] << std::setw(5) << snum[0];
+            std::cout << std::setw(5) << knum[1] << std::setw(5) << snum[1];
+            std::cout << std::setw(5) << knum[2] << std::setw(5) << snum[2];
+            std::cout << std::setw(15) << obj.v.real();
+            std::cout << std::setw(15) << obj.v.imag() << std::endl;
             }
+            */
             self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] 
-                += std::pow(0.5, 4) * fcell * v_norm
+            += std::pow(0.5, 4) * fcell * v_norm
                 * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
-                    - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
-                    + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
-                    - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
+                - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
+                + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
+                - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
 
         } while (std::next_permutation(obj.ks.begin(), obj.ks.end()));
 
@@ -313,7 +305,7 @@ void Relaxation::test_delta(const double T)
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
-    int i, j;
+    int i;
     double omega;
 
     for (i = -1000; i <= 1000; ++i){
@@ -324,7 +316,7 @@ void Relaxation::test_delta(const double T)
 
 double Relaxation::freq2(const double x) 
 {
-    if (std::abs(x) < eps15) return 0.0;
+    //  if (std::abs(x) < eps15) return 0.0;
     if (x >= 0.0) {
         return std::sqrt(x);
     } else {

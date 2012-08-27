@@ -38,7 +38,6 @@ void Fcs_phonon::setup(std::string mode)
 
     if (mode == "boltzmann"){
         memory->allocate(force_constant, 2);
-        memory->allocate(fcs_set, 2);
         load_fcs();
         for (i = 0; i < maxorder; ++i){
             std::cout << "Number of non-zero IFCs for " << i + 2 << " order: ";
@@ -98,12 +97,14 @@ void Fcs_phonon::load_fcs()
 
     double val;
 
-    unsigned int atmn, crdn;
+    unsigned int atmn, xyz;
     std::string str_int;
     unsigned int len;
     unsigned int *ind;
 
+    Triplet tri_tmp;
     std::vector<unsigned int> ivec;
+    std::vector<Triplet> tri_vec;
 
     bool flag_found;
     std::ifstream ifs_fcs;
@@ -149,17 +150,24 @@ void Fcs_phonon::load_fcs()
                         ifs_fcs >> str_int;
                         len = str_int.size();
                         atmn = atoi(str_int.substr(0, len - 1).c_str()) - 1;
-                        crdn = coordinate_index(str_int[len - 1]);
-                        ind[i] = 3 * atmn + crdn;
-                        ivec.push_back(ind[i]);
+                        xyz = coordinate_index(str_int[len - 1]);
+                        ivec.push_back(3 * atmn + xyz);
                     }
 
                     if (std::abs(val) > eps) {
-
-                        fcs_set[iorder].insert(FcsClass(iorder + 2, val, ind));
-
                         do {
-                            force_constant[iorder].push_back(FcsClass(val, ivec));
+                            tri_vec.clear();
+
+                            for (i = 0; i < iorder + 2; ++i){
+                                tri_tmp.atom = system->map_s2p[ivec[i] / 3].atom_num;
+                                tri_tmp.cell = system->map_s2p[ivec[i] / 3].tran_num;
+                                tri_tmp.xyz  = ivec[i] % 3;
+
+                                tri_vec.push_back(tri_tmp);
+                            }
+
+                            force_constant[iorder].push_back(FcsClass(val, tri_vec));
+                       
                         } while (std::next_permutation(ivec.begin() + 1, ivec.end()));            
                     }
                 }
