@@ -53,6 +53,10 @@ namespace PHON_NS {
         void test_delta(const double);
 
     private:
+        struct StructKS {
+        public:
+            unsigned int ks1, ks2, ks3;
+        };
         std::vector<ReciprocalVs> *V;
         std::complex<double> delta_lorentz(const double);
         std::complex<double> im;
