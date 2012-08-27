@@ -12,6 +12,8 @@
 #include "error.h"
 #include "write_phonons.h"
 #include "../alm_c++/constants.h"
+#include <iostream>
+#include "system.h"
 
 
 using namespace PHON_NS;
@@ -30,10 +32,16 @@ void Conductivity::setup_kl()
     memory->allocate(vel, nk, ns, 3);
     memory->allocate(func, nk);
 
-    unsigned int i;
+    unsigned int i, j, k;
 
     for (i = 0; i < nk; ++i){
         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel[i]);
+
+        // Generate phonon velocity in cartesian coordinate
+        for (j = 0; j < ns; ++j){
+            system->rotvec(vel[i][j], vel[i][j], system->lavec_p, 'T');
+            for (k = 0; k < 3; ++k) vel[i][j][k] /= 2.0 * pi;
+        }
     }
 }
 
@@ -48,7 +56,7 @@ void Conductivity::gen_tau(const double T)
     for (i = 0; i < nk; ++i){
         for (j = 0; j < ns; ++j){
             tau[i][j] = 1.0 / (2.0 * relaxation->self_E[k++].imag());
-            tau[i][j] = 1.0;
+            tau[i][j] = 1.0e-12 / time_ry;
         }
     }
 }
@@ -108,7 +116,7 @@ void Conductivity::calc_kl_at_T(const double T)
             eval[is][ik] = writes->in_kayser(dynamical->eval_phonon[ik][is]);
         }
     }
-    std::cout << "Cv, v_i, v_j, tau" << std::endl;
+
     for (i = 0; i < 3; ++i){
 
         for (j = 0; j < 3; ++j){
@@ -116,16 +124,20 @@ void Conductivity::calc_kl_at_T(const double T)
             kl[i][j] = 0.0;
 
             for (is = 0; is < ns; ++is){
-                std::cout << "is = " << is << std::endl;
+
                 for (ik = 0; ik < nk; ++ik){
                     func[ik] =  phonon_thermodynamics->Cv(phonon_velocity->freq(dynamical->eval_phonon[ik][is]), T) 
                         * vel[ik][is][i] * vel[ik][is][j] * tau[ik][is];
-                    std::cout << "ik = " << ik << " " << phonon_thermodynamics->Cv(phonon_velocity->freq(dynamical->eval_phonon[ik][is]), T) << " ";
-                    std::cout << vel[ik][is][i] << " " << vel[ik][is][j] << " " << tau[ik][is] << std::endl;
+
+                    kl[i][j] += func[ik];
                 }
-                for (iomega = 0; iomega < nomega; ++iomega){
-                    kl[i][j] += domega*integration->do_tetrahedron(eval[is], func, omega_min + domega*static_cast<double>(iomega));
+                //            for (ik = 0; ik < nk; ++ik){
+                //               kl[i][j] += integration->do_tetrahedron(eval[is], func, phonon_velocity->freq(dynamical->eval_phonon[ik][is]));
+                //          }
+                /*        for (iomega = 0; iomega < nomega; ++iomega){
+                kl[i][j] += domega*integration->do_tetrahedron(eval[is], func, omega_min + domega*static_cast<double>(iomega));
                 }
+                */
             }
             kl[i][j] /= Bohr_in_Angstrom * 1.0e-10 * time_ry * static_cast<double>(nk);
         }

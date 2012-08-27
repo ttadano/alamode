@@ -12,12 +12,13 @@
 #include "phonon_velocity.h"
 #include "parsephon.h"
 #include "error.h"
+#include <vector>
 
 using namespace PHON_NS;
 
 Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
-  
+
     //    epsilon = 2.5*1.0e-1/Hz_to_kayser*time_ry;
     //    std::cout << "epsilon = " << epsilon << std::endl;
 }
@@ -78,7 +79,17 @@ void Relaxation::calc_ReciprocalV()
     unsigned int i;
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
-    unsigned int ks_tmp[3];
+
+    struct ks {
+        unsigned int ks1, ks2, ks3;
+    };
+    std::vector<ks> kslist;
+    ks ks_tmp;
+    unsigned int ks_arr[3];
+
+    unsigned int nkp;
+
+    int ik;
 
     double xk_tmp[3], xk_norm;
     std::complex<double> prod;
@@ -87,6 +98,10 @@ void Relaxation::calc_ReciprocalV()
 
     std::cout << std::endl;
     std::cout << "Calculating force constants in reciprocal space .." << std::endl;
+
+    nkp = 0;
+
+    kslist.clear();
 
     for (k1 = 0; k1 < nk; ++k1){
         for (k2 = 0; k2 < nk; ++k2){
@@ -109,24 +124,36 @@ void Relaxation::calc_ReciprocalV()
                     for (b2 = 0; b2 < nband; ++b2){
                         for (b3 = 0; b3 < nband; ++b3){
 
-                            ks_tmp[0] = nband * k1 + b1;
-                            ks_tmp[1] = nband * k2 + b2;
-                            ks_tmp[2] = nband * k3 + b3;
+                            ks_tmp.ks1 = nband * k1 + b1;
+                            ks_tmp.ks2 = nband * k2 + b2;
+                            ks_tmp.ks3 = nband * k3 + b3;
 
-                            if (ks_tmp[0] > ks_tmp[1] || ks_tmp[1] > ks_tmp[2]) continue;
+                            if (ks_tmp.ks1 > ks_tmp.ks2 || ks_tmp.ks2 > ks_tmp.ks3) continue;
 
-                            prod = V3(ks_tmp[0], ks_tmp[1], ks_tmp[2]);
-
-                            // Add to list
-                            if (std::abs(prod) > eps15) {
-                                V[0].push_back(ReciprocalVs(prod, ks_tmp, 3));
-                            }
+                            kslist.push_back(ks_tmp);
                         }
                     }
                 }
             }
         }
     }
+    nkp = kslist.size();
+#pragma omp parallel for private(ks_arr, prod) schedule(static)
+    for (ik = 0; ik < nkp; ++ik){
+
+        ks_arr[0] = kslist[ik].ks1;
+        ks_arr[1] = kslist[ik].ks2;
+        ks_arr[2] = kslist[ik].ks3;
+        prod = V3(ks_arr[0], ks_arr[1], ks_arr[2]);
+
+        // Add to list
+        if (std::abs(prod) > eps15) {
+#pragma omp critical
+            V[0].push_back(ReciprocalVs(prod, ks_arr, 3));
+        }
+    }
+
+    kslist.clear();
     std::cout << "Done !" << std::endl;
     std::cout << "Number of nonzero V's: " << V[0].size() << std::endl;
 }
@@ -162,7 +189,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
 
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
         FcsClass fcs = *it;
- 
+
         for (i = 0; i < 3; ++i){
             vec1[i] = vec_s[fcs.elems[1].cell][i] - vec_s[fcs.elems[0].cell][i];
             vec2[i] = vec_s[fcs.elems[2].cell][i] - vec_s[fcs.elems[0].cell][i];
@@ -172,16 +199,16 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
 
         system->rotvec(vec1, vec1, mat_convert);
         system->rotvec(vec2, vec2, mat_convert);
-        
+
         phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
-              + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
-   
+        + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
+
         mass_prod = mass_p[fcs.elems[0].atom] * mass_p[fcs.elems[1].atom] * mass_p[fcs.elems[2].atom];
 
         ret += (*it).fcs_val * std::exp(im * phase) / std::sqrt(mass_prod)
             * dynamical->evec_phonon[k1][b1][3 * fcs.elems[0].atom + fcs.elems[0].xyz]
-            * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
-            * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
+        * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
+        * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
     }
 
     return ret/std::sqrt(omega_prod);
