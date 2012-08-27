@@ -80,7 +80,8 @@ void Relaxation::calc_ReciprocalV()
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
 
-    struct ks {
+    class ks {
+    public:
         unsigned int ks1, ks2, ks3;
     };
     std::vector<ks> kslist;
