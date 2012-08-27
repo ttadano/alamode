@@ -9,6 +9,8 @@
 #include <string>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include "relaxation.h"
+#include "conductivity.h"
 
 using namespace PHON_NS;
 
@@ -93,6 +95,8 @@ void Input::read_input_boltzmann()
 
     string file_fcs;
     double lavec[3][3];
+    double epsilon;
+    double Tmin, Tmax, dT;
 
     unsigned int i, j;
 
@@ -100,11 +104,22 @@ void Input::read_input_boltzmann()
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
     cin >> file_fcs;
+    cin >> epsilon;
+    cin >> Tmin >> Tmax >> dT;
+
+    if (Tmin > Tmax) {
+        error->exit("read_input_boltzmann", "Tmin is bigger than Tmax");
+    }
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
-        system->lavec_p[i][j] = lavec[i][j];
+            system->lavec_p[i][j] = lavec[i][j];
         }
     }
     fcs_phonon->file_fcs = file_fcs;
+    relaxation->epsilon = epsilon;
+
+    conductivity->Tmin = Tmin;
+    conductivity->Tmax = Tmax;
+    conductivity->dT = dT;
 }

@@ -47,8 +47,8 @@ namespace PHON_NS {
         void calc_selfenergy();
         void calc_selfenergy_at_T(const double);
 
-        double *tau;
         std::complex<double> *self_E;
+        double epsilon;
 
         void test_delta(const double);
 
@@ -59,7 +59,6 @@ namespace PHON_NS {
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         double **vec_s;
         double *mass_p;
-        double epsilon;
         double mat_convert[3][3];
         double freq2(const double);
     };

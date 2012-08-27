@@ -14,6 +14,7 @@
 #include "phonon_dos.h"
 #include "integration.h"
 #include "relaxation.h"
+#include "conductivity.h"
 
 using namespace PHON_NS;
 
@@ -70,6 +71,8 @@ PHON::PHON(int narg, char **arg)
         dynamical->diagonalize_dynamical_all();
         relaxation->calc_ReciprocalV();
         relaxation->calc_selfenergy();
+        conductivity->setup_kl();
+        conductivity->calc_kl();
    //     phonon_thermodynamics->test_fB(1000.0);
         //        relaxation->test_delta(100);
 
@@ -102,6 +105,7 @@ void PHON::create_pointers()
     phonon_velocity = new Phonon_velocity(this);
     phonon_thermodynamics = new Phonon_thermodynamics(this);
     relaxation = new Relaxation(this);
+    conductivity = new Conductivity(this);
     writes = new Writes(this);
     dos = new Dos(this);
 }
@@ -118,6 +122,7 @@ void PHON::destroy_pointers()
     delete phonon_velocity;
     delete phonon_thermodynamics;
     delete relaxation;
+    delete conductivity;
     delete writes;
     delete dos;
 }

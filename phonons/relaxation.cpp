@@ -17,7 +17,7 @@ using namespace PHON_NS;
 
 Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
-    epsilon = 2.5/Hz_to_kayser*time_ry;
+  
     //    epsilon = 2.5*1.0e-1/Hz_to_kayser*time_ry;
     //    std::cout << "epsilon = " << epsilon << std::endl;
 }
@@ -31,7 +31,6 @@ void Relaxation::setup_relaxation()
 
     memory->allocate(V, 1);
     memory->allocate(self_E, nk*nband);
-    memory->allocate(tau, nk*nband);
 
     unsigned int i, j, k;
 
@@ -56,6 +55,8 @@ void Relaxation::setup_relaxation()
     for (i = 0; i < system->natmin; ++i){
         mass_p[i] = system->mass[system->map_p2s[i][0]];
     }
+
+    epsilon *= time_ry / Hz_to_kayser;
 }
 
 void Relaxation::finish_relaxation()
@@ -63,7 +64,7 @@ void Relaxation::finish_relaxation()
     V[0].clear();
     memory->deallocate(V);
     memory->deallocate(self_E);
-    memory->deallocate(tau);
+
     memory->deallocate(vec_s);
     memory->deallocate(mass_p);
 }
