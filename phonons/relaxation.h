@@ -26,6 +26,14 @@ namespace PHON_NS {
                 ks.push_back(*it);
             }
         }
+
+        ReciprocalVs(const std::complex<double> val, const unsigned int *vec, const unsigned int n)
+        {
+            v = val;
+            for (unsigned int i = 0; i < n; ++i){
+                ks.push_back(vec[i]);
+            }
+        }
     };
 
     class Relaxation: protected Pointers {
@@ -48,6 +56,9 @@ namespace PHON_NS {
         std::vector<ReciprocalVs> *V;
         std::complex<double> delta_lorentz(const double);
         std::complex<double> im;
+        std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         double epsilon;
+        double mat_convert[3][3];
+        double freq2(const double);
     };
 }

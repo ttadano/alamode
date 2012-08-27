@@ -44,6 +44,7 @@ void Phonon_velocity::calc_phonon_vel_band()
 
     memory->allocate(xk_tmp, 3);
 
+
     for (ik = 0; ik < nk; ++ik){
 
         // Represent the given kpoint in cartesian coordinate
@@ -154,6 +155,3 @@ double Phonon_velocity::freq(const double x)
         return std::sqrt(-x);
     }
 }
-
-
-

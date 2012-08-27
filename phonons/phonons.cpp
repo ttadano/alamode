@@ -31,11 +31,14 @@ PHON::PHON(int narg, char **arg)
         fcs_phonon->setup(mode);
         dos->setup();
 
+
         dynamical->setup_dynamical(mode);
+
         dynamical->diagonalize_dynamical_all();
 
         // Calculate the group velocity of phonons along given direction in
         // the reciprocal space.
+
         if (kpoint->kpoint_mode == 1) phonon_velocity->calc_phonon_vel_band();
 
         if (dos->flag_dos) {
@@ -53,6 +56,7 @@ PHON::PHON(int narg, char **arg)
         if (dos->flag_dos) {
             integration->finish_integration();
         }
+
     } else if (mode == "boltzmann") {
 
         system->setup();
