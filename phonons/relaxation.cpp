@@ -18,9 +18,6 @@ using namespace PHON_NS;
 
 Relaxation::Relaxation(PHON *phon): Pointers(phon) {
     im = std::complex<double>(0.0, 1.0);
-
-    //    epsilon = 2.5*1.0e-1/Hz_to_kayser*time_ry;
-    //    std::cout << "epsilon = " << epsilon << std::endl;
 }
 
 Relaxation::~Relaxation(){};
@@ -239,7 +236,7 @@ void Relaxation::calc_selfenergy()
     ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
     if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
 
-    ofs_selfenergy << "#Temperature, k-point, branch, Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1]" << std::endl;
+    ofs_selfenergy << "#Temperature, k-point, branch, Energy [cm^-1], Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1], Tau [ps]" << std::endl;
     ofs_selfenergy.setf(std::ios::scientific);
 
     for (i = 0; i < NT; ++i){
@@ -249,8 +246,10 @@ void Relaxation::calc_selfenergy()
             ofs_selfenergy << std::setw(5) << T;
             ofs_selfenergy << std::setw(5) << iks / nband;
             ofs_selfenergy << std::setw(5) << iks % nband;
-            ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].real()/time_ry*Hz_to_kayser; 
-            ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].imag()/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::setw(15) << freq2(dynamical->eval_phonon[iks/nband][iks%nband])/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
+            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::setw(15) << 1.0e+12/(2.0 * self_E[iks].imag())*time_ry;
             ofs_selfenergy << std::endl;
         }
         ofs_selfenergy << std::endl;

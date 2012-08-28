@@ -56,7 +56,7 @@ void Conductivity::gen_tau(const double T)
     for (i = 0; i < nk; ++i){
         for (j = 0; j < ns; ++j){
             tau[i][j] = 1.0 / (2.0 * relaxation->self_E[k++].imag());
-            tau[i][j] = 1.0e-12 / time_ry;
+         //   tau[i][j] = 1.0e-12 / time_ry;
         }
     }
 }
@@ -131,15 +131,8 @@ void Conductivity::calc_kl_at_T(const double T)
 
                     kl[i][j] += func[ik];
                 }
-                //            for (ik = 0; ik < nk; ++ik){
-                //               kl[i][j] += integration->do_tetrahedron(eval[is], func, phonon_velocity->freq(dynamical->eval_phonon[ik][is]));
-                //          }
-                /*        for (iomega = 0; iomega < nomega; ++iomega){
-                kl[i][j] += domega*integration->do_tetrahedron(eval[is], func, omega_min + domega*static_cast<double>(iomega));
-                }
-                */
             }
-            kl[i][j] /= Bohr_in_Angstrom * 1.0e-10 * time_ry * static_cast<double>(nk);
+            kl[i][j] /= Bohr_in_Angstrom * 1.0e-10 * time_ry * static_cast<double>(nk) * system->volume_p;
         }
 
     }

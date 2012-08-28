@@ -14,6 +14,7 @@ namespace PHON_NS {
         double lavec_s[3][3], rlavec_s[3][3];
         double lavec_p[3][3], rlavec_p[3][3];
         double **xr_p, **xr_s, **xc;
+        double volume_p;
 
         unsigned int nat, natmin, ntran;
         unsigned int *kd, nkd;
@@ -30,6 +31,7 @@ namespace PHON_NS {
         double *mass_kd, *mass;
 
         void rotvec(double [3], double [3], double [3][3], char mode = 'N');
+        double volume(double [3], double [3], double [3]);
 
     private:
         void load_system_info();

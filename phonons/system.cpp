@@ -64,6 +64,16 @@ void System::setup()
     std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
     std::cout << std::endl << std::endl;
 
+    double vec_tmp[3][3];
+
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
+        vec_tmp[i][j] = lavec_p[j][i];
+        }
+    }
+    volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
+
+    std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
     std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
     // Atomic masses in Rydberg unit
@@ -184,4 +194,16 @@ void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char 
     } else {
         error->exit("rotvec", "invalid input valiable for mode");
     }
+}
+
+
+double System::volume(double vec1[3], double vec2[3], double vec3[3])
+{
+    double vol;
+
+    vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
+                 + vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
+                 + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
+
+    return vol;
 }
