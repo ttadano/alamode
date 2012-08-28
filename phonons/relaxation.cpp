@@ -13,6 +13,7 @@
 #include "parsephon.h"
 #include "error.h"
 #include <vector>
+#include "conductivity.h"
 
 using namespace PHON_NS;
 
@@ -211,11 +212,9 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
 
 void Relaxation::calc_selfenergy()
 {
-    double Tmin, Tmax, dT;
-
-    Tmin = 1.0;
-    Tmax = 2.0;
-    dT= 1.0;
+    double Tmin = conductivity->Tmin;
+    double Tmax = conductivity->Tmax;
+    double dT = conductivity->dT;
 
     unsigned int NT= static_cast<unsigned int>((Tmax - Tmin) / dT);
 
