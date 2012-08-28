@@ -48,17 +48,16 @@ namespace PHON_NS {
         void calc_selfenergy_at_T(const double);
 
         std::complex<double> *self_E;
+       // double *self_E2;
         double epsilon;
 
-        void test_delta(const double);
-
-    private:
+     private:
         struct StructKS {
         public:
             unsigned int ks1, ks2, ks3;
         };
         std::vector<ReciprocalVs> *V;
-        std::complex<double> delta_lorentz(const double);
+        double delta_lorentz(const double);
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         double **vec_s;

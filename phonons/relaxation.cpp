@@ -30,6 +30,7 @@ void Relaxation::setup_relaxation()
 
     memory->allocate(V, 1);
     memory->allocate(self_E, nk*nband);
+ //   memory->allocate(self_E2, nk*nband);
 
     unsigned int i, j, k;
 
@@ -63,6 +64,7 @@ void Relaxation::finish_relaxation()
     V[0].clear();
     memory->deallocate(V);
     memory->deallocate(self_E);
+  //  memory->deallocate(self_E2);
 
     memory->deallocate(vec_s);
     memory->deallocate(mass_p);
@@ -78,7 +80,7 @@ void Relaxation::calc_ReciprocalV()
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
 
-    
+
     std::vector<StructKS> kslist;
     StructKS ks_tmp;
     unsigned int ks_arr[3];
@@ -133,7 +135,9 @@ void Relaxation::calc_ReciprocalV()
             }
         }
     }
+
     nkp = kslist.size();
+
 #pragma omp parallel for private(ks_arr, prod) schedule(static)
     for (ik = 0; ik < nkp; ++ik){
 
@@ -203,8 +207,8 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
 
         ret += (*it).fcs_val * std::exp(im * phase) / std::sqrt(mass_prod)
             * dynamical->evec_phonon[k1][b1][3 * fcs.elems[0].atom + fcs.elems[0].xyz]
-        * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
-        * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
+            * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
+            * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
     }
 
     return ret/std::sqrt(omega_prod);
@@ -271,6 +275,9 @@ void Relaxation::calc_selfenergy_at_T(const double T)
 
     double fcell = 1.0 / static_cast<double>(system->ntran);
 
+    double tmp;
+    std::complex<double> ctmp;
+
     memory->allocate(ind, 3);
     memory->allocate(knum, 3);
     memory->allocate(snum, 3);
@@ -278,8 +285,10 @@ void Relaxation::calc_selfenergy_at_T(const double T)
 
     nks = nk * nband;
 
-    for (i = 0; i < nks; ++i) self_E[i] = 0.0;
-
+    for (i = 0; i < nks; ++i) {
+        self_E[i] = (0.0, 0.0);
+     //   self_E2[i] = 0.0;
+    }
     for (std::vector<ReciprocalVs>::iterator it = V[0].begin(); it != V[0].end(); ++it){
         ReciprocalVs obj = *it;
         v_norm = std::norm(obj.v);
@@ -307,35 +316,37 @@ void Relaxation::calc_selfenergy_at_T(const double T)
             std::cout << std::setw(15) << obj.v.imag() << std::endl;
             }
             */
-            self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] 
-            += std::pow(0.5, 4) * fcell * v_norm
+
+            ctmp =  std::pow(0.5, 4) * fcell * v_norm
                 * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
                 - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
                 + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
                 - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
+
+            self_E[nband * kpoint->knum_minus[knum[0]] + snum[0]] += ctmp;
+
+            /*
+            tmp = pi * std::pow(0.5, 4) * fcell * v_norm
+            * ( - n1 * delta_lorentz(omega[0] + omega[1] + omega[2])
+            + n1 * delta_lorentz(omega[0] - omega[1] - omega[2])
+            - n2 * delta_lorentz(omega[0] - omega[1] + omega[2])
+            + n2 * delta_lorentz(omega[0] + omega[1] - omega[2]));
+
+            self_E2[nband * kpoint->knum_minus[knum[0]] + snum[0]] += tmp; 
+
+            if (std::abs(tmp-ctmp.imag()) > eps) {
+            std::cout << tmp - ctmp.imag() << std::endl;
+            }
+            */
 
         } while (std::next_permutation(obj.ks.begin(), obj.ks.end()));
 
     }
 }
 
-std::complex<double> Relaxation::delta_lorentz(const double omega)
+double Relaxation::delta_lorentz(const double omega)
 {
-    return 1.0 / (omega - im*epsilon);
-}
-
-void Relaxation::test_delta(const double T)
-{
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-
-    int i;
-    double omega;
-
-    for (i = -1000; i <= 1000; ++i){
-        omega = static_cast<double>(i) * 0.1;
-        std::cout << "omega = " << omega << ", delta(omega)= " << delta_lorentz(omega).real() << " " << delta_lorentz(omega).imag() << std::endl;
-    }
+    return epsilon / (omega*omega + epsilon*epsilon) / pi;
 }
 
 double Relaxation::freq2(const double x) 
