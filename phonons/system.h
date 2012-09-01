@@ -30,6 +30,8 @@ namespace PHON_NS {
         std::string *symbol_kd;
         double *mass_kd, *mass;
 
+        double Tmin, Tmax, dT;
+
         void rotvec(double [3], double [3], double [3][3], char mode = 'N');
         double volume(double [3], double [3], double [3]);
 

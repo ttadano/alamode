@@ -53,6 +53,7 @@ void Input::read_input_phonons()
 
     string file_born;
     double na_sigma;
+    double Tmin, Tmax, dT;
 
     unsigned int i, j;
 
@@ -63,6 +64,7 @@ void Input::read_input_phonons()
 
     cin >> eigenvectors >> writeanime >> nonanalytic;
     cin >> nbands;
+    cin >> Tmin >> Tmax >> dT;
     cin >> kpoint_mode;
     if(nonanalytic) cin >> file_born >> na_sigma;
 
@@ -86,6 +88,12 @@ void Input::read_input_phonons()
 
     fcs_phonon->file_fcs = file_fcs;
     kpoint->kpoint_mode = kpoint_mode;
+
+    if (Tmin > Tmax) error->exit("read_input_phonon", "Tmin is larger than Tmax");
+
+    system->Tmin = Tmin;
+    system->Tmax = Tmax;
+    system->dT = dT;
 
 }
 

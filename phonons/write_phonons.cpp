@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <fstream>
 #include "relaxation.h"
+#include "phonon_thermodynamics.h"
 
 using namespace PHON_NS;
 
@@ -36,6 +37,7 @@ void Writes::write_phonon_info()
 
     if(dos->flag_dos) {
         write_phonon_dos();
+        write_heatcapacity();
     }
 
     if(writeanime) {
@@ -323,4 +325,39 @@ void Writes::write_selfenergy()
         ofs_selfenergy << std::endl;
     }
     ofs_selfenergy.close();
+}
+
+void Writes::write_heatcapacity()
+{
+    unsigned int i, NT;
+    double Tmin = system->Tmin;
+    double Tmax = system->Tmax;
+    double dT = system->dT;
+
+    double T, TD;
+    std::string file_cv;
+
+    NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+
+    std::ofstream ofs_cv;
+    file_cv = input->job_title + ".heatcapacity";
+    ofs_cv.open(file_cv.c_str(), std::ios::out);
+    if(!ofs_cv) error->exit("write_heatcapacity", "cannot open file_cv");
+    ofs_cv << "# Temperature [K], Internal Energy [Ry], Heat Capacity / kB" << std::endl;
+    
+    TD = 1000.0;
+    phonon_thermodynamics->Debye_T(Tmax, TD);
+    std::cout << "TD = " << TD << std::endl;
+
+    for (i = 0; i <= NT; ++i){
+        T = Tmin + dT * static_cast<double>(i);
+ //       phonon_thermodynamics->Debye_T(T, TD);
+
+        ofs_cv << std::setw(15) << T;
+        ofs_cv << std::setw(15) << phonon_thermodynamics->Internal_Energy(T);
+        ofs_cv << std::setw(15) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann << std::endl;
+ //       ofs_cv << std::setw(15) << TD << std::endl;
+    }
+
+    ofs_cv.close();
 }
