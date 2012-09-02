@@ -32,9 +32,7 @@ PHON::PHON(int narg, char **arg)
         fcs_phonon->setup(mode);
         dos->setup();
 
-
         dynamical->setup_dynamical(mode);
-
         dynamical->diagonalize_dynamical_all();
 
         // Calculate the group velocity of phonons along given direction in
@@ -64,11 +62,11 @@ PHON::PHON(int narg, char **arg)
         kpoint->kpoint_setups();
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
+        dynamical->diagonalize_dynamical_all();
 
         integration->setup_integration();
         relaxation->setup_relaxation();
 
-        dynamical->diagonalize_dynamical_all();
         relaxation->calc_ReciprocalV();
         relaxation->calc_selfenergy();
         conductivity->setup_kl();

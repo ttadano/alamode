@@ -14,6 +14,7 @@
 #include "error.h"
 #include <vector>
 #include "conductivity.h"
+#include "write_phonons.h"
 
 using namespace PHON_NS;
 
@@ -30,7 +31,7 @@ void Relaxation::setup_relaxation()
 
     memory->allocate(V, 1);
     memory->allocate(self_E, nk*nband);
- //   memory->allocate(self_E2, nk*nband);
+    //   memory->allocate(self_E2, nk*nband);
 
     unsigned int i, j, k;
 
@@ -56,6 +57,17 @@ void Relaxation::setup_relaxation()
         mass_p[i] = system->mass[system->map_p2s[i][0]];
     }
 
+    double domega_min;
+
+    domega_min = 10000.0;
+
+    domega_min = std::min(domega_min, writes->in_kayser(dynamical->eval_phonon[1][0]));
+    domega_min = std::min(domega_min, writes->in_kayser(dynamical->eval_phonon[kpoint->nkz][0]));
+    domega_min = std::min(domega_min, writes->in_kayser(dynamical->eval_phonon[kpoint->nkz*kpoint->nky][0]));
+
+    std::cout << "Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
+    std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl;
+
     epsilon *= time_ry / Hz_to_kayser;
 }
 
@@ -64,7 +76,7 @@ void Relaxation::finish_relaxation()
     V[0].clear();
     memory->deallocate(V);
     memory->deallocate(self_E);
-  //  memory->deallocate(self_E2);
+    //  memory->deallocate(self_E2);
 
     memory->deallocate(vec_s);
     memory->deallocate(mass_p);
@@ -207,8 +219,8 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
 
         ret += (*it).fcs_val * std::exp(im * phase) / std::sqrt(mass_prod)
             * dynamical->evec_phonon[k1][b1][3 * fcs.elems[0].atom + fcs.elems[0].xyz]
-            * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
-            * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
+        * dynamical->evec_phonon[k2][b2][3 * fcs.elems[1].atom + fcs.elems[1].xyz]
+        * dynamical->evec_phonon[k3][b3][3 * fcs.elems[2].atom + fcs.elems[2].xyz];
     }
 
     return ret/std::sqrt(omega_prod);
@@ -287,7 +299,7 @@ void Relaxation::calc_selfenergy_at_T(const double T)
 
     for (i = 0; i < nks; ++i) {
         self_E[i] = (0.0, 0.0);
-     //   self_E2[i] = 0.0;
+        //   self_E2[i] = 0.0;
     }
     for (std::vector<ReciprocalVs>::iterator it = V[0].begin(); it != V[0].end(); ++it){
         ReciprocalVs obj = *it;
