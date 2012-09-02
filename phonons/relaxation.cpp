@@ -113,6 +113,20 @@ void Relaxation::calc_ReciprocalV()
 
     kslist.clear();
 
+    unsigned int arr[3];
+    arr[0] = 4; arr[1] = 4; arr[2] = 5;
+    std::cout << "V[4, 4, 5] = " << V3new(arr) << std::endl;
+    std::cout << "V[4, 4, 5] = " << V3(4, 4, 5) << std::endl;
+    arr[0] = 4; arr[1] = 5; arr[2] = 4;
+    std::cout << "V[4, 5, 4] = " << V3new(arr) << std::endl;
+    std::cout << "V[4, 5, 4] = " << V3(4, 5, 4) << std::endl;
+    arr[0] = 5; arr[1] = 4; arr[2] = 4;
+    std::cout << "V[5, 4, 4] = " << V3new(arr) << std::endl;
+    std::cout << "V[5, 4, 4] = " << V3(5, 4, 4) << std::endl;
+
+
+    error->exit("hoge", "tomare!");
+
     for (k1 = 0; k1 < nk; ++k1){
         for (k2 = 0; k2 < nk; ++k2){
             for (k3 = 0; k3 < nk; ++k3){
@@ -184,7 +198,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
     std::vector<FcsClass>::iterator it;
     std::complex<double> ret, tmp;
 
-    ret = (0.0, 0.0);
+    ret = std::complex<double>(0.0, 0.0);
 
     k1 = ks1 / nband;
     k2 = ks2 / nband;
@@ -224,6 +238,86 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
     }
 
     return ret/std::sqrt(omega_prod);
+}
+
+std::complex<double> Relaxation::V3new(const unsigned int ks[3])
+{
+    std::complex<double> ret(0.0, 0.0);
+
+    unsigned int i;
+
+    unsigned int kn[3];
+    unsigned int sn[3];
+    unsigned int ns = dynamical->neval;
+
+    double xk_tmp[3], xk_norm;
+    double omega[3], omega_prod;
+
+    double mass_prod;
+    double phase;
+    double vec1[3], vec2[3];
+
+    std::vector<FcsClass>::iterator it;
+    std::complex<double> ctmp;
+
+
+    for (i = 0; i < 3; ++i){
+        kn[i] = ks[i] / ns;
+        sn[i] = ks[i] % ns;
+    }
+
+    xk_tmp[0] = kpoint->xk[kn[0]][0] + kpoint->xk[kn[1]][0] + kpoint->xk[kn[2]][0];
+    xk_tmp[1] = kpoint->xk[kn[0]][1] + kpoint->xk[kn[1]][1] + kpoint->xk[kn[2]][1];
+    xk_tmp[2] = kpoint->xk[kn[0]][2] + kpoint->xk[kn[1]][2] + kpoint->xk[kn[2]][2];
+
+    for (i = 0; i < 3; ++i){
+        xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+    }
+    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+ 
+
+    // If the momentum-conservation is not satisfied, we skip the loop.
+
+    if (std::sqrt(xk_norm) <= eps15) {
+
+        for (i = 0; i < 3; ++i){
+            omega[i] = freq2(dynamical->eval_phonon[kn[i]][sn[i]]);
+        }
+
+        for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
+            FcsClass fcs = *it;
+
+            for (i = 0; i < 3; ++i){
+                vec1[i] = vec_s[fcs.elems[1].cell][i] - vec_s[fcs.elems[0].cell][i];
+                vec2[i] = vec_s[fcs.elems[2].cell][i] - vec_s[fcs.elems[0].cell][i];
+                vec1[i] = dynamical->fold(vec1[i]);
+                vec2[i] = dynamical->fold(vec2[i]);
+            }
+
+            system->rotvec(vec1, vec1, mat_convert);
+            system->rotvec(vec2, vec2, mat_convert);
+
+            phase = 0.0;
+            ctmp = std::complex<double>(1.0, 0.0);
+            mass_prod = 1.0;
+
+     
+            for (i = 0; i < 3; ++i){
+                phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
+                mass_prod *= mass_p[fcs.elems[i].atom];
+                ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * fcs.elems[i].atom + fcs.elems[i].xyz];
+   //             std::cout << "e = " << dynamical->evec_phonon[kn[i]][sn[i]][3 * fcs.elems[i].atom + fcs.elems[i].xyz];
+    //            std::cout << "ctmp = " << ctmp << std::endl;
+            }
+            
+            ret += (*it).fcs_val * std::exp(im * phase) * ctmp / std::sqrt(mass_prod);
+
+        }
+
+        ret /= std::sqrt(omega[0] * omega[1] * omega[2]);
+    }
+
+    return ret;
 }
 
 void Relaxation::calc_selfenergy()
@@ -298,7 +392,7 @@ void Relaxation::calc_selfenergy_at_T(const double T)
     nks = nk * nband;
 
     for (i = 0; i < nks; ++i) {
-        self_E[i] = (0.0, 0.0);
+        self_E[i] = std::complex<double>(0.0, 0.0);
         //   self_E2[i] = 0.0;
     }
     for (std::vector<ReciprocalVs>::iterator it = V[0].begin(); it != V[0].end(); ++it){
