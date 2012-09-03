@@ -68,13 +68,10 @@ PHON::PHON(int narg, char **arg)
         relaxation->setup_relaxation();
 
   //      relaxation->calc_ReciprocalV();
-        relaxation->calc_selfenergy();
+  //      relaxation->calc_selfenergy();
         conductivity->setup_kl();
         conductivity->calc_kl();
-   //     phonon_thermodynamics->test_fB(1000.0);
-        //        relaxation->test_delta(100);
 
-     //   writes->write_selfenergy();
         integration->finish_integration();
         relaxation->finish_relaxation();
 

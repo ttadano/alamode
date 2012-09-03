@@ -47,6 +47,7 @@ namespace PHON_NS {
         void calc_selfenergy();
         void calc_selfenergy_at_T(const double);
         std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
+        std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> *self_E;
         double epsilon;
 
