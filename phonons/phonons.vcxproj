@@ -37,10 +37,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\boost\boost_1_47;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <IncludePath>C:\boost\boost_1_47;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>C:\boost\boost_1_47\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <LibraryPath>C:\boost\boost_1_47\lib;C:\eigen_c++\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>C:\boost\boost_1_47;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
@@ -90,6 +90,7 @@
     <ClCompile Include="phonon_thermodynamics.cpp" />
     <ClCompile Include="phonon_velocity.cpp" />
     <ClCompile Include="relaxation.cpp" />
+    <ClCompile Include="symmetry_core.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="write_phonons.cpp" />
@@ -109,6 +110,7 @@
     <ClInclude Include="phonon_velocity.h" />
     <ClInclude Include="pointers.h" />
     <ClInclude Include="relaxation.h" />
+    <ClInclude Include="symmetry_core.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="write_phonons.h" />

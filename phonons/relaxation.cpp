@@ -234,8 +234,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     unsigned int sn[3];
     unsigned int ns = dynamical->neval;
 
-    double omega[3], omega_prod;
-
+    double omega[3];
     double mass_prod;
     double phase;
     double vec1[3], vec2[3];
@@ -310,14 +309,14 @@ void Relaxation::calc_selfenergy()
 
     for (i = 0; i <= NT; ++i){
         T = Tmin + dT * static_cast<double>(i);
-//        calc_selfenergy_at_T(T);
+        //        calc_selfenergy_at_T(T);
         for (iks = 0; iks < nks; ++iks){
             ofs_selfenergy << std::setw(5) << T;
             ofs_selfenergy << std::setw(5) << iks / nband;
             ofs_selfenergy << std::setw(5) << iks % nband;
             ofs_selfenergy << std::setw(15) << freq2(dynamical->eval_phonon[iks/nband][iks%nband])/time_ry*Hz_to_kayser;
-//            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
-//            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
+            //            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
+            //            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
             self_E[iks] = selfenergy(T, freq2(dynamical->eval_phonon[iks/nband][iks%nband]), iks/nband, iks%nband);
             ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser;
             ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
@@ -376,7 +375,8 @@ std::complex<double> Relaxation::selfenergy(const double T, const double omega, 
 #pragma omp parallel private(ik, jk, is, js)
     {
 
-        unsigned int iks, jks, iks2;
+        int iks2;
+        unsigned int iks, jks;
         unsigned int arr[3];
         double xk_tmp[3], xk_norm;
         double omega_inner[2];
@@ -389,39 +389,39 @@ std::complex<double> Relaxation::selfenergy(const double T, const double omega, 
         arr[0] = ns * kpoint->knum_minus[knum] + snum;
 
 #pragma omp for reduction (+:ret_re, ret_im)
-            for (iks2 = 0; iks2 < nks*nks; ++iks2){
-                iks = iks2 / nks;
-                jks = iks2 % nks;
-                ik = iks / ns;
-                is = iks % ns;
-                jk = jks / ns;
-                js = jks % ns;
+        for (iks2 = 0; iks2 < nks*nks; ++iks2){
+            iks = iks2 / nks;
+            jks = iks2 % nks;
+            ik = iks / ns;
+            is = iks % ns;
+            jk = jks / ns;
+            js = jks % ns;
 
-                arr[1] = iks;
-                arr[2] = jks;
+            arr[1] = iks;
+            arr[2] = jks;
 
-                xk_tmp[0] = kpoint->xk[knum_inv][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
-                xk_tmp[1] = kpoint->xk[knum_inv][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
-                xk_tmp[2] = kpoint->xk[knum_inv][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+            xk_tmp[0] = kpoint->xk[knum_inv][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
+            xk_tmp[1] = kpoint->xk[knum_inv][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
+            xk_tmp[2] = kpoint->xk[knum_inv][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
 
-                for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
-                xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
-                if (std::sqrt(xk_norm) > eps15) continue; 
+            for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+            xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+            if (std::sqrt(xk_norm) > eps15) continue; 
 
-                omega_inner[0] = freq2(dynamical->eval_phonon[ik][is]);
-                omega_inner[1] = freq2(dynamical->eval_phonon[jk][js]);
-                n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
-                n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
+            omega_inner[0] = freq2(dynamical->eval_phonon[ik][is]);
+            omega_inner[1] = freq2(dynamical->eval_phonon[jk][js]);
+            n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
+            n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
 
-                ctmp =  std::norm(V3new(arr))
-                    * ( n1 / (omega + omega_inner[0] + omega_inner[1] + im * epsilon)
-                        - n1 / (omega - omega_inner[0] - omega_inner[1] + im * epsilon) 
-                        + n2 / (omega - omega_inner[0] + omega_inner[1] + im * epsilon)
-                        - n2 / (omega + omega_inner[0] - omega_inner[1] + im * epsilon));
-        
-                ret_re += ctmp.real();
-                ret_im += ctmp.imag();
-            }
+            ctmp =  std::norm(V3new(arr))
+                * ( n1 / (omega + omega_inner[0] + omega_inner[1] + im * epsilon)
+                - n1 / (omega - omega_inner[0] - omega_inner[1] + im * epsilon) 
+                + n2 / (omega - omega_inner[0] + omega_inner[1] + im * epsilon)
+                - n2 / (omega + omega_inner[0] - omega_inner[1] + im * epsilon));
+
+            ret_re += ctmp.real();
+            ret_im += ctmp.imag();
+        }
     }
 
     return (ret_re + im * ret_im) * std::pow(0.5, 4) / static_cast<double>(system->ntran); 
@@ -440,20 +440,18 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
 
     unsigned int i;
     unsigned int knum_inv;
-    double ret_re, ret_im;
 
     nks = nk * ns;
     knum_inv = kpoint->knum_minus[knum];
 
-        unsigned int iks, jks, iks2;
-        unsigned int arr[3];
-        double xk_tmp[3], xk_norm;
-        double omega_inner[2];
-        double n1, n2;
+    unsigned int arr[3];
+    double xk_tmp[3], xk_norm;
+    double omega_inner[2];
+    double n1, n2;
 
-        std::complex<double> ctmp;
+    std::complex<double> ctmp;
 
-        arr[0] = ns * kpoint->knum_minus[knum] + snum;
+    arr[0] = ns * kpoint->knum_minus[knum] + snum;
 
     for (ik = 0; ik < nk; ++ik){
         for (jk = 0; jk < nk; ++jk){
@@ -482,9 +480,9 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
 
                     ctmp =  std::norm(V3new(arr))
                         * ( n1 / (omega + omega_inner[0] + omega_inner[1] + im * epsilon)
-                            - n1 / (omega - omega_inner[0] - omega_inner[1] + im * epsilon) 
-                            + n2 / (omega - omega_inner[0] + omega_inner[1] + im * epsilon)
-                            - n2 / (omega + omega_inner[0] - omega_inner[1] + im * epsilon));
+                        - n1 / (omega - omega_inner[0] - omega_inner[1] + im * epsilon) 
+                        + n2 / (omega - omega_inner[0] + omega_inner[1] + im * epsilon)
+                        - n2 / (omega + omega_inner[0] - omega_inner[1] + im * epsilon));
 
                     ret += ctmp;
                 }

@@ -84,13 +84,17 @@ void Conductivity::calc_kl_at_T(const double T)
 {
     unsigned int i, j;
     unsigned int is, ik;
+    unsigned int jk;
     double omega;
 
-    for (ik = 0; ik < nk; ++ik){
+    jk = 0;
+
+    for (ik = 0; ik < kpoint->nk_equiv.size(); ++ik){
         for (is = 0; is < ns; ++is){
-            omega = phonon_velocity->freq(dynamical->eval_phonon[ik][is]);
-            tau[ik][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, ik, is).imag());
+            omega = phonon_velocity->freq(dynamical->eval_phonon[jk][is]);
+            tau[jk][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, jk, is).imag());
         }
+        jk += kpoint->nk_equiv[ik];
     }
 
     for (i = 0; i < 3; ++i){
@@ -98,13 +102,16 @@ void Conductivity::calc_kl_at_T(const double T)
 
             kl[i][j] = 0.0;
 
-            for (ik = 0; ik < nk; ++ik){
+            //   for (ik = 0; ik < nk; ++ik){
+            jk = 0;
+            for (ik = 0; ik < kpoint->nk_equiv.size(); ++ik){
                 for (is = 0; is < ns; ++is){
 
-                    omega = phonon_velocity->freq(dynamical->eval_phonon[ik][is]);
+                    omega = phonon_velocity->freq(dynamical->eval_phonon[jk][is]);
 
-                    kl[i][j] += phonon_thermodynamics->Cv(omega, T) * vel[ik][is][i] * vel[ik][is][j] * tau[ik][is];
+                    kl[i][j] += kpoint->weight_k[ik] * phonon_thermodynamics->Cv(omega, T) * vel[jk][is][i] * vel[jk][is][j] * tau[jk][is];
                 }
+                jk += kpoint->nk_equiv[ik];
             }
             kl[i][j] /= Bohr_in_Angstrom * 1.0e-10 * time_ry * static_cast<double>(nk) * system->volume_p;
         }

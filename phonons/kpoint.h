@@ -11,7 +11,7 @@ namespace PHON_NS {
     public:
         std::vector<double> kval;
         unsigned int knum;
-        
+
         KpointList(){};
         KpointList(const KpointList &obj){
             knum = obj.knum;
@@ -27,60 +27,49 @@ namespace PHON_NS {
                 kval.push_back(*it);
             }
         }
-        
+
     };
 
     inline bool operator<(const KpointList a, const KpointList b){
-
-        bool flag = true;
-        std::vector<double>::const_iterator first1, first2, last1, last2;
-
-        first1 = a.kval.begin();
-        first2 = b.kval.begin();
-        last1 = a.kval.end();
-        last2 = b.kval.end();
-
-        while (first1 != last1)
-        {
-            if (first2 == last2 || *first2 < *first1) { 
-                return false;
-            } else if (*first1 < *first2) {
-                return true;
-            }
-            ++first1;
-            ++first2;
-        }
-        return first2 != last2;
-
-/*        for (unsigned int i = 0; i < a.kval.size(); ++i){
-            flag = flag && (a.kval[i] < b.kval[i]) && (std::abs(a.kval[i] - b.kval[i]) > eps12);
-        }
-        return flag;
-*/
+        return std::lexicographical_compare(a.kval.begin(), a.kval.end(), b.kval.begin(), b.kval.end());
     }
-    
+
+    inline bool operator==(const KpointList a, const KpointList b){
+        double tmp = 0.0;
+        for (unsigned int i = 0; i < 3; ++i){
+            tmp += std::pow(a.kval[i] - b.kval[i], 2);
+        }
+        return std::sqrt(tmp) < eps;
+    }
+
     class Kpoint: protected Pointers {
     public:
         Kpoint(class PHON *);
         ~Kpoint();
 
-      void kpoint_setups();
+        void kpoint_setups();
+        void reduce_kpoints();
 
-      int kpoint_mode;
-      unsigned int nkx, nky, nkz;
-      
-      unsigned int npath, nk;
+        int kpoint_mode;
+        unsigned int nkx, nky, nkz;
 
-      unsigned int *knum_minus;
+        unsigned int npath, nk;
 
-      double **xk;
-      double **kpoint_direction;
-      double *kaxis;
+        unsigned int *knum_minus;
+
+        double **xk;
+        double **kpoint_direction;
+        double *kaxis;
+
+        std::vector<KpointList> kpIBZ;
+        std::vector<unsigned int> nk_equiv;
+        std::vector<double> weight_k;
 
     private:
         void gen_kpoints_band();
         void gen_kmesh();
         void gen_nkminus();
+       
         std::string **kp_symbol;
         double ***kp_bound;
         unsigned int *nkp;

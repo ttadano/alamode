@@ -10,6 +10,7 @@ namespace PHON_NS
         class Timer *timer;
         class Input *input;
         class System *system;
+        class Symmetry *symmetry;
         class Kpoint *kpoint;
         class Integration *integration;
         class Fcs_phonon *fcs_phonon;

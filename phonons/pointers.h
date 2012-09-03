@@ -12,6 +12,7 @@ namespace PHON_NS {
           error(ptr->error),
           input(ptr->input),
           system(ptr->system),
+          symmetry(ptr->symmetry),
           kpoint(ptr->kpoint),
           integration(ptr->integration),
           fcs_phonon(ptr->fcs_phonon),
@@ -30,6 +31,7 @@ namespace PHON_NS {
         Error *&error;
         Input *&input;
         System *&system;
+        Symmetry *&symmetry;
         Kpoint *&kpoint;
         Integration *&integration;
         Fcs_phonon *&fcs_phonon;

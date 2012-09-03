@@ -11,6 +11,7 @@
 #include <boost/algorithm/string.hpp>
 #include "relaxation.h"
 #include "conductivity.h"
+#include "symmetry_core.h"
 
 using namespace PHON_NS;
 
@@ -56,7 +57,9 @@ void Input::read_input_phonons()
     double Tmin, Tmax, dT;
 
     unsigned int i, j;
+    unsigned int nsym, nnp;
 
+    cin >> nsym >> nnp;
     for (i = 0; i < 3; ++i){
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
@@ -69,6 +72,9 @@ void Input::read_input_phonons()
     if(nonanalytic) cin >> file_born >> na_sigma;
 
     // distribute input parameters to each class
+
+    symmetry->nsym = nsym;
+    symmetry->nnp = nnp;
 
     for (i = 0; i < 3; ++i){
         for(j = 0; j < 3; ++j){
@@ -107,7 +113,9 @@ void Input::read_input_boltzmann()
     double Tmin, Tmax, dT;
 
     unsigned int i, j;
+    unsigned int nsym, nnp;
 
+    cin >> nsym >> nnp;
     for (i = 0; i < 3; ++i) {
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
@@ -118,6 +126,9 @@ void Input::read_input_boltzmann()
     if (Tmin > Tmax) {
         error->exit("read_input_boltzmann", "Tmin is bigger than Tmax");
     }
+
+    symmetry->nsym = nsym;
+    symmetry->nnp = nnp;
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){

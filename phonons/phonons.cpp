@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "error.h"
 #include "system.h"
+#include "symmetry_core.h"
 #include "kpoint.h"
 #include "fcs_phonon.h"
 #include "dynamical.h"
@@ -28,6 +29,7 @@ PHON::PHON(int narg, char **arg)
     if (mode == "phonons") {
 
         system->setup();
+        symmetry->setup_symmetry();
         kpoint->kpoint_setups();
         fcs_phonon->setup(mode);
         dos->setup();
@@ -59,6 +61,7 @@ PHON::PHON(int narg, char **arg)
     } else if (mode == "boltzmann") {
 
         system->setup();
+        symmetry->setup_symmetry();
         kpoint->kpoint_setups();
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
@@ -93,6 +96,7 @@ void PHON::create_pointers()
     memory = new Memory(this);
     error = new Error(this);
     system = new System(this);
+    symmetry = new Symmetry(this);
     kpoint = new Kpoint(this);
     fcs_phonon = new Fcs_phonon(this);
     dynamical = new Dynamical(this);
@@ -110,6 +114,7 @@ void PHON::destroy_pointers()
     delete memory;
     delete error;
     delete system;
+    delete symmetry;
     delete kpoint;
     delete fcs_phonon;
     delete dynamical;
