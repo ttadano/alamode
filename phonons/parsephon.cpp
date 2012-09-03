@@ -127,7 +127,7 @@ void Input::read_input_boltzmann()
     fcs_phonon->file_fcs = file_fcs;
     relaxation->epsilon = epsilon;
 
-    conductivity->Tmin = Tmin;
-    conductivity->Tmax = Tmax;
-    conductivity->dT = dT;
+    system->Tmin = Tmin;
+    system->Tmax = Tmax;
+    system->dT = dT;
 }

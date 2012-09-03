@@ -67,7 +67,7 @@ PHON::PHON(int narg, char **arg)
         integration->setup_integration();
         relaxation->setup_relaxation();
 
-        relaxation->calc_ReciprocalV();
+  //      relaxation->calc_ReciprocalV();
         relaxation->calc_selfenergy();
         conductivity->setup_kl();
         conductivity->calc_kl();

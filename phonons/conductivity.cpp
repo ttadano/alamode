@@ -75,7 +75,7 @@ void Conductivity::calc_kl()
 
     ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
 
-    for (iT = 0; iT < NT; ++iT){
+    for (iT = 0; iT <= NT; ++iT){
         T = Tmin + dT * static_cast<double>(iT);
         gen_tau(T);
         calc_kl_at_T(T);

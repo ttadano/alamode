@@ -46,9 +46,8 @@ namespace PHON_NS {
         void calc_ReciprocalV();
         void calc_selfenergy();
         void calc_selfenergy_at_T(const double);
-
+        std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> *self_E;
-       // double *self_E2;
         double epsilon;
 
      private:
@@ -60,7 +59,7 @@ namespace PHON_NS {
         double delta_lorentz(const double);
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
-        std::complex<double> V3new(const unsigned int [3]);
+        inline std::complex<double> V3new(const unsigned int [3]);
         double **vec_s;
         double *mass_p;
         double mat_convert[3][3];
