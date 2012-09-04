@@ -57,6 +57,7 @@ namespace PHON_NS {
             unsigned int ks1, ks2, ks3;
         };
         std::vector<ReciprocalVs> *V;
+        void modify_eigenvectors();
         double delta_lorentz(const double);
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
@@ -64,6 +65,5 @@ namespace PHON_NS {
         double **vec_s;
         double *mass_p;
         double mat_convert[3][3];
-        double freq2(const double);
     };
 }

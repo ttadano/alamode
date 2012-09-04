@@ -133,7 +133,8 @@ void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, dou
     int i, j;
 
     int m11, m12, m13, m21, m22, m23, m31, m32, m33;
-    unsigned int det, np1, np2, np3;
+    unsigned int  np1, np2, np3;
+    int det;
 
     Eigen::Matrix3d amat, bmat;
     Eigen::Matrix3d rot2;
@@ -283,7 +284,7 @@ bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix
 bool Symmetry::is_invariant(Eigen::Matrix3d rot, unsigned int nat, unsigned int *kd, double **x, int tran[3], unsigned int nnp)
 {
 
-    unsigned int i, j, k, l;
+    int i, j, k, l;
     Eigen::Vector3d wsi, usi, vsi, tmp;
 
     bool value = true;

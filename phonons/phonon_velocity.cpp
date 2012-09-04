@@ -75,7 +75,7 @@ void Phonon_velocity::calc_phonon_vel_band()
 
         for (i = 0; i < n; ++i){
             for (idiff = 0; idiff < ndiff; ++idiff){
-                omega_tmp[idiff] = freq(omega_shift[idiff][i]);
+                omega_tmp[idiff] = dynamical->freq(omega_shift[idiff][i]);
             }
             phvel[ik][i] = diff(omega_tmp, ndiff, h);
         }
@@ -123,7 +123,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
 
         for (j = 0; j < n; ++j){
             for (idiff = 0; idiff < ndiff; ++idiff){
-                omega_tmp[idiff] = freq(omega_shift[idiff][j]);
+                omega_tmp[idiff] = dynamical->freq(omega_shift[idiff][j]);
             }
             vel_out[j][i] = diff(omega_tmp, ndiff, h);
         }
@@ -145,13 +145,4 @@ double Phonon_velocity::diff(double *f, const unsigned int n, double h)
     }
 
     return df;
-}
-
-double Phonon_velocity::freq(const double x) 
-{
-    if (x >= 0.0) {
-        return std::sqrt(x);
-    } else {
-        return std::sqrt(-x);
-    }
 }

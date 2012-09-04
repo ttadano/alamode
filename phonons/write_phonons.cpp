@@ -16,8 +16,7 @@
 using namespace PHON_NS;
 
 Writes::Writes(PHON *phon): Pointers(phon){
-  //  Ry_to_kayser = std::pow(Hz_to_kayser, 2) / (amu_ry * std::pow(time_ry, 2));
-    Ry_to_kayser = std::pow(Hz_to_kayser, 2) / std::pow(time_ry, 2);
+    Ry_to_kayser = Hz_to_kayser / time_ry;
 };
 
 Writes::~Writes(){};
@@ -263,6 +262,7 @@ void Writes::write_eigenvectors()
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     ofs_evec << "Modes and k-points information below" << std::endl;
+//    nbands = neval;
     ofs_evec << std::setw(10) << nbands;
     ofs_evec << std::setw(10) << nk << std::endl;
 
@@ -288,14 +288,7 @@ void Writes::write_eigenvectors()
 
 double Writes::in_kayser(const double x)
 {
-    double val = x;
-    val *= Ry_to_kayser;
-
-    if(val < 0.0){
-        return -std::sqrt(-val);
-    } else {
-        return std::sqrt(val);
-    }
+    return x * Ry_to_kayser;
 }
 
 void Writes::write_selfenergy()

@@ -27,6 +27,7 @@ namespace PHON_NS {
         void setup_dynamical(std::string);
 
         double fold(double);
+        double freq(const double);
 
     private:
         void calc_analytic();

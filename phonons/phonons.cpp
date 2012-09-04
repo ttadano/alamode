@@ -51,9 +51,11 @@ PHON::PHON(int narg, char **arg)
 
         memory->deallocate(dynamical->evec_phonon);
         memory->deallocate(dynamical->eval_phonon);
+
         if (kpoint->kpoint_mode == 1) {
             memory->deallocate(phonon_velocity->phvel);
         }
+
         if (dos->flag_dos) {
             integration->finish_integration();
         }
@@ -66,17 +68,19 @@ PHON::PHON(int narg, char **arg)
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
         dynamical->diagonalize_dynamical_all();
+//        writes->write_phonon_info();
 
         integration->setup_integration();
         relaxation->setup_relaxation();
 
-  //      relaxation->calc_ReciprocalV();
-  //      relaxation->calc_selfenergy();
+//        relaxation->calc_ReciprocalV();
+//        relaxation->calc_selfenergy();
         conductivity->setup_kl();
         conductivity->calc_kl();
 
         integration->finish_integration();
         relaxation->finish_relaxation();
+        conductivity->finish_kl();
 
     } else {
         error->exit("phonons", "invalid mode");
@@ -94,6 +98,7 @@ PHON::~PHON(){
 void PHON::create_pointers()
 {
     memory = new Memory(this);
+    timer = new Timer(this);
     error = new Error(this);
     system = new System(this);
     symmetry = new Symmetry(this);
@@ -112,6 +117,7 @@ void PHON::create_pointers()
 void PHON::destroy_pointers()
 {
     delete memory;
+    delete timer;
     delete error;
     delete system;
     delete symmetry;

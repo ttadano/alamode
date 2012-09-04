@@ -5,6 +5,7 @@
 #include "phonon_dos.h"
 #include "symmetry_core.h"
 #include "dynamical.h"
+#include "timer.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -39,6 +40,8 @@ void Kpoint::kpoint_setups()
         for(i = 0; i < nk; ++i){
             std::cin >> xk[i][0] >> xk[i][1] >> xk[i][2];
         };
+
+        std::cout << " Number of k-points: " << nk << std::endl << std::endl;
         break;
 
     case 1:
@@ -147,19 +150,18 @@ void Kpoint::kpoint_setups()
         for (i = 0; i < nk_equiv.size(); ++i){
             std::cout << std::setw(8) << i + 1 << ":";
             for (j = 0; j < 3; ++j){
-                std::cout << std::setw(15) << kpIBZ[ik].kval[j];
+                std::cout << std::setw(15) << std::scientific << kpIBZ[ik].kval[j];
             }
-            std::cout << std::setw(15) << weight_k[i] << std::endl;
+            std::cout << std::setw(15) << std::fixed << weight_k[i] << std::endl;
             ik += nk_equiv[i];
         }
         std::cout << std::endl;
+        std::cout.unsetf(std::ios::fixed);
 
         break;
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
     }
-
-
 }
 
 void Kpoint::gen_kpoints_band()
@@ -198,6 +200,8 @@ void Kpoint::gen_kmesh()
     unsigned int i;
     double **xkr, xk_tmp;
 
+    std::cout << "Generating uniform k-point grid ..." << std::endl;
+
     memory->allocate(xkr, nk, 3);
 
     for (ix = 0; ix < nkx; ++ix){
@@ -222,6 +226,9 @@ void Kpoint::gen_kmesh()
         }
     }
     memory->deallocate(xkr);
+
+    std::cout << "done !" << std::endl;
+    timer->print_elapsed();
 }
 
 void Kpoint::gen_nkminus()
@@ -230,9 +237,9 @@ void Kpoint::gen_nkminus()
     unsigned int ik, jk;
     double xk_tmp, norm;
     std::vector<KpointList> ksets;
-    std::set<KpointList>::iterator it;
+    std::vector<KpointList>::iterator it;
     std::vector<double> ktmp;
-    bool found_same;
+    bool *found_minus;
 
     ksets.clear();
 
@@ -247,32 +254,39 @@ void Kpoint::gen_nkminus()
         ksets.push_back(KpointList(ik, ktmp));
     }
 
+    memory->allocate(found_minus, nk);
+
+    for (ik = 0; ik < nk; ++ik) found_minus[ik] = false;
+
     for (ik = 0; ik < nk; ++ik){
 
-        found_same = false;
+        if (found_minus[ik]) continue;
 
         ktmp.clear();
         ktmp.push_back(-xk[ik][0]);
         ktmp.push_back(-xk[ik][1]);
         ktmp.push_back(-xk[ik][2]);
 
-        for (std::vector<KpointList>::const_iterator it = ksets.begin(); it != ksets.end(); ++it){
+        for (it = ksets.begin(); it != ksets.end(); ++it){
             norm = std::pow(std::fmod(ktmp[0]-(*it).kval[0], 1.0), 2) 
                 + std::pow(std::fmod(ktmp[1]-(*it).kval[1], 1.0), 2) 
                 + std::pow(std::fmod(ktmp[2]-(*it).kval[2], 1.0), 2);
 
             if (std::sqrt(norm) < eps12) {
                 knum_minus[ik] = (*it).knum;
-                found_same = true;
+                knum_minus[(*it).knum] = ik;
+                found_minus[ik] = true;
+                found_minus[(*it).knum] = true;
                 break;
             } 
         }
 
-        if (!found_same) {
+        if (!found_minus[ik]) {
             error->exit("gen_nkminus", "k-point of the inverse point is not found");
         }
     }
 
+    memory->deallocate(found_minus);
     ksets.clear();
 }
 
@@ -287,6 +301,8 @@ void Kpoint::reduce_kpoints()
     unsigned int *kequiv;
     unsigned int nsame, knum_found;
     double xk_sym[3], srot[3][3];
+
+    std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
 
     kpIBZ.clear();
     nk_equiv.clear();
@@ -359,5 +375,8 @@ void Kpoint::reduce_kpoints()
     for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
         weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
     }
-    std::cout << std::endl;
+    memory->deallocate(kequiv);
+
+    std::cout << "done !" << std::endl;
+    timer->print_elapsed();
 }

@@ -12,7 +12,6 @@ namespace PHON_NS {
        void phonon_vel_k(double *, double **);
 
        double **phvel;
-       double freq(const double);
    
     private:
         double diff(double *, const unsigned int, double);

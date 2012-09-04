@@ -51,7 +51,7 @@ void Phonon_thermodynamics::test_fB(const double T)
 
     for (i = 0; i < nk; ++i){
         for (j = 0; j < ns; ++j){
-            omega = phonon_velocity->freq(dynamical->eval_phonon[i][j]);
+            omega = dynamical->eval_phonon[i][j];
             std::cout << "omega = " << omega / (T_to_Ryd * T) << " ,fB = " << fB(omega, T) << std::endl;
         }
     }
@@ -68,7 +68,7 @@ double Phonon_thermodynamics::Cv_tot(const double T)
 
     for (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
-            omega = phonon_velocity->freq(dynamical->eval_phonon[ik][is]);
+            omega = dynamical->eval_phonon[ik][is];
             ret += Cv(omega, T);
         }
     }
@@ -145,7 +145,7 @@ double Phonon_thermodynamics::Internal_Energy(const double T)
 
     for (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
-            omega = phonon_velocity->freq(dynamical->eval_phonon[ik][is]);
+            omega = dynamical->eval_phonon[ik][is];
             ret += omega * coth_T(omega, T);
         }
     }

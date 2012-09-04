@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pointers.h"
+#include <iostream>
 #include <string>
 #include <vector>
 #include "../alm_c++/constants.h"

@@ -9,6 +9,7 @@ namespace PHON_NS {
         Conductivity(class PHON *);
         ~Conductivity();
         void setup_kl();
+        void finish_kl();
         void calc_kl();
 
         double **tau;

@@ -6,6 +6,7 @@
 #include "../alm_c++/constants.h"
 #include "fcs_phonon.h"
 #include <iomanip>
+#include "timer.h"
 
 using namespace PHON_NS;
 
@@ -127,7 +128,7 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
 
             for(icrd = 0; icrd < 3; ++icrd){
                 for(jcrd = 0; jcrd < 3; ++jcrd){
-                    ctmp[icrd][jcrd] = (0.0, 0.0);
+                    ctmp[icrd][jcrd] = std::complex<double>(0.0, 0.0);
                 }
             }
 
@@ -164,9 +165,11 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
 
 void Dynamical::diagonalize_dynamical_all()
 {
-    unsigned int ik;
+    unsigned int ik, is;
     unsigned int nk = kpoint->nk;
     bool require_evec; 
+
+    std::cout << std::endl << "Diagonalizing dynamical matrices for all k-points ..." << std::endl;
 
     memory->allocate(eval_phonon, nk, neval);
 
@@ -182,7 +185,14 @@ void Dynamical::diagonalize_dynamical_all()
 
     for (ik = 0; ik < nk; ++ik){
         eval_k(kpoint->xk[ik], eval_phonon[ik], evec_phonon[ik], require_evec);
+        
+   // Phonon energy is the square-room of the eigenvalue 
+        for (is = 0; is < neval; ++is){
+            eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
+        }
     }
+    std::cout << "done !" << std::endl;
+    timer->print_elapsed();
 }
 
 
@@ -272,12 +282,7 @@ void Dynamical::calc_analytic()
                 system->rotvec(vec, vec, system->lavec_s);
                 system->rotvec(vec, vec, system->rlavec_p);
 
-                /*  for(icrd = 0; icrd < 3; ++icrd){
-                vec[icrd] /= 2.0 * pi;
-                }*/
-
                 for (ik = 0; ik < nk; ++ik){
-                    // phase[ik] = 2.0 * pi * (vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2]);
                     phase[ik] = vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2];
                     exp_phase = std::exp(im * phase[ik]);
 
@@ -398,5 +403,14 @@ double Dynamical::fold(double x)
         } else {
             return x - 1.0;
         }
+    }
+}
+
+double Dynamical::freq(const double x) 
+{
+    if (x >= 0.0) {
+        return std::sqrt(x);
+    } else {
+        return std::sqrt(-x);
     }
 }
