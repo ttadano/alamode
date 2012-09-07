@@ -134,6 +134,27 @@ void Interaction::calc_distlist(int nat, double **xf)
             }
         }
     }
+    
+    unsigned int iat;
+    int icount;
+    std::cout << std::endl;
+    std::cout << "List of distance (in Bohr)" << std::endl;
+    for (i = 0; i < symmetry->natmin; ++i){
+        icount = 0;
+        iat = symmetry->map_p2s[i][0];
+        std::cout << std::setw(5) << iat + 1 << " (" << std::setw(3) << system->kdname[system->kd[iat]-1] << "):  ";
+        for (j = i; j < nat; ++j){
+            if (icount && icount % 6 == 0) {
+                std::cout << std::endl;
+                std::cout << "              ";
+            }
+            ++icount;
+
+            std::cout << std::setw(3) << j + 1 << "(" << std::setw(3) << system->kdname[system->kd[j]-1] << ")";
+            std::cout << std::setw(8) << distlist[i][j] << "  ";
+        }
+        std::cout << std::endl << std::endl;
+    }
 }
 
 void Interaction::search_interactions()
