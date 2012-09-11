@@ -37,6 +37,7 @@ void Writes::write_phonon_info()
     if(dos->flag_dos) {
         write_phonon_dos();
         write_heatcapacity();
+        write_phonon_vel_all();
     }
 
     if(writeanime) {
@@ -89,8 +90,6 @@ void Writes::write_phonon_vel()
     unsigned int nk = kpoint->nk;
 
     double *kaxis = kpoint->kaxis;
-    double **eval = dynamical->eval_phonon;
-
     double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
 
     ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
@@ -100,6 +99,46 @@ void Writes::write_phonon_vel()
         ofs_vel << std::setw(8) << kaxis[i];
         for (j = 0; j < nbands; ++j){
             ofs_vel << std::setw(15) << std::abs(phonon_velocity->phvel[i][j]*Ry_to_SI_vel);
+        }
+        ofs_vel << std::endl;
+    }
+
+    ofs_vel.close();
+}
+
+void Writes::write_phonon_vel_all()
+{
+    std::ofstream ofs_vel;
+
+    file_vel = input->job_title + ".phvel_all";
+    ofs_vel.open(file_vel.c_str(), std::ios::out);
+    if(!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
+
+    unsigned int i, j;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+
+    double *kaxis = kpoint->kaxis;
+    double **eval = dynamical->eval_phonon;
+
+    double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
+
+    ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
+    ofs_vel.setf(std::ios::fixed);
+
+
+    for (i = 0; i < nk; ++i){
+
+        ofs_vel << "# ik = " << std::setw(8);
+        for (j = 0; j < 3; ++j){
+           ofs_vel << std::setw(15) << kpoint->xk[i][j];
+        }
+        ofs_vel << std::endl;
+
+        for (j = 0; j < ns; ++j){
+            ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
+            ofs_vel << std::setw(15) << std::abs(phonon_velocity->phvel[i][j]*Ry_to_SI_vel);
+            ofs_vel << std::endl;
         }
         ofs_vel << std::endl;
     }

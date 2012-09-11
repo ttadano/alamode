@@ -21,6 +21,7 @@ namespace PHON_NS
 
         void write_phonon_bands();
         void write_phonon_vel();
+        void write_phonon_vel_all();
         void write_phonon_dos();
         void write_mode_anime();
         void write_eigenvectors();
