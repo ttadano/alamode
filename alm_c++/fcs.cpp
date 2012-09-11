@@ -73,11 +73,13 @@ void Fcs::read_pairs(int maxorder)
     files->ifs_int.open(files->file_int.c_str(), std::ios::out);
     if(!files->ifs_int) error->exit("read_pairs", "cannot open file_int");
 
-    for(order = 0; order < maxorder; ++order){
+    std::cout << std::endl;
 
-        std::cout << "only [1-body, ... ," 
-            << std::setw(2) << nbody_include[order] 
-        << "-body] interaction will be considered"  << std::endl;
+    for(order = 0; order < maxorder; ++order){
+        
+        std::cout << "For " << std::setw(8) << interaction->str_order[order] << ", ";
+        std::cout << "only " << std::setw(2) << nbody_include[order];
+        std::cout << "-body interaction (and below) will be considered." << std::endl;
 
         files->ifs_int >> nints[order];
         if(nints[order] == 0) continue;
@@ -151,8 +153,6 @@ void Fcs::generate_fclists(int maxorder)
 
             IntList list_tmp = *iter;
             for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
-
-
 
             for (i1 = 0; i1 < nxyz; ++i1){
                 for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
