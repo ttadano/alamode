@@ -143,6 +143,9 @@ void Fcs::generate_fclists(int maxorder)
             IntList list_tmp = *iter;
             for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
 
+            // Ignore many-body case 
+            if (nbody(order + 2, atmn) > nbody_include[i]) continue;
+
             for (i1 = 0; i1 < nxyz; ++i1){
                 for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
 
@@ -411,4 +414,18 @@ std::string Fcs::easyvizint(const int n)
     str_tmp += str_crd[crdn];
 
     return  str_tmp;
+}
+
+int Fcs::nbody(const int n, const int *arr)
+{
+    std::vector<int> v;
+    v.clear();
+
+    for (unsigned int i = 0; i < n; ++i) {
+        v.push_back(arr[i]);
+    }
+    std::sort(v.begin(), v.end());
+    v.erase(std::unique(v.begin(), v.end()), v.end());
+
+    return v.size();
 }

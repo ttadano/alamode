@@ -9,6 +9,7 @@
 #include "error.h"
 #include "fitting.h"
 #include "constraint.h"
+#include "fcs.h"
 
 using namespace ALM_NS;
 
@@ -36,6 +37,8 @@ void Input::parce_input()
     double *masskd;
     int maxorder;
     unsigned int nboot;
+
+    int *nbody_include;
 
     // Read Job prefix
     cin >> job_title;
@@ -79,6 +82,20 @@ void Input::parce_input()
                 if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", k + 1);
             }
         }
+    }
+
+    memory->allocate(nbody_include, maxorder);
+    memory->allocate(fcs->nbody_include, maxorder);
+
+    for (i = 0; i < maxorder; ++i) {
+       cin >> nbody_include[i];
+    }
+    if (nbody_include[0] != 2) {
+        error->warn("parce_input", "Harmonic interaction is always 2 body (except on-site 1 body)");
+    }
+
+    for (i = 0; i < maxorder; ++i){
+       fcs->nbody_include[i] = nbody_include[i];    
     }
 
     // Read data info used for fitting
