@@ -16,7 +16,9 @@
 using namespace ALM_NS;
 
 Fcs::Fcs(ALM *alm) : Pointers(alm){};
-Fcs::~Fcs() {};
+Fcs::~Fcs() {
+    memory->deallocate(nbody_include);
+};
 
 void Fcs::init(){
 
@@ -76,7 +78,7 @@ void Fcs::read_pairs(int maxorder)
     std::cout << std::endl;
 
     for(order = 0; order < maxorder; ++order){
-        
+
         std::cout << "For " << std::setw(8) << interaction->str_order[order] << ", ";
         std::cout << "only " << std::setw(2) << nbody_include[order];
         std::cout << "-body interaction (and below) will be considered." << std::endl;
@@ -428,6 +430,7 @@ int Fcs::nbody(const int n, const int *arr)
 {
     std::vector<int> v;
     v.clear();
+    int ret;
 
     for (unsigned int i = 0; i < n; ++i) {
         v.push_back(arr[i]);
@@ -435,5 +438,8 @@ int Fcs::nbody(const int n, const int *arr)
     std::sort(v.begin(), v.end());
     v.erase(std::unique(v.begin(), v.end()), v.end());
 
-    return v.size();
+    ret = v.size();
+    v.clear();
+
+    return ret;
 }

@@ -98,6 +98,8 @@ void Input::parce_input()
        fcs->nbody_include[i] = nbody_include[i];    
     }
 
+    memory->deallocate(nbody_include);
+
     // Read data info used for fitting
     cin >> ndata >> nstart >> nend >> nskip;
     if(ndata <= 0 || nstart <= 0 || nend <= 0 
