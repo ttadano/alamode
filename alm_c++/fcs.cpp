@@ -125,7 +125,9 @@ void Fcs::generate_fclists(int maxorder)
 
     for(order = 0; order < maxorder; ++order){
 
-        std::cout << std::setw(8) << interaction->str_order[order] << " ...";
+        std::cout << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+
+        std::cout << "only [1-body, ... , " << std::setw(3) << nbody_include[order] << "-body] interaction will be considered"  << std::endl;
 
         fc_set[order].clear();
         ndup[order].clear();
