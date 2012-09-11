@@ -74,6 +74,11 @@ void Fcs::read_pairs(int maxorder)
     if(!files->ifs_int) error->exit("read_pairs", "cannot open file_int");
 
     for(order = 0; order < maxorder; ++order){
+
+        std::cout << "only [1-body, ... ," 
+            << std::setw(2) << nbody_include[order] 
+        << "-body] interaction will be considered"  << std::endl;
+
         files->ifs_int >> nints[order];
         if(nints[order] == 0) continue;
 
@@ -83,6 +88,10 @@ void Fcs::read_pairs(int maxorder)
             for(j = 0; j < order + 2; ++j){
                 files->ifs_int >> pair_tmp[j];
             }
+
+            // Ignore many-body case 
+            if (nbody(order + 2, pair_tmp) > nbody_include[order]) continue;
+
             pairs[order].insert(IntList(order + 2, pair_tmp));
         }
         memory->deallocate(pair_tmp);
@@ -127,8 +136,6 @@ void Fcs::generate_fclists(int maxorder)
 
         std::cout << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
 
-        std::cout << "only [1-body, ... , " << std::setw(3) << nbody_include[order] << "-body] interaction will be considered"  << std::endl;
-
         fc_set[order].clear();
         ndup[order].clear();
         nmother = 0;
@@ -145,8 +152,7 @@ void Fcs::generate_fclists(int maxorder)
             IntList list_tmp = *iter;
             for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
 
-            // Ignore many-body case 
-            if (nbody(order + 2, atmn) > nbody_include[i]) continue;
+
 
             for (i1 = 0; i1 < nxyz; ++i1){
                 for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
@@ -304,7 +310,7 @@ int Fcs::min_inprim(const int n, const int *arr)
 
     for (i = 0; i < n; ++i){
 
-      ind[i] = 3 * system->nat;
+        ind[i] = 3 * system->nat;
         atmnum = arr[i] / 3;
 
         for (j = 0; j < natmin; ++j){
