@@ -40,7 +40,9 @@ PHON::PHON(int narg, char **arg)
         // Calculate the group velocity of phonons along given direction in
         // the reciprocal space.
 
-        if (kpoint->kpoint_mode == 1) phonon_velocity->calc_phonon_vel_band();
+        if (kpoint->kpoint_mode == 1)  {
+            phonon_velocity->calc_phonon_vel_band();
+        }
 
         if (dos->flag_dos) {
             integration->setup_integration();

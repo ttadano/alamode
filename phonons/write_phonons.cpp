@@ -114,7 +114,7 @@ void Writes::write_phonon_vel_all()
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if(!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
 
-    unsigned int i, j;
+    unsigned int i, j, k;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
@@ -122,10 +122,13 @@ void Writes::write_phonon_vel_all()
     double **eval = dynamical->eval_phonon;
 
     double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
+    double **vel;
 
+    memory->allocate(vel, ns, 3);
+   
+    
     ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
-
 
     for (i = 0; i < nk; ++i){
 
@@ -135,15 +138,24 @@ void Writes::write_phonon_vel_all()
         }
         ofs_vel << std::endl;
 
+        phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
+
+         for (j = 0; j < ns; ++j){
+            system->rotvec(vel[j], vel[j], system->lavec_p, 'T');
+            for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
+        }
+
         for (j = 0; j < ns; ++j){
             ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
-            ofs_vel << std::setw(15) << std::abs(phonon_velocity->phvel[i][j]*Ry_to_SI_vel);
+            ofs_vel << std::setw(15) << std::sqrt(std::pow(vel[j][0], 2) + std::pow(vel[j][1], 2) + std::pow(vel[j][2], 2))*Ry_to_SI_vel;
             ofs_vel << std::endl;
         }
         ofs_vel << std::endl;
     }
 
     ofs_vel.close();
+
+    memory->deallocate(vel);
 }
 
 void Writes::write_phonon_dos()
