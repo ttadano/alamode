@@ -56,14 +56,18 @@ namespace PHON_NS {
         public:
             unsigned int ks1, ks2, ks3;
         };
+        unsigned int nk, ns, nks;
         std::vector<ReciprocalVs> *V;
         void modify_eigenvectors();
         double delta_lorentz(const double);
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         inline std::complex<double> V3new(const unsigned int [3]);
+        inline std::complex<double> V3new2(const unsigned int [3]);
         double **vec_s;
         double *mass_p;
         double mat_convert[3][3];
+
+        double ***fc3;
     };
 }

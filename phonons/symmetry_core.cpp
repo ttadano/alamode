@@ -11,6 +11,8 @@ using namespace PHON_NS;
 
 Symmetry::Symmetry(PHON *phon): Pointers(phon){
     file_sym = "SYMM_INFO_PRIM";
+//    time_reversal_sym = true;
+    time_reversal_sym = false;
 }
 Symmetry::~Symmetry(){}
 
@@ -306,7 +308,7 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, unsigned int nat, unsigned int 
                 for (k = 0; k < 3; ++k) { 
                     vsi(k) = x[j][k];
                     tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
-                    // need "std" to specify floating point operation
+                    // Need "std" to specify floating point operation
                     // especially for intel compiler (there was no problem in MSVC)
                     tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
                 }

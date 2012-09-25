@@ -136,7 +136,7 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 atm_s2 =system->map_p2s[j][itran];
 
                 for(icrd = 0; icrd < 3; ++icrd){
-                    vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
+                    vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
                     vec[icrd] = fold(vec[icrd]);
                 }
 
@@ -146,6 +146,11 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
 
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
+
+                if (std::abs(exp_phase.real()) < 1.0e-14) exp_phase.real() = 0.0;
+                if (std::abs(exp_phase.imag()) < 1.0e-14) exp_phase.imag() = 0.0;
+
+//                std::cout << "phase = " << exp_phase << std::endl;
 
                 for (icrd = 0; icrd < 3; ++icrd){
                     for (jcrd = 0; jcrd < 3; ++jcrd){
@@ -394,15 +399,12 @@ void Dynamical::diagonalize_dynamical()
 
 double Dynamical::fold(double x)
 {
-    double xabs = std::abs(x);
-    if(xabs <= 0.5){
+    if (x >= -0.5 && x < 0.5) {
         return x;
+    } else if (x < 0.0) {
+        return x + 1.0;
     } else {
-        if(x < 0.0) {
-            return x + 1.0;
-        } else {
-            return x - 1.0;
-        }
+        return x - 1.0;
     }
 }
 
@@ -411,6 +413,10 @@ double Dynamical::freq(const double x)
     if (x >= 0.0) {
         return std::sqrt(x);
     } else {
-        return std::sqrt(-x);
+        if (std::abs(x) < eps) {
+            return std::sqrt(-x);
+        } else { 
+            return -std::sqrt(-x);
+        }
     }
 }

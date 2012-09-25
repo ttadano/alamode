@@ -11,6 +11,8 @@
 #include <cmath>
 #include <set>
 #include <numeric>
+#include <Eigen/Core>
+#include <Eigen/LU>
 
 using namespace PHON_NS;
 
@@ -25,6 +27,7 @@ Kpoint::~Kpoint() {
 void Kpoint::kpoint_setups()
 {
     unsigned int i, j;
+    symmetry->symmetry_flag = false;
 
     if (phon->mode == "boltzmann") kpoint_mode = 3;
 
@@ -121,7 +124,7 @@ void Kpoint::kpoint_setups()
         dos->emax = emax;
         dos->delta_e = delta_e;
 
-        gen_kmesh();
+        gen_kmesh(symmetry->symmetry_flag);
         std::cout << " nkx: " << std::setw(6) << nkx;
         std::cout << " nky: " << std::setw(6) << nky;
         std::cout << " nkz: " << std::setw(6) << nkz;
@@ -133,17 +136,16 @@ void Kpoint::kpoint_setups()
         std::cin >> nkx >> nky >> nkz;
         nk = nkx * nky * nkz;
         memory->allocate(xk, nk, 3);
-        gen_kmesh();
+        symmetry->symmetry_flag = true;
+        gen_kmesh(symmetry->symmetry_flag);
         memory->allocate(knum_minus, nk);
         gen_nkminus();
-        reduce_kpoints();
 
         std::cout << " nkx: " << std::setw(6) << nkx;
         std::cout << " nky: " << std::setw(6) << nky;
         std::cout << " nkz: " << std::setw(6) << nkz;
         std::cout << std::endl;
         std::cout << " Number of irreducible k-points: " << nk_equiv.size() << std::endl << std::endl;
-
         std::cout << "#k-points (in unit of reciprocal vector), weights" << std::endl;
         
         ik = 0;
@@ -156,8 +158,8 @@ void Kpoint::kpoint_setups()
             ik += nk_equiv[i];
         }
         std::cout << std::endl;
-        std::cout.unsetf(std::ios::fixed);
 
+        std::cout.unsetf(std::ios::fixed);
         break;
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
@@ -194,7 +196,7 @@ void Kpoint::gen_kpoints_band()
     }
 }
 
-void Kpoint::gen_kmesh()
+void Kpoint::gen_kmesh(bool usesym)
 {
     unsigned int ix, iy, iz, ik;
     unsigned int i;
@@ -215,19 +217,17 @@ void Kpoint::gen_kmesh()
         }
     }
 
+    if (usesym) {
+        reduce_kpoints(xkr);
+    }
+
     for (ik = 0; ik < nk; ++ik){
         for (i = 0; i < 3; ++i){
-            if (xkr[ik][i] >= 0.5){
-                xk_tmp = 1.0;
-            } else {
-                xk_tmp = 0.0;
-            }
-            xk[ik][i] =  xk_tmp - xkr[ik][i]; 
+            xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
         }
     }
     memory->deallocate(xkr);
 
-    std::cout << "done !" << std::endl;
     timer->print_elapsed();
 }
 
@@ -261,7 +261,6 @@ void Kpoint::gen_nkminus()
     for (ik = 0; ik < nk; ++ik){
 
         if (found_minus[ik]) continue;
-
         ktmp.clear();
         ktmp.push_back(-xk[ik][0]);
         ktmp.push_back(-xk[ik][1]);
@@ -290,17 +289,22 @@ void Kpoint::gen_nkminus()
     ksets.clear();
 }
 
-void Kpoint::reduce_kpoints()
+void Kpoint::reduce_kpoints(double **xkr)
 {
     unsigned int ik;
     unsigned int i, j;
     std::set<KpointList> ksets;
-    std::set<KpointList>::iterator it;
     std::vector<double> ktmp;
 
     unsigned int *kequiv;
     unsigned int nsame, knum_found;
-    double xk_sym[3], srot[3][3];
+    int iloc, jloc, kloc;
+    int nloc;
+
+    Eigen::Matrix3d srot;
+    Eigen::Vector3d xk_sym, xk_orig;
+
+    double diff[3];
 
     std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
 
@@ -312,18 +316,7 @@ void Kpoint::reduce_kpoints()
 
     ksets.clear();
 
-    for (ik = 0; ik < nk; ++ik){
-
-        ktmp.clear();
-
-        ktmp.push_back(xk[ik][0]);
-        ktmp.push_back(xk[ik][1]);
-        ktmp.push_back(xk[ik][2]);
-
-        ksets.insert(KpointList(ik, ktmp));
-
-        kequiv[ik] = ik;
-    }
+    for (ik = 0; ik < nk; ++ik) kequiv[ik] = ik;
 
     for (ik = 0; ik < nk; ++ik){
 
@@ -332,51 +325,98 @@ void Kpoint::reduce_kpoints()
         nsame = 1;
 
         ktmp.clear();
-        ktmp.push_back(xk[ik][0]);
-        ktmp.push_back(xk[ik][1]);
-        ktmp.push_back(xk[ik][2]);
+        ktmp.push_back(xkr[ik][0] - static_cast<double>(nint(xkr[ik][0])));
+        ktmp.push_back(xkr[ik][1] - static_cast<double>(nint(xkr[ik][1])));
+        ktmp.push_back(xkr[ik][2] - static_cast<double>(nint(xkr[ik][2])));
 
         kpIBZ.push_back(KpointList(ik, ktmp));
 
+        for (i = 0; i < 3; ++i) xk_orig(i) = xkr[ik][i];
+
+        unsigned int symcount = 0;
+
         for (std::vector<SymmetryOperation>::iterator isym = symmetry->SymmList.begin(); isym != symmetry->SymmList.end(); ++isym){
+
             for (i = 0; i < 3; ++i){
                 for (j = 0; j < 3; ++j){
-                    srot[i][j] = static_cast<double>((*isym).symop[3 * i + j]);
+                    srot(i,j) = static_cast<double>((*isym).symop[3 * i + j]);
                 }
             }
-            system->rotvec(xk_sym, xk[ik], srot, 'T');
+
+            Eigen::FullPivLU< Eigen::Matrix3d > lu(srot);
+            Eigen::Matrix3d S = lu.inverse();
+
+            xk_sym = S.transpose() * xk_orig;
 
             for (i = 0; i < 3; ++i){
-                xk_sym[i] = dynamical->fold(xk_sym[i]);
+                xk_sym(i) = xk_sym(i) - nint(xk_sym(i));
             }    
 
-            ktmp.clear();  
-            ktmp.push_back(xk_sym[0]);
-            ktmp.push_back(xk_sym[1]);
-            ktmp.push_back(xk_sym[2]);
+            diff[0] = static_cast<double>(nint(xk_sym(0)*nkx)) - xk_sym(0)*nkx;
+            diff[1] = static_cast<double>(nint(xk_sym(1)*nky)) - xk_sym(1)*nky;
+            diff[2] = static_cast<double>(nint(xk_sym(2)*nkz)) - xk_sym(2)*nkz;
 
-            it  = ksets.find(KpointList(ik, ktmp));
+            if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
 
-            if (it != ksets.end()){
-                knum_found = (*it).knum;
+                iloc = (nint(xk_sym(0)*nkx + 2 * nkx)) % nkx;
+                jloc = (nint(xk_sym(1)*nky + 2 * nky)) % nky;
+                kloc = (nint(xk_sym(2)*nkz + 2 * nkz)) % nkz;
 
-                if(knum_found > ik && kequiv[knum_found] == knum_found) {
-                    kequiv[knum_found] = ik;
+                nloc = kloc + nkz * jloc + nky * nkz * iloc;
+
+                if(nloc > ik && kequiv[nloc] == nloc) {
+                    kequiv[nloc] = ik;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym(0));
+                    ktmp.push_back(xk_sym(1));
+                    ktmp.push_back(xk_sym(2));
+                    kpIBZ.push_back(KpointList(nloc, ktmp));
                     ++nsame;
-                    kpIBZ.push_back(KpointList(knum_found, (*it).kval));
+                }
+            }
+
+            // Time-reversal symmetry
+
+            if (!symmetry->time_reversal_sym) continue;
+
+            for (i = 0; i < 3; ++i) xk_sym(i) *= -1.0; 
+
+            diff[0] = static_cast<double>(nint(xk_sym(0)*nkx)) - xk_sym(0)*nkx;
+            diff[1] = static_cast<double>(nint(xk_sym(1)*nky)) - xk_sym(1)*nky;
+            diff[2] = static_cast<double>(nint(xk_sym(2)*nkz)) - xk_sym(2)*nkz;
+
+            if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+
+                iloc = (nint(xk_sym(0)*nkx + 2 * nkx)) % nkx;
+                jloc = (nint(xk_sym(1)*nky + 2 * nky)) % nky;
+                kloc = (nint(xk_sym(2)*nkz + 2 * nkz)) % nkz;
+
+                nloc = kloc + nkz * jloc + nky * nkz * iloc;
+
+                if(nloc > ik && kequiv[nloc] == nloc) {
+                    kequiv[nloc] = ik;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym(0));
+                    ktmp.push_back(xk_sym(1));
+                    ktmp.push_back(xk_sym(2));
+                    kpIBZ.push_back(KpointList(nloc, ktmp));
+                    ++nsame;
                 }
             }
         }
+
         if (nsame > 0) {
             nk_equiv.push_back(nsame);
         }
     }
-
+    
     for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
         weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
     }
     memory->deallocate(kequiv);
+}
 
-    std::cout << "done !" << std::endl;
-    timer->print_elapsed();
+int Kpoint::nint(const double x)
+{
+    return static_cast<int>(x + 0.5 - (x < 0.0));
 }

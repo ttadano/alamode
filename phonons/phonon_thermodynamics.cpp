@@ -69,6 +69,7 @@ double Phonon_thermodynamics::Cv_tot(const double T)
     for (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
             omega = dynamical->eval_phonon[ik][is];
+            if (omega < 0.0) continue;
             ret += Cv(omega, T);
         }
     }
@@ -146,6 +147,7 @@ double Phonon_thermodynamics::Internal_Energy(const double T)
     for (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
             omega = dynamical->eval_phonon[ik][is];
+            if (omega < 0.0) continue;
             ret += omega * coth_T(omega, T);
         }
     }

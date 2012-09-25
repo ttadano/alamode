@@ -49,13 +49,11 @@ namespace PHON_NS {
         ~Kpoint();
 
         void kpoint_setups();
-        void reduce_kpoints();
+        void reduce_kpoints(double **);
 
         int kpoint_mode;
         unsigned int nkx, nky, nkz;
-
         unsigned int npath, nk;
-
         unsigned int *knum_minus;
 
         double **xk;
@@ -68,11 +66,12 @@ namespace PHON_NS {
 
     private:
         void gen_kpoints_band();
-        void gen_kmesh();
+        void gen_kmesh(bool);
         void gen_nkminus();
        
         std::string **kp_symbol;
         double ***kp_bound;
         unsigned int *nkp;
+        int nint(const double);
     };
 }

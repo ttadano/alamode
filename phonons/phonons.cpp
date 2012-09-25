@@ -1,5 +1,5 @@
-#include "phonons.h"
 #include <iostream>
+#include "phonons.h"
 #include "timer.h"
 #include "parsephon.h"
 #include "memory.h"
@@ -77,6 +77,7 @@ PHON::PHON(int narg, char **arg)
 
 //        relaxation->calc_ReciprocalV();
 //        relaxation->calc_selfenergy();
+
         conductivity->setup_kl();
         conductivity->calc_kl();
 

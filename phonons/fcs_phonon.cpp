@@ -5,6 +5,7 @@
 #include "phonons.h"
 #include "../alm_c++/constants.h"
 #include <string>
+#include <iomanip>
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
@@ -184,6 +185,23 @@ void Fcs_phonon::load_fcs()
 
     memory->deallocate(ind);
     std::cout << "Done !" << std::endl;
+/*
+    for (std::vector<FcsClass>::iterator p = force_constant[1].begin(); p != force_constant[1].end(); ++p)
+    {
+        std::cout << "$";
+        std::cout << std::setw(15) << (*p).fcs_val;
+        std::cout << std::setw(5) << (*p).elems[0].cell;
+        std::cout << std::setw(5) << (*p).elems[0].atom;
+        std::cout << std::setw(5) << (*p).elems[0].xyz;
+        std::cout << std::setw(5) << (*p).elems[1].cell;
+        std::cout << std::setw(5) << (*p).elems[1].atom;
+        std::cout << std::setw(5) << (*p).elems[1].xyz;
+        std::cout << std::setw(5) << (*p).elems[2].cell;
+        std::cout << std::setw(5) << (*p).elems[2].atom;
+        std::cout << std::setw(5) << (*p).elems[2].xyz;
+        std::cout << std::endl;
+    }
+*/
 }
 
 unsigned int Fcs_phonon::coordinate_index(const char char_coord)

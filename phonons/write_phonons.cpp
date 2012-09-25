@@ -36,7 +36,7 @@ void Writes::write_phonon_info()
 
     if(dos->flag_dos) {
         write_phonon_dos();
-        write_heatcapacity();
+        write_thermodynamics();
         write_phonon_vel_all();
     }
 
@@ -65,12 +65,11 @@ void Writes::write_phonon_bands()
     double **eval = dynamical->eval_phonon;
 
     ofs_bands << "# k-axis, Eigenvalues [cm^-1]" << std::endl;
-    ofs_bands.setf(std::ios::fixed);
 
     for (i = 0; i < nk; ++i){
-        ofs_bands << std::setw(8) << kaxis[i];
+        ofs_bands << std::setw(8) << std::fixed << kaxis[i];
         for (j = 0; j < nbands; ++j){
-            ofs_bands << std::setw(12) << in_kayser(eval[i][j]);
+            ofs_bands << std::setw(15) << std::scientific << in_kayser(eval[i][j]);
         }
         ofs_bands << std::endl;
     }
@@ -126,7 +125,6 @@ void Writes::write_phonon_vel_all()
 
     memory->allocate(vel, ns, 3);
    
-    
     ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
@@ -371,7 +369,7 @@ void Writes::write_selfenergy()
     ofs_selfenergy.close();
 }
 
-void Writes::write_heatcapacity()
+void Writes::write_thermodynamics()
 {
     unsigned int i, NT;
     double Tmin = system->Tmin;
@@ -379,15 +377,15 @@ void Writes::write_heatcapacity()
     double dT = system->dT;
 
     double T, TD;
-    std::string file_cv;
+    std::string file_thermo;
 
     NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
 
-    std::ofstream ofs_cv;
-    file_cv = input->job_title + ".heatcapacity";
-    ofs_cv.open(file_cv.c_str(), std::ios::out);
-    if(!ofs_cv) error->exit("write_heatcapacity", "cannot open file_cv");
-    ofs_cv << "# Temperature [K], Internal Energy [Ry], Heat Capacity / kB" << std::endl;
+    std::ofstream ofs_thermo;
+    file_thermo = input->job_title + ".thermo";
+    ofs_thermo.open(file_thermo.c_str(), std::ios::out);
+    if(!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
+    ofs_thermo << "# Temperature [K], Internal Energy [Ry], Heat Capacity / kB" << std::endl;
     
     TD = 1000.0;
     phonon_thermodynamics->Debye_T(Tmax, TD);
@@ -397,11 +395,11 @@ void Writes::write_heatcapacity()
         T = Tmin + dT * static_cast<double>(i);
  //       phonon_thermodynamics->Debye_T(T, TD);
 
-        ofs_cv << std::setw(15) << T;
-        ofs_cv << std::setw(15) << phonon_thermodynamics->Internal_Energy(T);
-        ofs_cv << std::setw(15) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann << std::endl;
+        ofs_thermo << std::setw(15) << T;
+        ofs_thermo << std::setw(15) << phonon_thermodynamics->Internal_Energy(T);
+        ofs_thermo << std::setw(15) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann << std::endl;
  //       ofs_cv << std::setw(15) << TD << std::endl;
     }
 
-    ofs_cv.close();
+    ofs_thermo.close();
 }

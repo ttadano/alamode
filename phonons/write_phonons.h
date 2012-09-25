@@ -25,7 +25,7 @@ namespace PHON_NS
         void write_phonon_dos();
         void write_mode_anime();
         void write_eigenvectors();
-        void write_heatcapacity();
+        void write_thermodynamics();
 
         double Ry_to_kayser;
 

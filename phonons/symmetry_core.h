@@ -45,11 +45,11 @@ namespace PHON_NS {
         ~Symmetry();
 
         unsigned int nsym, nnp;
+        bool symmetry_flag, time_reversal_sym;
         std::string file_sym;
         std::vector<SymmetryOperation> SymmList;
         void setup_symmetry();
         void gensym(unsigned int, unsigned int&, unsigned int, double[3][3], double[3][3], double **, unsigned int *);
-       
 
     private:
         void findsym(unsigned int, unsigned int, unsigned int *, double [3][3], double [3][3], double **);
