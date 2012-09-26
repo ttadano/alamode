@@ -147,8 +147,8 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
 
-                if (std::abs(exp_phase.real()) < 1.0e-14) exp_phase.real() = 0.0;
-                if (std::abs(exp_phase.imag()) < 1.0e-14) exp_phase.imag() = 0.0;
+                if (std::abs(exp_phase.real()) < 1.0e-14) exp_phase.real(0.0);
+                if (std::abs(exp_phase.imag()) < 1.0e-14) exp_phase.imag(0.0);
 
 //                std::cout << "phase = " << exp_phase << std::endl;
 
