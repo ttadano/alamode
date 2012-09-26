@@ -75,6 +75,7 @@ PHON::PHON(int narg, char **arg)
         integration->setup_integration();
         relaxation->setup_relaxation();
 
+        relaxation->calc_two_phonon_dos();
 //        relaxation->calc_ReciprocalV();
 //        relaxation->calc_selfenergy();
 

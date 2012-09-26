@@ -16,6 +16,8 @@
 #include "error.h"
 #include "conductivity.h"
 #include "write_phonons.h"
+#include "integration.h"
+#include "parsephon.h"
 #include <omp.h>
 
 using namespace PHON_NS;
@@ -439,6 +441,7 @@ void Relaxation::calc_selfenergy()
     if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
 
     for (i = 0; i <= NT; ++i) {
+
         T = Tmin + dT * static_cast<double>(i);
         calc_selfenergy_at_T(T);
         ofs_test << std::setw(5) << T;
@@ -678,6 +681,89 @@ void Relaxation::calc_selfenergy_at_T(const double T)
     memory->deallocate(knum);
     memory->deallocate(snum);
     memory->deallocate(omega);
+}
+
+void Relaxation::calc_two_phonon_dos()
+{
+    unsigned int is, js;
+    unsigned int ik, jk;
+    unsigned int i;
+
+    double k_tmp[3], xk_tmp[3];
+    double xk_norm;
+
+    k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
+
+    double *e_tmp;
+
+    memory->allocate(e_tmp, nk);
+
+    unsigned int kcount;
+
+    double emin, emax, delta_e;
+    unsigned int n_energy;
+    double *energy_dos, *tdos;
+
+     emin = 0.0;
+     emax = 1200.0;
+     delta_e = 1.0;
+     n_energy = static_cast<int>((emax - emin) / delta_e);
+     memory->allocate(energy_dos, n_energy);
+     memory->allocate(tdos, n_energy);
+
+     
+    for (i = 0; i < n_energy; ++i){
+        energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        tdos[i] = 0.0;
+    }
+
+    for (is = 0; is < ns; ++is){
+        for (js = 0; js < ns; ++js){
+
+            kcount = 0;
+
+            for (ik = 0; ik < nk; ++ik) {
+                for (jk = 0; jk < nk; ++jk){
+
+                    xk_tmp[0] = k_tmp[0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
+                    xk_tmp[1] = k_tmp[1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
+                    xk_tmp[2] = k_tmp[2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+
+                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+                    if (std::sqrt(xk_norm) > eps15) continue; 
+
+                    e_tmp[kcount++] = writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
+                }
+            }
+
+            for (i = 0; i < n_energy; ++i){
+                tdos[i] += integration->dos_integration(e_tmp, energy_dos[i]);
+            }
+
+            std::cout << "kcount = " << kcount << std::endl;
+        }
+    }
+
+    std::string file_tdos;
+    std::ofstream ofs_tdos;
+
+    file_tdos = input->job_title + ".tdos";
+
+    ofs_tdos.open(file_tdos.c_str(), std::ios::out);
+
+    for (i = 0; i < n_energy; ++i) {
+        ofs_tdos << std::setw(15) << energy_dos[i];
+        ofs_tdos << std::setw(15) << tdos[i] << std::endl;
+    }
+    
+    ofs_tdos.close();
+    memory->deallocate(e_tmp);
+    memory->deallocate(tdos);
+    memory->deallocate(energy_dos);
+
+    error->exit("calc_two_phonon_dos", "hoge");
+
 }
 
 void Relaxation::modify_eigenvectors()
