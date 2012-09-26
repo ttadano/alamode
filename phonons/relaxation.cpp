@@ -759,7 +759,10 @@ void Relaxation::calc_two_phonon_dos()
 
     for (i = 0; i < n_energy; ++i) {
         ofs_tdos << std::setw(15) << energy_dos[i];
-        ofs_tdos << std::setw(15) << tdos[i] << std::endl;
+        ofs_tdos << std::setw(15) << tdos[0][i];
+        ofs_tdos << std::setw(15) << tdos[1][i];
+        ofs_tdos << std::setw(15) << tdos[2][i];
+        ofs_tdos << std::setw(15) << tdos[3][i] << std::endl;
     }
     
     ofs_tdos.close();
