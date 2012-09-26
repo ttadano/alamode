@@ -694,27 +694,27 @@ void Relaxation::calc_two_phonon_dos()
 
     k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
 
-    double *e_tmp;
-
-    memory->allocate(e_tmp, nk);
-
+    double **e_tmp;
+  
     unsigned int kcount;
 
     double emin, emax, delta_e;
     unsigned int n_energy;
-    double *energy_dos, *tdos;
+    double *energy_dos, **tdos;
 
      emin = 0.0;
      emax = 1200.0;
      delta_e = 1.0;
      n_energy = static_cast<int>((emax - emin) / delta_e);
+     
+     memory->allocate(e_tmp, 4, nk);
      memory->allocate(energy_dos, n_energy);
-     memory->allocate(tdos, n_energy);
+     memory->allocate(tdos, 4, n_energy);
 
      
     for (i = 0; i < n_energy; ++i){
         energy_dos[i] = emin + delta_e * static_cast<double>(i);
-        tdos[i] = 0.0;
+        for (unsigned int j = 0; j < 4; ++j) tdos[j][i] = 0.0;
     }
 
     for (is = 0; is < ns; ++is){
@@ -733,12 +733,17 @@ void Relaxation::calc_two_phonon_dos()
                     xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
                     if (std::sqrt(xk_norm) > eps15) continue; 
 
-                    e_tmp[kcount++] = writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
+                    e_tmp[0][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
+                    e_tmp[1][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
+                    e_tmp[2][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
+                    e_tmp[3][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
+
+                    ++kcount;
                 }
             }
 
             for (i = 0; i < n_energy; ++i){
-                tdos[i] += integration->dos_integration(e_tmp, energy_dos[i]);
+               for (unsigned int j = 0; j < 4; ++j) tdos[j][i] += integration->dos_integration(e_tmp[j], energy_dos[i]);
             }
 
             std::cout << "kcount = " << kcount << std::endl;
