@@ -132,14 +132,7 @@ void Dos::calc_tdos()
     double **e_tmp;
   
     unsigned int kcount;
-
-    double emin, emax, delta_e;
-    unsigned int n_energy;
     double *energy_dos, **tdos;
-
-     emin = 0.0;
-     emax = 1200.0;
-     delta_e = 1.0;
 
      n_energy = static_cast<int>((emax - emin) / delta_e);
      

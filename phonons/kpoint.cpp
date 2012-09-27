@@ -26,13 +26,16 @@ Kpoint::~Kpoint() {
 
 void Kpoint::kpoint_setups()
 {
-    unsigned int i, j;
     symmetry->symmetry_flag = false;
+
+    unsigned int i, j;
+    double emin, emax, delta_e;
 
     if (phon->mode == "boltzmann") kpoint_mode = 3;
 
     std::cout << "**k-points**" << std::endl;
 
+ 
     switch (kpoint_mode){
 
     case 0:
@@ -118,7 +121,7 @@ void Kpoint::kpoint_setups()
         nk = nkx * nky * nkz;
         memory->allocate(xk, nk, 3);
 
-        double emin, emax, delta_e;
+
         std::cin >> emin >> emax >> delta_e;
         dos->emin = emin;
         dos->emax = emax;
@@ -134,6 +137,12 @@ void Kpoint::kpoint_setups()
     case 3:
         std::cout << " kpoint_mode = 3: Uniform k-point grid for Boltzmann" << std::endl;
         std::cin >> nkx >> nky >> nkz;
+        std::cin >> emin >> emax >> delta_e;
+        
+        dos->emin = emin;
+        dos->emax = emax;
+        dos->delta_e = delta_e;
+
         nk = nkx * nky * nkz;
         memory->allocate(xk, nk, 3);
         symmetry->symmetry_flag = true;

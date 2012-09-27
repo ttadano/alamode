@@ -18,6 +18,7 @@
 #include "write_phonons.h"
 #include "integration.h"
 #include "parsephon.h"
+#include "phonon_dos.h"
 #include <omp.h>
 
 using namespace PHON_NS;
@@ -323,83 +324,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     return ret;
 }
 
-void Relaxation::calc_selfenergy()
-{
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
 
-    unsigned int NT= static_cast<unsigned int>((Tmax - Tmin) / dT);
-    unsigned int i, iks;
-
-    double T;
-
-    std::string file_selfenergy;
-    std::ofstream ofs_selfenergy;
-
-    std::string file_test;
-    std::ofstream ofs_test;
-
-    double omega_tmp;
-    std::complex<double> ctmp;
-    unsigned int j;
-
-    file_test = input->job_title + ".test";
-    ofs_test.open(file_test.c_str(), std::ios::out);
-    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
-
-    for (i = 0; i <= NT; ++i) {
-
-        T = Tmin + dT * static_cast<double>(i);
-        calc_selfenergy_at_T(T);
-        ofs_test << std::setw(5) << T;
-        for (j = 0; j < 6; ++j){
-            ofs_test << std::setw(15) << 2.0 * self_E[j]/time_ry*Hz_to_kayser;
-        }
-        ofs_test << std::endl;
-    }
-
-    file_selfenergy = input->job_title + ".selfE";
-    ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
-    if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
-
-    ofs_selfenergy << "#Temperature, k-point, branch, Energy [cm^-1], Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1], Tau [ps]" << std::endl;
-    ofs_selfenergy.setf(std::ios::scientific);
-
-    for (i = 0; i <= NT; ++i){
-        T = Tmin + dT * static_cast<double>(i);
-        calc_selfenergy_at_T(T);
-        for (iks = 0; iks < nks; ++iks){
-            ofs_selfenergy << std::setw(5) << T;
-            ofs_selfenergy << std::setw(5) << iks / ns;
-            ofs_selfenergy << std::setw(5) << iks % ns;
-            ofs_selfenergy << std::setw(15) << dynamical->eval_phonon[iks/ns][iks%ns]/time_ry*Hz_to_kayser;
-            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
-            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
-            self_E[iks] = selfenergy(T, dynamical->eval_phonon[iks/ns][iks%ns], iks/ns, iks%ns);
-            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser;
-            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
-            ofs_selfenergy << std::setw(15) << 1.0e+12/(2.0 * self_E[iks].imag())*time_ry;
-            ofs_selfenergy << std::endl;
-        }
-        ofs_selfenergy << std::endl;
-    }
-    ofs_selfenergy.close(); 
-
-    for (i = 0; i < 1200; i+=1){
-        omega_tmp = static_cast<double>(i);
-        ofs_test << std::setw(15) << omega_tmp;
-        omega_tmp *= time_ry / Hz_to_kayser;
-        for (j = 0; j < 6; ++j){
-            ctmp = selfenergy(Tmin, omega_tmp, 0, j);
-            ofs_test << std::setw(15) << ctmp.real();
-            ofs_test << std::setw(15) << ctmp.imag();
-        }
-        ofs_test << std::endl;
-    }
-
-    ofs_test.close();
-}
 
 std::complex<double> Relaxation::selfenergy(const double T, const double omega, const unsigned int knum, const unsigned int snum)
 {
@@ -638,4 +563,176 @@ void Relaxation::modify_eigenvectors()
 double Relaxation::delta_lorentz(const double omega)
 {
     return epsilon / (omega*omega + epsilon*epsilon) / pi;
+}
+
+void Relaxation::calc_selfenergy()
+{
+    double Tmin = system->Tmin;
+    double Tmax = system->Tmax;
+    double dT = system->dT;
+
+    unsigned int NT= static_cast<unsigned int>((Tmax - Tmin) / dT);
+    unsigned int i, iks;
+
+    double T;
+
+    std::string file_selfenergy;
+    std::ofstream ofs_selfenergy;
+
+    std::string file_test;
+    std::ofstream ofs_test;
+
+    double omega_tmp;
+    std::complex<double> ctmp;
+    unsigned int j;
+
+    file_test = input->job_title + ".test";
+    ofs_test.open(file_test.c_str(), std::ios::out);
+    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
+    
+    for (i = 0; i < dos->n_energy; ++i){
+        omega_tmp = dos->emin + dos->delta_e * static_cast<double>(i);
+        ofs_test << std::setw(15) << omega_tmp;
+        omega_tmp *= time_ry / Hz_to_kayser;
+        for (j = 0; j < 6; ++j){
+            ctmp = selfenergy(Tmin, omega_tmp, 0, j);
+            ofs_test << std::setw(15) << ctmp.real();
+            ofs_test << std::setw(15) << ctmp.imag();
+        }
+        ofs_test << std::endl;
+    }
+
+    ofs_test.close();
+
+    unsigned int ks_tmp[3];
+    double **e_tmp, **f_tmp;
+    double *energy_dos, *damp;
+    double v3_tmp;
+    unsigned int ik, jk;
+    unsigned int is, js;
+    unsigned int kcount;
+    double xk_tmp[3], xk_norm;
+    double omega_inner[2];
+    double n1, n2;
+
+    file_test = input->job_title + ".test2";
+    ofs_test.open(file_test.c_str(), std::ios::out);
+    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test2");
+
+    ks_tmp[0] = 3;
+    T = 0.0;
+
+    ofs_test << "# Damping function of a phonon xk = ";
+    for (i = 0; i < 3; ++i) {
+        ofs_test << std::setw(15) << kpoint->xk[ks_tmp[0]/ns][i];
+    }
+    ofs_test << std::endl;
+    ofs_test << "# T = " << T << std::endl;
+
+    memory->allocate(e_tmp, 4, dos->n_energy);
+    memory->allocate(f_tmp, 4, dos->n_energy);
+    memory->allocate(energy_dos, dos->n_energy);
+    memory->allocate(damp, dos->n_energy);
+
+    for (i = 0; i < dos->n_energy; ++i) damp[i] = 0.0;
+
+     for (is = 0; is < ns; ++is){
+        for (js = 0; js < ns; ++js){
+
+            kcount = 0;
+
+            for (ik = 0; ik < nk; ++ik) {
+                for (jk = 0; jk < nk; ++jk){
+
+                    xk_tmp[0] = kpoint->xk[ks_tmp[0]/ns][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
+                    xk_tmp[1] = kpoint->xk[ks_tmp[0]/ns][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
+                    xk_tmp[2] = kpoint->xk[ks_tmp[0]/ns][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+
+                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+                    if (std::sqrt(xk_norm) > eps15) continue; 
+
+                    ks_tmp[1] = ik * ns + is;
+                    ks_tmp[2] = jk * ns + js;
+
+                    v3_tmp = std::norm(V3new(ks_tmp));
+
+                    omega_inner[0] = dynamical->eval_phonon[ik][is];
+                    omega_inner[1] = dynamical->eval_phonon[jk][js];
+                     
+                    n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
+                    n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
+
+                    e_tmp[0][kcount] = - writes->in_kayser(omega_inner[0] + omega_inner[1]);
+                    e_tmp[1][kcount] = writes->in_kayser(omega_inner[0] + omega_inner[1]);
+                    e_tmp[2][kcount] = writes->in_kayser(omega_inner[0] - omega_inner[1]);
+                    e_tmp[3][kcount] = - writes->in_kayser(omega_inner[0] - omega_inner[1]);
+
+                    f_tmp[0][kcount] = -v3_tmp * (n1 + n2 + 1.0);
+                    f_tmp[1][kcount] = v3_tmp * (n1 + n2 + 1.0);
+                    f_tmp[2][kcount] = v3_tmp * (n2 - n1);
+                    f_tmp[3][kcount] = v3_tmp * (n1 - n2);
+
+                    ++kcount;
+                }
+            }
+
+            for (i = 0; i < dos->n_energy; ++i){
+               for (unsigned int j = 0; j < 4; ++j) {
+                   damp[i] += integration->do_tetrahedron(e_tmp[j], f_tmp[j], energy_dos[i]);
+               }
+            }
+
+            std::cout << "kcount = " << kcount << std::endl;
+        }
+    }
+
+    for (i = 0; i < dos->n_energy; ++i){
+        ofs_test << std::setw(15) << energy_dos[i];
+        ofs_test << std::setw(15) << damp[i] << std::endl;
+    }
+
+    ofs_test.close();
+
+    /*
+    for (i = 0; i <= NT; ++i) {
+
+        T = Tmin + dT * static_cast<double>(i);
+        calc_selfenergy_at_T(T);
+        ofs_test << std::setw(5) << T;
+        for (j = 0; j < 6; ++j){
+            ofs_test << std::setw(15) << 2.0 * self_E[j]/time_ry*Hz_to_kayser;
+        }
+        ofs_test << std::endl;
+    }
+
+    file_selfenergy = input->job_title + ".selfE";
+    ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
+    if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
+
+    ofs_selfenergy << "#Temperature, k-point, branch, Energy [cm^-1], Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1], Tau [ps]" << std::endl;
+    ofs_selfenergy.setf(std::ios::scientific);
+
+    for (i = 0; i <= NT; ++i){
+        T = Tmin + dT * static_cast<double>(i);
+        calc_selfenergy_at_T(T);
+        for (iks = 0; iks < nks; ++iks){
+            ofs_selfenergy << std::setw(5) << T;
+            ofs_selfenergy << std::setw(5) << iks / ns;
+            ofs_selfenergy << std::setw(5) << iks % ns;
+            ofs_selfenergy << std::setw(15) << dynamical->eval_phonon[iks/ns][iks%ns]/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
+            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
+            self_E[iks] = selfenergy(T, dynamical->eval_phonon[iks/ns][iks%ns], iks/ns, iks%ns);
+            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
+            ofs_selfenergy << std::setw(15) << 1.0e+12/(2.0 * self_E[iks].imag())*time_ry;
+            ofs_selfenergy << std::endl;
+        }
+        ofs_selfenergy << std::endl;
+    }
+    ofs_selfenergy.close(); 
+    */
+
+    
 }
