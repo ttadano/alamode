@@ -12,6 +12,7 @@ namespace PHON_NS
         void setup();
         bool flag_dos;
         void calc_dos();
+        void calc_tdos();
 
         double emin, emax, delta_e;
         int n_energy;

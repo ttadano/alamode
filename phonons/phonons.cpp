@@ -75,9 +75,11 @@ PHON::PHON(int narg, char **arg)
         integration->setup_integration();
         relaxation->setup_relaxation();
 
-        relaxation->calc_two_phonon_dos();
-//        relaxation->calc_ReciprocalV();
-//        relaxation->calc_selfenergy();
+        dos->calc_tdos();
+        relaxation->calc_ReciprocalV();
+        relaxation->calc_selfenergy();
+
+        error->exit("hoge", "tomare");
 
         conductivity->setup_kl();
         conductivity->calc_kl();

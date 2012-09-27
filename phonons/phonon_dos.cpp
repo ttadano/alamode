@@ -9,6 +9,9 @@
 #include "integration.h"
 #include <algorithm>
 #include <vector>
+#include <fstream>
+#include <iomanip>
+#include "parsephon.h"
 
 using namespace PHON_NS;
 
@@ -111,114 +114,96 @@ void Dos::calc_dos()
     memory->deallocate(eval);
 }
 
-/*
-double Dos::dos_integration(const unsigned int neval, const unsigned int ntetra, double **eval, const double e)
+void Dos::calc_tdos()
 {
-double dos_ret = 0.0;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
 
-unsigned int i, j, k;
+    unsigned int is, js;
+    unsigned int ik, jk;
+    unsigned int i;
 
-std::vector<double> e_tetra;
-double e1, e2, e3, e4;
+    double k_tmp[3], xk_tmp[3];
+    double xk_norm;
 
-double f_ntetra = 1.0 / static_cast<double>(ntetra);
+    k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
 
-for (i = 0; i < ntetra; ++i){
-for (j = 0; j < neval; ++j){
+    unsigned int ks_tmp[3];
+    double **e_tmp;
+  
+    unsigned int kcount;
 
-e_tetra.clear();
-for (k = 0; k < 4; ++k){
-e_tetra.push_back(eval[tetras[i][k]][j]);
+    double emin, emax, delta_e;
+    unsigned int n_energy;
+    double *energy_dos, **tdos;
+
+     emin = 0.0;
+     emax = 1200.0;
+     delta_e = 1.0;
+
+     n_energy = static_cast<int>((emax - emin) / delta_e);
+     
+     memory->allocate(e_tmp, 4, nk);
+     memory->allocate(energy_dos, n_energy);
+     memory->allocate(tdos, 4, n_energy);
+
+     
+    for (i = 0; i < n_energy; ++i){
+        energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        for (unsigned int j = 0; j < 4; ++j) tdos[j][i] = 0.0;
+    }
+
+    for (is = 0; is < ns; ++is){
+        for (js = 0; js < ns; ++js){
+
+            kcount = 0;
+
+            for (ik = 0; ik < nk; ++ik) {
+                for (jk = 0; jk < nk; ++jk){
+
+                    xk_tmp[0] = k_tmp[0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
+                    xk_tmp[1] = k_tmp[1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
+                    xk_tmp[2] = k_tmp[2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+
+                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+                    if (std::sqrt(xk_norm) > eps15) continue; 
+
+                    e_tmp[0][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
+                    e_tmp[1][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
+                    e_tmp[2][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
+                    e_tmp[3][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
+
+                    ++kcount;
+                }
+            }
+
+            for (i = 0; i < n_energy; ++i){
+               for (unsigned int j = 0; j < 4; ++j) tdos[j][i] += integration->dos_integration(e_tmp[j], energy_dos[i]);
+            }
+
+            std::cout << "kcount = " << kcount << std::endl;
+        }
+    }
+
+    std::string file_tdos;
+    std::ofstream ofs_tdos;
+
+    file_tdos = input->job_title + ".tdos";
+
+    ofs_tdos.open(file_tdos.c_str(), std::ios::out);
+
+    ofs_tdos << "# Two-phonon DOS at" << std::setw(15) << k_tmp[0] << std::setw(15) << k_tmp[1] << std::setw(15) << k_tmp[2] << std::endl;
+    for (i = 0; i < n_energy; ++i) {
+        ofs_tdos << std::setw(15) << energy_dos[i];
+        ofs_tdos << std::setw(15) << tdos[0][i];
+        ofs_tdos << std::setw(15) << tdos[1][i];
+        ofs_tdos << std::setw(15) << tdos[2][i];
+        ofs_tdos << std::setw(15) << tdos[3][i] << std::endl;
+    }
+    
+    ofs_tdos.close();
+    memory->deallocate(e_tmp);
+    memory->deallocate(tdos);
+    memory->deallocate(energy_dos);
 }
-
-std::sort(e_tetra.begin(), e_tetra.end());
-e1 = e_tetra[0];
-e2 = e_tetra[1];
-e3 = e_tetra[2];
-e4 = e_tetra[3];
-
-if (e3 <= e && e < e4){
-dos_ret += f_ntetra*(3.0*std::pow((e4 - e), 2) / ((e4 - e1)*(e4 - e2)*(e4 - e3)));
-} else if (e2 <= e && e < e3) {
-dos_ret += f_ntetra*(3.0*(e2 - e1) + 6.0*(e - e2) - 3.0*(e4 + e3 - e2 - e1)*std::pow((e - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
-} else if (e1 <= e && e < e2) {
-dos_ret += f_ntetra*3.0*std::pow((e - e1), 2) / ((e2 - e1)*(e3 - e1)*(e4 - e1));
-}
-
-}
-}
-
-return dos_ret;
-}
-
-void Dos::prepare_tetrahedron(const int nk1, const int nk2, const int nk3)
-{
-int i, j, k, ii, jj, kk;
-int n1, n2, n3, n4, n5, n6, n7, n8;
-int m;
-
-int nk23 = nk2 * nk3;
-
-for (i = 0; i < nk1; ++i){
-for (j = 0; j < nk2; ++j){
-for (k = 0; k < nk3; ++k){
-
-ii = (i + 1) % nk1;
-jj = (j + 1) % nk2;
-kk = (k + 1) % nk3;
-
-n1 =  k +  j*nk3 +  i*nk23;
-n2 =  k +  j*nk3 + ii*nk23;
-n3 =  k + jj*nk3 +  i*nk23;
-n4 =  k + jj*nk3 + ii*nk23;
-n5 = kk +  j*nk3 +  i*nk23;
-n6 = kk +  j*nk3 + ii*nk23;
-n7 = kk + jj*nk3 +  i*nk23;
-n8 = kk + jj*nk3 + ii*nk23;
-
-m = 6 * (k + j*nk3 + i*nk23);
-
-tetras[m][0] = n1;
-tetras[m][1] = n2;
-tetras[m][2] = n3;
-tetras[m][3] = n6;
-
-++m;
-
-tetras[m][0] = n2;
-tetras[m][1] = n3;
-tetras[m][2] = n4;
-tetras[m][3] = n6;
-
-++m;
-
-tetras[m][0] = n1;
-tetras[m][1] = n3;
-tetras[m][2] = n5;
-tetras[m][3] = n6;
-
-++m;
-
-tetras[m][0] = n3;
-tetras[m][1] = n4;
-tetras[m][2] = n6;
-tetras[m][3] = n8;
-
-++m;
-
-tetras[m][0] = n3;
-tetras[m][1] = n6;
-tetras[m][2] = n7;
-tetras[m][3] = n8;
-
-++m;
-
-tetras[m][0] = n3;
-tetras[m][1] = n5;
-tetras[m][2] = n6;
-tetras[m][3] = n7;
-}
-}
-}
-}
-*/

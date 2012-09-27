@@ -308,16 +308,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
         mass_prod = 1.0;
-        /*
-        std::cout << "#FCS3 = " << fcs.fcs_val << std::endl;
-        std::cout << "(m1, a1, mu1) = ( " << fcs.elems[0].cell << " , " << fcs.elems[0].atom << " , " << fcs.elems[0].xyz << " )" << std::endl;
-        std::cout << "(m2, a2, mu2) = ( " << fcs.elems[1].cell << " , " << fcs.elems[1].atom << " , " << fcs.elems[1].xyz << " )" << std::endl;
-        std::cout << "(m3, a3, mu3) = ( " << fcs.elems[2].cell << " , " << fcs.elems[2].atom << " , " << fcs.elems[2].xyz << " )" << std::endl;
-        std::cout << "e1 = " << dynamical->evec_phonon[kn[0]][sn[0]][3 * fcs.elems[0].atom + fcs.elems[0].xyz] << std::endl;
-        std::cout << "e2 = " << dynamical->evec_phonon[kn[1]][sn[1]][3 * fcs.elems[1].atom + fcs.elems[1].xyz] << std::endl;
-        std::cout << "e3 = " << dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs.elems[2].atom + fcs.elems[2].xyz] << std::endl;
-        */
-
+ 
         for (i = 0; i < 3; ++i){
             phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
             mass_prod *= mass_p[fcs.elems[i].atom];
@@ -331,89 +322,6 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
     return ret;
 }
-
-/*
-std::complex<double> Relaxation::V3new2(const unsigned int ks[3])
-{
-std::complex<double> ret(0.0, 0.0);
-
-unsigned int i;
-unsigned int kn[3], sn[3];
-double fcs_tmp;
-double omega[3];
-double mass_prod, mass[3];
-double phase;
-double vec1[3], vec2[3];
-double vk1, vk2;
-unsigned int iat, jat, kat, iat2;
-unsigned int icrd, jcrd, kcrd;
-
-std::complex<double> ctmp;
-
-for (i = 0; i < 3; ++i){
-kn[i] = ks[i] / ns;
-sn[i] = ks[i] % ns;
-omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
-}
-
-for (iat = 0; iat < system->natmin; ++iat){
-
-iat2 = system->map_p2s[iat][0];
-
-mass[0] = system->mass[iat2];
-
-for (jat = 0; jat < system->nat; ++jat){
-
-mass[1] = system->mass[jat];
-
-for (i = 0; i < 3; ++i){
-vec1[i] = system->xr_s[system->map_p2s[0][system->map_s2p[jat].tran_num]][i];
-vec1[i] = dynamical->fold(vec1[i]);
-}
-system->rotvec(vec1, vec1, mat_convert);
-
-vk1 = vec1[0] * kpoint->xk[kn[1]][0]
-+ vec1[1] * kpoint->xk[kn[1]][1]
-+ vec1[2] * kpoint->xk[kn[1]][2];
-
-for (kat = 0; kat < system->nat; ++kat){
-
-mass[2] = system->mass[kat];
-
-for (i = 0; i < 3; ++i){
-vec2[i] = system->xr_s[system->map_p2s[0][system->map_s2p[kat].tran_num]][i];
-vec2[i] = dynamical->fold(vec2[i]);
-}
-system->rotvec(vec2, vec2, mat_convert);
-
-vk2 = vec2[0] * kpoint->xk[kn[2]][0]
-+ vec2[1] * kpoint->xk[kn[2]][1]
-+ vec2[2] * kpoint->xk[kn[2]][2];
-
-ctmp = std::complex<double>(0.0, 0.0);
-
-for (icrd = 0; icrd < 3; ++icrd){
-for (jcrd = 0; jcrd < 3; ++jcrd){
-for (kcrd = 0; kcrd < 3; ++kcrd){
-
-fcs_tmp = fc3[3*iat+icrd][3*jat+jcrd][3*kat+kcrd];
-if(std::abs(fcs_tmp) < eps) continue;
-ctmp += fcs_tmp
-*dynamical->evec_phonon[kn[0]][sn[0]][3 * iat + icrd]
-*dynamical->evec_phonon[kn[1]][sn[1]][3 * system->map_s2p[jat].atom_num + jcrd]
-*dynamical->evec_phonon[kn[2]][sn[2]][3 * system->map_s2p[kat].atom_num + kcrd];
-}
-}
-}
-
-ret += ctmp * std::exp(im * (vk1 + vk2)) / std::sqrt(mass[0]*mass[1]*mass[2]);
-}
-}
-}
-ret /= std::sqrt(omega[0] * omega[1] * omega[2]);
-return ret;
-}
-*/
 
 void Relaxation::calc_selfenergy()
 {
@@ -451,8 +359,6 @@ void Relaxation::calc_selfenergy()
         ofs_test << std::endl;
     }
 
-    error->exit("hoge", "tomare");
-
     file_selfenergy = input->job_title + ".selfE";
     ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
     if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
@@ -480,7 +386,7 @@ void Relaxation::calc_selfenergy()
     }
     ofs_selfenergy.close(); 
 
-    for (i = 1; i < 600; i+=5){
+    for (i = 0; i < 1200; i+=1){
         omega_tmp = static_cast<double>(i);
         ofs_test << std::setw(15) << omega_tmp;
         omega_tmp *= time_ry / Hz_to_kayser;
@@ -681,97 +587,6 @@ void Relaxation::calc_selfenergy_at_T(const double T)
     memory->deallocate(knum);
     memory->deallocate(snum);
     memory->deallocate(omega);
-}
-
-void Relaxation::calc_two_phonon_dos()
-{
-    unsigned int is, js;
-    unsigned int ik, jk;
-    unsigned int i;
-
-    double k_tmp[3], xk_tmp[3];
-    double xk_norm;
-
-    k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
-
-    double **e_tmp;
-  
-    unsigned int kcount;
-
-    double emin, emax, delta_e;
-    unsigned int n_energy;
-    double *energy_dos, **tdos;
-
-     emin = 0.0;
-     emax = 1200.0;
-     delta_e = 1.0;
-     n_energy = static_cast<int>((emax - emin) / delta_e);
-     
-     memory->allocate(e_tmp, 4, nk);
-     memory->allocate(energy_dos, n_energy);
-     memory->allocate(tdos, 4, n_energy);
-
-     
-    for (i = 0; i < n_energy; ++i){
-        energy_dos[i] = emin + delta_e * static_cast<double>(i);
-        for (unsigned int j = 0; j < 4; ++j) tdos[j][i] = 0.0;
-    }
-
-    for (is = 0; is < ns; ++is){
-        for (js = 0; js < ns; ++js){
-
-            kcount = 0;
-
-            for (ik = 0; ik < nk; ++ik) {
-                for (jk = 0; jk < nk; ++jk){
-
-                    xk_tmp[0] = k_tmp[0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
-                    xk_tmp[1] = k_tmp[1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
-                    xk_tmp[2] = k_tmp[2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
-
-                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
-                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
-                    if (std::sqrt(xk_norm) > eps15) continue; 
-
-                    e_tmp[0][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
-                    e_tmp[1][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
-                    e_tmp[2][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
-                    e_tmp[3][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
-
-                    ++kcount;
-                }
-            }
-
-            for (i = 0; i < n_energy; ++i){
-               for (unsigned int j = 0; j < 4; ++j) tdos[j][i] += integration->dos_integration(e_tmp[j], energy_dos[i]);
-            }
-
-            std::cout << "kcount = " << kcount << std::endl;
-        }
-    }
-
-    std::string file_tdos;
-    std::ofstream ofs_tdos;
-
-    file_tdos = input->job_title + ".tdos";
-
-    ofs_tdos.open(file_tdos.c_str(), std::ios::out);
-
-    for (i = 0; i < n_energy; ++i) {
-        ofs_tdos << std::setw(15) << energy_dos[i];
-        ofs_tdos << std::setw(15) << tdos[0][i];
-        ofs_tdos << std::setw(15) << tdos[1][i];
-        ofs_tdos << std::setw(15) << tdos[2][i];
-        ofs_tdos << std::setw(15) << tdos[3][i] << std::endl;
-    }
-    
-    ofs_tdos.close();
-    memory->deallocate(e_tmp);
-    memory->deallocate(tdos);
-    memory->deallocate(energy_dos);
-
-    error->exit("calc_two_phonon_dos", "hoge");
-
 }
 
 void Relaxation::modify_eigenvectors()

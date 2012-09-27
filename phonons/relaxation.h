@@ -45,7 +45,6 @@ namespace PHON_NS {
         void finish_relaxation();
         void calc_ReciprocalV();
         void calc_selfenergy();
-        void calc_two_phonon_dos();
         void calc_selfenergy_at_T(const double);
         std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
@@ -64,7 +63,6 @@ namespace PHON_NS {
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         inline std::complex<double> V3new(const unsigned int [3]);
-        inline std::complex<double> V3new2(const unsigned int [3]);
         double **vec_s;
         double *mass_p;
         double mat_convert[3][3];
