@@ -76,7 +76,7 @@ PHON::PHON(int narg, char **arg)
         relaxation->setup_relaxation();
 
         dos->calc_tdos();
-        relaxation->calc_ReciprocalV();
+   //     relaxation->calc_ReciprocalV();
         relaxation->calc_selfenergy();
 
         error->exit("hoge", "tomare");

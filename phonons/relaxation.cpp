@@ -629,13 +629,16 @@ void Relaxation::calc_selfenergy()
     ofs_test << std::endl;
     ofs_test << "# T = " << T << std::endl;
 
-    memory->allocate(e_tmp, 4, dos->n_energy);
-    memory->allocate(f_tmp, 4, dos->n_energy);
+    memory->allocate(e_tmp, 4, nk);
+    memory->allocate(f_tmp, 4, nk);
     memory->allocate(energy_dos, dos->n_energy);
     memory->allocate(damp, dos->n_energy);
 
-    for (i = 0; i < dos->n_energy; ++i) damp[i] = 0.0;
-
+    for (i = 0; i < dos->n_energy; ++i) {
+        damp[i] = 0.0;
+        energy_dos[i] = dos->emin + dos->delta_e * static_cast<double>(i);
+    }
+   
      for (is = 0; is < ns; ++is){
         for (js = 0; js < ns; ++js){
 
@@ -673,6 +676,7 @@ void Relaxation::calc_selfenergy()
                     f_tmp[2][kcount] = v3_tmp * (n2 - n1);
                     f_tmp[3][kcount] = v3_tmp * (n1 - n2);
 
+                    
                     ++kcount;
                 }
             }
