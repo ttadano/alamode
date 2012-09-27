@@ -670,10 +670,10 @@ void Relaxation::calc_selfenergy()
                     e_tmp[2][kcount] = writes->in_kayser(omega_inner[0] - omega_inner[1]);
                     e_tmp[3][kcount] = - writes->in_kayser(omega_inner[0] - omega_inner[1]);
 
-                    f_tmp[0][kcount] = -v3_tmp * (n1 + n2 + 1.0);
-                    f_tmp[1][kcount] = v3_tmp * (n1 + n2 + 1.0);
-                    f_tmp[2][kcount] = v3_tmp * (n2 - n1);
-                    f_tmp[3][kcount] = v3_tmp * (n1 - n2);
+                    f_tmp[0][kcount] = -v3_tmp * n1;
+                    f_tmp[1][kcount] = v3_tmp * n1;
+                    f_tmp[2][kcount] = -v3_tmp * n2;
+                    f_tmp[3][kcount] = v3_tmp * n2;
                     
                     ++kcount;
                 }
