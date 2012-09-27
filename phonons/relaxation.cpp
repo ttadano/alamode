@@ -594,7 +594,7 @@ void Relaxation::calc_selfenergy()
         omega_tmp = dos->emin + dos->delta_e * static_cast<double>(i);
         ofs_test << std::setw(15) << omega_tmp;
         omega_tmp *= time_ry / Hz_to_kayser;
-        for (j = 0; j < 6; ++j){
+        for (j = 3; j < 4; ++j){
             ctmp = selfenergy(T, omega_tmp, 0, j);
             ofs_test << std::setw(15) << ctmp.real();
             ofs_test << std::setw(15) << ctmp.imag();
@@ -665,10 +665,10 @@ void Relaxation::calc_selfenergy()
                     n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
                     n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
 
-                    e_tmp[0][kcount] = - writes->in_kayser(omega_inner[0] + omega_inner[1]);
-                    e_tmp[1][kcount] = writes->in_kayser(omega_inner[0] + omega_inner[1]);
-                    e_tmp[2][kcount] = writes->in_kayser(omega_inner[0] - omega_inner[1]);
-                    e_tmp[3][kcount] = - writes->in_kayser(omega_inner[0] - omega_inner[1]);
+                    e_tmp[0][kcount] = -omega_inner[0] - omega_inner[1];
+                    e_tmp[1][kcount] = omega_inner[0] + omega_inner[1];
+                    e_tmp[2][kcount] = omega_inner[0] - omega_inner[1];
+                    e_tmp[3][kcount] = -omega_inner[0] + omega_inner[1];
 
                     f_tmp[0][kcount] = -v3_tmp * n1;
                     f_tmp[1][kcount] = v3_tmp * n1;
@@ -681,7 +681,7 @@ void Relaxation::calc_selfenergy()
 
             for (i = 0; i < dos->n_energy; ++i){
                for (unsigned int j = 0; j < 4; ++j) {
-                   damp[i] += integration->do_tetrahedron(e_tmp[j], f_tmp[j], energy_dos[i]);
+                   damp[i] += integration->do_tetrahedron(e_tmp[j], f_tmp[j], energy_dos[i] * time_ry / Hz_to_kayser);
                }
             }
 
