@@ -324,8 +324,6 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     return ret;
 }
 
-
-
 std::complex<double> Relaxation::selfenergy(const double T, const double omega, const unsigned int knum, const unsigned int snum)
 {
     std::complex<double> ret(0.0, 0.0);
@@ -586,6 +584,8 @@ void Relaxation::calc_selfenergy()
     std::complex<double> ctmp;
     unsigned int j;
 
+    T = 0.0;
+
     file_test = input->job_title + ".test";
     ofs_test.open(file_test.c_str(), std::ios::out);
     if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
@@ -595,7 +595,7 @@ void Relaxation::calc_selfenergy()
         ofs_test << std::setw(15) << omega_tmp;
         omega_tmp *= time_ry / Hz_to_kayser;
         for (j = 0; j < 6; ++j){
-            ctmp = selfenergy(Tmin, omega_tmp, 0, j);
+            ctmp = selfenergy(T, omega_tmp, 0, j);
             ofs_test << std::setw(15) << ctmp.real();
             ofs_test << std::setw(15) << ctmp.imag();
         }
@@ -620,8 +620,7 @@ void Relaxation::calc_selfenergy()
     if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test2");
 
     ks_tmp[0] = 3;
-    T = 0.0;
-
+   
     ofs_test << "# Damping function of a phonon xk = ";
     for (i = 0; i < 3; ++i) {
         ofs_test << std::setw(15) << kpoint->xk[ks_tmp[0]/ns][i];
@@ -675,7 +674,6 @@ void Relaxation::calc_selfenergy()
                     f_tmp[1][kcount] = v3_tmp * (n1 + n2 + 1.0);
                     f_tmp[2][kcount] = v3_tmp * (n2 - n1);
                     f_tmp[3][kcount] = v3_tmp * (n1 - n2);
-
                     
                     ++kcount;
                 }
@@ -690,6 +688,10 @@ void Relaxation::calc_selfenergy()
             std::cout << "kcount = " << kcount << std::endl;
         }
     }
+
+     for (i = 0; i < dos->n_energy; ++i){
+        damp[i] *= pi * std::pow(0.5, 4) / static_cast<double>(system->ntran); 
+     }
 
     for (i = 0; i < dos->n_energy; ++i){
         ofs_test << std::setw(15) << energy_dos[i];
