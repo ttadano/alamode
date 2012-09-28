@@ -64,7 +64,8 @@ namespace PHON_NS {
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         inline std::complex<double> V3new(const unsigned int [3]);
         double **vec_s;
-        double *mass_p;
+        double ***relvec;
+        double *invsqrt_mass_p;
         double mat_convert[3][3];
 
         double ***fc3;
