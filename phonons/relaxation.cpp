@@ -74,6 +74,9 @@ void Relaxation::setup_relaxation()
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
 
+    memory->allocate(e_tmp, 4, nk);
+    memory->allocate(f_tmp, 4, nk);
+
     double domega_min;
 
     domega_min = 10000.0;
@@ -311,15 +314,21 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
 
+        /*
         for (i = 0; i < 3; ++i){
             vec1[i] = vec_s[(*it).elems[1].cell][i] - vec_s[(*it).elems[0].cell][i];
             vec2[i] = vec_s[(*it).elems[2].cell][i] - vec_s[(*it).elems[0].cell][i];
             vec1[i] = dynamical->fold(vec1[i]);
             vec2[i] = dynamical->fold(vec2[i]);
         }
-
+        
         system->rotvec(vec1, vec1, mat_convert);
         system->rotvec(vec2, vec2, mat_convert);
+        */
+         for (i = 0; i < 3; ++i){
+            vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
+            vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
+        }
 
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
@@ -471,6 +480,70 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
     return ret * std::pow(0.5, 4) / static_cast<double>(nk); 
 }
 
+double Relaxation::self_tetra(const double T, const double omega, const unsigned int knum, const unsigned int snum)
+{
+    double ret = 0.0;
+
+    unsigned int i;
+    unsigned int is, js, ik, jk;
+    unsigned int ks_tmp[3], kcount;
+    double xk_tmp[3], xk_norm;
+    double v3_tmp, omega_inner[2];
+    double n1, n2;
+
+    unsigned int knum_inv = kpoint->knum_minus[knum];
+
+    ks_tmp[0] = knum_inv * ns + snum;
+
+    for (is = 0; is < ns; ++is){
+        for (js = 0; js < ns; ++js){
+
+            kcount = 0;
+
+            for (ik = 0; ik < nk; ++ik) {
+                for (jk = 0; jk < nk; ++jk){
+
+                    xk_tmp[0] = kpoint->xk[knum_inv][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
+                    xk_tmp[1] = kpoint->xk[knum_inv][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
+                    xk_tmp[2] = kpoint->xk[knum_inv][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+
+                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+                    if (std::sqrt(xk_norm) > eps15) continue; 
+
+                    ks_tmp[1] = ik * ns + is;
+                    ks_tmp[2] = jk * ns + js;
+
+                    v3_tmp = std::norm(V3new(ks_tmp));
+
+                    omega_inner[0] = dynamical->eval_phonon[ik][is];
+                    omega_inner[1] = dynamical->eval_phonon[jk][js];
+                     
+                    n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
+                    n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
+
+                   // e_tmp[0][kcount] = -omega_inner[0] - omega_inner[1];
+                    e_tmp[1][kcount] = omega_inner[0] + omega_inner[1];
+                    e_tmp[2][kcount] = omega_inner[0] - omega_inner[1];
+                    e_tmp[3][kcount] = -omega_inner[0] + omega_inner[1];
+
+                   // f_tmp[0][kcount] = -v3_tmp * n1;
+                    f_tmp[1][kcount] = v3_tmp * n1;
+                    f_tmp[2][kcount] = -v3_tmp * n2;
+                    f_tmp[3][kcount] = v3_tmp * n2;
+                    
+                    ++kcount;
+                }
+            }
+
+               for (unsigned int j = 1; j < 4; ++j) {
+                   ret += integration->do_tetrahedron(e_tmp[j], f_tmp[j], omega);
+               }
+        }
+    }
+     return ret * pi * std::pow(0.5, 4);
+}
+
 void Relaxation::calc_selfenergy_at_T(const double T)
 {
     unsigned int i;
@@ -620,7 +693,6 @@ void Relaxation::calc_selfenergy()
     ofs_test.close();
 
     unsigned int ks_tmp[3];
-    double **e_tmp, **f_tmp;
     double *energy_dos, *damp;
     double v3_tmp;
     unsigned int ik, jk;
@@ -643,8 +715,6 @@ void Relaxation::calc_selfenergy()
     ofs_test << std::endl;
     ofs_test << "# T = " << T << std::endl;
 
-    memory->allocate(e_tmp, 4, nk);
-    memory->allocate(f_tmp, 4, nk);
     memory->allocate(energy_dos, dos->n_energy);
     memory->allocate(damp, dos->n_energy);
 

@@ -49,6 +49,7 @@ namespace PHON_NS {
         std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> *self_E;
+        double self_tetra(const double, const double, const unsigned int, const unsigned int);
         double epsilon;
 
      private:
@@ -67,7 +68,7 @@ namespace PHON_NS {
         double ***relvec;
         double *invsqrt_mass_p;
         double mat_convert[3][3];
-
+        double **e_tmp, **f_tmp;
         double ***fc3;
     };
 }
