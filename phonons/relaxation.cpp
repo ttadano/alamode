@@ -259,17 +259,17 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
     omega_prod = omega[0] * omega[1] * omega[2];
 
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
-/*
+        /*
         for (i = 0; i < 3; ++i){
-            vec1[i] = vec_s[(*it).elems[1].cell][i] - vec_s[(*it).elems[0].cell][i];
-            vec2[i] = vec_s[(*it).elems[2].cell][i] - vec_s[(*it).elems[0].cell][i];
-            vec1[i] = dynamical->fold(vec1[i]);
-            vec2[i] = dynamical->fold(vec2[i]);
+        vec1[i] = vec_s[(*it).elems[1].cell][i] - vec_s[(*it).elems[0].cell][i];
+        vec2[i] = vec_s[(*it).elems[2].cell][i] - vec_s[(*it).elems[0].cell][i];
+        vec1[i] = dynamical->fold(vec1[i]);
+        vec2[i] = dynamical->fold(vec2[i]);
         }
 
         system->rotvec(vec1, vec1, mat_convert);
         system->rotvec(vec2, vec2, mat_convert);
-*/
+        */
         for (i = 0; i < 3; ++i){
             vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
             vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
@@ -316,16 +316,16 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
         /*
         for (i = 0; i < 3; ++i){
-            vec1[i] = vec_s[(*it).elems[1].cell][i] - vec_s[(*it).elems[0].cell][i];
-            vec2[i] = vec_s[(*it).elems[2].cell][i] - vec_s[(*it).elems[0].cell][i];
-            vec1[i] = dynamical->fold(vec1[i]);
-            vec2[i] = dynamical->fold(vec2[i]);
+        vec1[i] = vec_s[(*it).elems[1].cell][i] - vec_s[(*it).elems[0].cell][i];
+        vec2[i] = vec_s[(*it).elems[2].cell][i] - vec_s[(*it).elems[0].cell][i];
+        vec1[i] = dynamical->fold(vec1[i]);
+        vec2[i] = dynamical->fold(vec2[i]);
         }
-        
+
         system->rotvec(vec1, vec1, mat_convert);
         system->rotvec(vec2, vec2, mat_convert);
         */
-         for (i = 0; i < 3; ++i){
+        for (i = 0; i < 3; ++i){
             vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
             vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
         }
@@ -333,7 +333,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
         invsqrt_mass_prod = 1.0;
- 
+
         for (i = 0; i < 3; ++i){
             phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
             invsqrt_mass_prod *= invsqrt_mass_p[(*it).elems[i].atom];
@@ -476,7 +476,7 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
         }
     }
 
-//    return ret * std::pow(0.5, 4) / static_cast<double>(system->ntran); 
+    //    return ret * std::pow(0.5, 4) / static_cast<double>(system->ntran); 
     return ret * std::pow(0.5, 4) / static_cast<double>(nk); 
 }
 
@@ -491,7 +491,9 @@ double Relaxation::self_tetra(const double T, const double omega, const unsigned
     double v3_tmp, omega_inner[2];
     double n1, n2;
 
-    unsigned int knum_inv = kpoint->knum_minus[knum];
+    unsigned int knum_inv;
+    
+    knum_inv= kpoint->knum_minus[knum];
 
     ks_tmp[0] = knum_inv * ns + snum;
 
@@ -518,30 +520,30 @@ double Relaxation::self_tetra(const double T, const double omega, const unsigned
 
                     omega_inner[0] = dynamical->eval_phonon[ik][is];
                     omega_inner[1] = dynamical->eval_phonon[jk][js];
-                     
+
                     n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
                     n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
 
-                   // e_tmp[0][kcount] = -omega_inner[0] - omega_inner[1];
+                    // e_tmp[0][kcount] = -omega_inner[0] - omega_inner[1];
                     e_tmp[1][kcount] = omega_inner[0] + omega_inner[1];
                     e_tmp[2][kcount] = omega_inner[0] - omega_inner[1];
                     e_tmp[3][kcount] = -omega_inner[0] + omega_inner[1];
 
-                   // f_tmp[0][kcount] = -v3_tmp * n1;
+                    // f_tmp[0][kcount] = -v3_tmp * n1;
                     f_tmp[1][kcount] = v3_tmp * n1;
                     f_tmp[2][kcount] = -v3_tmp * n2;
                     f_tmp[3][kcount] = v3_tmp * n2;
-                    
+
                     ++kcount;
                 }
             }
 
-               for (unsigned int j = 1; j < 4; ++j) {
-                   ret += integration->do_tetrahedron(e_tmp[j], f_tmp[j], omega);
-               }
+            for (unsigned int j = 1; j < 4; ++j) {
+                ret += integration->do_tetrahedron(e_tmp[j], f_tmp[j], omega);
+            }
         }
     }
-     return ret * pi * std::pow(0.5, 4);
+    return ret * pi * std::pow(0.5, 4);
 }
 
 void Relaxation::calc_selfenergy_at_T(const double T)
@@ -677,7 +679,7 @@ void Relaxation::calc_selfenergy()
     file_test = input->job_title + ".test";
     ofs_test.open(file_test.c_str(), std::ios::out);
     if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
-    
+
     for (i = 0; i < dos->n_energy; ++i){
         omega_tmp = dos->emin + dos->delta_e * static_cast<double>(i);
         ofs_test << std::setw(15) << omega_tmp;
@@ -707,7 +709,7 @@ void Relaxation::calc_selfenergy()
     if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test2");
 
     ks_tmp[0] = 3;
-   
+
     ofs_test << "# Damping function of a phonon xk = ";
     for (i = 0; i < 3; ++i) {
         ofs_test << std::setw(15) << kpoint->xk[ks_tmp[0]/ns][i];
@@ -722,8 +724,8 @@ void Relaxation::calc_selfenergy()
         damp[i] = 0.0;
         energy_dos[i] = dos->emin + dos->delta_e * static_cast<double>(i);
     }
-   
-     for (is = 0; is < ns; ++is){
+
+    for (is = 0; is < ns; ++is){
         for (js = 0; js < ns; ++js){
 
             kcount = 0;
@@ -746,7 +748,7 @@ void Relaxation::calc_selfenergy()
 
                     omega_inner[0] = dynamical->eval_phonon[ik][is];
                     omega_inner[1] = dynamical->eval_phonon[jk][js];
-                     
+
                     n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
                     n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
 
@@ -759,24 +761,24 @@ void Relaxation::calc_selfenergy()
                     f_tmp[1][kcount] = v3_tmp * n1;
                     f_tmp[2][kcount] = -v3_tmp * n2;
                     f_tmp[3][kcount] = v3_tmp * n2;
-                    
+
                     ++kcount;
                 }
             }
 
             for (i = 0; i < dos->n_energy; ++i){
-               for (unsigned int j = 0; j < 4; ++j) {
-                   damp[i] += integration->do_tetrahedron(e_tmp[j], f_tmp[j], energy_dos[i] * time_ry / Hz_to_kayser);
-               }
+                for (unsigned int j = 0; j < 4; ++j) {
+                    damp[i] += integration->do_tetrahedron(e_tmp[j], f_tmp[j], energy_dos[i] * time_ry / Hz_to_kayser);
+                }
             }
 
             std::cout << "kcount = " << kcount << std::endl;
         }
     }
 
-     for (i = 0; i < dos->n_energy; ++i){
+    for (i = 0; i < dos->n_energy; ++i){
         damp[i] *= pi * std::pow(0.5, 4) / time_ry*Hz_to_kayser; 
-     }
+    }
 
     for (i = 0; i < dos->n_energy; ++i){
         ofs_test << std::setw(15) << energy_dos[i];
@@ -788,13 +790,13 @@ void Relaxation::calc_selfenergy()
     /*
     for (i = 0; i <= NT; ++i) {
 
-        T = Tmin + dT * static_cast<double>(i);
-        calc_selfenergy_at_T(T);
-        ofs_test << std::setw(5) << T;
-        for (j = 0; j < 6; ++j){
-            ofs_test << std::setw(15) << 2.0 * self_E[j]/time_ry*Hz_to_kayser;
-        }
-        ofs_test << std::endl;
+    T = Tmin + dT * static_cast<double>(i);
+    calc_selfenergy_at_T(T);
+    ofs_test << std::setw(5) << T;
+    for (j = 0; j < 6; ++j){
+    ofs_test << std::setw(15) << 2.0 * self_E[j]/time_ry*Hz_to_kayser;
+    }
+    ofs_test << std::endl;
     }
 
     file_selfenergy = input->job_title + ".selfE";
@@ -805,22 +807,22 @@ void Relaxation::calc_selfenergy()
     ofs_selfenergy.setf(std::ios::scientific);
 
     for (i = 0; i <= NT; ++i){
-        T = Tmin + dT * static_cast<double>(i);
-        calc_selfenergy_at_T(T);
-        for (iks = 0; iks < nks; ++iks){
-            ofs_selfenergy << std::setw(5) << T;
-            ofs_selfenergy << std::setw(5) << iks / ns;
-            ofs_selfenergy << std::setw(5) << iks % ns;
-            ofs_selfenergy << std::setw(15) << dynamical->eval_phonon[iks/ns][iks%ns]/time_ry*Hz_to_kayser;
-            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
-            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
-            self_E[iks] = selfenergy(T, dynamical->eval_phonon[iks/ns][iks%ns], iks/ns, iks%ns);
-            ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser;
-            ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
-            ofs_selfenergy << std::setw(15) << 1.0e+12/(2.0 * self_E[iks].imag())*time_ry;
-            ofs_selfenergy << std::endl;
-        }
-        ofs_selfenergy << std::endl;
+    T = Tmin + dT * static_cast<double>(i);
+    calc_selfenergy_at_T(T);
+    for (iks = 0; iks < nks; ++iks){
+    ofs_selfenergy << std::setw(5) << T;
+    ofs_selfenergy << std::setw(5) << iks / ns;
+    ofs_selfenergy << std::setw(5) << iks % ns;
+    ofs_selfenergy << std::setw(15) << dynamical->eval_phonon[iks/ns][iks%ns]/time_ry*Hz_to_kayser;
+    ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
+    ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
+    self_E[iks] = selfenergy(T, dynamical->eval_phonon[iks/ns][iks%ns], iks/ns, iks%ns);
+    ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser;
+    ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
+    ofs_selfenergy << std::setw(15) << 1.0e+12/(2.0 * self_E[iks].imag())*time_ry;
+    ofs_selfenergy << std::endl;
+    }
+    ofs_selfenergy << std::endl;
     }
     ofs_selfenergy.close(); 
     */

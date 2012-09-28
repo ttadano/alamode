@@ -135,10 +135,13 @@ void Conductivity::calc_kl_at_T(const double T)
     for  (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
             omega = dynamical->eval_phonon[ik][is];
-//            tau[ik][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, ik, is).imag());
+          
 //           tau[ik][is] = 1.0 / (2.0 * relaxation->self_E[ik*ns + is].imag());
-            tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
 
+            tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
+             std::cout << "ik = " << ik << " , is = " << is << "omega = " << omega << "tau = " <<  tau[ik][is];
+             tau[ik][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, ik, is).imag());
+             std::cout << "tau2 = " << tau[ik][is] << std::endl;
             for (i = 0; i < 3; ++i){
                 for (j = 0; j < 3; ++j){
                     kl[i][j] += kpoint->weight_k[ik] * phonon_thermodynamics->Cv(omega, T) * vel[ik][is][i] * vel[ik][is][j] * tau[ik][is];
