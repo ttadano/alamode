@@ -106,6 +106,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
     memory->allocate(omega_shift, ndiff, n); 
     memory->allocate(xk_shift, ndiff, 3);
     memory->allocate(omega_tmp, ndiff);
+    memory->allocate(evec_tmp, 1, 1);
 
     for (i = 0; i < 3; ++i){
 
@@ -132,6 +133,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
     memory->deallocate(xk_shift);
     memory->deallocate(omega_shift);
     memory->deallocate(omega_tmp);
+    memory->deallocate(evec_tmp);
 }
 
 double Phonon_velocity::diff(double *f, const unsigned int n, double h)

@@ -141,7 +141,7 @@ void Relaxation::finish_relaxation()
     memory->deallocate(V);
     memory->deallocate(self_E);
 
-    memory->deallocate(vec_s);
+    memory->deallocate(relvec);
     memory->deallocate(invsqrt_mass_p);
 }
 
