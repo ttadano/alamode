@@ -422,6 +422,15 @@ void Kpoint::reduce_kpoints(double **xkr)
     for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
         weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
     }
+
+    // Construct the independent k-point list
+    kpset_uniq.clear();
+    unsigned int jk = 0;
+    for (ik = 0; ik < nk_equiv.size(); ++ik){
+     kpset_uniq.insert(kpIBZ[jk].knum);
+     jk += nk_equiv[ik];
+    }
+
     memory->deallocate(kequiv);
 }
 

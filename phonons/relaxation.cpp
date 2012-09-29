@@ -173,9 +173,18 @@ void Relaxation::calc_ReciprocalV()
 
     kslist.clear();
 
+    bool is_necessary;
+
     for (k1 = 0; k1 < nk; ++k1){
         for (k2 = 0; k2 < nk; ++k2){
             for (k3 = 0; k3 < nk; ++k3){
+
+                is_necessary 
+                    = (kpoint->kpset_uniq.find(kpoint->knum_minus[k1]) != kpoint->kpset_uniq.end()) 
+                    || (kpoint->kpset_uniq.find(kpoint->knum_minus[k2]) != kpoint->kpset_uniq.end())
+                    || (kpoint->kpset_uniq.find(kpoint->knum_minus[k3]) != kpoint->kpset_uniq.end());
+
+                if(!is_necessary) continue;
 
                 xk_tmp[0] = kpoint->xk[k1][0] + kpoint->xk[k2][0] + kpoint->xk[k3][0];
                 xk_tmp[1] = kpoint->xk[k1][1] + kpoint->xk[k2][1] + kpoint->xk[k3][1];

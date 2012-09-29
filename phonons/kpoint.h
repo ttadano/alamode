@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
 #include "../alm_c++/constants.h"
 
 namespace PHON_NS {
@@ -63,6 +64,7 @@ namespace PHON_NS {
         std::vector<KpointList> kpIBZ;
         std::vector<unsigned int> nk_equiv;
         std::vector<double> weight_k;
+        std::set<unsigned int> kpset_uniq;
 
     private:
         void gen_kpoints_band();
