@@ -76,11 +76,11 @@ void Conductivity::calc_kl()
 
     ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
     
- //   relaxation->calc_ReciprocalV();
+    relaxation->calc_ReciprocalV();
 
     for (iT = 0; iT <= NT; ++iT){
         T = Tmin + dT * static_cast<double>(iT);
- //        relaxation->calc_selfenergy_at_T(T);
+        relaxation->calc_selfenergy_at_T(T);
         calc_kl_at_T(T);
 
         ofs_kl << std::setw(5) << T;
@@ -151,7 +151,8 @@ void Conductivity::calc_kl_at_T(const double T)
         for (is = 0; is < ns; ++is){
 
             omega = dynamical->eval_phonon[knum][is];
-            tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
+            tau[knum][is] = 1.0 / (2.0 * relaxation->self_E[ns * knum + is].imag());
+            // tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
             //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
 
             for (i = 0; i < 3; ++i){

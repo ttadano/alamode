@@ -492,7 +492,7 @@ double Relaxation::self_tetra(const double T, const double omega, const unsigned
     double n1, n2;
 
     unsigned int knum_inv;
-    
+
     knum_inv= kpoint->knum_minus[knum];
 
     ks_tmp[0] = knum_inv * ns + snum;
@@ -549,57 +549,50 @@ double Relaxation::self_tetra(const double T, const double omega, const unsigned
 void Relaxation::calc_selfenergy_at_T(const double T)
 {
     unsigned int i;
-    double v_norm;
-
-    unsigned int *ind, *knum, *snum;
-    double *omega;
-    double n1, n2;
-
-    double fcell = 1.0 / static_cast<double>(system->ntran);
-
-    std::complex<double> ctmp;
-
-    memory->allocate(ind, 3);
-    memory->allocate(knum, 3);
-    memory->allocate(snum, 3);
-    memory->allocate(omega, 3);
+    int ielem;
 
     for (i = 0; i < nks; ++i) {
         self_E[i] = std::complex<double>(0.0, 0.0);
     }
 
-    for (std::vector<ReciprocalVs>::iterator it = V[0].begin(); it != V[0].end(); ++it){
+#pragma omp parallel
+    {
+        unsigned int ind[3], knum[3], snum[3];
+        double v_norm;
+        double omega[3];
+        double n1, n2; 
 
-        do {
-            for (i = 0; i < 3; ++i){
-                ind[i] = (*it).ks[i];
-                knum[i] = ind[i] / ns;
-                snum[i] = ind[i] % ns;
-                omega[i] = dynamical->eval_phonon[knum[i]][snum[i]];
-            }
+        std::complex<double> ctmp;
 
-            n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
-            n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
+#pragma omp for
+        for (ielem = 0; ielem < V[0].size(); ++ielem){
 
-            ctmp = std::norm((*it).v)
-                * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
-                - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
-                + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
-                - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
+            do {
+                for (i = 0; i < 3; ++i){
+                    ind[i] = V[0][ielem].ks[i];
+                    knum[i] = ind[i] / ns;
+                    snum[i] = ind[i] % ns;
+                    omega[i] = dynamical->eval_phonon[knum[i]][snum[i]];
+                }
 
-            self_E[ns * kpoint->knum_minus[knum[0]] + snum[0]] += ctmp;
+                n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
+                n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
 
-        } while (std::next_permutation((*it).ks.begin(), (*it).ks.end()));
+                ctmp = std::norm(V[0][ielem].v)
+                    * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
+                    - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
+                    + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
+                    - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
+
+                self_E[ns * kpoint->knum_minus[knum[0]] + snum[0]] += ctmp;
+
+            } while (std::next_permutation(V[0][ielem].ks.begin(), V[0][ielem].ks.end()));
+        }
     }
 
     for (i = 0; i < nks; ++i){
         self_E[i] *= std::pow(0.5, 4) / static_cast<double>(nk);
     }
-
-    memory->deallocate(ind);
-    memory->deallocate(knum);
-    memory->deallocate(snum);
-    memory->deallocate(omega);
 }
 
 void Relaxation::modify_eigenvectors()
