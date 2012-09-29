@@ -115,7 +115,8 @@ void Conductivity::calc_kl_at_T(const double T)
         for (jk = 0; jk < kpoint->nk_equiv[ik]; ++jk){
      
             knum = kpoint->kpIBZ[kk].knum;
-        std::cout << " #K = " << std::setw(4) << ik + 1;
+            if (jk == 0) std::cout << "#";
+        std::cout << "#K = " << std::setw(4) << ik + 1;
         std::cout << " knum = " << std::setw(4) << knum + 1;
         std::cout << " xk = " << std::setw(15 ) << kpoint->xk[knum][0]  << std::setw(15) << kpoint->xk[knum][1]  << std::setw(15) << kpoint->xk[knum][2];
         std::cout << ": ";
@@ -125,7 +126,7 @@ void Conductivity::calc_kl_at_T(const double T)
             std::cout << std::setw(15) << vel[knum][is][0] * vel[knum][is][0];
             std::cout << std::setw(15) << 1.0 / (2.0 *relaxation->selfenergy(T, omega, knum, is).imag());
         }
-        std::cout << ":" << std::endl;
+        std::cout << " : " << std::endl;
         ++kk;
     }
     }
