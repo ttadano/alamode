@@ -111,6 +111,7 @@ void Conductivity::calc_kl_at_T(const double T)
     
     kk = 0;
  
+    /*
     for (ik = 0; ik < kpoint->nk_equiv.size(); ++ik){
         for (jk = 0; jk < kpoint->nk_equiv[ik]; ++jk){
      
@@ -130,33 +131,14 @@ void Conductivity::calc_kl_at_T(const double T)
         ++kk;
     }
     }
+    */
     
-
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
             kl[i][j] = 0.0;
         }
     }
-
-/*
-    for  (ik = 0; ik < nk; ++ik){
-        for (is = 0; is < ns; ++is){
-            omega = dynamical->eval_phonon[ik][is];
-          
-//           tau[ik][is] = 1.0 / (2.0 * relaxation->self_E[ik*ns + is].imag());
-
-  //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
-             tau[ik][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, ik, is).imag());
-            for (i = 0; i < 3; ++i){
-                for (j = 0; j < 3; ++j){
-                    kl[i][j] += kpoint->weight_k[ik] * phonon_thermodynamics->Cv(omega, T) * vel[ik][is][i] * vel[ik][is][j] * tau[ik][is];
-                }
-            }
-
-        }
-    }
-    */
 
     double vv_tmp;
 
@@ -170,8 +152,7 @@ void Conductivity::calc_kl_at_T(const double T)
 
             omega = dynamical->eval_phonon[knum][is];
             tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
-  //          std::cout << "omega[" << knum << "," << is << "] = " << omega << std::endl;
-  //          std::cout << "tau[" << knum << "," << is << "] = " << tau[knum][is]*time_ry * 1.0e+12 << std::endl;
+            //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
 
             for (i = 0; i < 3; ++i){
                 for (j = 0; j < 3; ++j){
@@ -182,11 +163,9 @@ void Conductivity::calc_kl_at_T(const double T)
                         ktmp = kpoint->kpIBZ[jk + kk].knum;
                         vv_tmp += vel[ktmp][is][i] * vel[ktmp][is][j];
                     }
-  //                  std::cout << "vv[" << i << "," << j <<"] = " << vv_tmp << std::endl;
+                    vv_tmp /= static_cast<double>(kpoint->nk_equiv[ik]);
                                   
                     kl[i][j] += kpoint->weight_k[ik] * phonon_thermodynamics->Cv(omega, T) * vv_tmp * tau[knum][is];
-  //                  std::cout << "#" << kpoint->weight_k[ik] << " " << phonon_thermodynamics->Cv(omega, T) << " " << vv_tmp << " " << tau[knum][is] << std::endl;
-                  //  kl[i][j] += kpoint->weight_k[ik] * phonon_thermodynamics->Cv(omega, T) * vel[knum][is][i] * vel[knum][is][j] * tau[knum][is];
                 }
             }
         }
