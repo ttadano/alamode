@@ -121,11 +121,11 @@ void Conductivity::calc_kl_at_T(const double T)
         std::cout << ": ";
         for (is = 0; is < ns; ++is){
             omega = dynamical->eval_phonon[knum][is];
-            std::cout << std::setw(13) << omega;
+            std::cout << std::setw(13) << phonon_thermodynamics->Cv(omega, T);
             std::cout << std::setw(15) << vel[knum][is][0] * vel[knum][is][0];
-            std::cout << std::setw(15) << relaxation->selfenergy(T, omega, knum, is).imag();
+            std::cout << std::setw(15) << 1.0 / (2.0 *relaxation->selfenergy(T, omega, knum, is).imag());
         }
-        std::cout << std::endl;
+        std::cout << ":" << std::endl;
         ++kk;
     }
     }
