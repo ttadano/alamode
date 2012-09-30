@@ -150,19 +150,18 @@ void Relaxation::calc_ReciprocalV()
     // Calculate V_{ks, k's', k''s''}^(3) for Self-energy calculation
 
     unsigned int i;
-    unsigned int k1, k2, k3;
+    int k1, k2, k3;
     unsigned int b1, b2, b3;
 
     std::vector<StructKS> kslist;
     StructKS ks_tmp;
-    unsigned int ks_arr[3];
 
     unsigned int nkp;
 
     int ik;
 
     double xk_tmp[3], xk_norm;
-    std::complex<double> prod;
+
 
     std::vector<FcsClass>::iterator it;
 
@@ -175,9 +174,84 @@ void Relaxation::calc_ReciprocalV()
 
     bool is_necessary;
 
+    /*
+
+    #pragma omp parallel
+    {
+    int nk3 = nk * nk * nk;
+    int mk1, mk2, mk3;
+    bool is_necessary2;
+    double xk_tmp2[3], xk_norm2;
+    StructKS ks_tmp2;
+    std::vector<StructKS> kslist_tmp;
+
+    kslist_tmp.clear();
+    //    ik = mk1 * nk * nk + mk2 * nk + mk3;
+
+    #pragma omp for
+    for (ik = 0; ik < nk3; ++ik) {
+
+    mk1 = ik / (nk * nk);
+    mk2 = (ik / nk) % nk;
+    mk3 = ik % nk;
+
+    is_necessary2
+    = (kpoint->kpset_uniq.find(kpoint->knum_minus[mk1]) != kpoint->kpset_uniq.end()) 
+    || (kpoint->kpset_uniq.find(kpoint->knum_minus[mk2]) != kpoint->kpset_uniq.end())
+    || (kpoint->kpset_uniq.find(kpoint->knum_minus[mk3]) != kpoint->kpset_uniq.end());
+
+    //     if(!is_necessary2) continue;
+
+    xk_tmp2[0] = kpoint->xk[mk1][0] + kpoint->xk[mk2][0] + kpoint->xk[mk3][0];
+    xk_tmp2[1] = kpoint->xk[mk1][1] + kpoint->xk[mk2][1] + kpoint->xk[mk3][1];
+    xk_tmp2[2] = kpoint->xk[mk1][2] + kpoint->xk[mk2][2] + kpoint->xk[mk3][2];
+
+    for (i = 0; i < 3; ++i){
+    xk_tmp2[i] = std::fmod(xk_tmp2[i], 1.0);
+    }
+    xk_norm2 = std::pow(xk_tmp2[0], 2) + std::pow(xk_tmp2[1], 2) + std::pow(xk_tmp2[2], 2);
+
+    // If the momentum-conservation is not satisfied, we skip the loop.
+
+    //      if (std::sqrt(xk_norm2) > eps15) continue;
+
+    //  std::cout << std::setw(10) <<  mk1 << std::setw(10) << mk2 << std::setw(10) << mk3 << std::endl;
+
+    for (b1 = 0; b1 < ns; ++b1){
+    for (b2 = 0; b2 < ns; ++b2){
+    for (b3 = 0; b3 < ns; ++b3){
+
+    ks_tmp2.ks1 = ns * mk1 + b1;
+    ks_tmp2.ks2 = ns * mk2 + b2;
+    ks_tmp2.ks3 = ns * mk3 + b3;
+
+    if (ks_tmp2.ks1 > ks_tmp2.ks2 || ks_tmp2.ks2 > ks_tmp2.ks3) continue;
+    #pragma omp critical
+    kslist_tmp.push_back(ks_tmp2);
+    //                         std::cout << "OK1"<< std::endl;
+    }
+    }
+    }
+
+    }
+    #pragma omp barrier
+
+
+    #pragma omp critical
+    {
+    std::cout << "nkp = " << kslist_tmp.size() << std::endl;
+    kslist.insert(kslist.end(), kslist_tmp.begin(), kslist_tmp.end());
+    }
+    }
+
+    std::cout << "nkp_tot = " << kslist.size() << std::endl;
+
+    kslist.clear();
+    */
+
     for (k1 = 0; k1 < nk; ++k1){
-        for (k2 = 0; k2 < nk; ++k2){
-            for (k3 = 0; k3 < nk; ++k3){
+        for (k2 = k1; k2 < nk; ++k2){
+            for (k3 = k2; k3 < nk; ++k3){
 
                 is_necessary 
                     = (kpoint->kpset_uniq.find(kpoint->knum_minus[k1]) != kpoint->kpset_uniq.end()) 
@@ -210,6 +284,7 @@ void Relaxation::calc_ReciprocalV()
                             if (ks_tmp.ks1 > ks_tmp.ks2 || ks_tmp.ks2 > ks_tmp.ks3) continue;
 
                             kslist.push_back(ks_tmp);
+
                         }
                     }
                 }
@@ -219,21 +294,43 @@ void Relaxation::calc_ReciprocalV()
 
     nkp = kslist.size();
 
-#pragma omp parallel for private(ks_arr, prod) schedule(static)
-    for (ik = 0; ik < nkp; ++ik){
+#pragma omp parallel
+    {
+        unsigned int ks_arr[3];
+        std::complex<double> prod;
 
-        ks_arr[0] = kslist[ik].ks1;
-        ks_arr[1] = kslist[ik].ks2;
-        ks_arr[2] = kslist[ik].ks3;
-        prod = V3(ks_arr[0], ks_arr[1], ks_arr[2]);
+#pragma omp for schedule(static)
+        for (ik = 0; ik < nkp; ++ik){
 
-        // Add to list
-        if (std::abs(prod) > eps) {
+            ks_arr[0] = kslist[ik].ks1;
+            ks_arr[1] = kslist[ik].ks2;
+            ks_arr[2] = kslist[ik].ks3;
+            prod = V3(ks_arr[0], ks_arr[1], ks_arr[2]);
+
+            // Add to list
+            if (std::abs(prod) > eps) {
 #pragma omp critical
-            V[0].push_back(ReciprocalVs(prod, ks_arr, 3));
+                V[0].push_back(ReciprocalVs(prod, ks_arr, 3));
+            }
         }
     }
+    /*
 
+    #pragma omp parallel for private(ks_arr, prod) schedule(static)
+    for (ik = 0; ik < nkp; ++ik){
+
+    ks_arr[0] = kslist[ik].ks1;
+    ks_arr[1] = kslist[ik].ks2;
+    ks_arr[2] = kslist[ik].ks3;
+    prod = V3(ks_arr[0], ks_arr[1], ks_arr[2]);
+
+    // Add to list
+    if (std::abs(prod) > eps) {
+    #pragma omp critical
+    V[0].push_back(ReciprocalVs(prod, ks_arr, 3));
+    }
+    }
+    */
     kslist.clear();
     std::cout << "Done !" << std::endl;
     std::cout << "Number of nonzero V's: " << V[0].size() << std::endl;
@@ -803,7 +900,7 @@ void Relaxation::calc_selfenergy()
         ofs_test << std::endl;
     }
     ofs_test.close();
-/*
+    /*
     file_selfenergy = input->job_title + ".selfE";
     ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
     if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");

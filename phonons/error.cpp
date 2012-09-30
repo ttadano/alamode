@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <string>
 #include "error.h"
+#include "mpi_common.h"
 
 using namespace PHON_NS;
 
@@ -17,12 +18,14 @@ void Error::warn(const char *file, const char *message)
 
 void Error::exit(const char *file, const char *message)
 {
+    MPI_Finalize();
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
     std::exit(EXIT_FAILURE);
 }
 
 void Error::exit(const char *file, const char *message, int info)
 {
+    MPI_Finalize();
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);
 }

@@ -9,21 +9,22 @@ namespace PHON_NS {
         Pointers(PHON *ptr) :
           phon(ptr),
               memory(ptr->memory),
-          error(ptr->error),
-          input(ptr->input),
-          system(ptr->system),
-          symmetry(ptr->symmetry),
-          kpoint(ptr->kpoint),
-          integration(ptr->integration),
-          fcs_phonon(ptr->fcs_phonon),
-          dynamical(ptr->dynamical),
-          phonon_velocity(ptr->phonon_velocity),
-          phonon_thermodynamics(ptr->phonon_thermodynamics),
-          relaxation(ptr->relaxation),
-          conductivity(ptr->conductivity),
-          writes(ptr->writes),
-          dos(ptr->dos),
-          timer(ptr->timer) {}
+              error(ptr->error),
+              input(ptr->input),
+              system(ptr->system),
+              symmetry(ptr->symmetry),
+              kpoint(ptr->kpoint),
+              integration(ptr->integration),
+              fcs_phonon(ptr->fcs_phonon),
+              dynamical(ptr->dynamical),
+              phonon_velocity(ptr->phonon_velocity),
+              phonon_thermodynamics(ptr->phonon_thermodynamics),
+              relaxation(ptr->relaxation),
+              conductivity(ptr->conductivity),
+              writes(ptr->writes),
+              dos(ptr->dos),
+              mympi(ptr->mympi),
+              timer(ptr->timer) {}
           virtual ~Pointers(){}
     protected:
         PHON *phon;
@@ -42,6 +43,7 @@ namespace PHON_NS {
         Conductivity *&conductivity;
         Writes *&writes;
         Dos *&dos;
+        MyMPI *&mympi;
         Timer *&timer;
     };
 }

@@ -16,11 +16,14 @@
 #include "integration.h"
 #include "relaxation.h"
 #include "conductivity.h"
+#include "mpi_common.h"
 
 using namespace PHON_NS;
 
-PHON::PHON(int narg, char **arg)
+PHON::PHON(int narg, char **arg, MPI_Comm comm)
 {
+    mympi = new MyMPI(this, comm);
+
     std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     input = new Input(this, narg, arg);
     create_pointers();

@@ -1,5 +1,13 @@
 #pragma once
 #include <string>
+//#include "mpi_common.h"
+
+#ifdef _WIN32
+#include <mpi.h>
+#else
+#include "mpi.h"
+#endif
+
 
 namespace PHON_NS
 {
@@ -21,8 +29,9 @@ namespace PHON_NS
         class Conductivity *conductivity;
         class Writes *writes;
         class Dos *dos;
+        class MyMPI *mympi;
 
-        PHON(int, char**);
+        PHON(int, char**, MPI_Comm);
         ~PHON();
 
         void create_pointers();
