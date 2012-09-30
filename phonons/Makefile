@@ -4,7 +4,7 @@
 	${CXX} ${CXXFLAGS} -c $<
 
 CXX = icpc
-CXXFLAGS = -O3 -xSSE4.1 -openmp -vec-report1 -g
+CXXFLAGS = -O3 -xSSE4.1 -openmp -vec-report1 
 LDFLAGS = -mkl
 
 PROG = phonons

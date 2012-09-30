@@ -789,18 +789,21 @@ void Relaxation::calc_selfenergy()
 
     ofs_test.close();
 
-    /*
+    file_test = input->job_title + ".damp_T";
+    ofs_test.open(file_test.c_str(), std::ios::out);
+    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
+
     for (i = 0; i <= NT; ++i) {
-
-    T = Tmin + dT * static_cast<double>(i);
-    calc_selfenergy_at_T(T);
-    ofs_test << std::setw(5) << T;
-    for (j = 0; j < 6; ++j){
-    ofs_test << std::setw(15) << 2.0 * self_E[j]/time_ry*Hz_to_kayser;
+        T = Tmin + dT * static_cast<double>(i);
+        calc_selfenergy_at_T(T);
+        ofs_test << std::setw(5) << T;
+        for (j = 0; j < 6; ++j){
+            ofs_test << std::setw(15) << 2.0 * self_E[j].imag()/time_ry*Hz_to_kayser;
+        }
+        ofs_test << std::endl;
     }
-    ofs_test << std::endl;
-    }
-
+    ofs_test.close();
+/*
     file_selfenergy = input->job_title + ".selfE";
     ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
     if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
