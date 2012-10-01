@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "parsephon.h"
 #include "error.h"
 #include "system.h"
@@ -24,9 +25,17 @@ void Input::parce_input()
     using namespace std;
     string mode;
 
-    cin >> job_title;
-    cin >> mode;
-    boost::to_lower(mode);
+    if (mympi->my_rank == 0) {
+        cin >> job_title;
+        cin >> mode;
+        boost::to_lower(mode);
+    }
+/*
+    int len = job_title.length();
+    MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(const_cast<char *>(job_title.data()), len, MPI_CHAR, 0, MPI_COMM_WORLD);
+    std::cout << job_title.data() << std::endl;
+*/
 
     phon->mode = mode;
 

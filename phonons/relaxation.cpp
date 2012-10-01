@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include <fstream>
 #include <iomanip>
 #include <algorithm>
@@ -77,6 +78,8 @@ void Relaxation::setup_relaxation()
     memory->allocate(e_tmp, 4, nk);
     memory->allocate(f_tmp, 4, nk);
 
+
+    if (mympi->my_rank == 0) {
     double domega_min;
 
     domega_min = 10000.0;
@@ -88,10 +91,12 @@ void Relaxation::setup_relaxation()
     std::cout << std::endl;
     std::cout << "Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
     std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl << std::endl;
+    }
 
     modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
+    MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     /*
     unsigned int tmp[3];
@@ -271,7 +276,7 @@ void Relaxation::calc_ReciprocalV()
 
                 // If the momentum-conservation is not satisfied, we skip the loop.
 
-                if (std::sqrt(xk_norm) > eps15) continue;
+                              if (std::sqrt(xk_norm) > eps15) continue;
 
                 for (b1 = 0; b1 < ns; ++b1){
                     for (b2 = 0; b2 < ns; ++b2){
@@ -709,10 +714,12 @@ void Relaxation::modify_eigenvectors()
     unsigned int nk_inv;
     std::complex<double> *evec_tmp;
 
+    if (mympi->my_rank == 0) {
     std::cout << "**********      NOTICE      **********" << std::endl;
     std::cout << "For the brevity of the calculation, " << std::endl;
     std::cout << "phonon eigenvectors will be modified" << std::endl;
     std::cout << "so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
+    }
 
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
@@ -743,8 +750,11 @@ void Relaxation::modify_eigenvectors()
     memory->deallocate(flag_done);
     memory->deallocate(evec_tmp);
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (mympi->my_rank == 0) {
     std::cout << "done !" << std::endl;
     std::cout << "**************************************" << std::endl;
+    }
 }
 
 double Relaxation::delta_lorentz(const double omega)

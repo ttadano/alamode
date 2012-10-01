@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "fcs_phonon.h"
 #include "system.h"
 #include "memory.h"
@@ -35,14 +36,22 @@ void Fcs_phonon::setup(std::string mode)
         }
     }
 
-    load_fc2();
+    if (mympi->my_rank == 0) load_fc2();
+    // This is not necessary
+    MPI_Bcast(&fc2[0][0][0][0], 9*natmin*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (mode == "boltzmann"){
         memory->allocate(force_constant, 2);
-        load_fcs();
+
+        if (mympi->my_rank == 0) load_fcs();
+
+        MPI_Bcast_fc_class(2);
+
+        if (mympi->my_rank == 0) {
         for (i = 0; i < maxorder; ++i){
             std::cout << "Number of non-zero IFCs for " << i + 2 << " order: ";
             std::cout << force_constant[i].size() << std::endl;
+        }
         }
     }
 }
@@ -185,23 +194,7 @@ void Fcs_phonon::load_fcs()
 
     memory->deallocate(ind);
     std::cout << "Done !" << std::endl;
-/*
-    for (std::vector<FcsClass>::iterator p = force_constant[1].begin(); p != force_constant[1].end(); ++p)
-    {
-        std::cout << "$";
-        std::cout << std::setw(15) << (*p).fcs_val;
-        std::cout << std::setw(5) << (*p).elems[0].cell;
-        std::cout << std::setw(5) << (*p).elems[0].atom;
-        std::cout << std::setw(5) << (*p).elems[0].xyz;
-        std::cout << std::setw(5) << (*p).elems[1].cell;
-        std::cout << std::setw(5) << (*p).elems[1].atom;
-        std::cout << std::setw(5) << (*p).elems[1].xyz;
-        std::cout << std::setw(5) << (*p).elems[2].cell;
-        std::cout << std::setw(5) << (*p).elems[2].atom;
-        std::cout << std::setw(5) << (*p).elems[2].xyz;
-        std::cout << std::endl;
-    }
-*/
+
 }
 
 unsigned int Fcs_phonon::coordinate_index(const char char_coord)
@@ -217,4 +210,61 @@ unsigned int Fcs_phonon::coordinate_index(const char char_coord)
         error->exit("coordinate_index", "invalid char_coord", char_coord);
     }
     return m;
+}
+
+void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
+{
+    unsigned int i;
+    int j, k;
+    int nelem;
+    double *fcs_tmp;
+    unsigned int ***ind;
+
+    Triplet tri_tmp;
+    std::vector<Triplet> tri_vec;
+
+    for (i = 0; i < N; ++i){
+        int len = force_constant[i].size();
+        nelem = i + 2;
+
+        MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        memory->allocate(fcs_tmp, len);
+        memory->allocate(ind, len, nelem, 3);
+
+        if (mympi->my_rank == 0) {
+        for (j = 0; j < len; ++j){
+            fcs_tmp[j] = force_constant[i][j].fcs_val;
+            for (k = 0; k < nelem; ++k){
+                ind[j][k][0] = force_constant[i][j].elems[k].atom;
+                ind[j][k][1] = force_constant[i][j].elems[k].cell;
+                ind[j][k][2] = force_constant[i][j].elems[k].xyz;
+            }
+        }
+        }
+
+        MPI_Bcast(&fcs_tmp[0], len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&ind[0][0][0], 3*nelem*len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+        if (mympi->my_rank > 0) {
+            force_constant[i].clear();
+
+            for (j = 0; j < len; ++j){
+                
+                tri_vec.clear();
+
+                for (k = 0; k < nelem; ++k){
+                    tri_tmp.atom = ind[j][k][0];
+                    tri_tmp.cell = ind[j][k][1];
+                    tri_tmp.xyz  = ind[j][k][2];
+
+                    tri_vec.push_back(tri_tmp);
+                }
+                force_constant[i].push_back(FcsClass(fcs_tmp[j], tri_vec));
+            }
+        }
+
+        memory->deallocate(fcs_tmp);
+        memory->deallocate(ind);
+    }
 }

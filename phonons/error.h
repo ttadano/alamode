@@ -12,5 +12,6 @@ namespace PHON_NS {
         void warn(const char *, const char *);
         void exit(const char *, const char *);        
         void exit(const char *, const char *, int);
+        void exitall(const char *, const char *);        
     };
 }

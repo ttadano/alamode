@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "symmetry_core.h"
 #include "memory.h"
 #include "../alm_c++/constants.h"
@@ -36,6 +37,7 @@ void Symmetry::setup_symmetry()
         kdtmp[i] = system->kd[system->map_p2s[i][0]];
     }
 
+    if (mympi->my_rank == 0) {
     std::cout << "Atoms in the primitive cell" << std::endl;
     for (i = 0; i < natmin; ++i){
     std::cout << std::setw(6) << i + 1 << ":";
@@ -45,12 +47,15 @@ void Symmetry::setup_symmetry()
     std::cout << std::setw(5) << kdtmp[i] << std::endl;
     }
     std::cout << std::endl;
+    }
 
     SymmList.clear();
     gensym(natmin, nsym, nnp, system->lavec_p, system->rlavec_p, xtmp, kdtmp);
 
+    if (mympi->my_rank == 0) {
     std::cout << "**Symmetry" << std::endl;
     std::cout << "Number of Symmetry Operations = " << nsym << std::endl << std::endl;
+    }
 }
 
 void Symmetry::gensym(unsigned int nat, unsigned int &nsym, unsigned int nnp, double aa[3][3], double bb[3][3], double **x, unsigned int *kd)
@@ -60,7 +65,9 @@ void Symmetry::gensym(unsigned int nat, unsigned int &nsym, unsigned int nnp, do
     std::ofstream ofs_sym;    
     std::ifstream ifs_sym;
 
-    if(nsym == 0) {
+    if (mympi->my_rank == 0) {
+
+        if(nsym == 0) {
 
         // Automatically find symmetries.
 
@@ -128,6 +135,8 @@ void Symmetry::gensym(unsigned int nat, unsigned int &nsym, unsigned int nnp, do
         }
         ifs_sym.close();
     }
+    }
+    MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 }
 
 void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, double aa[3][3], double bb[3][3], double **x)

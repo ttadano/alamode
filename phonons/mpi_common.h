@@ -6,6 +6,7 @@
 #include "mpi.h"
 #endif
 
+#include <string>
 #include "pointers.h"
 
 namespace PHON_NS {
@@ -15,8 +16,9 @@ namespace PHON_NS {
         MyMPI(class PHON *, MPI_Comm);
         ~MyMPI();
 
+        void MPI_Bcast_string(std::string &, int, MPI_Comm);
+
         int my_rank;
         int nprocs;
     };
-    
 }

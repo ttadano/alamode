@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include <iostream>
 #include "phonons.h"
 #include "timer.h"
@@ -16,18 +17,24 @@
 #include "integration.h"
 #include "relaxation.h"
 #include "conductivity.h"
-#include "mpi_common.h"
 
 using namespace PHON_NS;
 
 PHON::PHON(int narg, char **arg, MPI_Comm comm)
 {
     mympi = new MyMPI(this, comm);
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
+    }
 
-    std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     input = new Input(this, narg, arg);
     create_pointers();
-    input->parce_input();
+
+    if (mympi->my_rank == 0) {
+        input->parce_input();
+    }
+
+    mympi->MPI_Bcast_string(mode, 0, MPI_COMM_WORLD);
 
     if (mode == "phonons") {
 
@@ -92,6 +99,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         relaxation->finish_relaxation();
         conductivity->finish_kl();
 
+
     } else {
         error->exit("phonons", "invalid mode");
     }
@@ -99,6 +107,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     destroy_pointers();
 
     std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
+
 }
 
 PHON::~PHON(){

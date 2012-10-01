@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "conductivity.h"
 #include "memory.h"
 #include "kpoint.h"
@@ -70,11 +71,13 @@ void Conductivity::calc_kl()
 
     unsigned int NT= static_cast<unsigned int>((Tmax - Tmin) / dT);
 
-    file_kl = input->job_title + ".kl";
-    ofs_kl.open(file_kl.c_str(), std::ios::out);
-    if(!ofs_kl) error->exit("calc_kl", "cannot open file_kl");
+    if (mympi->my_rank == 0) {
+        file_kl = input->job_title + ".kl";
+        ofs_kl.open(file_kl.c_str(), std::ios::out);
+        if(!ofs_kl) error->exit("calc_kl", "cannot open file_kl");
 
-    ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+        ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+    }
     
     relaxation->calc_ReciprocalV();
 
@@ -83,16 +86,18 @@ void Conductivity::calc_kl()
         relaxation->calc_selfenergy_at_T(T);
         calc_kl_at_T(T);
 
-        ofs_kl << std::setw(5) << T;
+        if (mympi->my_rank == 0) {
+            ofs_kl << std::setw(5) << T;
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
                 ofs_kl << std::setw(15) << kl[i][j];
             }
         }
         ofs_kl << std::endl;
+        }
     }
 
-    ofs_kl.close();
+    if (mympi->my_rank == 0) ofs_kl.close();
 }
 
 void Conductivity::calc_kl_at_T(const double T)

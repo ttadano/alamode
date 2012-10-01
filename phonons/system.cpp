@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "system.h"
 #include "fcs_phonon.h"
 #include "error.h"
@@ -37,6 +38,7 @@ void System::setup()
         }
     }
 
+    if (mympi->my_rank == 0) {
     std::cout << "**Lattice Vectors**" << std::endl;
     std::cout.setf(std::ios::scientific);
 
@@ -75,6 +77,7 @@ void System::setup()
 
     std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
     std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
+    }
 
     // Atomic masses in Rydberg unit
 
@@ -82,12 +85,16 @@ void System::setup()
     for (i = 0; i < nat; ++i){
         mass[i] = mass_kd[kd[i]]*amu_ry;
     }
+    MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void System::load_system_info()
 {
     unsigned int i;
 
+    if (mympi->my_rank == 0) {
     std::string file_fcs = fcs_phonon->file_fcs;
     std::ifstream ifs_fcs;
 
@@ -137,6 +144,30 @@ void System::load_system_info()
         }
     }
     ifs_fcs.close();
+    }
+
+    MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&lavec_p[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    if (mympi->my_rank > 0){
+        memory->allocate(mass_kd, nkd);
+        memory->allocate(xr_s, nat, 3);
+        memory->allocate(kd, nat);
+        memory->allocate(map_p2s, natmin, ntran);
+        memory->allocate(map_s2p, nat);
+    }
+    
+    MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    // need to define MPI_MYTYPE for the exchange of user defined class
+//    MPI_Bcast(&map_s2p[0], sizeof(map_s2p), MPI_BYTE, 0, MPI_COMM_WORLD);
 }
 
 void System::recips(double vec[3][3], double inverse[3][3])

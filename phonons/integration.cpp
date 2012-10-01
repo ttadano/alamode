@@ -24,7 +24,7 @@ void Integration::setup_integration()
     ntetra = 6 * nk;
 
     memory->allocate(tetras, ntetra, 4);
-    prepare_tetrahedron(nkx, nky, nkz); 
+    prepare_tetrahedron(nkx, nky, nkz);
 }
 
 void Integration::finish_integration()

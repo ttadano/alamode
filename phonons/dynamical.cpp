@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "dynamical.h"
 #include "system.h"
 #include "memory.h"
@@ -174,7 +175,9 @@ void Dynamical::diagonalize_dynamical_all()
     unsigned int nk = kpoint->nk;
     bool require_evec; 
 
+    if (mympi->my_rank == 0) {
     std::cout << std::endl << "Diagonalizing dynamical matrices for all k-points ..." << std::endl;
+    }
 
     memory->allocate(eval_phonon, nk, neval);
 
@@ -196,10 +199,13 @@ void Dynamical::diagonalize_dynamical_all()
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
         }
     }
-    std::cout << "done !" << std::endl;
-    timer->print_elapsed();
-}
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (mympi->my_rank == 0) {
+        timer->print_elapsed();
+        std::cout << "done !" << std::endl;
+    }
+}
 
 void Dynamical::calc_dynamical_matrix()
 {

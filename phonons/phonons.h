@@ -1,6 +1,4 @@
 #pragma once
-#include <string>
-//#include "mpi_common.h"
 
 #ifdef _WIN32
 #include <mpi.h>
@@ -8,6 +6,7 @@
 #include "mpi.h"
 #endif
 
+#include <string>
 
 namespace PHON_NS
 {

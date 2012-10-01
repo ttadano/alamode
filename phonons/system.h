@@ -35,6 +35,8 @@ namespace PHON_NS {
         void rotvec(double [3], double [3], double [3][3], char mode = 'N');
         double volume(double [3], double [3], double [3]);
 
+
+
     private:
         void load_system_info();
         void recips(double [3][3], double [3][3]);

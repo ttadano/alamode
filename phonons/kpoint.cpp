@@ -1,3 +1,4 @@
+#include "mpi_common.h" 
 #include "kpoint.h"
 #include "memory.h"
 #include "error.h"
@@ -33,8 +34,9 @@ void Kpoint::kpoint_setups()
 
     if (phon->mode == "boltzmann") kpoint_mode = 3;
 
-    std::cout << "**k-points**" << std::endl;
+    if (mympi->my_rank == 0) {
 
+    std::cout << "**k-points**" << std::endl;
  
     switch (kpoint_mode){
 
@@ -173,6 +175,23 @@ void Kpoint::kpoint_setups()
     default:
         error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
     }
+    }
+
+    MPI_Bcast(&nkx, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nky, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nkz, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nk , 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    MPI_Bcast(&dos->emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&dos->emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&dos->delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    
+    if (mympi->my_rank > 0) {
+        memory->allocate(xk, nk, 3);
+        memory->allocate(knum_minus, nk);
+    }
+    MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 }
 
 void Kpoint::gen_kpoints_band()

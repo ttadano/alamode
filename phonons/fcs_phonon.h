@@ -57,5 +57,6 @@ namespace PHON_NS {
         void load_fc2();
         void load_fcs();
         unsigned int coordinate_index(const char);
+        void MPI_Bcast_fc_class(const unsigned int);
     };
 }
