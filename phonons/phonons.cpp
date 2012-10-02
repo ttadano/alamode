@@ -98,20 +98,21 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         integration->finish_integration();
         relaxation->finish_relaxation();
         conductivity->finish_kl();
-
-
     } else {
         error->exit("phonons", "invalid mode");
     }
 
     destroy_pointers();
 
-    std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
+    }
 
 }
 
 PHON::~PHON(){
     delete input;
+    delete mympi;
 }
 
 void PHON::create_pointers()

@@ -32,6 +32,8 @@ void Kpoint::kpoint_setups()
     unsigned int i, j;
     double emin, emax, delta_e;
 
+    MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     if (phon->mode == "boltzmann") kpoint_mode = 3;
 
     if (mympi->my_rank == 0) {
@@ -192,6 +194,17 @@ void Kpoint::kpoint_setups()
     }
     MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    if (kpoint_mode == 2 || kpoint_mode == 3) {
+        MPI_Bcast(&nk_reduced, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&nequiv_max, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        if (mympi->my_rank > 0) {
+            memory->allocate(nk_equiv_arr, nk_reduced);
+            memory->allocate(k_reduced, nk_reduced, nequiv_max);
+        }
+        MPI_Bcast(&nk_equiv_arr[0], nk_reduced, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&k_reduced[0][0], nk_reduced*nequiv_max, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    }
 }
 
 void Kpoint::gen_kpoints_band()
@@ -443,14 +456,43 @@ void Kpoint::reduce_kpoints(double **xkr)
     }
 
     // Construct the independent k-point list
+
+    memory->allocate(nk_equiv_arr, nk_equiv.size());
     kpset_uniq.clear();
     unsigned int jk = 0;
     for (ik = 0; ik < nk_equiv.size(); ++ik){
-     kpset_uniq.insert(kpIBZ[jk].knum);
-     jk += nk_equiv[ik];
+        kpset_uniq.insert(kpIBZ[jk].knum);
+        nk_equiv_arr[ik] = nk_equiv[ik];
+        jk += nk_equiv[ik];
+    }
+    memory->deallocate(kequiv);
+
+    nk_reduced = nk_equiv.size();
+    nequiv_max = 0;
+
+    for (ik = 0; ik < nk_reduced; ++ik){
+        nequiv_max = std::max(nequiv_max, nk_equiv[ik]);
     }
 
-    memory->deallocate(kequiv);
+    memory->allocate(k_reduced, nk_reduced, nequiv_max);
+
+    j = 0;
+    for (ik = 0; ik < nk_reduced; ++ik) {
+        for (i = 0; i < nequiv_max; ++i){
+            k_reduced[ik][i] = 0;
+        }
+        for (i = 0; i < nk_equiv[ik]; ++i){
+            k_reduced[ik][i] = kpIBZ[j++].knum;
+        }
+    }
+/*
+    for (ik = 0; ik < nk_reduced; ++ik){
+        std::cout << "#ik = " << ik << std::endl;
+        for (i = 0; i < nk_equiv[ik]; ++i){
+            std::cout << nk_equiv[ik] << " " << k_reduced[ik][i] << std::endl;
+        }
+    }
+*/
 }
 
 int Kpoint::nint(const double x)

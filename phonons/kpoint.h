@@ -66,6 +66,9 @@ namespace PHON_NS {
         std::vector<double> weight_k;
         std::set<unsigned int> kpset_uniq;
 
+        unsigned int **k_reduced, *nk_equiv_arr;
+        unsigned int nk_reduced, nequiv_max;
+
     private:
         void gen_kpoints_band();
         void gen_kmesh(bool);

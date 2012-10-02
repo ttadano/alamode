@@ -591,6 +591,69 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
     return ret * std::pow(0.5, 4) / static_cast<double>(nk); 
 }
 
+void Relaxation::calc_damping(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, double *ret)
+{
+    unsigned int ik, jk;
+    unsigned int is, js;
+
+    unsigned int i;
+    unsigned int knum_inv;
+    double T_tmp;
+
+    int iks2;
+    unsigned int iks, jks;
+    unsigned int arr[3];
+    double xk_tmp[3], xk_norm;
+    double omega_inner[2];
+    double n1, n2;
+    double v3_tmp;
+
+    for (i = 0; i < N; ++i) ret[i] = 0.0;
+
+    knum_inv = kpoint->knum_minus[knum];
+    arr[0] = ns * kpoint->knum_minus[knum] + snum;
+
+    for (iks2 = 0; iks2 < nks*nks; ++iks2){
+
+        iks = iks2 / nks;
+        jks = iks2 % nks;
+        ik = iks / ns;
+        is = iks % ns;
+        jk = jks / ns;
+        js = jks % ns;
+
+        arr[1] = iks;
+        arr[2] = jks;
+
+        xk_tmp[0] = kpoint->xk[knum_inv][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
+        xk_tmp[1] = kpoint->xk[knum_inv][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
+        xk_tmp[2] = kpoint->xk[knum_inv][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+
+        for (i = 0; i < 3; ++i) xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
+        xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
+        if (std::sqrt(xk_norm) > eps15) continue; 
+
+        omega_inner[0] = dynamical->eval_phonon[ik][is];
+        omega_inner[1] = dynamical->eval_phonon[jk][js];
+        v3_tmp = std::norm(V3new(arr));
+
+        for (i = 0; i < N; ++i) {
+            T_tmp = T[i];
+            n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
+            n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+
+            ret[i] += v3_tmp 
+                * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+                   + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+                   - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+                   + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+
+        }
+    }
+
+    for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+}
+
 double Relaxation::self_tetra(const double T, const double omega, const unsigned int knum, const unsigned int snum)
 {
     double ret = 0.0;

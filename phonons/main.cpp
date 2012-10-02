@@ -9,7 +9,6 @@ using namespace PHON_NS;
 
 int main(int argc, char **argv)
 {
-
     std::cout << "Phonons program C++ version 0.1" << std::endl;
 
     MPI_Init(&argc, &argv);
