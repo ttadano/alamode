@@ -80,16 +80,12 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
         dynamical->diagonalize_dynamical_all();
-//        writes->write_phonon_info();
+        //        writes->write_phonon_info();
 
         integration->setup_integration();
         relaxation->setup_relaxation();
 
-   //     dos->calc_tdos();
-   //     relaxation->calc_ReciprocalV();
-
-
-   //     error->exit("hoge", "tomare");
+        //     dos->calc_tdos();
 
         conductivity->setup_kl();
         conductivity->calc_kl();

@@ -9,14 +9,14 @@ using namespace PHON_NS;
 
 int main(int argc, char **argv)
 {
-    std::cout << "Phonons program C++ version 0.1" << std::endl;
+    std::cout << "Phonons program version 1.0 (MPI)" << std::endl;
 
     MPI_Init(&argc, &argv);
 
     PHON *phon = new PHON(argc, argv, MPI_COMM_WORLD);
 
     MPI_Finalize();
-  
+
     std::cout << "Bye! :)" << std::endl;
     return 0;
 }

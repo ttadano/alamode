@@ -123,10 +123,10 @@ void Phonon_thermodynamics::Debye_T(const double T, double &TD)
     double diff_C;
     double fdegfree = 1.0 / static_cast<double>(3.0 * system->natmin);
 
-   if (T > eps) {
+    if (T > eps) {
 
         do {   
-     //       std::cout << "T = " << T << " , TD = " << TD << std::endl;
+            //       std::cout << "T = " << T << " , TD = " << TD << std::endl;
             diff_C = fdegfree * (Cv_tot(T) - Cv_Debye(T, TD)) / k_Boltzmann;
 
             TD_old = TD;

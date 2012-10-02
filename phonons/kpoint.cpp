@@ -29,7 +29,7 @@ void Kpoint::kpoint_setups()
 {
     symmetry->symmetry_flag = false;
 
-    unsigned int i, j;
+    unsigned int i;
     double emin, emax, delta_e;
 
     MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -38,145 +38,145 @@ void Kpoint::kpoint_setups()
 
     if (mympi->my_rank == 0) {
 
-    std::cout << "**k-points**" << std::endl;
- 
-    switch (kpoint_mode){
+        std::cout << "**k-points**" << std::endl;
 
-    case 0:
-        std::cout << " kpoint_mode = 0: calculation on given k-points" << std::endl;
-        std::cin >> nk;
-        memory->allocate(xk, nk, 3);
+        switch (kpoint_mode){
 
-        for(i = 0; i < nk; ++i){
-            std::cin >> xk[i][0] >> xk[i][1] >> xk[i][2];
-        };
+        case 0:
+            std::cout << " kpoint_mode = 0: calculation on given k-points" << std::endl;
+            std::cin >> nk;
+            memory->allocate(xk, nk, 3);
 
-        std::cout << " Number of k-points: " << nk << std::endl << std::endl;
-        break;
+            for(i = 0; i < nk; ++i){
+                std::cin >> xk[i][0] >> xk[i][1] >> xk[i][2];
+            };
 
-    case 1:
-        std::cout << " kpoint_mode = 1: band structure calculation" << std::endl;
-        std::cin >> npath;
-        std::cout << " Number of paths: " << npath << std::endl;
-        memory->allocate(kp_symbol, npath, 2);
-        memory->allocate(kp_bound, npath, 2, 3);
-        memory->allocate(nkp, npath);
+            std::cout << " Number of k-points: " << nk << std::endl << std::endl;
+            break;
 
-        nk = 0;
-        for (i = 0; i < npath; ++i){
-            std::cin >> kp_symbol[i][0] >> kp_bound[i][0][0] >> kp_bound[i][0][1] >> kp_bound[i][0][2]
-            >> kp_symbol[i][1] >> kp_bound[i][1][0] >> kp_bound[i][1][1] >> kp_bound[i][1][2] >> nkp[i];
-            nk += nkp[i];
-        };
-        memory->allocate(xk, nk, 3);
-        memory->allocate(kpoint_direction, nk, 3);
+        case 1:
+            std::cout << " kpoint_mode = 1: band structure calculation" << std::endl;
+            std::cin >> npath;
+            std::cout << " Number of paths: " << npath << std::endl;
+            memory->allocate(kp_symbol, npath, 2);
+            memory->allocate(kp_bound, npath, 2, 3);
+            memory->allocate(nkp, npath);
 
-        gen_kpoints_band();
-        memory->deallocate(kp_bound);
+            nk = 0;
+            for (i = 0; i < npath; ++i){
+                std::cin >> kp_symbol[i][0] >> kp_bound[i][0][0] >> kp_bound[i][0][1] >> kp_bound[i][0][2]
+                >> kp_symbol[i][1] >> kp_bound[i][1][0] >> kp_bound[i][1][1] >> kp_bound[i][1][2] >> nkp[i];
+                nk += nkp[i];
+            };
+            memory->allocate(xk, nk, 3);
+            memory->allocate(kpoint_direction, nk, 3);
 
-        double **xk_c, tmp[3];
-        memory->allocate(kaxis, nk);
-        memory->allocate(xk_c, nk, 3);
+            gen_kpoints_band();
+            memory->deallocate(kp_bound);
 
-        for (i = 0; i < nk; ++i){
-            system->rotvec(xk_c[i], xk[i], system->rlavec_p, 'T');
-        }
+            double **xk_c, tmp[3];
+            memory->allocate(kaxis, nk);
+            memory->allocate(xk_c, nk, 3);
 
-        unsigned int j, k;
-        unsigned int ik;
+            for (i = 0; i < nk; ++i){
+                system->rotvec(xk_c[i], xk[i], system->rlavec_p, 'T');
+            }
 
-        ik = 0;
-        std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
-        std::cout << " kpval";
-        std::cout.unsetf(std::ios::scientific);
+            unsigned int j, k;
+            unsigned int ik;
 
-        for (i = 0; i < npath; ++i){
-            for (j = 0; j < nkp[i]; ++j){
-                if (j == 0){
-                    if(ik == 0) {
-                        kaxis[ik] = 0.0;
+            ik = 0;
+            std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
+            std::cout << " kpval";
+            std::cout.unsetf(std::ios::scientific);
+
+            for (i = 0; i < npath; ++i){
+                for (j = 0; j < nkp[i]; ++j){
+                    if (j == 0){
+                        if(ik == 0) {
+                            kaxis[ik] = 0.0;
+                        } else {
+                            kaxis[ik] = kaxis[ik - 1];
+                        }
+                        std::cout << std::setw(10) << kaxis[ik];
                     } else {
-                        kaxis[ik] = kaxis[ik - 1];
+                        for (k = 0; k < 3; ++k){
+                            tmp[k] = xk_c[ik][k] - xk_c[ik - 1][k];
+                        }
+                        kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
                     }
-                    std::cout << std::setw(10) << kaxis[ik];
-                } else {
-                    for (k = 0; k < 3; ++k){
-                        tmp[k] = xk_c[ik][k] - xk_c[ik - 1][k];
-                    }
-                    kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+                    ++ik;
                 }
-                ++ik;
             }
-        }
 
-        std::cout << std::setw(10) << kaxis[ik - 1];
-        std::cout << std::endl;
-        std::cout << " ----------------------------------------" << std::endl;
+            std::cout << std::setw(10) << kaxis[ik - 1];
+            std::cout << std::endl;
+            std::cout << " ----------------------------------------" << std::endl;
 
-        memory->deallocate(xk_c);
-        memory->deallocate(nkp);
+            memory->deallocate(xk_c);
+            memory->deallocate(nkp);
 
-        std::cout.setf(std::ios::scientific);
+            std::cout.setf(std::ios::scientific);
 
-        break;
-    case 2:
-        std::cout << " kpoint_mode = 2: DOS calculation" << std::endl;
-        std::cin >> nkx >> nky >> nkz;
-        nk = nkx * nky * nkz;
-        memory->allocate(xk, nk, 3);
+            break;
+        case 2:
+            std::cout << " kpoint_mode = 2: DOS calculation" << std::endl;
+            std::cin >> nkx >> nky >> nkz;
+            nk = nkx * nky * nkz;
+            memory->allocate(xk, nk, 3);
 
 
-        std::cin >> emin >> emax >> delta_e;
-        dos->emin = emin;
-        dos->emax = emax;
-        dos->delta_e = delta_e;
+            std::cin >> emin >> emax >> delta_e;
+            dos->emin = emin;
+            dos->emax = emax;
+            dos->delta_e = delta_e;
 
-        gen_kmesh(symmetry->symmetry_flag);
-        std::cout << " nkx: " << std::setw(6) << nkx;
-        std::cout << " nky: " << std::setw(6) << nky;
-        std::cout << " nkz: " << std::setw(6) << nkz;
-        std::cout << std::endl;
-        std::cout << " Number of k-points: " << nk << std::endl << std::endl;
-        break;
-    case 3:
-        std::cout << " kpoint_mode = 3: Uniform k-point grid for Boltzmann" << std::endl;
-        std::cin >> nkx >> nky >> nkz;
-        std::cin >> emin >> emax >> delta_e;
-        
-        dos->emin = emin;
-        dos->emax = emax;
-        dos->delta_e = delta_e;
+            gen_kmesh(symmetry->symmetry_flag);
+            std::cout << " nkx: " << std::setw(6) << nkx;
+            std::cout << " nky: " << std::setw(6) << nky;
+            std::cout << " nkz: " << std::setw(6) << nkz;
+            std::cout << std::endl;
+            std::cout << " Number of k-points: " << nk << std::endl << std::endl;
+            break;
+        case 3:
+            std::cout << " kpoint_mode = 3: Uniform k-point grid for Boltzmann" << std::endl;
+            std::cin >> nkx >> nky >> nkz;
+            std::cin >> emin >> emax >> delta_e;
 
-        nk = nkx * nky * nkz;
-        memory->allocate(xk, nk, 3);
-        symmetry->symmetry_flag = true;
-        gen_kmesh(symmetry->symmetry_flag);
-        memory->allocate(knum_minus, nk);
-        gen_nkminus();
+            dos->emin = emin;
+            dos->emax = emax;
+            dos->delta_e = delta_e;
 
-        std::cout << " nkx: " << std::setw(6) << nkx;
-        std::cout << " nky: " << std::setw(6) << nky;
-        std::cout << " nkz: " << std::setw(6) << nkz;
-        std::cout << std::endl;
-        std::cout << " Number of irreducible k-points: " << nk_equiv.size() << std::endl << std::endl;
-        std::cout << "#k-points (in unit of reciprocal vector), weights" << std::endl;
-        
-        ik = 0;
-        for (i = 0; i < nk_equiv.size(); ++i){
-            std::cout << std::setw(8) << i + 1 << ":";
-            for (j = 0; j < 3; ++j){
-                std::cout << std::setw(15) << std::scientific << kpIBZ[ik].kval[j];
+            nk = nkx * nky * nkz;
+            memory->allocate(xk, nk, 3);
+            symmetry->symmetry_flag = true;
+            gen_kmesh(symmetry->symmetry_flag);
+            memory->allocate(knum_minus, nk);
+            gen_nkminus();
+
+            std::cout << " nkx: " << std::setw(6) << nkx;
+            std::cout << " nky: " << std::setw(6) << nky;
+            std::cout << " nkz: " << std::setw(6) << nkz;
+            std::cout << std::endl;
+            std::cout << " Number of irreducible k-points: " << nk_equiv.size() << std::endl << std::endl;
+            std::cout << "#k-points (in unit of reciprocal vector), weights" << std::endl;
+
+            ik = 0;
+            for (i = 0; i < nk_equiv.size(); ++i){
+                std::cout << std::setw(8) << i + 1 << ":";
+                for (j = 0; j < 3; ++j){
+                    std::cout << std::setw(15) << std::scientific << kpIBZ[ik].kval[j];
+                }
+                std::cout << std::setw(15) << std::fixed << weight_k[i] << std::endl;
+                ik += nk_equiv[i];
             }
-            std::cout << std::setw(15) << std::fixed << weight_k[i] << std::endl;
-            ik += nk_equiv[i];
-        }
-        std::cout << std::endl;
+            std::cout << std::endl;
 
-        std::cout.unsetf(std::ios::fixed);
-        break;
-    default:
-        error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
-    }
+            std::cout.unsetf(std::ios::fixed);
+            break;
+        default:
+            error->exit("read_kpoints", "invalid kpoint_mode = ", kpoint_mode);
+        }
     }
 
     MPI_Bcast(&nkx, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -187,7 +187,7 @@ void Kpoint::kpoint_setups()
     MPI_Bcast(&dos->emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dos->emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dos->delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    
+
     if (mympi->my_rank > 0) {
         memory->allocate(xk, nk, 3);
         memory->allocate(knum_minus, nk);
@@ -239,9 +239,9 @@ void Kpoint::gen_kpoints_band()
 
 void Kpoint::gen_kmesh(bool usesym)
 {
-    unsigned int ix, iy, iz, ik;
-    unsigned int i;
-    double **xkr, xk_tmp;
+    unsigned int ix, iy, iz;
+    unsigned int i, ik;
+    double **xkr;
 
     std::cout << "Generating uniform k-point grid ..." << std::endl;
 
@@ -274,9 +274,8 @@ void Kpoint::gen_kmesh(bool usesym)
 
 void Kpoint::gen_nkminus()
 {
-    unsigned int i;
-    unsigned int ik, jk;
-    double xk_tmp, norm;
+    unsigned int ik;
+    double norm;
     std::vector<KpointList> ksets;
     std::vector<KpointList>::iterator it;
     std::vector<double> ktmp;
@@ -334,18 +333,19 @@ void Kpoint::reduce_kpoints(double **xkr)
 {
     unsigned int ik;
     unsigned int i, j;
-    std::set<KpointList> ksets;
-    std::vector<double> ktmp;
-
-    unsigned int *kequiv;
-    unsigned int nsame, knum_found;
+    unsigned int nsame;
     int iloc, jloc, kloc;
     int nloc;
 
-    Eigen::Matrix3d srot;
-    Eigen::Vector3d xk_sym, xk_orig;
+    unsigned int *kequiv;
 
     double diff[3];
+
+    std::set<KpointList> ksets;
+    std::vector<double> ktmp;
+
+    Eigen::Matrix3d srot;
+    Eigen::Vector3d xk_sym, xk_orig;
 
     std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
 
@@ -450,7 +450,7 @@ void Kpoint::reduce_kpoints(double **xkr)
             nk_equiv.push_back(nsame);
         }
     }
-    
+
     for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
         weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
     }
@@ -471,7 +471,7 @@ void Kpoint::reduce_kpoints(double **xkr)
     nequiv_max = 0;
 
     for (ik = 0; ik < nk_reduced; ++ik){
-        nequiv_max = std::max(nequiv_max, nk_equiv[ik]);
+        nequiv_max = std::max<unsigned int>(nequiv_max, nk_equiv[ik]);
     }
 
     memory->allocate(k_reduced, nk_reduced, nequiv_max);
@@ -485,14 +485,6 @@ void Kpoint::reduce_kpoints(double **xkr)
             k_reduced[ik][i] = kpIBZ[j++].knum;
         }
     }
-/*
-    for (ik = 0; ik < nk_reduced; ++ik){
-        std::cout << "#ik = " << ik << std::endl;
-        for (i = 0; i < nk_equiv[ik]; ++i){
-            std::cout << nk_equiv[ik] << " " << k_reduced[ik][i] << std::endl;
-        }
-    }
-*/
 }
 
 int Kpoint::nint(const double x)

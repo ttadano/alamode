@@ -47,6 +47,7 @@ namespace PHON_NS {
         void calc_selfenergy();
         void calc_selfenergy_at_T(const double);
         void calc_damping(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+        void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> *self_E;

@@ -31,7 +31,6 @@ void Dynamical::eval_k(double *xk_in, double *eval_out, std::complex<double> **e
 
     // Calculate phonon energy for the specific k-point given in fractional basis
 
-
     unsigned int i, j;
 
     std::complex<double> **dymat_k;
@@ -148,10 +147,12 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
 
-                if (std::abs(exp_phase.real()) < 1.0e-14) exp_phase.real(0.0);
-                if (std::abs(exp_phase.imag()) < 1.0e-14) exp_phase.imag(0.0);
-
-//                std::cout << "phase = " << exp_phase << std::endl;
+                if (std::abs(exp_phase.real()) < 1.0e-14) {
+                    exp_phase = std::complex<double>(0.0, exp_phase.imag());
+                }
+                if (std::abs(exp_phase.imag()) < 1.0e-14) {
+                    exp_phase = std::complex<double>(exp_phase.real(), 0.0);
+                }
 
                 for (icrd = 0; icrd < 3; ++icrd){
                     for (jcrd = 0; jcrd < 3; ++jcrd){
@@ -176,7 +177,7 @@ void Dynamical::diagonalize_dynamical_all()
     bool require_evec; 
 
     if (mympi->my_rank == 0) {
-    std::cout << std::endl << "Diagonalizing dynamical matrices for all k-points ..." << std::endl;
+        std::cout << std::endl << "Diagonalizing dynamical matrices for all k-points ..." << std::endl;
     }
 
     memory->allocate(eval_phonon, nk, neval);
@@ -193,8 +194,8 @@ void Dynamical::diagonalize_dynamical_all()
 
     for (ik = 0; ik < nk; ++ik){
         eval_k(kpoint->xk[ik], eval_phonon[ik], evec_phonon[ik], require_evec);
-        
-   // Phonon energy is the square-room of the eigenvalue 
+
+        // Phonon energy is the square-room of the eigenvalue 
         for (is = 0; is < neval; ++is){
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
         }
@@ -209,7 +210,6 @@ void Dynamical::diagonalize_dynamical_all()
 
 void Dynamical::calc_dynamical_matrix()
 {
-
     // Calculate dynamical matrix of all k-points
 
     neval = 3 * system->natmin;

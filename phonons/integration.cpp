@@ -124,9 +124,9 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
     double frac3 = 1.0/3.0;
     double f_ntetra = 1.0 / static_cast<double>(ntetra);
     double g, vol, vol_tot;
-  
+
     tetra_pair pair;
-    
+
     vol_tot = 0.0;
 
     for (i = 0; i < ntetra; ++i){
@@ -162,7 +162,7 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
             I2 = frac3 * fij(e2, e4, e_ref);
             I3 = frac3 * fij(e3, e4, e_ref);
             I4 = frac3 * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
-           
+
             ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
 
         } else if (e2 <= e_ref && e_ref < e3) {

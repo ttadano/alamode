@@ -48,10 +48,10 @@ void Fcs_phonon::setup(std::string mode)
         MPI_Bcast_fc_class(2);
 
         if (mympi->my_rank == 0) {
-        for (i = 0; i < maxorder; ++i){
-            std::cout << "Number of non-zero IFCs for " << i + 2 << " order: ";
-            std::cout << force_constant[i].size() << std::endl;
-        }
+            for (i = 0; i < maxorder; ++i){
+                std::cout << "Number of non-zero IFCs for " << i + 2 << " order: ";
+                std::cout << force_constant[i].size() << std::endl;
+            }
         }
     }
 }
@@ -177,7 +177,7 @@ void Fcs_phonon::load_fcs()
                             }
 
                             force_constant[iorder].push_back(FcsClass(val, tri_vec));
-                       
+
                         } while (std::next_permutation(ivec.begin() + 1, ivec.end()));            
                     }
                 }
@@ -233,14 +233,14 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
         memory->allocate(ind, len, nelem, 3);
 
         if (mympi->my_rank == 0) {
-        for (j = 0; j < len; ++j){
-            fcs_tmp[j] = force_constant[i][j].fcs_val;
-            for (k = 0; k < nelem; ++k){
-                ind[j][k][0] = force_constant[i][j].elems[k].atom;
-                ind[j][k][1] = force_constant[i][j].elems[k].cell;
-                ind[j][k][2] = force_constant[i][j].elems[k].xyz;
+            for (j = 0; j < len; ++j){
+                fcs_tmp[j] = force_constant[i][j].fcs_val;
+                for (k = 0; k < nelem; ++k){
+                    ind[j][k][0] = force_constant[i][j].elems[k].atom;
+                    ind[j][k][1] = force_constant[i][j].elems[k].cell;
+                    ind[j][k][2] = force_constant[i][j].elems[k].xyz;
+                }
             }
-        }
         }
 
         MPI_Bcast(&fcs_tmp[0], len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -250,7 +250,7 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
             force_constant[i].clear();
 
             for (j = 0; j < len; ++j){
-                
+
                 tri_vec.clear();
 
                 for (k = 0; k < nelem; ++k){

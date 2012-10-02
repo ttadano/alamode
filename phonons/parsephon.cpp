@@ -30,12 +30,6 @@ void Input::parce_input()
         cin >> mode;
         boost::to_lower(mode);
     }
-/*
-    int len = job_title.length();
-    MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(const_cast<char *>(job_title.data()), len, MPI_CHAR, 0, MPI_COMM_WORLD);
-    std::cout << job_title.data() << std::endl;
-*/
 
     phon->mode = mode;
 

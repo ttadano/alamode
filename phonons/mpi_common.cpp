@@ -19,7 +19,8 @@ void MyMPI::MPI_Bcast_string(std::string &str, int root, MPI_Comm comm)
     len = str.length();
     MPI_Bcast(&len, 1, MPI_INT, 0, comm);
     
-    char ctmp[len + 1];
+    // limited to 512 characters
+    char ctmp[512];
     std::strcpy(ctmp, str.c_str());
     MPI_Bcast(&ctmp, len + 1, MPI_CHAR, 0, comm);
     str = std::string(ctmp);

@@ -12,7 +12,7 @@ using namespace PHON_NS;
 
 Symmetry::Symmetry(PHON *phon): Pointers(phon){
     file_sym = "SYMM_INFO_PRIM";
-//    time_reversal_sym = true;
+    //    time_reversal_sym = true;
     time_reversal_sym = false;
 }
 Symmetry::~Symmetry(){}
@@ -31,30 +31,30 @@ void Symmetry::setup_symmetry()
     for (i = 0; i < natmin; ++i){
         system->rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
         system->rotvec(xtmp[i], xtmp[i], system->rlavec_p);
-        
+
         for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
-        
+
         kdtmp[i] = system->kd[system->map_p2s[i][0]];
     }
 
     if (mympi->my_rank == 0) {
-    std::cout << "Atoms in the primitive cell" << std::endl;
-    for (i = 0; i < natmin; ++i){
-    std::cout << std::setw(6) << i + 1 << ":";
-    for (j = 0; j < 3; ++j) {
-        std::cout << std::setw(15) << xtmp[i][j];
-    }
-    std::cout << std::setw(5) << kdtmp[i] << std::endl;
-    }
-    std::cout << std::endl;
+        std::cout << "Atoms in the primitive cell" << std::endl;
+        for (i = 0; i < natmin; ++i){
+            std::cout << std::setw(6) << i + 1 << ":";
+            for (j = 0; j < 3; ++j) {
+                std::cout << std::setw(15) << xtmp[i][j];
+            }
+            std::cout << std::setw(5) << kdtmp[i] << std::endl;
+        }
+        std::cout << std::endl;
     }
 
     SymmList.clear();
     gensym(natmin, nsym, nnp, system->lavec_p, system->rlavec_p, xtmp, kdtmp);
 
     if (mympi->my_rank == 0) {
-    std::cout << "**Symmetry" << std::endl;
-    std::cout << "Number of Symmetry Operations = " << nsym << std::endl << std::endl;
+        std::cout << "**Symmetry" << std::endl;
+        std::cout << "Number of Symmetry Operations = " << nsym << std::endl << std::endl;
     }
 }
 
@@ -69,72 +69,72 @@ void Symmetry::gensym(unsigned int nat, unsigned int &nsym, unsigned int nnp, do
 
         if(nsym == 0) {
 
-        // Automatically find symmetries.
+            // Automatically find symmetries.
 
-        std::cout << "Generating Symmetry Operations: This can take a while." << std::endl << std::endl;
+            std::cout << "Generating Symmetry Operations: This can take a while." << std::endl << std::endl;
 
-        // findsym(nat, nnp, kd, aa, bb, x, nsym, rot, tran_int);
-        findsym(nat, nnp, kd, aa, bb, x);
-        nsym = SymmList.size();
+            // findsym(nat, nnp, kd, aa, bb, x, nsym, rot, tran_int);
+            findsym(nat, nnp, kd, aa, bb, x);
+            nsym = SymmList.size();
 
-        ofs_sym.open(file_sym.c_str(), std::ios::out);
-        if (!ofs_sym) error->exit("gensym", "cannot open file_sym");
+            ofs_sym.open(file_sym.c_str(), std::ios::out);
+            if (!ofs_sym) error->exit("gensym", "cannot open file_sym");
 
-        ofs_sym << nsym << std::endl;
-        ofs_sym << nnp << std::endl;
+            ofs_sym << nsym << std::endl;
+            ofs_sym << nnp << std::endl;
 
-        for(std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
-            SymmetryOperation sym_tmp = *p;
-            for (i = 0; i < 9; ++i){
-                ofs_sym << std::setw(4) << sym_tmp.symop[i];
-            }
-            ofs_sym << std::setw(7) << " ";
-            for(i = 9; i < 12; ++i){
-                ofs_sym << sym_tmp.symop[i] << std::setw(4);
-            }
-            ofs_sym << std::endl;
-        }
-
-        ofs_sym.close();
-    } 
-    else if(nsym == 1) {
-
-        // Identity operation only !
-
-        int rot_tmp[3][3], tran_tmp[3];
-
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
-                if(i == j) {
-                    rot_tmp[i][j] = 1;
-                } else {
-                    rot_tmp[i][j] = 0;
+            for(std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
+                SymmetryOperation sym_tmp = *p;
+                for (i = 0; i < 9; ++i){
+                    ofs_sym << std::setw(4) << sym_tmp.symop[i];
                 }
+                ofs_sym << std::setw(7) << " ";
+                for(i = 9; i < 12; ++i){
+                    ofs_sym << sym_tmp.symop[i] << std::setw(4);
+                }
+                ofs_sym << std::endl;
             }
-            tran_tmp[i] = 0;
-        }
 
-        SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
-    } 
-    else {
-        unsigned int nsym2;
-        int rot_tmp[3][3], tran_tmp[3];
+            ofs_sym.close();
+        } 
+        else if(nsym == 1) {
 
-        ifs_sym.open(file_sym.c_str(), std::ios::in);
-        ifs_sym >> nsym2 >> nnp;
+            // Identity operation only !
 
-        if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
+            int rot_tmp[3][3], tran_tmp[3];
 
-        for (i = 0; i < nsym; ++i) {
-            ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-                    >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
-                    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-                    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
-  
+            for (i = 0; i < 3; ++i){
+                for (j = 0; j < 3; ++j){
+                    if(i == j) {
+                        rot_tmp[i][j] = 1;
+                    } else {
+                        rot_tmp[i][j] = 0;
+                    }
+                }
+                tran_tmp[i] = 0;
+            }
+
             SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
+        } 
+        else {
+            unsigned int nsym2;
+            int rot_tmp[3][3], tran_tmp[3];
+
+            ifs_sym.open(file_sym.c_str(), std::ios::in);
+            ifs_sym >> nsym2 >> nnp;
+
+            if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
+
+            for (i = 0; i < nsym; ++i) {
+                ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
+                >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
+                >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+                >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+
+                SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
+            }
+            ifs_sym.close();
         }
-        ifs_sym.close();
-    }
     }
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 }
@@ -233,7 +233,7 @@ void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, dou
                                                 rot2(i,j) = static_cast<double>(rot_reciprocal[i][j]);
                                             }
                                         }
-                                        
+
                                         if(!is_ortho(rot2, amat, bmat)) continue;
 
 #pragma omp parallel for private(np1, np2, np3)

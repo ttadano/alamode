@@ -124,7 +124,7 @@ void Writes::write_phonon_vel_all()
     double **vel;
 
     memory->allocate(vel, ns, 3);
-   
+
     ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
@@ -132,13 +132,13 @@ void Writes::write_phonon_vel_all()
 
         ofs_vel << "# ik = " << std::setw(8);
         for (j = 0; j < 3; ++j){
-           ofs_vel << std::setw(15) << kpoint->xk[i][j];
+            ofs_vel << std::setw(15) << kpoint->xk[i][j];
         }
         ofs_vel << std::endl;
 
         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
 
-         for (j = 0; j < ns; ++j){
+        for (j = 0; j < ns; ++j){
             system->rotvec(vel[j], vel[j], system->lavec_p, 'T');
             for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
         }
@@ -311,7 +311,7 @@ void Writes::write_eigenvectors()
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     ofs_evec << "Modes and k-points information below" << std::endl;
-//    nbands = neval;
+    //    nbands = neval;
     ofs_evec << std::setw(10) << nbands;
     ofs_evec << std::setw(10) << nk << std::endl;
 
@@ -386,19 +386,19 @@ void Writes::write_thermodynamics()
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if(!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
     ofs_thermo << "# Temperature [K], Internal Energy [Ry], Heat Capacity / kB" << std::endl;
-    
+
     TD = 1000.0;
     phonon_thermodynamics->Debye_T(Tmax, TD);
     std::cout << "TD = " << TD << std::endl;
 
     for (i = 0; i <= NT; ++i){
         T = Tmin + dT * static_cast<double>(i);
- //       phonon_thermodynamics->Debye_T(T, TD);
+        //       phonon_thermodynamics->Debye_T(T, TD);
 
         ofs_thermo << std::setw(15) << T;
         ofs_thermo << std::setw(15) << phonon_thermodynamics->Internal_Energy(T);
         ofs_thermo << std::setw(15) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann << std::endl;
- //       ofs_cv << std::setw(15) << TD << std::endl;
+        //       ofs_cv << std::setw(15) << TD << std::endl;
     }
 
     ofs_thermo.close();

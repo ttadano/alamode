@@ -22,7 +22,7 @@ Dos::~Dos(){
         memory->deallocate(energy_dos);
         memory->deallocate(dos_phonon);
         if(dynamical->eigenvectors) {
-        memory->deallocate(pdos_phonon);
+            memory->deallocate(pdos_phonon);
         }
     }
 }
@@ -118,29 +118,25 @@ void Dos::calc_tdos()
 {
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
-
-    unsigned int is, js;
-    unsigned int ik, jk;
     unsigned int i;
+    unsigned int ik, jk;
+    unsigned int is, js;
+    unsigned int kcount;
 
     double k_tmp[3], xk_tmp[3];
     double xk_norm;
 
-    k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
-
-    unsigned int ks_tmp[3];
-    double **e_tmp;
-  
-    unsigned int kcount;
+    double **e_tmp;    
     double *energy_dos, **tdos;
 
-     n_energy = static_cast<int>((emax - emin) / delta_e);
-     
-     memory->allocate(e_tmp, 4, nk);
-     memory->allocate(energy_dos, n_energy);
-     memory->allocate(tdos, 4, n_energy);
+    n_energy = static_cast<int>((emax - emin) / delta_e);
 
-     
+    memory->allocate(e_tmp, 4, nk);
+    memory->allocate(energy_dos, n_energy);
+    memory->allocate(tdos, 4, n_energy);
+
+    k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
+
     for (i = 0; i < n_energy; ++i){
         energy_dos[i] = emin + delta_e * static_cast<double>(i);
         for (unsigned int j = 0; j < 4; ++j) tdos[j][i] = 0.0;
@@ -172,7 +168,7 @@ void Dos::calc_tdos()
             }
 
             for (i = 0; i < n_energy; ++i){
-               for (unsigned int j = 0; j < 4; ++j) tdos[j][i] += integration->dos_integration(e_tmp[j], energy_dos[i]);
+                for (unsigned int j = 0; j < 4; ++j) tdos[j][i] += integration->dos_integration(e_tmp[j], energy_dos[i]);
             }
 
             std::cout << "kcount = " << kcount << std::endl;
@@ -194,7 +190,7 @@ void Dos::calc_tdos()
         ofs_tdos << std::setw(15) << tdos[2][i];
         ofs_tdos << std::setw(15) << tdos[3][i] << std::endl;
     }
-    
+
     ofs_tdos.close();
     memory->deallocate(e_tmp);
     memory->deallocate(tdos);
