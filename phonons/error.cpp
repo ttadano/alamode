@@ -1,8 +1,8 @@
+#include "mpi_common.h"
 #include <iostream>
 #include <cstdlib>
 #include <string>
 #include "error.h"
-#include "mpi_common.h"
 
 using namespace PHON_NS;
 

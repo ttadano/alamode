@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "timer.h"
 #include <string>
 #include <iostream>
