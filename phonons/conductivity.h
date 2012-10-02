@@ -13,11 +13,10 @@ namespace PHON_NS {
         void calc_kl();
 
         double **tau;
-        double kl[3][3];
 
     private:
         double ***vel;
-        void calc_kl_at_T(const double);
+        void calc_kl_at_T(const double, double [3][3]);
         void calc_kl_mpi(const unsigned int, unsigned int *, double *, unsigned int *, unsigned int **, const unsigned int, double *, double ***); 
         unsigned int nk, ns;
     };

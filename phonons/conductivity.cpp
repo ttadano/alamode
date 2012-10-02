@@ -93,9 +93,8 @@ void Conductivity::calc_kl()
     }
 
     //    relaxation->calc_ReciprocalV();
-
-
     // Variables for k-point parallelization
+
     unsigned int nk_g, nk_l;
     unsigned int *k_local;
     unsigned int *nk_equiv_l;
@@ -184,8 +183,8 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
         for (is = 0; is < ns; ++is){
 
             omega = dynamical->eval_phonon[knum][is];
- //           relaxation->calc_damping(NT, temperature, omega, knum, is, damping);
-            relaxation->calc_damping_tetra(NT, temperature, omega, knum, is, damping);
+            relaxation->calc_damping(NT, temperature, omega, knum, is, damping);
+//            relaxation->calc_damping_tetra(NT, temperature, omega, knum, is, damping);
 
             //tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
             //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
@@ -199,8 +198,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
                         ktmp = k_equivalent[ik][k];
                         vv_tmp += vel[ktmp][is][i] * vel[ktmp][is][j];
                     }
-                    vv_tmp *= weight[ik];
-                    //                         std::cout << "vv = " << vv_tmp << std::endl;
+                    vv_tmp /= static_cast<double>(nk_equivalent[ik]);
 
                     for (iT = 0; iT < NT; ++iT){
                         kl[iT][i][j] += weight[ik] * phonon_thermodynamics->Cv(omega, temperature[iT]) * vv_tmp / (2.0 * damping[iT]);
@@ -214,7 +212,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
     memory->deallocate(damping);
 }
 
-void Conductivity::calc_kl_at_T(const double T)
+void Conductivity::calc_kl_at_T(const double T, double kl[3][3])
 {
     unsigned int i, j;
     unsigned int is, ik;
@@ -251,7 +249,6 @@ void Conductivity::calc_kl_at_T(const double T)
     }
     */
 
-
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
             kl[i][j] = 0.0;
@@ -269,8 +266,8 @@ void Conductivity::calc_kl_at_T(const double T)
         for (is = 0; is < ns; ++is){
 
             omega = dynamical->eval_phonon[knum][is];
-            tau[knum][is] = 1.0 / (2.0 * relaxation->self_E[ns * knum + is].imag());
-            // tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
+            //tau[knum][is] = 1.0 / (2.0 * relaxation->self_E[ns * knum + is].imag());
+             tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
             //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
 
             for (i = 0; i < 3; ++i){
