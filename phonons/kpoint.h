@@ -68,6 +68,7 @@ namespace PHON_NS {
 
         unsigned int **k_reduced, *nk_equiv_arr;
         unsigned int nk_reduced, nequiv_max;
+        int nint(const double);
 
     private:
         void gen_kpoints_band();
@@ -77,6 +78,6 @@ namespace PHON_NS {
         std::string **kp_symbol;
         double ***kp_bound;
         unsigned int *nkp;
-        int nint(const double);
+
     };
 }

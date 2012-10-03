@@ -479,7 +479,6 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
     unsigned int ik, jk;
     unsigned int is, js; 
     unsigned int iks, jks, iks2;
-    unsigned int knum_inv;
     unsigned int arr[3];
 
     double T_tmp;
@@ -490,43 +489,48 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
     for (i = 0; i < N; ++i) ret[i] = 0.0;
 
-    knum_inv = kpoint->knum_minus[knum];
     arr[0] = ns * kpoint->knum_minus[knum] + snum;
 
-    for (iks2 = 0; iks2 < nks*nks; ++iks2){
+    unsigned int nkx = kpoint->nkx;
+    unsigned int nky = kpoint->nky;
+    unsigned int nkz = kpoint->nkz;
 
-        iks = iks2 / nks;
-        jks = iks2 % nks;
-        ik = iks / ns;
-        is = iks % ns;
-        jk = jks / ns;
-        js = jks % ns;
+    int iloc, jloc, kloc;
 
-        arr[1] = iks;
-        arr[2] = jks;
+    for (ik = 0; ik < nk; ++ik) {
 
-        xk_tmp[0] = kpoint->xk[knum_inv][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
-        xk_tmp[1] = kpoint->xk[knum_inv][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
-        xk_tmp[2] = kpoint->xk[knum_inv][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+        xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
+        xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
+        xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
 
-        for (i = 0; i < 3; ++i) xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
-        xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
-        if (std::sqrt(xk_norm) > eps15) continue; 
+        iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+        jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+        kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
-        omega_inner[0] = dynamical->eval_phonon[ik][is];
-        omega_inner[1] = dynamical->eval_phonon[jk][js];
-        v3_tmp = std::norm(V3new(arr));
+        jk = kloc + nkz * jloc + nky * nkz * iloc;
 
-        for (i = 0; i < N; ++i) {
-            T_tmp = T[i];
-            n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
-            n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+        for (is = 0; is < ns; ++is){
+            for (js = 0; js < ns; ++js){
 
-            ret[i] += v3_tmp 
-                * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
-                + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                arr[1] = ns * ik + is;
+                arr[2] = ns * jk + js;
+        
+                omega_inner[0] = dynamical->eval_phonon[ik][is];
+                omega_inner[1] = dynamical->eval_phonon[jk][js];
+                v3_tmp = std::norm(V3new(arr));
+
+                for (i = 0; i < N; ++i) {
+                    T_tmp = T[i];
+                    n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
+                    n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+
+                    ret[i] += v3_tmp 
+                        * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+                           + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+                           - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+                           + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                }
+            }
         }
     }
 
@@ -538,7 +542,6 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 {
     unsigned int i, j;
     unsigned int is, js, ik, jk;
-    unsigned int knum_inv;
     unsigned int ks_tmp[3];
     unsigned int kcount;
 
@@ -547,10 +550,15 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
     double *v3_tmp;
     double **omega_inner;
 
+    unsigned int nkx = kpoint->nkx;
+    unsigned int nky = kpoint->nky;
+    unsigned int nkz = kpoint->nkz;
+
+    int iloc, jloc, kloc;
+
     for (i = 0; i < N; ++i) ret[i] = 0.0;
 
-    knum_inv = kpoint->knum_minus[knum];
-    ks_tmp[0] = ns * knum_inv + snum;
+    ks_tmp[0] = ns * kpoint->knum_minus[knum] + snum;
 
     memory->allocate(v3_tmp, nk);
     memory->allocate(omega_inner, nk, 2);
@@ -558,39 +566,36 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
     for (is = 0; is < ns; ++is){
         for (js = 0; js < ns; ++js){
 
-            kcount = 0;
-
             for (ik = 0; ik < nk; ++ik) {
-                for (jk = 0; jk < nk; ++jk){
 
-                    xk_tmp[0] = kpoint->xk[knum_inv][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
-                    xk_tmp[1] = kpoint->xk[knum_inv][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
-                    xk_tmp[2] = kpoint->xk[knum_inv][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
+                xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
+                xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
+                xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
 
-                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
-                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
-                    if (std::sqrt(xk_norm) > eps15) continue; 
+                iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+                jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+                kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
-                    ks_tmp[1] = ik * ns + is;
-                    ks_tmp[2] = jk * ns + js;
+                jk = kloc + nkz * jloc + nky * nkz * iloc;
+
+                ks_tmp[1] = ik * ns + is;
+                ks_tmp[2] = jk * ns + js;
 
                 //    if (kcount == nk) error->exitall("calc_damping_tetra", "The number of element is larger than nk");
 
-                    omega_inner[kcount][0] = dynamical->eval_phonon[ik][is];
-                    omega_inner[kcount][1] = dynamical->eval_phonon[jk][js];
+                omega_inner[ik][0] = dynamical->eval_phonon[ik][is];
+                omega_inner[ik][1] = dynamical->eval_phonon[jk][js];
 
-                    v3_tmp[kcount] = std::norm(V3new(ks_tmp));
+                v3_tmp[ik] = std::norm(V3new(ks_tmp));
 
-                    // e_tmp[0][kcount] = -omega_inner[kcount][0] - omega_inner[kcount][1];
-                    e_tmp[1][kcount] = omega_inner[kcount][0] + omega_inner[kcount][1];
-                    e_tmp[2][kcount] = omega_inner[kcount][0] - omega_inner[kcount][1];
-                    e_tmp[3][kcount] = -omega_inner[kcount][0] + omega_inner[kcount][1];
-                    ++kcount;
-                }
+                // e_tmp[0][kcount] = -omega_inner[kcount][0] - omega_inner[kcount][1];
+                e_tmp[1][ik] = omega_inner[ik][0] + omega_inner[ik][1];
+                e_tmp[2][ik] = omega_inner[ik][0] - omega_inner[ik][1];
+                e_tmp[3][ik] = -omega_inner[ik][0] + omega_inner[ik][1];
             }
 
             for (j = 0; j < N; ++j){
-                for (i = 0; i < kcount; ++i){
+                for (i = 0; i < nk; ++i){
                     n1 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) + phonon_thermodynamics->fB(omega_inner[i][1], T[j]) + 1.0;
                     n2 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) - phonon_thermodynamics->fB(omega_inner[i][1], T[j]);
                     // f_tmp[0][i] = -v3_tmp[i] * n1;
