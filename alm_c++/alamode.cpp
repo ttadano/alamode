@@ -11,6 +11,7 @@
 #include "constraint.h"
 #include "timer.h"
 #include "writes.h"
+#include "ewald.h"
 
 using namespace ALM_NS;
 
@@ -40,6 +41,7 @@ void ALM::create()
     symmetry = new Symmetry(this);
     fitting = new Fitting(this);
     constraint = new Constraint(this);
+    ewald = new Ewald(this);
     writes = new Writes(this);
 }
 
@@ -68,5 +70,6 @@ void ALM::finalize()
     delete system;
     delete fitting;
     delete constraint;
+    delete ewald;
     delete writes;
 }

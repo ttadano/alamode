@@ -10,6 +10,7 @@
 #include "fitting.h"
 #include "constraint.h"
 #include "fcs.h"
+#include "ewald.h"
 
 using namespace ALM_NS;
 
@@ -29,6 +30,8 @@ void Input::parce_input()
     int ndata, nstart, nend, nskip;
     int *kd;
     bool is_periodic[3];
+    bool is_longrange;
+    string file_longrange;
     int multiply_data;
     int constraint_flag;
     double lavec[3][3];
@@ -130,6 +133,9 @@ void Input::parce_input()
 
     cin >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];
 
+    cin >> is_longrange;
+    if (is_longrange) cin >> file_longrange;
+
     // Read species mass
     memory->allocate(kdname, nkd);
     memory->allocate(masskd, nkd);
@@ -169,6 +175,9 @@ void Input::parce_input()
     constraint->constraint_mode = constraint_flag;
 
     for (i = 0; i < 3; ++i) interaction->is_periodic[i] = is_periodic[i];
+
+    ewald->is_longrange = is_longrange;
+    ewald->file_longrange = file_longrange;
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){

@@ -15,6 +15,7 @@ namespace ALM_NS {
         class Fitting *fitting;
         class Constraint *constraint;
         class Files *files;
+        class Ewald *ewald;
         class Writes *writes;
         class Error *error;
         class Timer *timer;

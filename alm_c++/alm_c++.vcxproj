@@ -83,6 +83,7 @@
     <ClCompile Include="alamode.cpp" />
     <ClCompile Include="constraint.cpp" />
     <ClCompile Include="error.cpp" />
+    <ClCompile Include="ewald.cpp" />
     <ClCompile Include="fcs.cpp" />
     <ClCompile Include="files.cpp" />
     <ClCompile Include="fitting.cpp" />
@@ -101,6 +102,7 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="constraint.h" />
     <ClInclude Include="error.h" />
+    <ClInclude Include="ewald.h" />
     <ClInclude Include="fcs.h" />
     <ClInclude Include="files.h" />
     <ClInclude Include="fitting.h" />
