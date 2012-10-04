@@ -87,7 +87,7 @@ void Kpoint::kpoint_setups()
 
             ik = 0;
             std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
-            std::cout << " kpval";
+            std::cout << " kval";
             std::cout.unsetf(std::ios::scientific);
 
             for (i = 0; i < npath; ++i){
@@ -188,12 +188,18 @@ void Kpoint::kpoint_setups()
     MPI_Bcast(&dos->emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dos->delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+
     if (mympi->my_rank > 0) {
         memory->allocate(xk, nk, 3);
-        memory->allocate(knum_minus, nk);
     }
     MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    if (kpoint_mode == 3) {
+        if (mympi->my_rank > 0) {
+            memory->allocate(knum_minus, nk);
+        }
+        MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    }
 
     if (kpoint_mode == 2 || kpoint_mode == 3) {
         MPI_Bcast(&nk_reduced, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);

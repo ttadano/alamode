@@ -41,6 +41,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         system->setup();
         symmetry->setup_symmetry();
         kpoint->kpoint_setups();
+       
         fcs_phonon->setup(mode);
         dos->setup();
 

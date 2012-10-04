@@ -54,8 +54,6 @@ void System::setup()
         std::cout << std::endl << std::endl;
 
         std::cout << " *Primitive Cell* " << std::endl << std::endl;
-
-        std::cout << " *Super Cell* " << std::endl << std::endl;
         std::cout << " " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
         std::cout << " " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
         std::cout << " " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
@@ -168,6 +166,7 @@ void System::load_system_info()
     MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     // need to define MPI_MYTYPE for the exchange of user defined class
     //    MPI_Bcast(&map_s2p[0], sizeof(map_s2p), MPI_BYTE, 0, MPI_COMM_WORLD);
+
 }
 
 void System::recips(double vec[3][3], double inverse[3][3])

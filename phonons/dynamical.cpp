@@ -136,13 +136,13 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 atm_s2 =system->map_p2s[j][itran];
 
                 for(icrd = 0; icrd < 3; ++icrd){
-                    vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
+    //                vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
+                    vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                     vec[icrd] = fold(vec[icrd]);
                 }
 
                 system->rotvec(vec, vec, system->lavec_s);
                 system->rotvec(vec, vec, system->rlavec_p);
-
 
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
@@ -153,6 +153,7 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 if (std::abs(exp_phase.imag()) < 1.0e-14) {
                     exp_phase = std::complex<double>(exp_phase.real(), 0.0);
                 }
+                
 
                 for (icrd = 0; icrd < 3; ++icrd){
                     for (jcrd = 0; jcrd < 3; ++jcrd){
