@@ -138,7 +138,7 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 for(icrd = 0; icrd < 3; ++icrd){                    
                     if (system->cell_dimension[icrd] == 1) {
                         vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
-                        if (vec[icrd] < -0.5) {
+                        if (vec[icrd] <= -0.5) {
                             vec[icrd] = -1.0;
                         } else if (vec[icrd] >= 0.5){
                             vec[icrd] = 1.0;
@@ -147,8 +147,8 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                         }
                         vec[icrd] *= 2.0 * pi;
                     } else if (system->cell_dimension[i] == 2) {
-                         vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
-                         if (vec[icrd] < -0.5) {
+                        vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
+                        if (vec[icrd] <= -0.5) {
                             vec[icrd] = -1.0;
                         } else if (vec[icrd] >= 0.5){
                             vec[icrd] = 1.0;
@@ -159,14 +159,14 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                     } else {
                         vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
                         vec[icrd] = fold(vec[icrd]);
-                        
-                system->rotvec(vec, vec, system->lavec_s);
-                system->rotvec(vec, vec, system->rlavec_p);
+
+                        system->rotvec(vec, vec, system->lavec_s);
+                        system->rotvec(vec, vec, system->rlavec_p);
                     }
                 }
 
 
-             //   std::cout << "r[" << atm_p1 << "] - r[" << atm_s2 << "] = " << vec[0] << " " << vec[1] << " " << vec[2] << std::endl;
+                //   std::cout << "r[" << atm_p1 << "] - r[" << atm_s2 << "] = " << vec[0] << " " << vec[1] << " " << vec[2] << std::endl;
 
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
