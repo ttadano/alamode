@@ -50,18 +50,7 @@ void Relaxation::setup_relaxation()
         }
     }
 
-    memory->allocate(vec_s, system->ntran, 3);
-
-    memory->allocate(invsqrt_mass_p, system->natmin);
-
-    for (i = 0; i < system->ntran; ++i){
-        for (j = 0; j < 3; ++j){
-            vec_s[i][j] = system->xr_s[system->map_p2s[0][i]][j];
-        }
-    }
-
-
-
+/*
     memory->allocate(relvec, system->ntran, system->ntran, 3);
     for (i = 0; i < system->ntran; ++i){
         for (j = 0; j < system->ntran; ++j){
@@ -71,19 +60,60 @@ void Relaxation::setup_relaxation()
             system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
         }
     }
-
-    /*
+*/
+  
     memory->allocate(relvec, system->nat, system->nat, 3);
-    for (i = 0; i < system->nat; ++i){
-    for (j = 0; j < system->nat; ++j){
-    for (k = 0; k < 3; ++k){
-    relvec[i][j][k] = dynamical->fold(system->xr_s[i][k] - system->xr_s[j][k]);
+    memory->allocate(invsqrt_mass_p, system->natmin);
+
+    if (mympi->my_rank == 0) {
+        double vec[3];
+        memory->allocate(vec_s, system->ntran, 3);
+
+        for (i = 0; i < system->ntran; ++i){
+            for (j = 0; j < 3; ++j){
+                vec_s[i][j] = system->xr_s[system->map_p2s[0][i]][j];
+            }
+        }
+
+        for (i = 0; i < system->nat; ++i){
+            for (j = 0; j < system->nat; ++j){
+
+                for (k = 0; k < 3; ++k){
+
+                    if (system->cell_dimension[k] == 1) {
+
+                        vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
+                        if (vec[k] <= -0.5) {
+                            vec[k] = -1.0;
+                        } else if (vec[k] > 0.5){
+                            vec[k] = 1.0;
+                        } else {
+                            vec[k] = 0.0;
+                        }
+
+                    } else if (system->cell_dimension[k] == 2) {
+
+                        vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
+                            - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
+                        vec[k] = dynamical->fold(vec[k]);
+                        if (std::abs(system->xr_s[i][k] - system->xr_s[j][k]) > 0.5) vec[k] *= -1.0;
+
+                    } else {
+
+                        vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
+                            - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
+                        vec[k] = dynamical->fold(vec[k]);
+
+                    }
+                    
+                    relvec[i][j][k] = vec[k];
+                }
+                system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
+            }
+        }
+        memory->deallocate(vec_s);
     }
-    system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
-    }
-    }
-    */
-    memory->deallocate(vec_s);
+    MPI_Bcast(&relvec[0][0][0], 3*system->nat*system->nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     for (i = 0; i < system->natmin; ++i){
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
@@ -112,7 +142,20 @@ void Relaxation::setup_relaxation()
     epsilon *= time_ry / Hz_to_kayser;
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-/*
+    for (unsigned int ik = 0; ik < nk; ++ik){
+        for (unsigned int is = 0; is < ns; ++is){ 
+            std::cout << "ik = " << ik << "is = " << is << " " << dynamical->eval_phonon[ik][is] << " " << dynamical->eval_phonon[kpoint->knum_minus[ik]][is] << std::endl;
+            for (unsigned int js = 0; js < ns; ++js) {
+                if (std::abs(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js])) > eps10) {
+                    std::cout << "js = " << js;
+                    std::cout << " " << dynamical->evec_phonon[ik][is][js];
+                    std::cout << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js] << std::endl;
+                    std::cout << std::endl;
+                }
+            }
+        }
+    }
+    /*
     unsigned int tmp[3];
     std::complex<double> v3tmp1, v3tmp2;
 
@@ -151,7 +194,6 @@ void Relaxation::setup_relaxation()
     }
     error->exit("hoge", "fuga");
     */
-
 }
 
 void Relaxation::finish_relaxation()
@@ -317,13 +359,12 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
     unsigned int kn[3];
     unsigned int sn[3];
+    unsigned int atom_num[3];
 
     double omega[3];
     double invsqrt_mass_prod;
     double phase;
     double vec0[3], vec1[3], vec2[3];
-
-    double xcoord[3][3];
 
     std::vector<FcsClass>::iterator it;
     std::complex<double> ctmp;
@@ -336,29 +377,17 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
 
+        for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
+        for (i = 0; i < 3; ++i) {
+            vec1[i] = relvec[atom_num[1]][atom_num[0]][i];
+            vec2[i] = relvec[atom_num[2]][atom_num[0]][i];
+        }
+/*
         for (i = 0; i < 3; ++i){
-            /*            vec0[i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][(*it).elems[0].cell]][i];
-            vec1[i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][(*it).elems[1].cell]][i];
-            vec2[i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][(*it).elems[2].cell]][i];
-            */
             vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
             vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
-     /*
-         xcoord[0][i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][0]][i];
-            xcoord[1][i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][0]][i];
-            xcoord[2][i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][0]][i];
-            */
         }
-        /*
-        std::cout << "1: " << xcoord[0][0] << " " << xcoord[0][1] << " " << xcoord[0][2] << std::endl;
-        std::cout << "2: " << xcoord[1][0] << " " << xcoord[1][1] << " " << xcoord[1][2] << std::endl;
-        std::cout << "3: " << xcoord[2][0] << " " << xcoord[2][1] << " " << xcoord[2][2] << std::endl;
-        */
-      /*  system->rotvec(xcoord[0], xcoord[0], mat_convert);
-        system->rotvec(xcoord[1], xcoord[1], mat_convert);
-        system->rotvec(xcoord[2], xcoord[2], mat_convert);
-        */
-        // std::cout << xcoord[0][0] << " " << xcoord[0][1] << " " << xcoord[0][2] << std::endl;
+*/
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
         invsqrt_mass_prod = 1.0;
@@ -787,28 +816,6 @@ void Relaxation::modify_eigenvectors()
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
 
-    /*
-    double x_tmp[3];
-    for (ik = 0; ik < nk; ++ik){
-
-        for (is = 0; is < ns; ++is) {
-            std::cout << "ik = " << ik << " is = " << is << std::endl;
-            for (unsigned int iat = 0; iat < system->natmin; ++iat) {
-                for (unsigned int j = 0; j < 3; ++j) x_tmp[j] = system->xr_s[system->map_p2s[iat][0]][j];
-                system->rotvec(x_tmp, x_tmp, mat_convert);
-
-                for (unsigned int i = 0; i < 3; ++i) {
-                    js = 3 * iat + i;
-                    std::complex<double> cphase = std::exp(im*(kpoint->xk[ik][0] * x_tmp[0] + kpoint->xk[ik][1] * x_tmp[1] + kpoint->xk[ik][2] * x_tmp[2]));
-     //               if (std::abs(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js]))> eps12) {
-                        std::cout << "js = " << js << dynamical->evec_phonon[ik][is][js] << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js] << std::endl;
-     //                  std::cout << "js = " << js << dynamical->evec_phonon[ik][is][js]*cphase << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js]*std::conj(cphase) << std::endl;
-     //               }
-                }
-            }   
-        }
-    }
-    */
 
 
     for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;

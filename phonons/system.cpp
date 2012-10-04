@@ -77,7 +77,7 @@ void System::setup()
         std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
         std::cout << " Dimension of the supercell :";
-        for (i = 0; i < 3; ++i) std::cout << std::setw(4) << cell_dimension[0] << "x";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(4) << cell_dimension[0] << "  x";
         std::cout << std::endl;
     }
 

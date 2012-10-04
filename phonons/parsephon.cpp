@@ -129,7 +129,9 @@ void Input::read_input_boltzmann()
     for (i = 0; i < 3; ++i) {
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
-    for (i = 0; i < 3; ++i) cin >> cell_dimension[3];
+    for (i = 0; i < 3; ++i) {
+        cin >> cell_dimension[i];
+    }
 
     cin >> file_fcs;
     cin >> epsilon;
