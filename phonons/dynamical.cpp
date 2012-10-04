@@ -136,8 +136,8 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 atm_s2 =system->map_p2s[j][itran];
 
                 for(icrd = 0; icrd < 3; ++icrd){
-    //                vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
-                    vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
+                    vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
+    //                vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                     vec[icrd] = fold(vec[icrd]);
                 }
 

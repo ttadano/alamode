@@ -50,6 +50,7 @@ void Conductivity::setup_kl()
         std::cout << std::endl;
 
         std::cout.unsetf(std::ios::fixed);
+
     }
 }
 
@@ -175,7 +176,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
             }
         }
     }
-
+   
     for (ik = 0; ik < nk_local; ++ik){
 
         knum = k_local[ik];

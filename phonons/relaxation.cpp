@@ -51,7 +51,7 @@ void Relaxation::setup_relaxation()
     }
 
     memory->allocate(vec_s, system->ntran, 3);
-    
+
     memory->allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->ntran; ++i){
@@ -60,7 +60,7 @@ void Relaxation::setup_relaxation()
         }
     }
 
-    
+
 
     memory->allocate(relvec, system->ntran, system->ntran, 3);
     for (i = 0; i < system->ntran; ++i){
@@ -71,18 +71,18 @@ void Relaxation::setup_relaxation()
             system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
         }
     }
-    
-/*
+
+    /*
     memory->allocate(relvec, system->nat, system->nat, 3);
     for (i = 0; i < system->nat; ++i){
-        for (j = 0; j < system->nat; ++j){
-            for (k = 0; k < 3; ++k){
-              relvec[i][j][k] = dynamical->fold(system->xr_s[i][k] - system->xr_s[j][k]);
-            }
-            system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
-        }
+    for (j = 0; j < system->nat; ++j){
+    for (k = 0; k < 3; ++k){
+    relvec[i][j][k] = dynamical->fold(system->xr_s[i][k] - system->xr_s[j][k]);
     }
-*/
+    system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
+    }
+    }
+    */
     memory->deallocate(vec_s);
 
     for (i = 0; i < system->natmin; ++i){
@@ -108,49 +108,51 @@ void Relaxation::setup_relaxation()
     }
 
     modify_eigenvectors();
+    error->exitall("hoge", "hoge");
 
     epsilon *= time_ry / Hz_to_kayser;
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    /*
+
     unsigned int tmp[3];
     std::complex<double> v3tmp1, v3tmp2;
 
     for (unsigned int ik = 0; ik < nk; ++ik){
-    for (unsigned int jk = 0; jk < nk; ++jk){
-    for (unsigned int kk = 0; kk < nk; ++kk){
-    std::cout << "k_orig=" << ik << "," << jk << "," << kk << std::endl;
-    std::cout << "k_minus=" << kpoint->knum_minus[ik] << "," << kpoint->knum_minus[jk] << "," << kpoint->knum_minus[kk] << std::endl;
-    for (unsigned int is = 0; is < ns; ++is){
-    for (unsigned int js = 0; js < ns; ++js){
-    for (unsigned int ks = 0; ks < ns; ++ks){
+        for (unsigned int jk = 0; jk < nk; ++jk){
+            for (unsigned int kk = 0; kk < nk; ++kk){
+                std::cout << "k_orig=" << ik << "," << jk << "," << kk << std::endl;
+                std::cout << "k_minus=" << kpoint->knum_minus[ik] << "," << kpoint->knum_minus[jk] << "," << kpoint->knum_minus[kk] << std::endl;
+                for (unsigned int is = 0; is < ns; ++is){
+                    for (unsigned int js = 0; js < ns; ++js){
+                        for (unsigned int ks = 0; ks < ns; ++ks){
 
-    tmp[0] = ns * ik + is;
-    tmp[1] = ns * jk + js;
-    tmp[2] = ns * kk + ks;
+                            tmp[0] = ns * ik + is;
+                            tmp[1] = ns * jk + js;
+                            tmp[2] = ns * kk + ks;
 
-    v3tmp1 = V3new(tmp);
+                            v3tmp1 = V3new(tmp);
 
-    tmp[0] = ns * kpoint->knum_minus[ik] + is;
-    tmp[1] = ns * kpoint->knum_minus[jk] + js;
-    tmp[2] = ns * kpoint->knum_minus[kk] + ks;
+                            tmp[0] = ns * kpoint->knum_minus[ik] + is;
+                            tmp[1] = ns * kpoint->knum_minus[jk] + js;
+                            tmp[2] = ns * kpoint->knum_minus[kk] + ks;
 
-    v3tmp2 = V3new(tmp);
+                            v3tmp2 = V3new(tmp);
 
-    if (std::abs(v3tmp1 - conj(v3tmp2)) > eps10) {
-    std::cout << "(" << ik << "," << is;
-    std::cout << ";" << jk << "," << js;
-    std::cout << ";" << kk << "," << ks;
-    std::cout << ") = " << v3tmp1 << v3tmp2 << std::endl;
-    }
-    }
-    }
-    }
-    }
-    }
+                            if (std::abs(v3tmp1 - conj(v3tmp2)) > eps10) {
+                                std::cout << "(" << ik << "," << is;
+                                std::cout << ";" << jk << "," << js;
+                                std::cout << ";" << kk << "," << ks;
+                                std::cout << ") = " << v3tmp1 << v3tmp2 << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     error->exit("hoge", "fuga");
-    */
+
+
 
 }
 
@@ -337,7 +339,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
 
         for (i = 0; i < 3; ++i){
-/*            vec0[i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][(*it).elems[0].cell]][i];
+            /*            vec0[i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][(*it).elems[0].cell]][i];
             vec1[i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][(*it).elems[1].cell]][i];
             vec2[i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][(*it).elems[2].cell]][i];
             */
@@ -347,11 +349,15 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
             xcoord[1][i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][0]][i];
             xcoord[2][i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][0]][i];
         }
-        
+        /*
+        std::cout << "1: " << xcoord[0][0] << " " << xcoord[0][1] << " " << xcoord[0][2] << std::endl;
+        std::cout << "2: " << xcoord[1][0] << " " << xcoord[1][1] << " " << xcoord[1][2] << std::endl;
+        std::cout << "3: " << xcoord[2][0] << " " << xcoord[2][1] << " " << xcoord[2][2] << std::endl;
+        */
         system->rotvec(xcoord[0], xcoord[0], mat_convert);
         system->rotvec(xcoord[1], xcoord[1], mat_convert);
         system->rotvec(xcoord[2], xcoord[2], mat_convert);
-
+        // std::cout << xcoord[0][0] << " " << xcoord[0][1] << " " << xcoord[0][2] << std::endl;
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
         invsqrt_mass_prod = 1.0;
@@ -542,7 +548,7 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
                 arr[1] = ns * ik + is;
                 arr[2] = ns * jk + js;
-        
+
                 omega_inner[0] = dynamical->eval_phonon[ik][is];
                 omega_inner[1] = dynamical->eval_phonon[jk][js];
                 v3_tmp = std::norm(V3new(arr));
@@ -554,9 +560,9 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
                     ret[i] += v3_tmp 
                         * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
-                           + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                           - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                           + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                        + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+                        - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+                        + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
                 }
             }
         }
@@ -631,7 +637,7 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
                     f_tmp[2][i] = -v3_tmp[i] * n2;
                     f_tmp[3][i] = v3_tmp[i] * n2;
                 }
-             
+
                 for (i = 1; i < 4; ++i) {
                     ret[j] += integration->do_tetrahedron(e_tmp[i], f_tmp[i], omega);
                 }
@@ -779,6 +785,28 @@ void Relaxation::modify_eigenvectors()
 
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
+
+    double x_tmp[3];
+    for (ik = 0; ik < nk; ++ik){
+
+        for (is = 0; is < ns; ++is) {
+            std::cout << "ik = " << ik << " is = " << is << std::endl;
+            for (unsigned int iat = 0; iat < system->natmin; ++iat) {
+                for (unsigned int j = 0; j < 3; ++j) x_tmp[j] = system->xr_s[system->map_p2s[iat][0]][j];
+                system->rotvec(x_tmp, x_tmp, mat_convert);
+
+                for (unsigned int i = 0; i < 3; ++i) {
+                    js = 3 * iat + i;
+                    std::complex<double> cphase = std::exp(im*(kpoint->xk[ik][0] * x_tmp[0] + kpoint->xk[ik][1] * x_tmp[1] + kpoint->xk[ik][2] * x_tmp[2]));
+     //               if (std::abs(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js]))> eps12) {
+                        std::cout << "js = " << js << dynamical->evec_phonon[ik][is][js] << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js] << std::endl;
+     //                  std::cout << "js = " << js << dynamical->evec_phonon[ik][is][js]*cphase << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js]*std::conj(cphase) << std::endl;
+     //               }
+                }
+            }   
+        }
+    }
+
 
     for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
 
