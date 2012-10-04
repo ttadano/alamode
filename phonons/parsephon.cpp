@@ -54,6 +54,7 @@ void Input::read_input_phonons()
     int kpoint_mode;
     bool eigenvectors, writeanime, nonanalytic;
     int nbands;
+    unsigned int cell_dimension[3];
 
     string file_born;
     double na_sigma;
@@ -66,6 +67,10 @@ void Input::read_input_phonons()
     for (i = 0; i < 3; ++i){
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
+    // This is a tentative modification. 
+    // When cell_dimension = 1 or 2, algorithm will be slightly changed.
+
+    cin >> cell_dimension[0] >> cell_dimension[1] >> cell_dimension[2];
     cin >> file_fcs;
 
     cin >> eigenvectors >> writeanime >> nonanalytic;
@@ -83,6 +88,7 @@ void Input::read_input_phonons()
         for(j = 0; j < 3; ++j){
             system->lavec_p[i][j] = lavec[i][j];
         }
+        system->cell_dimension[i] = cell_dimension[i];
     }
 
     dynamical->eigenvectors = eigenvectors;
@@ -117,11 +123,14 @@ void Input::read_input_boltzmann()
 
     unsigned int i, j;
     unsigned int nsym, nnp;
+    unsigned int cell_dimension[3];
 
     cin >> nsym >> nnp;
     for (i = 0; i < 3; ++i) {
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
     }
+    for (i = 0; i < 3; ++i) cin >> cell_dimension[3];
+
     cin >> file_fcs;
     cin >> epsilon;
     cin >> Tmin >> Tmax >> dT;
@@ -137,6 +146,7 @@ void Input::read_input_boltzmann()
         for (j = 0; j < 3; ++j){
             system->lavec_p[i][j] = lavec[i][j];
         }
+        system->cell_dimension[i] = cell_dimension[i];
     }
     fcs_phonon->file_fcs = file_fcs;
     relaxation->epsilon = epsilon;

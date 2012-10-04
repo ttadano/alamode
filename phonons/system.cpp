@@ -75,6 +75,10 @@ void System::setup()
 
         std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
         std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
+
+        std::cout << " Dimension of the supercell :";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(4) << cell_dimension[0] << "x";
+        std::cout << std::endl;
     }
 
     // Atomic masses in Rydberg unit
@@ -86,6 +90,7 @@ void System::setup()
     MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cell_dimension[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 }
 
 void System::load_system_info()
@@ -124,21 +129,6 @@ void System::load_system_info()
                 std::getline(ifs_fcs, str_tmp);
                 ifs_fcs >> nat >> natmin >> ntran;
 
-                if (ntran == 1) {
-                    is_unitcell = true;
-                    std::cout << "MESSAGE: The given IFCs are determined in a unit cell." << std::endl;
-                    std::cout << "Therefore, the computation will be performed for a 2x2x2 virtual supercell." << std::endl;
-/*
-                    nat *= 8;
-                    ntran = 8;
-                    for (i = 0; i < 3; ++i) {
-                        for (unsigned int j = 0; j < 3; ++j) {
-                            lavec_s[i][j] *= 2.0;
-                        }
-                    }
-                    */
-                }
-
                 memory->allocate(xr_s, nat, 3);
                 memory->allocate(kd, nat);
                 memory->allocate(map_p2s, natmin, ntran);
@@ -148,31 +138,13 @@ void System::load_system_info()
                 std::getline(ifs_fcs, str_tmp);
                 std::getline(ifs_fcs, str_tmp);
 
-          //      if (is_unitcell){
-             /*       for (i = 0; i < nat / 8; ++i){
-                        ifs_fcs >> str_tmp >> ikd >> xr_s[i][0] >> xr_s[i][1] >> xr_s[i][2] >> itran >> icell;
-                        kd[i] = ikd - 1;
-                        map_p2s[icell - 1][itran - 1] = i;
-                        map_s2p[i].atom_num = icell - 1;
-                        map_s2p[i].tran_num = itran - 1;
-                    }
-
-                    for (itran = 1; itran < ntran; ++itran) {
-                        for (i = 0; i < nat / 8; ++i){
-                        kd[itran * (nat / 8) + i] = kd[i];
-                   //     map_p2s[i][itran] = 
-                        }
-                    }
-                    */
-           //     } else {
-                    for (i = 0; i < nat; ++i){
-                        ifs_fcs >> str_tmp >> ikd >> xr_s[i][0] >> xr_s[i][1] >> xr_s[i][2] >> itran >> icell;
-                        kd[i] = ikd - 1;
-                        map_p2s[icell - 1][itran - 1] = i;
-                        map_s2p[i].atom_num = icell - 1;
-                        map_s2p[i].tran_num = itran - 1;
-                    }
-              //  }
+                for (i = 0; i < nat; ++i){
+                    ifs_fcs >> str_tmp >> ikd >> xr_s[i][0] >> xr_s[i][1] >> xr_s[i][2] >> itran >> icell;
+                    kd[i] = ikd - 1;
+                    map_p2s[icell - 1][itran - 1] = i;
+                    map_s2p[i].atom_num = icell - 1;
+                    map_s2p[i].tran_num = itran - 1;
+                }
             }
         }
         ifs_fcs.close();
@@ -185,7 +157,6 @@ void System::load_system_info()
     MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&is_unitcell, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0){
         memory->allocate(mass_kd, nkd);
