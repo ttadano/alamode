@@ -51,7 +51,7 @@ void Relaxation::setup_relaxation()
     }
 
     memory->allocate(vec_s, system->ntran, 3);
-    memory->allocate(relvec, system->ntran, system->ntran, 3);
+    
     memory->allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->ntran; ++i){
@@ -60,6 +60,9 @@ void Relaxation::setup_relaxation()
         }
     }
 
+    
+
+    memory->allocate(relvec, system->ntran, system->ntran, 3);
     for (i = 0; i < system->ntran; ++i){
         for (j = 0; j < system->ntran; ++j){
             for (k = 0; k < 3; ++k){ 
@@ -68,7 +71,18 @@ void Relaxation::setup_relaxation()
             system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
         }
     }
-
+    
+/*
+    memory->allocate(relvec, system->nat, system->nat, 3);
+    for (i = 0; i < system->nat; ++i){
+        for (j = 0; j < system->nat; ++j){
+            for (k = 0; k < 3; ++k){
+              relvec[i][j][k] = dynamical->fold(system->xr_s[i][k] - system->xr_s[j][k]);
+            }
+            system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
+        }
+    }
+*/
     memory->deallocate(vec_s);
 
     for (i = 0; i < system->natmin; ++i){
@@ -307,7 +321,9 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     double omega[3];
     double invsqrt_mass_prod;
     double phase;
-    double vec1[3], vec2[3];
+    double vec0[3], vec1[3], vec2[3];
+
+    double xcoord[3][3];
 
     std::vector<FcsClass>::iterator it;
     std::complex<double> ctmp;
@@ -321,9 +337,20 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
 
         for (i = 0; i < 3; ++i){
+/*            vec0[i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][(*it).elems[0].cell]][i];
+            vec1[i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][(*it).elems[1].cell]][i];
+            vec2[i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][(*it).elems[2].cell]][i];
+            */
             vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
             vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
+            xcoord[0][i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][0]][i];
+            xcoord[1][i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][0]][i];
+            xcoord[2][i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][0]][i];
         }
+        
+        system->rotvec(xcoord[0], xcoord[0], mat_convert);
+        system->rotvec(xcoord[1], xcoord[1], mat_convert);
+        system->rotvec(xcoord[2], xcoord[2], mat_convert);
 
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
@@ -331,6 +358,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
         for (i = 0; i < 3; ++i){
             phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
+            phase += xcoord[0][i] * kpoint->xk[kn[0]][i] + xcoord[1][i] * kpoint->xk[kn[1]][i] + xcoord[2][i] * kpoint->xk[kn[2]][i];
             invsqrt_mass_prod *= invsqrt_mass_p[(*it).elems[i].atom];
             ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * (*it).elems[i].atom + (*it).elems[i].xyz];
         }
