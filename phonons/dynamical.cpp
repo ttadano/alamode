@@ -136,7 +136,7 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 atm_s2 =system->map_p2s[j][itran];
 
                 for(icrd = 0; icrd < 3; ++icrd){                    
-                    if (system->cell_dimension[icrd] = 1) {
+                    if (system->cell_dimension[icrd] == 1) {
                         vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                         if (vec[icrd] < -0.5) {
                             vec[icrd] = -1.0;
