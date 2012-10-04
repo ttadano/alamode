@@ -145,23 +145,26 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                         } else {
                             vec[icrd] = 0.0;
                         }
+                        vec[icrd] *= 2.0 * pi;
                     } else if (system->cell_dimension[i] == 2) {
                          vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                          if (vec[icrd] < -0.5) {
-                            vec[icrd] = -0.5;
+                            vec[icrd] = -1.0;
                         } else if (vec[icrd] >= 0.5){
-                            vec[icrd] = 0.5;
+                            vec[icrd] = 1.0;
                         } else {
                             vec[icrd] = 0.0;
                         }
+                        vec[icrd] *= 2.0 * pi;
                     } else {
                         vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
                         vec[icrd] = fold(vec[icrd]);
+                        
+                system->rotvec(vec, vec, system->lavec_s);
+                system->rotvec(vec, vec, system->rlavec_p);
                     }
                 }
 
-                system->rotvec(vec, vec, system->lavec_s);
-                system->rotvec(vec, vec, system->rlavec_p);
 
              //   std::cout << "r[" << atm_p1 << "] - r[" << atm_s2 << "] = " << vec[0] << " " << vec[1] << " " << vec[2] << std::endl;
 
