@@ -18,6 +18,7 @@ namespace PHON_NS {
 
         unsigned int nat, natmin, ntran;
         unsigned int *kd, nkd;
+        bool is_unitcell;
 
         unsigned int **map_p2s;
         class Maps {

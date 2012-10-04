@@ -107,13 +107,12 @@ void Relaxation::setup_relaxation()
         std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl << std::endl;
     }
 
-    modify_eigenvectors();
-    error->exitall("hoge", "hoge");
+  //  modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-
+/*
     unsigned int tmp[3];
     std::complex<double> v3tmp1, v3tmp2;
 
@@ -151,8 +150,7 @@ void Relaxation::setup_relaxation()
         }
     }
     error->exit("hoge", "fuga");
-
-
+    */
 
 }
 
@@ -345,18 +343,21 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
             */
             vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
             vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
-            xcoord[0][i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][0]][i];
+     /*
+         xcoord[0][i] = system->xr_s[system->map_p2s[(*it).elems[0].atom][0]][i];
             xcoord[1][i] = system->xr_s[system->map_p2s[(*it).elems[1].atom][0]][i];
             xcoord[2][i] = system->xr_s[system->map_p2s[(*it).elems[2].atom][0]][i];
+            */
         }
         /*
         std::cout << "1: " << xcoord[0][0] << " " << xcoord[0][1] << " " << xcoord[0][2] << std::endl;
         std::cout << "2: " << xcoord[1][0] << " " << xcoord[1][1] << " " << xcoord[1][2] << std::endl;
         std::cout << "3: " << xcoord[2][0] << " " << xcoord[2][1] << " " << xcoord[2][2] << std::endl;
         */
-        system->rotvec(xcoord[0], xcoord[0], mat_convert);
+      /*  system->rotvec(xcoord[0], xcoord[0], mat_convert);
         system->rotvec(xcoord[1], xcoord[1], mat_convert);
         system->rotvec(xcoord[2], xcoord[2], mat_convert);
+        */
         // std::cout << xcoord[0][0] << " " << xcoord[0][1] << " " << xcoord[0][2] << std::endl;
         phase = 0.0;
         ctmp = std::complex<double>(1.0, 0.0);
@@ -364,7 +365,7 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
         for (i = 0; i < 3; ++i){
             phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
-            phase += xcoord[0][i] * kpoint->xk[kn[0]][i] + xcoord[1][i] * kpoint->xk[kn[1]][i] + xcoord[2][i] * kpoint->xk[kn[2]][i];
+         //   phase += xcoord[0][i] * kpoint->xk[kn[0]][i] + xcoord[1][i] * kpoint->xk[kn[1]][i] + xcoord[2][i] * kpoint->xk[kn[2]][i];
             invsqrt_mass_prod *= invsqrt_mass_p[(*it).elems[i].atom];
             ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * (*it).elems[i].atom + (*it).elems[i].xyz];
         }
@@ -786,6 +787,7 @@ void Relaxation::modify_eigenvectors()
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
 
+    /*
     double x_tmp[3];
     for (ik = 0; ik < nk; ++ik){
 
@@ -806,6 +808,7 @@ void Relaxation::modify_eigenvectors()
             }   
         }
     }
+    */
 
 
     for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
