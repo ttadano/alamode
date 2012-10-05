@@ -37,6 +37,16 @@ void System::init(){
     std::cout << " " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
     std::cout << std::endl;
 
+    double vec_tmp[3][3];
+     for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                vec_tmp[i][j] = lavec[j][i];
+            }
+        }
+
+    cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[3]);
+    std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl;
+
     std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
     for (i = 0; i < nat; ++i) {
         std::cout << std::setw(5) << i + 1;
@@ -129,15 +139,31 @@ void System::frac2cart(double **xf)
     memory->deallocate(x_tmp);
 }
 
-void System::rotvec(double y[3], double x[3], double A[3][3]){
+void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char mode)
+{
+    // Perform matrix x vector multiplication. 
+    //
+    // vec_out = mat      * vec_in   (mode = 'N')
+    //          (mat)^{t} * vec_in   (mode = 'T')
+    //
 
-    int i;
-    double tmp[3];
-
-    for (i = 0; i < 3; ++i) tmp[i] = x[i];
+    unsigned int i;
+    double vec_tmp[3];
 
     for (i = 0; i < 3; ++i){
-        y[i] = A[i][0] * tmp[0] + A[i][1] * tmp[1] + A[i][2] * tmp[2];
+        vec_tmp[i] = vec_in[i];
+    }
+
+    if (mode == 'N') {
+        for (i = 0; i < 3; ++i){
+            vec_out[i] = mat[i][0] * vec_tmp[0] + mat[i][1] * vec_tmp[1] + mat[i][2] * vec_tmp[2];
+        }
+    } else if (mode == 'T'){
+        for (i = 0; i < 3; ++i){
+            vec_out[i] = mat[0][i] * vec_tmp[0] + mat[1][i] * vec_tmp[1] + mat[2][i] * vec_tmp[2];
+        }
+    } else {
+        error->exit("rotvec", "invalid input valiable for mode");
     }
 }
 
@@ -316,3 +342,13 @@ void System::load_reference_system()
     ifs_fc2.close();
 }
 
+double System::volume(const double vec1[3], const double vec2[3], const double vec3[3])
+{
+    double vol;
+
+    vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
+        + vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
+        + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
+
+    return vol;
+}

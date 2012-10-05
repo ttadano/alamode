@@ -28,8 +28,11 @@ namespace ALM_NS {
         double **xcoord_s;
 
         int *map_ref;
-        void rotvec(double [3], double [3], double [3][3]);
+        void rotvec(double [3], double [3], double [3][3], char mode = 'N');
+        double cell_volume;
+
     private:
         unsigned int coordinate_index(const char);
+        double volume(const double [3], const double [3], const double[3]);
     };
 }
