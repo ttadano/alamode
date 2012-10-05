@@ -53,6 +53,7 @@ namespace PHON_NS {
         std::complex<double> *self_E;
         double self_tetra(const double, const double, const unsigned int, const unsigned int);
         double epsilon;
+        int ksum_mode;
 
      private:
         struct StructKS {

@@ -83,12 +83,23 @@ void Relaxation::setup_relaxation()
                     if (system->cell_dimension[k] == 1) {
 
                         vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
+/*
                         if (vec[k] <= -0.5) {
                             vec[k] = -1.0;
                         } else if (vec[k] > 0.5){
                             vec[k] = 1.0;
                         } else {
                             vec[k] = 0.0;
+                        }
+*/
+                        if (std::abs(vec[k]) < 0.5) {
+                            vec[k] = 0.0;
+                        } else {
+                            if (system->xr_s[i][k] < 0.5) {
+                                vec[k] = -1.0;
+                            } else {
+                                vec[k] = 1.0;
+                            }
                         }
 
                     } else if (system->cell_dimension[k] == 2) {
@@ -135,11 +146,23 @@ void Relaxation::setup_relaxation()
         std::cout << std::endl;
         std::cout << "Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
         std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl << std::endl;
+        
+        if (ksum_mode == 0) {
+            std::cout << "Lorentzian broadning will be used." << std::endl;
+        } else if (ksum_mode == 1) {
+            std::cout << "Gaussian broadning will be used." << std::endl;
+        } else if (ksum_mode == -1) {
+            std::cout << "Tetrahedron method will be used." << std::endl;
+        } else {
+            error->exit("setup_relaxation", "Invalid ksum_mode");
+        }
     }
 
-  //  modify_eigenvectors();
+    modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
+
+    MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     for (unsigned int ik = 0; ik < nk; ++ik){

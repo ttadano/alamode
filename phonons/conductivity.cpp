@@ -184,8 +184,12 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
         for (is = 0; is < ns; ++is){
 
             omega = dynamical->eval_phonon[knum][is];
-            relaxation->calc_damping(NT, temperature, omega, knum, is, damping);
-//            relaxation->calc_damping_tetra(NT, temperature, omega, knum, is, damping);
+
+            if (relaxation->ksum_mode == 0) {
+                relaxation->calc_damping(NT, temperature, omega, knum, is, damping);
+            } else if (relaxation->ksum_mode == -1) {
+                relaxation->calc_damping_tetra(NT, temperature, omega, knum, is, damping);
+            }
 
             //tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
             //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));

@@ -124,6 +124,7 @@ void Input::read_input_boltzmann()
     unsigned int i, j;
     unsigned int nsym, nnp;
     unsigned int cell_dimension[3];
+    int ksum_mode;
 
     cin >> nsym >> nnp;
     for (i = 0; i < 3; ++i) {
@@ -134,7 +135,7 @@ void Input::read_input_boltzmann()
     }
 
     cin >> file_fcs;
-    cin >> epsilon;
+    cin >> ksum_mode >> epsilon;
     cin >> Tmin >> Tmax >> dT;
 
     if (Tmin > Tmax) {
@@ -151,6 +152,7 @@ void Input::read_input_boltzmann()
         system->cell_dimension[i] = cell_dimension[i];
     }
     fcs_phonon->file_fcs = file_fcs;
+    relaxation->ksum_mode = ksum_mode;
     relaxation->epsilon = epsilon;
 
     system->Tmin = Tmin;
