@@ -50,18 +50,18 @@ void Relaxation::setup_relaxation()
         }
     }
 
-/*
+    /*
     memory->allocate(relvec, system->ntran, system->ntran, 3);
     for (i = 0; i < system->ntran; ++i){
-        for (j = 0; j < system->ntran; ++j){
-            for (k = 0; k < 3; ++k){ 
-                relvec[i][j][k] = dynamical->fold(vec_s[i][k] - vec_s[j][k]);
-            }
-            system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
-        }
+    for (j = 0; j < system->ntran; ++j){
+    for (k = 0; k < 3; ++k){ 
+    relvec[i][j][k] = dynamical->fold(vec_s[i][k] - vec_s[j][k]);
     }
-*/
-  
+    system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
+    }
+    }
+    */
+
     memory->allocate(relvec, system->nat, system->nat, 3);
     memory->allocate(invsqrt_mass_p, system->natmin);
 
@@ -83,15 +83,15 @@ void Relaxation::setup_relaxation()
                     if (system->cell_dimension[k] == 1) {
 
                         vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
-/*
+                        /*
                         if (vec[k] <= -0.5) {
-                            vec[k] = -1.0;
+                        vec[k] = -1.0;
                         } else if (vec[k] > 0.5){
-                            vec[k] = 1.0;
+                        vec[k] = 1.0;
                         } else {
-                            vec[k] = 0.0;
+                        vec[k] = 0.0;
                         }
-*/
+                        */
                         if (std::abs(vec[k]) < 0.5) {
                             vec[k] = 0.0;
                         } else {
@@ -105,18 +105,18 @@ void Relaxation::setup_relaxation()
                     } else if (system->cell_dimension[k] == 2) {
 
                         vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
-                            - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
+                        - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
                         vec[k] = dynamical->fold(vec[k]);
                         if (std::abs(system->xr_s[i][k] - system->xr_s[j][k]) > 0.5) vec[k] *= -1.0;
 
                     } else {
 
                         vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
-                            - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
+                        - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
                         vec[k] = dynamical->fold(vec[k]);
 
                     }
-                    
+
                     relvec[i][j][k] = vec[k];
                 }
                 system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
@@ -146,7 +146,7 @@ void Relaxation::setup_relaxation()
         std::cout << std::endl;
         std::cout << "Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
         std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl << std::endl;
-        
+
         if (ksum_mode == 0) {
             std::cout << "Lorentzian broadning will be used." << std::endl;
         } else if (ksum_mode == 1) {
@@ -183,37 +183,37 @@ void Relaxation::setup_relaxation()
     std::complex<double> v3tmp1, v3tmp2;
 
     for (unsigned int ik = 0; ik < nk; ++ik){
-        for (unsigned int jk = 0; jk < nk; ++jk){
-            for (unsigned int kk = 0; kk < nk; ++kk){
-                std::cout << "k_orig=" << ik << "," << jk << "," << kk << std::endl;
-                std::cout << "k_minus=" << kpoint->knum_minus[ik] << "," << kpoint->knum_minus[jk] << "," << kpoint->knum_minus[kk] << std::endl;
-                for (unsigned int is = 0; is < ns; ++is){
-                    for (unsigned int js = 0; js < ns; ++js){
-                        for (unsigned int ks = 0; ks < ns; ++ks){
+    for (unsigned int jk = 0; jk < nk; ++jk){
+    for (unsigned int kk = 0; kk < nk; ++kk){
+    std::cout << "k_orig=" << ik << "," << jk << "," << kk << std::endl;
+    std::cout << "k_minus=" << kpoint->knum_minus[ik] << "," << kpoint->knum_minus[jk] << "," << kpoint->knum_minus[kk] << std::endl;
+    for (unsigned int is = 0; is < ns; ++is){
+    for (unsigned int js = 0; js < ns; ++js){
+    for (unsigned int ks = 0; ks < ns; ++ks){
 
-                            tmp[0] = ns * ik + is;
-                            tmp[1] = ns * jk + js;
-                            tmp[2] = ns * kk + ks;
+    tmp[0] = ns * ik + is;
+    tmp[1] = ns * jk + js;
+    tmp[2] = ns * kk + ks;
 
-                            v3tmp1 = V3new(tmp);
+    v3tmp1 = V3new(tmp);
 
-                            tmp[0] = ns * kpoint->knum_minus[ik] + is;
-                            tmp[1] = ns * kpoint->knum_minus[jk] + js;
-                            tmp[2] = ns * kpoint->knum_minus[kk] + ks;
+    tmp[0] = ns * kpoint->knum_minus[ik] + is;
+    tmp[1] = ns * kpoint->knum_minus[jk] + js;
+    tmp[2] = ns * kpoint->knum_minus[kk] + ks;
 
-                            v3tmp2 = V3new(tmp);
+    v3tmp2 = V3new(tmp);
 
-                            if (std::abs(v3tmp1 - conj(v3tmp2)) > eps10) {
-                                std::cout << "(" << ik << "," << is;
-                                std::cout << ";" << jk << "," << js;
-                                std::cout << ";" << kk << "," << ks;
-                                std::cout << ") = " << v3tmp1 << v3tmp2 << std::endl;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    if (std::abs(v3tmp1 - conj(v3tmp2)) > eps10) {
+    std::cout << "(" << ik << "," << is;
+    std::cout << ";" << jk << "," << js;
+    std::cout << ";" << kk << "," << ks;
+    std::cout << ") = " << v3tmp1 << v3tmp2 << std::endl;
+    }
+    }
+    }
+    }
+    }
+    }
     }
     error->exit("hoge", "fuga");
     */
@@ -330,15 +330,15 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
     unsigned int i;
     unsigned int k1, k2, k3;
     unsigned int b1, b2, b3;
+    int ielem;
 
-    double invsqrt_mass_prod, phase, omega_prod;
-    double vec1[3], vec2[3];
+    double omega_prod;
     double omega[3];
 
-    std::vector<FcsClass>::iterator it;
-    std::complex<double> ret, tmp;
+    //  std::vector<FcsClass>::iterator it;
 
-    ret = std::complex<double>(0.0, 0.0);
+    double ret_re = 0.0;
+    double ret_im = 0.0;
 
     k1 = ks1 / ns;
     k2 = ks2 / ns;
@@ -353,44 +353,75 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
     omega[2] = dynamical->eval_phonon[k3][b3];
     omega_prod = omega[0] * omega[1] * omega[2];
 
-    for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
+#pragma omp parallel
+    {
+        double vec1[3], vec2[3];
+        double invsqrt_mass_prod, phase; 
+        std::complex<double> tmp;
+        tmp = std::complex<double>(0.0, 0.0);
 
-        for (i = 0; i < 3; ++i){
-            vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
-            vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
+#pragma omp parallel for reduction(+: ret_re, ret_im)
+        for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem){
+
+            for (i = 0; i < 3; ++i){
+                vec1[i] = relvec[fcs_phonon->force_constant[1][ielem].elems[1].cell][fcs_phonon->force_constant[1][ielem].elems[0].cell][i];
+                vec2[i] = relvec[fcs_phonon->force_constant[1][ielem].elems[2].cell][fcs_phonon->force_constant[1][ielem].elems[0].cell][i];
+            }
+
+            phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
+            + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
+
+            invsqrt_mass_prod = invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[0].atom]
+            * invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[1].atom] 
+            * invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[2].atom];
+
+
+            tmp = fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invsqrt_mass_prod
+                * dynamical->evec_phonon[k1][b1][3 * fcs_phonon->force_constant[1][ielem].elems[0].atom + fcs_phonon->force_constant[1][ielem].elems[0].xyz]
+            * dynamical->evec_phonon[k2][b2][3 * fcs_phonon->force_constant[1][ielem].elems[1].atom + fcs_phonon->force_constant[1][ielem].elems[1].xyz]
+            * dynamical->evec_phonon[k3][b3][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz];
+            ret_re += tmp.real();
+            ret_im += tmp.imag();
         }
-
-        phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
-        + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
-
-        invsqrt_mass_prod = invsqrt_mass_p[(*it).elems[0].atom] * invsqrt_mass_p[(*it).elems[1].atom] * invsqrt_mass_p[(*it).elems[2].atom];
-
-        ret += (*it).fcs_val * std::exp(im * phase) * invsqrt_mass_prod
-            * dynamical->evec_phonon[k1][b1][3 * (*it).elems[0].atom + (*it).elems[0].xyz]
-        * dynamical->evec_phonon[k2][b2][3 * (*it).elems[1].atom + (*it).elems[1].xyz]
-        * dynamical->evec_phonon[k3][b3][3 * (*it).elems[2].atom + (*it).elems[2].xyz];
     }
 
-    return ret/std::sqrt(omega_prod);
+
+    /*
+
+    for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
+
+    for (i = 0; i < 3; ++i){
+    vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
+    vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
+    }
+
+    phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
+    + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
+
+    invsqrt_mass_prod = invsqrt_mass_p[(*it).elems[0].atom] * invsqrt_mass_p[(*it).elems[1].atom] * invsqrt_mass_p[(*it).elems[2].atom];
+
+    ret += (*it).fcs_val * std::exp(im * phase) * invsqrt_mass_prod
+    * dynamical->evec_phonon[k1][b1][3 * (*it).elems[0].atom + (*it).elems[0].xyz]
+    * dynamical->evec_phonon[k2][b2][3 * (*it).elems[1].atom + (*it).elems[1].xyz]
+    * dynamical->evec_phonon[k3][b3][3 * (*it).elems[2].atom + (*it).elems[2].xyz];
+    }
+    */
+    return (ret_re + im * ret_im) / std::sqrt(omega_prod);
+    //  return ret/std::sqrt(omega_prod);
 }
 
 std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 {
-    std::complex<double> ret(0.0, 0.0);
-
     unsigned int i;
-
     unsigned int kn[3];
     unsigned int sn[3];
-    unsigned int atom_num[3];
+
+    int ielem;
 
     double omega[3];
-    double invsqrt_mass_prod;
-    double phase;
-    double vec0[3], vec1[3], vec2[3];
 
-    std::vector<FcsClass>::iterator it;
-    std::complex<double> ctmp;
+    double ret_re = 0.0;
+    double ret_im = 0.0;
 
     for (i = 0; i < 3; ++i){
         kn[i] = ks[i] / ns;
@@ -398,36 +429,70 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
     }
 
-    for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
+#pragma omp parallel 
+    {
+        double invsqrt_mass_prod;
+        double phase;
+        std::complex<double> ctmp;
+        double vec1[3], vec2[3];
+        unsigned int atom_num[3];
 
-        for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
-        for (i = 0; i < 3; ++i) {
-            vec1[i] = relvec[atom_num[1]][atom_num[0]][i];
-            vec2[i] = relvec[atom_num[2]][atom_num[0]][i];
-        }
-/*
-        for (i = 0; i < 3; ++i){
-            vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
-            vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
-        }
-*/
-        phase = 0.0;
-        ctmp = std::complex<double>(1.0, 0.0);
-        invsqrt_mass_prod = 1.0;
+#pragma omp for reduction(+: ret_re, ret_im)
+        for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
 
-        for (i = 0; i < 3; ++i){
-            phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
-         //   phase += xcoord[0][i] * kpoint->xk[kn[0]][i] + xcoord[1][i] * kpoint->xk[kn[1]][i] + xcoord[2][i] * kpoint->xk[kn[2]][i];
-            invsqrt_mass_prod *= invsqrt_mass_p[(*it).elems[i].atom];
-            ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * (*it).elems[i].atom + (*it).elems[i].xyz];
-        }
+            for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[fcs_phonon->force_constant[1][ielem].elems[i].atom][fcs_phonon->force_constant[1][ielem].elems[i].cell];
+            for (i = 0; i < 3; ++i) {
+                vec1[i] = relvec[atom_num[1]][atom_num[0]][i];
+                vec2[i] = relvec[atom_num[2]][atom_num[0]][i];
+            }
 
-        ret += (*it).fcs_val * std::exp(im * phase) * ctmp * invsqrt_mass_prod;
+            phase = 0.0;
+            ctmp = std::complex<double>(1.0, 0.0);
+            invsqrt_mass_prod = 1.0;
+
+            for (i = 0; i < 3; ++i){
+                phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
+                invsqrt_mass_prod *= invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[i].atom];
+                ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * fcs_phonon->force_constant[1][ielem].elems[i].atom + fcs_phonon->force_constant[1][ielem].elems[i].xyz];
+            }
+            ctmp *=  fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invsqrt_mass_prod;
+            ret_re += ctmp.real();
+            ret_im += ctmp.imag();
+        }
     }
 
-    ret /= std::sqrt(omega[0] * omega[1] * omega[2]);
+    return (ret_re + im * ret_im) / std::sqrt(omega[0] * omega[1] * omega[2]);
+
+    /*
+    std::vector<FcsClass>::iterator it;
+    std::complex<double> ret(0.0, 0.0);
+
+    for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
+
+    for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
+    for (i = 0; i < 3; ++i) {
+    vec1[i] = relvec[atom_num[1]][atom_num[0]][i];
+    vec2[i] = relvec[atom_num[2]][atom_num[0]][i];
+    }
+
+    phase = 0.0;
+    ctmp = std::complex<double>(1.0, 0.0);
+    invsqrt_mass_prod = 1.0;
+
+    for (i = 0; i < 3; ++i){
+    phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
+    //   phase += xcoord[0][i] * kpoint->xk[kn[0]][i] + xcoord[1][i] * kpoint->xk[kn[1]][i] + xcoord[2][i] * kpoint->xk[kn[2]][i];
+    invsqrt_mass_prod *= invsqrt_mass_p[(*it).elems[i].atom];
+    ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * (*it).elems[i].atom + (*it).elems[i].xyz];
+    }
+
+    ret += (*it).fcs_val * std::exp(im * phase) * ctmp * invsqrt_mass_prod;
+    }
+
+    ret /= std::sqrt(omega[0] * omega[1] * omega[2]);  
 
     return ret;
+    */
 }
 
 std::complex<double> Relaxation::selfenergy(const double T, const double omega, const unsigned int knum, const unsigned int snum)
