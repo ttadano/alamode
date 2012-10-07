@@ -44,7 +44,7 @@ void System::init(){
             }
         }
 
-    cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[3]);
+    cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
     std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl;
 
     std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
@@ -342,7 +342,7 @@ void System::load_reference_system()
     ifs_fc2.close();
 }
 
-double System::volume(const double vec1[3], const double vec2[3], const double vec3[3])
+double System::volume(double vec1[3], double vec2[3], double vec3[3])
 {
     double vol;
 

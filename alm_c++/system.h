@@ -33,6 +33,6 @@ namespace ALM_NS {
 
     private:
         unsigned int coordinate_index(const char);
-        double volume(const double [3], const double [3], const double[3]);
+        double volume(double [3], double [3], double[3]);
     };
 }

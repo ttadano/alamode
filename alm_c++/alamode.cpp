@@ -52,6 +52,7 @@ void ALM::initialize()
     symmetry->init();
     interaction->init();
     fcs->init();
+    ewald->init();
 }
 ALM::~ALM()
 {

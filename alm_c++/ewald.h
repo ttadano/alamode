@@ -34,7 +34,8 @@ namespace ALM_NS {
     
     private:
         double alpha;
-        double Gmax;
+        double Gmax, Lmax;
+        int Nmax;
         void load_charge();
         void ewald_force_short(const int, double **, double **);
         void ewald_force_long(const int, double **, double **);
