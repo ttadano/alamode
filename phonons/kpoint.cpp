@@ -125,12 +125,12 @@ void Kpoint::kpoint_setups()
             nk = nkx * nky * nkz;
             memory->allocate(xk, nk, 3);
 
-
             std::cin >> emin >> emax >> delta_e;
             dos->emin = emin;
             dos->emax = emax;
             dos->delta_e = delta_e;
 
+            symmetry->symmetry_flag = true;
             gen_kmesh(symmetry->symmetry_flag);
             std::cout << " nkx: " << std::setw(6) << nkx;
             std::cout << " nky: " << std::setw(6) << nky;
@@ -200,7 +200,7 @@ void Kpoint::kpoint_setups()
         }
         MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     }
-
+   
     if (kpoint_mode == 2 || kpoint_mode == 3) {
         MPI_Bcast(&nk_reduced, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
         MPI_Bcast(&nequiv_max, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -211,6 +211,7 @@ void Kpoint::kpoint_setups()
         MPI_Bcast(&nk_equiv_arr[0], nk_reduced, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
         MPI_Bcast(&k_reduced[0][0], nk_reduced*nequiv_max, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     }
+
 }
 
 void Kpoint::gen_kpoints_band()

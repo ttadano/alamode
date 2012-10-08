@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "phonon_dos.h"
 #include "kpoint.h"
 #include "../alm_c++/constants.h"
@@ -35,10 +36,9 @@ void Dos::setup()
         flag_dos = false;
     }
 
-    if(flag_dos && delta_e < eps12) error->exit("dos_setup()", "invalid delta_e");
+    if(flag_dos && delta_e < eps12) error->exit("dos_setup()", "Too small delta_e");
 
-    if(flag_dos)
-    {
+    if(flag_dos) {
         n_energy = static_cast<int>((emax - emin) / delta_e);
         memory->allocate(energy_dos, n_energy);
         memory->allocate(dos_phonon, n_energy);
@@ -62,7 +62,12 @@ void Dos::calc_dos()
     unsigned int neval = dynamical->neval;
     double **eval;
 
+    double *dos_local;
+
+    unsigned int nshift_mpi;
+
     memory->allocate(eval, neval, nk);
+    memory->allocate(dos_local, n_energy);
 
     for (j = 0; j < nk; ++j){
         for (k = 0; k < neval; ++k){
@@ -71,12 +76,16 @@ void Dos::calc_dos()
     }
 
     for (i = 0; i < n_energy; ++i){
-        dos_phonon[i] = 0.0;
-        for (j = 0; j < neval; ++j){
-            dos_phonon[i] += integration->dos_integration(eval[j], energy_dos[i]);
+        dos_local[i] = 0.0;
+
+        for (j = mympi->my_rank; j < neval; j += mympi->nprocs) {
+            dos_local[i] += integration->dos_integration(eval[j], energy_dos[i]);
         }
     }
 
+    MPI_Reduce(&dos_local[0], &dos_phonon[0], n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    memory->deallocate(dos_local);
+    
     if (dynamical->eigenvectors) {
 
         // Calculate atom projected phonon-DOS
@@ -85,7 +94,9 @@ void Dos::calc_dos()
         unsigned int natmin = system->natmin;
 
         double **proj;
+        double **pdos_local;
         memory->allocate(proj, neval, nk);
+        memory->allocate(pdos_local, system->nat, n_energy);
 
         for (iat = 0; iat < natmin; ++iat){
 
@@ -100,15 +111,18 @@ void Dos::calc_dos()
             }
 
             for (i = 0; i < n_energy; ++i){
-                pdos_phonon[iat][i] = 0.0;
+                pdos_local[iat][i] = 0.0;
 
-                for (imode = 0; imode < neval; ++imode){
-                    pdos_phonon[iat][i] += integration->do_tetrahedron(eval[imode], proj[imode], energy_dos[i]);
+                for (imode = mympi->my_rank; imode < neval; imode += mympi->nprocs) {
+                      pdos_local[iat][i] += integration->do_tetrahedron(eval[imode], proj[imode], energy_dos[i]);
                 }
-            }
+            }            
         }
 
+        MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], system->nat*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+       
         memory->deallocate(proj);
+        memory->deallocate(pdos_local);
     }
 
     memory->deallocate(eval);

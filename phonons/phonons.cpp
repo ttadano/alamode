@@ -43,9 +43,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         kpoint->kpoint_setups();
        
         fcs_phonon->setup(mode);
-        dos->setup();
-
         dynamical->setup_dynamical(mode);
+        dos->setup();
+        
         dynamical->diagonalize_dynamical_all();
 
         // Calculate the group velocity of phonons along given direction in
@@ -60,7 +60,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
             dos->calc_dos();
         }
 
-        writes->write_phonon_info();
+        if (mympi->my_rank == 0) {
+            writes->write_phonon_info();
+        }
 
         memory->deallocate(dynamical->evec_phonon);
         memory->deallocate(dynamical->eval_phonon);

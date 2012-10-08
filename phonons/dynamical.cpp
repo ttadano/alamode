@@ -22,6 +22,8 @@ void Dynamical::setup_dynamical(std::string mode)
     neval = 3 * system->natmin;
     UPLO = 'U';
 
+    MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
     if (mode == "boltzmann") {
         eigenvectors = true;
     }
