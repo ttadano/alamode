@@ -94,8 +94,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         conductivity->setup_kl();
         conductivity->calc_kl();
     
-        
-
         integration->finish_integration();
         relaxation->finish_relaxation();
         conductivity->finish_kl();
