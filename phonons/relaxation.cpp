@@ -21,6 +21,7 @@
 #include "parsephon.h"
 #include "phonon_dos.h"
 #include <omp.h>
+#include "timer.h"
 
 using namespace PHON_NS;
 
@@ -139,9 +140,9 @@ void Relaxation::setup_relaxation()
 
         domega_min = 10000.0;
 
-        domega_min = std::min(domega_min, writes->in_kayser(dynamical->eval_phonon[1][0]));
-        domega_min = std::min(domega_min, writes->in_kayser(dynamical->eval_phonon[kpoint->nkz][0]));
-        domega_min = std::min(domega_min, writes->in_kayser(dynamical->eval_phonon[kpoint->nkz*kpoint->nky][0]));
+        domega_min = std::min<double>(domega_min, writes->in_kayser(dynamical->eval_phonon[1][0]));
+        domega_min = std::min<double>(domega_min, writes->in_kayser(dynamical->eval_phonon[kpoint->nkz][0]));
+        domega_min = std::min<double>(domega_min, writes->in_kayser(dynamical->eval_phonon[kpoint->nkz*kpoint->nky][0]));
 
         std::cout << std::endl;
         std::cout << "Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
@@ -164,20 +165,21 @@ void Relaxation::setup_relaxation()
 
     MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
+    /*
     for (unsigned int ik = 0; ik < nk; ++ik){
-        for (unsigned int is = 0; is < ns; ++is){ 
-            std::cout << "ik = " << ik << "is = " << is << " " << dynamical->eval_phonon[ik][is] << " " << dynamical->eval_phonon[kpoint->knum_minus[ik]][is] << std::endl;
-            for (unsigned int js = 0; js < ns; ++js) {
-                if (std::abs(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js])) > eps10) {
-                    std::cout << "js = " << js;
-                    std::cout << " " << dynamical->evec_phonon[ik][is][js];
-                    std::cout << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js] << std::endl;
-                    std::cout << std::endl;
-                }
-            }
-        }
+    for (unsigned int is = 0; is < ns; ++is){ 
+    std::cout << "ik = " << ik << "is = " << is << " " << dynamical->eval_phonon[ik][is] << " " << dynamical->eval_phonon[kpoint->knum_minus[ik]][is] << std::endl;
+    for (unsigned int js = 0; js < ns; ++js) {
+    if (std::abs(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js])) > eps10) {
+    std::cout << "js = " << js;
+    std::cout << " " << dynamical->evec_phonon[ik][is][js];
+    std::cout << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js] << std::endl;
+    std::cout << std::endl;
     }
+    }
+    }
+    }
+    */
     /*
     unsigned int tmp[3];
     std::complex<double> v3tmp1, v3tmp2;
@@ -649,6 +651,8 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
     int iloc, jloc, kloc;
 
+    double time_tmp;
+
     for (ik = 0; ik < nk; ++ik) {
 
         xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
@@ -669,7 +673,11 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
                 omega_inner[0] = dynamical->eval_phonon[ik][is];
                 omega_inner[1] = dynamical->eval_phonon[jk][js];
+
+                std::cout << "ik = " << ik << " is, js = " << is << " " << js;
+                time_tmp = timer->elapsed();
                 v3_tmp = std::norm(V3new(arr));
+                std::cout << " Time = " << timer->elapsed() - time_tmp << std::endl;
 
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
@@ -950,10 +958,10 @@ void Relaxation::calc_selfenergy()
     double Tmax = system->Tmax;
     double dT = system->dT;
 
-    unsigned int NT= static_cast<unsigned int>((Tmax - Tmin) / dT);
-    unsigned int i;
+    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+    unsigned int i, j;
 
-    double T;
+    double *T_arr, T;
 
     std::string file_selfenergy;
     std::ofstream ofs_selfenergy;
@@ -961,163 +969,65 @@ void Relaxation::calc_selfenergy()
     std::string file_test;
     std::ofstream ofs_test;
 
-    double omega_tmp;
-    std::complex<double> ctmp;
-    unsigned int j;
+    unsigned int knum, snum;
+    double omega;
+    double *damping;
 
-    T = 0.0;
+    memory->allocate(T_arr, NT);
+    memory->allocate(damping, NT);
 
+    for (i = 0; i < NT; ++i) T_arr[i] = Tmin + dT * static_cast<double>(i);
+
+    /*
     file_test = input->job_title + ".test";
     ofs_test.open(file_test.c_str(), std::ios::out);
     if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
 
     for (i = 0; i < dos->n_energy; ++i){
-        omega_tmp = dos->emin + dos->delta_e * static_cast<double>(i);
-        ofs_test << std::setw(15) << omega_tmp;
-        omega_tmp *= time_ry / Hz_to_kayser;
-        for (j = 3; j < 4; ++j){
-            ctmp = selfenergy(T, omega_tmp, 0, j);
-            ofs_test << std::setw(15) << ctmp.real()/time_ry*Hz_to_kayser;
-            ofs_test << std::setw(15) << ctmp.imag()/time_ry*Hz_to_kayser;
-        }
-        ofs_test << std::endl;
-    }
-
-    ofs_test.close();
-
-    unsigned int ks_tmp[3];
-    double *energy_dos, *damp;
-    double v3_tmp;
-    unsigned int ik, jk;
-    unsigned int is, js;
-    unsigned int kcount;
-    double xk_tmp[3], xk_norm;
-    double omega_inner[2];
-    double n1, n2;
-
-    file_test = input->job_title + ".test2";
-    ofs_test.open(file_test.c_str(), std::ios::out);
-    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test2");
-
-    ks_tmp[0] = 3;
-
-    ofs_test << "# Damping function of a phonon xk = ";
-    for (i = 0; i < 3; ++i) {
-        ofs_test << std::setw(15) << kpoint->xk[ks_tmp[0]/ns][i];
+    omega_tmp = dos->emin + dos->delta_e * static_cast<double>(i);
+    ofs_test << std::setw(15) << omega_tmp;
+    omega_tmp *= time_ry / Hz_to_kayser;
+    for (j = 3; j < 4; ++j){
+    ctmp = selfenergy(T, omega_tmp, 0, j);
+    ofs_test << std::setw(15) << ctmp.real()/time_ry*Hz_to_kayser;
+    ofs_test << std::setw(15) << ctmp.imag()/time_ry*Hz_to_kayser;
     }
     ofs_test << std::endl;
-    ofs_test << "# T = " << T << std::endl;
-
-    memory->allocate(energy_dos, dos->n_energy);
-    memory->allocate(damp, dos->n_energy);
-
-    for (i = 0; i < dos->n_energy; ++i) {
-        damp[i] = 0.0;
-        energy_dos[i] = dos->emin + dos->delta_e * static_cast<double>(i);
-    }
-
-    for (is = 0; is < ns; ++is){
-        for (js = 0; js < ns; ++js){
-
-            kcount = 0;
-
-            for (ik = 0; ik < nk; ++ik) {
-                for (jk = 0; jk < nk; ++jk){
-
-                    xk_tmp[0] = kpoint->xk[ks_tmp[0]/ns][0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
-                    xk_tmp[1] = kpoint->xk[ks_tmp[0]/ns][1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
-                    xk_tmp[2] = kpoint->xk[ks_tmp[0]/ns][2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
-
-                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
-                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
-                    if (std::sqrt(xk_norm) > eps15) continue; 
-
-                    ks_tmp[1] = ik * ns + is;
-                    ks_tmp[2] = jk * ns + js;
-
-                    v3_tmp = std::norm(V3new(ks_tmp));
-
-                    omega_inner[0] = dynamical->eval_phonon[ik][is];
-                    omega_inner[1] = dynamical->eval_phonon[jk][js];
-
-                    n1 = phonon_thermodynamics->fB(omega_inner[0], T) + phonon_thermodynamics->fB(omega_inner[1], T) + 1.0;
-                    n2 = phonon_thermodynamics->fB(omega_inner[0], T) - phonon_thermodynamics->fB(omega_inner[1], T);
-
-                    e_tmp[0][kcount] = -omega_inner[0] - omega_inner[1];
-                    e_tmp[1][kcount] = omega_inner[0] + omega_inner[1];
-                    e_tmp[2][kcount] = omega_inner[0] - omega_inner[1];
-                    e_tmp[3][kcount] = -omega_inner[0] + omega_inner[1];
-
-                    f_tmp[0][kcount] = -v3_tmp * n1;
-                    f_tmp[1][kcount] = v3_tmp * n1;
-                    f_tmp[2][kcount] = -v3_tmp * n2;
-                    f_tmp[3][kcount] = v3_tmp * n2;
-
-                    ++kcount;
-                }
-            }
-
-            for (i = 0; i < dos->n_energy; ++i){
-                for (unsigned int j = 0; j < 4; ++j) {
-                    damp[i] += integration->do_tetrahedron(e_tmp[j], f_tmp[j], energy_dos[i] * time_ry / Hz_to_kayser);
-                }
-            }
-
-            std::cout << "kcount = " << kcount << std::endl;
-        }
-    }
-
-    for (i = 0; i < dos->n_energy; ++i){
-        damp[i] *= pi * std::pow(0.5, 4) / time_ry*Hz_to_kayser; 
-    }
-
-    for (i = 0; i < dos->n_energy; ++i){
-        ofs_test << std::setw(15) << energy_dos[i];
-        ofs_test << std::setw(15) << damp[i] << std::endl;
     }
 
     ofs_test.close();
+    */    
+    if (mympi->my_rank == 0) {
+        file_test = input->job_title + ".damp_T";
+        ofs_test.open(file_test.c_str(), std::ios::out);
+        if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
 
-    file_test = input->job_title + ".damp_T";
-    ofs_test.open(file_test.c_str(), std::ios::out);
-    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
+        knum = 1;
+        snum = 0;
 
-    for (i = 0; i <= NT; ++i) {
-        T = Tmin + dT * static_cast<double>(i);
-        calc_selfenergy_at_T(T);
-        ofs_test << std::setw(5) << T;
-        for (j = 0; j < 6; ++j){
-            ofs_test << std::setw(15) << 2.0 * self_E[j].imag()/time_ry*Hz_to_kayser;
+        omega = dynamical->eval_phonon[knum][snum];
+
+        ofs_test << "# Damping function [cm] of a phonon at xk = ";
+        for (i = 0; i < 3; ++i) {
+            ofs_test << std::setw(15) << kpoint->xk[knum][i];
         }
         ofs_test << std::endl;
-    }
-    ofs_test.close();
-    /*
-    file_selfenergy = input->job_title + ".selfE";
-    ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
-    if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
+        ofs_test << "# Branch = " << snum << std::endl;
 
-    ofs_selfenergy << "#Temperature, k-point, branch, Energy [cm^-1], Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1], Tau [ps]" << std::endl;
-    ofs_selfenergy.setf(std::ios::scientific);
+        if (relaxation->ksum_mode == 0) {
+            relaxation->calc_damping(NT, T_arr, omega, knum, snum, damping);
+        } else if (relaxation->ksum_mode == -1) {
+            relaxation->calc_damping_tetra(NT, T_arr, omega, knum, snum, damping);
+        }
 
-    for (i = 0; i <= NT; ++i){
-    T = Tmin + dT * static_cast<double>(i);
-    calc_selfenergy_at_T(T);
-    for (iks = 0; iks < nks; ++iks){
-    ofs_selfenergy << std::setw(5) << T;
-    ofs_selfenergy << std::setw(5) << iks / ns;
-    ofs_selfenergy << std::setw(5) << iks % ns;
-    ofs_selfenergy << std::setw(15) << dynamical->eval_phonon[iks/ns][iks%ns]/time_ry*Hz_to_kayser;
-    ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser; 
-    ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
-    self_E[iks] = selfenergy(T, dynamical->eval_phonon[iks/ns][iks%ns], iks/ns, iks%ns);
-    ofs_selfenergy << std::setw(15) << self_E[iks].real()/time_ry*Hz_to_kayser;
-    ofs_selfenergy << std::setw(15) << self_E[iks].imag()/time_ry*Hz_to_kayser;
-    ofs_selfenergy << std::setw(15) << 1.0e+12/(2.0 * self_E[iks].imag())*time_ry;
-    ofs_selfenergy << std::endl;
+        for (i = 0; i < NT; ++i) {
+            T = Tmin + dT * static_cast<double>(i);
+            ofs_test  << std::setw(5) << T;
+            ofs_test << std::setw(15) << 2.0 * damping[i]/time_ry*Hz_to_kayser;
+            ofs_test << std::setw(15) << time_ry / (2.0 * damping[i]) * 1.0e+12;
+            ofs_test << std::endl;
+        }
+        ofs_test.close();
     }
-    ofs_selfenergy << std::endl;
-    }
-    ofs_selfenergy.close(); 
-    */
+    error->exitall("hoge", "tomare!");
 }
