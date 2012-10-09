@@ -762,11 +762,12 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
                 omega_inner[0] = dynamical->eval_phonon[ik][is];
                 omega_inner[1] = dynamical->eval_phonon[jk][js];
 
-                std::cout << "ik = " << ik << " is, js = " << is << " " << js;
-                time_tmp = timer->elapsed();
+                //   std::cout << "ik = " << ik << " is, js = " << is << " " << js;
+                // time_tmp = timer->elapsed();
                 v3_tmp = std::norm(V3new(arr));
               //  v3_tmp = std::norm(V3new2(arr));
-                std::cout << " Time = " << timer->elapsed() - time_tmp << std::endl;
+              //  std::cout << " Time = " << timer->elapsed() - time_tmp << std::endl;
+                std::cout << "v3_tmp = " << v3_tmp << std::endl;
 
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
@@ -1091,8 +1092,8 @@ void Relaxation::calc_selfenergy()
         ofs_test.open(file_test.c_str(), std::ios::out);
         if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
 
-        knum = 0;
-        snum = 3;
+        knum = 1;
+        snum = 0;
 
         omega = dynamical->eval_phonon[knum][snum];
 
