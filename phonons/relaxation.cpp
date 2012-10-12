@@ -138,6 +138,16 @@ void Relaxation::setup_relaxation()
         ++j;     
     }
 
+    // Tentative modification for tuning
+    memory->allocate(cexp_phase, nk, fcs_phonon->force_constant[1].size(), 2);
+
+    for (i = 0; i < nk; ++i){
+        for (j = 0; j < fcs_phonon->force_constant[1].size(); ++j){
+         cexp_phase[i][j][0] =  std::exp(im * (vec_for_v3[j][0][0] * kpoint->xk[i][0] + vec_for_v3[j][1][0] * kpoint->xk[i][1] + vec_for_v3[j][2][0] * kpoint->xk[i][2]));
+         cexp_phase[i][j][1] =  std::exp(im * (vec_for_v3[j][0][1] * kpoint->xk[i][0] + vec_for_v3[j][1][1] * kpoint->xk[i][1] + vec_for_v3[j][2][1] * kpoint->xk[i][2]));
+        }
+    }
+
     // For tetrahedron method
     memory->allocate(e_tmp, 4, nk);
     memory->allocate(f_tmp, 4, nk);
@@ -480,15 +490,16 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
             ctmp *=  fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invsqrt_mass_prod;
             */
 
-            phase = vec_for_v3[ielem][0][0] * kpoint->xk[kn[1]][0] + vec_for_v3[ielem][0][1] * kpoint->xk[kn[2]][0] 
-            + vec_for_v3[ielem][1][0] * kpoint->xk[kn[1]][1] + vec_for_v3[ielem][1][1] * kpoint->xk[kn[2]][1] 
-            + vec_for_v3[ielem][2][0] * kpoint->xk[kn[1]][2] + vec_for_v3[ielem][2][1] * kpoint->xk[kn[2]][2];
+       //     phase = vec_for_v3[ielem][0][0] * kpoint->xk[kn[1]][0] + vec_for_v3[ielem][0][1] * kpoint->xk[kn[2]][0] 
+       //     + vec_for_v3[ielem][1][0] * kpoint->xk[kn[1]][1] + vec_for_v3[ielem][1][1] * kpoint->xk[kn[2]][1] 
+       //     + vec_for_v3[ielem][2][0] * kpoint->xk[kn[1]][2] + vec_for_v3[ielem][2][1] * kpoint->xk[kn[2]][2];
 
             ctmp = dynamical->evec_phonon[kn[0]][sn[0]][3 * fcs_phonon->force_constant[1][ielem].elems[0].atom + fcs_phonon->force_constant[1][ielem].elems[0].xyz] 
             * dynamical->evec_phonon[kn[1]][sn[1]][3 * fcs_phonon->force_constant[1][ielem].elems[1].atom + fcs_phonon->force_constant[1][ielem].elems[1].xyz]
             * dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz];
 
-            ctmp *=  fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invmass_for_v3[ielem];
+         //   ctmp *=  fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invmass_for_v3[ielem];
+            ctmp *= fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
 
             ret_re += ctmp.real();
             ret_im += ctmp.imag();
@@ -763,10 +774,10 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
                 omega_inner[1] = dynamical->eval_phonon[jk][js];
 
                 //   std::cout << "ik = " << ik << " is, js = " << is << " " << js;
-                // time_tmp = timer->elapsed();
+                time_tmp = timer->elapsed();
                 v3_tmp = std::norm(V3new(arr));
               //  v3_tmp = std::norm(V3new2(arr));
-              //  std::cout << " Time = " << timer->elapsed() - time_tmp << std::endl;
+                std::cout << " Time = " << timer->elapsed() - time_tmp << std::endl;
                 std::cout << "v3_tmp = " << v3_tmp << std::endl;
 
                 for (i = 0; i < N; ++i) {

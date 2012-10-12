@@ -75,5 +75,6 @@ namespace PHON_NS {
         double **e_tmp, **f_tmp;
         double ***fc3;
         double ***vec_for_v3, *invmass_for_v3;
+        std::complex<double> ***cexp_phase;
     };
 }
