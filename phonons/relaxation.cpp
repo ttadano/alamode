@@ -217,8 +217,7 @@ void Relaxation::setup_relaxation()
     v3tmp1 = V3new(tmp);
 
     tmp[0] = ns * kpoint->knum_minus[ik] + is;
-    tmp[1] = ns * kpoint->knum_minus[jk] + js;
-    tmp[2] = ns * kpoint->knum_minus[kk] + ks;
+    tmp[1] = ns * kpoint->knum_minus[jk] + js; tmp[2] = ns * kpoint->knum_minus[kk] + ks;
 
     v3tmp2 = V3new(tmp);
 
@@ -430,54 +429,15 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 
 #pragma omp parallel 
     {
-        double invsqrt_mass_prod;
-        double phase;
         std::complex<double> ctmp;
-        //     double vec1[3], vec2[3];
-        //     unsigned int atom_num[3];
 
 #pragma omp for reduction(+: ret_re, ret_im)
         for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
 
-            /*   for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[fcs_phonon->force_constant[1][ielem].elems[i].atom][fcs_phonon->force_constant[1][ielem].elems[i].cell];
-            for (i = 0; i < 3; ++i) {
-            vec1[i] = relvec[atom_num[1]][atom_num[0]][i];
-            vec2[i] = relvec[atom_num[2]][atom_num[0]][i];
-            vec1[i] = vec_for_v3[ielem][i][0]; vec2[i] = vec_for_v3[ielem][i][1];
-            }
-
-
-            phase = 0.0;
-            ctmp = std::complex<double>(1.0, 0.0);
-            invsqrt_mass_prod = 1.0;
-
-            for (i = 0; i < 3; ++i){
-            phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
-            invsqrt_mass_prod *= invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[i].atom];
-            ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * fcs_phonon->force_constant[1][ielem].elems[i].atom + fcs_phonon->force_constant[1][ielem].elems[i].xyz];
-            }
-
-            phase = vec1[0] * kpoint->xk[kn[1]][0] + vec2[0] * kpoint->xk[kn[2]][0] 
-            +vec1[1] * kpoint->xk[kn[1]][1] + vec2[1] * kpoint->xk[kn[2]][1] 
-            +vec1[2] * kpoint->xk[kn[1]][2] + vec2[2] * kpoint->xk[kn[2]][2];
-
-            invsqrt_mass_prod = invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[0].atom]
-            *  invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[1].atom]
-            *  invsqrt_mass_p[fcs_phonon->force_constant[1][ielem].elems[2].atom];
-
-            ctmp *=  fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invsqrt_mass_prod;
-            */
-
-       //     phase = vec_for_v3[ielem][0][0] * kpoint->xk[kn[1]][0] + vec_for_v3[ielem][0][1] * kpoint->xk[kn[2]][0] 
-       //     + vec_for_v3[ielem][1][0] * kpoint->xk[kn[1]][1] + vec_for_v3[ielem][1][1] * kpoint->xk[kn[2]][1] 
-       //     + vec_for_v3[ielem][2][0] * kpoint->xk[kn[1]][2] + vec_for_v3[ielem][2][1] * kpoint->xk[kn[2]][2];
-
             ctmp = dynamical->evec_phonon[kn[0]][sn[0]][3 * fcs_phonon->force_constant[1][ielem].elems[0].atom + fcs_phonon->force_constant[1][ielem].elems[0].xyz] 
             * dynamical->evec_phonon[kn[1]][sn[1]][3 * fcs_phonon->force_constant[1][ielem].elems[1].atom + fcs_phonon->force_constant[1][ielem].elems[1].xyz]
-            * dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz];
-
-         //   ctmp *=  fcs_phonon->force_constant[1][ielem].fcs_val * std::exp(im * phase) * invmass_for_v3[ielem];
-            ctmp *= fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
+            * dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz]
+            * fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
 
             ret_re += ctmp.real();
             ret_im += ctmp.imag();
@@ -485,37 +445,6 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
     }
 
     return (ret_re + im * ret_im) / std::sqrt(omega[0] * omega[1] * omega[2]);
-
-    /*
-    std::vector<FcsClass>::iterator it;
-    std::complex<double> ret(0.0, 0.0);
-
-    for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
-
-    for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
-    for (i = 0; i < 3; ++i) {
-    vec1[i] = relvec[atom_num[1]][atom_num[0]][i];
-    vec2[i] = relvec[atom_num[2]][atom_num[0]][i];
-    }
-
-    phase = 0.0;
-    ctmp = std::complex<double>(1.0, 0.0);
-    invsqrt_mass_prod = 1.0;
-
-    for (i = 0; i < 3; ++i){
-    phase += vec1[i] * kpoint->xk[kn[1]][i] + vec2[i] * kpoint->xk[kn[2]][i];
-    //   phase += xcoord[0][i] * kpoint->xk[kn[0]][i] + xcoord[1][i] * kpoint->xk[kn[1]][i] + xcoord[2][i] * kpoint->xk[kn[2]][i];
-    invsqrt_mass_prod *= invsqrt_mass_p[(*it).elems[i].atom];
-    ctmp *= dynamical->evec_phonon[kn[i]][sn[i]][3 * (*it).elems[i].atom + (*it).elems[i].xyz];
-    }
-
-    ret += (*it).fcs_val * std::exp(im * phase) * ctmp * invsqrt_mass_prod;
-    }
-
-    ret /= std::sqrt(omega[0] * omega[1] * omega[2]);  
-
-    return ret;
-    */
 }
 
 std::complex<double> Relaxation::V3new2(const unsigned int ks[3])

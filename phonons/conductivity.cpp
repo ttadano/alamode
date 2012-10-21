@@ -72,13 +72,31 @@ void Conductivity::calc_kl()
 
     unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
 
-    double ***kl_T_loc;
-    double ***kl_T;
+    double ***kl_T_loc, ***kl_T;
     double *T_arr;
+    double *wks_local;
+
+    unsigned int nks_g, nks_l;
+    unsigned int iks_local;
+    unsigned int **ks_local;
+    unsigned int *nk_equiv_local;
+    unsigned int **k_reduced_local;
 
     memory->allocate(T_arr, NT);
     memory->allocate(kl_T_loc, NT, 3, 3);
     memory->allocate(kl_T, NT, 3, 3);
+
+    // Distribute (k,s) to individual MPI threads
+    nks_g = kpoint->nk_reduced * ns;
+    nks_l = nks_g / mympi->nprocs;
+
+    int nrem = nks_g - nks_l * mympi->nprocs;
+    if (mympi->my_rank + 1 <= nrem) ++nks_l;
+
+    memory->allocate(ks_local, nks_l, 2);
+    memory->allocate(wks_local, nks_l);
+    memory->allocate(nk_equiv_local, nks_l);
+    memory->allocate(k_reduced_local, nks_l, kpoint->nequiv_max);
 
     for (iT = 0; iT < NT; ++iT){
         T_arr[iT] = Tmin  + static_cast<double>(iT)*dT;
@@ -90,9 +108,13 @@ void Conductivity::calc_kl()
         if(!ofs_kl) error->exit("calc_kl", "cannot open file_kl");
 
         ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+
+        std::cout << " The number of total (k,s) = " << nks_g << std::endl;
     }
 
-   
+    std::cout << " #RANK = " << std::setw(5) << mympi->my_rank << " , nks = " << std::setw(5) << nks_l << std::endl;
+
+/*   
     unsigned int nk_g, nk_l;
     unsigned int *k_local;
     unsigned int *nk_equiv_l;
@@ -136,28 +158,10 @@ void Conductivity::calc_kl()
     memory->deallocate(wk_l);
     memory->deallocate(nk_equiv_l);
     memory->deallocate(k_reduced_l);
-
-
-/*
-    unsigned int **ks_local;
-    unsigned int nks_g, nks_l;
-    double *wks_local;
-    unsigned int iks_local;
-    unsigned int *nk_equiv_local;
-    unsigned int **k_reduced_local;
-
-    nks_g = kpoint->nk_reduced * ns;
-    nks_l = nks_g / mympi->nprocs;
-
-    int nrem = nks_g - nks_l * mympi->nprocs;
-    if (mympi->my_rank + 1 <= nrem) ++nks_l;
-
-    memory->allocate(ks_local, nks_l, 2);
-    memory->allocate(wks_local, nks_l);
-    memory->allocate(nk_equiv_local, nks_l);
-    memory->allocate(k_reduced_local, nks_l, kpoint->nequiv_max);
+*/
 
     iks_local = 0;
+
     for (i = 0; i < nks_g; ++i) {
         if (i % mympi->nprocs == mympi->my_rank) {
             ks_local[iks_local][0] = kpoint->k_reduced[i / ns][0];
@@ -176,7 +180,6 @@ void Conductivity::calc_kl()
 
     calc_kl_mpi2(nks_l, ks_local, wks_local, nk_equiv_local, k_reduced_local, NT, T_arr, kl_T_loc);
     MPI_Reduce(&kl_T_loc[0][0][0], &kl_T[0][0][0], 9*NT, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    */
 
     for (iT = 0; iT < NT; ++iT){
         if (mympi->my_rank == 0) {
@@ -190,8 +193,12 @@ void Conductivity::calc_kl()
         }
     }
 
-
     if (mympi->my_rank == 0) ofs_kl.close();
+
+    memory->deallocate(ks_local);
+    memory->deallocate(wks_local);
+    memory->deallocate(nk_equiv_local);
+    memory->deallocate(k_reduced_local);
 
     memory->deallocate(kl_T_loc);
     memory->deallocate(kl_T);
@@ -289,6 +296,8 @@ void Conductivity::calc_kl_mpi2(const unsigned int nks_local, unsigned int **ks_
         } else if (relaxation->ksum_mode == -1) {
             relaxation->calc_damping_tetra(NT, temperature, omega, knum, snum, damping);
         }
+        std::cout << "##RANK = " << std::setw(5) << mympi->my_rank << 
+            " , ELEMENT " << std::setw(5) << ik + 1 << " done." << std::endl;
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
@@ -311,8 +320,6 @@ void Conductivity::calc_kl_mpi2(const unsigned int nks_local, unsigned int **ks_
 
     memory->deallocate(damping);
 }
-
-
 
 void Conductivity::calc_kl_at_T(const double T, double kl[3][3])
 {
