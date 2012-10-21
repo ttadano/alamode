@@ -296,8 +296,10 @@ void Conductivity::calc_kl_mpi2(const unsigned int nks_local, unsigned int **ks_
         } else if (relaxation->ksum_mode == -1) {
             relaxation->calc_damping_tetra(NT, temperature, omega, knum, snum, damping);
         }
-        std::cout << "##RANK = " << std::setw(5) << mympi->my_rank << 
-            " , ELEMENT " << std::setw(5) << ik + 1 << " done." << std::endl;
+
+        if (mympi->my_rank == 0) {
+           std::cout <<  "ELEMENT " << std::setw(5) << ik + 1 << " done." << std::endl;
+        }
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
