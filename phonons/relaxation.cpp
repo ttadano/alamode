@@ -406,29 +406,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
         }
     }
 
-
-    /*
-
-    for (it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it){
-
-    for (i = 0; i < 3; ++i){
-    vec1[i] = relvec[(*it).elems[1].cell][(*it).elems[0].cell][i];
-    vec2[i] = relvec[(*it).elems[2].cell][(*it).elems[0].cell][i];
-    }
-
-    phase = vec1[0] * kpoint->xk[k2][0] + vec1[1] * kpoint->xk[k2][1] + vec1[2] * kpoint->xk[k2][2]
-    + vec2[0] * kpoint->xk[k3][0] + vec2[1] * kpoint->xk[k3][1] + vec2[2] * kpoint->xk[k3][2];
-
-    invsqrt_mass_prod = invsqrt_mass_p[(*it).elems[0].atom] * invsqrt_mass_p[(*it).elems[1].atom] * invsqrt_mass_p[(*it).elems[2].atom];
-
-    ret += (*it).fcs_val * std::exp(im * phase) * invsqrt_mass_prod
-    * dynamical->evec_phonon[k1][b1][3 * (*it).elems[0].atom + (*it).elems[0].xyz]
-    * dynamical->evec_phonon[k2][b2][3 * (*it).elems[1].atom + (*it).elems[1].xyz]
-    * dynamical->evec_phonon[k3][b3][3 * (*it).elems[2].atom + (*it).elems[2].xyz];
-    }
-    */
     return (ret_re + im * ret_im) / std::sqrt(omega_prod);
-    //  return ret/std::sqrt(omega_prod);
 }
 
 std::complex<double> Relaxation::V3new(const unsigned int ks[3])
@@ -773,12 +751,7 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
                 omega_inner[0] = dynamical->eval_phonon[ik][is];
                 omega_inner[1] = dynamical->eval_phonon[jk][js];
 
-                //   std::cout << "ik = " << ik << " is, js = " << is << " " << js;
-                time_tmp = timer->elapsed();
                 v3_tmp = std::norm(V3new(arr));
-              //  v3_tmp = std::norm(V3new2(arr));
-                std::cout << " Time = " << timer->elapsed() - time_tmp << std::endl;
-                std::cout << "v3_tmp = " << v3_tmp << std::endl;
 
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
@@ -1130,5 +1103,5 @@ void Relaxation::calc_selfenergy()
         }
         ofs_test.close();
     }
-    error->exitall("hoge", "tomare!");
+  //  error->exitall("hoge", "tomare!");
 }

@@ -43,14 +43,13 @@ void Conductivity::setup_kl()
 
     if (mympi->my_rank == 0) {
         std::cout.setf(std::ios::fixed);
-
+        std::cout << std::endl;
         std::cout << " Tmin = " << std::setw(10) << system->Tmin; 
         std::cout << " Tmax = " << std::setw(10) << system->Tmax; 
         std::cout << " dT   = " << std::setw(10) << system->dT; 
         std::cout << std::endl;
 
         std::cout.unsetf(std::ios::fixed);
-
     }
 }
 
@@ -93,15 +92,14 @@ void Conductivity::calc_kl()
         ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
     }
 
-    //    relaxation->calc_ReciprocalV();
-    // Variables for k-point parallelization
-
+   
     unsigned int nk_g, nk_l;
     unsigned int *k_local;
     unsigned int *nk_equiv_l;
     unsigned int **k_reduced_l;
     double *wk_l;
     unsigned int ik_loc;
+
 
     nk_g = kpoint->nk_reduced;
     nk_l = nk_g / mympi->nprocs;
@@ -117,22 +115,68 @@ void Conductivity::calc_kl()
     ik_loc = 0;
 
     for (i = 0; i < nk_g; ++i) {
-        if (i % mympi->nprocs == mympi->my_rank){
-            k_local[ik_loc] = kpoint->k_reduced[i][0];
-            nk_equiv_l[ik_loc] = kpoint->nk_equiv_arr[i];
-            for (k = 0; k < nk_equiv_l[ik_loc]; ++k){
-                k_reduced_l[ik_loc][k] = kpoint->k_reduced[i][k];
-            }
-            ++ik_loc;
-        }
+    if (i % mympi->nprocs == mympi->my_rank){
+    k_local[ik_loc] = kpoint->k_reduced[i][0];
+    nk_equiv_l[ik_loc] = kpoint->nk_equiv_arr[i];
+    for (k = 0; k < nk_equiv_l[ik_loc]; ++k){
+    k_reduced_l[ik_loc][k] = kpoint->k_reduced[i][k];
+    }
+    ++ik_loc;
+    }
     }
 
     for (i = 0; i < nk_l; ++i){
-        wk_l[i] = static_cast<double>(nk_equiv_l[i]) / static_cast<double>(kpoint->nk);
+    wk_l[i] = static_cast<double>(nk_equiv_l[i]) / static_cast<double>(kpoint->nk);
     }
 
     calc_kl_mpi(nk_l, k_local, wk_l, nk_equiv_l, k_reduced_l, NT, T_arr, kl_T_loc);
     MPI_Reduce(&kl_T_loc[0][0][0], &kl_T[0][0][0], 9*NT, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    memory->deallocate(k_local);
+    memory->deallocate(wk_l);
+    memory->deallocate(nk_equiv_l);
+    memory->deallocate(k_reduced_l);
+
+
+/*
+    unsigned int **ks_local;
+    unsigned int nks_g, nks_l;
+    double *wks_local;
+    unsigned int iks_local;
+    unsigned int *nk_equiv_local;
+    unsigned int **k_reduced_local;
+
+    nks_g = kpoint->nk_reduced * ns;
+    nks_l = nks_g / mympi->nprocs;
+
+    int nrem = nks_g - nks_l * mympi->nprocs;
+    if (mympi->my_rank + 1 <= nrem) ++nks_l;
+
+    memory->allocate(ks_local, nks_l, 2);
+    memory->allocate(wks_local, nks_l);
+    memory->allocate(nk_equiv_local, nks_l);
+    memory->allocate(k_reduced_local, nks_l, kpoint->nequiv_max);
+
+    iks_local = 0;
+    for (i = 0; i < nks_g; ++i) {
+        if (i % mympi->nprocs == mympi->my_rank) {
+            ks_local[iks_local][0] = kpoint->k_reduced[i / ns][0];
+            ks_local[iks_local][1] = i % ns;
+            nk_equiv_local[iks_local] = kpoint->nk_equiv_arr[i / ns];
+            for (k = 0; k < nk_equiv_local[iks_local]; ++k){
+                k_reduced_local[iks_local][k] = kpoint->k_reduced[i / ns][k];
+            }
+            ++iks_local;
+        }
+    }
+
+    for (i = 0; i < nks_l; ++i){
+        wks_local[i] = static_cast<double>(nk_equiv_local[i]) / static_cast<double>(kpoint->nk);
+    }
+
+    calc_kl_mpi2(nks_l, ks_local, wks_local, nk_equiv_local, k_reduced_local, NT, T_arr, kl_T_loc);
+    MPI_Reduce(&kl_T_loc[0][0][0], &kl_T[0][0][0], 9*NT, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    */
 
     for (iT = 0; iT < NT; ++iT){
         if (mympi->my_rank == 0) {
@@ -146,18 +190,16 @@ void Conductivity::calc_kl()
         }
     }
 
+
     if (mympi->my_rank == 0) ofs_kl.close();
 
-    memory->deallocate(k_local);
-    memory->deallocate(wk_l);
-    memory->deallocate(nk_equiv_l);
-    memory->deallocate(k_reduced_l);
     memory->deallocate(kl_T_loc);
     memory->deallocate(kl_T);
     memory->deallocate(T_arr);
 }
 
-void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_local, double *weight, unsigned int *nk_equivalent, unsigned int **k_equivalent, const unsigned int NT, double *temperature, double ***kl)
+void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_local, double *weight, 
+    unsigned int *nk_equivalent, unsigned int **k_equivalent, const unsigned int NT, double *temperature, double ***kl)
 {
     unsigned int i, j, k;
     unsigned int iT;
@@ -176,7 +218,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
             }
         }
     }
-   
+
     for (ik = 0; ik < nk_local; ++ik){
 
         knum = k_local[ik];
@@ -190,9 +232,6 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
             } else if (relaxation->ksum_mode == -1) {
                 relaxation->calc_damping_tetra(NT, temperature, omega, knum, is, damping);
             }
-
-            //tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
-            //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
 
             for (i = 0; i < 3; ++i){
                 for (j = 0; j < 3; ++j){
@@ -217,6 +256,64 @@ void Conductivity::calc_kl_mpi(const unsigned int nk_local, unsigned int *k_loca
     memory->deallocate(damping);
 }
 
+void Conductivity::calc_kl_mpi2(const unsigned int nks_local, unsigned int **ks_local, double *weight, 
+    unsigned int *nk_equivalent, unsigned int **k_equivalent, const unsigned int NT, double *temperature, double ***kl)
+{
+    unsigned int i, j, k;
+    unsigned int iT;
+    unsigned int ik, is;
+    unsigned int knum, snum, ktmp;
+    double omega;
+    double vv_tmp;
+    double *damping;
+
+    memory->allocate(damping, NT);
+
+    for (iT = 0; iT < NT; ++iT){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                kl[iT][i][j] = 0.0;
+            }
+        }
+    }
+
+    for (ik = 0; ik < nks_local; ++ik){
+
+        knum = ks_local[ik][0];
+        snum = ks_local[ik][1];
+
+        omega = dynamical->eval_phonon[knum][snum];
+
+        if (relaxation->ksum_mode == 0) {
+            relaxation->calc_damping(NT, temperature, omega, knum, snum, damping);
+        } else if (relaxation->ksum_mode == -1) {
+            relaxation->calc_damping_tetra(NT, temperature, omega, knum, snum, damping);
+        }
+
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+
+                vv_tmp = 0.0;
+
+                for (k = 0; k < nk_equivalent[ik]; ++k){
+                    ktmp = k_equivalent[ik][k];
+                    vv_tmp += vel[ktmp][snum][i] * vel[ktmp][snum][j];
+                }
+                vv_tmp /= static_cast<double>(nk_equivalent[ik]);
+
+                for (iT = 0; iT < NT; ++iT){
+                    kl[iT][i][j] += weight[ik] * phonon_thermodynamics->Cv(omega, temperature[iT]) * vv_tmp / (2.0 * damping[iT]);
+                }
+            }
+
+        }
+    }
+
+    memory->deallocate(damping);
+}
+
+
+
 void Conductivity::calc_kl_at_T(const double T, double kl[3][3])
 {
     unsigned int i, j;
@@ -231,28 +328,6 @@ void Conductivity::calc_kl_at_T(const double T, double kl[3][3])
     unsigned int ikIBZ = 0, nsame = 0;
 
     kk = 0;
-
-    /*
-    for (ik = 0; ik < kpoint->nk_equiv.size(); ++ik){
-    for (jk = 0; jk < kpoint->nk_equiv[ik]; ++jk){
-
-    knum = kpoint->kpIBZ[kk].knum;
-    if (jk == 0) std::cout << "#";
-    std::cout << "#K = " << std::setw(4) << ik + 1;
-    std::cout << " knum = " << std::setw(4) << knum + 1;
-    std::cout << " xk = " << std::setw(15 ) << kpoint->xk[knum][0]  << std::setw(15) << kpoint->xk[knum][1]  << std::setw(15) << kpoint->xk[knum][2];
-    std::cout << ": ";
-    for (is = 0; is < ns; ++is){
-    omega = dynamical->eval_phonon[knum][is];
-    std::cout << std::setw(13) << phonon_thermodynamics->Cv(omega, T);
-    std::cout << std::setw(15) << vel[knum][is][0] * vel[knum][is][0];
-    std::cout << std::setw(15) << 1.0 / (2.0 *relaxation->selfenergy(T, omega, knum, is).imag());
-    }
-    std::cout << " : " << std::endl;
-    ++kk;
-    }
-    }
-    */
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
@@ -272,7 +347,7 @@ void Conductivity::calc_kl_at_T(const double T, double kl[3][3])
 
             omega = dynamical->eval_phonon[knum][is];
             //tau[knum][is] = 1.0 / (2.0 * relaxation->self_E[ns * knum + is].imag());
-             tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
+            tau[knum][is] = 1.0 / (2.0 * relaxation->selfenergy(T, omega, knum, is).imag());
             //          tau[ik][is] = 1.0 / (2.0 * relaxation->self_tetra(T, omega, ik, is));
 
             for (i = 0; i < 3; ++i){
