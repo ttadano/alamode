@@ -50,7 +50,6 @@ namespace PHON_NS {
         void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
-        std::complex<double> *self_E;
         double self_tetra(const double, const double, const unsigned int, const unsigned int);
         double epsilon;
         int ksum_mode;

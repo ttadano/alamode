@@ -169,9 +169,9 @@ void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char 
 
 void System::load_reference_system()
 {
-    int i, j;
+    int i;
     int iat, jat;
-    int icrd, jcrd;
+    int icrd;
 
     std::ifstream ifs_fc2;
 

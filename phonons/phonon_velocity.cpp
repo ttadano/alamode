@@ -1,3 +1,5 @@
+#include <complex>
+#include <iomanip>
 #include "phonon_velocity.h"
 #include "kpoint.h"
 #include "memory.h"
@@ -6,9 +8,6 @@
 #include "error.h"
 #include "write_phonons.h"
 #include "../alm_c++/constants.h"
-#include <complex>
-#include <iomanip>
-
 
 using namespace PHON_NS;
 

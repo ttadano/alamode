@@ -64,8 +64,6 @@ void Dos::calc_dos()
 
     double *dos_local;
 
-    unsigned int nshift_mpi;
-
     memory->allocate(eval, neval, nk);
     memory->allocate(dos_local, n_energy);
 

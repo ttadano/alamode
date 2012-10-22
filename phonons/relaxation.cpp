@@ -3,25 +3,23 @@
 #include <iomanip>
 #include <algorithm>
 #include <vector>
-#include "relaxation.h"
-#include "memory.h"
-#include "kpoint.h"
-#include "system.h"
-#include "dynamical.h"
-#include "fcs_phonon.h"
-#include "symmetry_core.h"
-#include "../alm_c++/constants.h"
-#include "phonon_thermodynamics.h"
-#include "phonon_velocity.h"
-#include "parsephon.h"
-#include "error.h"
+#include <omp.h>
 #include "conductivity.h"
-#include "write_phonons.h"
+#include "dynamical.h"
+#include "error.h"
+#include "fcs_phonon.h"
 #include "integration.h"
+#include "kpoint.h"
+#include "memory.h"
 #include "parsephon.h"
 #include "phonon_dos.h"
-#include <omp.h>
-#include "timer.h"
+#include "phonon_thermodynamics.h"
+#include "phonon_velocity.h"
+#include "relaxation.h"
+#include "symmetry_core.h"
+#include "system.h"
+#include "write_phonons.h"
+#include "../alm_c++/constants.h"
 
 using namespace PHON_NS;
 
@@ -38,7 +36,6 @@ void Relaxation::setup_relaxation()
     nks = ns*nk;
 
     memory->allocate(V, 1);
-    memory->allocate(self_E, nks);
 
     unsigned int i, j, k;
 
@@ -72,15 +69,7 @@ void Relaxation::setup_relaxation()
                     if (system->cell_dimension[k] == 1) {
 
                         vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
-                        /*
-                        if (vec[k] <= -0.5) {
-                        vec[k] = -1.0;
-                        } else if (vec[k] > 0.5){
-                        vec[k] = 1.0;
-                        } else {
-                        vec[k] = 0.0;
-                        }
-                        */
+
                         if (std::abs(vec[k]) < 0.5) {
                             vec[k] = 0.0;
                         } else {
@@ -143,14 +132,16 @@ void Relaxation::setup_relaxation()
 
     for (i = 0; i < nk; ++i){
         for (j = 0; j < fcs_phonon->force_constant[1].size(); ++j){
-         cexp_phase[i][j][0] =  std::exp(im * (vec_for_v3[j][0][0] * kpoint->xk[i][0] + vec_for_v3[j][1][0] * kpoint->xk[i][1] + vec_for_v3[j][2][0] * kpoint->xk[i][2]));
-         cexp_phase[i][j][1] =  std::exp(im * (vec_for_v3[j][0][1] * kpoint->xk[i][0] + vec_for_v3[j][1][1] * kpoint->xk[i][1] + vec_for_v3[j][2][1] * kpoint->xk[i][2]));
+            cexp_phase[i][j][0] =  std::exp(im * (vec_for_v3[j][0][0] * kpoint->xk[i][0] + vec_for_v3[j][1][0] * kpoint->xk[i][1] + vec_for_v3[j][2][0] * kpoint->xk[i][2]));
+            cexp_phase[i][j][1] =  std::exp(im * (vec_for_v3[j][0][1] * kpoint->xk[i][0] + vec_for_v3[j][1][1] * kpoint->xk[i][1] + vec_for_v3[j][2][1] * kpoint->xk[i][2]));
         }
     }
 
     // For tetrahedron method
-    memory->allocate(e_tmp, 4, nk);
-    memory->allocate(f_tmp, 4, nk);
+    if (ksum_mode == -1) {
+        memory->allocate(e_tmp, 4, nk);
+        memory->allocate(f_tmp, 4, nk);
+    }
 
     if (mympi->my_rank == 0) {
         double domega_min;
@@ -174,6 +165,7 @@ void Relaxation::setup_relaxation()
         } else {
             error->exit("setup_relaxation", "Invalid ksum_mode");
         }
+        std::cout << std::endl;
     }
 
     modify_eigenvectors();
@@ -182,71 +174,22 @@ void Relaxation::setup_relaxation()
 
     MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    /*
-    for (unsigned int ik = 0; ik < nk; ++ik){
-    for (unsigned int is = 0; is < ns; ++is){ 
-    std::cout << "ik = " << ik << "is = " << is << " " << dynamical->eval_phonon[ik][is] << " " << dynamical->eval_phonon[kpoint->knum_minus[ik]][is] << std::endl;
-    for (unsigned int js = 0; js < ns; ++js) {
-    if (std::abs(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js])) > eps10) {
-    std::cout << "js = " << js;
-    std::cout << " " << dynamical->evec_phonon[ik][is][js];
-    std::cout << " " << dynamical->evec_phonon[kpoint->knum_minus[ik]][is][js] << std::endl;
-    std::cout << std::endl;
-    }
-    }
-    }
-    }
-    */
-    /*
-    unsigned int tmp[3];
-    std::complex<double> v3tmp1, v3tmp2;
-
-    for (unsigned int ik = 0; ik < nk; ++ik){
-    for (unsigned int jk = 0; jk < nk; ++jk){
-    for (unsigned int kk = 0; kk < nk; ++kk){
-    std::cout << "k_orig=" << ik << "," << jk << "," << kk << std::endl;
-    std::cout << "k_minus=" << kpoint->knum_minus[ik] << "," << kpoint->knum_minus[jk] << "," << kpoint->knum_minus[kk] << std::endl;
-    for (unsigned int is = 0; is < ns; ++is){
-    for (unsigned int js = 0; js < ns; ++js){
-    for (unsigned int ks = 0; ks < ns; ++ks){
-
-    tmp[0] = ns * ik + is;
-    tmp[1] = ns * jk + js;
-    tmp[2] = ns * kk + ks;
-
-    v3tmp1 = V3new(tmp);
-
-    tmp[0] = ns * kpoint->knum_minus[ik] + is;
-    tmp[1] = ns * kpoint->knum_minus[jk] + js; tmp[2] = ns * kpoint->knum_minus[kk] + ks;
-
-    v3tmp2 = V3new(tmp);
-
-    if (std::abs(v3tmp1 - conj(v3tmp2)) > eps10) {
-    std::cout << "(" << ik << "," << is;
-    std::cout << ";" << jk << "," << js;
-    std::cout << ";" << kk << "," << ks;
-    std::cout << ") = " << v3tmp1 << v3tmp2 << std::endl;
-    }
-    }
-    }
-    }
-    }
-    }
-    }
-    error->exit("hoge", "fuga");
-    */
 }
 
 void Relaxation::finish_relaxation()
 {
     V[0].clear();
     memory->deallocate(V);
-    memory->deallocate(self_E);
 
     memory->deallocate(relvec);
     memory->deallocate(invsqrt_mass_p);
     memory->deallocate(vec_for_v3);
     memory->deallocate(invmass_for_v3);
+
+    if (ksum_mode == -1) {
+        memory->deallocate(e_tmp);
+        memory->deallocate(f_tmp);
+    }
 }
 
 void Relaxation::calc_ReciprocalV()
@@ -503,7 +446,8 @@ std::complex<double> Relaxation::V3new2(const unsigned int ks[3])
     return (ret_re + im * ret_im) / std::sqrt(omega[0] * omega[1] * omega[2]);
 }
 
-std::complex<double> Relaxation::selfenergy(const double T, const double omega, const unsigned int knum, const unsigned int snum)
+std::complex<double> Relaxation::selfenergy(const double T, const double omega, 
+    const unsigned int knum, const unsigned int snum)
 {
     std::complex<double> ret(0.0, 0.0);
 
@@ -572,7 +516,8 @@ std::complex<double> Relaxation::selfenergy(const double T, const double omega, 
     return (ret_re + im * ret_im) * std::pow(0.5, 4) / static_cast<double>(nk);
 }
 
-std::complex<double> Relaxation::selfenergy2(const double T, const double omega, const unsigned int knum, const unsigned int snum)
+std::complex<double> Relaxation::selfenergy2(const double T, const double omega, 
+    const unsigned int knum, const unsigned int snum)
 {
     std::complex<double> ret(0.0, 0.0);
 
@@ -633,18 +578,18 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
     return ret * std::pow(0.5, 4) / static_cast<double>(nk); 
 }
 
-void Relaxation::calc_damping(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, double *ret)
+void Relaxation::calc_damping(const unsigned int N, double *T, const double omega, 
+    const unsigned int knum, const unsigned int snum, double *ret)
 {
     unsigned int i;
     unsigned int ik, jk;
     unsigned int is, js; 
-    unsigned int iks, jks, iks2;
     unsigned int arr[3];
 
     double T_tmp;
     double n1, n2;
     double v3_tmp;
-    double xk_tmp[3], xk_norm;
+    double xk_tmp[3];
     double omega_inner[2];
 
     for (i = 0; i < N; ++i) ret[i] = 0.0;
@@ -656,8 +601,6 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
     unsigned int nkz = kpoint->nkz;
 
     int iloc, jloc, kloc;
-
-    double time_tmp;
 
     for (ik = 0; ik < nk; ++ik) {
 
@@ -700,15 +643,14 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
     for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
 }
 
-
-void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, double *ret)
+void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const double omega,
+    const unsigned int knum, const unsigned int snum, double *ret)
 {
     unsigned int i, j;
     unsigned int is, js, ik, jk;
     unsigned int ks_tmp[3];
-    unsigned int kcount;
 
-    double xk_tmp[3], xk_norm;
+    double xk_tmp[3];
     double n1, n2;
     double *v3_tmp;
     double **omega_inner;
@@ -783,7 +725,8 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
     memory->deallocate(omega_inner);
 }
 
-double Relaxation::self_tetra(const double T, const double omega, const unsigned int knum, const unsigned int snum)
+double Relaxation::self_tetra(const double T, const double omega,
+    const unsigned int knum, const unsigned int snum)
 {
     double ret = 0.0;
 
@@ -849,53 +792,6 @@ double Relaxation::self_tetra(const double T, const double omega, const unsigned
     return ret * pi * std::pow(0.5, 4);
 }
 
-void Relaxation::calc_selfenergy_at_T(const double T)
-{
-    unsigned int i;
-    int ielem;
-
-    for (i = 0; i < nks; ++i) {
-        self_E[i] = std::complex<double>(0.0, 0.0);
-    }
-
-#pragma omp parallel
-    {
-        unsigned int ind[3], knum[3], snum[3];
-        double omega[3];
-        double n1, n2; 
-
-        std::complex<double> ctmp;
-
-#pragma omp for
-        for (ielem = 0; ielem < V[0].size(); ++ielem){
-
-            do {
-                for (i = 0; i < 3; ++i){
-                    ind[i] = V[0][ielem].ks[i];
-                    knum[i] = ind[i] / ns;
-                    snum[i] = ind[i] % ns;
-                    omega[i] = dynamical->eval_phonon[knum[i]][snum[i]];
-                }
-
-                n1 = phonon_thermodynamics->fB(omega[1], T) + phonon_thermodynamics->fB(omega[2], T) + 1.0;
-                n2 = phonon_thermodynamics->fB(omega[1], T) - phonon_thermodynamics->fB(omega[2], T);
-
-                ctmp = std::norm(V[0][ielem].v)
-                    * ( n1 / (omega[0] + omega[1] + omega[2] + im * epsilon)
-                    - n1 / (omega[0] - omega[1] - omega[2] + im * epsilon) 
-                    + n2 / (omega[0] - omega[1] + omega[2] + im * epsilon)
-                    - n2 / (omega[0] + omega[1] - omega[2] + im * epsilon));
-
-                self_E[ns * kpoint->knum_minus[knum[0]] + snum[0]] += ctmp;
-
-            } while (std::next_permutation(V[0][ielem].ks.begin(), V[0][ielem].ks.end()));
-        }
-    }
-
-    for (i = 0; i < nks; ++i){
-        self_E[i] *= std::pow(0.5, 4) / static_cast<double>(nk);
-    }
-}
 
 void Relaxation::modify_eigenvectors()
 {
@@ -962,7 +858,7 @@ void Relaxation::calc_selfenergy()
     double dT = system->dT;
 
     unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
-    unsigned int i, j;
+    unsigned int i;
 
     double *T_arr, T;
 
@@ -981,25 +877,6 @@ void Relaxation::calc_selfenergy()
 
     for (i = 0; i < NT; ++i) T_arr[i] = Tmin + dT * static_cast<double>(i);
 
-    /*
-    file_test = input->job_title + ".test";
-    ofs_test.open(file_test.c_str(), std::ios::out);
-    if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
-
-    for (i = 0; i < dos->n_energy; ++i){
-    omega_tmp = dos->emin + dos->delta_e * static_cast<double>(i);
-    ofs_test << std::setw(15) << omega_tmp;
-    omega_tmp *= time_ry / Hz_to_kayser;
-    for (j = 3; j < 4; ++j){
-    ctmp = selfenergy(T, omega_tmp, 0, j);
-    ofs_test << std::setw(15) << ctmp.real()/time_ry*Hz_to_kayser;
-    ofs_test << std::setw(15) << ctmp.imag()/time_ry*Hz_to_kayser;
-    }
-    ofs_test << std::endl;
-    }
-
-    ofs_test.close();
-    */    
     if (mympi->my_rank == 0) {
         file_test = input->job_title + ".damp_T";
         ofs_test.open(file_test.c_str(), std::ios::out);
@@ -1032,5 +909,5 @@ void Relaxation::calc_selfenergy()
         }
         ofs_test.close();
     }
-  //  error->exitall("hoge", "tomare!");
+    //  error->exitall("hoge", "tomare!");
 }

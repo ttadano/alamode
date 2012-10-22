@@ -17,9 +17,7 @@ namespace PHON_NS {
     private:
         double ***vel;
         void calc_kl_at_T(const double, double [3][3]);
-        void calc_kl_mpi(const unsigned int, unsigned int *, double *, 
-            unsigned int *, unsigned int **, const unsigned int, double *, double ***); 
-        void calc_kl_mpi2(const unsigned int, unsigned int **, double *, 
+        void calc_kl_mpi(const unsigned int, unsigned int **, double *, 
             unsigned int *, unsigned int **, const unsigned int, double *, double ***);
         unsigned int nk, ns;
     };

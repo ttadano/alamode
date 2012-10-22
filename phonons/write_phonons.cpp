@@ -340,35 +340,6 @@ double Writes::in_kayser(const double x)
     return x * Ry_to_kayser;
 }
 
-void Writes::write_selfenergy()
-{
-    unsigned int nband = dynamical->neval;
-    unsigned int nk = kpoint->nk;
-
-    unsigned int nks = nband*nk;
-
-    unsigned int iks;
-    std::string file_selfenergy;
-
-    std::ofstream ofs_selfenergy;
-    file_selfenergy = input->job_title + ".selfE";
-    ofs_selfenergy.open(file_selfenergy.c_str(), std::ios::out);
-    if(!ofs_selfenergy) error->exit("write_selfenergy", "cannot open file_selfenergy");
-
-
-    ofs_selfenergy << "#k-point, branch, Re[Sigma] [cm^-1], Im[Sigma]^[cm^-1]" << std::endl;
-    ofs_selfenergy.setf(std::ios::scientific);
-
-    for (iks = 0; iks < nks; ++iks){
-        ofs_selfenergy << std::setw(5) << iks / nband;
-        ofs_selfenergy << std::setw(5) << iks % nband;
-        ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].real()/time_ry*Hz_to_kayser; 
-        ofs_selfenergy << std::setw(15) << relaxation->self_E[iks].imag()/time_ry*Hz_to_kayser;
-        ofs_selfenergy << std::endl;
-    }
-    ofs_selfenergy.close();
-}
-
 void Writes::write_thermodynamics()
 {
     unsigned int i, NT;
