@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include <complex>
 #include <iomanip>
 #include "phonon_velocity.h"

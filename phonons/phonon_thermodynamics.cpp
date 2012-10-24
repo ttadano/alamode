@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include <iostream>
 #include "dynamical.h"
 #include "error.h"
