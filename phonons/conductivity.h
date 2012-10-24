@@ -12,6 +12,7 @@ namespace PHON_NS {
         void finish_kl();
         void calc_kl();
 
+        int use_classical_Cv;
         double **tau;
 
     private:

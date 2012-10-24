@@ -50,7 +50,13 @@ void Conductivity::setup_kl()
         std::cout << std::endl;
 
         std::cout.unsetf(std::ios::fixed);
+
+        if (use_classical_Cv == 1) {
+            std::cout << "Heat capacity will be replaced by kB (classical limit)" << std::endl;
+        }
     }
+
+    MPI_Bcast(&use_classical_Cv, 1, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 void Conductivity::finish_kl()
@@ -194,7 +200,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
         }
 
         if (mympi->my_rank == 0) {
-           std::cout <<  "ELEMENT " << std::setw(5) << ik + 1 << " done." << std::endl;
+            std::cout <<  "ELEMENT " << std::setw(5) << ik + 1 << " done." << std::endl;
         }
 
         for (i = 0; i < 3; ++i){
@@ -208,8 +214,14 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
                 }
                 vv_tmp /= static_cast<double>(nk_equivalent[ik]);
 
-                for (iT = 0; iT < NT; ++iT){
-                    kl[iT][i][j] += weight[ik] * phonon_thermodynamics->Cv(omega, temperature[iT]) * vv_tmp / (2.0 * damping[iT]);
+                if (use_classical_Cv == 1) {
+                    for (iT = 0; iT < NT; ++iT){
+                        kl[iT][i][j] += weight[ik] * k_Boltzmann * vv_tmp / (2.0 * damping[iT]);
+                    }
+                } else {
+                    for (iT = 0; iT < NT; ++iT){
+                        kl[iT][i][j] += weight[ik] * phonon_thermodynamics->Cv(omega, temperature[iT]) * vv_tmp / (2.0 * damping[iT]);
+                    }
                 }
             }
 

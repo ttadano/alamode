@@ -126,6 +126,8 @@ void Input::read_input_boltzmann()
     unsigned int cell_dimension[3];
     int ksum_mode;
 
+    int use_classical_Cv;
+
     cin >> nsym >> nnp;
     for (i = 0; i < 3; ++i) {
         cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
@@ -136,6 +138,7 @@ void Input::read_input_boltzmann()
 
     cin >> file_fcs;
     cin >> ksum_mode >> epsilon;
+    cin >> use_classical_Cv;
     cin >> Tmin >> Tmax >> dT;
 
     if (Tmin > Tmax) {
@@ -154,6 +157,8 @@ void Input::read_input_boltzmann()
     fcs_phonon->file_fcs = file_fcs;
     relaxation->ksum_mode = ksum_mode;
     relaxation->epsilon = epsilon;
+
+    conductivity->use_classical_Cv = use_classical_Cv;
 
     system->Tmin = Tmin;
     system->Tmax = Tmax;
