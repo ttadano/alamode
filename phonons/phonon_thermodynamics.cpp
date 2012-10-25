@@ -20,8 +20,8 @@ Phonon_thermodynamics::~Phonon_thermodynamics(){};
 double Phonon_thermodynamics::Cv(const double omega, const double T)
 {
     double x;
-
-    if (std::abs(T) < eps) {
+    
+    if (std::abs(T) < eps || omega == 0.0) {
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);
@@ -148,8 +148,12 @@ double Phonon_thermodynamics::Internal_Energy(const double T)
     for (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
             omega = dynamical->eval_phonon[ik][is];
-            if (omega < 0.0) continue;
-            ret += omega * coth_T(omega, T);
+            if (omega <= 0.0) {
+                // exactly zero is anomalous
+                continue;
+            } else {
+                ret += omega * coth_T(omega, T);
+            }
         }
     }
     return ret / static_cast<double>(nk);
