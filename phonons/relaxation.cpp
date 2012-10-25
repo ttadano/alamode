@@ -138,6 +138,7 @@ void Relaxation::setup_relaxation()
     }
 
     // For tetrahedron method
+    MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (ksum_mode == -1) {
         memory->allocate(e_tmp, 4, nk);
         memory->allocate(f_tmp, 4, nk);
@@ -171,8 +172,7 @@ void Relaxation::setup_relaxation()
     modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
-
-    MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
