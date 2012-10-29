@@ -176,6 +176,26 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
     double vv_tmp;
     double *damping;
 
+    std::string file_tau;
+    std::stringstream str_rank;
+
+    str_rank << mympi->my_rank;
+    file_tau = input->job_title + ".tau_" + str_rank.str();
+
+    std::ofstream ofs_tau;
+
+    ofs_tau.open(file_tau.c_str(), std::ios::out);
+    
+
+    //MPI_File thefile;
+    //MPI_Offset bufsize = NT;
+    //MPI_Offset disp = mympi->my_rank*bufsize*sizeof(double);
+
+    //MPI_File_open(MPI_COMM_WORLD, const_cast<char*>(file_tau.c_str()), MPI_MODE_WRONLY, MPI_INFO_NULL, &thefile);
+    //MPI_File_set_view(thefile, disp, MPI_DOUBLE, MPI_DOUBLE, "native", MPI_INFO_NULL);
+
+    std::cout << file_tau << std::endl;
+
     memory->allocate(damping, NT);
 
     for (iT = 0; iT < NT; ++iT){
@@ -198,6 +218,22 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
         } else if (relaxation->ksum_mode == -1) {
             relaxation->calc_damping_tetra(NT, temperature, omega, knum, snum, damping);
         }
+
+       // MPI_File_write(thefile, damping, bufsize, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+        ofs_tau << "# Relaxation time [ps] of a phonon at xk = ";
+        for (i = 0; i < 3; ++i) {
+            ofs_tau << std::setw(15) << kpoint->xk[knum][i];
+        }
+        ofs_tau << std::endl;
+        ofs_tau << "# Branch = " << snum << std::endl;
+
+        for (i = 0; i < NT; ++i){
+            ofs_tau << std::setw(8) << knum << std::setw(8) << snum;
+            ofs_tau << std::setw(15) << writes->in_kayser(omega);
+            ofs_tau << std::setw(15) << temperature[i] << std::setw(15) << time_ry / ( 2.0 * damping[i]) * 1.0e+12 << std::endl;
+        }
+        ofs_tau << std::endl;
 
         if (mympi->my_rank == 0) {
             std::cout <<  "ELEMENT " << std::setw(5) << ik + 1 << " done." << std::endl;
@@ -227,6 +263,9 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
 
         }
     }
+
+   // MPI_File_close(&thefile);
+    ofs_tau.close();
 
     memory->deallocate(damping);
 }

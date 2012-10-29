@@ -25,11 +25,9 @@ void Input::parce_input()
     using namespace std;
     string mode;
 
-    if (mympi->my_rank == 0) {
-        cin >> job_title;
-        cin >> mode;
-        boost::to_lower(mode);
-    }
+    cin >> job_title;
+    cin >> mode;
+    boost::to_lower(mode);
 
     phon->mode = mode;
 
