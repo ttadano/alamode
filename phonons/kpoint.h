@@ -70,6 +70,8 @@ namespace PHON_NS {
         unsigned int nk_reduced, nequiv_max;
         int nint(const double);
 
+        int get_knum(const double, const double, const double);
+
     private:
         void gen_kpoints_band();
         void gen_kmesh(bool);

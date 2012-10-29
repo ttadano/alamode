@@ -162,7 +162,7 @@ double Phonon_thermodynamics::Internal_Energy(const double T)
 double Phonon_thermodynamics::coth_T(const double omega, const double T)
 {
     if (T < eps) {
-        // if T = 0.0 and omega > 0 coth(hbar*omega/(2*kB*T)) = 1.0
+        // if T = 0.0 and omega > 0, coth(hbar*omega/(2*kB*T)) = 1.0
         return 1.0;
     } else {
         double x = 0.5 * omega / (T_to_Ryd * T);

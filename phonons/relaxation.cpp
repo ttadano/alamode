@@ -872,6 +872,9 @@ void Relaxation::calc_selfenergy()
     double omega;
     double *damping;
 
+
+    double k_tmp[3];
+
     memory->allocate(T_arr, NT);
     memory->allocate(damping, NT);
 
@@ -882,7 +885,11 @@ void Relaxation::calc_selfenergy()
         ofs_test.open(file_test.c_str(), std::ios::out);
         if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
 
-        knum = 1;
+
+        k_tmp[0] = 0.5; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
+        knum = kpoint->get_knum(k_tmp[0], k_tmp[1], k_tmp[2]);
+        if (knum == -1) error->exit("calc_selfenergy", "Corresponding k-point not exist");
+        //knum = 1;
         snum = 0;
 
         omega = dynamical->eval_phonon[knum][snum];
@@ -909,5 +916,5 @@ void Relaxation::calc_selfenergy()
         }
         ofs_test.close();
     }
-    //  error->exitall("hoge", "tomare!");
+      error->exitall("hoge", "tomare!");
 }

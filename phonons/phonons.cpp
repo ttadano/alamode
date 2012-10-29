@@ -89,7 +89,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         //     dos->calc_tdos();
 
-       // relaxation->calc_selfenergy();
+        relaxation->calc_selfenergy();
 
         conductivity->setup_kl();
         conductivity->calc_kl();

@@ -494,6 +494,36 @@ void Kpoint::reduce_kpoints(double **xkr)
     }
 }
 
+
+int Kpoint::get_knum(const double kx, const double ky, const double kz)
+{
+
+    double diff[3];
+
+    diff[0] = static_cast<double>(nint(kx*static_cast<double>(nkx))) - kx*static_cast<double>(nkx);
+    diff[1] = static_cast<double>(nint(ky*static_cast<double>(nky))) - ky*static_cast<double>(nky);
+    diff[2] = static_cast<double>(nint(kz*static_cast<double>(nkz))) - kz*static_cast<double>(nkz);
+
+
+    double norm = std::sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
+
+    if (norm > eps12) {
+
+        return -1;
+    
+    } else {
+        
+        int iloc, jloc, kloc;
+
+        iloc = (nint(kx*nkx + 2 * nkx)) % nkx;
+        jloc = (nint(ky*nky + 2 * nky)) % nky;
+        kloc = (nint(kz*nkz + 2 * nkz)) % nkz;
+
+        return kloc + nkz * jloc + nky * nkz * iloc;
+    }
+}
+
+
 int Kpoint::nint(const double x)
 {
     return static_cast<int>(x + 0.5 - (x < 0.0));
