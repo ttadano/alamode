@@ -23,6 +23,7 @@ using namespace PHON_NS;
 PHON::PHON(int narg, char **arg, MPI_Comm comm)
 {
     mympi = new MyMPI(this, comm);
+
     if (mympi->my_rank == 0) {
         std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     }

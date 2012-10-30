@@ -34,7 +34,7 @@ void Conductivity::setup_kl()
     for (i = 0; i < nk; ++i){
         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel[i]);
 
-        // Generate phonon velocity in cartesian coordinate
+        // Generate phonon velocity in Cartesian coordinate
         for (j = 0; j < ns; ++j){
             system->rotvec(vel[i][j], vel[i][j], system->lavec_p, 'T');
             for (k = 0; k < 3; ++k) vel[i][j][k] /= 2.0 * pi;
@@ -213,7 +213,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
 
         omega = dynamical->eval_phonon[knum][snum];
 
-        if (relaxation->ksum_mode == 0) {
+        if (relaxation->ksum_mode == 0 || relaxation->ksum_mode == 1) {
             relaxation->calc_damping(NT, temperature, omega, knum, snum, damping);
         } else if (relaxation->ksum_mode == -1) {
             relaxation->calc_damping_tetra(NT, temperature, omega, knum, snum, damping);

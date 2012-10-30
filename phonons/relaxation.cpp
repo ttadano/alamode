@@ -158,9 +158,9 @@ void Relaxation::setup_relaxation()
         std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl << std::endl;
 
         if (ksum_mode == 0) {
-            std::cout << "Lorentzian broadning will be used." << std::endl;
+            std::cout << "Lorentzian broadening will be used." << std::endl;
         } else if (ksum_mode == 1) {
-            std::cout << "Gaussian broadning will be used." << std::endl;
+            std::cout << "Gaussian broadening will be used." << std::endl;
         } else if (ksum_mode == -1) {
             std::cout << "Tetrahedron method will be used." << std::endl;
         } else {
@@ -172,7 +172,7 @@ void Relaxation::setup_relaxation()
     modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
-   
+
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
@@ -630,11 +630,19 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
                     n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
                     n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
 
-                    ret[i] += v3_tmp 
-                        * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
-                        + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                        - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                        + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                    if (ksum_mode == 0) {
+                        ret[i] += v3_tmp 
+                            * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+                            + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+                            - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+                            + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                    } else if (ksum_mode == 1) {
+                        ret[i] += v3_tmp 
+                            * (- n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
+                            + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
+                            - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
+                            + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
+                    }
                 }
             }
         }
@@ -851,6 +859,11 @@ double Relaxation::delta_lorentz(const double omega)
     return epsilon / (omega*omega + epsilon*epsilon) / pi;
 }
 
+double Relaxation::delta_gauss(const double omega)
+{
+    return std::exp(- omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
+}
+
 void Relaxation::calc_selfenergy()
 {
     double Tmin = system->Tmin;
@@ -901,7 +914,7 @@ void Relaxation::calc_selfenergy()
         ofs_test << std::endl;
         ofs_test << "# Branch = " << snum << std::endl;
 
-        if (relaxation->ksum_mode == 0) {
+        if (relaxation->ksum_mode == 0 || relaxation->ksum_mode == 1) {
             relaxation->calc_damping(NT, T_arr, omega, knum, snum, damping);
         } else if (relaxation->ksum_mode == -1) {
             relaxation->calc_damping_tetra(NT, T_arr, omega, knum, snum, damping);
@@ -916,5 +929,5 @@ void Relaxation::calc_selfenergy()
         }
         ofs_test.close();
     }
-      error->exitall("hoge", "tomare!");
+    error->exitall("hoge", "tomare!");
 }
