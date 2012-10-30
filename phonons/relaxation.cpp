@@ -881,7 +881,7 @@ void Relaxation::calc_selfenergy()
     std::string file_test;
     std::ofstream ofs_test;
 
-    unsigned int knum, snum;
+    int knum, snum;
     double omega;
     double *damping;
 
@@ -898,12 +898,25 @@ void Relaxation::calc_selfenergy()
         ofs_test.open(file_test.c_str(), std::ios::out);
         if(!ofs_test) error->exit("write_selfenergy", "cannot open file_test");
 
+        std::string file_KS;
 
-        k_tmp[0] = 0.5; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
+        file_KS = "KS_INPUT";
+        std::ifstream ifs_KS;
+        ifs_KS.open(file_KS.c_str(), std::ios::in);
+        if (!ifs_KS) error->exit("write_selfenergy", "cannot open KS_INPUT");
+        ifs_KS >> k_tmp[0] >> k_tmp[1] >> k_tmp[2];
+        ifs_KS >> snum;
+        ifs_KS.close();
+
+        std::cout << "Given kpoints: ";
+        for (i = 0; i < 3; ++i) {
+            std::cout << std::setw(15) << k_tmp[i];
+        }
+        std::cout << std::endl;
+        std::cout << "Given branch: " << snum + 1 << std::endl;
+
         knum = kpoint->get_knum(k_tmp[0], k_tmp[1], k_tmp[2]);
         if (knum == -1) error->exit("calc_selfenergy", "Corresponding k-point not exist");
-        //knum = 1;
-        snum = 0;
 
         omega = dynamical->eval_phonon[knum][snum];
 
