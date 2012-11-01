@@ -252,7 +252,7 @@ void Conductivity::calc_kl_mpi(const unsigned int nks_local, unsigned int **ks_l
 
                 if (use_classical_Cv == 1) {
                     for (iT = 0; iT < NT; ++iT){
-                        kl[iT][i][j] += weight[ik] * k_Boltzmann * vv_tmp / (2.0 * damping[iT]);
+                        kl[iT][i][j] += weight[ik] * phonon_thermodynamics->Cv_classical(omega, temperature[iT]) * vv_tmp / (2.0 * damping[iT]);
                     }
                 } else {
                     for (iT = 0; iT < NT; ++iT){

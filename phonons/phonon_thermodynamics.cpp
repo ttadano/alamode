@@ -29,6 +29,18 @@ double Phonon_thermodynamics::Cv(const double omega, const double T)
     }
 }
 
+double Phonon_thermodynamics::Cv_classical(const double omega, const double T)
+{
+    double x;
+
+    if (std::abs(T) < eps || omega == 0.0) {
+        return 0.0;
+    } else {
+        x = omega / (T_to_Ryd * T);
+        return k_Boltzmann * std::pow(x, 2) * std::exp(-x);
+    }
+}
+
 double Phonon_thermodynamics::fB(const double omega, const double T)
 {
     double x;

@@ -18,6 +18,7 @@ namespace PHON_NS {
         double Cv_tot(const double);
         double Internal_Energy(const double);
         double Cv_Debye(const double, const double);
+        double Cv_classical(const double, const double);
         void Debye_T(const double, double &);
 
     public:
