@@ -627,8 +627,14 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
-                    n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
-                    n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+
+                    if (conductivity->use_classical_Cv == 0) {
+                        n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
+                        n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+                    } else if (conductivity->use_classical_Cv == 1) {
+                        n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) + phonon_thermodynamics->fC(omega_inner[1], T_tmp) + 1.0;
+                        n2 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) - phonon_thermodynamics->fC(omega_inner[1], T_tmp);
+                    }
 
                     if (ksum_mode == 0) {
                         ret[i] += v3_tmp 
@@ -709,8 +715,15 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 
             for (j = 0; j < N; ++j){
                 for (i = 0; i < nk; ++i){
-                    n1 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) + phonon_thermodynamics->fB(omega_inner[i][1], T[j]) + 1.0;
-                    n2 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) - phonon_thermodynamics->fB(omega_inner[i][1], T[j]);
+
+                    if (conductivity->use_classical_Cv == 0) {
+                        n1 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) + phonon_thermodynamics->fB(omega_inner[i][1], T[j]) + 1.0;
+                        n2 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) - phonon_thermodynamics->fB(omega_inner[i][1], T[j]);
+                    } else if (conductivity->use_classical_Cv == 1) {
+                        n1 = phonon_thermodynamics->fC(omega_inner[i][0], T[j]) + phonon_thermodynamics->fC(omega_inner[i][1], T[j]) + 1.0;
+                        n2 = phonon_thermodynamics->fC(omega_inner[i][0], T[j]) - phonon_thermodynamics->fC(omega_inner[i][1], T[j]);
+                    }
+
                     // f_tmp[0][i] = -v3_tmp[i] * n1;
                     f_tmp[1][i] = v3_tmp[i] * n1;
                     f_tmp[2][i] = -v3_tmp[i] * n2;
@@ -916,7 +929,7 @@ void Relaxation::calc_selfenergy()
         std::cout << "Given branch: " << snum + 1 << std::endl;
 
         knum = kpoint->get_knum(k_tmp[0], k_tmp[1], k_tmp[2]);
-        if (knum == -1) error->exit("calc_selfenergy", "Corresponding k-point not exist");
+        if (knum == -1) error->exit("calc_selfenergy", "Corresponding k-point does not exist");
 
         omega = dynamical->eval_phonon[knum][snum];
 

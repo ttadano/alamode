@@ -41,6 +41,18 @@ double Phonon_thermodynamics::fB(const double omega, const double T)
     }
 }
 
+double Phonon_thermodynamics::fC(const double omega, const double T)
+{
+    double x;
+
+    if (std::abs(T) < eps) {
+        return 0.0;
+    } else {
+        x = omega / (T_to_Ryd * T);
+        return std::exp(-x);
+    }
+}
+
 void Phonon_thermodynamics::test_fB(const double T)
 {
 

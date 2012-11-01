@@ -12,6 +12,7 @@ namespace PHON_NS {
 
         double Cv(const double, const double);
         double fB(const double, const double);
+        double fC(const double, const double);
 
         void test_fB(const double);
         double Cv_tot(const double);
