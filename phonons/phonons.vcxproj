@@ -11,18 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{6AB1F33A-7CED-4C6C-8D65-3766A74672ED}</ProjectGuid>
+    <ProjectGuid>{DB5CE95F-04C6-4494-84A3-A29E5D17C1B7}</ProjectGuid>
     <RootNamespace>phonons</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v110</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v110</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -37,28 +39,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;C:\boost\boost_1_47;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>C:\Program Files\Microsoft HPC Pack 2008 SDK\Lib\i386;C:\boost\boost_1_47\lib;C:\eigen_c++\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <IncludePath>C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;C:\boost\boost_1_47;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>C:\Program Files\Microsoft HPC Pack 2008 SDK\Lib\i386;C:\boost\boost_1_47\lib;C:\eigen_c++\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\boost\boost_1_47;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LibraryPath>C:\boost\boost_1_47\lib;C:\eigen_c++\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <IncludePath>C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;C:\boost\boost_1_47;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>C:\Program Files\Microsoft HPC Pack 2008 SDK\Lib\i386;C:\boost\boost_1_47\lib;C:\eigen_c++\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>"C:\lapack"</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msmpi.lib;libblas.lib;liblapack.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>"C:\lapack"</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libblas.lib;liblapack.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <Profile>false</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -67,7 +64,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalIncludeDirectories>"C:\lapack"</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -84,10 +81,10 @@
     <ClCompile Include="fcs_phonon.cpp" />
     <ClCompile Include="integration.cpp" />
     <ClCompile Include="kpoint.cpp" />
-    <ClCompile Include="mpi_common.cpp" />
-    <ClCompile Include="parsephon.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
+    <ClCompile Include="mpi_common.cpp" />
+    <ClCompile Include="parsephon.cpp" />
     <ClCompile Include="phonons.cpp" />
     <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="phonon_thermodynamics.cpp" />
@@ -105,9 +102,9 @@
     <ClInclude Include="fcs_phonon.h" />
     <ClInclude Include="integration.h" />
     <ClInclude Include="kpoint.h" />
+    <ClInclude Include="memory.h" />
     <ClInclude Include="mpi_common.h" />
     <ClInclude Include="parsephon.h" />
-    <ClInclude Include="memory.h" />
     <ClInclude Include="phonons.h" />
     <ClInclude Include="phonon_dos.h" />
     <ClInclude Include="phonon_thermodynamics.h" />
@@ -118,13 +115,6 @@
     <ClInclude Include="system.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="write_phonons.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
