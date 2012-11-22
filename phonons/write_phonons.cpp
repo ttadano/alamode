@@ -144,6 +144,8 @@ void Writes::write_phonon_vel_all()
         }
 
         for (j = 0; j < ns; ++j){
+            ofs_vel << std::setw(5) << i;
+            ofs_vel << std::setw(5) << j;
             ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
             ofs_vel << std::setw(15) << std::sqrt(std::pow(vel[j][0], 2) + std::pow(vel[j][1], 2) + std::pow(vel[j][2], 2))*Ry_to_SI_vel;
             ofs_vel << std::endl;
