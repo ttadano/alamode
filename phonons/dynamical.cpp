@@ -155,6 +155,7 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                         if (std::abs(system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd]) > 0.5) vec[icrd] *= -1.0;
                     } else {
                         vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
+                   //     vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                         vec[icrd] = fold(vec[icrd]);
                     }
                 }
@@ -165,14 +166,14 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
 
-
+/*
                 if (std::abs(exp_phase.real()) < 1.0e-14) {
                     exp_phase = std::complex<double>(0.0, exp_phase.imag());
                 }
                 if (std::abs(exp_phase.imag()) < 1.0e-14) {
                     exp_phase = std::complex<double>(exp_phase.real(), 0.0);
                 }
-
+                */
 
                 for (icrd = 0; icrd < 3; ++icrd){
                     for (jcrd = 0; jcrd < 3; ++jcrd){
@@ -188,6 +189,25 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
             }
         }
     }
+
+#ifdef _DEBUG
+        std::cout << "D" << std::endl;
+        for (icrd = 0; icrd < 6; ++icrd){
+            for (jcrd = 0; jcrd < 6; ++jcrd){
+                std::cout << "(" << std::setw(15) << std::scientific << dymat_out[icrd][jcrd].real();
+                std::cout << std::setw(15) << std::scientific << dymat_out[icrd][jcrd].imag() << ") ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "D - D^{\\dagger}" << std::endl;
+        for (icrd = 0; icrd < 6; ++icrd){
+            for (jcrd = 0; jcrd < 6; ++jcrd){
+                std::cout << "(" << std::setw(15) << std::scientific << dymat_out[icrd][jcrd].real() - dymat_out[jcrd][icrd].real() ;
+                std::cout << std::setw(15) << std::scientific << dymat_out[icrd][jcrd].imag() + dymat_out[jcrd][icrd].imag() << ") ";
+            }
+            std::cout << std::endl;
+        }
+#endif
 }
 
 void Dynamical::diagonalize_dynamical_all()

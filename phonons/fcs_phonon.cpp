@@ -1,4 +1,6 @@
 #include "mpi_common.h"
+#include "dynamical.h"
+#include "kpoint.h"
 #include "fcs_phonon.h"
 #include "system.h"
 #include "memory.h"
@@ -40,7 +42,7 @@ void Fcs_phonon::setup(std::string mode)
     // This is not necessary
     MPI_Bcast(&fc2[0][0][0][0], 9*natmin*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    if (mode == "boltzmann"){
+    if (mode == "boltzmann" || (mode == "phonons" && kpoint->kpoint_mode == 1)){
         memory->allocate(force_constant, 2);
 
         if (mympi->my_rank == 0) load_fcs();
@@ -53,6 +55,10 @@ void Fcs_phonon::setup(std::string mode)
                 std::cout << force_constant[i].size() << std::endl;
             }
         }
+    }
+
+    if (mode == "phonons" && kpoint->kpoint_mode == 1) {
+        prepare_delta_fc2();
     }
 }
 
@@ -267,4 +273,70 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
         memory->deallocate(fcs_tmp);
         memory->deallocate(ind);
     }
+}
+
+void Fcs_phonon::prepare_delta_fc2()
+{
+    unsigned int i;
+    unsigned int iat, jat, icrd, jcrd;
+    double coord_tmp[3];
+
+    unsigned int atm_p1, atm_s2;
+
+    unsigned int natmin = system->natmin;
+    unsigned int nat = system->nat;
+    
+    memory->allocate(dfc2, natmin, nat, 3, 3);
+
+    for (iat = 0; iat < natmin; ++iat){
+        for (jat = 0; jat < nat; ++jat){
+            for (icrd = 0; icrd < 3; ++icrd){
+                for (jcrd = 0; jcrd < 3; ++jcrd){
+                    dfc2[iat][jat][icrd][jcrd] = 0.0;
+                }
+            }
+        }
+    }
+    
+    for (std::vector<FcsClass>::iterator it = force_constant[1].begin(); it != force_constant[1].end(); ++it) {
+        FcsClass fc3_tmp = *it;
+
+        atm_p1 = system->map_p2s[fc3_tmp.elems[0].atom][0];
+        atm_s2 = system->map_p2s[fc3_tmp.elems[2].atom][fc3_tmp.elems[2].cell];
+
+        for (i = 0; i < 3; ++i) {
+            coord_tmp[i] = system->xr_s[atm_s2][i] - system->xr_s[atm_p1][i];
+            coord_tmp[i] = dynamical->fold(coord_tmp[i]);
+        }
+        system->rotvec(coord_tmp, coord_tmp, system->lavec_s);
+
+        iat = fc3_tmp.elems[0].atom;
+        jat = fc3_tmp.elems[1].cell * natmin + fc3_tmp.elems[1].atom;
+        icrd = fc3_tmp.elems[0].xyz;
+        jcrd = fc3_tmp.elems[1].xyz;
+        dfc2[iat][jat][icrd][jcrd] += fc3_tmp.fcs_val * coord_tmp[fc3_tmp.elems[2].xyz];
+    }
+
+
+    for (iat = 0; iat < natmin; ++iat){
+        for (jat = 0; jat < nat; ++jat){
+            for (icrd = 0; icrd < 3; ++icrd){
+                for (jcrd = 0; jcrd < 3; ++jcrd){
+                   std::cout << std::setw(15) << fc2[iat][jat][icrd][jcrd];
+                   std::cout << std::setw(15) << dfc2[iat][jat][icrd][jcrd] << std::endl;
+                }
+            }
+        }
+    }
+
+/*
+    for (iat = 0; iat < natmin; ++iat){
+        for (jat = 0; jat < natmin; ++jat){
+            for (icrd = 0; icrd < 3; ++icrd){
+                for (jcrd = 0; jcrd < 3; ++jcrd){
+                    std::cout << dfc2[iat][jat][icrd][jcrd] << std::endl;
+                }
+            }
+        }
+    }*/
 }

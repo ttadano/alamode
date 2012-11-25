@@ -55,6 +55,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         if (kpoint->kpoint_mode == 1)  {
             phonon_velocity->calc_phonon_vel_band();
+            phonon_thermodynamics->calc_gruneisen();
         }
 
         if (dos->flag_dos) {

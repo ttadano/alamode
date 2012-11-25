@@ -9,6 +9,7 @@ namespace PHON_NS {
         ~Phonon_thermodynamics();
 
         double T_to_Ryd;
+        std::complex<double> **gruneisen;
 
         double Cv(const double, const double);
         double fB(const double, const double);
@@ -21,8 +22,10 @@ namespace PHON_NS {
         double Cv_classical(const double, const double);
         void Debye_T(const double, double &);
 
+        void calc_gruneisen();
+
     public:
         double coth_T(const double, const double);
-
+        void calc_dfc2_reciprocal(std::complex<double> **, double *);
     };
 }
