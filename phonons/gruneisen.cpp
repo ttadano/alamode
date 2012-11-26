@@ -62,6 +62,11 @@ void Gruneisen::calc_gruneisen()
          }
     }
 
+    memory->deallocate(evec_tmp);
+    memory->deallocate(eval_orig);
+    memory->deallocate(eval_plus);
+    memory->deallocate(eval_minus);
+
     std::cout << "done !" << std::endl;
 }
 
@@ -202,6 +207,8 @@ void Gruneisen::calc_gruneisen2()
     unsigned int nk = kpoint->nk;
 
     double gamma_imag;
+
+    dynamical->diagonalize_dynamical_all();
 
     memory->allocate(gruneisen, nk, ns);
 
