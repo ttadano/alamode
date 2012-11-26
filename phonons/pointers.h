@@ -23,6 +23,7 @@ namespace PHON_NS {
               conductivity(ptr->conductivity),
               writes(ptr->writes),
               dos(ptr->dos),
+              gruneisen(ptr->gruneisen),
               mympi(ptr->mympi),
               timer(ptr->timer) {}
           virtual ~Pointers(){}
@@ -43,6 +44,7 @@ namespace PHON_NS {
         Conductivity *&conductivity;
         Writes *&writes;
         Dos *&dos;
+        Gruneisen *&gruneisen;
         MyMPI *&mympi;
         Timer *&timer;
     };

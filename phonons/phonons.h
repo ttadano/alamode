@@ -28,6 +28,7 @@ namespace PHON_NS
         class Conductivity *conductivity;
         class Writes *writes;
         class Dos *dos;
+        class Gruneisen *gruneisen;
         class MyMPI *mympi;
 
         PHON(int, char**, MPI_Comm);

@@ -23,7 +23,7 @@ namespace PHON_NS {
         double **eval_phonon;
         std::complex<double> ***evec_phonon;
         
-        void eval_k(double *, double *, std::complex<double> **, bool);
+        void eval_k(double *, double ****, double *, std::complex<double> **, bool);
         void setup_dynamical(std::string);
 
         double fold(double);
@@ -31,7 +31,7 @@ namespace PHON_NS {
 
     private:
         void calc_analytic();
-        void calc_analytic_k(std::complex<double> **, double *);
+        void calc_analytic_k(double *, double ****, std::complex<double> **);
         void calc_nonanalytic();
         
         char UPLO;

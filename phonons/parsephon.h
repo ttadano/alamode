@@ -15,5 +15,6 @@ namespace PHON_NS {
     private:
         void read_input_phonons();
         void read_input_boltzmann();
+        void read_input_gruneisen();
     };
 }

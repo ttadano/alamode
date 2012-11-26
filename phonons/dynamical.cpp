@@ -29,7 +29,7 @@ void Dynamical::setup_dynamical(std::string mode)
     }
 }
 
-void Dynamical::eval_k(double *xk_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
+void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -40,7 +40,7 @@ void Dynamical::eval_k(double *xk_in, double *eval_out, std::complex<double> **e
 
     memory->allocate(dymat_k, neval, neval);
 
-    calc_analytic_k(dymat_k, xk_in);
+    calc_analytic_k(xk_in, fc2_in, dymat_k);
 
     memory->allocate(dymat_tmp, neval, neval);
     memory->allocate(dymat_transpose, neval, neval);
@@ -105,7 +105,7 @@ void Dynamical::eval_k(double *xk_in, double *eval_out, std::complex<double> **e
     memory->deallocate(amat);
 }
 
-void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in) {
+void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<double> **dymat_out) {
 
     unsigned int i, j;
     unsigned int icrd, jcrd;
@@ -166,18 +166,18 @@ void Dynamical::calc_analytic_k(std::complex<double> **dymat_out, double *xk_in)
                 phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
                 exp_phase = std::exp(im * phase);
 
-/*
+
                 if (std::abs(exp_phase.real()) < 1.0e-14) {
                     exp_phase = std::complex<double>(0.0, exp_phase.imag());
                 }
                 if (std::abs(exp_phase.imag()) < 1.0e-14) {
                     exp_phase = std::complex<double>(exp_phase.real(), 0.0);
                 }
-                */
+                
 
                 for (icrd = 0; icrd < 3; ++icrd){
                     for (jcrd = 0; jcrd < 3; ++jcrd){
-                        ctmp[icrd][jcrd] += fcs_phonon->fc2[i][atm_s2][icrd][jcrd] * exp_phase;
+                        ctmp[icrd][jcrd] += fc2_in[i][atm_s2][icrd][jcrd] * exp_phase;
                     }
                 }
             }
@@ -233,9 +233,9 @@ void Dynamical::diagonalize_dynamical_all()
     // Calculate phonon eigenvalues and eigenvectors for all k-points
 
     for (ik = 0; ik < nk; ++ik){
-        eval_k(kpoint->xk[ik], eval_phonon[ik], evec_phonon[ik], require_evec);
+        eval_k(kpoint->xk[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
 
-        // Phonon energy is the square-room of the eigenvalue 
+        // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is){
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
         }

@@ -1,6 +1,7 @@
 #include "write_phonons.h"
 #include "system.h"
 #include "dynamical.h"
+#include "gruneisen.h"
 #include "kpoint.h"
 #include "parsephon.h"
 #include "error.h"
@@ -375,4 +376,37 @@ void Writes::write_thermodynamics()
     }
 
     ofs_thermo.close();
+}
+
+void Writes::write_gruneisen()
+{
+    if (nbands < 0 || nbands > 3 * system->natmin) {
+        std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
+        std::cout << "All modes will be printed." << std::endl;    
+        nbands =  3 * system->natmin;
+    }
+
+    std::ofstream ofs_gruneisen;
+
+    file_vel = input->job_title + ".gruneisen";
+    ofs_gruneisen.open(file_vel.c_str(), std::ios::out);
+    if(!ofs_gruneisen) error->exit("write_gruneisen", "cannot open file_vel");
+
+    unsigned int i, j;
+    unsigned int nk = kpoint->nk;
+
+    double *kaxis = kpoint->kaxis;
+    
+    ofs_gruneisen << "# k-axis, gamma" << std::endl;
+    ofs_gruneisen.setf(std::ios::fixed);
+
+    for (i = 0; i < nk; ++i){
+        ofs_gruneisen << std::setw(8) << kaxis[i];
+        for (j = 0; j < nbands; ++j){
+            ofs_gruneisen << std::setw(15) << gruneisen->gruneisen[i][j].real();
+        }
+        ofs_gruneisen << std::endl;
+    }
+
+    ofs_gruneisen.close();
 }

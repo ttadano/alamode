@@ -1,6 +1,7 @@
 #include "mpi_common.h"
 #include <complex>
 #include <iomanip>
+#include "fcs_phonon.h"
 #include "phonon_velocity.h"
 #include "kpoint.h"
 #include "memory.h"
@@ -70,7 +71,7 @@ void Phonon_velocity::calc_phonon_vel_band()
             system->rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p, 'T');
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
-            dynamical->eval_k(xk_shift[idiff], omega_shift[idiff], evec_tmp, false); 
+            dynamical->eval_k(xk_shift[idiff], fcs_phonon->fc2, omega_shift[idiff], evec_tmp, false); 
         }
 
         for (i = 0; i < n; ++i){
@@ -119,7 +120,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
         xk_shift[1][i] += h;
 
         for (idiff = 0; idiff < ndiff; ++idiff) {
-            dynamical->eval_k(xk_shift[idiff], omega_shift[idiff], evec_tmp, false);
+            dynamical->eval_k(xk_shift[idiff], fcs_phonon->fc2, omega_shift[idiff], evec_tmp, false);
         }
 
         for (j = 0; j < n; ++j){

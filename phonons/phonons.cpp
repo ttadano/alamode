@@ -5,6 +5,7 @@
 #include "parsephon.h"
 #include "memory.h"
 #include "error.h"
+#include "gruneisen.h"
 #include "system.h"
 #include "symmetry_core.h"
 #include "kpoint.h"
@@ -55,7 +56,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         if (kpoint->kpoint_mode == 1)  {
             phonon_velocity->calc_phonon_vel_band();
-            phonon_thermodynamics->calc_gruneisen();
         }
 
         if (dos->flag_dos) {
@@ -100,6 +100,19 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         integration->finish_integration();
         relaxation->finish_relaxation();
         conductivity->finish_kl();
+
+    } else if (mode == "gruneisen") {
+        system->setup();
+
+        kpoint->kpoint_setups();
+
+        fcs_phonon->setup(mode);
+        dynamical->setup_dynamical(mode);
+        gruneisen->setup();
+        gruneisen->calc_gruneisen();
+        writes->write_gruneisen();
+        gruneisen->finish_gruneisen();
+
     } else {
         error->exit("phonons", "invalid mode");
     }
@@ -134,6 +147,7 @@ void PHON::create_pointers()
     conductivity = new Conductivity(this);
     writes = new Writes(this);
     dos = new Dos(this);
+    gruneisen = new Gruneisen(this);
 }
 
 void PHON::destroy_pointers()
@@ -153,4 +167,5 @@ void PHON::destroy_pointers()
     delete conductivity;
     delete writes;
     delete dos;
+    delete gruneisen;
 }

@@ -51,13 +51,13 @@ namespace PHON_NS {
         unsigned int maxorder;
         std::string file_fcs;
         double ****fc2;
-        double ****dfc2;
+       
         std::vector<FcsClass> *force_constant;
 
     private:
         void load_fc2();
         void load_fcs();
-        void prepare_delta_fc2();
+        
         unsigned int coordinate_index(const char);
         void MPI_Bcast_fc_class(const unsigned int);
     };
