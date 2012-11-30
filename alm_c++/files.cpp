@@ -40,9 +40,10 @@ void Files::closefiles()
 void Files::init()
 {
     setfilenames();
-    openfiles();
 
     std::cout << "Input Filenames" << std::endl;
     std::cout << "  Displacement: " << file_disp << std::endl;
     std::cout << "  Force       : " << file_force << std::endl;
+
+    openfiles();
 }

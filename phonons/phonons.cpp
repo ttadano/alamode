@@ -109,8 +109,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
         gruneisen->setup();
-     //   gruneisen->calc_gruneisen();
-        gruneisen->calc_gruneisen2();
+        gruneisen->calc_gruneisen();
+     //   gruneisen->calc_gruneisen2();
         writes->write_gruneisen();
         gruneisen->finish_gruneisen();
 
