@@ -42,6 +42,7 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 
     calc_analytic_k(xk_in, fc2_in, dymat_k);
 
+/*
     memory->allocate(dymat_tmp, neval, neval);
     memory->allocate(dymat_transpose, neval, neval);
 
@@ -59,6 +60,7 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 
     memory->deallocate(dymat_tmp);
     memory->deallocate(dymat_transpose);
+*/
 
     char JOBZ;
     int INFO, LWORK;
@@ -154,8 +156,8 @@ void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<d
                         vec[icrd] = fold(vec[icrd]);
                         if (std::abs(system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd]) > 0.5) vec[icrd] *= -1.0;
                     } else {
-                        vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
-                   //     vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
+//                        vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
+                       vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                         vec[icrd] = fold(vec[icrd]);
                     }
                 }

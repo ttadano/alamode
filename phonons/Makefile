@@ -4,7 +4,7 @@
 	${CXX} ${CXXFLAGS} -c $<
 
 CXX = mpicxx
-CXXFLAGS = -O3 -xSSE4.1 -openmp -vec-report2
+CXXFLAGS = -O3 -xSSE4.1 -openmp -vec-report2 -D_DEBUG
 LDFLAGS = -mkl
 
 PROG = phonons

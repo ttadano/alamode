@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include "dynamical.h"
 #include "error.h"
 #include "fcs_phonon.h"
@@ -143,7 +144,6 @@ void Gruneisen::prepare_delta_fc2()
         for (jat = 0; jat < nat; ++jat){
             for (icrd = 0; icrd < 3; ++icrd){
                 for (jcrd = 0; jcrd < 3; ++jcrd){
-                    std::cout << std::setw(15) << fc2[iat][jat][icrd][jcrd];
                     std::cout << std::setw(15) << dfc2[iat][jat][icrd][jcrd] << std::endl;
                 }
             }
