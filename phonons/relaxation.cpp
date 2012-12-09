@@ -91,6 +91,8 @@ void Relaxation::setup_relaxation()
 
                         vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
                         - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
+
+                        //  vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
                         vec[k] = dynamical->fold(vec[k]);
 
                     }
@@ -137,6 +139,20 @@ void Relaxation::setup_relaxation()
         }
     }
 
+    memory->allocate(cexp_phase2, nk, system->natmin);
+
+    for (i = 0; i < nk; ++i){
+        for (j = 0; j < system->natmin; ++j){
+            double xtmp[3];
+            for (unsigned int m = 0; m < 3; ++m){
+                xtmp[m] = system->xr_s[system->map_p2s[j][0]][m];
+            }
+            system->rotvec(xtmp, xtmp, mat_convert);
+
+            cexp_phase2[i][j] = std::exp(im * (xtmp[0] * kpoint->xk[i][0] + xtmp[1] * kpoint->xk[i][1] + xtmp[2] * kpoint->xk[i][2]));
+        }
+    }
+
     // For tetrahedron method
     MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (ksum_mode == -1) {
@@ -169,7 +185,7 @@ void Relaxation::setup_relaxation()
         std::cout << std::endl;
     }
 
-    modify_eigenvectors();
+  //  modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
 
@@ -382,6 +398,10 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
             * dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz]
             * fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
 
+            ctmp *= cexp_phase2[kn[0]][fcs_phonon->force_constant[1][ielem].elems[0].atom] 
+            *cexp_phase2[kn[1]][fcs_phonon->force_constant[1][ielem].elems[1].atom] 
+            *cexp_phase2[kn[2]][fcs_phonon->force_constant[1][ielem].elems[2].atom] ;
+
             ret_re += ctmp.real();
             ret_im += ctmp.imag();
         }
@@ -447,7 +467,7 @@ std::complex<double> Relaxation::V3new2(const unsigned int ks[3])
 }
 
 std::complex<double> Relaxation::selfenergy(const double T, const double omega, 
-    const unsigned int knum, const unsigned int snum)
+                                            const unsigned int knum, const unsigned int snum)
 {
     std::complex<double> ret(0.0, 0.0);
 
@@ -517,7 +537,7 @@ std::complex<double> Relaxation::selfenergy(const double T, const double omega,
 }
 
 std::complex<double> Relaxation::selfenergy2(const double T, const double omega, 
-    const unsigned int knum, const unsigned int snum)
+                                             const unsigned int knum, const unsigned int snum)
 {
     std::complex<double> ret(0.0, 0.0);
 
@@ -579,7 +599,7 @@ std::complex<double> Relaxation::selfenergy2(const double T, const double omega,
 }
 
 void Relaxation::calc_damping(const unsigned int N, double *T, const double omega, 
-    const unsigned int knum, const unsigned int snum, double *ret)
+                              const unsigned int knum, const unsigned int snum, double *ret)
 {
     unsigned int i;
     unsigned int ik, jk;
@@ -658,7 +678,7 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 }
 
 void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const double omega,
-    const unsigned int knum, const unsigned int snum, double *ret)
+                                    const unsigned int knum, const unsigned int snum, double *ret)
 {
     unsigned int i, j;
     unsigned int is, js, ik, jk;
@@ -747,7 +767,7 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 }
 
 double Relaxation::self_tetra(const double T, const double omega,
-    const unsigned int knum, const unsigned int snum)
+                              const unsigned int knum, const unsigned int snum)
 {
     double ret = 0.0;
 
