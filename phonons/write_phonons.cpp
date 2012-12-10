@@ -380,6 +380,8 @@ void Writes::write_thermodynamics()
 
 void Writes::write_gruneisen()
 {
+
+    if (kpoint->kpoint_mode == 1) {
     if (nbands < 0 || nbands > 3 * system->natmin) {
         std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
         std::cout << "All modes will be printed." << std::endl;    
@@ -409,4 +411,37 @@ void Writes::write_gruneisen()
     }
 
     ofs_gruneisen.close();
+
+    } else {
+    
+        std::ofstream ofs_gruall;
+        std::string file_gruall;
+        file_gruall = input->job_title + ".gru_all";
+        ofs_gruall.open(file_gruall.c_str(), std::ios::out);
+        if (!ofs_gruall) error->exit("write_gruneisen", "cannot open file_gruall");
+
+        unsigned int i, j, k;
+        unsigned int nk = kpoint->nk;
+        unsigned int ns = dynamical->neval;
+
+        ofs_gruall << "# knum, snum, omega [cm^-1], gruneisen parameter" << std::endl;
+
+        for (i = 0; i < nk; ++i){
+            ofs_gruall << "# knum = " << i;
+            for (k = 0; k < 3; ++k) {
+            ofs_gruall << std::setw(15)<< kpoint->xk[i][k];
+            }
+            ofs_gruall << std::endl;
+
+            for (j = 0; j < ns; ++j){
+                ofs_gruall << std::setw(5) << i;
+                ofs_gruall << std::setw(5) << j;
+                ofs_gruall << std::setw(15) << in_kayser(dynamical->eval_phonon[i][j]);
+                ofs_gruall << std::setw(15) << gruneisen->gruneisen[i][j].real();
+                ofs_gruall << std::endl;
+            }
+        }
+
+        ofs_gruall.close();
+    }
 }
