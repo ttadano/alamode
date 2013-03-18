@@ -14,7 +14,7 @@
 #include <numeric>
 #include <Eigen/Core>
 #include <Eigen/LU>
-#include <Boost/lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
