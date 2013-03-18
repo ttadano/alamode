@@ -25,6 +25,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 {
     mympi = new MyMPI(this, comm);
 
+	restart_flag = false;
+
     if (mympi->my_rank == 0) {
         std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
     }
@@ -83,6 +85,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         system->setup();
         symmetry->setup_symmetry();
         kpoint->kpoint_setups();
+		dos->setup();
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
         dynamical->diagonalize_dynamical_all();
@@ -105,7 +108,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         system->setup();
 
         kpoint->kpoint_setups();
-
+		dos->setup();
         fcs_phonon->setup(mode);
         dynamical->setup_dynamical(mode);
         dynamical->diagonalize_dynamical_all();

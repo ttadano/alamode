@@ -32,6 +32,19 @@ namespace PHON_NS {
 
     };
 
+	class KpointInp {
+	public:
+		std::vector<std::string> kpelem;
+
+		KpointInp(){};
+
+		KpointInp(const std::vector<std::string> &obj) {
+			for (std::vector<std::string>::const_iterator it = obj.begin(); it != obj.end(); ++it) {
+				kpelem.push_back(*it);
+			}
+		}
+	};
+
     inline bool operator<(const KpointList a, const KpointList b){
         return std::lexicographical_compare(a.kval.begin(), a.kval.end(), b.kval.begin(), b.kval.end());
     }
@@ -62,6 +75,7 @@ namespace PHON_NS {
         double *kaxis;
 
         std::vector<KpointList> kpIBZ;
+		std::vector<KpointInp> kpInp;
         std::vector<unsigned int> nk_equiv;
         std::vector<double> weight_k;
         std::set<unsigned int> kpset_uniq;

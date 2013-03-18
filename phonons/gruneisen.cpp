@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include <iostream>
 #include <iomanip>
 #include "dynamical.h"
@@ -16,8 +17,13 @@ Gruneisen::~Gruneisen(){};
 
 void Gruneisen::setup()
 {
+
+	MPI_Bcast(&delta_a, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+	if (mympi->my_rank == 0) {
     std::cout << std::endl; 
     std::cout << "Change in cell parameters : " << delta_a << std::endl;
+	}
 
     memory->allocate(gruneisen, kpoint->nk, dynamical->neval);
 

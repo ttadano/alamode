@@ -30,7 +30,11 @@ Dos::~Dos(){
 
 void Dos::setup()
 {
-    if(kpoint->kpoint_mode == 2) {
+	MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if(kpoint->kpoint_mode == 2 && phon->mode == "phonons") {
         flag_dos = true;
     } else {
         flag_dos = false;

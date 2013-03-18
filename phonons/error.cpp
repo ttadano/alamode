@@ -34,3 +34,9 @@ void Error::exitall(const char *file, const char *message)
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
     std::exit(EXIT_FAILURE);
 }
+
+void Error::exit(const char *file, const char *message, const char *info)
+{
+	std::cout << "ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+	std::exit(EXIT_FAILURE);
+}

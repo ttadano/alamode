@@ -38,5 +38,6 @@ namespace PHON_NS
         void destroy_pointers();
 
         std::string mode;
+		bool restart_flag;
     };
 }

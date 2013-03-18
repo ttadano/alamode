@@ -23,10 +23,6 @@ void Dynamical::setup_dynamical(std::string mode)
     UPLO = 'U';
 
     MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-
-    if (mode == "boltzmann") {
-        eigenvectors = true;
-    }
 }
 
 void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {

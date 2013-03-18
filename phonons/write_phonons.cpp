@@ -25,7 +25,7 @@ Writes::~Writes(){};
 void Writes::write_phonon_info()
 {
     if (nbands < 0 || nbands > 3 * system->natmin) {
-        std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
+        std::cout << "nbands < 0 or nbands > 3 * natmin" << std::endl;
         std::cout << "All modes will be printed." << std::endl;    
         nbands =  3 * system->natmin;
     }
@@ -244,6 +244,7 @@ void Writes::write_mode_anime()
     std::complex<double> evec_tmp;
     unsigned int m;
     i = 0;
+	
 
     for (ik = 0; ik < nk; ++ik){
         for (imode = 0; imode < nbands; ++imode){
@@ -276,6 +277,7 @@ void Writes::write_mode_anime()
             ++i;
         }
     }
+
 
     memory->deallocate(xmod);
     memory->deallocate(kd_tmp);
