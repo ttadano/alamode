@@ -115,7 +115,7 @@ void Input::parse_general_vars(){
 
 	split_str_by_space(general_var_dict["PERIODIC"], periodic_v);
 
-	if (periodic_v.size() == 1) {
+	if (periodic_v.size() == 0) {
 		for (i = 0; i < 3; ++i) {
 			is_periodic[i] = 1;
 		}
