@@ -152,9 +152,11 @@ void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<d
                         vec[icrd] = fold(vec[icrd]);
                         if (std::abs(system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd]) > 0.5) vec[icrd] *= -1.0;
                     } else {
-//                        vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
+ //                      vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
                         vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
                         vec[icrd] = fold(vec[icrd]);
+
+						vec[icrd] += system->xr_s[atm_p2][icrd] - system->xr_s[atm_p1][icrd];
                     }
                 }
 
