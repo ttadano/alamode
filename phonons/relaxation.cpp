@@ -51,6 +51,7 @@ void Relaxation::setup_relaxation()
     memory->allocate(relvec, system->nat, system->nat, 3);
     memory->allocate(invsqrt_mass_p, system->natmin);
 
+
     if (mympi->my_rank == 0) {
         double vec[3];
         memory->allocate(vec_s, system->ntran, 3);
@@ -74,9 +75,9 @@ void Relaxation::setup_relaxation()
                             vec[k] = 0.0;
                         } else {
                             if (system->xr_s[i][k] < 0.5) {
-                                vec[k] = -1.0;
-                            } else {
                                 vec[k] = 1.0;
+                            } else {
+                                vec[k] = -1.0;
                             }
                         }
 
@@ -89,12 +90,14 @@ void Relaxation::setup_relaxation()
 
                     } else {
 
-                        vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
-                        - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
-
-                        //  vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
+//                          vec[k] = system->xr_s[system->map_p2s[0][system->map_s2p[i].tran_num]][k] 
+//                          - system->xr_s[system->map_p2s[0][system->map_s2p[j].tran_num]][k];  
+// 
+                        vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
                         vec[k] = dynamical->fold(vec[k]);
 
+						vec[k] += system->xr_s[system->map_p2s[system->map_s2p[j].atom_num][0]][k]
+						-system->xr_s[system->map_p2s[system->map_s2p[i].atom_num][0]][k];
                     }
 
                     relvec[i][j][k] = vec[k];
@@ -185,7 +188,39 @@ void Relaxation::setup_relaxation()
         std::cout << std::endl;
     }
 
-  //  modify_eigenvectors();
+
+#ifdef _DEBUG
+
+	// Check if e_{ks}^{*} = e_{-ks} is satisfied.
+	// Note that the violation of the above equation does not necessary 
+	// mean bugs.
+
+	int ik, is, js;
+	int nk_inv;
+	double res;
+
+	for (ik = 0; ik < nk; ++ik) {
+
+		nk_inv = kpoint->knum_minus[ik];
+
+		res = 0.0;
+
+		for (is = 0; is < ns; ++is) {
+			for (js = 0; js < ns; ++js) {
+				res += std::norm(dynamical->evec_phonon[ik][is][js] - std::conj(dynamical->evec_phonon[nk_inv][is][js]));
+			}
+		}
+
+		if (std::sqrt(res)/static_cast<double>(std::pow(ns, 2)) > eps12) {
+			std::cout << "ik = " << ik << std::endl;
+			error->warn("setup_relaxation", "e_{ks}^{*} = e_{-ks} is not satisfied.");
+			std::cout << "The above message doesn't necessary mean a problem." << std::endl;
+		}
+	}
+
+#endif
+
+    modify_eigenvectors();
 
     epsilon *= time_ry / Hz_to_kayser;
 
@@ -398,9 +433,9 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
             * dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz]
             * fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
 
-            ctmp *= cexp_phase2[kn[0]][fcs_phonon->force_constant[1][ielem].elems[0].atom] 
-            *cexp_phase2[kn[1]][fcs_phonon->force_constant[1][ielem].elems[1].atom] 
-            *cexp_phase2[kn[2]][fcs_phonon->force_constant[1][ielem].elems[2].atom] ;
+//              ctmp *= cexp_phase2[kn[0]][fcs_phonon->force_constant[1][ielem].elems[0].atom] 
+//              *cexp_phase2[kn[1]][fcs_phonon->force_constant[1][ielem].elems[1].atom] 
+//              *cexp_phase2[kn[2]][fcs_phonon->force_constant[1][ielem].elems[2].atom] ;
 
             ret_re += ctmp.real();
             ret_im += ctmp.imag();
@@ -976,4 +1011,49 @@ void Relaxation::calc_selfenergy()
         ofs_test.close();
     }
     error->exitall("hoge", "tomare!");
+}
+
+
+void Relaxation::v3_test() {
+
+	int i;
+	int knum;
+	unsigned int stmp[3], kstmp[3];
+	double k_tmp[3];
+	int nkplus, nkminus;
+
+	nkplus = 1;
+	nkminus= kpoint->knum_minus[nkplus];
+
+
+	stmp[0] = 0;
+	stmp[1] = 1;
+	stmp[2] = 2;
+
+	for (i = 0; i < 3; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[nkplus][i];
+	}
+	std::cout << std::endl;
+
+	for (i = 0; i < 3; ++i) {
+		kstmp[i] = dynamical->neval * nkplus + stmp[i];
+	}
+	std::cout << V3(kstmp[0], kstmp[1], kstmp[2]) << std::endl;
+	std::cout << V3new(kstmp) << std::endl;
+	std::cout << V3new2(kstmp) << std::endl;
+
+	for (i = 0; i < 3; ++i) {
+		kstmp[i] = dynamical->neval * nkminus + stmp[i];
+	}
+	for (i = 0; i < 3; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[nkminus][i];
+	}
+	std::cout << std::endl;
+
+	std::cout << V3(kstmp[0], kstmp[1], kstmp[2]) << std::endl;
+	std::cout << V3new(kstmp) << std::endl;
+	std::cout << V3new2(kstmp) << std::endl;
+
+
+	error->exit("v3_test", "finished!");
 }

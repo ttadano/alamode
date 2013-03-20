@@ -54,6 +54,8 @@ namespace PHON_NS {
         double epsilon;
         int ksum_mode;
 
+		void v3_test();
+
      private:
         struct StructKS {
         public:

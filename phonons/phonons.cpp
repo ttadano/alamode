@@ -91,11 +91,13 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         dynamical->diagonalize_dynamical_all();
 
         integration->setup_integration();
-        relaxation->setup_relaxation();
+		relaxation->setup_relaxation();
 
         //     dos->calc_tdos();
 
        // relaxation->calc_selfenergy();
+
+	//	relaxation->v3_test();
 
         conductivity->setup_kl();
         conductivity->calc_kl();
