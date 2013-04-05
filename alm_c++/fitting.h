@@ -18,6 +18,8 @@ namespace ALM_NS {
         void fitmain();
        // int rank(const int, const int, double **);
         int rank(int, int, double *);
+		int rank2(const int, const int, double **);
+
         // int getRankEigen(const int, const int,const  int);
 
         double *params;

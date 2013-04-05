@@ -793,6 +793,56 @@ int Fitting::rank(int m, int n, double *mat)
     return rank;
 }
 
+int Fitting::rank2(const int m_in, const int n_in, double **mat) 
+{
+	// Reveal the rank of matrix mat without destroying the matrix elements
+
+	int i, j, k;
+	double *arr;
+
+	int m = m_in;
+	int n = n_in;
+
+	memory->allocate(arr, m*n);
+
+	k = 0;
+
+	for (j = 0; j < n; ++j ) {
+	for (i = 0; i < m; ++i) {
+		arr[k++] = mat[i][j];
+	}
+	}
+
+	int LWORK = 10 * m;
+	int INFO;
+	int *IWORK;
+	int ldu = 1, ldvt = 1;
+	double *s, *WORK;
+	double u[1], vt[1];
+
+	int nmin = std::min<int>(m, n);
+
+	memory->allocate(IWORK, 8 * nmin);
+	memory->allocate(WORK, LWORK);
+	memory->allocate(s, nmin);
+
+	char mode[]  = "N";
+
+	dgesdd_(mode, &m, &n, arr, &m, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO); 
+
+	int rank = 0;
+	for(i = 0; i < nmin; ++i){
+		if(s[i] > eps12) ++rank;
+	}
+
+	memory->deallocate(IWORK);
+	memory->deallocate(s);
+
+	memory->deallocate(arr);
+
+	return rank;
+}
+
 /*
 void Fitting::calc_covariance(int m, int n)
 {

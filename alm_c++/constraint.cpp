@@ -1,13 +1,17 @@
 #include "constraint.h"
 #include "interaction.h"
 #include "memory.h"
-#include <Eigen/Dense>
 #include "fcs.h"
 #include "symmetry.h"
 #include "system.h"
 #include "combination.h"
 #include "constants.h"
 #include "error.h"
+#include "fitting.h"
+
+#ifdef _USE_EIGEN
+#include <Eigen/Dense>
+#endif
 
 using namespace ALM_NS;
 
@@ -997,6 +1001,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 		}
 
 		// Transpose matrix A 
+
 		k = 0;
 
 		for (j = 0; j < nparam; ++j) {
@@ -1004,6 +1009,10 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 				arr_tmp[k++] = mat_tmp[i][j];
 			}
 		}
+
+		// Reveal rank
+
+		int nrank = fitting->rank2(nconst, nparam, mat_tmp);
 
 		// Perform LU decomposition
 
@@ -1023,12 +1032,6 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
 		memory->deallocate(arr_tmp);
 		memory->allocate(arr_tmp, nparam);
-
-		int nrank = 0;
-
-		for (i = 0; i < nmin; ++i) {
-			if (std::abs(mat_tmp[i][i]) > eps15) ++nrank;
-		}
 
 		Constraint_Set.clear();
 
