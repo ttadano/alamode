@@ -13,7 +13,6 @@
 #include "listcomparison.h"
 #include "files.h"
 #include "timer.h"
-#include <Eigen/Core>
 
 using namespace ALM_NS;
 
@@ -517,6 +516,7 @@ void Interaction::calc_minvec()
     }
     std::cout.unsetf(std::ios::scientific);
 #endif
+
     memory->deallocate(minloc);
     memory->deallocate(x_neib);
     memory->deallocate(dist_tmp);

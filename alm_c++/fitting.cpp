@@ -17,7 +17,11 @@
 #include "combination.h"
 #include "constants.h"
 #include "constraint.h"
+
+#ifdef _USE_EIGEN
 #include <Eigen/Dense>
+#endif
+
 #include <time.h>
 
 #ifdef _VSL

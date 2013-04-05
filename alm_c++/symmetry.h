@@ -1,10 +1,13 @@
 #pragma once
 
 #include "pointers.h"
-#include <Eigen/Core>
 #include <string>
 #include <fstream>
 #include <vector>
+
+#ifdef _USE_EIGEN
+#include <Eigen/Core>
+#endif
 
 namespace ALM_NS {
     
@@ -83,8 +86,14 @@ namespace ALM_NS {
         std::ifstream ifs_sym;
 
     private:
+#ifdef _USE_EIGEN
         bool is_ortho(Eigen::Matrix3d, Eigen::Matrix3d, Eigen::Matrix3d);
         bool is_invariant(Eigen::Matrix3d, int, int*, double **, int[3], int);
+#endif
+		bool is_ortho(double [3][3], double [3][3], double [3][3]);
+		bool is_invariant(double [3][3], int, int *, double **, int [3], int);
+		void matmul3(double [3][3], const double [3][3], const double [3][3]);
+		void transpose3(double [3][3], const double [3][3]);
         void symop_in_cart(double [3][3], double[3][3]);
         void pure_translations();
         void data_multiplier(int, int, int);
