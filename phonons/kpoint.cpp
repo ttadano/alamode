@@ -12,9 +12,13 @@
 #include <cmath>
 #include <set>
 #include <numeric>
+
+#include <boost/lexical_cast.hpp>
+
+#ifdef _USE_EIGEN
 #include <Eigen/Core>
 #include <Eigen/LU>
-#include <boost/lexical_cast.hpp>
+#endif
 
 using namespace PHON_NS;
 
@@ -31,7 +35,6 @@ void Kpoint::kpoint_setups()
 	symmetry->symmetry_flag = true;
 
 	unsigned int i, j;
-	double emin, emax, delta_e;
 
 	MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -340,8 +343,13 @@ void Kpoint::reduce_kpoints(double **xkr)
 	std::set<KpointList> ksets;
 	std::vector<double> ktmp;
 
+#ifdef _USE_EIGEN
 	Eigen::Matrix3d srot;
 	Eigen::Vector3d xk_sym, xk_orig;
+#else
+	double srot[3][3];
+	double xk_sym[3], xk_orig[3];
+#endif
 
 	std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
 
@@ -368,7 +376,11 @@ void Kpoint::reduce_kpoints(double **xkr)
 
 		kpIBZ.push_back(KpointList(ik, ktmp));
 
+#ifdef _USE_EIGEN
 		for (i = 0; i < 3; ++i) xk_orig(i) = xkr[ik][i];
+#else
+		for (i = 0; i < 3; ++i) xk_orig[i] = xkr[ik][i];
+#endif
 
 		unsigned int symcount = 0;
 
@@ -376,10 +388,14 @@ void Kpoint::reduce_kpoints(double **xkr)
 
 			for (i = 0; i < 3; ++i){
 				for (j = 0; j < 3; ++j){
+#ifdef _USE_EIGEN
 					srot(i,j) = static_cast<double>((*isym).symop[3 * i + j]);
+#else
+					srot[i][j] = static_cast<double>((*isym).symop[3 * i + j]);
+#endif
 				}
 			}
-
+#ifdef _USE_EIGEN
 			Eigen::FullPivLU< Eigen::Matrix3d > lu(srot);
 			Eigen::Matrix3d S = lu.inverse();
 
@@ -440,6 +456,72 @@ void Kpoint::reduce_kpoints(double **xkr)
 					++nsame;
 				}
 			}
+
+#else
+			double srot_inv[3][3], srot_inv_t[3][3];
+
+			system->invmat3(srot_inv, srot);
+			system->transpose3(srot_inv_t, srot_inv);
+			system->rotvec(xk_sym, xk_orig, srot_inv_t);
+
+
+			for (i = 0; i < 3; ++i){
+				xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+			}    
+
+			diff[0] = static_cast<double>(nint(xk_sym[0]*nkx)) - xk_sym[0]*nkx;
+			diff[1] = static_cast<double>(nint(xk_sym[1]*nky)) - xk_sym[1]*nky;
+			diff[2] = static_cast<double>(nint(xk_sym[2]*nkz)) - xk_sym[2]*nkz;
+
+			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+
+				iloc = (nint(xk_sym[0]*nkx + 2 * nkx)) % nkx;
+				jloc = (nint(xk_sym[1]*nky + 2 * nky)) % nky;
+				kloc = (nint(xk_sym[2]*nkz + 2 * nkz)) % nkz;
+
+				nloc = kloc + nkz * jloc + nky * nkz * iloc;
+
+				if(nloc > ik && kequiv[nloc] == nloc) {
+					kequiv[nloc] = ik;
+					ktmp.clear();
+					ktmp.push_back(xk_sym[0]);
+					ktmp.push_back(xk_sym[1]);
+					ktmp.push_back(xk_sym[2]);
+					kpIBZ.push_back(KpointList(nloc, ktmp));
+					++nsame;
+				}
+			}
+
+			// Time-reversal symmetry
+
+			if (!symmetry->time_reversal_sym) continue;
+
+			for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0; 
+
+			diff[0] = static_cast<double>(nint(xk_sym[0]*nkx)) - xk_sym[0]*nkx;
+			diff[1] = static_cast<double>(nint(xk_sym[1]*nky)) - xk_sym[1]*nky;
+			diff[2] = static_cast<double>(nint(xk_sym[2]*nkz)) - xk_sym[2]*nkz;
+
+			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+
+				iloc = (nint(xk_sym[0]*nkx + 2 * nkx)) % nkx;
+				jloc = (nint(xk_sym[1]*nky + 2 * nky)) % nky;
+				kloc = (nint(xk_sym[2]*nkz + 2 * nkz)) % nkz;
+
+				nloc = kloc + nkz * jloc + nky * nkz * iloc;
+
+				if(nloc > ik && kequiv[nloc] == nloc) {
+					kequiv[nloc] = ik;
+					ktmp.clear();
+					ktmp.push_back(xk_sym[0]);
+					ktmp.push_back(xk_sym[1]);
+					ktmp.push_back(xk_sym[2]);
+					kpIBZ.push_back(KpointList(nloc, ktmp));
+					++nsame;
+				}
+			}
+
+#endif
 		}
 
 		if (nsame > 0) {

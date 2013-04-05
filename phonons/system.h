@@ -35,7 +35,9 @@ namespace PHON_NS {
 
         void rotvec(double [3], double [3], double [3][3], char mode = 'N');
         double volume(double [3], double [3], double [3]);
-
+		void invmat3(double [3][3], double [3][3]);
+		void matmul3(double [3][3], const double [3][3], const double [3][3]);
+		void transpose3(double [3][3], const double [3][3]);
 
 
     private:

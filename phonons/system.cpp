@@ -228,7 +228,7 @@ void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char 
             vec_out[i] = mat[0][i] * vec_tmp[0] + mat[1][i] * vec_tmp[1] + mat[2][i] * vec_tmp[2];
         }
     } else {
-        error->exit("rotvec", "invalid input valiable for mode");
+        error->exit("rotvec", "invalid input variable for mode");
     }
 }
 
@@ -243,3 +243,56 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 
     return vol;
 }
+
+void System::invmat3(double invmat[3][3], double mat[3][3])
+{
+	double det;
+
+	det = mat[0][0] * mat[1][1] * mat[2][2] 
+	+ mat[1][0] * mat[2][1] * mat[0][2] 
+	+ mat[2][0] * mat[0][1] * mat[1][2]
+	- mat[0][0] * mat[2][1] * mat[1][2] 
+	- mat[2][0] * mat[1][1] * mat[0][2]
+	- mat[1][0] * mat[0][1] * mat[2][2];
+
+	if(det < eps12) {
+		error->exit("invmat3", "Given matrix is singular");
+	}
+
+	double factor = 1.0 / det;
+
+	invmat[0][0] = (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * factor;
+	invmat[0][1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) * factor;
+	invmat[0][2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * factor;
+
+	invmat[1][0] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) * factor;
+	invmat[1][1] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * factor;
+	invmat[1][2] = (mat[0][2] * mat[1][0] - mat[0][0] * mat[1][2]) * factor;
+
+	invmat[2][0] = (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * factor;
+	invmat[2][1] = (mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1]) * factor;
+	invmat[2][2] = (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * factor;
+}
+
+
+void System::matmul3(double ret[3][3], const double amat[3][3], const double bmat[3][3]) 
+{
+	int i, j, k;
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			ret[i][j] = 0.0;
+			for (k = 0; k < 3; ++k) ret[i][j] += amat[i][k] * bmat[k][j]; 	        
+		}
+	}
+}
+
+void System::transpose3(double ret[3][3], const double mat[3][3]) 
+{
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			ret[i][j] = mat[j][i];
+		}
+	}
+}
+

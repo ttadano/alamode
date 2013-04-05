@@ -4,9 +4,13 @@
 #include "../alm_c++/constants.h"
 #include "error.h"
 #include "system.h"
-#include <Eigen/Core>
 #include <iomanip>
 #include <fstream>
+#include <algorithm>
+
+#ifdef _USE_EIGEN
+#include <Eigen/Core>
+#endif
 
 using namespace PHON_NS;
 
@@ -147,8 +151,12 @@ void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, dou
     unsigned int  np1, np2, np3;
     int det;
 
+#ifdef _USE_EIGEN
     Eigen::Matrix3d amat, bmat;
     Eigen::Matrix3d rot2;
+#else
+	double rot2[3][3];
+#endif
 
     int rot_tmp[3][3], rot_reciprocal[3][3];
     int tran_tmp[3];
@@ -156,8 +164,10 @@ void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, dou
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
 
+#ifdef _USE_EIGEN
             amat(i,j) = aa[i][j];
             bmat(i,j) = bb[i][j];
+#endif
 
             if(i == j) {
                 rot_tmp[i][j] = 1;
@@ -230,11 +240,18 @@ void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, dou
 
                                         for (i = 0; i < 3; ++i) {
                                             for (j = 0; j < 3; ++j){
+#ifdef _USE_EIGEN
                                                 rot2(i,j) = static_cast<double>(rot_reciprocal[i][j]);
+#else
+												rot2[i][j] = static_cast<double>(rot_reciprocal[i][j]);
+#endif
                                             }
                                         }
-
+#ifdef _USE_EIGEN
                                         if(!is_ortho(rot2, amat, bmat)) continue;
+#else
+										if(!is_ortho(rot2, aa, bb)) continue;
+#endif
 
 #pragma omp parallel for private(np1, np2, np3)
                                         for (itran = 0; itran < nnps; ++itran){
@@ -268,6 +285,7 @@ void Symmetry::findsym(unsigned int nat, unsigned int nnp, unsigned int *kd, dou
     memory->deallocate(arr_trans);
 }
 
+#ifdef _USE_EIGEN
 bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix3d bmat)
 {
     double pi2 = 2.0 * pi;
@@ -318,7 +336,7 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, unsigned int nat, unsigned int 
                     vsi(k) = x[j][k];
                     tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0); 
                     // Need "std" to specify floating point operation
-                    // especially for intel compiler (there was no problem in MSVC)
+                    // especially for Intel compiler (there was no problem in MSVC)
                     tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
                 }
                 double diff = tmp.dot(tmp);
@@ -331,3 +349,82 @@ bool Symmetry::is_invariant(Eigen::Matrix3d rot, unsigned int nat, unsigned int 
     }
     return value;
 }
+#else
+
+bool Symmetry::is_ortho(double rot[3][3], double amat[3][3], double bmat[3][3]) 
+{
+	int i, j;
+	double pi2 = 2.0 * pi;
+	double res;
+
+	double sat[3][3], unit[3][3], tmp[3][3], tmp2[3][3];
+	double amat_t[3][3], bmat_t[3][3], sat_t[3][3];
+
+	system->transpose3(amat_t, amat);
+	system->transpose3(bmat_t, bmat);
+
+	system->matmul3(sat, rot, amat_t);
+	system->transpose3(sat_t, sat);
+
+	system->matmul3(tmp, bmat_t, sat);
+	system->matmul3(tmp2, bmat, tmp);
+	system->matmul3(unit, sat_t, tmp2);
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			unit[i][j] /= pow(pi2, 2);
+		}
+	}
+
+	res = pow((unit[0][0] - 1.0), 2) + pow((unit[1][1] - 1.0), 2) + pow((unit[2][2] - 1.0), 2)
+		+ pow(unit[0][1], 2) + pow(unit[0][2], 2)
+		+ pow(unit[1][0], 2) + pow(unit[1][2], 2)
+		+ pow(unit[2][0], 2) + pow(unit[2][1], 2);
+
+	if(res > eps) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+bool Symmetry::is_invariant(double rot[3][3], unsigned int nat, unsigned int *kd, double **x, int tran[3], unsigned int nnp) {
+
+	int i, j, k, l;
+	double wsi[3], usi[3], vsi[3], tmp[3];
+	double diff;
+
+	bool value = true;
+
+	for (i = 0; i < nat; ++i) {
+
+		for (j = 0; j < 3; ++j) {
+			wsi[j] = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
+		}
+
+		system->rotvec(usi, wsi, rot, 'T');
+
+		l = -1;
+
+		for (j = 0; j < nat; ++j) {
+
+			if (kd[j] == kd[i]) {
+
+				for (k = 0; k < 3; ++k) {
+					vsi[k] = x[j][k];
+					tmp[k] = std::fmod(std::abs(usi[k] - vsi[k]), 1.0);
+					tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
+				}
+				diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+				if (diff < eps12) l = j;
+			}
+		}
+
+		if (l == -1) value = false;
+
+
+	}
+	return value;
+}
+#endif
+

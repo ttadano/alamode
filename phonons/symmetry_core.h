@@ -3,7 +3,10 @@
 #include "pointers.h"
 #include <string>
 #include <vector>
+
+#ifdef _USE_EIGEN
 #include <Eigen/Core>
+#endif
 
 namespace PHON_NS {
 
@@ -50,10 +53,17 @@ namespace PHON_NS {
         std::vector<SymmetryOperation> SymmList;
         void setup_symmetry();
         void gensym(unsigned int, unsigned int&, unsigned int, double[3][3], double[3][3], double **, unsigned int *);
+		
 
     private:
         void findsym(unsigned int, unsigned int, unsigned int *, double [3][3], double [3][3], double **);
+
+#ifdef _USE_EIGEN
         bool is_ortho(Eigen::Matrix3d, Eigen::Matrix3d, Eigen::Matrix3d);
         bool is_invariant(Eigen::Matrix3d, unsigned int, unsigned int *, double **, int[3], unsigned int);
+#else
+		bool is_ortho(double [3][3], double [3][3], double [3][3]);
+		bool is_invariant(double [3][3], unsigned int, unsigned int *, double **, int [3], unsigned int);
+#endif
     };
 }
