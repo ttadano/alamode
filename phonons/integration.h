@@ -33,5 +33,4 @@ namespace PHON_NS {
         std::vector<tetra_pair> tetra_data;
         inline double refold(double);
     };
-
 }

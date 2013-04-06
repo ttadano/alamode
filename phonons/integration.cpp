@@ -132,7 +132,6 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
     double f1, f2, f3, f4;
 
     double frac3 = 1.0/3.0;
-    double f_ntetra = 1.0 / static_cast<double>(ntetra);
     double g, vol, vol_tot;
 
     tetra_pair pair;
@@ -209,7 +208,6 @@ double Integration::dos_integration(double *energy, const double e_ref)
     std::vector<double> e_tetra;
     double e1, e2, e3, e4;
     double vol, vol_tot;
-    double f_ntetra = 1.0 / static_cast<double>(ntetra);
 
     vol_tot = 0.0;
 

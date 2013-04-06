@@ -560,7 +560,6 @@ void Constraint::rotational_invariance()
 	int order;
 	int maxorder = interaction->maxorder;
 	int natmin = symmetry->natmin;
-	int nat = system->nat;
 	int mu, nu;
 	int ixyz, nxyz, nxyz2;
 	int mu_lambda, lambda;

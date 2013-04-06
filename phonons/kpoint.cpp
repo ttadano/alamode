@@ -382,8 +382,6 @@ void Kpoint::reduce_kpoints(double **xkr)
 		for (i = 0; i < 3; ++i) xk_orig[i] = xkr[ik][i];
 #endif
 
-		unsigned int symcount = 0;
-
 		for (std::vector<SymmetryOperation>::iterator isym = symmetry->SymmList.begin(); isym != symmetry->SymmList.end(); ++isym){
 
 			for (i = 0; i < 3; ++i){

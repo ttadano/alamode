@@ -20,5 +20,4 @@ namespace PHON_NS
         double *dos_phonon;
         double **pdos_phonon;
     };
-
 }

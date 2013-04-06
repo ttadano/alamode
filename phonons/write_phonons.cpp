@@ -118,7 +118,6 @@ void Writes::write_phonon_vel_all()
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
-    double *kaxis = kpoint->kaxis;
     double **eval = dynamical->eval_phonon;
 
     double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;

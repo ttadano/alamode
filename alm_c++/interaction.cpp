@@ -13,6 +13,7 @@
 #include "listcomparison.h"
 #include "files.h"
 #include "timer.h"
+#include <cmath>
 
 using namespace ALM_NS;
 
@@ -80,8 +81,8 @@ void Interaction::init()
 double Interaction::distance(double *x1, double *x2)
 {
     double dist;    
-    dist = pow(x1[0] - x2[0], 2) + pow(x1[1] - x2[1], 2) + pow(x1[2] - x2[2], 2);
-    dist = sqrt(dist);
+    dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
+    dist = std::sqrt(dist);
 
     return dist;
 }

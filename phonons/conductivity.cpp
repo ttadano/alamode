@@ -281,8 +281,6 @@ void Conductivity::calc_kl_at_T(const double T, double kl[3][3])
     std::complex<double> tmp1;
     unsigned int ktmp;
 
-    unsigned int ikIBZ = 0, nsame = 0;
-
     kk = 0;
 
     for (i = 0; i < 3; ++i){

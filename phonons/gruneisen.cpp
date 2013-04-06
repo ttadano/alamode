@@ -94,9 +94,6 @@ void Gruneisen::prepare_delta_fc2()
 
     unsigned int nalpha[3], ncell[3], ixyz[3];
 
-    unsigned int atm_p1, atm_s2;
-    unsigned int atm1, atm2, atm3;
-
     unsigned int natmin = system->natmin;
     unsigned int nat = system->nat;
 

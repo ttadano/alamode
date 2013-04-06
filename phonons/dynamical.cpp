@@ -33,13 +33,14 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 	unsigned int i, j;
 
 	std::complex<double> **dymat_k;
-	std::complex<double> **dymat_tmp, **dymat_transpose;
-
+	
 	memory->allocate(dymat_k, neval, neval);
 
 	calc_analytic_k(xk_in, fc2_in, dymat_k);
 
 	/*
+	std::complex<double> **dymat_tmp, **dymat_transpose;
+
 	memory->allocate(dymat_tmp, neval, neval);
 	memory->allocate(dymat_transpose, neval, neval);
 
@@ -418,7 +419,7 @@ void Dynamical::calc_analytic()
 			for(ik = 0; ik < nk; ++ik){
 				for(icrd = 0; icrd < 3; ++icrd){
 					for(jcrd = 0; jcrd < 3; ++jcrd){
-						ctmp[ik][icrd][jcrd] = (0.0, 0.0);
+						ctmp[ik][icrd][jcrd] = std::complex<double>(0.0, 0.0);
 					}
 				}
 			}

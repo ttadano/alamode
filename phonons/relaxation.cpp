@@ -291,7 +291,6 @@ void Relaxation::calc_ReciprocalV()
 
 	StructKS ks_tmp;
 	std::vector<StructKS> kslist;
-	std::vector<FcsClass>::iterator it;
 
 	std::cout << std::endl;
 	std::cout << "Calculating force constants in reciprocal space .." << std::endl;
@@ -1049,9 +1048,7 @@ void Relaxation::calc_selfenergy()
 void Relaxation::v3_test() {
 
 	int i;
-	int knum;
 	unsigned int stmp[3], kstmp[3];
-	double k_tmp[3];
 	int nkplus, nkminus;
 
 	nkplus = 1;
