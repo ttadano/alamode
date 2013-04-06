@@ -457,7 +457,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 
 #else
 			double srot_inv[3][3], srot_inv_t[3][3];
-
+			
 			system->invmat3(srot_inv, srot);
 			system->transpose3(srot_inv_t, srot_inv);
 			system->rotvec(xk_sym, xk_orig, srot_inv_t);

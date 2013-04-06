@@ -185,7 +185,7 @@ void System::recips(double vec[3][3], double inverse[3][3])
     - vec[2][0] * vec[1][1] * vec[0][2]
     - vec[1][0] * vec[0][1] * vec[2][2];
 
-    if(det < eps12) {
+    if(std::abs(det) < eps12) {
         error->exit("recips", "Lattice Vector is singular");
     }
 
@@ -254,8 +254,8 @@ void System::invmat3(double invmat[3][3], double mat[3][3])
 	- mat[0][0] * mat[2][1] * mat[1][2] 
 	- mat[2][0] * mat[1][1] * mat[0][2]
 	- mat[1][0] * mat[0][1] * mat[2][2];
-
-	if(det < eps12) {
+	
+	if(std::abs(det) < eps12) {
 		error->exit("invmat3", "Given matrix is singular");
 	}
 
