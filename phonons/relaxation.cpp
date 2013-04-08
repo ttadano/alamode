@@ -117,6 +117,9 @@ void Relaxation::setup_relaxation()
 		invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
 	}
 
+	/*
+	// This section requires large amount of memory.
+
 	memory->allocate(vec_for_v3, fcs_phonon->force_constant[1].size(), 3, 2);
 	memory->allocate(invmass_for_v3, fcs_phonon->force_constant[1].size());
 
@@ -159,6 +162,7 @@ void Relaxation::setup_relaxation()
 			cexp_phase2[i][j] = std::exp(im * (xtmp[0] * kpoint->xk[i][0] + xtmp[1] * kpoint->xk[i][1] + xtmp[2] * kpoint->xk[i][2]));
 		}
 	}
+	*/
 
 	// For tetrahedron method
 	MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -709,7 +713,7 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 				omega_inner[0] = dynamical->eval_phonon[ik][is];
 				omega_inner[1] = dynamical->eval_phonon[jk][js];
 
-				v3_tmp = std::norm(V3new(arr));
+				v3_tmp = std::norm(V3new2(arr));
 
 				for (i = 0; i < N; ++i) {
 					T_tmp = T[i];
@@ -791,7 +795,7 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 				omega_inner[ik][0] = dynamical->eval_phonon[ik][is];
 				omega_inner[ik][1] = dynamical->eval_phonon[jk][js];
 
-				v3_tmp[ik] = std::norm(V3new(ks_tmp));
+				v3_tmp[ik] = std::norm(V3new2(ks_tmp));
 
 				// e_tmp[0][kcount] = -omega_inner[kcount][0] - omega_inner[kcount][1];
 				e_tmp[1][ik] = omega_inner[ik][0] + omega_inner[ik][1];
