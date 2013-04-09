@@ -77,8 +77,10 @@ void System::setup()
         std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
         std::cout << " Dimension of the supercell :";
-        for (i = 0; i < 3; ++i) std::cout << std::setw(4) << cell_dimension[0] << "  x";
-        std::cout << std::endl;
+		std::cout << std::setw(4) << cell_dimension[0] << "  x";
+		std::cout << std::setw(4) << cell_dimension[1] << "  x";
+		std::cout << std::setw(4) << cell_dimension[2] << std::endl;
+
     }
 
     // Atomic masses in Rydberg unit
