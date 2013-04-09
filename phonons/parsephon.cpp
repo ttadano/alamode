@@ -24,8 +24,14 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon, int narg, char **arg): Pointers(phon) {
+Input::Input(PHON *phon): Pointers(phon) {}
 
+Input::~Input() {
+	if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
+}
+
+void Input::parce_input(int narg, char **arg)
+{
 	if (narg == 1) {
 
 		from_stdin = true;
@@ -40,12 +46,7 @@ Input::Input(PHON *phon, int narg, char **arg): Pointers(phon) {
 			exit(EXIT_FAILURE);
 		}
 	}
-}
 
-Input::~Input() {}
-
-void Input::parce_input()
-{
 	if (!locate_tag("&general") && mympi->my_rank == 0) {
 		error->exit("parse_input", "&general entry not found in the input file");
 	}

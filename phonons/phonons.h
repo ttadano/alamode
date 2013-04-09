@@ -12,6 +12,9 @@ namespace PHON_NS
 {
     class PHON {
     public:
+		PHON(int, char**, MPI_Comm);
+		virtual ~PHON();
+
         class Memory *memory;
         class Error *error;
         class Timer *timer;
@@ -30,9 +33,6 @@ namespace PHON_NS
         class Dos *dos;
         class Gruneisen *gruneisen;
         class MyMPI *mympi;
-
-        PHON(int, char**, MPI_Comm);
-        ~PHON();
 
         void create_pointers();
         void destroy_pointers();

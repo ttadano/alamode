@@ -25,8 +25,11 @@ using namespace PHON_NS;
 PHON::PHON(int narg, char **arg, MPI_Comm comm)
 {
     mympi = new MyMPI(this, comm);
+	input = new Input(this);
 
 	restart_flag = false;
+
+    create_pointers();
 
     if (mympi->my_rank == 0) {
 		std::cout << "Phonons program version 1.0 (MPI)" << std::endl;
@@ -35,13 +38,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		std::cout << "The number of MPI threads: " << mympi->nprocs << std::endl;
 		std::cout << "The number of OpenMP threads: " << omp_get_num_threads() << std::endl;
 		std::cout << std::endl;
-    }
 
-    input = new Input(this, narg, arg);
-    create_pointers();
-
-    if (mympi->my_rank == 0) {
-        input->parce_input();
+	    input->parce_input(narg, arg);
     }
 
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -130,18 +128,17 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         error->exit("phonons", "invalid mode");
     }
 
-    destroy_pointers();
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
 	    std::cout << "Bye! :)" << std::endl;
     }
-
+	   destroy_pointers();
 }
 
 PHON::~PHON(){
     delete input;
-    delete mympi;
+	delete mympi;
 }
 
 void PHON::create_pointers()

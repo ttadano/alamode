@@ -10,9 +10,9 @@
 namespace PHON_NS {
     class Input: protected Pointers {
     public:
-        Input(class PHON *, int, char **);
+        Input(class PHON *);
         ~Input();
-        void parce_input();
+        void parce_input(int, char **);
 
         std::string job_title;
 
