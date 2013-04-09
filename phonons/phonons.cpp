@@ -18,6 +18,7 @@
 #include "integration.h"
 #include "relaxation.h"
 #include "conductivity.h"
+#include <omp.h>
 
 using namespace PHON_NS;
 
@@ -28,7 +29,12 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 	restart_flag = false;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
+		std::cout << "Phonons program version 1.0 (MPI)" << std::endl;
+        std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl << std::endl;
+
+		std::cout << "The number of MPI threads: " << mympi->nprocs << std::endl;
+		std::cout << "The number of OpenMP threads: " << omp_get_num_threads() << std::endl;
+		std::cout << std::endl;
     }
 
     input = new Input(this, narg, arg);
@@ -128,6 +134,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
+	    std::cout << "Bye! :)" << std::endl;
     }
 
 }

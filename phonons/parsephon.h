@@ -4,6 +4,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <iostream>
+#include <fstream>
 
 namespace PHON_NS {
     class Input: protected Pointers {
@@ -15,6 +17,9 @@ namespace PHON_NS {
         std::string job_title;
 
     private:
+		std::ifstream ifs_input;
+		bool from_stdin;
+
         void read_input_phonons();
         void read_input_boltzmann();
         void read_input_gruneisen();

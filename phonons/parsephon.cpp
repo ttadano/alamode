@@ -9,6 +9,7 @@
 #include "mpi_common.h"
 #include "write_phonons.h"
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
@@ -23,7 +24,23 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon, int narg, char **arg): Pointers(phon) {}
+Input::Input(PHON *phon, int narg, char **arg): Pointers(phon) {
+
+	if (narg == 1) {
+
+		from_stdin = true;
+
+	} else {
+
+		from_stdin = false;
+
+		ifs_input.open(arg[1], std::ios::in);
+		if (!ifs_input) {
+			std::cout << "No such file or directory: " << arg[1] << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+}
 
 Input::~Input() {}
 
@@ -64,7 +81,11 @@ void Input::parse_general_vars() {
 	std::vector<std::string> no_defaults, celldim_v;
 	std::map<std::string, std::string> general_var_dict;
 
-	std::cin.ignore();
+	if (from_stdin) {
+		std::cin.ignore();
+	} else {
+		ifs_input.ignore();
+	}
 
 	get_var_dict(str_allowed_list, general_var_dict);
 	boost::split(no_defaults, str_no_defaults, boost::is_space());
@@ -211,11 +232,19 @@ void Input::parse_cell_parameter() {
 	double a;
 	double lavec_tmp[3][3];
 
-	std::cin >> a;
+	if (from_stdin) {
+		std::cin >> a;
 
-	std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-	std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-	std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+		std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
+		std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
+		std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+	} else {
+		ifs_input >> a;
+
+		ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
+		ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
+		ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+	}
 
 	for (i = 0; i < 3; ++i) {
 		for (j = 0; j < 3; ++j) {
@@ -230,43 +259,88 @@ void Input::parse_kpoints() {
 	std::string line, str_tmp;
 	std::vector<std::string> kpelem;
 
-	std::cin >> kpmode;
+	if (from_stdin) {
 
-	if (!(kpmode >= 0 && kpmode <= 2)) {
-		error->exit("parse_kpoints", "Invalid KPMODE");
-	}
 
-	std::cin.ignore();
+		std::cin >> kpmode;
 
-	while (std::getline(std::cin, line)) {
-
-		if (is_endof_entry(line)) {
-			break;
+		if (!(kpmode >= 0 && kpmode <= 2)) {
+			error->exit("parse_kpoints", "Invalid KPMODE");
 		}
-		kpelem.clear();
 
-		std::istringstream is(line);
+		std::cin.ignore();
 
-		while (1) {
-			str_tmp.clear();
-			is >> str_tmp;
-			if (str_tmp.empty()) {
+		while (std::getline(std::cin, line)) {
+
+			if (is_endof_entry(line)) {
 				break;
 			}
-			kpelem.push_back(str_tmp);
+			kpelem.clear();
+
+			std::istringstream is(line);
+
+			while (1) {
+				str_tmp.clear();
+				is >> str_tmp;
+				if (str_tmp.empty()) {
+					break;
+				}
+				kpelem.push_back(str_tmp);
+			}
+
+			if (kpmode == 0 && kpelem.size() != 3) {
+				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
+			}
+			if (kpmode == 1 && kpelem.size() != 9) {
+				error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
+			}
+			if (kpmode == 2 && kpelem.size() != 3) {
+				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+			}
+
+			kpoint->kpInp.push_back(kpelem);
+		}
+	} else {
+
+		ifs_input >> kpmode;
+
+		if (!(kpmode >= 0 && kpmode <= 2)) {
+			error->exit("parse_kpoints", "Invalid KPMODE");
 		}
 
-		if (kpmode == 0 && kpelem.size() != 3) {
-			error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
-		}
-		if (kpmode == 1 && kpelem.size() != 9) {
-			error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
-		}
-		if (kpmode == 2 && kpelem.size() != 3) {
-			error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+		ifs_input.ignore();
+
+		while (std::getline(ifs_input, line)) {
+
+			if (is_endof_entry(line)) {
+				break;
+			}
+			kpelem.clear();
+
+			std::istringstream is(line);
+
+			while (1) {
+				str_tmp.clear();
+				is >> str_tmp;
+				if (str_tmp.empty()) {
+					break;
+				}
+				kpelem.push_back(str_tmp);
+			}
+
+			if (kpmode == 0 && kpelem.size() != 3) {
+				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
+			}
+			if (kpmode == 1 && kpelem.size() != 9) {
+				error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
+			}
+			if (kpmode == 2 && kpelem.size() != 3) {
+				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+			}
+
+			kpoint->kpInp.push_back(kpelem);
 		}
 
-		kpoint->kpInp.push_back(kpelem);
 	}
 
 	kpoint->kpoint_mode = kpmode;
@@ -275,185 +349,185 @@ void Input::parse_kpoints() {
 /*
 void Input::read_input_phonons()
 {
-	using namespace std;
+using namespace std;
 
-	string file_fcs;
-	double lavec[3][3];
-	int kpoint_mode;
-	bool eigenvectors, writeanime, nonanalytic;
-	int nbands;
-	unsigned int cell_dimension[3];
+string file_fcs;
+double lavec[3][3];
+int kpoint_mode;
+bool eigenvectors, writeanime, nonanalytic;
+int nbands;
+unsigned int cell_dimension[3];
 
-	string file_born;
-	double na_sigma;
-	double Tmin, Tmax, dT;
+string file_born;
+double na_sigma;
+double Tmin, Tmax, dT;
 
-	unsigned int i, j;
-	unsigned int nsym, nnp;
+unsigned int i, j;
+unsigned int nsym, nnp;
 
-	cin >> nsym >> nnp;
-	for (i = 0; i < 3; ++i){
-		cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
-	}
-	// This is a tentative modification. 
-	// When cell_dimension = 1 or 2, algorithm will be slightly changed.
+cin >> nsym >> nnp;
+for (i = 0; i < 3; ++i){
+cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
+}
+// This is a tentative modification. 
+// When cell_dimension = 1 or 2, algorithm will be slightly changed.
 
-	cin >> cell_dimension[0] >> cell_dimension[1] >> cell_dimension[2];
-	cin >> file_fcs;
+cin >> cell_dimension[0] >> cell_dimension[1] >> cell_dimension[2];
+cin >> file_fcs;
 
-	cin >> eigenvectors >> writeanime >> nonanalytic;
-	cin >> nbands;
-	cin >> Tmin >> Tmax >> dT;
-	cin >> kpoint_mode;
-	if(nonanalytic) cin >> file_born >> na_sigma;
+cin >> eigenvectors >> writeanime >> nonanalytic;
+cin >> nbands;
+cin >> Tmin >> Tmax >> dT;
+cin >> kpoint_mode;
+if(nonanalytic) cin >> file_born >> na_sigma;
 
-	// distribute input parameters to each class
+// distribute input parameters to each class
 
-	symmetry->nsym = nsym;
-	symmetry->nnp = nnp;
+symmetry->nsym = nsym;
+symmetry->nnp = nnp;
 
-	for (i = 0; i < 3; ++i){
-		for(j = 0; j < 3; ++j){
-			system->lavec_p[i][j] = lavec[i][j];
-		}
-		system->cell_dimension[i] = cell_dimension[i];
-	}
+for (i = 0; i < 3; ++i){
+for(j = 0; j < 3; ++j){
+system->lavec_p[i][j] = lavec[i][j];
+}
+system->cell_dimension[i] = cell_dimension[i];
+}
 
-	dynamical->eigenvectors = eigenvectors;
-	writes->writeanime = writeanime;
-	dynamical->nonanalytic = nonanalytic;
-	writes->nbands = nbands;
+dynamical->eigenvectors = eigenvectors;
+writes->writeanime = writeanime;
+dynamical->nonanalytic = nonanalytic;
+writes->nbands = nbands;
 
-	if(nonanalytic) {
-		dynamical->file_born = file_born;
-		dynamical->na_sigma = na_sigma;
-	}
+if(nonanalytic) {
+dynamical->file_born = file_born;
+dynamical->na_sigma = na_sigma;
+}
 
-	fcs_phonon->file_fcs = file_fcs;
-	kpoint->kpoint_mode = kpoint_mode;
+fcs_phonon->file_fcs = file_fcs;
+kpoint->kpoint_mode = kpoint_mode;
 
-	if (Tmin > Tmax) error->exit("read_input_phonon", "Tmin is larger than Tmax");
+if (Tmin > Tmax) error->exit("read_input_phonon", "Tmin is larger than Tmax");
 
-	system->Tmin = Tmin;
-	system->Tmax = Tmax;
-	system->dT = dT;
+system->Tmin = Tmin;
+system->Tmax = Tmax;
+system->dT = dT;
 
 }
 
 void Input::read_input_boltzmann()
 {
-	using namespace std;
+using namespace std;
 
-	string file_fcs;
-	double lavec[3][3];
-	double epsilon;
-	double Tmin, Tmax, dT;
+string file_fcs;
+double lavec[3][3];
+double epsilon;
+double Tmin, Tmax, dT;
 
-	unsigned int i, j;
-	unsigned int nsym, nnp;
-	unsigned int cell_dimension[3];
-	int ksum_mode;
+unsigned int i, j;
+unsigned int nsym, nnp;
+unsigned int cell_dimension[3];
+int ksum_mode;
 
-	int use_classical_Cv;
+int use_classical_Cv;
 
-	cin >> nsym >> nnp;
-	for (i = 0; i < 3; ++i) {
-		cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
-	}
-	for (i = 0; i < 3; ++i) {
-		cin >> cell_dimension[i];
-	}
+cin >> nsym >> nnp;
+for (i = 0; i < 3; ++i) {
+cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
+}
+for (i = 0; i < 3; ++i) {
+cin >> cell_dimension[i];
+}
 
-	cin >> file_fcs;
-	cin >> ksum_mode >> epsilon;
-	cin >> use_classical_Cv;
-	cin >> Tmin >> Tmax >> dT;
+cin >> file_fcs;
+cin >> ksum_mode >> epsilon;
+cin >> use_classical_Cv;
+cin >> Tmin >> Tmax >> dT;
 
-	if (Tmin > Tmax) {
-		error->exit("read_input_boltzmann", "Tmin is bigger than Tmax");
-	}
+if (Tmin > Tmax) {
+error->exit("read_input_boltzmann", "Tmin is bigger than Tmax");
+}
 
-	symmetry->nsym = nsym;
-	symmetry->nnp = nnp;
+symmetry->nsym = nsym;
+symmetry->nnp = nnp;
 
-	for (i = 0; i < 3; ++i){
-		for (j = 0; j < 3; ++j){
-			system->lavec_p[i][j] = lavec[i][j];
-		}
-		system->cell_dimension[i] = cell_dimension[i];
-	}
-	fcs_phonon->file_fcs = file_fcs;
-	relaxation->ksum_mode = ksum_mode;
-	relaxation->epsilon = epsilon;
+for (i = 0; i < 3; ++i){
+for (j = 0; j < 3; ++j){
+system->lavec_p[i][j] = lavec[i][j];
+}
+system->cell_dimension[i] = cell_dimension[i];
+}
+fcs_phonon->file_fcs = file_fcs;
+relaxation->ksum_mode = ksum_mode;
+relaxation->epsilon = epsilon;
 
-	conductivity->use_classical_Cv = use_classical_Cv;
+conductivity->use_classical_Cv = use_classical_Cv;
 
-	system->Tmin = Tmin;
-	system->Tmax = Tmax;
-	system->dT = dT;
+system->Tmin = Tmin;
+system->Tmax = Tmax;
+system->dT = dT;
 }
 
 void Input::read_input_gruneisen()
 {
-	using namespace std;
+using namespace std;
 
-	string file_fcs;
-	double lavec[3][3];
-	int kpoint_mode;
-	bool eigenvectors, writeanime, nonanalytic;
-	int nbands;
-	unsigned int cell_dimension[3];
+string file_fcs;
+double lavec[3][3];
+int kpoint_mode;
+bool eigenvectors, writeanime, nonanalytic;
+int nbands;
+unsigned int cell_dimension[3];
 
-	string file_born;
-	double na_sigma;
-	double delta_a;
+string file_born;
+double na_sigma;
+double delta_a;
 
-	unsigned int i, j;
-	unsigned int nsym, nnp;
+unsigned int i, j;
+unsigned int nsym, nnp;
 
-	cin >> nsym >> nnp;
-	for (i = 0; i < 3; ++i){
-		cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
-	}
-	// This is a tentative modification. 
-	// When cell_dimension = 1 or 2, algorithm will be slightly changed.
+cin >> nsym >> nnp;
+for (i = 0; i < 3; ++i){
+cin >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
+}
+// This is a tentative modification. 
+// When cell_dimension = 1 or 2, algorithm will be slightly changed.
 
-	cin >> cell_dimension[0] >> cell_dimension[1] >> cell_dimension[2];
-	cin >> file_fcs;
+cin >> cell_dimension[0] >> cell_dimension[1] >> cell_dimension[2];
+cin >> file_fcs;
 
-	cin >> eigenvectors >> writeanime >> nonanalytic;
-	cin >> nbands;
-	cin >> delta_a;
-	cin >> kpoint_mode;
-	if(nonanalytic) cin >> file_born >> na_sigma;
+cin >> eigenvectors >> writeanime >> nonanalytic;
+cin >> nbands;
+cin >> delta_a;
+cin >> kpoint_mode;
+if(nonanalytic) cin >> file_born >> na_sigma;
 
-	// distribute input parameters to each class
+// distribute input parameters to each class
 
-	symmetry->nsym = nsym;
-	symmetry->nnp = nnp;
+symmetry->nsym = nsym;
+symmetry->nnp = nnp;
 
-	for (i = 0; i < 3; ++i){
-		for(j = 0; j < 3; ++j){
-			system->lavec_p[i][j] = lavec[i][j];
-		}
-		system->cell_dimension[i] = cell_dimension[i];
-	}
+for (i = 0; i < 3; ++i){
+for(j = 0; j < 3; ++j){
+system->lavec_p[i][j] = lavec[i][j];
+}
+system->cell_dimension[i] = cell_dimension[i];
+}
 
-	dynamical->eigenvectors = eigenvectors;
-	writes->writeanime = writeanime;
-	dynamical->nonanalytic = nonanalytic;
-	writes->nbands = nbands;
+dynamical->eigenvectors = eigenvectors;
+writes->writeanime = writeanime;
+dynamical->nonanalytic = nonanalytic;
+writes->nbands = nbands;
 
-	if(nonanalytic) {
-		dynamical->file_born = file_born;
-		dynamical->na_sigma = na_sigma;
-	}
+if(nonanalytic) {
+dynamical->file_born = file_born;
+dynamical->na_sigma = na_sigma;
+}
 
-	fcs_phonon->file_fcs = file_fcs;
-	kpoint->kpoint_mode = kpoint_mode;
+fcs_phonon->file_fcs = file_fcs;
+kpoint->kpoint_mode = kpoint_mode;
 
-	// Fractional change in cell parameters
-	gruneisen->delta_a = delta_a;
+// Fractional change in cell parameters
+gruneisen->delta_a = delta_a;
 }
 
 */
@@ -463,19 +537,39 @@ int Input::locate_tag(std::string key){
 	int ret = 0;
 	std::string line;
 
-	// An error detected in the following two lines when MPI is used.
-	// 	std::cin.clear();
-	// 	std::cin.seekg(0, std::ios_base::beg);
+	if (from_stdin) {
 
-	while (std::cin >> line) {
-		boost::to_lower(line);
-		boost::trim(line);
-		if (line == key){
-			ret = 1;
-			break;
+		// An error detected in the following two lines when MPI is used.
+		std::cin.clear();
+		std::cin.seekg(0, std::ios_base::beg);
+
+		while (std::cin >> line) {
+			boost::to_lower(line);
+			boost::trim(line);
+			if (line == key){
+				ret = 1;
+				break;
+			}
 		}
+		return ret; 
+
+	} else {
+
+		// An error detected in the following two lines when MPI is used.
+		ifs_input.clear();
+		ifs_input.seekg(0, std::ios_base::beg);
+
+		while (ifs_input >> line) {
+			boost::to_lower(line);
+			boost::trim(line);
+			if (line == key){
+				ret = 1;
+				break;
+			}
+		}
+		return ret; 
 	}
-	return ret;
+
 }
 
 
@@ -493,60 +587,121 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 
 	var_dict.clear();
 
-	while (std::getline(std::cin, line)) {
+	if (from_stdin) {
 
-		// Ignore comment region
-		pos_first_comment_tag = line.find_first_of('#');
+		while (std::getline(std::cin, line)) {
 
-		if (pos_first_comment_tag == std::string::npos) {
-			line_wo_comment = line;
-		} else {
-			line_wo_comment = line.substr(0, pos_first_comment_tag);
-		}
+			// Ignore comment region
+			pos_first_comment_tag = line.find_first_of('#');
 
-		boost::trim_left(line_wo_comment);
-		if (line_wo_comment.empty()) continue;
-		if (is_endof_entry(line_wo_comment)) break;
+			if (pos_first_comment_tag == std::string::npos) {
+				line_wo_comment = line;
+			} else {
+				line_wo_comment = line.substr(0, pos_first_comment_tag);
+			}
 
-		//	std::cout << line_wo_comment << std::endl;
+			boost::trim_left(line_wo_comment);
+			if (line_wo_comment.empty()) continue;
+			if (is_endof_entry(line_wo_comment)) break;
 
-		// Split the input line by ';'
+			//	std::cout << line_wo_comment << std::endl;
 
-		boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+			// Split the input line by ';'
 
-		for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
+			boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 
-			// Split the input entry by '='
+			for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
-			std::string str_tmp = boost::trim_copy(*it);
+				// Split the input entry by '='
 
-			if (!str_tmp.empty()) {
+				std::string str_tmp = boost::trim_copy(*it);
 
-				boost::split(str_varval, str_tmp, boost::is_any_of("="));
+				if (!str_tmp.empty()) {
 
-				if (str_varval.size() != 2) {
-					error->exit("get_var_dict", "Unacceptable format");
+					boost::split(str_varval, str_tmp, boost::is_any_of("="));
+
+					if (str_varval.size() != 2) {
+						error->exit("get_var_dict", "Unacceptable format");
+					}
+
+					key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
+					val = boost::trim_copy(str_varval[1]);
+
+					if (keyword_set.find(key) == keyword_set.end()) {
+						std::cout << "Could not recognize the variable " << key << std::endl;
+						error->exit("get_var_dict", "Invalid variable found");
+					}
+
+					if (var_dict.find(key) != var_dict.end()) {
+						std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+						error->exit("get_var_dict", "Redundant input parameter");
+					}
+
+					// If everything is OK, add the variable and the corresponding value
+					// to the dictionary.
+
+					var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
 				}
-
-				key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
-				val = boost::trim_copy(str_varval[1]);
-
-				if (keyword_set.find(key) == keyword_set.end()) {
-					std::cout << "Could not recognize the variable " << key << std::endl;
-					error->exit("get_var_dict", "Invalid variable found");
-				}
-
-				if (var_dict.find(key) != var_dict.end()) {
-					std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
-					error->exit("get_var_dict", "Redundant input parameter");
-				}
-
-				// If everything is OK, add the variable and the corresponding value
-				// to the dictionary.
-
-				var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
 			}
 		}
+	} else {
+
+		while (std::getline(ifs_input, line)) {
+
+			// Ignore comment region
+			pos_first_comment_tag = line.find_first_of('#');
+
+			if (pos_first_comment_tag == std::string::npos) {
+				line_wo_comment = line;
+			} else {
+				line_wo_comment = line.substr(0, pos_first_comment_tag);
+			}
+
+			boost::trim_left(line_wo_comment);
+			if (line_wo_comment.empty()) continue;
+			if (is_endof_entry(line_wo_comment)) break;
+
+			//	std::cout << line_wo_comment << std::endl;
+
+			// Split the input line by ';'
+
+			boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+
+			for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
+
+				// Split the input entry by '='
+
+				std::string str_tmp = boost::trim_copy(*it);
+
+				if (!str_tmp.empty()) {
+
+					boost::split(str_varval, str_tmp, boost::is_any_of("="));
+
+					if (str_varval.size() != 2) {
+						error->exit("get_var_dict", "Unacceptable format");
+					}
+
+					key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
+					val = boost::trim_copy(str_varval[1]);
+
+					if (keyword_set.find(key) == keyword_set.end()) {
+						std::cout << "Could not recognize the variable " << key << std::endl;
+						error->exit("get_var_dict", "Invalid variable found");
+					}
+
+					if (var_dict.find(key) != var_dict.end()) {
+						std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+						error->exit("get_var_dict", "Redundant input parameter");
+					}
+
+					// If everything is OK, add the variable and the corresponding value
+					// to the dictionary.
+
+					var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
+				}
+			}
+		}
+
 	}
 	keyword_set.clear();
 }

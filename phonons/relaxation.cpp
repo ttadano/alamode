@@ -439,6 +439,10 @@ std::complex<double> Relaxation::V3(const unsigned int ks1, const unsigned int k
 
 std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 {
+	/* 
+	This version requires massive RAM to store cexp_phase
+	*/
+
 	unsigned int i;
 	unsigned int kn[3];
 	unsigned int sn[3];
