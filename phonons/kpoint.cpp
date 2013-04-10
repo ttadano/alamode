@@ -12,8 +12,11 @@
 #include <cmath>
 #include <set>
 #include <numeric>
+#include "parsephon.h"
 
+#ifdef _USE_BOOST
 #include <boost/lexical_cast.hpp>
+#endif
 
 #ifdef _USE_EIGEN
 #include <Eigen/Core>
@@ -35,6 +38,7 @@ void Kpoint::kpoint_setups()
 	symmetry->symmetry_flag = true;
 
 	unsigned int i, j;
+	std::string str_tmp;
 
 	MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -53,7 +57,11 @@ void Kpoint::kpoint_setups()
 
 			for (std::vector<KpointInp>::const_iterator it = kpInp.begin(); it != kpInp.end(); ++it) {
 				for (i = 0; i < 3; ++i) {
+#ifdef _USE_BOOST
 					xk[j][i] = boost::lexical_cast<double>((*it).kpelem[i]);
+#else
+					xk[j][i] = std::atof(((*it).kpelem[i]).c_str());
+#endif 
 				}	
 				++j;
 			}
@@ -78,11 +86,20 @@ void Kpoint::kpoint_setups()
 			for (std::vector<KpointInp>::const_iterator it = kpInp.begin(); it != kpInp.end(); ++it) {
 				kp_symbol[j][0] = (*it).kpelem[0];
 				kp_symbol[j][1] = (*it).kpelem[4];
+#ifdef _USE_BOOST
 				for (i = 0; i < 3; ++i) {
 					kp_bound[j][0][i] = boost::lexical_cast<double>((*it).kpelem[i + 1]);
 					kp_bound[j][1][i] = boost::lexical_cast<double>((*it).kpelem[i + 5]);
 				}
 				nkp[j] = boost::lexical_cast<int>((*it).kpelem[8]);
+#else
+				for (i = 0; i < 3; ++i) {
+					kp_bound[j][0][i] = std::atof(((*it).kpelem[i + 1]).c_str());
+					kp_bound[j][1][i] = std::atof(((*it).kpelem[i + 5]).c_str());
+					
+				}
+				nkp[j] = std::atoi(((*it).kpelem[8]).c_str());
+#endif
 				nk += nkp[j];
 				++j;
 			}
@@ -141,10 +158,15 @@ void Kpoint::kpoint_setups()
 		case 2:
 			std::cout << " KPMODE = 2: Uniform grid" << std::endl;
 
+#ifdef _USE_BOOST
 			nkx = boost::lexical_cast<int>(kpInp[0].kpelem[0]);
 			nky = boost::lexical_cast<int>(kpInp[0].kpelem[1]);
 			nkz = boost::lexical_cast<int>(kpInp[0].kpelem[2]);
-
+#else 
+			nkx = std::atoi((kpInp[0].kpelem[0]).c_str());
+			nky = std::atoi((kpInp[0].kpelem[1]).c_str());
+			nkz = std::atoi((kpInp[0].kpelem[2]).c_str());	
+#endif
 			nk = nkx * nky * nkz;
 			memory->allocate(xk, nk, 3);
 

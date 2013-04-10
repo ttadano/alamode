@@ -10,8 +10,11 @@
 #include <string>
 #include <iomanip>
 #include <fstream>
-#include <boost/lexical_cast.hpp>
 #include <algorithm>
+
+#ifdef _USE_BOOST
+#include <boost/lexical_cast.hpp>
+#endif
 
 using namespace PHON_NS;
 
@@ -138,7 +141,11 @@ void Fcs_phonon::load_fcs()
         if (iorder == 0) {
             flag_str[iorder] = "#FCS_HARMONIC";
         } else {
+#ifdef _USE_BOOST
             flag_str[iorder] = "#FCS_ANHARM" + boost::lexical_cast<std::string>(iorder + 2);
+#else
+			flag_str[iorder] = "#FCS_ANHARM" + std::to_string(iorder + 2);
+#endif
         }
 
         flag_found = false;

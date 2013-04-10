@@ -12,8 +12,6 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 #include "relaxation.h"
 #include "conductivity.h"
 #include "symmetry_core.h"
@@ -21,6 +19,12 @@
 #include <map>
 #include <vector>
 #include "phonon_dos.h"
+#include <sstream>
+
+#ifdef _USE_BOOST
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#endif
 
 using namespace PHON_NS;
 
@@ -89,7 +93,11 @@ void Input::parse_general_vars() {
 	}
 
 	get_var_dict(str_allowed_list, general_var_dict);
+#if _USE_BOOST
 	boost::split(no_defaults, str_no_defaults, boost::is_space());
+#else 
+	no_defaults = my_split(str_no_defaults, ' ');
+#endif
 
 	for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
 		if (general_var_dict.find(*it) == general_var_dict.end()) {
@@ -99,9 +107,17 @@ void Input::parse_general_vars() {
 
 	prefix = general_var_dict["PREFIX"];
 	mode = general_var_dict["MODE"];
+	
+#ifdef _USE_BOOST
 	boost::to_lower(mode);
 	nsym = boost::lexical_cast<int>(general_var_dict["NSYM"]);
 	nnp = boost::lexical_cast<int>(general_var_dict["NNP"]);
+#else
+	std::transform (mode.begin(), mode.end(), mode.begin(), tolower);
+	nsym = my_cast<int>(general_var_dict["NSYM"]);
+	nnp = my_cast<int>(general_var_dict["NNP"]);
+#endif
+
 	fcsinfo = general_var_dict["FCSINFO"];
 
 	// Default values
@@ -183,7 +199,11 @@ void Input::parse_general_vars() {
 		}
 
 		for (i = 0; i < 3; ++i) {
+#ifdef _USE_BOOST
 			celldim[i] = boost::lexical_cast<int>(celldim_v[i]);
+#else
+			celldim[i] = my_cast<int>(celldim_v[i]);
+#endif
 		}
 	}
 
@@ -536,7 +556,7 @@ gruneisen->delta_a = delta_a;
 int Input::locate_tag(std::string key){
 
 	int ret = 0;
-	std::string line;
+	std::string line, line2;
 
 	if (from_stdin) {
 
@@ -545,8 +565,14 @@ int Input::locate_tag(std::string key){
 		std::cin.seekg(0, std::ios_base::beg);
 
 		while (std::cin >> line) {
+#ifdef _USE_BOOST
 			boost::to_lower(line);
 			boost::trim(line);
+#else
+			std::transform(line.begin(), line.end(), line.begin(), tolower);
+			line2 = line;
+			line = trim(line2);
+#endif
 			if (line == key){
 				ret = 1;
 				break;
@@ -561,8 +587,14 @@ int Input::locate_tag(std::string key){
 		ifs_input.seekg(0, std::ios_base::beg);
 
 		while (ifs_input >> line) {
+#ifdef _USE_BOOST
 			boost::to_lower(line);
 			boost::trim(line);
+#else
+			std::transform(line.begin(), line.end(), line.begin(), tolower);
+			line2 = line;
+			line = trim(line2);
+#endif
 			if (line == key){
 				ret = 1;
 				break;
@@ -577,14 +609,22 @@ int Input::locate_tag(std::string key){
 void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict) {
 
 	std::string line, key, val;
-	std::string line_wo_comment;
+	std::string line_wo_comment, line_tmp;
 	std::string::size_type pos_first_comment_tag;
 	std::vector<std::string> str_entry, str_varval;
 
 
 	std::set<std::string> keyword_set;
-
+#ifdef _USE_BOOST
 	boost::split(keyword_set, keywords, boost::is_space());
+#else
+	std::vector<std::string> strvec_tmp;
+	strvec_tmp = my_split(keywords, ' ');
+	for (std::vector<std::string>::iterator it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
+		keyword_set.insert(*it);
+	}
+	strvec_tmp.clear();
+#endif
 
 	var_dict.clear();
 
@@ -600,34 +640,50 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 			} else {
 				line_wo_comment = line.substr(0, pos_first_comment_tag);
 			}
-
+#ifdef _USE_BOOST
 			boost::trim_left(line_wo_comment);
+#else
+			line_tmp = line_wo_comment;
+			line_wo_comment = ltrim(line_tmp);
+#endif
 			if (line_wo_comment.empty()) continue;
 			if (is_endof_entry(line_wo_comment)) break;
 
 			//	std::cout << line_wo_comment << std::endl;
 
 			// Split the input line by ';'
-
+#ifdef _USE_BOOST
 			boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+#else
+			str_entry = my_split(line_wo_comment, ';');
+#endif
+
 
 			for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
 				// Split the input entry by '='
-
+#ifdef _USE_BOOST
 				std::string str_tmp = boost::trim_copy(*it);
-
+#else
+				std::string str_tmp = trim((*it));
+#endif
 				if (!str_tmp.empty()) {
-
+#ifdef _USE_BOOST
 					boost::split(str_varval, str_tmp, boost::is_any_of("="));
-
+#else 
+					str_varval = my_split(str_tmp, '=');
+#endif
 					if (str_varval.size() != 2) {
 						error->exit("get_var_dict", "Unacceptable format");
 					}
-
+#ifdef _USE_BOOST
 					key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
 					val = boost::trim_copy(str_varval[1]);
-
+#else
+					key = trim(str_varval[0]);
+					std::transform(key.begin(), key.end(), key.begin(), toupper);
+					val = trim(str_varval[1]);
+#endif
 					if (keyword_set.find(key) == keyword_set.end()) {
 						std::cout << "Could not recognize the variable " << key << std::endl;
 						error->exit("get_var_dict", "Invalid variable found");
@@ -657,33 +713,51 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 			} else {
 				line_wo_comment = line.substr(0, pos_first_comment_tag);
 			}
-
+#ifdef _USE_BOOST
 			boost::trim_left(line_wo_comment);
+#else
+			line_tmp = line_wo_comment;
+			line_wo_comment = ltrim(line_tmp);
+#endif
 			if (line_wo_comment.empty()) continue;
 			if (is_endof_entry(line_wo_comment)) break;
 
 			//	std::cout << line_wo_comment << std::endl;
 
 			// Split the input line by ';'
-
+#ifdef _USE_BOOST
 			boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
-
+#else
+			str_entry = my_split(line_wo_comment, ';');
+#endif
 			for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
 				// Split the input entry by '='
 
+#ifdef _USE_BOOST
 				std::string str_tmp = boost::trim_copy(*it);
-
+#else
+				std::string str_tmp = trim((*it));
+#endif
 				if (!str_tmp.empty()) {
-
+#ifdef _USE_BOOST
 					boost::split(str_varval, str_tmp, boost::is_any_of("="));
+#else
+					str_varval = my_split(str_tmp, '=');
+#endif
 
 					if (str_varval.size() != 2) {
 						error->exit("get_var_dict", "Unacceptable format");
 					}
 
+#ifdef _USE_BOOST
 					key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
 					val = boost::trim_copy(str_varval[1]);
+#else
+					key = trim(str_varval[0]);
+					std::transform(key.begin(), key.end(), key.begin(), toupper);
+					val = trim(str_varval[1]);
+#endif
 
 					if (keyword_set.find(key) == keyword_set.end()) {
 						std::cout << "Could not recognize the variable " << key << std::endl;
@@ -738,6 +812,21 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
 template<typename T> void Input::assign_val(T &val, std::string key, std::map<std::string, std::string> dict) {
 
 	if (!dict[key].empty()) {
+#ifdef _USE_BOOST
 		val = boost::lexical_cast<T>(dict[key]);
+#else
+		val = my_cast<T>(dict[key]);
+#endif
 	}
+}
+
+template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
+{
+	std::stringstream ss;
+	T_to ret;
+
+	ss << x;
+	ss >> ret;
+
+	return ret;
 }
