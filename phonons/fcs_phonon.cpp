@@ -144,7 +144,9 @@ void Fcs_phonon::load_fcs()
 #ifdef _USE_BOOST
             flag_str[iorder] = "#FCS_ANHARM" + boost::lexical_cast<std::string>(iorder + 2);
 #else
-			flag_str[iorder] = "#FCS_ANHARM" + std::to_string(iorder + 2);
+			std::stringstream ss_tmp;
+			ss_tmp << iorder + 2;
+			flag_str[iorder] = "#FCS_ANHARM" + ss_tmp.str();
 #endif
         }
 
