@@ -96,7 +96,7 @@ void Kpoint::kpoint_setups()
 				for (i = 0; i < 3; ++i) {
 					kp_bound[j][0][i] = std::atof(((*it).kpelem[i + 1]).c_str());
 					kp_bound[j][1][i] = std::atof(((*it).kpelem[i + 5]).c_str());
-					
+
 				}
 				nkp[j] = std::atoi(((*it).kpelem[8]).c_str());
 #endif
@@ -296,7 +296,7 @@ void Kpoint::gen_kmesh(bool usesym)
 void Kpoint::gen_nkminus()
 {
 	unsigned int ik;
-	double norm;
+	double diff[3];
 	std::vector<KpointList> ksets;
 	std::vector<KpointList>::iterator it;
 	std::vector<double> ktmp;
@@ -328,11 +328,12 @@ void Kpoint::gen_nkminus()
 		ktmp.push_back(-xk[ik][2]);
 
 		for (it = ksets.begin(); it != ksets.end(); ++it){
-			norm = std::pow(std::fmod(ktmp[0]-(*it).kval[0], 1.0), 2) 
-				+ std::pow(std::fmod(ktmp[1]-(*it).kval[1], 1.0), 2) 
-				+ std::pow(std::fmod(ktmp[2]-(*it).kval[2], 1.0), 2);
+			diff[0] = std::fmod(ktmp[0]-(*it).kval[0], 1.0);
+			diff[1] = std::fmod(ktmp[1]-(*it).kval[1], 1.0);
+			diff[2] = std::fmod(ktmp[2]-(*it).kval[2], 1.0);
 
-			if (std::sqrt(norm) < eps12) {
+
+			if (std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 				knum_minus[ik] = (*it).knum;
 				knum_minus[(*it).knum] = ik;
 				found_minus[ik] = true;
@@ -479,7 +480,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 
 #else
 			double srot_inv[3][3], srot_inv_t[3][3];
-			
+
 			system->invmat3(srot_inv, srot);
 			system->transpose3(srot_inv_t, srot_inv);
 			system->rotvec(xk_sym, xk_orig, srot_inv_t);
@@ -493,7 +494,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 			diff[1] = static_cast<double>(nint(xk_sym[1]*nky)) - xk_sym[1]*nky;
 			diff[2] = static_cast<double>(nint(xk_sym[2]*nkz)) - xk_sym[2]*nkz;
 
-			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+			if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 
 				iloc = (nint(xk_sym[0]*nkx + 2 * nkx)) % nkx;
 				jloc = (nint(xk_sym[1]*nky + 2 * nky)) % nky;
@@ -522,7 +523,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 			diff[1] = static_cast<double>(nint(xk_sym[1]*nky)) - xk_sym[1]*nky;
 			diff[2] = static_cast<double>(nint(xk_sym[2]*nkz)) - xk_sym[2]*nkz;
 
-			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+			if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 
 				iloc = (nint(xk_sym[0]*nkx + 2 * nkx)) % nkx;
 				jloc = (nint(xk_sym[1]*nky + 2 * nky)) % nky;
@@ -596,9 +597,9 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
 	diff[2] = static_cast<double>(nint(kz*static_cast<double>(nkz))) - kz*static_cast<double>(nkz);
 
 
-	double norm = std::sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
+	double norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
 
-	if (norm > eps12) {
+	if (norm >= eps12) {
 
 		return -1;
 
