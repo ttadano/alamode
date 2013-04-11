@@ -1032,18 +1032,50 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 		memory->deallocate(arr_tmp);
 		memory->allocate(arr_tmp, nparam);
 
+		// The returned matrix U is not always echelon form.
+
+		std::vector<ConstraintClass> Constraint_tmp;
+
+		Constraint_tmp.clear();
 		Constraint_Set.clear();
 
-		for (i = 0; i < nrank; ++i) {
+
+		for (i = 0; i < nconst; ++i) {
 			for (j = 0; j < i; ++j) arr_tmp[j] = 0.0;
 
 			for (j = i; j < nparam; ++j) {
 				arr_tmp[j] = mat_tmp[i][j];
-
 			}
 
-			Constraint_Set.insert(ConstraintClass(nparam, arr_tmp));
+			Constraint_tmp.push_back(ConstraintClass(nparam, arr_tmp));
 		}
+
+		std::sort(Constraint_tmp.begin(), Constraint_tmp.end());
+
+		int pivcol;
+		int pivcol_upper = -1;
+
+		for (std::vector<ConstraintClass>::reverse_iterator rit = Constraint_tmp.rbegin(); rit != Constraint_tmp.rend(); ++rit) {
+			
+			pivcol = -1;
+
+			for (i = 0; i < nparam; ++i) {
+				if (std::abs((*rit).w_const[i]) > eps) {
+					pivcol = i;
+					break;
+				}
+			}
+
+			if (pivcol == -1) break; // No necessary entries left
+
+			if (pivcol > pivcol_upper) {
+				Constraint_Set.insert(ConstraintClass(*rit));
+			}
+
+			pivcol_upper = pivcol;
+		}
+
+		Constraint_tmp.clear();
 
 		memory->deallocate(mat_tmp);
 		memory->deallocate(arr_tmp);
