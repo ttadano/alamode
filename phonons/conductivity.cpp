@@ -199,7 +199,8 @@ void Conductivity::calc_kl2()
 	unsigned int i, j, k, is;
 	unsigned int knum, snum;
 	unsigned int *nks_thread;
-	unsigned int iks, iks_g;
+	int iks;
+	unsigned int iks_g;
 	unsigned int nk_equiv;
 	unsigned int ktmp;
 
