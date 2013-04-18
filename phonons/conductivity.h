@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pointers.h"
+#include <vector>
+#include <set>
 
 namespace PHON_NS {
 
@@ -11,6 +13,8 @@ namespace PHON_NS {
         void setup_kl();
         void finish_kl();
         void calc_kl();
+		void prepare_restart();
+		void calc_kl2();
 
         int use_classical_Cv;
         double **tau;
@@ -21,5 +25,11 @@ namespace PHON_NS {
         void calc_kl_mpi(const unsigned int, unsigned int **, double *, 
             unsigned int *, unsigned int **, const unsigned int, double *, double ***);
         unsigned int nk, ns;
+		unsigned int ntemp;
+		int nshift_restart;
+		double *Temperature;
+		double *tau_l;
+		std::vector<int> vks, vks_l, vks_done;
+		std::set<int> vks_job;
     };
 }

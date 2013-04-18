@@ -172,7 +172,7 @@ void Relaxation::setup_relaxation()
 
 	if (mympi->my_rank == 0) {
 
-		unsigned int nk_near;
+		unsigned int nk_near = 0;
 		double domega_min;
 		double dist_k_min, dist_k;
 		double xk_tmp[3], xk_tmp2[3];
@@ -186,7 +186,7 @@ void Relaxation::setup_relaxation()
 				xk_tmp[i] = 0.5;
 			}
 			system->rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
-			dist_k_min = std::sqrt(xk_tmp2[0] * xk_tmp2[0] + xk_tmp2[1] * xk_tmp2[1] + xk_tmp2[2] * xk_tmp2[2]);
+			dist_k_min = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
 
 			for (ik = 1; ik < nk; ++ik) {
 				for (int j = 0; j < 3; ++j) {
@@ -194,9 +194,9 @@ void Relaxation::setup_relaxation()
 				}
 				system->rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
 
-				dist_k = std::sqrt(xk_tmp2[0] * xk_tmp2[0] + xk_tmp2[1] * xk_tmp2[1] + xk_tmp2[2] * xk_tmp2[2]);
-
-				if (dist_k < dist_k_min) {
+				dist_k = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
+			
+				if (dist_k <= dist_k_min) {
 					dist_k_min = dist_k;
 					nk_near = ik;
 				}

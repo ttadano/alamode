@@ -981,6 +981,11 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 	int nconst = Constraint_Set.size();
 	double *arr_tmp;
 	double **mat_tmp;
+	
+	int INFO;
+	int *ipiv;
+
+	std::vector<ConstraintClass> Constraint_tmp;
 
 	if (nconst > 0){
 
@@ -1015,8 +1020,6 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
 		// Perform LU decomposition
 
-		int INFO;
-		int *ipiv;
 		memory->allocate(ipiv, nmin);
 
 		dgetrf_(&nconst, &nparam, arr_tmp, &nconst, ipiv, &INFO);
@@ -1033,12 +1036,11 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 		memory->allocate(arr_tmp, nparam);
 
 		// The returned matrix U is not always echelon form.
-
-		std::vector<ConstraintClass> Constraint_tmp;
+		// Here, I try to remove redundant rows.
+		// Still, buggy... 
 
 		Constraint_tmp.clear();
 		Constraint_Set.clear();
-
 
 		for (i = 0; i < nconst; ++i) {
 			for (j = 0; j < i; ++j) arr_tmp[j] = 0.0;
@@ -1056,11 +1058,12 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 		int pivcol_upper = -1;
 
 		for (std::vector<ConstraintClass>::reverse_iterator rit = Constraint_tmp.rbegin(); rit != Constraint_tmp.rend(); ++rit) {
-			
+			ConstraintClass const_now = *rit;
+
 			pivcol = -1;
 
 			for (i = 0; i < nparam; ++i) {
-				if (std::abs((*rit).w_const[i]) > eps) {
+				if (std::abs(const_now.w_const[i]) > eps) {
 					pivcol = i;
 					break;
 				}
@@ -1069,7 +1072,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 			if (pivcol == -1) break; // No necessary entries left
 
 			if (pivcol > pivcol_upper) {
-				Constraint_Set.insert(ConstraintClass(*rit));
+				Constraint_Set.insert(ConstraintClass(const_now));
 			}
 
 			pivcol_upper = pivcol;
@@ -1077,10 +1080,13 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
 		Constraint_tmp.clear();
 
+		if (Constraint_Set.size() != nrank) {
+			error->warn("remove_redundant_rows", "Something wrong may happened");
+		}
+
 		memory->deallocate(mat_tmp);
 		memory->deallocate(arr_tmp);
 		memory->deallocate(ipiv);
-
 	}
 
 #endif

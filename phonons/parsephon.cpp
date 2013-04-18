@@ -20,6 +20,7 @@
 #include <vector>
 #include "phonon_dos.h"
 #include <sstream>
+#include <sys/stat.h>
 
 #ifdef _USE_BOOST
 #include <boost/algorithm/string.hpp>
@@ -74,14 +75,15 @@ void Input::parce_input(int narg, char **arg)
 void Input::parse_general_vars() {
 
 	int i;
-	std::string prefix, mode, fcsinfo, borninfo;
+	std::string prefix, mode, fcsinfo, borninfo, file_result;
 	int nsym, nnp, celldim[3], nbands, ismear;
 	double Tmin, Tmax, dT, na_sigma, epsilon;
 	double emin, emax, delta_e, delta_a;
-	bool eigenvector, printxsf, nonanalytic, lclassical;
+	bool eigenvector, printxsf, nonanalytic, lclassical, restart;
+	struct stat st;
 
 	std::string str_tmp;
-	std::string str_allowed_list = "PREFIX MODE NSYM NNP CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A";
+	std::string str_allowed_list = "PREFIX MODE NSYM NNP CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART";
 	std::string str_no_defaults = "PREFIX MODE NSYM NNP FCSINFO";
 	std::vector<std::string> no_defaults, celldim_v;
 	std::map<std::string, std::string> general_var_dict;
@@ -107,6 +109,8 @@ void Input::parse_general_vars() {
 
 	prefix = general_var_dict["PREFIX"];
 	mode = general_var_dict["MODE"];
+
+	file_result = prefix + ".result";
 	
 #ifdef _USE_BOOST
 	boost::to_lower(mode);
@@ -134,6 +138,14 @@ void Input::parse_general_vars() {
 	printxsf = false;
 	nonanalytic = false;
 	lclassical = false;
+
+	// if file_result exists in the current directory, restart mode will be automatically turned on.
+
+	if (stat(file_result.c_str(), &st) == 0) {
+		restart = true;
+	} else {
+		restart = false;
+	}
 
 	nbands = -1;
 	borninfo = "";
@@ -168,6 +180,7 @@ void Input::parse_general_vars() {
 
 	assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
 	assign_val(lclassical, "LCLASSICAL", general_var_dict);
+	assign_val(restart, "RESTART", general_var_dict);
 
 	assign_val(nbands, "NBANDS", general_var_dict);
 	assign_val(borninfo, "BORNINFO", general_var_dict);
@@ -214,7 +227,9 @@ void Input::parse_general_vars() {
 
 
 	job_title = prefix;
+	writes->file_result = file_result;
 	phon->mode = mode;
+	phon->restart_flag = restart;
 	symmetry->nsym = nsym;
 	symmetry->nnp = nnp;
 

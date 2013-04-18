@@ -1,3 +1,4 @@
+#include "mpi_common.h"
 #include "write_phonons.h"
 #include "system.h"
 #include "dynamical.h"
@@ -13,6 +14,9 @@
 #include <fstream>
 #include "relaxation.h"
 #include "phonon_thermodynamics.h"
+#include <sys/stat.h>
+#include "fcs_phonon.h"
+#include "conductivity.h"
 
 using namespace PHON_NS;
 
@@ -21,6 +25,211 @@ Writes::Writes(PHON *phon): Pointers(phon){
 };
 
 Writes::~Writes(){};
+
+void Writes::setup_result_io() 
+{
+
+	/*
+	std::string str;
+	str = input->job_title + ".result";
+
+	memory->allocate(file_result, str.size() + 1);
+	std::copy(str.begin(), str.end(), file_result);
+	file_result[str.size()] = '\0';
+
+	MPI_Bcast(&phon->restart_flag, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+	if (phon->restart_flag) {
+		MPI_File_open(MPI_COMM_WORLD, file_result, MPI_MODE_RDWR, MPI_INFO_NULL, &fp_result);
+	} else {
+     	MPI_File_open(MPI_COMM_WORLD, file_result, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp_result);
+	}
+	*/
+
+	if (mympi->my_rank == 0) {
+
+		if (phon->restart_flag) {
+			// Restart
+			fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
+			if (!fs_result) {
+				error->exit("setup_result_io", "Could not open file_result");
+			}
+
+			// Check the consistency
+
+			std::string line_tmp, str_tmp;
+			int natmin_tmp, nkd_tmp;
+			int nk_tmp[3], nksym_tmp;
+			int is_classical, ismear;
+			double epsilon_tmp, T1, T2, delta_T;		
+
+
+			bool found_tag;
+
+			found_tag = false;
+			while (fs_result >> line_tmp)
+			{
+				if (line_tmp == "#SYSTEM") {
+					found_tag = true;
+					break;
+				}
+			}
+			if (!found_tag) error->exit("setup_result_io", "Could not find #SYSTEM tag");
+
+			fs_result >> natmin_tmp >> nkd_tmp;
+
+			if (!(natmin_tmp == system->natmin && nkd_tmp == system->nkd)) {
+				error->exit("setup_result_io", "SYSTEM information is not consistent");
+			}
+
+			found_tag = false;
+			while (fs_result >> line_tmp)
+			{
+				if (line_tmp == "#KPOINT") {
+					found_tag = true;
+					break;
+				}
+			}
+			if (!found_tag) error->exit("setup_result_io", "Could not find #KPOINT tag");
+
+			fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
+			fs_result >> nksym_tmp;
+
+			if (!(kpoint->nkx == nk_tmp[0] && kpoint->nky == nk_tmp[1] && kpoint->nkz == nk_tmp[2]
+			     && kpoint->nk_equiv.size() == nksym_tmp)) {
+					 error->exit("setup_result_io", "KPOINT information is not consistent");
+			}
+		
+
+			found_tag = false;
+			while (fs_result >> line_tmp)
+			{
+				if (line_tmp == "#CLASSICAL") {
+					found_tag = true;
+					break;
+				}
+			}
+			if (!found_tag) error->exit("setup_result_io", "Could not find #CLASSICAL tag");
+
+			fs_result >> is_classical;
+			if (is_classical != conductivity->use_classical_Cv) {
+				error->exit("setup_result_io", "CLASSICAL val is not consistent");
+			}
+
+
+			found_tag = false;
+			while (fs_result >> line_tmp)
+			{
+				if (line_tmp == "#FCSINFO") {
+					found_tag = true;
+					break;
+				}
+			}
+			if (!found_tag) error->exit("setup_result_io", "Could not find #FCSINFO tag");
+
+			fs_result >> str_tmp;
+			if (str_tmp != fcs_phonon->file_fcs) {
+				error->warn("setup_result_io", "FCSINFO is not consistent");
+			}
+
+
+			found_tag = false;
+			while (fs_result >> line_tmp)
+			{
+				if (line_tmp == "#SMEARING") {
+					found_tag = true;
+					break;
+				}
+			}
+			if (!found_tag) error->exit("setup_result_io", "Could not find #SMEARING tag");
+			
+			fs_result >> ismear;
+			fs_result >> epsilon_tmp;
+
+			if (ismear != relaxation->ksum_mode) {
+				error->exit("setup_result_io", "Smearing method is not consistent");
+			}
+			if (ismear != -1 && epsilon_tmp != relaxation->epsilon) {
+				error->exit("setup_result_io", "Smearing width is not consistent");
+			}
+
+
+			found_tag = false;
+			while (fs_result >> line_tmp)
+			{
+				if (line_tmp == "#TEMPERATURE") {
+					found_tag = true;
+					break;
+				}
+			}
+			if (!found_tag) error->exit("setup_result_io", "Could not find #TEMPERATURE tag");
+			
+			fs_result >> T1 >> T2 >> delta_T;
+
+			if (!(T1 == system->Tmin && T2 == system->Tmax && delta_T == system->dT)) {
+				error->exit("setup_result_io", "Temperature information is not consistent");
+			}
+
+		} else {
+			// From scratch
+			fs_result.open(file_result.c_str(), std::ios::out);
+			if (!fs_result) {
+				error->exit("setup_result_io", "Could not open file_result");
+			}
+
+			fs_result << "## General information" << std::endl;
+			fs_result << "#SYSTEM" << std::endl;
+			fs_result << system->natmin << " " << system->nkd << std::endl;
+			fs_result << "#END SYSTEM" << std::endl;
+
+			fs_result << "#KPOINT" << std::endl;
+			fs_result << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
+			fs_result << kpoint->nk_equiv.size() << std::endl;
+
+			int ik = 0;
+			for (int i = 0; i < kpoint->nk_equiv.size(); ++i){
+				fs_result << std::setw(6) << i + 1 << ":";
+				for (int j = 0; j < 3; ++j){
+					fs_result << std::setw(15) << std::scientific << kpoint->kpIBZ[ik].kval[j];
+				}
+				fs_result << std::setw(12) << std::fixed << kpoint->weight_k[i] << std::endl;
+				ik += kpoint->nk_equiv[i];
+			}
+			fs_result.unsetf(std::ios::fixed);
+
+			fs_result << "#END KPOINT" << std::endl;
+
+			fs_result << "#CLASSICAL" << std::endl;
+			fs_result << conductivity->use_classical_Cv << std::endl;
+			fs_result << "#END CLASSICAL" << std::endl;
+
+			fs_result << "#FCSINFO" << std::endl;
+			fs_result << fcs_phonon->file_fcs << std::endl;
+			fs_result << "#END  FCSINFO" << std::endl;
+
+			fs_result << "#SMEARING" << std::endl;
+			fs_result << relaxation->ksum_mode << std::endl;
+			fs_result << relaxation->epsilon << std::endl;
+			fs_result << "#END SMEARING" << std::endl;
+
+			fs_result << "#TEMPERATURE" << std::endl;
+			fs_result << system->Tmin << " " << system->Tmax << " " << system->dT << std::endl;
+			fs_result << "#END TEMPERATURE" << std::endl;
+
+			fs_result << "##END General information" << std::endl;
+		}
+	}
+}
+
+void Writes::finalize_result_io() 
+{
+	//fs_result.close();
+	/*
+	memory->deallocate(file_result);
+	MPI_File_close(&fp_result);
+	*/
+	// error->exit("hoge", "hoge");
+}
 
 void Writes::write_phonon_info()
 {

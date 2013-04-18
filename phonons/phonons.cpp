@@ -27,8 +27,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 	mympi = new MyMPI(this, comm);
 	input = new Input(this);
 
-	restart_flag = false;
-
 	create_pointers();
 
 	if (mympi->my_rank == 0) {
@@ -40,6 +38,14 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		std::cout << std::endl;
 
 		input->parce_input(narg, arg);
+
+		if (restart_flag) {
+			if (mode == "boltzmann") {
+				std::cout << "Restart Mode is switched on!" << std::endl << std::endl;
+			} else {
+				std::cout << "Restart Mode is only available for BTE" << std::endl << std::endl;
+			}
+		}
 	}
 
 	mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -94,6 +100,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		dynamical->setup_dynamical(mode);
 		dynamical->diagonalize_dynamical_all();
 
+		writes->setup_result_io();
+
 		integration->setup_integration();
 		relaxation->setup_relaxation();
 
@@ -104,11 +112,16 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		//	relaxation->v3_test();
 
 		conductivity->setup_kl();
-		conductivity->calc_kl();
+		conductivity->prepare_restart();
+		conductivity->calc_kl2();
+		
+
+	//	conductivity->calc_kl();
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
 		conductivity->finish_kl();
+		writes->finalize_result_io();
 
 	} else if (mode == "gruneisen") {
 		system->setup();
