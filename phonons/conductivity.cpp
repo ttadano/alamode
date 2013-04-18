@@ -146,7 +146,7 @@ void Conductivity::prepare_restart()
 		}
 
 		writes->fs_result.close();
-		writes->fs_result.open(writes->file_result.c_str(), std::ios::app);
+		writes->fs_result.open(writes->file_result.c_str(), std::ios::app | std::ios::out);
 	}
 
 
@@ -195,8 +195,8 @@ void Conductivity::finish_kl()
 
 void Conductivity::calc_kl2()
 {
-	unsigned int nks_g, nks_l;
-	unsigned int i, j, k, is;
+	unsigned int nks_g;
+	unsigned int i, j, k;
 	unsigned int knum, snum;
 	unsigned int *nks_thread;
 	int iks;
@@ -233,8 +233,8 @@ void Conductivity::calc_kl2()
 		std::cout << "Total Number of (k, s) pairs to be calculated : " << nks_g << std::endl;
 		std::cout << "Assigned number of (k, s) pairs for each MPI threads below" << std::endl;
 		for (i = 0; i < mympi->nprocs; ++i) {
-			std::cout << "RANK: " << std::setw(5) << i + 1;
-			std::cout << "NKS: " << std::setw(5) << nks_thread[i] << std::endl;
+			std::cout << " RANK: " << std::setw(5) << i + 1;
+			std::cout << std::setw(8) << "NKS: " << std::setw(5) << nks_thread[i] << std::endl;
 		}
 		std::cout << std::endl;
 
