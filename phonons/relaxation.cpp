@@ -117,9 +117,6 @@ void Relaxation::setup_relaxation()
 		invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
 	}
 
-	
-	// This section requires large amount of memory.
-
 	memory->allocate(vec_for_v3, fcs_phonon->force_constant[1].size(), 3, 2);
 	memory->allocate(invmass_for_v3, fcs_phonon->force_constant[1].size());
 
@@ -139,29 +136,39 @@ void Relaxation::setup_relaxation()
 		++j;     
 	}
 
+	memory->allocate(evec_index, fcs_phonon->force_constant[1].size(), 3);
+
+	for (i = 0; i < fcs_phonon->force_constant[1].size(); ++i) {
+		evec_index[i][0] = 3 * fcs_phonon->force_constant[1][i].elems[0].atom + fcs_phonon->force_constant[1][i].elems[0].xyz;
+		evec_index[i][1] = 3 * fcs_phonon->force_constant[1][i].elems[1].atom + fcs_phonon->force_constant[1][i].elems[1].xyz;
+		evec_index[i][2] = 3 * fcs_phonon->force_constant[1][i].elems[2].atom + fcs_phonon->force_constant[1][i].elems[2].xyz;
+	}
+
+
 	// Tentative modification for tuning
-	memory->allocate(cexp_phase, nk, fcs_phonon->force_constant[1].size(), 2);
+	// This requires large amount of RAM.
+	// 	memory->allocate(cexp_phase, nk, fcs_phonon->force_constant[1].size(), 2);
+	// 
+	// 	for (i = 0; i < nk; ++i){
+	// 		for (j = 0; j < fcs_phonon->force_constant[1].size(); ++j){
+	// 			cexp_phase[i][j][0] =  std::exp(im * (vec_for_v3[j][0][0] * kpoint->xk[i][0] + vec_for_v3[j][1][0] * kpoint->xk[i][1] + vec_for_v3[j][2][0] * kpoint->xk[i][2]));
+	// 			cexp_phase[i][j][1] =  std::exp(im * (vec_for_v3[j][0][1] * kpoint->xk[i][0] + vec_for_v3[j][1][1] * kpoint->xk[i][1] + vec_for_v3[j][2][1] * kpoint->xk[i][2]));
+	// 		}
+	// 	}
 
-	for (i = 0; i < nk; ++i){
-		for (j = 0; j < fcs_phonon->force_constant[1].size(); ++j){
-			cexp_phase[i][j][0] =  std::exp(im * (vec_for_v3[j][0][0] * kpoint->xk[i][0] + vec_for_v3[j][1][0] * kpoint->xk[i][1] + vec_for_v3[j][2][0] * kpoint->xk[i][2]));
-			cexp_phase[i][j][1] =  std::exp(im * (vec_for_v3[j][0][1] * kpoint->xk[i][0] + vec_for_v3[j][1][1] * kpoint->xk[i][1] + vec_for_v3[j][2][1] * kpoint->xk[i][2]));
-		}
-	}
-
-	memory->allocate(cexp_phase2, nk, system->natmin);
-
-	for (i = 0; i < nk; ++i){
-		for (j = 0; j < system->natmin; ++j){
-			double xtmp[3];
-			for (unsigned int m = 0; m < 3; ++m){
-				xtmp[m] = system->xr_s[system->map_p2s[j][0]][m];
-			}
-			system->rotvec(xtmp, xtmp, mat_convert);
-
-			cexp_phase2[i][j] = std::exp(im * (xtmp[0] * kpoint->xk[i][0] + xtmp[1] * kpoint->xk[i][1] + xtmp[2] * kpoint->xk[i][2]));
-		}
-	}
+	// 	memory->allocate(cexp_phase2, nk, system->natmin);
+	// 
+	// 	for (i = 0; i < nk; ++i){
+	// 		for (j = 0; j < system->natmin; ++j){
+	// 			double xtmp[3];
+	// 			for (unsigned int m = 0; m < 3; ++m){
+	// 				xtmp[m] = system->xr_s[system->map_p2s[j][0]][m];
+	// 			}
+	// 			system->rotvec(xtmp, xtmp, mat_convert);
+	// 
+	// 			cexp_phase2[i][j] = std::exp(im * (xtmp[0] * kpoint->xk[i][0] + xtmp[1] * kpoint->xk[i][1] + xtmp[2] * kpoint->xk[i][2]));
+	// 		}
+	// 	}
 
 	// For tetrahedron method
 	MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -195,7 +202,7 @@ void Relaxation::setup_relaxation()
 				system->rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
 
 				dist_k = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
-			
+
 				if (dist_k <= dist_k_min) {
 					dist_k_min = dist_k;
 					nk_near = ik;
@@ -271,6 +278,7 @@ void Relaxation::finish_relaxation()
 	memory->deallocate(invsqrt_mass_p);
 	memory->deallocate(vec_for_v3);
 	memory->deallocate(invmass_for_v3);
+	memory->deallocate(evec_index);
 
 	if (ksum_mode == -1) {
 		memory->deallocate(e_tmp);
@@ -462,15 +470,23 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 #pragma omp parallel 
 	{
 		std::complex<double> ctmp;
+		double phase;
 
 #pragma omp for reduction(+: ret_re, ret_im)
 		for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
 
-			ctmp = dynamical->evec_phonon[kn[0]][sn[0]][3 * fcs_phonon->force_constant[1][ielem].elems[0].atom + fcs_phonon->force_constant[1][ielem].elems[0].xyz] 
-			* dynamical->evec_phonon[kn[1]][sn[1]][3 * fcs_phonon->force_constant[1][ielem].elems[1].atom + fcs_phonon->force_constant[1][ielem].elems[1].xyz]
-			* dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz]
-			* fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
+			// 			ctmp = dynamical->evec_phonon[kn[0]][sn[0]][3 * fcs_phonon->force_constant[1][ielem].elems[0].atom + fcs_phonon->force_constant[1][ielem].elems[0].xyz] 
+			// 			* dynamical->evec_phonon[kn[1]][sn[1]][3 * fcs_phonon->force_constant[1][ielem].elems[1].atom + fcs_phonon->force_constant[1][ielem].elems[1].xyz]
+			// 			* dynamical->evec_phonon[kn[2]][sn[2]][3 * fcs_phonon->force_constant[1][ielem].elems[2].atom + fcs_phonon->force_constant[1][ielem].elems[2].xyz]
+			// 			* fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * cexp_phase[kn[1]][ielem][0] * cexp_phase[kn[2]][ielem][1];
 
+			phase = (vec_for_v3[ielem][0][0]*kpoint->xk[kn[1]][0] + vec_for_v3[ielem][1][0]*kpoint->xk[kn[1]][1] + vec_for_v3[ielem][2][0]*kpoint->xk[kn[1]][2]
+			+vec_for_v3[ielem][0][1]*kpoint->xk[kn[2]][0] + vec_for_v3[ielem][1][1]*kpoint->xk[kn[2]][1] + vec_for_v3[ielem][2][1]*kpoint->xk[kn[2]][2]);
+
+			ctmp = fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * std::exp(im*phase)
+				* dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]] * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]] * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+
+			// We don't need the following three lines anymore.
 			//              ctmp *= cexp_phase2[kn[0]][fcs_phonon->force_constant[1][ielem].elems[0].atom] 
 			//              *cexp_phase2[kn[1]][fcs_phonon->force_constant[1][ielem].elems[1].atom] 
 			//              *cexp_phase2[kn[2]][fcs_phonon->force_constant[1][ielem].elems[2].atom] ;
