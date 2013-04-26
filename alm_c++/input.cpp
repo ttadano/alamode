@@ -369,10 +369,10 @@ void Input::parse_fitting_vars() {
 		multiply_data = boost::lexical_cast<int>(fitting_var_dict["MULTDAT"]);
 	}
 
-	if (multiply_data == 2) {
+	if (multiply_data == 3) {
 		refsys_file = fitting_var_dict["REFINFO"];
 		if (refsys_file.empty()) {
-			error->exit("parse_fitting_vars", "REFINFO tag has to be given when MULTDAT=2");
+			error->exit("parse_fitting_vars", "REFINFO tag has to be given when MULTDAT=3");
 		} 
 	}
 
