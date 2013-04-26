@@ -16,8 +16,6 @@
 #include <Eigen/Core>
 #endif
 
-
-
 using namespace ALM_NS;
 
 Symmetry::Symmetry(ALM *alm) : Pointers(alm) 
@@ -518,7 +516,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 	double tmp[3][3];
 #endif
 
-	
+
 
 	for (int isym = 0; isym < nsym; ++isym) {
 
@@ -548,7 +546,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 		}
 #endif
 
-		
+
 	}
 
 #ifdef _DEBUG
@@ -676,8 +674,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 	double **u, **f;
 	double ***u_sym, ***f_sym;
 
-	memory->allocate(u_sym, ntran, nat, 3);
-	memory->allocate(f_sym, ntran, nat, 3);
+
 
 	files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
 	files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
@@ -687,9 +684,13 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 	if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
 	if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
-	if(multiply_data == 2) 
+	if(multiply_data == 3) 
 	{ 
 		std::cout << "**Displacement-force data will be expanded to the bigger supercell**" << std::endl << std::endl;
+
+
+		memory->allocate(u_sym, ntran, nat, 3);
+		memory->allocate(f_sym, ntran, nat, 3);
 
 		std::ifstream ifs_refsys;
 		ifs_refsys.open(refsys_file.c_str(), std::ios::in);
@@ -788,26 +789,59 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 				}
 			} 
 
-			/*            for (itran = 0; itran < ntran; ++itran){
-			for (j = 0; j < nat; ++j){
-			for (k = 0; k < 3; ++k){
-			files->ofs_disp_sym << " " << u_sym[itran][j][k];
-			files->ofs_force_sym << " " << f_sym[itran][j][k];
-			}
-			files->ofs_disp_sym << std::endl;
-			files->ofs_force_sym << std::endl;
-			}
-			}
-			*/
 		}
 		error->exit("hoge", "hoge");
 		memory->deallocate(map_ref);
-	}
 
-	else {
+	} else if (multiply_data == 2) {
+
+		int isym;
 
 		memory->allocate(u, nat, 3);
 		memory->allocate(f, nat, 3);
+
+		memory->allocate(u_sym, nsym, nat, 3);
+		memory->allocate(f_sym, nsym, nat, 3);
+
+		for (i = 0; i < ndata; ++i) {
+			for (j = 0; j < nat; ++j) {
+				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
+				files->ifs_disp >> f[j][0] >> f[j][1] >> f[j][2];
+			}
+
+			for (isym = 0; isym < nsym; ++isym) {
+				for (j = 0; j < nat; ++j) {
+					n_map = map_sym[j][isym];
+
+					for (k = 0; k < 3; ++k) {
+						u_sym[isym][n_map][k] = u[j][k];
+						f_sym[isym][n_map][k] = f[j][k];
+					}
+				}
+			}
+
+			for (isym = 0; isym < nsym; ++isym) {
+				for (j = 0; j < nat; ++j) {
+					files->ofs_disp_sym.write((char *) &u_sym[isym][j][0], sizeof(double));
+					files->ofs_disp_sym.write((char *) &u_sym[isym][j][1], sizeof(double));
+					files->ofs_disp_sym.write((char *) &u_sym[isym][j][2], sizeof(double));
+					files->ofs_force_sym.write((char *) &f_sym[isym][j][0], sizeof(double));
+					files->ofs_force_sym.write((char *) &f_sym[isym][j][1], sizeof(double));
+					files->ofs_force_sym.write((char *) &f_sym[isym][j][2], sizeof(double));
+				}
+			}
+		}
+
+		std::cout << "Symmetrically equivalent displacements and forces data are" << std::endl;
+		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+
+	} else {
+
+		memory->allocate(u, nat, 3);
+		memory->allocate(f, nat, 3);
+
+		memory->allocate(u_sym, ntran, nat, 3);
+		memory->allocate(f_sym, ntran, nat, 3);
 
 		for (i = 0; i < ndata; ++i){
 			for (j = 0; j < nat; ++j){
@@ -818,8 +852,9 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 			for (itran = 0; itran < ntran; ++itran){
 				for (j = 0; j < nat; ++j){
+					n_map = map_sym[j][symnum_tran[itran]];
+
 					for (k = 0; k < 3; ++k){
-						n_map = map_sym[j][symnum_tran[itran]];
 						u_sym[itran][n_map][k] = u[j][k];
 						f_sym[itran][n_map][k] = f[j][k];
 					}
@@ -837,12 +872,13 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 				}
 			}
 		}
+		std::cout << "Symmetrically (Only translational part) equivalent displacements and forces data are" << std::endl;
+		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+
 	}
 
 	files->ofs_disp_sym.close();
 	files->ofs_force_sym.close();
-	std::cout << "Symmetrically equivalent displacements and forces data are" << std::endl;
-	std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
 
 	memory->deallocate(u);
 	memory->deallocate(f);
