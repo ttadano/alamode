@@ -59,6 +59,7 @@ namespace ALM_NS {
         int nsym, nnp;
         int ntran, natmin;
         int nsym_s, ntran_s, natmin_s; // for reference system (supercell?)
+		int ntran_ref;
 
         int multiply_data;
 

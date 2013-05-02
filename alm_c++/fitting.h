@@ -47,6 +47,7 @@ namespace ALM_NS {
         int factorial(const int);       
       
         double **amat;
+		double *amat_1d;
         double *fsum;
     };
 

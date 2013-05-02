@@ -55,7 +55,14 @@ void Fitting::fitmain()
     files->ifs_force_sym.open(files->file_force_sym.c_str(), std::ios::in | std::ios::binary);
     if(!files->ifs_force_sym) error->exit("fitmain", "cannot open file force_sym");
 
-    int ntran = symmetry->ntran;
+    int ntran;
+
+	if (symmetry->multiply_data == 3) {
+		ntran = symmetry->ntran_ref;
+	} else {
+		ntran = symmetry->ntran;
+	}
+
     int nat = system->nat;
     int natmin = symmetry->natmin;
 
@@ -76,7 +83,8 @@ void Fitting::fitmain()
     std::cout << "Total Number of Parameters : " << N << std::endl;
     M = 3 * natmin * ndata * ntran;
 
-    memory->allocate(amat, M, N);
+   // memory->allocate(amat, M, N);
+	memory->allocate(amat_1d, M*N);
     memory->allocate(fsum, M);
 
     // Calculate matrix elements for fitting
@@ -128,7 +136,9 @@ void Fitting::fitmain()
 
     for(i = 0; i < N; ++i) params[i] = fsum[i];
 
-    memory->deallocate(amat);
+    // memory->deallocate(amat);
+	memory->deallocate(amat_1d);
+
     memory->deallocate(fsum);
     timer->print_elapsed();
 }
@@ -159,7 +169,8 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End)
     k = 0;
     for (j = 0; j < N; ++j){
         for(i = M_Start; i < M_End; ++i){
-            amat_mod[k++] = amat[i][j];
+       //     amat_mod[k++] = amat[i][j];
+			amat_mod[k++] = amat_1d[i*N + j];
         }
     }
     j = 0;
@@ -223,7 +234,8 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P)
 
     for(j = 0; j < N; ++j){
         for(i = M_Start; i < M_End; ++i){
-            mat_tmp[k++] = amat[i][j];
+    //        mat_tmp[k++] = amat[i][j];
+			mat_tmp[k++] = amat_1d[i*N + j];
         }
     }
 
@@ -384,7 +396,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ntran, int ndata, int 
             for(i = 0; i < ndata_used; ++i){
                 iloc = rnd_index[i];
                 for (k = iloc * mset; k < (iloc + 1) * mset; ++k){
-                    amat_mod[l++] = amat[k][j];
+         //           amat_mod[l++] = amat[k][j];
+					amat_mod[l++] = amat_1d[k*N + j];
                 }
             }
         }
@@ -480,7 +493,8 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran,
         k = 0;
         for(j = 0; j < N; ++j){
             for(i = M_Start; i < M_End; ++i){
-                amat_mod[k++] = amat[i][j];
+          //      amat_mod[k++] = amat[i][j];
+				amat_mod[k++] = amat_1d[N*i + j];
             }
         }
 
@@ -543,7 +557,8 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     std::cout << "Calculation of Matrix Elements for Direct Fitting Started ..." << std::endl;
     for (i = 0; i < M; ++i){
         for (j = 0; j < N; ++j){
-            amat[i][j] = 0.0;
+			amat_1d[N*i + j] = 0.0;
+      //      amat[i][j] = 0.0;
         }
         fsum[i] = 0.0;
     }
@@ -607,7 +622,8 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
                         }
-                        amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+						amat_1d[N*k + iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+                   //     amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
                         ++mm;
                     }
                     ++iparam;

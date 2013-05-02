@@ -30,6 +30,7 @@ Symmetry::~Symmetry() {
 	memory->deallocate(map_sym);
 	memory->deallocate(map_p2s);
 	memory->deallocate(map_s2p);
+	memory->deallocate(symnum_tran);
 }
 
 void Symmetry::init()
@@ -584,7 +585,8 @@ void Symmetry::pure_translations()
 	}
 	std::cout << "Each cell contains " << natmin << " atoms" << std::endl;
 
-	symnum_tran = new int[ntran];
+	memory->allocate(symnum_tran, ntran);
+
 	int isym = 0;
 
 	for (i = 0; i < nsym; ++i){
@@ -604,7 +606,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 	memory->allocate(xnew, nat, 3);
 
 	for(iat = 0; iat < nat; ++iat){
-		for(isym = 0; isym < nsym; isym++){
+		for(isym = 0; isym < nsym; ++isym){
 			map_sym[iat][isym] = -1;
 		}
 	}
@@ -674,23 +676,20 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 	double **u, **f;
 	double ***u_sym, ***f_sym;
 
-
-
 	files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
 	files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
 
-	//    files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out);
-	//    files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out);
 	if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
 	if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
 
-	if(multiply_data == 3) 
-	{ 
+	if(multiply_data == 3) {
+
 		std::cout << "**Displacement-force data will be expanded to the bigger supercell**" << std::endl << std::endl;
 
+		int nsym_ref = 0;
+		unsigned int nnp_ref;
 
-		memory->allocate(u_sym, ntran, nat, 3);
-		memory->allocate(f_sym, ntran, nat, 3);
+		// Read from reference file
 
 		std::ifstream ifs_refsys;
 		ifs_refsys.open(refsys_file.c_str(), std::ios::in);
@@ -705,10 +704,10 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 			}
 		}
 		system->recips(lavec_ref, rlavec_ref);
-		ifs_refsys >> nat_ref;
+		ifs_refsys >> nat_ref >> nnp_ref;
 
 		int *kd_ref, *map_ref;
-		double **x_ref, *xtmp, *xdiff;
+		double **x_ref;
 
 		memory->allocate(kd_ref, nat_ref);
 		memory->allocate(x_ref, nat_ref, 3);
@@ -721,43 +720,148 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 		}
 		ifs_refsys.close();
 
-		memory->allocate(xtmp , 3);
-		memory->allocate(xdiff, 3);
-		memory->allocate(map_ref, nat);
+		// Generate symmetry operations of the reference system
+
+		findsym(nat_ref, nnp_ref, kd_ref, lavec_ref, rlavec_ref, x_ref);
+
+		nsym_ref = SymmList.size();
+
+		double **tnons_ref;
+		int ***symrel_int_ref;
+
+		memory->allocate(tnons_ref, nsym_ref, 3);
+		memory->allocate(symrel_int_ref, nsym_ref, 3, 3);
+
+		int isym = 0;
+
+		ntran_ref = 0;
+
+		for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
+			SymmetryOperation symop_tmp = *iter;
+			for (i = 0; i < 3; ++i){
+				for (j = 0; j < 3; ++j){
+					symrel_int_ref[isym][i][j] = symop_tmp.symop[3 * i + j];
+				}
+			}
+			for (i = 0; i < 3; ++i){
+				tnons_ref[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp_ref);
+			}
+
+			if (symrel_int_ref[isym][0][0] == 1 && symrel_int_ref[isym][1][1] == 1 && symrel_int_ref[isym][2][2] == 1) {
+				++ntran_ref;
+			}
+
+			++isym;
+		}
+		SymmList.clear();
+
+		double **xnew, tmp[3];
+		int **map_sym_ref;
+		int *symnum_tran_ref;
 
 		bool map_found;
 		int iat, jat, icrd, jcrd;
 		double dist;
 
-		for (iat = 0; iat < nat; ++iat){
-			map_found = false;
 
-			system->rotvec(xtmp, system->xcoord[iat], system->lavec);
-			system->rotvec(xtmp, xtmp, rlavec_ref);
+		memory->allocate(symnum_tran_ref, ntran_ref);
+		itran = 0;
 
-			for (icrd = 0; icrd < 3; ++icrd) { 
-				xtmp[icrd] /= 2.0 * pi;
+		for (isym = 0; isym < nsym_ref; ++isym) {
+			if (symrel_int_ref[isym][0][0] == 1 && symrel_int_ref[isym][1][1] == 1 && symrel_int_ref[isym][2][2] == 1) { 
+				symnum_tran_ref[itran++] = isym;
 			}
-
-			for (jat = 0; jat < nat_ref; ++jat){
-				for (jcrd = 0; jcrd < 3; ++jcrd){
-					xdiff[jcrd] = xtmp[jcrd] - x_ref[jat][jcrd];
-					xdiff[jcrd] = std::fmod(xdiff[jcrd], 1.0);
-				}
-				dist = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
-
-				if(dist < eps12 && kd_ref[jat] == system->kd[iat]){
-					map_ref[iat] = jat;
-					map_found = true;
-					break;
-				}
-			}
-			if(!map_found) error->exit("data_multiplier", "Cannot find equivalent atoms for atom", iat + 1);
 		}
 
-		memory->deallocate(kd_ref);
-		memory->deallocate(xtmp);
-		memory->deallocate(xdiff);
+		memory->allocate(xnew, nat_ref, 3);
+		memory->allocate(map_sym_ref, nat_ref, nsym_ref);
+
+		for(iat = 0; iat < nat_ref; ++iat){
+			for(isym = 0; isym < nsym_ref; ++isym){
+				map_sym_ref[iat][isym] = -1;
+			}
+		}
+
+		for (isym = 0; isym < nsym_ref; ++isym){
+			for (iat = 0; iat < nat_ref; ++iat){
+
+				for (i = 0; i < 3; ++i){
+					xnew[iat][i] = static_cast<double>(symrel_int_ref[isym][i][0]) * x_ref[iat][0] 
+					+ static_cast<double>(symrel_int_ref[isym][i][1]) * x_ref[iat][1] 
+					+ static_cast<double>(symrel_int_ref[isym][i][2]) * x_ref[iat][2] 
+					+ tnons_ref[isym][i];
+				}
+
+				for (jat = 0; jat < nat_ref; ++jat){
+					for (i = 0; i < 3; ++i){
+						tmp[i] = fmod(std::abs(xnew[iat][i] - x_ref[jat][i]), 1.0);
+						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+					}
+
+					dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+					if(dist < eps10) {
+						map_sym_ref[iat][isym] = jat;
+						break;
+					}
+				}
+				if (map_sym_ref[iat][isym] == -1) error->exit("data_multiplier", "cannot find symmetry for operation # ", isym + 1);
+			}
+		}
+		memory->deallocate(xnew); 
+
+
+		// Generate mapping information of larger supercell to smaller one.
+
+		int **map_large_to_small;
+		double xtmp[3], xdiff[3], xshift[3];
+
+		memory->allocate(map_large_to_small, ntran_ref, nat);
+
+		for (itran = 0; itran < ntran_ref; ++itran){
+
+			for (icrd = 0; icrd < 3; ++icrd) {
+				xshift[icrd] = x_ref[0][icrd] - x_ref[map_sym_ref[0][symnum_tran_ref[itran]]][icrd];
+			}
+
+			for (iat = 0; iat < nat; ++iat) {
+
+				map_found = false;
+
+				system->rotvec(xtmp, system->xcoord[iat], system->lavec);
+				system->rotvec(xtmp, xtmp, rlavec_ref);
+
+				for (icrd = 0; icrd < 3; ++icrd) {
+					xtmp[icrd] /= 2.0 * pi;
+				}
+
+				for (jat = 0; jat < nat_ref; ++jat) {
+
+					for (jcrd = 0; jcrd < 3; ++jcrd) {
+						xdiff[jcrd] = xtmp[jcrd] - x_ref[jat][jcrd] - xshift[jcrd];
+						xdiff[jcrd] = std::fmod(xdiff[jcrd], 1.0);
+					}
+					dist = xdiff[0]*xdiff[0] + xdiff[1]*xdiff[1] + xdiff[2]*xdiff[2];
+
+					if (dist < eps12 && kd_ref[jat] == system->kd[iat]) {
+						map_large_to_small[itran][iat] = jat;
+						map_found = true;
+						break;
+					}
+				}
+
+				if (!map_found) error->exit("data_multiplier", "cannot find equivalent atom");
+			}
+
+			std::cout << "itran = " << itran << std::endl;
+			for (iat = 0; iat < nat; ++iat) {
+				std::cout << "iat = " << iat << " mapped = " << map_large_to_small[itran][iat] << std::endl;
+			}
+		}
+
+		// Write mapped displacement-force data set
+
+		memory->allocate(u_sym, ntran_ref, nat, 3);
+		memory->allocate(f_sym, ntran_ref, nat, 3);
 
 		memory->allocate(u, nat_ref, 3);
 		memory->allocate(f, nat_ref, 3);
@@ -768,17 +872,17 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
 			}
 
-			for (itran = 0; itran < ntran; ++itran){
+			for (itran = 0; itran < ntran_ref; ++itran){
 				for (j = 0; j < nat; ++j){
 					for (k = 0; k < 3; ++k){
-						n_map = map_sym[j][symnum_tran[itran]];
-						u_sym[itran][n_map][k] = u[map_ref[j]][k];
-						f_sym[itran][n_map][k] = f[map_ref[j]][k];
+						n_map = map_large_to_small[itran][j];
+						u_sym[itran][j][k] = u[n_map][k];
+						f_sym[itran][j][k] = f[n_map][k];
 					}
 				}
 			}
 
-			for (itran = 0; itran < ntran; ++itran){
+			for (itran = 0; itran < ntran_ref; ++itran){
 				for (j = 0; j < nat; ++j){
 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
@@ -790,8 +894,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 			} 
 
 		}
-		error->exit("hoge", "hoge");
-		memory->deallocate(map_ref);
+	//	error->exit("hoge", "hoge");
 
 	} else if (multiply_data == 2) {
 
