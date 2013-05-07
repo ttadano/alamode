@@ -557,6 +557,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     std::cout << "Calculation of Matrix Elements for Direct Fitting Started ..." << std::endl;
     for (i = 0; i < M; ++i){
         for (j = 0; j < N; ++j){
+			std::cout << N*i+j << std::endl;
 			amat_1d[N*i + j] = 0.0;
       //      amat[i][j] = 0.0;
         }
