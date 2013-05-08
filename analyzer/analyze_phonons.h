@@ -58,6 +58,27 @@ static inline std::string &trim(std::string &s) {
 }
 
 
+
+// memsize calculator
+
+int memsize_in_MB(int size_of_one, int n1){
+	unsigned long n = n1 * size_of_one;
+	return n / 1000000;
+}
+int memsize_in_MB(int size_of_one, int n1, int n2){
+	unsigned long n = n1 * n2 * size_of_one;
+	return n / 1000000;
+}
+int memsize_in_MB(int size_of_one, int n1, int n2, int n3){
+	unsigned long n = n1 * n2 * n3 * size_of_one;
+	return n / 1000000;
+}
+int memsize_in_MB(int size_of_one, int n1, int n2, int n3, int n4){
+	unsigned long n = n1 * n2 * n3 * n4 * size_of_one;
+	return n / 1000000;
+}
+
+
 template <typename T>
 T *allocate(T *&arr, int n1){
 
@@ -167,23 +188,4 @@ void deallocate(T ****&arr){
 	delete [] arr[0][0];
 	delete [] arr[0];
 	delete [] arr;
-}
-
-// memsize calculator
-
-int memsize_in_MB(int size_of_one, int n1){
-	unsigned long n = n1 * size_of_one;
-	return n / 1000000;
-}
-int memsize_in_MB(int size_of_one, int n1, int n2){
-	unsigned long n = n1 * n2 * size_of_one;
-	return n / 1000000;
-}
-int memsize_in_MB(int size_of_one, int n1, int n2, int n3){
-	unsigned long n = n1 * n2 * n3 * size_of_one;
-	return n / 1000000;
-}
-int memsize_in_MB(int size_of_one, int n1, int n2, int n3, int n4){
-	unsigned long n = n1 * n2 * n3 * n4 * size_of_one;
-	return n / 1000000;
 }
