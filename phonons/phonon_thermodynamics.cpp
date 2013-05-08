@@ -24,7 +24,7 @@ double Phonon_thermodynamics::Cv(const double omega, const double T)
 {
     double x;
 
-    if (std::abs(T) < eps || omega == 0.0) {
+    if (std::abs(T) < eps) {
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);
@@ -36,7 +36,7 @@ double Phonon_thermodynamics::Cv_classical(const double omega, const double T)
 {
     double x;
 
-    if (std::abs(T) < eps || omega == 0.0) {
+    if (std::abs(T) < eps) {
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);

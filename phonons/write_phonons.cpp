@@ -180,6 +180,7 @@ void Writes::setup_result_io()
 			fs_result << "## General information" << std::endl;
 			fs_result << "#SYSTEM" << std::endl;
 			fs_result << system->natmin << " " << system->nkd << std::endl;
+			fs_result << system->volume_p << std::endl;
 			fs_result << "#END SYSTEM" << std::endl;
 
 			fs_result << "#KPOINT" << std::endl;
