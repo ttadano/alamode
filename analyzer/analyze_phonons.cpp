@@ -1,12 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-//#include <boost/program_options.hpp>
 #include "analyze_phonons.h"
 
 using namespace std;
-//using namespace boost::program_options;
-
 
 int main(int argc, char *argv[]) {
 	string str;
