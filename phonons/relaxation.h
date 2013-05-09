@@ -55,6 +55,7 @@ namespace PHON_NS {
         int ksum_mode;
 
 		void v3_test();
+		void modify_eigenvectors();
 
      private:
         struct StructKS {
@@ -63,7 +64,7 @@ namespace PHON_NS {
         };
         unsigned int nk, ns, nks;
         std::vector<ReciprocalVs> *V;
-        void modify_eigenvectors();
+        
         double delta_lorentz(const double);
         double delta_gauss(const double);
         std::complex<double> im;

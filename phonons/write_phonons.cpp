@@ -257,6 +257,7 @@ void Writes::write_phonon_info()
 
     if(dynamical->eigenvectors) {
         write_eigenvectors();
+		write_rmsd();
     }
 }
 
@@ -656,3 +657,45 @@ void Writes::write_gruneisen()
         ofs_gruall.close();
     }
 }
+
+void Writes::write_rmsd()
+{
+	// relaxation->modify_eigenvectors();
+
+	// Write room mean square displacement of atoms
+
+	std::string file_rmsd = input->job_title + ".rmsd";
+	std::ofstream ofs_rmsd;
+
+	unsigned int i, j;
+	unsigned int NT;
+	unsigned int ns = dynamical->neval;
+
+	double Tmin = system->Tmin;
+	double Tmax = system->Tmax;
+	double dT = system->dT;
+	double T, d2_tmp;
+
+	ofs_rmsd.open(file_rmsd.c_str(), std::ios::out);
+	if (!ofs_rmsd) error->exit("write_rmsd", "Could not open file_rmsd");
+
+	ofs_rmsd << "# Root Mean Square Displacements at a function of temperature." << std::endl;
+	ofs_rmsd << "# Temperature [K], u1_x, u1_y, u1_z, .... [Angstrom]" << std::endl;
+
+	NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+
+	for (i = 0; i < NT; ++i) {
+		
+		T = Tmin + static_cast<double>(i) * dT;
+		ofs_rmsd << std::setw(15) << T;
+
+		for (j = 0; j < ns; ++j){
+			d2_tmp = phonon_thermodynamics->disp2_avg(T, j, j);
+		    ofs_rmsd << std::setw(15) << std::sqrt(d2_tmp)*1.0e+10;
+		}
+		ofs_rmsd << std::endl;
+	}
+	ofs_rmsd.close();
+
+}
+

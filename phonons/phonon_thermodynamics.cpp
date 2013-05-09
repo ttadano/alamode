@@ -186,6 +186,41 @@ double Phonon_thermodynamics::Internal_Energy(const double T)
     return ret / static_cast<double>(nk);
 }
 
+double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, const unsigned int ns2)
+{
+	double ret = 0.0;
+	unsigned int ik, is;
+	unsigned int nk = kpoint->nk;
+	unsigned int ns = dynamical->neval;
+	double omega;
+
+	for (ik = 0; ik < nk; ++ik) {
+		for (is = 0; is < ns; ++is) {
+
+		//	if (ik == 0 && is < 3) continue;
+
+			omega = dynamical->eval_phonon[ik][is];
+
+			ret += real(dynamical->evec_phonon[ik][is][ns1] * dynamical->evec_phonon[ik][is][ns2])
+				* coth_T(omega, T) / omega;
+
+// 			std::cout << "T = " << T;
+// 			std::cout << " ik = " << ik << " is = " << is;
+// 			std::cout << " evec_prod = " << real(dynamical->evec_phonon[ik][is][ns1] * conj(dynamical->evec_phonon[ik][is][ns2]));
+// 			std::cout << " coth = " << coth_T(omega, T);
+// 			std::cout << " 1/omega = " << 1.0/omega << std::endl;
+		}
+	}
+
+	ret *= 0.5 / (static_cast<double>(nk) * std::sqrt(system->mass[system->map_p2s[ns1/3][0]] * system->mass[system->map_p2s[ns2/3][0]]));
+
+    //   ret *= 2.0 * electron_mass / time_ry * Bohr_in_Angstrom * Bohr_in_Angstrom;
+	ret *= h_planck / (2.0 * pi); // Convert to SI unit 
+	// Note that hbar (Dirac's constant) is equal to 2*Me*a0**2/time_ry
+
+	return ret;
+}
+
 double Phonon_thermodynamics::coth_T(const double omega, const double T)
 {
     if (T < eps) {
