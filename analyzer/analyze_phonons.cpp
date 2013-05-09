@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
 		beg_s = atoi(argv[3]) - 1;
 		end_s = atoi(argv[4]);
 
+		if (end_s == 0) end_s = ns;
+
 		max_len = atof(argv[5]);
 		d_len = atof(argv[6]);
 
