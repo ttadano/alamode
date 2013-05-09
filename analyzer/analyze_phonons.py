@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-import sys
+"""
+This python script is a simple user interface to 
+the C++ analyzer program "analyze_phonons.cpp".
+To execute this script, the above c++ program has to be
+compiled and made executable.
+"""
+import sys, os
 import optparse
 import datetime
 import subprocess
@@ -16,7 +22,8 @@ parser.add_option('-d', '--direction')
 options, args = parser.parse_args()
 file_result = args[0]
 
-analyze_obj = "./analyze_phonons "
+dir_obj = os.path.dirname(__file__)
+analyze_obj = dir_obj + "/analyze_phonons "
 
 if __name__ == '__main__':
     
