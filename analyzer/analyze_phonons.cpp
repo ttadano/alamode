@@ -104,8 +104,12 @@ int main(int argc, char *argv[]) {
 		beg_k = atoi(argv[3]) - 1;
 		end_k = atoi(argv[4]);
 
+		if (end_k == 0) end_k = nk;
+
 		beg_s = atoi(argv[5]) - 1;
 		end_s = atoi(argv[6]);
+
+		if (end_s == 0) end_s = ns;
 
 		int itemp;
 		double target_temp;
@@ -132,6 +136,8 @@ int main(int argc, char *argv[]) {
 
 		beg_s = atoi(argv[3]) - 1;
 		end_s = atoi(argv[4]);
+
+		if (end_s == 0) end_s = ns;
 
 		calc_kappa();
 
@@ -163,7 +169,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	return 0;
-
 }
 
 void calc_tau(int itemp) 
@@ -195,7 +200,7 @@ void calc_tau_temp(int target_k, int target_s)
 
 
 	cout << "# Temperature dependence of the damping function will be presented" << endl;
-	cout << "# for phonon specified by kpoint " << target_k << " and mode " << target_s << endl;
+	cout << "# for phonon specified by kpoint " << target_k  + 1 << " and mode " << target_s  + 1<< endl;
 	cout << "# Frequency = " << omega[target_k][target_s] << " [cm^-1]" << endl;
 	cout << "# Velocity  = " << vel_norm << " [m/s]" << endl;
 	cout << "# Temperature [k], Relaxation Time [ps], MFP [nm]" << endl;
@@ -351,7 +356,7 @@ double Cv(double omega, double temp)
 {
 	double x;
 
-	if (abs(temp) < 1.0e-15) {
+	if (abs(temp) < 1.0e-12) {
 		return 0.0;
 	} else {
 		x = omega*kayser_to_Ryd / (temp*T_to_Ryd);
