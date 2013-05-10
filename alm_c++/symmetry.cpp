@@ -110,7 +110,7 @@ void Symmetry::init()
 	}
 	std::cout << std::endl;
 
-	if(multiply_data) data_multiplier(nat, system->ndata, multiply_data);
+	if(multiply_data >= -1) data_multiplier(nat, system->ndata, multiply_data);
 
 	timer->print_elapsed();
 }
