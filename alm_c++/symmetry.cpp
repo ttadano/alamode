@@ -982,6 +982,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 		memory->allocate(u, nat, 3);
 		memory->allocate(f, nat, 3);
+                memory->allocate(u_sym, 1, 1, 1);
+                memory->allocate(f_sym, 1, 1, 1);
 
 		for (i = 0; i < ndata; ++i) {
 			for (j = 0; j < nat; ++j) {
@@ -999,8 +1001,17 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 		}
 
 		ntran = 1;
+
+		std::cout << "Displacements and forces data are" << std::endl;
+		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+
 	} else if (multiply_data == -1) {
+
 		ntran = 1;
+		memory->allocate(u, 1, 1);
+		memory->allocate(f, 1, 1);
+                memory->allocate(u_sym, 1, 1, 1);
+                memory->allocate(f_sym, 1, 1, 1);
 	} 
 
 	files->ofs_disp_sym.close();

@@ -4,7 +4,7 @@
 	${CXX} ${CXXFLAGS} -c $<
 
 CXX = icpc -I /home/stsune/tadano/include
-CXXFLAGS = -O2 -xSSE4.1 -vec-report1 -openmp -openmp-report1 
+CXXFLAGS = -O2 -xSSE4.1 -mkl -vec-report1 -openmp -openmp-report1  -D_USE_EIGEN
 LDFLAGS = -mkl
 
 PROG = alm_c++
