@@ -83,8 +83,8 @@ void Fitting::fitmain()
     std::cout << "Total Number of Parameters : " << N << std::endl;
     M = 3 * natmin * ndata * ntran;
 
-   // memory->allocate(amat, M, N);
-	memory->allocate(amat_1d, M*N);
+    memory->allocate(amat, M, N);
+   // 	memory->allocate(amat_1d, M*N);
     memory->allocate(fsum, M);
 
     // Calculate matrix elements for fitting
@@ -130,7 +130,7 @@ void Fitting::fitmain()
         }
     }
 
-    // Copy force constants to public valiable "params"
+    // Copy force constants to public variable "params"
 
     memory->allocate(params, N);
 
@@ -169,8 +169,8 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End)
     k = 0;
     for (j = 0; j < N; ++j){
         for(i = M_Start; i < M_End; ++i){
-       //     amat_mod[k++] = amat[i][j];
-			amat_mod[k++] = amat_1d[i*N + j];
+            amat_mod[k++] = amat[i][j];
+		//	amat_mod[k++] = amat_1d[i*N + j];
         }
     }
     j = 0;
@@ -234,8 +234,8 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P)
 
     for(j = 0; j < N; ++j){
         for(i = M_Start; i < M_End; ++i){
-    //        mat_tmp[k++] = amat[i][j];
-			mat_tmp[k++] = amat_1d[i*N + j];
+            mat_tmp[k++] = amat[i][j];
+	//		mat_tmp[k++] = amat_1d[i*N + j];
         }
     }
 
@@ -275,6 +275,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P)
     for(j = 0; j < N; ++j){
         for(i = M_Start; i < M_End; ++i){
             amat_mod[k++] = amat[i][j];
+	//		amat_mod[k++] = amat_1d[i*N + j];
         }
     }
     k = 0;
@@ -396,8 +397,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ntran, int ndata, int 
             for(i = 0; i < ndata_used; ++i){
                 iloc = rnd_index[i];
                 for (k = iloc * mset; k < (iloc + 1) * mset; ++k){
-         //           amat_mod[l++] = amat[k][j];
-					amat_mod[l++] = amat_1d[k*N + j];
+                    amat_mod[l++] = amat[k][j];
+			//		amat_mod[l++] = amat_1d[k*N + j];
                 }
             }
         }
@@ -493,8 +494,8 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ntran,
         k = 0;
         for(j = 0; j < N; ++j){
             for(i = M_Start; i < M_End; ++i){
-          //      amat_mod[k++] = amat[i][j];
-				amat_mod[k++] = amat_1d[N*i + j];
+                amat_mod[k++] = amat[i][j];
+			//	amat_mod[k++] = amat_1d[N*i + j];
             }
         }
 
@@ -557,9 +558,9 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     std::cout << "Calculation of Matrix Elements for Direct Fitting Started ..." << std::endl;
     for (i = 0; i < M; ++i){
         for (j = 0; j < N; ++j){
-			std::cout << N*i+j << std::endl;
-			amat_1d[N*i + j] = 0.0;
-      //      amat[i][j] = 0.0;
+		//	std::cout << N*i+j << std::endl;
+		//	amat_1d[N*i + j] = 0.0;
+            amat[i][j] = 0.0;
         }
         fsum[i] = 0.0;
     }
@@ -623,8 +624,8 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
                         }
-						amat_1d[N*k + iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
-                   //     amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+					//	amat_1d[N*k + iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+                        amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
                         ++mm;
                     }
                     ++iparam;

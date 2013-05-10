@@ -938,7 +938,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 		std::cout << "Symmetrically equivalent displacements and forces data are" << std::endl;
 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
 
-	} else {
+	} else if (multiply_data == 1) {
 
 		memory->allocate(u, nat, 3);
 		memory->allocate(f, nat, 3);
@@ -978,7 +978,30 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 		std::cout << "Symmetrically (Only translational part) equivalent displacements and forces data are" << std::endl;
 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
 
-	}
+	} else if (multiply_data == 0) {
+
+		memory->allocate(u, nat, 3);
+		memory->allocate(f, nat, 3);
+
+		for (i = 0; i < ndata; ++i) {
+			for (j = 0; j < nat; ++j) {
+				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
+				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+			}
+			for (j = 0; j < nat; ++j){
+				files->ofs_disp_sym.write((char *) &u[j][0], sizeof(double));
+				files->ofs_disp_sym.write((char *) &u[j][1], sizeof(double));
+				files->ofs_disp_sym.write((char *) &u[j][2], sizeof(double));
+				files->ofs_force_sym.write((char *) &f[j][0], sizeof(double));
+				files->ofs_force_sym.write((char *) &f[j][1], sizeof(double));
+				files->ofs_force_sym.write((char *) &f[j][2], sizeof(double));
+			}
+		}
+
+		ntran = 1;
+	} else if (multiply_data == -1) {
+		ntran = 1;
+	} 
 
 	files->ofs_disp_sym.close();
 	files->ofs_force_sym.close();
