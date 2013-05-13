@@ -165,6 +165,35 @@ int main(int argc, char *argv[]) {
 		}
 
 		calc_kappa_size(max_len, d_len, itemp, size_flag);
+	
+	} else if (calc == "kappa_size2" ) {
+
+		double max_len, d_len;
+		int size_flag[3];
+		int itemp;
+		double target_temp;
+
+		beg_s = atoi(argv[3]) - 1;
+		end_s = atoi(argv[4]);
+
+		if (end_s == 0) end_s = ns;
+
+		max_len = atof(argv[5]);
+		d_len = atof(argv[6]);
+
+		target_temp = atof(argv[7]);
+		if (fmod(target_temp-tmin, dt) > 1.0e-12) {
+			cout << "No information is found at the given temperature." << endl;
+			exit(1);
+		}
+		itemp = static_cast<int>((target_temp - tmin) / dt);
+
+		for (i = 0; i < 3; ++i) {
+			size_flag[i] = atoi(argv[8+i]);
+		}
+
+		calc_kappa_size2(max_len, d_len, itemp, size_flag);
+
 	}
 
 	return 0;
@@ -329,6 +358,74 @@ void calc_kappa_size(double max_length, double delta_length, int itemp, int flag
 	}
 
 }
+
+void calc_kappa_size2(double max_length, double delta_length, int itemp, int flag[3])
+{
+	int nlength = static_cast<int>(max_length/delta_length);
+	double length;
+	double kappa[3][3];
+	int il, ik, is;
+	int nsame;
+	double tau_tmp, c_tmp;
+	double mfp_tmp[3];
+
+	double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+
+
+	cout << "# Size dependent thermal conductivity at temperature " << temp[itemp] << " K." << endl;
+	cout << "# Relaxation time will be modified following Matthiesen's rule " << endl;
+	cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+	cout << "# Size change flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
+	cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
+
+
+	for (il = 0; il < nlength; ++il) {
+		length = delta_length * static_cast<double>(il);
+
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				kappa[i][j] = 0.0;
+			}
+		}
+
+		for (ik = 0; ik < nk; ++ik) {
+			nsame = n_weight[ik];
+
+			for (is = beg_s; is < end_s; ++is) {
+				tau_tmp = tau[itemp][ik][is];
+				c_tmp = Cv(omega[ik][is], temp[itemp]);
+
+				for (i = 0; i < nsame; ++i) {
+
+					for (j = 0; j < 3; ++j) {
+						mfp_tmp[j] = tau_tmp * abs(vel[ik][is][i][j]) * 0.001;
+
+						if (flag[j]) {	
+							for (k = 0; k < 3; ++k) {
+								kappa[j][k] += c_tmp * vel[ik][is][i][j] * vel[ik][is][i][k] * tau_tmp * length / (length + 2.0 * mfp_tmp[j]); 
+							}
+						} else {
+							for (k = 0; k < 3; ++k) {
+								kappa[j][k] += c_tmp * vel[ik][is][i][j] * vel[ik][is][i][k] * tau_tmp; 
+							}
+						}
+					}
+
+				}
+			}
+		}
+
+		cout << setw(15) << length;
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				cout << setw(15) << kappa[i][j]*factor;
+			}
+		}
+		cout << endl;
+	}
+
+}
+
 
 int locate_tag(string key)
 {

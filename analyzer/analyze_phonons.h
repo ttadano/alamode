@@ -33,6 +33,7 @@ void calc_tau(int);
 void calc_tau_temp(int, int);
 void calc_kappa();
 void calc_kappa_size(double, double, int, int [3]);
+void calc_kappa_size2(double, double, int, int [3]);
 double Cv(double, double);
 
 static const double Ryd_to_kayser = Hz_to_kayser / time_ry;
