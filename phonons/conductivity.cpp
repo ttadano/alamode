@@ -110,13 +110,21 @@ void Conductivity::prepare_restart()
 			writes->fs_result << "##Phonon Frequency" << std::endl;
 			writes->fs_result << "#K-point (Symmetrically reduced), Branch, Omega (cm^-1)" << std::endl;
 
-			ik = 0;
-			for (i = 0; i < kpoint->nk_equiv.size(); ++i){
+// 			ik = 0;
+// 			for (i = 0; i < kpoint->nk_equiv.size(); ++i){
+// 				for (is = 0; is < dynamical->neval; ++is) {
+// 					writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
+// 					writes->fs_result << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[ik][is]) << std::endl;
+// 				}
+// 				ik += kpoint->nk_equiv[i];
+// 			}
+
+			for (i = 0; i < kpoint->nk_reduced; ++i) {
+				ik = kpoint->k_reduced[i][0];
 				for (is = 0; is < dynamical->neval; ++is) {
 					writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
 					writes->fs_result << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[ik][is]) << std::endl;
 				}
-				ik += kpoint->nk_equiv[i];
 			}
 
 			writes->fs_result << "##END Phonon Frequency" << std::endl << std::endl;
