@@ -201,19 +201,52 @@ int main(int argc, char *argv[]) {
 
 void calc_tau(int itemp) 
 {
+	int ik, is;
+
 	double vel_norm;
+
+	double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+	double kappa[3][3];
+	double tau_tmp, c_tmp;
 
 	cout << "# Relaxation time at temperature " <<  temp[itemp] << " K." << endl;
 	cout <<	"# kpoint range " << beg_k + 1 << " " << end_k << endl;
 	cout <<	"# mode   range " << beg_s + 1 << " " << end_s << endl;
-	cout << "# ik, is, Frequency [cm^{-1}], Relaxation Time [ps], velocity [m/s],  MFP [nm]" << endl;
+	cout << "#  ik,  is, Frequency [cm^{-1}], Relaxation Time [ps], |Velocity| [m/s], MFP [nm], ";
+	cout << "Multiplicity, Thermal conductivity par mode (xx, xy, ...) [W/mK]" << endl;
 
-	for (i = beg_k; i < end_k; ++i) {
-		for (j = beg_s; j < end_s; ++j) {
-			vel_norm = sqrt(vel[i][j][0][0]*vel[i][j][0][0] + vel[i][j][0][1]*vel[i][j][0][1] + vel[i][j][0][2]*vel[i][j][0][2]);
-			cout << setw(5) << i + 1 << setw(5) << j + 1;
-			cout << setw(15) << omega[i][j] << setw(15) << tau[itemp][i][j];
-			cout << setw(15) << vel_norm << setw(15) << tau[itemp][i][j]*vel_norm*0.001 << endl;
+	for (ik = beg_k; ik < end_k; ++ik) {
+		for (is = beg_s; is < end_s; ++is) {
+            
+			tau_tmp	= tau[itemp][ik][is];
+			c_tmp = Cv(omega[ik][is], temp[itemp]);
+
+			for (i = 0; i < 3; ++i) {
+				for (j = 0; j < 3; ++j) {
+					kappa[i][j] = 0.0;
+				}
+			}
+
+			for (k = 0; k < n_weight[ik]; ++k) {
+				for (i = 0; i < 3; ++i) {
+					for (j = 0; j < 3; ++j) {
+						kappa[i][j] += c_tmp * tau_tmp * vel[ik][is][k][i] * vel[ik][is][k][j];
+					}
+				}
+			}
+
+			vel_norm = sqrt(vel[ik][is][0][0]*vel[ik][is][0][0] + vel[ik][is][0][1]*vel[ik][is][0][1] + vel[ik][is][0][2]*vel[ik][is][0][2]);
+			cout << setw(5) << ik + 1 << setw(5) << is + 1;
+			cout << setw(15) << omega[ik][is] << setw(15) << tau_tmp;
+			cout << setw(15) << vel_norm << setw(15) << tau_tmp*vel_norm*0.001;
+			cout << setw(5) << n_weight[ik];
+
+			for (i = 0; i < 3; ++i){
+				for (j = 0; j < 3; ++j) {
+					cout << setw(15) << kappa[i][j]*factor / static_cast<double>(n_weight[ik]);
+				}
+			}
+			cout << endl;
 		}
 	}
 }
