@@ -3,6 +3,7 @@
 #include "pointers.h"
 #include <complex>
 #include <vector>
+#include <string>
 
 namespace PHON_NS {
 
@@ -43,18 +44,25 @@ namespace PHON_NS {
 
         void setup_relaxation();
         void finish_relaxation();
+		void setup_mode_analysis();
         void calc_ReciprocalV();
         void calc_selfenergy();
+		void compute_mode_tau();
         void calc_selfenergy_at_T(const double);
         void calc_damping(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+		void calc_damping4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
         double self_tetra(const double, const double, const unsigned int, const unsigned int);
         double epsilon;
         int ksum_mode;
+		bool quartic_mode;
+		bool ks_analyze_mode;
+		std::string ks_input;
 
 		void v3_test();
+		void v4_test();
 		void modify_eigenvectors();
 
      private:
@@ -64,6 +72,7 @@ namespace PHON_NS {
         };
         unsigned int nk, ns, nks;
         std::vector<ReciprocalVs> *V;
+		std::vector<unsigned int> kslist;
         
         double delta_lorentz(const double);
         double delta_gauss(const double);
@@ -71,6 +80,7 @@ namespace PHON_NS {
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         inline std::complex<double> V3new(const unsigned int [3]);
         inline std::complex<double> V3new2(const unsigned int [3]);
+		inline std::complex<double> V4(const unsigned int [4]);
         double **vec_s;
         double ***relvec;
         double *invsqrt_mass_p;
@@ -78,8 +88,10 @@ namespace PHON_NS {
         double **e_tmp, **f_tmp;
         double ***fc3;
         double ***vec_for_v3, *invmass_for_v3;
-        std::complex<double> ***cexp_phase;
+		double ***vec_for_v4, *invmass_for_v4;
+		std::complex<double> ***cexp_phase;
         std::complex<double> **cexp_phase2;
 		int **evec_index;
+		int **evec_index4;
     };
 }

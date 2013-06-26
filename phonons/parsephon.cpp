@@ -75,15 +75,16 @@ void Input::parce_input(int narg, char **arg)
 void Input::parse_general_vars() {
 
 	int i;
-	std::string prefix, mode, fcsinfo, borninfo, file_result;
+	std::string prefix, mode, fcsinfo, borninfo, file_result, ks_input;
 	int nsym, nnp, celldim[3], nbands, ismear;
 	double Tmin, Tmax, dT, na_sigma, epsilon;
 	double emin, emax, delta_e, delta_a;
 	bool eigenvector, printxsf, nonanalytic, lclassical, restart;
+	bool quartic_mode, ks_analyze_mode;
 	struct stat st;
 
 	std::string str_tmp;
-	std::string str_allowed_list = "PREFIX MODE NSYM NNP CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART";
+	std::string str_allowed_list = "PREFIX MODE NSYM NNP CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT";
 	std::string str_no_defaults = "PREFIX MODE NSYM NNP FCSINFO";
 	std::vector<std::string> no_defaults, celldim_v;
 	std::map<std::string, std::string> general_var_dict;
@@ -139,6 +140,9 @@ void Input::parse_general_vars() {
 	nonanalytic = false;
 	lclassical = false;
 
+	quartic_mode = false;
+	ks_analyze_mode = false;
+
 	// if file_result exists in the current directory, restart mode will be automatically turned on.
 
 	if (stat(file_result.c_str(), &st) == 0) {
@@ -190,6 +194,8 @@ void Input::parse_general_vars() {
 	assign_val(na_sigma, "NA_SIGMA", general_var_dict);
 
 	assign_val(delta_a, "DELTA_A", general_var_dict);
+	assign_val(quartic_mode, "QUARTIC", general_var_dict);
+	assign_val(ks_input, "KS_INPUT", general_var_dict);
 
 
 	str_tmp = general_var_dict["CELLDIM"];
@@ -258,6 +264,8 @@ void Input::parse_general_vars() {
 
 	gruneisen->delta_a = delta_a;
 	relaxation->ksum_mode = ismear;
+	relaxation->quartic_mode = quartic_mode;
+	relaxation->ks_input = ks_input;
 
 	general_var_dict.clear();
 }

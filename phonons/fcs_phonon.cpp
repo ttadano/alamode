@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "error.h"
 #include "phonons.h"
+#include "relaxation.h"
 #include "../alm_c++/constants.h"
 #include <string>
 #include <iomanip>
@@ -44,13 +45,16 @@ void Fcs_phonon::setup(std::string mode)
     if (mympi->my_rank == 0) load_fc2();
     // This is not necessary
     MPI_Bcast(&fc2[0][0][0][0], 9*natmin*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&relaxation->quartic_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-    if (mode == "boltzmann" || mode == "gruneisen"){
-        memory->allocate(force_constant, 2);
+	if (mode == "boltzmann" || mode == "gruneisen"){
+
+		if (relaxation->quartic_mode) maxorder = 3;
+
+        memory->allocate(force_constant, maxorder);
 
         if (mympi->my_rank == 0) load_fcs();
-
-        MPI_Bcast_fc_class(2);
+        MPI_Bcast_fc_class(maxorder);
 
         if (mympi->my_rank == 0) {
             for (i = 0; i < maxorder; ++i){
@@ -227,6 +231,7 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
 {
     unsigned int i;
     int j, k;
+	int len;
     int nelem;
     double *fcs_tmp;
     unsigned int ***ind;
@@ -234,8 +239,9 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
     Triplet tri_tmp;
     std::vector<Triplet> tri_vec;
 
-    for (i = 0; i < N; ++i){
-        int len = force_constant[i].size();
+    for (i = 0; i < N; ++i) {
+   
+		len = force_constant[i].size();
         nelem = i + 2;
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);

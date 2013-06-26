@@ -100,7 +100,11 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		dynamical->setup_dynamical(mode);
 		dynamical->diagonalize_dynamical_all();
 
-		writes->setup_result_io();
+		relaxation->setup_mode_analysis();
+
+		if (!relaxation->ks_analyze_mode) {
+		    writes->setup_result_io();
+		}
 
 		integration->setup_integration();
 		relaxation->setup_relaxation();
@@ -109,18 +113,26 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		// relaxation->calc_selfenergy();
 
-		//	relaxation->v3_test();
+	//	relaxation->v3_test();
+	//	relaxation->v4_test();
 
+		if (relaxation->ks_analyze_mode) {
+			relaxation->compute_mode_tau();
+		} else {
 		conductivity->setup_kl();
 		conductivity->prepare_restart();
 		conductivity->calc_kl2();
+		}
 		
-
 	//	conductivity->calc_kl();
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
-		conductivity->finish_kl();
+
+		if (!relaxation->ks_analyze_mode) {
+		   conductivity->finish_kl();
+		}
+
 		writes->finalize_result_io();
 
 	} else if (mode == "gruneisen") {
