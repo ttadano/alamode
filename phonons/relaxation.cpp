@@ -1042,33 +1042,35 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 						for (i = 0; i < N; ++i) {
 							T_tmp = T[i];
 
-							if (conductivity->use_classical_Cv == 0) {
+			//				if (conductivity->use_classical_Cv == 0) {
 								n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
 								n2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
 								n3 = phonon_thermodynamics->fB(omega_inner[2], T_tmp);
-							} else if (conductivity->use_classical_Cv == 1) {
-								n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp);
-								n2 = phonon_thermodynamics->fC(omega_inner[1], T_tmp);
-								n3 = phonon_thermodynamics->fC(omega_inner[2], T_tmp);
-							}
+// 							} else if (conductivity->use_classical_Cv == 1) {
+// 								n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp);
+// 								n2 = phonon_thermodynamics->fC(omega_inner[1], T_tmp);
+// 								n3 = phonon_thermodynamics->fC(omega_inner[2], T_tmp);
+// 							}
 
 							n12 = n1 * n2;
 							n23 = n2 * n3;
 							n31 = n3 * n1;
 
-							if (ksum_mode == 0) {
+						//	std::cout << "n1 = " << n12 << " " << n31 << std::endl;
+
+						//	if (ksum_mode == 0) {
 								ret[i] += v4_tmp 
 									* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
 									+ (n12 - n23 - n31 - n3) * (delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
 									+ (n23 - n12 - n31 - n1) * (delta_lorentz(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_lorentz(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
 									+ (n31 - n12 - n23 - n2) * (delta_lorentz(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_lorentz(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
-							} else if (ksum_mode == 1) {
-								ret[i] += v4_tmp 
-									* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_gauss(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
-									+ (n12 - n23 - n31 - n3) * (delta_gauss(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_gauss(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
-									+ (n23 - n12 - n31 - n1) * (delta_gauss(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_gauss(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
-									+ (n31 - n12 - n23 - n2) * (delta_gauss(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_gauss(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
-							}
+// 							} else if (ksum_mode == 1) {
+// 								ret[i] += v4_tmp 
+// 									* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_gauss(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
+// 									+ (n12 - n23 - n31 - n3) * (delta_gauss(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_gauss(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
+// 									+ (n23 - n12 - n31 - n1) * (delta_gauss(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_gauss(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
+// 									+ (n31 - n12 - n23 - n2) * (delta_gauss(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_gauss(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
+// 							}
 						}
 					}
 				}
@@ -1439,7 +1441,7 @@ void Relaxation::compute_mode_tau()
 			ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
 			
 			if (quartic_mode) {
-				ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+				ofs_mode_tau << std::setw(15) << damp4[j];
 			}
 
 			ofs_mode_tau << std::endl; 
