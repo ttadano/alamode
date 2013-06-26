@@ -174,6 +174,17 @@ void Relaxation::setup_relaxation()
 
 		// This is for quartic vertexes.
 
+		if (mympi->my_rank == 0) {
+			std::cout << std::endl << std::endl;
+			std::cout << "**********************************************************" << std::endl;
+			std::cout << "    QUARTIC = 1: quartic_mode is on !                     " << std::endl;
+			std::cout << "    Be careful! This mode is still under test.            " << std::endl;
+			std::cout << "    There can be bugs and the computation is very heavy   " << std::endl;
+			std::cout << "**********************************************************" << std::endl;
+			std::cout << std::endl;
+		}
+	
+	
 		memory->allocate(vec_for_v4, fcs_phonon->force_constant[2].size(), 3, 3);
 		memory->allocate(invmass_for_v4, fcs_phonon->force_constant[2].size());
 
@@ -1022,7 +1033,7 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 
 			ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
-			std::cout << ik1 << " " << ik2 << " " << ik3 << std::endl;
+		//	std::cout << ik1 << " " << ik2 << " " << ik3 << std::endl;
 
 			for (is1 = 0; is1 < ns; ++is1){
 				for (is2 = 0; is2 < ns; ++is2){
