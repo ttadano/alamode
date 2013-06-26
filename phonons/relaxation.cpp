@@ -1441,7 +1441,7 @@ void Relaxation::compute_mode_tau()
 			ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
 			
 			if (quartic_mode) {
-				ofs_mode_tau << std::setw(15) << damp4[j];
+				ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
 			}
 
 			ofs_mode_tau << std::endl; 
