@@ -1078,7 +1078,7 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 		}
 	}
 
-	for (i = 0; i < N; ++i) ret[i] *=  pi / (std::pow(static_cast<double>(nk), 4.0/3.0) * 3.0 * std::pow(2.0, 5));
+	for (i = 0; i < N; ++i) ret[i] *=  pi / (std::pow(static_cast<double>(nk), 2) * 3.0 * std::pow(2.0, 5));
 
 }
 double Relaxation::self_tetra(const double T, const double omega,
