@@ -103,7 +103,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		relaxation->setup_mode_analysis();
 
 		if (!relaxation->ks_analyze_mode) {
-		    writes->setup_result_io();
+			writes->setup_result_io();
 		}
 
 		integration->setup_integration();
@@ -113,24 +113,26 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		// relaxation->calc_selfenergy();
 
-	//	relaxation->v3_test();
-	//	relaxation->v4_test();
+		//	relaxation->v3_test();
+		//	relaxation->v4_test();
+
+		std::cout << dynamical->evec_phonon[0][0][0] << std::endl;
 
 		if (relaxation->ks_analyze_mode) {
 			relaxation->compute_mode_tau();
 		} else {
-		conductivity->setup_kl();
-		conductivity->prepare_restart();
-		conductivity->calc_kl2();
+			conductivity->setup_kl();
+			conductivity->prepare_restart();
+			conductivity->calc_kl2();
 		}
-		
-	//	conductivity->calc_kl();
+
+		//	conductivity->calc_kl();
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
 
 		if (!relaxation->ks_analyze_mode) {
-		   conductivity->finish_kl();
+			conductivity->finish_kl();
 		}
 
 		writes->finalize_result_io();

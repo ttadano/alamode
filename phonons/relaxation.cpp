@@ -183,8 +183,8 @@ void Relaxation::setup_relaxation()
 			std::cout << "**********************************************************" << std::endl;
 			std::cout << std::endl;
 		}
-	
-	
+
+
 		memory->allocate(vec_for_v4, fcs_phonon->force_constant[2].size(), 3, 3);
 		memory->allocate(invmass_for_v4, fcs_phonon->force_constant[2].size());
 
@@ -318,21 +318,21 @@ void Relaxation::setup_mode_analysis()
 {
 
 	// Judge if ks_analyze_mode should be turned on or not.
-    
+
 	unsigned int i;
-	
+
 	if (mympi->my_rank == 0) {
 		if (!ks_input.empty()) {
 			std::cout << std::endl;
 			std::cout << "KS_INPUT is given." << std::endl;
 			std::cout << "Analysis on specific k points will be performed instead of thermal conductivity calculations." << std::endl;
 			std::cout << std::endl;
-		
-		
+
+
 			std::ifstream ifs_ks;
 			ifs_ks.open(ks_input.c_str(), std::ios::in);
 			if (!ifs_ks) error->exit("setup_relaxation", "Cannot open file KS_INPUT");
-			 
+
 			unsigned int nlist;
 			double ktmp[3];
 			unsigned int snum_tmp;
@@ -344,21 +344,21 @@ void Relaxation::setup_mode_analysis()
 
 			kslist.clear();
 			for (i = 0; i < nlist; ++i) {
-			
-      			ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
+
+				ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
 				knum_tmp = kpoint->get_knum(ktmp[0], ktmp[1], ktmp[2]);
 
 				if (knum_tmp == -1) error->exit("setup_relaxation", "Given kpoint is not exist in given k-point grid.");
 				kslist.push_back(knum_tmp * dynamical->neval + snum_tmp);
 			}
 			std::cout << "The number of entries = " << kslist.size() << std::endl;
-		
+
 			ks_analyze_mode = true;
-		
+
 		} else {
-			
+
 			ks_analyze_mode = false;
-		
+
 		}
 	}
 	MPI_Bcast(&ks_analyze_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
@@ -1033,7 +1033,7 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 
 			ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
-		//	std::cout << ik1 << " " << ik2 << " " << ik3 << std::endl;
+			//	std::cout << ik1 << " " << ik2 << " " << ik3 << std::endl;
 
 			for (is1 = 0; is1 < ns; ++is1){
 				for (is2 = 0; is2 < ns; ++is2){
@@ -1048,40 +1048,40 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 						omega_inner[1] = dynamical->eval_phonon[ik2][is2];
 						omega_inner[2] = dynamical->eval_phonon[ik3][is3];
 
-			      		v4_tmp = std::norm(V4(arr));
+						v4_tmp = std::norm(V4(arr));
 
 						for (i = 0; i < N; ++i) {
 							T_tmp = T[i];
 
-			//				if (conductivity->use_classical_Cv == 0) {
-								n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
-								n2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
-								n3 = phonon_thermodynamics->fB(omega_inner[2], T_tmp);
-// 							} else if (conductivity->use_classical_Cv == 1) {
-// 								n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp);
-// 								n2 = phonon_thermodynamics->fC(omega_inner[1], T_tmp);
-// 								n3 = phonon_thermodynamics->fC(omega_inner[2], T_tmp);
-// 							}
+							//				if (conductivity->use_classical_Cv == 0) {
+							n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
+							n2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+							n3 = phonon_thermodynamics->fB(omega_inner[2], T_tmp);
+							// 							} else if (conductivity->use_classical_Cv == 1) {
+							// 								n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp);
+							// 								n2 = phonon_thermodynamics->fC(omega_inner[1], T_tmp);
+							// 								n3 = phonon_thermodynamics->fC(omega_inner[2], T_tmp);
+							// 							}
 
 							n12 = n1 * n2;
 							n23 = n2 * n3;
 							n31 = n3 * n1;
 
-						//	std::cout << "n1 = " << n12 << " " << n31 << std::endl;
+							//	std::cout << "n1 = " << n12 << " " << n31 << std::endl;
 
-						//	if (ksum_mode == 0) {
-								ret[i] += v4_tmp 
-									* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
-									+ (n12 - n23 - n31 - n3) * (delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
-									+ (n23 - n12 - n31 - n1) * (delta_lorentz(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_lorentz(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
-									+ (n31 - n12 - n23 - n2) * (delta_lorentz(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_lorentz(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
-// 							} else if (ksum_mode == 1) {
-// 								ret[i] += v4_tmp 
-// 									* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_gauss(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
-// 									+ (n12 - n23 - n31 - n3) * (delta_gauss(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_gauss(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
-// 									+ (n23 - n12 - n31 - n1) * (delta_gauss(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_gauss(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
-// 									+ (n31 - n12 - n23 - n2) * (delta_gauss(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_gauss(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
-// 							}
+							//	if (ksum_mode == 0) {
+							ret[i] += v4_tmp 
+								* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
+								+ (n12 - n23 - n31 - n3) * (delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
+								+ (n23 - n12 - n31 - n1) * (delta_lorentz(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_lorentz(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
+								+ (n31 - n12 - n23 - n2) * (delta_lorentz(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_lorentz(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
+							// 							} else if (ksum_mode == 1) {
+							// 								ret[i] += v4_tmp 
+							// 									* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_gauss(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
+							// 									+ (n12 - n23 - n31 - n3) * (delta_gauss(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_gauss(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
+							// 									+ (n23 - n12 - n31 - n1) * (delta_gauss(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_gauss(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
+							// 									+ (n31 - n12 - n23 - n2) * (delta_gauss(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_gauss(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
+							// 							}
 						}
 					}
 				}
@@ -1092,6 +1092,134 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 	for (i = 0; i < N; ++i) ret[i] *=  pi / (std::pow(static_cast<double>(nk), 2) * 3.0 * std::pow(2.0, 5));
 
 }
+
+void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const double omega,
+										 const unsigned int knum, const unsigned int snum, double ***ret)
+{
+	unsigned int i, j, k;
+	unsigned int is, js, ik, jk;
+	unsigned int iat, jat;
+	unsigned int ks_tmp[3];
+
+	double xk_tmp[3];
+	double n1, n2;
+	double *v3_tmp;
+	double **omega_inner;
+
+	double ****f_tmp_atom;
+	double ***v3_tmp_proj;
+	double proj1, proj2;
+
+	unsigned int nkx = kpoint->nkx;
+	unsigned int nky = kpoint->nky;
+	unsigned int nkz = kpoint->nkz;
+
+	int iloc, jloc, kloc;
+
+	memory->allocate(f_tmp_atom, system->natmin, system->natmin, 4, nk);
+
+	unsigned int natmin = system->natmin;
+
+	for (iat = 0; iat < natmin; ++iat) {
+		for (jat = 0; jat < natmin; ++jat) {
+			for (i = 0; i < N; ++i) {
+				ret[iat][jat][i] = 0.0;
+			}
+		}
+	}
+
+	ks_tmp[0] = ns * kpoint->knum_minus[knum] + snum;
+
+	memory->allocate(v3_tmp, nk);
+	memory->allocate(v3_tmp_proj, natmin, natmin, nk);
+
+	memory->allocate(omega_inner, nk, 2);
+
+	for (is = 0; is < ns; ++is) {
+		for (js = 0; js < ns; ++js)	{
+
+			for (ik = 0; ik < nk; ++ik) {
+
+				xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
+				xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
+				xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
+
+				iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+				jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+				kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+
+				jk = kloc + nkz * jloc + nky * nkz * iloc;
+
+				ks_tmp[1] = ik * ns + is;
+				ks_tmp[2] = jk * ns + js;
+
+				omega_inner[ik][0] = dynamical->eval_phonon[ik][is];
+				omega_inner[ik][1] = dynamical->eval_phonon[jk][js];
+
+				v3_tmp[ik] = std::norm(V3new(ks_tmp));
+
+				for (iat = 0; iat < natmin; ++iat) {
+					proj1 = 0.0;
+					for (k = 0; k < 3; ++k) proj1 += std::norm(dynamical->evec_phonon[ik][is][3*iat + k]);
+
+					for (jat = 0; jat < natmin; ++jat) {
+						proj2 = 0.0;
+						for (k = 0; k < 3; ++k) proj2 += std::norm(dynamical->evec_phonon[jk][js][3*jat + k]);
+
+						v3_tmp_proj[iat][jat][ik] = v3_tmp[ik]*proj1*proj2;
+					}
+				}
+
+				// e_tmp[0][kcount] = -omega_inner[kcount][0] - omega_inner[kcount][1];
+				e_tmp[1][ik] = omega_inner[ik][0] + omega_inner[ik][1];
+				e_tmp[2][ik] = omega_inner[ik][0] - omega_inner[ik][1];
+				e_tmp[3][ik] = -omega_inner[ik][0] + omega_inner[ik][1];
+			}
+
+			for (j = 0; j < N; ++j){
+				for (iat = 0; iat < natmin; ++iat) {
+					for (jat = 0; jat < natmin; ++jat) {
+
+						for (i = 0; i < nk; ++i){
+
+							if (conductivity->use_classical_Cv == 0) {
+								n1 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) + phonon_thermodynamics->fB(omega_inner[i][1], T[j]) + 1.0;
+								n2 = phonon_thermodynamics->fB(omega_inner[i][0], T[j]) - phonon_thermodynamics->fB(omega_inner[i][1], T[j]);
+							} else if (conductivity->use_classical_Cv == 1) {
+								n1 = phonon_thermodynamics->fC(omega_inner[i][0], T[j]) + phonon_thermodynamics->fC(omega_inner[i][1], T[j]) + 1.0;
+								n2 = phonon_thermodynamics->fC(omega_inner[i][0], T[j]) - phonon_thermodynamics->fC(omega_inner[i][1], T[j]);
+							}
+
+							// f_tmp[0][i] = -v3_tmp[i] * n1;
+							f_tmp_atom[iat][jat][1][i]=  v3_tmp_proj[iat][jat][i] * n1;
+							f_tmp_atom[iat][jat][2][i]= -v3_tmp_proj[iat][jat][i] * n2;
+							f_tmp_atom[iat][jat][3][i] = v3_tmp_proj[iat][jat][i] * n2;
+						}
+
+						for (i = 1; i < 4; ++i) {
+							ret[iat][jat][j] += integration->do_tetrahedron(e_tmp[i], f_tmp_atom[iat][jat][i], omega);
+						}
+					}
+				}
+			}
+
+		}
+	}
+
+	for (iat = 0; iat < natmin; ++iat){
+		for (jat = 0; jat < natmin; ++jat) {
+			for (i = 0; i < N; ++i) {
+				ret[iat][jat][i] *=  pi * std::pow(0.5, 4);
+			}
+		}
+	}
+
+	memory->deallocate(v3_tmp);
+	memory->deallocate(omega_inner);
+	memory->deallocate(v3_tmp_proj);
+}
+
+
 double Relaxation::self_tetra(const double T, const double omega,
 							  const unsigned int knum, const unsigned int snum)
 {
@@ -1344,7 +1472,7 @@ void Relaxation::v3_test() {
 	std::cout << V3new2(kstmp) << std::endl;
 
 
-// error->exit("v3_test", "finished!");
+	// error->exit("v3_test", "finished!");
 }
 
 
@@ -1405,59 +1533,136 @@ void Relaxation::compute_mode_tau()
 	unsigned int knum, snum;
 
 	NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
-
-	std::ofstream ofs_mode_tau;
-	std::string file_mode_tau = input->job_title + ".mode_tau";
-
-	ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
-	if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
-
 	memory->allocate(T_arr, NT);
-	memory->allocate(damp3, NT);
-
-	if (quartic_mode) {
-	  memory->allocate(damp4, NT);
-	}
 
 	for (i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i)*dT;
 
-	for (i = 0; i < kslist.size(); ++i) {
-		knum = kslist[i] / ns;
-		snum = kslist[i] % ns;
 
-		omega = dynamical->eval_phonon[knum][snum];
+	std::ofstream ofs_mode_tau;
+	std::string file_mode_tau;
 
-		std::cout << knum << " " << snum << std::endl;
 
-		ofs_mode_tau << "# xk = ";
+	if (!atom_project_mode) {
 
-		for (j = 0; j < 3; ++j) {
-			ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
-		}
-		ofs_mode_tau << std::endl;
-		ofs_mode_tau << "# mode = " << snum << std::endl;
-		ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
+		file_mode_tau = input->job_title + ".mode_tau";
 
-		if (ksum_mode == -1) {
-			relaxation->calc_damping_tetra(NT, T_arr, omega, knum, snum, damp3);
-		} else {
-			relaxation->calc_damping(NT, T_arr, omega, knum, snum, damp3);
-		}
+		ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
+		if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+
+		memory->allocate(damp3, NT);
 
 		if (quartic_mode) {
-			relaxation->calc_damping4(NT, T_arr, omega, knum, snum, damp4);
+			memory->allocate(damp4, NT);
 		}
 
-		for (j = 0; j < NT; ++j) {
-			ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
-			
-			if (quartic_mode) {
-				ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+		for (i = 0; i < kslist.size(); ++i) {
+			knum = kslist[i] / ns;
+			snum = kslist[i] % ns;
+
+			omega = dynamical->eval_phonon[knum][snum];
+
+			ofs_mode_tau << "# xk = ";
+
+			for (j = 0; j < 3; ++j) {
+				ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+			}
+			ofs_mode_tau << std::endl;
+			ofs_mode_tau << "# mode = " << snum << std::endl;
+			ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
+
+			if (ksum_mode == -1) {
+				calc_damping_tetra(NT, T_arr, omega, knum, snum, damp3);
+			} else {
+				calc_damping(NT, T_arr, omega, knum, snum, damp3);
 			}
 
-			ofs_mode_tau << std::endl; 
+			if (quartic_mode) {
+				if (ksum_mode == -1) {
+					error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
+				} else {
+					calc_damping4(NT, T_arr, omega, knum, snum, damp4);
+				}
+			}
+
+			for (j = 0; j < NT; ++j) {
+				ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
+
+				if (quartic_mode) {
+					ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+				}
+
+				ofs_mode_tau << std::endl; 
+			}
 		}
+
+		memory->deallocate(damp3);
+
+		if (quartic_mode) {
+			memory->deallocate(damp4);
+		}
+
+	} else {
+
+		unsigned int natmin = system->natmin;
+		int iat, jat;
+		double ***damp3_atom;
+		double damp_sum;
+
+		memory->allocate(damp3_atom, natmin, natmin, NT);
+
+		file_mode_tau = input->job_title + ".mode_tau_atom";
+
+		ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
+		if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+
+		for (i = 0; i < kslist.size(); ++i) {
+
+			knum = kslist[i] / ns;
+			snum = kslist[i] % ns;
+
+			omega = dynamical->eval_phonon[knum][snum];
+
+			ofs_mode_tau << "# xk = ";
+
+			for (j = 0; j < 3; ++j) {
+				ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+			}
+			ofs_mode_tau << std::endl;
+			ofs_mode_tau << "# mode = " << snum << std::endl;
+			ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
+			ofs_mode_tau << "# Damping [cm^-1] (total, atomproj[i][j], i,j = 1, natmin)" << std::endl;
+
+			if (ksum_mode == -1) {
+				calc_damping_tetra_atom(NT, T_arr, omega, knum, snum, damp3_atom);
+			}
+
+			for (j = 0; j < NT; ++j) {
+				ofs_mode_tau << std::setw(10) << T_arr[j];
+
+				damp_sum = 0.0;
+
+				for (iat = 0; iat < natmin; ++iat) {
+					for (jat = 0; jat < natmin; ++jat) {
+						damp_sum += damp3_atom[iat][jat][j];
+					}
+				}
+
+				ofs_mode_tau << std::setw(15) << writes->in_kayser(damp_sum);
+
+				for (iat = 0; iat < natmin; ++iat) {
+					for (jat = 0; jat < natmin; ++jat) {
+						ofs_mode_tau << std::setw(15) << writes->in_kayser(damp3_atom[iat][jat][j]);
+					}
+				}
+				ofs_mode_tau << std::endl; 
+			}
+		}
+
+		memory->deallocate(damp3_atom);
 	}
+
+	memory->deallocate(T_arr);
+
 
 }
 

@@ -52,13 +52,15 @@ namespace PHON_NS {
         void calc_damping(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
 		void calc_damping4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-        std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
+        void calc_damping_tetra_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***); 
+		std::complex<double> selfenergy(const double, const double, const unsigned int, const unsigned int);
         std::complex<double> selfenergy2(const double, const double, const unsigned int, const unsigned int);
         double self_tetra(const double, const double, const unsigned int, const unsigned int);
         double epsilon;
         int ksum_mode;
 		bool quartic_mode;
 		bool ks_analyze_mode;
+		bool atom_project_mode;
 		std::string ks_input;
 
 		void v3_test();
