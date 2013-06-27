@@ -110,13 +110,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		relaxation->setup_relaxation();
 
 		//     dos->calc_tdos();
-
 		// relaxation->calc_selfenergy();
-
 		//	relaxation->v3_test();
 		//	relaxation->v4_test();
-
-		std::cout << dynamical->evec_phonon[0][0][0] << std::endl;
 
 		if (relaxation->ks_analyze_mode) {
 			relaxation->compute_mode_tau();
