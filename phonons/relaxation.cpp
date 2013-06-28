@@ -1047,6 +1047,118 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 	for (i = 0; i < N; ++i) ret[i] *=  pi / (std::pow(static_cast<double>(nk), 2) * 3.0 * std::pow(2.0, 5));
 }
 
+void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const double omega, 
+									const unsigned int knum, const unsigned int snum, double ***ret)
+{
+	unsigned int i, j;
+	unsigned int ik, jk;
+	unsigned int is, js;
+	unsigned int iat, jat;
+	unsigned int arr[3];
+
+	double T_tmp;
+	double n1, n2;
+	double v3_tmp;
+	double xk_tmp[3];
+	double omega_inner[2];
+
+	double proj1, proj2;
+
+	unsigned int natmin = system->natmin;
+
+	for (iat = 0; iat < natmin; ++iat) {
+		for (jat = 0; jat < natmin; ++jat) {
+			for (i = 0; i < N; ++i) ret[iat][jat][i] = 0.0;
+		}
+	}
+
+
+	arr[0] = ns * kpoint->knum_minus[knum] + snum;
+
+	unsigned int nkx = kpoint->nkx;
+	unsigned int nky = kpoint->nky;
+	unsigned int nkz = kpoint->nkz;
+
+	int iloc, jloc, kloc;
+
+	for (ik = 0; ik < nk; ++ik) {
+
+		xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
+		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
+		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
+
+		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+
+		jk = kloc + nkz * jloc + nky * nkz * iloc;
+
+		for (is = 0; is < ns; ++is){
+	
+			
+			for (js = 0; js < ns; ++js){
+
+				arr[1] = ns * ik + is;
+				arr[2] = ns * jk + js;
+
+				omega_inner[0] = dynamical->eval_phonon[ik][is];
+				omega_inner[1] = dynamical->eval_phonon[jk][js];
+
+				v3_tmp = std::norm(V3new(arr));
+
+
+
+				for (iat = 0; iat < natmin; ++iat) {
+
+					proj1 = 0.0;
+					for (j = 0; j < 3; ++j) proj1 += std::norm(dynamical->evec_phonon[ik][is][3*iat + j]);
+
+					for (jat = 0; jat < natmin; ++jat) {
+
+						proj2 = 0.0;
+						for (j = 0; j < 3; ++j) proj2 += std::norm(dynamical->evec_phonon[jk][js][3*jat + j]);
+
+						for (i = 0; i < N; ++i) {
+							T_tmp = T[i];
+
+							if (conductivity->use_classical_Cv == 0) {
+								n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
+								n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+							} else if (conductivity->use_classical_Cv == 1) {
+								n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) + phonon_thermodynamics->fC(omega_inner[1], T_tmp) + 1.0;
+								n2 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) - phonon_thermodynamics->fC(omega_inner[1], T_tmp);
+							}
+
+							if (ksum_mode == 0) {
+								ret[iat][jat][i] += v3_tmp * proj1 * proj2
+									* (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+									+ n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+									- n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+									+ n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+							} else if (ksum_mode == 1) {
+								ret[iat][jat][i] += v3_tmp * proj1 * proj2 
+									* (- n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
+									+ n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
+									- n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
+									+ n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
+							}
+						}
+					}
+				}
+
+
+			}
+		}
+	}
+
+	for (iat = 0; iat < natmin; ++iat) {
+		for (jat = 0; jat < natmin; ++jat) {
+			for (i = 0; i < N; ++i) ret[iat][jat][i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+		}
+	}
+}
+
+
 void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const double omega,
 										 const unsigned int knum, const unsigned int snum, double ***ret)
 {
@@ -1583,6 +1695,8 @@ void Relaxation::compute_mode_tau()
 
 			if (ksum_mode == -1) {
 				calc_damping_tetra_atom(NT, T_arr, omega, knum, snum, damp3_atom);
+			} else {
+				calc_damping_atom(NT, T_arr, omega, knum, snum, damp3_atom);
 			}
 
 			for (j = 0; j < NT; ++j) {
