@@ -174,6 +174,7 @@ void Relaxation::setup_relaxation()
 	// 		}
 	// 	}
 
+
 	if (quartic_mode) {
 
 		// This is for quartic vertexes.
@@ -221,7 +222,7 @@ void Relaxation::setup_relaxation()
 
 	MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&calc_realpart, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-
+	MPI_Bcast(&atom_project_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
 	// For tetrahedron method
 	if (ksum_mode == -1) {
@@ -323,7 +324,6 @@ void Relaxation::setup_relaxation()
 
 void Relaxation::setup_mode_analysis()
 {
-
 	// Judge if ks_analyze_mode should be turned on or not.
 
 	unsigned int i;
@@ -369,6 +369,25 @@ void Relaxation::setup_mode_analysis()
 		}
 	}
 	MPI_Bcast(&ks_analyze_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+	unsigned int *kslist_arr;
+	unsigned int nlist;
+
+	nlist = kslist.size();
+
+	MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	memory->allocate(kslist_arr, nlist);
+
+	if (mympi->my_rank == 0) {
+		for (i = 0; i < nlist; ++i) kslist_arr[i] = kslist[i];
+	}
+	MPI_Bcast(&kslist_arr[0], nlist, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+	if (mympi->my_rank > 0) {
+		kslist.clear();
+		for (i = 0; i < nlist; ++i) kslist.push_back(kslist_arr[i]);
+	}
+	memory->deallocate(kslist_arr);
 }
 
 void Relaxation::finish_relaxation()
@@ -1082,7 +1101,7 @@ void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const doubl
 
 	int iloc, jloc, kloc;
 
-	for (ik = 0; ik < nk; ++ik) {
+	for (ik = mympi->my_rank; ik < nk; ik += mympi->nprocs) {
 
 		xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
@@ -1143,13 +1162,14 @@ void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const doubl
 		}
 	}
 
-	for (i = 0; i < N; ++i) {
-		for (iat = 0; iat < natmin; ++iat) {
-			for (jat = 0; jat < natmin; ++jat) {
-				ret[i][iat][jat] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+		for (i = 0; i < N; ++i) {
+			for (iat = 0; iat < natmin; ++iat) {
+				for (jat = 0; jat < natmin; ++jat) {
+					ret[i][iat][jat] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+				}
 			}
 		}
-	}
+
 }
 
 
@@ -1534,11 +1554,12 @@ void Relaxation::compute_mode_tau()
 
 	if (!atom_project_mode) {
 
-		file_mode_tau = input->job_title + ".mode_tau";
+		if (mympi->my_rank == 0) {
+			file_mode_tau = input->job_title + ".mode_tau";
 
-		ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
-		if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
-
+			ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
+			if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+		}
 
 		if (calc_realpart) {
 
@@ -1546,14 +1567,17 @@ void Relaxation::compute_mode_tau()
 			double *shift4;
 			double omega_shift;
 
-			ofs_mode_tau << "## Temperature dependence of self-energies of given mode" << std::endl;
-			ofs_mode_tau << "## T[K], Gamma3 (cm^-1), Shift3 (cm^-1)";
-			if (quartic_mode) ofs_mode_tau << ", Shift4 (cm^-1) <-- linear term in lambda";
-			ofs_mode_tau << ", Shifted frequency (cm^-1)";
+			if (mympi->my_rank == 0) {
+				ofs_mode_tau << "## Temperature dependence of self-energies of given mode" << std::endl;
+				ofs_mode_tau << "## T[K], Gamma3 (cm^-1), Shift3 (cm^-1)";
+				if (quartic_mode) ofs_mode_tau << ", Shift4 (cm^-1) <-- linear term in lambda";
+				ofs_mode_tau << ", Shifted frequency (cm^-1)";
 
-			ofs_mode_tau << std::endl;
+				ofs_mode_tau << std::endl;
+			}
 
 			memory->allocate(self3, NT);
+			
 			if (quartic_mode) {
 				memory->allocate(shift4, NT);
 			}
@@ -1564,14 +1588,16 @@ void Relaxation::compute_mode_tau()
 
 				omega = dynamical->eval_phonon[knum][snum];
 
-				ofs_mode_tau << "# xk = ";
+				if (mympi->my_rank == 0) {
+					ofs_mode_tau << "# xk = ";
 
-				for (j = 0; j < 3; ++j) {
-					ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+					for (j = 0; j < 3; ++j) {
+						ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+					}
+					ofs_mode_tau << std::endl;
+					ofs_mode_tau << "# mode = " << snum << std::endl;
+					ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
 				}
-				ofs_mode_tau << std::endl;
-				ofs_mode_tau << "# mode = " << snum << std::endl;
-				ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
 
 				calc_selfenergy_V3(NT, T_arr, omega, knum, snum, self3);
 
@@ -1579,18 +1605,20 @@ void Relaxation::compute_mode_tau()
 					calc_realpart_V4(NT, T_arr, omega, knum, snum, shift4);
 				}
 
-				for (j = 0; j < NT; ++j) {
-					ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self3[j].imag());
-					ofs_mode_tau << std::setw(15) << writes->in_kayser(-self3[j].real());
+				if (mympi->my_rank == 0) {
+					for (j = 0; j < NT; ++j) {
+						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self3[j].imag());
+						ofs_mode_tau << std::setw(15) << writes->in_kayser(-self3[j].real());
 
-					omega_shift = omega - self3[j].real();
+						omega_shift = omega - self3[j].real();
 
-					if (quartic_mode) { 
-						ofs_mode_tau << std::setw(15) << writes->in_kayser(-shift4[j]);
-						omega_shift -= shift4[j];
+						if (quartic_mode) { 
+							ofs_mode_tau << std::setw(15) << writes->in_kayser(-shift4[j]);
+							omega_shift -= shift4[j];
+						}
+						ofs_mode_tau << std::setw(15) << writes->in_kayser(omega_shift);
+						ofs_mode_tau << std::endl; 
 					}
-					ofs_mode_tau << std::setw(15) << writes->in_kayser(omega_shift);
-					ofs_mode_tau << std::endl; 
 				}
 			}
 
@@ -1599,11 +1627,14 @@ void Relaxation::compute_mode_tau()
 
 		} else {
 
-			ofs_mode_tau << "## Temperature dependence of Gamma for given mode" << std::endl;
-			ofs_mode_tau << "## T[K], Gamma3 (cm^-1)";
-			if(quartic_mode) ofs_mode_tau << ", Gamma4(cm^-1) <-- specific diagram only";
-			ofs_mode_tau << std::endl;
 
+			if (mympi->my_rank == 0) {
+				ofs_mode_tau << "## Temperature dependence of Gamma for given mode" << std::endl;
+				ofs_mode_tau << "## T[K], Gamma3 (cm^-1)";
+				if(quartic_mode) ofs_mode_tau << ", Gamma4(cm^-1) <-- specific diagram only";
+				ofs_mode_tau << std::endl;
+			}
+			
 			memory->allocate(damp3, NT);
 			if (quartic_mode) {
 				memory->allocate(damp4, NT);
@@ -1615,14 +1646,16 @@ void Relaxation::compute_mode_tau()
 
 				omega = dynamical->eval_phonon[knum][snum];
 
-				ofs_mode_tau << "# xk = ";
+	            if (mympi->my_rank == 0) {
+					ofs_mode_tau << "# xk = ";
 
-				for (j = 0; j < 3; ++j) {
-					ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+					for (j = 0; j < 3; ++j) {
+						ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+					}
+					ofs_mode_tau << std::endl;
+					ofs_mode_tau << "# mode = " << snum << std::endl;
+					ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
 				}
-				ofs_mode_tau << std::endl;
-				ofs_mode_tau << "# mode = " << snum << std::endl;
-				ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
 
 				if (ksum_mode == -1) {
 					calc_damping_tetra(NT, T_arr, omega, knum, snum, damp3);
@@ -1638,16 +1671,17 @@ void Relaxation::compute_mode_tau()
 					}
 				}
 
-				for (j = 0; j < NT; ++j) {
-					ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
+				if (mympi->my_rank == 0) {
+					for (j = 0; j < NT; ++j) {
+						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
 
-					if (quartic_mode) {
-						ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+						if (quartic_mode) {
+							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+						}
+
+						ofs_mode_tau << std::endl; 
 					}
-
-					ofs_mode_tau << std::endl; 
 				}
-
 			}
 
 			memory->deallocate(damp3);
@@ -1658,17 +1692,17 @@ void Relaxation::compute_mode_tau()
 
 		unsigned int natmin = system->natmin;
 		int iat, jat;
-		double ***damp3_atom;
+		double ***damp3_atom, ***damp3_atom_g;
 		double damp_sum;
 
-		ofs_mode_tau << "## Temperature dependence of atom-projected Gamma for given mode" << std::endl;
-		ofs_mode_tau << "## T[K], Gamma3 (cm^-1) (total, atomproj[i][j], i,j = 1, natmin)" << std::endl;
+		if (mympi->my_rank == 0) {
+			file_mode_tau = input->job_title + ".mode_tau_atom";
 
-
-		file_mode_tau = input->job_title + ".mode_tau_atom";
-
-		ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
-		if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+			ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
+			if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+			ofs_mode_tau << "## Temperature dependence of atom-projected Gamma for given mode" << std::endl;
+			ofs_mode_tau << "## T[K], Gamma3 (cm^-1) (total, atomproj[i][j], i,j = 1, natmin)" << std::endl;
+		}
 
 		for (i = 0; i < kslist.size(); ++i) {
 
@@ -1677,73 +1711,84 @@ void Relaxation::compute_mode_tau()
 
 			omega = dynamical->eval_phonon[knum][snum];
 
-			ofs_mode_tau << "# xk = ";
 
-			for (j = 0; j < 3; ++j) {
-				ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+			if (mympi->my_rank == 0) {
+				ofs_mode_tau << "# xk = ";
+
+				for (j = 0; j < 3; ++j) {
+					ofs_mode_tau << std::setw(15) << kpoint->xk[knum][j];
+				}
+				ofs_mode_tau << std::endl;
+				ofs_mode_tau << "# mode = " << snum << std::endl;
+				ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
 			}
-			ofs_mode_tau << std::endl;
-			ofs_mode_tau << "# mode = " << snum << std::endl;
-			ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
-
+			
 			if (ksum_mode == -1) {
+
+				std::cout << "myrank = " << mympi->my_rank << std::endl;
+
 				memory->allocate(damp3_atom, natmin, natmin, NT);
 
 				calc_damping_tetra_atom(NT, T_arr, omega, knum, snum, damp3_atom);
 
-				for (j = 0; j < NT; ++j) {
-					ofs_mode_tau << std::setw(10) << T_arr[j];
+				if (mympi->my_rank == 0) {
+					for (j = 0; j < NT; ++j) {
+						ofs_mode_tau << std::setw(10) << T_arr[j];
 
-					damp_sum = 0.0;
+						damp_sum = 0.0;
 
-					for (iat = 0; iat < natmin; ++iat) {
-						for (jat = 0; jat < natmin; ++jat) {
-							damp_sum += damp3_atom[iat][jat][j];
+						for (iat = 0; iat < natmin; ++iat) {
+							for (jat = 0; jat < natmin; ++jat) {
+								damp_sum += damp3_atom[iat][jat][j];
+							}
 						}
-					}
 
-					ofs_mode_tau << std::setw(15) << writes->in_kayser(damp_sum);
+						ofs_mode_tau << std::setw(15) << writes->in_kayser(damp_sum);
 
-					for (iat = 0; iat < natmin; ++iat) {
-						for (jat = 0; jat < natmin; ++jat) {
-							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp3_atom[iat][jat][j]);
+						for (iat = 0; iat < natmin; ++iat) {
+							for (jat = 0; jat < natmin; ++jat) {
+								ofs_mode_tau << std::setw(15) << writes->in_kayser(damp3_atom[iat][jat][j]);
+							}
 						}
+						ofs_mode_tau << std::endl; 
 					}
-					ofs_mode_tau << std::endl; 
 				}
+				memory->deallocate(damp3_atom);
 			} else {
+
 				memory->allocate(damp3_atom, NT, natmin, natmin);
+				memory->allocate(damp3_atom_g, NT, natmin, natmin);
 
 				calc_damping_atom(NT, T_arr, omega, knum, snum, damp3_atom);
+				MPI_Reduce(&damp3_atom[0][0][0], &damp3_atom_g[0][0][0], NT*natmin*natmin, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-				for (j = 0; j < NT; ++j) {
-					ofs_mode_tau << std::setw(10) << T_arr[j];
+				if (mympi->my_rank == 0) {
+					for (j = 0; j < NT; ++j) {
+						ofs_mode_tau << std::setw(10) << T_arr[j];
 
-					damp_sum = 0.0;
+						damp_sum = 0.0;
 
-					for (iat = 0; iat < natmin; ++iat) {
-						for (jat = 0; jat < natmin; ++jat) {
-							damp_sum += damp3_atom[j][iat][jat];
+						for (iat = 0; iat < natmin; ++iat) {
+							for (jat = 0; jat < natmin; ++jat) {
+								damp_sum += damp3_atom_g[j][iat][jat];
+							}
 						}
-					}
 
-					ofs_mode_tau << std::setw(15) << writes->in_kayser(damp_sum);
+						ofs_mode_tau << std::setw(15) << writes->in_kayser(damp_sum);
 
-					for (iat = 0; iat < natmin; ++iat) {
-						for (jat = 0; jat < natmin; ++jat) {
-							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp3_atom[j][iat][jat]);
+						for (iat = 0; iat < natmin; ++iat) {
+							for (jat = 0; jat < natmin; ++jat) {
+								ofs_mode_tau << std::setw(15) << writes->in_kayser(damp3_atom_g[j][iat][jat]);
+							}
 						}
+						ofs_mode_tau << std::endl; 
 					}
-					ofs_mode_tau << std::endl; 
 				}
+				memory->deallocate(damp3_atom);
+				memory->deallocate(damp3_atom_g);
 			}
 		}
-
-		memory->deallocate(damp3_atom);
 	}
-
 	memory->deallocate(T_arr);
-
-
 }
 
