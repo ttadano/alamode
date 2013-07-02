@@ -175,10 +175,11 @@ void Writes::wrtmisc(){
     ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
     for (j = 0; j < 3; ++j){
         for(i = 0; i < 3; ++i){
-            ofs_info <<  std::setw(15) << system->lavec[i][j]; // Be careful to the transpose of (i,j)
+            ofs_info <<  std::setw(25) << std::setprecision(16) << system->lavec[i][j]; // Be careful to the transpose of (i,j)
         }
         ofs_info << std::endl;
     }
+    
     ofs_info << "Atomic Species" << std::endl;
     ofs_info << std::setw(6) << system->nkd << std::endl;
 

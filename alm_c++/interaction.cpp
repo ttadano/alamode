@@ -151,7 +151,7 @@ void Interaction::calc_distlist(int nat, double **xf)
             ++icount;
 
             std::cout << std::setw(3) << j + 1 << "(" << std::setw(3) << system->kdname[system->kd[j]-1] << ")";
-            std::cout << std::setw(8) << distlist[i][j] << "  ";
+            std::cout << std::setw(8) << distlist[iat][j] << "  ";
         }
         std::cout << std::endl << std::endl;
     }

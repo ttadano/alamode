@@ -318,6 +318,7 @@ void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][
 											// STL containers are not thread-safe
 #pragma omp critical
 											SymmList.push_back(SymmetryOperation(rot_tmp, arr_trans[itran]));
+
 										}
 									}
 								}
