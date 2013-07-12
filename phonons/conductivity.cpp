@@ -96,7 +96,7 @@ void Conductivity::prepare_restart()
 	std::string line_tmp;
 	unsigned int nk_tmp, ns_tmp, nks_tmp;
 	unsigned int multiplicity;
-    int nks_done, *arr_done;
+        int nks_done, *arr_done;
 
 	double vel_dummy[3];
 
@@ -319,7 +319,6 @@ void Conductivity::calc_kl2()
 			std::cout <<  "ELEMENT " << std::setw(5) << i + 1 << " done." << std::endl;
 		}
 	}
-
 
 	if (mympi->my_rank == 0) {
 

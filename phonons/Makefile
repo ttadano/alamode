@@ -3,9 +3,9 @@
 .cpp.o:
 	${CXX} ${CXXFLAGS} -c $<
 
-CXX = mpicxx
-CXXFLAGS = -O3 -xSSE4.1 -openmp -vec-report2 -D_DEBUG
-LDFLAGS = -mkl
+CXX = mpicxx -I ~/include
+CXXFLAGS = -O3 -xSSE3 -openmp -vec-report2 
+LDFLAGS = -mkl 
 
 PROG = phonons
 

@@ -1297,6 +1297,7 @@ void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const 
 
 	memory->deallocate(v3_tmp);
 	memory->deallocate(omega_inner);
+	memory->deallocate(f_tmp_atom);
 	memory->deallocate(v3_tmp_proj);
 }
 
@@ -1497,7 +1498,6 @@ void Relaxation::v4_test() {
 	nkplus = 2;
 	nkminus= kpoint->knum_minus[nkplus];
 
-
 	stmp[0] = 0;
 	stmp[1] = 1;
 	stmp[2] = 2;
@@ -1532,8 +1532,6 @@ void Relaxation::v4_test() {
 void Relaxation::compute_mode_tau()
 {
 	unsigned int i, j;
-	double *damp3, *damp4;
-
 	double *T_arr;
 
 	unsigned int NT;
@@ -1564,6 +1562,9 @@ void Relaxation::compute_mode_tau()
 
 		if (calc_realpart) {
 
+                    /* Calculate both real and imaginary part of self-energy.
+                       If quartic_mode == true, then the frequency shift from O(H_{4}) is also computed. */
+
 			std::complex<double> *self3;
 			double *shift4;
 			double omega_shift;
@@ -1573,7 +1574,6 @@ void Relaxation::compute_mode_tau()
 				ofs_mode_tau << "## T[K], Gamma3 (cm^-1), Shift3 (cm^-1)";
 				if (quartic_mode) ofs_mode_tau << ", Shift4 (cm^-1) <-- linear term in lambda";
 				ofs_mode_tau << ", Shifted frequency (cm^-1)";
-
 				ofs_mode_tau << std::endl;
 			}
 
@@ -1627,6 +1627,11 @@ void Relaxation::compute_mode_tau()
 			if(quartic_mode) memory->deallocate(shift4);
 
 		} else {
+                    
+                    double *damp3, *damp4;
+
+                    /* Calculate the imaginary part of self-energy. 
+                       If quartic_mode == true, self-energy of O(H_{4}^{2}) is also calculated. */
 
 
 			if (mympi->my_rank == 0) {
@@ -1691,6 +1696,9 @@ void Relaxation::compute_mode_tau()
 
 	} else {
 
+            /* Atom projection mode. Same as above except that the self-energy is projected on each atomic elements.
+               calc_realpart is not used here.  */
+
 		unsigned int natmin = system->natmin;
 		int iat, jat;
 		double ***damp3_atom, ***damp3_atom_g;
@@ -1704,6 +1712,9 @@ void Relaxation::compute_mode_tau()
 			ofs_mode_tau << "## Temperature dependence of atom-projected Gamma for given mode" << std::endl;
 			ofs_mode_tau << "## T[K], Gamma3 (cm^-1) (total, atomproj[i][j], i,j = 1, natmin)" << std::endl;
 		}
+
+                memory->allocate(damp3_atom, NT, natmin, natmin);
+                memory->allocate(damp3_atom_g, NT, natmin, natmin);
 
 		for (i = 0; i < kslist.size(); ++i) {
 
@@ -1755,10 +1766,8 @@ void Relaxation::compute_mode_tau()
 					}
 				}
 				memory->deallocate(damp3_atom);
-			} else {
 
-				memory->allocate(damp3_atom, NT, natmin, natmin);
-				memory->allocate(damp3_atom_g, NT, natmin, natmin);
+			} else {
 
 				calc_damping_atom(NT, T_arr, omega, knum, snum, damp3_atom);
 				MPI_Reduce(&damp3_atom[0][0][0], &damp3_atom_g[0][0][0], NT*natmin*natmin, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -1785,9 +1794,10 @@ void Relaxation::compute_mode_tau()
 						ofs_mode_tau << std::endl; 
 					}
 				}
-				memory->deallocate(damp3_atom);
-				memory->deallocate(damp3_atom_g);
+
 			}
+                        memory->deallocate(damp3_atom);
+                        memory->deallocate(damp3_atom_g);
 		}
 	}
 	memory->deallocate(T_arr);
