@@ -361,6 +361,7 @@ void Relaxation::setup_mode_analysis()
 			std::cout << "The number of entries = " << kslist.size() << std::endl;
 
 			ks_analyze_mode = true;
+			ifs_ks.close();
 
 		} else {
 
@@ -374,6 +375,8 @@ void Relaxation::setup_mode_analysis()
 	unsigned int nlist;
 
 	nlist = kslist.size();
+
+	// Broadcast kslist
 
 	MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 	memory->allocate(kslist_arr, nlist);
@@ -1562,8 +1565,8 @@ void Relaxation::compute_mode_tau()
 
 		if (calc_realpart) {
 
-                    /* Calculate both real and imaginary part of self-energy.
-                       If quartic_mode == true, then the frequency shift from O(H_{4}) is also computed. */
+			/* Calculate both real and imaginary part of self-energy.
+			If quartic_mode == true, then the frequency shift from O(H_{4}) is also computed. */
 
 			std::complex<double> *self3;
 			double *shift4;
@@ -1627,11 +1630,11 @@ void Relaxation::compute_mode_tau()
 			if(quartic_mode) memory->deallocate(shift4);
 
 		} else {
-                    
-                    double *damp3, *damp4;
 
-                    /* Calculate the imaginary part of self-energy. 
-                       If quartic_mode == true, self-energy of O(H_{4}^{2}) is also calculated. */
+			double *damp3, *damp4;
+
+			/* Calculate the imaginary part of self-energy. 
+			If quartic_mode == true, self-energy of O(H_{4}^{2}) is also calculated. */
 
 
 			if (mympi->my_rank == 0) {
@@ -1694,10 +1697,12 @@ void Relaxation::compute_mode_tau()
 			if (quartic_mode) memory->deallocate(damp4);
 		}
 
+		if (mympi->my_rank == 0) ofs_mode_tau.close();
+
 	} else {
 
-            /* Atom projection mode. Same as above except that the self-energy is projected on each atomic elements.
-               calc_realpart is not used here.  */
+		/* Atom projection mode. Same as above except that the self-energy is projected on each atomic elements.
+		calc_realpart is not used here.  */
 
 		unsigned int natmin = system->natmin;
 		int iat, jat;
@@ -1713,8 +1718,8 @@ void Relaxation::compute_mode_tau()
 			ofs_mode_tau << "## T[K], Gamma3 (cm^-1) (total, atomproj[i][j], i,j = 1, natmin)" << std::endl;
 		}
 
-                memory->allocate(damp3_atom, NT, natmin, natmin);
-                memory->allocate(damp3_atom_g, NT, natmin, natmin);
+		memory->allocate(damp3_atom, NT, natmin, natmin);
+		memory->allocate(damp3_atom_g, NT, natmin, natmin);
 
 		for (i = 0; i < kslist.size(); ++i) {
 
@@ -1796,9 +1801,10 @@ void Relaxation::compute_mode_tau()
 				}
 
 			}
-                        memory->deallocate(damp3_atom);
-                        memory->deallocate(damp3_atom_g);
+			memory->deallocate(damp3_atom);
+			memory->deallocate(damp3_atom_g);
 		}
+		if (mympi->my_rank == 0) ofs_mode_tau.close();
 	}
 	memory->deallocate(T_arr);
 }
