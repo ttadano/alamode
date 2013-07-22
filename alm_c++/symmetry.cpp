@@ -71,20 +71,22 @@ void Symmetry::init()
 	symop_availability_check(symrel, sym_available, nsym, nsym_fc);
 
 	std::cout << "Among " << nsym << " symmetries, " << nsym_fc << " symmetries will be used to reduce the number of parameters." << std::endl;
-	std::cout << "Used symmetry operations (rotational part in Cartesian coordinate only) are printed below:" << std::endl;
-
-	for (i = 0; i < nsym; ++i){
-		if (sym_available[i]) {
-			std::cout << std::setw(5) << i + 1;
-			for (j = 0; j < 3; ++j){
-				for (k = 0; k < 3; ++k){
-					std::cout << std::setw(4) << symrel[i][j][k];
-				}
-			}
-			std::cout << std::endl;
-		}
-	}
 	std::cout << std::endl;
+
+// 	std::cout << "Used symmetry operations (rotational part in Cartesian coordinate only) are printed below:" << std::endl;
+// 
+// 	for (i = 0; i < nsym; ++i){
+// 		if (sym_available[i]) {
+// 			std::cout << std::setw(5) << i + 1;
+// 			for (j = 0; j < 3; ++j){
+// 				for (k = 0; k < 3; ++k){
+// 					std::cout << std::setw(4) << symrel[i][j][k];
+// 				}
+// 			}
+// 			std::cout << std::endl;
+// 		}
+// 	}
+// 	std::cout << std::endl;
 
 	pure_translations();
 

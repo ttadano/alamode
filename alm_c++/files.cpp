@@ -15,7 +15,7 @@ void Files::setfilenames()
    // file_premd = job_title + ".premd";
     file_disp_sym = file_disp + ".SYM";
     file_force_sym = file_force + ".SYM";
-    file_int = job_title + ".pairs";
+   // file_int = job_title + ".pairs";
 }
 
 void Files::openfiles()

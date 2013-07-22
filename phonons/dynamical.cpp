@@ -3,7 +3,9 @@
 #include "system.h"
 #include "memory.h"
 #include "kpoint.h"
+#include "fcs_phonon.h"
 #include <complex>
+#include <vector>
 #include "../alm_c++/constants.h"
 #include "fcs_phonon.h"
 #include <iomanip>
@@ -16,14 +18,38 @@ Dynamical::Dynamical(PHON *phon): Pointers(phon){
 	eigenvectors = false;
 }
 
-Dynamical::~Dynamical(){}
+Dynamical::~Dynamical(){
+	memory->deallocate(xshift_s);
+}
 
 void Dynamical::setup_dynamical(std::string mode)
 {
+	int i;
+	int ix, iy, iz;
+	int icell = 0;
+
 	neval = 3 * system->natmin;
 	UPLO = 'U';
 
 	MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+	memory->allocate(xshift_s, 27, 3);
+
+	for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
+
+	for (ix = -1; ix <= 1; ++ix) {
+		for (iy = -1; iy <= 1; ++iy) {
+			for (iz = -1; iz <= 1; ++iz) {
+				if (ix == 0 && iy == 0 && iz == 0) continue;
+
+				++icell;
+
+				xshift_s[icell][0] = static_cast<double>(ix);
+				xshift_s[icell][1] = static_cast<double>(iy);
+				xshift_s[icell][2] = static_cast<double>(iz);
+			}
+		}
+	}
 }
 
 void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
@@ -39,6 +65,8 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 	calc_analytic_k(xk_in, fc2_in, dymat_k);
 
 	/*
+	// Hermitize the dynamical matrix
+
 	std::complex<double> **dymat_tmp, **dymat_transpose;
 
 	memory->allocate(dymat_tmp, neval, neval);
@@ -59,6 +87,63 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 	memory->deallocate(dymat_tmp);
 	memory->deallocate(dymat_transpose);
 	*/
+
+	char JOBZ;
+	int INFO, LWORK;
+	double *RWORK;
+	std::complex<double> *WORK;
+
+	LWORK = (2 * neval - 1) * 10;
+	memory->allocate(RWORK, 3*neval - 2);
+	memory->allocate(WORK, LWORK);
+
+	std::complex<double> *amat;
+	memory->allocate(amat, neval * neval);
+
+	unsigned int k = 0;
+	int n = dynamical->neval;
+	for(i = 0; i < neval; ++i){
+		for (j = 0; j < neval; ++j){
+			amat[k++] = dymat_k[i][j];
+		}
+	}
+
+	memory->deallocate(dymat_k);
+
+	if (require_evec) {
+		JOBZ = 'V';
+	} else {
+		JOBZ = 'N';
+	}
+
+	// Perform diagonalization
+	zheev_(&JOBZ, &UPLO, &n, amat, &n, eval_out, WORK, &LWORK, RWORK, &INFO);
+
+	if (eigenvectors && require_evec){
+		k = 0;
+		for(i = 0; i < neval; ++i){
+			for (j = 0; j < neval; ++j){
+				evec_out[i][j] = amat[k++];
+			}
+		}
+	}
+
+	memory->deallocate(RWORK);
+	memory->deallocate(WORK);
+	memory->deallocate(amat);
+}
+
+void Dynamical::eval_k(double *xk_in, std::vector<FcsClassExtent> fc2_ext, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
+
+	// Calculate phonon energy for the specific k-point given in fractional basis
+
+	unsigned int i, j;
+
+	std::complex<double> **dymat_k;
+	
+	memory->allocate(dymat_k, neval, neval);
+
+	calc_analytic_k(xk_in, fc2_ext, dymat_k);
 
 	char JOBZ;
 	int INFO, LWORK;
@@ -229,6 +314,57 @@ void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<d
 #endif
 }
 
+
+void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_out)
+{
+	int i, j;
+	unsigned int atm1_s, atm2_s;
+	unsigned int atm1_p, atm2_p;
+	unsigned int xyz1, xyz2;
+	unsigned int icell;
+
+	double vec[3];
+	std::complex<double> phase;
+	std::complex<double> im(0.0, 1.0);
+
+	std::complex<double> **ctmp;
+
+	memory->allocate(ctmp, 3*system->natmin, 3*system->natmin);
+
+	for (i = 0; i < 3*system->natmin; ++i) {
+		for (j = 0; j < 3*system->natmin; ++j) {
+			dymat_out[i][j] = std::complex<double>(0.0, 0.0);
+	}
+	}
+
+	for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.begin(); it != fc2_in.end(); ++it) {
+
+		atm1_p = (*it).atm1;
+		atm2_s = (*it).atm2;
+		xyz1 = (*it).xyz1;
+		xyz2 = (*it).xyz2;
+
+		icell = (*it).cell_s;
+
+		atm1_s = system->map_p2s[atm1_p][0];
+
+		for (i = 0; i < 3; ++i) {
+			vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm2_s][i];
+			vec[i] -= xshift_s[icell][i];
+		}
+
+		system->rotvec(vec, vec, system->lavec_s);
+		system->rotvec(vec, vec, system->rlavec_p);
+
+		phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+
+		atm2_p = system->map_s2p[atm2_s].atom_num;
+
+		dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_p] * system->mass[atm2_p]);
+	}
+}
+
+
 void Dynamical::diagonalize_dynamical_all()
 {
 	unsigned int ik, is;
@@ -252,7 +388,11 @@ void Dynamical::diagonalize_dynamical_all()
 	// Calculate phonon eigenvalues and eigenvectors for all k-points
 
 	for (ik = 0; ik < nk; ++ik){
-		eval_k(kpoint->xk[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
+		if (fcs_phonon->is_fc2_ext) {
+			eval_k(kpoint->xk[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
+		} else {
+			eval_k(kpoint->xk[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
+		}
 
 		// Phonon energy is the square-root of the eigenvalue 
 		for (is = 0; is < neval; ++is){

@@ -59,13 +59,13 @@ void Input::parse_general_vars(){
 
 	int i;
 	std::string prefix, str_tmp;
-	int nat, nkd, nsym, nnp;
+	int nat, nkd, nsym, nnp, interaction_type;
 	bool is_periodic[3];
 	std::string *kdname;
 	double *masskd;
 
 	std::vector<std::string> kdname_v, periodic_v, masskd_v;
-	std::string str_allowed_list = "PREFIX NAT NKD NSYM NNP KD MASS PERIODIC";
+	std::string str_allowed_list = "PREFIX NAT NKD NSYM NNP KD MASS PERIODIC INTERTYPE";
 	std::string str_no_defaults = "PREFIX NAT NKD NSYM NNP KD MASS";
 	std::vector<std::string> no_defaults;
 	std::map<std::string, std::string> general_var_dict;
@@ -127,6 +127,14 @@ void Input::parse_general_vars(){
 		error->exit("parse_general_vars", "Invalid number of entries for PERIODIC");
 	}
 
+	if (general_var_dict["INTERTYPE"].empty()) {
+		interaction_type = 0;
+	} else {
+		interaction_type = boost::lexical_cast<int>(general_var_dict["INTERTYPE"]);
+	}
+	if (interaction_type < 0 || interaction_type > 2) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, or 2.");
+
+
 	files->job_title = prefix;
 	system->nat = nat;
 	system->nkd = nkd;
@@ -143,6 +151,7 @@ void Input::parse_general_vars(){
 	for (i = 0; i < 3; ++i) {
 		interaction->is_periodic[i] = is_periodic[i];
 	}
+	interaction->interaction_type = interaction_type;
 
 	memory->deallocate(kdname);
 	memory->deallocate(masskd);
@@ -245,10 +254,10 @@ void Input::parse_interaction_vars() {
 	ewald->file_longrange = file_longrange;
 
 	interaction->maxorder = maxorder;
-	memory->allocate(fcs->nbody_include, maxorder);
+	memory->allocate(interaction->nbody_include, maxorder);
 
 	for (i = 0; i < maxorder; ++i){
-		fcs->nbody_include[i] = nbody_include[i];    
+		interaction->nbody_include[i] = nbody_include[i];    
 	}
 
 	memory->deallocate(nbody_include);

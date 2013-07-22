@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pointers.h"
+#include "fcs_phonon.h"
+#include <vector>
 #include <complex>
 #include <string>
 
@@ -24,6 +26,8 @@ namespace PHON_NS {
         std::complex<double> ***evec_phonon;
         
         void eval_k(double *, double ****, double *, std::complex<double> **, bool);
+		void eval_k(double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
+
         void setup_dynamical(std::string);
 
         double fold(double);
@@ -32,8 +36,10 @@ namespace PHON_NS {
     private:
         void calc_analytic();
         void calc_analytic_k(double *, double ****, std::complex<double> **);
+		void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
         void calc_nonanalytic();
         
+		double **xshift_s;
         char UPLO;
         std::complex<double> ***dymat;
     };

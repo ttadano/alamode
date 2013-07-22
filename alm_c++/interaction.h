@@ -2,6 +2,8 @@
 
 #include <string>
 #include <vector>
+#include <set>
+#include "listcomparison.h"
 #include "pointers.h"
 
 
@@ -22,14 +24,43 @@ namespace ALM_NS {
         return std::lexicographical_compare(a.x.begin(), a.x.end(), b.x.begin(), b.x.end());
     }
 
+	class DistInfo {
+	public:
+		int cell;
+		double dist;
+		double relvec[3];
+
+		DistInfo();
+		DistInfo(const int n, const double d, const double x[3]) {
+			cell = n;
+			dist = d;
+			for (int i = 0; i < 3; ++i) relvec[i] = x[i];
+		}
+
+		DistInfo(const DistInfo &obj) {
+			cell = obj.cell;
+			dist = obj.dist;
+			for (int i = 0; i < 3; ++i) relvec[i] = obj.relvec[i];
+		}
+	};
+
+	inline bool operator<(const DistInfo a, const DistInfo b) {
+		return a.dist < b.dist;
+	}
+
     class Interaction: protected Pointers {
     public:
         Interaction(class ALM *);
         ~Interaction();
         void init();
 
+		int *nbody_include;
+
         double ***rcs;
         double **distlist;
+		std::vector<DistInfo> **mindist_pairs;
+		std::set<IntList> *pairs;
+
 
         double distance(double *, double *);
 
@@ -39,6 +70,7 @@ namespace ALM_NS {
 
         int nneib;
         int maxorder;
+		int interaction_type;
         double ***xcrd;
 
         int ***intpairs;
@@ -112,5 +144,9 @@ namespace ALM_NS {
         void search_interactions();
         void set_ordername();
         void calc_minvec();
+		int nbody(const int, const int *);
+
+		std::vector<DistInfo> **distall;
+		std::set<IntList> *interacting_atom_pairs;
     };
 }

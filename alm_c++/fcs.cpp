@@ -16,21 +16,16 @@
 using namespace ALM_NS;
 
 Fcs::Fcs(ALM *alm) : Pointers(alm){};
-Fcs::~Fcs() {
-    memory->deallocate(nbody_include);
-};
+Fcs::~Fcs() {};
 
 void Fcs::init(){
 
     int i;
     int maxorder = interaction->maxorder;
     memory->allocate(nints, maxorder);
-    memory->allocate(pairs, maxorder);
     memory->allocate(nzero, maxorder);
 
     for(i = 0; i < maxorder; ++i) nzero[i] = 0;
-
-    read_pairs(maxorder);
 
     fc_set = new std::vector<FcProperty> [maxorder];
     ndup = new std::vector<int> [maxorder];
@@ -61,48 +56,10 @@ void Fcs::init(){
     std::cout << " done." << std::endl;
 
     memory->deallocate(nints);
-    memory->deallocate(pairs);
     memory->deallocate(nzero);
     timer->print_elapsed();
 }
 
-void Fcs::read_pairs(int maxorder)
-{
-
-    int i, j, order;
-    int *pair_tmp;
-
-    files->ifs_int.open(files->file_int.c_str(), std::ios::out);
-    if(!files->ifs_int) error->exit("read_pairs", "cannot open file_int");
-
-    std::cout << std::endl;
-
-    for(order = 0; order < maxorder; ++order){
-
-        std::cout << "For " << std::setw(8) << interaction->str_order[order] << ", ";
-        std::cout << "only " << std::setw(2) << nbody_include[order];
-        std::cout << "-body interaction (and below) will be considered." << std::endl;
-
-        files->ifs_int >> nints[order];
-        if(nints[order] == 0) continue;
-
-        memory->allocate(pair_tmp, order + 2);
-
-        for(i = 0; i < nints[order]; ++i){
-            for(j = 0; j < order + 2; ++j){
-                files->ifs_int >> pair_tmp[j];
-            }
-
-            // Ignore many-body case 
-            if (nbody(order + 2, pair_tmp) > nbody_include[order]) continue;
-
-            pairs[order].insert(IntList(order + 2, pair_tmp));
-        }
-        memory->deallocate(pair_tmp);
-    }
-
-    files->ifs_int.close();
-}
 
 void Fcs::generate_fclists(int maxorder)
 {
@@ -151,7 +108,7 @@ void Fcs::generate_fclists(int maxorder)
 
         std::set<IntList> list_found;
 
-        for (std::set<IntList>::iterator iter = pairs[order].begin(); iter != pairs[order].end(); ++iter){
+        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter){
 
             IntList list_tmp = *iter;
             for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
@@ -426,20 +383,4 @@ std::string Fcs::easyvizint(const int n)
     return  str_tmp;
 }
 
-int Fcs::nbody(const int n, const int *arr)
-{
-    std::vector<int> v;
-    v.clear();
-    int ret;
 
-    for (unsigned int i = 0; i < n; ++i) {
-        v.push_back(arr[i]);
-    }
-    std::sort(v.begin(), v.end());
-    v.erase(std::unique(v.begin(), v.end()), v.end());
-
-    ret = v.size();
-    v.clear();
-
-    return ret;
-}

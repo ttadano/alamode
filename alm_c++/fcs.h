@@ -47,7 +47,6 @@ namespace ALM_NS {
 
         int *nzero;
 
-        std::set<IntList> *pairs;
         std::vector<int> *ndup;
         std::vector<FcProperty> *fc_set;
 
@@ -59,17 +58,12 @@ namespace ALM_NS {
         bool is_inprim(const int);
         int min_inprim(const int, const int *);
         double coef_sym(const int, const int, const int *, const int *);
-        int *nbody_include;
 
     private:
         int *nints;
-        void read_pairs(int);
         void generate_fclists(int);
         bool is_ascending(const int, const int *);
-        int nbody(const int, const int *);
         
-
-
     };
 
 }
