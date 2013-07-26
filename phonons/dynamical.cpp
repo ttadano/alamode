@@ -360,7 +360,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 
 		atm2_p = system->map_s2p[atm2_s].atom_num;
 
-		dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_p] * system->mass[atm2_p]);
+		dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
 	}
 }
 
