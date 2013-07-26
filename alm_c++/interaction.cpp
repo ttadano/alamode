@@ -42,6 +42,21 @@ void Interaction::init()
 	memory->allocate(str_order, maxorder);
 	set_ordername();
 
+	if (interaction_type == 0) {
+		std::cout << "INTERTYPE = 0: Harmonic IFCs will be searched by using cutoff radii" << std::endl;
+	} else if (interaction_type == 1) {
+		std::cout << "INTERTYPE = 1: Harmonic IFCs will be automatically considered so that" << std::endl;
+		std::cout << "               each interaction occurs only once" << std::endl;
+		std::cout << "               The cutoff radii for HARMONIC below will be neglected." << std::endl;
+	} else if (interaction_type == 2) {
+		std::cout << "INTERTYPE = 2: All the harmonic IFCs will be considered." << std::endl;
+		std::cout << "               If a interaction occurs more than once, the corresponding IFC" << std::endl;
+		std::cout << "               will be divided by the multiplicity P." << std::endl;
+		std::cout << "               The cutoff radii for HARMONIC below will be neglected." << std::endl;
+	} else {
+		error->exit("interaction->init", "This cannot happen");
+	}
+	std::cout << std::endl;
 	std::cout << "*** Cutoff Radii Matrix in Bohr Unit. (nkd x nkd matrix) ***" << std::endl;
 
 	for (i = 0; i < maxorder; ++i){
@@ -340,10 +355,12 @@ void Interaction::search_interactions()
 		error->exit("search_interactions", "This cannot happen.");
 	}
 
-
-	if(maxval(natmin, nat, order, countint) > 1) {
-		error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
+	if (interaction_type != 2) {
+		if(maxval(natmin, nat, order, countint) > 1) {
+			error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
+		}
 	}
+
 
 #ifdef _DEBUG
 	for (i = 0; i < natmin; i++){

@@ -12,17 +12,12 @@ void Files::setfilenames()
 {
     file_fcs = job_title + ".fcs";
     file_info = job_title + ".info";
-   // file_premd = job_title + ".premd";
     file_disp_sym = file_disp + ".SYM";
     file_force_sym = file_force + ".SYM";
-   // file_int = job_title + ".pairs";
 }
 
 void Files::openfiles()
 {
-  //  ofs_premd.open(file_premd.c_str(), std::ios::out);
-   // if(!ofs_premd) error->exit("openfiles", "cannot open premd file");
-   
     ifs_disp.open(file_disp.c_str(), std::ios::in);
     if(!ifs_disp) error->exit("openfiles", "cannot open disp file");
     ifs_force.open(file_force.c_str(), std::ios::in);
@@ -31,8 +26,6 @@ void Files::openfiles()
 
 void Files::closefiles()
 {
-  //  ofs_premd.close();
-
     ifs_disp.close();
     ifs_force.close();
 }
@@ -40,10 +33,5 @@ void Files::closefiles()
 void Files::init()
 {
     setfilenames();
-
-    std::cout << "Input Filenames" << std::endl;
-    std::cout << "  Displacement: " << file_disp << std::endl;
-    std::cout << "  Force       : " << file_force << std::endl;
-
     openfiles();
 }

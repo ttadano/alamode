@@ -35,38 +35,62 @@ void Constraint::setup(){
 	switch (constraint_mode) {
 	case 0: // do nothing
 		exist_constraint = false;
+		std::cout << "ICONST = 0: Constraint will NOT be considered." << std::endl;
+		std::cout << "            Correct phonon dispersion may not obtained." << std::endl;
 		break;
 	case 1: 
 		impose_inv_T = true;
+		std::cout << "ICONST = 1: Constraints for translational invariance will be considered." << std::endl;
 		break;
 	case 2:
 		impose_inv_T = true;
 		fix_harmonic = true;
+		std::cout << "ICONST = 2: Constraints for translational invariance will be considered." << std::endl;
+		std::cout << "            Also, HARMONIC terms will be fixed to the value given in" << fc2_file << std::endl;
 		break;
 	case 3:
 		impose_inv_T = true;
 		impose_inv_R = true;
+		std::cout << "ICONST = 3: Constraints for translational and rotational invariance will be considered." << std::endl;
+		std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
+		std::cout << "            Rotational invariance of the maximum order will be neglected" << std::endl;
 		break;
 	case 4:
 		impose_inv_T = true;
 		impose_inv_R = true;
 		fix_harmonic = true;
+		std::cout << "ICONST = 4: Constraints for translational and rotational invariance will be considered." << std::endl;
+		std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
+		std::cout << "            Rotational invariance of the maximum order will be neglected" << std::endl;
+		std::cout << "            Also, HARMONIC terms will be fixed to the value given in" << fc2_file << std::endl;
 		break;
 	case 5:
 		impose_inv_T = true;
 		impose_inv_R = true;
 		exclude_last_R = false;
+		std::cout << "ICONST = 5: Constraints for translational and rotational invariance will be considered." << std::endl;
+		std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
 		break;
 	case 6:
 		impose_inv_T = true;
 		impose_inv_R = true;
 		fix_harmonic = true;
 		exclude_last_R = false;
+		std::cout << "ICONST = 6: Constraints for translational and rotational invariance will be considered." << std::endl;
+		std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
+		std::cout << "            Also, HARMONIC terms will be fixed to the value given in" << fc2_file << std::endl;
 		break;
 	default:
 		error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
 		break;
 	}
+
+
+	if (impose_inv_R && interaction->interaction_type == 2) {
+		std::cout << "WARNING: Rotational invariance and INTERTYPE = 2 should not be turned on simultaneously." << std::endl;
+		std::cout << "         This might generate inaccurate IFCs." << std::endl << std::endl;
+	}
+
 
 	if (exist_constraint){
 
@@ -103,7 +127,7 @@ void Constraint::setup(){
 			if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
 		}
 
-		std::cout << "*** Constraint Information ***" << std::endl;
+		std::cout << "********************* Constraint Information *********************" << std::endl;
 		std::cout << "Number of Constraints (Translational, Rotational Self, Rotational Cross)" << std::endl;
 		for (order = 0; order < maxorder; ++order){
 			std::cout << std::setw(8) << interaction->str_order[order];
@@ -176,7 +200,7 @@ void Constraint::setup(){
 			std::cout << std::setw(5) << const_rotation_cross[order].size();
 			std::cout << std::endl;
 		}
-		std::cout << "******************************" << std::endl << std::endl;
+		std::cout << "******************************************************************" << std::endl << std::endl;
 
 		Pmax = 0;
 		for (order = 0; order < maxorder; ++order){
@@ -190,7 +214,7 @@ void Constraint::setup(){
 		memory->allocate(const_rhs, Pmax);
 
 		calc_constraint_matrix(N, P);
-		std::cout << "Total number of constraints: " << P << std::endl;
+		std::cout << "Total number of constraints: " << P << std::endl << std::endl;
 
 		memory->deallocate(const_translation);
 		memory->deallocate(const_rotation_self);

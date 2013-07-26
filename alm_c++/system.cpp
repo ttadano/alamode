@@ -31,21 +31,21 @@ void System::init(){
     std::cout << " " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
     std::cout << std::endl;
 
+	double vec_tmp[3][3];
+	for (i = 0; i < 3; ++i){
+		for (j = 0; j < 3; ++j){
+			vec_tmp[i][j] = lavec[j][i];
+		}
+	}
+
+	cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
+	std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
+
     std::cout << std::endl << "Reciprocal Lattice Vector" << std::endl;
     std::cout << " " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
     std::cout << " " << rlavec[1][0] << " " << rlavec[1][1] << " " << rlavec[1][2] << " : b2" << std::endl;
     std::cout << " " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
     std::cout << std::endl;
-
-    double vec_tmp[3][3];
-     for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
-                vec_tmp[i][j] = lavec[j][i];
-            }
-        }
-
-    cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
-    std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl;
 
     std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
     for (i = 0; i < nat; ++i) {
@@ -55,13 +55,10 @@ void System::init(){
         std::cout << std::setw(15) << xcoord[i][2];
         std::cout << std::setw(5) << kd[i] << std::endl;
     }
-    std::cout << std::endl;
-    std::cout << "Number of input data: " << ndata << std::endl;
-    std::cout << "nstart = " << nstart << ", nend = " << nend << ", nskip = " << nskip << std::endl;
-
+    std::cout << std::endl << std::endl;
     std::cout.unsetf(std::ios::scientific);
 
-    // generate cartesian coordinate
+    // Generate Cartesian coordinate
 
     memory->allocate(x_cartesian, nat, 3);
 
@@ -71,8 +68,6 @@ void System::init(){
         }
     }
     frac2cart(x_cartesian);
-
-    timer->print_elapsed();
 }
 
 void System::recips(double aa[3][3], double bb[3][3])

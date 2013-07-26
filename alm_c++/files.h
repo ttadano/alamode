@@ -22,8 +22,6 @@ namespace ALM_NS {
 
         std::string file_int;
 
-        std::ofstream ofs_premd;
-
         std::ofstream ofs_int;
         std::ifstream ifs_int;
 

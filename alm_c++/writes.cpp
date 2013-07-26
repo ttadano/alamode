@@ -1,15 +1,16 @@
+#include <fstream>
+#include <boost/lexical_cast.hpp>
 #include "writes.h"
 #include "system.h"
 #include "interaction.h"
 #include "memory.h"
 #include "symmetry.h"
 #include "error.h"
+#include "ewald.h"
 #include "files.h"
 #include "fcs.h"
 #include "fitting.h"
 #include "constraint.h"
-#include <boost/lexical_cast.hpp>
-#include <fstream>
 
 
 using namespace ALM_NS;
@@ -17,6 +18,53 @@ using namespace ALM_NS;
 Writes::Writes(ALM *alm): Pointers(alm){}
 
 Writes::~Writes() {}
+
+void Writes::write_input_vars()
+{
+	unsigned int i;
+
+	std::cout << std::endl;
+	std::cout << "Input variables below:" << std::endl;
+	std::cout << "---------------------------------------------------" << std::endl;
+	std::cout << "General:" << std::endl;
+	std::cout << " PREFIX = " << files->job_title << std::endl;
+	std::cout << " NAT = " << system->nat << "; NKD = " << system->nkd << std::endl;
+	std::cout << " NSYM = " << symmetry->nsym << "; NNP = " << symmetry->nnp << std::endl;
+	std::cout << " KD = ";
+	for (i = 0; i < system->nkd; ++i) std::cout << std::setw(4) << system->kdname[i];
+	std::cout << std::endl;
+	std::cout << " MASS = ";
+	for (i = 0; i < system->nkd; ++i) std::cout << std::setw(8) << system->mass_kd[i];
+	std::cout << std::endl;
+	std::cout << " PERIODIC = ";
+	for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
+	std::cout << std::endl;
+	std::cout << " INTERTYPE = " << interaction->interaction_type << std::endl;
+	std::cout << std::endl;
+
+	std::cout << "Interaction:" << std::endl;
+	std::cout << " NORDER = " << interaction->maxorder << std::endl;
+	std::cout << " NBODY = ";
+	for (i = 0; i < interaction->maxorder; ++i) std::cout << std::setw(3) << interaction->nbody_include[i];
+	std::cout << std::endl;
+	std::cout << " ILONG = " << ewald->is_longrange << "; FLONG = " << ewald->file_longrange << std::endl;
+	std::cout << std::endl;
+
+	std::cout << "Fitting:" << std::endl;
+	std::cout << " DFILE = " << files->file_disp << std::endl;
+	std::cout << " FFILE = " << files->file_force << std::endl;
+	std::cout << " NDATA = " << system->ndata << "; NSTART = " << system->nstart << "; NEND = " << system->nend << "; NSKIP = " << system->nskip << std::endl;
+	std::cout << " NBOOT = " << fitting->nboot << std::endl;
+	std::cout << " MULTDAT = " << symmetry->multiply_data << std::endl;
+	std::cout << " ICONST = " << constraint->constraint_mode << std::endl;
+	std::cout << " ROTAXIS = " << constraint->rotation_axis << std::endl;
+	std::cout << " FC2INFO = " << constraint->fc2_file << std::endl;
+	std::cout << " REFINFO = " << symmetry->refsys_file << std::endl;
+	std::cout << std::endl;
+	std::cout << "---------------------------------------------------" << std::endl;
+	std::cout << std::endl;
+
+}
 
 void Writes::writeall()
 {
@@ -355,7 +403,7 @@ void Writes::wrtmisc(){
 		ishift += fcs->ndup[order].size();
 	}
 
-	if (interaction->interaction_type == 2 || interaction->interaction_type == 1) {
+	if (interaction->interaction_type == 2) {
 
 		ofs_info << "#FCS_HARMONIC_EXT" << std::endl;
 

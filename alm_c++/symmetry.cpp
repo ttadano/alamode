@@ -35,7 +35,7 @@ Symmetry::~Symmetry() {
 
 void Symmetry::init()
 {
-	int i, j, k;
+	int i, j;
 	int nat = system->nat;
 
 	SymmList.clear();
@@ -59,10 +59,7 @@ void Symmetry::init()
 	}
 	SymmList.clear();
 
-	std::cout << std::endl << "Number of symmetry operations = " << nsym << std::endl;
-
-	timer->print_elapsed();
-
+	std::cout << "Number of symmetry operations = " << nsym << std::endl;
 	memory->allocate(symrel, nsym, 3, 3);
 	symop_in_cart(system->lavec, system->rlavec);
 
@@ -70,7 +67,12 @@ void Symmetry::init()
 	int nsym_fc;
 	symop_availability_check(symrel, sym_available, nsym, nsym_fc);
 
-	std::cout << "Among " << nsym << " symmetries, " << nsym_fc << " symmetries will be used to reduce the number of parameters." << std::endl;
+	if (nsym_fc == nsym) {
+		std::cout << "All symmetry operations will be used to reduce the number of force constants." << std::endl;
+	} else {
+		std::cout << nsym_fc << " symmetry operations out of" << nsym << " will be used to reduce the number of parameters." << std::endl;
+		std::cout << "Other " << nsym - nsym_fc << " symmetry operations will be imposed as constraints." << std::endl;
+	}
 	std::cout << std::endl;
 
 // 	std::cout << "Used symmetry operations (rotational part in Cartesian coordinate only) are printed below:" << std::endl;
@@ -112,8 +114,18 @@ void Symmetry::init()
 	}
 	std::cout << std::endl;
 
-	if(multiply_data >= -1) data_multiplier(nat, system->ndata, multiply_data);
+	timer->print_elapsed();
 
+	std::cout << "Input Filenames" << std::endl;
+	std::cout << "  Displacement: " << files->file_disp << std::endl;
+	std::cout << "  Force       : " << files->file_force << std::endl;
+	std::cout << std::endl;
+
+	if(multiply_data >= -1) {
+		data_multiplier(nat, system->ndata, multiply_data);
+	} else {
+		std::cout << "MULTDAT < -1: Use the existing disp.SYM and force.SYM files." << std::endl;
+	}
 	timer->print_elapsed();
 }
 
@@ -125,7 +137,8 @@ void Symmetry::gensym(int nat, int &nsym, int nnp, double aa[3][3], double bb[3]
 
 		// Automatically find symmetries.
 
-		std::cout << "Generating Symmetry Operations: This can take a while." << std::endl << std::endl;
+		std::cout << "NSYM = 0 is given: Trying to find symmetry operations with NNP = " << nnp << std::endl;
+		std::cout << "Please be patient. This can take a while." << std::endl << std::endl;
 
 		// findsym(nat, nnp, kd, aa, bb, x, nsym, rot, tran_int);
 		findsym(nat, nnp, kd, aa, bb, x);
@@ -153,6 +166,8 @@ void Symmetry::gensym(int nat, int &nsym, int nnp, double aa[3][3], double bb[3]
 
 		// Identity operation only !
 
+		std::cout << "NSYM = 1 is given: Only identity matrix is considered." << std::endl << std::endl;
+
 		int rot_tmp[3][3], tran_tmp[3];
 
 		for (i = 0; i < 3; ++i){
@@ -169,6 +184,9 @@ void Symmetry::gensym(int nat, int &nsym, int nnp, double aa[3][3], double bb[3]
 		SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
 	} 
 	else {
+
+		std::cout << "NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
+
 		int nsym2;
 		int rot_tmp[3][3], tran_tmp[3];
 
@@ -581,7 +599,7 @@ void Symmetry::pure_translations()
 	natmin = system->nat / ntran;
 
 	if(ntran > 1) {
-		std::cout << "Given system is not primitive cell;" << std::endl;
+		std::cout << "Given system is not primitive cell." << std::endl;
 		std::cout << std::setw(8) <<  ntran << " translation operations exist." << std::endl;
 	} else {
 		std::cout << "Given system is a primitive cell." << std::endl;
@@ -687,7 +705,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 	if(multiply_data == 3) {
 
-		std::cout << "**Displacement-force data will be expanded to the bigger supercell**" << std::endl << std::endl;
+		std::cout << "MULTDAT = 3: Displacement-force data will be expanded to the bigger supercell" << std::endl;
+		std::cout << "**WARNING: This is not fully tested.**" << std::endl << std::endl;
 
 		int nsym_ref = 0;
 		unsigned int nnp_ref;
@@ -709,7 +728,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 		system->recips(lavec_ref, rlavec_ref);
 		ifs_refsys >> nat_ref >> nnp_ref;
 
-		int *kd_ref, *map_ref;
+		int *kd_ref;
 		double **x_ref;
 
 		memory->allocate(kd_ref, nat_ref);
@@ -901,6 +920,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 	} else if (multiply_data == 2) {
 
+	    std::cout << "MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl << std::endl;
+
 		int isym;
 
 		memory->allocate(u, nat, 3);
@@ -943,6 +964,9 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 	} else if (multiply_data == 1) {
 
+		std::cout << "MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
+		std::cout << "             by using pure translational operations only." << std::endl << std::endl;
+
 		memory->allocate(u, nat, 3);
 		memory->allocate(f, nat, 3);
 
@@ -983,6 +1007,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 	} else if (multiply_data == 0) {
 
+		std::cout << "MULTDAT = 0: Just copy DFILE and FFILE to DFILE.SYM and FFILE.SYM" << std::endl << std::endl;
+
 		memory->allocate(u, nat, 3);
 		memory->allocate(f, nat, 3);
                 memory->allocate(u_sym, 1, 1, 1);
@@ -1010,11 +1036,13 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 	} else if (multiply_data == -1) {
 
+		std::cout << "MULTDAT = -1: Not implemented yet" << std::endl << std::endl;
+
 		ntran = 1;
 		memory->allocate(u, 1, 1);
 		memory->allocate(f, 1, 1);
-                memory->allocate(u_sym, 1, 1, 1);
-                memory->allocate(f_sym, 1, 1, 1);
+        memory->allocate(u_sym, 1, 1, 1);
+        memory->allocate(f_sym, 1, 1, 1);
 	} 
 
 	files->ofs_disp_sym.close();

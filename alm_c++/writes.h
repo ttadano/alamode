@@ -11,6 +11,7 @@ namespace ALM_NS{
         ~Writes();
         
         void writeall();
+		void write_input_vars();
 
     private:
         void wrtfcs();

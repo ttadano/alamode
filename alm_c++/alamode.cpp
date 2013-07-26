@@ -1,4 +1,5 @@
 #include <iostream>
+#include <omp.h>
 #include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
@@ -19,16 +20,20 @@ ALM::ALM(int narg, char **arg)
 {
     timer = new Timer(this);
 
-    std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl;
+	std::cout << "Number of OpenMP threads = " << omp_get_max_threads() << std::endl << std::endl;
+    std::cout << "Job started at " << timer->DataAndTime() << std::endl;
+
     input = new Input(this, narg, arg);
     create();
     input->parce_input();
+	writes->write_input_vars();
     initialize();
     constraint->setup();
     fitting->fitmain();
     writes->writeall();
     finalize();
-    std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
+    
+	std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
 }
 
 void ALM::create()
@@ -48,7 +53,7 @@ void ALM::create()
 void ALM::initialize()
 {
     system->init();
-    files->init();
+	files->init();
     symmetry->init();
     interaction->init();
     fcs->init();
