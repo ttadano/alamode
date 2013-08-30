@@ -17,6 +17,7 @@ namespace PHON_NS
         void write_gruneisen();
 		void setup_result_io();
 		void finalize_result_io();
+		void write_input_vars();
 
         bool writeanime;
 

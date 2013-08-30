@@ -1072,10 +1072,10 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
 {
 	/*
-	 Diagram (d)
+	Diagram (d)
 
-	 2 3-point vertexes and 1 4-point vertex.
-     
+	2 3-point vertexes and 1 4-point vertex.
+
 	*/
 
 	unsigned int i;
@@ -1130,7 +1130,7 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 							arr_cubic1[0] = ns * knum + snum;
 							arr_cubic1[1] = ns * kpoint->knum_minus[ik1] + is1;
 							arr_cubic1[2] = ns * kpoint->knum_minus[ik2] + is2;
-							
+
 							arr_cubic2[0] = ns * kpoint->knum_minus[knum] + snum;
 							arr_cubic2[1] = ns * ik3 + is3;
 							arr_cubic2[2] = ns * ik4 + is4;
@@ -1158,11 +1158,11 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 								n4 = phonon_thermodynamics->fB(omega4, T_tmp);
 
 								ret[i] += v3_tmp1 * v3_tmp2 * v4_tmp
-									      * ((1.0 + n1 + n2) * (1.0 / (omega - omega1 - omega2 + im * epsilon) - 1.0 / (omega + omega1 + omega2 + im *epsilon)) 
-									         + (n2 - n1) * (1.0 / (omega - omega1 + omega2 + im * epsilon) - 1.0 / (omega + omega1 - omega2 + im * epsilon)))
-									      * ((1.0 + n3 + n4) * (1.0 / (omega - omega3 - omega4 + im * epsilon) - 1.0 / (omega + omega3 + omega4 + im *epsilon)) 
-								        	 + (n4 - n3) * (1.0 / (omega - omega3 + omega4 + im * epsilon) - 1.0 / (omega + omega3 - omega4 + im * epsilon)));
-							
+									* ((1.0 + n1 + n2) * (1.0 / (omega - omega1 - omega2 + im * epsilon) - 1.0 / (omega + omega1 + omega2 + im * epsilon)) 
+									+ (n2 - n1) * (1.0 / (omega - omega1 + omega2 + im * epsilon) - 1.0 / (omega + omega1 - omega2 + im * epsilon)))
+									* ((1.0 + n3 + n4) * (1.0 / (omega - omega3 - omega4 + im * epsilon) - 1.0 / (omega + omega3 + omega4 + im * epsilon)) 
+									+ (n4 - n3) * (1.0 / (omega - omega3 + omega4 + im * epsilon) - 1.0 / (omega + omega3 - omega4 + im * epsilon)));
+
 							}
 						}
 					}
@@ -1172,6 +1172,92 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 	}
 
 	for (i = 0; i < N; ++i) ret[i] *=  -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
+}
+
+
+void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
+{
+	/*
+	Diagram (j)
+
+	*/
+
+	unsigned int i;
+	unsigned int ik1, ik2, ik3;
+	unsigned int is1, is2, is3;
+	double T_tmp;
+	double n1, n2, n3;
+	double omega1, omega2, omega3;
+
+	std::complex<double> v4_tmp1, v4_tmp2;
+
+	unsigned int arr_quartic1[4], arr_quartic2[4];
+
+	unsigned int nkx = kpoint->nkx;
+	unsigned int nky = kpoint->nky;
+	unsigned int nkz = kpoint->nkz;
+
+	int iloc, jloc, kloc;
+
+	for (ik1 = 0; ik1 < nk; ++ik1) {
+		for (ik2 = 0; ik2 < nk; ++ik2) {
+
+			for (is1 = 0; is1 < ns; ++is1) {
+				for (is2 = 0; is2 < ns; ++is2) {
+					for (is3 = 0; is3 < ns; ++is3) {
+
+						arr_quartic1[0] = ns * kpoint->knum_minus[knum] + snum;
+						arr_quartic1[1] = ns * ik1 + is1;
+						arr_quartic1[2] = ns * kpoint->knum_minus[ik1] + is3;
+						arr_quartic1[3] = ns * knum + snum;
+
+						arr_quartic2[0] = ns * kpoint->knum_minus[ik1] + is1;
+						arr_quartic2[1] = ns * ik2 + is2;
+						arr_quartic2[2] = ns * kpoint->knum_minus[ik2] + is2;
+						arr_quartic2[3] = ns * ik1 + is3;
+
+						omega1 = dynamical->eval_phonon[ik1][is1];
+						omega2 = dynamical->eval_phonon[ik2][is2];
+						omega3 = dynamical->eval_phonon[ik1][is3];
+
+						v4_tmp1 = V4(arr_quartic1);
+						v4_tmp2 = V4(arr_quartic2);
+
+
+						if (std::abs(omega1 - omega3) < eps) {
+
+							for (i = 0; i < N; ++i) {
+								T_tmp = T[i];
+
+								n1 = phonon_thermodynamics->fB(omega1, T_tmp);
+								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
+								n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+
+								ret[i] += v4_tmp1 * v4_tmp2 * (2.0 * n2 + 1.0) * (-2.0* (n1 + 1.0)* n1 / (T_tmp * phonon_thermodynamics->T_to_Ryd) - (2.0 * n1 + 1.0) / omega1);
+							}
+						} else {
+
+							for (i = 0; i < N; ++i) {
+								T_tmp = T[i];
+
+								n1 = phonon_thermodynamics->fB(omega1, T_tmp);
+								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
+								n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+
+								ret[i] += v4_tmp1 * v4_tmp2 * (2.0 * n2 + 1.0) * (2.0 * (n3 - n1) / (omega3 - omega1) - 2.0 * (n1 + n3 + 1.0) / (omega1 + omega3));
+							}
+
+						}
+
+						
+					}
+				}
+			}
+
+		}
+	}
+
+	for (i = 0; i < N; ++i) ret[i] *=  -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
 }
 
 void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const double omega, 

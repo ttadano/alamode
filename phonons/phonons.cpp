@@ -38,10 +38,13 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		std::cout << std::endl;
 
 		input->parce_input(narg, arg);
+		writes->write_input_vars();
 
 		if (restart_flag) {
 			if (mode == "boltzmann") {
-				std::cout << "Restart Mode is switched on!" << std::endl << std::endl;
+				std::cout << "Restart Mode is switched on!" << std::endl;
+				std::cout << "If you want to turn off Restart Mode, set RESTART = 0 in the input file" << std::endl;
+				std::cout << std::endl;
 			} else {
 				std::cout << "Restart Mode is only available for BTE" << std::endl << std::endl;
 			}
