@@ -1069,6 +1069,111 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 	for (i = 0; i < N; ++i) ret[i] *=  pi / (std::pow(static_cast<double>(nk), 2) * 3.0 * std::pow(2.0, 5));
 }
 
+void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
+{
+	/*
+	 Diagram (d)
+
+	 2 3-point vertexes and 1 4-point vertex.
+     
+	*/
+
+	unsigned int i;
+	unsigned int ik1, ik2, ik3, ik4;
+	unsigned int is1, is2, is3, is4;
+	unsigned int arr_cubic1[3], arr_cubic2[3];
+	unsigned int arr_quartic[4];
+	double xk_tmp[3];
+	std::complex<double> v3_tmp1, v3_tmp2, v4_tmp;
+
+	unsigned int nkx = kpoint->nkx;
+	unsigned int nky = kpoint->nky;
+	unsigned int nkz = kpoint->nkz;
+
+	int iloc, jloc, kloc;
+	double n1, n2, n3, n4;
+	double omega1, omega2, omega3, omega4;
+	double T_tmp;
+
+
+	for (i = 0; i < N; ++i) ret[i] = 0.0;
+
+	for (ik1 = 0; ik1 < nk; ++ik1) {
+
+		xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik1][0];
+		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
+		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
+
+		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+
+		ik2 = kloc + nkz * jloc + nky * nkz * iloc;
+
+		for (ik3 = 0; ik3 < nk; ++ik3) {
+
+			xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik3][0];
+			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik3][1];
+			xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik3][2];
+
+			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+
+			ik4 = kloc + nkz * jloc + nky * nkz * iloc;
+
+			for (is1 = 0; is1 < ns; ++is1) {
+				for (is2 = 0; is2 < ns; ++is2) {
+					for (is3 = 0; is3 < ns; ++is3) {
+						for (is4 = 0; is4 < ns; ++is4) {
+
+							arr_cubic1[0] = ns * knum + snum;
+							arr_cubic1[1] = ns * kpoint->knum_minus[ik1] + is1;
+							arr_cubic1[2] = ns * kpoint->knum_minus[ik2] + is2;
+							
+							arr_cubic2[0] = ns * kpoint->knum_minus[knum] + snum;
+							arr_cubic2[1] = ns * ik3 + is3;
+							arr_cubic2[2] = ns * ik4 + is4;
+
+							arr_quartic[0] = ns * ik1 + is1;
+							arr_quartic[1] = ns * ik2 + is2;
+							arr_quartic[2] = ns * kpoint->knum_minus[ik3] + is3;
+							arr_quartic[3] = ns * kpoint->knum_minus[ik4] + is4;
+
+							omega1 = dynamical->eval_phonon[ik1][is1];
+							omega2 = dynamical->eval_phonon[ik2][is2];
+							omega3 = dynamical->eval_phonon[ik3][is3];
+							omega4 = dynamical->eval_phonon[ik4][is4];
+
+							v3_tmp1 = V3new(arr_cubic1);
+							v3_tmp2 = V3new(arr_cubic2);
+							v4_tmp = V4(arr_quartic);
+
+							for (i = 0; i < N; ++i) {
+								T_tmp = T[i];
+
+								n1 = phonon_thermodynamics->fB(omega1, T_tmp);
+								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
+								n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+								n4 = phonon_thermodynamics->fB(omega4, T_tmp);
+
+								ret[i] += v3_tmp1 * v3_tmp2 * v4_tmp
+									      * ((1.0 + n1 + n2) * (1.0 / (omega - omega1 - omega2 + im * epsilon) - 1.0 / (omega + omega1 + omega2 + im *epsilon)) 
+									         + (n2 - n1) * (1.0 / (omega - omega1 + omega2 + im * epsilon) - 1.0 / (omega + omega1 - omega2 + im * epsilon)))
+									      * ((1.0 + n3 + n4) * (1.0 / (omega - omega3 - omega4 + im * epsilon) - 1.0 / (omega + omega3 + omega4 + im *epsilon)) 
+								        	 + (n4 - n3) * (1.0 / (omega - omega3 + omega4 + im * epsilon) - 1.0 / (omega + omega3 - omega4 + im * epsilon)));
+							
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for (i = 0; i < N; ++i) ret[i] *=  -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
+}
+
 void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const double omega, 
 								   const unsigned int knum, const unsigned int snum, double ***ret)
 {
@@ -1632,6 +1737,7 @@ void Relaxation::compute_mode_tau()
 		} else {
 
 			double *damp3, *damp4;
+			std::complex<double> *self_d;
 
 			/* Calculate the imaginary part of self-energy. 
 			If quartic_mode == true, self-energy of O(H_{4}^{2}) is also calculated. */
@@ -1647,6 +1753,7 @@ void Relaxation::compute_mode_tau()
 			memory->allocate(damp3, NT);
 			if (quartic_mode) {
 				memory->allocate(damp4, NT);
+				memory->allocate(self_d, NT);
 			}
 
 			for (i = 0; i < kslist.size(); ++i) {
@@ -1677,6 +1784,7 @@ void Relaxation::compute_mode_tau()
 						error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
 					} else {
 						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
+						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
 					}
 				}
 
@@ -1686,6 +1794,7 @@ void Relaxation::compute_mode_tau()
 
 						if (quartic_mode) {
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_d[j].imag());
 						}
 
 						ofs_mode_tau << std::endl; 
@@ -1694,7 +1803,10 @@ void Relaxation::compute_mode_tau()
 			}
 
 			memory->deallocate(damp3);
-			if (quartic_mode) memory->deallocate(damp4);
+			if (quartic_mode) {
+				memory->deallocate(damp4);
+				memory->deallocate(self_d);
+			}
 		}
 
 		if (mympi->my_rank == 0) ofs_mode_tau.close();
