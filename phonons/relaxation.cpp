@@ -1183,7 +1183,7 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 	*/
 
 	unsigned int i;
-	unsigned int ik1, ik2, ik3;
+	unsigned int ik1, ik2;
 	unsigned int is1, is2, is3;
 	double T_tmp;
 	double n1, n2, n3;
@@ -1196,8 +1196,6 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 	unsigned int nkx = kpoint->nkx;
 	unsigned int nky = kpoint->nky;
 	unsigned int nkz = kpoint->nkz;
-
-	int iloc, jloc, kloc;
 
 	for (ik1 = 0; ik1 < nk; ++ik1) {
 		for (ik2 = 0; ik2 < nk; ++ik2) {
@@ -1823,7 +1821,7 @@ void Relaxation::compute_mode_tau()
 		} else {
 
 			double *damp3, *damp4;
-			std::complex<double> *self_d;
+			std::complex<double> *self_d, *self_j;
 
 			/* Calculate the imaginary part of self-energy. 
 			If quartic_mode == true, self-energy of O(H_{4}^{2}) is also calculated. */
@@ -1840,6 +1838,7 @@ void Relaxation::compute_mode_tau()
 			if (quartic_mode) {
 				memory->allocate(damp4, NT);
 				memory->allocate(self_d, NT);
+				memory->allocate(self_j, NT);
 			}
 
 			for (i = 0; i < kslist.size(); ++i) {
@@ -1871,6 +1870,7 @@ void Relaxation::compute_mode_tau()
 					} else {
 						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
 						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
+						selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
 					}
 				}
 
@@ -1881,6 +1881,7 @@ void Relaxation::compute_mode_tau()
 						if (quartic_mode) {
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_d[j].imag());
+							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_j[j].imag());
 						}
 
 						ofs_mode_tau << std::endl; 
@@ -1892,6 +1893,7 @@ void Relaxation::compute_mode_tau()
 			if (quartic_mode) {
 				memory->deallocate(damp4);
 				memory->deallocate(self_d);
+				memory->deallocate(self_j);
 			}
 		}
 
