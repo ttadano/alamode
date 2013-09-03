@@ -59,7 +59,7 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 	unsigned int i, j;
 
 	std::complex<double> **dymat_k;
-	
+
 	memory->allocate(dymat_k, neval, neval);
 
 	calc_analytic_k(xk_in, fc2_in, dymat_k);
@@ -140,7 +140,7 @@ void Dynamical::eval_k(double *xk_in, std::vector<FcsClassExtent> fc2_ext, doubl
 	unsigned int i, j;
 
 	std::complex<double> **dymat_k;
-	
+
 	memory->allocate(dymat_k, neval, neval);
 
 	calc_analytic_k(xk_in, fc2_ext, dymat_k);
@@ -334,7 +334,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 	for (i = 0; i < 3*system->natmin; ++i) {
 		for (j = 0; j < 3*system->natmin; ++j) {
 			dymat_out[i][j] = std::complex<double>(0.0, 0.0);
-	}
+		}
 	}
 
 	for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.begin(); it != fc2_in.end(); ++it) {

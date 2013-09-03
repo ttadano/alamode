@@ -350,8 +350,8 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 			ind[i][4] = fc2_ext[i].cell_s;
 		}
 	}
-	MPI_Bcast(&fcs_tmp, nfcs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&ind, nfcs*5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&fcs_tmp[0], nfcs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&ind[0][0], nfcs*5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
 	if (mympi->my_rank != 0) {
 		for (i = 0; i < nfcs; ++i) {

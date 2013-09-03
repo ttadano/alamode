@@ -17,233 +17,237 @@ System::~System() {}
 
 void System::setup()
 {
-    unsigned int i, j;
+	unsigned int i, j;
 
-    load_system_info();
+	load_system_info();
 
-    recips(lavec_s, rlavec_s);
-    recips(lavec_p, rlavec_p);
+	recips(lavec_s, rlavec_s);
+	recips(lavec_p, rlavec_p);
 
-    memory->allocate(xr_p, nat, 3);
-    memory->allocate(xc, nat, 3);
+	memory->allocate(xr_p, nat, 3);
+	memory->allocate(xc, nat, 3);
 
-    for (i = 0; i < nat; ++i){
-        rotvec(xc[i], xr_s[i], lavec_s);
-    }
+	for (i = 0; i < nat; ++i){
+		rotvec(xc[i], xr_s[i], lavec_s);
+	}
 
-    for (i = 0; i < nat; ++i){
-        rotvec(xr_p[i], xc[i], rlavec_s);
-        for(j = 0; j < 3; ++j){
-            xr_p[i][j] /=  2.0 * pi;
-        }
-    }
+	for (i = 0; i < nat; ++i){
+		rotvec(xr_p[i], xc[i], rlavec_s);
+		for(j = 0; j < 3; ++j){
+			xr_p[i][j] /=  2.0 * pi;
+		}
+	}
 
-    if (mympi->my_rank == 0) {
-        std::cout << "**Lattice Vectors**" << std::endl;
-        std::cout.setf(std::ios::scientific);
+	if (mympi->my_rank == 0) {
+		std::cout << "**Lattice Vectors**" << std::endl;
+		std::cout.setf(std::ios::scientific);
 
-        std::cout << " *Super Cell* " << std::endl << std::endl;
-        std::cout << " " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
-        std::cout << " " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
-        std::cout << " " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
-        std::cout << std::endl;
+		std::cout << " *Super Cell* " << std::endl << std::endl;
+		std::cout << " " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
+		std::cout << " " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
+		std::cout << " " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
+		std::cout << std::endl;
 
-        std::cout << " " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
-        std::cout << " " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
-        std::cout << " " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
-        std::cout << std::endl << std::endl;
+		std::cout << " " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
+		std::cout << " " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
+		std::cout << " " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
+		std::cout << std::endl << std::endl;
 
-        std::cout << " *Primitive Cell* " << std::endl << std::endl;
-        std::cout << " " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
-        std::cout << " " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
-        std::cout << " " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
-        std::cout << std::endl;
+		std::cout << " *Primitive Cell* " << std::endl << std::endl;
+		std::cout << " " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
+		std::cout << " " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
+		std::cout << " " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
+		std::cout << std::endl;
 
-        std::cout << " " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
-        std::cout << " " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
-        std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
-        std::cout << std::endl << std::endl;
+		std::cout << " " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
+		std::cout << " " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
+		std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
+		std::cout << std::endl << std::endl;
 
-        double vec_tmp[3][3];
+		double vec_tmp[3][3];
 
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
-                vec_tmp[i][j] = lavec_p[j][i];
-            }
-        }
-        volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
+		for (i = 0; i < 3; ++i){
+			for (j = 0; j < 3; ++j){
+				vec_tmp[i][j] = lavec_p[j][i];
+			}
+		}
+		volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
-        std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
-        std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
+		std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
+		std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
-        std::cout << " Dimension of the supercell :";
+		std::cout << " Dimension of the supercell :";
 		std::cout << std::setw(4) << cell_dimension[0] << "  x";
 		std::cout << std::setw(4) << cell_dimension[1] << "  x";
 		std::cout << std::setw(4) << cell_dimension[2] << std::endl;
 
-    }
+	}
 
-    // Atomic masses in Rydberg unit
+	// Atomic masses in Rydberg unit
 
-    memory->allocate(mass, nat);
-    for (i = 0; i < nat; ++i){
-        mass[i] = mass_kd[kd[i]]*amu_ry;
-    }
-    MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&cell_dimension[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	memory->allocate(mass, nat);
+	for (i = 0; i < nat; ++i){
+		mass[i] = mass_kd[kd[i]]*amu_ry;
+	}
+	MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&cell_dimension[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 }
 
 void System::load_system_info()
 {
-    unsigned int i;
+	unsigned int i;
 
-    if (mympi->my_rank == 0) {
-        std::string file_fcs = fcs_phonon->file_fcs;
-        std::ifstream ifs_fcs;
+	if (mympi->my_rank == 0) {
+		std::string file_fcs = fcs_phonon->file_fcs;
+		std::ifstream ifs_fcs;
 
-        ifs_fcs.open(file_fcs.c_str(), std::ios::in);
-        if(!ifs_fcs) error->exit("load_system_info", "cannot open file file_fcs");
+		ifs_fcs.open(file_fcs.c_str(), std::ios::in);
+		if(!ifs_fcs) error->exit("load_system_info", "cannot open file file_fcs");
 
-        std::string str_tmp;
+		std::string str_tmp;
 
-        while(!ifs_fcs.eof())
-        {
-            std::getline(ifs_fcs, str_tmp);
-            if(str_tmp == "##SYSTEM INFO"){
+		while(!ifs_fcs.eof())
+		{
+			std::getline(ifs_fcs, str_tmp);
+			if(str_tmp == "##SYSTEM INFO"){
 
-                std::getline(ifs_fcs, str_tmp);
+				std::getline(ifs_fcs, str_tmp);
 
-                for (i = 0; i < 3; ++i){
-                    ifs_fcs >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
-                }
-                ifs_fcs.ignore();
-                std::getline(ifs_fcs, str_tmp);
-                ifs_fcs >> nkd;
-                memory->allocate(symbol_kd, nkd);
-                memory->allocate(mass_kd, nkd);
+				for (i = 0; i < 3; ++i){
+					ifs_fcs >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
+				}
+				ifs_fcs.ignore();
+				std::getline(ifs_fcs, str_tmp);
+				ifs_fcs >> nkd;
+				memory->allocate(symbol_kd, nkd);
+				memory->allocate(mass_kd, nkd);
 
-                for (i = 0; i < nkd; ++i){
-                    ifs_fcs >> str_tmp >> symbol_kd[i] >> mass_kd[i];
-                }
-                ifs_fcs.ignore();
-                std::getline(ifs_fcs, str_tmp);
-                ifs_fcs >> nat >> natmin >> ntran;
+				for (i = 0; i < nkd; ++i){
+					ifs_fcs >> str_tmp >> symbol_kd[i] >> mass_kd[i];
+				}
+				ifs_fcs.ignore();
+				std::getline(ifs_fcs, str_tmp);
+				ifs_fcs >> nat >> natmin >> ntran;
 
-                memory->allocate(xr_s, nat, 3);
-                memory->allocate(kd, nat);
-                memory->allocate(map_p2s, natmin, ntran);
-                memory->allocate(map_s2p, nat);
+				memory->allocate(xr_s, nat, 3);
+				memory->allocate(kd, nat);
+				memory->allocate(map_p2s, natmin, ntran);
+				memory->allocate(map_s2p, nat);
 
-                unsigned int ikd, itran, icell;
-                std::getline(ifs_fcs, str_tmp);
-                std::getline(ifs_fcs, str_tmp);
+				unsigned int ikd, itran, icell;
+				std::getline(ifs_fcs, str_tmp);
+				std::getline(ifs_fcs, str_tmp);
 
-                for (i = 0; i < nat; ++i){
-                    ifs_fcs >> str_tmp >> ikd >> xr_s[i][0] >> xr_s[i][1] >> xr_s[i][2] >> itran >> icell;
-                    kd[i] = ikd - 1;
-                    map_p2s[icell - 1][itran - 1] = i;
-                    map_s2p[i].atom_num = icell - 1;
-                    map_s2p[i].tran_num = itran - 1;
-                }
-            }
-        }
-        ifs_fcs.close();
-    }
+				for (i = 0; i < nat; ++i){
+					ifs_fcs >> str_tmp >> ikd >> xr_s[i][0] >> xr_s[i][1] >> xr_s[i][2] >> itran >> icell;
+					kd[i] = ikd - 1;
+					map_p2s[icell - 1][itran - 1] = i;
+					map_s2p[i].atom_num = icell - 1;
+					map_s2p[i].tran_num = itran - 1;
+				}
+			}
+		}
+		ifs_fcs.close();
+	}
 
-    MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&lavec_p[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&lavec_p[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    if (mympi->my_rank > 0){
-        memory->allocate(mass_kd, nkd);
-        memory->allocate(xr_s, nat, 3);
-        memory->allocate(kd, nat);
-        memory->allocate(map_p2s, natmin, ntran);
-        memory->allocate(map_s2p, nat);
-    }
+	if (mympi->my_rank > 0){
+		memory->allocate(mass_kd, nkd);
+		memory->allocate(xr_s, nat, 3);
+		memory->allocate(kd, nat);
+		memory->allocate(map_p2s, natmin, ntran);
+		memory->allocate(map_s2p, nat);
+	}
 
-    MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    // need to define MPI_MYTYPE for the exchange of user defined class
-    //    MPI_Bcast(&map_s2p[0], sizeof(map_s2p), MPI_BYTE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+	// need to define MPI_MYTYPE for the exchange of user defined class ?
+
+	for (i = 0; i < nat; ++i) {
+		MPI_Bcast(&map_s2p[i], sizeof(map_s2p[i]), MPI_BYTE, 0, MPI_COMM_WORLD);
+	}
 
 }
 
 void System::recips(double vec[3][3], double inverse[3][3])
 {
-    double det;
-    det = vec[0][0] * vec[1][1] * vec[2][2] 
-    + vec[1][0] * vec[2][1] * vec[0][2] 
-    + vec[2][0] * vec[0][1] * vec[1][2]
-    - vec[0][0] * vec[2][1] * vec[1][2] 
-    - vec[2][0] * vec[1][1] * vec[0][2]
-    - vec[1][0] * vec[0][1] * vec[2][2];
+	double det;
+	det = vec[0][0] * vec[1][1] * vec[2][2] 
+	+ vec[1][0] * vec[2][1] * vec[0][2] 
+	+ vec[2][0] * vec[0][1] * vec[1][2]
+	- vec[0][0] * vec[2][1] * vec[1][2] 
+	- vec[2][0] * vec[1][1] * vec[0][2]
+	- vec[1][0] * vec[0][1] * vec[2][2];
 
-    if(std::abs(det) < eps12) {
-        error->exit("recips", "Lattice Vector is singular");
-    }
+	if(std::abs(det) < eps12) {
+		error->exit("recips", "Lattice Vector is singular");
+	}
 
-    double factor = 2.0 * pi / det;
+	double factor = 2.0 * pi / det;
 
-    inverse[0][0] = (vec[1][1] * vec[2][2] - vec[1][2] * vec[2][1]) * factor;
-    inverse[0][1] = (vec[0][2] * vec[2][1] - vec[0][1] * vec[2][2]) * factor;
-    inverse[0][2] = (vec[0][1] * vec[1][2] - vec[0][2] * vec[1][1]) * factor;
+	inverse[0][0] = (vec[1][1] * vec[2][2] - vec[1][2] * vec[2][1]) * factor;
+	inverse[0][1] = (vec[0][2] * vec[2][1] - vec[0][1] * vec[2][2]) * factor;
+	inverse[0][2] = (vec[0][1] * vec[1][2] - vec[0][2] * vec[1][1]) * factor;
 
-    inverse[1][0] = (vec[1][2] * vec[2][0] - vec[1][0] * vec[2][2]) * factor;
-    inverse[1][1] = (vec[0][0] * vec[2][2] - vec[0][2] * vec[2][0]) * factor;
-    inverse[1][2] = (vec[0][2] * vec[1][0] - vec[0][0] * vec[1][2]) * factor;
+	inverse[1][0] = (vec[1][2] * vec[2][0] - vec[1][0] * vec[2][2]) * factor;
+	inverse[1][1] = (vec[0][0] * vec[2][2] - vec[0][2] * vec[2][0]) * factor;
+	inverse[1][2] = (vec[0][2] * vec[1][0] - vec[0][0] * vec[1][2]) * factor;
 
-    inverse[2][0] = (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]) * factor;
-    inverse[2][1] = (vec[0][1] * vec[2][0] - vec[0][0] * vec[2][1]) * factor;
-    inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
+	inverse[2][0] = (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]) * factor;
+	inverse[2][1] = (vec[0][1] * vec[2][0] - vec[0][0] * vec[2][1]) * factor;
+	inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
 }
 
 void System::rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char mode)
 {
-    // Perform matrix x vector multiplication. 
-    //
-    // vec_out = mat      * vec_in   (mode = 'N')
-    //          (mat)^{t} * vec_in   (mode = 'T')
-    //
+	// Perform matrix x vector multiplication. 
+	//
+	// vec_out = mat      * vec_in   (mode = 'N')
+	//          (mat)^{t} * vec_in   (mode = 'T')
+	//
 
-    unsigned int i;
-    double vec_tmp[3];
+	unsigned int i;
+	double vec_tmp[3];
 
-    for (i = 0; i < 3; ++i){
-        vec_tmp[i] = vec_in[i];
-    }
+	for (i = 0; i < 3; ++i){
+		vec_tmp[i] = vec_in[i];
+	}
 
-    if (mode == 'N') {
-        for (i = 0; i < 3; ++i){
-            vec_out[i] = mat[i][0] * vec_tmp[0] + mat[i][1] * vec_tmp[1] + mat[i][2] * vec_tmp[2];
-        }
-    } else if (mode == 'T'){
-        for (i = 0; i < 3; ++i){
-            vec_out[i] = mat[0][i] * vec_tmp[0] + mat[1][i] * vec_tmp[1] + mat[2][i] * vec_tmp[2];
-        }
-    } else {
-        error->exit("rotvec", "invalid input variable for mode");
-    }
+	if (mode == 'N') {
+		for (i = 0; i < 3; ++i){
+			vec_out[i] = mat[i][0] * vec_tmp[0] + mat[i][1] * vec_tmp[1] + mat[i][2] * vec_tmp[2];
+		}
+	} else if (mode == 'T'){
+		for (i = 0; i < 3; ++i){
+			vec_out[i] = mat[0][i] * vec_tmp[0] + mat[1][i] * vec_tmp[1] + mat[2][i] * vec_tmp[2];
+		}
+	} else {
+		error->exit("rotvec", "invalid input variable for mode");
+	}
 }
 
 
 double System::volume(double vec1[3], double vec2[3], double vec3[3])
 {
-    double vol;
+	double vol;
 
-    vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
-        + vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
-        + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
+	vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
+		+ vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
+		+ vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
 
-    return vol;
+	return vol;
 }
 
 void System::invmat3(double invmat[3][3], double mat[3][3])
@@ -256,7 +260,7 @@ void System::invmat3(double invmat[3][3], double mat[3][3])
 	- mat[0][0] * mat[2][1] * mat[1][2] 
 	- mat[2][0] * mat[1][1] * mat[0][2]
 	- mat[1][0] * mat[0][1] * mat[2][2];
-	
+
 	if(std::abs(det) < eps12) {
 		error->exit("invmat3", "Given matrix is singular");
 	}
