@@ -1177,7 +1177,7 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
 {
 	/*
-	
+
 	Diagram (e)
 
 	*/
@@ -1190,6 +1190,8 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 	double n1, n2, n3, n4;
 	double xk_tmp[3];
 	std::complex<double> v3_tmp1, v3_tmp2, v4_tmp;
+	std::complex<double> prod_tmp;
+	std::complex<double> omega_shift;
 
 	unsigned int arr_cubic1[3], arr_cubic2[3];
 	unsigned int arr_quartic[4];
@@ -1199,8 +1201,13 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 	unsigned int nkz = kpoint->nkz;
 
 	unsigned int iloc, jloc, kloc;
+	int ip1, ip4;
+	double dp1, dp4;
 
 	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+
+
+	omega_shift = omega + im * epsilon;
 
 	for (ik1 = 0; ik1 < nk; ++ik1) {
 
@@ -1245,30 +1252,55 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 							v3_tmp2 = V3new(arr_cubic2);
 							v4_tmp = V4(arr_quartic);
 
-							if (std::abs(omega1 - omega2) > eps) {
+
+							if (std::abs(omega1 - omega2) < eps) {
 
 								for (i = 0; i < N; ++i) {
 									T_tmp = T[i];
-								
+
+									prod_tmp = std::complex<double>(0.0, 0.0);
+
+
+									for (ip1 = 1; ip1 >= -1; ip1 -= 2) {
+										dp1 = static_cast<double>(ip1) * omega1;
+										n1 = phonon_thermodynamics->fB(dp1, T_tmp);
+
+										for (ip4 = 1; ip4 >= -1; ip4 -= 2) {
+											dp4 = static_cast<double>(ip4) * omega4;
+											n4 = phonon_thermodynamics->fB(dp4, T_tmp);
+
+											prod_tmp += static_cast<double>(ip4) * ((1.0 + n1 + n4) / std::pow((omega_shift + dp1 + dp4), 2)
+												+ n1 * (n1 + 1.0) / ((omega_shift + dp1 + dp4) * T_tmp *  phonon_thermodynamics->T_to_Ryd)
+												+ (1.0 + n1 + n4) / (dp1 * (omega_shift + dp1 + dp4)));	
+										}
+									}
+
+									n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+									ret[i] += v3_tmp1 * v3_tmp2 * v4_tmp * (2.0 + n3 + 1.0) * prod_tmp;
+								}
+							} else {
+
+								for (i = 0; i < N; ++i) {
+									T_tmp = T[i];
+
 									n1 = phonon_thermodynamics->fB(omega1, T_tmp);
 									n2 = phonon_thermodynamics->fB(omega2, T_tmp);
 									n3 = phonon_thermodynamics->fB(omega3, T_tmp);
 									n4 = phonon_thermodynamics->fB(omega4, T_tmp);
 
 									ret[i] += v3_tmp1 * v3_tmp2 * v4_tmp * (2.0 * n3 + 1.0) * 
-										  ( (1.0 / (omega1 + omega2) - 1.0 / (omega1 - omega2)) * (1.0 / (omega + omega1 + omega4 + im * epsilon) - 1.0 / (omega + omega1 - omega4 + im * epsilon)) * (n1 + 1.0)
-										  + (1.0 / (omega1 + omega2) - 1.0 / (omega1 - omega2)) * (1.0 / (omega - omega1 + omega4 + im * epsilon) - 1.0 / (omega - omega1 - omega4 + im * epsilon)) * n1
-										  + (1.0 / (omega1 + omega2) + 1.0 / (omega1 - omega2)) * (1.0 / (omega + omega2 + omega4 + im * epsilon) - 1.0 / (omega + omega2 - omega4 + im * epsilon)) * (n2 + 1.0)
-										  + (1.0 / (omega1 + omega2) + 1.0 / (omega1 - omega2)) * (1.0 / (omega - omega2 + omega4 + im * epsilon) - 1.0 / (omega - omega2 - omega4 + im * epsilon)) * n2
-										  + (1.0 / (omega + omega1 - omega4 + im * epsilon) - 1.0 / (omega - omega1 - omega4 + im * epsilon)) * (1.0 / (omega + omega2 - omega4 + im * epsilon) - 1.0 / (omega - omega2 - omega4 + im * epsilon)) * (n4 + 1.0)
-										  + (1.0 / (omega + omega1 + omega4 + im * epsilon) - 1.0 / (omega - omega1 + omega4 + im * epsilon)) * (1.0 / (omega + omega2 + omega4 + im * epsilon) - 1.0 / (omega - omega2 + omega4 + im * epsilon)) * n4);
+										( (1.0 / (omega1 + omega2) - 1.0 / (omega1 - omega2)) * (1.0 / (omega_shift + omega1 + omega4) - 1.0 / (omega_shift + omega1 - omega4)) * (n1 + 1.0)
+										+ (1.0 / (omega1 + omega2) - 1.0 / (omega1 - omega2)) * (1.0 / (omega_shift - omega1 + omega4) - 1.0 / (omega_shift - omega1 - omega4)) * n1
+										+ (1.0 / (omega1 + omega2) + 1.0 / (omega1 - omega2)) * (1.0 / (omega_shift + omega2 + omega4) - 1.0 / (omega_shift + omega2 - omega4)) * (n2 + 1.0)
+										+ (1.0 / (omega1 + omega2) + 1.0 / (omega1 - omega2)) * (1.0 / (omega_shift - omega2 + omega4) - 1.0 / (omega_shift - omega2 - omega4)) * n2
+										+ (1.0 / (omega_shift + omega1 - omega4) - 1.0 / (omega_shift - omega1 - omega4)) * (1.0 / (omega_shift + omega2 - omega4) - 1.0 / (omega_shift - omega2 - omega4)) * (n4 + 1.0)
+										+ (1.0 / (omega_shift + omega1 + omega4) - 1.0 / (omega_shift - omega1 + omega4)) * (1.0 / (omega_shift + omega2 + omega4) - 1.0 / (omega_shift - omega2 + omega4)) * n4);
 
-
-							/*
-							ret[i] *= v3_tmp1 * v3_tmp2 * v4_tmp * (2.0 * n3 + 1.0) * (2.0 * omega2) / (omega1 * omega1 - omega2 * omega2)
-										   * ((1.0 + n1 + n4) * (1.0 / (omega - omega1 - omega4 + im * epsilon) - 1.0 / (omega + omega1 + omega4 + im * epsilon)) 
-										      + (n4 - n1) * (1.0 / (omega - omega1 + omega4 + im * epsilon) - 1.0 / (omega + omega1 - omega4 + im * epsilon)));
-							*/
+									/*
+									ret[i] *= v3_tmp1 * v3_tmp2 * v4_tmp * (2.0 * n3 + 1.0) * (2.0 * omega2) / (omega1 * omega1 - omega2 * omega2)
+									* ((1.0 + n1 + n4) * (1.0 / (omega - omega1 - omega4 + im * epsilon) - 1.0 / (omega + omega1 + omega4 + im * epsilon)) 
+									+ (n4 - n1) * (1.0 / (omega - omega1 + omega4 + im * epsilon) - 1.0 / (omega + omega1 - omega4 + im * epsilon)));
+									*/
 								}
 							}
 						}
@@ -1979,9 +2011,9 @@ void Relaxation::compute_mode_tau()
 						error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
 					} else {
 						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
-			//			selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
+						//			selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
 						selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
-				//		selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
+						//		selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
 					}
 				}
 
