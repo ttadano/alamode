@@ -53,8 +53,15 @@ namespace PHON_NS {
         void calc_damping_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***);
         void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         void calc_damping4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+	    void selfenergy_a(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
+		void selfenergy_b(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
+		void selfenergy_c(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
 		void selfenergy_d(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
 		void selfenergy_e(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
+		void selfenergy_f(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
+		void selfenergy_g(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
+		void selfenergy_h(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
+		void selfenergy_i(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
 		void selfenergy_j(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
         void calc_damping_tetra_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***); 
         void calc_selfenergy_V3(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
