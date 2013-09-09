@@ -50,6 +50,14 @@ void Dynamical::setup_dynamical(std::string mode)
 			}
 		}
 	}
+
+	if (nonanalytic) {
+		std::cout << std::endl;
+		std::cout << " NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
+		std::cout << std::endl;
+
+
+	}
 }
 
 void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {

@@ -1876,8 +1876,10 @@ void Relaxation::selfenergy_g(const unsigned int N, double *T, const double omeg
 	std::complex<double> v3_tmp1, v3_tmp2, v4_tmp;
 	std::complex<double> v_prod;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
 
+	omega_shift = omega + im * epsilon;
+
+	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
 
 	arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_cubic2[2] = ns * knum + snum;
