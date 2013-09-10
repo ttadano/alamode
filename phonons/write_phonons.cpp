@@ -705,7 +705,7 @@ void Writes::write_gruneisen()
 
 void Writes::write_rmsd()
 {
-	relaxation->modify_eigenvectors();
+// 	relaxation->modify_eigenvectors();
 
 	// Write room mean square displacement of atoms
 

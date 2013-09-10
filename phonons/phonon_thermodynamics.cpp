@@ -202,7 +202,7 @@ double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, 
 			omega = dynamical->eval_phonon[ik][is];
 
 			ret += real(dynamical->evec_phonon[ik][is][ns1] * dynamical->evec_phonon[ik][is][ns2])
-				* coth_T(omega, T) / omega;
+				* coth_T(0.5 * omega, T) / omega;
 
 // 			std::cout << "T = " << T;
 // 			std::cout << " ik = " << ik << " is = " << is;
