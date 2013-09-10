@@ -38,10 +38,13 @@ namespace PHON_NS {
         void calc_analytic_k(double *, double ****, std::complex<double> **);
 		void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
         void calc_nonanalytic();
+		void load_born();
         
 		double **xshift_s;
         char UPLO;
         std::complex<double> ***dymat;
+		double dielec[3][3];
+		double ***borncharge;
     };
 
     extern "C" {

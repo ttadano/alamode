@@ -1771,9 +1771,9 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 														n3 = phonon_thermodynamics->fB(dp3, T_tmp);
 														n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
-														ret[i] += v3_prod * static_cast<double>(ip2*ip3*ip4) * omega_sum[1] 
-														* (n2 * omega_sum[0] * ((1.0 + n3 + n4) *  omega_sum[0] + (1.0 + n2 + n4) * dp1_inv)
-															+ (1.0 + n3) * (1.0 + n4) * D134 * (D134 + dp1_inv) 
+														ret[i] += v3_prod * static_cast<double>(ip2*ip3*ip4)
+															* (omega_sum[1] * (n2 * omega_sum[0] * ((1.0 + n3 + n4) *  omega_sum[0] + (1.0 + n2 + n4) * dp1_inv)
+															+ (1.0 + n3) * (1.0 + n4) * D134 * (D134 + dp1_inv)) 
 															+ (1.0 + n1) * (1.0 + n3 + n4) * D134 * omega_sum[0] * (omega_sum[0] + D134 + dp1_inv + n1 / (phonon_thermodynamics->T_to_Ryd*T_tmp)));
 													}
 												}
@@ -2009,10 +2009,9 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 	double omega1, omega2, omega3, omega4, omega5;
 	double dp1, dp2, dp3, dp4, dp5;
 	double n1, n2, n3, n4, n5;
-	double D1, D2, D3;
-	double D123_inv;
+	double D1, D2, D1_inv, D2_inv, D12_inv;
 	double N12, N35, N34;
-	double N_prod[3];
+	double N_prod[4];
 
 	std::complex<double> v3_tmp1, v3_tmp2, v3_tmp3, v3_tmp4;
 	std::complex<double> v_prod;
@@ -2115,17 +2114,18 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 												dp4 = static_cast<double>(ip4) * omega4;
 
 												D2 = dp4 - dp3 - dp2;
+												D2_inv = 1.0 / D2;
 												omega_sum[3] = 1.0 / (omega_shift + dp1 + dp3 - dp4);
 
 												for (ip5 = 1; ip5 >= -1; ip5 -= 2) {
 													dp5 = static_cast<double>(ip5) * omega5;
 
 													D1 = dp5 - dp3 - dp1;
-													D3 = dp1 - dp2 + dp4 - dp5;
+													D1_inv = 1.0 / D1;
+													D12_inv = D1_inv * D2_inv;
+
 													omega_sum[1] = 1.0 / (omega_shift - dp4 + dp5);
 													omega_sum[2] = 1.0 / (omega_shift - dp2 - dp3 + dp5);
-
-													D123_inv = 1.0 / (D1 * D2 * D3);
 
 													for (i = 0; i < N; ++i) {
 														T_tmp = T[i];
@@ -2140,12 +2140,14 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 														N34 = n3 - n4;
 														N35 = n3 - n5;
 
-														N_prod[0] = N12 * (N35 * D2 - N34 * D1);
-														N_prod[1] = ((1.0 + n2) * N35 - n3 * (1.0 + n5)) * D3;
-														N_prod[2] = ((1.0 + n1) * N34 - n3 * (1.0 + n4)) * D3;
+														N_prod[0] = N12 * (1.0 + n3);
+														N_prod[1] = (1.0 + n2 + n3) * (1.0 + n5) - (1.0 + n1 + n3) * (1.0 + n4);
+														N_prod[2] = ((1.0 + n2) * N35 - n3 * (1.0 + n5));
+														N_prod[3] = -((1.0 + n1) * N34 - n3 * (1.0 + n4));
 
-														ret[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) * D123_inv
-															* (N_prod[0] * omega_sum[0] - (N_prod[0] + N_prod[1] - N_prod[2]) * omega_sum[1] + N_prod[1] * omega_sum[2] - N_prod[2] * omega_sum[3]);
+														ret[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
+															* (D12_inv * (N_prod[0] * omega_sum[0] + N_prod[1] * omega_sum[1] + N_prod[2] * omega_sum[2] + N_prod[3] * omega_sum[3])
+															+ N12 * ((1.0 + n5) * D1_inv - (1.0 + n4) * D2_inv) * omega_sum[0] * omega_sum[1]);
 													}
 												}
 											}

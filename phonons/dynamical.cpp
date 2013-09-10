@@ -9,6 +9,7 @@
 #include "../alm_c++/constants.h"
 #include "fcs_phonon.h"
 #include <iomanip>
+#include <fstream>
 #include "timer.h"
 #include "error.h"
 
@@ -51,11 +52,20 @@ void Dynamical::setup_dynamical(std::string mode)
 		}
 	}
 
-	if (nonanalytic) {
-		std::cout << std::endl;
-		std::cout << " NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
-		std::cout << std::endl;
+	MPI_Bcast(&nonanalytic, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
+	if (nonanalytic) {
+		if (mympi->my_rank == 0) {
+			std::cout << std::endl;
+			std::cout << " NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
+			std::cout << std::endl;
+		}
+		memory->allocate(borncharge, system->natmin, 3, 3);
+
+		if (mympi->my_rank == 0) load_born();
+
+		MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&borncharge[0][0][0], 9*system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	}
 }
@@ -495,6 +505,99 @@ void Dynamical::diagonalize_dynamical_all()
 
 	}
 #endif
+}
+
+
+void Dynamical::load_born()
+{
+	// Read the dielectric tensor and born effective charges from file_born
+
+	std::ifstream ifs_born;
+	double sum_born[3][3];
+	double res;
+
+	ifs_born.open(file_born.c_str(), std::ios::in);
+	if (!ifs_born) error->exit("load_born", "cannot open file_born");
+
+	unsigned int i, j, k;
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			ifs_born >> dielec[i][j];
+		}
+	}
+
+	for (i = 0; i < system->natmin; ++i) {
+		for (j = 0; j < 3; ++j) {
+			for (k = 0; k < 3; ++k) {
+				ifs_born >> borncharge[i][j][k];
+			}
+		}
+	}
+
+	std::cout << "Dielectric constant tensor in Cartesian coordinate" << std::endl;
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			std::cout << std::setw(15) << dielec[i][j];
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << "Born effective charge tensor in Cartesian coordinate" << std::endl;
+	for (i = 0; i < system->natmin; ++i) {
+		std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[i] << ") :" << std::endl;
+		for (j = 0; j < 3; ++j) {
+			for (k = 0; k < 3; ++k) {
+				std::cout << std::setw(15) << borncharge[i][j][k];
+			}
+			std::cout << std::endl;
+		}
+	}
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			sum_born[i][j] = 0.0;
+		}
+	}
+
+	for (i = 0; i < system->natmin; ++i) {
+		for (j = 0; j < 3; ++j) {
+			for (k = 0; k < 3; ++k) {
+				sum_born[j][k] += borncharge[i][j][k];
+			}
+		}
+	}
+
+	res = 0.0;
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			res += std::pow(sum_born[i][j], 2);
+		}
+	}
+
+	if (res > eps10) {
+		std::cout << "WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
+		std::cout << "         The born effective charges will be modified as follows." << std::endl;
+
+		for (i = 0; i < system->natmin; ++i) {
+			for (j = 0; j < 3; ++j) {
+				for (k = 0; k < 3; ++k) {
+					borncharge[i][j][k] -= sum_born[j][k] / static_cast<double>(system->natmin);
+				}
+			}
+		}
+
+		std::cout << "New Born effective charge tensor in Cartesian coordinate." << std::endl;
+		for (i = 0; i < system->natmin; ++i) {
+			std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[i] << ") :" << std::endl;
+			for (j = 0; j < 3; ++j) {
+				for (k = 0; k < 3; ++k) {
+					std::cout << std::setw(15) << borncharge[i][j][k];
+				}
+				std::cout << std::endl;
+			}
+		}
+	}
 }
 
 
