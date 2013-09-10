@@ -21,6 +21,11 @@ Dynamical::Dynamical(PHON *phon): Pointers(phon){
 
 Dynamical::~Dynamical(){
 	memory->deallocate(xshift_s);
+	memory->deallocate(kvec_na);
+
+	if (nonanalytic) {
+		memory->deallocate(borncharge);
+	}
 }
 
 void Dynamical::setup_dynamical(std::string mode)
@@ -53,6 +58,7 @@ void Dynamical::setup_dynamical(std::string mode)
 	}
 
 	MPI_Bcast(&nonanalytic, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+	memory->allocate(kvec_na, kpoint->nk, 3);
 
 	if (nonanalytic) {
 		if (mympi->my_rank == 0) {
@@ -66,21 +72,42 @@ void Dynamical::setup_dynamical(std::string mode)
 
 		MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&borncharge[0][0][0], 9*system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+		if (mympi->my_rank == 0) {
+			std::cout << std::endl;
+			std::cout << "Damping factor for the non-analytic term: " << na_sigma << std::endl;
+			std::cout << std::endl;
+		}
+
+		setup_na_kvec();
 	}
 }
 
-void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
+void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
 	// Calculate phonon energy for the specific k-point given in fractional basis
 
 	unsigned int i, j;
 
 	std::complex<double> **dymat_k;
+	double **dymat_na_k;
 
 	memory->allocate(dymat_k, neval, neval);
 
 	calc_analytic_k(xk_in, fc2_in, dymat_k);
+
+	if (nonanalytic) {
+		memory->allocate(dymat_na_k, neval, neval);
+		calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
+
+		for (i = 0; i < neval; ++i) {
+			for (j = 0; j < neval; ++j) {
+				dymat_k[i][j] += dymat_na_k[i][j];
+			}
+		}
+		memory->deallocate(dymat_na_k);
+	}
 
 	/*
 	// Hermitize the dynamical matrix
@@ -151,17 +178,30 @@ void Dynamical::eval_k(double *xk_in, double ****fc2_in, double *eval_out, std::
 	memory->deallocate(amat);
 }
 
-void Dynamical::eval_k(double *xk_in, std::vector<FcsClassExtent> fc2_ext, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
+void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
 	// Calculate phonon energy for the specific k-point given in fractional basis
 
 	unsigned int i, j;
 
 	std::complex<double> **dymat_k;
+	double **dymat_na_k;
 
 	memory->allocate(dymat_k, neval, neval);
 
 	calc_analytic_k(xk_in, fc2_ext, dymat_k);
+
+	if (nonanalytic) {
+		memory->allocate(dymat_na_k, neval, neval);
+		calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
+
+		for (i = 0; i < neval; ++i) {
+			for (j = 0; j < neval; ++j) {
+				dymat_k[i][j] += dymat_na_k[i][j];
+			}
+		}
+		memory->deallocate(dymat_na_k);
+	}
 
 	char JOBZ;
 	int INFO, LWORK;
@@ -382,6 +422,75 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 	}
 }
 
+void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **dymat_na_out)
+{
+	unsigned int i, j;
+	unsigned int iat, jat;
+	unsigned int atm_p1, atm_p2;
+	double kepsilon[3];
+	double kz1[3], kz2[3];
+	double denom, norm2;
+	double born_tmp[3][3];
+	double xk_tmp[3];
+	double factor;
+
+	for (i = 0; i < neval; ++i) {
+		for (j = 0; j < neval; ++j) {
+			dymat_na_out[i][j] = 0.0;
+		}
+	}
+
+	system->rotvec(kepsilon, kvec_na_in, dielec);
+	denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
+
+	if (denom > eps) {
+
+		for (iat = 0; iat < system->natmin; ++iat) {
+			atm_p1 = system->map_p2s[iat][0];
+
+
+			for (i = 0; i <3; ++i) {
+				for (j = 0; j < 3; ++j) {
+					born_tmp[i][j] = borncharge[iat][i][j];
+				}
+			}
+
+			system->rotvec(kz1, kvec_na_in, born_tmp, 'T');
+
+			for (jat = 0; jat < system->natmin; ++jat) {
+				atm_p2 = system->map_p2s[jat][0];
+
+
+				for (i = 0; i <3; ++i) {
+					for (j = 0; j < 3; ++j) {
+						born_tmp[i][j] = borncharge[jat][i][j];
+					}
+				}
+
+				system->rotvec(kz2, kvec_na_in, born_tmp, 'T');
+
+				for (i = 0; i < 3; ++i) {
+					for (j = 0; j < 3; ++j) {
+
+						dymat_na_out[3 * iat + i][3 * jat + j] = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
+
+					}
+				}
+			}
+		}
+	}
+
+	system->rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
+	norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
+
+	factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
+
+	for (i = 0; i < neval; ++i) {
+		for (j = 0; j < neval; ++j) {
+			dymat_na_out[i][j] *= factor;
+		}
+	}
+}
 
 void Dynamical::diagonalize_dynamical_all()
 {
@@ -407,9 +516,9 @@ void Dynamical::diagonalize_dynamical_all()
 
 	for (ik = 0; ik < nk; ++ik){
 		if (fcs_phonon->is_fc2_ext) {
-			eval_k(kpoint->xk[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
+			eval_k(kpoint->xk[ik], kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
 		} else {
-			eval_k(kpoint->xk[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
+			eval_k(kpoint->xk[ik], kvec_na[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
 		}
 
 		// Phonon energy is the square-root of the eigenvalue 
@@ -576,6 +685,7 @@ void Dynamical::load_born()
 	}
 
 	if (res > eps10) {
+		std::cout << std::endl;
 		std::cout << "WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
 		std::cout << "         The born effective charges will be modified as follows." << std::endl;
 
@@ -586,7 +696,7 @@ void Dynamical::load_born()
 				}
 			}
 		}
-
+		std::cout << std::endl;
 		std::cout << "New Born effective charge tensor in Cartesian coordinate." << std::endl;
 		for (i = 0; i < system->natmin; ++i) {
 			std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[i] << ") :" << std::endl;
@@ -595,6 +705,42 @@ void Dynamical::load_born()
 					std::cout << std::setw(15) << borncharge[i][j][k];
 				}
 				std::cout << std::endl;
+			}
+		}
+	}
+}
+
+void Dynamical::setup_na_kvec()
+{
+	// Setup k-vector necessary for the non-analytic correction.
+
+	unsigned int i, j;
+	unsigned int nk = kpoint->nk;
+	double norm;
+
+	if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 2) {
+
+		// DOS or Boltzmann
+
+		for (i = 0; i < kpoint->nk; ++i) {
+			for (j = 0; j < 3; ++j) {
+				kvec_na[i][j] = kpoint->xk[i][j];
+			}
+			system->rotvec(kvec_na[i], kvec_na[i], system->rlavec_p, 'T');
+			norm = std::sqrt(kvec_na[i][0] * kvec_na[i][0] + kvec_na[i][1] * kvec_na[i][1] + kvec_na[i][2] * kvec_na[i][2]);
+
+			if (norm > eps) {
+				for (j = 0; j < 3; ++j) kvec_na[i][j] /= norm;
+			}
+		}
+
+	} else if (kpoint->kpoint_mode == 1) {
+
+		// Band structure calculation
+
+		for (i = 0; i < kpoint->nk; ++i) {
+			for (j = 0; j < 3; ++j) {
+				kvec_na[i][j] = kpoint->kpoint_direction[i][j];
 			}
 		}
 	}

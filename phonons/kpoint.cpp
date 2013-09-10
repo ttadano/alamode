@@ -31,6 +31,13 @@ Kpoint::Kpoint(PHON *phon): Pointers(phon) {
 
 Kpoint::~Kpoint() {
 	memory->deallocate(xk);
+
+// 	if (kpoint_mode == 1) {
+// 		memory->deallocate(kpoint_direction);
+// 		memory->deallocate(kaxis);
+// 		memory->deallocate(kp_symbol);
+// 		memory->deallocate(kp_bound);
+// 	}
 }
 
 void Kpoint::kpoint_setups()
@@ -246,7 +253,9 @@ void Kpoint::gen_kpoints_band()
 		norm = std::pow(xk_direction[0], 2) + std::pow(xk_direction[1], 2) + std::pow(xk_direction[2], 2);
 		norm = std::sqrt(norm);
 
-		for (j = 0; j < 3; ++j) xk_direction[j] /= norm;
+		if (norm > eps) {
+			for (j = 0; j < 3; ++j) xk_direction[j] /= norm;
+		}
 
 		for(j = 0; j < nkp[i]; ++j){
 			for(k = 0; k < 3; ++k){
@@ -591,11 +600,13 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
 {
 
 	double diff[3];
+	double dkx = static_cast<double>(nkx);
+	double dky = static_cast<double>(nky);
+	double dkz = static_cast<double>(nkz);
 
-	diff[0] = static_cast<double>(nint(kx*static_cast<double>(nkx))) - kx*static_cast<double>(nkx);
-	diff[1] = static_cast<double>(nint(ky*static_cast<double>(nky))) - ky*static_cast<double>(nky);
-	diff[2] = static_cast<double>(nint(kz*static_cast<double>(nkz))) - kz*static_cast<double>(nkz);
-
+	diff[0] = static_cast<double>(nint(kx*dkx)) - kx*dkx;
+	diff[1] = static_cast<double>(nint(ky*dky)) - ky*dky;
+	diff[2] = static_cast<double>(nint(kz*dkz)) - kz*dkz;
 
 	double norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
 
@@ -607,9 +618,9 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
 
 		int iloc, jloc, kloc;
 
-		iloc = (nint(kx*nkx + 2 * nkx)) % nkx;
-		jloc = (nint(ky*nky + 2 * nky)) % nky;
-		kloc = (nint(kz*nkz + 2 * nkz)) % nkz;
+		iloc = (nint(kx*dkx + 2.0 * dkx)) % nkx;
+		jloc = (nint(ky*dky + 2.0 * dky)) % nky;
+		kloc = (nint(kz*dkz + 2.0 * dkz)) % nkz;
 
 		return kloc + nkz * jloc + nky * nkz * iloc;
 	}

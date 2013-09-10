@@ -46,6 +46,8 @@ void Gruneisen::calc_gruneisen()
     double *eval_minus;
 
     double xk_tmp[3];
+	double norm;
+	double kvec_tmp[3];
 
     std::complex<double> **evec_tmp;
     memory->allocate(evec_tmp, 1, 1); // dummy allocation
@@ -58,11 +60,17 @@ void Gruneisen::calc_gruneisen()
     for (ik = 0; ik < nk; ++ik){
         for (i = 0; i < 3; ++i) {
             xk_tmp[i] = kpoint->xk[ik][i];
+			kvec_tmp[i] = xk_tmp[i];
         }
+		system->rotvec(kvec_tmp, kvec_tmp, system->rlavec_p, 'T');
+		norm = std::sqrt(kvec_tmp[0] * kvec_tmp[0] + kvec_tmp[1] * kvec_tmp[1] + kvec_tmp[2] * kvec_tmp[2]);
+		if (norm > eps) {
+			kvec_tmp[i] /= norm;
+		}
 
-        dynamical->eval_k(xk_tmp, fcs_phonon->fc2, eval_orig, evec_tmp, false);
-        dynamical->eval_k(xk_tmp, fc2_plus, eval_plus, evec_tmp, false);
-        dynamical->eval_k(xk_tmp, fc2_minus, eval_minus, evec_tmp, false);
+        dynamical->eval_k(xk_tmp, kvec_tmp, fcs_phonon->fc2, eval_orig, evec_tmp, false);
+        dynamical->eval_k(xk_tmp, kvec_tmp, fc2_plus, eval_plus, evec_tmp, false);
+        dynamical->eval_k(xk_tmp, kvec_tmp, fc2_minus, eval_minus, evec_tmp, false);
 
          for (is = 0; is < ns; ++is) {
              gruneisen[ik][is] = (eval_plus[is] - eval_minus[is]) / (2.0 * delta_a) / (-6.0 * eval_orig[is]);
