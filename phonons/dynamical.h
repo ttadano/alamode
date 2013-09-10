@@ -12,8 +12,8 @@ namespace PHON_NS {
         Dynamical(class PHON *);
         ~Dynamical();
 
-        void calc_dynamical_matrix();
-        void diagonalize_dynamical();
+  //      void calc_dynamical_matrix();
+  //      void diagonalize_dynamical();
         void diagonalize_dynamical_all();
 
         unsigned int neval;
@@ -34,11 +34,10 @@ namespace PHON_NS {
         double freq(const double);
 
     private:
-        void calc_analytic();
+//        void calc_analytic();
         void calc_analytic_k(double *, double ****, std::complex<double> **);
 		void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
 		void calc_nonanalytic_k(double *, double *, double **);
-        void calc_nonanalytic();
 		void load_born();
 		void setup_na_kvec();
 

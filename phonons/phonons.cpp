@@ -34,7 +34,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl << std::endl;
 
 		std::cout << "The number of MPI threads: " << mympi->nprocs << std::endl;
-		std::cout << "The number of OpenMP threads: " << omp_get_num_threads() << std::endl;
+		std::cout << "The number of OpenMP threads: " << omp_get_max_threads() << std::endl;
 		std::cout << std::endl;
 
 		input->parce_input(narg, arg);

@@ -32,12 +32,12 @@ Kpoint::Kpoint(PHON *phon): Pointers(phon) {
 Kpoint::~Kpoint() {
 	memory->deallocate(xk);
 
-// 	if (kpoint_mode == 1) {
-// 		memory->deallocate(kpoint_direction);
-// 		memory->deallocate(kaxis);
-// 		memory->deallocate(kp_symbol);
-// 		memory->deallocate(kp_bound);
-// 	}
+	// 	if (kpoint_mode == 1) {
+	// 		memory->deallocate(kpoint_direction);
+	// 		memory->deallocate(kaxis);
+	// 		memory->deallocate(kp_symbol);
+	// 		memory->deallocate(kp_bound);
+	// 	}
 }
 
 void Kpoint::kpoint_setups()
@@ -140,9 +140,9 @@ void Kpoint::kpoint_setups()
 						std::cout << std::setw(10) << kaxis[ik];
 					} else {
 						for (k = 0; k < 3; ++k){
-                                                    tmp[k] = xk[ik][k] - xk[ik - 1][k];
+							tmp[k] = xk[ik][k] - xk[ik - 1][k];
 						}
-                                                system->rotvec(tmp, tmp, system->rlavec_p, 'T');
+						system->rotvec(tmp, tmp, system->rlavec_p, 'T');
 						kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 					}
 					++ik;
@@ -205,6 +205,7 @@ void Kpoint::kpoint_setups()
 		}
 	}
 
+
 	MPI_Bcast(&nkx, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&nky, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&nkz, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -215,7 +216,15 @@ void Kpoint::kpoint_setups()
 	}
 	MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-	if (kpoint_mode == 2) {
+	if (kpoint_mode == 1) {
+
+		if (mympi->my_rank > 0) {
+			memory->allocate(kpoint_direction, nk, 3);
+		}
+		MPI_Bcast(&kpoint_direction[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+	} else if (kpoint_mode == 2) {
+
 		if (mympi->my_rank > 0) {
 			memory->allocate(knum_minus, nk);
 		}
@@ -255,8 +264,8 @@ void Kpoint::gen_kpoints_band()
 
 		for(j = 0; j < nkp[i]; ++j){
 			for(k = 0; k < 3; ++k){
-                            xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
-                            kpoint_direction[ik][k] = xk_direction[k];
+				xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
+				kpoint_direction[ik][k] = xk_direction[k];
 			}
 			++ik;
 		}

@@ -440,8 +440,6 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 		}
 	}
 
-//        std::cout << "kvec_na = " << kvec_na_in[0] << " " << kvec_na_in[1] << " " << kvec_na_in[2] << std::endl;
-
 	system->rotvec(kepsilon, kvec_na_in, dielec);
 	denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
 
@@ -484,10 +482,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 
 	system->rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
 	norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
-        std::cout << std::endl;
-        std::cout << "xk_in = " << xk_in[0] << " " << xk_in[1] << " " << xk_in[2] << std::endl;
-        std::cout << "xk_tmp= " << xk_tmp[0] << " " << xk_tmp[1] << " " << xk_tmp[2] << std::endl;
-        std::cout << "norm2 = " << norm2 << std::endl;
+
 	factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
 
 	for (i = 0; i < neval; ++i) {
@@ -752,6 +747,32 @@ void Dynamical::setup_na_kvec()
 	}
 }
 
+double Dynamical::fold(double x)
+{
+	if (x >= -0.5 && x < 0.5) {
+		return x;
+	} else if (x < 0.0) {
+		return x + 1.0;
+	} else {
+		return x - 1.0;
+	}
+}
+
+double Dynamical::freq(const double x) 
+{
+	if (x >= 0.0) {
+		return std::sqrt(x);
+	} else {
+		if (std::abs(x) < eps) {
+			return std::sqrt(-x);
+		} else { 
+			return -std::sqrt(-x);
+		}
+	}
+}
+
+
+/*
 
 void Dynamical::calc_dynamical_matrix()
 {
@@ -947,27 +968,6 @@ void Dynamical::diagonalize_dynamical()
 	memory->deallocate(eval);
 	memory->deallocate(amat);
 }
+*/
 
-double Dynamical::fold(double x)
-{
-	if (x >= -0.5 && x < 0.5) {
-		return x;
-	} else if (x < 0.0) {
-		return x + 1.0;
-	} else {
-		return x - 1.0;
-	}
-}
 
-double Dynamical::freq(const double x) 
-{
-	if (x >= 0.0) {
-		return std::sqrt(x);
-	} else {
-		if (std::abs(x) < eps) {
-			return std::sqrt(-x);
-		} else { 
-			return -std::sqrt(-x);
-		}
-	}
-}

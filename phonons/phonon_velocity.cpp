@@ -34,7 +34,9 @@ void Phonon_velocity::calc_phonon_vel_band()
 
 	memory->allocate(evec_tmp, 1, 1);
 
-	std::cout << "Calculating group velocities of phonon along given k-path ..." << std::endl;
+	if (mympi->my_rank == 0) {
+		std::cout << "Calculating group velocities of phonon along given k-path ..." << std::endl;
+	}
 
 	memory->allocate(phvel, nk, n);
 
@@ -92,7 +94,9 @@ void Phonon_velocity::calc_phonon_vel_band()
 
 	memory->deallocate(evec_tmp);
 
-	std::cout << "..done!" << std::endl;
+	if (mympi->my_rank == 0) {
+		std::cout << "..done!" << std::endl;
+	}
 }
 
 void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
