@@ -93,6 +93,7 @@ void System::setup()
 	MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&cell_dimension[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void System::load_system_info()
