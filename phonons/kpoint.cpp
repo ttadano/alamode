@@ -121,10 +121,6 @@ void Kpoint::kpoint_setups()
 			memory->allocate(kaxis, nk);
 			memory->allocate(xk_c, nk, 3);
 
-			for (i = 0; i < nk; ++i){
-				system->rotvec(xk_c[i], xk[i], system->rlavec_p, 'T');
-			}
-
 			unsigned int j, k;
 			unsigned int ik;
 
@@ -144,8 +140,9 @@ void Kpoint::kpoint_setups()
 						std::cout << std::setw(10) << kaxis[ik];
 					} else {
 						for (k = 0; k < 3; ++k){
-							tmp[k] = xk_c[ik][k] - xk_c[ik - 1][k];
+                                                    tmp[k] = xk[ik][k] - xk[ik - 1][k];
 						}
+                                                system->rotvec(tmp, tmp, system->rlavec_p, 'T');
 						kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 					}
 					++ik;
@@ -156,7 +153,6 @@ void Kpoint::kpoint_setups()
 			std::cout << std::endl;
 			std::cout << " ----------------------------------------" << std::endl;
 
-			memory->deallocate(xk_c);
 			memory->deallocate(nkp);
 
 			std::cout.setf(std::ios::scientific);
@@ -259,8 +255,8 @@ void Kpoint::gen_kpoints_band()
 
 		for(j = 0; j < nkp[i]; ++j){
 			for(k = 0; k < 3; ++k){
-				xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
-				kpoint_direction[ik][k] = xk_direction[k];
+                            xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
+                            kpoint_direction[ik][k] = xk_direction[k];
 			}
 			++ik;
 		}

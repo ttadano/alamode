@@ -200,7 +200,7 @@ void PHON::destroy_pointers()
 	delete integration;
 	delete phonon_velocity;
 	delete phonon_thermodynamics;
-	delete relaxation;
+//	delete relaxation;
 	delete conductivity;
 	delete writes;
 	delete dos;

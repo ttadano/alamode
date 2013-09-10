@@ -3082,15 +3082,15 @@ void Relaxation::compute_mode_tau()
 					if (ksum_mode == -1) {
 						error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
 					} else {
-						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
-						selfenergy_c(NT, T_arr, omega, knum, snum, self_c);
-						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
-						selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
-						selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
-						selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
+//						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
+//						selfenergy_c(NT, T_arr, omega, knum, snum, self_c);
+//						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
+//						selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
+//						selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
+//						selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
 						selfenergy_h(NT, T_arr, omega, knum, snum, self_h);
-						selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
-						selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
+//						selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
+//						selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
 					}
 				}
 
