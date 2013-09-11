@@ -1055,7 +1055,7 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 							n31 = n3 * n1;
 
 							ret[i] += v4_tmp 
-								* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2])
+								* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * (delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2]) + delta_lorentz(omega + omega_inner[0] + omega_inner[1] + omega_inner[2]))
 								+ (n12 - n23 - n31 - n3) * (delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
 								+ (n23 - n12 - n31 - n1) * (delta_lorentz(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_lorentz(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
 								+ (n31 - n12 - n23 - n2) * (delta_lorentz(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_lorentz(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
@@ -1067,7 +1067,7 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 		}
 	}
 
-	for (i = 0; i < N; ++i) ret[i] *=  pi / (std::pow(static_cast<double>(nk), 2) * 3.0 * std::pow(2.0, 5));
+	for (i = 0; i < N; ++i) ret[i] *=  -pi / (std::pow(static_cast<double>(nk), 2) * 3.0 * std::pow(2.0, 5));
 }
 
 
@@ -1306,7 +1306,7 @@ void Relaxation::selfenergy_c(const unsigned int N, double *T, const double omeg
 		}
 	}
 
-	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 5) * 3);
+	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 5) * 3.0);
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -2019,7 +2019,7 @@ void Relaxation::selfenergy_g(const unsigned int N, double *T, const double omeg
 	}
 
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 
@@ -2445,7 +2445,7 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 	arr_quartic1[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_quartic1[3] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 
 		ik3 = ik1;
 
