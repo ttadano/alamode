@@ -81,11 +81,12 @@ void Input::parse_general_vars() {
 	double emin, emax, delta_e, delta_a;
 	bool eigenvector, printxsf, nonanalytic, lclassical, restart;
 	bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
+	bool sym_time_reversal;
 	struct stat st;
 
 	std::string str_tmp;
 	std::string str_allowed_list = "PREFIX MODE NSYM NNP CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO \
-								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART";
+								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM";
 	std::string str_no_defaults = "PREFIX MODE NSYM NNP FCSINFO";
 	std::vector<std::string> no_defaults, celldim_v;
 	std::map<std::string, std::string> general_var_dict;
@@ -145,6 +146,7 @@ void Input::parse_general_vars() {
 	ks_analyze_mode = false;
 	atom_project_mode = false;
 	calc_realpart = false;
+	sym_time_reversal = false;
 
 	// if file_result exists in the current directory, restart mode will be automatically turned on.
 
@@ -184,6 +186,8 @@ void Input::parse_general_vars() {
 	}
 
 	assign_val(eigenvector, "EIGENVECTOR", general_var_dict);
+	assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
+
 
 	assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
 	assign_val(lclassical, "LCLASSICAL", general_var_dict);
@@ -242,6 +246,7 @@ void Input::parse_general_vars() {
 	phon->restart_flag = restart;
 	symmetry->nsym = nsym;
 	symmetry->nnp = nnp;
+	symmetry->time_reversal_sym = sym_time_reversal;
 
 	system->Tmin = Tmin;
 	system->Tmax = Tmax;

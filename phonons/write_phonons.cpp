@@ -38,6 +38,7 @@ void Writes::write_input_vars()
     std::cout << "General:" << std::endl;
 	std::cout << " PREFIX = " << input->job_title << std::endl;
 	std::cout << " NSYM = " << symmetry->nsym << "; NNP = " << symmetry->nnp << std::endl;
+	std::cout << " TREVSYM = " << symmetry->time_reversal_sym << std::endl;
 	std::cout << " CELLDIM = ";
 	for (i = 0; i < 3; ++i) std::cout << std::setw(4) << system->cell_dimension[i];
 	std::cout << std::endl << std::endl;

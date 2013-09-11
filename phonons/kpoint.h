@@ -94,6 +94,5 @@ namespace PHON_NS {
         std::string **kp_symbol;
         double ***kp_bound;
         unsigned int *nkp;
-
     };
 }

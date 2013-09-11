@@ -170,6 +170,7 @@ void Kpoint::kpoint_setups()
 			nky = std::atoi((kpInp[0].kpelem[1]).c_str());
 			nkz = std::atoi((kpInp[0].kpelem[2]).c_str());	
 #endif
+
 			nk = nkx * nky * nkz;
 			memory->allocate(xk, nk, 3);
 
