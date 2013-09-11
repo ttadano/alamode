@@ -30,7 +30,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 	create_pointers();
 
 	if (mympi->my_rank == 0) {
-		std::cout << "Phonons program version 1.0 (MPI)" << std::endl;
+		std::cout << "Phonons program version 1.0 (MPI): svn rev. 338" << std::endl;
 		std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl << std::endl;
 
 		std::cout << "The number of MPI threads: " << mympi->nprocs << std::endl;
