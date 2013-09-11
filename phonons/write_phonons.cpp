@@ -706,8 +706,6 @@ void Writes::write_gruneisen()
 
 void Writes::write_rmsd()
 {
-// 	relaxation->modify_eigenvectors();
-
 	// Write room mean square displacement of atoms
 
 	std::string file_rmsd = input->job_title + ".rmsd";
@@ -737,7 +735,7 @@ void Writes::write_rmsd()
 
 		for (j = 0; j < ns; ++j){
 			d2_tmp = phonon_thermodynamics->disp2_avg(T, j, j);
-		    ofs_rmsd << std::setw(15) << std::sqrt(d2_tmp)*1.0e+10;
+			ofs_rmsd << std::setw(15) << std::sqrt(d2_tmp)*Bohr_in_Angstrom;
 		}
 		ofs_rmsd << std::endl;
 	}

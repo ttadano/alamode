@@ -197,25 +197,23 @@ double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, 
 	for (ik = 0; ik < nk; ++ik) {
 		for (is = 0; is < ns; ++is) {
 
-		//	if (ik == 0 && is < 3) continue;
-
 			omega = dynamical->eval_phonon[ik][is];
 
-			ret += real(dynamical->evec_phonon[ik][is][ns1] * dynamical->evec_phonon[ik][is][ns2])
-				* coth_T(0.5 * omega, T) / omega;
+			// Skip when omega is almost zero. 
+			// (neglect divergent contributions from acoustic modes at gamma point)
+			if (omega < eps8) {
+//				std::cout << "ik = " << ik << " is = " << is << " omega = " << omega << std::endl;
+				continue;
+			}
+			ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2])) * (fB(omega, T) + 0.5) / omega;
 
-// 			std::cout << "T = " << T;
-// 			std::cout << " ik = " << ik << " is = " << is;
-// 			std::cout << " evec_prod = " << real(dynamical->evec_phonon[ik][is][ns1] * conj(dynamical->evec_phonon[ik][is][ns2]));
-// 			std::cout << " coth = " << coth_T(omega, T);
-// 			std::cout << " 1/omega = " << 1.0/omega << std::endl;
 		}
 	}
 
-	ret *= 0.5 / (static_cast<double>(nk) * std::sqrt(system->mass[system->map_p2s[ns1/3][0]] * system->mass[system->map_p2s[ns2/3][0]]));
+	ret *= 1.0 / (static_cast<double>(nk) * std::sqrt(system->mass[system->map_p2s[ns1/3][0]] * system->mass[system->map_p2s[ns2/3][0]]));
 
-    //   ret *= 2.0 * electron_mass / time_ry * Bohr_in_Angstrom * Bohr_in_Angstrom;
-	ret *= h_planck / (2.0 * pi); // Convert to SI unit 
+    // ret *= 2.0 * electron_mass / time_ry * Bohr_in_Angstrom * Bohr_in_Angstrom;
+	// ret *= h_planck / (2.0 * pi); // Convert to SI unit 
 	// Note that hbar (Dirac's constant) is equal to 2*Me*a0**2/time_ry
 
 	return ret;
@@ -227,7 +225,7 @@ double Phonon_thermodynamics::coth_T(const double omega, const double T)
         // if T = 0.0 and omega > 0, coth(hbar*omega/(2*kB*T)) = 1.0
         return 1.0;
     } else {
-        double x = 0.5 * omega / (T_to_Ryd * T);
+        double x = omega / (T_to_Ryd * T);
         return 1.0 + 2.0 / (std::exp(2.0 * x) - 1.0);
     }
 }
