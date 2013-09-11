@@ -3139,11 +3139,7 @@ void Relaxation::compute_mode_tau()
 				if (ksum_mode == -1) {
 					calc_damping_tetra(NT, T_arr, omega, knum, snum, damp3);
 				} else {
-					timer->print_elapsed();
-					calc_damping(NT, T_arr, omega, knum, snum, damp3);
-					timer->print_elapsed();
 					selfenergy_a(NT, T_arr, omega, knum, snum, self_a);
-					timer->print_elapsed();
 				}
 
 				if (quartic_mode) {
@@ -3151,24 +3147,23 @@ void Relaxation::compute_mode_tau()
 						error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
 					} else {
 //						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
-//						selfenergy_c(NT, T_arr, omega, knum, snum, self_c);
-//						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
-//						selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
-//						selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
-//						selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
+						selfenergy_c(NT, T_arr, omega, knum, snum, self_c);
+						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
+						selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
+						selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
+						selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
 						selfenergy_h(NT, T_arr, omega, knum, snum, self_h);
-//						selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
-//						selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
+						selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
+						selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
 					}
 				}
 
 				if (mympi->my_rank == 0) {
 					for (j = 0; j < NT; ++j) {
-						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
-						ofs_mode_tau << std::setw(15) << writes->in_kayser(self_a[j].imag());
+						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self_a[j].imag());
 
 						if (quartic_mode) {
-							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
+							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_c[j].imag());
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_d[j].imag());
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_e[j].imag());
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_f[j].imag());
