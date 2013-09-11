@@ -20,6 +20,7 @@
 #include "system.h"
 #include "write_phonons.h"
 #include "../alm_c++/constants.h"
+#include "timer.h"
 
 using namespace PHON_NS;
 
@@ -1088,6 +1089,7 @@ void Relaxation::selfenergy_a(const unsigned int N, double *T, const double omeg
 	double v3_tmp;
 	std::complex<double> omega_shift;
 	std::complex<double> omega_sum[2];
+	std::complex<double> *ret_mpi;
 
 	unsigned int nkx = kpoint->nkx;
 	unsigned int nky = kpoint->nky;
@@ -1104,9 +1106,12 @@ void Relaxation::selfenergy_a(const unsigned int N, double *T, const double omeg
 
 	omega_shift = omega + im * epsilon;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	memory->allocate(ret_mpi, N);
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
+
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
+
 		xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik1][0];
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
@@ -1137,14 +1142,18 @@ void Relaxation::selfenergy_a(const unsigned int N, double *T, const double omeg
 					n1 = phonon_thermodynamics->fB(omega1, T_tmp);
 					n2 = phonon_thermodynamics->fB(omega2, T_tmp);
 
-					ret[i] += v3_tmp * ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1]); 
+					ret_mpi[i] += v3_tmp * ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1]); 
 				}
 			}
 		}
 	}
 
 	factor = 1.0 / (static_cast<double>(nk) * std::pow(2.0, 4));
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 void Relaxation::selfenergy_b(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -1167,14 +1176,17 @@ void Relaxation::selfenergy_b(const unsigned int N, double *T, const double omeg
 	double factor;
 
 	std::complex<double> v4_tmp;
+	std::complex<double> *ret_mpi;
 
+	memory->allocate(ret_mpi, N);
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_quartic[3] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 		for (is1 = 0; is1 < ns; ++is1) {
 
 			arr_quartic[1] = ns * ik1 + is1;
@@ -1185,13 +1197,17 @@ void Relaxation::selfenergy_b(const unsigned int N, double *T, const double omeg
 
 			for (i = 0; i < N; ++i) {
 				n1 = phonon_thermodynamics->fB(omega1, T[i]);
-				ret[i] += v4_tmp * (2.0 * n1 + 1.0);
+				ret_mpi[i] += v4_tmp * (2.0 * n1 + 1.0);
 			}
 		}
 	}
 
 	factor = -1.0 / (static_cast<double>(nk) * std::pow(2.0, 3));
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 
@@ -1225,14 +1241,17 @@ void Relaxation::selfenergy_c(const unsigned int N, double *T, const double omeg
 
 	std::complex<double> omega_shift;
 	std::complex<double> omega_sum[4];
+	std::complex<double> *ret_mpi;
+
+	memory->allocate(ret_mpi, N);
 
 	omega_shift = omega + im * epsilon;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
 
-	for (ik1 = 0; ik1 < N; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < N; ik1 += mympi->nprocs) {
 		for (ik2 = 0; ik2 < N; ++ik2) {
 
 			xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik1][0] - kpoint->xk[ik2][0];
@@ -1278,7 +1297,7 @@ void Relaxation::selfenergy_c(const unsigned int N, double *T, const double omeg
 							n23 = n2 * n3;
 							n31 = n3 * n1;
 
-							ret[i] += v4_tmp * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
+							ret_mpi[i] += v4_tmp * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
 							+ (n31 + n23 + n3 - n12) * omega_sum[1]	+ (n12 + n31 + n1 - n23) * omega_sum[2]	+ (n23 + n12 + n2 - n31) * omega_sum[3]);
 						}
 					}
@@ -1288,9 +1307,11 @@ void Relaxation::selfenergy_c(const unsigned int N, double *T, const double omeg
 	}
 
 	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 5) * 3);
-	for (i = 0; i < N; ++i) ret[i] *= factor;
-}
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+	memory->deallocate(ret_mpi);
+}
 
 
 void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -1324,6 +1345,9 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 	std::complex<double> v_prod;
 	std::complex<double> omega_shift;
 	std::complex<double> omega_sum[4];
+	std::complex<double> *ret_mpi;
+
+	memory->allocate(ret_mpi, N);
 
 	omega_shift = omega + im * epsilon;
 
@@ -1332,7 +1356,7 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 	arr_cubic1[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_cubic2[2] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 
 		xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik1][0];
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
@@ -1404,7 +1428,7 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 								n3 = phonon_thermodynamics->fB(omega3, T_tmp);
 								n4 = phonon_thermodynamics->fB(omega4, T_tmp);
 
-								ret[i] += v_prod
+								ret_mpi[i] += v_prod
 									* ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1])
 									* ((1.0 + n3 + n4) * omega_sum[2] + (n4 - n3) * omega_sum[3]);
 							}
@@ -1416,7 +1440,11 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 	}
 
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
-	for (i = 0; i < N; ++i) ret[i] *=  factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *=  factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -1458,19 +1486,19 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 	std::complex<double> omega_sum14[4], omega_sum24[4];
 	std::complex<double> omega_prod[6];
 	std::complex<double> *prod_tmp;
+	std::complex<double> *ret_mpi;
 
-
+	memory->allocate(ret_mpi, N);
 	memory->allocate(prod_tmp, N);
 
 	omega_shift = omega + im * epsilon;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
-
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_cubic1[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_cubic2[2] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 
 		ik2 = ik1;
 
@@ -1550,7 +1578,7 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 									T_tmp = T[i];
 
 									n3 = phonon_thermodynamics->fB(omega3, T_tmp);
-									ret[i] += v_prod * (2.0 * n3 + 1.0) * prod_tmp[i];
+									ret_mpi[i] += v_prod * (2.0 * n3 + 1.0) * prod_tmp[i];
 								}
 							}
 						}
@@ -1606,7 +1634,7 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 									n3 = phonon_thermodynamics->fB(omega3, T_tmp);
 									n4 = phonon_thermodynamics->fB(omega4, T_tmp);
 
-									ret[i] += v_prod * (2.0 * n3 + 1.0) 
+									ret_mpi[i] += v_prod * (2.0 * n3 + 1.0) 
 										* ((1.0 + n1) * omega_prod[0] + n1 * omega_prod[1] 
 									+ (1.0 + n2) * omega_prod[2] + n2 * omega_prod[3] 
 									+ (1.0 + n4) * omega_prod[4] + n4 * omega_prod[5]);
@@ -1628,9 +1656,12 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
 	//	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	memory->deallocate(prod_tmp);
+	memory->deallocate(ret_mpi);
 }
 
 void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -1666,15 +1697,18 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 	std::complex<double> v3_tmp1, v3_tmp2, v3_tmp3, v3_tmp4;
 	std::complex<double> v3_prod;
 	std::complex<double> omega_shift;
+	std::complex<double> *ret_mpi;
+
+	memory->allocate(ret_mpi, N);
 
 	omega_shift = omega + im * epsilon;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_cubic1[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_cubic4[2] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 
 		ik5 = ik1;
 
@@ -1771,7 +1805,7 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 														n3 = phonon_thermodynamics->fB(dp3, T_tmp);
 														n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
-														ret[i] += v3_prod * static_cast<double>(ip2*ip3*ip4)
+														ret_mpi[i] += v3_prod * static_cast<double>(ip2*ip3*ip4)
 															* (omega_sum[1] * (n2 * omega_sum[0] * ((1.0 + n3 + n4) *  omega_sum[0] + (1.0 + n2 + n4) * dp1_inv)
 															+ (1.0 + n3) * (1.0 + n4) * D134 * (D134 + dp1_inv)) 
 															+ (1.0 + n1) * (1.0 + n3 + n4) * D134 * omega_sum[0] * (omega_sum[0] + D134 + dp1_inv + n1 / (phonon_thermodynamics->T_to_Ryd*T_tmp)));
@@ -1816,7 +1850,7 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 															n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 															n5 = phonon_thermodynamics->fB(dp5, T_tmp);
 
-															ret[i] += v3_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
+															ret_mpi[i] += v3_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
 																* ((1.0 + n3 + n4) * (-(1.0 + n1 + n2) * D15 * D134 * omega_sum[0] 
 															+ (1.0 + n5 + n2) * D15 * D345 * omega_sum[1])
 																+ (1.0 + n2 + n3 + n4 + n2 * n3 + n3 * n4 + n4 * n2) * D15 * (D345 - D134) * omega_sum[2]);
@@ -1836,7 +1870,11 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 	}
 
 	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 
@@ -1875,16 +1913,18 @@ void Relaxation::selfenergy_g(const unsigned int N, double *T, const double omeg
 
 	std::complex<double> v3_tmp1, v3_tmp2, v4_tmp;
 	std::complex<double> v_prod;
+	std::complex<double> *ret_mpi;
 
+	memory->allocate(ret_mpi, N);
 
 	omega_shift = omega + im * epsilon;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_cubic2[2] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 
 		for (ik2 = 0; ik2 < nk; ++ik2) {
 
@@ -1962,7 +2002,7 @@ void Relaxation::selfenergy_g(const unsigned int N, double *T, const double omeg
 												n3 = phonon_thermodynamics->fB(dp3, T_tmp);
 												n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
-												ret[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) * D124 
+												ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) * D124 
 													* ((1.0 + n1 + n2 + n3 + n4 + n1 * n3 + n1 * n4 + n2 * n3 + n2 * n4) * omega_sum[0] 
 												- (1.0 + n1 + n2 + n3 + n1 * n2 + n2 * n3 + n1 * n3) * omega_sum[1]);
 
@@ -1980,6 +2020,10 @@ void Relaxation::selfenergy_g(const unsigned int N, double *T, const double omeg
 
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
 	for (i = 0; i < N; ++i) ret[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -2017,16 +2061,18 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 	std::complex<double> v_prod;
 	std::complex<double> omega_shift;
 	std::complex<double> omega_sum[4];
+	std::complex<double> *ret_mpi;
 
+	memory->allocate(ret_mpi, N);
 
 	omega_shift = omega + im * epsilon;
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_cubic1[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_cubic4[2] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 
 		xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik1][0];
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
@@ -2145,7 +2191,7 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 														N_prod[2] = ((1.0 + n2) * N35 - n3 * (1.0 + n5));
 														N_prod[3] = -((1.0 + n1) * N34 - n3 * (1.0 + n4));
 
-														ret[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
+														ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
 															* (D12_inv * (N_prod[0] * omega_sum[0] + N_prod[1] * omega_sum[1] + N_prod[2] * omega_sum[2] + N_prod[3] * omega_sum[3])
 															+ N12 * ((1.0 + n5) * D1_inv - (1.0 + n4) * D2_inv) * omega_sum[0] * omega_sum[1]);
 													}
@@ -2163,7 +2209,11 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 	}
 
 	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7)); 
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -2202,14 +2252,16 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 
 	std::complex<double> v4_tmp, v3_tmp1, v3_tmp2;
 	std::complex<double> v_prod;
+	std::complex<double> *ret_mpi;
 
+	memory->allocate(ret_mpi, N);
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_quartic[3] = ns * knum + snum;
 
-	for (ik1 = 0; ik1 < nk; ++ik1) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
 		for (ik2 = 0; ik2 < nk; ++ik2) {
 
 			ik4 = ik2;
@@ -2279,7 +2331,7 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 												N_prod[0] = (1.0 + n1) * (1.0 + n3) + n2 * (1.0 + n2 + n3);
 												N_prod[1] = n2 * (1.0 + n2) * (1.0 + n2 + n3);
 
-												ret[i] += v_prod * static_cast<double>(ip1*ip3)
+												ret_mpi[i] += v_prod * static_cast<double>(ip1*ip3)
 													* (D123 * (N_prod[0] * D123 + N_prod[1] / (phonon_thermodynamics->T_to_Ryd * T_tmp)	+ N_prod[0] * dp2_inv));
 											}
 										}
@@ -2331,7 +2383,7 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 													n3 = phonon_thermodynamics->fB(dp3, T_tmp);
 													n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
-													ret[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) 
+													ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) 
 														* ((1.0 + n1 + n3) * D24 * (n4 * D134 - n2 * D123) + D123 * D134 * n1 * n3);
 												}
 											}
@@ -2347,7 +2399,11 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 	}
 
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 
@@ -2380,9 +2436,11 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 
 	std::complex<double> v4_tmp1, v4_tmp2;
 	std::complex<double> v_prod;
+	std::complex<double> *ret_mpi;
 
+	memory->allocate(ret_mpi, N);
 
-	for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+	for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
 	arr_quartic1[0] = ns * kpoint->knum_minus[knum] + snum;
 	arr_quartic1[3] = ns * knum + snum;
@@ -2427,7 +2485,7 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 								n1 = phonon_thermodynamics->fB(omega1, T_tmp);
 								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
 
-								ret[i] += v_prod * (2.0 * n2 + 1.0) * (-2.0 * (1.0 + n1) * n1 / (phonon_thermodynamics->T_to_Ryd * T_tmp) - (2.0 * n1 + 1.0) * omega1_inv);
+								ret_mpi[i] += v_prod * (2.0 * n2 + 1.0) * (-2.0 * (1.0 + n1) * n1 / (phonon_thermodynamics->T_to_Ryd * T_tmp) - (2.0 * n1 + 1.0) * omega1_inv);
 							}
 						}
 					} else {
@@ -2452,7 +2510,7 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
 								n3 = phonon_thermodynamics->fB(omega3, T_tmp);
 
-								ret[i] += v_prod * 2.0 * ((n1 - n3) * D13[0] - (1.0 + n1 + n3) * D13[1]);
+								ret_mpi[i] += v_prod * 2.0 * ((n1 - n3) * D13[0] - (1.0 + n1 + n3) * D13[1]);
 							}
 						}
 					}
@@ -2463,7 +2521,11 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
 
-	for (i = 0; i < N; ++i) ret[i] *= factor;
+	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	memory->deallocate(ret_mpi);
 }
 
 void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const double omega, 
@@ -3029,7 +3091,8 @@ void Relaxation::compute_mode_tau()
 		} else {
 
 			double *damp3, *damp4;
-			std::complex<double> *self_c, *self_d, *self_e, *self_f, *self_g, *self_h, *self_i, *self_j;
+			std::complex<double> *self_a, *self_b, *self_c, *self_d, *self_e;
+			std::complex<double> *self_f, *self_g, *self_h, *self_i, *self_j;
 
 			/* Calculate the imaginary part of self-energy. 
 			If quartic_mode == true, self-energy of O(H_{4}^{2}) is also calculated. */
@@ -3043,6 +3106,7 @@ void Relaxation::compute_mode_tau()
 			}
 
 			memory->allocate(damp3, NT);
+			memory->allocate(self_a, NT);
 			if (quartic_mode) {
 				memory->allocate(damp4, NT);
 				memory->allocate(self_c, NT);
@@ -3075,7 +3139,11 @@ void Relaxation::compute_mode_tau()
 				if (ksum_mode == -1) {
 					calc_damping_tetra(NT, T_arr, omega, knum, snum, damp3);
 				} else {
+					timer->print_elapsed();
 					calc_damping(NT, T_arr, omega, knum, snum, damp3);
+					timer->print_elapsed();
+					selfenergy_a(NT, T_arr, omega, knum, snum, self_a);
+					timer->print_elapsed();
 				}
 
 				if (quartic_mode) {
@@ -3097,6 +3165,7 @@ void Relaxation::compute_mode_tau()
 				if (mympi->my_rank == 0) {
 					for (j = 0; j < NT; ++j) {
 						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
+						ofs_mode_tau << std::setw(15) << writes->in_kayser(self_a[j].imag());
 
 						if (quartic_mode) {
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
@@ -3115,6 +3184,8 @@ void Relaxation::compute_mode_tau()
 			}
 
 			memory->deallocate(damp3);
+			memory->deallocate(self_a);
+
 			if (quartic_mode) {
 				memory->deallocate(damp4);
 				memory->deallocate(self_c);
