@@ -1055,7 +1055,7 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 							n31 = n3 * n1;
 
 							ret[i] += v4_tmp 
-								* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * (delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2]) + delta_lorentz(omega + omega_inner[0] + omega_inner[1] + omega_inner[2]))
+								* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * (delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2]) - delta_lorentz(omega + omega_inner[0] + omega_inner[1] + omega_inner[2]))
 								+ (n12 - n23 - n31 - n3) * (delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
 								+ (n23 - n12 - n31 - n1) * (delta_lorentz(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_lorentz(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
 								+ (n31 - n12 - n23 - n2) * (delta_lorentz(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_lorentz(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
