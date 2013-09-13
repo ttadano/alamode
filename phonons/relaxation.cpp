@@ -1054,12 +1054,12 @@ void Relaxation::calc_damping4(const unsigned int N, double *T, const double ome
 							n23 = n2 * n3;
 							n31 = n3 * n1;
 
+							
 							ret[i] += v4_tmp 
 								* ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * (delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2]) - delta_lorentz(omega + omega_inner[0] + omega_inner[1] + omega_inner[2]))
 								+ (n12 - n23 - n31 - n3) * (delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2]) - delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2]))
 								+ (n23 - n12 - n31 - n1) * (delta_lorentz(omega - omega_inner[0] + omega_inner[1] + omega_inner[2]) - delta_lorentz(omega + omega_inner[0] - omega_inner[1] - omega_inner[2]))
 								+ (n31 - n12 - n23 - n2) * (delta_lorentz(omega + omega_inner[0] - omega_inner[1] + omega_inner[2]) - delta_lorentz(omega - omega_inner[0] + omega_inner[1] - omega_inner[2])));
-
 						}
 					}
 				}
@@ -1251,8 +1251,8 @@ void Relaxation::selfenergy_c(const unsigned int N, double *T, const double omeg
 
 	arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
 
-	for (ik1 = mympi->my_rank; ik1 < N; ik1 += mympi->nprocs) {
-		for (ik2 = 0; ik2 < N; ++ik2) {
+	for (ik1 = mympi->my_rank; ik1 < nk; ik1 += mympi->nprocs) {
+		for (ik2 = 0; ik2 < nk; ++ik2) {
 
 			xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik1][0] - kpoint->xk[ik2][0];
 			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1] - kpoint->xk[ik2][1];
@@ -3146,11 +3146,11 @@ void Relaxation::compute_mode_tau()
 					if (ksum_mode == -1) {
 						error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
 					} else {
-//						calc_damping4(NT, T_arr, omega, knum, snum, damp4);
+	//					calc_damping4(NT, T_arr, omega, knum, snum, damp4);
 						selfenergy_c(NT, T_arr, omega, knum, snum, self_c);
 						selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
 						selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
-						selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
+    					selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
 						selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
 						selfenergy_h(NT, T_arr, omega, knum, snum, self_h);
 						selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
@@ -3163,6 +3163,7 @@ void Relaxation::compute_mode_tau()
 						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self_a[j].imag());
 
 						if (quartic_mode) {
+//							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_c[j].imag());
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_d[j].imag());
 							ofs_mode_tau << std::setw(15) << writes->in_kayser(self_e[j].imag());
