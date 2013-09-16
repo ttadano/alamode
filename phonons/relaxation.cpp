@@ -1478,6 +1478,7 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 	double n1, n2, n3, n4;
 	double xk_tmp[3];
 	double D12[2];
+	double T_inv;
 
 	std::complex<double> v3_tmp1, v3_tmp2, v4_tmp;
 	std::complex<double> v_prod;
@@ -1568,8 +1569,15 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 											n1 = phonon_thermodynamics->fB(dp1, T_tmp);
 											n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
+											
+											if (std::abs(T_tmp) < eps) {
+												T_inv = 1.0e+8; //special treatment for T = 0
+											} else {
+												T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+											}
+
 											prod_tmp[i] += static_cast<double>(ip4) * omega_sum
-												* ((1.0 + n1 + n4) * omega_sum + (1.0 + n1 + n4) * dp1_inv + n1 * (1.0 + n1) / (phonon_thermodynamics->T_to_Ryd * T_tmp));
+												* ((1.0 + n1 + n4) * omega_sum + (1.0 + n1 + n4) * dp1_inv + n1 * (1.0 + n1) * T_inv);
 										}
 									}
 								}
@@ -1692,6 +1700,7 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 	double dp1_inv;
 	double factor;
 	double D15, D134, D345;
+	double T_inv;
 
 	std::complex<double> omega_sum[3];
 	std::complex<double> v3_tmp1, v3_tmp2, v3_tmp3, v3_tmp4;
@@ -1805,10 +1814,16 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 														n3 = phonon_thermodynamics->fB(dp3, T_tmp);
 														n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
+														if (std::abs(T_tmp) < eps) {
+															T_inv = 1.0e+8;
+														} else {
+															T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+														}
+
 														ret_mpi[i] += v3_prod * static_cast<double>(ip2*ip3*ip4)
 															* (omega_sum[1] * (n2 * omega_sum[0] * ((1.0 + n3 + n4) *  omega_sum[0] + (1.0 + n2 + n4) * dp1_inv)
 															+ (1.0 + n3) * (1.0 + n4) * D134 * (D134 + dp1_inv)) 
-															+ (1.0 + n1) * (1.0 + n3 + n4) * D134 * omega_sum[0] * (omega_sum[0] + D134 + dp1_inv + n1 / (phonon_thermodynamics->T_to_Ryd*T_tmp)));
+															+ (1.0 + n1) * (1.0 + n3 + n4) * D134 * omega_sum[0] * (omega_sum[0] + D134 + dp1_inv + n1 * T_inv));
 													}
 												}
 											}
@@ -2249,6 +2264,7 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 	double factor;
 	double xk_tmp[3];
 	double N_prod[2];
+	double T_inv;
 
 	std::complex<double> v4_tmp, v3_tmp1, v3_tmp2;
 	std::complex<double> v_prod;
@@ -2331,8 +2347,14 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 												N_prod[0] = (1.0 + n1) * (1.0 + n3) + n2 * (1.0 + n2 + n3);
 												N_prod[1] = n2 * (1.0 + n2) * (1.0 + n2 + n3);
 
+												if (std::abs(T_tmp) < eps) {
+													T_inv = 1.0e+8;
+												} else {
+													T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+												}
+
 												ret_mpi[i] += v_prod * static_cast<double>(ip1*ip3)
-													* (D123 * (N_prod[0] * D123 + N_prod[1] / (phonon_thermodynamics->T_to_Ryd * T_tmp)	+ N_prod[0] * dp2_inv));
+													* (D123 * (N_prod[0] * D123 + N_prod[1] * T_inv + N_prod[0] * dp2_inv));
 											}
 										}
 									}
@@ -2433,6 +2455,7 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 	double omega1, omega2, omega3;
 	double omega1_inv;
 	double D13[2];
+	double T_inv;
 
 	std::complex<double> v4_tmp1, v4_tmp2;
 	std::complex<double> v_prod;
@@ -2485,7 +2508,13 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 								n1 = phonon_thermodynamics->fB(omega1, T_tmp);
 								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
 
-								ret_mpi[i] += v_prod * (2.0 * n2 + 1.0) * (-2.0 * (1.0 + n1) * n1 / (phonon_thermodynamics->T_to_Ryd * T_tmp) - (2.0 * n1 + 1.0) * omega1_inv);
+								if (std::abs(T_tmp) < eps) {
+									T_inv = 1.0e+8;
+								} else {
+									T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+								}
+
+								ret_mpi[i] += v_prod * (2.0 * n2 + 1.0) * (-2.0 * (1.0 + n1) * n1 * T_inv - (2.0 * n1 + 1.0) * omega1_inv);
 							}
 						}
 					} else {
