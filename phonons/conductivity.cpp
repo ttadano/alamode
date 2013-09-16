@@ -55,7 +55,7 @@ void Conductivity::setup_kl()
 
 			// Generate phonon velocity in Cartesian coordinate
 			for (j = 0; j < ns; ++j){
-				system->rotvec(vel[i][j], vel[i][j], system->lavec_p, 'T');
+				system->rotvec(vel[i][j], vel[i][j], system->lavec_p);
 				for (k = 0; k < 3; ++k) vel[i][j][k] /= 2.0 * pi;
 				for (k = 0; k < 3; ++k) vel[i][j][k] *= Bohr_in_Angstrom*1.0e-10/time_ry;
 			}

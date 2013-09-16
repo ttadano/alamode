@@ -155,8 +155,8 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
 			}
 		}
 
-		for (j = 0; j < n; ++j){
-			for (idiff = 0; idiff < ndiff; ++idiff){
+		for (j = 0; j < n; ++j) {
+			for (idiff = 0; idiff < ndiff; ++idiff) {
 				omega_tmp[idiff] = dynamical->freq(omega_shift[idiff][j]);
 			}
 			vel_out[j][i] = diff(omega_tmp, ndiff, h);
@@ -168,6 +168,8 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
 	memory->deallocate(omega_tmp);
 	memory->deallocate(evec_tmp);
 	memory->deallocate(kvec_na_tmp);
+
+
 }
 
 double Phonon_velocity::diff(double *f, const unsigned int n, double h)
