@@ -1594,7 +1594,7 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 					} else {
 
 						D12[0] = 1.0 / (omega1 + omega2) - 1.0 / (omega1 - omega2);
-						D12[1] = 1.0 / (omega1 + omega2) + 1.0 / (omega1 + omega2);
+						D12[1] = 1.0 / (omega1 + omega2) + 1.0 / (omega1 - omega2);
 
 						for (is3 = 0; is3 < ns; ++is3) {
 
@@ -1627,10 +1627,10 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 								omega_sum24[2] = 1.0 / (omega_shift - omega2 + omega4);
 								omega_sum24[3] = 1.0 / (omega_shift - omega2 - omega4);
 
-								omega_prod[0] = (D12[0] - D12[1]) * (omega_sum14[0] - omega_sum14[1]);
-								omega_prod[1] = (D12[0] - D12[1]) * (omega_sum14[2] - omega_sum14[3]);
-								omega_prod[2] = (D12[0] + D12[1]) * (omega_sum24[0] - omega_sum24[1]);
-								omega_prod[3] = (D12[0] + D12[1]) * (omega_sum24[2] - omega_sum24[3]);
+								omega_prod[0] = D12[0] * (omega_sum14[0] - omega_sum14[1]);
+								omega_prod[1] = D12[0] * (omega_sum14[2] - omega_sum14[3]);
+								omega_prod[2] = D12[1] * (omega_sum24[0] - omega_sum24[1]);
+								omega_prod[3] = D12[1] * (omega_sum24[2] - omega_sum24[3]);
 								omega_prod[4] = (omega_sum14[1] - omega_sum14[3]) * (omega_sum24[1] - omega_sum24[3]);
 								omega_prod[5] = (omega_sum14[0] - omega_sum14[2]) * (omega_sum24[0] - omega_sum24[2]);
 
