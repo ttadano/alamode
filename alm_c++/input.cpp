@@ -132,7 +132,7 @@ void Input::parse_general_vars(){
 	} else {
 		interaction_type = boost::lexical_cast<int>(general_var_dict["INTERTYPE"]);
 	}
-	if (interaction_type < 0 || interaction_type > 2) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, or 2.");
+	if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
 
 
 	files->job_title = prefix;

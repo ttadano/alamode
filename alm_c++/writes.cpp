@@ -290,7 +290,7 @@ void Writes::wrtmisc(){
 				}
 			}
 		}
-	} else if (interaction->interaction_type == 2) {
+	} else if (interaction->interaction_type == 2 || interaction->interaction_type == 3) {
 
 		// Special treatment for harmonic terms
 
@@ -403,7 +403,7 @@ void Writes::wrtmisc(){
 		ishift += fcs->ndup[order].size();
 	}
 
-	if (interaction->interaction_type == 2) {
+	if (interaction->interaction_type == 2 || interaction->interaction_type == 3) {
 
 		ofs_info << "#FCS_HARMONIC_EXT" << std::endl;
 

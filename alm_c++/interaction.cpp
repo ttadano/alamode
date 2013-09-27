@@ -53,6 +53,8 @@ void Interaction::init()
 		std::cout << "               If a interaction occurs more than once, the corresponding IFC" << std::endl;
 		std::cout << "               will be divided by the multiplicity P." << std::endl;
 		std::cout << "               The cutoff radii for HARMONIC below will be neglected." << std::endl;
+	} else if (interaction_type == 3) {
+		std::cout << "INTERTYPE = 3: This is test." << std::endl;
 	} else {
 		error->exit("interaction->init", "This cannot happen");
 	}
@@ -251,34 +253,35 @@ void Interaction::search_interactions()
 	///
 
 	if (interaction_type == 0) {
-		for (icell = 0; icell < nneib; ++icell){
-			for (i = 0; i < natmin; ++i){
 
-				iat = symmetry->map_p2s[i][0]; //index of an atom in the primitive cell
-
-				for (jat = 0; jat < nat; ++jat){
-
-					dist = distance(xcrd[0][iat], xcrd[icell][jat]);
-
-					for (order = 0; order < maxorder; ++order){
-
-						if(dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-							if(!countint[i][jat][order]) {
-								intpairs[i][order][ninter[i][order]] = jat;
-
-								// store relative vectors for molecular dynamics simulation
-								for(j = 0; j < 3; ++j){
-									relvec[i][order][ninter[i][order]][j] = xcrd[icell][jat][j] - xcrd[0][iat][j];
-								}
-								++ninter[i][order];
-							}
-							++countint[i][jat][order];
-						}
-					}
-				}
-			}
-		}
+ 		for (icell = 0; icell < nneib; ++icell){
+ 			for (i = 0; i < natmin; ++i){
+ 
+ 				iat = symmetry->map_p2s[i][0]; //index of an atom in the primitive cell
+ 
+ 				for (jat = 0; jat < nat; ++jat){
+ 
+ 					dist = distance(xcrd[0][iat], xcrd[icell][jat]);
+ 
+ 					for (order = 0; order < maxorder; ++order){
+ 
+ 						if(dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+ 
+ 							if(!countint[i][jat][order]) {
+ 								intpairs[i][order][ninter[i][order]] = jat;
+ 
+ 								// store relative vectors for molecular dynamics simulation
+ 								for(j = 0; j < 3; ++j){
+ 									relvec[i][order][ninter[i][order]][j] = xcrd[icell][jat][j] - xcrd[0][iat][j];
+ 								}
+ 								++ninter[i][order];
+ 							}
+ 							++countint[i][jat][order];
+ 						}
+ 					}
+ 				}
+ 			}
+ 		}
 	} else if (interaction_type == 1) {
 
 		for (i = 0; i < natmin; ++i) {
@@ -332,6 +335,43 @@ void Interaction::search_interactions()
 					++ninter[i][0];
 					countint[i][jat][0] = mindist_pairs[i][jat].size();
 				
+
+				for (order = 1; order < maxorder; ++order) {
+
+					if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+
+						if (!countint[i][jat][order]) {
+							intpairs[i][order][ninter[i][order]] = jat;
+
+							for(j = 0; j < 3; ++j){
+								relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
+							}
+							++ninter[i][order];
+						}
+						++countint[i][jat][order];
+					}
+				}
+			}
+		}
+	} else if (interaction_type == 3) {
+
+		for (i = 0; i < natmin; ++i) {
+			iat = symmetry->map_p2s[i][0];
+
+			for (jat = 0; jat < nat; ++jat) {
+				dist = mindist_pairs[i][jat][0].dist;
+
+				// Add to interaction list when the distance between the corresponding
+				// atoms is smaller than the cutoff radius.
+
+				if (dist <= rcs[0][system->kd[iat] - 1][system->kd[jat] - 1]) {
+					intpairs[i][0][ninter[i][0]] = jat;
+					for (j = 0; j < 3; ++j) {
+						relvec[i][0][ninter[i][0]][j] = mindist_pairs[i][jat][0].relvec[j];
+					}
+					++ninter[i][0];
+					countint[i][jat][0] = mindist_pairs[i][jat].size();
+				}
 
 				for (order = 1; order < maxorder; ++order) {
 

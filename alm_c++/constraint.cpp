@@ -688,6 +688,7 @@ void Constraint::rotational_invariance()
 
 								if(iter_found != list_found.end()){
 									FcProperty arrtmp = *iter_found;              
+									// This operation should be modified for INTERTYPE = 2, 3.
 									arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
 								}
 
@@ -698,6 +699,7 @@ void Constraint::rotational_invariance()
 								iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
 								if(iter_found != list_found.end()){
 									FcProperty arrtmp = *iter_found;                        
+									// This operation should be modified for INTERTYPE = 2, 3.
 									arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
 								}
 							}
@@ -1138,7 +1140,7 @@ void Constraint::setup_rotation_axis(bool flag[3][3])
 
 	for (mu = 0; mu < 3; ++mu){
 		for (nu = 0; nu < 3; ++nu) {
-			if (mu == nu ) {
+			if (mu == nu) {
 				flag[mu][nu] = false;
 			} else {
 				flag[mu][nu] = true;
