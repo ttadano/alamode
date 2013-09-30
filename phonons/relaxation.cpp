@@ -3189,7 +3189,11 @@ void Relaxation::compute_mode_tau()
 
 				if (mympi->my_rank == 0) {
 					for (j = 0; j < NT; ++j) {
-						ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self_a[j].imag());
+						if (ksum_mode == -1) {
+							ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
+						} else {
+							ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self_a[j].imag());
+						}
 
 						if (quartic_mode) {
 //							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
