@@ -312,8 +312,6 @@ void Relaxation::setup_relaxation()
 
 #endif
 
-	modify_eigenvectors();
-
 	epsilon *= time_ry / Hz_to_kayser;
 
 	MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -599,15 +597,22 @@ std::complex<double> Relaxation::V3new(const unsigned int ks[3])
 	{
 		std::complex<double> ctmp;
 		double phase;
+		std::complex<double> evecs_tmp;
 
 #pragma omp for reduction(+: ret_re, ret_im)
 		for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
 
-			phase = (vec_for_v3[ielem][0][0]*kpoint->xk[kn[1]][0] + vec_for_v3[ielem][1][0]*kpoint->xk[kn[1]][1] + vec_for_v3[ielem][2][0]*kpoint->xk[kn[1]][2]
-			+vec_for_v3[ielem][0][1]*kpoint->xk[kn[2]][0] + vec_for_v3[ielem][1][1]*kpoint->xk[kn[2]][1] + vec_for_v3[ielem][2][1]*kpoint->xk[kn[2]][2]);
+			phase = vec_for_v3[ielem][0][0] * kpoint->xk[kn[1]][0] 
+			+ vec_for_v3[ielem][1][0] * kpoint->xk[kn[1]][1]
+			+ vec_for_v3[ielem][2][0] * kpoint->xk[kn[1]][2]
+			+ vec_for_v3[ielem][0][1] * kpoint->xk[kn[2]][0] 
+			+ vec_for_v3[ielem][1][1] * kpoint->xk[kn[2]][1] 
+			+ vec_for_v3[ielem][2][1] * kpoint->xk[kn[2]][2];
 
 			ctmp = fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * std::exp(im*phase)
-				* dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]] * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]] * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+				* dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]]
+			    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
+				* dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
 
 			ret_re += ctmp.real();
 			ret_im += ctmp.imag();
@@ -718,6 +723,144 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
 
 	return (ret_re + im * ret_im) / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
 }
+
+
+void Relaxation::v3_test() {
+
+	int i;
+	unsigned int stmp[3], kstmp[3];
+	int nkplus, nkminus;
+	double k_tmp1[3], k_tmp2[3], k_tmp3[3];
+
+	nkplus = 1;
+	nkminus= kpoint->knum_minus[nkplus];
+
+
+	stmp[0] = 0;
+	stmp[1] = 1;
+	stmp[2] = 2;
+
+	k_tmp1[0] = 0.4; k_tmp1[1] = 0.0; k_tmp1[2] = 0.0;
+	k_tmp2[0] = -0.4; k_tmp2[1] = 0.4; k_tmp2[2] = 0.0;
+	k_tmp3[0] = 0.0; k_tmp3[1] = -0.4; k_tmp3[2] = 0.0;
+
+	kstmp[0] = kpoint->get_knum(k_tmp1[0], k_tmp1[1], k_tmp1[2]);
+	kstmp[1] = kpoint->get_knum(k_tmp2[0], k_tmp2[1], k_tmp2[2]);
+	kstmp[2] = kpoint->get_knum(k_tmp3[0], k_tmp3[1], k_tmp3[2]);
+
+	for (i = 0; i < 3; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[kstmp[0]][i];
+	}
+	std::cout << std::endl;
+	for (i = 0; i < 3; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[kstmp[1]][i];
+	}
+	std::cout << std::endl;
+	for (i = 0; i < 3; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[kstmp[2]][i];
+	}
+	std::cout << std::endl;
+
+	kstmp[0] = ns * kpoint->get_knum(k_tmp1[0], k_tmp1[1], k_tmp1[2]) + stmp[0];
+	kstmp[1] = ns * kpoint->get_knum(k_tmp2[0], k_tmp2[1], k_tmp2[2]) + stmp[1];
+	kstmp[2] = ns * kpoint->get_knum(k_tmp3[0], k_tmp3[1], k_tmp3[2]) + stmp[2];
+
+	std::cout << std::norm(V3(kstmp[0], kstmp[1], kstmp[2])) << std::endl;
+	std::cout << std::norm(V3new(kstmp)) << std::endl;
+	std::cout << std::norm(V3new2(kstmp)) << std::endl;
+
+	error->exit("v3_test", "finished!");
+
+
+	unsigned int ik0, ik1, ik2;
+	unsigned int is0, is1, is2;
+	double omega1, omega2;
+	double norm;
+	double xk_tmp[3];
+
+	ik0 = 2;
+	is0 = 1;
+
+	for (ik1 = 0; ik1 < kpoint->nk; ++ik1) {
+
+		xk_tmp[0] = - (kpoint->xk[ik0][0] + kpoint->xk[ik1][0]);
+		xk_tmp[1] = - (kpoint->xk[ik0][1] + kpoint->xk[ik1][1]);
+		xk_tmp[2] = - (kpoint->xk[ik0][2] + kpoint->xk[ik1][2]);
+
+		ik2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+
+		if (ik2 == -1) {
+			error->exit("hoge","hoge");
+		}
+
+			for (is1 = 0; is1 < ns; ++is1) {
+				for (is2 = 0; is2 < ns; ++is2) {
+					omega1 = dynamical->eval_phonon[ik1][is1];
+					omega2 = dynamical->eval_phonon[ik2][is2];
+
+					std::cout << std::setw(5) << ik1 << std::setw(5) << is1;
+					std::cout << std::setw(15) << writes->in_kayser(omega1);
+					std::cout << std::setw(5) << ik2 << std::setw(5) << is2;
+					std::cout << std::setw(15) << writes->in_kayser(omega2);
+
+
+					norm =   std::pow(std::fmod(kpoint->xk[ik0][0] + kpoint->xk[ik1][0] + kpoint->xk[ik2][0], 1.0), 2)
+						   + std::pow(std::fmod(kpoint->xk[ik0][1] + kpoint->xk[ik1][1] + kpoint->xk[ik2][1], 1.0), 2)
+					       + std::pow(std::fmod(kpoint->xk[ik0][2] + kpoint->xk[ik1][2] + kpoint->xk[ik2][2], 1.0), 2);
+					std::cout << std::setw(15) << norm;
+
+					kstmp[0] = ns * ik0 + is0;
+					kstmp[1] = ns * ik1 + is1;
+					kstmp[2] = ns * ik2 + is2;
+					std::cout << std::setw(15) << std::norm(V3(kstmp[0],kstmp[1],kstmp[2])) << std::endl;
+				}
+		}
+	}
+
+
+}
+
+
+void Relaxation::v4_test() {
+
+	int i;
+	unsigned int stmp[4], kstmp[4];
+	int nkplus, nkminus;
+
+	nkplus = 2;
+	nkminus= kpoint->knum_minus[nkplus];
+
+	stmp[0] = 0;
+	stmp[1] = 1;
+	stmp[2] = 2;
+	stmp[3] = 0;
+
+	for (i = 0; i < 4; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[nkplus][i];
+	}
+	std::cout << std::endl;
+
+	for (i = 0; i < 4; ++i) {
+		kstmp[i] = dynamical->neval * nkplus + stmp[i];
+	}
+
+
+	std::cout << V4(kstmp) << std::endl;
+
+	for (i = 0; i < 4; ++i) {
+		kstmp[i] = dynamical->neval * nkminus + stmp[i];
+	}
+	for (i = 0; i < 4; ++i) {
+		std::cout << std::setw(15) << kpoint->xk[nkminus][i];
+	}
+	std::cout << std::endl;
+
+	std::cout << V4(kstmp) << std::endl;
+
+
+	error->exit("v4_test", "finished!");
+}
+
 
 void Relaxation::calc_selfenergy_V3(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
 {
@@ -2792,58 +2935,6 @@ void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const 
 	memory->deallocate(v3_tmp_proj);
 }
 
-void Relaxation::modify_eigenvectors()
-{
-	bool *flag_done;
-	unsigned int ik;
-	unsigned int is, js;
-	unsigned int nk_inv;
-	std::complex<double> *evec_tmp;
-
-	if (mympi->my_rank == 0) {
-		std::cout << "**********      NOTICE      **********" << std::endl;
-		std::cout << "For the brevity of the calculation, " << std::endl;
-		std::cout << "phonon eigenvectors will be modified" << std::endl;
-		std::cout << "so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
-	}
-
-	memory->allocate(flag_done, nk);
-	memory->allocate(evec_tmp, ns);
-
-
-
-	for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
-
-	for (ik = 0; ik < nk; ++ik){
-
-		if (!flag_done[ik]) {
-
-			nk_inv = kpoint->knum_minus[ik];   
-
-			for (is = 0; is < ns; ++is){
-				for (js = 0; js < ns; ++js){
-					evec_tmp[js] = dynamical->evec_phonon[ik][is][js];
-				}
-
-				for (js = 0; js < ns; ++js){
-					dynamical->evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
-				}
-			}
-
-			flag_done[ik] = true;
-			flag_done[nk_inv] = true;
-		}
-	}
-
-	memory->deallocate(flag_done);
-	memory->deallocate(evec_tmp);
-
-	MPI_Barrier(MPI_COMM_WORLD);
-	if (mympi->my_rank == 0) {
-		std::cout << "done !" << std::endl;
-		std::cout << "**************************************" << std::endl;
-	}
-}
 
 double Relaxation::delta_lorentz(const double omega)
 {
@@ -2936,89 +3027,6 @@ void Relaxation::calc_selfenergy()
 	error->exitall("hoge", "tomare!");
 }
 
-
-void Relaxation::v3_test() {
-
-	int i;
-	unsigned int stmp[3], kstmp[3];
-	int nkplus, nkminus;
-
-	nkplus = 1;
-	nkminus= kpoint->knum_minus[nkplus];
-
-
-	stmp[0] = 0;
-	stmp[1] = 1;
-	stmp[2] = 2;
-
-	for (i = 0; i < 3; ++i) {
-		std::cout << std::setw(15) << kpoint->xk[nkplus][i];
-	}
-	std::cout << std::endl;
-
-	for (i = 0; i < 3; ++i) {
-		kstmp[i] = dynamical->neval * nkplus + stmp[i];
-	}
-	std::cout << V3(kstmp[0], kstmp[1], kstmp[2]) << std::endl;
-	std::cout << V3new(kstmp) << std::endl;
-	std::cout << V3new2(kstmp) << std::endl;
-
-	for (i = 0; i < 3; ++i) {
-		kstmp[i] = dynamical->neval * nkminus + stmp[i];
-	}
-	for (i = 0; i < 3; ++i) {
-		std::cout << std::setw(15) << kpoint->xk[nkminus][i];
-	}
-	std::cout << std::endl;
-
-	std::cout << V3(kstmp[0], kstmp[1], kstmp[2]) << std::endl;
-	std::cout << V3new(kstmp) << std::endl;
-	std::cout << V3new2(kstmp) << std::endl;
-
-
-	// error->exit("v3_test", "finished!");
-}
-
-
-void Relaxation::v4_test() {
-
-	int i;
-	unsigned int stmp[4], kstmp[4];
-	int nkplus, nkminus;
-
-	nkplus = 2;
-	nkminus= kpoint->knum_minus[nkplus];
-
-	stmp[0] = 0;
-	stmp[1] = 1;
-	stmp[2] = 2;
-	stmp[3] = 0;
-
-	for (i = 0; i < 4; ++i) {
-		std::cout << std::setw(15) << kpoint->xk[nkplus][i];
-	}
-	std::cout << std::endl;
-
-	for (i = 0; i < 4; ++i) {
-		kstmp[i] = dynamical->neval * nkplus + stmp[i];
-	}
-
-
-	std::cout << V4(kstmp) << std::endl;
-
-	for (i = 0; i < 4; ++i) {
-		kstmp[i] = dynamical->neval * nkminus + stmp[i];
-	}
-	for (i = 0; i < 4; ++i) {
-		std::cout << std::setw(15) << kpoint->xk[nkminus][i];
-	}
-	std::cout << std::endl;
-
-	std::cout << V4(kstmp) << std::endl;
-
-
-	error->exit("v4_test", "finished!");
-}
 
 void Relaxation::compute_mode_tau()
 {

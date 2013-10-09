@@ -96,7 +96,7 @@ void Conductivity::prepare_restart()
 	std::string line_tmp;
 	unsigned int nk_tmp, ns_tmp, nks_tmp;
 	unsigned int multiplicity;
-        int nks_done, *arr_done;
+	int nks_done, *arr_done;
 
 	double vel_dummy[3];
 
@@ -110,14 +110,14 @@ void Conductivity::prepare_restart()
 			writes->fs_result << "##Phonon Frequency" << std::endl;
 			writes->fs_result << "#K-point (Symmetrically reduced), Branch, Omega (cm^-1)" << std::endl;
 
-// 			ik = 0;
-// 			for (i = 0; i < kpoint->nk_equiv.size(); ++i){
-// 				for (is = 0; is < dynamical->neval; ++is) {
-// 					writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-// 					writes->fs_result << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[ik][is]) << std::endl;
-// 				}
-// 				ik += kpoint->nk_equiv[i];
-// 			}
+			// 			ik = 0;
+			// 			for (i = 0; i < kpoint->nk_equiv.size(); ++i){
+			// 				for (is = 0; is < dynamical->neval; ++is) {
+			// 					writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
+			// 					writes->fs_result << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[ik][is]) << std::endl;
+			// 				}
+			// 				ik += kpoint->nk_equiv[i];
+			// 			}
 
 			for (i = 0; i < kpoint->nk_reduced; ++i) {
 				ik = kpoint->k_reduced[i][0];
@@ -181,13 +181,13 @@ void Conductivity::prepare_restart()
 
 		it_set = vks_job.find(arr_done[i]);
 
-     	if (it_set == vks_job.end()) {
- 			error->exit("prepare_restart", "This cannot happen");
- 		} else {
- 			vks_job.erase(it_set);
+		if (it_set == vks_job.end()) {
+			error->exit("prepare_restart", "This cannot happen");
+		} else {
+			vks_job.erase(it_set);
 		}
 	}
-	
+
 	memory->deallocate(arr_done);
 	vks_done.clear();
 
@@ -310,7 +310,7 @@ void Conductivity::calc_kl2()
 					if (std::abs(tau_tmp) < eps) {
 						tau[iks_g][k] = 0.0; 
 					} else {
-			    	tau[iks_g][k] = time_ry * 1.0e+12 / (2.0 * tau_tmp);
+						tau[iks_g][k] = time_ry * 1.0e+12 / (2.0 * tau_tmp);
 					}
 					writes->fs_result << std::setw(15) << tau[iks_g][k] << std::endl;
 				}

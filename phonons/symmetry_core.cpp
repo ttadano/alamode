@@ -60,6 +60,8 @@ void Symmetry::setup_symmetry()
 		std::cout << "**Symmetry" << std::endl;
 		std::cout << "Number of Symmetry Operations = " << nsym << std::endl << std::endl;
 	}
+
+	gensym_withmap(xtmp, kdtmp);
 }
 
 void Symmetry::gensym(unsigned int nat, unsigned int &nsym, unsigned int nnp, double aa[3][3], double bb[3][3], double **x, unsigned int *kd)
@@ -390,7 +392,8 @@ bool Symmetry::is_ortho(double rot[3][3], double amat[3][3], double bmat[3][3])
 	}
 }
 
-bool Symmetry::is_invariant(double rot[3][3], unsigned int nat, unsigned int *kd, double **x, int tran[3], unsigned int nnp) {
+bool Symmetry::is_invariant(double rot[3][3], unsigned int nat, unsigned int *kd, double **x, int tran[3], unsigned int nnp)
+{
 
 	int i, j, k, l;
 	double wsi[3], usi[3], vsi[3], tmp[3];
@@ -430,3 +433,87 @@ bool Symmetry::is_invariant(double rot[3][3], unsigned int nat, unsigned int *kd
 }
 #endif
 
+void Symmetry::gensym_withmap(double **x, unsigned int *kd)
+{
+	// Generate symmetry operations in reciprocal space with the atom-mapping information.
+
+	int S_tmp[3][3], T_tmp[3][3], mat_tmp[3][3];
+	double shift[3], x_mod[3], S_double[3][3], tmp[3];
+	double diff;
+	unsigned int *map_tmp;
+	int i, j, k;
+	int num_mapped;
+	unsigned int natmin = system->natmin;
+
+	SymmListWithMap.clear();
+
+	memory->allocate(map_tmp, natmin);
+
+	for (std::vector<SymmetryOperation>::iterator isym = symmetry->SymmList.begin(); isym != symmetry->SymmList.end(); ++isym) {
+	
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				T_tmp[i][j] = (*isym).symop[3 * i + j];
+			}
+		}
+
+		for (i = 0; i < 3; ++i) {
+			shift[i] = static_cast<double>((*isym).symop[i + 9]) / static_cast<double>(nnp);
+		}
+
+
+		for (i = 0; i < natmin; ++i) map_tmp[i] = 0;
+
+		system->invmat3_i(mat_tmp, T_tmp);
+
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				S_tmp[i][j] = mat_tmp[j][i];
+			}
+		}
+
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				S_double[i][j] = static_cast<double>(S_tmp[i][j]);
+			}
+		}
+
+		// Generate mapping information
+
+		for (i = 0; i < natmin; ++i) {
+
+			for (j = 0; j < 3; ++j) {
+				x_mod[j] = x[i][j] - shift[j];
+			}
+
+			system->rotvec(x_mod, x_mod, S_double, 'T');
+
+			num_mapped = -1;
+
+			for (j = 0; j < natmin; ++j) {
+
+				if (kd[j] == kd[i]) {
+
+					for (k = 0; k < 3; ++k) {
+						tmp[k] = std::fmod(std::abs(x_mod[k] - x[j][k]), 1.0);
+						tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
+					}
+					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+					if (diff < eps12) {
+						num_mapped = j;
+						break;
+					}
+				}
+			}
+
+			if (num_mapped == -1) {
+				error->exit("gensym_withmap", "cannot find a equivalent atom");
+			}
+			map_tmp[i] = num_mapped;
+		}
+
+		// Add to vector
+
+		SymmListWithMap.push_back(SymmetryOperationWithMapping(S_tmp, map_tmp, natmin, shift));
+	}
+}

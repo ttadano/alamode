@@ -76,7 +76,6 @@ namespace PHON_NS {
 
         void v3_test();
         void v4_test();
-        void modify_eigenvectors();
 
      private:
         struct StructKS {

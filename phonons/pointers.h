@@ -21,6 +21,7 @@ namespace PHON_NS {
               phonon_thermodynamics(ptr->phonon_thermodynamics),
               relaxation(ptr->relaxation),
               conductivity(ptr->conductivity),
+			  interpolation(ptr->interpolation),
               writes(ptr->writes),
               dos(ptr->dos),
               gruneisen(ptr->gruneisen),
@@ -42,6 +43,7 @@ namespace PHON_NS {
         Phonon_thermodynamics *&phonon_thermodynamics;
         Relaxation *&relaxation;
         Conductivity *&conductivity;
+		Interpolation *&interpolation;
         Writes *&writes;
         Dos *&dos;
         Gruneisen *&gruneisen;

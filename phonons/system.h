@@ -39,6 +39,8 @@ namespace PHON_NS {
 		void matmul3(double [3][3], const double [3][3], const double [3][3]);
 		void transpose3(double [3][3], const double [3][3]);
 
+		void invmat3_i(int [3][3], int [3][3]);
+
 
     private:
         void load_system_info();
