@@ -28,16 +28,20 @@ namespace PHON_NS {
         void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
 		void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
 
+		void calc_analytic_k(double *, double ****, std::complex<double> **);
+		void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
+		void calc_nonanalytic_k(double *, double *, double **);
+
         void setup_dynamical(std::string);
+		void modify_eigenvectors();
+		void modify_eigenvectors_sym();
 
         double fold(double);
         double freq(const double);
 
     private:
 //        void calc_analytic();
-        void calc_analytic_k(double *, double ****, std::complex<double> **);
-		void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
-		void calc_nonanalytic_k(double *, double *, double **);
+
 		void load_born();
 		void setup_na_kvec();
 

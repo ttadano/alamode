@@ -16,6 +16,7 @@
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "integration.h"
+#include "interpolation.h"
 #include "relaxation.h"
 #include "conductivity.h"
 #include <omp.h>
@@ -66,6 +67,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		dynamical->diagonalize_dynamical_all();
 
+
+
+
 		// Calculate the group velocity of phonons along given direction in
 		// the reciprocal space.
 
@@ -114,7 +118,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		//     dos->calc_tdos();
 		// relaxation->calc_selfenergy();
-		//	relaxation->v3_test();
+        // relaxation->v3_test();
 		//	relaxation->v4_test();
 
 		if (relaxation->ks_analyze_mode) {
@@ -126,6 +130,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		}
 
 		//	conductivity->calc_kl();
+
+	    //	interpolation->prepare_interpolation();
+
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
@@ -182,6 +189,7 @@ void PHON::create_pointers()
 	phonon_thermodynamics = new Phonon_thermodynamics(this);
 	relaxation = new Relaxation(this);
 	conductivity = new Conductivity(this);
+	interpolation = new Interpolation(this);
 	writes = new Writes(this);
 	dos = new Dos(this);
 	gruneisen = new Gruneisen(this);
@@ -201,6 +209,7 @@ void PHON::destroy_pointers()
 	delete phonon_velocity;
 	delete phonon_thermodynamics;
 //	delete relaxation;
+	delete interpolation;
 	delete conductivity;
 	delete writes;
 	delete dos;

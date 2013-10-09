@@ -29,6 +29,7 @@ namespace PHON_NS
         class Phonon_thermodynamics *phonon_thermodynamics;
         class Relaxation *relaxation;
         class Conductivity *conductivity;
+		class Interpolation *interpolation;
         class Writes *writes;
         class Dos *dos;
         class Gruneisen *gruneisen;

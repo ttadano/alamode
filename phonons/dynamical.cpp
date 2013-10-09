@@ -12,6 +12,7 @@
 #include <fstream>
 #include "timer.h"
 #include "error.h"
+#include "symmetry_core.h"
 
 using namespace PHON_NS;
 
@@ -298,7 +299,6 @@ void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<d
 						vec[icrd] = fold(vec[icrd]);
 						if (std::abs(system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd]) > 0.5) vec[icrd] *= -1.0;
 					} else {
-						//                     vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
 						vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
 						vec[icrd] = fold(vec[icrd]);
 
@@ -312,13 +312,6 @@ void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<d
 				phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 				exp_phase = std::exp(im * phase);
 
-				// 
-				//                  if (std::abs(exp_phase.real()) < 1.0e-14) {
-				//                      exp_phase = std::complex<double>(0.0, exp_phase.imag());
-				//                  }
-				//                  if (std::abs(exp_phase.imag()) < 1.0e-14) {
-				//                      exp_phase = std::complex<double>(exp_phase.real(), 0.0);
-				//              }
 
 
 				for (icrd = 0; icrd < 3; ++icrd){
@@ -378,7 +371,9 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 	int i, j;
 	unsigned int atm1_s, atm2_s;
 	unsigned int atm1_p, atm2_p;
+	unsigned int atm_ref;
 	unsigned int xyz1, xyz2;
+	unsigned int tran_num;
 	unsigned int icell;
 
 	double vec[3];
@@ -405,9 +400,13 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 		icell = (*it).cell_s;
 
 		atm1_s = system->map_p2s[atm1_p][0];
+		atm2_p = system->map_s2p[atm2_s].atom_num;
+		tran_num = system->map_s2p[atm2_s].tran_num;
+		atm_ref = system->map_p2s[atm1_p][tran_num];
 
 		for (i = 0; i < 3; ++i) {
-			vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm2_s][i];
+	
+				vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm_ref][i];
 			vec[i] -= xshift_s[icell][i];
 		}
 
@@ -416,7 +415,6 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 
 		phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
-		atm2_p = system->map_s2p[atm2_s].atom_num;
 
 		dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
 	}
@@ -533,6 +531,88 @@ void Dynamical::diagonalize_dynamical_all()
 		std::cout << "done !" << std::endl;
 	}
 
+	//	modify_eigenvectors_sym();
+
+	if (kpoint->kpoint_mode == 2) {
+		modify_eigenvectors();
+	}
+
+// 	 	 	std::complex<double> prod;
+// 	 	 	std::cout << "orthogonality check 1" << std::endl;
+// 	 	 	for (ik = 0; ik < nk; ++ik) {
+// 	 	 		
+// 	 	 
+// 	 	 		for (int is1 = 0; is1 < neval; ++is1) {
+// 	 	 			for (int is2 = 0; is2 < neval; ++is2) {
+// 	 	 
+// 	 	 				prod = std::complex<double>(0.0, 0.0);
+// 	 	 
+// 	 	 				for (int i = 0; i < neval; ++i) {
+// 	 	 					prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is2][i];
+// 	 	 				}
+// 	 	 				if (std::norm(prod) > eps) {
+// 	 	 					std::cout << "ik = " << ik << " is1, is2 =" << is1 << " " << is2 << " prod = " << prod << std::endl;
+// 	 	 				}
+// 	 	 			}
+// 	 	 		}
+// 	 	 	}
+// 	 	 	std::cout << "orthogonality check 2" << std::endl;
+// 	 	 
+// 	 	 	for (ik = 0; ik < nk; ++ik) {
+// 	 	 				for (int i = 0; i < neval; ++i) {
+// 	 	 					for (int j = 0; j < neval; ++j) {
+// 	 	 
+// 	 	 						prod = std::complex<double>(0.0, 0.0);
+// 	 	 
+// 	 	 						for (int is1 = 0; is1 < neval; ++is1) {
+// 	 	 							prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is1][j];
+// 	 	 						}
+// 	 	 						if (std::norm(prod) > eps) {
+// 	 	 							std::cout << "ik = " << ik << " i, j =" << i << " " << j << " prod = " << prod << std::endl;
+// 	 	 						}
+// 	 	 
+// 	 	 					}
+// 	 	 		}
+// 	 		}
+
+//  	double xk_tmp[3];
+//  	std::complex<double> **dymat;
+//  
+//  	memory->allocate(dymat, neval, neval);
+//  
+//  	for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+//  		for (unsigned int i = 0; i < kpoint->nk_equiv[ik]; ++i) {
+//  			std::cout << "ik = " << ik + 1 << " i = " << i + 1 << " kp = " << kpoint->k_reduced[ik][i];
+//  	
+//  			for (int j = 0; j < 3; ++j) {
+//  				xk_tmp[j] = kpoint->xk[kpoint->k_reduced[ik][i]][j];
+//  				std::cout << std::setw(15) << xk_tmp[j];
+//  			}
+//  			std::cout << std::endl;
+//  
+//  		  if (fcs_phonon->is_fc2_ext) {
+//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2_ext, dymat);
+//  		  } else {
+//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2, dymat);
+//  		  }
+//  		
+//  		  for (int j = 0; j < neval; ++j) {
+//  			  for (int k = 0; k < neval; ++k) {
+//  				  if (std::abs(dymat[j][k].real()) < eps12) {
+//  					  dymat[j][k] = std::complex<double>(0.0, dymat[j][k].imag());
+//  				  }
+//  				  if (std::abs(dymat[j][k].imag()) < eps12) {
+//  					  dymat[j][k] = std::complex<double>(dymat[j][k].real(), 0.0);
+//  				  }
+//  
+//  				  std::cout << std::setw(15) << dymat[j][k].real() << std::setw(15) << dymat[j][k].imag();
+//  		  }
+//  			  std::cout << std::endl;
+//  		}
+//  		  std::cout << std::endl;
+//  	}
+//  	}
+
 #ifdef _DEBUG
 
 
@@ -615,6 +695,168 @@ void Dynamical::diagonalize_dynamical_all()
 	}
 #endif
 }
+
+void Dynamical::modify_eigenvectors()
+{
+	bool *flag_done;
+	unsigned int ik;
+	unsigned int is, js;
+	unsigned int nk_inv;
+	std::complex<double> *evec_tmp;
+
+	unsigned int nk = kpoint->nk;
+	unsigned int ns = neval;
+
+	if (mympi->my_rank == 0) {
+		std::cout << "**********      NOTICE      **********" << std::endl;
+		std::cout << "For the brevity of the calculation, " << std::endl;
+		std::cout << "phonon eigenvectors will be modified" << std::endl;
+		std::cout << "so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
+	}
+
+	memory->allocate(flag_done, nk);
+	memory->allocate(evec_tmp, ns);
+
+
+	for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
+
+	for (ik = 0; ik < nk; ++ik){
+
+		if (!flag_done[ik]) {
+
+			nk_inv = kpoint->knum_minus[ik];   
+
+			for (is = 0; is < ns; ++is){
+				for (js = 0; js < ns; ++js){
+					evec_tmp[js] = dynamical->evec_phonon[ik][is][js];
+				}
+
+				for (js = 0; js < ns; ++js){
+					dynamical->evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
+				}
+			}
+
+			flag_done[ik] = true;
+			flag_done[nk_inv] = true;
+		}
+	}
+
+	memory->deallocate(flag_done);
+	memory->deallocate(evec_tmp);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (mympi->my_rank == 0) {
+		std::cout << "done !" << std::endl;
+		std::cout << "**************************************" << std::endl;
+	}
+}
+
+void Dynamical::modify_eigenvectors_sym()
+{
+
+	// This is under test.
+
+	double Sk[3], S[3][3], k[3];
+	double x[3], x_new[3], Sx[3], x_tmp[3];
+	double S_cart[3][3];
+	double AA_T[3][3], BB_T[3][3];
+	double shift[3];
+
+	unsigned int ik;
+	unsigned int nk = kpoint->nk;
+	unsigned int ns = neval;
+	unsigned int i, j;
+	bool *flag_done;
+	int knum_sym;
+	unsigned int iat, icrd, jcrd;
+	unsigned int *atom_mapped;
+	double phase;
+	std::complex<double> exp_phase;
+	std::complex<double> im = std::complex<double>(0.0, 1.0);
+	std::complex<double> S_evec;
+
+	memory->allocate(flag_done, nk);
+	for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
+
+	memory->allocate(atom_mapped, system->natmin);
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			AA_T[i][j] = system->lavec_p[j][i];
+			BB_T[i][j] = system->rlavec_p[j][i];
+		}
+	}
+
+
+	for (ik = 0; ik < nk; ++ik) {
+		for (i = 0; i < 3; ++i) k[i] = kpoint->xk[ik][i];
+
+		if (flag_done[ik]) continue;
+
+		for (std::vector<SymmetryOperationWithMapping>::const_iterator it = symmetry->SymmListWithMap.begin(); it != symmetry->SymmListWithMap.end(); ++it) {
+
+			for (i = 0; i < 3; ++i) {
+				for (j = 0; j < 3; ++j) {
+					S[i][j] = static_cast<double>((*it).symop[3 * i + j]);
+				}
+				shift[i] = (*it).shift[i];
+			}
+
+			system->rotvec(Sk, k, S);
+
+			for (i = 0; i < 3; ++i) {
+				Sk[i] = Sk[i] - kpoint->nint(Sk[i]);
+			}    
+			knum_sym = kpoint->get_knum(Sk[0], Sk[1], Sk[2]);
+
+			if (knum_sym == -1) error->exit("modify_eigenvectors_sym", "kpoint not found");
+
+			system->matmul3(S_cart, S, AA_T);
+			system->matmul3(S_cart, BB_T, S_cart);
+
+			for (i = 0; i < 3; ++i) {
+				for (j = 0; j < 3; ++j) {
+					S_cart[i][j] /= 2.0 * pi;
+				}
+			}
+
+			if (!flag_done[knum_sym]) {
+
+				for (iat = 0; iat < system->natmin; ++iat) {
+					atom_mapped[iat] = (*it).mapping[iat];
+					for (i = 0; i < 3; ++i) {
+						x[i] = system->xr_p[system->map_p2s[iat][0]][i];
+						x_new[i] = system->xr_p[system->map_p2s[atom_mapped[iat]][0]][i];
+					}
+
+					system->rotvec(Sx, x, S);
+					for (i = 0; i < 3; ++i) x_tmp[i] = x_new[i] - Sx[i] - shift[i];
+					phase = Sk[0] * x_tmp[0] + Sk[1] * x_tmp[1] + Sk[2] * x_tmp[2];
+					exp_phase = exp(im * phase);
+					// 
+					// 					for (i = 0; i < 3; ++i) {
+					// 						std::cout << std::setw(15) << x_tmp[i];
+					// 					}
+					// 					std::cout << std::endl;
+					// 					std::cout << std::setw(15) << phase << std::endl;
+
+					for (i = 0; i < ns; ++i) {
+						for (icrd = 0; icrd < 3; ++icrd) {
+							S_evec = std::complex<double>(0.0, 0.0);
+
+							for (jcrd = 0; jcrd < 3; ++jcrd) {
+								S_evec += S_cart[icrd][jcrd] * evec_phonon[ik][i][3 * iat + jcrd];
+							}
+							evec_phonon[knum_sym][i][3 * atom_mapped[iat] + icrd] = S_evec * exp_phase;
+						}
+					}
+				}
+			}
+			flag_done[knum_sym] = true;
+		}
+	}
+}
+
 
 
 void Dynamical::load_born()
@@ -743,7 +985,6 @@ void Dynamical::setup_na_kvec()
 				kvec_na[i][j] = kpoint->kpoint_direction[i][j];
 			}
 		}
-
 	}
 }
 
@@ -770,204 +1011,4 @@ double Dynamical::freq(const double x)
 		}
 	}
 }
-
-
-/*
-
-void Dynamical::calc_dynamical_matrix()
-{
-// Calculate dynamical matrix of all k-points
-
-neval = 3 * system->natmin;
-memory->allocate(dymat, kpoint->nk, neval, neval);
-calc_analytic();
-
-std::complex<double> **dymat_tmp, **dymat_transpose;
-memory->allocate(dymat_tmp, neval, neval);
-memory->allocate(dymat_transpose, neval, neval);
-
-unsigned int nk = kpoint->nk;
-unsigned int i, j, ik;
-
-// Hermitize dynamical matrix
-
-for (ik = 0; ik < nk; ++ik){
-for (i = 0; i < neval; ++i){
-for (j = 0; j < neval; ++j){
-dymat_tmp[i][j] = dymat[ik][i][j];
-dymat_transpose[i][j] = dymat[ik][j][i];
-}
-}
-for (i = 0; i < neval; ++i){
-for (j = 0; j < neval; ++j){
-dymat[ik][i][j] = 0.5 * (dymat_tmp[i][j] + std::conj(dymat_transpose[i][j]));
-}
-}
-}
-
-memory->deallocate(dymat_tmp);
-memory->deallocate(dymat_transpose);
-}
-
-void Dynamical::calc_analytic()
-{
-unsigned int i, j, itran, ik;
-unsigned int icrd, jcrd;
-
-unsigned int natmin = system->natmin;
-unsigned int ntran = system->ntran;
-
-unsigned int atm_p1, atm_p2, atm_s2;
-
-unsigned int nk = kpoint->nk;
-
-std::complex<double> ***ctmp;
-std::complex<double> im(0.0, 1.0);
-std::complex<double> exp_phase;
-
-double vec[3];
-
-double *phase;
-
-memory->allocate(ctmp, nk, 3, 3);
-memory->allocate(phase, nk);
-
-for (i = 0; i < natmin; ++i){
-
-atm_p1 = system->map_p2s[i][0];
-
-for (j = 0; j < natmin; ++j){
-
-atm_p2 = system->map_p2s[j][0];
-
-for(ik = 0; ik < nk; ++ik){
-for(icrd = 0; icrd < 3; ++icrd){
-for(jcrd = 0; jcrd < 3; ++jcrd){
-ctmp[ik][icrd][jcrd] = std::complex<double>(0.0, 0.0);
-}
-}
-}
-
-for(itran = 0; itran < ntran; ++itran){
-atm_s2 =system->map_p2s[j][itran];
-
-for(icrd = 0; icrd < 3; ++icrd){
-vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
-vec[icrd] = fold(vec[icrd]);
-}
-
-system->rotvec(vec, vec, system->lavec_s);
-system->rotvec(vec, vec, system->rlavec_p);
-
-for (ik = 0; ik < nk; ++ik){
-phase[ik] = vec[0] * kpoint->xk[ik][0] + vec[1] * kpoint->xk[ik][1] + vec[2] * kpoint->xk[ik][2];
-exp_phase = std::exp(im * phase[ik]);
-
-for (icrd = 0; icrd < 3; ++icrd){
-for (jcrd = 0; jcrd < 3; ++jcrd){
-ctmp[ik][icrd][jcrd] += fcs_phonon->fc2[i][atm_s2][icrd][jcrd] * exp_phase;
-}
-}
-}
-}
-
-for (ik = 0; ik < nk; ++ik){
-for (icrd = 0; icrd < 3; ++icrd){
-for (jcrd = 0; jcrd < 3; ++jcrd){
-dymat[ik][3 * i + icrd][3 * j + jcrd] = ctmp[ik][icrd][jcrd] / std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]);
-}
-}
-}
-
-}
-}
-
-#ifdef _DEBUG
-for(ik = 0; ik < nk; ++ik){
-std::cout << "D" << std::endl;
-for (icrd = 0; icrd < 6; ++icrd){
-for (jcrd = 0; jcrd < 6; ++jcrd){
-std::cout << "(" << std::setw(15) << std::scientific << real(dymat[ik][icrd][jcrd]);
-std::cout << std::setw(15) << std::scientific << imag(dymat[ik][icrd][jcrd]) << ") ";
-}
-std::cout << std::endl;
-}
-std::cout << "D - D^{\\dagger}" << std::endl;
-for (icrd = 0; icrd < 6; ++icrd){
-for (jcrd = 0; jcrd < 6; ++jcrd){
-std::cout << "(" << std::setw(15) << std::scientific << real(dymat[ik][icrd][jcrd]) -real(dymat[ik][jcrd][icrd]) ;
-std::cout << std::setw(15) << std::scientific << imag(dymat[ik][icrd][jcrd]) + imag(dymat[ik][jcrd][icrd]) << ") ";
-}
-std::cout << std::endl;
-}
-} 
-#endif
-
-memory->deallocate(ctmp);
-memory->deallocate(phase);
-}
-
-void Dynamical::diagonalize_dynamical()
-{
-char JOBZ, UPLO = 'U';
-int INFO, LWORK;
-double *RWORK;
-std::complex<double> *WORK;
-
-if(eigenvectors){
-JOBZ = 'V';
-} else {
-JOBZ = 'N';
-}
-
-LWORK = (2 * neval - 1) * 10;
-memory->allocate(RWORK, 3*neval - 2);
-memory->allocate(WORK, LWORK);
-
-double *eval;
-std::complex<double> *amat;
-
-memory->allocate(eval, neval);
-memory->allocate(amat, neval * neval);
-
-int n = neval;
-unsigned int i, j;
-unsigned int ik, k;
-
-unsigned int nk = kpoint->nk;
-
-memory->allocate(eval_phonon, nk, neval);
-
-for (ik = 0; ik < nk; ++ik){
-k = 0;
-for(i = 0; i < neval; ++i){
-for (j = 0; j < neval; ++j){
-amat[k++] = dymat[ik][i][j];
-}
-}
-
-zheev_(&JOBZ, &UPLO, &n, amat, &n, eval, WORK, &LWORK, RWORK, &INFO);
-
-// save eigenvalues
-
-for (i = 0; i < neval; ++i){
-eval_phonon[ik][i] = eval[i];
-}
-
-// save eigenvectors if necessary
-
-if(eigenvectors){
-k = 0;
-for(i = 0; i < neval; ++i){
-for (j = 0; j < neval; ++j){
-dymat[ik][i][j] = amat[k++];
-}
-}
-}
-}
-memory->deallocate(eval);
-memory->deallocate(amat);
-}
-*/
-
 

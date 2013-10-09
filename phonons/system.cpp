@@ -253,7 +253,45 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 
 void System::invmat3(double invmat[3][3], double mat[3][3])
 {
+	unsigned int i, j;
 	double det;
+	double mat_tmp[3][3];
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			mat_tmp[i][j] = mat[i][j];
+		}
+	}
+
+	det = mat_tmp[0][0] * mat_tmp[1][1] * mat_tmp[2][2] 
+	+ mat_tmp[1][0] * mat_tmp[2][1] * mat_tmp[0][2] 
+	+ mat_tmp[2][0] * mat_tmp[0][1] * mat_tmp[1][2]
+	- mat_tmp[0][0] * mat_tmp[2][1] * mat_tmp[1][2] 
+	- mat_tmp[2][0] * mat_tmp[1][1] * mat_tmp[0][2]
+	- mat_tmp[1][0] * mat_tmp[0][1] * mat_tmp[2][2];
+
+	if(std::abs(det) < eps12) {
+		error->exit("invmat3", "Given matrix is singular");
+	}
+
+	double factor = 1.0 / det;
+
+	invmat[0][0] = (mat_tmp[1][1] * mat_tmp[2][2] - mat_tmp[1][2] * mat_tmp[2][1]) * factor;
+	invmat[0][1] = (mat_tmp[0][2] * mat_tmp[2][1] - mat_tmp[0][1] * mat_tmp[2][2]) * factor;
+	invmat[0][2] = (mat_tmp[0][1] * mat_tmp[1][2] - mat_tmp[0][2] * mat_tmp[1][1]) * factor;
+
+	invmat[1][0] = (mat_tmp[1][2] * mat_tmp[2][0] - mat_tmp[1][0] * mat_tmp[2][2]) * factor;
+	invmat[1][1] = (mat_tmp[0][0] * mat_tmp[2][2] - mat_tmp[0][2] * mat_tmp[2][0]) * factor;
+	invmat[1][2] = (mat_tmp[0][2] * mat_tmp[1][0] - mat_tmp[0][0] * mat_tmp[1][2]) * factor;
+
+	invmat[2][0] = (mat_tmp[1][0] * mat_tmp[2][1] - mat_tmp[1][1] * mat_tmp[2][0]) * factor;
+	invmat[2][1] = (mat_tmp[0][1] * mat_tmp[2][0] - mat_tmp[0][0] * mat_tmp[2][1]) * factor;
+	invmat[2][2] = (mat_tmp[0][0] * mat_tmp[1][1] - mat_tmp[0][1] * mat_tmp[1][0]) * factor;
+}
+
+void System::invmat3_i(int invmat[3][3], int mat[3][3])
+{
+	int det;
 
 	det = mat[0][0] * mat[1][1] * mat[2][2] 
 	+ mat[1][0] * mat[2][1] * mat[0][2] 
@@ -262,34 +300,39 @@ void System::invmat3(double invmat[3][3], double mat[3][3])
 	- mat[2][0] * mat[1][1] * mat[0][2]
 	- mat[1][0] * mat[0][1] * mat[2][2];
 
-	if(std::abs(det) < eps12) {
+	if(std::abs(det) == 0) {
 		error->exit("invmat3", "Given matrix is singular");
 	}
 
-	double factor = 1.0 / det;
+	invmat[0][0] = (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) / det;
+	invmat[0][1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) / det;
+	invmat[0][2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) / det;
 
-	invmat[0][0] = (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * factor;
-	invmat[0][1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) * factor;
-	invmat[0][2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * factor;
+	invmat[1][0] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) / det;
+	invmat[1][1] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) / det;
+	invmat[1][2] = (mat[0][2] * mat[1][0] - mat[0][0] * mat[1][2]) / det;
 
-	invmat[1][0] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) * factor;
-	invmat[1][1] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * factor;
-	invmat[1][2] = (mat[0][2] * mat[1][0] - mat[0][0] * mat[1][2]) * factor;
+	invmat[2][0] = (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) / det;
+	invmat[2][1] = (mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1]) / det;
+	invmat[2][2] = (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) / det;
 
-	invmat[2][0] = (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * factor;
-	invmat[2][1] = (mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1]) * factor;
-	invmat[2][2] = (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * factor;
 }
-
 
 void System::matmul3(double ret[3][3], const double amat[3][3], const double bmat[3][3]) 
 {
 	int i, j, k;
 
+	double ret_tmp[3][3];
+
 	for (i = 0; i < 3; ++i) {
 		for (j = 0; j < 3; ++j) {
-			ret[i][j] = 0.0;
-			for (k = 0; k < 3; ++k) ret[i][j] += amat[i][k] * bmat[k][j]; 	        
+			ret_tmp[i][j] = 0.0;
+			for (k = 0; k < 3; ++k) ret_tmp[i][j] += amat[i][k] * bmat[k][j]; 	        
+		}
+	}
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			ret[i][j] = ret_tmp[i][j];
 		}
 	}
 }
