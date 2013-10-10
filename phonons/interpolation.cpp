@@ -197,7 +197,7 @@ void Interpolation::setup_damping()
 		for (ik = 0; ik < nk; ++ik) {
 			for (is = 0; is < ns; ++is) {
 				if (std::pow(damp[i][ik][is], 2) < eps) {
-		//		if (ik == 0 && (is == 0 || is == 1 || is == 2)) {
+					//		if (ik == 0 && (is == 0 || is == 1 || is == 2)) {
 					damp[i][ik][is] = 0.0;
 				} else {
 					damp[i][ik][is] = 4.0e-24 / std::pow(damp[i][ik][is] * time_ry, 2);

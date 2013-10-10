@@ -16,7 +16,6 @@
 
 using namespace ALM_NS;
 
-
 ALM::ALM(int narg, char **arg)
 {
     timer = new Timer(this);
