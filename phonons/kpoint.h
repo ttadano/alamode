@@ -62,8 +62,7 @@ namespace PHON_NS {
         Kpoint(class PHON *);
         ~Kpoint();
 
-        void kpoint_setups();
-        void reduce_kpoints(double **);
+        void kpoint_setups(std::string);
 
         int kpoint_mode;
         unsigned int nkx, nky, nkz;
@@ -85,10 +84,11 @@ namespace PHON_NS {
         int nint(const double);
 
         int get_knum(const double, const double, const double);
+		void gen_kmesh(bool, unsigned int [3], double **, std::vector<unsigned int> &, std::vector<KpointList> &);
 
     private:
         void gen_kpoints_band();
-        void gen_kmesh(bool);
+		void reduce_kpoints(double **, unsigned int [3], std::vector<unsigned int> &, std::vector<KpointList> &);
         void gen_nkminus();
        
         std::string **kp_symbol;

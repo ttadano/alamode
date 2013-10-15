@@ -59,7 +59,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		system->setup();
 		symmetry->setup_symmetry();
-		kpoint->kpoint_setups();
+		kpoint->kpoint_setups(mode);
 
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
@@ -101,7 +101,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		system->setup();
 		symmetry->setup_symmetry();
-		kpoint->kpoint_setups();
+		kpoint->kpoint_setups(mode);
 		dos->setup();
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
@@ -118,7 +118,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		//     dos->calc_tdos();
 		// relaxation->calc_selfenergy();
-        // relaxation->v3_test();
+		// relaxation->v3_test();
 		//	relaxation->v4_test();
 
 		if (relaxation->ks_analyze_mode) {
@@ -131,8 +131,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		//	conductivity->calc_kl();
 
-	    //	interpolation->prepare_interpolation();
-
+		interpolation->prepare_interpolation();
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
@@ -143,10 +142,25 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		writes->finalize_result_io();
 
+	} else if (mode == "interpolation") {
+
+		system->setup();
+		symmetry->setup_symmetry();
+		interpolation->parse_self_energy();
+
+		kpoint->kpoint_setups(mode);
+		dos->setup();
+		fcs_phonon->setup(mode);
+		dynamical->setup_dynamical(mode);
+		dynamical->diagonalize_dynamical_all();
+
+		integration->setup_integration();
+		relaxation->setup_relaxation();
+
 	} else if (mode == "gruneisen") {
 		system->setup();
 
-		kpoint->kpoint_setups();
+		kpoint->kpoint_setups(mode);
 		dos->setup();
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
@@ -208,7 +222,7 @@ void PHON::destroy_pointers()
 	delete integration;
 	delete phonon_velocity;
 	delete phonon_thermodynamics;
-//	delete relaxation;
+	//	delete relaxation;
 	delete interpolation;
 	delete conductivity;
 	delete writes;

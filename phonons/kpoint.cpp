@@ -40,11 +40,12 @@ Kpoint::~Kpoint() {
 	// 	}
 }
 
-void Kpoint::kpoint_setups()
+void Kpoint::kpoint_setups(std::string mode)
 {
 	symmetry->symmetry_flag = true;
 
 	unsigned int i, j;
+	unsigned int ik, jk;
 	std::string str_tmp;
 
 	MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -122,7 +123,6 @@ void Kpoint::kpoint_setups()
 			memory->allocate(xk_c, nk, 3);
 
 			unsigned int j, k;
-			unsigned int ik;
 
 			ik = 0;
 			std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
@@ -171,13 +171,55 @@ void Kpoint::kpoint_setups()
 			nkz = std::atoi((kpInp[0].kpelem[2]).c_str());	
 #endif
 
+			unsigned int nk_tmp[3];
+
 			nk = nkx * nky * nkz;
 			memory->allocate(xk, nk, 3);
 
-			gen_kmesh(symmetry->symmetry_flag);
-			std::cout << " nkx: " << std::setw(6) << nkx;
-			std::cout << " nky: " << std::setw(6) << nky;
-			std::cout << " nkz: " << std::setw(6) << nkz;
+			nk_tmp[0] = nkx;
+			nk_tmp[1] = nky; 
+			nk_tmp[2] = nkz;
+
+			gen_kmesh(symmetry->symmetry_flag, nk_tmp, xk, nk_equiv, kpIBZ);
+			
+			weight_k.clear();
+			for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
+				weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
+			}
+
+			// Construct the independent k-point list
+
+			memory->allocate(nk_equiv_arr, nk_equiv.size());
+			kpset_uniq.clear();
+			
+			jk = 0;
+			for (ik = 0; ik < nk_equiv.size(); ++ik){
+				kpset_uniq.insert(kpIBZ[jk].knum);
+				nk_equiv_arr[ik] = nk_equiv[ik];
+				jk += nk_equiv[ik];
+			}
+
+			nk_reduced = nk_equiv.size();
+			nequiv_max = 0;
+
+			for (ik = 0; ik < nk_reduced; ++ik){
+				nequiv_max = std::max<unsigned int>(nequiv_max, nk_equiv[ik]);
+			}
+
+			memory->allocate(k_reduced, nk_reduced, nequiv_max);
+
+			j = 0;
+			for (ik = 0; ik < nk_reduced; ++ik) {
+				for (i = 0; i < nequiv_max; ++i){
+					k_reduced[ik][i] = 0;
+				}
+				for (i = 0; i < nk_equiv[ik]; ++i){
+					k_reduced[ik][i] = kpIBZ[j++].knum;
+				}
+			}
+			std::cout << " nk1: " << std::setw(6) << nkx;
+			std::cout << " nk2: " << std::setw(6) << nky;
+			std::cout << " nk3: " << std::setw(6) << nkz;
 			std::cout << std::endl;
 			std::cout << " Number of k-points: " << nk << std::endl << std::endl;
 
@@ -273,34 +315,36 @@ void Kpoint::gen_kpoints_band()
 	}
 }
 
-void Kpoint::gen_kmesh(bool usesym)
+void Kpoint::gen_kmesh(bool usesym, unsigned int nk_in[3], double **xk_out, std::vector<unsigned int> &nk_equiv_out, std::vector<KpointList> &kplist_out)
 {
 	unsigned int ix, iy, iz;
 	unsigned int i, ik;
 	double **xkr;
 
+	unsigned int nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
+
 	std::cout << "Generating uniform k-point grid ..." << std::endl;
 
-	memory->allocate(xkr, nk, 3);
+	memory->allocate(xkr, nk_tot, 3);
 
-	for (ix = 0; ix < nkx; ++ix){
-		for (iy = 0; iy < nky; ++iy){
-			for (iz = 0; iz < nkz; ++iz){
-				ik = iz + iy * nkz + ix * nkz * nky;
-				xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nkx);
-				xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nky);
-				xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nkz);
+	for (ix = 0; ix < nk_in[0]; ++ix){
+		for (iy = 0; iy < nk_in[1]; ++iy){
+			for (iz = 0; iz < nk_in[2]; ++iz){
+				ik = iz + iy * nk_in[2] + ix * nk_in[2] * nk_in[1];
+				xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_in[0]);
+				xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_in[1]);
+				xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_in[2]);
 			}
 		}
 	}
 
 	if (usesym) {
-		reduce_kpoints(xkr);
+		reduce_kpoints(xkr, nk_in, nk_equiv_out, kplist_out);
 	}
 
-	for (ik = 0; ik < nk; ++ik){
+	for (ik = 0; ik < nk_tot; ++ik){
 		for (i = 0; i < 3; ++i){
-			xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+			xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
 		}
 	}
 	memory->deallocate(xkr);
@@ -366,7 +410,7 @@ void Kpoint::gen_nkminus()
 	ksets.clear();
 }
 
-void Kpoint::reduce_kpoints(double **xkr)
+void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<unsigned int> &nk_equiv_out, std::vector<KpointList> &kplist_out)
 {
 	unsigned int ik;
 	unsigned int i, j;
@@ -375,6 +419,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 	int nloc;
 
 	unsigned int *kequiv;
+	unsigned int nk_tot;
 
 	double diff[3];
 
@@ -391,17 +436,18 @@ void Kpoint::reduce_kpoints(double **xkr)
 
 	std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
 
-	kpIBZ.clear();
-	nk_equiv.clear();
-	weight_k.clear();
-
-	memory->allocate(kequiv, nk);
+	kplist_out.clear();
+	nk_equiv_out.clear();
 
 	ksets.clear();
 
-	for (ik = 0; ik < nk; ++ik) kequiv[ik] = ik;
+	nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
 
-	for (ik = 0; ik < nk; ++ik){
+	memory->allocate(kequiv, nk_tot);
+
+	for (ik = 0; ik < nk_tot; ++ik) kequiv[ik] = ik;
+
+	for (ik = 0; ik < nk_tot; ++ik){
 
 		if(kequiv[ik] != ik) continue;
 
@@ -412,7 +458,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 		ktmp.push_back(xkr[ik][1] - static_cast<double>(nint(xkr[ik][1])));
 		ktmp.push_back(xkr[ik][2] - static_cast<double>(nint(xkr[ik][2])));
 
-		kpIBZ.push_back(KpointList(ik, ktmp));
+		kplist_out.push_back(KpointList(ik, ktmp));
 
 #ifdef _USE_EIGEN
 		for (i = 0; i < 3; ++i) xk_orig(i) = xkr[ik][i];
@@ -459,7 +505,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 					ktmp.push_back(xk_sym(0));
 					ktmp.push_back(xk_sym(1));
 					ktmp.push_back(xk_sym(2));
-					kpIBZ.push_back(KpointList(nloc, ktmp));
+					kplist_out.push_back(KpointList(nloc, ktmp));
 					++nsame;
 				}
 			}
@@ -488,7 +534,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 					ktmp.push_back(xk_sym(0));
 					ktmp.push_back(xk_sym(1));
 					ktmp.push_back(xk_sym(2));
-					kpIBZ.push_back(KpointList(nloc, ktmp));
+					kplist_out.push_back(KpointList(nloc, ktmp));
 					++nsame;
 				}
 			}
@@ -523,7 +569,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 					ktmp.push_back(xk_sym[0]);
 					ktmp.push_back(xk_sym[1]);
 					ktmp.push_back(xk_sym[2]);
-					kpIBZ.push_back(KpointList(nloc, ktmp));
+					kplist_out.push_back(KpointList(nloc, ktmp));
 					++nsame;
 				}
 			}
@@ -552,7 +598,7 @@ void Kpoint::reduce_kpoints(double **xkr)
 					ktmp.push_back(xk_sym[0]);
 					ktmp.push_back(xk_sym[1]);
 					ktmp.push_back(xk_sym[2]);
-					kpIBZ.push_back(KpointList(nloc, ktmp));
+					kplist_out.push_back(KpointList(nloc, ktmp));
 					++nsame;
 				}
 			}
@@ -561,44 +607,11 @@ void Kpoint::reduce_kpoints(double **xkr)
 		}
 
 		if (nsame > 0) {
-			nk_equiv.push_back(nsame);
+			nk_equiv_out.push_back(nsame);
 		}
 	}
 
-	for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
-		weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
-	}
-
-	// Construct the independent k-point list
-
-	memory->allocate(nk_equiv_arr, nk_equiv.size());
-	kpset_uniq.clear();
-	unsigned int jk = 0;
-	for (ik = 0; ik < nk_equiv.size(); ++ik){
-		kpset_uniq.insert(kpIBZ[jk].knum);
-		nk_equiv_arr[ik] = nk_equiv[ik];
-		jk += nk_equiv[ik];
-	}
-	memory->deallocate(kequiv);
-
-	nk_reduced = nk_equiv.size();
-	nequiv_max = 0;
-
-	for (ik = 0; ik < nk_reduced; ++ik){
-		nequiv_max = std::max<unsigned int>(nequiv_max, nk_equiv[ik]);
-	}
-
-	memory->allocate(k_reduced, nk_reduced, nequiv_max);
-
-	j = 0;
-	for (ik = 0; ik < nk_reduced; ++ik) {
-		for (i = 0; i < nequiv_max; ++i){
-			k_reduced[ik][i] = 0;
-		}
-		for (i = 0; i < nk_equiv[ik]; ++i){
-			k_reduced[ik][i] = kpIBZ[j++].knum;
-		}
-	}
+	memory->deallocate(kequiv);	
 }
 
 
