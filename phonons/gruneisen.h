@@ -3,6 +3,8 @@
 #include "pointers.h"
 #include <string>
 #include <complex>
+#include <vector>
+#include "fcs_phonon.h"
 
 namespace PHON_NS {
     class Gruneisen: protected Pointers {
@@ -20,6 +22,7 @@ namespace PHON_NS {
     private:
          double ****fc2_plus, ****fc2_minus;
          double ****dfc2;
+		 std::vector<FcsClassExtent> fc2_plus_ext, fc2_minus_ext;
          void prepare_delta_fc2();
          void prepare_newfc2();
          void calc_dfc2_reciprocal(std::complex<double> **, double *);

@@ -405,8 +405,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 		atm_ref = system->map_p2s[atm1_p][tran_num];
 
 		for (i = 0; i < 3; ++i) {
-	
-				vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm_ref][i];
+			vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm_ref][i];
 			vec[i] -= xshift_s[icell][i];
 		}
 
@@ -414,7 +413,6 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 		system->rotvec(vec, vec, system->rlavec_p);
 
 		phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
-
 
 		dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
 	}
@@ -537,81 +535,81 @@ void Dynamical::diagonalize_dynamical_all()
 		modify_eigenvectors();
 	}
 
-// 	 	 	std::complex<double> prod;
-// 	 	 	std::cout << "orthogonality check 1" << std::endl;
-// 	 	 	for (ik = 0; ik < nk; ++ik) {
-// 	 	 		
-// 	 	 
-// 	 	 		for (int is1 = 0; is1 < neval; ++is1) {
-// 	 	 			for (int is2 = 0; is2 < neval; ++is2) {
-// 	 	 
-// 	 	 				prod = std::complex<double>(0.0, 0.0);
-// 	 	 
-// 	 	 				for (int i = 0; i < neval; ++i) {
-// 	 	 					prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is2][i];
-// 	 	 				}
-// 	 	 				if (std::norm(prod) > eps) {
-// 	 	 					std::cout << "ik = " << ik << " is1, is2 =" << is1 << " " << is2 << " prod = " << prod << std::endl;
-// 	 	 				}
-// 	 	 			}
-// 	 	 		}
-// 	 	 	}
-// 	 	 	std::cout << "orthogonality check 2" << std::endl;
-// 	 	 
-// 	 	 	for (ik = 0; ik < nk; ++ik) {
-// 	 	 				for (int i = 0; i < neval; ++i) {
-// 	 	 					for (int j = 0; j < neval; ++j) {
-// 	 	 
-// 	 	 						prod = std::complex<double>(0.0, 0.0);
-// 	 	 
-// 	 	 						for (int is1 = 0; is1 < neval; ++is1) {
-// 	 	 							prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is1][j];
-// 	 	 						}
-// 	 	 						if (std::norm(prod) > eps) {
-// 	 	 							std::cout << "ik = " << ik << " i, j =" << i << " " << j << " prod = " << prod << std::endl;
-// 	 	 						}
-// 	 	 
-// 	 	 					}
-// 	 	 		}
-// 	 		}
+	// 	 	 	std::complex<double> prod;
+	// 	 	 	std::cout << "orthogonality check 1" << std::endl;
+	// 	 	 	for (ik = 0; ik < nk; ++ik) {
+	// 	 	 		
+	// 	 	 
+	// 	 	 		for (int is1 = 0; is1 < neval; ++is1) {
+	// 	 	 			for (int is2 = 0; is2 < neval; ++is2) {
+	// 	 	 
+	// 	 	 				prod = std::complex<double>(0.0, 0.0);
+	// 	 	 
+	// 	 	 				for (int i = 0; i < neval; ++i) {
+	// 	 	 					prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is2][i];
+	// 	 	 				}
+	// 	 	 				if (std::norm(prod) > eps) {
+	// 	 	 					std::cout << "ik = " << ik << " is1, is2 =" << is1 << " " << is2 << " prod = " << prod << std::endl;
+	// 	 	 				}
+	// 	 	 			}
+	// 	 	 		}
+	// 	 	 	}
+	// 	 	 	std::cout << "orthogonality check 2" << std::endl;
+	// 	 	 
+	// 	 	 	for (ik = 0; ik < nk; ++ik) {
+	// 	 	 				for (int i = 0; i < neval; ++i) {
+	// 	 	 					for (int j = 0; j < neval; ++j) {
+	// 	 	 
+	// 	 	 						prod = std::complex<double>(0.0, 0.0);
+	// 	 	 
+	// 	 	 						for (int is1 = 0; is1 < neval; ++is1) {
+	// 	 	 							prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is1][j];
+	// 	 	 						}
+	// 	 	 						if (std::norm(prod) > eps) {
+	// 	 	 							std::cout << "ik = " << ik << " i, j =" << i << " " << j << " prod = " << prod << std::endl;
+	// 	 	 						}
+	// 	 	 
+	// 	 	 					}
+	// 	 	 		}
+	// 	 		}
 
-//  	double xk_tmp[3];
-//  	std::complex<double> **dymat;
-//  
-//  	memory->allocate(dymat, neval, neval);
-//  
-//  	for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
-//  		for (unsigned int i = 0; i < kpoint->nk_equiv[ik]; ++i) {
-//  			std::cout << "ik = " << ik + 1 << " i = " << i + 1 << " kp = " << kpoint->k_reduced[ik][i];
-//  	
-//  			for (int j = 0; j < 3; ++j) {
-//  				xk_tmp[j] = kpoint->xk[kpoint->k_reduced[ik][i]][j];
-//  				std::cout << std::setw(15) << xk_tmp[j];
-//  			}
-//  			std::cout << std::endl;
-//  
-//  		  if (fcs_phonon->is_fc2_ext) {
-//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2_ext, dymat);
-//  		  } else {
-//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2, dymat);
-//  		  }
-//  		
-//  		  for (int j = 0; j < neval; ++j) {
-//  			  for (int k = 0; k < neval; ++k) {
-//  				  if (std::abs(dymat[j][k].real()) < eps12) {
-//  					  dymat[j][k] = std::complex<double>(0.0, dymat[j][k].imag());
-//  				  }
-//  				  if (std::abs(dymat[j][k].imag()) < eps12) {
-//  					  dymat[j][k] = std::complex<double>(dymat[j][k].real(), 0.0);
-//  				  }
-//  
-//  				  std::cout << std::setw(15) << dymat[j][k].real() << std::setw(15) << dymat[j][k].imag();
-//  		  }
-//  			  std::cout << std::endl;
-//  		}
-//  		  std::cout << std::endl;
-//  	}
-//  	}
+	//  	double xk_tmp[3];
+	//  	std::complex<double> **dymat;
+	//  
+	//  	memory->allocate(dymat, neval, neval);
+	//  
+	//  	for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+	//  		for (unsigned int i = 0; i < kpoint->nk_equiv[ik]; ++i) {
+	//  			std::cout << "ik = " << ik + 1 << " i = " << i + 1 << " kp = " << kpoint->k_reduced[ik][i];
+	//  	
+	//  			for (int j = 0; j < 3; ++j) {
+	//  				xk_tmp[j] = kpoint->xk[kpoint->k_reduced[ik][i]][j];
+	//  				std::cout << std::setw(15) << xk_tmp[j];
+	//  			}
+	//  			std::cout << std::endl;
+	//  
+	//  		  if (fcs_phonon->is_fc2_ext) {
+	//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2_ext, dymat);
+	//  		  } else {
+	//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2, dymat);
+	//  		  }
+	//  		
+	//  		  for (int j = 0; j < neval; ++j) {
+	//  			  for (int k = 0; k < neval; ++k) {
+	//  				  if (std::abs(dymat[j][k].real()) < eps12) {
+	//  					  dymat[j][k] = std::complex<double>(0.0, dymat[j][k].imag());
+	//  				  }
+	//  				  if (std::abs(dymat[j][k].imag()) < eps12) {
+	//  					  dymat[j][k] = std::complex<double>(dymat[j][k].real(), 0.0);
+	//  				  }
+	//  
+	//  				  std::cout << std::setw(15) << dymat[j][k].real() << std::setw(15) << dymat[j][k].imag();
+	//  		  }
+	//  			  std::cout << std::endl;
+	//  		}
+	//  		  std::cout << std::endl;
+	//  	}
+	//  	}
 
 #ifdef _DEBUG
 
