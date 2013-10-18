@@ -198,10 +198,9 @@ void Kpoint::kpoint_setups(std::string mode)
 				nk_equiv_arr[ik] = nk_equiv[ik];
 				jk += nk_equiv[ik];
 			}
-
 			nk_reduced = nk_equiv.size();
-			nequiv_max = 0;
 
+			nequiv_max = 0;
 			for (ik = 0; ik < nk_reduced; ++ik){
 				nequiv_max = std::max<unsigned int>(nequiv_max, nk_equiv[ik]);
 			}
@@ -347,8 +346,8 @@ void Kpoint::gen_kmesh(bool usesym, unsigned int nk_in[3], double **xk_out, std:
 			xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
 		}
 	}
-	memory->deallocate(xkr);
 
+	memory->deallocate(xkr);
 	timer->print_elapsed();
 }
 
@@ -487,17 +486,17 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
 				xk_sym(i) = xk_sym(i) - nint(xk_sym(i));
 			}    
 
-			diff[0] = static_cast<double>(nint(xk_sym(0)*nkx)) - xk_sym(0)*nkx;
-			diff[1] = static_cast<double>(nint(xk_sym(1)*nky)) - xk_sym(1)*nky;
-			diff[2] = static_cast<double>(nint(xk_sym(2)*nkz)) - xk_sym(2)*nkz;
+			diff[0] = static_cast<double>(nint(xk_sym(0)*nk_in[0])) - xk_sym(0)*nk_in[0];
+			diff[1] = static_cast<double>(nint(xk_sym(1)*nk_in[1])) - xk_sym(1)*nk_in[1];
+			diff[2] = static_cast<double>(nint(xk_sym(2)*nk_in[2])) - xk_sym(2)*nk_in[2];
 
 			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
 
-				iloc = (nint(xk_sym(0)*nkx + 2 * nkx)) % nkx;
-				jloc = (nint(xk_sym(1)*nky + 2 * nky)) % nky;
-				kloc = (nint(xk_sym(2)*nkz + 2 * nkz)) % nkz;
+				iloc = (nint(xk_sym(0)*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+				jloc = (nint(xk_sym(1)*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+				kloc = (nint(xk_sym(2)*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nkz * jloc + nky * nkz * iloc;
+				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
 				if(nloc > ik && kequiv[nloc] == nloc) {
 					kequiv[nloc] = ik;
@@ -516,17 +515,17 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
 
 			for (i = 0; i < 3; ++i) xk_sym(i) *= -1.0; 
 
-			diff[0] = static_cast<double>(nint(xk_sym(0)*nkx)) - xk_sym(0)*nkx;
-			diff[1] = static_cast<double>(nint(xk_sym(1)*nky)) - xk_sym(1)*nky;
-			diff[2] = static_cast<double>(nint(xk_sym(2)*nkz)) - xk_sym(2)*nkz;
+			diff[0] = static_cast<double>(nint(xk_sym(0)*nk_in[0])) - xk_sym(0)*nk_in[0];
+			diff[1] = static_cast<double>(nint(xk_sym(1)*nk_in[1])) - xk_sym(1)*nk_in[1];
+			diff[2] = static_cast<double>(nint(xk_sym(2)*nk_in[2])) - xk_sym(2)*nk_in[2];
 
 			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
 
-				iloc = (nint(xk_sym(0)*nkx + 2 * nkx)) % nkx;
-				jloc = (nint(xk_sym(1)*nky + 2 * nky)) % nky;
-				kloc = (nint(xk_sym(2)*nkz + 2 * nkz)) % nkz;
+				iloc = (nint(xk_sym(0)*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+				jloc = (nint(xk_sym(1)*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+				kloc = (nint(xk_sym(2)*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nkz * jloc + nky * nkz * iloc;
+				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
 				if(nloc > ik && kequiv[nloc] == nloc) {
 					kequiv[nloc] = ik;
@@ -551,17 +550,17 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
 				xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
 			}    
 
-			diff[0] = static_cast<double>(nint(xk_sym[0]*nkx)) - xk_sym[0]*nkx;
-			diff[1] = static_cast<double>(nint(xk_sym[1]*nky)) - xk_sym[1]*nky;
-			diff[2] = static_cast<double>(nint(xk_sym[2]*nkz)) - xk_sym[2]*nkz;
+			diff[0] = static_cast<double>(nint(xk_sym[0]*nk_in[0])) - xk_sym[0]*nk_in[0];
+			diff[1] = static_cast<double>(nint(xk_sym[1]*nk_in[1])) - xk_sym[1]*nk_in[1];
+			diff[2] = static_cast<double>(nint(xk_sym[2]*nk_in[2])) - xk_sym[2]*nk_in[2];
 
 			if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 
-				iloc = (nint(xk_sym[0]*nkx + 2 * nkx)) % nkx;
-				jloc = (nint(xk_sym[1]*nky + 2 * nky)) % nky;
-				kloc = (nint(xk_sym[2]*nkz + 2 * nkz)) % nkz;
+				iloc = (nint(xk_sym[0]*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+				jloc = (nint(xk_sym[1]*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+				kloc = (nint(xk_sym[2]*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nkz * jloc + nky * nkz * iloc;
+				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
 				if(nloc > ik && kequiv[nloc] == nloc) {
 					kequiv[nloc] = ik;
@@ -580,17 +579,17 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
 
 			for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0; 
 
-			diff[0] = static_cast<double>(nint(xk_sym[0]*nkx)) - xk_sym[0]*nkx;
-			diff[1] = static_cast<double>(nint(xk_sym[1]*nky)) - xk_sym[1]*nky;
-			diff[2] = static_cast<double>(nint(xk_sym[2]*nkz)) - xk_sym[2]*nkz;
+			diff[0] = static_cast<double>(nint(xk_sym[0]*nk_in[0])) - xk_sym[0]*nk_in[0];
+			diff[1] = static_cast<double>(nint(xk_sym[1]*nk_in[1])) - xk_sym[1]*nk_in[1];
+			diff[2] = static_cast<double>(nint(xk_sym[2]*nk_in[2])) - xk_sym[2]*nk_in[2];
 
 			if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 
-				iloc = (nint(xk_sym[0]*nkx + 2 * nkx)) % nkx;
-				jloc = (nint(xk_sym[1]*nky + 2 * nky)) % nky;
-				kloc = (nint(xk_sym[2]*nkz + 2 * nkz)) % nkz;
+				iloc = (nint(xk_sym[0]*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+				jloc = (nint(xk_sym[1]*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+				kloc = (nint(xk_sym[2]*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nkz * jloc + nky * nkz * iloc;
+				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
 				if(nloc > ik && kequiv[nloc] == nloc) {
 					kequiv[nloc] = ik;

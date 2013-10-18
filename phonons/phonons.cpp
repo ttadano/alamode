@@ -146,7 +146,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		system->setup();
 		symmetry->setup_symmetry();
-		interpolation->parse_self_energy();
 
 		kpoint->kpoint_setups(mode);
 		dos->setup();
@@ -154,8 +153,12 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		dynamical->setup_dynamical(mode);
 		dynamical->diagonalize_dynamical_all();
 
-		integration->setup_integration();
-		relaxation->setup_relaxation();
+		interpolation->prepare_interpolation();
+		interpolation->exec_interpolation();
+		interpolation->finish_interpolation();
+// 
+// 		integration->setup_integration();
+// 		relaxation->setup_relaxation();
 
 	} else if (mode == "gruneisen") {
 		system->setup();
