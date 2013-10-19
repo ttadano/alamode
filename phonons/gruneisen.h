@@ -17,6 +17,7 @@ namespace PHON_NS {
         std::complex<double> **gruneisen;
         void calc_gruneisen();
         void calc_gruneisen2();
+		void calc_gruneisen3();
         void finish_gruneisen();
 
     private:
