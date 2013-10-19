@@ -24,6 +24,8 @@ namespace PHON_NS {
 
         double **eval_phonon;
         std::complex<double> ***evec_phonon;
+
+		double **kvec_na;
         
         void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
 		void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
@@ -45,7 +47,6 @@ namespace PHON_NS {
 		void load_born();
 		void setup_na_kvec();
 
-        double **kvec_na;
 		double **xshift_s;
         char UPLO;
         std::complex<double> ***dymat;

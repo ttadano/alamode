@@ -1,6 +1,7 @@
 #include "mpi_common.h"
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include "dynamical.h"
 #include "error.h"
 #include "fcs_phonon.h"
@@ -9,6 +10,8 @@
 #include "kpoint.h"
 #include "memory.h"
 #include "system.h"
+#include "parsephon.h"
+#include "write_phonons.h"
 
 using namespace PHON_NS;
 
@@ -17,13 +20,12 @@ Gruneisen::~Gruneisen(){};
 
 void Gruneisen::setup()
 {
+	//	MPI_Bcast(&delta_a, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-	MPI_Bcast(&delta_a, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-	if (mympi->my_rank == 0) {
-		std::cout << std::endl; 
-		std::cout << "Change in cell parameters : " << delta_a << std::endl;
-	}
+	//	if (mympi->my_rank == 0) {
+	std::cout << std::endl; 
+	std::cout << "Change in cell parameters : " << delta_a << std::endl;
+	//	}
 
 	memory->allocate(gruneisen, kpoint->nk, dynamical->neval);
 
@@ -42,8 +44,8 @@ void Gruneisen::calc_gruneisen()
 	unsigned int ik, is;
 
 	double *eval_orig;
-	double *eval_plus;
-	double *eval_minus;
+	double **eval_plus;
+	double **eval_minus;
 
 	double xk_tmp[3];
 	double norm;
@@ -53,39 +55,71 @@ void Gruneisen::calc_gruneisen()
 	memory->allocate(evec_tmp, 1, 1); // dummy allocation
 
 	memory->allocate(eval_orig, ns);
-	memory->allocate(eval_plus, ns);
-	memory->allocate(eval_minus, ns);
-
+	memory->allocate(eval_plus, nk, ns);
+	memory->allocate(eval_minus, nk, ns);
 
 	for (ik = 0; ik < nk; ++ik){
-		for (i = 0; i < 3; ++i) {
-			xk_tmp[i] = kpoint->xk[ik][i];
-			kvec_tmp[i] = xk_tmp[i];
-		}
-		system->rotvec(kvec_tmp, kvec_tmp, system->rlavec_p, 'T');
-		norm = std::sqrt(kvec_tmp[0] * kvec_tmp[0] + kvec_tmp[1] * kvec_tmp[1] + kvec_tmp[2] * kvec_tmp[2]);
-		if (norm > eps) {
-			kvec_tmp[i] /= norm;
-		}
+
+		for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[ik][i];
 
 		if (fcs_phonon->is_fc2_ext) {
-			dynamical->eval_k(xk_tmp, kvec_tmp, fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
-			dynamical->eval_k(xk_tmp, kvec_tmp, fc2_plus_ext, eval_plus, evec_tmp, false);
-			dynamical->eval_k(xk_tmp, kvec_tmp, fc2_minus_ext, eval_minus, evec_tmp, false);
+			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
+			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
+			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
 		} else {
-			dynamical->eval_k(xk_tmp, kvec_tmp, fcs_phonon->fc2, eval_orig, evec_tmp, false);
-			dynamical->eval_k(xk_tmp, kvec_tmp, fc2_plus, eval_plus, evec_tmp, false);
-			dynamical->eval_k(xk_tmp, kvec_tmp, fc2_minus, eval_minus, evec_tmp, false);
+			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fcs_phonon->fc2, eval_orig, evec_tmp, false);
+			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_plus, eval_plus[ik], evec_tmp, false);
+			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_minus, eval_minus[ik], evec_tmp, false);
 		}
 
-// 		for (is = 0; is< ns; ++is) {
-// 			std::cout << std::setw(15) << eval_plus[is];
-// 			std::cout << std::setw(15) << eval_minus[is] << std::endl;
-// 		}
+		// 		for (is = 0; is< ns; ++is) {
+		//  			std::cout << std::setw(15) << eval_plus[is];
+		//  			std::cout << std::setw(15) << eval_minus[is] << std::endl;
+		//  		}
 		for (is = 0; is < ns; ++is) {
-			gruneisen[ik][is] = (eval_plus[is] - eval_minus[is]) / (2.0 * delta_a) / (-6.0 * eval_orig[is]);
+			gruneisen[ik][is] = (eval_plus[ik][is] - eval_minus[ik][is]) / (2.0 * delta_a) / (-6.0 * eval_orig[is]);
 		}
 	}
+
+	for (ik = 0; ik < nk; ++ik) {
+		for (is = 0; is < ns; ++is) {
+			eval_plus[ik][is] = dynamical->freq(eval_plus[ik][is]);
+			eval_minus[ik][is] = dynamical->freq(eval_minus[ik][is]);
+		}
+	}
+
+	if (kpoint->kpoint_mode == 1) {
+		std::string file_band_plus, file_band_minus;
+
+		file_band_plus = input->job_title + ".band_+";
+		file_band_minus = input->job_title + ".band_-";
+
+		std::ofstream ofs_plus, ofs_minus;
+
+		ofs_plus.open(file_band_plus.c_str(), std::ios::out);
+		if (!ofs_plus) error->exit("calc_gruneisen", "Could not create band_plus file.");
+		ofs_minus.open(file_band_minus.c_str(), std::ios::out);
+		if (!ofs_minus) error->exit("calc_gruneisen", "Could not create band_minus file.");
+
+		ofs_plus << "# Phonon energy (cm^-1) of the system expanded by " << std::setw(10) << delta_a * 100 << " %." << std::endl;
+		ofs_minus << "# Phonon energy (cm^-1) of the system compressed by " << std::setw(10) << delta_a * 100 << " %." << std::endl;
+
+		for (ik = 0; ik < nk; ++ik){
+			ofs_plus << std::setw(8) << std::fixed << kpoint->kaxis[ik];
+			ofs_minus << std::setw(8) << std::fixed << kpoint->kaxis[ik];
+
+			for (is = 0; is < ns; ++is){
+				ofs_plus << std::setw(15) << std::scientific << writes->in_kayser(eval_plus[ik][is]);
+				ofs_minus << std::setw(15) << std::scientific << writes->in_kayser(eval_minus[ik][is]);
+			}
+			ofs_plus << std::endl;
+			ofs_minus << std::endl;
+		}
+
+		ofs_plus.close();
+		ofs_minus.close();
+	}
+
 
 	memory->deallocate(evec_tmp);
 	memory->deallocate(eval_orig);
@@ -214,7 +248,7 @@ void Gruneisen::prepare_newfc2()
 					xdiff[icrd] = system->xr_s[jat][icrd] - system->xr_s[system->map_p2s[iat][0]][icrd];
 
 					if (std::abs(xdiff[icrd]-0.5) < eps || std::abs(xdiff[icrd] + 0.5) < eps) {
-					//	error->exit("prepare_newfc2", "multiple interaction exist. This should not occur.");
+						//	error->exit("prepare_newfc2", "multiple interaction exist. This should not occur.");
 					} else if (xdiff[icrd] > 0.5) {
 						cell[icrd] = -1;
 					} else if (xdiff[icrd] < -0.5) {
@@ -247,7 +281,7 @@ void Gruneisen::prepare_newfc2()
 						dfc2_tmp = dfc2[iat][jat][icrd][jcrd];
 
 						if (std::abs(dfc2_tmp) > eps) {
-						//	std::cout << iat << " " << jat << " " << ncell << " " <<  icrd << " " << jcrd << std::endl;
+							//	std::cout << iat << " " << jat << " " << ncell << " " <<  icrd << " " << jcrd << std::endl;
 							dfc2_ext_tmp.atm1 = iat;
 							dfc2_ext_tmp.atm2 = jat;
 							dfc2_ext_tmp.cell_s = ncell;
@@ -281,7 +315,7 @@ void Gruneisen::prepare_newfc2()
 		}
 	}
 
-	
+
 
 #ifdef _DEBUG
 	double fc2_tmp;
@@ -407,9 +441,9 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 						vec[icrd] = dynamical->fold(vec[icrd]);
 						if (std::abs(system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd]) > 0.5) vec[icrd] *= -1.0;
 					} else {
-						//     vec[icrd] = system->xr_s[atm_p2][icrd] - system->xr_s[atm_s2][icrd];
 						vec[icrd] = system->xr_s[atm_p1][icrd] - system->xr_s[atm_s2][icrd];
 						vec[icrd] = dynamical->fold(vec[icrd]);
+						vec[icrd] += system->xr_s[atm_p2][icrd] - system->xr_s[atm_p1][icrd];
 					}
 				}
 
@@ -419,12 +453,12 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 				phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 				exp_phase = std::exp(im * phase);
 
-				if (std::abs(exp_phase.real()) < 1.0e-14) {
-					exp_phase = std::complex<double>(0.0, exp_phase.imag());
-				}
-				if (std::abs(exp_phase.imag()) < 1.0e-14) {
-					exp_phase = std::complex<double>(exp_phase.real(), 0.0);
-				}
+				// 				if (std::abs(exp_phase.real()) < 1.0e-14) {
+				// 					exp_phase = std::complex<double>(0.0, exp_phase.imag());
+				// 				}
+				// 				if (std::abs(exp_phase.imag()) < 1.0e-14) {
+				// 					exp_phase = std::complex<double>(exp_phase.real(), 0.0);
+				// 				}
 
 
 				for (icrd = 0; icrd < 3; ++icrd){
@@ -451,4 +485,96 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 		}
 	}
 
+}
+
+
+void Gruneisen::calc_gruneisen3()
+{
+	unsigned int i, j;
+	unsigned int nk = kpoint->nk;
+	unsigned int ns = dynamical->neval;
+
+	unsigned int icrd, jcrd, kcrd;
+	unsigned int nalpha[3], ncell[3], ixyz[3];
+	unsigned int iat, jat, kat;
+	unsigned int iat2, jat2, kat2;
+
+	unsigned int ik, is;
+
+	double coord_tmp[3], x[3];
+	double phase;
+	std::complex<double> im(0.0, 1.0);
+
+	memory->allocate(gruneisen, nk, ns);
+
+
+	dynamical->diagonalize_dynamical_all();
+
+
+	for (i = 0; i < nk; ++i) {
+		for (j = 0; j < ns; ++j) {
+			gruneisen[i][j] = std::complex<double>(0.0, 0.0);
+		}
+	}
+
+	for (std::vector<FcsClass>::iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
+
+		FcsClass fc3_tmp = *it;
+
+		for (i = 0; i < 3; ++i){
+			nalpha[i] = fc3_tmp.elems[i].atom;
+			ncell[i]  = fc3_tmp.elems[i].cell;
+			ixyz[i] = fc3_tmp.elems[i].xyz;
+			std::cout << std::setw(5) << nalpha[i];
+			std::cout << std::setw(5) << ncell[i];
+			std::cout << std::setw(5) << ixyz[i];
+			std::cout << "     ";
+		}
+		std::cout << std::setw(15) << fc3_tmp.fcs_val;
+		std::cout << std::endl;
+
+		iat = system->map_p2s[nalpha[0]][ncell[0]];
+		jat = system->map_p2s[nalpha[1]][ncell[1]];
+		kat = system->map_p2s[nalpha[2]][ncell[2]];
+
+		iat2 = system->map_p2s[nalpha[0]][0];
+
+		jat2 = system->map_p2s[0][ncell[1]];
+		kat2 = system->map_p2s[0][ncell[2]];
+
+		for (i = 0; i < 3; ++i) {
+			coord_tmp[i] = system->xr_s[kat2][i] - system->xr_s[jat2][i];
+			//	coord_tmp[i] = dynamical->fold(coord_tmp[i]);
+			x[i] = system->xr_s[iat2][i];
+		}
+		system->rotvec(coord_tmp, coord_tmp, system->lavec_s);
+		system->rotvec(coord_tmp, coord_tmp, system->rlavec_p);
+
+		// 		for (i = 0; i < 3; ++i) std::cout << std::setw(15) << coord_tmp[i] / (2.0 * pi);
+		// 		std::cout << std::endl;
+
+
+		system->rotvec(x, x, system->lavec_s);
+		std::cout << "x = " << std::setw(15) << x[0] << std::setw(15) << x[1] << std::setw(15) << x[2] << std::endl;
+
+		for (ik = 0; ik < nk; ++ik) {
+			phase = coord_tmp[0] * kpoint->xk[ik][0] + coord_tmp[1] * kpoint->xk[ik][1] + coord_tmp[2] * kpoint->xk[ik][2];
+			//	std::cout << "phase = " << phase << std::endl;
+
+			for (is = 0; is < ns; ++is) {
+				gruneisen[ik][is] += fc3_tmp.fcs_val * std::exp(im * phase) 
+					* x[ixyz[0]] * std::conj(dynamical->evec_phonon[ik][is][3 * nalpha[1] + ixyz[1]])
+					* dynamical->evec_phonon[ik][is][3 * nalpha[2] + ixyz[2]] / std::sqrt(system->mass[jat] * system->mass[kat]);
+				std::cout << "ik = " << std::setw(5) << ik;
+				std::cout << "is = " << std::setw(5) << is;
+				std::cout << "gru = " << std::setw(15) << gruneisen[ik][is] << std::endl;
+			}
+		}
+	}
+
+	for (ik = 0; ik < nk; ++ik) {
+		for (is = 0; is < ns; ++is) {
+			gruneisen[ik][is] /= - 6.0 * std::pow(dynamical->eval_phonon[ik][is], 2);
+		}
+	}
 }

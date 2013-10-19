@@ -156,9 +156,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		interpolation->prepare_interpolation();
 		interpolation->exec_interpolation();
 		interpolation->finish_interpolation();
-// 
-// 		integration->setup_integration();
-// 		relaxation->setup_relaxation();
+		// 
+		// 		integration->setup_integration();
+		// 		relaxation->setup_relaxation();
 
 	} else if (mode == "gruneisen") {
 		system->setup();
@@ -168,11 +168,15 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
 		dynamical->diagonalize_dynamical_all();
-		gruneisen->setup();
-		gruneisen->calc_gruneisen();
-		//   gruneisen->calc_gruneisen2();
-		writes->write_gruneisen();
-		gruneisen->finish_gruneisen();
+
+		if (mympi->my_rank == 0) {
+			gruneisen->setup();
+			gruneisen->calc_gruneisen();
+			// gruneisen->calc_gruneisen2();
+			writes->write_gruneisen();
+			gruneisen->finish_gruneisen();
+		}
+
 
 	} else {
 		error->exit("phonons", "invalid mode");
