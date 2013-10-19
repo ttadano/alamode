@@ -70,7 +70,7 @@ namespace PHON_NS {
 				std::complex<double> *work, int *lwork, double *rwork, int *info);
 	}
 
-	inline bool compare_real(std::complex<double> &a, std::complex<double> &b) 
+	inline bool compare_real(const std::complex<double> &a, const std::complex<double> &b) 
 	{
 		return a.real() < b.real();
 	}

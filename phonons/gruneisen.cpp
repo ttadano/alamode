@@ -50,14 +50,15 @@ void Gruneisen::calc_gruneisen()
 	double kvec_tmp[3];
 
 	std::complex<double> **evec_tmp;
-	memory->allocate(evec_tmp, 1, 1); // dummy allocation
 
+	memory->allocate(evec_tmp, 1, 1); // dummy allocation
 	memory->allocate(eval_orig, ns);
 	memory->allocate(eval_plus, ns);
 	memory->allocate(eval_minus, ns);
 
 
 	for (ik = 0; ik < nk; ++ik){
+
 		for (i = 0; i < 3; ++i) {
 			xk_tmp[i] = kpoint->xk[ik][i];
 			kvec_tmp[i] = xk_tmp[i];
@@ -65,11 +66,11 @@ void Gruneisen::calc_gruneisen()
 		system->rotvec(kvec_tmp, kvec_tmp, system->rlavec_p, 'T');
 		norm = std::sqrt(kvec_tmp[0] * kvec_tmp[0] + kvec_tmp[1] * kvec_tmp[1] + kvec_tmp[2] * kvec_tmp[2]);
 		if (norm > eps) {
-			kvec_tmp[i] /= norm;
+                    for (i = 0; i < 3; ++i) kvec_tmp[i] /= norm;
 		}
 
 		if (fcs_phonon->is_fc2_ext) {
-			dynamical->eval_k(xk_tmp, kvec_tmp, fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
+                        dynamical->eval_k(xk_tmp, kvec_tmp, fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
 			dynamical->eval_k(xk_tmp, kvec_tmp, fc2_plus_ext, eval_plus, evec_tmp, false);
 			dynamical->eval_k(xk_tmp, kvec_tmp, fc2_minus_ext, eval_minus, evec_tmp, false);
 		} else {
