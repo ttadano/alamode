@@ -267,7 +267,7 @@ void Conductivity::calc_kl2()
 
 		if (iks == -1) {
 
-			for (j = 0; j < ntemp; ++j) tau_l[j] = -1.0; // do nothing
+			for (j = 0; j < ntemp; ++j) tau_l[j] = 0.0; // do nothing
 
 		} else {
 
@@ -308,7 +308,7 @@ void Conductivity::calc_kl2()
 				for (k = 0; k < ntemp; ++k) {
 					tau_tmp = tau[iks_g][k];
 					if (std::abs(tau_tmp) < eps) {
-						tau[iks_g][k] = 0.0; 
+                                            //	tau[iks_g][k] = 0.0; 
 					} else {
 						tau[iks_g][k] = time_ry * 1.0e+12 / (2.0 * tau_tmp);
 					}

@@ -772,7 +772,8 @@ void Relaxation::v3_test() {
 	error->exit("v3_test", "finished!");
 
 
-	unsigned int ik0, ik1, ik2;
+	unsigned int ik0, ik1;
+        int ik2;
 	unsigned int is0, is1, is2;
 	double omega1, omega2;
 	double norm;
@@ -1027,13 +1028,13 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
 					if (ksum_mode == 0) {
 						ret[i] += v3_tmp 
-							* (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+                                                    * ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
 							+ n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
 							- n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
 							+ n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
 					} else if (ksum_mode == 1) {
 						ret[i] += v3_tmp 
-							* (- n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
+                                                    * ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
 							+ n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
 							- n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
 							+ n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));

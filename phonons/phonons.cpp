@@ -44,7 +44,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		if (restart_flag) {
 			if (mode == "boltzmann") {
 				std::cout << "Restart Mode is switched on!" << std::endl;
-				std::cout << "If you want to turn off Restart Mode, set RESTART = 0 in the input file" << std::endl;
+				std::cout << "If you want to turn off the Restart Mode, set RESTART = 0 in the input file" << std::endl;
 				std::cout << std::endl;
 			} else {
 				std::cout << "Restart Mode is only available for BTE" << std::endl << std::endl;
@@ -131,7 +131,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		//	conductivity->calc_kl();
 
-		interpolation->prepare_interpolation();
+		// interpolation->prepare_interpolation();
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
