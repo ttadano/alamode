@@ -67,9 +67,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		dynamical->diagonalize_dynamical_all();
 
-
-
-
 		// Calculate the group velocity of phonons along given direction in
 		// the reciprocal space.
 
@@ -118,7 +115,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		//     dos->calc_tdos();
 		// relaxation->calc_selfenergy();
-		// relaxation->v3_test();
+		//  relaxation->v3_test();
 		//	relaxation->v4_test();
 
 		if (relaxation->ks_analyze_mode) {
@@ -176,7 +173,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 			writes->write_gruneisen();
 			gruneisen->finish_gruneisen();
 		}
-
 
 	} else {
 		error->exit("phonons", "invalid mode");

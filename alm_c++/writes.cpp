@@ -190,7 +190,7 @@ void Writes::wrtfcs()
 				str_tmp = "# FC" + boost::lexical_cast<std::string>(i + 2) + "_";
 				str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
 
-				ofs_fcs << str_tmp << std::setw(6) << fcs->ndup[i][iuniq] << std::setw(16) << fitting->params[ip] << std::endl;
+				ofs_fcs << str_tmp << std::setw(10) << fcs->ndup[i][iuniq] << std::setw(16) << fitting->params[ip] << std::endl;
 
 				for (j = 0; j < fcs->ndup[i][iuniq]; ++j){
 					ofs_fcs << std::setw(5) << j + 1 << std::setw(16) << fcs->fc_set[i][id].coef;

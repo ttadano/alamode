@@ -69,7 +69,7 @@ namespace PHON_NS {
         unsigned int maxorder;
         std::string file_fcs;
         double ****fc2;
-       
+      
         std::vector<FcsClass> *force_constant;
 		std::vector<FcsClassExtent> fc2_ext;
 

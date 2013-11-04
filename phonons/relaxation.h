@@ -92,6 +92,7 @@ namespace PHON_NS {
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         inline std::complex<double> V3new(const unsigned int [3]);
         inline std::complex<double> V3new2(const unsigned int [3]);
+	//	inline std::complex<double> V3new3(const unsigned int [3]);
         inline std::complex<double> V4(const unsigned int [4]);
         double **vec_s;
         double ***relvec;
@@ -105,5 +106,8 @@ namespace PHON_NS {
         std::complex<double> **cexp_phase2;
         int **evec_index;
         int **evec_index4;
+
+// 		double *fc3_new;
+// 		int ***index_fc3;
     };
 }
