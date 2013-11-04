@@ -93,22 +93,51 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double
 
 	std::complex<double> **dymat_k;
 	double **dymat_na_k;
+        std::complex<double> **dymat_na_mod;
 
 	memory->allocate(dymat_k, neval, neval);
 
 	calc_analytic_k(xk_in, fc2_in, dymat_k);
 
 	if (nonanalytic) {
+
 		memory->allocate(dymat_na_k, neval, neval);
+                memory->allocate(dymat_na_mod, neval, neval);
+
 		calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
+
+                double xdiff[3];
+                double phase;
+                std::complex<double> im(0.0, 1.0);
+                unsigned int icrd, jcrd;
+
+                // Multiply a phase factor for the non-analytic term.
+                for (i = 0; i < system->natmin; ++i) {
+                    for (j = 0; j < system->natmin; ++j) {
+
+                        for (icrd = 0; icrd < 3; ++icrd) xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd] - system->xr_s[system->map_p2s[j][0]][icrd];
+                        system->rotvec(xdiff, xdiff, system->lavec_s);
+                        system->rotvec(xdiff, xdiff, system->rlavec_p);
+
+                        phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
+
+                        for (icrd = 0; icrd < 3; ++icrd) {
+                            for (jcrd = 0; jcrd < 3; ++jcrd) {
+                                dymat_na_mod[3 * i + icrd][3 * j + jcrd] = dymat_na_k[3 * i + icrd][3 * j + jcrd] 
+                                    * exp(-im * phase);
+                            }
+                        }
+                    }
+                }
 
 		for (i = 0; i < neval; ++i) {
 			for (j = 0; j < neval; ++j) {
-				dymat_k[i][j] += dymat_na_k[i][j];
+				dymat_k[i][j] += dymat_na_mod[i][j];
 			}
 		}
-		memory->deallocate(dymat_na_k);
-	}
+                memory->deallocate(dymat_na_k);
+                memory->deallocate(dymat_na_mod);
+        }
 
 	/*
 	// Hermitize the dynamical matrix
@@ -234,10 +263,6 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
 
                         phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
 
-//                        std::cout << "iat = " << std::setw(5) << i;
-//                        std::cout << "jat = " << std::setw(5) << j;
-//                        std::cout << "phase = " << phase << std::endl;
-
                         for (icrd = 0; icrd < 3; ++icrd) {
                             for (jcrd = 0; jcrd < 3; ++jcrd) {
                                 dymat_na_mod[3 * i + icrd][3 * j + jcrd] = dymat_na_k[3 * i + icrd][3 * j + jcrd] 
@@ -248,28 +273,8 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
                 }
 
 
-
-//                for (i = 0; i < neval; ++i) {
-//                    for (j = 0; j < neval; ++j) {
-//                        if (std::abs(dymat_na_mod[i][j].real()) < eps) {
-//                            std::cout << std::setw(15) << 0.0;
-//                        } else {
-//                            std::cout << std::setw(15) << dymat_na_mod[i][j].real();
-//                        }
-//                        if (std::abs(dymat_na_mod[i][j].imag()) < eps) {
-//                            std::cout << std::setw(15) << 0.0;
-//                        } else {
-//                            std::cout << std::setw(15) << dymat_na_mod[i][j].imag();
-//                        }
-//                        std::cout << std::setw(15) << dymat_na_k[i][j];
-//                    }
-//                    std::cout << std::endl;
-//                }
-//                std::cout << std::endl;
-
 		for (i = 0; i < neval; ++i) {
 			for (j = 0; j < neval; ++j) {
-//				dymat_k[i][j] += dymat_na_k[i][j];
 				dymat_k[i][j] += dymat_na_mod[i][j];
 			}
 		}
@@ -968,7 +973,7 @@ void Dynamical::load_born()
 	std::cout << std::endl;
 	std::cout << "Born effective charge tensor in Cartesian coordinate" << std::endl;
 	for (i = 0; i < system->natmin; ++i) {
-		std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[i] << ") :" << std::endl;
+		std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 		for (j = 0; j < 3; ++j) {
 			for (k = 0; k < 3; ++k) {
 				std::cout << std::setw(15) << borncharge[i][j][k];
@@ -1013,7 +1018,7 @@ void Dynamical::load_born()
 		std::cout << std::endl;
 		std::cout << "New Born effective charge tensor in Cartesian coordinate." << std::endl;
 		for (i = 0; i < system->natmin; ++i) {
-			std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[i] << ") :" << std::endl;
+                    std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 			for (j = 0; j < 3; ++j) {
 				for (k = 0; k < 3; ++k) {
 					std::cout << std::setw(15) << borncharge[i][j][k];
