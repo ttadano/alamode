@@ -107,6 +107,8 @@ namespace PHON_NS {
         int **evec_index;
         int **evec_index4;
 
+		void mpi_reduce_complex(unsigned int, std::complex<double> *, std::complex<double> *);
+
 // 		double *fc3_new;
 // 		int ***index_fc3;
     };

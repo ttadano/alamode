@@ -1398,7 +1398,9 @@ void Relaxation::selfenergy_a(const unsigned int N, double *T, const double omeg
 	factor = 1.0 / (static_cast<double>(nk) * std::pow(2.0, 4));
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
 }
@@ -1452,7 +1454,9 @@ void Relaxation::selfenergy_b(const unsigned int N, double *T, const double omeg
 	factor = -1.0 / (static_cast<double>(nk) * std::pow(2.0, 3));
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
 }
@@ -1556,7 +1560,9 @@ void Relaxation::selfenergy_c(const unsigned int N, double *T, const double omeg
 	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 5) * 3.0);
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+	mpi_reduce_complex(N, ret_mpi, ret);
+
 	memory->deallocate(ret_mpi);
 }
 
@@ -1689,7 +1695,9 @@ void Relaxation::selfenergy_d(const unsigned int N, double *T, const double omeg
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
 	for (i = 0; i < N; ++i) ret_mpi[i] *=  factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+	mpi_reduce_complex(N, ret_mpi, ret);
+
 
 	memory->deallocate(ret_mpi);
 }
@@ -1913,7 +1921,9 @@ void Relaxation::selfenergy_e(const unsigned int N, double *T, const double omeg
 	//	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(prod_tmp);
 	memory->deallocate(ret_mpi);
@@ -2134,7 +2144,9 @@ void Relaxation::selfenergy_f(const unsigned int N, double *T, const double omeg
 	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
 }
@@ -2283,7 +2295,9 @@ void Relaxation::selfenergy_g(const unsigned int N, double *T, const double omeg
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
 }
@@ -2473,10 +2487,13 @@ void Relaxation::selfenergy_h(const unsigned int N, double *T, const double omeg
 	factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7)); 
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
 }
+
+
+
 
 void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
 {
@@ -2670,7 +2687,9 @@ void Relaxation::selfenergy_i(const unsigned int N, double *T, const double omeg
 	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
 }
@@ -2799,9 +2818,42 @@ void Relaxation::selfenergy_j(const unsigned int N, double *T, const double omeg
 
 	for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
-	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+// 	MPI_Reduce(&ret_mpi[0], &ret[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	mpi_reduce_complex(N, ret_mpi, ret);
 
 	memory->deallocate(ret_mpi);
+}
+
+void Relaxation::mpi_reduce_complex(unsigned int N, std::complex<double> *in_mpi, std::complex<double> *out) {
+
+#ifdef HAS_MPI_COMPLEX16
+	MPI_Reduce(&in_mpi[0], &out[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+#else
+	unsigned int i;
+	double *ret_mpi_re, *ret_mpi_im;
+	double *ret_re, *ret_im;
+
+	memory->allocate(ret_mpi_re, N);
+	memory->allocate(ret_mpi_im, N);
+	memory->allocate(ret_im, N);
+	memory->allocate(ret_re, N);
+
+	for (i = 0; i < N; ++i) {
+		ret_mpi_re[i] = in_mpi[i].real();
+		ret_mpi_im[i] = in_mpi[i].imag();
+	}
+	MPI_Reduce(&ret_mpi_re[0], &ret_re[0], N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	MPI_Reduce(&ret_mpi_im[0], &ret_im[0], N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	for (i = 0; i < N; ++i) {
+		out[i] = ret_re[i] + im * ret_im[i];
+	}
+	memory->deallocate(ret_mpi_re);
+	memory->deallocate(ret_mpi_im);
+	memory->deallocate(ret_re);
+	memory->deallocate(ret_im);
+#endif
 }
 
 void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const double omega, 
