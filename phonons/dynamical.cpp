@@ -662,8 +662,48 @@ void Dynamical::diagonalize_dynamical_all()
 	}
 
 	MPI_Allgatherv(&eval_phonon_mpi[nk_s][0], ndata_eval[mympi->my_rank], MPI_DOUBLE, &eval_phonon[0][0], ndata_eval, displs_eval, MPI_DOUBLE, MPI_COMM_WORLD);
-	if (eigenvectors) MPI_Allgatherv(&evec_phonon_mpi[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_COMPLEX16, &evec_phonon[0][0][0], ndata_evec, displs_evec, MPI_COMPLEX16, MPI_COMM_WORLD);
 
+#ifdef HAS_MPI_COMPLEX16
+	if (eigenvectors) MPI_Allgatherv(&evec_phonon_mpi[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_COMPLEX16, &evec_phonon[0][0][0], ndata_evec, displs_evec, MPI_COMPLEX16, MPI_COMM_WORLD);
+#else
+	if (eigenvectors) {
+		unsigned int j, k;
+		std::complex<double> im(0.0, 1.0);
+
+		double ***evec_phonon_re, ***evec_phonon_im;
+		double ***evec_phonon_mpi_re, ***evec_phonon_mpi_im;
+
+		memory->allocate(evec_phonon_re, nk, neval, neval);
+		memory->allocate(evec_phonon_im, nk, neval, neval);
+		memory->allocate(evec_phonon_mpi_re, nk, neval, neval);
+		memory->allocate(evec_phonon_mpi_im, nk, neval, neval);
+
+		for (i = nk_s; i < nk_e; ++i) {
+			for (j = 0; j < neval; ++j) {
+				for (k = 0; k < neval; ++k) {
+					evec_phonon_mpi_re[i][j][k] = evec_phonon_mpi[i][j][k].real();
+					evec_phonon_mpi_im[i][j][k] = evec_phonon_mpi[i][j][k].imag();
+				}
+			}
+		}
+
+		MPI_Allgatherv(&evec_phonon_mpi_re[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_re[0][0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
+		MPI_Allgatherv(&evec_phonon_mpi_im[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_im[0][0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
+
+		for (i = 0; i < nk; ++i) {
+			for (j = 0; j < neval; ++j) {
+				for (k = 0; k < neval; ++k) {
+					evec_phonon[i][j][k] = evec_phonon_re[i][j][k] + im * evec_phonon_im[i][j][k];
+				}
+			}
+		}
+
+		memory->deallocate(evec_phonon_re);
+		memory->deallocate(evec_phonon_im);
+		memory->deallocate(evec_phonon_mpi_re);
+		memory->deallocate(evec_phonon_mpi_im);
+	}
+#endif
 
 	memory->deallocate(eval_phonon_mpi);
 	memory->deallocate(evec_phonon_mpi);
