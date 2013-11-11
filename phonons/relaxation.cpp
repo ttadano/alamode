@@ -3216,8 +3216,8 @@ void Relaxation::compute_mode_tau()
 						omega_shift = omega - self_a[j].real();
 
 						if (quartic_mode) { 
-							ofs_mode_tau << std::setw(15) << writes->in_kayser(-self_b[j].imag());
-							omega_shift -= self_b[j].imag();
+							ofs_mode_tau << std::setw(15) << writes->in_kayser(-self_b[j].real());
+							omega_shift -= self_b[j].real();
 						}
 						ofs_mode_tau << std::setw(15) << writes->in_kayser(omega_shift);
 						ofs_mode_tau << std::endl; 
@@ -3443,10 +3443,10 @@ void Relaxation::compute_mode_tau()
 				}
 
 			}
-			memory->deallocate(damp3_atom);
-			memory->deallocate(damp3_atom_g);
 		}
 		if (mympi->my_rank == 0) ofs_mode_tau.close();
+		memory->deallocate(damp3_atom);
+		memory->deallocate(damp3_atom_g);
 	}
 	memory->deallocate(T_arr);
 }
