@@ -3443,10 +3443,10 @@ void Relaxation::compute_mode_tau()
 				}
 
 			}
-			memory->deallocate(damp3_atom);
-			memory->deallocate(damp3_atom_g);
 		}
 		if (mympi->my_rank == 0) ofs_mode_tau.close();
+		memory->deallocate(damp3_atom);
+		memory->deallocate(damp3_atom_g);
 	}
 	memory->deallocate(T_arr);
 }
