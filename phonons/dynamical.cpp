@@ -665,7 +665,7 @@ void Dynamical::diagonalize_dynamical_all()
 
 	MPI_Allgatherv(&eval_phonon_mpi[nk_s][0], ndata_eval[mympi->my_rank], MPI_DOUBLE, &eval_phonon[0][0], ndata_eval, displs_eval, MPI_DOUBLE, MPI_COMM_WORLD);
 
-#if defined(MPI_COMPLEX16)
+#if defined(MPI_COMPLEX16_2)
 	if (eigenvectors) {
 
 		unsigned int js;
@@ -682,7 +682,7 @@ void Dynamical::diagonalize_dynamical_all()
 		for (ik = 0; ik < nk; ++ik) {
 			for (is = 0; is < neval; ++is) {
 				for (js = 0; js < neval; ++js) {
-					evec_phonon[ik][is][js] = evec_phonon_2d[ik][3 * is + js];
+					evec_phonon[ik][is][js] = evec_phonon_2d[ik][neval * is + js];
 				}
 			}
 		}
@@ -715,7 +715,7 @@ void Dynamical::diagonalize_dynamical_all()
 		for (i = 0; i < nk; ++i) {
 			for (j = 0; j < neval; ++j) {
 				for (k = 0; k < neval; ++k) {
-					evec_phonon[i][j][k] = evec_phonon_re[i][neval *  + k] + im * evec_phonon_im[i][neval * j + k];
+					evec_phonon[i][j][k] = evec_phonon_re[i][neval * j + k] + im * evec_phonon_im[i][neval * j + k];
 				}
 			}
 		}
