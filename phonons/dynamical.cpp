@@ -576,6 +576,7 @@ void Dynamical::diagonalize_dynamical_all()
 
 	double **eval_phonon_mpi;
 	std::complex<double> ***evec_phonon_mpi;
+	std::complex<double> **evec_phonon_2d, **evec_phonon_mpi_2d;
 
 	int *nk_mpi, *displs;
 	int *displs_eval, *displs_evec;
@@ -594,7 +595,8 @@ void Dynamical::diagonalize_dynamical_all()
 		require_evec = true;
 		memory->allocate(evec_phonon, nk, neval, neval);
 		memory->allocate(evec_phonon_mpi, nk, neval, neval);
-
+		memory->allocate(evec_phonon_2d, nk, neval * neval);
+		memory->allocate(evec_phonon_mpi_2d, nk, neval * neval);
 	} else {
 		require_evec = false;
 		memory->allocate(evec_phonon, nk, 1, 1);
@@ -663,37 +665,57 @@ void Dynamical::diagonalize_dynamical_all()
 
 	MPI_Allgatherv(&eval_phonon_mpi[nk_s][0], ndata_eval[mympi->my_rank], MPI_DOUBLE, &eval_phonon[0][0], ndata_eval, displs_eval, MPI_DOUBLE, MPI_COMM_WORLD);
 
-#ifdef HAS_MPI_COMPLEX16
-	if (eigenvectors) MPI_Allgatherv(&evec_phonon_mpi[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_COMPLEX16, &evec_phonon[0][0][0], ndata_evec, displs_evec, MPI_COMPLEX16, MPI_COMM_WORLD);
+#if defined(MPI_COMPLEX16)
+	if (eigenvectors) {
+
+		unsigned int js;
+
+		for (ik = nk_s; ik < nk_e; ++ik) {
+			for (is = 0; is < neval; ++is) {
+				for (js = 0; js < neval; ++js) {
+					evec_phonon_mpi_2d[ik][neval * is + js] = evec_phonon_mpi[ik][is][js];
+				}
+			}
+		}
+		MPI_Allgatherv(&evec_phonon_mpi_2d[nk_s][0], ndata_evec[mympi->my_rank], MPI_COMPLEX16, &evec_phonon_2d[0][0], ndata_evec, displs_evec, MPI_COMPLEX16, MPI_COMM_WORLD);
+
+		for (ik = 0; ik < nk; ++ik) {
+			for (is = 0; is < neval; ++is) {
+				for (js = 0; js < neval; ++js) {
+					evec_phonon[ik][is][js] = evec_phonon_2d[ik][3 * is + js];
+				}
+			}
+		}
+	}
 #else
 	if (eigenvectors) {
 		unsigned int j, k;
 		std::complex<double> im(0.0, 1.0);
 
-		double ***evec_phonon_re, ***evec_phonon_im;
-		double ***evec_phonon_mpi_re, ***evec_phonon_mpi_im;
+		double **evec_phonon_re, **evec_phonon_im;
+		double **evec_phonon_mpi_re, **evec_phonon_mpi_im;
 
-		memory->allocate(evec_phonon_re, nk, neval, neval);
-		memory->allocate(evec_phonon_im, nk, neval, neval);
-		memory->allocate(evec_phonon_mpi_re, nk, neval, neval);
-		memory->allocate(evec_phonon_mpi_im, nk, neval, neval);
+		memory->allocate(evec_phonon_re, nk, neval * neval);
+		memory->allocate(evec_phonon_im, nk, neval * neval);
+		memory->allocate(evec_phonon_mpi_re, nk, neval * neval);
+		memory->allocate(evec_phonon_mpi_im, nk, neval * neval);
 
 		for (i = nk_s; i < nk_e; ++i) {
 			for (j = 0; j < neval; ++j) {
 				for (k = 0; k < neval; ++k) {
-					evec_phonon_mpi_re[i][j][k] = evec_phonon_mpi[i][j][k].real();
-					evec_phonon_mpi_im[i][j][k] = evec_phonon_mpi[i][j][k].imag();
+					evec_phonon_mpi_re[i][neval * j + k] = evec_phonon_mpi[i][j][k].real();
+					evec_phonon_mpi_im[i][neval * j + k] = evec_phonon_mpi[i][j][k].imag();
 				}
 			}
 		}
 
-		MPI_Allgatherv(&evec_phonon_mpi_re[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_re[0][0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
-		MPI_Allgatherv(&evec_phonon_mpi_im[nk_s][0][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_im[0][0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
+		MPI_Allgatherv(&evec_phonon_mpi_re[nk_s][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_re[0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
+		MPI_Allgatherv(&evec_phonon_mpi_im[nk_s][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_im[0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
 
 		for (i = 0; i < nk; ++i) {
 			for (j = 0; j < neval; ++j) {
 				for (k = 0; k < neval; ++k) {
-					evec_phonon[i][j][k] = evec_phonon_re[i][j][k] + im * evec_phonon_im[i][j][k];
+					evec_phonon[i][j][k] = evec_phonon_re[i][neval *  + k] + im * evec_phonon_im[i][neval * j + k];
 				}
 			}
 		}
@@ -713,6 +735,11 @@ void Dynamical::diagonalize_dynamical_all()
 	memory->deallocate(ndata_evec);
 	memory->deallocate(displs_eval);
 	memory->deallocate(displs_evec);
+
+	if (eigenvectors) {
+		memory->deallocate(evec_phonon_2d);
+		memory->deallocate(evec_phonon_mpi_2d);
+	}
 
 // 	for (ik = 0; ik < nk; ++ik){
 // 		if (fcs_phonon->is_fc2_ext) {
@@ -735,85 +762,11 @@ void Dynamical::diagonalize_dynamical_all()
 
 	//	modify_eigenvectors_sym();
 
-	if (kpoint->kpoint_mode == 2) {
+	if (kpoint->kpoint_mode == 2 && eigenvectors) {
 		modify_eigenvectors();
 	}
 
-	// 	 	 	std::complex<double> prod;
-	// 	 	 	std::cout << "orthogonality check 1" << std::endl;
-	// 	 	 	for (ik = 0; ik < nk; ++ik) {
-	// 	 	 		
-	// 	 	 
-	// 	 	 		for (int is1 = 0; is1 < neval; ++is1) {
-	// 	 	 			for (int is2 = 0; is2 < neval; ++is2) {
-	// 	 	 
-	// 	 	 				prod = std::complex<double>(0.0, 0.0);
-	// 	 	 
-	// 	 	 				for (int i = 0; i < neval; ++i) {
-	// 	 	 					prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is2][i];
-	// 	 	 				}
-	// 	 	 				if (std::norm(prod) > eps) {
-	// 	 	 					std::cout << "ik = " << ik << " is1, is2 =" << is1 << " " << is2 << " prod = " << prod << std::endl;
-	// 	 	 				}
-	// 	 	 			}
-	// 	 	 		}
-	// 	 	 	}
-	// 	 	 	std::cout << "orthogonality check 2" << std::endl;
-	// 	 	 
-	// 	 	 	for (ik = 0; ik < nk; ++ik) {
-	// 	 	 				for (int i = 0; i < neval; ++i) {
-	// 	 	 					for (int j = 0; j < neval; ++j) {
-	// 	 	 
-	// 	 	 						prod = std::complex<double>(0.0, 0.0);
-	// 	 	 
-	// 	 	 						for (int is1 = 0; is1 < neval; ++is1) {
-	// 	 	 							prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is1][j];
-	// 	 	 						}
-	// 	 	 						if (std::norm(prod) > eps) {
-	// 	 	 							std::cout << "ik = " << ik << " i, j =" << i << " " << j << " prod = " << prod << std::endl;
-	// 	 	 						}
-	// 	 	 
-	// 	 	 					}
-	// 	 	 		}
-	// 	 		}
-
-	//  	double xk_tmp[3];
-	//  	std::complex<double> **dymat;
-	//  
-	//  	memory->allocate(dymat, neval, neval);
-	//  
-	//  	for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
-	//  		for (unsigned int i = 0; i < kpoint->nk_equiv[ik]; ++i) {
-	//  			std::cout << "ik = " << ik + 1 << " i = " << i + 1 << " kp = " << kpoint->k_reduced[ik][i];
-	//  	
-	//  			for (int j = 0; j < 3; ++j) {
-	//  				xk_tmp[j] = kpoint->xk[kpoint->k_reduced[ik][i]][j];
-	//  				std::cout << std::setw(15) << xk_tmp[j];
-	//  			}
-	//  			std::cout << std::endl;
-	//  
-	//  		  if (fcs_phonon->is_fc2_ext) {
-	//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2_ext, dymat);
-	//  		  } else {
-	//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2, dymat);
-	//  		  }
-	//  		
-	//  		  for (int j = 0; j < neval; ++j) {
-	//  			  for (int k = 0; k < neval; ++k) {
-	//  				  if (std::abs(dymat[j][k].real()) < eps12) {
-	//  					  dymat[j][k] = std::complex<double>(0.0, dymat[j][k].imag());
-	//  				  }
-	//  				  if (std::abs(dymat[j][k].imag()) < eps12) {
-	//  					  dymat[j][k] = std::complex<double>(dymat[j][k].real(), 0.0);
-	//  				  }
-	//  
-	//  				  std::cout << std::setw(15) << dymat[j][k].real() << std::setw(15) << dymat[j][k].imag();
-	//  		  }
-	//  			  std::cout << std::endl;
-	//  		}
-	//  		  std::cout << std::endl;
-	//  	}
-	//  	}
+	
 
 #ifdef _DEBUG
 
@@ -895,6 +848,82 @@ void Dynamical::diagonalize_dynamical_all()
 		memory->deallocate(xk2);
 
 	}
+
+	// 	 	 	std::complex<double> prod;
+	// 	 	 	std::cout << "orthogonality check 1" << std::endl;
+	// 	 	 	for (ik = 0; ik < nk; ++ik) {
+	// 	 	 		
+	// 	 	 
+	// 	 	 		for (int is1 = 0; is1 < neval; ++is1) {
+	// 	 	 			for (int is2 = 0; is2 < neval; ++is2) {
+	// 	 	 
+	// 	 	 				prod = std::complex<double>(0.0, 0.0);
+	// 	 	 
+	// 	 	 				for (int i = 0; i < neval; ++i) {
+	// 	 	 					prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is2][i];
+	// 	 	 				}
+	// 	 	 				if (std::norm(prod) > eps) {
+	// 	 	 					std::cout << "ik = " << ik << " is1, is2 =" << is1 << " " << is2 << " prod = " << prod << std::endl;
+	// 	 	 				}
+	// 	 	 			}
+	// 	 	 		}
+	// 	 	 	}
+	// 	 	 	std::cout << "orthogonality check 2" << std::endl;
+	// 	 	 
+	// 	 	 	for (ik = 0; ik < nk; ++ik) {
+	// 	 	 				for (int i = 0; i < neval; ++i) {
+	// 	 	 					for (int j = 0; j < neval; ++j) {
+	// 	 	 
+	// 	 	 						prod = std::complex<double>(0.0, 0.0);
+	// 	 	 
+	// 	 	 						for (int is1 = 0; is1 < neval; ++is1) {
+	// 	 	 							prod += std::conj(evec_phonon[ik][is1][i]) * evec_phonon[ik][is1][j];
+	// 	 	 						}
+	// 	 	 						if (std::norm(prod) > eps) {
+	// 	 	 							std::cout << "ik = " << ik << " i, j =" << i << " " << j << " prod = " << prod << std::endl;
+	// 	 	 						}
+	// 	 	 
+	// 	 	 					}
+	// 	 	 		}
+	// 	 		}
+
+	//  	double xk_tmp[3];
+	//  	std::complex<double> **dymat;
+	//  
+	//  	memory->allocate(dymat, neval, neval);
+	//  
+	//  	for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+	//  		for (unsigned int i = 0; i < kpoint->nk_equiv[ik]; ++i) {
+	//  			std::cout << "ik = " << ik + 1 << " i = " << i + 1 << " kp = " << kpoint->k_reduced[ik][i];
+	//  	
+	//  			for (int j = 0; j < 3; ++j) {
+	//  				xk_tmp[j] = kpoint->xk[kpoint->k_reduced[ik][i]][j];
+	//  				std::cout << std::setw(15) << xk_tmp[j];
+	//  			}
+	//  			std::cout << std::endl;
+	//  
+	//  		  if (fcs_phonon->is_fc2_ext) {
+	//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2_ext, dymat);
+	//  		  } else {
+	//  			  calc_analytic_k(xk_tmp, fcs_phonon->fc2, dymat);
+	//  		  }
+	//  		
+	//  		  for (int j = 0; j < neval; ++j) {
+	//  			  for (int k = 0; k < neval; ++k) {
+	//  				  if (std::abs(dymat[j][k].real()) < eps12) {
+	//  					  dymat[j][k] = std::complex<double>(0.0, dymat[j][k].imag());
+	//  				  }
+	//  				  if (std::abs(dymat[j][k].imag()) < eps12) {
+	//  					  dymat[j][k] = std::complex<double>(dymat[j][k].real(), 0.0);
+	//  				  }
+	//  
+	//  				  std::cout << std::setw(15) << dymat[j][k].real() << std::setw(15) << dymat[j][k].imag();
+	//  		  }
+	//  			  std::cout << std::endl;
+	//  		}
+	//  		  std::cout << std::endl;
+	//  	}
+	//  	}
 #endif
 }
 
