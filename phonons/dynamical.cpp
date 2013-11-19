@@ -665,7 +665,7 @@ void Dynamical::diagonalize_dynamical_all()
 
 	MPI_Allgatherv(&eval_phonon_mpi[nk_s][0], ndata_eval[mympi->my_rank], MPI_DOUBLE, &eval_phonon[0][0], ndata_eval, displs_eval, MPI_DOUBLE, MPI_COMM_WORLD);
 
-#if defined(MPI_COMPLEX16_2)
+#if defined(MPI_COMPLEX16)
 	if (eigenvectors) {
 
 		unsigned int js;
