@@ -23,7 +23,7 @@ Constraint::Constraint(ALM *alm) : Pointers(alm){
 	exclude_last_R = true;
 };
 Constraint::~Constraint() {
-	if (constraint_mode != 0) {
+	if (constraint_mode != 0 && alm->mode == "fitting") {
 		memory->deallocate(const_mat);
 		memory->deallocate(const_rhs);
 		memory->deallocate(const_symmetry);

@@ -52,7 +52,6 @@ namespace ALM_NS {
 
 		// Declaration construction
 
-
 		SymmetryOperationTransFloat(const int rot_in[3][3], const double tran_in[3])
 		{
 			for (int i = 0; i < 3; ++i){
@@ -125,7 +124,8 @@ namespace ALM_NS {
 		std::ofstream ofs_sym;
 		std::ifstream ifs_sym;
 
-		int numsymop(int, double **x, double);
+		void gensym_notran(std::vector<SymmetryOperation> &);
+		int numsymop(int, double **x, double, std::vector<SymmetryOperation>);
 
 	private:
 // #ifdef _USE_EIGEN

@@ -507,7 +507,7 @@ void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryO
 	}
 }
 
-int Symmetry::numsymop(int nat, double **x, double tolerance)
+int Symmetry::numsymop(int nat, double **x, double tolerance, std::vector<SymmetryOperation> symlist)
 {
 	int i, j;
 	int ii, jj;
@@ -522,7 +522,7 @@ int Symmetry::numsymop(int nat, double **x, double tolerance)
 	int itype;
 	int iat, jat;
 
-	for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
+	for (std::vector<SymmetryOperation>::iterator it = symlist.begin(); it != symlist.end(); ++it) {
 
 		for (i = 0; i < 3; ++i) {
 			for (j = 0; j < 3; ++j) {
@@ -578,6 +578,17 @@ int Symmetry::numsymop(int nat, double **x, double tolerance)
 	return ret;
 }
 
+void Symmetry::gensym_notran(std::vector<SymmetryOperation> &sym_notran) {
+
+	sym_notran.clear();
+
+	for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
+		
+		if ((*it).symop[9] == 0 && (*it).symop[10] == 0 && (*it).symop[11] == 0) {
+			sym_notran.push_back(*it);
+		}
+	}
+}
 
 // void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][3], double **x)
 // {

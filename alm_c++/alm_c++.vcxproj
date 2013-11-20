@@ -88,6 +88,7 @@
     <ClCompile Include="interaction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
+    <ClCompile Include="patterndisp.cpp" />
     <ClCompile Include="symmetry.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="timer.cpp" />
@@ -107,6 +108,7 @@
     <ClInclude Include="interaction.h" />
     <ClInclude Include="listcomparison.h" />
     <ClInclude Include="memory.h" />
+    <ClInclude Include="patterndisp.h" />
     <ClInclude Include="pointers.h" />
     <ClInclude Include="symmetry.h" />
     <ClInclude Include="system.h" />

@@ -12,6 +12,7 @@ namespace ALM_NS{
         
         void writeall();
 		void write_input_vars();
+		void write_displacement_pattern();
 
     private:
         void wrtfcs();
