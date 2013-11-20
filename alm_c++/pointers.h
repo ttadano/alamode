@@ -18,6 +18,7 @@ namespace ALM_NS {
           files(ptr->files),
           error(ptr->error),
           ewald(ptr->ewald),
+		  displace(ptr->displace),
           fcs(ptr->fcs),
           writes(ptr->writes),
           timer(ptr->timer) {}
@@ -34,6 +35,7 @@ namespace ALM_NS {
         Constraint *&constraint;
         Files *&files;
         Ewald *&ewald;
+		Displace *&displace;
         Writes *&writes;
         Error *&error;
         Timer *&timer;

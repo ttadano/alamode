@@ -68,6 +68,7 @@ void System::init(){
         }
     }
     frac2cart(x_cartesian);
+	setup_atomic_class(kd);
 }
 
 void System::recips(double aa[3][3], double bb[3][3])
@@ -346,4 +347,33 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
         + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
 
     return vol;
+}
+
+void System::setup_atomic_class(int *kd) {
+
+	// This function can be modified when one needs to 
+	// compute symmetry operations of spin polarized systems.
+
+	unsigned int i;
+	std::set<unsigned int> kd_uniq;
+	kd_uniq.clear();
+
+	for (i = 0; i < nat; ++i) {
+		kd_uniq.insert(kd[i]);
+	}
+	nclassatom = kd_uniq.size();
+
+	memory->allocate(atomlist_class, nclassatom);
+
+	for (i = 0; i < nat; ++i) {
+		int count = 0;
+		for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
+			if (kd[i] == (*it)) {
+				atomlist_class[count].push_back(i);
+			}
+			++count;
+		}
+	}
+
+	kd_uniq.clear();
 }

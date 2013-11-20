@@ -11,6 +11,7 @@
 #include "fcs.h"
 #include "fitting.h"
 #include "constraint.h"
+#include "patterndisp.h"
 
 
 using namespace ALM_NS;
@@ -28,8 +29,9 @@ void Writes::write_input_vars()
 	std::cout << "---------------------------------------------------" << std::endl;
 	std::cout << "General:" << std::endl;
 	std::cout << " PREFIX = " << files->job_title << std::endl;
+	std::cout << " MODE = " << alm->mode << std::endl;
 	std::cout << " NAT = " << system->nat << "; NKD = " << system->nkd << std::endl;
-	std::cout << " NSYM = " << symmetry->nsym << "; NNP = " << symmetry->nnp << std::endl;
+	std::cout << " NSYM = " << symmetry->nsym << "; PRINTSYMM = " << symmetry->is_printsymmetry << "; TOLERANCE = " << symmetry->tolerance << std::endl;
 	std::cout << " KD = ";
 	for (i = 0; i < system->nkd; ++i) std::cout << std::setw(4) << system->kdname[i];
 	std::cout << std::endl;
@@ -42,7 +44,12 @@ void Writes::write_input_vars()
 	std::cout << " INTERTYPE = " << interaction->interaction_type << std::endl;
 	std::cout << std::endl;
 
-	std::cout << "Interaction:" << std::endl;
+	if (alm->mode == "suggest") {
+		std::cout << " DBASIS = " << displace->disp_basis << std::endl;
+		std::cout << std::endl;
+	}
+
+	std::cout << "Interaction:" << std::endl;	
 	std::cout << " NORDER = " << interaction->maxorder << std::endl;
 	std::cout << " NBODY = ";
 	for (i = 0; i < interaction->maxorder; ++i) std::cout << std::setw(3) << interaction->nbody_include[i];
@@ -50,17 +57,20 @@ void Writes::write_input_vars()
 	std::cout << " ILONG = " << ewald->is_longrange << "; FLONG = " << ewald->file_longrange << std::endl;
 	std::cout << std::endl;
 
-	std::cout << "Fitting:" << std::endl;
-	std::cout << " DFILE = " << files->file_disp << std::endl;
-	std::cout << " FFILE = " << files->file_force << std::endl;
-	std::cout << " NDATA = " << system->ndata << "; NSTART = " << system->nstart << "; NEND = " << system->nend << "; NSKIP = " << system->nskip << std::endl;
-	std::cout << " NBOOT = " << fitting->nboot << std::endl;
-	std::cout << " MULTDAT = " << symmetry->multiply_data << std::endl;
-	std::cout << " ICONST = " << constraint->constraint_mode << std::endl;
-	std::cout << " ROTAXIS = " << constraint->rotation_axis << std::endl;
-	std::cout << " FC2INFO = " << constraint->fc2_file << std::endl;
-	std::cout << " REFINFO = " << symmetry->refsys_file << std::endl;
-	std::cout << std::endl;
+	if (alm->mode == "fitting") {
+		std::cout << "Fitting:" << std::endl;
+		std::cout << " DFILE = " << files->file_disp << std::endl;
+		std::cout << " FFILE = " << files->file_force << std::endl;
+		std::cout << " NDATA = " << system->ndata << "; NSTART = " << system->nstart << "; NEND = " << system->nend << "; NSKIP = " << system->nskip << std::endl;
+		std::cout << " NBOOT = " << fitting->nboot << std::endl;
+		std::cout << " MULTDAT = " << symmetry->multiply_data << std::endl;
+		std::cout << " ICONST = " << constraint->constraint_mode << std::endl;
+		std::cout << " ROTAXIS = " << constraint->rotation_axis << std::endl;
+		std::cout << " FC2INFO = " << constraint->fc2_file << std::endl;
+		std::cout << " REFINFO = " << symmetry->refsys_file << std::endl;
+		std::cout << std::endl;
+	}
+
 	std::cout << "---------------------------------------------------" << std::endl;
 	std::cout << std::endl;
 
@@ -455,4 +465,48 @@ void Writes::wrtmisc(){
 	memory->deallocate(pair_tmp);
 
 	std::cout << std::endl << "Miscellaneous information needed for post-process was stored to file: " << files->file_info << std::endl;
+}
+
+void Writes::write_displacement_pattern()
+{
+	int i, j, k;
+
+	int order;
+	int maxorder = interaction->maxorder;
+
+	int counter;
+
+	std::ofstream ofs_pattern;
+
+	for (order = 0; order < maxorder; ++order) {
+		ofs_pattern.open(files->file_disp_pattern[order].c_str(), std::ios::out);
+		if (!ofs_pattern) error->exit("write_displacement_pattern", "Cannot open file_disp_pattern");
+
+		counter = 0;
+
+		ofs_pattern << "Basis : " << displace->disp_basis[0] << std::endl;
+
+		for (std::vector<AtomWithDirection>::iterator it = displace->pattern_all[order].begin(); it != displace->pattern_all[order].end(); ++it) {
+			AtomWithDirection entry = *it;
+
+			++counter;
+
+			ofs_pattern << std::setw(5) << counter << ":" << std::endl;
+
+			for (i = 0; i < entry.atoms.size(); ++i) {
+				ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
+				for (j = 0; j < 3; ++j) {
+					ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
+				}
+				ofs_pattern << std::endl;
+			}	
+		}
+
+		ofs_pattern.close();
+
+		std::cout << "Suggested displacement patterns for " << interaction->str_order[order] 
+		<< " are printed in file " << files->file_disp_pattern[order] << std::endl;
+	}
+
+
 }

@@ -21,6 +21,7 @@ namespace ALM_NS {
         std::string file_disp_sym, file_force_sym;
 
         std::string file_int;
+		std::string *file_disp_pattern;
 
         std::ofstream ofs_int;
         std::ifstream ifs_int;
@@ -28,6 +29,8 @@ namespace ALM_NS {
         std::ifstream ifs_disp, ifs_force;
         std::ofstream ofs_disp_sym, ofs_force_sym;
         std::ifstream ifs_disp_sym, ifs_force_sym;
+
+		std::ofstream *ofs_disp_pattern;
 
     private:
         void openfiles();

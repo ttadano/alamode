@@ -11,6 +11,8 @@
 #include "constraint.h"
 #include "fcs.h"
 #include "ewald.h"
+#include "patterndisp.h"
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <map>
 #include <boost/lexical_cast.hpp>
@@ -43,10 +45,13 @@ void Input::parce_input()
 	}
 	parse_cutoff_radii();
 
-	if (!locate_tag("&fitting")) {
-		error->exit("parse_input", "&fitting entry not found in the input file");
+
+	if (alm->mode == "fitting") {
+		if (!locate_tag("&fitting")) {
+			error->exit("parse_input", "&fitting entry not found in the input file");
+		}
+		parse_fitting_vars();
 	}
-	parse_fitting_vars();
 
 	if (!locate_tag("&position")) {
 		error->exit("parse_input", "&position entry not found in the input file");
@@ -58,15 +63,17 @@ void Input::parce_input()
 void Input::parse_general_vars(){
 
 	int i;
-	std::string prefix, str_tmp;
+	std::string prefix, mode, str_tmp, str_disp_basis;
 	int nat, nkd, nsym, nnp, interaction_type;
+	int is_printsymmetry;
 	bool is_periodic[3];
 	std::string *kdname;
+	double tolerance;
 	double *masskd;
 
 	std::vector<std::string> kdname_v, periodic_v, masskd_v;
-	std::string str_allowed_list = "PREFIX NAT NKD NSYM NNP KD MASS PERIODIC INTERTYPE";
-	std::string str_no_defaults = "PREFIX NAT NKD NSYM NNP KD MASS";
+	std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD MASS PERIODIC INTERTYPE PRINTSYMM TOLERANCE DBASIS";
+	std::string str_no_defaults = "PREFIX MODE NAT NKD KD MASS";
 	std::vector<std::string> no_defaults;
 	std::map<std::string, std::string> general_var_dict;
 
@@ -83,11 +90,28 @@ void Input::parse_general_vars(){
 	}
 
 	prefix = general_var_dict["PREFIX"];
+	mode = general_var_dict["MODE"];
+	
+	std::transform(mode.begin(), mode.end(), mode.begin(), tolower);
+	if (mode != "fitting" && mode != "suggest") {
+		error->exit("parse_general_vars", "Invalid MODE variable");
+	}
+
 	nat = boost::lexical_cast<int>(general_var_dict["NAT"]);
 	nkd = boost::lexical_cast<int>(general_var_dict["NKD"]);
-	nsym= boost::lexical_cast<int>(general_var_dict["NSYM"]);
-	nnp = boost::lexical_cast<int>(general_var_dict["NNP"]);
 
+
+	if (general_var_dict["NSYM"].empty()) {
+		nsym = 0;
+	} else {
+		nsym= boost::lexical_cast<int>(general_var_dict["NSYM"]);
+	}
+
+	if (general_var_dict["PRINTSYMM"].empty()) {
+		is_printsymmetry = 0;
+	} else {
+		is_printsymmetry = boost::lexical_cast<int>(general_var_dict["PRINTSYMM"]);
+	}
 
 	split_str_by_space(general_var_dict["KD"], kdname_v);
 
@@ -100,7 +124,6 @@ void Input::parse_general_vars(){
 		}
 	}
 
-
 	split_str_by_space(general_var_dict["MASS"], masskd_v);
 
 	if (masskd_v.size() != nkd) {
@@ -111,7 +134,6 @@ void Input::parse_general_vars(){
 			masskd[i] = boost::lexical_cast<double>(masskd_v[i]);
 		}
 	}
-
 
 	split_str_by_space(general_var_dict["PERIODIC"], periodic_v);
 
@@ -135,11 +157,32 @@ void Input::parse_general_vars(){
 	if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
 
 
+	if (general_var_dict["TOLERANCE"].empty()) {
+		tolerance = 1.0e-8;
+	} else {
+		tolerance = boost::lexical_cast<double>(general_var_dict["TOLERANCE"]);
+	}
+
+	if (mode == "suggest") {
+		if (general_var_dict["DBASIS"].empty()) {
+			str_disp_basis = "Cart";
+		} else {
+			str_disp_basis = general_var_dict["DBASIS"];
+		}
+		std::transform(str_disp_basis.begin(), str_disp_basis.end(), str_disp_basis.begin(), toupper);
+		if (str_disp_basis[0] != 'C' && str_disp_basis[0] != 'F') {
+			error->exit("parse_general_vars", "Invalid DBASIS");
+		}
+	}
+
+
 	files->job_title = prefix;
+	alm->mode = mode;
 	system->nat = nat;
 	system->nkd = nkd;
 	symmetry->nsym = nsym;
-	symmetry->nnp = nnp;
+	symmetry->is_printsymmetry = is_printsymmetry;
+	symmetry->tolerance = tolerance;
 
 	memory->allocate(system->kdname, nkd);
 	memory->allocate(system->mass_kd, nkd);
@@ -152,6 +195,8 @@ void Input::parse_general_vars(){
 		interaction->is_periodic[i] = is_periodic[i];
 	}
 	interaction->interaction_type = interaction_type;
+
+	if (mode == "suggest") displace->disp_basis = str_disp_basis;
 
 	memory->deallocate(kdname);
 	memory->deallocate(masskd);
