@@ -468,7 +468,7 @@ void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryO
 	for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
 
 		for (i = 0; i < 3; ++i) {
-			tran_tmp = abs((*it).tran[i]);
+			tran_tmp = std::abs((*it).tran[i]);
 
 			if (translation_set.find(tran_tmp) == translation_set.end()) {
 				translation_set.insert(tran_tmp);
@@ -554,7 +554,7 @@ int Symmetry::numsymop(int nat, double **x, double tolerance, std::vector<Symmet
 					jat = system->atomlist_class[itype][jj];
 
 					for (i = 0; i < 3; ++i) {
-						tmp[i] = std::fmod(abs(x[jat][i] - x_rot_tmp[i]), 1.0);
+						tmp[i] = std::fmod(std::abs(x[jat][i] - x_rot_tmp[i]), 1.0);
 						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
 					}
 					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
@@ -1025,7 +1025,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 			for (jat = 0; jat < nat; ++jat){
 
 				for (i = 0; i < 3; ++i){
-					tmp[i] = fmod(std::abs(xnew[iat][i] - x[jat][i]), 1.0);
+					tmp[i] = std::fmod(std::abs(xnew[iat][i] - x[jat][i]), 1.0);
 					tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
 				}
 
@@ -1195,7 +1195,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 				for (jat = 0; jat < nat_ref; ++jat){
 					for (i = 0; i < 3; ++i){
-						tmp[i] = fmod(std::abs(xnew[iat][i] - x_ref[jat][i]), 1.0);
+						tmp[i] = std::fmod(std::abs(xnew[iat][i] - x_ref[jat][i]), 1.0);
 						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
 					}
 
@@ -1529,7 +1529,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 				for (k = 0; k < 3; ++k) {
 #ifdef _USE_EIGEN
 					vsi(k) = x[j][k];
-					tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
+					tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0); 
 					// need "std" to specify floating point operation
 					// especially for intel compiler (there was no problem in MSVC)
 					tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
