@@ -31,9 +31,7 @@ namespace ALM_NS {
 		unsigned int nclassatom;
 		std::vector<unsigned int> *atomlist_class;
 
-
         int *map_ref;
-        void rotvec(double [3], double [3], double [3][3], char mode = 'N');
         double cell_volume;
 
     private:

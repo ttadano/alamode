@@ -107,6 +107,7 @@
     <ClInclude Include="input.h" />
     <ClInclude Include="interaction.h" />
     <ClInclude Include="listcomparison.h" />
+    <ClInclude Include="mathfunctions.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="patterndisp.h" />
     <ClInclude Include="pointers.h" />

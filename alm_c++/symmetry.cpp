@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include "mathfunctions.h"
 #include "symmetry.h"
 #include "system.h"
 #include "memory.h"
@@ -326,7 +327,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 										rot_tmp[2][2] = m33;
 
 										// Here, aa_rot = aa * rot_tmp is correct.
-										matmul3(aa_rot, aa, rot_tmp);
+										 matmul3(aa_rot, aa, rot_tmp);
 
 										for (i = 0; i < 3; ++i) {
 											for (j = 0; j < 3; ++j) {
@@ -398,7 +399,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 			}
 		}
 
-		system->rotvec(x_rot, x[iat], rot);
+		rotvec(x_rot, x[iat], rot);
 
 		for (ii = 0; ii < atomclass[0].size(); ++ii) {
 			jat = atomclass[0][ii];
@@ -416,7 +417,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 
 					kat = atomclass[itype][jj];
 
-					system->rotvec(x_rot_tmp, x[kat], rot);
+					rotvec(x_rot_tmp, x[kat], rot);
 
 					for (i = 0; i < 3; ++i) {
 						x_rot_tmp[i] += tran[i];
@@ -541,7 +542,7 @@ int Symmetry::numsymop(int nat, double **x, double tolerance, std::vector<Symmet
 
 				iat = system->atomlist_class[itype][ii];
 
-				system->rotvec(x_rot_tmp, x[iat], rot);
+				rotvec(x_rot_tmp, x[iat], rot);
 
 				for (i = 0; i < 3; ++i) {
 					x_rot_tmp[i] += tran[i];
@@ -590,312 +591,6 @@ void Symmetry::gensym_notran(std::vector<SymmetryOperation> &sym_notran) {
 	}
 }
 
-// void Symmetry::findsym(int nat, int nnp, int *kd, double aa[3][3], double bb[3][3], double **x)
-// {
-// 	int i, j;
-// 
-// 	int m11, m12, m13, m21, m22, m23, m31, m32, m33;
-// 	int det, np1, np2, np3;
-// 
-// #ifdef _USE_EIGEN
-// 	Eigen::Matrix3d amat, bmat;
-// 	Eigen::Matrix3d rot2;
-// #else
-// 	double rot2[3][3];
-// #endif
-// 
-// 	int rot_tmp[3][3], rot_reciprocal[3][3];
-// 	int tran_tmp[3];
-// 
-// 	for (i = 0; i < 3; ++i){
-// 		for (j = 0; j < 3; ++j){
-// 
-// #ifdef _USE_EIGEN
-// 			amat(i,j) = aa[i][j];
-// 			bmat(i,j) = bb[i][j];
-// #endif
-// 
-// 			if(i == j) {
-// 				rot_tmp[i][j] = 1;
-// 			} else {
-// 				rot_tmp[i][j] = 0;
-// 			}
-// 		}
-// 		tran_tmp[i] = 0;
-// 	}
-// 
-// 	// Add the identity operation to the list
-// 
-// 	SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
-// 
-// 	int nnps = nnp * nnp * nnp;
-// 	int **arr_trans;
-// 
-// 	memory->allocate(arr_trans, nnps, 3);
-// 
-// 	int itran = 0;
-// 
-// 	for (np1 = 0; np1 < nnp; ++np1){
-// 		for (np2 = 0; np2 < nnp; ++np2){
-// 			for (np3 = 0; np3 < nnp; ++np3){
-// 				arr_trans[itran][0] = np1;
-// 				arr_trans[itran][1] = np2;
-// 				arr_trans[itran][2] = np3;
-// 				++itran;
-// 			}
-// 		}
-// 	}   
-// 
-// 	for (m11 = -1; m11 <= 1; ++m11){
-// 		for (m12 = -1; m12 <= 1; ++m12) {
-// 			for (m13 = -1; m13 <= 1; ++m13){
-// 				for (m21 = -1; m21 <= 1; ++m21){
-// 					for (m22 = -1; m22 <= 1; ++m22){
-// 						for (m23 = -1; m23 <= 1; ++m23){
-// 							for (m31 = -1; m31 <= 1; ++m31){
-// 								for (m32 = -1; m32 <= 1; ++m32){
-// 									for (m33 = -1; m33 <= 1; ++m33){
-// 
-// 										det = m11 * (m22 * m33 - m32 * m23)
-// 											- m21 * (m12 * m33 - m32 * m13)
-// 											+ m31 * (m12 * m23 - m22 * m13);
-// 
-// 										if (det != 1 && det != -1) continue;
-// 
-// 										rot_tmp[0][0] = m11;
-// 										rot_tmp[0][1] = m12;
-// 										rot_tmp[0][2] = m13;
-// 										rot_tmp[1][0] = m21;
-// 										rot_tmp[1][1] = m22;
-// 										rot_tmp[1][2] = m23;
-// 										rot_tmp[2][0] = m31;
-// 										rot_tmp[2][1] = m32;
-// 										rot_tmp[2][2] = m33;
-// 
-// 										det = 1 / det;
-// 
-// 										rot_reciprocal[0][0] = (m22 * m33 - m23 * m32) * det ;
-// 										rot_reciprocal[0][1] = (m23 * m31 - m21 * m33) * det ;
-// 										rot_reciprocal[0][2] = (m21 * m32 - m22 * m31) * det ;
-// 										rot_reciprocal[1][0] = (m32 * m13 - m33 * m12) * det ;
-// 										rot_reciprocal[1][1] = (m33 * m11 - m31 * m13) * det ;
-// 										rot_reciprocal[1][2] = (m31 * m12 - m32 * m11) * det ;
-// 										rot_reciprocal[2][0] = (m12 * m23 - m13 * m22) * det ;
-// 										rot_reciprocal[2][1] = (m13 * m21 - m11 * m23) * det ;
-// 										rot_reciprocal[2][2] = (m11 * m22 - m12 * m21) * det ;
-// 
-// 										for (i = 0; i < 3; ++i) {
-// 											for (j = 0; j < 3; ++j){
-// #ifdef _USE_EIGEN
-// 												rot2(i,j) = static_cast<double>(rot_reciprocal[i][j]);
-// #else
-// 												rot2[i][j] = static_cast<double>(rot_reciprocal[i][j]);
-// #endif
-// 											}
-// 										}
-// 
-// #ifdef _USE_EIGEN
-// 										if(!is_ortho(rot2, amat, bmat)) continue;
-// #else
-// 										if(!is_ortho(rot2, aa, bb)) continue;
-// #endif
-// 
-// #pragma omp parallel for private(np1, np2, np3)
-// 										for (itran = 0; itran < nnps; ++itran){
-// 
-// 											np1 = arr_trans[itran][0];
-// 											np2 = arr_trans[itran][1];
-// 											np3 = arr_trans[itran][2];
-// 
-// 											if(m11 == 1 && m12 == 0 && m13 ==0 &&
-// 												m21 == 0 && m22 == 1 && m23 == 0 &&
-// 												m31 == 0 && m32 == 0 && m33 == 1 &&
-// 												np1 == 0 && np2 == 0 && np3 == 0) continue;
-// 
-// 											if(!is_invariant(rot2, nat, kd, x, arr_trans[itran], nnp)) continue;
-// 
-// 											// STL containers are not thread-safe
-// #pragma omp critical
-// 											SymmList.push_back(SymmetryOperation(rot_tmp, arr_trans[itran]));
-// 
-// 										}
-// 									}
-// 								}
-// 							}
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 
-// 	std::sort(SymmList.begin() + 1, SymmList.end());
-// 	memory->deallocate(arr_trans);
-// }
-// 
-// #ifdef _USE_EIGEN
-// bool Symmetry::is_ortho(Eigen::Matrix3d rot, Eigen::Matrix3d amat, Eigen::Matrix3d bmat)
-// {
-// 	double pi2 = 2.0 * pi;
-// 
-// 	Eigen::Matrix3d sat, unit;
-// 
-// 	double tmp;
-// 
-// 	sat = rot * amat.transpose();
-// 	unit = (sat.transpose() * (bmat * (bmat.transpose() * sat)));
-// 	unit /= pow(pi2, 2);
-// 
-// 	tmp = pow((unit(0,0) - 1.0), 2) + pow((unit(1,1) - 1.0), 2) + pow((unit(2,2) - 1.0), 2)
-// 		+ pow(unit(0,1), 2) + pow(unit(0,2), 2)
-// 		+ pow(unit(1,0), 2) + pow(unit(1,2), 2)
-// 		+ pow(unit(2,0), 2) + pow(unit(2,1), 2);
-// 
-// 	if(tmp > eps) {
-// 		return false;
-// 	} else {
-// 		return true;
-// 	}
-// }
-// 
-// bool Symmetry::is_invariant(Eigen::Matrix3d rot, int nat, int *kd, double **x, int tran[3], int nnp)
-// {
-// 
-// 	int i, j, k, l;
-// 	Eigen::Vector3d wsi, usi, vsi, tmp;
-// 
-// 	bool value = true;
-// 
-// 	for (i = 0; i < nat; ++i){
-// 
-// 		for (j = 0; j < 3; ++j){   
-// 			wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
-// 		}
-// 
-// 		usi = rot.transpose() * wsi;
-// 
-// 		l = -1;
-// 
-// 		for (j = 0; j < nat; ++j){
-// 
-// 			if(kd[j] == kd[i]) {
-// 
-// 				for (k = 0; k < 3; ++k) { 
-// 					vsi(k) = x[j][k];
-// 					tmp(k) = fmod(std::abs(usi(k) - vsi(k)), 1.0); 
-// 					// need "std" to specify floating point operation
-// 					// especially for intel compiler (there was no problem in MSVC)
-// 					tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
-// 				}
-// 				double diff = tmp.dot(tmp);
-// 				if (diff < eps12) l = j;
-// 			}
-// 		}
-// 
-// 		if(l == -1) value = false;
-// 
-// 	}
-// 	return value;
-// }
-// #endif
-// 
-// bool Symmetry::is_ortho(double rot[3][3], double amat[3][3], double bmat[3][3]) 
-// {
-// 	int i, j;
-// 	double pi2 = 2.0 * pi;
-// 	double res;
-// 
-// 	double sat[3][3], unit[3][3], tmp[3][3], tmp2[3][3];
-// 	double amat_t[3][3], bmat_t[3][3], sat_t[3][3];
-// 
-// 	transpose3(amat_t, amat);
-// 	transpose3(bmat_t, bmat);
-// 
-// 	matmul3(sat, rot, amat_t);
-// 	transpose3(sat_t, sat);
-// 
-// 	matmul3(tmp, bmat_t, sat);
-// 	matmul3(tmp2, bmat, tmp);
-// 	matmul3(unit, sat_t, tmp2);
-// 
-// 	for (i = 0; i < 3; ++i) {
-// 		for (j = 0; j < 3; ++j) {
-// 			unit[i][j] /= pow(pi2, 2);
-// 		}
-// 	}
-// 
-// 	res = pow((unit[0][0] - 1.0), 2) + pow((unit[1][1] - 1.0), 2) + pow((unit[2][2] - 1.0), 2)
-// 		+ pow(unit[0][1], 2) + pow(unit[0][2], 2)
-// 		+ pow(unit[1][0], 2) + pow(unit[1][2], 2)
-// 		+ pow(unit[2][0], 2) + pow(unit[2][1], 2);
-// 
-// 	if(res > eps) {
-// 		return false;
-// 	} else {
-// 		return true;
-// 	}
-// }
-
-void Symmetry::matmul3(double ret[3][3], const double amat[3][3], const double bmat[3][3]) 
-{
-	int i, j, k;
-
-	for (i = 0; i < 3; ++i) {
-		for (j = 0; j < 3; ++j) {
-			ret[i][j] = 0.0;
-			for (k = 0; k < 3; ++k) ret[i][j] += amat[i][k] * bmat[k][j]; 	        
-		}
-	}
-}
-
-void Symmetry::transpose3(double ret[3][3], const double mat[3][3]) 
-{
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 3; ++j) {
-			ret[i][j] = mat[j][i];
-		}
-	}
-}
-
-// 
-// bool Symmetry::is_invariant(double rot[3][3], int nat, int *kd, double **x, int tran[3], int nnp) {
-// 
-// 	int i, j, k, l;
-// 	double wsi[3], usi[3], vsi[3], tmp[3];
-// 	double diff;
-// 
-// 	bool value = true;
-// 
-// 	for (i = 0; i < nat; ++i) {
-// 
-// 		for (j = 0; j < 3; ++j) {
-// 			wsi[j] = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
-// 		}
-// 
-// 		system->rotvec(usi, wsi, rot, 'T');
-// 
-// 		l = -1;
-// 
-// 		for (j = 0; j < nat; ++j) {
-// 
-// 			if (kd[j] == kd[i]) {
-// 
-// 				for (k = 0; k < 3; ++k) {
-// 					vsi[k] = x[j][k];
-// 					tmp[k] = std::fmod(std::abs(usi[k] - vsi[k]), 1.0);
-// 					tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
-// 				}
-// 				diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-// 				if (diff < eps12) l = j;
-// 			}
-// 		}
-// 
-// 		if (l == -1) value = false;
-// 
-// 
-// 	}
-// 	return value;
-// }
 
 void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
@@ -1228,8 +923,8 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 
 				map_found = false;
 
-				system->rotvec(xtmp, system->xcoord[iat], system->lavec);
-				system->rotvec(xtmp, xtmp, rlavec_ref);
+				rotvec(xtmp, system->xcoord[iat], system->lavec);
+				rotvec(xtmp, xtmp, rlavec_ref);
 
 				for (icrd = 0; icrd < 3; ++icrd) {
 					xtmp[icrd] /= 2.0 * pi;
@@ -1520,7 +1215,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 #ifdef _USE_EIGEN
 			usi = rot * wsi;
 #else
-			system->rotvec(usi, wsi, rot);
+			rotvec(usi, wsi, rot);
 #endif
 
 			l = -1;

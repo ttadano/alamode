@@ -3,6 +3,7 @@
 #include "error.h"
 #include "system.h"
 #include "constants.h"
+#include "mathfunctions.h"
 #include <fstream>
 #include <cmath>
 #include <boost/math/special_functions/erf.hpp>
@@ -32,7 +33,7 @@ void Ewald::init()
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) tmp[j] = 0.0;
             tmp[i] = 1.0;
-            system->rotvec(tmp, tmp, system->lavec);
+            rotvec(tmp, tmp, system->lavec);
             d_tmp = 0.5 * std::sqrt(tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2]);
             Lmax = std::min<double>(Lmax, d_tmp);
         }
@@ -150,7 +151,7 @@ void Ewald::prepare_G(const double gmax)
 
                 if (std::sqrt(std::pow(x_tmp[0], 2) + std::pow(x_tmp[1], 2) + std::pow(x_tmp[2], 2)) <= gmax)
                 {
-                    system->rotvec(x_tmp, x_tmp, system->rlavec, 'T');
+                    rotvec(x_tmp, x_tmp, system->rlavec, 'T');
                     G_vector.push_back(Gvecs(x_tmp));
                 }            
             }
@@ -216,7 +217,7 @@ void Ewald::ewald_force_short(const int N, double **r, double **f)
                             r_tmp[j] = r_tmp[j] - static_cast<double>(nint(r_tmp[j]));
                         }
 */
-                        system->rotvec(r_tmp, r_tmp, system->lavec);
+                        rotvec(r_tmp, r_tmp, system->lavec);
                         rij = std::sqrt(std::pow(r_tmp[0], 2) + std::pow(r_tmp[1], 2) + std::pow(r_tmp[2], 2));
                         if (rij >= Lmax) continue;
 
@@ -267,7 +268,7 @@ void Ewald::ewald_force_long(const int N, double **r, double **f)
                     r_tmp[j] = r[iat][j] - r[jat][j];
 //                    r_tmp[j] = r_tmp[j] - static_cast<double>(nint(r_tmp[j]));
                 }
-                system->rotvec(r_tmp, r_tmp, system->lavec);
+                rotvec(r_tmp, r_tmp, system->lavec);
                 tmp += Q[jat] * std::sin(g_tmp[0] * r_tmp[0] + g_tmp[1] * r_tmp[1] + g_tmp[2] * r_tmp[2]);
             }
 

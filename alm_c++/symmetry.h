@@ -87,9 +87,6 @@ namespace ALM_NS {
 		void init();
 		void setup_symmetry_operation(int, unsigned int&, unsigned int&, double[3][3], double[3][3], 
 			double **, int *);
-// 		void findsym(int, int, int *, double[3][3], double[3][3],
-// 			double **);
-
 		void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
 
 		unsigned int nsym, nnp;
@@ -128,14 +125,7 @@ namespace ALM_NS {
 		int numsymop(int, double **x, double, std::vector<SymmetryOperation>);
 
 	private:
-// #ifdef _USE_EIGEN
-// 		bool is_ortho(Eigen::Matrix3d, Eigen::Matrix3d, Eigen::Matrix3d);
-// 		bool is_invariant(Eigen::Matrix3d, int, int*, double **, int[3], int);
-// #endif
-// 		bool is_ortho(double [3][3], double [3][3], double [3][3]);
-// 		bool is_invariant(double [3][3], int, int *, double **, int [3], int);
-		void matmul3(double [3][3], const double [3][3], const double [3][3]);
-		void transpose3(double [3][3], const double [3][3]);
+
 		void symop_in_cart(double [3][3], double[3][3]);
 		void pure_translations();
 		void data_multiplier(int, int, int);
@@ -153,3 +143,4 @@ namespace ALM_NS {
 
 
 }
+
