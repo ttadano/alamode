@@ -33,6 +33,7 @@
 
 using namespace ALM_NS;
 
+
 Fitting::Fitting(ALM *alm): Pointers(alm){
 	seed = (unsigned int) time(NULL);
 #ifdef _VSL
@@ -586,8 +587,9 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 			}
 		}
 	}
-
+#ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
+#endif
 	{ 
 		int *ind;
 		int mm, order, iat, k;
@@ -596,7 +598,9 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
 		memory->allocate(ind, maxorder + 1);
 
+#ifdef _OPENMP
 #pragma omp for schedule(guided)
+#endif
 		for(irow = 0; irow < ncycle; ++irow){
 
 			// generate r.h.s vector B

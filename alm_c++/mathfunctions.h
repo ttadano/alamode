@@ -51,3 +51,8 @@ inline void rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char m
 		exit(1);
 	}
 }
+
+inline int nint(double x)
+{
+	return int(x + 0.5 - (x < 0.0));
+}

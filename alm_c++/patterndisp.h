@@ -53,10 +53,10 @@ namespace ALM_NS {
 		AtomWithDirection();
 		AtomWithDirection(std::vector<int> a, std::vector<double> b) {
 
-			for (int i = 0; i < a.size(); ++i) {
+			for (unsigned int i = 0; i < a.size(); ++i) {
 				atoms.push_back(a[i]);
 			}
-			for (int i = 0; i < b.size(); ++i) {
+			for (unsigned int i = 0; i < b.size(); ++i) {
 				directions.push_back(b[i]);
 			}
 		}

@@ -241,7 +241,7 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
 		SymmetryOperationTransFloat sym_tmp = *p;
 
 		for(i = 0; i < 3; ++i){
-			tran_int[i] = int(static_cast<double>(nnp) * sym_tmp.tran[i] + 0.5 - (static_cast<double>(nnp) * sym_tmp.tran[i] < 0));
+			tran_int[i] = nint(static_cast<double>(nnp) * sym_tmp.tran[i]);
 			if (tran_int[i] < 0) tran_int[i] += nnp;
 		}
 
@@ -372,7 +372,8 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 	}
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
+void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x,
+									 std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
 
 	unsigned int i, j;
 	unsigned int iat, jat, kat, lat;
@@ -383,7 +384,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 	double tmp[3];
 	double diff;
 
-	unsigned int ii, jj, kk;
+	int ii, jj, kk;
 	unsigned int itype;
 
 	bool is_found;
@@ -401,12 +402,15 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 
 		rotvec(x_rot, x[iat], rot);
 
+#ifdef _OPENMP
+#pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff)
+#endif
 		for (ii = 0; ii < atomclass[0].size(); ++ii) {
 			jat = atomclass[0][ii];
 
 			for (i = 0; i < 3; ++i) {
 				tran[i] = x[jat][i] - x_rot[i];
-				tran[i] = tran[i] - int(tran[i] + 0.5 - (tran[i] < 0));
+				tran[i] = tran[i] - nint(tran[i]);
 			}
 
 			isok = true;
@@ -445,6 +449,9 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 			}
 
 			if (isok) {
+#ifdef _OPENMP
+#pragma omp critical
+#endif
 				CrystalSymmList.push_back(SymmetryOperationTransFloat((*it_latsym).mat, tran));
 			}
 		}
@@ -486,7 +493,7 @@ void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryO
 		for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
 
 			tran_numerator = (*it) * static_cast<double>(ret);
-			if (std::abs(tran_numerator - static_cast<double>(int(tran_numerator + 0.5 - (tran_numerator < 0)))) > eps12) {
+			if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
 				is_integer = false;
 				break;
 			}
@@ -664,15 +671,13 @@ void Symmetry::pure_translations()
 	int i;
 
 	ntran = 0;
-	for(i = 0; i < nsym; ++i){
-		if(symrel_int[i][0][0] == 1 && symrel_int[i][1][1] == 1 && symrel_int[i][2][2] == 1) {
-			++ntran;
-		}
+	for (i = 0; i < nsym; ++i) {
+		if (is_translation(symrel_int[i])) ++ntran;
 	}
 
 	natmin = system->nat / ntran;
 
-	if(ntran > 1) {
+	if (ntran > 1) {
 		std::cout << "Given system is not primitive cell." << std::endl;
 		std::cout << std::setw(8) <<  ntran << " translation operations exist." << std::endl;
 	} else {
@@ -685,20 +690,20 @@ void Symmetry::pure_translations()
 	int isym = 0;
 
 	for (i = 0; i < nsym; ++i){
-		if(symrel_int[i][0][0] == 1 && symrel_int[i][1][1] == 1 && symrel_int[i][2][2] == 1) {
-			symnum_tran[isym++] = i; 
-		}
+		if (is_translation(symrel_int[i])) 	symnum_tran[isym++] = i;
 	}
 }
 
 void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *map_s2p)
 {
-	double **xnew;
 	int isym, iat, jat;
-	int i;
-	double tmp[3], dist; 
+	int i, j;
+	int itype;
+	int ii, jj;
+	double xnew[3];
+	double tmp[3], diff; 
+	double rot_double[3][3];
 
-	memory->allocate(xnew, nat, 3);
 
 	for(iat = 0; iat < nat; ++iat){
 		for(isym = 0; isym < nsym; ++isym){
@@ -708,32 +713,42 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 
 	for (isym = 0; isym < nsym; ++isym){
 
-		for (iat = 0; iat < nat; ++iat){
-
-			for (i = 0; i < 3; ++i){
-				xnew[iat][i] = static_cast<double>(symrel_int[isym][i][0]) * x[iat][0] 
-				+ static_cast<double>(symrel_int[isym][i][1]) * x[iat][1] 
-				+ static_cast<double>(symrel_int[isym][i][2]) * x[iat][2] 
-				+ tnons[isym][i];
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				rot_double[i][j] = static_cast<double>(symrel_int[isym][i][j]);
 			}
+		}
 
-			for (jat = 0; jat < nat; ++jat){
+		for (itype = 0; itype < system->nclassatom; ++itype) {
+#if _OPENMP
+#pragma omp parallel for private(iat, xnew, jat, tmp, diff)
+#endif
+			for (ii = 0; ii < system->atomlist_class[itype].size(); ++ii) {
 
-				for (i = 0; i < 3; ++i){
-					tmp[i] = std::fmod(std::abs(xnew[iat][i] - x[jat][i]), 1.0);
-					tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+				iat = system->atomlist_class[itype][ii];
+
+				rotvec(xnew, x[iat], rot_double);
+
+				for (i = 0; i < 3; ++i) xnew[i] += tnons[isym][i];
+
+				for (jj = 0; jj < system->atomlist_class[itype].size(); ++jj) {
+
+					jat = system->atomlist_class[itype][jj];
+
+					for (i = 0; i < 3; ++i) {
+						tmp[i] = std::fmod(abs(x[jat][i] - xnew[i]), 1.0);
+						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+					}
+					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+					if (diff < tolerance * tolerance) {
+						map_sym[iat][isym] = jat;
+						break;
+					}
 				}
-
-				dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-				if(dist < tolerance * tolerance) {
-					map_sym[iat][isym] = jat;
-					break;
-				}
+				if (map_sym[iat][isym] == -1) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
 			}
-			if (map_sym[iat][isym] == -1) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
 		}
 	}
-	memory->deallocate(xnew);    
 
 	bool *is_checked;
 	memory->allocate(is_checked, nat);
@@ -762,6 +777,18 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 			map_s2p[atomnum_translated].tran_num = i;
 		}
 	}
+}
+
+bool Symmetry::is_translation(int **rot) {
+
+	bool ret;
+
+	ret = 
+		rot[0][0] == 1 && rot[0][1] == 0 && rot[0][2] == 0 &&
+		rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 && 
+		rot[2][0] == 0 && rot[2][1] == 0 && rot[2][2] == 1;
+
+	return ret;
 }
 
 void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
@@ -843,9 +870,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 				tnons_ref[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp_ref);
 			}
 
-			if (symrel_int_ref[isym][0][0] == 1 && symrel_int_ref[isym][1][1] == 1 && symrel_int_ref[isym][2][2] == 1) {
-				++ntran_ref;
-			}
+			if (is_translation(symrel_int_ref[isym])) ++ntran_ref;
 
 			++isym;
 		}
@@ -864,9 +889,7 @@ void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
 		itran = 0;
 
 		for (isym = 0; isym < nsym_ref; ++isym) {
-			if (symrel_int_ref[isym][0][0] == 1 && symrel_int_ref[isym][1][1] == 1 && symrel_int_ref[isym][2][2] == 1) { 
-				symnum_tran_ref[itran++] = isym;
-			}
+			if (is_translation(symrel_int_ref[isym])) symnum_tran_ref[itran++] = isym;
 		}
 
 		memory->allocate(xnew, nat_ref, 3);

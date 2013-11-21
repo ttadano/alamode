@@ -126,6 +126,8 @@ namespace ALM_NS {
 
 	private:
 
+		bool is_translation(int **);
+
 		void symop_in_cart(double [3][3], double[3][3]);
 		void pure_translations();
 		void data_multiplier(int, int, int);

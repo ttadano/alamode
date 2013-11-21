@@ -67,6 +67,7 @@
       <AdditionalIncludeDirectories>"C:\lapack"</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4307;4308</DisableSpecificWarnings>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);_USE_EIGEN</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
