@@ -507,6 +507,4 @@ void Writes::write_displacement_pattern()
 		std::cout << "Suggested displacement patterns for " << interaction->str_order[order] 
 		<< " are printed in file " << files->file_disp_pattern[order] << std::endl;
 	}
-
-
 }
