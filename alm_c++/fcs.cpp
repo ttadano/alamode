@@ -71,8 +71,10 @@ void Fcs::generate_fclists(int maxorder)
     int *ind, *ind_mapped;
     int *ind_tmp, *ind_mapped_tmp;
     int nxyz;
-    IntList list_tmp;
+	unsigned int isym;
 
+    IntList list_tmp;
+	
     double c_tmp;
 
     int **xyzcomponent;
@@ -130,7 +132,7 @@ void Fcs::generate_fclists(int maxorder)
 
                 int ndeps = 0;
 
-                for (int isym = 0; isym < symmetry->nsym; ++isym){
+                for (isym = 0; isym < symmetry->nsym; ++isym){
 
                     if(!symmetry->sym_available[isym]) continue;
 

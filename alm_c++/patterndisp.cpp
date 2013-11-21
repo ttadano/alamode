@@ -7,6 +7,7 @@
 #include "interaction.h"
 #include "symmetry.h"
 #include "constants.h"
+#include "mathfunctions.h"
 
 using namespace ALM_NS;
 
@@ -121,7 +122,7 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
 				disp_tmp[k] = disp_harm[i].directionlist[j].direction[k];
 				if (std::abs(disp_tmp[k]) > eps) direc = k;
 			}
-			system->rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
+			rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
 
 
 			for (k = 0; k < nat; ++k) {
@@ -142,7 +143,7 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
 					disp_tmp[(direc + 1) % 3] = static_cast<double>(ii);
 					disp_tmp[(direc + 2) % 3] = static_cast<double>(jj);
 
-					system->rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
+					rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
 
 					for (k = 0; k < nat; ++k) {
 						for (l = 0; l < 3; ++l) {
@@ -233,7 +234,7 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 					for (i = 0; i < 3; ++i) disp_tmp[i] /= std::sqrt(norm);
 
 					if (disp_basis[0] == 'F') {
-						system->rotvec(disp_tmp, disp_tmp, system->rlavec);
+						rotvec(disp_tmp, disp_tmp, system->rlavec);
 						for (i = 0; i < 3; ++i) disp_tmp[i] /= 2.0 * pi;
 					}
 
@@ -278,7 +279,7 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 					disp_tmp[(*it).atomset[i] % 3] = 1.0;
 
 					if (disp_basis[0] == 'F') {
-						system->rotvec(disp_tmp, disp_tmp, system->rlavec);
+						rotvec(disp_tmp, disp_tmp, system->rlavec);
 						for (j = 0; j < 3; ++j) disp_tmp[j] /= 2.0 * pi;
 					}
 

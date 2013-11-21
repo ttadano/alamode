@@ -1,5 +1,4 @@
 #include <iostream>
-#include <omp.h>
 #include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
@@ -15,13 +14,19 @@
 #include "ewald.h"
 #include "patterndisp.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 using namespace ALM_NS;
 
 ALM::ALM(int narg, char **arg)
 {
 	timer = new Timer(this);
 
+#ifdef _OPENMP
 	std::cout << "Number of OpenMP threads = " << omp_get_max_threads() << std::endl << std::endl;
+#endif
 	std::cout << "Job started at " << timer->DataAndTime() << std::endl;
 
 	input = new Input(this, narg, arg);

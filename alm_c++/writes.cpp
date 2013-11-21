@@ -469,7 +469,7 @@ void Writes::wrtmisc(){
 
 void Writes::write_displacement_pattern()
 {
-	int i, j, k;
+	int i, j;
 
 	int order;
 	int maxorder = interaction->maxorder;

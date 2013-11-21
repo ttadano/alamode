@@ -313,10 +313,10 @@ void Constraint::constraint_from_symmetry()
 	// Create constraint matrices arising from the crystal symmetry.
 
 	int i;
-	int isym, ixyz;
+	unsigned int isym;
+	int ixyz, nxyz;
 	int order;
 	int maxorder = interaction->maxorder;
-	int nxyz;
 
 	int *ind;
 	int **xyzcomponent;
