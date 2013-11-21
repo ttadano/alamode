@@ -122,7 +122,7 @@ namespace ALM_NS {
 		std::ifstream ifs_sym;
 
 		void gensym_notran(std::vector<SymmetryOperation> &);
-		int numsymop(int, double **x, double, std::vector<SymmetryOperation>);
+		int numsymop(int, double **x, double);
 
 	private:
 
