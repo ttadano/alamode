@@ -384,11 +384,31 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 	double tmp[3];
 	double diff;
 
+        int rot_int[3][3];
+
 	int ii, jj, kk;
 	unsigned int itype;
 
 	bool is_found;
 	bool isok;
+
+        bool is_identity_matrix;
+
+        
+        // Add identity matrix first.
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                if (i == j) {
+                    rot_int[i][j] = 1;
+                } else {
+                    rot_int[i][j] = 0;
+                }
+            }
+            tran[i] = 0.0;
+        }
+
+        CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
+
 
 	for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
@@ -403,7 +423,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 		rotvec(x_rot, x[iat], rot);
 
 #ifdef _OPENMP
-#pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff)
+#pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, i, itype, jj, kk, is_identity_matrix)
 #endif
 		for (ii = 0; ii < atomclass[0].size(); ++ii) {
 			jat = atomclass[0][ii];
@@ -414,6 +434,14 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 			}
 
 			isok = true;
+
+                        is_identity_matrix = 
+                            ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
+                            + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                            + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                            + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
+
+                        if (is_identity_matrix) continue;
 
 			for (itype = 0; itype < nclass; ++itype) {
 
@@ -716,6 +744,9 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 		}
 	}
 
+#ifdef  _OPENMP
+#pragma omp parallel for private(i, j, rot_double, itype, ii, iat, xnew, jj, jat, tmp, diff, isym)
+#endif
 	for (isym = 0; isym < nsym; ++isym){
 
 		for (i = 0; i < 3; ++i) {
@@ -725,9 +756,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 		}
 
 		for (itype = 0; itype < system->nclassatom; ++itype) {
-#if _OPENMP
-#pragma omp parallel for private(iat, xnew, jat, tmp, diff)
-#endif
+
 			for (ii = 0; ii < system->atomlist_class[itype].size(); ++ii) {
 
 				iat = system->atomlist_class[itype][ii];
