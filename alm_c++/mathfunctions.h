@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cstdlib>
 
 template <typename T>
 inline void matmul3(T ret[3][3], T amat[3][3], T bmat[3][3]) {
