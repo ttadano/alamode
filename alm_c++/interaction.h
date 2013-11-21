@@ -5,6 +5,7 @@
 #include <set>
 #include "listcomparison.h"
 #include "pointers.h"
+#include "constants.h"
 
 
 namespace ALM_NS {
@@ -46,6 +47,25 @@ namespace ALM_NS {
 
 	inline bool operator<(const DistInfo a, const DistInfo b) {
 		return a.dist < b.dist;
+	}
+
+	class DistList {
+	public:
+		int atom;
+		double dist;
+
+		DistList();
+		DistList(int n, double dist_tmp) {
+			atom = n;
+			dist = dist_tmp;
+		}
+	};
+	inline bool operator<(const DistList a, const DistList b) {
+		if (std::abs(a.dist - b.dist) > eps8) {
+			return a.dist < b.dist;
+		} else {
+			return a.atom < b.atom;
+		}
 	}
 
     class Interaction: protected Pointers {
