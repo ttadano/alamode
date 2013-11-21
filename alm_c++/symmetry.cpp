@@ -434,7 +434,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 						lat = atomclass[itype][kk];
 
 						for (i = 0; i < 3; ++i) {
-							tmp[i] = std::fmod(abs(x[lat][i] - x_rot_tmp[i]), 1.0);
+							tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
 							tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
 						}
 						diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
@@ -741,7 +741,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 					jat = system->atomlist_class[itype][jj];
 
 					for (i = 0; i < 3; ++i) {
-						tmp[i] = std::fmod(abs(x[jat][i] - xnew[i]), 1.0);
+						tmp[i] = std::fmod(std::abs(x[jat][i] - xnew[i]), 1.0);
 						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
 					}
 					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
