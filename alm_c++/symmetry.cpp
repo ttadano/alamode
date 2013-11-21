@@ -515,7 +515,7 @@ void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryO
 	}
 }
 
-int Symmetry::numsymop(int nat, double **x, double tolerance, std::vector<SymmetryOperation> symlist)
+int Symmetry::numsymop(int nat, double **x, double tolerance)
 {
 	int i, j;
 	int ii, jj;
@@ -530,15 +530,20 @@ int Symmetry::numsymop(int nat, double **x, double tolerance, std::vector<Symmet
 	int itype;
 	int iat, jat;
 
-	for (std::vector<SymmetryOperation>::iterator it = symlist.begin(); it != symlist.end(); ++it) {
+	int isym;
+
+#if _OPENMP
+#pragma omp parallel for private(rot, tran, isok, iat, x_rot_tmp, is_found, jat, tmp, diff, i, j, itype, ii, jj), reduction(+ : ret)
+#endif
+	for (isym = 0; isym < SymmList.size(); ++isym) {
 
 		for (i = 0; i < 3; ++i) {
 			for (j = 0; j < 3; ++j) {
-				rot[i][j] = static_cast<double>((*it).symop[3 * i + j]);
+				rot[i][j] = static_cast<double>(SymmList[isym].symop[3 * i + j]);
 			}
 		}
 		for (i = 0; i < 3; ++i) {
-			tran[i] = static_cast<double>((*it).symop[9 + i]) / static_cast<double>(nnp);
+			tran[i] = static_cast<double>(SymmList[isym].symop[9 + i]) / static_cast<double>(nnp);
 		}
 
 		isok = true;

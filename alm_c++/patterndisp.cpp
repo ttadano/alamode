@@ -73,10 +73,10 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
 	double **pos_disp;
 
 	std::vector<DirectionVec> directionlist_tmp, direction_new;
-	std::vector<SymmetryOperation> symmlist_notran;
+//	std::vector<SymmetryOperation> symmlist_notran;
 
 
-	symmetry->gensym_notran(symmlist_notran);	
+//	symmetry->gensym_notran(symmlist_notran);	
 
 	memory->allocate(flag_disp, nat, 3);
 
@@ -133,7 +133,7 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
 		
 			for (l = 0; l < 3; ++l) pos_disp[disp_harm[i].atom][l] += factor * disp_tmp_frac[l];
 
-			nsym_max = symmetry->numsymop(nat, pos_disp, symmetry->tolerance, symmlist_notran);
+			nsym_max = symmetry->numsymop(nat, pos_disp, symmetry->tolerance);
 
 			for (k = 0; k < 3; ++k) disp_best[k] = disp_tmp[k];
 
@@ -152,7 +152,7 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
 					}
 
 					for (l = 0; l < 3; ++l) pos_disp[disp_harm[i].atom][l] += factor * disp_tmp_frac[l];
-					nsym_disp = symmetry->numsymop(nat, pos_disp, symmetry->tolerance, symmlist_notran);
+					nsym_disp = symmetry->numsymop(nat, pos_disp, symmetry->tolerance);
 
 					if (nsym_disp > nsym_max) {
 						bool isok = true;
@@ -167,7 +167,6 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
 								norm1 = std::pow(direction_new[k].direction[l], 2);
 								norm2 = std::pow(disp_tmp[l], 2);
 							}
-					//		std::cout << "cos(theta) = " << dprod / (std::sqrt(norm1*norm2)) << std::endl;
 							if (std::abs(dprod - std::sqrt(norm1*norm2)) < eps10) {
 								isok = false;
 							}

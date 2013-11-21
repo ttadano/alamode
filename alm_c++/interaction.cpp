@@ -189,24 +189,97 @@ void Interaction::calc_distlist(int nat, double **xf)
 		}
 	}
 
-	std::cout << std::endl;
-	std::cout << "List of distance (in Bohr)" << std::endl;
-	for (i = 0; i < symmetry->natmin; ++i){
-		icount = 0;
-		iat = symmetry->map_p2s[i][0];
-		std::cout << std::setw(5) << iat + 1 << " (" << std::setw(3) << system->kdname[system->kd[iat]-1] << "):  ";
-		for (j = i; j < nat; ++j){
-			if (icount && icount % 6 == 0) {
-				std::cout << std::endl;
-				std::cout << "              ";
-			}
-			++icount;
+	std::vector<DistList> *neighborlist;
 
-			std::cout << std::setw(3) << j + 1 << "(" << std::setw(3) << system->kdname[system->kd[j]-1] << ")";
-			std::cout << std::setw(8) << mindist_pairs[i][j][0].dist << "  ";
+	memory->allocate(neighborlist, symmetry->natmin);
+
+	for (i = 0; i < symmetry->natmin; ++i) {
+		neighborlist[i].clear();
+
+		for (j = 0; j < nat; ++j) {
+			neighborlist[i].push_back(DistList(j, mindist_pairs[i][j][0].dist));
 		}
-		std::cout << std::endl << std::endl;
+		std::sort(neighborlist[i].begin(), neighborlist[i].end());
 	}
+
+	std::cout << std::endl;
+	std::cout << "List of neighboring atoms below." << std::endl;
+	std::cout << "Format [N th-nearest shell, distance in Bohr (Number of atoms on the shell)]" << std::endl << std::endl;
+
+	int nthnearest;
+	std::vector<int> atomlist;
+
+	for (i = 0; i < symmetry->natmin; ++i) {
+
+		nthnearest = 0;
+		atomlist.clear();
+
+		iat = symmetry->map_p2s[i][0];
+		std::cout << std::setw(5) << iat + 1 << " (" << std::setw(3) << system->kdname[system->kd[iat] - 1] << "): ";
+
+		dist_tmp = 0.0;
+
+		for (j = 0; j < nat; ++j) {
+
+			if (neighborlist[i][j].dist < eps8) continue; // distance is zero
+
+			if (std::abs(neighborlist[i][j].dist - dist_tmp) > eps8) {
+
+				if (atomlist.size() > 0) {
+					nthnearest += 1;
+
+					if (nthnearest > 1) std::cout << std::setw(13) << " ";
+
+					std::cout << std::setw(3) << nthnearest << std::setw(8) << dist_tmp << " (" << std::setw(3) << atomlist.size() << ")";
+					std::cout << " -";
+
+					icount = 0;
+					for (k = 0; k < atomlist.size(); ++k) {
+
+						if (icount % 10 == 0 && icount > 0) {
+							std::cout << std::endl;
+							std::cout << std::setw(32) << " ";
+						}
+						++icount;
+
+						std::cout << std::setw(4) << atomlist[k] + 1; 
+						std::cout <<  "(" << std::setw(3) << system->kdname[system->kd[atomlist[k]] - 1] << ")";
+
+					}
+					std::cout << std::endl;
+				}
+			
+
+				dist_tmp = neighborlist[i][j].dist;
+				atomlist.clear();
+				atomlist.push_back(neighborlist[i][j].atom);
+			} else {
+				atomlist.push_back(neighborlist[i][j].atom);
+			}
+		}
+		std::cout << std::endl;
+	}
+
+	memory->deallocate(neighborlist);
+// 
+// 	std::cout << std::endl;
+// 	std::cout << "List of distance (in Bohr)" << std::endl;
+// 	for (i = 0; i < symmetry->natmin; ++i){
+// 		icount = 0;
+// 		iat = symmetry->map_p2s[i][0];
+// 		std::cout << std::setw(5) << iat + 1 << " (" << std::setw(3) << system->kdname[system->kd[iat]-1] << "):  ";
+// 		for (j = i; j < nat; ++j){
+// 			if (icount && icount % 6 == 0) {
+// 				std::cout << std::endl;
+// 				std::cout << "              ";
+// 			}
+// 			++icount;
+// 
+// 			std::cout << std::setw(3) << j + 1 << "(" << std::setw(3) << system->kdname[system->kd[j]-1] << ")";
+// 			std::cout << std::setw(8) << mindist_pairs[i][j][0].dist << "  ";
+// 		}
+// 		std::cout << std::endl << std::endl;
+// 	}
 }
 
 void Interaction::search_interactions()
