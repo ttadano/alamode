@@ -327,7 +327,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 										rot_tmp[2][2] = m33;
 
 										// Here, aa_rot = aa * rot_tmp is correct.
-										 matmul3(aa_rot, aa, rot_tmp);
+										matmul3(aa_rot, aa, rot_tmp);
 
 										for (i = 0; i < 3; ++i) {
 											for (j = 0; j < 3; ++j) {
@@ -372,8 +372,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 	}
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x,
-									 std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
+void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
 
 	unsigned int i, j;
 	unsigned int iat, jat, kat, lat;
@@ -384,7 +383,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 	double tmp[3];
 	double diff;
 
-        int rot_int[3][3];
+	int rot_int[3][3];
 
 	int ii, jj, kk;
 	unsigned int itype;
@@ -392,22 +391,22 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 	bool is_found;
 	bool isok;
 
-        bool is_identity_matrix;
+	bool is_identity_matrix;
 
-        
-        // Add identity matrix first.
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                if (i == j) {
-                    rot_int[i][j] = 1;
-                } else {
-                    rot_int[i][j] = 0;
-                }
-            }
-            tran[i] = 0.0;
-        }
 
-        CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
+	// Add identity matrix first.
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			if (i == j) {
+				rot_int[i][j] = 1;
+			} else {
+				rot_int[i][j] = 0;
+			}
+		}
+		tran[i] = 0.0;
+	}
+
+	CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
 
 
 	for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
@@ -435,13 +434,13 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 
 			isok = true;
 
-                        is_identity_matrix = 
-                            ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
-                            + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                            + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                            + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
+			is_identity_matrix = 
+				( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
+				+ std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+				+ std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+				+ std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
 
-                        if (is_identity_matrix) continue;
+			if (is_identity_matrix) continue;
 
 			for (itype = 0; itype < nclass; ++itype) {
 
@@ -624,7 +623,7 @@ void Symmetry::gensym_notran(std::vector<SymmetryOperation> &sym_notran) {
 	sym_notran.clear();
 
 	for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
-		
+
 		if ((*it).symop[9] == 0 && (*it).symop[10] == 0 && (*it).symop[11] == 0) {
 			sym_notran.push_back(*it);
 		}

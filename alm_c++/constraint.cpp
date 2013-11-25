@@ -1011,14 +1011,11 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 	int INFO;
 	int *ipiv;
 
-	std::vector<ConstraintClass> Constraint_tmp;
+	int nrank;
 
 	if (nconst > 0){
 
-		int nmin = std::min<int>(nconst, nparam);
-
 		memory->allocate(mat_tmp, nconst, nparam);
-		memory->allocate(arr_tmp, nconst * nparam);
 
 		i = 0;
 
@@ -1030,22 +1027,24 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 			++i;
 		}
 
-		// Transpose matrix A 
+		rref(nconst, nparam, mat_tmp, nrank, tolerance);
+
+		/*
+		// 		// Transpose matrix A 
+
+		memory->allocate(arr_tmp, nconst * nparam);
 
 		k = 0;
 
 		for (j = 0; j < nparam; ++j) {
-			for (i = 0; i < nconst; ++i) {
-				arr_tmp[k++] = mat_tmp[i][j];
-			}
+		for (i = 0; i < nconst; ++i) {
+		arr_tmp[k++] = mat_tmp[i][j];
 		}
-
-		// Reveal rank
-
-		int nrank = fitting->rank2(nconst, nparam, mat_tmp);
+		}
 
 		// Perform LU decomposition
 
+		int nmin = std::min<int>(nconst, nparam);
 		memory->allocate(ipiv, nmin);
 
 		dgetrf_(&nconst, &nparam, arr_tmp, &nconst, ipiv, &INFO);
@@ -1059,60 +1058,24 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 		}
 
 		memory->deallocate(arr_tmp);
+		memory->deallocate(ipiv);
+		*/
+
 		memory->allocate(arr_tmp, nparam);
 
-		// The returned matrix U is not always echelon form.
-		// Here, I try to remove redundant rows.
-		// Still, buggy... 
-
-		Constraint_tmp.clear();
 		Constraint_Set.clear();
 
-		for (i = 0; i < nconst; ++i) {
+		for (i = 0; i < nrank; ++i) {
 			for (j = 0; j < i; ++j) arr_tmp[j] = 0.0;
 
 			for (j = i; j < nparam; ++j) {
 				arr_tmp[j] = mat_tmp[i][j];
 			}
-
-			Constraint_tmp.push_back(ConstraintClass(nparam, arr_tmp));
-		}
-
-		std::sort(Constraint_tmp.begin(), Constraint_tmp.end());
-
-		int pivcol;
-		int pivcol_upper = -1;
-
-		for (std::vector<ConstraintClass>::reverse_iterator rit = Constraint_tmp.rbegin(); rit != Constraint_tmp.rend(); ++rit) {
-			ConstraintClass const_now = *rit;
-
-			pivcol = -1;
-
-			for (i = 0; i < nparam; ++i) {
-				if (std::abs(const_now.w_const[i]) > eps) {
-					pivcol = i;
-					break;
-				}
-			}
-
-			if (pivcol == -1) break; // No necessary entries left
-
-			if (pivcol > pivcol_upper) {
-				Constraint_Set.insert(ConstraintClass(const_now));
-			}
-
-			pivcol_upper = pivcol;
-		}
-
-		Constraint_tmp.clear();
-
-		if (Constraint_Set.size() != nrank) {
-			error->warn("remove_redundant_rows", "Something wrong may happened");
+			Constraint_Set.insert(ConstraintClass(nparam, arr_tmp));
 		}
 
 		memory->deallocate(mat_tmp);
 		memory->deallocate(arr_tmp);
-		memory->deallocate(ipiv);
 	}
 
 #endif
@@ -1179,3 +1142,70 @@ void Constraint::setup_rotation_axis(bool flag[3][3])
 		error->warn("setup_rotation_axis", "Invalid rotation_axis. Default value(xyz) will be used.");
 	}
 }
+
+
+void Constraint::rref(int nrows, int ncols, double **mat, int &nrank, double tolerance)
+{
+	// Return the reduced row echelon form (rref) of matrix mat.
+	// In addition, rank of the matrix is estimated.
+
+
+	int irow, icol, jrow, jcol;
+	int pivot;
+	int maxloc;
+	double maxval, val;
+	double tmp, *arr;
+
+	memory->allocate(arr, ncols);
+
+	nrank = 0;
+
+	icol = 0;
+
+	for (irow = 0; irow < nrows; ++irow) {
+
+		pivot = irow;
+
+		while (std::abs(mat[pivot][icol]) < tolerance) {
+			++pivot;
+
+			if (pivot == nrows) {
+				pivot = irow;
+				++icol;
+
+				if (icol == ncols) break;
+			}
+		}
+
+		if (icol == ncols) break;
+
+
+		if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
+
+		if (pivot != irow) {
+			for (jcol = icol; jcol < ncols; ++jcol) {
+				tmp = mat[pivot][jcol];
+				mat[pivot][jcol] = mat[irow][jcol];
+				mat[irow][jcol] = tmp;
+			}
+		}
+
+		tmp = mat[irow][icol];
+		for (jcol = icol; jcol < ncols; ++jcol) {
+			mat[irow][jcol] /= tmp;
+		}
+
+		for (jrow = 0; jrow < nrows; ++jrow) {
+			if (jrow == irow) continue;
+
+			tmp = mat[jrow][icol];
+
+			for (jcol = icol; jcol < ncols; ++jcol) {
+				mat[jrow][jcol] -= tmp * mat[irow][jcol];
+			}
+		}
+	}
+
+	memory->deallocate(arr);
+}
+

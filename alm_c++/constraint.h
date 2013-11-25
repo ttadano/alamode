@@ -71,6 +71,7 @@ namespace ALM_NS
 
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);
+		void rref(int, int, double **, int &, double tolerance =eps12);
     };
 
 	extern "C" {
