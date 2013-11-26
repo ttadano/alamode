@@ -7,7 +7,7 @@ using namespace ALM_NS;
 
 int main(int argc, char **argv)
 {
-    std::cout << "Alamode C++ version 0.3" << std::endl << std::endl;
+    std::cout << "Program ALM (version 0.4)" << std::endl << std::endl;
 
     ALM *alm = new ALM(argc, argv);
     

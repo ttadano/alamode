@@ -20,8 +20,8 @@ void Files::setfilenames()
 
     file_fcs = job_title + ".fcs";
     file_info = job_title + ".info";
-    file_disp_sym = file_disp + ".SYM";
-    file_force_sym = file_force + ".SYM";
+//     file_disp_sym = file_disp + ".SYM";
+//     file_force_sym = file_force + ".SYM";
 
 	if (alm->mode == "suggest") {
 

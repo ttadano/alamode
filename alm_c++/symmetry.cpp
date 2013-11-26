@@ -122,11 +122,6 @@ void Symmetry::init()
 		std::cout << "  Force       : " << files->file_force << std::endl;
 		std::cout << std::endl;
 
-		if(multiply_data >= -1) {
-			data_multiplier(nat, system->ndata, multiply_data);
-		} else {
-			std::cout << "MULTDAT < -1: Use the existing disp.SYM and force.SYM files." << std::endl;
-		}
 		timer->print_elapsed();
 	}
 }
@@ -824,365 +819,365 @@ bool Symmetry::is_translation(int **rot) {
 	return ret;
 }
 
-void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
-{
-	int i, j, k, itran;
-	int n_map;
-	double **u, **f;
-	double ***u_sym, ***f_sym;
-
-	files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
-	files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
-
-	if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
-	if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
-
-	if(multiply_data == 3) {
-
-		std::cout << "MULTDAT = 3: Displacement-force data will be expanded to the bigger supercell" << std::endl;
-		std::cout << "**WARNING: This is not fully tested.**" << std::endl << std::endl;
-
-		int nsym_ref = 0;
-		unsigned int nnp_ref;
-
-		// Read from reference file
-
-		std::ifstream ifs_refsys;
-		ifs_refsys.open(refsys_file.c_str(), std::ios::in);
-		if(!ifs_refsys) error->exit("data_multiplier", "cannot open refsys_file");
-
-		double lavec_ref[3][3], rlavec_ref[3][3];
-		int nat_ref;
-
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
-				ifs_refsys >> lavec_ref[j][i];
-			}
-		}
-		system->recips(lavec_ref, rlavec_ref);
-		ifs_refsys >> nat_ref >> nnp_ref;
-
-		int *kd_ref;
-		double **x_ref;
-
-		memory->allocate(kd_ref, nat_ref);
-		memory->allocate(x_ref, nat_ref, 3);
-
-		for (i = 0; i < nat_ref; ++i){
-			ifs_refsys >> kd_ref[i];
-			for (j = 0; j < 3; ++j){
-				ifs_refsys >> x_ref[i][j];
-			}
-		}
-		ifs_refsys.close();
-
-		// Generate symmetry operations of the reference system
-
-		findsym(nat_ref, lavec_ref, x_ref, SymmList);
-
-		nsym_ref = SymmList.size();
-
-		double **tnons_ref;
-		int ***symrel_int_ref;
-
-		memory->allocate(tnons_ref, nsym_ref, 3);
-		memory->allocate(symrel_int_ref, nsym_ref, 3, 3);
-
-		int isym = 0;
-
-		ntran_ref = 0;
-
-		for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
-			SymmetryOperation symop_tmp = *iter;
-			for (i = 0; i < 3; ++i){
-				for (j = 0; j < 3; ++j){
-					symrel_int_ref[isym][i][j] = symop_tmp.symop[3 * i + j];
-				}
-			}
-			for (i = 0; i < 3; ++i){
-				tnons_ref[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp_ref);
-			}
-
-			if (is_translation(symrel_int_ref[isym])) ++ntran_ref;
-
-			++isym;
-		}
-		SymmList.clear();
-
-		double **xnew, tmp[3];
-		int **map_sym_ref;
-		int *symnum_tran_ref;
-
-		bool map_found;
-		int iat, jat, icrd, jcrd;
-		double dist;
-
-
-		memory->allocate(symnum_tran_ref, ntran_ref);
-		itran = 0;
-
-		for (isym = 0; isym < nsym_ref; ++isym) {
-			if (is_translation(symrel_int_ref[isym])) symnum_tran_ref[itran++] = isym;
-		}
-
-		memory->allocate(xnew, nat_ref, 3);
-		memory->allocate(map_sym_ref, nat_ref, nsym_ref);
-
-		for(iat = 0; iat < nat_ref; ++iat){
-			for(isym = 0; isym < nsym_ref; ++isym){
-				map_sym_ref[iat][isym] = -1;
-			}
-		}
-
-		for (isym = 0; isym < nsym_ref; ++isym){
-			for (iat = 0; iat < nat_ref; ++iat){
-
-				for (i = 0; i < 3; ++i){
-					xnew[iat][i] = static_cast<double>(symrel_int_ref[isym][i][0]) * x_ref[iat][0] 
-					+ static_cast<double>(symrel_int_ref[isym][i][1]) * x_ref[iat][1] 
-					+ static_cast<double>(symrel_int_ref[isym][i][2]) * x_ref[iat][2] 
-					+ tnons_ref[isym][i];
-				}
-
-				for (jat = 0; jat < nat_ref; ++jat){
-					for (i = 0; i < 3; ++i){
-						tmp[i] = std::fmod(std::abs(xnew[iat][i] - x_ref[jat][i]), 1.0);
-						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
-					}
-
-					dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-					if(dist < tolerance * tolerance) {
-						map_sym_ref[iat][isym] = jat;
-						break;
-					}
-				}
-				if (map_sym_ref[iat][isym] == -1) error->exit("data_multiplier", "cannot find symmetry for operation # ", isym + 1);
-			}
-		}
-		memory->deallocate(xnew); 
-
-
-		// Generate mapping information of larger supercell to smaller one.
-
-		int **map_large_to_small;
-		double xtmp[3], xdiff[3], xshift[3];
-
-		memory->allocate(map_large_to_small, ntran_ref, nat);
-
-		for (itran = 0; itran < ntran_ref; ++itran){
-
-			for (icrd = 0; icrd < 3; ++icrd) {
-				xshift[icrd] = x_ref[0][icrd] - x_ref[map_sym_ref[0][symnum_tran_ref[itran]]][icrd];
-			}
-
-			for (iat = 0; iat < nat; ++iat) {
-
-				map_found = false;
-
-				rotvec(xtmp, system->xcoord[iat], system->lavec);
-				rotvec(xtmp, xtmp, rlavec_ref);
-
-				for (icrd = 0; icrd < 3; ++icrd) {
-					xtmp[icrd] /= 2.0 * pi;
-				}
-
-				for (jat = 0; jat < nat_ref; ++jat) {
-
-					for (jcrd = 0; jcrd < 3; ++jcrd) {
-						xdiff[jcrd] = xtmp[jcrd] - x_ref[jat][jcrd] - xshift[jcrd];
-						xdiff[jcrd] = std::fmod(xdiff[jcrd], 1.0);
-					}
-					dist = xdiff[0]*xdiff[0] + xdiff[1]*xdiff[1] + xdiff[2]*xdiff[2];
-
-					if (dist < tolerance * tolerance && kd_ref[jat] == system->kd[iat]) {
-						map_large_to_small[itran][iat] = jat;
-						map_found = true;
-						break;
-					}
-				}
-
-				if (!map_found) error->exit("data_multiplier", "cannot find equivalent atom");
-			}
-
-			std::cout << "itran = " << itran << std::endl;
-			for (iat = 0; iat < nat; ++iat) {
-				std::cout << "iat = " << iat << " mapped = " << map_large_to_small[itran][iat] << std::endl;
-			}
-		}
-
-		// Write mapped displacement-force data set
-
-		memory->allocate(u_sym, ntran_ref, nat, 3);
-		memory->allocate(f_sym, ntran_ref, nat, 3);
-
-		memory->allocate(u, nat_ref, 3);
-		memory->allocate(f, nat_ref, 3);
-
-		for (i = 0; i < ndata; ++i){
-			for (j = 0; j < nat_ref; ++j){
-				files->ifs_disp  >> u[j][0] >> u[j][1] >> u[j][2];
-				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-			}
-
-			for (itran = 0; itran < ntran_ref; ++itran){
-				for (j = 0; j < nat; ++j){
-					for (k = 0; k < 3; ++k){
-						n_map = map_large_to_small[itran][j];
-						u_sym[itran][j][k] = u[n_map][k];
-						f_sym[itran][j][k] = f[n_map][k];
-					}
-				}
-			}
-
-			for (itran = 0; itran < ntran_ref; ++itran){
-				for (j = 0; j < nat; ++j){
-					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
-					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
-					files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
-				}
-			} 
-
-		}
-		//	error->exit("hoge", "hoge");
-
-	} else if (multiply_data == 2) {
-
-		std::cout << "MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl << std::endl;
-
-		int isym;
-
-		memory->allocate(u, nat, 3);
-		memory->allocate(f, nat, 3);
-
-		memory->allocate(u_sym, nsym, nat, 3);
-		memory->allocate(f_sym, nsym, nat, 3);
-
-		for (i = 0; i < ndata; ++i) {
-			for (j = 0; j < nat; ++j) {
-				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-				files->ifs_disp >> f[j][0] >> f[j][1] >> f[j][2];
-			}
-
-			for (isym = 0; isym < nsym; ++isym) {
-				for (j = 0; j < nat; ++j) {
-					n_map = map_sym[j][isym];
-
-					for (k = 0; k < 3; ++k) {
-						u_sym[isym][n_map][k] = u[j][k];
-						f_sym[isym][n_map][k] = f[j][k];
-					}
-				}
-			}
-
-			for (isym = 0; isym < nsym; ++isym) {
-				for (j = 0; j < nat; ++j) {
-					files->ofs_disp_sym.write((char *) &u_sym[isym][j][0], sizeof(double));
-					files->ofs_disp_sym.write((char *) &u_sym[isym][j][1], sizeof(double));
-					files->ofs_disp_sym.write((char *) &u_sym[isym][j][2], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[isym][j][0], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[isym][j][1], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[isym][j][2], sizeof(double));
-				}
-			}
-		}
-
-		std::cout << "Symmetrically equivalent displacements and forces data are" << std::endl;
-		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
-
-	} else if (multiply_data == 1) {
-
-		std::cout << "MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
-		std::cout << "             by using pure translational operations only." << std::endl << std::endl;
-
-		memory->allocate(u, nat, 3);
-		memory->allocate(f, nat, 3);
-
-		memory->allocate(u_sym, ntran, nat, 3);
-		memory->allocate(f_sym, ntran, nat, 3);
-
-		for (i = 0; i < ndata; ++i){
-			for (j = 0; j < nat; ++j){
-				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-			}
-
-
-			for (itran = 0; itran < ntran; ++itran){
-				for (j = 0; j < nat; ++j){
-					n_map = map_sym[j][symnum_tran[itran]];
-
-					for (k = 0; k < 3; ++k){
-						u_sym[itran][n_map][k] = u[j][k];
-						f_sym[itran][n_map][k] = f[j][k];
-					}
-				}
-			}
-
-			for (itran = 0; itran < ntran; ++itran){
-				for (j = 0; j < nat; ++j){
-					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
-					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
-					files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
-					files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
-				}
-			}
-		}
-		std::cout << "Symmetrically (Only translational part) equivalent displacements and forces data are" << std::endl;
-		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
-
-	} else if (multiply_data == 0) {
-
-		std::cout << "MULTDAT = 0: Just copy DFILE and FFILE to DFILE.SYM and FFILE.SYM" << std::endl << std::endl;
-
-		memory->allocate(u, nat, 3);
-		memory->allocate(f, nat, 3);
-		memory->allocate(u_sym, 1, 1, 1);
-		memory->allocate(f_sym, 1, 1, 1);
-
-		for (i = 0; i < ndata; ++i) {
-			for (j = 0; j < nat; ++j) {
-				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-			}
-			for (j = 0; j < nat; ++j){
-				files->ofs_disp_sym.write((char *) &u[j][0], sizeof(double));
-				files->ofs_disp_sym.write((char *) &u[j][1], sizeof(double));
-				files->ofs_disp_sym.write((char *) &u[j][2], sizeof(double));
-				files->ofs_force_sym.write((char *) &f[j][0], sizeof(double));
-				files->ofs_force_sym.write((char *) &f[j][1], sizeof(double));
-				files->ofs_force_sym.write((char *) &f[j][2], sizeof(double));
-			}
-		}
-
-		ntran = 1;
-
-		std::cout << "Displacements and forces data are" << std::endl;
-		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
-
-	} else if (multiply_data == -1) {
-
-		std::cout << "MULTDAT = -1: Not implemented yet" << std::endl << std::endl;
-
-		ntran = 1;
-		memory->allocate(u, 1, 1);
-		memory->allocate(f, 1, 1);
-		memory->allocate(u_sym, 1, 1, 1);
-		memory->allocate(f_sym, 1, 1, 1);
-	} 
-
-	files->ofs_disp_sym.close();
-	files->ofs_force_sym.close();
-
-	memory->deallocate(u);
-	memory->deallocate(f);
-	memory->deallocate(u_sym);
-	memory->deallocate(f_sym);
-}
+// void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
+// {
+// 	int i, j, k, itran;
+// 	int n_map;
+// 	double **u, **f;
+// 	double ***u_sym, ***f_sym;
+// 
+// 	files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
+// 	files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
+// 
+// 	if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
+// 	if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
+// 
+// 	if(multiply_data == 3) {
+// 
+// 		std::cout << "MULTDAT = 3: Displacement-force data will be expanded to the bigger supercell" << std::endl;
+// 		std::cout << "**WARNING: This is not fully tested.**" << std::endl << std::endl;
+// 
+// 		int nsym_ref = 0;
+// 		unsigned int nnp_ref;
+// 
+// 		// Read from reference file
+// 
+// 		std::ifstream ifs_refsys;
+// 		ifs_refsys.open(refsys_file.c_str(), std::ios::in);
+// 		if(!ifs_refsys) error->exit("data_multiplier", "cannot open refsys_file");
+// 
+// 		double lavec_ref[3][3], rlavec_ref[3][3];
+// 		int nat_ref;
+// 
+// 		for (i = 0; i < 3; ++i){
+// 			for (j = 0; j < 3; ++j){
+// 				ifs_refsys >> lavec_ref[j][i];
+// 			}
+// 		}
+// 		system->recips(lavec_ref, rlavec_ref);
+// 		ifs_refsys >> nat_ref >> nnp_ref;
+// 
+// 		int *kd_ref;
+// 		double **x_ref;
+// 
+// 		memory->allocate(kd_ref, nat_ref);
+// 		memory->allocate(x_ref, nat_ref, 3);
+// 
+// 		for (i = 0; i < nat_ref; ++i){
+// 			ifs_refsys >> kd_ref[i];
+// 			for (j = 0; j < 3; ++j){
+// 				ifs_refsys >> x_ref[i][j];
+// 			}
+// 		}
+// 		ifs_refsys.close();
+// 
+// 		// Generate symmetry operations of the reference system
+// 
+// 		findsym(nat_ref, lavec_ref, x_ref, SymmList);
+// 
+// 		nsym_ref = SymmList.size();
+// 
+// 		double **tnons_ref;
+// 		int ***symrel_int_ref;
+// 
+// 		memory->allocate(tnons_ref, nsym_ref, 3);
+// 		memory->allocate(symrel_int_ref, nsym_ref, 3, 3);
+// 
+// 		int isym = 0;
+// 
+// 		ntran_ref = 0;
+// 
+// 		for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
+// 			SymmetryOperation symop_tmp = *iter;
+// 			for (i = 0; i < 3; ++i){
+// 				for (j = 0; j < 3; ++j){
+// 					symrel_int_ref[isym][i][j] = symop_tmp.symop[3 * i + j];
+// 				}
+// 			}
+// 			for (i = 0; i < 3; ++i){
+// 				tnons_ref[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp_ref);
+// 			}
+// 
+// 			if (is_translation(symrel_int_ref[isym])) ++ntran_ref;
+// 
+// 			++isym;
+// 		}
+// 		SymmList.clear();
+// 
+// 		double **xnew, tmp[3];
+// 		int **map_sym_ref;
+// 		int *symnum_tran_ref;
+// 
+// 		bool map_found;
+// 		int iat, jat, icrd, jcrd;
+// 		double dist;
+// 
+// 
+// 		memory->allocate(symnum_tran_ref, ntran_ref);
+// 		itran = 0;
+// 
+// 		for (isym = 0; isym < nsym_ref; ++isym) {
+// 			if (is_translation(symrel_int_ref[isym])) symnum_tran_ref[itran++] = isym;
+// 		}
+// 
+// 		memory->allocate(xnew, nat_ref, 3);
+// 		memory->allocate(map_sym_ref, nat_ref, nsym_ref);
+// 
+// 		for(iat = 0; iat < nat_ref; ++iat){
+// 			for(isym = 0; isym < nsym_ref; ++isym){
+// 				map_sym_ref[iat][isym] = -1;
+// 			}
+// 		}
+// 
+// 		for (isym = 0; isym < nsym_ref; ++isym){
+// 			for (iat = 0; iat < nat_ref; ++iat){
+// 
+// 				for (i = 0; i < 3; ++i){
+// 					xnew[iat][i] = static_cast<double>(symrel_int_ref[isym][i][0]) * x_ref[iat][0] 
+// 					+ static_cast<double>(symrel_int_ref[isym][i][1]) * x_ref[iat][1] 
+// 					+ static_cast<double>(symrel_int_ref[isym][i][2]) * x_ref[iat][2] 
+// 					+ tnons_ref[isym][i];
+// 				}
+// 
+// 				for (jat = 0; jat < nat_ref; ++jat){
+// 					for (i = 0; i < 3; ++i){
+// 						tmp[i] = std::fmod(std::abs(xnew[iat][i] - x_ref[jat][i]), 1.0);
+// 						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+// 					}
+// 
+// 					dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+// 					if(dist < tolerance * tolerance) {
+// 						map_sym_ref[iat][isym] = jat;
+// 						break;
+// 					}
+// 				}
+// 				if (map_sym_ref[iat][isym] == -1) error->exit("data_multiplier", "cannot find symmetry for operation # ", isym + 1);
+// 			}
+// 		}
+// 		memory->deallocate(xnew); 
+// 
+// 
+// 		// Generate mapping information of larger supercell to smaller one.
+// 
+// 		int **map_large_to_small;
+// 		double xtmp[3], xdiff[3], xshift[3];
+// 
+// 		memory->allocate(map_large_to_small, ntran_ref, nat);
+// 
+// 		for (itran = 0; itran < ntran_ref; ++itran){
+// 
+// 			for (icrd = 0; icrd < 3; ++icrd) {
+// 				xshift[icrd] = x_ref[0][icrd] - x_ref[map_sym_ref[0][symnum_tran_ref[itran]]][icrd];
+// 			}
+// 
+// 			for (iat = 0; iat < nat; ++iat) {
+// 
+// 				map_found = false;
+// 
+// 				rotvec(xtmp, system->xcoord[iat], system->lavec);
+// 				rotvec(xtmp, xtmp, rlavec_ref);
+// 
+// 				for (icrd = 0; icrd < 3; ++icrd) {
+// 					xtmp[icrd] /= 2.0 * pi;
+// 				}
+// 
+// 				for (jat = 0; jat < nat_ref; ++jat) {
+// 
+// 					for (jcrd = 0; jcrd < 3; ++jcrd) {
+// 						xdiff[jcrd] = xtmp[jcrd] - x_ref[jat][jcrd] - xshift[jcrd];
+// 						xdiff[jcrd] = std::fmod(xdiff[jcrd], 1.0);
+// 					}
+// 					dist = xdiff[0]*xdiff[0] + xdiff[1]*xdiff[1] + xdiff[2]*xdiff[2];
+// 
+// 					if (dist < tolerance * tolerance && kd_ref[jat] == system->kd[iat]) {
+// 						map_large_to_small[itran][iat] = jat;
+// 						map_found = true;
+// 						break;
+// 					}
+// 				}
+// 
+// 				if (!map_found) error->exit("data_multiplier", "cannot find equivalent atom");
+// 			}
+// 
+// 			std::cout << "itran = " << itran << std::endl;
+// 			for (iat = 0; iat < nat; ++iat) {
+// 				std::cout << "iat = " << iat << " mapped = " << map_large_to_small[itran][iat] << std::endl;
+// 			}
+// 		}
+// 
+// 		// Write mapped displacement-force data set
+// 
+// 		memory->allocate(u_sym, ntran_ref, nat, 3);
+// 		memory->allocate(f_sym, ntran_ref, nat, 3);
+// 
+// 		memory->allocate(u, nat_ref, 3);
+// 		memory->allocate(f, nat_ref, 3);
+// 
+// 		for (i = 0; i < ndata; ++i){
+// 			for (j = 0; j < nat_ref; ++j){
+// 				files->ifs_disp  >> u[j][0] >> u[j][1] >> u[j][2];
+// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+// 			}
+// 
+// 			for (itran = 0; itran < ntran_ref; ++itran){
+// 				for (j = 0; j < nat; ++j){
+// 					for (k = 0; k < 3; ++k){
+// 						n_map = map_large_to_small[itran][j];
+// 						u_sym[itran][j][k] = u[n_map][k];
+// 						f_sym[itran][j][k] = f[n_map][k];
+// 					}
+// 				}
+// 			}
+// 
+// 			for (itran = 0; itran < ntran_ref; ++itran){
+// 				for (j = 0; j < nat; ++j){
+// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
+// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
+// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
+// 				}
+// 			} 
+// 
+// 		}
+// 		//	error->exit("hoge", "hoge");
+// 
+// 	} else if (multiply_data == 2) {
+// 
+// 		std::cout << "MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl << std::endl;
+// 
+// 		int isym;
+// 
+// 		memory->allocate(u, nat, 3);
+// 		memory->allocate(f, nat, 3);
+// 
+// 		memory->allocate(u_sym, nsym, nat, 3);
+// 		memory->allocate(f_sym, nsym, nat, 3);
+// 
+// 		for (i = 0; i < ndata; ++i) {
+// 			for (j = 0; j < nat; ++j) {
+// 				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
+// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+// 			}
+// 
+// 			for (isym = 0; isym < nsym; ++isym) {
+// 				for (j = 0; j < nat; ++j) {
+// 					n_map = map_sym[j][isym];
+// 
+// 					for (k = 0; k < 3; ++k) {
+// 						u_sym[isym][n_map][k] = u[j][k];
+// 						f_sym[isym][n_map][k] = f[j][k];
+// 					}
+// 				}
+// 			}
+// 
+// 			for (isym = 0; isym < nsym; ++isym) {
+// 				for (j = 0; j < nat; ++j) {
+// 					files->ofs_disp_sym.write((char *) &u_sym[isym][j][0], sizeof(double));
+// 					files->ofs_disp_sym.write((char *) &u_sym[isym][j][1], sizeof(double));
+// 					files->ofs_disp_sym.write((char *) &u_sym[isym][j][2], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[isym][j][0], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[isym][j][1], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[isym][j][2], sizeof(double));
+// 				}
+// 			}
+// 		}
+// 
+// 		std::cout << "Symmetrically equivalent displacements and forces data are" << std::endl;
+// 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+// 
+// 	} else if (multiply_data == 1) {
+// 
+// 		std::cout << "MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
+// 		std::cout << "             by using pure translational operations only." << std::endl << std::endl;
+// 
+// 		memory->allocate(u, nat, 3);
+// 		memory->allocate(f, nat, 3);
+// 
+// 		memory->allocate(u_sym, ntran, nat, 3);
+// 		memory->allocate(f_sym, ntran, nat, 3);
+// 
+// 		for (i = 0; i < ndata; ++i){
+// 			for (j = 0; j < nat; ++j){
+// 				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
+// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+// 			}
+// 
+// 
+// 			for (itran = 0; itran < ntran; ++itran){
+// 				for (j = 0; j < nat; ++j){
+// 					n_map = map_sym[j][symnum_tran[itran]];
+// 
+// 					for (k = 0; k < 3; ++k){
+// 						u_sym[itran][n_map][k] = u[j][k];
+// 						f_sym[itran][n_map][k] = f[j][k];
+// 					}
+// 				}
+// 			}
+// 
+// 			for (itran = 0; itran < ntran; ++itran){
+// 				for (j = 0; j < nat; ++j){
+// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
+// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
+// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
+// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
+// 				}
+// 			}
+// 		}
+// 		std::cout << "Symmetrically (Only translational part) equivalent displacements and forces data are" << std::endl;
+// 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+// 
+// 	} else if (multiply_data == 0) {
+// 
+// 		std::cout << "MULTDAT = 0: Just copy DFILE and FFILE to DFILE.SYM and FFILE.SYM" << std::endl << std::endl;
+// 
+// 		memory->allocate(u, nat, 3);
+// 		memory->allocate(f, nat, 3);
+// 		memory->allocate(u_sym, 1, 1, 1);
+// 		memory->allocate(f_sym, 1, 1, 1);
+// 
+// 		for (i = 0; i < ndata; ++i) {
+// 			for (j = 0; j < nat; ++j) {
+// 				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
+// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
+// 			}
+// 			for (j = 0; j < nat; ++j){
+// 				files->ofs_disp_sym.write((char *) &u[j][0], sizeof(double));
+// 				files->ofs_disp_sym.write((char *) &u[j][1], sizeof(double));
+// 				files->ofs_disp_sym.write((char *) &u[j][2], sizeof(double));
+// 				files->ofs_force_sym.write((char *) &f[j][0], sizeof(double));
+// 				files->ofs_force_sym.write((char *) &f[j][1], sizeof(double));
+// 				files->ofs_force_sym.write((char *) &f[j][2], sizeof(double));
+// 			}
+// 		}
+// 
+// 		ntran = 1;
+// 
+// 		std::cout << "Displacements and forces data are" << std::endl;
+// 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
+// 
+// 	} else if (multiply_data == -1) {
+// 
+// 		std::cout << "MULTDAT = -1: Not implemented yet" << std::endl << std::endl;
+// 
+// 		ntran = 1;
+// 		memory->allocate(u, 1, 1);
+// 		memory->allocate(f, 1, 1);
+// 		memory->allocate(u_sym, 1, 1, 1);
+// 		memory->allocate(f_sym, 1, 1, 1);
+// 	} 
+// 
+// 	files->ofs_disp_sym.close();
+// 	files->ofs_force_sym.close();
+// 
+// 	memory->deallocate(u);
+// 	memory->deallocate(f);
+// 	memory->deallocate(u_sym);
+// 	memory->deallocate(f_sym);
+// }
 
 void Symmetry::print_symmetrized_coordinate(double **x)
 {

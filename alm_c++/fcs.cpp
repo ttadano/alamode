@@ -202,28 +202,6 @@ void Fcs::generate_fclists(int maxorder)
             } // close xyz component loop
         } // close atom number loop (iterator)
 
-        /*std::cout << "ORDER: " << order << " Size: " << ndup[order].size() << std::endl;
-        for(unsigned int m = 0; m < ndup[order].size(); ++m){
-        std::cout << "ORDER: " << order << std::setw(5) << ndup[order][m] << std::endl;
-        }
-        std::cout << "ORDER: " << order << " nzero " << nzero[order]<< std::endl;
-
-        std::cout << "**ORDER = " << order << " **" << std::endl;
-        std::cout << "Number of Parameters = " << ndup[order].size() << std::endl;
-
-        int mmm = 0;
-        for (unsigned int m = 0; m < ndup[order].size(); ++m){
-        std::cout << "#" << m << " ndup = " << ndup[order][m] << std::endl;
-        for (unsigned int mm = 0; mm < ndup[order][m]; ++mm){
-        for (i = 0; i < order + 2; ++i){
-        std::cout << std::setw(6) << easyvizint(fc_set[order][mmm].elems[i]);    
-        }
-        std::cout << " " << fc_set[order][mmm].mother << std::endl;
-        ++mmm;
-        } 
-        std::cout << std::endl;
-        }
-        */
         memory->deallocate(xyzcomponent);
         list_found.clear();
         std::cout << ".. done. " << std::endl;
@@ -378,7 +356,6 @@ std::string Fcs::easyvizint(const int n)
     std::string str_crd[3] = {"x", "y", "z"};
     std::string str_tmp;
 
-    //   str_tmp = std::to_string(static_cast<long double>(atmn));
     str_tmp = boost::lexical_cast<std::string>(atmn);
     str_tmp += str_crd[crdn];
 

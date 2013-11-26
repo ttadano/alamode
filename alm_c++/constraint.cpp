@@ -1152,8 +1152,6 @@ void Constraint::rref(int nrows, int ncols, double **mat, int &nrank, double tol
 
 	int irow, icol, jrow, jcol;
 	int pivot;
-	int maxloc;
-	double maxval, val;
 	double tmp, *arr;
 
 	memory->allocate(arr, ncols);

@@ -131,7 +131,6 @@ namespace ALM_NS {
 		void symop_in_cart(double [3][3], double[3][3]);
 		void pure_translations();
 		void data_multiplier(int, int, int);
-
 		void print_symmetrized_coordinate(double **);
 		void symop_availability_check(double ***, bool *, const int, int &);
 
