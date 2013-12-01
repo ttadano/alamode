@@ -76,10 +76,10 @@ void System::setup()
 		std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
 		std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
 
-		std::cout << " Dimension of the supercell :";
-		std::cout << std::setw(4) << cell_dimension[0] << "  x";
-		std::cout << std::setw(4) << cell_dimension[1] << "  x";
-		std::cout << std::setw(4) << cell_dimension[2] << std::endl;
+// 		std::cout << " Dimension of the supercell :";
+// 		std::cout << std::setw(4) << cell_dimension[0] << "  x";
+// 		std::cout << std::setw(4) << cell_dimension[1] << "  x";
+// 		std::cout << std::setw(4) << cell_dimension[2] << std::endl;
 
 	}
 
@@ -94,6 +94,16 @@ void System::setup()
 	MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&cell_dimension[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
+	memory->allocate(kd_prim, natmin);
+
+	for (i = 0; i < natmin; ++i) {
+		kd_prim[i] = kd[map_p2s[i][0]];
+	}
+	setup_atomic_class(natmin, kd_prim);
+
+	memory->deallocate(kd_prim);
 }
 
 void System::load_system_info()
@@ -346,3 +356,31 @@ void System::transpose3(double ret[3][3], const double mat[3][3])
 	}
 }
 
+void System::setup_atomic_class(unsigned int N, unsigned int *kd) {
+
+	// This function can be modified when one needs to 
+	// compute symmetry operations of spin polarized systems.
+
+	unsigned int i;
+	std::set<unsigned int> kd_uniq;
+	kd_uniq.clear();
+
+	for (i = 0; i < N; ++i) {
+		kd_uniq.insert(kd[i]);
+	}
+	nclassatom = kd_uniq.size();
+
+	memory->allocate(atomlist_class, nclassatom);
+
+	for (i = 0; i < N; ++i) {
+		int count = 0;
+		for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
+			if (kd[i] == (*it)) {
+				atomlist_class[count].push_back(i);
+			}
+			++count;
+		}
+	}
+
+	kd_uniq.clear();
+}
