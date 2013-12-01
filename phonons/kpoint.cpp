@@ -13,6 +13,7 @@
 #include <set>
 #include <numeric>
 #include "parsephon.h"
+#include "../alm_c++/mathfunctions.h"
 
 #ifdef _USE_BOOST
 #include <boost/lexical_cast.hpp>
@@ -142,7 +143,7 @@ void Kpoint::kpoint_setups(std::string mode)
 						for (k = 0; k < 3; ++k){
 							tmp[k] = xk[ik][k] - xk[ik - 1][k];
 						}
-						system->rotvec(tmp, tmp, system->rlavec_p, 'T');
+						rotvec(tmp, tmp, system->rlavec_p, 'T');
 						kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 					}
 					++ik;
@@ -296,7 +297,7 @@ void Kpoint::gen_kpoints_band()
 			xk_direction[j] = xk_e[j] - xk_s[j];
 		}
 
-		system->rotvec(xk_direction, xk_direction, system->rlavec_p, 'T');
+		rotvec(xk_direction, xk_direction, system->rlavec_p, 'T');
 		norm = std::pow(xk_direction[0], 2) + std::pow(xk_direction[1], 2) + std::pow(xk_direction[2], 2);
 		norm = std::sqrt(norm);
 
@@ -541,9 +542,9 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
 #else
 			double srot_inv[3][3], srot_inv_t[3][3];
 
-			system->invmat3(srot_inv, srot);
-			system->transpose3(srot_inv_t, srot_inv);
-			system->rotvec(xk_sym, xk_orig, srot_inv_t);
+			invmat3(srot_inv, srot);
+			transpose3(srot_inv_t, srot_inv);
+			rotvec(xk_sym, xk_orig, srot_inv_t);
 
 
 			for (i = 0; i < 3; ++i){

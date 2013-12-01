@@ -12,6 +12,7 @@
 #include "system.h"
 #include "parsephon.h"
 #include "write_phonons.h"
+#include "../alm_c++//mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -196,7 +197,7 @@ void Gruneisen::prepare_delta_fc2()
 			coord_tmp[i] = system->xr_s[kat][i] - system->xr_s[iat][i];
 			coord_tmp[i] = dynamical->fold(coord_tmp[i]);
 		}
-		system->rotvec(coord_tmp, coord_tmp, system->lavec_s);
+		rotvec(coord_tmp, coord_tmp, system->lavec_s);
 
 		dfc2[nalpha[0]][jat][icrd][jcrd] += fc3_tmp.fcs_val * coord_tmp[ixyz[2]];
 	}
@@ -447,8 +448,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 					}
 				}
 
-				system->rotvec(vec, vec, system->lavec_s);
-				system->rotvec(vec, vec, system->rlavec_p);
+				rotvec(vec, vec, system->lavec_s);
+				rotvec(vec, vec, system->rlavec_p);
 
 				phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 				exp_phase = std::exp(im * phase);
@@ -547,14 +548,14 @@ void Gruneisen::calc_gruneisen3()
 			//	coord_tmp[i] = dynamical->fold(coord_tmp[i]);
 			x[i] = system->xr_s[iat2][i];
 		}
-		system->rotvec(coord_tmp, coord_tmp, system->lavec_s);
-		system->rotvec(coord_tmp, coord_tmp, system->rlavec_p);
+		rotvec(coord_tmp, coord_tmp, system->lavec_s);
+		rotvec(coord_tmp, coord_tmp, system->rlavec_p);
 
 		// 		for (i = 0; i < 3; ++i) std::cout << std::setw(15) << coord_tmp[i] / (2.0 * pi);
 		// 		std::cout << std::endl;
 
 
-		system->rotvec(x, x, system->lavec_s);
+		rotvec(x, x, system->lavec_s);
 		std::cout << "x = " << std::setw(15) << x[0] << std::setw(15) << x[1] << std::setw(15) << x[2] << std::endl;
 
 		for (ik = 0; ik < nk; ++ik) {

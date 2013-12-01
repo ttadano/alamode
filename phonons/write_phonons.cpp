@@ -18,7 +18,7 @@
 #include "symmetry_core.h"
 #include "system.h"
 #include "write_phonons.h"
-
+#include "../alm_c++/mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -397,7 +397,7 @@ void Writes::write_phonon_vel_all()
         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
 
         for (j = 0; j < ns; ++j){
-            system->rotvec(vel[j], vel[j], system->lavec_p, 'T');
+            rotvec(vel[j], vel[j], system->lavec_p, 'T');
             for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
         }
 
@@ -488,7 +488,7 @@ void Writes::write_mode_anime()
         for (j = 0; j < 3; ++j){
             xmod[i][j] = system->xc[k][j];
         }
-        // system->rotvec(system->lavec_p, xmod[i], xmod[i]);
+        // rotvec(system->lavec_p, xmod[i], xmod[i]);
 
         for (j = 0; j < 3; ++j){
             xmod[i][j] *= Bohr_in_Angstrom;

@@ -36,14 +36,8 @@ namespace PHON_NS {
         double *mass_kd, *mass;
 
         double Tmin, Tmax, dT;
-
-        void rotvec(double [3], double [3], double [3][3], char mode = 'N');
         double volume(double [3], double [3], double [3]);
-		void invmat3(double [3][3], double [3][3]);
-		void matmul3(double [3][3], const double [3][3], const double [3][3]);
-		void transpose3(double [3][3], const double [3][3]);
 
-		void invmat3_i(int [3][3], int [3][3]);
 
 
     private:

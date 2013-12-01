@@ -10,6 +10,7 @@
 #include "error.h"
 #include "write_phonons.h"
 #include "../alm_c++/constants.h"
+#include "../alm_c++/mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -51,7 +52,7 @@ void Phonon_velocity::calc_phonon_vel_band()
 	for (ik = 0; ik < nk; ++ik){
 
 		// Represent the given kpoint in Cartesian coordinate
-		system->rotvec(xk_tmp, kpoint->xk[ik], system->rlavec_p, 'T');
+		rotvec(xk_tmp, kpoint->xk[ik], system->rlavec_p, 'T');
 
 		if (ndiff == 2) {
 			// central difference
@@ -70,7 +71,7 @@ void Phonon_velocity::calc_phonon_vel_band()
 
 			// Move back to fractional basis
 
-			system->rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p, 'T');
+			rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p, 'T');
 			for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
 			if (fcs_phonon->is_fc2_ext) {
@@ -135,8 +136,8 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
 			kvec_na_tmp[0][j] = xk_shift[0][j];
 			kvec_na_tmp[1][j] = xk_shift[1][j];
 		}
-		system->rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->rlavec_p, 'T');
-		system->rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
+		rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->rlavec_p, 'T');
+		rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
 
 		norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0] + kvec_na_tmp[0][1] * kvec_na_tmp[0][1] + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
 		if (norm > eps) {

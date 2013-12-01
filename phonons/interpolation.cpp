@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
+#include "../alm_c++/mathfunctions.h"
 
 #if defined(WIN32) || defined(_WIN32)
 #pragma comment(lib, "libfftw3-3.lib")
@@ -79,7 +80,7 @@ void Interpolation::prepare_interpolation()
 		for (j = 0; j < 3; ++j) {
 			kvec_na_interpolate[i][j] = dynamical->fold(xk_interpolate[i][j]);
 		}
-		system->rotvec(kvec_na_interpolate[i], kvec_na_interpolate[i], system->rlavec_p, 'T');
+		rotvec(kvec_na_interpolate[i], kvec_na_interpolate[i], system->rlavec_p, 'T');
 		norm = std::sqrt(kvec_na_interpolate[i][0] * kvec_na_interpolate[i][0] + kvec_na_interpolate[i][1] * kvec_na_interpolate[i][1] + kvec_na_interpolate[i][2] * kvec_na_interpolate[i][2]);
 
 		if (norm > eps) {
@@ -197,7 +198,7 @@ void Interpolation::exec_interpolation()
 // 						x_tmp[1] -= static_cast<double>(nktmp[1]);
 // 						x_tmp[2] -= static_cast<double>(nktmp[2]);
 // 
-// 						system->rotvec(x_tmp, x_tmp, system->lavec_p);
+// 						rotvec(x_tmp, x_tmp, system->lavec_p);
 // 						dist = std::sqrt(x_tmp[0] * x_tmp[0] + x_tmp[1] * x_tmp[1] + x_tmp[2] * x_tmp[2]);
 // 
 // 						std::cout << "i = " << std::setw(4) << i + 1;

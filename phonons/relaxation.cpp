@@ -21,6 +21,7 @@
 #include "write_phonons.h"
 #include "../alm_c++/constants.h"
 #include "timer.h"
+#include "../alm_c++/mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -111,7 +112,7 @@ void Relaxation::setup_relaxation()
 
 					relvec[i][j][k] = vec[k];
 				}
-				system->rotvec(relvec[i][j], relvec[i][j], mat_convert);
+				rotvec(relvec[i][j], relvec[i][j], mat_convert);
 			}
 		}
 		memory->deallocate(vec_s);
@@ -191,7 +192,7 @@ void Relaxation::setup_relaxation()
 	// 			for (unsigned int m = 0; m < 3; ++m){
 	// 				xtmp[m] = system->xr_s[system->map_p2s[j][0]][m];
 	// 			}
-	// 			system->rotvec(xtmp, xtmp, mat_convert);
+	// 			rotvec(xtmp, xtmp, mat_convert);
 	// 
 	// 			cexp_phase2[i][j] = std::exp(im * (xtmp[0] * kpoint->xk[i][0] + xtmp[1] * kpoint->xk[i][1] + xtmp[2] * kpoint->xk[i][2]));
 	// 		}
@@ -268,14 +269,14 @@ void Relaxation::setup_relaxation()
 			for (i = 0; i < 3; ++i) {
 				xk_tmp[i] = 0.5;
 			}
-			system->rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
+			rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
 			dist_k_min = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
 
 			for (ik = 1; ik < nk; ++ik) {
 				for (int j = 0; j < 3; ++j) {
 					xk_tmp[j] = kpoint->xk[ik][j];
 				}
-				system->rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
+				rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
 
 				dist_k = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
 

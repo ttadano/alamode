@@ -13,6 +13,7 @@
 #include "timer.h"
 #include "error.h"
 #include "symmetry_core.h"
+#include "../alm_c++/mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -116,8 +117,8 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double
                     for (j = 0; j < system->natmin; ++j) {
 
                         for (icrd = 0; icrd < 3; ++icrd) xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd] - system->xr_s[system->map_p2s[j][0]][icrd];
-                        system->rotvec(xdiff, xdiff, system->lavec_s);
-                        system->rotvec(xdiff, xdiff, system->rlavec_p);
+                        rotvec(xdiff, xdiff, system->lavec_s);
+                        rotvec(xdiff, xdiff, system->rlavec_p);
 
                         phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
 
@@ -258,8 +259,8 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
                     for (j = 0; j < system->natmin; ++j) {
 
                         for (icrd = 0; icrd < 3; ++icrd) xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd] - system->xr_s[system->map_p2s[j][0]][icrd];
-                        system->rotvec(xdiff, xdiff, system->lavec_s);
-                        system->rotvec(xdiff, xdiff, system->rlavec_p);
+                        rotvec(xdiff, xdiff, system->lavec_s);
+                        rotvec(xdiff, xdiff, system->rlavec_p);
 
                         phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
 
@@ -384,8 +385,8 @@ void Dynamical::calc_analytic_k(double *xk_in, double ****fc2_in, std::complex<d
 					}
 				}
 
-				system->rotvec(vec, vec, system->lavec_s);
-				system->rotvec(vec, vec, system->rlavec_p);
+				rotvec(vec, vec, system->lavec_s);
+				rotvec(vec, vec, system->rlavec_p);
 
 				phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 				exp_phase = std::exp(im * phase);
@@ -488,8 +489,8 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 			vec[i] -= xshift_s[icell][i];
 		}
 
-		system->rotvec(vec, vec, system->lavec_s);
-		system->rotvec(vec, vec, system->rlavec_p);
+		rotvec(vec, vec, system->lavec_s);
+		rotvec(vec, vec, system->rlavec_p);
 
 		phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -515,7 +516,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 		}
 	}
 
-	system->rotvec(kepsilon, kvec_na_in, dielec);
+	rotvec(kepsilon, kvec_na_in, dielec);
 	denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
 
 	if (denom > eps) {
@@ -530,7 +531,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 				}
 			}
 
-			system->rotvec(kz1, kvec_na_in, born_tmp, 'T');
+			rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
 			for (jat = 0; jat < system->natmin; ++jat) {
 				atm_p2 = system->map_p2s[jat][0];
@@ -542,7 +543,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 					}
 				}
 
-				system->rotvec(kz2, kvec_na_in, born_tmp, 'T');
+				rotvec(kz2, kvec_na_in, born_tmp, 'T');
 
 				for (i = 0; i < 3; ++i) {
 					for (j = 0; j < 3; ++j) {
@@ -555,7 +556,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 		}
 	}
 
-	system->rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
+	rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
 	norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
 
 	factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
@@ -1033,7 +1034,7 @@ void Dynamical::modify_eigenvectors_sym()
 				shift[i] = (*it).shift[i];
 			}
 
-			system->rotvec(Sk, k, S);
+			rotvec(Sk, k, S);
 
 			for (i = 0; i < 3; ++i) {
 				Sk[i] = Sk[i] - kpoint->nint(Sk[i]);
@@ -1042,8 +1043,8 @@ void Dynamical::modify_eigenvectors_sym()
 
 			if (knum_sym == -1) error->exit("modify_eigenvectors_sym", "kpoint not found");
 
-			system->matmul3(S_cart, S, AA_T);
-			system->matmul3(S_cart, BB_T, S_cart);
+			matmul3(S_cart, S, AA_T);
+			matmul3(S_cart, BB_T, S_cart);
 
 			for (i = 0; i < 3; ++i) {
 				for (j = 0; j < 3; ++j) {
@@ -1060,7 +1061,7 @@ void Dynamical::modify_eigenvectors_sym()
 						x_new[i] = system->xr_p[system->map_p2s[atom_mapped[iat]][0]][i];
 					}
 
-					system->rotvec(Sx, x, S);
+					rotvec(Sx, x, S);
 					for (i = 0; i < 3; ++i) x_tmp[i] = x_new[i] - Sx[i] - shift[i];
 					phase = Sk[0] * x_tmp[0] + Sk[1] * x_tmp[1] + Sk[2] * x_tmp[2];
 					exp_phase = exp(im * phase);
@@ -1199,7 +1200,7 @@ void Dynamical::setup_na_kvec()
 			for (j = 0; j < 3; ++j) {
 				kvec_na[i][j] = fold(kpoint->xk[i][j]);
 			}
-			system->rotvec(kvec_na[i], kvec_na[i], system->rlavec_p, 'T');
+			rotvec(kvec_na[i], kvec_na[i], system->rlavec_p, 'T');
 			norm = std::sqrt(kvec_na[i][0] * kvec_na[i][0] + kvec_na[i][1] * kvec_na[i][1] + kvec_na[i][2] * kvec_na[i][2]);
 
 			if (norm > eps) {

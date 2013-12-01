@@ -141,9 +141,8 @@ void Fitting::fitmain()
 	for(i = 0; i < N; ++i) params[i] = fsum[i];
 
 	memory->deallocate(amat);
-	// memory->deallocate(amat_1d);
-
 	memory->deallocate(fsum);
+
 	timer->print_elapsed();
 }
 

@@ -34,8 +34,8 @@ void Symmetry::setup_symmetry()
 	unsigned int i, j;
 
 	for (i = 0; i < natmin; ++i){
-		system->rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
-		system->rotvec(xtmp[i], xtmp[i], system->rlavec_p);
+		rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+		rotvec(xtmp[i], xtmp[i], system->rlavec_p);
 
 		for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
 
@@ -512,7 +512,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
 		for (i = 0; i < natmin; ++i) map_tmp[i] = 0;
 
-		system->invmat3_i(mat_tmp, T_tmp);
+		invmat3_i(mat_tmp, T_tmp);
 
 		for (i = 0; i < 3; ++i) {
 			for (j = 0; j < 3; ++j) {
@@ -534,7 +534,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 				x_mod[j] = x[i][j] - shift[j];
 			}
 
-			system->rotvec(x_mod, x_mod, S_double, 'T');
+			rotvec(x_mod, x_mod, S_double, 'T');
 
 			num_mapped = -1;
 

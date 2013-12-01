@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include "../alm_c++/mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -250,9 +251,9 @@ double Integration::volume(int *klist)
         k3[i] = refold(kpoint->xk[klist[3]][i] - kpoint->xk[klist[0]][i]);
     }
 
-    system->rotvec(k1, k1, system->rlavec_p, 'T');
-    system->rotvec(k2, k2, system->rlavec_p, 'T');
-    system->rotvec(k3, k3, system->rlavec_p, 'T');
+    rotvec(k1, k1, system->rlavec_p, 'T');
+    rotvec(k2, k2, system->rlavec_p, 'T');
+    rotvec(k3, k3, system->rlavec_p, 'T');
 
     vol = std::abs(k1[0]*(k2[1]*k3[2] - k2[2]*k3[1]) 
         + k1[1]*(k2[2]*k3[0] - k2[0]*k3[2]) 
