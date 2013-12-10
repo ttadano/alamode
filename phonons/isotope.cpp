@@ -103,7 +103,7 @@ void Isotope::calc_isotope_selfenergy_all()
 
 	int nks = nk * ns;
 
-	double *gamma_tmp;
+	double *gamma_tmp, *gamma_loc;
 	double tmp, omega;
 
 	int knum, snum;
@@ -115,17 +115,20 @@ void Isotope::calc_isotope_selfenergy_all()
 		}
 	
 		memory->allocate(gamma_tmp, nks);
+		memory->allocate(gamma_loc, nks);
 
-		for (i = 0; i < nks; ++i) gamma_tmp[i] = 0.0;
+		for (i = 0; i < nks; ++i) gamma_loc[i] = 0.0;
 
-		for (i = 0; i < nks; ++i) {
+		for (i = mympi->my_rank; i < nks; i += mympi->nprocs) {
 			knum = i / ns;
 			snum = i % ns;
 			omega = dynamical->eval_phonon[knum][snum];
 			calc_isotope_selfenergy(knum, snum, omega, tmp);
-			gamma_tmp[i] = tmp;
+			gamma_loc[i] = tmp;
 		}
 
+		MPI_Reduce(&gamma_loc[0], &gamma_tmp[0], nks, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		
 		for (i = 0; i < nk; ++i) {
 			for (j = 0; j < ns; ++j) {
 				gamma_isotope[i][j] = gamma_tmp[ns * i + j];
@@ -133,6 +136,7 @@ void Isotope::calc_isotope_selfenergy_all()
 		}
 
 		memory->deallocate(gamma_tmp);
+		memory->deallocate(gamma_loc);
 
 		if (mympi->my_rank == 0) {
 			std::cout << "Done !" << std::endl;
