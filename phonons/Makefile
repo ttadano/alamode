@@ -13,7 +13,7 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
 	phonon_dos.cpp phonon_velocity.cpp integration.cpp relaxation.cpp \
 	phonon_thermodynamics.cpp conductivity.cpp symmetry_core.cpp \
-        mpi_common.cpp gruneisen.cpp interpolation.cpp
+        mpi_common.cpp gruneisen.cpp interpolation.cpp isotope.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
