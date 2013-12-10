@@ -26,6 +26,7 @@ namespace PHON_NS {
               dos(ptr->dos),
               gruneisen(ptr->gruneisen),
               mympi(ptr->mympi),
+			  isotope(ptr->isotope),
               timer(ptr->timer) {}
           virtual ~Pointers(){}
     protected:
@@ -48,6 +49,7 @@ namespace PHON_NS {
         Dos *&dos;
         Gruneisen *&gruneisen;
         MyMPI *&mympi;
+		Isotope *&isotope;
         Timer *&timer;
     };
 }

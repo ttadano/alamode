@@ -76,6 +76,8 @@ namespace PHON_NS {
 
         void v3_test();
         void v4_test();
+		double delta_lorentz(const double);
+		double delta_gauss(const double);
 
      private:
         struct StructKS {
@@ -86,8 +88,7 @@ namespace PHON_NS {
         std::vector<ReciprocalVs> *V;
         std::vector<unsigned int> kslist;
         
-        double delta_lorentz(const double);
-        double delta_gauss(const double);
+ 
         std::complex<double> im;
         std::complex<double> V3(const unsigned int, const unsigned int, const unsigned int);
         inline std::complex<double> V3new(const unsigned int [3]);

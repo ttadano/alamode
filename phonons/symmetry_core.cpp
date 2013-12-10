@@ -42,18 +42,6 @@ void Symmetry::setup_symmetry()
 		kdtmp[i] = system->kd[system->map_p2s[i][0]];
 	}
 
-	if (mympi->my_rank == 0) {
-		std::cout << "Atoms in the primitive cell" << std::endl;
-		for (i = 0; i < natmin; ++i){
-			std::cout << std::setw(6) << i + 1 << ":";
-			for (j = 0; j < 3; ++j) {
-				std::cout << std::setw(15) << xtmp[i][j];
-			}
-			std::cout << std::setw(5) << kdtmp[i] << std::endl;
-		}
-		std::cout << std::endl;
-	}
-
 	SymmList.clear();
 
 	if (mympi->my_rank == 0) {

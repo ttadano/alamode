@@ -34,6 +34,7 @@ namespace PHON_NS
         class Dos *dos;
         class Gruneisen *gruneisen;
         class MyMPI *mympi;
+		class Isotope *isotope;
 
         void create_pointers();
         void destroy_pointers();

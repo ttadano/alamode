@@ -20,6 +20,8 @@ void System::setup()
 {
 	unsigned int i, j;
 
+	double **xtmp;
+
 	load_system_info();
 
 	recips(lavec_s, rlavec_s);
@@ -75,13 +77,34 @@ void System::setup()
 		volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
 		std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
-		std::cout << " Number of Atoms: " << nat << std::endl << std::endl;
+		std::cout << " Number of Atoms in the supercell: " << nat << std::endl << std::endl;
 
-// 		std::cout << " Dimension of the supercell :";
-// 		std::cout << std::setw(4) << cell_dimension[0] << "  x";
-// 		std::cout << std::setw(4) << cell_dimension[1] << "  x";
-// 		std::cout << std::setw(4) << cell_dimension[2] << std::endl;
+		memory->allocate(xtmp, natmin, 3);
 
+		for (i = 0; i < natmin; ++i) {
+			rotvec(xtmp[i], xr_s[map_p2s[i][0]], lavec_s);
+			rotvec(xtmp[i], xtmp[i], rlavec_p);
+			for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
+		}
+
+		std::cout << "Atoms in the primitive cell" << std::endl;
+		for (i = 0; i < natmin; ++i){
+			std::cout << std::setw(6) << i + 1 << ":";
+			for (j = 0; j < 3; ++j) {
+				std::cout << std::setw(15) << xtmp[i][j];
+			}
+			std::cout << std::setw(5) << symbol_kd[kd[map_p2s[i][0]]] << std::endl;
+		}
+		std::cout << std::endl << std::endl;
+
+		memory->deallocate(xtmp);
+
+		std::cout << "Mass of atomic species:" << std::endl;
+		for (i = 0; i < nkd; ++i) {
+			std::cout << std::setw(4) << symbol_kd[i] << ":";
+			std::cout << std::fixed << std::setw(12) << mass_kd[i] << std::endl;
+		}
+		std::cout << std::endl << std::endl;
 	}
 
 	// Atomic masses in Rydberg unit
@@ -110,6 +133,7 @@ void System::setup()
 void System::load_system_info()
 {
 	unsigned int i;
+	int nkd_tmp;
 
 	if (mympi->my_rank == 0) {
 		std::string file_fcs = fcs_phonon->file_fcs;
@@ -132,13 +156,16 @@ void System::load_system_info()
 				}
 				ifs_fcs.ignore();
 				std::getline(ifs_fcs, str_tmp);
-				ifs_fcs >> nkd;
-				memory->allocate(symbol_kd, nkd);
-				memory->allocate(mass_kd, nkd);
+				ifs_fcs >> nkd_tmp;
 
-				for (i = 0; i < nkd; ++i){
-					ifs_fcs >> str_tmp >> symbol_kd[i] >> mass_kd[i];
-				}
+				if (nkd != nkd_tmp) error->exit("load_system_info", "NKD in the info file is not consistent with that given in the input file.");
+				// 				memory->allocate(symbol_kd, nkd);
+				// 				memory->allocate(mass_kd, nkd);
+
+				// 				for (i = 0; i < nkd; ++i){
+				// 					ifs_fcs >> str_tmp >> symbol_kd[i] >> mass_kd[i];
+				// 				}
+
 				ifs_fcs.ignore();
 				std::getline(ifs_fcs, str_tmp);
 				ifs_fcs >> nat >> natmin >> ntran;

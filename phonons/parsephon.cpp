@@ -21,6 +21,8 @@
 #include "phonon_dos.h"
 #include <sstream>
 #include <sys/stat.h>
+#include "memory.h"
+#include "isotope.h"
 
 #ifdef _USE_BOOST
 #include <boost/algorithm/string.hpp>
@@ -76,7 +78,10 @@ void Input::parse_general_vars() {
 
 	int i;
 	std::string prefix, mode, fcsinfo, borninfo, file_result, ks_input;
-	int nsym, nnp, celldim[3], nbands, ismear;
+	int nsym, celldim[3], nbands, ismear;
+	int nkd;
+	std::string *kdname;
+	double *masskd, *isotope_factor;
 	double Tmin, Tmax, dT, na_sigma, epsilon;
 	double emin, emax, delta_e, delta_a;
 	double tolerance;
@@ -84,13 +89,15 @@ void Input::parse_general_vars() {
 	bool eigenvector, printxsf, nonanalytic, lclassical, restart;
 	bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
 	bool sym_time_reversal;
+	bool include_isotope;
 	struct stat st;
 
 	std::string str_tmp;
 	std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO \
-								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM";
-	std::string str_no_defaults = "PREFIX MODE FCSINFO";
+								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS";
+	std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
 	std::vector<std::string> no_defaults, celldim_v;
+	std::vector<std::string> kdname_v, masskd_v, isofact_v;
 	std::map<std::string, std::string> general_var_dict;
 
 	if (from_stdin) {
@@ -120,24 +127,45 @@ void Input::parse_general_vars() {
 #ifdef _USE_BOOST
 	boost::to_lower(mode);
 	nsym = boost::lexical_cast<int>(general_var_dict["NSYM"]);
-	nnp = boost::lexical_cast<int>(general_var_dict["NNP"]);
 #else
 	std::transform (mode.begin(), mode.end(), mode.begin(), tolower);
 	nsym = my_cast<int>(general_var_dict["NSYM"]);
-	nnp = my_cast<int>(general_var_dict["NNP"]);
 #endif
 
 	fcsinfo = general_var_dict["FCSINFO"];
+	assign_val(nkd, "NKD", general_var_dict);
+
+	split_str_by_space(general_var_dict["KD"], kdname_v);
+
+	if (kdname_v.size() != nkd) {
+		error->exit("parse_general_vars", "The number of entries for KD is inconsistent with NKD");
+	} else {
+		memory->allocate(kdname, nkd);
+		for (i = 0; i < nkd; ++i){
+			kdname[i] = kdname_v[i];
+		}
+	}
+
+	split_str_by_space(general_var_dict["MASS"], masskd_v);
+
+	if (masskd_v.size() != nkd) {
+		error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
+	} else {
+		memory->allocate(masskd, nkd);
+		for (i = 0; i < nkd; ++i) {
+			masskd[i] = my_cast<double>(masskd_v[i]);
+		}
+	}
 
 	// Default values
 
 	Tmin = 0.0;
 	Tmax = 1000.0;
-	dT = 1.0;
+	dT = 10.0;
 
 	emin = 0.0;
 	emax = 1000.0;
-	delta_e = 1.0;
+	delta_e = 10.0;
 
 	eigenvector = false;
 	printxsf = false;
@@ -153,6 +181,8 @@ void Input::parse_general_vars() {
 	tolerance = 1.0e-8;
 	printsymmetry = false;
 	sym_time_reversal = false;
+
+	include_isotope = false;
 
 	// if file_result exists in the current directory, restart mode will be automatically turned on.
 
@@ -214,6 +244,21 @@ void Input::parse_general_vars() {
 	assign_val(atom_project_mode, "ATOMPROJ", general_var_dict);
 	assign_val(calc_realpart, "REALPART", general_var_dict);
 
+	assign_val(include_isotope, "ISOTOPE", general_var_dict);
+
+	if (include_isotope) {
+		split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
+
+		if (isofact_v.size() != nkd) {
+			error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
+		} else {
+			memory->allocate(isotope_factor, nkd);
+			for (i = 0; i < nkd; ++i){
+				isotope_factor[i] = my_cast<double>(isofact_v[i]);
+			}
+		}
+	}
+
 	str_tmp = general_var_dict["CELLDIM"];
 
 	if (!str_tmp.empty()) {
@@ -257,9 +302,20 @@ void Input::parse_general_vars() {
 	symmetry->printsymmetry = printsymmetry;
 	symmetry->time_reversal_sym = sym_time_reversal;
 
+
 	system->Tmin = Tmin;
 	system->Tmax = Tmax;
 	system->dT = dT;
+	system->nkd = nkd;
+
+	memory->allocate(system->mass_kd, nkd);
+	memory->allocate(system->symbol_kd, nkd);
+	for (i = 0; i < nkd; ++i) {
+		system->mass_kd[i] = masskd[i];
+		system->symbol_kd[i] = kdname[i];
+	}
+	memory->deallocate(masskd);
+	memory->deallocate(kdname);
 
 	dos->emax = emax;
 	dos->emin = emin;
@@ -286,6 +342,16 @@ void Input::parse_general_vars() {
 	relaxation->ks_input = ks_input;
 	relaxation->atom_project_mode = atom_project_mode;
 	relaxation->calc_realpart = calc_realpart;
+
+	isotope->include_isotope = include_isotope;
+
+	if (include_isotope) {
+		memory->allocate(isotope->isotope_factor, nkd);
+		for (i = 0; i < nkd; ++i) {
+			isotope->isotope_factor[i] = isotope_factor[i];
+		}
+		memory->deallocate(isotope_factor);
+	}
 
 	general_var_dict.clear();
 }

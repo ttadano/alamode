@@ -20,6 +20,7 @@
 #include "relaxation.h"
 #include "conductivity.h"
 #include <omp.h>
+#include "isotope.h"
 
 using namespace PHON_NS;
 
@@ -112,6 +113,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		integration->setup_integration();
 		relaxation->setup_relaxation();
+		isotope->setup_isotope_scattering();
+		isotope->calc_isotope_selfenergy_all();
 
 		//     dos->calc_tdos();
 		// relaxation->calc_selfenergy();
@@ -210,6 +213,7 @@ void PHON::create_pointers()
 	writes = new Writes(this);
 	dos = new Dos(this);
 	gruneisen = new Gruneisen(this);
+	isotope = new Isotope(this);
 }
 
 void PHON::destroy_pointers()
@@ -231,4 +235,5 @@ void PHON::destroy_pointers()
 	delete writes;
 	delete dos;
 	delete gruneisen;
+	delete isotope;
 }

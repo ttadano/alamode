@@ -18,6 +18,7 @@
 #include <set>
 #include <vector>
 #include "../alm_c++/mathfunctions.h"
+#include "isotope.h"
 
 using namespace PHON_NS;
 
@@ -333,6 +334,19 @@ void Conductivity::calc_kl2()
 		if(!ofs_kl) error->exit("calc_kl", "cannot open file_kl");
 
 		ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+
+		if (isotope->include_isotope) {
+			ofs_kl << "# Isotope effects are included." << std::endl;
+
+			for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
+				knum = kpoint->k_reduced[iks / ns][0];
+				snum = iks % ns;
+
+				for (i = 0; i < ntemp; ++i) {
+					tau[iks][i] = 1.0 / (1.0 / tau[iks][i] + 2.0 * isotope->gamma_isotope[knum][snum] * 1.0e-12 / time_ry);
+				}
+			}
+		}
 
 		memory->allocate(kappa, ntemp, 3, 3);
 
