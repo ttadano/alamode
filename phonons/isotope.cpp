@@ -143,3 +143,4 @@ void Isotope::calc_isotope_selfenergy_all()
 		}
 	}
 }
+
