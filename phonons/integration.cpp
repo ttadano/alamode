@@ -178,12 +178,12 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
         } else if (e2 <= e_ref && e_ref < e3) {
             g =  3.0 * ((e2 - e1) + 2.0*(e_ref - e2) - (e4 + e3 - e2 - e1)*std::pow((e_ref - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
 
-            I1 = frac3 * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (g * (e4 - e1));
-            I2 = frac3 * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (g * (e4 - e1));
-            I3 = frac3 * fij(e3, e2, e_ref) + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (g * (e4 - e1));
-            I4 = frac3 * fij(e4, e1, e_ref) + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (g * (e4 - e1));
+            I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
+            I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
+            I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
+            I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
 
-            ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+            ret += vol * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
 
         } else if (e1 <= e_ref && e_ref < e2) {
             g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
@@ -196,6 +196,7 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
             ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
 
         }
+
     }
 
     return ret/vol_tot;
