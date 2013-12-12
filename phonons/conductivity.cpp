@@ -343,7 +343,7 @@ void Conductivity::calc_kl2()
 				snum = iks % ns;
 
 				for (i = 0; i < ntemp; ++i) {
-					tau[iks][i] = 1.0 / (1.0 / tau[iks][i] + 2.0 * isotope->gamma_isotope[knum][snum] * 1.0e-12 / time_ry);
+					tau[iks][i] = 1.0 / (1.0 / tau[iks][i] + 2.0 * isotope->gamma_isotope[iks/ns][snum] * 1.0e-12 / time_ry);
 				}
 			}
 		}

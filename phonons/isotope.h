@@ -20,6 +20,8 @@ namespace PHON_NS
 
 	private:
 		void calc_isotope_selfenergy(int, int, double, double &);
+		void calc_isotope_selfenergy_tetra(int, int, double, double &);
+
 
 	};
 }
