@@ -35,9 +35,6 @@ void Writes::write_input_vars()
 	std::cout << " KD = ";
 	for (i = 0; i < system->nkd; ++i) std::cout << std::setw(4) << system->kdname[i];
 	std::cout << std::endl;
-	std::cout << " MASS = ";
-	for (i = 0; i < system->nkd; ++i) std::cout << std::setw(8) << system->mass_kd[i];
-	std::cout << std::endl;
 	std::cout << " PERIODIC = ";
 	for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
 	std::cout << std::endl;
@@ -246,8 +243,9 @@ void Writes::wrtmisc(){
 	ofs_info << std::setw(6) << system->nkd << std::endl;
 
 	for(i = 0; i < system->nkd; ++i){
-		ofs_info << std::setw(6) << i + 1 << std::setw(5) << system->kdname[i] << std::setw(20) << system->mass_kd[i] << std::endl;
+		ofs_info << std::setw(5) << system->kdname[i];
 	}
+	ofs_info << std::endl;
 	ofs_info << "Translational Symmetry Information" << std::endl;
 	ofs_info << std::setw(6) << system->nat << std::setw(6) << symmetry->natmin << std::setw(6) << symmetry->ntran << std::endl;
 	ofs_info << std::setw(11) << "'Atoms'" << std::setw(11) << "'Species'" 
