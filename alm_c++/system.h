@@ -18,7 +18,6 @@ namespace ALM_NS {
         int ndata, nstart, nend, nskip;
         int *kd;
         double lavec[3][3], rlavec[3][3];
-        double *mass_kd, *mass;
         double **xcoord; // fractional coordinate
         double **x_cartesian;
         std::string *kdname;

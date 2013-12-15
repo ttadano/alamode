@@ -168,6 +168,7 @@ void System::load_system_info()
 
 				ifs_fcs.ignore();
 				std::getline(ifs_fcs, str_tmp);
+				std::getline(ifs_fcs, str_tmp);
 				ifs_fcs >> nat >> natmin >> ntran;
 
 				memory->allocate(xr_s, nat, 3);

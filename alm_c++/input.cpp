@@ -69,11 +69,10 @@ void Input::parse_general_vars(){
 	bool is_periodic[3];
 	std::string *kdname;
 	double tolerance;
-	double *masskd;
 
-	std::vector<std::string> kdname_v, periodic_v, masskd_v;
-	std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD MASS PERIODIC INTERTYPE PRINTSYMM TOLERANCE DBASIS";
-	std::string str_no_defaults = "PREFIX MODE NAT NKD KD MASS";
+	std::vector<std::string> kdname_v, periodic_v;
+	std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC INTERTYPE PRINTSYMM TOLERANCE DBASIS";
+	std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
 	std::vector<std::string> no_defaults;
 	std::map<std::string, std::string> general_var_dict;
 
@@ -124,16 +123,16 @@ void Input::parse_general_vars(){
 		}
 	}
 
-	split_str_by_space(general_var_dict["MASS"], masskd_v);
-
-	if (masskd_v.size() != nkd) {
-		error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
-	} else {
-		memory->allocate(masskd, nkd);
-		for (i = 0; i < nkd; ++i) {
-			masskd[i] = boost::lexical_cast<double>(masskd_v[i]);
-		}
-	}
+// 	split_str_by_space(general_var_dict["MASS"], masskd_v);
+// 
+// 	if (masskd_v.size() != nkd) {
+// 		error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
+// 	} else {
+// 		memory->allocate(masskd, nkd);
+// 		for (i = 0; i < nkd; ++i) {
+// 			masskd[i] = boost::lexical_cast<double>(masskd_v[i]);
+// 		}
+// 	}
 
 	split_str_by_space(general_var_dict["PERIODIC"], periodic_v);
 
@@ -185,11 +184,9 @@ void Input::parse_general_vars(){
 	symmetry->tolerance = tolerance;
 
 	memory->allocate(system->kdname, nkd);
-	memory->allocate(system->mass_kd, nkd);
 
 	for (i = 0; i < nkd; ++i){
 		system->kdname[i] = kdname[i];
-		system->mass_kd[i] = masskd[i];
 	}
 	for (i = 0; i < 3; ++i) {
 		interaction->is_periodic[i] = is_periodic[i];
@@ -199,10 +196,8 @@ void Input::parse_general_vars(){
 	if (mode == "suggest") displace->disp_basis = str_disp_basis;
 
 	memory->deallocate(kdname);
-	memory->deallocate(masskd);
 
 	kdname_v.clear();
-	masskd_v.clear();
 	periodic_v.clear();
 	no_defaults.clear();
 	general_var_dict.clear();
