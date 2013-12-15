@@ -170,11 +170,8 @@ void System::load_reference_system()
             std::getline(ifs_fc2, str_tmp);
             ifs_fc2 >> nkd_s;
             ifs_fc2.ignore();
-            for (i = 0; i < nkd_s; ++i){
-                std::getline(ifs_fc2, str_tmp);
-            }
             std::getline(ifs_fc2, str_tmp);
-            ifs_fc2.ignore();
+            std::getline(ifs_fc2, str_tmp);
 
             ifs_fc2 >> nat_s >> symmetry->natmin_s >> symmetry->ntran_s;
 
