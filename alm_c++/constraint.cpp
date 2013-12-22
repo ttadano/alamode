@@ -419,14 +419,16 @@ void Constraint::translational_invariance()
 	int *intarr, *intarr_copy;
 	int **xyzcomponent;
 
-	int nxyz;
+	int ixyz, nxyz;
 	int natmin = symmetry->natmin;
 	int nat = system->nat;
 	int nparams;
 
+	unsigned int isize;
+
 	double *arr_constraint;
 
-	std::vector<int> intlist;
+	std::vector<int> intlist, data;
 	std::set<FcProperty> list_found;
 	std::set<FcProperty>::iterator iter_found;
 
@@ -475,14 +477,14 @@ void Constraint::translational_invariance()
 
 			// Generate atom pairs for each order
 
-			if (order == 0){
+			if (order == 0) {
 				for (icrd = 0; icrd < 3; ++icrd){
 
 					intarr[0] = 3 * iat + icrd;
 
 					for (jcrd = 0; jcrd < 3; ++jcrd){
 
-						// Reset the temporary array for next constraint
+						// Reset the temporary array for another constraint
 						for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
 
 						for (jat = 0; jat < 3 * nat; jat += 3){
@@ -490,59 +492,61 @@ void Constraint::translational_invariance()
 
 							iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr, 1));
 
-							// corresponding fcs found.
+							//  If found a IFC
 							if (iter_found != list_found.end()){
 								FcProperty arrtmp = *iter_found;
 								arr_constraint[arrtmp.mother] += arrtmp.coef;
 							}
 						}
 						if (!is_allzero(nparams,arr_constraint)){
-							// add to constraint list
+							// Add to the constraint list
 							const_translation[order].insert(ConstraintClass(nparams, arr_constraint));
 						}
 					}
 				}
 			} else {
-				for(j = 0; j < interaction->ninter[i][order]; ++j){
+				for (j = 0; j < interaction->ninter[i][order]; ++j){
 					intlist.push_back(interaction->intpairs[i][order][j]);
 				}
 				std::sort(intlist.begin(), intlist.end());
 
 				CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order);
 				do {
-					std::vector<int> data = g.now();
+					data = g.now();
 
 					intarr[0] = iat;
-					for (unsigned int isize = 0; isize < data.size(); ++isize){
+					for (isize = 0; isize < data.size(); ++isize){
 						intarr[isize + 1] = data[isize];
 					}
 
-					if(!interaction->is_incutoff(order + 1, intarr)) continue;
+					// Skip if the atoms don't interact with each other.
+					if (!interaction->is_incutoff(order + 1, intarr)) continue;
 
-					for(int ixyz = 0; ixyz < nxyz; ++ixyz){
-						for(int jcrd = 0; jcrd < 3; ++jcrd){
+					// Loop for xyz component
+					for (ixyz = 0; ixyz < nxyz; ++ixyz){
+						for (jcrd = 0; jcrd < 3; ++jcrd){
 
-							// Reset the temporary array for next constraint
+							// Reset the temporary array for another constraint
 							for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
 
-							for(int jat = 0; jat < 3 * nat; jat += 3){
+							for (jat = 0; jat < 3 * nat; jat += 3){
 								intarr[order + 1] = jat / 3;
 
-								if(!interaction->is_incutoff(order + 2, intarr)) continue;
+								if (!interaction->is_incutoff(order + 2, intarr)) continue;
 
-								for(j = 0; j < order + 1; ++j)  intarr_copy[j] = 3 * intarr[j] + xyzcomponent[ixyz][j];
+								for (j = 0; j < order + 1; ++j)  intarr_copy[j] = 3 * intarr[j] + xyzcomponent[ixyz][j];
 								intarr_copy[order + 1] = jat + jcrd;
 
 								fcs->sort_tail(order + 2, intarr_copy);
 
 								iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr_copy, 1));
-								if(iter_found != list_found.end()){
+								if (iter_found != list_found.end()){
 									FcProperty arrtmp = *iter_found;
 									arr_constraint[arrtmp.mother] += arrtmp.coef;                                
 								} 
 
 							}
-							if(!is_allzero(nparams,arr_constraint)){
+							if (!is_allzero(nparams,arr_constraint)){
 								const_translation[order].insert(ConstraintClass(nparams, arr_constraint));
 							}
 						}

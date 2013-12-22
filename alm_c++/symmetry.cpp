@@ -75,21 +75,6 @@ void Symmetry::init()
 	}
 	std::cout << std::endl;
 
-	// 	std::cout << "Used symmetry operations (rotational part in Cartesian coordinate only) are printed below:" << std::endl;
-	// 
-	// 	for (i = 0; i < nsym; ++i){
-	// 		if (sym_available[i]) {
-	// 			std::cout << std::setw(5) << i + 1;
-	// 			for (j = 0; j < 3; ++j){
-	// 				for (k = 0; k < 3; ++k){
-	// 					std::cout << std::setw(4) << symrel[i][j][k];
-	// 				}
-	// 			}
-	// 			std::cout << std::endl;
-	// 		}
-	// 	}
-	// 	std::cout << std::endl;
-
 	pure_translations();
 
 	memory->allocate(map_sym, nat, nsym);
@@ -1277,7 +1262,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 					vsi(k) = x[j][k];
 					tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0); 
 					// need "std" to specify floating point operation
-					// especially for intel compiler (there was no problem in MSVC)
+					// especially for Intel compiler (there was no problem in MSVC)
 					tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
 #else
 					vsi[k] = x[j][k];

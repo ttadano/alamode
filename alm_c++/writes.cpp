@@ -458,7 +458,6 @@ void Writes::wrtmisc(){
 
 	}
 
-
 	memory->deallocate(ncount);
 	memory->deallocate(pair_tmp);
 

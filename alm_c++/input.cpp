@@ -123,17 +123,6 @@ void Input::parse_general_vars(){
 		}
 	}
 
-// 	split_str_by_space(general_var_dict["MASS"], masskd_v);
-// 
-// 	if (masskd_v.size() != nkd) {
-// 		error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
-// 	} else {
-// 		memory->allocate(masskd, nkd);
-// 		for (i = 0; i < nkd; ++i) {
-// 			masskd[i] = boost::lexical_cast<double>(masskd_v[i]);
-// 		}
-// 	}
-
 	split_str_by_space(general_var_dict["PERIODIC"], periodic_v);
 
 	if (periodic_v.size() == 0) {
@@ -546,7 +535,6 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 	std::string line_wo_comment;
 	std::string::size_type pos_first_comment_tag;
 	std::vector<std::string> str_entry, str_varval;
-
 
 	std::set<std::string> keyword_set;
 
