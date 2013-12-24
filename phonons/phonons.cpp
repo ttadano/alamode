@@ -21,6 +21,7 @@
 #include "conductivity.h"
 #include <omp.h>
 #include "isotope.h"
+#include "selfenergy.h"
 
 using namespace PHON_NS;
 
@@ -32,12 +33,15 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 	create_pointers();
 
 	if (mympi->my_rank == 0) {
-		std::cout << "Phonons program version 1.0 (MPI): svn rev. 338" << std::endl;
-		std::cout << std::endl << "Job started at " << timer->DataAndTime() <<  std::endl << std::endl;
-
+		std::cout << "Phonons program version 1.1 (MPI)" << std::endl;
+		std::cout << std::endl;
+		std::cout << "Job started at " << timer->DataAndTime() <<  std::endl << std::endl;
 		std::cout << "The number of MPI threads: " << mympi->nprocs << std::endl;
+
+#ifdef _OPENMP
 		std::cout << "The number of OpenMP threads: " << omp_get_max_threads() << std::endl;
 		std::cout << std::endl;
+#endif
 
 		input->parce_input(narg, arg);
 		writes->write_input_vars();
@@ -61,11 +65,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		system->setup();
 		symmetry->setup_symmetry();
 		kpoint->kpoint_setups(mode);
-
+		dos->setup();
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
-		dos->setup();
-
 		dynamical->diagonalize_dynamical_all();
 
 		// Calculate the group velocity of phonons along given direction in
@@ -113,11 +115,11 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 		integration->setup_integration();
 		relaxation->setup_relaxation();
+		selfenergy->setup_selfenergy();
 		isotope->setup_isotope_scattering();
 		isotope->calc_isotope_selfenergy_all();
 
 		//     dos->calc_tdos();
-		// relaxation->calc_selfenergy();
 		//  relaxation->v3_test();
 		//	relaxation->v4_test();
 
@@ -208,6 +210,7 @@ void PHON::create_pointers()
 	phonon_velocity = new Phonon_velocity(this);
 	phonon_thermodynamics = new Phonon_thermodynamics(this);
 	relaxation = new Relaxation(this);
+	selfenergy = new Selfenergy(this);
 	conductivity = new Conductivity(this);
 	interpolation = new Interpolation(this);
 	writes = new Writes(this);
@@ -230,6 +233,7 @@ void PHON::destroy_pointers()
 	delete phonon_velocity;
 	delete phonon_thermodynamics;
 	//	delete relaxation;
+	delete selfenergy;
 	delete interpolation;
 	delete conductivity;
 	delete writes;

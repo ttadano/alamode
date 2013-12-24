@@ -28,6 +28,7 @@ namespace PHON_NS
         class Phonon_velocity *phonon_velocity;
         class Phonon_thermodynamics *phonon_thermodynamics;
         class Relaxation *relaxation;
+		class Selfenergy *selfenergy;
         class Conductivity *conductivity;
 		class Interpolation *interpolation;
         class Writes *writes;

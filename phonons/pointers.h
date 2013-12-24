@@ -20,6 +20,7 @@ namespace PHON_NS {
               phonon_velocity(ptr->phonon_velocity),
               phonon_thermodynamics(ptr->phonon_thermodynamics),
               relaxation(ptr->relaxation),
+			  selfenergy(ptr->selfenergy),
               conductivity(ptr->conductivity),
 			  interpolation(ptr->interpolation),
               writes(ptr->writes),
@@ -43,6 +44,7 @@ namespace PHON_NS {
         Phonon_velocity *&phonon_velocity;
         Phonon_thermodynamics *&phonon_thermodynamics;
         Relaxation *&relaxation;
+		Selfenergy *&selfenergy;
         Conductivity *&conductivity;
 		Interpolation *&interpolation;
         Writes *&writes;
