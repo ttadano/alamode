@@ -119,30 +119,22 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		isotope->setup_isotope_scattering();
 		isotope->calc_isotope_selfenergy_all();
 
-		//     dos->calc_tdos();
-		//  relaxation->v3_test();
-		//	relaxation->v4_test();
-
 		if (relaxation->ks_analyze_mode) {
 			relaxation->compute_mode_tau();
 		} else {
-			conductivity->setup_kl();
+			conductivity->setup_kappa();
 			conductivity->prepare_restart();
-			conductivity->calc_kl2();
+			conductivity->calc_anharmonic_tau();
+			conductivity->compute_kappa();
+			writes->write_kappa();
 		}
-
-		//	conductivity->calc_kl();
-
-		// interpolation->prepare_interpolation();
 
 		integration->finish_integration();
 		relaxation->finish_relaxation();
 
 		if (!relaxation->ks_analyze_mode) {
-			conductivity->finish_kl();
+			conductivity->finish_kappa();
 		}
-
-		writes->finalize_result_io();
 
 	} else if (mode == "interpolation") {
 
@@ -232,12 +224,12 @@ void PHON::destroy_pointers()
 	delete integration;
 	delete phonon_velocity;
 	delete phonon_thermodynamics;
-	//	delete relaxation;
+	delete relaxation;
 	delete selfenergy;
 	delete interpolation;
 	delete conductivity;
 	delete writes;
 	delete dos;
 	delete gruneisen;
-	delete isotope;
+    delete isotope;
 }

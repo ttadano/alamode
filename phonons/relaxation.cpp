@@ -64,6 +64,7 @@ void Relaxation::setup_relaxation()
 	memory->allocate(invsqrt_mass_p, system->natmin);
 
 	if (mympi->my_rank == 0) {
+
 		double vec[3];
 		double **vec_s;
 
@@ -122,9 +123,9 @@ void Relaxation::setup_relaxation()
 	memory->allocate(evec_index, fcs_phonon->force_constant[1].size(), 3);
 
 	for (i = 0; i < fcs_phonon->force_constant[1].size(); ++i) {
-		evec_index[i][0] = 3 * fcs_phonon->force_constant[1][i].elems[0].atom + fcs_phonon->force_constant[1][i].elems[0].xyz;
-		evec_index[i][1] = 3 * fcs_phonon->force_constant[1][i].elems[1].atom + fcs_phonon->force_constant[1][i].elems[1].xyz;
-		evec_index[i][2] = 3 * fcs_phonon->force_constant[1][i].elems[2].atom + fcs_phonon->force_constant[1][i].elems[2].xyz;
+		for (j = 0; j < 3; ++j) {
+			evec_index[i][j] = 3 * fcs_phonon->force_constant[1][i].elems[j].atom + fcs_phonon->force_constant[1][i].elems[j].xyz;
+		}
 	}
 
 	if (quartic_mode) {
@@ -140,7 +141,6 @@ void Relaxation::setup_relaxation()
 			std::cout << "**********************************************************" << std::endl;
 			std::cout << std::endl;
 		}
-
 
 		memory->allocate(vec_for_v4, fcs_phonon->force_constant[2].size(), 3, 3);
 		memory->allocate(invmass_for_v4, fcs_phonon->force_constant[2].size());
@@ -165,10 +165,9 @@ void Relaxation::setup_relaxation()
 		memory->allocate(evec_index4, fcs_phonon->force_constant[2].size(), 4);
 
 		for (i = 0; i < fcs_phonon->force_constant[2].size(); ++i) {
-			evec_index4[i][0] = 3 * fcs_phonon->force_constant[2][i].elems[0].atom + fcs_phonon->force_constant[2][i].elems[0].xyz;
-			evec_index4[i][1] = 3 * fcs_phonon->force_constant[2][i].elems[1].atom + fcs_phonon->force_constant[2][i].elems[1].xyz;
-			evec_index4[i][2] = 3 * fcs_phonon->force_constant[2][i].elems[2].atom + fcs_phonon->force_constant[2][i].elems[2].xyz;
-			evec_index4[i][3] = 3 * fcs_phonon->force_constant[2][i].elems[3].atom + fcs_phonon->force_constant[2][i].elems[3].xyz;
+			for (j = 0; j < 4; ++j) {
+				evec_index4[i][j] = 3 * fcs_phonon->force_constant[2][i].elems[j].atom + fcs_phonon->force_constant[2][i].elems[j].xyz;
+			}
 		}
 	}
 
@@ -232,16 +231,15 @@ void Relaxation::setup_relaxation()
 		std::cout << std::endl;
 	}
 
-	epsilon *= time_ry / Hz_to_kayser;
+	memory->deallocate(relvec);
+	memory->deallocate(invsqrt_mass_p);
 
+	epsilon *= time_ry / Hz_to_kayser;
 	MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	if (mympi->my_rank == 0) {
 		std::cout << " done!" << std::endl;
 	}
-	memory->deallocate(relvec);
-	memory->deallocate(invsqrt_mass_p);
-
 }
 
 void Relaxation::setup_mode_analysis()

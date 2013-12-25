@@ -51,8 +51,5 @@ namespace PHON_NS {
         double ***vec_for_v4, *invmass_for_v4;
         int **evec_index;
         int **evec_index4;
-
-// 		double *fc3_new;
-// 		int ***index_fc3;
     };
 }

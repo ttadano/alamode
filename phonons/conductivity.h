@@ -10,24 +10,22 @@ namespace PHON_NS {
     public:
         Conductivity(class PHON *);
         ~Conductivity();
-        void setup_kl();
-        void finish_kl();
-        void calc_kl();
+        void setup_kappa();
 		void prepare_restart();
-		void calc_kl2();
+		void calc_anharmonic_tau();
+		void compute_kappa();
+		void finish_kappa();
 
         int use_classical_Cv;
+		unsigned int ntemp;
         double **tau;
+		double ***kappa;
+		double *Temperature;
 
     private:
         double ***vel;
-        void calc_kl_at_T(const double, double [3][3]);
-        void calc_kl_mpi(const unsigned int, unsigned int **, double *, 
-            unsigned int *, unsigned int **, const unsigned int, double *, double ***);
         unsigned int nk, ns;
-		unsigned int ntemp;
 		int nshift_restart;
-		double *Temperature;
 		double *tau_l;
 		std::vector<int> vks, vks_l, vks_done;
 		std::set<int> vks_job;
