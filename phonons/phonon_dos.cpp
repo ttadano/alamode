@@ -30,6 +30,8 @@ Dos::~Dos(){
 
 void Dos::setup()
 {
+	// This function must not called before dynamica->setup_dynamical()
+
 	MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -48,7 +50,7 @@ void Dos::setup()
         memory->allocate(dos_phonon, n_energy);
 
         if (dynamical->eigenvectors) {
-            memory->allocate(pdos_phonon, system->nat, n_energy);
+            memory->allocate(pdos_phonon, system->natmin, n_energy);
         }
     }
 }
@@ -87,7 +89,7 @@ void Dos::calc_dos()
 
     MPI_Reduce(&dos_local[0], &dos_phonon[0], n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     memory->deallocate(dos_local);
-    
+
     if (dynamical->eigenvectors) {
 
         // Calculate atom projected phonon-DOS
@@ -98,7 +100,7 @@ void Dos::calc_dos()
         double **proj;
         double **pdos_local;
         memory->allocate(proj, neval, nk);
-        memory->allocate(pdos_local, system->nat, n_energy);
+        memory->allocate(pdos_local, natmin, n_energy);
 
         for (iat = 0; iat < natmin; ++iat){
 
@@ -121,7 +123,7 @@ void Dos::calc_dos()
             }            
         }
 
-        MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], system->nat*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], natmin*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
        
         memory->deallocate(proj);
         memory->deallocate(pdos_local);

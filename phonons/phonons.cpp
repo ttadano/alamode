@@ -65,13 +65,10 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		system->setup();
 		symmetry->setup_symmetry();
 		kpoint->kpoint_setups(mode);
-		dos->setup();
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
+		dos->setup();
 		dynamical->diagonalize_dynamical_all();
-
-		// Calculate the group velocity of phonons along given direction in
-		// the reciprocal space.
 
 		if (kpoint->kpoint_mode == 1)  {
 			phonon_velocity->calc_phonon_vel_band();
@@ -102,9 +99,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		system->setup();
 		symmetry->setup_symmetry();
 		kpoint->kpoint_setups(mode);
-		dos->setup();
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
+		dos->setup();
 		dynamical->diagonalize_dynamical_all();
 
 		relaxation->setup_mode_analysis();
