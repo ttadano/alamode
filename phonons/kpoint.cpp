@@ -644,8 +644,3 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
 	}
 }
 
-
-int Kpoint::nint(const double x)
-{
-	return static_cast<int>(x + 0.5 - (x < 0.0));
-}

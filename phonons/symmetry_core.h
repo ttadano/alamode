@@ -81,16 +81,24 @@ namespace PHON_NS {
 
 	class SymmetryOperationWithMapping {
 	public:
-		std::vector<int> symop;
-		std::vector<unsigned int> mapping;
-		double shift[3];
+		std::vector<double> rot; // Rotation matrix in Cartesian basis
+		std::vector<double> rot_real;  // Rotation matrix in fractional basis
+		std::vector<double> rot_reciprocal; // Rotation matrix in reciprocal (fractional) basis
+		std::vector<unsigned int> mapping; 
+		double shift[3]; // Translation vector in fractional basis
 
 		SymmetryOperationWithMapping();
 
 		SymmetryOperationWithMapping(const SymmetryOperationWithMapping &a) 
 		{
-			for (std::vector<int>::const_iterator p = a.symop.begin(); p != a.symop.end(); ++p) {
-				symop.push_back(*p);
+			for (std::vector<double>::const_iterator p = a.rot.begin(); p != a.rot.end(); ++p) {
+				rot.push_back(*p);
+			}
+			for (std::vector<double>::const_iterator p = a.rot_real.begin(); p != a.rot_real.end(); ++p) {
+				rot_real.push_back(*p);
+			}
+			for (std::vector<double>::const_iterator p = a.rot_reciprocal.begin(); p != a.rot_reciprocal.end(); ++p) {
+				rot_reciprocal.push_back(*p);
 			}
 			for (std::vector<unsigned int>::const_iterator p = a.mapping.begin(); p != a.mapping.end(); ++p) {
 				mapping.push_back(*p);
@@ -100,13 +108,16 @@ namespace PHON_NS {
 			}
 		}
 
-		SymmetryOperationWithMapping(const int S[3][3], unsigned int *mapping_info, const unsigned int n, const double shift_in[3])
+		SymmetryOperationWithMapping(const double S[3][3], const double T[3][3], const double R[3][3], 
+			unsigned int *mapping_info, const unsigned int n, const double shift_in[3])
 		{
 			unsigned int i, j;
 
 			for (i = 0; i < 3; ++i) {
 				for (j = 0; j < 3; ++j) {
-					symop.push_back(S[i][j]);
+					rot.push_back(S[i][j]);
+					rot_real.push_back(T[i][j]);
+					rot_reciprocal.push_back(R[i][j]);
 				}
 			}
 			for (i = 0; i < n; ++i) {
@@ -119,7 +130,7 @@ namespace PHON_NS {
 	};
 
 	inline bool operator<(const SymmetryOperationWithMapping a, const SymmetryOperationWithMapping b) {
-		return std::lexicographical_compare(a.symop.begin(), a.symop.end(), b.symop.begin(), b.symop.end());
+		return std::lexicographical_compare(a.rot.begin(), a.rot.end(), b.rot.begin(), b.rot.end());
 	}
 
     class Symmetry: protected Pointers {

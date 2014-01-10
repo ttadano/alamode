@@ -32,10 +32,7 @@ void System::setup()
 
 	for (i = 0; i < nat; ++i){
 		rotvec(xc[i], xr_s[i], lavec_s);
-	}
-
-	for (i = 0; i < nat; ++i){
-		rotvec(xr_p[i], xc[i], rlavec_s);
+		rotvec(xr_p[i], xc[i], rlavec_p);
 		for(j = 0; j < 3; ++j){
 			xr_p[i][j] /=  2.0 * pi;
 		}
