@@ -29,13 +29,11 @@ namespace PHON_NS {
         bool calc_realpart;
         std::string ks_input;
 
-//         void v3_test();
-//         void v4_test();
 		double delta_lorentz(const double);
 		double delta_gauss(const double);
 
-		inline std::complex<double> V3(const unsigned int [3]);
-		inline std::complex<double> V4(const unsigned int [4]);
+		std::complex<double> V3(const unsigned int [3]);
+		std::complex<double> V4(const unsigned int [4]);
 
      private:
         struct StructKS {
