@@ -57,5 +57,8 @@ namespace PHON_NS {
     extern "C" {
     void zheev_(const char *jobz, const char *uplo, int *n,	std::complex<double> *a, int *lda, 
         double *w, std::complex<double> *work, int *lwork, double *rwork, int *info);
+	void zgemm_(const char *transa, const char *transb, int *m, int *n, int *k, 
+		std::complex<double> *alpha, std::complex<double> *a, int *lda, std::complex<double> *b, int *ldb, 
+		std::complex<double> *beta, std::complex<double> *c, int *ldc);
     }
 }

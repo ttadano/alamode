@@ -81,7 +81,6 @@ namespace PHON_NS {
 
         unsigned int **k_reduced, *nk_equiv_arr;
         unsigned int nk_reduced, nequiv_max;
-        int nint(const double);
 
         int get_knum(const double, const double, const double);
 		void gen_kmesh(bool, unsigned int [3], double **, std::vector<unsigned int> &, std::vector<KpointList> &);

@@ -23,6 +23,7 @@
 #include "timer.h"
 #include "../alm_c++/constants.h"
 #include "../alm_c++/mathfunctions.h"
+#include <set>
 
 using namespace PHON_NS;
 
@@ -88,7 +89,7 @@ void Relaxation::setup_relaxation()
 					-system->xr_s[system->map_p2s[system->map_s2p[i].atom_num][0]][k];
 
 
-					relvec[i][j][k] = vec[k];
+					relvec[i][j][k] = -vec[k];
 				}
 				rotvec(relvec[i][j], relvec[i][j], mat_convert);
 			}
@@ -236,6 +237,9 @@ void Relaxation::setup_relaxation()
 
 	epsilon *= time_ry / Hz_to_kayser;
 	MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+// 	gen_pair_uniq();
+// 	gensym_kpairs();
 
 	if (mympi->my_rank == 0) {
 		std::cout << " done!" << std::endl;
@@ -627,6 +631,9 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 	double xk_tmp[3];
 	double omega_inner[2];
 
+	double multi;
+	double f1, f2;
+
 	for (i = 0; i < N; ++i) ret[i] = 0.0;
 
 	arr[0] = ns * kpoint->knum_minus[knum] + snum;
@@ -643,9 +650,9 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		jk = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -655,8 +662,89 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 				arr[1] = ns * ik + is;
 				arr[2] = ns * jk + js;
 
+				if (arr[1] > arr[2]) continue;
+
+				if (arr[1] == arr[2]) {
+					multi = 1.0;
+				} else {
+					multi = 2.0;
+				}
+
+				v3_tmp = std::norm(V3(arr));
+
 				omega_inner[0] = dynamical->eval_phonon[ik][is];
 				omega_inner[1] = dynamical->eval_phonon[jk][js];
+
+				for (i = 0; i < N; ++i) {
+					T_tmp = T[i];
+
+					f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
+					f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+					n1 =  f1 + f2 + 1.0;
+					n2 =  f1 - f2;
+
+					if (ksum_mode == 0) {
+						ret[i] += v3_tmp *multi
+							* ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+							+ n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+							- n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+							+ n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+					} else if (ksum_mode == 1) {
+						ret[i] += v3_tmp * multi
+							* ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
+							+ n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
+							- n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
+							+ n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
+					}
+				}
+			}
+		}
+	}
+
+	for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+}
+
+void Relaxation::calc_damping2(const unsigned int N, double *T, const double omega, 
+							   const unsigned int ik_in, const unsigned int snum, double *ret)
+{
+	unsigned int i;
+	unsigned int ik, jk;
+	unsigned int is, js; 
+	unsigned int arr[3];
+
+	int k1, k2;
+
+	double T_tmp;
+	double n1, n2;
+	double v3_tmp;
+	double xk_tmp[3];
+	double omega_inner[2];
+
+	int knum, knum_minus;
+	double multi;
+
+	for (i = 0; i < N; ++i) ret[i] = 0.0;
+
+	int iloc, jloc, kloc;
+
+	for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+
+		multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
+		knum = kpoint->k_reduced[ik_in][0];
+		knum_minus = kpoint->knum_minus[knum];
+
+		arr[0] = ns * knum_minus + snum;
+
+		k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+		k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+		for (is = 0; is < ns; ++is) {
+			for (js = 0; js < ns; ++js) {
+				arr[1] = ns * k1 + is;
+				arr[2] = ns * k2 + js;
+
+				omega_inner[0] = dynamical->eval_phonon[k1][is];
+				omega_inner[1] = dynamical->eval_phonon[k2][js];
 
 				v3_tmp = std::norm(V3(arr));
 
@@ -672,13 +760,13 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 					}
 
 					if (ksum_mode == 0) {
-						ret[i] += v3_tmp 
+						ret[i] += v3_tmp * multi
 							* ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
 							+ n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
 							- n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
 							+ n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
 					} else if (ksum_mode == 1) {
-						ret[i] += v3_tmp 
+						ret[i] += v3_tmp * multi
 							* ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
 							+ n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
 							- n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
@@ -726,9 +814,9 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 				xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
 				xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
 
-				iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-				jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-				kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+				iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+				jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+				kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 				jk = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -827,9 +915,9 @@ void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const doubl
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		jk = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -940,9 +1028,9 @@ void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const 
 				xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
 				xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
 
-				iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-				jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-				kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+				iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+				jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+				kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 				jk = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1346,3 +1434,168 @@ void Relaxation::compute_mode_tau()
 	memory->deallocate(T_arr);
 }
 
+void Relaxation::gensym_kpairs() {
+
+	int i, j, k;
+	int k1, k2, k3, k0;
+	int l1, l2, l3;
+	double xk_tmp[3];
+
+	unsigned int arr[3];
+
+	std::complex<double> V3tmp1, V3tmp2;
+
+	for (i = 0; i < kpoint->nk_reduced; ++i) {
+		k0 = kpoint->k_reduced[i][0];
+		k1 = kpoint->knum_minus[k0];
+
+		std::cout << "#Irred. K " << std::setw(5) << i + 1;
+		std::cout << " #groups : " << std::setw(5) << pair_uniq[i].size() << std::endl;
+
+		for (j = 0; j < pair_uniq[i].size(); ++j) {
+			std::cout << "group " << std::setw(5) << j + 1 << std::endl;
+
+			for (k = 0; k < pair_uniq[i][j].group.size(); ++k) {
+				k2 = pair_uniq[i][j].group[k].ks[0];
+				k3 = pair_uniq[i][j].group[k].ks[1];
+
+				std::cout << std::setw(5) << k1 + 1;
+				std::cout << std::setw(5) << k2 + 1;
+				std::cout << std::setw(5) << k3 + 1;
+
+
+				arr[0] = ns * k1 + 3;
+				arr[1] = ns * k2 + 3;
+				arr[2] = ns * k3 + 3;
+				V3tmp1 = V3(arr);
+
+				arr[0] = ns * kpoint->knum_minus[k1] + 3;
+				arr[1] = ns * kpoint->knum_minus[k2] + 3;
+				arr[2] = ns * kpoint->knum_minus[k3] + 3;
+				V3tmp2 = V3(arr) * V3tmp1;
+
+			//	std::cout << std::setw(15) << std::norm(V3tmp1) << std::endl;
+				std::cout << std::setw(15) << V3tmp2.real();
+				std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
+			}
+		}
+		std::cout << std::endl;
+	}
+}
+
+int Relaxation::knum_sym(const int nk_in, const int symop_num) {
+
+	int i, j;
+	double srot[3][3];
+	double srot_inv[3][3], srot_inv_t[3][3];
+	double xk_orig[3], xk_sym[3];
+
+	if (symop_num < 0 || symop_num >= symmetry->nsym) {
+		error->exit("knum_sym", "Invalid symop_num");
+	}
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			srot[i][j] = static_cast<double>(symmetry->SymmList[symop_num].symop[3 * i + j]);
+		}
+	}
+
+	invmat3(srot_inv, srot);
+	transpose3(srot_inv_t, srot_inv);
+
+	for (i = 0; i < 3; ++i) xk_orig[i] = kpoint->xk[nk_in][i];
+
+	rotvec(xk_sym, xk_orig, srot_inv_t);
+	for (i = 0; i < 3; ++i){
+		xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+	}
+
+	int ret = kpoint->get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+
+	return ret;
+}
+
+void Relaxation::gen_pair_uniq()
+{
+	int i, j;
+	int ik1, ik2;
+	int isym;
+	int nks = kpoint->nk_reduced * ns;
+	int knum, knum_minus;
+	int ksym;
+
+	double xk[3], xk1[3], xk2[3];
+	int ks_in[2];
+
+	std::vector<int> *pointgroup;
+	std::vector<int> ks;
+
+	std::set<KsList> visited;
+	std::vector<KsList> kslist;
+
+	memory->allocate(pointgroup, kpoint->nk_reduced);
+
+	for (i = 0; i < kpoint->nk_reduced; ++i) {
+
+		pointgroup[i].clear();
+
+		knum = kpoint->k_reduced[i][0];
+		knum_minus = kpoint->knum_minus[knum];
+
+		for (isym = 0; isym < symmetry->nsym; ++isym) {
+
+			ksym = knum_sym(knum_minus, isym);
+
+			if (ksym == knum_minus) {
+				pointgroup[i].push_back(isym);
+			}
+		}
+	}
+
+	memory->allocate(pair_uniq, kpoint->nk_reduced);
+
+	for (i = 0; i < kpoint->nk_reduced; ++i) {
+
+		knum = kpoint->k_reduced[i][0];
+		knum_minus = kpoint->knum_minus[knum];
+
+		for (j = 0; j < 3; ++j) xk[j] = kpoint->xk[knum_minus][j];
+
+		pair_uniq[i].clear();
+
+		for (ik1 = 0; ik1 < nk; ++ik1) {
+			for (j = 0; j < 3; ++j) xk1[j] = kpoint->xk[ik1][j];
+			for (j = 0; j < 3; ++j) xk2[j] = -xk[j] - xk1[j];
+			ik2 = kpoint->get_knum(xk2[0], xk2[1], xk2[2]);
+
+			kslist.clear();
+
+			for (isym = 0; isym < pointgroup[i].size(); ++isym) {
+				ks_in[0] = knum_sym(ik1, pointgroup[i][isym]);
+				ks_in[1] = knum_sym(ik2, pointgroup[i][isym]);
+
+				if (visited.find(KsList(2, ks_in)) == visited.end()) {
+					visited.insert(KsList(2, ks_in));
+					kslist.push_back(KsList(2, ks_in));
+				}
+			}
+
+			if (kslist.size() > 0) {
+				pair_uniq[i].push_back(kslist);
+			}
+		}
+
+		// 		std::cout << "i = " << std::setw(5) << i + 1 << std::endl;
+		// 		ncount = 0;
+		// 		for (j = 0; j < pair_uniq[i].size(); ++j) {
+		// 			std::cout << "j = " << std::setw(5) << j + 1;
+		// 			std::cout << " (" << std::setw(5) << pair_uniq[i][j].group.size() << " )" << std::endl;
+		// 			for (k = 0; k < pair_uniq[i][j].group.size(); ++k) {
+		// 				std::cout << std::setw(5) << pair_uniq[i][j].group[k].ks[0];
+		// 				std::cout << std::setw(5) << pair_uniq[i][j].group[k].ks[1] << std::endl;
+		// 			}
+		// 			ncount += pair_uniq[i][j].group.size();
+		// 		}
+		// 		std::cout << "ncount = " << ncount << std::endl;
+	}
+}

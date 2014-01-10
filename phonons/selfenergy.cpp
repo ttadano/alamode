@@ -6,6 +6,7 @@
 #include "kpoint.h"
 #include "memory.h"
 #include "phonon_thermodynamics.h"
+#include "../alm_c++/mathfunctions.h"
 
 using namespace PHON_NS;
 
@@ -98,9 +99,9 @@ void Selfenergy::selfenergy_a(const unsigned int N, double *T, const double omeg
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -240,9 +241,9 @@ void Selfenergy::selfenergy_c(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1] - kpoint->xk[ik2][1];
 			xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2] - kpoint->xk[ik2][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -345,9 +346,9 @@ void Selfenergy::selfenergy_d(const unsigned int N, double *T, const double omeg
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -357,9 +358,9 @@ void Selfenergy::selfenergy_d(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik3][1];
 			xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik3][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -490,9 +491,9 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -708,9 +709,9 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -720,9 +721,9 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[ik1][1] - kpoint->xk[ik3][1];
 			xk_tmp[2] = kpoint->xk[ik1][2] - kpoint->xk[ik3][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -930,9 +931,9 @@ void Selfenergy::selfenergy_g(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1] - kpoint->xk[ik2][1];
 			xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2] - kpoint->xk[ik2][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -940,9 +941,9 @@ void Selfenergy::selfenergy_g(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik3][1];
 			xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik3][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1076,9 +1077,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
 		xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
 		xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-		iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-		jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-		kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+		iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+		jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+		kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 		ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1088,9 +1089,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[ik1][1] - kpoint->xk[ik3][1];
 			xk_tmp[2] = kpoint->xk[ik1][2] - kpoint->xk[ik3][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik5 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1098,9 +1099,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik5][1];
 			xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik5][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1271,9 +1272,9 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
 			xk_tmp[1] = kpoint->xk[ik2][1] - kpoint->xk[ik1][1];
 			xk_tmp[2] = kpoint->xk[ik2][2] - kpoint->xk[ik1][2];
 
-			iloc = (kpoint->nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-			jloc = (kpoint->nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-			kloc = (kpoint->nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+			iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
+			jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
+			kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
 
 			ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 

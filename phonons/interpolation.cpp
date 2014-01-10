@@ -99,16 +99,16 @@ void Interpolation::prepare_interpolation()
 // 	for (ik = 0; ik < nk_ref; ++ik) {
 // 		for (i = 0; i < 3; ++i) xk_minus[i] = -xk_interpolate[ik][i];
 // 
-// 		diff[0] = static_cast<double>(kpoint->nint(xk_minus[0]*static_cast<double>(nk1))) - xk_minus[0]*static_cast<double>(nk1);
-// 		diff[1] = static_cast<double>(kpoint->nint(xk_minus[1]*static_cast<double>(nk2))) - xk_minus[1]*static_cast<double>(nk2);
-// 		diff[2] = static_cast<double>(kpoint->nint(xk_minus[2]*static_cast<double>(nk3))) - xk_minus[2]*static_cast<double>(nk3);
+// 		diff[0] = static_cast<double>(nint(xk_minus[0]*static_cast<double>(nk1))) - xk_minus[0]*static_cast<double>(nk1);
+// 		diff[1] = static_cast<double>(nint(xk_minus[1]*static_cast<double>(nk2))) - xk_minus[1]*static_cast<double>(nk2);
+// 		diff[2] = static_cast<double>(nint(xk_minus[2]*static_cast<double>(nk3))) - xk_minus[2]*static_cast<double>(nk3);
 // 
 // 		norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
 // 		if (norm > eps12) error->exit("prepare_dymat_for_interpolation", "Cannot find a k point.");
 // 
-// 		iloc = (kpoint->nint(xk_minus[0]*static_cast<double>(nk1) + 2.0 * static_cast<double>(nk1))) % nk1;
-// 		jloc = (kpoint->nint(xk_minus[1]*static_cast<double>(nk2) + 2.0 * static_cast<double>(nk2))) % nk2;
-// 		kloc = (kpoint->nint(xk_minus[2]*static_cast<double>(nk3) + 2.0 * static_cast<double>(nk3))) % nk3;
+// 		iloc = (nint(xk_minus[0]*static_cast<double>(nk1) + 2.0 * static_cast<double>(nk1))) % nk1;
+// 		jloc = (nint(xk_minus[1]*static_cast<double>(nk2) + 2.0 * static_cast<double>(nk2))) % nk2;
+// 		kloc = (nint(xk_minus[2]*static_cast<double>(nk3) + 2.0 * static_cast<double>(nk3))) % nk3;
 // 
 // 		nk_inv = kloc + nk3 * jloc + nk2 * nk3 * iloc;  
 // 
@@ -715,16 +715,16 @@ void Interpolation::prepare_dymat_for_interpolation()
 
 			for (i = 0; i < 3; ++i) xk_minus[i] = -xk_interpolate[ik][i];
 
-			diff[0] = static_cast<double>(kpoint->nint(xk_minus[0]*static_cast<double>(nk1))) - xk_minus[0]*static_cast<double>(nk1);
-			diff[1] = static_cast<double>(kpoint->nint(xk_minus[1]*static_cast<double>(nk2))) - xk_minus[1]*static_cast<double>(nk2);
-			diff[2] = static_cast<double>(kpoint->nint(xk_minus[2]*static_cast<double>(nk3))) - xk_minus[2]*static_cast<double>(nk3);
+			diff[0] = static_cast<double>(nint(xk_minus[0]*static_cast<double>(nk1))) - xk_minus[0]*static_cast<double>(nk1);
+			diff[1] = static_cast<double>(nint(xk_minus[1]*static_cast<double>(nk2))) - xk_minus[1]*static_cast<double>(nk2);
+			diff[2] = static_cast<double>(nint(xk_minus[2]*static_cast<double>(nk3))) - xk_minus[2]*static_cast<double>(nk3);
 
 		    norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
 			if (norm > eps12) error->exit("prepare_dymat_for_interpolation", "Cannot find a k point.");
 
-			iloc = (kpoint->nint(xk_minus[0]*static_cast<double>(nk1) + 2.0 * static_cast<double>(nk1))) % nk1;
-			jloc = (kpoint->nint(xk_minus[1]*static_cast<double>(nk2) + 2.0 * static_cast<double>(nk2))) % nk2;
-			kloc = (kpoint->nint(xk_minus[2]*static_cast<double>(nk3) + 2.0 * static_cast<double>(nk3))) % nk3;
+			iloc = (nint(xk_minus[0]*static_cast<double>(nk1) + 2.0 * static_cast<double>(nk1))) % nk1;
+			jloc = (nint(xk_minus[1]*static_cast<double>(nk2) + 2.0 * static_cast<double>(nk2))) % nk2;
+			kloc = (nint(xk_minus[2]*static_cast<double>(nk3) + 2.0 * static_cast<double>(nk3))) % nk3;
 
 			nk_inv = kloc + nk3 * jloc + nk2 * nk3 * iloc;  
 

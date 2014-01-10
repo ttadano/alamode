@@ -471,9 +471,9 @@ void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryO
 
 void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 {
-	// Generate symmetry operations in reciprocal space with the atom-mapping information.
+	// Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
-	int S_tmp[3][3], T_tmp[3][3], mat_tmp[3][3];
+	double S[3][3], T[3][3], S_recip[3][3], mat_tmp[3][3];
 	double shift[3], x_mod[3], S_double[3][3], tmp[3];
 	double diff;
 	unsigned int *map_tmp;
@@ -485,11 +485,11 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
 	memory->allocate(map_tmp, natmin);
 
-	for (std::vector<SymmetryOperation>::iterator isym = symmetry->SymmList.begin(); isym != symmetry->SymmList.end(); ++isym) {
+	for (std::vector<SymmetryOperation>::iterator isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
 	
 		for (i = 0; i < 3; ++i) {
 			for (j = 0; j < 3; ++j) {
-				T_tmp[i][j] = (*isym).symop[3 * i + j];
+				T[i][j] = static_cast<double>((*isym).symop[3 * i + j]);
 			}
 		}
 
@@ -497,20 +497,19 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 			shift[i] = static_cast<double>((*isym).symop[i + 9]) / static_cast<double>(nnp);
 		}
 
-
-		for (i = 0; i < natmin; ++i) map_tmp[i] = 0;
-
-		invmat3_i(mat_tmp, T_tmp);
-
+		invmat3(mat_tmp, T);
 		for (i = 0; i < 3; ++i) {
 			for (j = 0; j < 3; ++j) {
-				S_tmp[i][j] = mat_tmp[j][i];
+				S_recip[i][j] = mat_tmp[j][i];
 			}
 		}
 
+		// Convert to Cartesian coordinate
+		matmul3(mat_tmp, T, system->rlavec_p);
+		matmul3(S, system->lavec_p, mat_tmp);
 		for (i = 0; i < 3; ++i) {
 			for (j = 0; j < 3; ++j) {
-				S_double[i][j] = static_cast<double>(S_tmp[i][j]);
+				S[i][j] /= 2.0 * pi;
 			}
 		}
 
@@ -518,11 +517,11 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
 		for (i = 0; i < natmin; ++i) {
 
-			for (j = 0; j < 3; ++j) {
-				x_mod[j] = x[i][j] - shift[j];
-			}
+			rotvec(x_mod, x[i], T);
 
-			rotvec(x_mod, x_mod, S_double, 'T');
+			for (j = 0; j < 3; ++j) {
+				x_mod[j] += shift[j];
+			}
 
 			num_mapped = -1;
 
@@ -532,7 +531,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
 					for (k = 0; k < 3; ++k) {
 						tmp[k] = std::fmod(std::abs(x_mod[k] - x[j][k]), 1.0);
-						tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
+						tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);	
 					}
 					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
 					if (diff < eps12) {
@@ -550,6 +549,6 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
 		// Add to vector
 
-		SymmListWithMap.push_back(SymmetryOperationWithMapping(S_tmp, map_tmp, natmin, shift));
+		SymmListWithMap.push_back(SymmetryOperationWithMapping(S, T, S_recip, map_tmp, natmin, shift));
 	}
 }
