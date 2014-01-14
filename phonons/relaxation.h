@@ -10,6 +10,7 @@ namespace PHON_NS {
 	class KsList {
 	public:
 		std::vector<int> ks;
+		int symnum;
 
 		KsList();
 
@@ -18,12 +19,14 @@ namespace PHON_NS {
 			for(std::vector<int>::const_iterator p = a.ks.begin(); p != a.ks.end(); ++p){
 				ks.push_back(*p);
 			}
+			symnum = a.symnum;
 		}
 
-		KsList(const int n, int *ks_in) {
+		KsList(const int n, int *ks_in, const int sym) {
 			for (int i = 0; i < n; ++i) {
 				ks.push_back(ks_in[i]);
 			}
+			symnum = sym;
 		}
 	};
 
@@ -89,5 +92,7 @@ namespace PHON_NS {
 		void gen_pair_uniq();
 
 		int knum_sym(const int, const int);
+		bool is_proper(const int);
+		bool is_symmorphic(const int);
 	};
 }
