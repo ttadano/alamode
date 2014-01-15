@@ -17,7 +17,7 @@ Selfenergy::~Selfenergy(){}
 
 void Selfenergy::setup_selfenergy()
 {
-	nk = kpoint->nk;
+	nk = kpoint->nk;	
 	ns = dynamical->neval;
 	epsilon = relaxation->epsilon;
 }
@@ -555,7 +555,10 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
 
 
 											if (std::abs(T_tmp) < eps) {
-												T_inv = 1.0e+8; //special treatment for T = 0
+												//special treatment for T = 0
+												// This is valid since beta always appears as a product beta*n
+												// which is zero when T = 0.
+												T_inv = 0.0; 
 											} else {
 												T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
 											}
@@ -799,7 +802,7 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
 														n4 = phonon_thermodynamics->fB(dp4, T_tmp);
 
 														if (std::abs(T_tmp) < eps) {
-															T_inv = 1.0e+8;
+															T_inv = 0.0;
 														} else {
 															T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
 														}
@@ -1335,7 +1338,7 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
 												N_prod[1] = n2 * (1.0 + n2) * (1.0 + n2 + n3);
 
 												if (std::abs(T_tmp) < eps) {
-													T_inv = 1.0e+8;
+													T_inv = 0.0;
 												} else {
 													T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
 												}
@@ -1496,7 +1499,7 @@ void Selfenergy::selfenergy_j(const unsigned int N, double *T, const double omeg
 								n2 = phonon_thermodynamics->fB(omega2, T_tmp);
 
 								if (std::abs(T_tmp) < eps) {
-									T_inv = 1.0e+8;
+									T_inv = 0.0;
 								} else {
 									T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
 								}

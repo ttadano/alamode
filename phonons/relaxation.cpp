@@ -238,8 +238,8 @@ void Relaxation::setup_relaxation()
 	epsilon *= time_ry / Hz_to_kayser;
 	MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-// 	gen_pair_uniq();
-// 	gensym_kpairs();
+ 	gen_pair_uniq();
+ 	gensym_kpairs();
 
 	if (mympi->my_rank == 0) {
 		std::cout << " done!" << std::endl;
@@ -707,6 +707,8 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 void Relaxation::calc_damping2(const unsigned int N, double *T, const double omega, 
 							   const unsigned int ik_in, const unsigned int snum, double *ret)
 {
+	// This is under test.
+
 	unsigned int i;
 	unsigned int ik, jk;
 	unsigned int is, js; 
@@ -822,8 +824,6 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 
 				ks_tmp[1] = ik * ns + is;
 				ks_tmp[2] = jk * ns + js;
-
-				//    if (kcount == nk) error->exitall("calc_damping_tetra", "The number of element is larger than nk");
 
 				omega_inner[ik][0] = dynamical->eval_phonon[ik][is];
 				omega_inner[ik][1] = dynamical->eval_phonon[jk][js];
@@ -1469,14 +1469,17 @@ void Relaxation::gensym_kpairs() {
 				arr[2] = ns * k3 + 3;
 				V3tmp1 = V3(arr);
 
-				arr[0] = ns * kpoint->knum_minus[k1] + 3;
-				arr[1] = ns * kpoint->knum_minus[k2] + 3;
-				arr[2] = ns * kpoint->knum_minus[k3] + 3;
-				V3tmp2 = V3(arr) * V3tmp1;
+// 				arr[0] = ns * kpoint->knum_minus[k1] + 3;
+// 				arr[1] = ns * kpoint->knum_minus[k2] + 3;
+// 				arr[2] = ns * kpoint->knum_minus[k3] + 3;
+// 				V3tmp2 = V3(arr) * V3tmp1;
 
-			//	std::cout << std::setw(15) << std::norm(V3tmp1) << std::endl;
-				std::cout << std::setw(15) << V3tmp2.real();
-				std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
+ 				std::cout << std::setw(15) << std::norm(V3tmp1);
+				std::cout << std::setw(5) << pair_uniq[i][j].group[k].symnum;
+				std::cout << std::setw(3) << is_proper(pair_uniq[i][j].group[k].symnum);
+				std::cout << std::setw(3) << is_symmorphic(pair_uniq[i][j].group[k].symnum) << std::endl;
+// 								std::cout << std::setw(15) << V3tmp2.real();
+// 								std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
 			}
 		}
 		std::cout << std::endl;
@@ -1515,6 +1518,50 @@ int Relaxation::knum_sym(const int nk_in, const int symop_num) {
 	return ret;
 }
 
+bool Relaxation::is_proper(const int isym)
+{
+	int i, j;
+	double det;
+	double S[3][3];
+	bool ret;
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			S[i][j] = static_cast<double>(symmetry->SymmList[isym].symop[3 * i + j]);
+		}
+	}
+
+	det = S[0][0] * (S[1][1] * S[2][2] - S[2][1] * S[1][2])
+		- S[1][0] * (S[0][1] * S[2][2] - S[2][1] * S[0][2])
+		+ S[2][0] * (S[0][1] * S[1][2] - S[1][1] * S[0][2]);
+
+	if (std::abs(det - 1.0) < eps12) {
+		ret = true;
+	} else if (std::abs(det + 1.0) < eps12) {
+		ret = false;
+	} else {
+		error->exit("is_proper", "This cannot happen.");
+	}
+
+	return ret;
+}
+
+bool Relaxation::is_symmorphic(const int isym)
+{
+	int i;
+	int tran[3];
+	bool ret;
+
+	for (i = 0; i < 3; ++i) tran[i] = symmetry->SymmList[isym].symop[9 + i];
+
+	if (tran[0] == 0 && tran[1] == 0 && tran[2] == 0) {
+		ret = true;
+	} else {
+		ret = false;
+	}
+	return ret;
+}
+
 void Relaxation::gen_pair_uniq()
 {
 	int i, j;
@@ -1546,7 +1593,7 @@ void Relaxation::gen_pair_uniq()
 
 			ksym = knum_sym(knum_minus, isym);
 
-			if (ksym == knum_minus) {
+			if (ksym == knum_minus && is_proper(isym)) {
 				pointgroup[i].push_back(isym);
 			}
 		}
@@ -1574,9 +1621,9 @@ void Relaxation::gen_pair_uniq()
 				ks_in[0] = knum_sym(ik1, pointgroup[i][isym]);
 				ks_in[1] = knum_sym(ik2, pointgroup[i][isym]);
 
-				if (visited.find(KsList(2, ks_in)) == visited.end()) {
-					visited.insert(KsList(2, ks_in));
-					kslist.push_back(KsList(2, ks_in));
+				if (visited.find(KsList(2, ks_in, isym)) == visited.end()) {
+					visited.insert(KsList(2, ks_in, isym));
+					kslist.push_back(KsList(2, ks_in, pointgroup[i][isym]));
 				}
 			}
 

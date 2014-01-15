@@ -140,7 +140,7 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double
 		memory->deallocate(dymat_na_mod);
 	}
 
-	/*
+	
 	// Hermitize the dynamical matrix
 
 	std::complex<double> **dymat_tmp, **dymat_transpose;
@@ -162,7 +162,7 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double
 
 	memory->deallocate(dymat_tmp);
 	memory->deallocate(dymat_transpose);
-	*/
+	
 
 	char JOBZ;
 	int INFO, LWORK;
@@ -1006,6 +1006,7 @@ void Dynamical::modify_eigenvectors_sym()
 	unsigned int iat, jat, icrd, jcrd;
 	unsigned int *atom_mapped;
 	double phase;
+	double det;
 
 	std::complex<double> exp_phase;
 	std::complex<double> im = std::complex<double>(0.0, 1.0);
@@ -1071,31 +1072,43 @@ void Dynamical::modify_eigenvectors_sym()
 				}
 				shift[i] = (*it).shift[i];
 			}
-			// 			if (ik == 0) {
-			// 				std::cout << "#Sym : " << std::setw(5) << isym << std::endl;
-			// 				std::cout << "S" << std::endl;
-			// 				for (i = 0; i < 3; ++i) {
-			// 					for (j = 0; j < 3; ++j) {
-			// 						std::cout << std::setw(5) << S[i][j];
-			// 					}
-			// 					std::cout << std::endl;
-			// 				}
-			// 				std::cout << "T" << std::endl;
-			// 				for (i = 0; i < 3; ++i) {
-			// 					for (j = 0; j < 3; ++j) {
-			// 						std::cout << std::setw(5) << T[i][j];
-			// 					}
-			// 					std::cout << std::endl;
-			// 				}
-			// 				std::cout << "S reciprocal" << std::endl;
-			// 				for (i = 0; i < 3; ++i) {
-			// 					for (j = 0; j < 3; ++j) {
-			// 						std::cout << std::setw(5) << S_recip[i][j];
-			// 					}
-			// 					std::cout << std::endl;
-			// 				}
-			// 				std::cout << std::endl;
-			// 			}
+			det = S[0][0] * (S[1][1] * S[2][2] - S[2][1] * S[1][2])
+				- S[1][0] * (S[0][1] * S[2][2] - S[2][1] * S[0][2])
+				+ S[2][0] * (S[0][1] * S[1][2] - S[1][1] * S[0][2]);
+
+			if (std::abs(det + 1.0) < eps12) continue;
+
+			if (ik == 0) {
+				std::cout << "#Sym : " << std::setw(5) << isym << std::endl;
+				std::cout << "S" << std::endl;
+				for (i = 0; i < 3; ++i) {
+					for (j = 0; j < 3; ++j) {
+						std::cout << std::setw(5) << S[i][j];
+					}
+					std::cout << std::endl;
+				}
+				std::cout << "T" << std::endl;
+				for (i = 0; i < 3; ++i) {
+					for (j = 0; j < 3; ++j) {
+						std::cout << std::setw(5) << T[i][j];
+					}
+					std::cout << std::endl;
+				}
+				std::cout << "S reciprocal" << std::endl;
+				for (i = 0; i < 3; ++i) {
+					for (j = 0; j < 3; ++j) {
+						std::cout << std::setw(5) << S_recip[i][j];
+					}
+					std::cout << std::endl;
+				}
+				std::cout << std::endl;
+
+				det = S[0][0] * (S[1][1] * S[2][2] - S[2][1] * S[1][2])
+					- S[1][0] * (S[0][1] * S[2][2] - S[2][1] * S[0][2])
+					+ S[2][0] * (S[0][1] * S[1][2] - S[1][1] * S[0][2]);
+
+				std::cout << "Det = " << det << std::endl;
+			}
 
 			rotvec(Sk, k, S_recip);
 			for (i = 0; i < 3; ++i) Sk[i] = Sk[i] - nint(Sk[i]);
