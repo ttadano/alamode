@@ -193,7 +193,7 @@ void Gruneisen::prepare_delta_fc2()
 		}
 		rotvec(coord_tmp, coord_tmp, system->lavec_s);
 
-		dfc2[nalpha[0]][jat][icrd][jcrd] += fc3_tmp.fcs_val * coord_tmp[ixyz[2]];
+		dfc2[nalpha[0]][jat][ixyz[0]][ixyz[1]] += fc3_tmp.fcs_val * coord_tmp[ixyz[2]];
 	}
 
 #ifdef _DEBUG
