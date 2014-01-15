@@ -12,7 +12,8 @@
 #include "system.h"
 #include "parsephon.h"
 #include "write_phonons.h"
-#include "../alm_c++//mathfunctions.h"
+#include "../alm_c++/mathfunctions.h"
+#include "relaxation.h"
 
 using namespace PHON_NS;
 
@@ -32,6 +33,11 @@ void Gruneisen::setup()
 
 	prepare_delta_fc2();
 	prepare_newfc2();
+
+	if (relaxation->quartic_mode) {
+		prepare_newfc3();
+		write_newinfo_all();
+	}
 }
 
 void Gruneisen::calc_gruneisen()
@@ -49,8 +55,7 @@ void Gruneisen::calc_gruneisen()
 	double **eval_minus;
 
 	double xk_tmp[3];
-	double norm;
-	double kvec_tmp[3];
+
 
 	std::complex<double> **evec_tmp;
 
@@ -73,10 +78,7 @@ void Gruneisen::calc_gruneisen()
 			dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_minus, eval_minus[ik], evec_tmp, false);
 		}
 
-		// 		for (is = 0; is< ns; ++is) {
-		//  			std::cout << std::setw(15) << eval_plus[is];
-		//  			std::cout << std::setw(15) << eval_minus[is] << std::endl;
-		//  		}
+
 		for (is = 0; is < ns; ++is) {
 			gruneisen[ik][is] = (eval_plus[ik][is] - eval_minus[ik][is]) / (2.0 * delta_a) / (-6.0 * eval_orig[is]);
 		}
@@ -149,7 +151,7 @@ void Gruneisen::prepare_delta_fc2()
 {
 	unsigned int i;
 	unsigned int iat, jat, kat;
-	unsigned int icrd, jcrd, kcrd;
+	unsigned int icrd, jcrd;
 	double coord_tmp[3];
 
 	unsigned int nalpha[3], ncell[3], ixyz[3];
@@ -174,14 +176,6 @@ void Gruneisen::prepare_delta_fc2()
 	for (std::vector<FcsClass>::iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
 
 		FcsClass fc3_tmp = *it;
-
-		iat = fc3_tmp.elems[0].cell * natmin + fc3_tmp.elems[0].atom;
-		jat = fc3_tmp.elems[1].cell * natmin + fc3_tmp.elems[1].atom;
-		kat = fc3_tmp.elems[2].cell * natmin + fc3_tmp.elems[2].atom;
-
-		icrd = fc3_tmp.elems[0].xyz;
-		jcrd = fc3_tmp.elems[1].xyz;
-		kcrd = fc3_tmp.elems[2].xyz;
 
 		for (i = 0; i < 3; ++i){
 			nalpha[i] = fc3_tmp.elems[i].atom;
@@ -340,6 +334,125 @@ void Gruneisen::prepare_newfc2()
 #endif
 }
 
+void Gruneisen::prepare_newfc3()
+{
+	int i;
+	int ind[4], arr_old[4], arr[4];
+	int natmin = system->natmin;
+	int nat = system->nat;
+	unsigned int nalpha[4], ncell[4], ixyz[4];
+	unsigned int atom_s[4];
+
+	double coord_tmp[3];
+	double fcs_tmp;
+
+	std::vector<unsigned int> arr3, arr4;
+	std::vector<FcsClassGru> fc3_copy, fc4_copy, dfc3;
+	std::vector<FcsClassGru>::iterator it_lower;
+
+	std::cout << "Preparing new FC3 from quartic force constants ...";
+
+	fc4_copy.clear();
+	dfc3.clear();
+
+	for (std::vector<FcsClass>::const_iterator it_fc4 = fcs_phonon->force_constant[2].begin(); it_fc4 != fcs_phonon->force_constant[2].end(); ++it_fc4) {
+		FcsClass fc4_tmp = *it_fc4;
+
+		for (i = 0; i < 4; ++i) {
+			nalpha[i] = fc4_tmp.elems[i].atom;
+			ncell[i] = fc4_tmp.elems[i].cell;
+			ixyz[i] = fc4_tmp.elems[i].xyz;
+			atom_s[i] = system->map_p2s[nalpha[i]][ncell[i]];
+			ind[i] = 3 * atom_s[i] + ixyz[i];
+		}
+
+		fc4_copy.push_back(FcsClassGru(4, ind, fc4_tmp.fcs_val));
+	}
+
+	std::sort(fc4_copy.begin(), fc4_copy.end());
+
+
+	for (i = 0; i < 3; ++i) arr_old[i] = -1;
+	fcs_tmp = 0.0;
+
+	for (std::vector<FcsClassGru>::const_iterator it_fc4 = fc4_copy.begin(); it_fc4 != fc4_copy.end(); ++it_fc4) {
+		FcsClassGru fc4_tmp = *it_fc4;
+
+		for (i = 0; i < 4; ++i) arr[i] = fc4_tmp.elems[i];
+
+		if (arr[0] != arr_old[0] || arr[1] != arr_old[1] || arr[2] != arr_old[2]) {
+			if (std::abs(fcs_tmp) > eps12) {
+				dfc3.push_back(FcsClassGru(3, arr_old, fcs_tmp));
+			}
+			fcs_tmp = 0.0;
+			
+			for (i = 0; i < 3; ++i) arr_old[i] = arr[i];
+		}
+
+		for (i = 0; i < 3; ++i) {
+			coord_tmp[i] = system->xr_s[arr[3]/3][i] - system->xr_s[arr[0]/3][i];
+			coord_tmp[i] = dynamical->fold(coord_tmp[i]);
+		}
+		rotvec(coord_tmp, coord_tmp, system->lavec_s);
+
+		fcs_tmp += fc4_tmp.fcs_val * coord_tmp[arr[3] % 3];
+	}
+	if (std::abs(fcs_tmp) > eps12) 	dfc3.push_back(FcsClassGru(3, arr_old, fcs_tmp));
+
+
+	if (fcs_phonon->force_constant[1].size() < dfc3.size()) {
+		error->exit("prepare_newfc3", "The number of DFC3 is greater than the number of FC3.\n \
+									  The cutoff radius for FC4 should not be greater than that of FC3.");
+	}
+	fc4_copy.clear();
+	fc3_copy.clear();
+
+
+	for (std::vector<FcsClass>::const_iterator it_fc3 = fcs_phonon->force_constant[1].begin(); it_fc3 != fcs_phonon->force_constant[1].end(); ++it_fc3) {
+		FcsClass fc3_tmp = *it_fc3;
+
+		for (i = 0; i < 3; ++i) {
+			nalpha[i] = fc3_tmp.elems[i].atom;
+			ncell[i] = fc3_tmp.elems[i].cell;
+			ixyz[i] = fc3_tmp.elems[i].xyz;
+			atom_s[i] = system->map_p2s[nalpha[i]][ncell[i]];
+			ind[i] = 3 * atom_s[i] + ixyz[i];
+		}
+		fc3_copy.push_back(FcsClassGru(3, ind, fc3_tmp.fcs_val));
+	}
+	std::sort(fc3_copy.begin(), fc3_copy.end());
+
+	fc3_plus.clear();
+	fc3_minus.clear();
+
+	for (std::vector<FcsClassGru>::const_iterator it = fc3_copy.begin(); it != fc3_copy.end(); ++it) {
+		fc3_plus.push_back(*it);
+		fc3_minus.push_back(*it);
+	}
+
+
+	for (std::vector<FcsClassGru>::const_iterator it = dfc3.begin(); it != dfc3.end(); ++it) {
+
+		for (i = 0; i < 3; ++i) ind[i] = (*it).elems[i];
+		
+		it_lower = lower_bound(fc3_plus.begin(), fc3_plus.end(), FcsClassGru(3, ind, fcs_tmp));
+		if (it_lower == fc3_plus.end()) {
+			error->exit("prepare_newfc3", "The list of FC3 doesn't contain a force constant in DFC3");
+		} else {
+			(*it_lower).fcs_val += delta_a * (*it).fcs_val;
+		}
+
+		it_lower = lower_bound(fc3_minus.begin(), fc3_minus.end(), FcsClassGru(3, ind, fcs_tmp));
+		if (it_lower == fc3_minus.end()) {
+			error->exit("prepare_newfc3", "The list of FC3 doesn't contain a force constant in DFC3");
+		} else {
+			(*it_lower).fcs_val -= delta_a * (*it).fcs_val;
+		}
+	}
+
+	std::cout << "done !" << std::endl;
+}
+
 void Gruneisen::calc_gruneisen2()
 {
 	unsigned int is, ik;
@@ -454,14 +567,6 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 				phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 				exp_phase = std::exp(im * phase);
 
-				// 				if (std::abs(exp_phase.real()) < 1.0e-14) {
-				// 					exp_phase = std::complex<double>(0.0, exp_phase.imag());
-				// 				}
-				// 				if (std::abs(exp_phase.imag()) < 1.0e-14) {
-				// 					exp_phase = std::complex<double>(exp_phase.real(), 0.0);
-				// 				}
-
-
 				for (icrd = 0; icrd < 3; ++icrd){
 					for (jcrd = 0; jcrd < 3; ++jcrd){
 						ctmp[icrd][jcrd] += dfc2[i][atm_s2][icrd][jcrd] * std::exp(im * phase);
@@ -495,7 +600,6 @@ void Gruneisen::calc_gruneisen3()
 	unsigned int nk = kpoint->nk;
 	unsigned int ns = dynamical->neval;
 
-	unsigned int icrd, jcrd, kcrd;
 	unsigned int nalpha[3], ncell[3], ixyz[3];
 	unsigned int iat, jat, kat;
 	unsigned int iat2, jat2, kat2;
@@ -554,7 +658,6 @@ void Gruneisen::calc_gruneisen3()
 		// 		for (i = 0; i < 3; ++i) std::cout << std::setw(15) << coord_tmp[i] / (2.0 * pi);
 		// 		std::cout << std::endl;
 
-
 		rotvec(x, x, system->lavec_s);
 		std::cout << "x = " << std::setw(15) << x[0] << std::setw(15) << x[1] << std::setw(15) << x[2] << std::endl;
 
@@ -579,3 +682,256 @@ void Gruneisen::calc_gruneisen3()
 		}
 	}
 }
+
+void Gruneisen::write_newinfo_all()
+{
+	std::string file_info_plus, file_info_minus;
+	std::ofstream ofs_plus, ofs_minus;
+	std::ifstream ifs_orig;
+
+	std::cout << "Harmonic and anharmonic force constants of the compressed/expanded system will be stored." << std::endl;
+	std::cout << "Note that only the anharmonic terms up to 3rd order will be printed." << std::endl << std::endl;
+
+	file_info_plus = input->job_title + "_+.info";
+	file_info_minus = input->job_title + "_-.info";
+
+	ofs_plus.open(file_info_plus.c_str(), std::ios::out);
+	if (!ofs_plus) error->exit("write_newinfo", "Cannot create the file file_info_plus");
+	ofs_minus.open(file_info_minus.c_str(), std::ios::out);
+	if (!ofs_minus) error->exit("write_newinfo", "Cannot create the file file_info_minus");
+	ifs_orig.open(fcs_phonon->file_fcs.c_str(), std::ios::in);
+	if (!ifs_orig) error->exit("write_newinfo", "Cannot open the info file");
+
+    write_newinfo(ifs_orig, ofs_plus, delta_a, fc2_plus, fc2_plus_ext, fc3_plus);
+	ifs_orig.close();
+	ifs_orig.open(fcs_phonon->file_fcs.c_str(), std::ios::in);
+	write_newinfo(ifs_orig, ofs_minus, -delta_a, fc2_minus, fc2_minus_ext, fc3_minus);
+
+	ofs_plus.close();
+	ofs_minus.close();
+	ifs_orig.close();
+}
+
+void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const double delta,
+							  double ****fc2_new, std::vector<FcsClassExtent> fc2_new_ext, std::vector<FcsClassGru> fc3_new)
+{
+
+	int i, j, k;
+	std::string line;
+
+	double factor = 1.0 + delta;
+	double aa[3][3];
+
+	int nat = system->nat;
+	int natmin = system->natmin;
+	int nfc2;
+
+	double dummy;
+
+	int ind[3];
+	int *pairs, *pairs2;
+	double relvec[3];
+
+	std::vector<int> elems;
+
+	std::string str_pair[3];
+	int len[3], xyz[3], atom[3];
+
+	std::vector<FcsClassGru>::iterator it_lower;
+
+	memory->allocate(pairs, natmin);
+	memory->allocate(pairs2, natmin * 3);
+
+	for (i = 0; i < 2; ++i) {
+		std::getline(ifs, line);
+		ofs << line << std::endl;
+	}
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			ifs >> aa[i][j];
+			aa[i][j] *= factor;
+		}
+	}
+
+	for (i = 0; i < 3; ++i) {
+		for (j = 0; j < 3; ++j) {
+			ofs << std::setw(25) << std::setprecision(16) << aa[i][j];
+		}
+		ofs << std::endl;
+	}
+	ifs.ignore();
+
+	for (i = 0; i < nat + 7; ++i) {
+		std::getline(ifs, line);
+		ofs << line << std::endl;
+	}
+
+	ifs >> nfc2;
+	for (i = 0; i < nfc2; ++i) {
+		ifs >> dummy >> ind[0] >> ind[1];
+
+		if (!fcs_phonon->is_fc2_ext) {
+			ofs << std::scientific << std::setprecision(16) << std::setw(25) << fc2_new[system->map_s2p[ind[0]/3].atom_num][ind[1]/3][ind[0]%3][ind[1]%3];
+		}
+		for (j = 0; j < 2; ++j) {
+			ofs << std::setw(7) << ind[j];
+		}
+		ofs << std::endl;
+	}
+	ifs.ignore();
+
+	for (i = 0; i < 2; ++i) {
+		std::getline(ifs, line);
+		ofs << line << std::endl;
+	}
+
+	while (std::getline(ifs,line)) {
+
+		if (line == "##FORCE CONSTANTS") break;
+
+		if (line == "#LIST_HARMONIC" || line == "#LIST_ANHARM3") {
+
+			ofs << line << std::endl;
+
+			for (i = 0; i < natmin; ++i) ifs >> pairs[i];
+			
+			for (i = 0; i < natmin; ++i) {
+				for (j = 0; j < pairs[i]; ++j) {
+					ifs >> ind[0] >> ind[1] >> relvec[0] >> relvec[1] >> relvec[2];
+					ofs << std::setw(6) << ind[0] << std::setw(6) << ind[1];
+					for (k = 0; k < 3; ++k) {
+						relvec[k] *= factor;
+						ofs << std::scientific << std::setprecision(16) << std::setw(25) << relvec[k];
+					}
+					ofs << std::endl;
+;				}
+			}
+		}
+	}
+
+	ofs << line << std::endl;
+	std::getline(ifs, line);
+	ofs << line << std::endl;
+
+	while (std::getline(ifs, line)) {
+
+		if (line == "#FCS_HARMONIC") {
+			ofs << line << std::endl;
+			std::getline(ifs, line);
+			ofs << line << std::endl;
+
+			for (i = 0; i < 3 * natmin; ++i) ifs >> pairs2[i];
+			for (i = 0; i < 3 * natmin; ++i) ofs << std::setw(6) << pairs2[i];
+			ofs << std::endl;
+
+			for (i = 0; i < 3 * natmin; ++i) {
+				for (j = 0; j < pairs2[i]; ++j) {
+					ifs >> dummy;
+					ifs >> str_pair[0] >> str_pair[1];
+
+					for (k = 0; k < 2; ++k) len[k] = str_pair[k].length();
+
+					for (k = 0; k < 2; ++k) {
+						if (str_pair[k][len[k] - 1] == 'x') {
+							xyz[k] = 0;
+						} else if (str_pair[k][len[k] - 1] == 'y') {
+							xyz[k] = 1;
+						} else if (str_pair[k][len[k] - 1] == 'z') {
+							xyz[k] = 2;
+						} else {
+							error->exit("write_newinfo", "This cannot happen.");
+						}
+					}
+
+					for (k = 0; k < 2; ++k) {
+						atom[k] = std::atoi(str_pair[k].substr(0,len[k]-1).c_str()) - 1;
+					}
+					atom[0] = system->map_s2p[atom[0]].atom_num;
+					if (!fcs_phonon->is_fc2_ext) {
+						ofs << std::scientific << std::setprecision(16) << std::setw(25) << fc2_new[atom[0]][atom[1]][xyz[0]][xyz[1]] << std::endl;
+					} else {
+						ofs << 0.0 << std::endl;
+					}
+					ofs << std::setw(5) << str_pair[0] << std::setw(5) << str_pair[1] << std::endl;
+				}
+			}
+		}
+
+		if (line == "#FCS_ANHARM3") {
+			ofs << line << std::endl;
+			std::getline(ifs, line);
+			ofs << line << std::endl;
+
+			for (i = 0; i < 3 * natmin; ++i) ifs >> pairs2[i];
+			for (i = 0; i < 3 * natmin; ++i) ofs << std::setw(6) << pairs2[i];
+			ofs << std::endl;
+
+			for (i = 0; i < 3 * natmin; ++i) {
+				for (j = 0; j < pairs2[i]; ++j) {
+					ifs >> dummy;
+					ifs >> str_pair[0] >> str_pair[1] >> str_pair[2];
+
+					for (k = 0; k < 3; ++k) len[k] = str_pair[k].length();
+
+					for (k = 0; k < 3; ++k) {
+						if (str_pair[k][len[k] - 1] == 'x') {
+							xyz[k] = 0;
+						} else if (str_pair[k][len[k] - 1] == 'y') {
+							xyz[k] = 1;
+						} else if (str_pair[k][len[k] - 1] == 'z') {
+							xyz[k] = 2;
+						} else {
+							error->exit("write_newinfo", "This cannot happen.");
+						}
+					}
+
+					elems.clear();
+					for (k = 0; k < 3; ++k) {
+						atom[k] = std::atoi(str_pair[k].substr(0,len[k]-1).c_str()) - 1;
+						ind[k] = 3 * atom[k] + xyz[k];
+						elems.push_back(3 * atom[k] + xyz[k]);
+					}
+
+					it_lower = lower_bound(fc3_new.begin(), fc3_new.end(), FcsClassGru(3, ind, dummy));
+
+					if (it_lower == fc3_new.end()) {
+						error->exit("write_newinfo", "FC3 with the same index could not be found.");
+					} else {
+						ofs << std::scientific << std::setprecision(16) << std::setw(25) << (*it_lower).fcs_val << std::endl;
+						ofs << std::setw(5) << str_pair[0] << std::setw(5) << str_pair[1] << std::setw(5) << str_pair[2] << std::endl;
+					}
+				}
+			}
+
+		}
+
+		if (line == "#FCS_HARMONIC_EXT") {
+			ofs << line << std::endl;
+
+
+			for (i = 0; i < 3 * natmin; ++i) pairs2[i] = 0;
+			for (std::vector<FcsClassExtent>::const_iterator it = fc2_new_ext.begin(); it != fc2_new_ext.end(); ++it) {
+				pairs2[3 * (*it).atm1 + (*it).xyz1] += 1;
+			}
+
+			nfc2 = 0;
+			for (i = 0; i < 3 * natmin; ++i) nfc2 += pairs2[i];
+
+			ofs << std::setw(10) << nfc2 << std::endl;
+			for (i = 0; i < 3 * natmin; ++i) ofs << std::setw(6) << pairs2[i];
+			ofs << std::endl;
+			
+			for (std::vector<FcsClassExtent>::const_iterator it = fc2_new_ext.begin(); it != fc2_new_ext.end(); ++it) {
+				ofs << std::setw(5) << (*it).atm1 << std::setw(5) << (*it).xyz1;
+				ofs << std::setw(8) << (*it).atm2 << std::setw(5) << (*it).xyz2;
+				ofs << std::setw(5) << (*it).cell_s;
+				ofs << std::scientific << std::setprecision(16) << std::setw(25) << (*it).fcs_val << std::endl;
+			}
+		}
+	}
+
+
+}
+
+
