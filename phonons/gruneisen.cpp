@@ -795,6 +795,8 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 			ofs << line << std::endl;
 
 			for (i = 0; i < natmin; ++i) ifs >> pairs[i];
+			for (i = 0; i < natmin; ++i) ofs << std::setw(6) << pairs[i];
+			ofs << std::endl;
 			
 			for (i = 0; i < natmin; ++i) {
 				for (j = 0; j < pairs[i]; ++j) {
