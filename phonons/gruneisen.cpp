@@ -768,6 +768,8 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 	}
 
 	ifs >> nfc2;
+	ofs << nfc2 << std::endl;
+
 	for (i = 0; i < nfc2; ++i) {
 		ifs >> dummy >> ind[0] >> ind[1];
 
