@@ -38,6 +38,7 @@ void Gruneisen::setup()
 		prepare_newfc3();
 		write_newinfo_all();
 	}
+	// calc_pressure();
 }
 
 void Gruneisen::calc_gruneisen()
@@ -385,7 +386,7 @@ void Gruneisen::prepare_newfc3()
 				dfc3.push_back(FcsClassGru(3, arr_old, fcs_tmp));
 			}
 			fcs_tmp = 0.0;
-			
+
 			for (i = 0; i < 3; ++i) arr_old[i] = arr[i];
 		}
 
@@ -434,7 +435,7 @@ void Gruneisen::prepare_newfc3()
 	for (std::vector<FcsClassGru>::const_iterator it = dfc3.begin(); it != dfc3.end(); ++it) {
 
 		for (i = 0; i < 3; ++i) ind[i] = (*it).elems[i];
-		
+
 		it_lower = lower_bound(fc3_plus.begin(), fc3_plus.end(), FcsClassGru(3, ind, fcs_tmp));
 		if (it_lower == fc3_plus.end()) {
 			error->exit("prepare_newfc3", "The list of FC3 doesn't contain a force constant in DFC3");
@@ -702,7 +703,7 @@ void Gruneisen::write_newinfo_all()
 	ifs_orig.open(fcs_phonon->file_fcs.c_str(), std::ios::in);
 	if (!ifs_orig) error->exit("write_newinfo", "Cannot open the info file");
 
-    write_newinfo(ifs_orig, ofs_plus, delta_a, fc2_plus, fc2_plus_ext, fc3_plus);
+	write_newinfo(ifs_orig, ofs_plus, delta_a, fc2_plus, fc2_plus_ext, fc3_plus);
 	ifs_orig.close();
 	ifs_orig.open(fcs_phonon->file_fcs.c_str(), std::ios::in);
 	write_newinfo(ifs_orig, ofs_minus, -delta_a, fc2_minus, fc2_minus_ext, fc3_minus);
@@ -799,7 +800,7 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 			for (i = 0; i < natmin; ++i) ifs >> pairs[i];
 			for (i = 0; i < natmin; ++i) ofs << std::setw(6) << pairs[i];
 			ofs << std::endl;
-			
+
 			for (i = 0; i < natmin; ++i) {
 				for (j = 0; j < pairs[i]; ++j) {
 					ifs >> ind[0] >> ind[1] >> relvec[0] >> relvec[1] >> relvec[2];
@@ -809,7 +810,7 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 						ofs << std::scientific << std::setprecision(16) << std::setw(25) << relvec[k];
 					}
 					ofs << std::endl;
-;				}
+					;				}
 			}
 		}
 	}
@@ -925,7 +926,7 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 			ofs << std::setw(10) << nfc2 << std::endl;
 			for (i = 0; i < 3 * natmin; ++i) ofs << std::setw(6) << pairs2[i];
 			ofs << std::endl;
-			
+
 			for (std::vector<FcsClassExtent>::const_iterator it = fc2_new_ext.begin(); it != fc2_new_ext.end(); ++it) {
 				ofs << std::setw(5) << (*it).atm1 << std::setw(5) << (*it).xyz1;
 				ofs << std::setw(8) << (*it).atm2 << std::setw(5) << (*it).xyz2;
@@ -938,4 +939,58 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 
 }
 
+
+void Gruneisen::calc_pressure()
+{
+	// Test function for calculating P
+
+	int i, j, k;
+	int icrd, jcrd;
+	int itran;
+	int natmin = system->natmin;
+	int nat = system->nat;
+
+	int atom0, atom1;
+
+	double R1[3], R2[3];
+	double volume;
+	double pressure;
+	double sum = 0.0;
+
+	for (itran = 0; itran < system->ntran; ++itran) {
+
+		for (i = 0; i < natmin; ++i) {
+			atom0 = system->map_p2s[i][0];
+			atom1 = system->map_p2s[i][itran];
+
+			for (k = 0; k < 3; ++k) R1[k] = system->xr_s[atom1][k];
+
+			rotvec(R1, R1, system->lavec_s);
+
+			for (j = 0; j < nat; ++j) {
+
+				for (k = 0; k < 3; ++k) {
+					R2[k] = system->xr_s[j][k];
+					R2[k] += system->xr_s[atom1][k] - system->xr_s[atom0][k];
+					if (R2[k] >= 1.0) R2[k] -= 1.0;
+				}
+				rotvec(R2, R2, system->lavec_s);
+
+				for (icrd = 0; icrd < 3; ++icrd) {
+					for (jcrd = 0; jcrd < 3; ++jcrd) {
+						sum += fcs_phonon->fc2[i][j][icrd][jcrd] * R1[icrd] * R2[jcrd];
+					}
+				}
+			}
+
+		}
+	}
+
+	volume = system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30 * static_cast<double>(system->ntran);
+	sum *= Ryd;
+	pressure = - delta_a * sum / (3.0 * volume) * 1.0e-9;
+
+	std::cout << "Pressure (GPa) = " << pressure << std::endl;
+	std::cout << "Bulk Modulus (GPa) = " << sum / (9.0 * volume) * 1.0e-9 << std::endl;
+}
 
