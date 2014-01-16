@@ -1455,12 +1455,13 @@ double Dynamical::fold(double x)
 
 double Dynamical::freq(const double x) 
 {
-	if (x >= 0.0) {
-		return std::sqrt(x);
+	if (std::abs(x) < eps) {
+		// Special treatment to avoid the divergence of computation.
+		return eps15;
 	} else {
-		if (std::abs(x) < eps) {
-			return std::sqrt(-x);
-		} else { 
+		if (x > 0.0) {
+			return std::sqrt(x);
+		} else {
 			return -std::sqrt(-x);
 		}
 	}
