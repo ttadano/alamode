@@ -52,6 +52,7 @@ namespace PHON_NS {
 		 void write_newinfo(std::ifstream &, std::ofstream &, const double, double ****, std::vector<FcsClassExtent>, std::vector<FcsClassGru>);
 		 void write_newinfo_all();
          void calc_dfc2_reciprocal(std::complex<double> **, double *);
+		 void calc_pressure();
         
     };
 }
