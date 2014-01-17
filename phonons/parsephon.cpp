@@ -90,11 +90,12 @@ void Input::parse_general_vars() {
 	bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
 	bool sym_time_reversal;
 	bool include_isotope;
+	bool fstate_omega, fstate_k;
 	struct stat st;
 
 	std::string str_tmp;
 	std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO \
-								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS";
+								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS FSTATE_W FSTATE_K";
 	std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
 	std::vector<std::string> no_defaults, celldim_v;
 	std::vector<std::string> kdname_v, masskd_v, isofact_v;
@@ -184,6 +185,9 @@ void Input::parse_general_vars() {
 
 	include_isotope = false;
 
+	fstate_omega = false;
+	fstate_k = false;
+
 	// if file_result exists in the current directory, restart mode will be automatically turned on.
 
 	if (stat(file_result.c_str(), &st) == 0) {
@@ -245,6 +249,10 @@ void Input::parse_general_vars() {
 	assign_val(calc_realpart, "REALPART", general_var_dict);
 
 	assign_val(include_isotope, "ISOTOPE", general_var_dict);
+
+	assign_val(fstate_omega, "FSTATE_W", general_var_dict);
+	assign_val(fstate_k, "FSTATE_K", general_var_dict);
+
 
 	if (include_isotope) {
 		split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
@@ -342,6 +350,9 @@ void Input::parse_general_vars() {
 	relaxation->ks_input = ks_input;
 	relaxation->atom_project_mode = atom_project_mode;
 	relaxation->calc_realpart = calc_realpart;
+
+	relaxation->calc_fstate_omega = fstate_omega;
+	relaxation->calc_fstate_k = fstate_k;
 
 	isotope->include_isotope = include_isotope;
 

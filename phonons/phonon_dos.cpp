@@ -32,11 +32,13 @@ void Dos::setup()
 {
 	// This function must not called before dynamica->setup_dynamical()
 
+	int i;
+
 	MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    if(kpoint->kpoint_mode == 2 && phon->mode == "phonons") {
+    if(kpoint->kpoint_mode == 2) {
         flag_dos = true;
     } else {
         flag_dos = false;
@@ -49,6 +51,10 @@ void Dos::setup()
         memory->allocate(energy_dos, n_energy);
         memory->allocate(dos_phonon, n_energy);
 
+		for (i = 0; i < n_energy; ++i){
+			energy_dos[i] = emin + delta_e * static_cast<double>(i);
+		}
+
         if (dynamical->eigenvectors) {
             memory->allocate(pdos_phonon, system->natmin, n_energy);
         }
@@ -59,11 +65,6 @@ void Dos::calc_dos()
 {
     int i;
     unsigned int j, k;
-
-    for (i = 0; i < n_energy; ++i){
-        energy_dos[i] = emin + delta_e * static_cast<double>(i);
-    }
-
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;

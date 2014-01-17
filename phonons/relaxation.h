@@ -67,6 +67,8 @@ namespace PHON_NS {
 		bool ks_analyze_mode;
 		bool atom_project_mode;
 		bool calc_realpart;
+		bool calc_fstate_omega;
+		bool calc_fstate_k;
 		std::string ks_input;
 
 		double delta_lorentz(const double);
@@ -94,5 +96,7 @@ namespace PHON_NS {
 		int knum_sym(const int, const int);
 		bool is_proper(const int);
 		bool is_symmorphic(const int);
+
+		void calc_frequency_resolved_final_state(const unsigned int, double *, const double, const double, const unsigned int, const unsigned int, double *);
 	};
 }
