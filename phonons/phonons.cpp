@@ -102,14 +102,17 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 		fcs_phonon->setup(mode);
 		dynamical->setup_dynamical(mode);
 		dos->setup();
-		dynamical->diagonalize_dynamical_all();
+
+		if (kpoint->kpoint_mode < 3) {
+			dynamical->diagonalize_dynamical_all();
+		}
 
 		relaxation->setup_mode_analysis();
 
 		if (!relaxation->ks_analyze_mode) {
 			writes->setup_result_io();
 		}
-
+		
 		integration->setup_integration();
 		relaxation->setup_relaxation();
 		selfenergy->setup_selfenergy();

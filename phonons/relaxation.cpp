@@ -240,8 +240,8 @@ void Relaxation::setup_relaxation()
 	epsilon *= time_ry / Hz_to_kayser;
 	MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-//  	gen_pair_uniq();
-//  	gensym_kpairs();
+	//  	gen_pair_uniq();
+	//  	gensym_kpairs();
 
 	if (mympi->my_rank == 0) {
 		std::cout << " done!" << std::endl;
@@ -275,16 +275,30 @@ void Relaxation::setup_mode_analysis()
 
 			if (nlist <= 0) error->exit("setup_relaxation", "First line in KS_INPUT files should be a positive integer.");
 
-			kslist.clear();
-			for (i = 0; i < nlist; ++i) {
+			if (calc_fstate_k) {
+				kslist_fstate_k.clear();
 
-				ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
-				knum_tmp = kpoint->get_knum(ktmp[0], ktmp[1], ktmp[2]);
+				for (i = 0; i < nlist; ++i) {
 
-				if (knum_tmp == -1) error->exit("setup_relaxation", "Given kpoint is not exist in given k-point grid.");
-				kslist.push_back(knum_tmp * dynamical->neval + snum_tmp);
+					ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
+
+					kslist_fstate_k.push_back(KsListMode(ktmp, snum_tmp));
+				}
+				std::cout << "The number of entries = " << kslist_fstate_k.size() << std::endl;
+
+			} else {
+				kslist.clear();
+				for (i = 0; i < nlist; ++i) {
+
+					ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
+					knum_tmp = kpoint->get_knum(ktmp[0], ktmp[1], ktmp[2]);
+
+					if (knum_tmp == -1) error->exit("setup_relaxation", "Given kpoint is not exist in given k-point grid.");
+					kslist.push_back(knum_tmp * dynamical->neval + snum_tmp);
+				}
+				std::cout << "The number of entries = " << kslist.size() << std::endl;
 			}
-			std::cout << "The number of entries = " << kslist.size() << std::endl;
+
 
 			ks_analyze_mode = true;
 			ifs_ks.close();
@@ -299,24 +313,60 @@ void Relaxation::setup_mode_analysis()
 
 	unsigned int *kslist_arr;
 	unsigned int nlist;
+	double **vec_tmp;
+	unsigned int *mode_tmp;
 
-	nlist = kslist.size();
+	if (kpoint->kpoint_mode == 3) {
+		int j;
 
-	// Broadcast kslist
+		nlist = kslist_fstate_k.size();
+		MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-	MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-	memory->allocate(kslist_arr, nlist);
+		memory->allocate(vec_tmp, nlist, 3);
+		memory->allocate(mode_tmp, nlist);
 
-	if (mympi->my_rank == 0) {
-		for (i = 0; i < nlist; ++i) kslist_arr[i] = kslist[i];
+		if (mympi->my_rank == 0) {
+			for (i = 0; i < nlist; ++i) {
+				for (j = 0; j < 3; ++j) {
+					vec_tmp[i][j] = kslist_fstate_k[i].xk[j];
+				}
+				mode_tmp[i] = kslist_fstate_k[i].nmode;
+			}
+		}
+
+		MPI_Bcast(&vec_tmp[0][0], 3 * nlist, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&mode_tmp[0], nlist, MPI_INT, 0, MPI_COMM_WORLD);
+
+		if (mympi->my_rank > 0) {
+			kslist_fstate_k.clear();
+
+			for (i = 0; i < nlist; ++i) {
+				kslist_fstate_k.push_back(KsListMode(vec_tmp[i], mode_tmp[i]));
+			}
+		}
+
+		memory->deallocate(vec_tmp);
+		memory->deallocate(mode_tmp);
+
+	} else {
+		nlist = kslist.size();
+
+		// Broadcast kslist
+
+		MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+		memory->allocate(kslist_arr, nlist);
+
+		if (mympi->my_rank == 0) {
+			for (i = 0; i < nlist; ++i) kslist_arr[i] = kslist[i];
+		}
+		MPI_Bcast(&kslist_arr[0], nlist, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+		if (mympi->my_rank > 0) {
+			kslist.clear();
+			for (i = 0; i < nlist; ++i) kslist.push_back(kslist_arr[i]);
+		}
+		memory->deallocate(kslist_arr);
 	}
-	MPI_Bcast(&kslist_arr[0], nlist, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-	if (mympi->my_rank > 0) {
-		kslist.clear();
-		for (i = 0; i < nlist; ++i) kslist.push_back(kslist_arr[i]);
-	}
-	memory->deallocate(kslist_arr);
 }
 
 void Relaxation::finish_relaxation()
@@ -426,6 +476,33 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
 	}
 
 	return (ret_re + im * ret_im) / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
+}
+
+std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3, int is, int js, double **eval, std::complex<double> ***evec)
+{
+	/* 
+	This version requires massive RAM to store cexp_phase
+	*/
+	int ielem;
+
+	double phase;
+	std::complex<double> ctmp = std::complex<double>(0.0, 0.0);
+
+	for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
+
+		phase = vec_for_v3[ielem][0][0] * xk2[0] 
+		+ vec_for_v3[ielem][1][0] * xk2[1]
+		+ vec_for_v3[ielem][2][0] * xk2[2] 
+		+ vec_for_v3[ielem][0][1] * xk3[0]
+		+ vec_for_v3[ielem][1][1] * xk3[1]
+		+ vec_for_v3[ielem][2][1] * xk3[2];
+
+
+		ctmp += fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * std::exp(im * phase)
+			* evec[0][mode][evec_index[ielem][0]] * evec[1][is][evec_index[ielem][1]] * evec[2][js][evec_index[ielem][2]];
+	}
+
+	return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
 }
 
 // void Relaxation::v3_test() {
@@ -1107,7 +1184,7 @@ void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const 
 }
 
 void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, double *T, const double omega0, 
-			const double omega, const unsigned int knum, const unsigned int snum, double *ret)
+													 const double omega, const unsigned int knum, const unsigned int snum, double *ret)
 {
 	unsigned int i;
 	unsigned int ik, jk;
@@ -1206,26 +1283,164 @@ double Relaxation::delta_gauss(const double omega)
 void Relaxation::compute_mode_tau()
 {
 	unsigned int i, j;
-	double *T_arr;
-
 	unsigned int NT;
+	unsigned int knum, snum;
 
 	double Tmax = system->Tmax;
 	double Tmin = system->Tmin;
 	double dT = system->dT;
 	double omega;
-
-	unsigned int knum, snum;
-
-	NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
-	memory->allocate(T_arr, NT);
-
-	for (i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i)*dT;
+	double *T_arr;
 
 	std::ofstream ofs_mode_tau;
 	std::string file_mode_tau;
 
-	if (calc_fstate_omega) {
+
+	NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+	memory->allocate(T_arr, NT);
+	for (i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i)*dT;
+
+
+	if (calc_fstate_k) {
+
+		// Momentum-resolved final state amplitude
+
+		int k, l;
+		int iT;
+		int is, js;
+		int nklist;
+		int mode;
+		double xk1[3], xk2[3], xk3[3];
+		double kvec[3];
+		double f1, f2, n1, n2;
+		double norm, T_tmp;
+		double V3norm;
+		double **eval;
+		double **gamma_k, **gamma_k_mpi;
+		double delta_tmp[2];
+
+		std::complex<double> ***evec;
+
+
+		if (mympi->my_rank == 0) {
+			file_mode_tau = input->job_title + ".fstate_k";
+			ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
+			if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+
+			ofs_mode_tau << "## Momentum-resolved final state amplitude for given modes" << std::endl;
+		}
+
+		memory->allocate(eval, 3, ns);
+		memory->allocate(evec, 3, ns, ns);
+
+
+		for (i = 0; i < kslist_fstate_k.size(); ++i) {
+
+			for (j = 0; j < 3; ++j) xk1[j] = -kslist_fstate_k[i].xk[j];
+			mode = kslist_fstate_k[i].nmode;
+			for (j = 0; j < 3; ++j) kvec[j] = dynamical->fold(xk1[j]);
+			rotvec(kvec, kvec, system->rlavec_p, 'T');
+			norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+			if (norm > eps) for (j = 0; j < 3; ++j) kvec[j] /= norm;
+			for (j = 0; j < 3; ++j) xk1[j] = dynamical->fold(xk1[j]);
+
+			dynamical->eval_k(xk1, kvec, fcs_phonon->fc2, eval[0], evec[0], true);
+			for (j = 0; j < ns; ++j) eval[0][j] = dynamical->freq(eval[0][j]);
+
+
+			for (j = 0; j < kpoint->nplanes; ++j) {
+
+				nklist = kpoint->kp_planes[j].size();
+
+				memory->allocate(gamma_k, nklist, NT);
+				memory->allocate(gamma_k_mpi, nklist, NT);
+
+				for (k = 0; k < nklist; ++k) {
+					for (l = 0; l < NT; ++l) {
+						gamma_k[k][l] = 0.0;
+						gamma_k_mpi[k][l] = 0.0;
+					}
+				}
+
+				for (k = mympi->my_rank; k < nklist; k += mympi->nprocs) {
+
+					for (l = 0; l < 3; ++l) xk2[l] = dynamical->fold(kpoint->kp_planes[j][k].k[l]);
+					for (l = 0; l < 3; ++l) xk3[l] = dynamical->fold(-xk1[l]-xk2[l]);
+
+					for (l = 0; l < 3; ++l) kvec[l] = xk2[l];
+					rotvec(kvec, kvec, system->rlavec_p, 'T');
+					norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+					if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
+
+					dynamical->eval_k(xk2, kvec, fcs_phonon->fc2, eval[1], evec[1], true);
+
+					for (l = 0; l < 3; ++l) kvec[l] = xk3[l];
+					rotvec(kvec, kvec, system->rlavec_p, 'T');
+					norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+					if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
+
+					dynamical->eval_k(xk3, kvec, fcs_phonon->fc2, eval[2], evec[2], true);
+
+					for (l = 0; l < ns; ++l) {
+						eval[1][l] = dynamical->freq(eval[1][l]);
+						eval[2][l] = dynamical->freq(eval[2][l]);
+					}
+
+					for (is = 0; is < ns; ++is) {
+						for (js = 0; js < ns; ++js) {
+							V3norm = std::norm(V3_mode(mode, xk2, xk3, is, js, eval, evec));
+
+							delta_tmp[0] = delta_lorentz(eval[0][mode] - eval[1][is] - eval[2][js])
+								         - delta_lorentz(eval[0][mode] + eval[1][is] + eval[2][js]);
+							delta_tmp[1] = delta_lorentz(eval[0][mode] + eval[1][is] - eval[2][js])
+								         - delta_lorentz(eval[0][mode] - eval[1][is] + eval[2][js]);
+
+							for (iT = 0; iT < NT; ++iT) {
+								T_tmp = T_arr[iT];
+
+								f1 = phonon_thermodynamics->fB(eval[1][is], T_tmp);
+								f2 = phonon_thermodynamics->fB(eval[2][js], T_tmp);
+								n1 = f1 + f2 + 1.0;
+								n2 = f1 - f2;
+
+								gamma_k_mpi[k][iT] += V3norm * (n1 * delta_tmp[0] + n2 * delta_tmp[1]);
+							}
+						}
+					}
+
+					for (iT = 0; iT < NT; ++iT) gamma_k_mpi[k][iT] *= pi * std::pow(0.5, 4);
+				}
+
+				MPI_Reduce(&gamma_k_mpi[0][0], &gamma_k[0][0], NT*nklist, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+				if (mympi->my_rank == 0) {
+					ofs_mode_tau << "# " << "Gamma at ";
+					for (l = 0; l < 3; ++l) ofs_mode_tau << std::setw(10) << -xk1[l];
+					ofs_mode_tau << " , mode = " << mode << std::endl;
+
+					for (iT = 0; iT < NT; ++iT) {
+						ofs_mode_tau << "# T = " << std::setw(10) << T_arr[iT] << std::endl;
+						ofs_mode_tau << "# Plane = " << std::setw(5) << j + 1 << std::endl;
+						for (k = 0; k < nklist; ++k) {
+							ofs_mode_tau << std::setw(5) << kpoint->kp_planes[j][k].n[0];
+							ofs_mode_tau << std::setw(5) << kpoint->kp_planes[j][k].n[1];
+							ofs_mode_tau << std::setw(15) << gamma_k[k][iT] << std::endl;
+						}
+					}
+
+				}
+
+				memory->deallocate(gamma_k);
+				memory->deallocate(gamma_k_mpi);
+			}
+		}
+		memory->deallocate(eval);
+		memory->deallocate(evec);
+
+	} else if (calc_fstate_omega) {
 
 		double omega0;
 		double *gamma_final;
@@ -1385,7 +1600,7 @@ void Relaxation::compute_mode_tau()
 		if (mympi->my_rank == 0) ofs_mode_tau.close();
 		memory->deallocate(damp3_atom);
 		memory->deallocate(damp3_atom_g);
-		
+
 	} else {
 		if (mympi->my_rank == 0) {
 			file_mode_tau = input->job_title + ".mode_tau";
@@ -1393,7 +1608,7 @@ void Relaxation::compute_mode_tau()
 			ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
 			if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
 		}
-		
+
 		if (calc_realpart) {
 
 			/* Calculate both real and imaginary part of self-energy.
@@ -1611,17 +1826,17 @@ void Relaxation::gensym_kpairs() {
 				arr[2] = ns * k3 + 3;
 				V3tmp1 = V3(arr);
 
-// 				arr[0] = ns * kpoint->knum_minus[k1] + 3;
-// 				arr[1] = ns * kpoint->knum_minus[k2] + 3;
-// 				arr[2] = ns * kpoint->knum_minus[k3] + 3;
-// 				V3tmp2 = V3(arr) * V3tmp1;
+				// 				arr[0] = ns * kpoint->knum_minus[k1] + 3;
+				// 				arr[1] = ns * kpoint->knum_minus[k2] + 3;
+				// 				arr[2] = ns * kpoint->knum_minus[k3] + 3;
+				// 				V3tmp2 = V3(arr) * V3tmp1;
 
- 				std::cout << std::setw(15) << std::norm(V3tmp1);
+				std::cout << std::setw(15) << std::norm(V3tmp1);
 				std::cout << std::setw(5) << pair_uniq[i][j].group[k].symnum;
 				std::cout << std::setw(3) << is_proper(pair_uniq[i][j].group[k].symnum);
 				std::cout << std::setw(3) << is_symmorphic(pair_uniq[i][j].group[k].symnum) << std::endl;
-// 								std::cout << std::setw(15) << V3tmp2.real();
-// 								std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
+				// 								std::cout << std::setw(15) << V3tmp2.real();
+				// 								std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
 			}
 		}
 		std::cout << std::endl;
