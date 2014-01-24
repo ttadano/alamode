@@ -57,6 +57,19 @@ namespace PHON_NS {
         return std::sqrt(tmp) < eps;
     }
 
+	class KpointPlane {
+	public:
+		double k[3];
+		int n[2];
+
+		KpointPlane(){};
+
+		KpointPlane(double *xk_in, int *n_in) {
+			for (int i = 0; i < 3; ++i) k[i] = xk_in[i];
+			for (int i = 0; i < 2; ++i) n[i] = n_in[i];
+		}
+	};
+
     class Kpoint: protected Pointers {
     public:
         Kpoint(class PHON *);
@@ -79,6 +92,9 @@ namespace PHON_NS {
         std::vector<double> weight_k;
         std::set<unsigned int> kpset_uniq;
 
+		unsigned int nplanes;
+		std::vector<KpointPlane> *kp_planes;
+
         unsigned int **k_reduced, *nk_equiv_arr;
         unsigned int nk_reduced, nequiv_max;
 
@@ -89,7 +105,9 @@ namespace PHON_NS {
         void gen_kpoints_band();
 		void reduce_kpoints(double **, unsigned int [3], std::vector<unsigned int> &, std::vector<KpointList> &);
         void gen_nkminus();
-       
+		void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *);
+        bool in_first_BZ(double *);
+
         std::string **kp_symbol;
         double ***kp_bound;
         unsigned int *nkp;

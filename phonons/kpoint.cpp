@@ -13,6 +13,7 @@
 #include <set>
 #include <numeric>
 #include "parsephon.h"
+#include "relaxation.h"
 #include "../alm_c++/mathfunctions.h"
 
 #ifdef _USE_BOOST
@@ -31,7 +32,7 @@ Kpoint::Kpoint(PHON *phon): Pointers(phon) {
 }
 
 Kpoint::~Kpoint() {
-	memory->deallocate(xk);
+	if (!relaxation->calc_fstate_k) memory->deallocate(xk);
 
 	// 	if (kpoint_mode == 1) {
 	// 		memory->deallocate(kpoint_direction);
@@ -86,7 +87,7 @@ void Kpoint::kpoint_setups(std::string mode)
 
 			std::cout << " Number of paths: " << npath << std::endl;
 			memory->allocate(kp_symbol, npath, 2);
-			memory->allocate(kp_bound, npath, 2, 3);
+			memory->allocate(kp_bound, npath, 2, 3);	
 			memory->allocate(nkp, npath);
 
 			nk = 0;
@@ -243,6 +244,20 @@ void Kpoint::kpoint_setups(std::string mode)
 			std::cout.unsetf(std::ios::fixed);
 
 			break;
+		case 3:
+			std::cout << " KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
+
+			nplanes = kpInp.size();
+			std::cout << "The number of planes: " << nplanes << std::endl;
+
+			memory->allocate(kp_planes, nplanes);
+			gen_kpoints_plane(kpInp, kp_planes);
+
+			for (i = 0; i < nplanes; ++i) {
+				std::cout << "The number of k points in Plane " << std::setw(5) << i + 1;
+				std::cout << std::setw(10) << kp_planes[i].size() << std::endl;
+			}
+			break;
 		default:
 			error->exit("read_kpoints", "This cannot happen.");
 		}
@@ -253,10 +268,12 @@ void Kpoint::kpoint_setups(std::string mode)
 	MPI_Bcast(&nkz, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&nk , 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-	if (mympi->my_rank > 0) {
-		memory->allocate(xk, nk, 3);
+	if (kpoint_mode < 3) {
+		if (mympi->my_rank > 0) {
+			memory->allocate(xk, nk, 3);
+		}
+		MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	}
-	MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	if (kpoint_mode == 1) {
 
@@ -279,6 +296,46 @@ void Kpoint::kpoint_setups(std::string mode)
 		}
 		MPI_Bcast(&nk_equiv_arr[0], nk_reduced, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&k_reduced[0][0], nk_reduced*nequiv_max, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+	} else if (kpoint_mode == 3) {
+
+		MPI_Bcast(&nplanes, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+		int nkp;
+		int **naxis;
+		double **xk_plane;
+
+		if (mympi->my_rank > 0) memory->allocate(kp_planes, nplanes);
+
+		for (i = 0; i < nplanes; ++i) {
+			nkp = kp_planes[i].size();
+
+			MPI_Bcast(&nkp, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+			memory->allocate(naxis, nkp, 2);
+			memory->allocate(xk_plane, nkp, 3);
+
+			if (mympi->my_rank == 0) {
+				for (j = 0; j < nkp; ++j) {
+					naxis[j][0] = kp_planes[i][j].n[0];
+					naxis[j][1] = kp_planes[i][j].n[1];
+					xk_plane[j][0] = kp_planes[i][j].k[0];
+					xk_plane[j][1] = kp_planes[i][j].k[1];
+					xk_plane[j][2] = kp_planes[i][j].k[2];
+				}
+			}
+
+			MPI_Bcast(&naxis[0][0], 2 * nkp, MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&xk_plane[0][0], 3 * nkp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+			if (mympi->my_rank > 0) {
+				for (j = 0; j < nkp; ++j) {
+					kp_planes[i].push_back(KpointPlane(xk_plane[j], naxis[j]));
+				}
+			}
+			memory->deallocate(naxis);
+			memory->deallocate(xk_plane);
+		}
 	}
 }
 
@@ -644,3 +701,97 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
 	}
 }
 
+void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<KpointPlane> *kpout) {
+
+	int i, j;
+	int nplane = kplist.size();
+
+	int N1, N2;
+	int ik1, ik2;
+
+	double frac1, frac2;
+	double xk_tmp[3];
+	double xk1[3], xk2[3];
+	int n_in[2];
+
+	for (i = 0; i < nplane; ++i) {
+		N1 = std::atoi(kplist[i].kpelem[3].c_str());
+		N2 = std::atoi(kplist[i].kpelem[7].c_str());
+
+		frac1 = 1.0 / static_cast<double>(N1);
+		frac2 = 1.0 / static_cast<double>(N2);
+
+		for (j = 0; j < 3; ++j) {
+			xk1[j] = std::atof(kplist[i].kpelem[j].c_str());
+			xk2[j] = std::atof(kplist[i].kpelem[4 + j].c_str());
+		}
+
+		for (ik1 = 0; ik1 < N1; ++ik1) {
+			for (ik2 = 0; ik2 < N2; ++ik2) {
+
+				for (j = 0; j < 3; ++j) {
+					xk_tmp[j] = static_cast<double>(ik1) * frac1 * xk1[j] + static_cast<double>(ik2) * frac2 * xk2[j]; 
+				}
+				if (in_first_BZ(xk_tmp)) {
+					n_in[0] = ik1;
+					n_in[1] = ik2;
+					kpout[i].push_back(KpointPlane(xk_tmp, n_in));
+				}
+			}
+		}
+	}
+}
+
+bool Kpoint::in_first_BZ(double *xk_in) {
+
+	int i, j, k, m;
+	int nmax = 1;
+	double tmp[3];
+	double dist, dist_min;
+	int iloc;
+	int ncount;
+
+	bool ret;
+
+
+	for (i = 0; i < 3; ++i) tmp[i] = xk_in[i];
+
+	rotvec(tmp, tmp, system->rlavec_p, 'T');
+
+	dist_min = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+
+	ncount = 0;
+
+	iloc = ncount;
+
+	for (i = -nmax; i <= nmax; ++i) {
+		for (j = -nmax; j <= nmax; ++j) {
+			for (k = -nmax; k <= nmax; ++k) {
+     
+				if (i == 0 && j == 0 && k == 0) continue;
+
+				++ncount;
+
+				tmp[0] = xk_in[0] - static_cast<double>(i);
+				tmp[1] = xk_in[1] - static_cast<double>(j);
+				tmp[2] = xk_in[2] - static_cast<double>(k);
+
+				rotvec(tmp, tmp, system->rlavec_p, 'T');
+				dist = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+
+				if (dist < dist_min) {
+					iloc = ncount;
+					break;
+				}
+			}
+		}
+	}
+
+	if (iloc == 0) {
+		ret = true;
+	} else {
+		ret = false;
+	}
+
+	return ret;
+}

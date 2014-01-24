@@ -46,6 +46,18 @@ namespace PHON_NS {
 		}
 	};
 
+	class KsListMode {
+	public:
+		double xk[3];
+		int nmode;
+
+		KsListMode();
+		KsListMode(double xk_in[3], const int n) {
+			for (int i = 0; i < 3; ++i) xk[i] = xk_in[i];
+			nmode = n;
+		}
+	};
+
 	class Relaxation: protected Pointers {
 	public:
 		Relaxation(class PHON *);
@@ -77,9 +89,12 @@ namespace PHON_NS {
 		std::complex<double> V3(const unsigned int [3]);
 		std::complex<double> V4(const unsigned int [4]);
 
+		std::complex<double> V3_mode(int,  double *, double *, int, int, double **, std::complex<double> ***);
+
 	private:
 		unsigned int nk, ns, nks;
 		std::vector<unsigned int> kslist;
+		std::vector<KsListMode> kslist_fstate_k;
 		std::complex<double> im;
 
 		double **e_tmp, **f_tmp;

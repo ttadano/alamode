@@ -405,7 +405,7 @@ void Input::parse_kpoints() {
 
 		std::cin >> kpmode;
 
-		if (!(kpmode >= 0 && kpmode <= 2)) {
+		if (!(kpmode >= 0 && kpmode <= 3)) {
 			error->exit("parse_kpoints", "Invalid KPMODE");
 		}
 
@@ -438,6 +438,9 @@ void Input::parse_kpoints() {
 			if (kpmode == 2 && kpelem.size() != 3) {
 				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
 			}
+			if (kpmode == 3 && kpelem.size() != 8) {
+				error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
+			}
 
 			kpoint->kpInp.push_back(kpelem);
 		}
@@ -445,8 +448,12 @@ void Input::parse_kpoints() {
 
 		ifs_input >> kpmode;
 
-		if (!(kpmode >= 0 && kpmode <= 2)) {
+		if (!(kpmode >= 0 && kpmode <= 3)) {
 			error->exit("parse_kpoints", "Invalid KPMODE");
+		} 
+
+		if (!relaxation->calc_fstate_k && kpmode == 3) {
+			error->exit("parse_kpoints", "KPMODE = 3 is valid only when FSTATE_K is true.");
 		}
 
 		ifs_input.ignore();
@@ -477,6 +484,9 @@ void Input::parse_kpoints() {
 			}
 			if (kpmode == 2 && kpelem.size() != 3) {
 				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+			}
+			if (kpmode == 3 && kpelem.size() != 8) {
+				error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
 			}
 
 			kpoint->kpInp.push_back(kpelem);
