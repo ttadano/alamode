@@ -113,7 +113,10 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 			writes->setup_result_io();
 		}
 		
-		integration->setup_integration();
+		if (kpoint->kpoint_mode == 2) {
+			integration->setup_integration();
+		}
+
 		relaxation->setup_relaxation();
 		selfenergy->setup_selfenergy();
 		isotope->setup_isotope_scattering();
@@ -129,7 +132,10 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 			writes->write_kappa();
 		}
 
-		integration->finish_integration();
+		if (kpoint->kpoint_mode == 2) {
+			integration->finish_integration();
+		}
+
 		relaxation->finish_relaxation();
 
 		if (!relaxation->ks_analyze_mode) {

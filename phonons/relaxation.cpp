@@ -215,7 +215,7 @@ void Relaxation::setup_relaxation()
 					nk_near = ik;
 				}
 			}
-			domega_min =  writes->in_kayser(dynamical->eval_phonon[nk_near][0]);
+			domega_min =  writes->in_kayser(dynamical->eval_phonon[nk_near][0]);	
 		}
 
 		std::cout << std::endl;

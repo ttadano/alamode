@@ -142,7 +142,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int 
 	}
 
 #ifdef _DEBUG
-	print_symmetrized_coordinate(x);
+	// print_symmetrized_coordinate(x);
 #endif
 }
 
