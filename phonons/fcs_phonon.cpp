@@ -7,7 +7,7 @@
 #include "error.h"
 #include "phonons.h"
 #include "relaxation.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include <string>
 #include <iomanip>
 #include <fstream>

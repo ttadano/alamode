@@ -1,12 +1,12 @@
 #include "mpi_common.h"
 #include "selfenergy.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "relaxation.h"
 #include "dynamical.h"
 #include "kpoint.h"
 #include "memory.h"
 #include "phonon_thermodynamics.h"
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 using namespace PHON_NS;
 

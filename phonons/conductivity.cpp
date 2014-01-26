@@ -14,10 +14,10 @@
 #include "relaxation.h"
 #include "system.h"
 #include "write_phonons.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include <set>
 #include <vector>
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 #include "isotope.h"
 
 using namespace PHON_NS;

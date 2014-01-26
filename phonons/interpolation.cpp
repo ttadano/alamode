@@ -7,7 +7,7 @@
 #include "system.h"
 #include "conductivity.h"
 #include "dynamical.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "write_phonons.h"
 #include "error.h"
 #include "relaxation.h"
@@ -17,7 +17,7 @@
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 #if defined(WIN32) || defined(_WIN32)
 #pragma comment(lib, "libfftw3-3.lib")

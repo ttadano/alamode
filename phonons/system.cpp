@@ -3,12 +3,12 @@
 #include "fcs_phonon.h"
 #include "error.h"
 #include "memory.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 using namespace PHON_NS;
 

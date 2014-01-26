@@ -7,7 +7,7 @@
 #include "kpoint.h"
 #include <complex>
 #include "relaxation.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "integration.h"
 #include "error.h"
 

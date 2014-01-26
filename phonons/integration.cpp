@@ -8,7 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 using namespace PHON_NS;
 

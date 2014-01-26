@@ -1,14 +1,14 @@
 #include "mpi_common.h"
 #include "symmetry_core.h"
 #include "memory.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "error.h"
 #include "system.h"
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
 #include <set>
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 #ifdef _USE_EIGEN
 #include <Eigen/Core>

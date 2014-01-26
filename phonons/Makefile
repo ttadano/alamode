@@ -3,8 +3,8 @@
 .cpp.o:
 	${CXX} ${CXXFLAGS} -c $<
 
-CXX = mpicxx -I ~/include
-CXXFLAGS = -O3 -xSSE3 -openmp -vec-report2 
+CXX = mpicxx -I ~/include -I ../common
+CXXFLAGS = -O3 -xSSE3 -openmp -vec-report0 
 LDFLAGS = -mkl 
 
 PROG = phonons
@@ -13,7 +13,8 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
 	phonon_dos.cpp phonon_velocity.cpp integration.cpp relaxation.cpp \
 	phonon_thermodynamics.cpp conductivity.cpp symmetry_core.cpp \
-        mpi_common.cpp gruneisen.cpp interpolation.cpp isotope.cpp
+        mpi_common.cpp gruneisen.cpp interpolation.cpp isotope.cpp \
+        selfenergy.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

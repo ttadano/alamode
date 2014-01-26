@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/stat.h>
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "conductivity.h"
 #include "dynamical.h"
 #include "error.h"
@@ -18,7 +18,7 @@
 #include "symmetry_core.h"
 #include "system.h"
 #include "write_phonons.h"
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 #include "isotope.h"
 
 using namespace PHON_NS;

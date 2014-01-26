@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "../alm_c++/constants.h"
+#include "constants.h"
 
 namespace PHON_NS {
 

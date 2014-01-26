@@ -14,7 +14,7 @@
 #include <numeric>
 #include "parsephon.h"
 #include "relaxation.h"
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 #ifdef _USE_BOOST
 #include <boost/lexical_cast.hpp>

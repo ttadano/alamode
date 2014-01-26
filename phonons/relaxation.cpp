@@ -21,8 +21,8 @@
 #include "system.h"
 #include "write_phonons.h"
 #include "timer.h"
-#include "../alm_c++/constants.h"
-#include "../alm_c++/mathfunctions.h"
+#include "constants.h"
+#include "mathfunctions.h"
 #include <set>
 
 using namespace PHON_NS;

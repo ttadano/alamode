@@ -9,8 +9,8 @@
 #include "system.h"
 #include "error.h"
 #include "write_phonons.h"
-#include "../alm_c++/constants.h"
-#include "../alm_c++/mathfunctions.h"
+#include "constants.h"
+#include "mathfunctions.h"
 
 using namespace PHON_NS;
 

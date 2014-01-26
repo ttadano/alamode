@@ -3,22 +3,22 @@
 .cpp.o:
 	${CXX} ${CXXFLAGS} -c $<
 
-CXX = icpc -I /home/stsune/tadano/include
+CXX = icpc -I /home/stsune/tadano/include -I ../common
 CXXFLAGS = -O2 -xSSE4.1 -mkl -vec-report1 -openmp -openmp-report1  -D_USE_EIGEN -D_VSL
 LDFLAGS = -mkl
 
-PROG = alm_c++
+PROG = alm
 
 CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp fitting.cpp input.cpp interaction.cpp \
 	main.cpp memory.cpp symmetry.cpp system.cpp ewald.cpp timer.cpp writes.cpp patterndisp.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
-default: alm_c++
+default: alm
 
 all: ${PROG}
 
-alm_c++: ${OBJS}
+alm: ${OBJS}
 	${CXX} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
 
 clean:

@@ -10,7 +10,7 @@
 #include "phonon_velocity.h"
 #include "pointers.h"
 #include "system.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 
 using namespace PHON_NS;
 

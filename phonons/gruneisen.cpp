@@ -12,7 +12,7 @@
 #include "system.h"
 #include "parsephon.h"
 #include "write_phonons.h"
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 #include "relaxation.h"
 
 using namespace PHON_NS;

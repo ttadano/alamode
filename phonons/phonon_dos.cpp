@@ -1,7 +1,7 @@
 #include "mpi_common.h"
 #include "phonon_dos.h"
 #include "kpoint.h"
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "error.h"
 #include "system.h"
 #include "memory.h"

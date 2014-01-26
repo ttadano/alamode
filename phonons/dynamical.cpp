@@ -6,14 +6,14 @@
 #include "fcs_phonon.h"
 #include <complex>
 #include <vector>
-#include "../alm_c++/constants.h"
+#include "constants.h"
 #include "fcs_phonon.h"
 #include <iomanip>
 #include <fstream>
 #include "timer.h"
 #include "error.h"
 #include "symmetry_core.h"
-#include "../alm_c++/mathfunctions.h"
+#include "mathfunctions.h"
 
 using namespace PHON_NS;
 
