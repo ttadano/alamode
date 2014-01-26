@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <fstream>
-#include "../alm_c++/constants.h"
+#include "constants.h"
 
 
 int locate_tag(std::string);
