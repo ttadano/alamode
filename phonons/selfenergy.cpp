@@ -176,6 +176,8 @@ void Selfenergy::selfenergy_b(const unsigned int N, double *T, const double omeg
 			arr_quartic[2] = ns * kpoint->knum_minus[ik1] + is1;
 
 			omega1 = dynamical->eval_phonon[ik1][is1];
+			if (omega1 < eps8) continue;
+
 			v4_tmp = relaxation->V4(arr_quartic);
 
 			for (i = 0; i < N; ++i) {
