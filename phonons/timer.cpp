@@ -47,7 +47,7 @@ void Timer::print_elapsed()
 }
 
 
-std::string Timer::DataAndTime()
+std::string Timer::DateAndTime()
 {
     time_t current;
     std::time(&current);

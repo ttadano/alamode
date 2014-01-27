@@ -35,7 +35,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 	if (mympi->my_rank == 0) {
 		std::cout << "Phonons program version 1.1 (MPI)" << std::endl;
 		std::cout << std::endl;
-		std::cout << "Job started at " << timer->DataAndTime() <<  std::endl << std::endl;
+		std::cout << "Job started at " << timer->DateAndTime() <<  std::endl << std::endl;
 		std::cout << "The number of MPI threads: " << mympi->nprocs << std::endl;
 
 #ifdef _OPENMP
@@ -183,7 +183,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
 
 	if (mympi->my_rank == 0) {
-		std::cout << std::endl << "Job finished at " << timer->DataAndTime() << std::endl;
+		std::cout << std::endl << "Job finished at " << timer->DateAndTime() << std::endl;
 		std::cout << "Bye! :)" << std::endl;
 	}
 	destroy_pointers();

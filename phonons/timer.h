@@ -19,7 +19,7 @@ namespace PHON_NS {
         void reset();
         double elapsed();
         void print_elapsed();
-        std::string DataAndTime();
+        std::string DateAndTime();
 
     private:
 #if defined(WIN32) || defined(_WIN32)
