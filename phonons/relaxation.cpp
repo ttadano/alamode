@@ -113,15 +113,15 @@ void Relaxation::setup_relaxation()
 	memory->allocate(fcs_group, ngroup);
 
 	for (i = 0; i < 3; ++i) arr_old[i] = -1;
-	j = -1;
+	int igroup = -1;
 	for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
 		for (i = 0; i < 3; ++i) arr_tmp[i] = 3 * (*it).elems[i].atom + (*it).elems[i].xyz;
 
 		if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
-			++j;
+			++igroup;
 			for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
 		}
-		fcs_group[j].push_back(*it);  
+		fcs_group[igroup].push_back(*it);  
 	}
 
 	memory->allocate(v3_arr, nk, ns*ns);
