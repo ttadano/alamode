@@ -271,7 +271,8 @@ void Conductivity::calc_anharmonic_tau()
 			omega = dynamical->eval_phonon[knum][snum];
 
 			if (relaxation->ksum_mode == 0 || relaxation->ksum_mode == 1) {
-				relaxation->calc_damping(ntemp, Temperature, omega, knum, snum, tau_l);
+		//		relaxation->calc_damping(ntemp, Temperature, omega, knum, snum, tau_l);
+				relaxation->calc_damping_tune(ntemp, Temperature, omega, knum, snum, tau_l);
 		//		relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, tau_l);
 			} else if (relaxation->ksum_mode == -1) {
 				relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, tau_l);

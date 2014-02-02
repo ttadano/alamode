@@ -42,6 +42,17 @@ namespace PHON_NS {
 
     };
 
+	inline bool operator<(const FcsClass &a, const FcsClass &b) {
+		std::vector<int> a_tmp, b_tmp;
+		a_tmp.clear();
+		b_tmp.clear();
+		for (int i = 0; i < a.elems.size(); ++i) {
+			a_tmp.push_back(3 * a.elems[i].atom + a.elems[i].xyz);
+			b_tmp.push_back(3 * b.elems[i].atom + b.elems[i].xyz);
+		}
+		return lexicographical_compare(a_tmp.begin(), a_tmp.end(), b_tmp.begin(), b_tmp.end());
+	}
+
 	class FcsClassExtent {
 	public:
        unsigned int atm1, atm2;

@@ -4,6 +4,7 @@
 #include <complex>
 #include <vector>
 #include <string>
+#include "fcs_phonon.h"
 
 namespace PHON_NS {
 
@@ -68,6 +69,8 @@ namespace PHON_NS {
 		void setup_mode_analysis();
 		void compute_mode_tau();
 		void calc_damping(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+		void calc_damping_tune(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+
 		void calc_damping2(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
 		void calc_damping_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***);
 		void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);	 
@@ -113,5 +116,11 @@ namespace PHON_NS {
 		bool is_symmorphic(const int);
 
 		void calc_frequency_resolved_final_state(const unsigned int, double *, const double, const double, const unsigned int, const unsigned int, double *);
+
+		int ngroup;
+		std::vector<FcsClass> *fcs_group;
+
+		double **v3_arr;
+		double ***delta_arr;
 	};
 }
