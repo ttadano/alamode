@@ -61,7 +61,7 @@ std::string Timer::DateAndTime()
     err_t = asctime_s(str_now, 32, &local);
     return str_now;
 #else
-     struct tm *local;
+    struct tm *local;
     local = std::localtime(&current);
 
     return asctime(local);

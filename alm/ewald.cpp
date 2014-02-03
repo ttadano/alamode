@@ -46,7 +46,7 @@ void Ewald::init()
 
         double **f_tmp;
         memory->allocate(f_tmp, system->nat, 3);
-        
+
         std::cout << "Short" << std::endl;
         ewald_force_short(system->nat, system->xcoord, f_tmp);
 
@@ -60,7 +60,7 @@ void Ewald::init()
         ewald_force_long(system->nat, system->xcoord, f_tmp);
 
         for (i = 0; i < system->nat; ++i){
-            
+
             for (j = 0; j < 3; ++j) {
                 std::cout << std::setw(15) << f_tmp[i][0];
             }
@@ -78,19 +78,19 @@ void Ewald::init()
             std::cout << " : " << f_tmp[0][0] << " " << f_tmp[8][0] << " " << f_tmp[24][0] << std::endl;
         }
 
-/*
+        /*
         for (i = 1; i < 500; ++i){
-            for (j = 1; j < 31; ++j){
-                alpha = static_cast<double>(i) * 0.01;
-                ewald_force_short(system->nat, system->xcoord, f_tmp);
-                std::cout << "#alpha = " << alpha << " Gmax = " << j;
-                std::cout << " f1_x,f9_x = " << f_tmp[0][0] << " " << f_tmp[8][0];
-                prepare_G(static_cast<double>(j));
-                ewald_force_long(system->nat, system->xcoord, f_tmp);
-                std::cout << " : " << f_tmp[0][0] << " " << f_tmp[8][0] << std::endl;
-            }
+        for (j = 1; j < 31; ++j){
+        alpha = static_cast<double>(i) * 0.01;
+        ewald_force_short(system->nat, system->xcoord, f_tmp);
+        std::cout << "#alpha = " << alpha << " Gmax = " << j;
+        std::cout << " f1_x,f9_x = " << f_tmp[0][0] << " " << f_tmp[8][0];
+        prepare_G(static_cast<double>(j));
+        ewald_force_long(system->nat, system->xcoord, f_tmp);
+        std::cout << " : " << f_tmp[0][0] << " " << f_tmp[8][0] << std::endl;
         }
-*/
+        }
+        */
 
         memory->deallocate(f_tmp);
 
@@ -131,7 +131,7 @@ void Ewald::prepare_G(const double gmax)
 
     double x_tmp[3];
 
-//    std::cout << "Generating G vectors for the ewald sum ...";
+    //    std::cout << "Generating G vectors for the ewald sum ...";
 
     for (i = 0; i < 2 * nx_G + 1; ++i){
         ix = i;
@@ -158,8 +158,8 @@ void Ewald::prepare_G(const double gmax)
         }
     }
 
-//    std::cout << "done." << std::endl;
-//    std::cout << "The number of G vectors : " << G_vector.size() << std::endl;
+    //    std::cout << "done." << std::endl;
+    //    std::cout << "The number of G vectors : " << G_vector.size() << std::endl;
 }
 
 void Ewald::ewald_force(const int N, double **r, double **f)
@@ -212,17 +212,17 @@ void Ewald::ewald_force_short(const int N, double **r, double **f)
                         r_tmp[1] = r[iat][1] - r[jat][1] + static_cast<double>(jcell);
                         r_tmp[2] = r[iat][2] - r[jat][2] + static_cast<double>(kcell);
 
-/*                        for (j = 0; j < 3; ++j) {
-                            r_tmp[j] = r[iat][j] - r[jat][j];
-                            r_tmp[j] = r_tmp[j] - static_cast<double>(nint(r_tmp[j]));
+                        /*                        for (j = 0; j < 3; ++j) {
+                        r_tmp[j] = r[iat][j] - r[jat][j];
+                        r_tmp[j] = r_tmp[j] - static_cast<double>(nint(r_tmp[j]));
                         }
-*/
+                        */
                         rotvec(r_tmp, r_tmp, system->lavec);
                         rij = std::sqrt(std::pow(r_tmp[0], 2) + std::pow(r_tmp[1], 2) + std::pow(r_tmp[2], 2));
                         if (rij >= Lmax) continue;
 
-//                        std::cout << "r[" << iat << "," << jat << "] = " << r_tmp[0] << " " << r_tmp[1] << " " << r_tmp[2] << std::endl;
-//                        std::cout << "r[" << iat << "," << jat << "] = " << rij << std::endl;
+                        //                        std::cout << "r[" << iat << "," << jat << "] = " << r_tmp[0] << " " << r_tmp[1] << " " << r_tmp[2] << std::endl;
+                        //                        std::cout << "r[" << iat << "," << jat << "] = " << rij << std::endl;
 
                         tmp = Q[jat] * (2.0 * alpha * std::exp(-alpha * rij) / std::sqrt(pi) + boost::math::erfc(alpha * rij) / rij) / std::pow(rij, 2);
                         for (i = 0; i < 3; ++i) f_tmp[i] += tmp * r_tmp[i];
@@ -266,7 +266,7 @@ void Ewald::ewald_force_long(const int N, double **r, double **f)
 
                 for (j = 0; j < 3; ++j) {
                     r_tmp[j] = r[iat][j] - r[jat][j];
-//                    r_tmp[j] = r_tmp[j] - static_cast<double>(nint(r_tmp[j]));
+                    //                    r_tmp[j] = r_tmp[j] - static_cast<double>(nint(r_tmp[j]));
                 }
                 rotvec(r_tmp, r_tmp, system->lavec);
                 tmp += Q[jat] * std::sin(g_tmp[0] * r_tmp[0] + g_tmp[1] * r_tmp[1] + g_tmp[2] * r_tmp[2]);

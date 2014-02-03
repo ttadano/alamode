@@ -25,16 +25,16 @@ void Integration::setup_integration()
 
     ntetra = 6 * nk;
 
-	if (mympi->my_rank == 0) {
-		std::cout << "Setting up the tetrahedron method ...";
-	}
+    if (mympi->my_rank == 0) {
+        std::cout << "Setting up the tetrahedron method ...";
+    }
 
     memory->allocate(tetras, ntetra, 4);
     prepare_tetrahedron(nkx, nky, nkz);
-	
-	if (mympi->my_rank == 0) {
-		std::cout << " done!" << std::endl;
-	}
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done!" << std::endl;
+    }
 
 }
 

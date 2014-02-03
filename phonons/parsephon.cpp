@@ -34,744 +34,744 @@ using namespace PHON_NS;
 Input::Input(PHON *phon): Pointers(phon) {}
 
 Input::~Input() {
-	if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
+    if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
 }
 
 void Input::parce_input(int narg, char **arg)
 {
-	if (narg == 1) {
+    if (narg == 1) {
 
-		from_stdin = true;
+        from_stdin = true;
 
-	} else {
+    } else {
 
-		from_stdin = false;
+        from_stdin = false;
 
-		ifs_input.open(arg[1], std::ios::in);
-		if (!ifs_input) {
-			std::cout << "No such file or directory: " << arg[1] << std::endl;
-			exit(EXIT_FAILURE);
-		}
-	}
+        ifs_input.open(arg[1], std::ios::in);
+        if (!ifs_input) {
+            std::cout << "No such file or directory: " << arg[1] << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
 
-	if (!locate_tag("&general") && mympi->my_rank == 0) {
-		error->exit("parse_input", "&general entry not found in the input file");
-	}
-	if (mympi->my_rank == 0) {
-		parse_general_vars();
-	}
+    if (!locate_tag("&general") && mympi->my_rank == 0) {
+        error->exit("parse_input", "&general entry not found in the input file");
+    }
+    if (mympi->my_rank == 0) {
+        parse_general_vars();
+    }
 
-	if (!locate_tag("&cell") && mympi->my_rank == 0) {
-		error->exit("parse_input", "&cell entry not found in the input file");
-	}
-	if (mympi->my_rank == 0) {
-		parse_cell_parameter();
-	}
+    if (!locate_tag("&cell") && mympi->my_rank == 0) {
+        error->exit("parse_input", "&cell entry not found in the input file");
+    }
+    if (mympi->my_rank == 0) {
+        parse_cell_parameter();
+    }
 
-	if (!locate_tag("&kpoint")) {
-		error->exit("parse_input", "&kpoint entry not found in the input file");
-	}
-	parse_kpoints();
+    if (!locate_tag("&kpoint")) {
+        error->exit("parse_input", "&kpoint entry not found in the input file");
+    }
+    parse_kpoints();
 }
 
 void Input::parse_general_vars() {
 
-	int i;
-	std::string prefix, mode, fcsinfo, borninfo, file_result, ks_input;
-	int nsym, celldim[3], nbands, ismear;
-	int nkd;
-	std::string *kdname;
-	double *masskd, *isotope_factor;
-	double Tmin, Tmax, dT, na_sigma, epsilon;
-	double emin, emax, delta_e, delta_a;
-	double tolerance;
-	bool printsymmetry;
-	bool eigenvector, printxsf, nonanalytic, lclassical, restart;
-	bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
-	bool sym_time_reversal;
-	bool include_isotope;
-	bool fstate_omega, fstate_k;
-	struct stat st;
+    int i;
+    std::string prefix, mode, fcsinfo, borninfo, file_result, ks_input;
+    int nsym, celldim[3], nbands, ismear;
+    int nkd;
+    std::string *kdname;
+    double *masskd, *isotope_factor;
+    double Tmin, Tmax, dT, na_sigma, epsilon;
+    double emin, emax, delta_e, delta_a;
+    double tolerance;
+    bool printsymmetry;
+    bool eigenvector, printxsf, nonanalytic, lclassical, restart;
+    bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
+    bool sym_time_reversal;
+    bool include_isotope;
+    bool fstate_omega, fstate_k;
+    struct stat st;
 
-	std::string str_tmp;
-	std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO \
-								    NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS FSTATE_W FSTATE_K";
-	std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
-	std::vector<std::string> no_defaults, celldim_v;
-	std::vector<std::string> kdname_v, masskd_v, isofact_v;
-	std::map<std::string, std::string> general_var_dict;
+    std::string str_tmp;
+    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO \
+                                   NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS FSTATE_W FSTATE_K";
+    std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
+    std::vector<std::string> no_defaults, celldim_v;
+    std::vector<std::string> kdname_v, masskd_v, isofact_v;
+    std::map<std::string, std::string> general_var_dict;
 
-	if (from_stdin) {
-		std::cin.ignore();
-	} else {
-		ifs_input.ignore();
-	}
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
 
-	get_var_dict(str_allowed_list, general_var_dict);
+    get_var_dict(str_allowed_list, general_var_dict);
 #if _USE_BOOST
-	boost::split(no_defaults, str_no_defaults, boost::is_space());
+    boost::split(no_defaults, str_no_defaults, boost::is_space());
 #else 
-	no_defaults = my_split(str_no_defaults, ' ');
+    no_defaults = my_split(str_no_defaults, ' ');
 #endif
 
-	for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
-		if (general_var_dict.find(*it) == general_var_dict.end()) {
-			error->exit("parse_general_vars", "The following variable is not found in &general input region: ", (*it).c_str());
-		}
-	}
+    for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
+        if (general_var_dict.find(*it) == general_var_dict.end()) {
+            error->exit("parse_general_vars", "The following variable is not found in &general input region: ", (*it).c_str());
+        }
+    }
 
-	prefix = general_var_dict["PREFIX"];
-	mode = general_var_dict["MODE"];
+    prefix = general_var_dict["PREFIX"];
+    mode = general_var_dict["MODE"];
 
-	file_result = prefix + ".result";
-	
+    file_result = prefix + ".result";
+
 #ifdef _USE_BOOST
-	boost::to_lower(mode);
-	nsym = boost::lexical_cast<int>(general_var_dict["NSYM"]);
+    boost::to_lower(mode);
+    nsym = boost::lexical_cast<int>(general_var_dict["NSYM"]);
 #else
-	std::transform (mode.begin(), mode.end(), mode.begin(), tolower);
-	nsym = my_cast<int>(general_var_dict["NSYM"]);
+    std::transform (mode.begin(), mode.end(), mode.begin(), tolower);
+    nsym = my_cast<int>(general_var_dict["NSYM"]);
 #endif
 
-	fcsinfo = general_var_dict["FCSINFO"];
-	assign_val(nkd, "NKD", general_var_dict);
+    fcsinfo = general_var_dict["FCSINFO"];
+    assign_val(nkd, "NKD", general_var_dict);
 
-	split_str_by_space(general_var_dict["KD"], kdname_v);
+    split_str_by_space(general_var_dict["KD"], kdname_v);
 
-	if (kdname_v.size() != nkd) {
-		error->exit("parse_general_vars", "The number of entries for KD is inconsistent with NKD");
-	} else {
-		memory->allocate(kdname, nkd);
-		for (i = 0; i < nkd; ++i){
-			kdname[i] = kdname_v[i];
-		}
-	}
+    if (kdname_v.size() != nkd) {
+        error->exit("parse_general_vars", "The number of entries for KD is inconsistent with NKD");
+    } else {
+        memory->allocate(kdname, nkd);
+        for (i = 0; i < nkd; ++i){
+            kdname[i] = kdname_v[i];
+        }
+    }
 
-	split_str_by_space(general_var_dict["MASS"], masskd_v);
+    split_str_by_space(general_var_dict["MASS"], masskd_v);
 
-	if (masskd_v.size() != nkd) {
-		error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
-	} else {
-		memory->allocate(masskd, nkd);
-		for (i = 0; i < nkd; ++i) {
-			masskd[i] = my_cast<double>(masskd_v[i]);
-		}
-	}
+    if (masskd_v.size() != nkd) {
+        error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
+    } else {
+        memory->allocate(masskd, nkd);
+        for (i = 0; i < nkd; ++i) {
+            masskd[i] = my_cast<double>(masskd_v[i]);
+        }
+    }
 
-	// Default values
+    // Default values
 
-	Tmin = 0.0;
-	Tmax = 1000.0;
-	dT = 10.0;
+    Tmin = 0.0;
+    Tmax = 1000.0;
+    dT = 10.0;
 
-	emin = 0.0;
-	emax = 1000.0;
-	delta_e = 10.0;
+    emin = 0.0;
+    emax = 1000.0;
+    delta_e = 10.0;
 
-	eigenvector = false;
-	printxsf = false;
-	nonanalytic = false;
-	lclassical = false;
+    eigenvector = false;
+    printxsf = false;
+    nonanalytic = false;
+    lclassical = false;
 
-	quartic_mode = false;
-	ks_analyze_mode = false;
-	atom_project_mode = false;
-	calc_realpart = false;
+    quartic_mode = false;
+    ks_analyze_mode = false;
+    atom_project_mode = false;
+    calc_realpart = false;
 
-	nsym = 0;
-	tolerance = 1.0e-8;
-	printsymmetry = false;
-	sym_time_reversal = false;
+    nsym = 0;
+    tolerance = 1.0e-8;
+    printsymmetry = false;
+    sym_time_reversal = false;
 
-	include_isotope = false;
+    include_isotope = false;
 
-	fstate_omega = false;
-	fstate_k = false;
+    fstate_omega = false;
+    fstate_k = false;
 
-	// if file_result exists in the current directory, restart mode will be automatically turned on.
+    // if file_result exists in the current directory, restart mode will be automatically turned on.
 
-	if (stat(file_result.c_str(), &st) == 0) {
-		restart = true;
-	} else {
-		restart = false;
-	}
+    if (stat(file_result.c_str(), &st) == 0) {
+        restart = true;
+    } else {
+        restart = false;
+    }
 
-	nbands = -1;
-	borninfo = "";
+    nbands = -1;
+    borninfo = "";
 
-	ismear = -1;
-	epsilon = 10.0;
-	na_sigma = 0.1;
+    ismear = -1;
+    epsilon = 10.0;
+    na_sigma = 0.1;
 
-	delta_a = 0.001;
+    delta_a = 0.001;
 
-	for (i = 0; i < 3; ++i) celldim[i] = 0;
+    for (i = 0; i < 3; ++i) celldim[i] = 0;
 
-	// Assign given values
+    // Assign given values
 
-	assign_val(Tmin, "TMIN", general_var_dict);
-	assign_val(Tmax, "TMAX", general_var_dict);
-	assign_val(dT, "DT", general_var_dict);
+    assign_val(Tmin, "TMIN", general_var_dict);
+    assign_val(Tmax, "TMAX", general_var_dict);
+    assign_val(dT, "DT", general_var_dict);
 
-	assign_val(emin, "EMIN", general_var_dict);
-	assign_val(emax, "EMAX", general_var_dict);
-	assign_val(delta_e, "DELTA_E", general_var_dict);
+    assign_val(emin, "EMIN", general_var_dict);
+    assign_val(emax, "EMAX", general_var_dict);
+    assign_val(delta_e, "DELTA_E", general_var_dict);
 
-	assign_val(printxsf, "PRINTXSF", general_var_dict);
+    assign_val(printxsf, "PRINTXSF", general_var_dict);
 
-	if (printxsf || mode == "boltzmann") {
-		eigenvector = true;
-	} else {
-		eigenvector = false;
-	}
+    if (printxsf || mode == "boltzmann") {
+        eigenvector = true;
+    } else {
+        eigenvector = false;
+    }
 
-	assign_val(eigenvector, "EIGENVECTOR", general_var_dict);
-	assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
-	assign_val(tolerance, "TOLERANCE", general_var_dict);
-	assign_val(printsymmetry, "PRINTSYMM", general_var_dict);
-
-
-	assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
-	assign_val(lclassical, "LCLASSICAL", general_var_dict);
-	assign_val(restart, "RESTART", general_var_dict);
-
-	assign_val(nbands, "NBANDS", general_var_dict);
-	assign_val(borninfo, "BORNINFO", general_var_dict);
-
-	assign_val(ismear, "ISMEAR", general_var_dict);
-	assign_val(epsilon, "EPSILON", general_var_dict);
-	assign_val(na_sigma, "NA_SIGMA", general_var_dict);
-
-	assign_val(delta_a, "DELTA_A", general_var_dict);
-	assign_val(quartic_mode, "QUARTIC", general_var_dict);
-	assign_val(ks_input, "KS_INPUT", general_var_dict);
-	assign_val(atom_project_mode, "ATOMPROJ", general_var_dict);
-	assign_val(calc_realpart, "REALPART", general_var_dict);
-
-	assign_val(include_isotope, "ISOTOPE", general_var_dict);
-
-	assign_val(fstate_omega, "FSTATE_W", general_var_dict);
-	assign_val(fstate_k, "FSTATE_K", general_var_dict);
+    assign_val(eigenvector, "EIGENVECTOR", general_var_dict);
+    assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
+    assign_val(tolerance, "TOLERANCE", general_var_dict);
+    assign_val(printsymmetry, "PRINTSYMM", general_var_dict);
 
 
-	if (include_isotope) {
-		split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
+    assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
+    assign_val(lclassical, "LCLASSICAL", general_var_dict);
+    assign_val(restart, "RESTART", general_var_dict);
 
-		if (isofact_v.size() != nkd) {
-			error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
-		} else {
-			memory->allocate(isotope_factor, nkd);
-			for (i = 0; i < nkd; ++i){
-				isotope_factor[i] = my_cast<double>(isofact_v[i]);
-			}
-		}
-	}
+    assign_val(nbands, "NBANDS", general_var_dict);
+    assign_val(borninfo, "BORNINFO", general_var_dict);
 
-	str_tmp = general_var_dict["CELLDIM"];
+    assign_val(ismear, "ISMEAR", general_var_dict);
+    assign_val(epsilon, "EPSILON", general_var_dict);
+    assign_val(na_sigma, "NA_SIGMA", general_var_dict);
 
-	if (!str_tmp.empty()) {
+    assign_val(delta_a, "DELTA_A", general_var_dict);
+    assign_val(quartic_mode, "QUARTIC", general_var_dict);
+    assign_val(ks_input, "KS_INPUT", general_var_dict);
+    assign_val(atom_project_mode, "ATOMPROJ", general_var_dict);
+    assign_val(calc_realpart, "REALPART", general_var_dict);
 
-		std::istringstream is(str_tmp);
+    assign_val(include_isotope, "ISOTOPE", general_var_dict);
 
-		while (1) {
-			str_tmp.clear();
-			is >> str_tmp;
-			if (str_tmp.empty()) {
-				break;
-			}
-			celldim_v.push_back(str_tmp);
-		}
+    assign_val(fstate_omega, "FSTATE_W", general_var_dict);
+    assign_val(fstate_k, "FSTATE_K", general_var_dict);
 
-		if (celldim_v.size() != 3) {
-			error->exit("parse_general_vars", "The number of entries for CELLDIM has to be 3.");
-		}
 
-		for (i = 0; i < 3; ++i) {
+    if (include_isotope) {
+        split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
+
+        if (isofact_v.size() != nkd) {
+            error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
+        } else {
+            memory->allocate(isotope_factor, nkd);
+            for (i = 0; i < nkd; ++i){
+                isotope_factor[i] = my_cast<double>(isofact_v[i]);
+            }
+        }
+    }
+
+    str_tmp = general_var_dict["CELLDIM"];
+
+    if (!str_tmp.empty()) {
+
+        std::istringstream is(str_tmp);
+
+        while (1) {
+            str_tmp.clear();
+            is >> str_tmp;
+            if (str_tmp.empty()) {
+                break;
+            }
+            celldim_v.push_back(str_tmp);
+        }
+
+        if (celldim_v.size() != 3) {
+            error->exit("parse_general_vars", "The number of entries for CELLDIM has to be 3.");
+        }
+
+        for (i = 0; i < 3; ++i) {
 #ifdef _USE_BOOST
-			celldim[i] = boost::lexical_cast<int>(celldim_v[i]);
+            celldim[i] = boost::lexical_cast<int>(celldim_v[i]);
 #else
-			celldim[i] = my_cast<int>(celldim_v[i]);
+            celldim[i] = my_cast<int>(celldim_v[i]);
 #endif
-		}
-	}
+        }
+    }
 
-	if ((printxsf || mode == "boltzmann") & !eigenvector) {
-		error->warn("parse_general_vars", "EIGENVECTOR is automatically changed to 1");
-		eigenvector = true;
-	}
-
-
-	job_title = prefix;
-	writes->file_result = file_result;
-	phon->mode = mode;
-	phon->restart_flag = restart;
-	symmetry->nsym = nsym;
-	symmetry->tolerance = tolerance;
-	symmetry->printsymmetry = printsymmetry;
-	symmetry->time_reversal_sym = sym_time_reversal;
+    if ((printxsf || mode == "boltzmann") & !eigenvector) {
+        error->warn("parse_general_vars", "EIGENVECTOR is automatically changed to 1");
+        eigenvector = true;
+    }
 
 
-	system->Tmin = Tmin;
-	system->Tmax = Tmax;
-	system->dT = dT;
-	system->nkd = nkd;
+    job_title = prefix;
+    writes->file_result = file_result;
+    phon->mode = mode;
+    phon->restart_flag = restart;
+    symmetry->nsym = nsym;
+    symmetry->tolerance = tolerance;
+    symmetry->printsymmetry = printsymmetry;
+    symmetry->time_reversal_sym = sym_time_reversal;
 
-	memory->allocate(system->mass_kd, nkd);
-	memory->allocate(system->symbol_kd, nkd);
-	for (i = 0; i < nkd; ++i) {
-		system->mass_kd[i] = masskd[i];
-		system->symbol_kd[i] = kdname[i];
-	}
-	memory->deallocate(masskd);
-	memory->deallocate(kdname);
 
-	dos->emax = emax;
-	dos->emin = emin;
-	dos->delta_e = delta_e;
+    system->Tmin = Tmin;
+    system->Tmax = Tmax;
+    system->dT = dT;
+    system->nkd = nkd;
 
-	for (i = 0; i < 3; ++i) {
-		system->cell_dimension[i] = celldim[i];
-	}
+    memory->allocate(system->mass_kd, nkd);
+    memory->allocate(system->symbol_kd, nkd);
+    for (i = 0; i < nkd; ++i) {
+        system->mass_kd[i] = masskd[i];
+        system->symbol_kd[i] = kdname[i];
+    }
+    memory->deallocate(masskd);
+    memory->deallocate(kdname);
 
-	dynamical->eigenvectors = eigenvector;
-	dynamical->nonanalytic = nonanalytic;
-	dynamical->na_sigma = na_sigma;
-	writes->writeanime = printxsf;
-	writes->nbands = nbands;
-	dynamical->file_born = borninfo;
+    dos->emax = emax;
+    dos->emin = emin;
+    dos->delta_e = delta_e;
 
-	relaxation->epsilon = epsilon;
-	fcs_phonon->file_fcs = fcsinfo;
-	conductivity->use_classical_Cv = lclassical;
+    for (i = 0; i < 3; ++i) {
+        system->cell_dimension[i] = celldim[i];
+    }
 
-	gruneisen->delta_a = delta_a;
-	relaxation->ksum_mode = ismear;
-	relaxation->quartic_mode = quartic_mode;
-	relaxation->ks_input = ks_input;
-	relaxation->atom_project_mode = atom_project_mode;
-	relaxation->calc_realpart = calc_realpart;
+    dynamical->eigenvectors = eigenvector;
+    dynamical->nonanalytic = nonanalytic;
+    dynamical->na_sigma = na_sigma;
+    writes->writeanime = printxsf;
+    writes->nbands = nbands;
+    dynamical->file_born = borninfo;
 
-	relaxation->calc_fstate_omega = fstate_omega;
-	relaxation->calc_fstate_k = fstate_k;
+    relaxation->epsilon = epsilon;
+    fcs_phonon->file_fcs = fcsinfo;
+    conductivity->use_classical_Cv = lclassical;
 
-	isotope->include_isotope = include_isotope;
+    gruneisen->delta_a = delta_a;
+    relaxation->ksum_mode = ismear;
+    relaxation->quartic_mode = quartic_mode;
+    relaxation->ks_input = ks_input;
+    relaxation->atom_project_mode = atom_project_mode;
+    relaxation->calc_realpart = calc_realpart;
 
-	if (include_isotope) {
-		memory->allocate(isotope->isotope_factor, nkd);
-		for (i = 0; i < nkd; ++i) {
-			isotope->isotope_factor[i] = isotope_factor[i];
-		}
-		memory->deallocate(isotope_factor);
-	}
+    relaxation->calc_fstate_omega = fstate_omega;
+    relaxation->calc_fstate_k = fstate_k;
 
-	general_var_dict.clear();
+    isotope->include_isotope = include_isotope;
+
+    if (include_isotope) {
+        memory->allocate(isotope->isotope_factor, nkd);
+        for (i = 0; i < nkd; ++i) {
+            isotope->isotope_factor[i] = isotope_factor[i];
+        }
+        memory->deallocate(isotope_factor);
+    }
+
+    general_var_dict.clear();
 }
 
 void Input::parse_cell_parameter() {
 
-	int i, j;
-	double a;
-	double lavec_tmp[3][3];
+    int i, j;
+    double a;
+    double lavec_tmp[3][3];
 
-	if (from_stdin) {
-		std::cin >> a;
+    if (from_stdin) {
+        std::cin >> a;
 
-		std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-		std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-		std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
-	} else {
-		ifs_input >> a;
+        std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
+        std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
+        std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+    } else {
+        ifs_input >> a;
 
-		ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-		ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-		ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
-	}
+        ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
+        ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
+        ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+    }
 
-	for (i = 0; i < 3; ++i) {
-		for (j = 0; j < 3; ++j) {
-			system->lavec_p[i][j] = a * lavec_tmp[i][j];
-		}
-	}
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            system->lavec_p[i][j] = a * lavec_tmp[i][j];
+        }
+    }
 }
 
 void Input::parse_kpoints() {
 
-	int kpmode;
-	std::string line, str_tmp;
-	std::vector<std::string> kpelem;
+    int kpmode;
+    std::string line, str_tmp;
+    std::vector<std::string> kpelem;
 
-	if (from_stdin) {
+    if (from_stdin) {
 
 
-		std::cin >> kpmode;
+        std::cin >> kpmode;
 
-		if (!(kpmode >= 0 && kpmode <= 3)) {
-			error->exit("parse_kpoints", "Invalid KPMODE");
-		}
+        if (!(kpmode >= 0 && kpmode <= 3)) {
+            error->exit("parse_kpoints", "Invalid KPMODE");
+        }
 
-		std::cin.ignore();
+        std::cin.ignore();
 
-		while (std::getline(std::cin, line)) {
+        while (std::getline(std::cin, line)) {
 
-			if (is_endof_entry(line)) {
-				break;
-			}
-			kpelem.clear();
+            if (is_endof_entry(line)) {
+                break;
+            }
+            kpelem.clear();
 
-			std::istringstream is(line);
+            std::istringstream is(line);
 
-			while (1) {
-				str_tmp.clear();
-				is >> str_tmp;
-				if (str_tmp.empty()) {
-					break;
-				}
-				kpelem.push_back(str_tmp);
-			}
+            while (1) {
+                str_tmp.clear();
+                is >> str_tmp;
+                if (str_tmp.empty()) {
+                    break;
+                }
+                kpelem.push_back(str_tmp);
+            }
 
-			if (kpmode == 0 && kpelem.size() != 3) {
-				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
-			}
-			if (kpmode == 1 && kpelem.size() != 9) {
-				error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
-			}
-			if (kpmode == 2 && kpelem.size() != 3) {
-				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
-			}
-			if (kpmode == 3 && kpelem.size() != 8) {
-				error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
-			}
+            if (kpmode == 0 && kpelem.size() != 3) {
+                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
+            }
+            if (kpmode == 1 && kpelem.size() != 9) {
+                error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
+            }
+            if (kpmode == 2 && kpelem.size() != 3) {
+                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+            }
+            if (kpmode == 3 && kpelem.size() != 8) {
+                error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
+            }
 
-			kpoint->kpInp.push_back(kpelem);
-		}
-	} else {
+            kpoint->kpInp.push_back(kpelem);
+        }
+    } else {
 
-		ifs_input >> kpmode;
+        ifs_input >> kpmode;
 
-		if (!(kpmode >= 0 && kpmode <= 3)) {
-			error->exit("parse_kpoints", "Invalid KPMODE");
-		} 
+        if (!(kpmode >= 0 && kpmode <= 3)) {
+            error->exit("parse_kpoints", "Invalid KPMODE");
+        } 
 
-		if (!relaxation->calc_fstate_k && kpmode == 3) {
-			error->exit("parse_kpoints", "KPMODE = 3 is valid only when FSTATE_K is true.");
-		}
+        if (!relaxation->calc_fstate_k && kpmode == 3) {
+            error->exit("parse_kpoints", "KPMODE = 3 is valid only when FSTATE_K is true.");
+        }
 
-		ifs_input.ignore();
+        ifs_input.ignore();
 
-		while (std::getline(ifs_input, line)) {
+        while (std::getline(ifs_input, line)) {
 
-			if (is_endof_entry(line)) {
-				break;
-			}
-			kpelem.clear();
+            if (is_endof_entry(line)) {
+                break;
+            }
+            kpelem.clear();
 
-			std::istringstream is(line);
+            std::istringstream is(line);
 
-			while (1) {
-				str_tmp.clear();
-				is >> str_tmp;
-				if (str_tmp.empty()) {
-					break;
-				}
-				kpelem.push_back(str_tmp);
-			}
+            while (1) {
+                str_tmp.clear();
+                is >> str_tmp;
+                if (str_tmp.empty()) {
+                    break;
+                }
+                kpelem.push_back(str_tmp);
+            }
 
-			if (kpmode == 0 && kpelem.size() != 3) {
-				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
-			}
-			if (kpmode == 1 && kpelem.size() != 9) {
-				error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
-			}
-			if (kpmode == 2 && kpelem.size() != 3) {
-				error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
-			}
-			if (kpmode == 3 && kpelem.size() != 8) {
-				error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
-			}
+            if (kpmode == 0 && kpelem.size() != 3) {
+                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
+            }
+            if (kpmode == 1 && kpelem.size() != 9) {
+                error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
+            }
+            if (kpmode == 2 && kpelem.size() != 3) {
+                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+            }
+            if (kpmode == 3 && kpelem.size() != 8) {
+                error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
+            }
 
-			kpoint->kpInp.push_back(kpelem);
-		}
+            kpoint->kpInp.push_back(kpelem);
+        }
 
-	}
+    }
 
-	kpoint->kpoint_mode = kpmode;
+    kpoint->kpoint_mode = kpmode;
 }
 
 
 int Input::locate_tag(std::string key){
 
-	int ret = 0;
-	std::string line, line2;
+    int ret = 0;
+    std::string line, line2;
 
-	if (from_stdin) {
+    if (from_stdin) {
 
-		// An error detected in the following two lines when MPI is used.
-		std::cin.clear();
-		std::cin.seekg(0, std::ios_base::beg);
+        // An error detected in the following two lines when MPI is used.
+        std::cin.clear();
+        std::cin.seekg(0, std::ios_base::beg);
 
-		while (std::cin >> line) {
+        while (std::cin >> line) {
 #ifdef _USE_BOOST
-			boost::to_lower(line);
-			boost::trim(line);
+            boost::to_lower(line);
+            boost::trim(line);
 #else
-			std::transform(line.begin(), line.end(), line.begin(), tolower);
-			line2 = line;
-			line = trim(line2);
+            std::transform(line.begin(), line.end(), line.begin(), tolower);
+            line2 = line;
+            line = trim(line2);
 #endif
-			if (line == key){
-				ret = 1;
-				break;
-			}
-		}
-		return ret; 
+            if (line == key){
+                ret = 1;
+                break;
+            }
+        }
+        return ret; 
 
-	} else {
+    } else {
 
-		// An error detected in the following two lines when MPI is used.
-		ifs_input.clear();
-		ifs_input.seekg(0, std::ios_base::beg);
+        // An error detected in the following two lines when MPI is used.
+        ifs_input.clear();
+        ifs_input.seekg(0, std::ios_base::beg);
 
-		while (ifs_input >> line) {
+        while (ifs_input >> line) {
 #ifdef _USE_BOOST
-			boost::to_lower(line);
-			boost::trim(line);
+            boost::to_lower(line);
+            boost::trim(line);
 #else
-			std::transform(line.begin(), line.end(), line.begin(), tolower);
-			line2 = line;
-			line = trim(line2);
+            std::transform(line.begin(), line.end(), line.begin(), tolower);
+            line2 = line;
+            line = trim(line2);
 #endif
-			if (line == key){
-				ret = 1;
-				break;
-			}
-		}
-		return ret; 
-	}
+            if (line == key){
+                ret = 1;
+                break;
+            }
+        }
+        return ret; 
+    }
 
 }
 
 
 void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict) {
 
-	std::string line, key, val;
-	std::string line_wo_comment, line_tmp;
-	std::string::size_type pos_first_comment_tag;
-	std::vector<std::string> str_entry, str_varval;
+    std::string line, key, val;
+    std::string line_wo_comment, line_tmp;
+    std::string::size_type pos_first_comment_tag;
+    std::vector<std::string> str_entry, str_varval;
 
 
-	std::set<std::string> keyword_set;
+    std::set<std::string> keyword_set;
 #ifdef _USE_BOOST
-	boost::split(keyword_set, keywords, boost::is_space());
+    boost::split(keyword_set, keywords, boost::is_space());
 #else
-	std::vector<std::string> strvec_tmp;
-	strvec_tmp = my_split(keywords, ' ');
-	for (std::vector<std::string>::iterator it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
-		keyword_set.insert(*it);
-	}
-	strvec_tmp.clear();
+    std::vector<std::string> strvec_tmp;
+    strvec_tmp = my_split(keywords, ' ');
+    for (std::vector<std::string>::iterator it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
+        keyword_set.insert(*it);
+    }
+    strvec_tmp.clear();
 #endif
 
-	var_dict.clear();
+    var_dict.clear();
 
-	if (from_stdin) {
+    if (from_stdin) {
 
-		while (std::getline(std::cin, line)) {
+        while (std::getline(std::cin, line)) {
 
-			// Ignore comment region
-			pos_first_comment_tag = line.find_first_of('#');
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-			if (pos_first_comment_tag == std::string::npos) {
-				line_wo_comment = line;
-			} else {
-				line_wo_comment = line.substr(0, pos_first_comment_tag);
-			}
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
 #ifdef _USE_BOOST
-			boost::trim_left(line_wo_comment);
+            boost::trim_left(line_wo_comment);
 #else
-			line_tmp = line_wo_comment;
-			line_wo_comment = ltrim(line_tmp);
+            line_tmp = line_wo_comment;
+            line_wo_comment = ltrim(line_tmp);
 #endif
-			if (line_wo_comment.empty()) continue;
-			if (is_endof_entry(line_wo_comment)) break;
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
 
-			//	std::cout << line_wo_comment << std::endl;
+            //	std::cout << line_wo_comment << std::endl;
 
-			// Split the input line by ';'
+            // Split the input line by ';'
 #ifdef _USE_BOOST
-			boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+            boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 #else
-			str_entry = my_split(line_wo_comment, ';');
+            str_entry = my_split(line_wo_comment, ';');
 #endif
 
 
-			for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
-				// Split the input entry by '='
+                // Split the input entry by '='
 #ifdef _USE_BOOST
-				std::string str_tmp = boost::trim_copy(*it);
+                std::string str_tmp = boost::trim_copy(*it);
 #else
-				std::string str_tmp = trim((*it));
+                std::string str_tmp = trim((*it));
 #endif
-				if (!str_tmp.empty()) {
+                if (!str_tmp.empty()) {
 #ifdef _USE_BOOST
-					boost::split(str_varval, str_tmp, boost::is_any_of("="));
+                    boost::split(str_varval, str_tmp, boost::is_any_of("="));
 #else 
-					str_varval = my_split(str_tmp, '=');
+                    str_varval = my_split(str_tmp, '=');
 #endif
-					if (str_varval.size() != 2) {
-						error->exit("get_var_dict", "Unacceptable format");
-					}
+                    if (str_varval.size() != 2) {
+                        error->exit("get_var_dict", "Unacceptable format");
+                    }
 #ifdef _USE_BOOST
-					key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
-					val = boost::trim_copy(str_varval[1]);
+                    key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
+                    val = boost::trim_copy(str_varval[1]);
 #else
-					key = trim(str_varval[0]);
-					std::transform(key.begin(), key.end(), key.begin(), toupper);
-					val = trim(str_varval[1]);
+                    key = trim(str_varval[0]);
+                    std::transform(key.begin(), key.end(), key.begin(), toupper);
+                    val = trim(str_varval[1]);
 #endif
-					if (keyword_set.find(key) == keyword_set.end()) {
-						std::cout << "Could not recognize the variable " << key << std::endl;
-						error->exit("get_var_dict", "Invalid variable found");
-					}
+                    if (keyword_set.find(key) == keyword_set.end()) {
+                        std::cout << "Could not recognize the variable " << key << std::endl;
+                        error->exit("get_var_dict", "Invalid variable found");
+                    }
 
-					if (var_dict.find(key) != var_dict.end()) {
-						std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
-						error->exit("get_var_dict", "Redundant input parameter");
-					}
+                    if (var_dict.find(key) != var_dict.end()) {
+                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+                        error->exit("get_var_dict", "Redundant input parameter");
+                    }
 
-					// If everything is OK, add the variable and the corresponding value
-					// to the dictionary.
+                    // If everything is OK, add the variable and the corresponding value
+                    // to the dictionary.
 
-					var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
-				}
-			}
-		}
-	} else {
+                    var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
+                }
+            }
+        }
+    } else {
 
-		while (std::getline(ifs_input, line)) {
+        while (std::getline(ifs_input, line)) {
 
-			// Ignore comment region
-			pos_first_comment_tag = line.find_first_of('#');
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-			if (pos_first_comment_tag == std::string::npos) {
-				line_wo_comment = line;
-			} else {
-				line_wo_comment = line.substr(0, pos_first_comment_tag);
-			}
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
 #ifdef _USE_BOOST
-			boost::trim_left(line_wo_comment);
+            boost::trim_left(line_wo_comment);
 #else
-			line_tmp = line_wo_comment;
-			line_wo_comment = ltrim(line_tmp);
+            line_tmp = line_wo_comment;
+            line_wo_comment = ltrim(line_tmp);
 #endif
-			if (line_wo_comment.empty()) continue;
-			if (is_endof_entry(line_wo_comment)) break;
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
 
-			//	std::cout << line_wo_comment << std::endl;
+            //	std::cout << line_wo_comment << std::endl;
 
-			// Split the input line by ';'
+            // Split the input line by ';'
 #ifdef _USE_BOOST
-			boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+            boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 #else
-			str_entry = my_split(line_wo_comment, ';');
+            str_entry = my_split(line_wo_comment, ';');
 #endif
-			for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
-				// Split the input entry by '='
-
-#ifdef _USE_BOOST
-				std::string str_tmp = boost::trim_copy(*it);
-#else
-				std::string str_tmp = trim((*it));
-#endif
-				if (!str_tmp.empty()) {
-#ifdef _USE_BOOST
-					boost::split(str_varval, str_tmp, boost::is_any_of("="));
-#else
-					str_varval = my_split(str_tmp, '=');
-#endif
-
-					if (str_varval.size() != 2) {
-						error->exit("get_var_dict", "Unacceptable format");
-					}
+                // Split the input entry by '='
 
 #ifdef _USE_BOOST
-					key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
-					val = boost::trim_copy(str_varval[1]);
+                std::string str_tmp = boost::trim_copy(*it);
 #else
-					key = trim(str_varval[0]);
-					std::transform(key.begin(), key.end(), key.begin(), toupper);
-					val = trim(str_varval[1]);
+                std::string str_tmp = trim((*it));
+#endif
+                if (!str_tmp.empty()) {
+#ifdef _USE_BOOST
+                    boost::split(str_varval, str_tmp, boost::is_any_of("="));
+#else
+                    str_varval = my_split(str_tmp, '=');
 #endif
 
-					if (keyword_set.find(key) == keyword_set.end()) {
-						std::cout << "Could not recognize the variable " << key << std::endl;
-						error->exit("get_var_dict", "Invalid variable found");
-					}
+                    if (str_varval.size() != 2) {
+                        error->exit("get_var_dict", "Unacceptable format");
+                    }
 
-					if (var_dict.find(key) != var_dict.end()) {
-						std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
-						error->exit("get_var_dict", "Redundant input parameter");
-					}
+#ifdef _USE_BOOST
+                    key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
+                    val = boost::trim_copy(str_varval[1]);
+#else
+                    key = trim(str_varval[0]);
+                    std::transform(key.begin(), key.end(), key.begin(), toupper);
+                    val = trim(str_varval[1]);
+#endif
 
-					// If everything is OK, add the variable and the corresponding value
-					// to the dictionary.
+                    if (keyword_set.find(key) == keyword_set.end()) {
+                        std::cout << "Could not recognize the variable " << key << std::endl;
+                        error->exit("get_var_dict", "Invalid variable found");
+                    }
 
-					var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
-				}
-			}
-		}
+                    if (var_dict.find(key) != var_dict.end()) {
+                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+                        error->exit("get_var_dict", "Redundant input parameter");
+                    }
 
-	}
-	keyword_set.clear();
+                    // If everything is OK, add the variable and the corresponding value
+                    // to the dictionary.
+
+                    var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
+                }
+            }
+        }
+
+    }
+    keyword_set.clear();
 }
 
 
 bool Input::is_endof_entry(std::string str) {
 
-	if (str[0] == '/') {
-		return true;
-	} else {
-		return false;
-	}
+    if (str[0] == '/') {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec) {
 
-	std::string str_tmp;
-	std::istringstream is(str);
+    std::string str_tmp;
+    std::istringstream is(str);
 
-	str_vec.clear();
+    str_vec.clear();
 
-	while(1) {
-		str_tmp.clear();
-		is >> str_tmp;
-		if (str_tmp.empty()) {
-			break;
-		}
-		str_vec.push_back(str_tmp);
-	}
-	str_tmp.clear();
+    while(1) {
+        str_tmp.clear();
+        is >> str_tmp;
+        if (str_tmp.empty()) {
+            break;
+        }
+        str_vec.push_back(str_tmp);
+    }
+    str_tmp.clear();
 }
 
 template<typename T> void Input::assign_val(T &val, std::string key, std::map<std::string, std::string> dict) {
 
-	if (!dict[key].empty()) {
+    if (!dict[key].empty()) {
 #ifdef _USE_BOOST
-		val = boost::lexical_cast<T>(dict[key]);
+        val = boost::lexical_cast<T>(dict[key]);
 #else
-		val = my_cast<T>(dict[key]);
+        val = my_cast<T>(dict[key]);
 #endif
-	}
+    }
 }
 
 template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
 {
-	std::stringstream ss;
-	T_to ret;
+    std::stringstream ss;
+    T_to ret;
 
-	ss << x;
-	ss >> ret;
+    ss << x;
+    ss >> ret;
 
-	return ret;
+    return ret;
 }

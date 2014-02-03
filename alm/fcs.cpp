@@ -71,10 +71,10 @@ void Fcs::generate_fclists(int maxorder)
     int *ind, *ind_mapped;
     int *ind_tmp, *ind_mapped_tmp;
     int nxyz;
-	unsigned int isym;
+    unsigned int isym;
 
     IntList list_tmp;
-	
+
     double c_tmp;
 
     int **xyzcomponent;

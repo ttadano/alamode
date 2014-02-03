@@ -30,13 +30,13 @@ Dos::~Dos(){
 
 void Dos::setup()
 {
-	// This function must not called before dynamica->setup_dynamical()
+    // This function must not called before dynamica->setup_dynamical()
 
-	int i;
+    int i;
 
-	MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if(kpoint->kpoint_mode == 2) {
         flag_dos = true;
@@ -51,9 +51,9 @@ void Dos::setup()
         memory->allocate(energy_dos, n_energy);
         memory->allocate(dos_phonon, n_energy);
 
-		for (i = 0; i < n_energy; ++i){
-			energy_dos[i] = emin + delta_e * static_cast<double>(i);
-		}
+        for (i = 0; i < n_energy; ++i){
+            energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        }
 
         if (dynamical->eigenvectors) {
             memory->allocate(pdos_phonon, system->natmin, n_energy);
@@ -119,13 +119,13 @@ void Dos::calc_dos()
                 pdos_local[iat][i] = 0.0;
 
                 for (imode = mympi->my_rank; imode < neval; imode += mympi->nprocs) {
-                      pdos_local[iat][i] += integration->do_tetrahedron(eval[imode], proj[imode], energy_dos[i]);
+                    pdos_local[iat][i] += integration->do_tetrahedron(eval[imode], proj[imode], energy_dos[i]);
                 }
             }            
         }
 
         MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], natmin*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-       
+
         memory->deallocate(proj);
         memory->deallocate(pdos_local);
     }

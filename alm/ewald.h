@@ -7,16 +7,16 @@
 namespace ALM_NS {
 
     class Gvecs {
-        public:
-            double vec[3];
+    public:
+        double vec[3];
 
-            Gvecs();
-            Gvecs(const double *arr)
-            {
-                for (unsigned int i = 0; i < 3; ++i){
+        Gvecs();
+        Gvecs(const double *arr)
+        {
+            for (unsigned int i = 0; i < 3; ++i){
                 vec[i] = arr[i];
-                }
-            };
+            }
+        };
     };
 
     class Ewald: protected Pointers {
@@ -31,7 +31,7 @@ namespace ALM_NS {
         double *Q;
         void ewald_force(const int, double **, double **);  
 
-    
+
     private:
         double alpha;
         double Gmax, Lmax;

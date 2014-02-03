@@ -21,8 +21,8 @@ namespace PHON_NS {
         unsigned int *kd, nkd;
         unsigned int cell_dimension[3];
 
-		unsigned int nclassatom;
-		std::vector<unsigned int> *atomlist_class;
+        unsigned int nclassatom;
+        std::vector<unsigned int> *atomlist_class;
 
         unsigned int **map_p2s;
         class Maps {
@@ -42,9 +42,9 @@ namespace PHON_NS {
 
     private:
 
-		unsigned int *kd_prim;
+        unsigned int *kd_prim;
         void load_system_info();
         void recips(double [3][3], double [3][3]);
-		void setup_atomic_class(unsigned int, unsigned int *);
+        void setup_atomic_class(unsigned int, unsigned int *);
     };
 }

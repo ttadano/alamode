@@ -53,13 +53,13 @@ namespace ALM_NS
 
         bool fix_harmonic;
         bool impose_inv_T, impose_inv_R, exclude_last_R;
-        
+
         std::set<ConstraintClass> *const_translation;
         std::set<ConstraintClass> *const_rotation_self;
         std::set<ConstraintClass> *const_rotation_cross;
 
         std::set<ConstraintClass> *const_self;
-       
+
         int levi_civita(const int, const int, const int);
 
         void translational_invariance();
@@ -71,10 +71,10 @@ namespace ALM_NS
 
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);
-		void rref(int, int, double **, int &, double tolerance =eps12);
+        void rref(int, int, double **, int &, double tolerance =eps12);
     };
 
-	extern "C" {
-		void dgetrf_(int *m, int *n, double *a, int *lda, int *ipiv, int *info);
-	}
+    extern "C" {
+        void dgetrf_(int *m, int *n, double *a, int *lda, int *ipiv, int *info);
+    }
 }

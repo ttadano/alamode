@@ -12,8 +12,8 @@ namespace PHON_NS
 {
     class PHON {
     public:
-		PHON(int, char**, MPI_Comm);
-		virtual ~PHON();
+        PHON(int, char**, MPI_Comm);
+        virtual ~PHON();
 
         class Memory *memory;
         class Error *error;
@@ -28,19 +28,19 @@ namespace PHON_NS
         class Phonon_velocity *phonon_velocity;
         class Phonon_thermodynamics *phonon_thermodynamics;
         class Relaxation *relaxation;
-		class Selfenergy *selfenergy;
+        class Selfenergy *selfenergy;
         class Conductivity *conductivity;
-		class Interpolation *interpolation;
+        class Interpolation *interpolation;
         class Writes *writes;
         class Dos *dos;
         class Gruneisen *gruneisen;
         class MyMPI *mympi;
-		class Isotope *isotope;
+        class Isotope *isotope;
 
         void create_pointers();
         void destroy_pointers();
 
         std::string mode;
-		bool restart_flag;
+        bool restart_flag;
     };
 }

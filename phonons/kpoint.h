@@ -32,18 +32,18 @@ namespace PHON_NS {
 
     };
 
-	class KpointInp {
-	public:
-		std::vector<std::string> kpelem;
+    class KpointInp {
+    public:
+        std::vector<std::string> kpelem;
 
-		KpointInp(){};
+        KpointInp(){};
 
-		KpointInp(const std::vector<std::string> &obj) {
-			for (std::vector<std::string>::const_iterator it = obj.begin(); it != obj.end(); ++it) {
-				kpelem.push_back(*it);
-			}
-		}
-	};
+        KpointInp(const std::vector<std::string> &obj) {
+            for (std::vector<std::string>::const_iterator it = obj.begin(); it != obj.end(); ++it) {
+                kpelem.push_back(*it);
+            }
+        }
+    };
 
     inline bool operator<(const KpointList a, const KpointList b){
         return std::lexicographical_compare(a.kval.begin(), a.kval.end(), b.kval.begin(), b.kval.end());
@@ -57,18 +57,18 @@ namespace PHON_NS {
         return std::sqrt(tmp) < eps;
     }
 
-	class KpointPlane {
-	public:
-		double k[3];
-		int n[2];
+    class KpointPlane {
+    public:
+        double k[3];
+        int n[2];
 
-		KpointPlane(){};
+        KpointPlane(){};
 
-		KpointPlane(double *xk_in, int *n_in) {
-			for (int i = 0; i < 3; ++i) k[i] = xk_in[i];
-			for (int i = 0; i < 2; ++i) n[i] = n_in[i];
-		}
-	};
+        KpointPlane(double *xk_in, int *n_in) {
+            for (int i = 0; i < 3; ++i) k[i] = xk_in[i];
+            for (int i = 0; i < 2; ++i) n[i] = n_in[i];
+        }
+    };
 
     class Kpoint: protected Pointers {
     public:
@@ -87,25 +87,25 @@ namespace PHON_NS {
         double *kaxis;
 
         std::vector<KpointList> kpIBZ;
-		std::vector<KpointInp> kpInp;
+        std::vector<KpointInp> kpInp;
         std::vector<unsigned int> nk_equiv;
         std::vector<double> weight_k;
         std::set<unsigned int> kpset_uniq;
 
-		unsigned int nplanes;
-		std::vector<KpointPlane> *kp_planes;
+        unsigned int nplanes;
+        std::vector<KpointPlane> *kp_planes;
 
         unsigned int **k_reduced, *nk_equiv_arr;
         unsigned int nk_reduced, nequiv_max;
 
         int get_knum(const double, const double, const double);
-		void gen_kmesh(bool, unsigned int [3], double **, std::vector<unsigned int> &, std::vector<KpointList> &);
+        void gen_kmesh(bool, unsigned int [3], double **, std::vector<unsigned int> &, std::vector<KpointList> &);
 
     private:
         void gen_kpoints_band();
-		void reduce_kpoints(double **, unsigned int [3], std::vector<unsigned int> &, std::vector<KpointList> &);
+        void reduce_kpoints(double **, unsigned int [3], std::vector<unsigned int> &, std::vector<KpointList> &);
         void gen_nkminus();
-		void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *);
+        void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *);
         bool in_first_BZ(double *);
 
         std::string **kp_symbol;

@@ -13,7 +13,7 @@ namespace ALM_NS {
         void recips(double [3][3], double [3][3]);
         void frac2cart(double **);
         void load_reference_system();
-     
+
         int nat, nkd;
         int ndata, nstart, nend, nskip;
         int *kd;
@@ -27,8 +27,8 @@ namespace ALM_NS {
         int *kd_s;
         double **xcoord_s;
 
-		unsigned int nclassatom;
-		std::vector<unsigned int> *atomlist_class;
+        unsigned int nclassatom;
+        std::vector<unsigned int> *atomlist_class;
 
         int *map_ref;
         double cell_volume;
@@ -36,6 +36,6 @@ namespace ALM_NS {
     private:
         unsigned int coordinate_index(const char);
         double volume(double [3], double [3], double[3]);
-		void setup_atomic_class(int *);
+        void setup_atomic_class(int *);
     };
 }

@@ -47,15 +47,15 @@ void Fcs_phonon::setup(std::string mode)
     // This is not necessary
     MPI_Bcast(&fc2[0][0][0][0], 9*natmin*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-	if (mympi->my_rank == 0) load_fc2_ext();
-	MPI_Bcast(&is_fc2_ext, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-	MPI_Bcast_fc2_ext();
+    if (mympi->my_rank == 0) load_fc2_ext();
+    MPI_Bcast(&is_fc2_ext, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast_fc2_ext();
 
-	MPI_Bcast(&relaxation->quartic_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&relaxation->quartic_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-	if (mode == "boltzmann" || mode == "gruneisen"){
+    if (mode == "boltzmann" || mode == "gruneisen"){
 
-		if (relaxation->quartic_mode) maxorder = 3;
+        if (relaxation->quartic_mode) maxorder = 3;
 
         memory->allocate(force_constant, maxorder);
 
@@ -154,9 +154,9 @@ void Fcs_phonon::load_fcs()
 #ifdef _USE_BOOST
             flag_str[iorder] = "#FCS_ANHARM" + boost::lexical_cast<std::string>(iorder + 2);
 #else
-			std::stringstream ss_tmp;
-			ss_tmp << iorder + 2;
-			flag_str[iorder] = "#FCS_ANHARM" + ss_tmp.str();
+            std::stringstream ss_tmp;
+            ss_tmp << iorder + 2;
+            flag_str[iorder] = "#FCS_ANHARM" + ss_tmp.str();
 #endif
         }
 
@@ -220,35 +220,35 @@ void Fcs_phonon::load_fcs()
 
 void Fcs_phonon::load_fc2_ext()
 {
-	std::ifstream ifs_fcs;
-	std::string str_tmp;
-	bool flag_found;
-	unsigned int nfcs;
-	unsigned int ifcs;
-	FcsClassExtent fcext_tmp;
+    std::ifstream ifs_fcs;
+    std::string str_tmp;
+    bool flag_found;
+    unsigned int nfcs;
+    unsigned int ifcs;
+    FcsClassExtent fcext_tmp;
 
-	ifs_fcs.open(file_fcs.c_str(), std::ios::in);
-	if (!ifs_fcs) error->exit("load_fc2_ext", "cannot open info file");
+    ifs_fcs.open(file_fcs.c_str(), std::ios::in);
+    if (!ifs_fcs) error->exit("load_fc2_ext", "cannot open info file");
 
-	flag_found = false;
+    flag_found = false;
 
-	while(!ifs_fcs.eof() && !flag_found)
-	{
-		std::getline(ifs_fcs, str_tmp);
-		if (str_tmp == "#FCS_HARMONIC_EXT") {
-			flag_found = true;
-			ifs_fcs >> nfcs;
-			ifs_fcs.ignore();
-			std::getline(ifs_fcs,str_tmp);
+    while(!ifs_fcs.eof() && !flag_found)
+    {
+        std::getline(ifs_fcs, str_tmp);
+        if (str_tmp == "#FCS_HARMONIC_EXT") {
+            flag_found = true;
+            ifs_fcs >> nfcs;
+            ifs_fcs.ignore();
+            std::getline(ifs_fcs,str_tmp);
 
-			for (ifcs = 0; ifcs < nfcs; ++ifcs) {
-				ifs_fcs >> fcext_tmp.atm1 >> fcext_tmp.xyz1 >> fcext_tmp.atm2 >> fcext_tmp.xyz2 >> fcext_tmp.cell_s >> fcext_tmp.fcs_val;
-				fc2_ext.push_back(fcext_tmp);
-			}
-		}
-	}
+            for (ifcs = 0; ifcs < nfcs; ++ifcs) {
+                ifs_fcs >> fcext_tmp.atm1 >> fcext_tmp.xyz1 >> fcext_tmp.atm2 >> fcext_tmp.xyz2 >> fcext_tmp.cell_s >> fcext_tmp.fcs_val;
+                fc2_ext.push_back(fcext_tmp);
+            }
+        }
+    }
 
-	is_fc2_ext = flag_found;
+    is_fc2_ext = flag_found;
 }
 
 
@@ -271,7 +271,7 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
 {
     unsigned int i;
     int j, k;
-	int len;
+    int len;
     int nelem;
     double *fcs_tmp;
     unsigned int ***ind;
@@ -280,8 +280,8 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
     std::vector<Triplet> tri_vec;
 
     for (i = 0; i < N; ++i) {
-   
-		len = force_constant[i].size();
+
+        len = force_constant[i].size();
         nelem = i + 2;
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -328,42 +328,42 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
 
 void Fcs_phonon::MPI_Bcast_fc2_ext()
 {
-	unsigned int i;
-	double *fcs_tmp;
-	unsigned int **ind;
-	unsigned int nfcs;
-	FcsClassExtent fcext_tmp;
+    unsigned int i;
+    double *fcs_tmp;
+    unsigned int **ind;
+    unsigned int nfcs;
+    FcsClassExtent fcext_tmp;
 
-	nfcs = fc2_ext.size();
-	MPI_Bcast(&nfcs, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    nfcs = fc2_ext.size();
+    MPI_Bcast(&nfcs, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-	memory->allocate(fcs_tmp, nfcs);
-	memory->allocate(ind, nfcs, 5);
+    memory->allocate(fcs_tmp, nfcs);
+    memory->allocate(ind, nfcs, 5);
 
-	if (mympi->my_rank == 0) {
-		for (i = 0; i < nfcs; ++i) {
-			fcs_tmp[i] = fc2_ext[i].fcs_val;
-			ind[i][0] = fc2_ext[i].atm1;
-			ind[i][1] = fc2_ext[i].xyz1;
-			ind[i][2] = fc2_ext[i].atm2;
-			ind[i][3] = fc2_ext[i].xyz2;
-			ind[i][4] = fc2_ext[i].cell_s;
-		}
-	}
-	MPI_Bcast(&fcs_tmp[0], nfcs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&ind[0][0], nfcs*5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    if (mympi->my_rank == 0) {
+        for (i = 0; i < nfcs; ++i) {
+            fcs_tmp[i] = fc2_ext[i].fcs_val;
+            ind[i][0] = fc2_ext[i].atm1;
+            ind[i][1] = fc2_ext[i].xyz1;
+            ind[i][2] = fc2_ext[i].atm2;
+            ind[i][3] = fc2_ext[i].xyz2;
+            ind[i][4] = fc2_ext[i].cell_s;
+        }
+    }
+    MPI_Bcast(&fcs_tmp[0], nfcs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ind[0][0], nfcs*5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-	if (mympi->my_rank != 0) {
-		for (i = 0; i < nfcs; ++i) {
-			fcext_tmp.atm1 = ind[i][0];
-			fcext_tmp.xyz1 = ind[i][1];
-			fcext_tmp.atm2 = ind[i][2];
-			fcext_tmp.xyz2 = ind[i][3];
-			fcext_tmp.cell_s = ind[i][4];
-			fcext_tmp.fcs_val = fcs_tmp[i];
-			fc2_ext.push_back(fcext_tmp);
-		}
-	}
-	memory->deallocate(fcs_tmp);
-	memory->deallocate(ind);
+    if (mympi->my_rank != 0) {
+        for (i = 0; i < nfcs; ++i) {
+            fcext_tmp.atm1 = ind[i][0];
+            fcext_tmp.xyz1 = ind[i][1];
+            fcext_tmp.atm2 = ind[i][2];
+            fcext_tmp.xyz2 = ind[i][3];
+            fcext_tmp.cell_s = ind[i][4];
+            fcext_tmp.fcs_val = fcs_tmp[i];
+            fc2_ext.push_back(fcext_tmp);
+        }
+    }
+    memory->deallocate(fcs_tmp);
+    memory->deallocate(ind);
 }

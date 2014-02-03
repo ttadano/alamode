@@ -22,786 +22,786 @@ using namespace ALM_NS;
 
 Symmetry::Symmetry(ALM *alm) : Pointers(alm) 
 {
-	file_sym = "SYMM_INFO";
+    file_sym = "SYMM_INFO";
 }
 
 Symmetry::~Symmetry() {
-	memory->deallocate(tnons);
-	memory->deallocate(symrel_int);
-	memory->deallocate(symrel);
-	memory->deallocate(map_sym);
-	memory->deallocate(map_p2s);
-	memory->deallocate(map_s2p);
-	memory->deallocate(symnum_tran);
+    memory->deallocate(tnons);
+    memory->deallocate(symrel_int);
+    memory->deallocate(symrel);
+    memory->deallocate(map_sym);
+    memory->deallocate(map_p2s);
+    memory->deallocate(map_s2p);
+    memory->deallocate(symnum_tran);
 }
 
 void Symmetry::init()
 {
-	int i, j;
-	int nat = system->nat;
+    int i, j;
+    int nat = system->nat;
 
-	setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord, system->kd);
+    setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord, system->kd);
 
-	memory->allocate(tnons, nsym, 3);
-	memory->allocate(symrel_int, nsym, 3, 3);
+    memory->allocate(tnons, nsym, 3);
+    memory->allocate(symrel_int, nsym, 3, 3);
 
-	int isym = 0;
-	for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
-		SymmetryOperation symop_tmp = *iter;
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
-				symrel_int[isym][i][j] = symop_tmp.symop[3 * i + j];
-			}
-		}
-		for (i = 0; i < 3; ++i){
-			tnons[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp);
-		}
-		++isym;
-	}
+    int isym = 0;
+    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
+        SymmetryOperation symop_tmp = *iter;
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                symrel_int[isym][i][j] = symop_tmp.symop[3 * i + j];
+            }
+        }
+        for (i = 0; i < 3; ++i){
+            tnons[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp);
+        }
+        ++isym;
+    }
 
-	std::cout << "Number of symmetry operations = " << nsym << std::endl;
-	memory->allocate(symrel, nsym, 3, 3);
-	symop_in_cart(system->lavec, system->rlavec);
+    std::cout << "Number of symmetry operations = " << nsym << std::endl;
+    memory->allocate(symrel, nsym, 3, 3);
+    symop_in_cart(system->lavec, system->rlavec);
 
-	memory->allocate(sym_available, nsym);
-	int nsym_fc;
-	symop_availability_check(symrel, sym_available, nsym, nsym_fc);
+    memory->allocate(sym_available, nsym);
+    int nsym_fc;
+    symop_availability_check(symrel, sym_available, nsym, nsym_fc);
 
-	if (nsym_fc == nsym) {
-		std::cout << "All symmetry operations will be used to reduce the number of force constants." << std::endl;
-	} else {
-		std::cout << nsym_fc << " symmetry operations out of " << nsym << " will be used to reduce the number of parameters." << std::endl;
-		std::cout << "Other " << nsym - nsym_fc << " symmetry operations will be imposed as constraints." << std::endl;
-	}
-	std::cout << std::endl;
+    if (nsym_fc == nsym) {
+        std::cout << "All symmetry operations will be used to reduce the number of force constants." << std::endl;
+    } else {
+        std::cout << nsym_fc << " symmetry operations out of " << nsym << " will be used to reduce the number of parameters." << std::endl;
+        std::cout << "Other " << nsym - nsym_fc << " symmetry operations will be imposed as constraints." << std::endl;
+    }
+    std::cout << std::endl;
 
-	pure_translations();
+    pure_translations();
 
-	memory->allocate(map_sym, nat, nsym);
-	memory->allocate(map_p2s, natmin, ntran);
-	memory->allocate(map_s2p, nat);
+    memory->allocate(map_sym, nat, nsym);
+    memory->allocate(map_p2s, natmin, ntran);
+    memory->allocate(map_s2p, nat);
 
-	genmaps(nat, system->xcoord, map_sym, map_p2s, map_s2p);
+    genmaps(nat, system->xcoord, map_sym, map_p2s, map_s2p);
 
-	std::cout << std::endl;
-	std::cout << "**Cell-Atom Correspondens Below**" << std::endl;
-	std::cout << std::setw(6) << "CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
+    std::cout << std::endl;
+    std::cout << "**Cell-Atom Correspondens Below**" << std::endl;
+    std::cout << std::setw(6) << "CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
 
-	for (int i = 0; i < ntran; ++i){
-		std::cout << std::setw(6) << i + 1 << " | ";
-		for (int j = 0; j < natmin; ++j)  {
-			std::cout << std::setw(5) << map_p2s[j][i] + 1;
-			if((j + 1)%5 == 0) {
-				std::cout << std::endl << "       | ";
-			}
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
+    for (int i = 0; i < ntran; ++i){
+        std::cout << std::setw(6) << i + 1 << " | ";
+        for (int j = 0; j < natmin; ++j)  {
+            std::cout << std::setw(5) << map_p2s[j][i] + 1;
+            if((j + 1)%5 == 0) {
+                std::cout << std::endl << "       | ";
+            }
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
 
-	timer->print_elapsed();
+    timer->print_elapsed();
 
-	if (alm->mode == "fitting") {
-		std::cout << "Input Filenames" << std::endl;
-		std::cout << "  Displacement: " << files->file_disp << std::endl;
-		std::cout << "  Force       : " << files->file_force << std::endl;
-		std::cout << std::endl;
+    if (alm->mode == "fitting") {
+        std::cout << "Input Filenames" << std::endl;
+        std::cout << "  Displacement: " << files->file_disp << std::endl;
+        std::cout << "  Force       : " << files->file_force << std::endl;
+        std::cout << std::endl;
 
-		timer->print_elapsed();
-	}
+        timer->print_elapsed();
+    }
 }
 
 void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned int &nnp, double aa[3][3], double bb[3][3], double **x, int *kd)
 {
-	int i, j;
+    int i, j;
 
-	SymmList.clear();
+    SymmList.clear();
 
-	if(nsym == 0) {
+    if(nsym == 0) {
 
-		// Automatically find symmetries.
+        // Automatically find symmetries.
 
-		std::cout << "NSYM = 0 is given: Trying to find symmetry operations." << std::endl;
-		std::cout << "Please be patient. This can take a while for a large supercell." << std::endl << std::endl;
+        std::cout << "NSYM = 0 is given: Trying to find symmetry operations." << std::endl;
+        std::cout << "Please be patient. This can take a while for a large supercell." << std::endl << std::endl;
 
-		findsym(nat, aa, x, SymmList);
+        findsym(nat, aa, x, SymmList);
 
-		std::sort(SymmList.begin() + 1, SymmList.end());
-		nsym = SymmList.size();
+        std::sort(SymmList.begin() + 1, SymmList.end());
+        nsym = SymmList.size();
 
-		if (is_printsymmetry) {
-			std::cout << "PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO file." << std::endl << std::endl;
-			ofs_sym.open(file_sym.c_str(), std::ios::out);
-			ofs_sym << nsym << std::endl;
-			ofs_sym << nnp << std::endl;
+        if (is_printsymmetry) {
+            std::cout << "PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO file." << std::endl << std::endl;
+            ofs_sym.open(file_sym.c_str(), std::ios::out);
+            ofs_sym << nsym << std::endl;
+            ofs_sym << nnp << std::endl;
 
-			for(std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
-				SymmetryOperation sym_tmp = *p;
-				for (i = 0; i < 9; ++i){
-					ofs_sym << std::setw(4) << sym_tmp.symop[i];
-				}
-				ofs_sym << std::setw(7) << " ";
-				for(i = 9; i < 12; ++i){
-					ofs_sym << sym_tmp.symop[i] << std::setw(4);
-				}
-				ofs_sym << std::endl;
-			}
+            for(std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
+                SymmetryOperation sym_tmp = *p;
+                for (i = 0; i < 9; ++i){
+                    ofs_sym << std::setw(4) << sym_tmp.symop[i];
+                }
+                ofs_sym << std::setw(7) << " ";
+                for(i = 9; i < 12; ++i){
+                    ofs_sym << sym_tmp.symop[i] << std::setw(4);
+                }
+                ofs_sym << std::endl;
+            }
 
-			ofs_sym.close();
-		}
-	} 
-	else if(nsym == 1) {
+            ofs_sym.close();
+        }
+    } 
+    else if(nsym == 1) {
 
-		// Identity operation only !
+        // Identity operation only !
 
-		std::cout << "NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
+        std::cout << "NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
 
-		int rot_tmp[3][3], tran_tmp[3];
+        int rot_tmp[3][3], tran_tmp[3];
 
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
-				if(i == j) {
-					rot_tmp[i][j] = 1;
-				} else {
-					rot_tmp[i][j] = 0;
-				}
-			}
-			tran_tmp[i] = 0;
-		}
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                if(i == j) {
+                    rot_tmp[i][j] = 1;
+                } else {
+                    rot_tmp[i][j] = 0;
+                }
+            }
+            tran_tmp[i] = 0;
+        }
 
-		SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
-		nnp = 1;
-	} 
-	else {
+        SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
+        nnp = 1;
+    } 
+    else {
 
-		std::cout << "NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
+        std::cout << "NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
 
-		int nsym2;
-		int rot_tmp[3][3], tran_tmp[3];
+        int nsym2;
+        int rot_tmp[3][3], tran_tmp[3];
 
-		ifs_sym.open(file_sym.c_str(), std::ios::in);
-		ifs_sym >> nsym2 >> nnp;
+        ifs_sym.open(file_sym.c_str(), std::ios::in);
+        ifs_sym >> nsym2 >> nnp;
 
-		if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
+        if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
 
-		for (i = 0; i < nsym; ++i) {
-			ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-			>> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
-			>> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-			>> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+        for (i = 0; i < nsym; ++i) {
+            ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
+            >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
+            >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+            >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
-			SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
-		}
-		ifs_sym.close();
-	}
+            SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
+        }
+        ifs_sym.close();
+    }
 
 #ifdef _DEBUG
-	print_symmetrized_coordinate(x);
+    print_symmetrized_coordinate(x);
 #endif
 }
 
 void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop) {
 
-	unsigned int i;
-	int tran_int[3];
+    unsigned int i;
+    int tran_int[3];
 
-	std::vector<RotationMatrix> LatticeSymmList;
-	std::vector<SymmetryOperationTransFloat> CrystalSymmList;
+    std::vector<RotationMatrix> LatticeSymmList;
+    std::vector<SymmetryOperationTransFloat> CrystalSymmList;
 
-	LatticeSymmList.clear();
-	find_lattice_symmetry(aa, LatticeSymmList);
-	CrystalSymmList.clear();
-	find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x, LatticeSymmList, CrystalSymmList);
+    LatticeSymmList.clear();
+    find_lattice_symmetry(aa, LatticeSymmList);
+    CrystalSymmList.clear();
+    find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x, LatticeSymmList, CrystalSymmList);
 
-	//	findsym(nat, nnp, kd, aa, bb, x);
-	find_nnp_for_translation(nnp, CrystalSymmList);
+    //	findsym(nat, nnp, kd, aa, bb, x);
+    find_nnp_for_translation(nnp, CrystalSymmList);
 
-	symop.clear();
-	for(std::vector<SymmetryOperationTransFloat>::iterator p = CrystalSymmList.begin(); p != CrystalSymmList.end(); ++p){
-		SymmetryOperationTransFloat sym_tmp = *p;
+    symop.clear();
+    for(std::vector<SymmetryOperationTransFloat>::iterator p = CrystalSymmList.begin(); p != CrystalSymmList.end(); ++p){
+        SymmetryOperationTransFloat sym_tmp = *p;
 
-		for(i = 0; i < 3; ++i){
-			tran_int[i] = nint(static_cast<double>(nnp) * sym_tmp.tran[i]);
-			if (tran_int[i] < 0) tran_int[i] += nnp;
-		}
+        for(i = 0; i < 3; ++i){
+            tran_int[i] = nint(static_cast<double>(nnp) * sym_tmp.tran[i]);
+            if (tran_int[i] < 0) tran_int[i] += nnp;
+        }
 
-		symop.push_back(SymmetryOperation(sym_tmp.rot, tran_int));
-	}
-	LatticeSymmList.clear();
-	CrystalSymmList.clear();
+        symop.push_back(SymmetryOperation(sym_tmp.rot, tran_int));
+    }
+    LatticeSymmList.clear();
+    CrystalSymmList.clear();
 }
 
 void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix> &LatticeSymmList) {
 
-	/*
-	Find the rotational matrices that leave the metric tensor invariant.
+    /*
+    Find the rotational matrices that leave the metric tensor invariant.
 
-	Metric tensor G = (g)_{ij} = a_{i} * a_{j} is invariant under crystal symmetry operations T,
-	i.e. T^{t}GT = G. Since G can be written as G = A^{t}A, the invariance condition is given by
-	(AT)^{t}(AT) = G0 (original).
-	*/
+    Metric tensor G = (g)_{ij} = a_{i} * a_{j} is invariant under crystal symmetry operations T,
+    i.e. T^{t}GT = G. Since G can be written as G = A^{t}A, the invariance condition is given by
+    (AT)^{t}(AT) = G0 (original).
+    */
 
-	int i, j, k;
-	int m11, m12, m13, m21, m22, m23, m31, m32, m33;
+    int i, j, k;
+    int m11, m12, m13, m21, m22, m23, m31, m32, m33;
 
-	int nsym_tmp = 0;
-	int mat_tmp[3][3];
-	double det, res;
-	double rot_tmp[3][3];
-	double aa_rot[3][3];
+    int nsym_tmp = 0;
+    int mat_tmp[3][3];
+    double det, res;
+    double rot_tmp[3][3];
+    double aa_rot[3][3];
 
-	double metric_tensor[3][3];
-	double metric_tensor_rot[3][3];
+    double metric_tensor[3][3];
+    double metric_tensor_rot[3][3];
 
 
-	for (i = 0; i < 3; ++i) {
-		for (j = 0; j < 3; ++j) {
-			metric_tensor[i][j] = 0.0;
-			for (k = 0; k < 3; ++k) {
-				metric_tensor[i][j] += aa[k][i] * aa[k][j];
-			}
-		}
-	}
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            metric_tensor[i][j] = 0.0;
+            for (k = 0; k < 3; ++k) {
+                metric_tensor[i][j] += aa[k][i] * aa[k][j];
+            }
+        }
+    }
 
-	for (i = 0; i < 3; ++i) {
-		for (j = 0; j < 3; ++j) {
-			if (i == j) {
-				mat_tmp[i][i] = 1;
-			} else {
-				mat_tmp[i][j] = 0;
-			}
-		}
-	}
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            if (i == j) {
+                mat_tmp[i][i] = 1;
+            } else {
+                mat_tmp[i][j] = 0;
+            }
+        }
+    }
 
-	// Identity matrix should be the first entry.
-	LatticeSymmList.push_back(mat_tmp);
+    // Identity matrix should be the first entry.
+    LatticeSymmList.push_back(mat_tmp);
 
-	for (m11 = -1; m11 <= 1; ++m11){
-		for (m12 = -1; m12 <= 1; ++m12) {
-			for (m13 = -1; m13 <= 1; ++m13){
-				for (m21 = -1; m21 <= 1; ++m21){
-					for (m22 = -1; m22 <= 1; ++m22){
-						for (m23 = -1; m23 <= 1; ++m23){
-							for (m31 = -1; m31 <= 1; ++m31){
-								for (m32 = -1; m32 <= 1; ++m32){
-									for (m33 = -1; m33 <= 1; ++m33){
+    for (m11 = -1; m11 <= 1; ++m11){
+        for (m12 = -1; m12 <= 1; ++m12) {
+            for (m13 = -1; m13 <= 1; ++m13){
+                for (m21 = -1; m21 <= 1; ++m21){
+                    for (m22 = -1; m22 <= 1; ++m22){
+                        for (m23 = -1; m23 <= 1; ++m23){
+                            for (m31 = -1; m31 <= 1; ++m31){
+                                for (m32 = -1; m32 <= 1; ++m32){
+                                    for (m33 = -1; m33 <= 1; ++m33){
 
-										if (m11 == 1 && m12 == 0 && m13 == 0 &&
-											m21 == 0 && m22 == 1 && m23 == 0 &&
-											m31 == 0 && m32 == 0 && m33 == 1) continue;
+                                        if (m11 == 1 && m12 == 0 && m13 == 0 &&
+                                            m21 == 0 && m22 == 1 && m23 == 0 &&
+                                            m31 == 0 && m32 == 0 && m33 == 1) continue;
 
-										det = m11 * (m22 * m33 - m32 * m23)
-											- m21 * (m12 * m33 - m32 * m13)
-											+ m31 * (m12 * m23 - m22 * m13);
+                                        det = m11 * (m22 * m33 - m32 * m23)
+                                            - m21 * (m12 * m33 - m32 * m13)
+                                            + m31 * (m12 * m23 - m22 * m13);
 
-										if (det != 1 && det != -1) continue;
+                                        if (det != 1 && det != -1) continue;
 
-										rot_tmp[0][0] = m11;
-										rot_tmp[0][1] = m12;
-										rot_tmp[0][2] = m13;
-										rot_tmp[1][0] = m21;
-										rot_tmp[1][1] = m22;
-										rot_tmp[1][2] = m23;
-										rot_tmp[2][0] = m31;
-										rot_tmp[2][1] = m32;
-										rot_tmp[2][2] = m33;
+                                        rot_tmp[0][0] = m11;
+                                        rot_tmp[0][1] = m12;
+                                        rot_tmp[0][2] = m13;
+                                        rot_tmp[1][0] = m21;
+                                        rot_tmp[1][1] = m22;
+                                        rot_tmp[1][2] = m23;
+                                        rot_tmp[2][0] = m31;
+                                        rot_tmp[2][1] = m32;
+                                        rot_tmp[2][2] = m33;
 
-										// Here, aa_rot = aa * rot_tmp is correct.
-										matmul3(aa_rot, aa, rot_tmp);
+                                        // Here, aa_rot = aa * rot_tmp is correct.
+                                        matmul3(aa_rot, aa, rot_tmp);
 
-										for (i = 0; i < 3; ++i) {
-											for (j = 0; j < 3; ++j) {
-												metric_tensor_rot[i][j] = 0.0;
-												for (k = 0; k < 3; ++k) {
-													metric_tensor_rot[i][j] += aa_rot[k][i] * aa_rot[k][j];
-												}
-											}
-										}
+                                        for (i = 0; i < 3; ++i) {
+                                            for (j = 0; j < 3; ++j) {
+                                                metric_tensor_rot[i][j] = 0.0;
+                                                for (k = 0; k < 3; ++k) {
+                                                    metric_tensor_rot[i][j] += aa_rot[k][i] * aa_rot[k][j];
+                                                }
+                                            }
+                                        }
 
-										res = 0.0;
-										for (i = 0; i < 3; ++i) {
-											for (j = 0; j < 3; ++j) {
-												res += std::pow(metric_tensor[i][j] - metric_tensor_rot[i][j], 2.0);
-											}
-										}
+                                        res = 0.0;
+                                        for (i = 0; i < 3; ++i) {
+                                            for (j = 0; j < 3; ++j) {
+                                                res += std::pow(metric_tensor[i][j] - metric_tensor_rot[i][j], 2.0);
+                                            }
+                                        }
 
-										// Metric tensor is invariant under symmetry operations.
+                                        // Metric tensor is invariant under symmetry operations.
 
-										if (res < tolerance * tolerance) {
-											++nsym_tmp;
-											for (i = 0; i < 3; ++i) {
-												for (j = 0; j < 3; ++j) {
-													mat_tmp[i][j] = static_cast<int>(rot_tmp[i][j]);
-												}
-											}
-											LatticeSymmList.push_back(mat_tmp);
-										}
+                                        if (res < tolerance * tolerance) {
+                                            ++nsym_tmp;
+                                            for (i = 0; i < 3; ++i) {
+                                                for (j = 0; j < 3; ++j) {
+                                                    mat_tmp[i][j] = static_cast<int>(rot_tmp[i][j]);
+                                                }
+                                            }
+                                            LatticeSymmList.push_back(mat_tmp);
+                                        }
 
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-	if (LatticeSymmList.size() > 48) {
-		error->exit("find_lattice_symmetry", "Number of lattice symmetry is larger than 48.");
-	}
+    if (LatticeSymmList.size() > 48) {
+        error->exit("find_lattice_symmetry", "Number of lattice symmetry is larger than 48.");
+    }
 }
 
 void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
 
-	unsigned int i, j;
-	unsigned int iat, jat, kat, lat;
-	double x_rot[3];
-	double rot[3][3];
-	double tran[3];
-	double x_rot_tmp[3];
-	double tmp[3];
-	double diff;
+    unsigned int i, j;
+    unsigned int iat, jat, kat, lat;
+    double x_rot[3];
+    double rot[3][3];
+    double tran[3];
+    double x_rot_tmp[3];
+    double tmp[3];
+    double diff;
 
-	int rot_int[3][3];
+    int rot_int[3][3];
 
-	int ii, jj, kk;
-	unsigned int itype;
+    int ii, jj, kk;
+    unsigned int itype;
 
-	bool is_found;
-	bool isok;
+    bool is_found;
+    bool isok;
 
-	bool is_identity_matrix;
-
-
-	// Add identity matrix first.
-	for (i = 0; i < 3; ++i) {
-		for (j = 0; j < 3; ++j) {
-			if (i == j) {
-				rot_int[i][j] = 1;
-			} else {
-				rot_int[i][j] = 0;
-			}
-		}
-		tran[i] = 0.0;
-	}
-
-	CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
+    bool is_identity_matrix;
 
 
-	for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
+    // Add identity matrix first.
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            if (i == j) {
+                rot_int[i][j] = 1;
+            } else {
+                rot_int[i][j] = 0;
+            }
+        }
+        tran[i] = 0.0;
+    }
 
-		iat = atomclass[0][0];
+    CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
 
-		for (i = 0; i < 3; ++i) {
-			for (j = 0; j < 3; ++j) {
-				rot[i][j] = static_cast<double>((*it_latsym).mat[i][j]);
-			}
-		}
 
-		rotvec(x_rot, x[iat], rot);
+    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
+
+        iat = atomclass[0][0];
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot[i][j] = static_cast<double>((*it_latsym).mat[i][j]);
+            }
+        }
+
+        rotvec(x_rot, x[iat], rot);
 
 #ifdef _OPENMP
 #pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, i, itype, jj, kk, is_identity_matrix)
 #endif
-		for (ii = 0; ii < atomclass[0].size(); ++ii) {
-			jat = atomclass[0][ii];
+        for (ii = 0; ii < atomclass[0].size(); ++ii) {
+            jat = atomclass[0][ii];
 
-			for (i = 0; i < 3; ++i) {
-				tran[i] = x[jat][i] - x_rot[i];
-				tran[i] = tran[i] - nint(tran[i]);
-			}
+            for (i = 0; i < 3; ++i) {
+                tran[i] = x[jat][i] - x_rot[i];
+                tran[i] = tran[i] - nint(tran[i]);
+            }
 
-			isok = true;
+            isok = true;
 
-			is_identity_matrix = 
-				( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
-				+ std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-				+ std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-				+ std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
+            is_identity_matrix = 
+                ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
+                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
 
-			if (is_identity_matrix) continue;
+            if (is_identity_matrix) continue;
 
-			for (itype = 0; itype < nclass; ++itype) {
+            for (itype = 0; itype < nclass; ++itype) {
 
-				for (jj = 0; jj < atomclass[itype].size(); ++jj) {
+                for (jj = 0; jj < atomclass[itype].size(); ++jj) {
 
-					kat = atomclass[itype][jj];
+                    kat = atomclass[itype][jj];
 
-					rotvec(x_rot_tmp, x[kat], rot);
+                    rotvec(x_rot_tmp, x[kat], rot);
 
-					for (i = 0; i < 3; ++i) {
-						x_rot_tmp[i] += tran[i];
-					}
+                    for (i = 0; i < 3; ++i) {
+                        x_rot_tmp[i] += tran[i];
+                    }
 
-					is_found = false;
+                    is_found = false;
 
-					for (kk = 0; kk < atomclass[itype].size(); ++kk) {
+                    for (kk = 0; kk < atomclass[itype].size(); ++kk) {
 
-						lat = atomclass[itype][kk];
+                        lat = atomclass[itype][kk];
 
-						for (i = 0; i < 3; ++i) {
-							tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
-							tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
-						}
-						diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-						if (diff < tolerance * tolerance) {
-							is_found = true;
-							break;
-						}
-					}
+                        for (i = 0; i < 3; ++i) {
+                            tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
+                            tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                        }
+                        diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                        if (diff < tolerance * tolerance) {
+                            is_found = true;
+                            break;
+                        }
+                    }
 
-					if (!is_found) isok = false;
-				}
-			}
+                    if (!is_found) isok = false;
+                }
+            }
 
-			if (isok) {
+            if (isok) {
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-				CrystalSymmList.push_back(SymmetryOperationTransFloat((*it_latsym).mat, tran));
-			}
-		}
+                CrystalSymmList.push_back(SymmetryOperationTransFloat((*it_latsym).mat, tran));
+            }
+        }
 
-	}
+    }
 }
 
 void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryOperationTransFloat> symminfo) {
 
-	int i;
+    int i;
 
-	ret = 1;
+    ret = 1;
 
-	std::set<double> translation_set;
-	double tran_tmp;
-	double tran_numerator;
-	bool is_integer;
-	bool is_found;
+    std::set<double> translation_set;
+    double tran_tmp;
+    double tran_numerator;
+    bool is_integer;
+    bool is_found;
 
-	translation_set.clear();
+    translation_set.clear();
 
-	for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
+    for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
 
-		for (i = 0; i < 3; ++i) {
-			tran_tmp = std::abs((*it).tran[i]);
+        for (i = 0; i < 3; ++i) {
+            tran_tmp = std::abs((*it).tran[i]);
 
-			if (translation_set.find(tran_tmp) == translation_set.end()) {
-				translation_set.insert(tran_tmp);
-			}
-		}
-	}
+            if (translation_set.find(tran_tmp) == translation_set.end()) {
+                translation_set.insert(tran_tmp);
+            }
+        }
+    }
 
-	is_found = false;
+    is_found = false;
 
-	while(1) {
+    while(1) {
 
-		is_integer = true;
+        is_integer = true;
 
-		for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
+        for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
 
-			tran_numerator = (*it) * static_cast<double>(ret);
-			if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
-				is_integer = false;
-				break;
-			}
-		}
+            tran_numerator = (*it) * static_cast<double>(ret);
+            if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
+                is_integer = false;
+                break;
+            }
+        }
 
-		if (is_integer) {
-			is_found = true;
-			break;
-		}
+        if (is_integer) {
+            is_found = true;
+            break;
+        }
 
-		if (ret > 1000) break;
-		++ret;
-	}
+        if (ret > 1000) break;
+        ++ret;
+    }
 
 
-	if (!is_found) {
-		// This should not happen.
-		error->exit("find_nnp_for_translation", "Cannot find nnp.");
-	}
+    if (!is_found) {
+        // This should not happen.
+        error->exit("find_nnp_for_translation", "Cannot find nnp.");
+    }
 }
 
 int Symmetry::numsymop(int nat, double **x, double tolerance)
 {
-	int i, j;
-	int ii, jj;
+    int i, j;
+    int ii, jj;
 
-	int ret = 0;
-	double rot[3][3], tran[3];
-	double x_rot_tmp[3];
-	double tmp[3];
-	double diff;
+    int ret = 0;
+    double rot[3][3], tran[3];
+    double x_rot_tmp[3];
+    double tmp[3];
+    double diff;
 
-	bool isok, is_found;
-	int itype;
-	int iat, jat;
+    bool isok, is_found;
+    int itype;
+    int iat, jat;
 
-	int isym;
+    int isym;
 
 #if _OPENMP
 #pragma omp parallel for private(rot, tran, isok, iat, x_rot_tmp, is_found, jat, tmp, diff, i, j, itype, ii, jj), reduction(+ : ret)
 #endif
-	for (isym = 0; isym < SymmList.size(); ++isym) {
+    for (isym = 0; isym < SymmList.size(); ++isym) {
 
-		for (i = 0; i < 3; ++i) {
-			for (j = 0; j < 3; ++j) {
-				rot[i][j] = static_cast<double>(SymmList[isym].symop[3 * i + j]);
-			}
-		}
-		for (i = 0; i < 3; ++i) {
-			tran[i] = static_cast<double>(SymmList[isym].symop[9 + i]) / static_cast<double>(nnp);
-		}
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot[i][j] = static_cast<double>(SymmList[isym].symop[3 * i + j]);
+            }
+        }
+        for (i = 0; i < 3; ++i) {
+            tran[i] = static_cast<double>(SymmList[isym].symop[9 + i]) / static_cast<double>(nnp);
+        }
 
-		isok = true;
+        isok = true;
 
-		for (itype = 0; itype < system->nclassatom; ++itype) {
+        for (itype = 0; itype < system->nclassatom; ++itype) {
 
-			for (ii = 0; ii < system->atomlist_class[itype].size(); ++ii) {
+            for (ii = 0; ii < system->atomlist_class[itype].size(); ++ii) {
 
-				iat = system->atomlist_class[itype][ii];
+                iat = system->atomlist_class[itype][ii];
 
-				rotvec(x_rot_tmp, x[iat], rot);
+                rotvec(x_rot_tmp, x[iat], rot);
 
-				for (i = 0; i < 3; ++i) {
-					x_rot_tmp[i] += tran[i];
-				}
+                for (i = 0; i < 3; ++i) {
+                    x_rot_tmp[i] += tran[i];
+                }
 
-				is_found = false;
+                is_found = false;
 
-				for (jj = 0; jj < system->atomlist_class[itype].size(); ++jj) {
+                for (jj = 0; jj < system->atomlist_class[itype].size(); ++jj) {
 
-					jat = system->atomlist_class[itype][jj];
+                    jat = system->atomlist_class[itype][jj];
 
-					for (i = 0; i < 3; ++i) {
-						tmp[i] = std::fmod(std::abs(x[jat][i] - x_rot_tmp[i]), 1.0);
-						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
-					}
-					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-					if (diff < tolerance * tolerance) {
-						is_found = true;
-						break;
-					}
-				}
+                    for (i = 0; i < 3; ++i) {
+                        tmp[i] = std::fmod(std::abs(x[jat][i] - x_rot_tmp[i]), 1.0);
+                        tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                    }
+                    diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                    if (diff < tolerance * tolerance) {
+                        is_found = true;
+                        break;
+                    }
+                }
 
-				if (!is_found) {
-					isok = false;
-					break;
-				}
-			}
-			if (!isok) break;
-		}
+                if (!is_found) {
+                    isok = false;
+                    break;
+                }
+            }
+            if (!isok) break;
+        }
 
-		if (isok) ++ret;
-	}
+        if (isok) ++ret;
+    }
 
-	return ret;
+    return ret;
 }
 
 void Symmetry::gensym_notran(std::vector<SymmetryOperation> &sym_notran) {
 
-	sym_notran.clear();
+    sym_notran.clear();
 
-	for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
+    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
 
-		if ((*it).symop[9] == 0 && (*it).symop[10] == 0 && (*it).symop[11] == 0) {
-			sym_notran.push_back(*it);
-		}
-	}
+        if ((*it).symop[9] == 0 && (*it).symop[10] == 0 && (*it).symop[11] == 0) {
+            sym_notran.push_back(*it);
+        }
+    }
 }
 
 
 void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
-	int i, j;
+    int i, j;
 
 #ifdef _USE_EIGEN
-	Eigen::Matrix3d aa, bb, sym_tmp;
-	Eigen::Matrix3d sym_crt;
+    Eigen::Matrix3d aa, bb, sym_tmp;
+    Eigen::Matrix3d sym_crt;
 
-	for (i = 0; i < 3; ++i){
-		for (j = 0; j < 3; ++j){
-			aa(i,j) = lavec[i][j];
-			bb(i,j) = rlavec[i][j];
-		}
-	}
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
+            aa(i,j) = lavec[i][j];
+            bb(i,j) = rlavec[i][j];
+        }
+    }
 
 #else 
-	double sym_tmp[3][3], sym_crt[3][3];
-	double tmp[3][3];
+    double sym_tmp[3][3], sym_crt[3][3];
+    double tmp[3][3];
 #endif
 
 
 
-	for (int isym = 0; isym < nsym; ++isym) {
+    for (int isym = 0; isym < nsym; ++isym) {
 
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
 #ifdef _USE_EIGEN
-				sym_tmp(i,j) = static_cast<double>(symrel_int[isym][i][j]);
+                sym_tmp(i,j) = static_cast<double>(symrel_int[isym][i][j]);
 #else
-				sym_tmp[i][j] = static_cast<double>(symrel_int[isym][i][j]);
+                sym_tmp[i][j] = static_cast<double>(symrel_int[isym][i][j]);
 #endif
-			}
-		}
+            }
+        }
 #ifdef _USE_EIGEN
-		sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
-				symrel[isym][i][j] = sym_crt(i,j);
-			}
-		}
+        sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                symrel[isym][i][j] = sym_crt(i,j);
+            }
+        }
 #else
-		matmul3(tmp, sym_tmp, rlavec);
-		matmul3(sym_crt, lavec, tmp);
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
-				symrel[isym][i][j] = sym_crt[i][j] / (2.0 * pi);
-			}
-		}
+        matmul3(tmp, sym_tmp, rlavec);
+        matmul3(sym_crt, lavec, tmp);
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                symrel[isym][i][j] = sym_crt[i][j] / (2.0 * pi);
+            }
+        }
 #endif
 
 
-	}
+    }
 
 #ifdef _DEBUG
 
-	std::cout << "Symmetry Operations in Cartesian Coordinate" << std::endl;
-	for (int isym = 0; isym < nsym; ++isym){
-		for (i = 0; i < 3; ++i){
-			for (j = 0; j < 3; ++j){
-				std::cout << std::setw(8) << symrel[isym][i][j];    
-			}
-		}
-		std::cout << std::endl;
-	}
+    std::cout << "Symmetry Operations in Cartesian Coordinate" << std::endl;
+    for (int isym = 0; isym < nsym; ++isym){
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                std::cout << std::setw(8) << symrel[isym][i][j];    
+            }
+        }
+        std::cout << std::endl;
+    }
 #endif
 }
 
 void Symmetry::pure_translations()
 {
-	int i;
+    int i;
 
-	ntran = 0;
-	for (i = 0; i < nsym; ++i) {
-		if (is_translation(symrel_int[i])) ++ntran;
-	}
+    ntran = 0;
+    for (i = 0; i < nsym; ++i) {
+        if (is_translation(symrel_int[i])) ++ntran;
+    }
 
-	natmin = system->nat / ntran;
+    natmin = system->nat / ntran;
 
-	if (ntran > 1) {
-		std::cout << "Given system is not primitive cell." << std::endl;
-		std::cout << std::setw(8) <<  ntran << " translation operations exist." << std::endl;
-	} else {
-		std::cout << "Given system is a primitive cell." << std::endl;
-	}
-	std::cout << "Each cell contains " << natmin << " atoms" << std::endl;
+    if (ntran > 1) {
+        std::cout << "Given system is not primitive cell." << std::endl;
+        std::cout << std::setw(8) <<  ntran << " translation operations exist." << std::endl;
+    } else {
+        std::cout << "Given system is a primitive cell." << std::endl;
+    }
+    std::cout << "Each cell contains " << natmin << " atoms" << std::endl;
 
-	memory->allocate(symnum_tran, ntran);
+    memory->allocate(symnum_tran, ntran);
 
-	int isym = 0;
+    int isym = 0;
 
-	for (i = 0; i < nsym; ++i){
-		if (is_translation(symrel_int[i])) 	symnum_tran[isym++] = i;
-	}
+    for (i = 0; i < nsym; ++i){
+        if (is_translation(symrel_int[i])) 	symnum_tran[isym++] = i;
+    }
 }
 
 void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *map_s2p)
 {
-	int isym, iat, jat;
-	int i, j;
-	int itype;
-	int ii, jj;
-	double xnew[3];
-	double tmp[3], diff; 
-	double rot_double[3][3];
+    int isym, iat, jat;
+    int i, j;
+    int itype;
+    int ii, jj;
+    double xnew[3];
+    double tmp[3], diff; 
+    double rot_double[3][3];
 
 
-	for(iat = 0; iat < nat; ++iat){
-		for(isym = 0; isym < nsym; ++isym){
-			map_sym[iat][isym] = -1;
-		}
-	}
+    for(iat = 0; iat < nat; ++iat){
+        for(isym = 0; isym < nsym; ++isym){
+            map_sym[iat][isym] = -1;
+        }
+    }
 
 #ifdef  _OPENMP
 #pragma omp parallel for private(i, j, rot_double, itype, ii, iat, xnew, jj, jat, tmp, diff, isym)
 #endif
-	for (isym = 0; isym < nsym; ++isym){
+    for (isym = 0; isym < nsym; ++isym){
 
-		for (i = 0; i < 3; ++i) {
-			for (j = 0; j < 3; ++j) {
-				rot_double[i][j] = static_cast<double>(symrel_int[isym][i][j]);
-			}
-		}
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot_double[i][j] = static_cast<double>(symrel_int[isym][i][j]);
+            }
+        }
 
-		for (itype = 0; itype < system->nclassatom; ++itype) {
+        for (itype = 0; itype < system->nclassatom; ++itype) {
 
-			for (ii = 0; ii < system->atomlist_class[itype].size(); ++ii) {
+            for (ii = 0; ii < system->atomlist_class[itype].size(); ++ii) {
 
-				iat = system->atomlist_class[itype][ii];
+                iat = system->atomlist_class[itype][ii];
 
-				rotvec(xnew, x[iat], rot_double);
+                rotvec(xnew, x[iat], rot_double);
 
-				for (i = 0; i < 3; ++i) xnew[i] += tnons[isym][i];
+                for (i = 0; i < 3; ++i) xnew[i] += tnons[isym][i];
 
-				for (jj = 0; jj < system->atomlist_class[itype].size(); ++jj) {
+                for (jj = 0; jj < system->atomlist_class[itype].size(); ++jj) {
 
-					jat = system->atomlist_class[itype][jj];
+                    jat = system->atomlist_class[itype][jj];
 
-					for (i = 0; i < 3; ++i) {
-						tmp[i] = std::fmod(std::abs(x[jat][i] - xnew[i]), 1.0);
-						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
-					}
-					diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-					if (diff < tolerance * tolerance) {
-						map_sym[iat][isym] = jat;
-						break;
-					}
-				}
-				if (map_sym[iat][isym] == -1) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
-			}
-		}
-	}
+                    for (i = 0; i < 3; ++i) {
+                        tmp[i] = std::fmod(std::abs(x[jat][i] - xnew[i]), 1.0);
+                        tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                    }
+                    diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                    if (diff < tolerance * tolerance) {
+                        map_sym[iat][isym] = jat;
+                        break;
+                    }
+                }
+                if (map_sym[iat][isym] == -1) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
+            }
+        }
+    }
 
-	bool *is_checked;
-	memory->allocate(is_checked, nat);
+    bool *is_checked;
+    memory->allocate(is_checked, nat);
 
-	for (i = 0; i < nat; ++i) is_checked[i] = false;
+    for (i = 0; i < nat; ++i) is_checked[i] = false;
 
-	jat = 0;
-	int atomnum_translated;
-	for (iat = 0; iat < nat; ++iat){
+    jat = 0;
+    int atomnum_translated;
+    for (iat = 0; iat < nat; ++iat){
 
-		if(is_checked[iat]) continue;
-		for (i = 0; i < ntran; ++i){
-			atomnum_translated = map_sym[iat][symnum_tran[i]];
-			map_p2s[jat][i] = atomnum_translated;
-			is_checked[atomnum_translated] = true;
-		}
-		++jat;
-	}
+        if(is_checked[iat]) continue;
+        for (i = 0; i < ntran; ++i){
+            atomnum_translated = map_sym[iat][symnum_tran[i]];
+            map_p2s[jat][i] = atomnum_translated;
+            is_checked[atomnum_translated] = true;
+        }
+        ++jat;
+    }
 
-	memory->deallocate(is_checked);
+    memory->deallocate(is_checked);
 
-	for (iat = 0; iat < natmin; ++iat){
-		for (i  = 0; i < ntran; ++i){
-			atomnum_translated = map_p2s[iat][i];
-			map_s2p[atomnum_translated].atom_num = iat;
-			map_s2p[atomnum_translated].tran_num = i;
-		}
-	}
+    for (iat = 0; iat < natmin; ++iat){
+        for (i  = 0; i < ntran; ++i){
+            atomnum_translated = map_p2s[iat][i];
+            map_s2p[atomnum_translated].atom_num = iat;
+            map_s2p[atomnum_translated].tran_num = i;
+        }
+    }
 }
 
 bool Symmetry::is_translation(int **rot) {
 
-	bool ret;
+    bool ret;
 
-	ret = 
-		rot[0][0] == 1 && rot[0][1] == 0 && rot[0][2] == 0 &&
-		rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 && 
-		rot[2][0] == 0 && rot[2][1] == 0 && rot[2][2] == 1;
+    ret = 
+        rot[0][0] == 1 && rot[0][1] == 0 && rot[0][2] == 0 &&
+        rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 && 
+        rot[2][0] == 0 && rot[2][1] == 0 && rot[2][2] == 1;
 
-	return ret;
+    return ret;
 }
 
 // void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
@@ -1166,194 +1166,194 @@ bool Symmetry::is_translation(int **rot) {
 
 void Symmetry::print_symmetrized_coordinate(double **x)
 {
-	int i, j, k, l;
-	int isym = 0;
-	double **x_symm, **x_avg;
-	int nat = system->nat;
-	int m11, m12, m13, m21, m22, m23, m31, m32, m33;
-	int det;
+    int i, j, k, l;
+    int isym = 0;
+    double **x_symm, **x_avg;
+    int nat = system->nat;
+    int m11, m12, m13, m21, m22, m23, m31, m32, m33;
+    int det;
 
 #ifdef _USE_EIGEN
-	Eigen::Matrix3d rot;
-	Eigen::Vector3d wsi, usi, vsi, tmp;
+    Eigen::Matrix3d rot;
+    Eigen::Vector3d wsi, usi, vsi, tmp;
 #else 
-	double rot[3][3];
-	double wsi[3], usi[3], vsi[3], tmp[3];
+    double rot[3][3];
+    double wsi[3], usi[3], vsi[3], tmp[3];
 #endif
 
-	int tran[3];
+    int tran[3];
 
-	memory->allocate(x_symm, nat, 3);
-	memory->allocate(x_avg, nat, 3);
+    memory->allocate(x_symm, nat, 3);
+    memory->allocate(x_avg, nat, 3);
 
-	for (i = 0; i < nat; ++i){
-		for (j = 0; j < 3; ++j){
-			x_avg[i][j] = 0.0;
-		}
-	}
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            x_avg[i][j] = 0.0;
+        }
+    }
 
-	for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
-		SymmetryOperation symm_tmp = *p;
+    for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
+        SymmetryOperation symm_tmp = *p;
 
-		++isym;
-		std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
+        ++isym;
+        std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
 
-		m11 = symm_tmp.symop[0];
-		m12 = symm_tmp.symop[1];
-		m13 = symm_tmp.symop[2];
-		m21 = symm_tmp.symop[3];
-		m22 = symm_tmp.symop[4];
-		m23 = symm_tmp.symop[5];
-		m31 = symm_tmp.symop[6];
-		m32 = symm_tmp.symop[7];
-		m33 = symm_tmp.symop[8];
+        m11 = symm_tmp.symop[0];
+        m12 = symm_tmp.symop[1];
+        m13 = symm_tmp.symop[2];
+        m21 = symm_tmp.symop[3];
+        m22 = symm_tmp.symop[4];
+        m23 = symm_tmp.symop[5];
+        m31 = symm_tmp.symop[6];
+        m32 = symm_tmp.symop[7];
+        m33 = symm_tmp.symop[8];
 
-		det = m11 * (m22 * m33 - m32 * m23)
-			- m21 * (m12 * m33 - m32 * m13)
-			+ m31 * (m12 * m23 - m22 * m13);
+        det = m11 * (m22 * m33 - m32 * m23)
+            - m21 * (m12 * m33 - m32 * m13)
+            + m31 * (m12 * m23 - m22 * m13);
 
 #ifdef _USE_EIGEN
-		rot(0,0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
-		rot(0,1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
-		rot(0,2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
-		rot(1,0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
-		rot(1,1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
-		rot(1,2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
-		rot(2,0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
-		rot(2,1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
-		rot(2,2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
+        rot(0,0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
+        rot(0,1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
+        rot(0,2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
+        rot(1,0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
+        rot(1,1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
+        rot(1,2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
+        rot(2,0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
+        rot(2,1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
+        rot(2,2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
 #else
-		rot[0][0] = static_cast<double>((m22 * m33 - m23 * m32) * det);
-		rot[0][1] = static_cast<double>((m23 * m31 - m21 * m33) * det);
-		rot[0][2] = static_cast<double>((m21 * m32 - m22 * m31) * det);
-		rot[1][0] = static_cast<double>((m32 * m13 - m33 * m12) * det);
-		rot[1][1] = static_cast<double>((m33 * m11 - m31 * m13) * det);
-		rot[1][2] = static_cast<double>((m31 * m12 - m32 * m11) * det);
-		rot[2][0] = static_cast<double>((m12 * m23 - m13 * m22) * det);
-		rot[2][1] = static_cast<double>((m13 * m21 - m11 * m23) * det);
-		rot[2][2] = static_cast<double>((m11 * m22 - m12 * m21) * det);
+        rot[0][0] = static_cast<double>((m22 * m33 - m23 * m32) * det);
+        rot[0][1] = static_cast<double>((m23 * m31 - m21 * m33) * det);
+        rot[0][2] = static_cast<double>((m21 * m32 - m22 * m31) * det);
+        rot[1][0] = static_cast<double>((m32 * m13 - m33 * m12) * det);
+        rot[1][1] = static_cast<double>((m33 * m11 - m31 * m13) * det);
+        rot[1][2] = static_cast<double>((m31 * m12 - m32 * m11) * det);
+        rot[2][0] = static_cast<double>((m12 * m23 - m13 * m22) * det);
+        rot[2][1] = static_cast<double>((m13 * m21 - m11 * m23) * det);
+        rot[2][2] = static_cast<double>((m11 * m22 - m12 * m21) * det);
 #endif
 
-		for (i = 9; i < 12; ++i){
-			tran[i - 9] = symm_tmp.symop[i];
-		}
+        for (i = 9; i < 12; ++i){
+            tran[i - 9] = symm_tmp.symop[i];
+        }
 
-		for (i = 0; i < nat; ++i){
+        for (i = 0; i < nat; ++i){
 
-			for (j = 0; j < 3; ++j){   
+            for (j = 0; j < 3; ++j){   
 #ifdef _USE_EIGEN
-				wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
+                wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
 #else 
-				wsi[j] = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
+                wsi[j] = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
 #endif
-			}
+            }
 
 #ifdef _USE_EIGEN
-			usi = rot * wsi;
+            usi = rot * wsi;
 #else
-			rotvec(usi, wsi, rot);
+            rotvec(usi, wsi, rot);
 #endif
 
-			l = -1;
+            l = -1;
 
-			for (j = 0; j < nat; ++j){
-				for (k = 0; k < 3; ++k) {
+            for (j = 0; j < nat; ++j){
+                for (k = 0; k < 3; ++k) {
 #ifdef _USE_EIGEN
-					vsi(k) = x[j][k];
-					tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0); 
-					// need "std" to specify floating point operation
-					// especially for Intel compiler (there was no problem in MSVC)
-					tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
+                    vsi(k) = x[j][k];
+                    tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0); 
+                    // need "std" to specify floating point operation
+                    // especially for Intel compiler (there was no problem in MSVC)
+                    tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;
 #else
-					vsi[k] = x[j][k];
-					tmp[k] = std::fmod(std::abs(usi[k] - vsi[k]), 1.0);
-					tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
+                    vsi[k] = x[j][k];
+                    tmp[k] = std::fmod(std::abs(usi[k] - vsi[k]), 1.0);
+                    tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
 #endif
-				}
+                }
 #ifdef _USE_EIGEN
-				double diff = tmp.dot(tmp);
+                double diff = tmp.dot(tmp);
 #else
-				double diff = tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2];
+                double diff = tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2];
 #endif
-				if (diff < tolerance * tolerance) l = j;
-			}
+                if (diff < tolerance * tolerance) l = j;
+            }
 
-			for (j = 0; j < 3; ++j){
+            for (j = 0; j < 3; ++j){
 #ifdef _USE_EIGEN
-				x_symm[l][j] = usi(j);
+                x_symm[l][j] = usi(j);
 #else 
-				x_symm[l][j] = usi[j];
+                x_symm[l][j] = usi[j];
 #endif
-				do {
-					if (x_symm[l][j] < 0.0) {
-						x_symm[l][j] += 1.0;
-					} else if (x_symm[l][j] > 1.0){
-						x_symm[l][j] -= 1.0;
-					}
-				} while(x_symm[l][j] < 0.0 || x_symm[l][j] > 1.0);
-			}
+                do {
+                    if (x_symm[l][j] < 0.0) {
+                        x_symm[l][j] += 1.0;
+                    } else if (x_symm[l][j] > 1.0){
+                        x_symm[l][j] -= 1.0;
+                    }
+                } while(x_symm[l][j] < 0.0 || x_symm[l][j] > 1.0);
+            }
 
-		}
+        }
 
-		for (i = 0; i < nat; ++i){
-			for (j = 0; j < 3; ++j){
-				std::cout << std::setw(15) << std::fixed << x_symm[i][j];
-			}
-			std::cout << " ( ";
-			for (j = 0; j < 3; ++j){
-				std::cout << std::setw(15) << std::scientific << x_symm[i][j]-x[i][j];
-			}
-			std::cout << " )" << std::endl;
+        for (i = 0; i < nat; ++i){
+            for (j = 0; j < 3; ++j){
+                std::cout << std::setw(15) << std::fixed << x_symm[i][j];
+            }
+            std::cout << " ( ";
+            for (j = 0; j < 3; ++j){
+                std::cout << std::setw(15) << std::scientific << x_symm[i][j]-x[i][j];
+            }
+            std::cout << " )" << std::endl;
 
-			for (j = 0; j < 3; ++j){
-				x_avg[i][j] += x_symm[i][j];
-			}
-		}
+            for (j = 0; j < 3; ++j){
+                x_avg[i][j] += x_symm[i][j];
+            }
+        }
 
-	}
+    }
 
-	for (i = 0; i < nat; ++i){
-		for (j = 0; j < 3; ++j){
-			x_avg[i][j] /= static_cast<double>(SymmList.size());
-		}
-	}
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            x_avg[i][j] /= static_cast<double>(SymmList.size());
+        }
+    }
 
-	std::cout << "Symmetrically Averaged Coordinate" << std::endl;
-	for (i = 0; i < nat; ++i){
-		for (j = 0; j < 3; ++j){
-			std::cout << std::setw(15) << std::fixed << std::setprecision(9) << x_avg[i][j];
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
+    std::cout << "Symmetrically Averaged Coordinate" << std::endl;
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            std::cout << std::setw(15) << std::fixed << std::setprecision(9) << x_avg[i][j];
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
 
-	std::cout.setf(std::ios::floatfield);
+    std::cout.setf(std::ios::floatfield);
 
-	memory->deallocate(x_symm);
-	memory->deallocate(x_avg);
+    memory->deallocate(x_symm);
+    memory->deallocate(x_avg);
 }
 
 void Symmetry::symop_availability_check(double ***rot, bool *flag, const int n, int &nsym_fc)
 {
-	int i, j, k;
-	int nfinite;
+    int i, j, k;
+    int nfinite;
 
-	nsym_fc = 0;
+    nsym_fc = 0;
 
-	for (i = 0; i < nsym; ++i){
+    for (i = 0; i < nsym; ++i){
 
-		nfinite = 0;
-		for (j = 0; j < 3; ++j){
-			for (k = 0; k < 3; ++k){
-				if(std::abs(rot[i][j][k]) > eps) ++nfinite;
-			}
-		}
+        nfinite = 0;
+        for (j = 0; j < 3; ++j){
+            for (k = 0; k < 3; ++k){
+                if(std::abs(rot[i][j][k]) > eps) ++nfinite;
+            }
+        }
 
-		if (nfinite == 3){
-			++nsym_fc;
-			flag[i] = true;
-		} else {
-			flag[i] = false;
-		}
-	}
+        if (nfinite == 3){
+            ++nsym_fc;
+            flag[i] = true;
+        } else {
+            flag[i] = false;
+        }
+    }
 }

@@ -63,7 +63,7 @@ namespace ALM_NS {
         int *nints;
         void generate_fclists(int);
         bool is_ascending(const int, const int *);
-        
+
     };
 
 }

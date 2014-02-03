@@ -16,9 +16,9 @@ namespace ALM_NS {
         ~Fitting();
 
         void fitmain();
-       // int rank(const int, const int, double **);
+        // int rank(const int, const int, double **);
         int rank(int, int, double *);
-		int rank2(const int, const int, double **);
+        int rank2(const int, const int, double **);
 
         // int getRankEigen(const int, const int,const  int);
 
@@ -26,7 +26,7 @@ namespace ALM_NS {
         double *fc2_ref;
         unsigned int nboot;
 
-		double **u, **f;
+        double **u, **f;
 
 #ifdef _VSL
         VSLStreamStatePtr stream;
@@ -38,7 +38,7 @@ namespace ALM_NS {
 
         int inprim_index(const int);
         void wrtfcs(const double *);
-		void data_multiplier(const int, const int, const int, const int, const int, int &, const int);
+        void data_multiplier(const int, const int, const int, const int, const int, int &, const int);
         void fit_without_constraints(int, int, int, double **, double *);
         void fit_with_constraints(int, int, int, int, double **, double *, double **, double *);
         void fit_consecutively(int, int, const int, const int,
@@ -51,18 +51,18 @@ namespace ALM_NS {
     };
 
     extern "C" {
-        
+
         void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,	
-        double *b, int *ldb, double *s, double *rcond, int *rank,
-        double *work, int *lwork, int *info);
-       
+            double *b, int *ldb, double *s, double *rcond, int *rank,
+            double *work, int *lwork, int *info);
+
         void dgglse_(int *m, int *n, int *p, double *a, int *lda,
-        double *b, int *ldb, double *c, double *d, double *x,
-        double *work, int *lwork, int *info);
+            double *b, int *ldb, double *c, double *d, double *x,
+            double *work, int *lwork, int *info);
 
         void dgesdd_(const char *jobz, int *m, int *n, double *a, int *lda,
-        double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
-        int *lwork, int *iwork, int *info);
+            double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
+            int *lwork, int *iwork, int *info);
 
         void dgeqrf_(int *m, int *n, double *a, double *tau,
             double *work, int *lwork, int *info);

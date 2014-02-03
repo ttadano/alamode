@@ -6,13 +6,13 @@ using namespace PHON_NS;
 
 int main(int argc, char **argv)
 {
-	MPI_Init(&argc, &argv);
+    MPI_Init(&argc, &argv);
 
-	PHON *phon = new PHON(argc, argv, MPI_COMM_WORLD);
+    PHON *phon = new PHON(argc, argv, MPI_COMM_WORLD);
 
-	delete phon;
+    delete phon;
 
-	MPI_Finalize();
+    MPI_Finalize();
 
-	return 0;
+    return 0;
 }

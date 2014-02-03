@@ -17,7 +17,7 @@ namespace ALM_NS {
         class Constraint *constraint;
         class Files *files;
         class Ewald *ewald;
-		class Displace *displace;
+        class Displace *displace;
         class Writes *writes;
         class Error *error;
         class Timer *timer;
@@ -27,6 +27,6 @@ namespace ALM_NS {
         void initialize();
         void finalize();
 
-		std::string mode;
+        std::string mode;
     };
 }

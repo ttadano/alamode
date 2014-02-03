@@ -32,15 +32,15 @@ void System::init(){
     std::cout << " " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
     std::cout << std::endl;
 
-	double vec_tmp[3][3];
-	for (i = 0; i < 3; ++i){
-		for (j = 0; j < 3; ++j){
-			vec_tmp[i][j] = lavec[j][i];
-		}
-	}
+    double vec_tmp[3][3];
+    for (i = 0; i < 3; ++i){
+        for (j = 0; j < 3; ++j){
+            vec_tmp[i][j] = lavec[j][i];
+        }
+    }
 
-	cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
-	std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
+    cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
+    std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
 
     std::cout << std::endl << "Reciprocal Lattice Vector" << std::endl;
     std::cout << " " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
@@ -69,7 +69,7 @@ void System::init(){
         }
     }
     frac2cart(x_cartesian);
-	setup_atomic_class(kd);
+    setup_atomic_class(kd);
 }
 
 void System::recips(double aa[3][3], double bb[3][3])
@@ -80,11 +80,11 @@ void System::recips(double aa[3][3], double bb[3][3])
     Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
 
     BB = 2 Pi AA^{-1},
-       = t(b1, b2, b3)
-                     
-         (b11 b12 b13)
-       = (b21 b22 b23)
-         (b31 b32 b33),
+    = t(b1, b2, b3)
+
+    (b11 b12 b13)
+    = (b21 b22 b23)
+    (b31 b32 b33),
 
     b1 = t(b11, b12, b13) etc.
     */
@@ -128,7 +128,7 @@ void System::frac2cart(double **xf)
     for (i = 0; i < nat; ++i){
 
         rotvec(x_tmp, xf[i], lavec);
-        
+
         for (j = 0; j < 3; ++j){
             xf[i][j] = x_tmp[j];
         }
@@ -322,29 +322,29 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 
 void System::setup_atomic_class(int *kd) {
 
-	// This function can be modified when one needs to 
-	// compute symmetry operations of spin polarized systems.
+    // This function can be modified when one needs to 
+    // compute symmetry operations of spin polarized systems.
 
-	unsigned int i;
-	std::set<unsigned int> kd_uniq;
-	kd_uniq.clear();
+    unsigned int i;
+    std::set<unsigned int> kd_uniq;
+    kd_uniq.clear();
 
-	for (i = 0; i < nat; ++i) {
-		kd_uniq.insert(kd[i]);
-	}
-	nclassatom = kd_uniq.size();
+    for (i = 0; i < nat; ++i) {
+        kd_uniq.insert(kd[i]);
+    }
+    nclassatom = kd_uniq.size();
 
-	memory->allocate(atomlist_class, nclassatom);
+    memory->allocate(atomlist_class, nclassatom);
 
-	for (i = 0; i < nat; ++i) {
-		int count = 0;
-		for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
-			if (kd[i] == (*it)) {
-				atomlist_class[count].push_back(i);
-			}
-			++count;
-		}
-	}
+    for (i = 0; i < nat; ++i) {
+        int count = 0;
+        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
+            if (kd[i] == (*it)) {
+                atomlist_class[count].push_back(i);
+            }
+            ++count;
+        }
+    }
 
-	kd_uniq.clear();
+    kd_uniq.clear();
 }

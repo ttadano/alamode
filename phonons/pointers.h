@@ -7,29 +7,29 @@ namespace PHON_NS {
     class Pointers {
     public:
         Pointers(PHON *ptr) :
-          phon(ptr),
-              memory(ptr->memory),
-              error(ptr->error),
-              input(ptr->input),
-              system(ptr->system),
-              symmetry(ptr->symmetry),
-              kpoint(ptr->kpoint),
-              integration(ptr->integration),
-              fcs_phonon(ptr->fcs_phonon),
-              dynamical(ptr->dynamical),
-              phonon_velocity(ptr->phonon_velocity),
-              phonon_thermodynamics(ptr->phonon_thermodynamics),
-              relaxation(ptr->relaxation),
-			  selfenergy(ptr->selfenergy),
-              conductivity(ptr->conductivity),
-			  interpolation(ptr->interpolation),
-              writes(ptr->writes),
-              dos(ptr->dos),
-              gruneisen(ptr->gruneisen),
-              mympi(ptr->mympi),
-			  isotope(ptr->isotope),
-              timer(ptr->timer) {}
-          virtual ~Pointers(){}
+            phon(ptr),
+            memory(ptr->memory),
+            error(ptr->error),
+            input(ptr->input),
+            system(ptr->system),
+            symmetry(ptr->symmetry),
+            kpoint(ptr->kpoint),
+            integration(ptr->integration),
+            fcs_phonon(ptr->fcs_phonon),
+            dynamical(ptr->dynamical),
+            phonon_velocity(ptr->phonon_velocity),
+            phonon_thermodynamics(ptr->phonon_thermodynamics),
+            relaxation(ptr->relaxation),
+            selfenergy(ptr->selfenergy),
+            conductivity(ptr->conductivity),
+            interpolation(ptr->interpolation),
+            writes(ptr->writes),
+            dos(ptr->dos),
+            gruneisen(ptr->gruneisen),
+            mympi(ptr->mympi),
+            isotope(ptr->isotope),
+            timer(ptr->timer) {}
+        virtual ~Pointers(){}
     protected:
         PHON *phon;
         Memory *&memory;
@@ -44,14 +44,14 @@ namespace PHON_NS {
         Phonon_velocity *&phonon_velocity;
         Phonon_thermodynamics *&phonon_thermodynamics;
         Relaxation *&relaxation;
-		Selfenergy *&selfenergy;
+        Selfenergy *&selfenergy;
         Conductivity *&conductivity;
-		Interpolation *&interpolation;
+        Interpolation *&interpolation;
         Writes *&writes;
         Dos *&dos;
         Gruneisen *&gruneisen;
         MyMPI *&mympi;
-		Isotope *&isotope;
+        Isotope *&isotope;
         Timer *&timer;
     };
 }

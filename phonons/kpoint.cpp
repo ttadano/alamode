@@ -28,770 +28,770 @@
 using namespace PHON_NS;
 
 Kpoint::Kpoint(PHON *phon): Pointers(phon) {
-	npath = 0;
+    npath = 0;
 }
 
 Kpoint::~Kpoint() {
-	if (!relaxation->calc_fstate_k) memory->deallocate(xk);
+    if (!relaxation->calc_fstate_k) memory->deallocate(xk);
 
-	// 	if (kpoint_mode == 1) {
-	// 		memory->deallocate(kpoint_direction);
-	// 		memory->deallocate(kaxis);
-	// 		memory->deallocate(kp_symbol);
-	// 		memory->deallocate(kp_bound);
-	// 	}
+    // 	if (kpoint_mode == 1) {
+    // 		memory->deallocate(kpoint_direction);
+    // 		memory->deallocate(kaxis);
+    // 		memory->deallocate(kp_symbol);
+    // 		memory->deallocate(kp_bound);
+    // 	}
 }
 
 void Kpoint::kpoint_setups(std::string mode)
 {
-	symmetry->symmetry_flag = true;
+    symmetry->symmetry_flag = true;
 
-	unsigned int i, j;
-	unsigned int ik, jk;
-	std::string str_tmp;
+    unsigned int i, j;
+    unsigned int ik, jk;
+    std::string str_tmp;
 
-	MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-	if (mympi->my_rank == 0) {
+    if (mympi->my_rank == 0) {
 
-		std::cout << "**k-points**" << std::endl;
+        std::cout << "**k-points**" << std::endl;
 
-		switch (kpoint_mode){
+        switch (kpoint_mode){
 
-		case 0:
-			std::cout << " KPMODE = 0 : calculation on given k-points" << std::endl;
+        case 0:
+            std::cout << " KPMODE = 0 : calculation on given k-points" << std::endl;
 
-			nk = kpInp.size();
-			memory->allocate(xk, nk, 3);
-			j = 0;
+            nk = kpInp.size();
+            memory->allocate(xk, nk, 3);
+            j = 0;
 
-			for (std::vector<KpointInp>::const_iterator it = kpInp.begin(); it != kpInp.end(); ++it) {
-				for (i = 0; i < 3; ++i) {
+            for (std::vector<KpointInp>::const_iterator it = kpInp.begin(); it != kpInp.end(); ++it) {
+                for (i = 0; i < 3; ++i) {
 #ifdef _USE_BOOST
-					xk[j][i] = boost::lexical_cast<double>((*it).kpelem[i]);
+                    xk[j][i] = boost::lexical_cast<double>((*it).kpelem[i]);
 #else
-					xk[j][i] = std::atof(((*it).kpelem[i]).c_str());
+                    xk[j][i] = std::atof(((*it).kpelem[i]).c_str());
 #endif 
-				}	
-				++j;
-			}
+                }	
+                ++j;
+            }
 
-			std::cout << " Number of k-points: " << nk << std::endl << std::endl;
+            std::cout << " Number of k-points: " << nk << std::endl << std::endl;
 
-			break;
+            break;
 
-		case 1:
-			std::cout << " KPMODE = 1: band structure calculation" << std::endl;
+        case 1:
+            std::cout << " KPMODE = 1: band structure calculation" << std::endl;
 
-			npath = kpInp.size();
+            npath = kpInp.size();
 
-			std::cout << " Number of paths: " << npath << std::endl;
-			memory->allocate(kp_symbol, npath, 2);
-			memory->allocate(kp_bound, npath, 2, 3);	
-			memory->allocate(nkp, npath);
+            std::cout << " Number of paths: " << npath << std::endl;
+            memory->allocate(kp_symbol, npath, 2);
+            memory->allocate(kp_bound, npath, 2, 3);	
+            memory->allocate(nkp, npath);
 
-			nk = 0;
+            nk = 0;
 
-			j = 0;
-			for (std::vector<KpointInp>::const_iterator it = kpInp.begin(); it != kpInp.end(); ++it) {
-				kp_symbol[j][0] = (*it).kpelem[0];
-				kp_symbol[j][1] = (*it).kpelem[4];
+            j = 0;
+            for (std::vector<KpointInp>::const_iterator it = kpInp.begin(); it != kpInp.end(); ++it) {
+                kp_symbol[j][0] = (*it).kpelem[0];
+                kp_symbol[j][1] = (*it).kpelem[4];
 #ifdef _USE_BOOST
-				for (i = 0; i < 3; ++i) {
-					kp_bound[j][0][i] = boost::lexical_cast<double>((*it).kpelem[i + 1]);
-					kp_bound[j][1][i] = boost::lexical_cast<double>((*it).kpelem[i + 5]);
-				}
-				nkp[j] = boost::lexical_cast<int>((*it).kpelem[8]);
+                for (i = 0; i < 3; ++i) {
+                    kp_bound[j][0][i] = boost::lexical_cast<double>((*it).kpelem[i + 1]);
+                    kp_bound[j][1][i] = boost::lexical_cast<double>((*it).kpelem[i + 5]);
+                }
+                nkp[j] = boost::lexical_cast<int>((*it).kpelem[8]);
 #else
-				for (i = 0; i < 3; ++i) {
-					kp_bound[j][0][i] = std::atof(((*it).kpelem[i + 1]).c_str());
-					kp_bound[j][1][i] = std::atof(((*it).kpelem[i + 5]).c_str());
+                for (i = 0; i < 3; ++i) {
+                    kp_bound[j][0][i] = std::atof(((*it).kpelem[i + 1]).c_str());
+                    kp_bound[j][1][i] = std::atof(((*it).kpelem[i + 5]).c_str());
 
-				}
-				nkp[j] = std::atoi(((*it).kpelem[8]).c_str());
+                }
+                nkp[j] = std::atoi(((*it).kpelem[8]).c_str());
 #endif
-				nk += nkp[j];
-				++j;
-			}
+                nk += nkp[j];
+                ++j;
+            }
 
-			memory->allocate(xk, nk, 3);
-			memory->allocate(kpoint_direction, nk, 3);
+            memory->allocate(xk, nk, 3);
+            memory->allocate(kpoint_direction, nk, 3);
 
-			gen_kpoints_band();
-			memory->deallocate(kp_bound);
+            gen_kpoints_band();
+            memory->deallocate(kp_bound);
 
-			double **xk_c, tmp[3];
-			memory->allocate(kaxis, nk);
-			memory->allocate(xk_c, nk, 3);
+            double **xk_c, tmp[3];
+            memory->allocate(kaxis, nk);
+            memory->allocate(xk_c, nk, 3);
 
-			unsigned int j, k;
+            unsigned int j, k;
 
-			ik = 0;
-			std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
-			std::cout << " kval";
-			std::cout.unsetf(std::ios::scientific);
+            ik = 0;
+            std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
+            std::cout << " kval";
+            std::cout.unsetf(std::ios::scientific);
 
-			for (i = 0; i < npath; ++i){
-				for (j = 0; j < nkp[i]; ++j){
-					if (j == 0){
-						if(ik == 0) {
-							kaxis[ik] = 0.0;
-						} else {
-							kaxis[ik] = kaxis[ik - 1];
-						}
-						std::cout << std::setw(10) << kaxis[ik];
-					} else {
-						for (k = 0; k < 3; ++k){
-							tmp[k] = xk[ik][k] - xk[ik - 1][k];
-						}
-						rotvec(tmp, tmp, system->rlavec_p, 'T');
-						kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
-					}
-					++ik;
-				}
-			}
+            for (i = 0; i < npath; ++i){
+                for (j = 0; j < nkp[i]; ++j){
+                    if (j == 0){
+                        if(ik == 0) {
+                            kaxis[ik] = 0.0;
+                        } else {
+                            kaxis[ik] = kaxis[ik - 1];
+                        }
+                        std::cout << std::setw(10) << kaxis[ik];
+                    } else {
+                        for (k = 0; k < 3; ++k){
+                            tmp[k] = xk[ik][k] - xk[ik - 1][k];
+                        }
+                        rotvec(tmp, tmp, system->rlavec_p, 'T');
+                        kaxis[ik] = kaxis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+                    }
+                    ++ik;
+                }
+            }
 
-			std::cout << std::setw(10) << kaxis[ik - 1];
-			std::cout << std::endl;
-			std::cout << " ----------------------------------------" << std::endl;
+            std::cout << std::setw(10) << kaxis[ik - 1];
+            std::cout << std::endl;
+            std::cout << " ----------------------------------------" << std::endl;
 
-			memory->deallocate(nkp);
+            memory->deallocate(nkp);
 
-			std::cout.setf(std::ios::scientific);
+            std::cout.setf(std::ios::scientific);
 
-			break;
-		case 2:
-			std::cout << " KPMODE = 2: Uniform grid" << std::endl;
+            break;
+        case 2:
+            std::cout << " KPMODE = 2: Uniform grid" << std::endl;
 
 #ifdef _USE_BOOST
-			nkx = boost::lexical_cast<int>(kpInp[0].kpelem[0]);
-			nky = boost::lexical_cast<int>(kpInp[0].kpelem[1]);
-			nkz = boost::lexical_cast<int>(kpInp[0].kpelem[2]);
+            nkx = boost::lexical_cast<int>(kpInp[0].kpelem[0]);
+            nky = boost::lexical_cast<int>(kpInp[0].kpelem[1]);
+            nkz = boost::lexical_cast<int>(kpInp[0].kpelem[2]);
 #else 
-			nkx = std::atoi((kpInp[0].kpelem[0]).c_str());
-			nky = std::atoi((kpInp[0].kpelem[1]).c_str());
-			nkz = std::atoi((kpInp[0].kpelem[2]).c_str());	
+            nkx = std::atoi((kpInp[0].kpelem[0]).c_str());
+            nky = std::atoi((kpInp[0].kpelem[1]).c_str());
+            nkz = std::atoi((kpInp[0].kpelem[2]).c_str());	
 #endif
 
-			unsigned int nk_tmp[3];
+            unsigned int nk_tmp[3];
 
-			nk = nkx * nky * nkz;
-			memory->allocate(xk, nk, 3);
+            nk = nkx * nky * nkz;
+            memory->allocate(xk, nk, 3);
 
-			nk_tmp[0] = nkx;
-			nk_tmp[1] = nky; 
-			nk_tmp[2] = nkz;
+            nk_tmp[0] = nkx;
+            nk_tmp[1] = nky; 
+            nk_tmp[2] = nkz;
 
-			gen_kmesh(symmetry->symmetry_flag, nk_tmp, xk, nk_equiv, kpIBZ);
-			
-			weight_k.clear();
-			for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
-				weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
-			}
+            gen_kmesh(symmetry->symmetry_flag, nk_tmp, xk, nk_equiv, kpIBZ);
 
-			// Construct the independent k-point list
+            weight_k.clear();
+            for (std::vector<unsigned int>::iterator p = nk_equiv.begin(); p != nk_equiv.end(); ++p){
+                weight_k.push_back(static_cast<double>(*p)/static_cast<double>(nk));
+            }
 
-			memory->allocate(nk_equiv_arr, nk_equiv.size());
-			kpset_uniq.clear();
-			
-			jk = 0;
-			for (ik = 0; ik < nk_equiv.size(); ++ik){
-				kpset_uniq.insert(kpIBZ[jk].knum);
-				nk_equiv_arr[ik] = nk_equiv[ik];
-				jk += nk_equiv[ik];
-			}
-			nk_reduced = nk_equiv.size();
+            // Construct the independent k-point list
 
-			nequiv_max = 0;
-			for (ik = 0; ik < nk_reduced; ++ik){
-				nequiv_max = std::max<unsigned int>(nequiv_max, nk_equiv[ik]);
-			}
+            memory->allocate(nk_equiv_arr, nk_equiv.size());
+            kpset_uniq.clear();
 
-			memory->allocate(k_reduced, nk_reduced, nequiv_max);
+            jk = 0;
+            for (ik = 0; ik < nk_equiv.size(); ++ik){
+                kpset_uniq.insert(kpIBZ[jk].knum);
+                nk_equiv_arr[ik] = nk_equiv[ik];
+                jk += nk_equiv[ik];
+            }
+            nk_reduced = nk_equiv.size();
 
-			j = 0;
-			for (ik = 0; ik < nk_reduced; ++ik) {
-				for (i = 0; i < nequiv_max; ++i){
-					k_reduced[ik][i] = 0;
-				}
-				for (i = 0; i < nk_equiv[ik]; ++i){
-					k_reduced[ik][i] = kpIBZ[j++].knum;
-				}
-			}
-			std::cout << " nk1: " << std::setw(6) << nkx;
-			std::cout << " nk2: " << std::setw(6) << nky;
-			std::cout << " nk3: " << std::setw(6) << nkz;
-			std::cout << std::endl;
-			std::cout << " Number of k-points: " << nk << std::endl << std::endl;
+            nequiv_max = 0;
+            for (ik = 0; ik < nk_reduced; ++ik){
+                nequiv_max = std::max<unsigned int>(nequiv_max, nk_equiv[ik]);
+            }
 
-			memory->allocate(knum_minus, nk);
-			gen_nkminus();
+            memory->allocate(k_reduced, nk_reduced, nequiv_max);
 
-			std::cout << " Number of irreducible k-points: " << nk_equiv.size() << std::endl << std::endl;
-			std::cout << "#k-points (in unit of reciprocal vector), weights" << std::endl;
+            j = 0;
+            for (ik = 0; ik < nk_reduced; ++ik) {
+                for (i = 0; i < nequiv_max; ++i){
+                    k_reduced[ik][i] = 0;
+                }
+                for (i = 0; i < nk_equiv[ik]; ++i){
+                    k_reduced[ik][i] = kpIBZ[j++].knum;
+                }
+            }
+            std::cout << " nk1: " << std::setw(6) << nkx;
+            std::cout << " nk2: " << std::setw(6) << nky;
+            std::cout << " nk3: " << std::setw(6) << nkz;
+            std::cout << std::endl;
+            std::cout << " Number of k-points: " << nk << std::endl << std::endl;
 
-			ik = 0;
-			for (i = 0; i < nk_equiv.size(); ++i){
-				std::cout << std::setw(8) << i + 1 << ":";
-				for (j = 0; j < 3; ++j){
-					std::cout << std::setw(15) << std::scientific << kpIBZ[ik].kval[j];
-				}
-				std::cout << std::setw(15) << std::fixed << weight_k[i] << std::endl;
-				ik += nk_equiv[i];
-			}
-			std::cout << std::endl;
+            memory->allocate(knum_minus, nk);
+            gen_nkminus();
 
-			std::cout.unsetf(std::ios::fixed);
+            std::cout << " Number of irreducible k-points: " << nk_equiv.size() << std::endl << std::endl;
+            std::cout << "#k-points (in unit of reciprocal vector), weights" << std::endl;
 
-			break;
-		case 3:
-			std::cout << " KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
+            ik = 0;
+            for (i = 0; i < nk_equiv.size(); ++i){
+                std::cout << std::setw(8) << i + 1 << ":";
+                for (j = 0; j < 3; ++j){
+                    std::cout << std::setw(15) << std::scientific << kpIBZ[ik].kval[j];
+                }
+                std::cout << std::setw(15) << std::fixed << weight_k[i] << std::endl;
+                ik += nk_equiv[i];
+            }
+            std::cout << std::endl;
 
-			nplanes = kpInp.size();
-			std::cout << "The number of planes: " << nplanes << std::endl;
+            std::cout.unsetf(std::ios::fixed);
 
-			memory->allocate(kp_planes, nplanes);
-			gen_kpoints_plane(kpInp, kp_planes);
+            break;
+        case 3:
+            std::cout << " KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
 
-			for (i = 0; i < nplanes; ++i) {
-				std::cout << "The number of k points in Plane " << std::setw(5) << i + 1;
-				std::cout << std::setw(10) << kp_planes[i].size() << std::endl;
-			}
-			break;
-		default:
-			error->exit("read_kpoints", "This cannot happen.");
-		}
-	}
+            nplanes = kpInp.size();
+            std::cout << "The number of planes: " << nplanes << std::endl;
 
-	MPI_Bcast(&nkx, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&nky, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&nkz, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&nk , 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+            memory->allocate(kp_planes, nplanes);
+            gen_kpoints_plane(kpInp, kp_planes);
 
-	if (kpoint_mode < 3) {
-		if (mympi->my_rank > 0) {
-			memory->allocate(xk, nk, 3);
-		}
-		MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	}
+            for (i = 0; i < nplanes; ++i) {
+                std::cout << "The number of k points in Plane " << std::setw(5) << i + 1;
+                std::cout << std::setw(10) << kp_planes[i].size() << std::endl;
+            }
+            break;
+        default:
+            error->exit("read_kpoints", "This cannot happen.");
+        }
+    }
 
-	if (kpoint_mode == 1) {
+    MPI_Bcast(&nkx, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nky, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nkz, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nk , 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-		if (mympi->my_rank > 0) {
-			memory->allocate(kpoint_direction, nk, 3);
-		}
-		MPI_Bcast(&kpoint_direction[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    if (kpoint_mode < 3) {
+        if (mympi->my_rank > 0) {
+            memory->allocate(xk, nk, 3);
+        }
+        MPI_Bcast(&xk[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    }
 
-	} else if (kpoint_mode == 2) {
+    if (kpoint_mode == 1) {
 
-		if (mympi->my_rank > 0) {
-			memory->allocate(knum_minus, nk);
-		}
-		MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&nk_reduced, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&nequiv_max, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-		if (mympi->my_rank > 0) {
-			memory->allocate(nk_equiv_arr, nk_reduced);
-			memory->allocate(k_reduced, nk_reduced, nequiv_max);
-		}
-		MPI_Bcast(&nk_equiv_arr[0], nk_reduced, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&k_reduced[0][0], nk_reduced*nequiv_max, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        if (mympi->my_rank > 0) {
+            memory->allocate(kpoint_direction, nk, 3);
+        }
+        MPI_Bcast(&kpoint_direction[0][0], 3*nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-	} else if (kpoint_mode == 3) {
+    } else if (kpoint_mode == 2) {
 
-		MPI_Bcast(&nplanes, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        if (mympi->my_rank > 0) {
+            memory->allocate(knum_minus, nk);
+        }
+        MPI_Bcast(&knum_minus[0], nk, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&nk_reduced, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&nequiv_max, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        if (mympi->my_rank > 0) {
+            memory->allocate(nk_equiv_arr, nk_reduced);
+            memory->allocate(k_reduced, nk_reduced, nequiv_max);
+        }
+        MPI_Bcast(&nk_equiv_arr[0], nk_reduced, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&k_reduced[0][0], nk_reduced*nequiv_max, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-		int nkp;
-		int **naxis;
-		double **xk_plane;
+    } else if (kpoint_mode == 3) {
 
-		if (mympi->my_rank > 0) memory->allocate(kp_planes, nplanes);
+        MPI_Bcast(&nplanes, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-		for (i = 0; i < nplanes; ++i) {
-			nkp = kp_planes[i].size();
+        int nkp;
+        int **naxis;
+        double **xk_plane;
 
-			MPI_Bcast(&nkp, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if (mympi->my_rank > 0) memory->allocate(kp_planes, nplanes);
 
-			memory->allocate(naxis, nkp, 2);
-			memory->allocate(xk_plane, nkp, 3);
+        for (i = 0; i < nplanes; ++i) {
+            nkp = kp_planes[i].size();
 
-			if (mympi->my_rank == 0) {
-				for (j = 0; j < nkp; ++j) {
-					naxis[j][0] = kp_planes[i][j].n[0];
-					naxis[j][1] = kp_planes[i][j].n[1];
-					xk_plane[j][0] = kp_planes[i][j].k[0];
-					xk_plane[j][1] = kp_planes[i][j].k[1];
-					xk_plane[j][2] = kp_planes[i][j].k[2];
-				}
-			}
+            MPI_Bcast(&nkp, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-			MPI_Bcast(&naxis[0][0], 2 * nkp, MPI_INT, 0, MPI_COMM_WORLD);
-			MPI_Bcast(&xk_plane[0][0], 3 * nkp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            memory->allocate(naxis, nkp, 2);
+            memory->allocate(xk_plane, nkp, 3);
 
-			if (mympi->my_rank > 0) {
-				for (j = 0; j < nkp; ++j) {
-					kp_planes[i].push_back(KpointPlane(xk_plane[j], naxis[j]));
-				}
-			}
-			memory->deallocate(naxis);
-			memory->deallocate(xk_plane);
-		}
-	}
+            if (mympi->my_rank == 0) {
+                for (j = 0; j < nkp; ++j) {
+                    naxis[j][0] = kp_planes[i][j].n[0];
+                    naxis[j][1] = kp_planes[i][j].n[1];
+                    xk_plane[j][0] = kp_planes[i][j].k[0];
+                    xk_plane[j][1] = kp_planes[i][j].k[1];
+                    xk_plane[j][2] = kp_planes[i][j].k[2];
+                }
+            }
+
+            MPI_Bcast(&naxis[0][0], 2 * nkp, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&xk_plane[0][0], 3 * nkp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+            if (mympi->my_rank > 0) {
+                for (j = 0; j < nkp; ++j) {
+                    kp_planes[i].push_back(KpointPlane(xk_plane[j], naxis[j]));
+                }
+            }
+            memory->deallocate(naxis);
+            memory->deallocate(xk_plane);
+        }
+    }
 }
 
 void Kpoint::gen_kpoints_band()
 {
-	unsigned int i, j, k;
-	double xk_s[3], xk_e[3];
-	double xk_direction[3], norm;
-	unsigned int ik = 0;
+    unsigned int i, j, k;
+    double xk_s[3], xk_e[3];
+    double xk_direction[3], norm;
+    unsigned int ik = 0;
 
-	for (i = 0; i < npath; ++i){
-		for (j = 0; j < 3; ++j){
-			xk_s[j] = kp_bound[i][0][j];
-			xk_e[j] = kp_bound[i][1][j];
-			xk_direction[j] = xk_e[j] - xk_s[j];
-		}
+    for (i = 0; i < npath; ++i){
+        for (j = 0; j < 3; ++j){
+            xk_s[j] = kp_bound[i][0][j];
+            xk_e[j] = kp_bound[i][1][j];
+            xk_direction[j] = xk_e[j] - xk_s[j];
+        }
 
-		rotvec(xk_direction, xk_direction, system->rlavec_p, 'T');
-		norm = std::pow(xk_direction[0], 2) + std::pow(xk_direction[1], 2) + std::pow(xk_direction[2], 2);
-		norm = std::sqrt(norm);
+        rotvec(xk_direction, xk_direction, system->rlavec_p, 'T');
+        norm = std::pow(xk_direction[0], 2) + std::pow(xk_direction[1], 2) + std::pow(xk_direction[2], 2);
+        norm = std::sqrt(norm);
 
-		if (norm > eps) {
-			for (j = 0; j < 3; ++j) xk_direction[j] /= norm;
-		}
+        if (norm > eps) {
+            for (j = 0; j < 3; ++j) xk_direction[j] /= norm;
+        }
 
-		for(j = 0; j < nkp[i]; ++j){
-			for(k = 0; k < 3; ++k){
-				xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
-				kpoint_direction[ik][k] = xk_direction[k];
-			}
-			++ik;
-		}
-	}
+        for(j = 0; j < nkp[i]; ++j){
+            for(k = 0; k < 3; ++k){
+                xk[ik][k] = xk_s[k] + (xk_e[k] - xk_s[k]) * static_cast<double>(j) / static_cast<double>(nkp[i] - 1);
+                kpoint_direction[ik][k] = xk_direction[k];
+            }
+            ++ik;
+        }
+    }
 }
 
 void Kpoint::gen_kmesh(bool usesym, unsigned int nk_in[3], double **xk_out, std::vector<unsigned int> &nk_equiv_out, std::vector<KpointList> &kplist_out)
 {
-	unsigned int ix, iy, iz;
-	unsigned int i, ik;
-	double **xkr;
+    unsigned int ix, iy, iz;
+    unsigned int i, ik;
+    double **xkr;
 
-	unsigned int nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
+    unsigned int nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
 
-	std::cout << "Generating uniform k-point grid ..." << std::endl;
+    std::cout << "Generating uniform k-point grid ..." << std::endl;
 
-	memory->allocate(xkr, nk_tot, 3);
+    memory->allocate(xkr, nk_tot, 3);
 
-	for (ix = 0; ix < nk_in[0]; ++ix){
-		for (iy = 0; iy < nk_in[1]; ++iy){
-			for (iz = 0; iz < nk_in[2]; ++iz){
-				ik = iz + iy * nk_in[2] + ix * nk_in[2] * nk_in[1];
-				xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_in[0]);
-				xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_in[1]);
-				xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_in[2]);
-			}
-		}
-	}
+    for (ix = 0; ix < nk_in[0]; ++ix){
+        for (iy = 0; iy < nk_in[1]; ++iy){
+            for (iz = 0; iz < nk_in[2]; ++iz){
+                ik = iz + iy * nk_in[2] + ix * nk_in[2] * nk_in[1];
+                xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_in[0]);
+                xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_in[1]);
+                xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_in[2]);
+            }
+        }
+    }
 
-	if (usesym) {
-		reduce_kpoints(xkr, nk_in, nk_equiv_out, kplist_out);
-	}
+    if (usesym) {
+        reduce_kpoints(xkr, nk_in, nk_equiv_out, kplist_out);
+    }
 
-	for (ik = 0; ik < nk_tot; ++ik){
-		for (i = 0; i < 3; ++i){
-			xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
-		}
-	}
+    for (ik = 0; ik < nk_tot; ++ik){
+        for (i = 0; i < 3; ++i){
+            xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+        }
+    }
 
-	memory->deallocate(xkr);
-	timer->print_elapsed();
+    memory->deallocate(xkr);
+    timer->print_elapsed();
 }
 
 void Kpoint::gen_nkminus()
 {
-	unsigned int ik;
-	double diff[3];
-	std::vector<KpointList> ksets;
-	std::vector<KpointList>::iterator it;
-	std::vector<double> ktmp;
-	bool *found_minus;
+    unsigned int ik;
+    double diff[3];
+    std::vector<KpointList> ksets;
+    std::vector<KpointList>::iterator it;
+    std::vector<double> ktmp;
+    bool *found_minus;
 
-	ksets.clear();
+    ksets.clear();
 
-	for (ik = 0; ik < nk; ++ik){
+    for (ik = 0; ik < nk; ++ik){
 
-		ktmp.clear();
+        ktmp.clear();
 
-		ktmp.push_back(xk[ik][0]);
-		ktmp.push_back(xk[ik][1]);
-		ktmp.push_back(xk[ik][2]);
+        ktmp.push_back(xk[ik][0]);
+        ktmp.push_back(xk[ik][1]);
+        ktmp.push_back(xk[ik][2]);
 
-		ksets.push_back(KpointList(ik, ktmp));
-	}
+        ksets.push_back(KpointList(ik, ktmp));
+    }
 
-	memory->allocate(found_minus, nk);
+    memory->allocate(found_minus, nk);
 
-	for (ik = 0; ik < nk; ++ik) found_minus[ik] = false;
+    for (ik = 0; ik < nk; ++ik) found_minus[ik] = false;
 
-	for (ik = 0; ik < nk; ++ik){
+    for (ik = 0; ik < nk; ++ik){
 
-		if (found_minus[ik]) continue;
-		ktmp.clear();
-		ktmp.push_back(-xk[ik][0]);
-		ktmp.push_back(-xk[ik][1]);
-		ktmp.push_back(-xk[ik][2]);
+        if (found_minus[ik]) continue;
+        ktmp.clear();
+        ktmp.push_back(-xk[ik][0]);
+        ktmp.push_back(-xk[ik][1]);
+        ktmp.push_back(-xk[ik][2]);
 
-		for (it = ksets.begin(); it != ksets.end(); ++it){
-			diff[0] = std::fmod(ktmp[0]-(*it).kval[0], 1.0);
-			diff[1] = std::fmod(ktmp[1]-(*it).kval[1], 1.0);
-			diff[2] = std::fmod(ktmp[2]-(*it).kval[2], 1.0);
+        for (it = ksets.begin(); it != ksets.end(); ++it){
+            diff[0] = std::fmod(ktmp[0]-(*it).kval[0], 1.0);
+            diff[1] = std::fmod(ktmp[1]-(*it).kval[1], 1.0);
+            diff[2] = std::fmod(ktmp[2]-(*it).kval[2], 1.0);
 
 
-			if (std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
-				knum_minus[ik] = (*it).knum;
-				knum_minus[(*it).knum] = ik;
-				found_minus[ik] = true;
-				found_minus[(*it).knum] = true;
-				break;
-			} 
-		}
+            if (std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
+                knum_minus[ik] = (*it).knum;
+                knum_minus[(*it).knum] = ik;
+                found_minus[ik] = true;
+                found_minus[(*it).knum] = true;
+                break;
+            } 
+        }
 
-		if (!found_minus[ik]) {
-			error->exit("gen_nkminus", "k-point of the inverse point is not found");
-		}
-	}
+        if (!found_minus[ik]) {
+            error->exit("gen_nkminus", "k-point of the inverse point is not found");
+        }
+    }
 
-	memory->deallocate(found_minus);
-	ksets.clear();
+    memory->deallocate(found_minus);
+    ksets.clear();
 }
 
 void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<unsigned int> &nk_equiv_out, std::vector<KpointList> &kplist_out)
 {
-	unsigned int ik;
-	unsigned int i, j;
-	unsigned int nsame;
-	int iloc, jloc, kloc;
-	int nloc;
+    unsigned int ik;
+    unsigned int i, j;
+    unsigned int nsame;
+    int iloc, jloc, kloc;
+    int nloc;
 
-	unsigned int *kequiv;
-	unsigned int nk_tot;
+    unsigned int *kequiv;
+    unsigned int nk_tot;
 
-	double diff[3];
+    double diff[3];
 
-	std::set<KpointList> ksets;
-	std::vector<double> ktmp;
-
-#ifdef _USE_EIGEN
-	Eigen::Matrix3d srot;
-	Eigen::Vector3d xk_sym, xk_orig;
-#else
-	double srot[3][3];
-	double xk_sym[3], xk_orig[3];
-#endif
-
-	std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
-
-	kplist_out.clear();
-	nk_equiv_out.clear();
-
-	ksets.clear();
-
-	nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
-
-	memory->allocate(kequiv, nk_tot);
-
-	for (ik = 0; ik < nk_tot; ++ik) kequiv[ik] = ik;
-
-	for (ik = 0; ik < nk_tot; ++ik){
-
-		if(kequiv[ik] != ik) continue;
-
-		nsame = 1;
-
-		ktmp.clear();
-		ktmp.push_back(xkr[ik][0] - static_cast<double>(nint(xkr[ik][0])));
-		ktmp.push_back(xkr[ik][1] - static_cast<double>(nint(xkr[ik][1])));
-		ktmp.push_back(xkr[ik][2] - static_cast<double>(nint(xkr[ik][2])));
-
-		kplist_out.push_back(KpointList(ik, ktmp));
+    std::set<KpointList> ksets;
+    std::vector<double> ktmp;
 
 #ifdef _USE_EIGEN
-		for (i = 0; i < 3; ++i) xk_orig(i) = xkr[ik][i];
+    Eigen::Matrix3d srot;
+    Eigen::Vector3d xk_sym, xk_orig;
 #else
-		for (i = 0; i < 3; ++i) xk_orig[i] = xkr[ik][i];
+    double srot[3][3];
+    double xk_sym[3], xk_orig[3];
 #endif
 
-		for (std::vector<SymmetryOperation>::iterator isym = symmetry->SymmList.begin(); isym != symmetry->SymmList.end(); ++isym){
+    std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
 
-			for (i = 0; i < 3; ++i){
-				for (j = 0; j < 3; ++j){
+    kplist_out.clear();
+    nk_equiv_out.clear();
+
+    ksets.clear();
+
+    nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
+
+    memory->allocate(kequiv, nk_tot);
+
+    for (ik = 0; ik < nk_tot; ++ik) kequiv[ik] = ik;
+
+    for (ik = 0; ik < nk_tot; ++ik){
+
+        if(kequiv[ik] != ik) continue;
+
+        nsame = 1;
+
+        ktmp.clear();
+        ktmp.push_back(xkr[ik][0] - static_cast<double>(nint(xkr[ik][0])));
+        ktmp.push_back(xkr[ik][1] - static_cast<double>(nint(xkr[ik][1])));
+        ktmp.push_back(xkr[ik][2] - static_cast<double>(nint(xkr[ik][2])));
+
+        kplist_out.push_back(KpointList(ik, ktmp));
+
 #ifdef _USE_EIGEN
-					srot(i,j) = static_cast<double>((*isym).symop[3 * i + j]);
+        for (i = 0; i < 3; ++i) xk_orig(i) = xkr[ik][i];
 #else
-					srot[i][j] = static_cast<double>((*isym).symop[3 * i + j]);
+        for (i = 0; i < 3; ++i) xk_orig[i] = xkr[ik][i];
 #endif
-				}
-			}
+
+        for (std::vector<SymmetryOperation>::iterator isym = symmetry->SymmList.begin(); isym != symmetry->SymmList.end(); ++isym){
+
+            for (i = 0; i < 3; ++i){
+                for (j = 0; j < 3; ++j){
 #ifdef _USE_EIGEN
-			Eigen::FullPivLU< Eigen::Matrix3d > lu(srot);
-			Eigen::Matrix3d S = lu.inverse();
+                    srot(i,j) = static_cast<double>((*isym).symop[3 * i + j]);
+#else
+                    srot[i][j] = static_cast<double>((*isym).symop[3 * i + j]);
+#endif
+                }
+            }
+#ifdef _USE_EIGEN
+            Eigen::FullPivLU< Eigen::Matrix3d > lu(srot);
+            Eigen::Matrix3d S = lu.inverse();
 
-			xk_sym = S.transpose() * xk_orig;
+            xk_sym = S.transpose() * xk_orig;
 
-			for (i = 0; i < 3; ++i){
-				xk_sym(i) = xk_sym(i) - nint(xk_sym(i));
-			}    
+            for (i = 0; i < 3; ++i){
+                xk_sym(i) = xk_sym(i) - nint(xk_sym(i));
+            }    
 
-			diff[0] = static_cast<double>(nint(xk_sym(0)*nk_in[0])) - xk_sym(0)*nk_in[0];
-			diff[1] = static_cast<double>(nint(xk_sym(1)*nk_in[1])) - xk_sym(1)*nk_in[1];
-			diff[2] = static_cast<double>(nint(xk_sym(2)*nk_in[2])) - xk_sym(2)*nk_in[2];
+            diff[0] = static_cast<double>(nint(xk_sym(0)*nk_in[0])) - xk_sym(0)*nk_in[0];
+            diff[1] = static_cast<double>(nint(xk_sym(1)*nk_in[1])) - xk_sym(1)*nk_in[1];
+            diff[2] = static_cast<double>(nint(xk_sym(2)*nk_in[2])) - xk_sym(2)*nk_in[2];
 
-			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+            if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
 
-				iloc = (nint(xk_sym(0)*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
-				jloc = (nint(xk_sym(1)*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
-				kloc = (nint(xk_sym(2)*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
+                iloc = (nint(xk_sym(0)*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+                jloc = (nint(xk_sym(1)*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+                kloc = (nint(xk_sym(2)*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
+                nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
-				if(nloc > ik && kequiv[nloc] == nloc) {
-					kequiv[nloc] = ik;
-					ktmp.clear();
-					ktmp.push_back(xk_sym(0));
-					ktmp.push_back(xk_sym(1));
-					ktmp.push_back(xk_sym(2));
-					kplist_out.push_back(KpointList(nloc, ktmp));
-					++nsame;
-				}
-			}
+                if(nloc > ik && kequiv[nloc] == nloc) {
+                    kequiv[nloc] = ik;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym(0));
+                    ktmp.push_back(xk_sym(1));
+                    ktmp.push_back(xk_sym(2));
+                    kplist_out.push_back(KpointList(nloc, ktmp));
+                    ++nsame;
+                }
+            }
 
-			// Time-reversal symmetry
+            // Time-reversal symmetry
 
-			if (!symmetry->time_reversal_sym) continue;
+            if (!symmetry->time_reversal_sym) continue;
 
-			for (i = 0; i < 3; ++i) xk_sym(i) *= -1.0; 
+            for (i = 0; i < 3; ++i) xk_sym(i) *= -1.0; 
 
-			diff[0] = static_cast<double>(nint(xk_sym(0)*nk_in[0])) - xk_sym(0)*nk_in[0];
-			diff[1] = static_cast<double>(nint(xk_sym(1)*nk_in[1])) - xk_sym(1)*nk_in[1];
-			diff[2] = static_cast<double>(nint(xk_sym(2)*nk_in[2])) - xk_sym(2)*nk_in[2];
+            diff[0] = static_cast<double>(nint(xk_sym(0)*nk_in[0])) - xk_sym(0)*nk_in[0];
+            diff[1] = static_cast<double>(nint(xk_sym(1)*nk_in[1])) - xk_sym(1)*nk_in[1];
+            diff[2] = static_cast<double>(nint(xk_sym(2)*nk_in[2])) - xk_sym(2)*nk_in[2];
 
-			if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
+            if(std::abs(std::pow(diff[0], 2) + std::pow(diff[1], 2) + std::pow(diff[2], 2)) < eps12) {
 
-				iloc = (nint(xk_sym(0)*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
-				jloc = (nint(xk_sym(1)*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
-				kloc = (nint(xk_sym(2)*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
+                iloc = (nint(xk_sym(0)*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+                jloc = (nint(xk_sym(1)*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+                kloc = (nint(xk_sym(2)*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
+                nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
-				if(nloc > ik && kequiv[nloc] == nloc) {
-					kequiv[nloc] = ik;
-					ktmp.clear();
-					ktmp.push_back(xk_sym(0));
-					ktmp.push_back(xk_sym(1));
-					ktmp.push_back(xk_sym(2));
-					kplist_out.push_back(KpointList(nloc, ktmp));
-					++nsame;
-				}
-			}
+                if(nloc > ik && kequiv[nloc] == nloc) {
+                    kequiv[nloc] = ik;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym(0));
+                    ktmp.push_back(xk_sym(1));
+                    ktmp.push_back(xk_sym(2));
+                    kplist_out.push_back(KpointList(nloc, ktmp));
+                    ++nsame;
+                }
+            }
 
 #else
-			double srot_inv[3][3], srot_inv_t[3][3];
+            double srot_inv[3][3], srot_inv_t[3][3];
 
-			invmat3(srot_inv, srot);
-			transpose3(srot_inv_t, srot_inv);
-			rotvec(xk_sym, xk_orig, srot_inv_t);
+            invmat3(srot_inv, srot);
+            transpose3(srot_inv_t, srot_inv);
+            rotvec(xk_sym, xk_orig, srot_inv_t);
 
 
-			for (i = 0; i < 3; ++i){
-				xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
-			}    
+            for (i = 0; i < 3; ++i){
+                xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+            }    
 
-			diff[0] = static_cast<double>(nint(xk_sym[0]*nk_in[0])) - xk_sym[0]*nk_in[0];
-			diff[1] = static_cast<double>(nint(xk_sym[1]*nk_in[1])) - xk_sym[1]*nk_in[1];
-			diff[2] = static_cast<double>(nint(xk_sym[2]*nk_in[2])) - xk_sym[2]*nk_in[2];
+            diff[0] = static_cast<double>(nint(xk_sym[0]*nk_in[0])) - xk_sym[0]*nk_in[0];
+            diff[1] = static_cast<double>(nint(xk_sym[1]*nk_in[1])) - xk_sym[1]*nk_in[1];
+            diff[2] = static_cast<double>(nint(xk_sym[2]*nk_in[2])) - xk_sym[2]*nk_in[2];
 
-			if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
+            if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 
-				iloc = (nint(xk_sym[0]*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
-				jloc = (nint(xk_sym[1]*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
-				kloc = (nint(xk_sym[2]*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
+                iloc = (nint(xk_sym[0]*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+                jloc = (nint(xk_sym[1]*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+                kloc = (nint(xk_sym[2]*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
+                nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
-				if(nloc > ik && kequiv[nloc] == nloc) {
-					kequiv[nloc] = ik;
-					ktmp.clear();
-					ktmp.push_back(xk_sym[0]);
-					ktmp.push_back(xk_sym[1]);
-					ktmp.push_back(xk_sym[2]);
-					kplist_out.push_back(KpointList(nloc, ktmp));
-					++nsame;
-				}
-			}
+                if(nloc > ik && kequiv[nloc] == nloc) {
+                    kequiv[nloc] = ik;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym[0]);
+                    ktmp.push_back(xk_sym[1]);
+                    ktmp.push_back(xk_sym[2]);
+                    kplist_out.push_back(KpointList(nloc, ktmp));
+                    ++nsame;
+                }
+            }
 
-			// Time-reversal symmetry
+            // Time-reversal symmetry
 
-			if (!symmetry->time_reversal_sym) continue;
+            if (!symmetry->time_reversal_sym) continue;
 
-			for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0; 
+            for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0; 
 
-			diff[0] = static_cast<double>(nint(xk_sym[0]*nk_in[0])) - xk_sym[0]*nk_in[0];
-			diff[1] = static_cast<double>(nint(xk_sym[1]*nk_in[1])) - xk_sym[1]*nk_in[1];
-			diff[2] = static_cast<double>(nint(xk_sym[2]*nk_in[2])) - xk_sym[2]*nk_in[2];
+            diff[0] = static_cast<double>(nint(xk_sym[0]*nk_in[0])) - xk_sym[0]*nk_in[0];
+            diff[1] = static_cast<double>(nint(xk_sym[1]*nk_in[1])) - xk_sym[1]*nk_in[1];
+            diff[2] = static_cast<double>(nint(xk_sym[2]*nk_in[2])) - xk_sym[2]*nk_in[2];
 
-			if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
+            if(std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
 
-				iloc = (nint(xk_sym[0]*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
-				jloc = (nint(xk_sym[1]*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
-				kloc = (nint(xk_sym[2]*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
+                iloc = (nint(xk_sym[0]*nk_in[0] + 2 * nk_in[0])) % nk_in[0];
+                jloc = (nint(xk_sym[1]*nk_in[1] + 2 * nk_in[1])) % nk_in[1];
+                kloc = (nint(xk_sym[2]*nk_in[2] + 2 * nk_in[2])) % nk_in[2];
 
-				nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
+                nloc = kloc + nk_in[2] * jloc + nk_in[1] * nk_in[2] * iloc;
 
-				if(nloc > ik && kequiv[nloc] == nloc) {
-					kequiv[nloc] = ik;
-					ktmp.clear();
-					ktmp.push_back(xk_sym[0]);
-					ktmp.push_back(xk_sym[1]);
-					ktmp.push_back(xk_sym[2]);
-					kplist_out.push_back(KpointList(nloc, ktmp));
-					++nsame;
-				}
-			}
+                if(nloc > ik && kequiv[nloc] == nloc) {
+                    kequiv[nloc] = ik;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym[0]);
+                    ktmp.push_back(xk_sym[1]);
+                    ktmp.push_back(xk_sym[2]);
+                    kplist_out.push_back(KpointList(nloc, ktmp));
+                    ++nsame;
+                }
+            }
 
 #endif
-		}
+        }
 
-		if (nsame > 0) {
-			nk_equiv_out.push_back(nsame);
-		}
-	}
+        if (nsame > 0) {
+            nk_equiv_out.push_back(nsame);
+        }
+    }
 
-	memory->deallocate(kequiv);	
+    memory->deallocate(kequiv);	
 }
 
 
 int Kpoint::get_knum(const double kx, const double ky, const double kz)
 {
 
-	double diff[3];
-	double dkx = static_cast<double>(nkx);
-	double dky = static_cast<double>(nky);
-	double dkz = static_cast<double>(nkz);
+    double diff[3];
+    double dkx = static_cast<double>(nkx);
+    double dky = static_cast<double>(nky);
+    double dkz = static_cast<double>(nkz);
 
-	diff[0] = static_cast<double>(nint(kx*dkx)) - kx*dkx;
-	diff[1] = static_cast<double>(nint(ky*dky)) - ky*dky;
-	diff[2] = static_cast<double>(nint(kz*dkz)) - kz*dkz;
+    diff[0] = static_cast<double>(nint(kx*dkx)) - kx*dkx;
+    diff[1] = static_cast<double>(nint(ky*dky)) - ky*dky;
+    diff[2] = static_cast<double>(nint(kz*dkz)) - kz*dkz;
 
-	double norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
+    double norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
 
-	if (norm >= eps12) {
+    if (norm >= eps12) {
 
-		return -1;
+        return -1;
 
-	} else {
+    } else {
 
-		int iloc, jloc, kloc;
+        int iloc, jloc, kloc;
 
-		iloc = (nint(kx*dkx + 2.0 * dkx)) % nkx;
-		jloc = (nint(ky*dky + 2.0 * dky)) % nky;
-		kloc = (nint(kz*dkz + 2.0 * dkz)) % nkz;
+        iloc = (nint(kx*dkx + 2.0 * dkx)) % nkx;
+        jloc = (nint(ky*dky + 2.0 * dky)) % nky;
+        kloc = (nint(kz*dkz + 2.0 * dkz)) % nkz;
 
-		return kloc + nkz * jloc + nky * nkz * iloc;
-	}
+        return kloc + nkz * jloc + nky * nkz * iloc;
+    }
 }
 
 void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<KpointPlane> *kpout) {
 
-	int i, j;
-	int nplane = kplist.size();
+    int i, j;
+    int nplane = kplist.size();
 
-	int N1, N2;
-	int ik1, ik2;
+    int N1, N2;
+    int ik1, ik2;
 
-	double frac1, frac2;
-	double xk_tmp[3];
-	double xk1[3], xk2[3];
-	int n_in[2];
+    double frac1, frac2;
+    double xk_tmp[3];
+    double xk1[3], xk2[3];
+    int n_in[2];
 
-	for (i = 0; i < nplane; ++i) {
-		N1 = std::atoi(kplist[i].kpelem[3].c_str());
-		N2 = std::atoi(kplist[i].kpelem[7].c_str());
+    for (i = 0; i < nplane; ++i) {
+        N1 = std::atoi(kplist[i].kpelem[3].c_str());
+        N2 = std::atoi(kplist[i].kpelem[7].c_str());
 
-		frac1 = 1.0 / static_cast<double>(N1);
-		frac2 = 1.0 / static_cast<double>(N2);
+        frac1 = 1.0 / static_cast<double>(N1);
+        frac2 = 1.0 / static_cast<double>(N2);
 
-		for (j = 0; j < 3; ++j) {
-			xk1[j] = std::atof(kplist[i].kpelem[j].c_str());
-			xk2[j] = std::atof(kplist[i].kpelem[4 + j].c_str());
-		}
+        for (j = 0; j < 3; ++j) {
+            xk1[j] = std::atof(kplist[i].kpelem[j].c_str());
+            xk2[j] = std::atof(kplist[i].kpelem[4 + j].c_str());
+        }
 
-		for (ik1 = 0; ik1 < N1; ++ik1) {
-			for (ik2 = 0; ik2 < N2; ++ik2) {
+        for (ik1 = 0; ik1 < N1; ++ik1) {
+            for (ik2 = 0; ik2 < N2; ++ik2) {
 
-				for (j = 0; j < 3; ++j) {
-					xk_tmp[j] = static_cast<double>(ik1) * frac1 * xk1[j] + static_cast<double>(ik2) * frac2 * xk2[j]; 
-				}
-				if (in_first_BZ(xk_tmp)) {
-					n_in[0] = ik1;
-					n_in[1] = ik2;
-					kpout[i].push_back(KpointPlane(xk_tmp, n_in));
-				}
-			}
-		}
-	}
+                for (j = 0; j < 3; ++j) {
+                    xk_tmp[j] = static_cast<double>(ik1) * frac1 * xk1[j] + static_cast<double>(ik2) * frac2 * xk2[j]; 
+                }
+                if (in_first_BZ(xk_tmp)) {
+                    n_in[0] = ik1;
+                    n_in[1] = ik2;
+                    kpout[i].push_back(KpointPlane(xk_tmp, n_in));
+                }
+            }
+        }
+    }
 }
 
 bool Kpoint::in_first_BZ(double *xk_in) {
 
-	int i, j, k, m;
-	int nmax = 1;
-	double tmp[3];
-	double dist, dist_min;
-	int iloc;
-	int ncount;
+    int i, j, k, m;
+    int nmax = 1;
+    double tmp[3];
+    double dist, dist_min;
+    int iloc;
+    int ncount;
 
-	bool ret;
+    bool ret;
 
 
-	for (i = 0; i < 3; ++i) tmp[i] = xk_in[i];
+    for (i = 0; i < 3; ++i) tmp[i] = xk_in[i];
 
-	rotvec(tmp, tmp, system->rlavec_p, 'T');
+    rotvec(tmp, tmp, system->rlavec_p, 'T');
 
-	dist_min = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+    dist_min = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 
-	ncount = 0;
+    ncount = 0;
 
-	iloc = ncount;
+    iloc = ncount;
 
-	for (i = -nmax; i <= nmax; ++i) {
-		for (j = -nmax; j <= nmax; ++j) {
-			for (k = -nmax; k <= nmax; ++k) {
-     
-				if (i == 0 && j == 0 && k == 0) continue;
+    for (i = -nmax; i <= nmax; ++i) {
+        for (j = -nmax; j <= nmax; ++j) {
+            for (k = -nmax; k <= nmax; ++k) {
 
-				++ncount;
+                if (i == 0 && j == 0 && k == 0) continue;
 
-				tmp[0] = xk_in[0] - static_cast<double>(i);
-				tmp[1] = xk_in[1] - static_cast<double>(j);
-				tmp[2] = xk_in[2] - static_cast<double>(k);
+                ++ncount;
 
-				rotvec(tmp, tmp, system->rlavec_p, 'T');
-				dist = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+                tmp[0] = xk_in[0] - static_cast<double>(i);
+                tmp[1] = xk_in[1] - static_cast<double>(j);
+                tmp[2] = xk_in[2] - static_cast<double>(k);
 
-				if (dist < dist_min) {
-					iloc = ncount;
-					break;
-				}
-			}
-		}
-	}
+                rotvec(tmp, tmp, system->rlavec_p, 'T');
+                dist = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 
-	if (iloc == 0) {
-		ret = true;
-	} else {
-		ret = false;
-	}
+                if (dist < dist_min) {
+                    iloc = ncount;
+                    break;
+                }
+            }
+        }
+    }
 
-	return ret;
+    if (iloc == 0) {
+        ret = true;
+    } else {
+        ret = false;
+    }
+
+    return ret;
 }

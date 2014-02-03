@@ -20,10 +20,10 @@ namespace PHON_NS {
         double Cv_Debye(const double, const double);
         double Cv_classical(const double, const double);
         void Debye_T(const double, double &);
-		double disp2_avg(const double, const unsigned int, const unsigned int);
+        double disp2_avg(const double, const unsigned int, const unsigned int);
 
     public:
         double coth_T(const double, const double);
-        
+
     };
 }

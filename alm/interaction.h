@@ -25,48 +25,48 @@ namespace ALM_NS {
         return std::lexicographical_compare(a.x.begin(), a.x.end(), b.x.begin(), b.x.end());
     }
 
-	class DistInfo {
-	public:
-		int cell;
-		double dist;
-		double relvec[3];
+    class DistInfo {
+    public:
+        int cell;
+        double dist;
+        double relvec[3];
 
-		DistInfo();
-		DistInfo(const int n, const double d, const double x[3]) {
-			cell = n;
-			dist = d;
-			for (int i = 0; i < 3; ++i) relvec[i] = x[i];
-		}
+        DistInfo();
+        DistInfo(const int n, const double d, const double x[3]) {
+            cell = n;
+            dist = d;
+            for (int i = 0; i < 3; ++i) relvec[i] = x[i];
+        }
 
-		DistInfo(const DistInfo &obj) {
-			cell = obj.cell;
-			dist = obj.dist;
-			for (int i = 0; i < 3; ++i) relvec[i] = obj.relvec[i];
-		}
-	};
+        DistInfo(const DistInfo &obj) {
+            cell = obj.cell;
+            dist = obj.dist;
+            for (int i = 0; i < 3; ++i) relvec[i] = obj.relvec[i];
+        }
+    };
 
-	inline bool operator<(const DistInfo a, const DistInfo b) {
-		return a.dist < b.dist;
-	}
+    inline bool operator<(const DistInfo a, const DistInfo b) {
+        return a.dist < b.dist;
+    }
 
-	class DistList {
-	public:
-		int atom;
-		double dist;
+    class DistList {
+    public:
+        int atom;
+        double dist;
 
-		DistList();
-		DistList(int n, double dist_tmp) {
-			atom = n;
-			dist = dist_tmp;
-		}
-	};
-	inline bool operator<(const DistList a, const DistList b) {
-		if (std::abs(a.dist - b.dist) > eps8) {
-			return a.dist < b.dist;
-		} else {
-			return a.atom < b.atom;
-		}
-	}
+        DistList();
+        DistList(int n, double dist_tmp) {
+            atom = n;
+            dist = dist_tmp;
+        }
+    };
+    inline bool operator<(const DistList a, const DistList b) {
+        if (std::abs(a.dist - b.dist) > eps8) {
+            return a.dist < b.dist;
+        } else {
+            return a.atom < b.atom;
+        }
+    }
 
     class Interaction: protected Pointers {
     public:
@@ -74,12 +74,12 @@ namespace ALM_NS {
         ~Interaction();
         void init();
 
-		int *nbody_include;
+        int *nbody_include;
 
         double ***rcs;
         double **distlist;
-		std::vector<DistInfo> **mindist_pairs;
-		std::set<IntList> *pairs;
+        std::vector<DistInfo> **mindist_pairs;
+        std::set<IntList> *pairs;
 
 
         double distance(double *, double *);
@@ -90,7 +90,7 @@ namespace ALM_NS {
 
         int nneib;
         int maxorder;
-		int interaction_type;
+        int interaction_type;
         double ***xcrd;
 
         int ***intpairs;
@@ -164,9 +164,9 @@ namespace ALM_NS {
         void search_interactions();
         void set_ordername();
         void calc_minvec();
-		int nbody(const int, const int *);
+        int nbody(const int, const int *);
 
-		std::vector<DistInfo> **distall;
-		std::set<IntList> *interacting_atom_pairs;
+        std::vector<DistInfo> **distall;
+        std::set<IntList> *interacting_atom_pairs;
     };
 }

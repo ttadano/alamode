@@ -8,11 +8,11 @@ namespace PHON_NS {
         Phonon_velocity(class PHON *);
         ~Phonon_velocity();
 
-       void calc_phonon_vel_band();
-       void phonon_vel_k(double *, double **);
+        void calc_phonon_vel_band();
+        void phonon_vel_k(double *, double **);
 
-       double **phvel;
-   
+        double **phvel;
+
     private:
         double diff(double *, const unsigned int, double);
     };

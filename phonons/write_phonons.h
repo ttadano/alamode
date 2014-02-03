@@ -15,17 +15,17 @@ namespace PHON_NS
         void write_phonon_info();
         void write_selfenergy();
         void write_gruneisen();
-		void setup_result_io();
-		void write_input_vars();
-		void write_kappa();
+        void setup_result_io();
+        void write_input_vars();
+        void write_kappa();
 
         bool writeanime;
 
         double in_kayser(const double);
         int nbands;
 
-		std::string file_result;
-		std::fstream fs_result;
+        std::string file_result;
+        std::fstream fs_result;
 
     private:
 
@@ -36,7 +36,7 @@ namespace PHON_NS
         void write_mode_anime();
         void write_eigenvectors();
         void write_thermodynamics();
-		void write_rmsd();
+        void write_rmsd();
 
         double Ry_to_kayser;   
     };

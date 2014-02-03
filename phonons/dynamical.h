@@ -12,8 +12,8 @@ namespace PHON_NS {
         Dynamical(class PHON *);
         ~Dynamical();
 
-  //      void calc_dynamical_matrix();
-  //      void diagonalize_dynamical();
+        //      void calc_dynamical_matrix();
+        //      void diagonalize_dynamical();
         void diagonalize_dynamical_all();
 
         unsigned int neval;
@@ -25,40 +25,40 @@ namespace PHON_NS {
         double **eval_phonon;
         std::complex<double> ***evec_phonon;
 
-		double **kvec_na;
-        
-        void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
-		void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
+        double **kvec_na;
 
-		void calc_analytic_k(double *, double ****, std::complex<double> **);
-		void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
-		void calc_nonanalytic_k(double *, double *, double **);
+        void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
+        void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
+
+        void calc_analytic_k(double *, double ****, std::complex<double> **);
+        void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
+        void calc_nonanalytic_k(double *, double *, double **);
 
         void setup_dynamical(std::string);
-		void modify_eigenvectors();
-		void modify_eigenvectors_sym();
+        void modify_eigenvectors();
+        void modify_eigenvectors_sym();
 
         double fold(double);
         double freq(const double);
 
     private:
-//        void calc_analytic();
+        //        void calc_analytic();
 
-		void load_born();
-		void setup_na_kvec();
+        void load_born();
+        void setup_na_kvec();
 
-		double **xshift_s;
+        double **xshift_s;
         char UPLO;
         std::complex<double> ***dymat;
-		double dielec[3][3];
-		double ***borncharge;
+        double dielec[3][3];
+        double ***borncharge;
     };
 
     extern "C" {
-    void zheev_(const char *jobz, const char *uplo, int *n,	std::complex<double> *a, int *lda, 
-        double *w, std::complex<double> *work, int *lwork, double *rwork, int *info);
-	void zgemm_(const char *transa, const char *transb, int *m, int *n, int *k, 
-		std::complex<double> *alpha, std::complex<double> *a, int *lda, std::complex<double> *b, int *ldb, 
-		std::complex<double> *beta, std::complex<double> *c, int *ldc);
+        void zheev_(const char *jobz, const char *uplo, int *n,	std::complex<double> *a, int *lda, 
+            double *w, std::complex<double> *work, int *lwork, double *rwork, int *info);
+        void zgemm_(const char *transa, const char *transb, int *m, int *n, int *k, 
+            std::complex<double> *alpha, std::complex<double> *a, int *lda, std::complex<double> *b, int *ldb, 
+            std::complex<double> *beta, std::complex<double> *c, int *ldc);
     }
 }
