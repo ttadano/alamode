@@ -142,7 +142,11 @@ void Relaxation::setup_relaxation()
             vec_for_v3[i][1][j] = relvec[atom_num[2]][atom_num[0]][i];
         }
 
-        invmass_for_v3[j] =  invsqrt_mass_p[(*it).elems[0].atom] * invsqrt_mass_p[(*it).elems[1].atom] * invsqrt_mass_p[(*it).elems[2].atom];
+        invmass_for_v3[j] 
+        = invsqrt_mass_p[(*it).elems[0].atom] 
+        * invsqrt_mass_p[(*it).elems[1].atom] 
+        * invsqrt_mass_p[(*it).elems[2].atom];
+
         ++j;     
     }
 
@@ -150,7 +154,9 @@ void Relaxation::setup_relaxation()
 
     for (i = 0; i < fcs_phonon->force_constant[1].size(); ++i) {
         for (j = 0; j < 3; ++j) {
-            evec_index[i][j] = 3 * fcs_phonon->force_constant[1][i].elems[j].atom + fcs_phonon->force_constant[1][i].elems[j].xyz;
+            evec_index[i][j] 
+            = 3 * fcs_phonon->force_constant[1][i].elems[j].atom 
+                + fcs_phonon->force_constant[1][i].elems[j].xyz;
         }
     }
 
@@ -174,7 +180,8 @@ void Relaxation::setup_relaxation()
         j = 0;
         unsigned int atom_num4[4];
 
-        for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[2].begin(); it != fcs_phonon->force_constant[2].end(); ++it) {
+        for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[2].begin(); 
+            it != fcs_phonon->force_constant[2].end(); ++it) {
 
             for (i = 0; i < 4; ++i) atom_num4[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
 
@@ -184,7 +191,12 @@ void Relaxation::setup_relaxation()
                 vec_for_v4[j][i][2] = relvec[atom_num4[3]][atom_num4[0]][i];
             }
 
-            invmass_for_v4[j] =  invsqrt_mass_p[(*it).elems[0].atom] * invsqrt_mass_p[(*it).elems[1].atom] * invsqrt_mass_p[(*it).elems[2].atom] * invsqrt_mass_p[(*it).elems[3].atom];
+            invmass_for_v4[j] 
+            = invsqrt_mass_p[(*it).elems[0].atom] 
+            * invsqrt_mass_p[(*it).elems[1].atom] 
+            * invsqrt_mass_p[(*it).elems[2].atom] 
+            * invsqrt_mass_p[(*it).elems[3].atom];
+            
             ++j;     
         }
 
@@ -192,7 +204,9 @@ void Relaxation::setup_relaxation()
 
         for (i = 0; i < fcs_phonon->force_constant[2].size(); ++i) {
             for (j = 0; j < 4; ++j) {
-                evec_index4[i][j] = 3 * fcs_phonon->force_constant[2][i].elems[j].atom + fcs_phonon->force_constant[2][i].elems[j].xyz;
+                evec_index4[i][j] 
+                = 3 * fcs_phonon->force_constant[2][i].elems[j].atom 
+                    + fcs_phonon->force_constant[2][i].elems[j].xyz;
             }
         }
     }
@@ -265,7 +279,7 @@ void Relaxation::setup_relaxation()
     epsilon *= time_ry / Hz_to_kayser;
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    //gen_pair_uniq();
+    gen_pair_uniq();
     //gensym_kpairs();
 
     if (mympi->my_rank == 0) {
@@ -1020,8 +1034,18 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
 
     int iloc, jloc, kloc;
 
-    for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+    double **v3_arr;
+    double ***delta_arr;
+    double ret_tmp;
 
+    double f1, f2;
+
+    memory->allocate(v3_arr, pair_uniq[ik_in].size(), ns * ns);
+    memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 4);
+
+
+#pragma omp parallel for private(multi, knum, knum_minus, arr, k1, k2, is, js, omega_inner)
+    for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
         knum = kpoint->k_reduced[ik_in][0];
         knum_minus = kpoint->knum_minus[knum];
@@ -1039,36 +1063,99 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
                 omega_inner[0] = dynamical->eval_phonon[k1][is];
                 omega_inner[1] = dynamical->eval_phonon[k2][js];
 
-                v3_tmp = std::norm(V3(arr));
+                v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
 
-                for (i = 0; i < N; ++i) {
-                    T_tmp = T[i];
-
-                    if (conductivity->use_classical_Cv == 0) {
-                        n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
-                        n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
-                    } else if (conductivity->use_classical_Cv == 1) {
-                        n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) + phonon_thermodynamics->fC(omega_inner[1], T_tmp) + 1.0;
-                        n2 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) - phonon_thermodynamics->fC(omega_inner[1], T_tmp);
-                    }
-
-                    if (ksum_mode == 0) {
-                        ret[i] += v3_tmp * multi
-                            * ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
-                            + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                            - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                            + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
-                    } else if (ksum_mode == 1) {
-                        ret[i] += v3_tmp * multi
-                            * ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
-                            + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
-                            - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
-                            + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
-                    }
-                }
+                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega + omega_inner[0] + omega_inner[1]);
+                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] - omega_inner[1]);
+                delta_arr[ik][ns * is + js][2] = delta_lorentz(omega - omega_inner[0] + omega_inner[1]);
+                delta_arr[ik][ns * is + js][3] = delta_lorentz(omega + omega_inner[0] - omega_inner[1]);
             }
         }
     }
+
+    for (i = 0; i < N; ++i) {
+        T_tmp = T[i];
+        ret_tmp = 0.0;
+
+#pragma omp parallel for private(xk_tmp, iloc, jloc, kloc, jk, is, js, arr, omega_inner, n1, n2, f1, f2), reduction(+:ret_tmp)
+        for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+
+            k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+            k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+            for (is = 0; is < ns; ++is){
+                for (js = 0; js < ns; ++js) {
+
+                    omega_inner[0] = dynamical->eval_phonon[k1][is];
+                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+
+                    f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
+                    f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+                    n1 =  f1 + f2 + 1.0;
+                    n2 =  f1 - f2;
+
+                    ret_tmp += v3_arr[ik][ns * is + js]
+                    * ( -n1 * delta_arr[ik][ns * is + js][0] + n1 * delta_arr[ik][ns * is + js][1]
+                    -n2 * delta_arr[ik][ns * is + js][2] + n2 * delta_arr[ik][ns * is + js][3]);
+
+                }
+            }
+        }
+        ret[i] = ret_tmp;
+    }
+
+//     for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+// 
+//         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
+//         knum = kpoint->k_reduced[ik_in][0];
+//         knum_minus = kpoint->knum_minus[knum];
+// 
+//         arr[0] = ns * knum_minus + snum;
+// 
+//         k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+//         k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+// 
+//         for (is = 0; is < ns; ++is) {
+//             for (js = 0; js < ns; ++js) {
+//                 arr[1] = ns * k1 + is;
+//                 arr[2] = ns * k2 + js;
+// 
+//                 omega_inner[0] = dynamical->eval_phonon[k1][is];
+//                 omega_inner[1] = dynamical->eval_phonon[k2][js];
+// 
+//                 v3_tmp = std::norm(V3(arr));
+// 
+//                 for (i = 0; i < N; ++i) {
+//                     T_tmp = T[i];
+// 
+//                     if (conductivity->use_classical_Cv == 0) {
+//                         n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
+//                         n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+//                     } else if (conductivity->use_classical_Cv == 1) {
+//                         n1 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) + phonon_thermodynamics->fC(omega_inner[1], T_tmp) + 1.0;
+//                         n2 = phonon_thermodynamics->fC(omega_inner[0], T_tmp) - phonon_thermodynamics->fC(omega_inner[1], T_tmp);
+//                     }
+// 
+//                     if (ksum_mode == 0) {
+//                         ret[i] += v3_tmp * multi
+//                             * ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
+//                             + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+//                             - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+//                             + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+//                     } else if (ksum_mode == 1) {
+//                         ret[i] += v3_tmp * multi
+//                             * ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
+//                             + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
+//                             - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
+//                             + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+    memory->deallocate(v3_arr);
+    memory->deallocate(delta_arr);
 
     for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
 }

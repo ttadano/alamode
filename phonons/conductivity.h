@@ -29,5 +29,7 @@ namespace PHON_NS {
         double *tau_l;
         std::vector<int> vks, vks_l, vks_done;
         std::set<int> vks_job;
+
+        void average_self_energy_at_degenerate_point(const int, const int, double **);
     };
 }

@@ -734,10 +734,12 @@ void Writes::write_kappa()
         }
 
         for (i = 0; i < conductivity->ntemp; ++i) {
-            ofs_kl << std::setw(5) << conductivity->Temperature[i];
+            ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                << conductivity->Temperature[i];
             for (j = 0; j < 3; ++j){
                 for (k = 0; k < 3; ++k){
-                    ofs_kl << std::setw(15) << conductivity->kappa[i][j][k];
+                    ofs_kl << std::setw(15) << std::fixed 
+                        << std::setprecision(4) << conductivity->kappa[i][j][k];
                 }
             }
             ofs_kl << std::endl;

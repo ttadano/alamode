@@ -272,8 +272,8 @@ void Conductivity::calc_anharmonic_tau()
 
             if (relaxation->ksum_mode == 0 || relaxation->ksum_mode == 1) {
                 //		relaxation->calc_damping(ntemp, Temperature, omega, knum, snum, tau_l);
-                relaxation->calc_damping_tune(ntemp, Temperature, omega, knum, snum, tau_l);
-                // relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, tau_l);
+                // relaxation->calc_damping_tune(ntemp, Temperature, omega, knum, snum, tau_l);
+                relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, tau_l);
             } else if (relaxation->ksum_mode == -1) {
                 relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, tau_l);
             }
@@ -334,6 +334,8 @@ void Conductivity::compute_kappa()
         double vv_tmp;
         int ieq;
 
+        average_self_energy_at_degenerate_point(kpoint->nk_reduced*ns, ntemp, tau);
+
         if (isotope->include_isotope) {
             for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
                 knum = kpoint->k_reduced[iks / ns][0];
@@ -379,6 +381,82 @@ void Conductivity::compute_kappa()
                     kappa[i][j][k] *=  1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p * static_cast<double>(nk));
                 }
             }
+        }
+    }
+}
+
+
+void Conductivity::average_self_energy_at_degenerate_point(const int n, const int m, double **lifetime)
+{
+    int i, j, k, l;
+    int nkr = kpoint->nk_reduced;
+    int ik;
+
+    double *eval_tmp;
+    double omega_now, omega_prev;
+    double tol_omega = 1.0e-5;
+
+    std::vector<int> degeneracy_at_k;
+
+    memory->allocate(eval_tmp, ns);
+
+    int ideg, is;
+    double *damping_sum;
+
+    memory->allocate(damping_sum, m);
+
+    for (i = 0; i < nkr; ++i) {
+        ik = kpoint->k_reduced[i][0];
+
+        for (j = 0; j < ns; ++j) eval_tmp[j] = dynamical->eval_phonon[ik][j];
+
+        degeneracy_at_k.clear();
+
+        omega_prev = eval_tmp[0];
+        ideg = 1;
+
+        for (j = 1; j < ns; ++j) {
+            omega_now = eval_tmp[j];
+
+            if (std::abs(omega_now - omega_prev) < tol_omega) {
+                ++ideg;
+            } else {
+                degeneracy_at_k.push_back(ideg);
+                ideg = 1;
+                omega_prev = omega_now;
+            }
+        }
+        degeneracy_at_k.push_back(ideg);
+
+        std::cout << kpoint->xk[ik][0] << " " << kpoint->xk[ik][1] << " " << kpoint->xk[ik][2] << std::endl;
+        for (j = 0; j < degeneracy_at_k.size(); ++j) {
+            std::cout << degeneracy_at_k[j] << std::endl;
+        }
+        std::cout<< std::endl;
+
+
+        is = 0;
+        for (j = 0; j < degeneracy_at_k.size(); ++j) {
+            ideg = degeneracy_at_k[j];
+
+            if (ideg > 1) {
+
+                for (l = 0; l < m; ++l) damping_sum[l] = 0.0;
+
+                for (k = is; k < is + ideg; ++k) {
+                    for (l = 0; l < m; ++l) {
+                        damping_sum[l] += 1.0 / lifetime[ns * i + k][l];
+                    }
+                }
+
+                for (k = is; k < is + ideg; ++k) {
+                    for (l = 0; l < m; ++l) {
+                        lifetime[ns * i + k][l] = static_cast<double>(ideg) / damping_sum[l];
+                    }
+                }
+            }
+
+            is += ideg;
         }
     }
 }
