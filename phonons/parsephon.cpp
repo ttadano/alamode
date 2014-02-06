@@ -6,7 +6,6 @@
 #include "kpoint.h"
 #include "fcs_phonon.h"
 #include "dynamical.h"
-#include "mpi_common.h"
 #include "write_phonons.h"
 #include <iostream>
 #include <fstream>
@@ -23,6 +22,7 @@
 #include <sys/stat.h>
 #include "memory.h"
 #include "isotope.h"
+#include "phonon_velocity.h"
 
 #ifdef _USE_BOOST
 #include <boost/algorithm/string.hpp>
@@ -85,7 +85,7 @@ void Input::parse_general_vars() {
     double Tmin, Tmax, dT, na_sigma, epsilon;
     double emin, emax, delta_e, delta_a;
     double tolerance;
-    bool printsymmetry;
+    bool printsymmetry, printvel;
     bool eigenvector, printxsf, nonanalytic, lclassical, restart;
     bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
     bool sym_time_reversal;
@@ -95,7 +95,7 @@ void Input::parse_general_vars() {
 
     std::string str_tmp;
     std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR PRINTXSF NBANDS NONANALYTIC BORNINFO \
-                                   NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS FSTATE_W FSTATE_K";
+                                   NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT NKD KD MASS FSTATE_W FSTATE_K PRINTVEL";
     std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
     std::vector<std::string> no_defaults, celldim_v;
     std::vector<std::string> kdname_v, masskd_v, isofact_v;
@@ -170,6 +170,7 @@ void Input::parse_general_vars() {
 
     eigenvector = false;
     printxsf = false;
+    printvel = false;
     nonanalytic = false;
     lclassical = false;
 
@@ -218,6 +219,7 @@ void Input::parse_general_vars() {
     assign_val(delta_e, "DELTA_E", general_var_dict);
 
     assign_val(printxsf, "PRINTXSF", general_var_dict);
+    assign_val(printvel, "PRINTVEL", general_var_dict);
 
     if (printxsf || mode == "boltzmann") {
         eigenvector = true;
@@ -328,6 +330,8 @@ void Input::parse_general_vars() {
     dos->emax = emax;
     dos->emin = emin;
     dos->delta_e = delta_e;
+
+    phonon_velocity->printvel = printvel;
 
     for (i = 0; i < 3; ++i) {
         system->cell_dimension[i] = celldim[i];

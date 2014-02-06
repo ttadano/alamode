@@ -11,6 +11,7 @@ namespace PHON_NS {
         void calc_phonon_vel_band();
         void phonon_vel_k(double *, double **);
 
+        bool printvel;
         double **phvel;
 
     private:

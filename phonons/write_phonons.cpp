@@ -263,13 +263,13 @@ void Writes::write_phonon_info()
 
     if(kpoint->kpoint_mode == 1){
         write_phonon_bands();
-        write_phonon_vel();
+        if (phonon_velocity->printvel) write_phonon_vel();
     }
 
     if(dos->flag_dos) {
         write_phonon_dos();
         write_thermodynamics();
-        write_phonon_vel_all();
+        if (phonon_velocity->printvel) write_phonon_vel_all();
     }
 
     if(writeanime) {
