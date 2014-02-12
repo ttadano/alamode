@@ -102,20 +102,20 @@ int main(int argc, char *argv[]) {
 
 
 	if (calc == "tau") {
-		beg_k = atoi(argv[3]) - 1;
-		end_k = atoi(argv[4]);
+		beg_k = atoi(argv[4]) - 1;
+		end_k = atoi(argv[5]);
 
 		if (end_k == 0) end_k = nk;
 
-		beg_s = atoi(argv[5]) - 1;
-		end_s = atoi(argv[6]);
+		beg_s = atoi(argv[6]) - 1;
+		end_s = atoi(argv[7]);
 
 		if (end_s == 0) end_s = ns;
 
 		int itemp;
 		double target_temp;
 
-		target_temp = atof(argv[7]);
+		target_temp = atof(argv[8]);
 		if (fmod(target_temp-tmin, dt) > 1.0e-12) {
 			cout << "No information is found at the given temperature." << endl;
 			exit(1);
@@ -128,15 +128,15 @@ int main(int argc, char *argv[]) {
 
 		int target_k, target_s;
 
-		target_k = atoi(argv[3]) - 1;
-		target_s = atoi(argv[4]) - 1;
+		target_k = atoi(argv[4]) - 1;
+		target_s = atoi(argv[5]) - 1;
 
 		calc_tau_temp(target_k, target_s);
 
 	} else if (calc == "kappa") {
 
-		beg_s = atoi(argv[3]) - 1;
-		end_s = atoi(argv[4]);
+		beg_s = atoi(argv[4]) - 1;
+		end_s = atoi(argv[5]);
 
 		if (end_s == 0) end_s = ns;
 
@@ -149,15 +149,15 @@ int main(int argc, char *argv[]) {
 		int itemp;
 		double target_temp;
 
-		beg_s = atoi(argv[3]) - 1;
-		end_s = atoi(argv[4]);
+		beg_s = atoi(argv[4]) - 1;
+		end_s = atoi(argv[5]);
 
 		if (end_s == 0) end_s = ns;
 
-		max_len = atof(argv[5]);
-		d_len = atof(argv[6]);
+		max_len = atof(argv[6]);
+		d_len = atof(argv[7]);
 
-		target_temp = atof(argv[7]);
+		target_temp = atof(argv[8]);
 		if (fmod(target_temp-tmin, dt) > 1.0e-12) {
 			cout << "No information is found at the given temperature." << endl;
 			exit(1);
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 		itemp = static_cast<int>((target_temp - tmin) / dt);
 
 		for (i = 0; i < 3; ++i) {
-			size_flag[i] = atoi(argv[8+i]);
+			size_flag[i] = atoi(argv[9+i]);
 		}
 
 		calc_kappa_size(max_len, d_len, itemp, size_flag);
@@ -177,15 +177,15 @@ int main(int argc, char *argv[]) {
 		int itemp;
 		double target_temp;
 
-		beg_s = atoi(argv[3]) - 1;
-		end_s = atoi(argv[4]);
+		beg_s = atoi(argv[4]) - 1;
+		end_s = atoi(argv[5]);
 
 		if (end_s == 0) end_s = ns;
 
-		max_len = atof(argv[5]);
-		d_len = atof(argv[6]);
+		max_len = atof(argv[6]);
+		d_len = atof(argv[7]);
 
-		target_temp = atof(argv[7]);
+		target_temp = atof(argv[8]);
 		if (fmod(target_temp-tmin, dt) > 1.0e-12) {
 			cout << "No information is found at the given temperature." << endl;
 			exit(1);
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 		itemp = static_cast<int>((target_temp - tmin) / dt);
 
 		for (i = 0; i < 3; ++i) {
-			size_flag[i] = atoi(argv[8+i]);
+			size_flag[i] = atoi(argv[9+i]);
 		}
 
 		calc_kappa_size2(max_len, d_len, itemp, size_flag);
