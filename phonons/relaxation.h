@@ -84,9 +84,12 @@ namespace PHON_NS {
         bool calc_realpart;
         bool calc_fstate_omega;
         bool calc_fstate_k;
+
+        bool use_triplet_symmetry;
+
         std::string ks_input;
 
-        double delta_lorentz(const double);
+        inline double delta_lorentz(const double);
         double delta_gauss(const double);
 
         std::complex<double> V3(const unsigned int [3]);
@@ -115,6 +118,7 @@ namespace PHON_NS {
         bool is_proper(const int);
         bool is_symmorphic(const int);
 
+        void generate_triplet_k(const bool);
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double, const double, const unsigned int, const unsigned int, double *);
 
         int ngroup;
@@ -122,5 +126,6 @@ namespace PHON_NS {
 
         double **v3_arr;
         double ***delta_arr;
+
     };
 }

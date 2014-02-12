@@ -18,6 +18,7 @@ namespace PHON_NS
         void setup_result_io();
         void write_input_vars();
         void write_kappa();
+        void write_result_xml();
 
         bool writeanime;
 

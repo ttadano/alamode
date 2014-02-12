@@ -273,7 +273,7 @@ void Conductivity::calc_anharmonic_tau()
             if (relaxation->ksum_mode == 0 || relaxation->ksum_mode == 1) {
                 //		relaxation->calc_damping(ntemp, Temperature, omega, knum, snum, tau_l);
                 // relaxation->calc_damping_tune(ntemp, Temperature, omega, knum, snum, tau_l);
-                relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, tau_l);
+                 relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, tau_l);
             } else if (relaxation->ksum_mode == -1) {
                 relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, tau_l);
             }
@@ -427,12 +427,12 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n, const in
             }
         }
         degeneracy_at_k.push_back(ideg);
-
-        std::cout << kpoint->xk[ik][0] << " " << kpoint->xk[ik][1] << " " << kpoint->xk[ik][2] << std::endl;
-        for (j = 0; j < degeneracy_at_k.size(); ++j) {
-            std::cout << degeneracy_at_k[j] << std::endl;
-        }
-        std::cout<< std::endl;
+// 
+//         std::cout << kpoint->xk[ik][0] << " " << kpoint->xk[ik][1] << " " << kpoint->xk[ik][2] << std::endl;
+//         for (j = 0; j < degeneracy_at_k.size(); ++j) {
+//             std::cout << degeneracy_at_k[j] << std::endl;
+//         }
+//         std::cout<< std::endl;
 
 
         is = 0;

@@ -25,6 +25,12 @@ namespace PHON_NS {
                 symop.push_back(*p);
             }
         }
+        SymmetryOperation(std::vector<int> a)
+        {
+            for(std::vector<int>::const_iterator p = a.begin(); p != a.end(); ++p){
+                symop.push_back(*p);
+            }
+        }
 
         SymmetryOperation(const int rot[3][3], const int trans[3])
         {
@@ -163,5 +169,6 @@ namespace PHON_NS {
         void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x, 
             std::vector<RotationMatrix>, std::vector<SymmetryOperationTransFloat> &);
         void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperationTransFloat>);
+        void broadcast_symmlist(std::vector<SymmetryOperation> &);
     };
 }

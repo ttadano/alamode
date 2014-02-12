@@ -49,13 +49,15 @@ void Symmetry::setup_symmetry()
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    broadcast_symmlist(SymmList);
 
     if (mympi->my_rank == 0) {
         std::cout << "**Symmetry" << std::endl;
         std::cout << "Number of Symmetry Operations = " << nsym << std::endl << std::endl;
     }
-
-    gensym_withmap(xtmp, kdtmp);
+    if (mympi->my_rank == 0) {
+        gensym_withmap(xtmp, kdtmp);
+    }
 }
 
 void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int &nnp, double aa[3][3], double bb[3][3], double **x, unsigned int *kd)
@@ -551,4 +553,39 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
         SymmListWithMap.push_back(SymmetryOperationWithMapping(S, T, S_recip, map_tmp, natmin, shift));
     }
+}
+
+
+void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym)
+{
+    int i, j;
+    int n;
+    std::vector<int> sym_entry;
+    int **sym_tmp;
+
+    if (mympi->my_rank == 0) n = sym.size();
+    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    memory->allocate(sym_tmp, n, 9);
+
+    if (mympi->my_rank == 0) {
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 9; ++j) {
+                sym_tmp[i][j] = sym[i].symop[j];
+            }
+        }
+    }
+    MPI_Bcast(&sym_tmp[0][0], 9*n, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (mympi->my_rank > 0) {
+        for (i = 0; i < n; ++i) {
+            sym_entry.clear();
+            for (j = 0; j < 9; ++j) {
+                sym_entry.push_back(sym_tmp[i][j]);
+            }
+            sym.push_back(SymmetryOperation(sym_entry));
+        }
+    }
+
+    memory->deallocate(sym_tmp);
 }

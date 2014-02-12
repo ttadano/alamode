@@ -279,8 +279,9 @@ void Relaxation::setup_relaxation()
     epsilon *= time_ry / Hz_to_kayser;
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    gen_pair_uniq();
-    //gensym_kpairs();
+    generate_triplet_k(use_triplet_symmetry);
+    // gen_pair_uniq();
+    if (mympi->my_rank == 1) gensym_kpairs();
 
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl;
@@ -477,7 +478,6 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 
     return ret / std::sqrt(omega[0] * omega[1] * omega[2]);
 }
-
 
 
 // std::complex<double> Relaxation::V3(const unsigned int ks[3])
@@ -884,7 +884,8 @@ void Relaxation::calc_damping_tune(const unsigned int N, double *T, const double
                                    const unsigned int knum, const unsigned int snum, double *ret)
 {
     unsigned int i;
-    unsigned int ik, jk;
+    int ik;
+    unsigned int jk;
     unsigned int is, js;
     unsigned int arr[3];
 
@@ -1013,7 +1014,8 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
     // This is under test.
 
     unsigned int i;
-    unsigned int ik, jk;
+    int ik;
+    unsigned int jk;
     unsigned int is, js; 
     unsigned int arr[3];
 
@@ -1039,7 +1041,7 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
     double f1, f2;
 
     memory->allocate(v3_arr, pair_uniq[ik_in].size(), ns * ns);
-    memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 4);
+    memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 2);
 
 
 #pragma omp parallel for private(multi, knum, knum_minus, arr, k1, k2, is, js, omega_inner)
@@ -1054,21 +1056,21 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
         k2 = pair_uniq[ik_in][ik].group[0].ks[1];
 
         for (is = 0; is < ns; ++is) {
-            for (js = 0; js < ns; ++js) {
-                arr[1] = ns * k1 + is;
-                arr[2] = ns * k2 + js;
+            arr[1] = ns * k1 + is;
+            omega_inner[0] = dynamical->eval_phonon[k1][is];
 
-                omega_inner[0] = dynamical->eval_phonon[k1][is];
+            for (js = 0; js < ns; ++js) {
+                arr[2] = ns * k2 + js;
                 omega_inner[1] = dynamical->eval_phonon[k2][js];
 
                 v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
 
-                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega + omega_inner[0] + omega_inner[1]);
-                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] - omega_inner[1]);
-                delta_arr[ik][ns * is + js][2] = delta_lorentz(omega - omega_inner[0] + omega_inner[1]);
-                delta_arr[ik][ns * is + js][3] = delta_lorentz(omega + omega_inner[0] - omega_inner[1]);
+                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega - omega_inner[0] - omega_inner[1])
+                                               - delta_lorentz(omega + omega_inner[0] + omega_inner[1]);
+                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] + omega_inner[1])
+                                               - delta_lorentz(omega + omega_inner[0] - omega_inner[1]);
             }
-        }
+        }   
     }
 
     for (i = 0; i < N; ++i) {
@@ -1092,10 +1094,8 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
                     n1 =  f1 + f2 + 1.0;
                     n2 =  f1 - f2;
 
-                    ret_tmp += v3_arr[ik][ns * is + js]
-                    * ( -n1 * delta_arr[ik][ns * is + js][0] + n1 * delta_arr[ik][ns * is + js][1]
-                    -n2 * delta_arr[ik][ns * is + js][2] + n2 * delta_arr[ik][ns * is + js][3]);
-
+                    ret_tmp += v3_arr[ik][ns * is + js] 
+                    * (n1 * delta_arr[ik][ns * is + js][0] - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -1567,7 +1567,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
     memory->deallocate(ret_mpi);
 }
 
-double Relaxation::delta_lorentz(const double omega)
+inline double Relaxation::delta_lorentz(const double omega)
 {
     return epsilon / (omega*omega + epsilon*epsilon) / pi;
 }
@@ -2104,39 +2104,39 @@ void Relaxation::gensym_kpairs() {
         k1 = kpoint->knum_minus[k0];
 
         std::cout << "#Irred. K " << std::setw(5) << i + 1;
-        std::cout << " #groups : " << std::setw(5) << pair_uniq[i].size() << std::endl;
+        std::cout << " #Number of Unique Triplets : " << std::setw(5) << pair_uniq[i].size() << std::endl;
 
-        for (j = 0; j < pair_uniq[i].size(); ++j) {
-            std::cout << "group " << std::setw(5) << j + 1 << std::endl;
-
-            for (k = 0; k < pair_uniq[i][j].group.size(); ++k) {
-                k2 = pair_uniq[i][j].group[k].ks[0];
-                k3 = pair_uniq[i][j].group[k].ks[1];
-
-                std::cout << std::setw(5) << k1 + 1;
-                std::cout << std::setw(5) << k2 + 1;
-                std::cout << std::setw(5) << k3 + 1;
-
-
-                arr[0] = ns * k1 + 3;
-                arr[1] = ns * k2 + 3;
-                arr[2] = ns * k3 + 3;
-                V3tmp1 = V3(arr);
-
-                // 				arr[0] = ns * kpoint->knum_minus[k1] + 3;
-                // 				arr[1] = ns * kpoint->knum_minus[k2] + 3;
-                // 				arr[2] = ns * kpoint->knum_minus[k3] + 3;
-                // 				V3tmp2 = V3(arr) * V3tmp1;
-
-                std::cout << std::setw(15) << std::norm(V3tmp1);
-                std::cout << std::setw(5) << pair_uniq[i][j].group[k].symnum;
-                std::cout << std::setw(3) << is_proper(pair_uniq[i][j].group[k].symnum);
-                std::cout << std::setw(3) << is_symmorphic(pair_uniq[i][j].group[k].symnum) << std::endl;
-                // 								std::cout << std::setw(15) << V3tmp2.real();
-                // 								std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
-            }
-        }
-        std::cout << std::endl;
+//         for (j = 0; j < pair_uniq[i].size(); ++j) {
+//             std::cout << "group " << std::setw(5) << j + 1 << std::endl;
+// 
+//             for (k = 0; k < pair_uniq[i][j].group.size(); ++k) {
+//                 k2 = pair_uniq[i][j].group[k].ks[0];
+//                 k3 = pair_uniq[i][j].group[k].ks[1];
+// 
+//                 std::cout << std::setw(5) << k1 + 1;
+//                 std::cout << std::setw(5) << k2 + 1;
+//                 std::cout << std::setw(5) << k3 + 1;
+// 
+// 
+//                 arr[0] = ns * k1 + 3;
+//                 arr[1] = ns * k2 + 3;
+//                 arr[2] = ns * k3 + 3;
+//                 V3tmp1 = V3(arr);
+// 
+//                 // 				arr[0] = ns * kpoint->knum_minus[k1] + 3;
+//                 // 				arr[1] = ns * kpoint->knum_minus[k2] + 3;
+//                 // 				arr[2] = ns * kpoint->knum_minus[k3] + 3;
+//                 // 				V3tmp2 = V3(arr) * V3tmp1;
+// 
+//                 std::cout << std::setw(15) << std::norm(V3tmp1);
+//                 std::cout << std::setw(5) << pair_uniq[i][j].group[k].symnum;
+//                 std::cout << std::setw(3) << is_proper(pair_uniq[i][j].group[k].symnum);
+//                 std::cout << std::setw(3) << is_symmorphic(pair_uniq[i][j].group[k].symnum) << std::endl;
+//                 // 								std::cout << std::setw(15) << V3tmp2.real();
+//                 // 								std::cout << std::setw(15) << V3tmp2.imag() << std::endl;
+//             }
+//         }
+//         std::cout << std::endl;
     }
 }
 
@@ -2285,18 +2285,97 @@ void Relaxation::gen_pair_uniq()
                 pair_uniq[i].push_back(kslist);
             }
         }
-
-        // 		std::cout << "i = " << std::setw(5) << i + 1 << std::endl;
-        // 		ncount = 0;
-        // 		for (j = 0; j < pair_uniq[i].size(); ++j) {
-        // 			std::cout << "j = " << std::setw(5) << j + 1;
-        // 			std::cout << " (" << std::setw(5) << pair_uniq[i][j].group.size() << " )" << std::endl;
-        // 			for (k = 0; k < pair_uniq[i][j].group.size(); ++k) {
-        // 				std::cout << std::setw(5) << pair_uniq[i][j].group[k].ks[0];
-        // 				std::cout << std::setw(5) << pair_uniq[i][j].group[k].ks[1] << std::endl;
-        // 			}
-        // 			ncount += pair_uniq[i][j].group.size();
-        // 		}
-        // 		std::cout << "ncount = " << ncount << std::endl;
     }
+}
+
+void Relaxation::generate_triplet_k(const bool use_triplet_symmetry)
+{
+    int i, j;
+    int *num_group_k;
+    int **symmetry_group_k;
+
+    int knum, isym, ksym;
+    int ik1, ik2;
+    int ks_in[2], tmp;
+    double xk[3], xk1[3], xk2[3];
+    
+    bool *flag_found;
+
+    std::vector<KsList> kslist;
+
+    memory->allocate(num_group_k, kpoint->nk_reduced);
+    memory->allocate(symmetry_group_k, kpoint->nk_reduced, symmetry->nsym);
+    memory->allocate(pair_uniq, kpoint->nk_reduced);
+    memory->allocate(flag_found, kpoint->nk);
+
+    for (i = 0; i < kpoint->nk_reduced; ++i) {
+
+        knum = kpoint->k_reduced[i][0];
+        
+        if (use_triplet_symmetry) {
+        
+            num_group_k[i] = 0;
+            j = 0;
+
+            for (isym = 0; isym < symmetry->nsym; ++isym) {
+
+                ksym = knum_sym(knum, isym);
+                if (ksym == knum) {
+                    num_group_k[i] += 1;
+                    symmetry_group_k[i][j++] = isym;
+                }
+            }
+        } else {
+            num_group_k[i] = 1;
+            symmetry_group_k[i][0] = 0; // Identity matrix
+        }
+
+        for (j = 0; j < 3; ++j) xk[j] = kpoint->xk[knum][j];
+
+        for (j = 0; j < kpoint->nk; ++j) flag_found[j] = false;
+
+        pair_uniq[i].clear();
+
+        for (ik1 = 0; ik1 < nk; ++ik1) {
+
+            for (j = 0; j < 3; ++j) xk1[j] = kpoint->xk[ik1][j];
+            for (j = 0; j < 3; ++j) xk2[j] = xk[j] - xk1[j];
+            
+            ik2 = kpoint->get_knum(xk2[0], xk2[1], xk2[2]);
+
+            kslist.clear();
+
+            if (ik1 > ik2) continue;
+
+            for (isym = 0; isym < num_group_k[i]; ++isym) {
+
+                ks_in[0] = knum_sym(ik1, symmetry_group_k[i][isym]);
+                ks_in[1] = knum_sym(ik2, symmetry_group_k[i][isym]);
+
+                if (!flag_found[ks_in[0]]) {
+                    kslist.push_back(KsList(2, ks_in, symmetry_group_k[i][isym]));
+                    flag_found[ks_in[0]] = true;
+                }
+
+                if (ks_in[0] != ks_in[1]) {
+                    tmp = ks_in[0];
+                    ks_in[0] = ks_in[1];
+                    ks_in[1] = tmp;
+
+                    if (!flag_found[ks_in[0]]) {
+                        kslist.push_back(KsList(2, ks_in, symmetry_group_k[i][isym]));
+                        flag_found[ks_in[0]] = true;
+                    }
+                }
+            }
+
+            if (kslist.size() > 0) {
+                pair_uniq[i].push_back(kslist);
+            }
+        }
+    }
+
+    memory->deallocate(num_group_k);
+    memory->deallocate(symmetry_group_k);
+    memory->deallocate(flag_found);
 }

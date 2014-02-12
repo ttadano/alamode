@@ -20,6 +20,8 @@
 #include "write_phonons.h"
 #include "mathfunctions.h"
 #include "isotope.h"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 using namespace PHON_NS;
 
@@ -50,11 +52,14 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << " EIGENVECTOR = " << dynamical->eigenvectors << std::endl;
+    std::cout << " PRINTVEL = " << phonon_velocity->printvel << std::endl;
     std::cout << " PRINTXSF = " << writes->writeanime << "; NBANDS = " << writes->nbands << std::endl;
     std::cout << " TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
     std::cout << " NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
     std::cout << " EMIN = " << dos->emin << "; EMAX = " << dos->emax << "; DELTA_E = " << dos->delta_e << std::endl;
     std::cout << std::endl;
+
+    std::cout << " TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
 
     std::cout << " DELTA_A = " << gruneisen->delta_a << std::endl;
     std::cout << std::endl;
@@ -749,4 +754,10 @@ void Writes::write_kappa()
         std::cout << std::endl;
         std::cout << "Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
     }
+}
+
+
+void Writes::write_result_xml()
+{
+
 }
