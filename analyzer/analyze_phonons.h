@@ -29,12 +29,16 @@ std::string calc;
 int beg_k, end_k;
 int beg_s, end_s;
 
+int average_gamma;
+
 void calc_tau(int);
 void calc_tau_temp(int, int);
 void calc_kappa();
 void calc_kappa_size(double, double, int, int [3]);
 void calc_kappa_size2(double, double, int, int [3]);
 double Cv(double, double);
+
+void average_gamma_at_degenerate_point(double **, double ***, const int, const int, const int);
 
 static const double Ryd_to_kayser = Hz_to_kayser / time_ry;
 static const double kayser_to_Ryd = 1.0 / Ryd_to_kayser;

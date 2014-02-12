@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <vector>
 #include "analyze_phonons.h"
 
 using namespace std;
@@ -8,9 +9,10 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	string str;
 
-	cout << "# Phonon analyzer ver. 1.0" << endl;
+	cout << "# Phonon analyzer Ver. 1.0" << endl;
 
 	calc = argv[2];
+    average_gamma = atoi(argv[3]);
 
 	ifs.open(argv[1], std::ios::in);
 
@@ -95,6 +97,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	ifs.close();
+
+    if (average_gamma) average_gamma_at_degenerate_point(omega, tau, nt, nk, ns);
 
 
 	if (calc == "tau") {
@@ -491,4 +495,62 @@ double Cv(double omega, double temp)
 		x = omega*kayser_to_Ryd / (temp*T_to_Ryd);
 		return k_Boltzmann * pow(x/(2.0 * sinh(0.5*x)), 2.0);
 	}
+}
+
+
+void average_gamma_at_degenerate_point(double **e, double ***tau, const int nt, const int nk, const int ns)
+{
+    int ideg, is;
+    double omega_prev, omega_now;
+    double tol_omega = 1.0e-3;
+
+    std::vector<int> degeneracy_at_k;
+    double *damp_sum;
+
+    allocate(damp_sum, nt);
+
+    for (i = 0; i < nk; ++i) {
+
+        degeneracy_at_k.clear();
+        omega_prev = e[i][0];
+        ideg = 1;
+
+        for (j = 1; j < ns; ++j) {
+            omega_now = e[i][j];
+
+            if (std::abs(omega_now - omega_prev) < tol_omega) {
+                ++ideg;
+            } else {
+                degeneracy_at_k.push_back(ideg);
+                ideg = 1;
+                omega_prev = omega_now;
+            }
+        }
+        degeneracy_at_k.push_back(ideg);
+
+        is = 0;
+
+        for (j = 0; j < degeneracy_at_k.size(); ++j) {
+            ideg = degeneracy_at_k[j];
+
+            if (ideg > 1) {
+
+                for (k = 0; k < nt; ++k) damp_sum[k] = 0.0;
+
+                for (k = is; k < is + ideg; ++k) {
+                    for (l = 0; l < nt; ++l) damp_sum[l] += 1.0 / tau[i][k][l];
+                }
+
+
+                for (k = is; k < is + ideg; ++k) {
+                    for (l = 0; l < nt; ++l) tau[i][k][l] = static_cast<double>(ideg) / damp_sum[l];
+                }
+            }
+
+            is += ideg;
+        }
+
+    }
+
+    deallocate(damp_sum);
 }
