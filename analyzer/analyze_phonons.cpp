@@ -538,12 +538,12 @@ void average_gamma_at_degenerate_point(double **e, double ***tau, const int nt, 
                 for (k = 0; k < nt; ++k) damp_sum[k] = 0.0;
 
                 for (k = is; k < is + ideg; ++k) {
-                    for (l = 0; l < nt; ++l) damp_sum[l] += 1.0 / tau[i][k][l];
+                    for (l = 0; l < nt; ++l) damp_sum[l] += 1.0 / tau[l][i][k];
                 }
 
 
                 for (k = is; k < is + ideg; ++k) {
-                    for (l = 0; l < nt; ++l) tau[i][k][l] = static_cast<double>(ideg) / damp_sum[l];
+                    for (l = 0; l < nt; ++l) tau[l][i][k] = static_cast<double>(ideg) / damp_sum[l];
                 }
             }
 
