@@ -18,6 +18,7 @@ parser.add_option('-k', '--kpoint')
 parser.add_option('-c', '--calc')
 parser.add_option('-l', '--length')
 parser.add_option('-d', '--direction')
+parser.add_option('-a', '--average')
 
 options, args = parser.parse_args()
 file_result = args[0]
@@ -33,6 +34,11 @@ if __name__ == '__main__':
 
     calc = options.calc
 
+    if options.average == None:
+        avg = 0
+    else:
+        avg = options.average
+
     if calc == "tau":
         if options.temp == None: # Damping function 
             if options.kpoint == None or options.mode == None:
@@ -46,7 +52,7 @@ if __name__ == '__main__':
                 target_k = int(options.kpoint)
                 target_s = int(options.mode)
                 calc = "tau_temp"
-                command = analyze_obj + file_result + " " + calc + " " + str(target_k) + " " + str(target_s) 
+                command = analyze_obj + file_result + " " + calc + " " + avg + " " + str(target_k) + " " + str(target_s) 
 
                 subprocess.call(command, shell=True)
 
@@ -78,7 +84,7 @@ if __name__ == '__main__':
                 else:
                     sys.exit("Invalid usage of --mode for --calc=tau")
 
-            command = analyze_obj + file_result + " " + calc + " " + str(beg_k) + " " + str(end_k) \
+            command = analyze_obj + file_result + " " + calc + " " + avg + " " + str(beg_k) + " " + str(end_k) \
                       + " " + str(beg_s) + " " + str(end_s) + " " + options.temp
 
             subprocess.call(command, shell=True)
@@ -126,7 +132,7 @@ if __name__ == '__main__':
             for i in range(len(options.direction.split(':'))):
                 size_flag[int(arr[i])-1] = 1
 
-        command = analyze_obj + file_result + " " + calc + " " + str(beg_s) + " " + str(end_s) \
+        command = analyze_obj + file_result + " " + calc + " " + avg + " " + str(beg_s) + " " + str(end_s) \
                   + " " + str(max_len) + " " + str(d_len) + " " + options.temp \
                   + " " + str(size_flag[0]) + " " + str(size_flag[1]) + " " + str(size_flag[2])
         subprocess.call(command, shell=True)
@@ -149,7 +155,7 @@ if __name__ == '__main__':
             else:
                 sys.exit("Invalid usage of --mode for --calc=kappa")
 
-        command = analyze_obj + file_result + " " + calc + " " + str(beg_s) + " " + str(end_s)
+        command = analyze_obj + file_result + " " + calc + " " + avg + " " + str(beg_s) + " " + str(end_s)
 
         subprocess.call(command, shell=True)
 
