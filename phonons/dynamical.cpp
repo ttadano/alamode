@@ -39,7 +39,15 @@ void Dynamical::setup_dynamical(std::string mode)
     neval = 3 * system->natmin;
     UPLO = 'U';
 
-    MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl << std::endl;
+        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+        std::cout << " Setting up conditions for the dynamical matrix ... " << std::endl << std::endl;
+        if (nonanalytic) {
+            std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
+            std::cout << std::endl;
+        }
+    }
 
     memory->allocate(xshift_s, 27, 3);
 
@@ -59,15 +67,13 @@ void Dynamical::setup_dynamical(std::string mode)
         }
     }
 
+    MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&nonanalytic, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
     memory->allocate(kvec_na, kpoint->nk, 3);
 
     if (nonanalytic) {
-        if (mympi->my_rank == 0) {
-            std::cout << std::endl;
-            std::cout << " NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
-            std::cout << std::endl;
-        }
+
         memory->allocate(borncharge, system->natmin, 3, 3);
 
         if (mympi->my_rank == 0) load_born();
@@ -78,7 +84,7 @@ void Dynamical::setup_dynamical(std::string mode)
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
-            std::cout << "Damping factor for the non-analytic term: " << na_sigma << std::endl;
+            std::cout << "  Damping factor for the non-analytic term: " << na_sigma << std::endl;
             std::cout << std::endl;
         }
 
@@ -584,9 +590,8 @@ void Dynamical::diagonalize_dynamical_all()
     int *ndata_eval, *ndata_evec;
     int nk_s, nk_e;
 
-
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << "Diagonalizing dynamical matrices for all k-points ..." << std::endl;
+        std::cout << std::endl << " Diagonalizing dynamical matrices for all k points ...";
     }
 
     memory->allocate(eval_phonon, nk, neval);
@@ -757,7 +762,6 @@ void Dynamical::diagonalize_dynamical_all()
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (mympi->my_rank == 0) {
-        timer->print_elapsed();
         std::cout << "done !" << std::endl;
     }
 
@@ -1316,15 +1320,13 @@ void Dynamical::modify_eigenvectors_sym()
 void Dynamical::load_born()
 {
     // Read the dielectric tensor and born effective charges from file_born
-
-    std::ifstream ifs_born;
+    unsigned int i, j, k;
     double sum_born[3][3];
     double res;
+    std::ifstream ifs_born;
 
     ifs_born.open(file_born.c_str(), std::ios::in);
     if (!ifs_born) error->exit("load_born", "cannot open file_born");
-
-    unsigned int i, j, k;
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -1339,8 +1341,9 @@ void Dynamical::load_born()
             }
         }
     }
-
-    std::cout << "Dielectric constant tensor in Cartesian coordinate" << std::endl;
+    std::cout << "  Dielectric constants and Born effective charges are read from " 
+        << file_born << "." << std::endl << std::endl;
+    std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             std::cout << std::setw(15) << dielec[i][j];
@@ -1348,9 +1351,11 @@ void Dynamical::load_born()
         std::cout << std::endl;
     }
     std::cout << std::endl;
-    std::cout << "Born effective charge tensor in Cartesian coordinate" << std::endl;
+    std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
     for (i = 0; i < system->natmin; ++i) {
-        std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+        std::cout << "  Atom" << std::setw(5) << i + 1 << "(" 
+            << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
                 std::cout << std::setw(15) << borncharge[i][j][k];
@@ -1382,8 +1387,8 @@ void Dynamical::load_born()
 
     if (res > eps10) {
         std::cout << std::endl;
-        std::cout << "WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
-        std::cout << "         The born effective charges will be modified as follows." << std::endl;
+        std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
+        std::cout << "           The born effective charges will be modified as follows." << std::endl;
 
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -1393,9 +1398,11 @@ void Dynamical::load_born()
             }
         }
         std::cout << std::endl;
-        std::cout << "New Born effective charge tensor in Cartesian coordinate." << std::endl;
+        std::cout << "  New Born effective charge tensor in Cartesian coordinate." << std::endl;
         for (i = 0; i < system->natmin; ++i) {
-            std::cout << "Atom" << std::setw(5) << i + 1 << "(" << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+            std::cout << "  Atom" << std::setw(5) << i + 1 << "(" 
+                << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+            
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
                     std::cout << std::setw(15) << borncharge[i][j][k];

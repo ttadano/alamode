@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pointers.h"
+#include <vector>
 
 namespace PHON_NS
 {
@@ -14,10 +15,17 @@ namespace PHON_NS
         void calc_dos();
         void calc_tdos();
 
+        void calc_dos2();
+
         double emin, emax, delta_e;
         int n_energy;
         double *energy_dos;
         double *dos_phonon;
         double **pdos_phonon;
+
+    private:
+        unsigned int nk_irreducible;
+        int *kmap_irreducible;
+        std::vector<int> k_irreducible;
     };
 }

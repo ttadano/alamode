@@ -109,6 +109,8 @@ namespace PHON_NS {
         int **evec_index;
         int **evec_index4;
 
+        bool sym_permutation;
+
         std::vector<KsListGroup> *pair_uniq;
 
         void gensym_kpairs();
@@ -118,8 +120,9 @@ namespace PHON_NS {
         bool is_proper(const int);
         bool is_symmorphic(const int);
 
-        void generate_triplet_k(const bool);
+        void generate_triplet_k(const bool, const bool);
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double, const double, const unsigned int, const unsigned int, double *);
+        void calc_frequency_resolved_final_state2(const unsigned int, double *, const double, const unsigned int, const double *, const unsigned int, const unsigned int, double **);
 
         int ngroup;
         std::vector<FcsClass> *fcs_group;

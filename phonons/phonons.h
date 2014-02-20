@@ -42,5 +42,11 @@ namespace PHON_NS
 
         std::string mode;
         bool restart_flag;
+
+        void execute_phonons();
+        void execute_RTA();
+        void execute_interpolation();
+        void execute_gruneisen();
+        void setup_base();
     };
 }

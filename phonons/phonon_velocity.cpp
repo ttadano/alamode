@@ -18,6 +18,11 @@ Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon){}
 
 Phonon_velocity::~Phonon_velocity(){}
 
+void Phonon_velocity::calc_group_velocity(const int kpmode)
+{
+
+}
+
 void Phonon_velocity::calc_phonon_vel_band()
 {
     unsigned int i;
@@ -36,7 +41,7 @@ void Phonon_velocity::calc_phonon_vel_band()
     memory->allocate(evec_tmp, 1, 1);
 
     if (mympi->my_rank == 0) {
-        std::cout << "Calculating group velocities of phonon along given k-path ..." << std::endl;
+        std::cout << " Calculating group velocities of phonon along given k path ... ";
     }
 
     memory->allocate(phvel, nk, n);
@@ -96,7 +101,7 @@ void Phonon_velocity::calc_phonon_vel_band()
     memory->deallocate(evec_tmp);
 
     if (mympi->my_rank == 0) {
-        std::cout << "..done!" << std::endl;
+        std::cout << "done!" << std::endl;
     }
 }
 

@@ -14,6 +14,15 @@ namespace PHON_NS {
         return a.e < b.e;
     }
 
+    struct TetraWithKnum {
+        double e;
+        int knum;
+    };
+
+    inline bool operator<(const TetraWithKnum &a, const TetraWithKnum &b) {
+        return a.e < b.e;
+    }
+
     class Integration: protected Pointers {
     public:
         Integration(class PHON *);
@@ -23,6 +32,7 @@ namespace PHON_NS {
         void finish_integration();
         double do_tetrahedron(double *, double *, const double);
         double dos_integration(double *, const double);
+        double calc_weight_tetrahedron(const int, int *, double *, double *, const double);
 
     private:
         unsigned int ntetra;
