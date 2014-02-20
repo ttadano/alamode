@@ -45,6 +45,8 @@ void Symmetry::setup_symmetry()
     SymmList.clear();
 
     if (mympi->my_rank == 0) {
+        std::cout << " Symmetry" << std::endl;
+        std::cout << " ========" << std::endl << std::endl;
         setup_symmetry_operation(natmin, nsym, nnp, system->lavec_p, system->rlavec_p, xtmp, kdtmp);
     }
 
@@ -52,8 +54,7 @@ void Symmetry::setup_symmetry()
     broadcast_symmlist(SymmList);
 
     if (mympi->my_rank == 0) {
-        std::cout << "**Symmetry" << std::endl;
-        std::cout << "Number of Symmetry Operations = " << nsym << std::endl << std::endl;
+        std::cout << "  Number of symmetry operations : " << nsym << std::endl << std::endl;
     }
     if (mympi->my_rank == 0) {
         gensym_withmap(xtmp, kdtmp);
@@ -70,7 +71,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int 
 
         // Automatically find symmetries.
 
-        std::cout << "NSYM = 0 is given: Trying to find symmetry operations." << std::endl;
+        std::cout << "  NSYM = 0 is given: Trying to find symmetry operations." << std::endl;
 
         findsym(N, aa, x, SymmList);
 
@@ -78,7 +79,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int 
         nsym = SymmList.size();
 
         if (printsymmetry) {
-            std::cout << "PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO_PRIM file." << std::endl << std::endl;
+            std::cout << "  PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO_PRIM file." << std::endl << std::endl;
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
             ofs_sym << nnp << std::endl;
@@ -102,7 +103,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int 
 
         // Identity operation only !
 
-        std::cout << "NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
+        std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
 
         int rot_tmp[3][3], tran_tmp[3];
 
@@ -122,7 +123,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int 
     } 
     else {
 
-        std::cout << "NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
+        std::cout << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
 
         int nsym2;
         int rot_tmp[3][3], tran_tmp[3];

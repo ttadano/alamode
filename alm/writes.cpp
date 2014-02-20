@@ -12,6 +12,8 @@
 #include "fitting.h"
 #include "constraint.h"
 #include "patterndisp.h"
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 
 using namespace ALM_NS;
@@ -31,7 +33,8 @@ void Writes::write_input_vars()
     std::cout << " PREFIX = " << files->job_title << std::endl;
     std::cout << " MODE = " << alm->mode << std::endl;
     std::cout << " NAT = " << system->nat << "; NKD = " << system->nkd << std::endl;
-    std::cout << " NSYM = " << symmetry->nsym << "; PRINTSYMM = " << symmetry->is_printsymmetry << "; TOLERANCE = " << symmetry->tolerance << std::endl;
+    std::cout << " NSYM = " << symmetry->nsym << "; PRINTSYMM = " << symmetry->is_printsymmetry
+        << "; TOLERANCE = " << symmetry->tolerance << std::endl;
     std::cout << " KD = ";
     for (i = 0; i < system->nkd; ++i) std::cout << std::setw(4) << system->kdname[i];
     std::cout << std::endl;
@@ -58,7 +61,8 @@ void Writes::write_input_vars()
         std::cout << "Fitting:" << std::endl;
         std::cout << " DFILE = " << files->file_disp << std::endl;
         std::cout << " FFILE = " << files->file_force << std::endl;
-        std::cout << " NDATA = " << system->ndata << "; NSTART = " << system->nstart << "; NEND = " << system->nend << "; NSKIP = " << system->nskip << std::endl;
+        std::cout << " NDATA = " << system->ndata << "; NSTART = " << system->nstart
+            << "; NEND = " << system->nend << "; NSKIP = " << system->nskip << std::endl;
         std::cout << " NBOOT = " << fitting->nboot << std::endl;
         std::cout << " MULTDAT = " << symmetry->multiply_data << std::endl;
         std::cout << " ICONST = " << constraint->constraint_mode << std::endl;
@@ -81,6 +85,7 @@ void Writes::writeall()
     if(!ofs_info) error->exit("writeall", "cannot open file_info");
 
     wrtmisc();
+    write_misc_xml();
 
     ofs_info.close();
 }
@@ -114,7 +119,8 @@ void Writes::wrtfcs()
     ofs_fcs << "*************************************************************"  << std::endl << std::endl;
 
     ofs_fcs << "---------------Symmetrically Independent FCs---------------" << std::endl;
-    ofs_fcs << " Indices (Global, Local)      FCs      Pairs       Distance (for IFC2)    Multiplicity (for IFC2)"<< std::endl;
+    ofs_fcs << " Indices (Global, Local)      FCs      Pairs       \
+               Distance (for IFC2)    Multiplicity (for IFC2)"<< std::endl;
 
     k = 0;
 
@@ -161,7 +167,8 @@ void Writes::wrtfcs()
                 ConstraintClass const_pointer = *p;
                 for (j = 0; j < nparam; ++j){
                     if (std::abs(const_pointer.w_const[j]) > eps8) {
-                        str_tmp = "(FC" + boost::lexical_cast<std::string>(i + 2) + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
+                        str_tmp = "(FC" + boost::lexical_cast<std::string>(i + 2) 
+                            + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
                         ofs_fcs << std::setw(15) << std::showpos << const_pointer.w_const[j];
                         ofs_fcs << std::setw(12) << std::left << str_tmp;
                     }
@@ -197,7 +204,8 @@ void Writes::wrtfcs()
                 str_tmp = "# FC" + boost::lexical_cast<std::string>(i + 2) + "_";
                 str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
 
-                ofs_fcs << str_tmp << std::setw(10) << fcs->ndup[i][iuniq] << std::setw(16) << fitting->params[ip] << std::endl;
+                ofs_fcs << str_tmp << std::setw(10) << fcs->ndup[i][iuniq] 
+                << std::setw(16) << fitting->params[ip] << std::endl;
 
                 for (j = 0; j < fcs->ndup[i][iuniq]; ++j){
                     ofs_fcs << std::setw(5) << j + 1 << std::setw(16) << fcs->fc_set[i][id].coef;
@@ -504,4 +512,139 @@ void Writes::write_displacement_pattern()
         std::cout << "Suggested displacement patterns for " << interaction->str_order[order] 
         << " are printed in file " << files->file_disp_pattern[order] << std::endl;
     }
+}
+
+void Writes::write_misc_xml()
+{
+    SystemInfo system_structure;
+
+    int i, j;
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            system_structure.lattice_vector[i][j] = system->lavec[i][j];
+        }
+    }
+
+    system_structure.nat = system->nat;
+    system_structure.natmin = symmetry->natmin;
+    system_structure.ntran = symmetry->ntran;
+    system_structure.nspecies = system->nkd;
+
+    AtomProperty prop_tmp;
+
+    for (i = 0; i < system->nat; ++i) {
+        prop_tmp.x = system->xcoord[i][0];
+        prop_tmp.y = system->xcoord[i][1];
+        prop_tmp.z = system->xcoord[i][2];
+        prop_tmp.kind = system->kd[i];
+        prop_tmp.atom = symmetry->map_s2p[i].atom_num + 1;
+        prop_tmp.tran = symmetry->map_s2p[i].tran_num + 1;
+
+        system_structure.atoms.push_back(AtomProperty(prop_tmp));
+    }
+
+    using boost::property_tree::ptree;
+
+    ptree pt;
+    std::string str_pos[3];
+
+    pt.put("Structure.NumberOfAtoms", system_structure.nat);
+    pt.put("Structure.NumberOfElements", system_structure.nspecies);
+
+    for (i = 0; i < system_structure.nspecies; ++i) {
+        pt.put("Structure.AtomicElements.element", system->kdname[i]);
+    }
+    for (i = 0; i < 3; ++i) {
+        str_pos[i].clear();
+        for (j = 0; j < 3; ++j) {
+            str_pos[i] += " " + double2string(system_structure.lattice_vector[j][i]);
+        }
+    }
+    pt.put("Structure.LatticeVector", "");
+    pt.put("Structure.LatticeVector.a1", str_pos[0]);
+    pt.put("Structure.LatticeVector.a2", str_pos[1]);
+    pt.put("Structure.LatticeVector.a3", str_pos[2]);
+
+    pt.put("Structure.Position", "");
+    std::string str_tmp;
+
+    for (i = 0; i < system_structure.nat; ++i) {
+        str_tmp.clear();
+        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->xcoord[i][j]);
+        ptree &child = pt.add("Structure.Position.pos", str_tmp);
+        child.put("<xmlattr>.index", i + 1);
+        child.put("<xmlattr>.element", system->kdname[system->kd[i] - 1]);
+    }
+
+    pt.put("Symmetry.NumberOfTranslations", symmetry->ntran);
+    for (i = 0; i < system_structure.ntran; ++i) {
+        for (j = 0; j < system_structure.natmin; ++j) {
+            ptree &child = pt.add("Symmetry.Translations.map", symmetry->map_p2s[j][i] + 1);
+            child.put("<xmlattr>.tran", i + 1);
+            child.put("<xmlattr>.atom", j + 1);
+        }
+    }
+
+    pt.put("ForceConstants", "");
+    str_tmp.clear();
+
+    pt.put("ForceConstants.HarmonicUnique.NFC2", fcs->ndup[0].size());
+
+
+    int ihead = 0;
+    int k = 0;
+    int pair_tmp[2];
+
+    for (unsigned int ui = 0; ui < fcs->ndup[0].size(); ++ui){
+        
+        for (i = 0; i < 2; ++i) {
+            pair_tmp[i] = fcs->fc_set[0][ihead].elems[i] / 3;
+        }
+        j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+
+        ptree &child = pt.add("ForceConstants.HarmonicUnique.FC2", double2string(fitting->params[k]));
+        child.put("<xmlattr>.pairs", 
+            std::to_string(fcs->fc_set[0][ihead].elems[0])
+            + " " + std::to_string(fcs->fc_set[0][ihead].elems[1]));
+        child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[j][pair_tmp[1]].size());
+        std::cout << fcs->fc_set[0][ihead].coef << std::endl;
+        ihead += fcs->ndup[0][ui];
+        ++k;
+    }
+
+    int ip;
+
+    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
+        FcProperty fctmp = *it;
+        ip = fctmp.mother;
+
+        for (k = 0; k < 2; ++k) {
+            pair_tmp[k] = fctmp.elems[k] / 3;
+        }
+        j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
+            ptree &child = pt.add("ForceConstants.Harmonic.FC2", double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size())));
+            child.put("<xmlattr>.pair1", std::to_string(j + 1) + " " + std::to_string(fctmp.elems[0]%3 + 1));
+            child.put("<xmlattr>.pair2", std::to_string(pair_tmp[1] + 1) 
+                + " " + std::to_string(fctmp.elems[1]%3 + 1)
+                + " " + std::to_string((*it2).cell + 1));
+        }
+    }
+
+    using namespace boost::property_tree::xml_parser;
+    const int indent = 2;
+    write_xml("test.xml", pt, std::locale(),
+        xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+}
+
+
+std::string Writes::double2string(const double d){
+
+    std::string rt;
+    std::stringstream ss;
+
+    ss << std::scientific << std::setprecision(16) << d;
+    ss >> rt;
+    return rt;
 }

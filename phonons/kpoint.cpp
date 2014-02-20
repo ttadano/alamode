@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <cmath>
 #include <set>
+#include <map>
 #include <numeric>
 #include "parsephon.h"
 #include "relaxation.h"
@@ -54,12 +55,13 @@ void Kpoint::kpoint_setups(std::string mode)
 
     if (mympi->my_rank == 0) {
 
-        std::cout << "**k-points**" << std::endl;
+        std::cout << " k points" << std::endl;
+        std::cout << " ========" << std::endl << std::endl;
 
         switch (kpoint_mode){
 
         case 0:
-            std::cout << " KPMODE = 0 : calculation on given k-points" << std::endl;
+            std::cout << "  KPMODE = 0 : Calculation on given k-points" << std::endl;
 
             nk = kpInp.size();
             memory->allocate(xk, nk, 3);
@@ -76,16 +78,27 @@ void Kpoint::kpoint_setups(std::string mode)
                 ++j;
             }
 
-            std::cout << " Number of k-points: " << nk << std::endl << std::endl;
+            std::cout << "  Number of k points : " << nk << std::endl << std::endl;
+            std::cout << "  List of k points : " << std::endl;
+            for (i = 0; i < nk; ++i) {
+                std::cout << std::setw(5) << i + 1 << ":";
+                for (j = 0; j < 3; ++j) {
+                    std::cout << std::setw(15) << xk[i][j];
+                }
+                std::cout << std::endl;
+            }
 
             break;
 
         case 1:
-            std::cout << " KPMODE = 1: band structure calculation" << std::endl;
+            std::cout << "  KPMODE = 1: Band structure calculation" << std::endl;
 
             npath = kpInp.size();
 
-            std::cout << " Number of paths: " << npath << std::endl;
+            std::cout << "  Number of paths : " << npath << std::endl << std::endl;
+            std::cout << "  List of k paths : " << std::endl;
+
+
             memory->allocate(kp_symbol, npath, 2);
             memory->allocate(kp_bound, npath, 2, 3);	
             memory->allocate(nkp, npath);
@@ -114,6 +127,22 @@ void Kpoint::kpoint_setups(std::string mode)
                 ++j;
             }
 
+            for (i = 0; i < npath; ++i) {
+                std::cout << std::setw(4) << i + 1 << ":";
+                for (j = 0; j < 2; ++j) {
+                    std::cout << std::setw(3) << kp_symbol[i][j];
+                    std::cout << " (";
+                    for (int k = 0; k < 3; ++k) {
+                        std::cout << std::setprecision(4) << std::setw(8) << kp_bound[i][j][k];
+                    }
+                    std::cout << ")";
+                }
+                std::cout << std::setw(4) << nkp[i] << std::endl;
+            }
+            std::cout << std::endl;
+            std::cout << "  Number of k points : " << nk << std::endl << std::endl;
+
+
             memory->allocate(xk, nk, 3);
             memory->allocate(kpoint_direction, nk, 3);
 
@@ -127,8 +156,6 @@ void Kpoint::kpoint_setups(std::string mode)
             unsigned int j, k;
 
             ik = 0;
-            std::cout << std::endl << " ---------- kpval at the edges ----------" << std::endl;
-            std::cout << " kval";
             std::cout.unsetf(std::ios::scientific);
 
             for (i = 0; i < npath; ++i){
@@ -139,7 +166,7 @@ void Kpoint::kpoint_setups(std::string mode)
                         } else {
                             kaxis[ik] = kaxis[ik - 1];
                         }
-                        std::cout << std::setw(10) << kaxis[ik];
+                    //    std::cout << std::setw(10) << kaxis[ik];
                     } else {
                         for (k = 0; k < 3; ++k){
                             tmp[k] = xk[ik][k] - xk[ik - 1][k];
@@ -151,9 +178,9 @@ void Kpoint::kpoint_setups(std::string mode)
                 }
             }
 
-            std::cout << std::setw(10) << kaxis[ik - 1];
-            std::cout << std::endl;
-            std::cout << " ----------------------------------------" << std::endl;
+//             std::cout << std::setw(10) << kaxis[ik - 1];
+//             std::cout << std::endl;
+//             std::cout << " ----------------------------------------" << std::endl;
 
             memory->deallocate(nkp);
 
@@ -161,7 +188,7 @@ void Kpoint::kpoint_setups(std::string mode)
 
             break;
         case 2:
-            std::cout << " KPMODE = 2: Uniform grid" << std::endl;
+            std::cout << "  KPMODE = 2: Uniform grid" << std::endl;
 
 #ifdef _USE_BOOST
             nkx = boost::lexical_cast<int>(kpInp[0].kpelem[0]);
@@ -177,6 +204,12 @@ void Kpoint::kpoint_setups(std::string mode)
 
             nk = nkx * nky * nkz;
             memory->allocate(xk, nk, 3);
+            std::cout << "  Gamma-centered uniform grid will be generated with the following mesh density: " << std::endl;
+            std::cout << "  nk1:" << std::setw(4) << nkx << std::endl;
+            std::cout << "  nk2:" << std::setw(4) << nky << std::endl;
+            std::cout << "  nk3:" << std::setw(4) << nkz << std::endl;
+            std::cout << std::endl;
+            std::cout << "  Number of k points : " << nk << std::endl << std::endl;
 
             nk_tmp[0] = nkx;
             nk_tmp[1] = nky; 
@@ -218,25 +251,20 @@ void Kpoint::kpoint_setups(std::string mode)
                     k_reduced[ik][i] = kpIBZ[j++].knum;
                 }
             }
-            std::cout << " nk1: " << std::setw(6) << nkx;
-            std::cout << " nk2: " << std::setw(6) << nky;
-            std::cout << " nk3: " << std::setw(6) << nkz;
-            std::cout << std::endl;
-            std::cout << " Number of k-points: " << nk << std::endl << std::endl;
 
             memory->allocate(knum_minus, nk);
-            gen_nkminus();
+            gen_nkminus(nk, knum_minus, xk);
 
-            std::cout << " Number of irreducible k-points: " << nk_equiv.size() << std::endl << std::endl;
-            std::cout << "#k-points (in unit of reciprocal vector), weights" << std::endl;
+            std::cout << "  Number of irreducible k points : " << nk_equiv.size() << std::endl << std::endl;
+            std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
 
             ik = 0;
             for (i = 0; i < nk_equiv.size(); ++i){
-                std::cout << std::setw(8) << i + 1 << ":";
+                std::cout << "  " << std::setw(5) << i + 1 << ":";
                 for (j = 0; j < 3; ++j){
-                    std::cout << std::setw(15) << std::scientific << kpIBZ[ik].kval[j];
+                    std::cout << std::setprecision(5) << std::setw(14) << std::scientific << kpIBZ[ik].kval[j];
                 }
-                std::cout << std::setw(15) << std::fixed << weight_k[i] << std::endl;
+                std::cout << std::setprecision(6) << std::setw(11) << std::fixed << weight_k[i] << std::endl;
                 ik += nk_equiv[i];
             }
             std::cout << std::endl;
@@ -245,17 +273,17 @@ void Kpoint::kpoint_setups(std::string mode)
 
             break;
         case 3:
-            std::cout << " KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
+            std::cout << "  KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
 
             nplanes = kpInp.size();
-            std::cout << "The number of planes: " << nplanes << std::endl;
+            std::cout << "  Number of planes : " << nplanes << std::endl;
 
             memory->allocate(kp_planes, nplanes);
             gen_kpoints_plane(kpInp, kp_planes);
 
             for (i = 0; i < nplanes; ++i) {
-                std::cout << "The number of k points in Plane " << std::setw(5) << i + 1;
-                std::cout << std::setw(10) << kp_planes[i].size() << std::endl;
+                std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :" ;
+                std::cout << std::setw(8) << kp_planes[i].size() << std::endl;
             }
             break;
         default:
@@ -297,6 +325,17 @@ void Kpoint::kpoint_setups(std::string mode)
         MPI_Bcast(&nk_equiv_arr[0], nk_reduced, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
         MPI_Bcast(&k_reduced[0][0], nk_reduced*nequiv_max, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
+        for (i = 0; i < nk_reduced; ++i) {
+            for (j = 0; j < nk_equiv_arr[i]; ++j) {
+                kmap_to_irreducible.insert(std::map<int,int>::value_type(k_reduced[i][j], i));
+            }
+        }
+
+        for (i = 0; i < nk; ++i) {
+            std::cout << std::setw(5) << i;
+            std::cout << std::setw(5) << kmap_to_irreducible[i] << std::endl;
+        }
+
     } else if (kpoint_mode == 3) {
 
         MPI_Bcast(&nplanes, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -337,6 +376,33 @@ void Kpoint::kpoint_setups(std::string mode)
             memory->deallocate(xk_plane);
         }
     }
+
+
+//     int *kequiv_tmp;
+//     int ***symmetry_tmp;
+//     int nk_irred;
+// 
+//     memory->allocate(kequiv_tmp, nk);
+//     memory->allocate(symmetry_tmp, symmetry->nsym, 3, 3);
+// 
+//     for (i = 0; i < symmetry->nsym; ++i) {
+//         for (j = 0; j < 3; ++j) {
+//             for (int k = 0; k < 3; ++k) {
+//                 symmetry_tmp[i][j][k] = symmetry->SymmList[i].symop[3 * j + k];
+//             }
+//         }
+//     }
+
+ //   generate_irreducible_kmap(kequiv_tmp, nk_irred, nkx, nky, nkz, kpoint->xk, symmetry->nsym, symmetry_tmp);
+//     for (i = 0; i < nk; ++i) {
+//         std::cout << std::setw(5) << i << std::setw(5) << kequiv_tmp[i] << std::endl;
+//     }
+//     memory->deallocate(kequiv_tmp);
+//     memory->deallocate(symmetry_tmp);
+// 
+//     error->exit("hoge", "hoge");
+
+
 }
 
 void Kpoint::gen_kpoints_band()
@@ -379,7 +445,7 @@ void Kpoint::gen_kmesh(bool usesym, unsigned int nk_in[3], double **xk_out, std:
 
     unsigned int nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
 
-    std::cout << "Generating uniform k-point grid ..." << std::endl;
+    // std::cout << "Generating uniform k-point grid ..." << std::endl;
 
     memory->allocate(xkr, nk_tot, 3);
 
@@ -405,66 +471,83 @@ void Kpoint::gen_kmesh(bool usesym, unsigned int nk_in[3], double **xk_out, std:
     }
 
     memory->deallocate(xkr);
-    timer->print_elapsed();
 }
 
-void Kpoint::gen_nkminus()
+
+void Kpoint::gen_nkminus(const unsigned int nk, unsigned int *minus_k, double **xk_in)
 {
     unsigned int ik;
-    double diff[3];
-    std::vector<KpointList> ksets;
-    std::vector<KpointList>::iterator it;
-    std::vector<double> ktmp;
-    bool *found_minus;
+    int ik_minus;
 
-    ksets.clear();
+    for (ik = 0; ik < nk; ++ik) {
 
-    for (ik = 0; ik < nk; ++ik){
+        ik_minus = get_knum(-xk[ik][0], -xk[ik][1], -xk[ik][2]);
 
-        ktmp.clear();
+        if (ik_minus == -1) error->exit("gen_nkminus", "-xk doesn't exist on the mesh point.");
+        if (ik_minus < ik) continue;
 
-        ktmp.push_back(xk[ik][0]);
-        ktmp.push_back(xk[ik][1]);
-        ktmp.push_back(xk[ik][2]);
-
-        ksets.push_back(KpointList(ik, ktmp));
+        minus_k[ik] = ik_minus;
+        minus_k[ik_minus] = ik;
     }
-
-    memory->allocate(found_minus, nk);
-
-    for (ik = 0; ik < nk; ++ik) found_minus[ik] = false;
-
-    for (ik = 0; ik < nk; ++ik){
-
-        if (found_minus[ik]) continue;
-        ktmp.clear();
-        ktmp.push_back(-xk[ik][0]);
-        ktmp.push_back(-xk[ik][1]);
-        ktmp.push_back(-xk[ik][2]);
-
-        for (it = ksets.begin(); it != ksets.end(); ++it){
-            diff[0] = std::fmod(ktmp[0]-(*it).kval[0], 1.0);
-            diff[1] = std::fmod(ktmp[1]-(*it).kval[1], 1.0);
-            diff[2] = std::fmod(ktmp[2]-(*it).kval[2], 1.0);
-
-
-            if (std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
-                knum_minus[ik] = (*it).knum;
-                knum_minus[(*it).knum] = ik;
-                found_minus[ik] = true;
-                found_minus[(*it).knum] = true;
-                break;
-            } 
-        }
-
-        if (!found_minus[ik]) {
-            error->exit("gen_nkminus", "k-point of the inverse point is not found");
-        }
-    }
-
-    memory->deallocate(found_minus);
-    ksets.clear();
 }
+
+// void Kpoint::gen_nkminus()
+// {
+//     unsigned int ik;
+//     double diff[3];
+//     std::vector<KpointList> ksets;
+//     std::vector<KpointList>::iterator it;
+//     std::vector<double> ktmp;
+//     bool *found_minus;
+// 
+//     ksets.clear();
+// 
+//     for (ik = 0; ik < nk; ++ik){
+// 
+//         ktmp.clear();
+// 
+//         ktmp.push_back(xk[ik][0]);
+//         ktmp.push_back(xk[ik][1]);
+//         ktmp.push_back(xk[ik][2]);
+// 
+//         ksets.push_back(KpointList(ik, ktmp));
+//     }
+// 
+//     memory->allocate(found_minus, nk);
+// 
+//     for (ik = 0; ik < nk; ++ik) found_minus[ik] = false;
+// 
+//     for (ik = 0; ik < nk; ++ik){
+// 
+//         if (found_minus[ik]) continue;
+//         ktmp.clear();
+//         ktmp.push_back(-xk[ik][0]);
+//         ktmp.push_back(-xk[ik][1]);
+//         ktmp.push_back(-xk[ik][2]);
+// 
+//         for (it = ksets.begin(); it != ksets.end(); ++it){
+//             diff[0] = std::fmod(ktmp[0]-(*it).kval[0], 1.0);
+//             diff[1] = std::fmod(ktmp[1]-(*it).kval[1], 1.0);
+//             diff[2] = std::fmod(ktmp[2]-(*it).kval[2], 1.0);
+// 
+// 
+//             if (std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]) < eps12) {
+//                 knum_minus[ik] = (*it).knum;
+//                 knum_minus[(*it).knum] = ik;
+//                 found_minus[ik] = true;
+//                 found_minus[(*it).knum] = true;
+//                 break;
+//             } 
+//         }
+// 
+//         if (!found_minus[ik]) {
+//             error->exit("gen_nkminus", "k-point of the inverse point is not found");
+//         }
+//     }
+// 
+//     memory->deallocate(found_minus);
+//     ksets.clear();
+// }
 
 void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<unsigned int> &nk_equiv_out, std::vector<KpointList> &kplist_out)
 {
@@ -490,7 +573,7 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
     double xk_sym[3], xk_orig[3];
 #endif
 
-    std::cout << "Reducing the k-points by using the crystal symmetry ... " << std::endl;
+    std::cout << "  Generating irreducible k points by using the crystal symmetry ... ";
 
     kplist_out.clear();
     nk_equiv_out.clear();
@@ -668,6 +751,8 @@ void Kpoint::reduce_kpoints(double **xkr, unsigned int nk_in[3], std::vector<uns
     }
 
     memory->deallocate(kequiv);	
+
+    std::cout << "done." << std::endl;
 }
 
 
@@ -712,6 +797,7 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<Kpoint
     double frac1, frac2;
     double xk_tmp[3];
     double xk1[3], xk2[3];
+    double dprod, norm1, norm2, costheta;
     int n_in[2];
 
     for (i = 0; i < nplane; ++i) {
@@ -724,6 +810,20 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<Kpoint
         for (j = 0; j < 3; ++j) {
             xk1[j] = std::atof(kplist[i].kpelem[j].c_str());
             xk2[j] = std::atof(kplist[i].kpelem[4 + j].c_str());
+        }
+
+        dprod = 0.0;
+        norm1 = 0.0;
+        norm2 = 0.0;
+
+        for (j = 0; j < 3; ++j) {
+            dprod += xk1[j] * xk2[j];
+            norm1 += xk1[j] * xk1[j];
+            norm2 += xk2[j] * xk2[j];
+        }
+        costheta = dprod / std::sqrt(norm1 * norm2);
+        if (std::abs(std::abs(costheta) - 1.0) < eps12) {
+            error->exit("gen_kpoints_plane", "Two vectors have to be linearly independent with each other.");
         }
 
         for (ik1 = 0; ik1 < N1; ++ik1) {
@@ -794,4 +894,65 @@ bool Kpoint::in_first_BZ(double *xk_in) {
     }
 
     return ret;
+}
+
+void Kpoint::generate_irreducible_kmap(int *kequiv, unsigned int &nk_irreducible, std::vector<int> &k_irreducible,
+                                       const unsigned int n1, const unsigned int n2, const unsigned int n3,
+                                       double **xk_in, const int nsymop, int ***symrot)
+{
+    int i, j, k;
+    int isym;
+    int nktot = n1 * n2 * n3;
+    int ksym;
+
+    double xk_orig[3], xk_sym[3];
+    double srot[3][3], srot_inv[3][3], srot_inv_t[3][3];
+
+    for (i = 0; i < nktot; ++i) kequiv[i] = i;
+
+    for (i = 0; i < nktot; ++i) {
+
+        if (kequiv[i] < i) continue;
+
+        for (j = 0; j < 3; ++j) xk_orig[j] = xk_in[i][j];
+
+        for (isym = 0; isym < nsymop; ++isym) {
+
+            for (j = 0; j < 3; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    srot[j][k] = symrot[isym][j][k];
+                }
+            }
+
+            invmat3(srot_inv, srot);
+            transpose3(srot_inv_t, srot_inv);
+
+            rotvec(xk_sym, xk_orig, srot_inv_t);
+
+            ksym = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+
+            if (ksym > kequiv[i]) {
+                kequiv[ksym] = i;
+            }
+        }
+    }
+
+    nk_irreducible = 0;
+    k_irreducible.clear();
+
+    std::map<int, int> map_to_irreducible_index;
+
+    for (i = 0; i < nktot; ++i) {
+        if (kequiv[i] == i) {
+            map_to_irreducible_index.insert(std::map<int, int>::value_type(i, nk_irreducible));
+            ++nk_irreducible;
+            k_irreducible.push_back(i);
+        }
+    }
+
+    for (i = 0; i < nktot; ++i) {
+        kequiv[i] = map_to_irreducible_index[kequiv[i]];
+    }
+
+    map_to_irreducible_index.clear();
 }

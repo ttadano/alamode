@@ -36,46 +36,46 @@ void Writes::write_input_vars()
     unsigned int i;
 
     std::cout << std::endl;
-    std::cout << "Input variables below:" << std::endl;
-    std::cout << "---------------------------------------------------" << std::endl;
-    std::cout << "General:" << std::endl;
-    std::cout << " PREFIX = " << input->job_title << std::endl;
-    std::cout << " NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance << std::endl;
-    std::cout << " PRINTSYMM = " << symmetry->printsymmetry << std::endl;
-    std::cout << " TREVSYM = " << symmetry->time_reversal_sym << std::endl;
-    std::cout << " CELLDIM = ";
+    std::cout << " Input variables :" << std::endl;
+    std::cout << " ------------------------------------------------------------" << std::endl;
+    std::cout << " General:" << std::endl;
+    std::cout << "  PREFIX = " << input->job_title << std::endl;
+    std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance << std::endl;
+    std::cout << "  PRINTSYMM = " << symmetry->printsymmetry << std::endl;
+    std::cout << "  TREVSYM = " << symmetry->time_reversal_sym << std::endl;
+    std::cout << "  CELLDIM = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(4) << system->cell_dimension[i];
     std::cout << std::endl << std::endl;
 
-    std::cout << " MODE = " << phon->mode << std::endl;
-    std::cout << " FCSINFO = " << fcs_phonon->file_fcs << std::endl;
+    std::cout << "  MODE = " << phon->mode << std::endl;
+    std::cout << "  FCSINFO = " << fcs_phonon->file_fcs << std::endl;
     std::cout << std::endl;
 
-    std::cout << " EIGENVECTOR = " << dynamical->eigenvectors << std::endl;
-    std::cout << " PRINTVEL = " << phonon_velocity->printvel << std::endl;
-    std::cout << " PRINTXSF = " << writes->writeanime << "; NBANDS = " << writes->nbands << std::endl;
-    std::cout << " TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
-    std::cout << " NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
-    std::cout << " EMIN = " << dos->emin << "; EMAX = " << dos->emax << "; DELTA_E = " << dos->delta_e << std::endl;
+    std::cout << "  EIGENVECTOR = " << dynamical->eigenvectors << std::endl;
+    std::cout << "  PRINTVEL = " << phonon_velocity->printvel << std::endl;
+    std::cout << "  PRINTXSF = " << writes->writeanime << "; NBANDS = " << writes->nbands << std::endl;
+    std::cout << "  TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
+    std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
+    std::cout << "  EMIN = " << dos->emin << "; EMAX = " << dos->emax << "; DELTA_E = " << dos->delta_e << std::endl;
     std::cout << std::endl;
 
-    std::cout << " TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
+    std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
 
-    std::cout << " DELTA_A = " << gruneisen->delta_a << std::endl;
+    std::cout << "  DELTA_A = " << gruneisen->delta_a << std::endl;
     std::cout << std::endl;
 
-    std::cout << " RESTART = " << phon->restart_flag << std::endl;
-    std::cout << " ISMEAR = " << relaxation->ksum_mode << "; EPSILON = " << relaxation->epsilon << std::endl;
-    std::cout << " LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
-    std::cout << " KS_INPUT = " << relaxation->ks_input << "; QUARTIC = " << relaxation->quartic_mode << std::endl;
-    std::cout << " ATOMPROJ = " << relaxation->atom_project_mode << "; REALPART = " << relaxation->calc_realpart << std::endl;
+    std::cout << "  RESTART = " << phon->restart_flag << std::endl;
+    std::cout << "  ISMEAR = " << relaxation->ksum_mode << "; EPSILON = " << relaxation->epsilon << std::endl;
+    std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
+    std::cout << "  KS_INPUT = " << relaxation->ks_input << "; QUARTIC = " << relaxation->quartic_mode << std::endl;
+    std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << "; REALPART = " << relaxation->calc_realpart << std::endl;
 
     std::cout << std::endl << std::endl;
 
-    std::cout << "Kpoint:" << std::endl;
-    std::cout << " KPMODE (1st entry for &kpoint) = " << kpoint->kpoint_mode << std::endl;
+    std::cout << " Kpoint:" << std::endl;
+    std::cout << "  KPMODE (1st entry for &kpoint) = " << kpoint->kpoint_mode << std::endl;
     std::cout << std::endl;
-    std::cout << "---------------------------------------------------" << std::endl;
+    std::cout << " ------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 

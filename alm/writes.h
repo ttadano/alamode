@@ -3,8 +3,40 @@
 #include "pointers.h"
 #include <string>
 #include <fstream>
+#include <vector>
 
 namespace ALM_NS{
+
+    class AtomProperty {
+    public:
+        double x, y, z;
+        int kind;
+        int atom, tran;
+
+        AtomProperty(){};
+        AtomProperty(const AtomProperty &other)
+            : x(x), y(y), z(z), kind(kind), atom(atom), tran(tran) {};
+        AtomProperty(const double *pos, const int kind_in, const int atom_in, const int tran_in) {
+            x = pos[0];
+            y = pos[1];
+            z = pos[2];
+            kind = kind_in;
+            atom = atom_in;
+            tran = tran_in;
+        }
+
+    };
+
+    class SystemInfo {
+    public:
+        double lattice_vector[3][3];
+        std::vector<AtomProperty> atoms;
+        int nat, natmin, ntran;
+        int nspecies;
+
+        SystemInfo(){};
+    };
+
     class Writes: protected Pointers{
     public:
         Writes(class ALM *);
@@ -17,8 +49,10 @@ namespace ALM_NS{
     private:
         void wrtfcs();
         void wrtmisc();
+        void write_misc_xml();
 
         std::ofstream ofs_info;
+        std::string double2string(const double);
 
     };
 }

@@ -39,29 +39,33 @@ void System::setup()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << "**Lattice Vectors**" << std::endl;
+        std::cout << " ------------------------------------------------------------" << std::endl;
+        std::cout << std::endl;
+        std::cout << " Crystal structure" << std::endl;
+        std::cout << " =================" << std::endl << std::endl;
+        std::cout << " Lattice Vectors:" << std::endl << std::endl;
         std::cout.setf(std::ios::scientific);
 
-        std::cout << " *Super Cell* " << std::endl << std::endl;
-        std::cout << " " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
-        std::cout << " " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
-        std::cout << " " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
+        std::cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << std::endl << std::endl;
+        std::cout << "  " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
+        std::cout << "  " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
+        std::cout << "  " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
         std::cout << std::endl;
 
-        std::cout << " " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
-        std::cout << " " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
-        std::cout << " " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
-        std::cout << std::endl << std::endl;
-
-        std::cout << " *Primitive Cell* " << std::endl << std::endl;
-        std::cout << " " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
-        std::cout << " " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
-        std::cout << " " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
+        std::cout << "  " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
+        std::cout << "  " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
+        std::cout << "  " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
         std::cout << std::endl;
 
-        std::cout << " " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
-        std::cout << " " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
-        std::cout << " " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
+        std::cout << " * Primitive cell " << std::endl << std::endl;
+        std::cout << "  " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
+        std::cout << "  " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
+        std::cout << "  " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
+        std::cout << std::endl;
+
+        std::cout << "  " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
+        std::cout << "  " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
+        std::cout << "  " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
         std::cout << std::endl << std::endl;
 
         double vec_tmp[3][3];
@@ -73,8 +77,9 @@ void System::setup()
         }
         volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
-        std::cout << " Unit cell volume = " << volume_p << " (a.u)^3" << std::endl;
-        std::cout << " Number of Atoms in the supercell: " << nat << std::endl << std::endl;
+        std::cout << "  Volume of the primitive cell : " << volume_p << " (a.u.)^3" << std::endl << std::endl;
+        std::cout << "  Number of atoms in the supercell     : " << nat << std::endl;
+        std::cout << "  Number of atoms in the primitive cell: " << natmin << std::endl << std::endl;
 
         memory->allocate(xtmp, natmin, 3);
 
@@ -84,19 +89,19 @@ void System::setup()
             for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
         }
 
-        std::cout << "Atoms in the primitive cell" << std::endl;
+        std::cout << "  Atomic positions in the primitive cell (fractional):" << std::endl;
         for (i = 0; i < natmin; ++i){
-            std::cout << std::setw(6) << i + 1 << ":";
+            std::cout << std::setw(4) << i + 1 << ":";
             for (j = 0; j < 3; ++j) {
                 std::cout << std::setw(15) << xtmp[i][j];
             }
-            std::cout << std::setw(5) << symbol_kd[kd[map_p2s[i][0]]] << std::endl;
+            std::cout << std::setw(4) << symbol_kd[kd[map_p2s[i][0]]] << std::endl;
         }
-        std::cout << std::endl << std::endl;
+        std::cout << std::endl;
 
         memory->deallocate(xtmp);
 
-        std::cout << "Mass of atomic species:" << std::endl;
+        std::cout << "  Mass of atomic species (u):" << std::endl;
         for (i = 0; i < nkd; ++i) {
             std::cout << std::setw(4) << symbol_kd[i] << ":";
             std::cout << std::fixed << std::setw(12) << mass_kd[i] << std::endl;

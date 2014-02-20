@@ -87,9 +87,14 @@ namespace PHON_NS {
         bool is_fc2_ext;
 
     private:
+        bool require_cubic;
+        bool require_quartic;
+
         void load_fc2();
         void load_fcs();
         void load_fc2_ext();
+        void examine_translational_invariance(const int, const unsigned int, const unsigned int,
+            double *, std::vector<FcsClass> *);
 
         unsigned int coordinate_index(const char);
         void MPI_Bcast_fc_class(const unsigned int);

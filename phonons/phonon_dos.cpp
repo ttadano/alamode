@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iomanip>
 #include "parsephon.h"
+#include "symmetry_core.h"
 
 using namespace PHON_NS;
 
@@ -26,11 +27,12 @@ Dos::~Dos(){
             memory->deallocate(pdos_phonon);
         }
     }
+    memory->deallocate(kmap_irreducible);
 }
 
 void Dos::setup()
 {
-    // This function must not called before dynamica->setup_dynamical()
+    // This function must not be called before dynamica->setup_dynamical()
 
     int i;
 
@@ -59,6 +61,111 @@ void Dos::setup()
             memory->allocate(pdos_phonon, system->natmin, n_energy);
         }
     }
+
+    int ***symmetry_tmp;
+
+    memory->allocate(kmap_irreducible, kpoint->nk);
+    memory->allocate(symmetry_tmp, symmetry->nsym, 3, 3);
+
+    for (i = 0; i < symmetry->nsym; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            for (int k = 0; k < 3; ++k) {
+                symmetry_tmp[i][j][k] = symmetry->SymmList[i].symop[3 * j + k];
+            }
+        }
+    }
+
+    kpoint->generate_irreducible_kmap(kmap_irreducible, nk_irreducible, k_irreducible,
+        kpoint->nkx, kpoint->nky, kpoint->nkz, 
+        kpoint->xk, symmetry->nsym, symmetry_tmp);
+
+    memory->deallocate(symmetry_tmp);
+}
+
+void Dos::calc_dos2()
+{
+    int i;
+    unsigned int j, k;
+    unsigned int nk = kpoint->nk;
+    unsigned int neval = dynamical->neval;
+    double **eval;
+    double *dos_local;
+    double *weight;
+
+    memory->allocate(eval, neval, nk);
+    memory->allocate(dos_local, n_energy);
+    memory->allocate(weight, nk_irreducible);
+
+    for (j = 0; j < nk; ++j){
+        for (k = 0; k < neval; ++k){
+            eval[k][j] = writes->in_kayser(dynamical->eval_phonon[j][k]);
+        }
+    }
+
+    for (i = 0; i < n_energy; ++i) {
+        dos_local[i] = 0.0;
+
+        for (k = mympi->my_rank; k < neval; k += mympi->nprocs) {
+            integration->calc_weight_tetrahedron(nk_irreducible, kmap_irreducible, 
+                weight, eval[k], energy_dos[i]);
+
+            for (j = 0; j < nk_irreducible; ++j) {
+                dos_local[i] += weight[j];
+            }
+        }
+    }
+    MPI_Reduce(&dos_local[0], &dos_phonon[0], n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (dynamical->eigenvectors) {
+
+        // Calculate atom projected phonon-DOS
+
+        unsigned int ik, imode, iat, icrd;
+        unsigned int natmin = system->natmin;
+
+        double **proj;
+        double **pdos_local;
+        memory->allocate(proj, neval, nk_irreducible);
+        memory->allocate(pdos_local, natmin, n_energy);
+
+        for (iat = 0; iat < natmin; ++iat){
+
+            for (imode = 0; imode < neval; ++imode){
+                for (i = 0; i < nk_irreducible; ++i){
+                    ik = k_irreducible[i];
+
+                    proj[imode][i] = 0.0;
+
+                    for (icrd = 0; icrd < 3; ++icrd){
+                        proj[imode][i] += std::norm(dynamical->evec_phonon[ik][imode][3 * iat + icrd]);
+                    }
+                }
+            }
+
+            for (i = 0; i < n_energy; ++i){
+                pdos_local[iat][i] = 0.0;
+
+                for (k = mympi->my_rank; k < neval; k += mympi->nprocs) {
+                    integration->calc_weight_tetrahedron(nk_irreducible, kmap_irreducible, 
+                        weight, eval[k], energy_dos[i]);
+
+                    for (j = 0; j < nk_irreducible; ++j) {
+                        pdos_local[iat][i] += proj[k][j] * weight[j];
+                    }
+                }
+            }            
+        }
+
+        MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], natmin*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        memory->deallocate(proj);
+        memory->deallocate(pdos_local);
+    }
+
+    memory->deallocate(dos_local);
+    memory->deallocate(weight);
+    memory->deallocate(eval);
+
 }
 
 void Dos::calc_dos()

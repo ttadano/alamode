@@ -8,6 +8,7 @@ namespace PHON_NS {
         Phonon_velocity(class PHON *);
         ~Phonon_velocity();
 
+        void calc_group_velocity(const int);
         void calc_phonon_vel_band();
         void phonon_vel_k(double *, double **);
 

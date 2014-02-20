@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 #include "constants.h"
 
 namespace PHON_NS {
@@ -97,14 +98,21 @@ namespace PHON_NS {
 
         unsigned int **k_reduced, *nk_equiv_arr;
         unsigned int nk_reduced, nequiv_max;
+        std::map<int, int> kmap_to_irreducible;
+
 
         int get_knum(const double, const double, const double);
         void gen_kmesh(bool, unsigned int [3], double **, std::vector<unsigned int> &, std::vector<KpointList> &);
 
+        void generate_irreducible_kmap(int *, unsigned int &, std::vector<int> &,
+            const unsigned int, const unsigned int, const unsigned int, 
+            double **, const int, int ***);
+
     private:
         void gen_kpoints_band();
         void reduce_kpoints(double **, unsigned int [3], std::vector<unsigned int> &, std::vector<KpointList> &);
-        void gen_nkminus();
+        //void gen_nkminus();
+        void gen_nkminus(const unsigned int, unsigned int *, double **);
         void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *);
         bool in_first_BZ(double *);
 

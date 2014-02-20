@@ -38,8 +38,6 @@ namespace PHON_NS {
         double Tmin, Tmax, dT;
         double volume(double [3], double [3], double [3]);
 
-
-
     private:
 
         unsigned int *kd_prim;
