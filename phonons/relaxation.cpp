@@ -286,7 +286,7 @@ void Relaxation::setup_relaxation()
 
     generate_triplet_k(use_triplet_symmetry, sym_permutation);
     // gen_pair_uniq();
-    if (mympi->my_rank == 1) gensym_kpairs();
+    //if (mympi->my_rank == 1) gensym_kpairs();
 
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl;
@@ -1485,94 +1485,6 @@ void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const 
 }
 
 void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, double *T, const double omega0, 
-                                                     const double omega, const unsigned int knum, const unsigned int snum, double *ret)
-{
-    unsigned int i;
-    unsigned int ik, jk;
-    unsigned int is, js; 
-    unsigned int arr[3];
-
-    double T_tmp;
-    double n1, n2;
-    double v3_tmp;
-    double xk_tmp[3];
-    double omega_inner[2];
-
-    double multi;
-    double f1, f2;
-
-    double *ret_mpi;
-
-    memory->allocate(ret_mpi, N);
-
-    for (i = 0; i < N; ++i) ret_mpi[i] = 0.0;
-
-    arr[0] = ns * kpoint->knum_minus[knum] + snum;
-
-    unsigned int nkx = kpoint->nkx;
-    unsigned int nky = kpoint->nky;
-    unsigned int nkz = kpoint->nkz;
-
-    int iloc, jloc, kloc;
-
-    for (ik = mympi->my_rank; ik < nk; ik += mympi->nprocs) {
-
-        xk_tmp[0] = kpoint->xk[knum][0] - kpoint->xk[ik][0];
-        xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik][1];
-        xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik][2];
-
-        iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-        jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-        kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
-
-        jk = kloc + nkz * jloc + nky * nkz * iloc;
-
-        for (is = 0; is < ns; ++is){
-
-            arr[1] = ns * ik + is;
-            omega_inner[0] = dynamical->eval_phonon[ik][is];
-
-            for (js = 0; js < ns; ++js){
-
-                arr[2] = ns * jk + js;
-                omega_inner[1] = dynamical->eval_phonon[jk][js];
-
-                v3_tmp = std::norm(V3(arr));
-
-                for (i = 0; i < N; ++i) {
-                    T_tmp = T[i];
-
-                    f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
-                    f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
-                    n1 =  f1 + f2 + 1.0;
-                    n2 =  f1 - f2;
-
-                    if (ksum_mode == 0) {
-                        ret_mpi[i] += v3_tmp * delta_lorentz(omega - omega_inner[0])
-                            * ( - n1 * delta_lorentz(omega0 + omega_inner[0] + omega_inner[1])
-                            + n1 * delta_lorentz(omega0 - omega_inner[0] - omega_inner[1])
-                            - n2 * delta_lorentz(omega0 - omega_inner[0] + omega_inner[1])
-                            + n2 * delta_lorentz(omega0 + omega_inner[0] - omega_inner[1]));
-                    } else if (ksum_mode == 1) {
-                        ret_mpi[i] += v3_tmp * delta_gauss(omega - omega_inner[0])
-                            * ( - n1 * delta_gauss(omega0 + omega_inner[0] + omega_inner[1])
-                            + n1 * delta_gauss(omega0 - omega_inner[0] - omega_inner[1])
-                            - n2 * delta_gauss(omega0 - omega_inner[0] + omega_inner[1])
-                            + n2 * delta_gauss(omega0 + omega_inner[0] - omega_inner[1]));
-                    }
-                }
-            }
-        }
-    }
-
-    for (i = 0; i < N; ++i) ret_mpi[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
-
-    MPI_Reduce(ret_mpi, ret, N, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    memory->deallocate(ret_mpi);
-}
-
-
-void Relaxation::calc_frequency_resolved_final_state2(const unsigned int N, double *T, const double omega0, 
                                                       const unsigned int M, const double *omega, const unsigned int ik_in, const unsigned int snum, double **ret)
 {
     int i, j, ik;
@@ -1588,14 +1500,17 @@ void Relaxation::calc_frequency_resolved_final_state2(const unsigned int N, doub
     double n1, n2;
     double f1, f2;
     double prod_tmp[2];
+    double **ret_mpi;
+
+    memory->allocate(ret_mpi, N, M);
 
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
-            ret[i][j] = 0.0;
+            ret_mpi[i][j] = 0.0;
         }
     }
 
-    for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+    for (ik = mympi->my_rank; ik < pair_uniq[ik_in].size(); ik += mympi->nprocs) {
 
         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
         knum = kpoint->k_reduced[ik_in][0];
@@ -1630,7 +1545,7 @@ void Relaxation::calc_frequency_resolved_final_state2(const unsigned int N, doub
                         - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1]));
 
                     for (j = 0; j < M; ++j) {
-                        ret[i][j] += v3_tmp * multi * delta_lorentz(omega[j] - omega_inner[0])
+                        ret_mpi[i][j] += v3_tmp * multi * delta_lorentz(omega[j] - omega_inner[0])
                             * (prod_tmp[0] + prod_tmp[1]);
                     }
                 }
@@ -1639,9 +1554,13 @@ void Relaxation::calc_frequency_resolved_final_state2(const unsigned int N, doub
     }
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
-            ret[i][j] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+            ret_mpi[i][j] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
         }
     }
+
+    MPI_Reduce(&ret_mpi[0][0], &ret[0][0], N*M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    memory->deallocate(ret_mpi);
 
 }
 
@@ -1862,12 +1781,11 @@ void Relaxation::compute_mode_tau()
                 ofs_mode_tau << "# mode = " << snum << std::endl;
                 ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega0) << std::endl;
             }
-            calc_frequency_resolved_final_state2(NT, T_arr, omega0, dos->n_energy, freq_array, kpoint->kmap_to_irreducible[knum], snum, gamma_final);
+            calc_frequency_resolved_final_state(NT, T_arr, omega0, dos->n_energy, freq_array, kpoint->kmap_to_irreducible[knum], snum, gamma_final);
             if (mympi->my_rank == 0) {
 
                 for (ienergy = 0; ienergy < dos->n_energy; ++ienergy) {
                     omega = dos->energy_dos[ienergy];
-                    // calc_frequency_resolved_final_state(NT, T_arr, omega0, omega * time_ry / Hz_to_kayser, knum, snum, gamma_final);
 
                     ofs_mode_tau << std::setw(10) << omega;
                     for (j = 0; j < NT; ++j) ofs_mode_tau << std::setw(15) << writes->in_kayser(gamma_final[j][ienergy]);

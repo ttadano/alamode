@@ -331,11 +331,6 @@ void Kpoint::kpoint_setups(std::string mode)
             }
         }
 
-        for (i = 0; i < nk; ++i) {
-            std::cout << std::setw(5) << i;
-            std::cout << std::setw(5) << kmap_to_irreducible[i] << std::endl;
-        }
-
     } else if (kpoint_mode == 3) {
 
         MPI_Bcast(&nplanes, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
