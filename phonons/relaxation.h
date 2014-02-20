@@ -89,7 +89,7 @@ namespace PHON_NS {
 
         std::string ks_input;
 
-        inline double delta_lorentz(const double);
+        double delta_lorentz(const double);
         double delta_gauss(const double);
 
         std::complex<double> V3(const unsigned int [3]);

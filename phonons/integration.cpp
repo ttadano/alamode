@@ -241,7 +241,7 @@ double Integration::dos_integration(double *energy, const double e_ref)
 }
 
 
-double Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_irreducible_k, 
+void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_irreducible_k, 
                                             double *weight, double *energy, const double e_ref)
 {
     int i, j;
