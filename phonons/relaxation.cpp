@@ -592,12 +592,12 @@ std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3, int
 
     for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
 
-        phase = vec_for_v3[ielem][0][0] * xk2[0] 
-        + vec_for_v3[ielem][1][0] * xk2[1]
-        + vec_for_v3[ielem][2][0] * xk2[2] 
-        + vec_for_v3[ielem][0][1] * xk3[0]
-        + vec_for_v3[ielem][1][1] * xk3[1]
-        + vec_for_v3[ielem][2][1] * xk3[2];
+        phase = vec_for_v3[0][0][ielem] * xk2[0] 
+        + vec_for_v3[1][0][ielem] * xk2[1]
+        + vec_for_v3[2][0][ielem] * xk2[2] 
+        + vec_for_v3[0][1][ielem] * xk3[0]
+        + vec_for_v3[1][1][ielem] * xk3[1]
+        + vec_for_v3[2][1][ielem] * xk3[2];
 
 
         ctmp += fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * std::exp(im * phase)
@@ -1564,7 +1564,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
 
 }
 
-inline double Relaxation::delta_lorentz(const double omega)
+double Relaxation::delta_lorentz(const double omega)
 {
     return epsilon / (omega*omega + epsilon*epsilon) / pi;
 }

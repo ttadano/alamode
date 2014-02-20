@@ -32,7 +32,7 @@ namespace PHON_NS {
         void finish_integration();
         double do_tetrahedron(double *, double *, const double);
         double dos_integration(double *, const double);
-        double calc_weight_tetrahedron(const int, int *, double *, double *, const double);
+        void calc_weight_tetrahedron(const int, int *, double *, double *, const double);
 
     private:
         unsigned int ntetra;
