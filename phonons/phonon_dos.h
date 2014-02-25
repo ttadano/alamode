@@ -23,6 +23,8 @@ namespace PHON_NS
         double *dos_phonon;
         double **pdos_phonon;
 
+        bool projected_dos;
+
     private:
         unsigned int nk_irreducible;
         int *kmap_irreducible;

@@ -178,7 +178,7 @@ void Isotope::calc_isotope_selfenergy_all()
         for (i = 0; i < nks; ++i) gamma_loc[i] = 0.0;
 
         for (i = mympi->my_rank; i < nks; i += mympi->nprocs) {
-            knum = kpoint->k_reduced[i / ns][0];
+            knum = kpoint->kpoint_irred_all[i / ns][0].knum;
             snum = i % ns;
             omega = dynamical->eval_phonon[knum][snum];
             calc_isotope_selfenergy_tetra(knum, snum, omega, tmp);

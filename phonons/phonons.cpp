@@ -47,17 +47,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         std::cout << std::endl;
 
         input->parce_input(narg, arg);
-        writes->write_input_vars();
-
-        if (restart_flag) {
-            if (mode == "RTA") {
-                std::cout << "Restart Mode is switched on!" << std::endl;
-                std::cout << "If you want to turn off the Restart Mode, set RESTART = 0 in the input file" << std::endl;
-                std::cout << std::endl;
-            } else {
-                std::cout << "Restart Mode is only available for BTE" << std::endl << std::endl;
-            }
-        }
+        writes->write_input_vars();    
     }
 
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -87,8 +77,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << "Job finished at " << timer->DateAndTime() << std::endl;
-        std::cout << "Bye! :)" << std::endl;
+        std::cout << std::endl << " Job finished at " << timer->DateAndTime() << std::endl;
     }
     destroy_pointers();
 }
@@ -176,15 +165,14 @@ void PHON::execute_phonons()
 
     if (dos->flag_dos) {
         integration->setup_integration();
-        dos->calc_dos();
+        dos->calc_dos2();
     }
 
     if (mympi->my_rank == 0) {
         writes->write_phonon_info();
     }
 
-    memory->deallocate(dynamical->evec_phonon);
-    memory->deallocate(dynamical->eval_phonon);
+    dynamical->finish_dynamical();
 
     if (kpoint->kpoint_mode == 1) {
         memory->deallocate(phonon_velocity->phvel);
@@ -205,6 +193,15 @@ void PHON::execute_RTA()
         std::cout << "      (relaxation time approximation).                       " << std::endl;
         std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
         std::cout << std::endl;
+
+        if (restart_flag) {
+            std::cout << std::endl;
+            std::cout << "      Restart mode is switched on!                                  " << std::endl;
+            std::cout << "      The calculation will be restart from the existing result file." << std::endl;
+            std::cout << "      If you want to start a calculation from scratch,              " << std::endl;
+            std::cout << "      please set RESTART = 0 in the input file                      " << std::endl;
+            std::cout << std::endl;
+        }
     }
 
     setup_base();
@@ -214,7 +211,6 @@ void PHON::execute_RTA()
     if (kpoint->kpoint_mode < 3) {
         dynamical->diagonalize_dynamical_all();
     }
-
     relaxation->setup_mode_analysis();
 
     if (!relaxation->ks_analyze_mode) {
@@ -244,6 +240,7 @@ void PHON::execute_RTA()
         integration->finish_integration();
     }
 
+    dynamical->finish_dynamical();
     relaxation->finish_relaxation();
 
     if (!relaxation->ks_analyze_mode) {

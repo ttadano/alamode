@@ -12,12 +12,12 @@ namespace PHON_NS {
         Dynamical(class PHON *);
         ~Dynamical();
 
-        //      void calc_dynamical_matrix();
-        //      void diagonalize_dynamical();
         void diagonalize_dynamical_all();
+        void finish_dynamical();
 
         unsigned int neval;
         bool eigenvectors, nonanalytic;
+        bool print_eigenvectors;
 
         std::string file_born;
         double na_sigma;
@@ -25,18 +25,11 @@ namespace PHON_NS {
         double **eval_phonon;
         std::complex<double> ***evec_phonon;
 
-        double **kvec_na;
+        void setup_dynamical(std::string);
 
         void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
         void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
 
-        void calc_analytic_k(double *, double ****, std::complex<double> **);
-        void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
-        void calc_nonanalytic_k(double *, double *, double **);
-
-        void setup_dynamical(std::string);
-        void modify_eigenvectors();
-        void modify_eigenvectors_sym();
 
         double fold(double);
         double freq(const double);
@@ -45,7 +38,11 @@ namespace PHON_NS {
         //        void calc_analytic();
 
         void load_born();
-        void setup_na_kvec();
+        void calc_analytic_k(double *, double ****, std::complex<double> **);
+        void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
+        void calc_nonanalytic_k(double *, double *, double **);
+        void modify_eigenvectors();
+        void modify_eigenvectors_sym();
 
         double **xshift_s;
         char UPLO;

@@ -70,13 +70,13 @@ void Gruneisen::calc_gruneisen()
         for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[ik][i];
 
         if (fcs_phonon->is_fc2_ext) {
-            dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
-            dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
-            dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
+            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
+            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
+            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
         } else {
-            dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fcs_phonon->fc2, eval_orig, evec_tmp, false);
-            dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_plus, eval_plus[ik], evec_tmp, false);
-            dynamical->eval_k(xk_tmp, dynamical->kvec_na[ik], fc2_minus, eval_minus[ik], evec_tmp, false);
+            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fcs_phonon->fc2, eval_orig, evec_tmp, false);
+            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus, eval_plus[ik], evec_tmp, false);
+            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus, eval_minus[ik], evec_tmp, false);
         }
 
 

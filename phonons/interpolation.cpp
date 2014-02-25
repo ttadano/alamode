@@ -36,6 +36,8 @@ void Interpolation::prepare_interpolation()
     unsigned int nk_tmp[3];
     std::vector<KpointList> kplist_ref;
 
+    std::vector<std::vector<KpointList> > kpoint_irred_ref;
+
     parse_self_energy();
 
     nk_ref = nk1 * nk2 * nk3;
@@ -47,29 +49,29 @@ void Interpolation::prepare_interpolation()
 
     memory->allocate(xk_interpolate, nk_ref, 3);	
 
-    kpoint->gen_kmesh(symmetry->symmetry_flag, nk_tmp, xk_interpolate, nk_equiv_ref, kplist_ref);
+    kpoint->gen_kmesh(symmetry->symmetry_flag, nk_tmp, xk_interpolate, kpoint_irred_ref);
 
-    nk_reduced_ref = nk_equiv_ref.size();
+    nk_reduced_ref = kpoint_irred_ref.size();
     if (nk_reduced_ref != nksym_ref) {
         error->exit("prepare_interpolation", "The number of symmetry-reduced k points are not the same.");
     }
 
-    nequiv_max_ref = 0;
-    for (ik = 0; ik < nk_reduced_ref; ++ik){
-        nequiv_max_ref = std::max<unsigned int>(nequiv_max_ref, nk_equiv_ref[ik]);
-    }
-
-    memory->allocate(k_reduced_ref, nk_reduced_ref, nequiv_max_ref);
-
-    j = 0;
-    for (ik = 0; ik < nk_reduced_ref; ++ik) {
-        for (i = 0; i < nequiv_max_ref; ++i){
-            k_reduced_ref[ik][i] = 0;
-        }
-        for (i = 0; i < nk_equiv_ref[ik]; ++i){
-            k_reduced_ref[ik][i] = kplist_ref[j++].knum;
-        }
-    }
+//     nequiv_max_ref = 0;
+//     for (ik = 0; ik < nk_reduced_ref; ++ik){
+//         nequiv_max_ref = std::max<unsigned int>(nequiv_max_ref, nk_equiv_ref[ik]);
+//     }
+// 
+//     memory->allocate(k_reduced_ref, nk_reduced_ref, nequiv_max_ref);
+// 
+//     j = 0;
+//     for (ik = 0; ik < nk_reduced_ref; ++ik) {
+//         for (i = 0; i < nequiv_max_ref; ++i){
+//             k_reduced_ref[ik][i] = 0;
+//         }
+//         for (i = 0; i < nk_equiv_ref[ik]; ++i){
+//             k_reduced_ref[ik][i] = kplist_ref[j++].knum;
+//         }
+//     }
 
     // Generate k vectors for the non-analytic correction.
 
@@ -90,7 +92,7 @@ void Interpolation::prepare_interpolation()
 
     // Generate eigval and eigvec for interpolation
     prepare_dymat_for_interpolation();
-    prepare_self_energy_extend();
+    prepare_self_energy_extend(kpoint_irred_ref);
 
     // 	double xk_minus[3], diff[3];
     // 	int iloc, jloc, kloc;
@@ -391,7 +393,7 @@ void Interpolation::setup_damping()
 
     for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
 
-        knum0 = kpoint->k_reduced[ik][0];
+        knum0 = kpoint->kpoint_irred_all[ik][0].knum;
 
         for (is = 0; is < ns; ++is) {
 
@@ -401,8 +403,8 @@ void Interpolation::setup_damping()
         }
 
         for (i = 0; i < NT; ++i) {
-            for (j = 1; j < kpoint->nk_equiv[ik]; ++j) {
-                knum = kpoint->k_reduced[ik][j];
+            for (j = 1; j < kpoint->kpoint_irred_all[ik].size(); ++j) {
+                knum = kpoint->kpoint_irred_all[ik][j].knum;
 
                 for (is = 0; is < ns; ++is) {
                     damp[i][knum][is] = damp[i][knum0][is];
@@ -425,7 +427,7 @@ void Interpolation::setup_damping()
     }
 }
 
-void Interpolation::prepare_self_energy_extend()
+void Interpolation::prepare_self_energy_extend(std::vector<std::vector<KpointList> > &kplist_in)
 {
     unsigned int i, j;
     unsigned int ik, is;
@@ -437,7 +439,7 @@ void Interpolation::prepare_self_energy_extend()
 
     for (ik = 0; ik < nk_reduced_ref; ++ik) {
 
-        knum0 = k_reduced_ref[ik][0];
+        knum0 = kplist_in[ik][0].knum;
 
         for (is = 0; is < ns; ++is) {
 
@@ -448,7 +450,7 @@ void Interpolation::prepare_self_energy_extend()
 
         for (i = 0; i < ntemp_ref; ++i) {
             for (j = 1; j < nk_equiv_ref[ik]; ++j) {
-                knum = k_reduced_ref[ik][j];
+                knum = kplist_in[ik][j].knum;
 
                 for (is = 0; is < ns; ++is) {
                     self_energy_extend[i][knum][is] = self_energy_extend[i][knum0][is];

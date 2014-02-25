@@ -20,6 +20,7 @@
 #include "write_phonons.h"
 #include "mathfunctions.h"
 #include "isotope.h"
+#include "integration.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
@@ -52,7 +53,7 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << "  EIGENVECTOR = " << dynamical->eigenvectors << std::endl;
-    std::cout << "  PRINTVEL = " << phonon_velocity->printvel << std::endl;
+    std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
     std::cout << "  PRINTXSF = " << writes->writeanime << "; NBANDS = " << writes->nbands << std::endl;
     std::cout << "  TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
     std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
@@ -65,7 +66,7 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << "  RESTART = " << phon->restart_flag << std::endl;
-    std::cout << "  ISMEAR = " << relaxation->ksum_mode << "; EPSILON = " << relaxation->epsilon << std::endl;
+    std::cout << "  ISMEAR = " << integration->ismear << "; EPSILON = " << relaxation->epsilon << std::endl;
     std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
     std::cout << "  KS_INPUT = " << relaxation->ks_input << "; QUARTIC = " << relaxation->quartic_mode << std::endl;
     std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << "; REALPART = " << relaxation->calc_realpart << std::endl;
@@ -132,7 +133,7 @@ void Writes::setup_result_io()
             fs_result >> nksym_tmp;
 
             if (!(kpoint->nkx == nk_tmp[0] && kpoint->nky == nk_tmp[1] && kpoint->nkz == nk_tmp[2]
-            && kpoint->nk_equiv.size() == nksym_tmp)) {
+            && kpoint->nk_reduced == nksym_tmp)) {
                 error->exit("setup_result_io", "KPOINT information is not consistent");
             }
 
@@ -182,7 +183,7 @@ void Writes::setup_result_io()
             fs_result >> ismear;
             fs_result >> epsilon_tmp;
 
-            if (ismear != relaxation->ksum_mode) {
+            if (ismear != integration->ismear) {
                 error->exit("setup_result_io", "Smearing method is not consistent");
             }
             if (ismear != -1 && epsilon_tmp != relaxation->epsilon) {
@@ -221,16 +222,14 @@ void Writes::setup_result_io()
 
             fs_result << "#KPOINT" << std::endl;
             fs_result << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
-            fs_result << kpoint->nk_equiv.size() << std::endl;
+            fs_result << kpoint->nk_reduced << std::endl;
 
-            int ik = 0;
-            for (int i = 0; i < kpoint->nk_equiv.size(); ++i){
+            for (int i = 0; i < kpoint->nk_reduced; ++i){
                 fs_result << std::setw(6) << i + 1 << ":";
                 for (int j = 0; j < 3; ++j){
-                    fs_result << std::setw(15) << std::scientific << kpoint->kpIBZ[ik].kval[j];
+                    fs_result << std::setw(15) << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
                 }
                 fs_result << std::setw(12) << std::fixed << kpoint->weight_k[i] << std::endl;
-                ik += kpoint->nk_equiv[i];
             }
             fs_result.unsetf(std::ios::fixed);
 
@@ -245,7 +244,7 @@ void Writes::setup_result_io()
             fs_result << "#END  FCSINFO" << std::endl;
 
             fs_result << "#SMEARING" << std::endl;
-            fs_result << relaxation->ksum_mode << std::endl;
+            fs_result << integration->ismear << std::endl;
             fs_result << relaxation->epsilon << std::endl;
             fs_result << "#END SMEARING" << std::endl;
 
@@ -268,21 +267,24 @@ void Writes::write_phonon_info()
 
     if(kpoint->kpoint_mode == 1){
         write_phonon_bands();
-        if (phonon_velocity->printvel) write_phonon_vel();
+        if (phonon_velocity->print_velocity) write_phonon_vel();
     }
 
     if(dos->flag_dos) {
         write_phonon_dos();
         write_thermodynamics();
-        if (phonon_velocity->printvel) write_phonon_vel_all();
+        if (phonon_velocity->print_velocity) write_phonon_vel_all();
     }
 
     if(writeanime) {
         write_mode_anime();
     }
 
-    if(dynamical->eigenvectors) {
+    if (dynamical->print_eigenvectors) {
         write_eigenvectors();
+    }
+
+    if (print_rmsd) {
         write_rmsd();
     }
 }

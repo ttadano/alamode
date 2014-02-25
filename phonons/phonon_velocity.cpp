@@ -18,6 +18,12 @@ Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon){}
 
 Phonon_velocity::~Phonon_velocity(){}
 
+
+void Phonon_velocity::setup_velocity()
+{
+    MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+}
+
 void Phonon_velocity::calc_group_velocity(const int kpmode)
 {
 
@@ -64,8 +70,8 @@ void Phonon_velocity::calc_phonon_vel_band()
             // f'(x) =~ f(x+h)-f(x-h)/2h
 
             for (i = 0; i < 3; ++i) {
-                xk_shift[0][i] = xk_tmp[i] - h * kpoint->kpoint_direction[ik][i];
-                xk_shift[1][i] = xk_tmp[i] + h * kpoint->kpoint_direction[ik][i];
+                xk_shift[0][i] = xk_tmp[i] - h * kpoint->kvec_na[ik][i];
+                xk_shift[1][i] = xk_tmp[i] + h * kpoint->kvec_na[ik][i];
             }
 
         } else {
@@ -80,9 +86,9 @@ void Phonon_velocity::calc_phonon_vel_band()
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
             if (fcs_phonon->is_fc2_ext) {
-                dynamical->eval_k(xk_shift[idiff], kpoint->kpoint_direction[ik], fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
+                dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
             } else {
-                dynamical->eval_k(xk_shift[idiff], kpoint->kpoint_direction[ik], fcs_phonon->fc2, omega_shift[idiff], evec_tmp, false); 
+                dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik], fcs_phonon->fc2, omega_shift[idiff], evec_tmp, false); 
             }
         }
 

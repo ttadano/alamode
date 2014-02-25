@@ -23,6 +23,7 @@
 #include "memory.h"
 #include "isotope.h"
 #include "phonon_velocity.h"
+#include "integration.h"
 
 #ifdef _USE_BOOST
 #include <boost/algorithm/string.hpp>
@@ -56,40 +57,41 @@ void Input::parce_input(int narg, char **arg)
 
     if (!locate_tag("&general")) error->exit("parse_input", "&general entry not found in the input file");
     parse_general_vars();
-
+   
     if (!locate_tag("&cell")) error->exit("parse_input", "&cell entry not found in the input file");
     parse_cell_parameter();
     
     if (!locate_tag("&kpoint")) error->exit("parse_input", "&kpoint entry not found in the input file");
     parse_kpoints();
+
+    if (!locate_tag("&analysis")) error->exit("parse_input", "&analysis entry not found in the input file");
+    parse_analysis_vars();
+
 }
 
-void Input::parse_general_vars() {
-
+void Input::parse_general_vars()
+{
     int i;
     int nsym, celldim[3], nbands, ismear, nkd;
-    double *masskd, *isotope_factor;
+    double *masskd;
     double Tmin, Tmax, dT, na_sigma, epsilon;
     double emin, emax, delta_e, delta_a;
     double tolerance;
-    bool printsymmetry, printvel;
-    bool eigenvector, printxsf, nonanalytic, lclassical, restart;
-    bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
+    bool printsymmetry;
+    bool nonanalytic, restart;
     bool sym_time_reversal, use_triplet_symmetry;
-    bool include_isotope;
-    bool fstate_omega, fstate_k;
+
     struct stat st;
     std::string prefix, mode, fcsinfo;
-    std::string borninfo, file_result, ks_input;
+    std::string borninfo, file_result;
     std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT EIGENVECTOR \
-                                   PRINTXSF NBANDS NONANALYTIC BORNINFO NA_SIGMA LCLASSICAL ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   DELTA_A RESTART QUARTIC KS_INPUT ATOMPROJ REALPART TREVSYM ISOTOPE ISOFACT \
-                                   NKD KD MASS FSTATE_W FSTATE_K PRINTVEL TRISYM";
+    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT \
+                                   NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
+                                   DELTA_A RESTART TREVSYM NKD KD MASS TRISYM";
     std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
     std::vector<std::string> no_defaults, celldim_v;
-    std::vector<std::string> kdname_v, masskd_v, isofact_v;
+    std::vector<std::string> kdname_v, masskd_v;
     std::map<std::string, std::string> general_var_dict;
 
     if (from_stdin) {
@@ -159,27 +161,11 @@ void Input::parse_general_vars() {
     emax = 1000.0;
     delta_e = 10.0;
 
-    eigenvector = false;
-    printxsf = false;
-    printvel = false;
     nonanalytic = false;
-    lclassical = false;
-
-    quartic_mode = false;
-    ks_analyze_mode = false;
-    atom_project_mode = false;
-    calc_realpart = false;
-
     nsym = 0;
     tolerance = 1.0e-8;
     printsymmetry = false;
     sym_time_reversal = false;
-
-    include_isotope = false;
-
-    fstate_omega = false;
-    fstate_k = false;
-
     use_triplet_symmetry = true;
 
     // if file_result exists in the current directory, restart mode will be automatically turned on.
@@ -211,23 +197,11 @@ void Input::parse_general_vars() {
     assign_val(emax, "EMAX", general_var_dict);
     assign_val(delta_e, "DELTA_E", general_var_dict);
 
-    assign_val(printxsf, "PRINTXSF", general_var_dict);
-    assign_val(printvel, "PRINTVEL", general_var_dict);
-
-    if (printxsf || mode == "RTA") {
-        eigenvector = true;
-    } else {
-        eigenvector = false;
-    }
-
-    assign_val(eigenvector, "EIGENVECTOR", general_var_dict);
     assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
     assign_val(tolerance, "TOLERANCE", general_var_dict);
     assign_val(printsymmetry, "PRINTSYMM", general_var_dict);
 
-
     assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
-    assign_val(lclassical, "LCLASSICAL", general_var_dict);
     assign_val(restart, "RESTART", general_var_dict);
 
     assign_val(nbands, "NBANDS", general_var_dict);
@@ -238,31 +212,9 @@ void Input::parse_general_vars() {
     assign_val(na_sigma, "NA_SIGMA", general_var_dict);
 
     assign_val(delta_a, "DELTA_A", general_var_dict);
-    assign_val(quartic_mode, "QUARTIC", general_var_dict);
-    assign_val(ks_input, "KS_INPUT", general_var_dict);
-    assign_val(atom_project_mode, "ATOMPROJ", general_var_dict);
-    assign_val(calc_realpart, "REALPART", general_var_dict);
-
-    assign_val(include_isotope, "ISOTOPE", general_var_dict);
-
-    assign_val(fstate_omega, "FSTATE_W", general_var_dict);
-    assign_val(fstate_k, "FSTATE_K", general_var_dict);
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
-
-    if (include_isotope) {
-        split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
-
-        if (isofact_v.size() != nkd) {
-            error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
-        } else {
-            memory->allocate(isotope_factor, nkd);
-            for (i = 0; i < nkd; ++i){
-                isotope_factor[i] = my_cast<double>(isofact_v[i]);
-            }
-        }
-    }
 
     str_tmp = general_var_dict["CELLDIM"];
 
@@ -292,12 +244,6 @@ void Input::parse_general_vars() {
         }
     }
 
-    if ((printxsf || mode == "RTA") & !eigenvector) {
-        error->warn("parse_general_vars", "EIGENVECTOR is automatically changed to 1");
-        eigenvector = true;
-    }
-
-
     job_title = prefix;
     writes->file_result = file_result;
     phon->mode = mode;
@@ -306,7 +252,6 @@ void Input::parse_general_vars() {
     symmetry->tolerance = tolerance;
     symmetry->printsymmetry = printsymmetry;
     symmetry->time_reversal_sym = sym_time_reversal;
-
 
     system->Tmin = Tmin;
     system->Tmax = Tmax;
@@ -326,39 +271,125 @@ void Input::parse_general_vars() {
     dos->emin = emin;
     dos->delta_e = delta_e;
 
-    phonon_velocity->printvel = printvel;
 
     for (i = 0; i < 3; ++i) {
         system->cell_dimension[i] = celldim[i];
     }
 
-    dynamical->eigenvectors = eigenvector;
     dynamical->nonanalytic = nonanalytic;
     dynamical->na_sigma = na_sigma;
-    writes->writeanime = printxsf;
     writes->nbands = nbands;
     dynamical->file_born = borninfo;
-
     relaxation->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsinfo;
-    conductivity->use_classical_Cv = lclassical;
-
     gruneisen->delta_a = delta_a;
-    relaxation->ksum_mode = ismear;
-    relaxation->quartic_mode = quartic_mode;
-    relaxation->ks_input = ks_input;
-    relaxation->atom_project_mode = atom_project_mode;
-    relaxation->calc_realpart = calc_realpart;
-
-    relaxation->calc_fstate_omega = fstate_omega;
-    relaxation->calc_fstate_k = fstate_k;
+    integration->ismear = ismear;
     relaxation->use_triplet_symmetry = use_triplet_symmetry;
 
-    isotope->include_isotope = include_isotope;
+    general_var_dict.clear();
+}
+
+void Input::parse_analysis_vars()
+{
+    int i;
+
+    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS GRUNEISEN";
+
+    bool include_isotope;
+    bool fstate_omega, fstate_k;
+    bool lclassical;
+    bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
+    bool print_vel, print_evec, print_xsf, print_rmsd;
+    bool projected_dos, gruneisen;
+
+    double *isotope_factor;
+    std::string ks_input;
+    std::map<std::string, std::string> general_var_dict;
+    std::vector<std::string> isofact_v;
+
+    print_xsf = false;
+    print_vel = false;
+    print_evec = false;
+    print_rmsd = false;
+
+    projected_dos = false;
+    gruneisen = false;
+
+    lclassical = false;
+    quartic_mode = false;
+    ks_analyze_mode = false;
+    atom_project_mode = false;
+    calc_realpart = false;
+    include_isotope = false;
+    fstate_omega = false;
+    fstate_k = false;
+
+    get_var_dict(str_allowed_list, general_var_dict);
+
+    assign_val(print_xsf, "PRINTXSF", general_var_dict);
+    assign_val(print_vel, "PRINTVEL", general_var_dict);
+    assign_val(print_evec, "PRINTEVEC", general_var_dict);
+    assign_val(print_rmsd, "PRINTRMSD", general_var_dict);
+
+    assign_val(projected_dos, "PDOS", general_var_dict);
+    assign_val(gruneisen, "GRUNEISEN", general_var_dict);
+
+    assign_val(lclassical, "LCLASSICAL", general_var_dict);
+    assign_val(quartic_mode, "QUARTIC", general_var_dict);
+    assign_val(atom_project_mode, "ATOMPROJ", general_var_dict);
+    assign_val(calc_realpart, "REALPART", general_var_dict);
+    assign_val(include_isotope, "ISOTOPE", general_var_dict);
+    assign_val(fstate_omega, "FSTATE_W", general_var_dict);
+    assign_val(fstate_k, "FSTATE_K", general_var_dict);
+    assign_val(ks_input, "KS_INPUT", general_var_dict);
+
 
     if (include_isotope) {
-        memory->allocate(isotope->isotope_factor, nkd);
-        for (i = 0; i < nkd; ++i) {
+        split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
+
+        if (isofact_v.size() != system->nkd) {
+            error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
+        } else {
+            memory->allocate(isotope_factor, system->nkd);
+            for (i = 0; i < system->nkd; ++i){
+                isotope_factor[i] = my_cast<double>(isofact_v[i]);
+            }
+        }
+    }
+
+//     if (phon->mode == "PHONONS") {
+//         if (kpoint->kpoint_mode != 2) {
+//             if (print_rmsd) {
+//                 std::cout << " PRINTRMSD = 1 will be neglected when kpoint mode is not 2." << std::endl;
+//                 print_rmsd = false;
+//             }
+//         }
+//     } else if (phon->mode == "RTA") {
+// 
+//     }
+    
+
+
+    phonon_velocity->print_velocity = print_vel;
+    dynamical->print_eigenvectors = print_evec;
+    writes->writeanime = print_xsf;
+    writes->print_rmsd = print_rmsd;
+
+    dos->projected_dos = projected_dos;
+
+    conductivity->use_classical_Cv = lclassical;
+    relaxation->quartic_mode = quartic_mode;
+    relaxation->atom_project_mode = atom_project_mode;
+    relaxation->calc_realpart = calc_realpart;
+    relaxation->calc_fstate_omega = fstate_omega;
+    relaxation->calc_fstate_k = fstate_k;
+    isotope->include_isotope = include_isotope;
+    relaxation->ks_input = ks_input;
+
+
+    if (include_isotope) {
+        memory->allocate(isotope->isotope_factor, system->nkd);
+        for (i = 0; i < system->nkd; ++i) {
             isotope->isotope_factor[i] = isotope_factor[i];
         }
         memory->deallocate(isotope_factor);
@@ -367,7 +398,8 @@ void Input::parse_general_vars() {
     general_var_dict.clear();
 }
 
-void Input::parse_cell_parameter() {
+void Input::parse_cell_parameter()
+{
 
     int i, j;
     double a;
@@ -497,7 +529,8 @@ void Input::parse_kpoints() {
 }
 
 
-int Input::locate_tag(std::string key){
+int Input::locate_tag(std::string key)  
+{
 
     int ret = 0;
     std::string line, line2;
@@ -549,7 +582,8 @@ int Input::locate_tag(std::string key){
 
 }
 
-void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict) {
+void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict)
+{
 
     std::string line, key, val;
     std::string line_wo_comment, line_tmp;
@@ -725,7 +759,8 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 }
 
 
-bool Input::is_endof_entry(std::string str) {
+bool Input::is_endof_entry(std::string str)
+{
 
     if (str[0] == '/') {
         return true;
@@ -734,7 +769,8 @@ bool Input::is_endof_entry(std::string str) {
     }
 }
 
-void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec) {
+void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec)
+{
 
     std::string str_tmp;
     std::istringstream is(str);
@@ -752,7 +788,8 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
     str_tmp.clear();
 }
 
-template<typename T> void Input::assign_val(T &val, std::string key, std::map<std::string, std::string> dict) {
+template<typename T> void Input::assign_val(T &val, std::string key, std::map<std::string, std::string> dict)
+{
 
     if (!dict[key].empty()) {
 #ifdef _USE_BOOST

@@ -14,21 +14,15 @@
 #include "error.h"
 #include "symmetry_core.h"
 #include "mathfunctions.h"
+#include "write_phonons.h"
+#include "phonon_dos.h"
 
 using namespace PHON_NS;
 
-Dynamical::Dynamical(PHON *phon): Pointers(phon){
-    eigenvectors = false;
-}
+Dynamical::Dynamical(PHON *phon): Pointers(phon){}
 
-Dynamical::~Dynamical(){
-    memory->deallocate(xshift_s);
-    memory->deallocate(kvec_na);
+Dynamical::~Dynamical(){}
 
-    if (nonanalytic) {
-        memory->deallocate(borncharge);
-    }
-}
 
 void Dynamical::setup_dynamical(std::string mode)
 {
@@ -42,8 +36,9 @@ void Dynamical::setup_dynamical(std::string mode)
     if (mympi->my_rank == 0) {
         std::cout << std::endl << std::endl;
         std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-        std::cout << " Setting up conditions for the dynamical matrix ... " << std::endl << std::endl;
+        std::cout << " Setting up conditions for the dynamical matrix ... ";
         if (nonanalytic) {
+            std::cout << std::endl;
             std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
             std::cout << std::endl;
         }
@@ -67,10 +62,21 @@ void Dynamical::setup_dynamical(std::string mode)
         }
     }
 
+    if (mympi->my_rank == 0) {
+        eigenvectors = false;
+
+        if (phon->mode == "RTA") {
+            eigenvectors = true;
+        } else {
+            if (print_eigenvectors || writes->print_rmsd || writes->writeanime || dos->projected_dos) {
+                eigenvectors = true;
+            }
+        }
+    }
+
+
     MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&nonanalytic, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-
-    memory->allocate(kvec_na, kpoint->nk, 3);
 
     if (nonanalytic) {
 
@@ -88,11 +94,12 @@ void Dynamical::setup_dynamical(std::string mode)
             std::cout << std::endl;
         }
 
-        setup_na_kvec();
     }
+    if (mympi->my_rank == 0) std::cout << "done!" << std::endl;
 }
 
-void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
+void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, 
+                       double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -122,7 +129,11 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < system->natmin; ++j) {
 
-                for (icrd = 0; icrd < 3; ++icrd) xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd] - system->xr_s[system->map_p2s[j][0]][icrd];
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd] 
+                                - system->xr_s[system->map_p2s[j][0]][icrd];
+                }
+
                 rotvec(xdiff, xdiff, system->lavec_s);
                 rotvec(xdiff, xdiff, system->rlavec_p);
 
@@ -215,7 +226,8 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, double
     memory->deallocate(amat);
 }
 
-void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext, double *eval_out, std::complex<double> **evec_out, bool require_evec) {
+void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext, 
+                       double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -228,25 +240,6 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     memory->allocate(dymat_k, neval, neval);
 
     calc_analytic_k(xk_in, fc2_ext, dymat_k);
-
-
-    //                for (i = 0; i < neval; ++i) {
-    //                    for (j = 0; j < neval; ++j) {
-    //                        if (std::abs(dymat_k[i][j].real()) < eps) {
-    //                            std::cout << std::setw(15) << 0.0;
-    //                        } else {
-    //                            std::cout << std::setw(15) << dymat_k[i][j].real();
-    //                        }
-    //                        if (std::abs(dymat_k[i][j].imag()) < eps) {
-    //                            std::cout << std::setw(15) << 0.0;
-    //                        } else {
-    //                            std::cout << std::setw(15) << dymat_k[i][j].imag();
-    //                        }
-    //
-    //                    }
-    //                    std::cout << std::endl;
-    //                }
-    //                std::cout << std::endl;
 
     if (nonanalytic) {
 
@@ -264,7 +257,11 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < system->natmin; ++j) {
 
-                for (icrd = 0; icrd < 3; ++icrd) xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd] - system->xr_s[system->map_p2s[j][0]][icrd];
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd]
+                                - system->xr_s[system->map_p2s[j][0]][icrd];
+                }
+
                 rotvec(xdiff, xdiff, system->lavec_s);
                 rotvec(xdiff, xdiff, system->rlavec_p);
 
@@ -278,7 +275,6 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
                 }
             }
         }
-
 
         for (i = 0; i < neval; ++i) {
             for (j = 0; j < neval; ++j) {
@@ -658,9 +654,9 @@ void Dynamical::diagonalize_dynamical_all()
 
     for (ik = nk_s; ik < nk_e; ++ik){
         if (fcs_phonon->is_fc2_ext) {
-            eval_k(kpoint->xk[ik], kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon_mpi[ik], evec_phonon_mpi[ik], require_evec);
+            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon_mpi[ik], evec_phonon_mpi[ik], require_evec);
         } else {
-            eval_k(kpoint->xk[ik], kvec_na[ik], fcs_phonon->fc2, eval_phonon_mpi[ik], evec_phonon_mpi[ik], require_evec);
+            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2, eval_phonon_mpi[ik], evec_phonon_mpi[ik], require_evec);
         }
 
         // Phonon energy is the square-root of the eigenvalue 
@@ -1413,51 +1409,17 @@ void Dynamical::load_born()
     }
 }
 
-void Dynamical::setup_na_kvec()
-{
-    // Setup k-vector necessary for the non-analytic correction.
-
-    unsigned int i, j;
-    unsigned int nk = kpoint->nk;
-    double norm;
-
-    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 2) {
-
-        // DOS or Boltzmann
-
-        for (i = 0; i < kpoint->nk; ++i) {
-            for (j = 0; j < 3; ++j) {
-                kvec_na[i][j] = fold(kpoint->xk[i][j]);
-            }
-            rotvec(kvec_na[i], kvec_na[i], system->rlavec_p, 'T');
-            norm = std::sqrt(kvec_na[i][0] * kvec_na[i][0] + kvec_na[i][1] * kvec_na[i][1] + kvec_na[i][2] * kvec_na[i][2]);
-
-            if (norm > eps) {
-                for (j = 0; j < 3; ++j) kvec_na[i][j] /= norm;
-            }
-        }
-
-    } else if (kpoint->kpoint_mode == 1) {
-
-        // Band structure calculation
-
-        for (i = 0; i < kpoint->nk; ++i) {
-            for (j = 0; j < 3; ++j) {
-                kvec_na[i][j] = kpoint->kpoint_direction[i][j];
-            }
-        }
-    }
-}
-
 double Dynamical::fold(double x)
 {
-    if (x >= -0.5 && x < 0.5) {
-        return x;
-    } else if (x < 0.0) {
-        return x + 1.0;
-    } else {
-        return x - 1.0;
-    }
+    return x - static_cast<double>(nint(x));
+
+//     if (x >= -0.5 && x < 0.5) {
+//         return x;
+//     } else if (x < 0.0) {
+//         return x + 1.0;
+//     } else {
+//         return x - 1.0;
+//     }
 }
 
 double Dynamical::freq(const double x) 
@@ -1474,3 +1436,17 @@ double Dynamical::freq(const double x)
     }
 }
 
+
+void PHON_NS::Dynamical::finish_dynamical()
+{
+    memory->deallocate(xshift_s);
+
+    if (kpoint->kpoint_mode < 3) {
+        memory->deallocate(evec_phonon);
+        memory->deallocate(eval_phonon);
+    }
+
+    if (nonanalytic) {
+        memory->deallocate(borncharge);
+    }
+}
