@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <complex>
+#include "kpoint.h"
 
 namespace PHON_NS {
 
@@ -48,7 +49,7 @@ namespace PHON_NS {
         void setup_damping();
         void parse_self_energy();
         void prepare_dymat_for_interpolation();
-        void prepare_self_energy_extend();
+        void prepare_self_energy_extend(std::vector<std::vector<KpointList> > &);
         void diagonalize_interpolated_matrix(std::complex<double> **, std::complex<double> *);
 
         void setup_polarization_matrix();

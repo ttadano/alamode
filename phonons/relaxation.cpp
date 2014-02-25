@@ -24,6 +24,7 @@
 #include "constants.h"
 #include "mathfunctions.h"
 #include <set>
+#include "integration.h"
 
 using namespace PHON_NS;
 
@@ -36,9 +37,9 @@ Relaxation::~Relaxation(){};
 void Relaxation::setup_relaxation()
 {
     if (mympi->my_rank == 0) {
-        std::cout << "Setting up the relaxation time calculation ...";
+        std::cout << " Setting up the relaxation time calculation ...";
 
-        if (calc_realpart && ksum_mode == -1) {
+        if (calc_realpart && integration->ismear == -1) {
             error->exit("setup_relaxation", "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
         }
     }
@@ -211,14 +212,14 @@ void Relaxation::setup_relaxation()
         }
     }
 
-    MPI_Bcast(&ksum_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_realpart, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&atom_project_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_fstate_omega, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     // For tetrahedron method
-    if (ksum_mode == -1) {
+    if (integration->ismear == -1) {
         memory->allocate(e_tmp, 4, nk);
         memory->allocate(f_tmp, 4, nk);
     }
@@ -258,15 +259,15 @@ void Relaxation::setup_relaxation()
         }
 
         std::cout << std::endl;
-        std::cout << "Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
-        std::cout << "Given epsilon (cm^-1) = " << epsilon << std::endl << std::endl;
+        std::cout << " Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
+        std::cout << std::endl;
 
-        if (ksum_mode == 0) {
-            std::cout << "Lorentzian broadening will be used." << std::endl;
-        } else if (ksum_mode == 1) {
-            std::cout << "Gaussian broadening will be used." << std::endl;
-        } else if (ksum_mode == -1) {
-            std::cout << "Tetrahedron method will be used." << std::endl;
+        if (integration->ismear == 0) {
+            std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = " << epsilon << " (cm^-1)" << std::endl;
+        } else if (integration->ismear == 1) {
+            std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = " << epsilon << " (cm^-1)" << std::endl;
+        } else if (integration->ismear == -1) {
+            std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
         } else {
             error->exit("setup_relaxation", "Invalid ksum_mode");
         }
@@ -284,13 +285,15 @@ void Relaxation::setup_relaxation()
     }
     MPI_Bcast(&sym_permutation, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-    generate_triplet_k(use_triplet_symmetry, sym_permutation);
+    if (kpoint->kpoint_mode == 2) {
+        generate_triplet_k(use_triplet_symmetry, sym_permutation);
+    }
     // gen_pair_uniq();
     //if (mympi->my_rank == 1) gensym_kpairs();
-
-    if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
-    }
+// 
+//     if (mympi->my_rank == 0) {
+//         std::cout << " done!" << std::endl;
+//     }
 }
 
 void Relaxation::setup_mode_analysis()
@@ -302,8 +305,9 @@ void Relaxation::setup_mode_analysis()
     if (mympi->my_rank == 0) {
         if (!ks_input.empty()) {
             std::cout << std::endl;
-            std::cout << "KS_INPUT is given." << std::endl;
-            std::cout << "Analysis on specific k points will be performed instead of thermal conductivity calculations." << std::endl;
+            std::cout << " KS_INPUT is given." << std::endl;
+            std::cout << " Analysis on specific k points will be performed " << std::endl;
+            std::cout << " instead of thermal conductivity calculations." << std::endl;
             std::cout << std::endl;
 
 
@@ -329,7 +333,7 @@ void Relaxation::setup_mode_analysis()
 
                     kslist_fstate_k.push_back(KsListMode(ktmp, snum_tmp));
                 }
-                std::cout << "The number of entries = " << kslist_fstate_k.size() << std::endl;
+                std::cout << " The number of entries = " << kslist_fstate_k.size() << std::endl;
 
             } else {
                 kslist.clear();
@@ -341,9 +345,8 @@ void Relaxation::setup_mode_analysis()
                     if (knum_tmp == -1) error->exit("setup_relaxation", "Given kpoint is not exist in given k-point grid.");
                     kslist.push_back(knum_tmp * dynamical->neval + snum_tmp);
                 }
-                std::cout << "The number of entries = " << kslist.size() << std::endl;
+                std::cout << " The number of entries = " << kslist.size() << std::endl;
             }
-
 
             ks_analyze_mode = true;
             ifs_ks.close();
@@ -423,7 +426,7 @@ void Relaxation::finish_relaxation()
     memory->deallocate(v3_arr);
     memory->deallocate(delta_arr);
 
-    if (ksum_mode == -1) {
+    if (integration->ismear == -1) {
         memory->deallocate(e_tmp);
         memory->deallocate(f_tmp);
     }
@@ -864,13 +867,13 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
                     n1 =  f1 + f2 + 1.0;
                     n2 =  f1 - f2;
 
-                    if (ksum_mode == 0) {
+                    if (integration->ismear == 0) {
                         ret[i] += v3_tmp *multi
                             * ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
                             + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
                             - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
                             + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
-                    } else if (ksum_mode == 1) {
+                    } else if (integration->ismear == 1) {
                         ret[i] += v3_tmp * multi
                             * ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
                             + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
@@ -1052,7 +1055,7 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
 #pragma omp parallel for private(multi, knum, knum_minus, arr, k1, k2, is, js, omega_inner)
     for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
-        knum = kpoint->k_reduced[ik_in][0];
+        knum = kpoint->kpoint_irred_all[ik_in][0].knum;
         knum_minus = kpoint->knum_minus[knum];
 
         arr[0] = ns * knum_minus + snum;
@@ -1316,13 +1319,13 @@ void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const doubl
             n1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) + phonon_thermodynamics->fB(omega_inner[1], T_tmp) + 1.0;
             n2 = phonon_thermodynamics->fB(omega_inner[0], T_tmp) - phonon_thermodynamics->fB(omega_inner[1], T_tmp);
 
-            if (ksum_mode == 0) {
+            if (integration->ismear == 0) {
                 v3_tmp2 = v3_tmp 
                     * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
                     + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
                     - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
                     + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
-            } else if (ksum_mode == 1) {
+            } else if (integration->ismear == 1) {
                 v3_tmp2 = v3_tmp
                     * (- n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
                     + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
@@ -1513,7 +1516,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
     for (ik = mympi->my_rank; ik < pair_uniq[ik_in].size(); ik += mympi->nprocs) {
 
         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
-        knum = kpoint->k_reduced[ik_in][0];
+        knum = kpoint->kpoint_irred_all[ik_in][0].knum;
         knum_minus = kpoint->knum_minus[knum];
 
         arr[0] = ns * knum_minus + snum;
@@ -1838,7 +1841,7 @@ void Relaxation::compute_mode_tau()
                 ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
             }
 
-            if (ksum_mode == -1) {
+            if (integration->ismear == -1) {
 
                 std::cout << "myrank = " << mympi->my_rank << std::endl;
 
@@ -2025,14 +2028,14 @@ void Relaxation::compute_mode_tau()
                     ofs_mode_tau << "# Frequency = " << writes->in_kayser(omega) << std::endl;
                 }
 
-                if (ksum_mode == -1) {
+                if (integration->ismear == -1) {
                     calc_damping_tetra(NT, T_arr, omega, knum, snum, damp3);
                 } else {
                     selfenergy->selfenergy_a(NT, T_arr, omega, knum, snum, self_a);
                 }
 
                 if (quartic_mode) {
-                    if (ksum_mode == -1) {
+                    if (integration->ismear == -1) {
                         error->exit("compute_mode_tau", "ISMEAR = -1 is not supported for QUARTIC = 1");
                     } else {
                         //					calc_damping4(NT, T_arr, omega, knum, snum, damp4);
@@ -2049,7 +2052,7 @@ void Relaxation::compute_mode_tau()
 
                 if (mympi->my_rank == 0) {
                     for (j = 0; j < NT; ++j) {
-                        if (ksum_mode == -1) {
+                        if (integration->ismear == -1) {
                             ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(damp3[j]);
                         } else {
                             ofs_mode_tau << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(self_a[j].imag());
@@ -2106,7 +2109,7 @@ void Relaxation::gensym_kpairs() {
     std::complex<double> V3tmp1, V3tmp2;
 
     for (i = 0; i < kpoint->nk_reduced; ++i) {
-        k0 = kpoint->k_reduced[i][0];
+        k0 = kpoint->kpoint_irred_all[i][0].knum;
         k1 = kpoint->knum_minus[k0];
 
         std::cout << "#Irred. K " << std::setw(5) << i + 1;
@@ -2246,7 +2249,7 @@ void Relaxation::gen_pair_uniq()
 
         pointgroup[i].clear();
 
-        knum = kpoint->k_reduced[i][0];
+        knum = kpoint->kpoint_irred_all[i][0].knum;
         knum_minus = kpoint->knum_minus[knum];
 
         for (isym = 0; isym < symmetry->nsym; ++isym) {
@@ -2263,7 +2266,7 @@ void Relaxation::gen_pair_uniq()
 
     for (i = 0; i < kpoint->nk_reduced; ++i) {
 
-        knum = kpoint->k_reduced[i][0];
+        knum = kpoint->kpoint_irred_all[i][0].knum;
         knum_minus = kpoint->knum_minus[knum];
 
         for (j = 0; j < 3; ++j) xk[j] = kpoint->xk[knum_minus][j];
@@ -2316,7 +2319,7 @@ void Relaxation::generate_triplet_k(const bool use_triplet_symmetry, const bool 
 
     for (i = 0; i < kpoint->nk_reduced; ++i) {
 
-        knum = kpoint->k_reduced[i][0];
+        knum = kpoint->kpoint_irred_all[i][0].knum;
 
         if (use_triplet_symmetry) {
 

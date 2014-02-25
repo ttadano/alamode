@@ -39,6 +39,7 @@ void Dos::setup()
     MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&projected_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if(kpoint->kpoint_mode == 2) {
         flag_dos = true;
@@ -57,7 +58,7 @@ void Dos::setup()
             energy_dos[i] = emin + delta_e * static_cast<double>(i);
         }
 
-        if (dynamical->eigenvectors) {
+        if (projected_dos) {
             memory->allocate(pdos_phonon, system->natmin, n_energy);
         }
     }
@@ -116,7 +117,7 @@ void Dos::calc_dos2()
     }
     MPI_Reduce(&dos_local[0], &dos_phonon[0], n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    if (dynamical->eigenvectors) {
+    if (projected_dos) {
 
         // Calculate atom projected phonon-DOS
 

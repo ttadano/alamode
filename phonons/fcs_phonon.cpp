@@ -93,7 +93,8 @@ void Fcs_phonon::setup(std::string mode)
 
         std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
         for (i = 0; i < maxorder; ++i) {
-            std::cout << "   Order " << i + 2 << " : " << std::setw(12) << maxdev[i] << std::endl;
+            std::cout << "   Order " << i + 2 << " : " << std::setw(12) 
+                << std::scientific << maxdev[i] << std::endl;
         }
         std::cout << std::endl;
         memory->deallocate(maxdev);

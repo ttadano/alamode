@@ -46,18 +46,6 @@ namespace PHON_NS {
         }
     };
 
-    inline bool operator<(const KpointList a, const KpointList b){
-        return std::lexicographical_compare(a.kval.begin(), a.kval.end(), b.kval.begin(), b.kval.end());
-    }
-
-    inline bool operator==(const KpointList a, const KpointList b){
-        double tmp = 0.0;
-        for (unsigned int i = 0; i < 3; ++i){
-            tmp += std::pow(a.kval[i] - b.kval[i], 2);
-        }
-        return std::sqrt(tmp) < eps;
-    }
-
     class KpointPlane {
     public:
         double k[3];
@@ -80,44 +68,44 @@ namespace PHON_NS {
 
         int kpoint_mode;
         unsigned int nkx, nky, nkz;
-        unsigned int npath, nk;
+        unsigned int nk;
         unsigned int *knum_minus;
 
         double **xk;
-        double **kpoint_direction;
         double *kaxis;
+        double **kvec_na;
 
-        std::vector<KpointList> kpIBZ;
         std::vector<KpointInp> kpInp;
-        std::vector<unsigned int> nk_equiv;
         std::vector<double> weight_k;
-        std::set<unsigned int> kpset_uniq;
+        std::vector<std::vector<KpointList> > kpoint_irred_all;
 
         unsigned int nplanes;
-        std::vector<KpointPlane> *kp_planes;
-
-        unsigned int **k_reduced, *nk_equiv_arr;
-        unsigned int nk_reduced, nequiv_max;
+        std::vector<KpointPlane> *kp_planes; 
+        unsigned int nk_reduced;
         std::map<int, int> kmap_to_irreducible;
 
 
         int get_knum(const double, const double, const double);
-        void gen_kmesh(bool, unsigned int [3], double **, std::vector<unsigned int> &, std::vector<KpointList> &);
 
         void generate_irreducible_kmap(int *, unsigned int &, std::vector<int> &,
             const unsigned int, const unsigned int, const unsigned int, 
             double **, const int, int ***);
+        void gen_kmesh(const bool, const unsigned int [3], double **, std::vector<std::vector<KpointList> > &);
+
 
     private:
-        void gen_kpoints_band();
-        void reduce_kpoints(double **, unsigned int [3], std::vector<unsigned int> &, std::vector<KpointList> &);
-        //void gen_nkminus();
+        void setup_kpoint_given(std::vector<KpointInp> &, unsigned int &, double **&, double **&);
+        void setup_kpoint_band(std::vector<KpointInp> &, unsigned int &, double **&, double **&, double *&);
+        void setup_kpoint_mesh(std::vector<KpointInp> &, unsigned int &, unsigned int &, unsigned int &, unsigned int &,
+            double **&, double **&, const bool, std::vector<std::vector<KpointList> > &);
+        void setup_kpoint_plane(std::vector<KpointInp> &, unsigned int &, std::vector<KpointPlane> *&);
+
+        void reduce_kpoints(const unsigned int, double **, const unsigned int [3], std::vector<std::vector<KpointList> > &);
         void gen_nkminus(const unsigned int, unsigned int *, double **);
         void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *);
         bool in_first_BZ(double *);
 
-        std::string **kp_symbol;
-        double ***kp_bound;
-        unsigned int *nkp;
+        void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &);
+        void mpi_broadcast_kplane_vector(const unsigned int, std::vector<KpointPlane> *&);
     };
 }

@@ -28,6 +28,9 @@ namespace PHON_NS {
         Integration(class PHON *);
         ~Integration();
 
+        bool use_tetrahedron;
+        int ismear;
+
         void setup_integration();
         void finish_integration();
         double do_tetrahedron(double *, double *, const double);

@@ -18,6 +18,8 @@ Integration::~Integration(){};
 
 void Integration::setup_integration()
 {
+    MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     unsigned int nk = kpoint->nk;
     unsigned int nkx = kpoint->nkx;
     unsigned int nky = kpoint->nky;
@@ -26,7 +28,7 @@ void Integration::setup_integration()
     ntetra = 6 * nk;
 
     if (mympi->my_rank == 0) {
-        std::cout << "Setting up the tetrahedron method ...";
+        std::cout << " Setting up the tetrahedron method ...";
     }
 
     memory->allocate(tetras, ntetra, 4);

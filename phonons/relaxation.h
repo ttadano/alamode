@@ -77,7 +77,6 @@ namespace PHON_NS {
         void calc_damping_tetra_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***); 
         void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         double epsilon;
-        int ksum_mode;
         bool quartic_mode;
         bool ks_analyze_mode;
         bool atom_project_mode;

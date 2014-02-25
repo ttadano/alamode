@@ -21,6 +21,7 @@ namespace PHON_NS
         void write_result_xml();
 
         bool writeanime;
+        bool print_rmsd;
 
         double in_kayser(const double);
         int nbands;
