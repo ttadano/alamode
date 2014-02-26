@@ -23,8 +23,11 @@ Dos::~Dos(){
     if(flag_dos) {
         memory->deallocate(energy_dos);
         memory->deallocate(dos_phonon);
-        if(dynamical->eigenvectors) {
+        if (projected_dos) {
             memory->deallocate(pdos_phonon);
+        }
+        if (two_phonon_dos) {
+            memory->deallocate(dos2_phonon);
         }
     }
     memory->deallocate(kmap_irreducible);
@@ -40,6 +43,7 @@ void Dos::setup()
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&projected_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&two_phonon_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if(kpoint->kpoint_mode == 2) {
         flag_dos = true;
@@ -60,6 +64,11 @@ void Dos::setup()
 
         if (projected_dos) {
             memory->allocate(pdos_phonon, system->natmin, n_energy);
+        }
+
+        if (two_phonon_dos) {
+            int n_energy2 = static_cast<int>((emax * 2.0 - emin) / delta_e);
+            memory->allocate(dos2_phonon, n_energy2, 4);
         }
     }
 
@@ -83,19 +92,16 @@ void Dos::setup()
     memory->deallocate(symmetry_tmp);
 }
 
-void Dos::calc_dos2()
+void Dos::calc_dos_all()
 {
     int i;
     unsigned int j, k;
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;
-    double *dos_local;
     double *weight;
 
     memory->allocate(eval, neval, nk);
-    memory->allocate(dos_local, n_energy);
-    memory->allocate(weight, nk_irreducible);
 
     for (j = 0; j < nk; ++j){
         for (k = 0; k < neval; ++k){
@@ -103,223 +109,236 @@ void Dos::calc_dos2()
         }
     }
 
-    for (i = 0; i < n_energy; ++i) {
-        dos_local[i] = 0.0;
+    calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
+        dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
 
-        for (k = mympi->my_rank; k < neval; k += mympi->nprocs) {
-            integration->calc_weight_tetrahedron(nk_irreducible, kmap_irreducible, 
-                weight, eval[k], energy_dos[i]);
-
-            for (j = 0; j < nk_irreducible; ++j) {
-                dos_local[i] += weight[j];
-            }
-        }
-    }
-    MPI_Reduce(&dos_local[0], &dos_phonon[0], n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
+    
     if (projected_dos) {
-
-        // Calculate atom projected phonon-DOS
-
-        unsigned int ik, imode, iat, icrd;
-        unsigned int natmin = system->natmin;
-
-        double **proj;
-        double **pdos_local;
-        memory->allocate(proj, neval, nk_irreducible);
-        memory->allocate(pdos_local, natmin, n_energy);
-
-        for (iat = 0; iat < natmin; ++iat){
-
-            for (imode = 0; imode < neval; ++imode){
-                for (i = 0; i < nk_irreducible; ++i){
-                    ik = k_irreducible[i];
-
-                    proj[imode][i] = 0.0;
-
-                    for (icrd = 0; icrd < 3; ++icrd){
-                        proj[imode][i] += std::norm(dynamical->evec_phonon[ik][imode][3 * iat + icrd]);
-                    }
-                }
-            }
-
-            for (i = 0; i < n_energy; ++i){
-                pdos_local[iat][i] = 0.0;
-
-                for (k = mympi->my_rank; k < neval; k += mympi->nprocs) {
-                    integration->calc_weight_tetrahedron(nk_irreducible, kmap_irreducible, 
-                        weight, eval[k], energy_dos[i]);
-
-                    for (j = 0; j < nk_irreducible; ++j) {
-                        pdos_local[iat][i] += proj[k][j] * weight[j];
-                    }
-                }
-            }            
-        }
-
-        MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], natmin*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-        memory->deallocate(proj);
-        memory->deallocate(pdos_local);
+        calc_atom_projected_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
+            pdos_phonon, neval, system->natmin, integration->ismear, 
+            dynamical->evec_phonon, kpoint->kpoint_irred_all);        
     }
-
-    memory->deallocate(dos_local);
-    memory->deallocate(weight);
     memory->deallocate(eval);
 
+    if (two_phonon_dos) {
+        int n_energy2 = static_cast<int>((emax * 2.0 - emin) / delta_e);
+        double *energy2;
+
+        memory->allocate(energy2, n_energy2);
+
+        for (i = 0; i < n_energy2; ++i) {
+                energy2[i] = emin + delta_e * static_cast<double>(i);
+        }
+        
+        calc_two_phonon_dos(n_energy2, energy2, dos2_phonon, integration->ismear, kpoint->kpoint_irred_all);       
+        memory->deallocate(energy2);
+    }
 }
 
-void Dos::calc_dos()
+void PHON_NS::Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, double **eval, 
+                            const unsigned int n, double *energy, double *ret, const unsigned int neval, const int smearing_method,
+                            std::vector<std::vector<KpointList> > &kpinfo)
 {
+    int i, j, k;
+    double *weight;
+
+    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
+
+#pragma omp parallel private (weight, k)
+    {
+        memory->allocate(weight, nk_irreducible);
+
+#pragma omp for
+        for (i = 0; i < n; ++i) {
+
+            dos_phonon[i] = 0.0;
+
+            for (k = 0; k < neval; ++k) {
+                if (smearing_method == -1) {
+                    integration->calc_weight_tetrahedron(nk_irreducible, map_k, weight, eval[k], energy[i]);
+                } else {
+                    integration->calc_weight_smearing(kpinfo, weight, eval[k], energy[i], smearing_method);
+                }
+
+                for (j = 0; j < nk_irreducible; ++j) {
+                    ret[i] += weight[j];
+                }
+            }
+        }
+        memory->deallocate(weight);
+    }
+
+    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+}
+
+void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk_irreducible, int *map_k, double **eval, const unsigned int n, 
+                                           double *energy, double **ret, const unsigned int neval, const unsigned int natmin, const int smearing_method,
+                                           std::complex<double> ***evec, std::vector<std::vector<KpointList> > &kpinfo )
+{
+    // Calculate atom projected phonon-DOS
+
     int i;
     unsigned int j, k;
+    unsigned int ik, imode, iat, icrd;
+    double *weight;
+    double **proj;
+
+    if (mympi->my_rank == 0) std::cout << " PDOS = 1 : Calculating atom-projected phonon DOS ...";
+
+    memory->allocate(proj, neval, nk_irreducible);
+
+    for (iat = 0; iat < natmin; ++iat){
+
+        for (imode = 0; imode < neval; ++imode){
+            for (i = 0; i < nk_irreducible; ++i){
+                ik = kpinfo[i][0].knum;
+
+                proj[imode][i] = 0.0;
+
+                for (icrd = 0; icrd < 3; ++icrd){
+                    proj[imode][i] += std::norm(evec[ik][imode][3 * iat + icrd]);
+                }
+            }
+        }
+
+#pragma omp parallel private (weight, k, j)
+        {
+            memory->allocate(weight, nk_irreducible);
+
+#pragma omp for
+            for (i = 0; i < n; ++i){
+                ret[iat][i] = 0.0;
+
+                for (k = 0; k < neval; ++k) {
+                    if (smearing_method == -1) {
+                        integration->calc_weight_tetrahedron(nk_irreducible, map_k, weight, eval[k], energy[i]);
+                    } else {
+                        integration->calc_weight_smearing(kpinfo, weight, eval[k], energy[i], smearing_method);
+                    }
+
+                    for (j = 0; j < nk_irreducible; ++j) {
+                        ret[iat][i] += proj[k][j] * weight[j];
+                    }
+                }
+            }            
+
+            memory->deallocate(weight);
+        }
+    }
+    memory->deallocate(proj);
+
+    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+}
+
+
+void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double **ret, const int smearing_method,
+                              std::vector<std::vector<KpointList> > kpinfo)
+{
+    int i, j;
+    int is, js, ik, jk;
+    int k;
+
+    int knum;
+
     unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
-    double **eval;
+    unsigned int ns = dynamical->neval;
 
-    double *dos_local;
+    int *kmap_identity;
 
-    memory->allocate(eval, neval, nk);
-    memory->allocate(dos_local, n_energy);
+    double multi;
+    double **e_tmp;    
+    double **tdos_q;
 
-    for (j = 0; j < nk; ++j){
-        for (k = 0; k < neval; ++k){
-            eval[k][j] = writes->in_kayser(dynamical->eval_phonon[j][k]);
+    double **weight;
+    double emax2 = 2.0 * emax;
+
+    double xk_tmp[3];
+
+    int loc;
+
+    if (mympi->my_rank == 0) {
+        std::cout << " TDOS = 1 : Calculating two-phonon DOS with doubled EMAX" << std::endl;
+        std::cout << "            This can take a while ... ";
+    }
+
+    memory->allocate(tdos_q, n, 4);
+    memory->allocate(kmap_identity, nk);
+    memory->allocate(e_tmp, 4, nk);
+    memory->allocate(weight, n, nk);
+
+    for (i = 0; i < nk; ++i) kmap_identity[i] = i;
+
+    for (i = 0; i < n; ++i) {
+        for (j = 0; j < 4; ++j) {
+            ret[i][j] = 0.0;
         }
     }
 
-    for (i = 0; i < n_energy; ++i){
-        dos_local[i] = 0.0;
+    for (is = 0; is < ns; ++is) {
+        for (js = 0; js < ns; ++js) {
 
-        for (j = mympi->my_rank; j < neval; j += mympi->nprocs) {
-            dos_local[i] += integration->dos_integration(eval[j], energy_dos[i]);
-        }
-    }
+            for (ik = 0; ik < kpinfo.size(); ++ik) {
 
-    MPI_Reduce(&dos_local[0], &dos_phonon[0], n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    memory->deallocate(dos_local);
+                multi = static_cast<double>(kpinfo[ik].size());
+                knum = kpinfo[ik][0].knum;
 
-    if (dynamical->eigenvectors) {
+                for (i = 0; i < n; ++i) {
+                    for (j = 0; j < 4; ++j) {
+                        tdos_q[i][j] = 0.0;
+                    }
+                }
 
-        // Calculate atom projected phonon-DOS
+#pragma omp parallel for private (j, loc, xk_tmp) 
+                for (jk = 0; jk < nk; ++jk) {
 
-        unsigned int ik, imode, iat, icrd;
-        unsigned int natmin = system->natmin;
+                    for (j = 0; j < 3; ++j) xk_tmp[j] = kpoint->xk[knum][j] + kpoint->xk[jk][j];
+                    loc = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
 
-        double **proj;
-        double **pdos_local;
-        memory->allocate(proj, neval, nk);
-        memory->allocate(pdos_local, natmin, n_energy);
+                    e_tmp[0][jk] = - writes->in_kayser(dynamical->eval_phonon[jk][is] + dynamical->eval_phonon[loc][js]);
+                    e_tmp[1][jk] = - e_tmp[0][jk];
+                    e_tmp[2][jk] =   writes->in_kayser(dynamical->eval_phonon[jk][is] - dynamical->eval_phonon[loc][js]);
+                    e_tmp[3][jk] = - e_tmp[2][jk];
+                }
 
-        for (iat = 0; iat < natmin; ++iat){
+                if (smearing_method == -1) {
 
-            for (imode = 0; imode < neval; ++imode){
-                for (ik = 0; ik < nk; ++ik){
-                    proj[imode][ik] = 0.0;
+                    for (j = 1; j < 4; ++j) {
+#pragma omp parallel for private (k)
+                        for (i = 0; i < n; ++i) {
+                            integration->calc_weight_tetrahedron(nk, kmap_identity, weight[i], e_tmp[j], energy[i]);
+                            for (k = 0; k < nk; ++k) {
+                                tdos_q[i][j] += weight[i][k];
+                            }
+                        }
+                    }
 
-                    for (icrd = 0; icrd < 3; ++icrd){
-                        proj[imode][ik] += std::norm(dynamical->evec_phonon[ik][imode][3 * iat + icrd]);
+                } else {
+
+                    for (j = 0; j < 4; ++j) {
+#pragma omp parallel for private (k)
+                        for (i = 0; i < n; ++i) {
+                            integration->calc_weight_smearing(nk, nk, kmap_identity, weight[i], e_tmp[j], energy[i], smearing_method);
+                            for (k = 0; k < nk; ++k) {
+                                tdos_q[i][j] += weight[i][k];
+                            }
+                        }
+                    }
+                }
+
+                for (i = 0; i < n; ++i) {
+                    for (j = 0; j < 4; ++j) {
+                        ret[i][j] += multi * tdos_q[i][j];
                     }
                 }
             }
-
-            for (i = 0; i < n_energy; ++i){
-                pdos_local[iat][i] = 0.0;
-
-                for (imode = mympi->my_rank; imode < neval; imode += mympi->nprocs) {
-                    pdos_local[iat][i] += integration->do_tetrahedron(eval[imode], proj[imode], energy_dos[i]);
-                }
-            }            
-        }
-
-        MPI_Reduce(&pdos_local[0][0], &pdos_phonon[0][0], natmin*n_energy, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-        memory->deallocate(proj);
-        memory->deallocate(pdos_local);
-    }
-
-    memory->deallocate(eval);
-}
-
-void Dos::calc_tdos()
-{
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    unsigned int i;
-    unsigned int ik, jk;
-    unsigned int is, js;
-    unsigned int kcount;
-
-    double k_tmp[3], xk_tmp[3];
-    double xk_norm;
-
-    double **e_tmp;    
-    double *energy_dos, **tdos;
-
-    n_energy = static_cast<int>((emax - emin) / delta_e);
-
-    memory->allocate(e_tmp, 4, nk);
-    memory->allocate(energy_dos, n_energy);
-    memory->allocate(tdos, 4, n_energy);
-
-    k_tmp[0] = 0.0; k_tmp[1] = 0.0; k_tmp[2] = 0.0;
-
-    for (i = 0; i < n_energy; ++i){
-        energy_dos[i] = emin + delta_e * static_cast<double>(i);
-        for (unsigned int j = 0; j < 4; ++j) tdos[j][i] = 0.0;
-    }
-
-    for (is = 0; is < ns; ++is){
-        for (js = 0; js < ns; ++js){
-
-            kcount = 0;
-
-            for (ik = 0; ik < nk; ++ik) {
-                for (jk = 0; jk < nk; ++jk){
-
-                    xk_tmp[0] = k_tmp[0] + kpoint->xk[ik][0] + kpoint->xk[jk][0];
-                    xk_tmp[1] = k_tmp[1] + kpoint->xk[ik][1] + kpoint->xk[jk][1];
-                    xk_tmp[2] = k_tmp[2] + kpoint->xk[ik][2] + kpoint->xk[jk][2];
-
-                    for (i = 0; i < 3; ++i)  xk_tmp[i] = std::fmod(xk_tmp[i], 1.0);
-                    xk_norm = std::pow(xk_tmp[0], 2) + std::pow(xk_tmp[1], 2) + std::pow(xk_tmp[2], 2);
-                    if (std::sqrt(xk_norm) > eps15) continue; 
-
-                    e_tmp[0][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
-                    e_tmp[1][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] + dynamical->eval_phonon[jk][js]);
-                    e_tmp[2][kcount] = writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
-                    e_tmp[3][kcount] = - writes->in_kayser(dynamical->eval_phonon[ik][is] - dynamical->eval_phonon[jk][js]);
-
-                    ++kcount;
-                }
-            }
-
-            for (i = 0; i < n_energy; ++i){
-                for (unsigned int j = 0; j < 4; ++j) tdos[j][i] += integration->dos_integration(e_tmp[j], energy_dos[i]);
-            }
-
-            std::cout << "kcount = " << kcount << std::endl;
         }
     }
-
-    std::string file_tdos;
-    std::ofstream ofs_tdos;
-
-    file_tdos = input->job_title + ".tdos";
-
-    ofs_tdos.open(file_tdos.c_str(), std::ios::out);
-
-    ofs_tdos << "# Two-phonon DOS at" << std::setw(15) << k_tmp[0] << std::setw(15) << k_tmp[1] << std::setw(15) << k_tmp[2] << std::endl;
-    for (i = 0; i < n_energy; ++i) {
-        ofs_tdos << std::setw(15) << energy_dos[i];
-        ofs_tdos << std::setw(15) << tdos[0][i];
-        ofs_tdos << std::setw(15) << tdos[1][i];
-        ofs_tdos << std::setw(15) << tdos[2][i];
-        ofs_tdos << std::setw(15) << tdos[3][i] << std::endl;
-    }
-
-    ofs_tdos.close();
     memory->deallocate(e_tmp);
-    memory->deallocate(tdos);
-    memory->deallocate(energy_dos);
+    memory->deallocate(weight);
+    memory->deallocate(kmap_identity);
+    memory->deallocate(tdos_q);
+
+    if (mympi->my_rank == 0) {
+        std::cout << "done." << std::endl;
+    }  
 }

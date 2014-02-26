@@ -25,24 +25,37 @@ void Integration::setup_integration()
     unsigned int nky = kpoint->nky;
     unsigned int nkz = kpoint->nkz;
 
-    ntetra = 6 * nk;
-
     if (mympi->my_rank == 0) {
-        std::cout << " Setting up the tetrahedron method ...";
+        std::cout << std::endl;
+        if (ismear == -1) {
+            std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
+        } else if (ismear == 0) {
+            std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = " 
+                << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+        } else if (ismear == 1) {
+            std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
+                << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+        } else {
+            error->exit("setup_relaxation", "Invalid ksum_mode");
+        }
+        std::cout << std::endl;
     }
 
-    memory->allocate(tetras, ntetra, 4);
-    prepare_tetrahedron(nkx, nky, nkz);
-
-    if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
+    if (ismear == -1) {
+        ntetra = 6 * nk;
+        memory->allocate(tetras, ntetra, 4);
+        prepare_tetrahedron(nkx, nky, nkz);
     }
 
+    epsilon *= time_ry / Hz_to_kayser;
+    MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void Integration::finish_integration()
 {
-    memory->deallocate(tetras);
+    if (ismear == -1) {
+        memory->deallocate(tetras);
+    }
 }
 
 void Integration::prepare_tetrahedron(const int nk1, const int nk2, const int nk3)
@@ -328,6 +341,51 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
     for (i = 0; i < nk_irreducible; ++i) weight[i] /= vol_tot;
 }
 
+void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList> > &kpinfo,
+                                                double *weight, double *energy, const double e_ref, const int smearing_method)
+{
+    int i;
+    int knum;
+
+    double epsilon = this->epsilon * Hz_to_kayser / time_ry;
+
+    if (smearing_method == 0) {
+        for (i = 0; i < kpinfo.size(); ++i) {
+            knum = kpinfo[i][0].knum;
+            weight[i] = kpoint->weight_k[i] * delta_lorentz(e_ref - energy[knum], epsilon);
+        }
+    } else if (smearing_method == 1) {
+        for (i = 0; i < kpinfo.size(); ++i) {
+            knum = kpinfo[i][0].knum;
+            weight[i] = kpoint->weight_k[i] * delta_gauss(e_ref - energy[knum], epsilon);
+        }
+    }
+}
+
+void PHON_NS::Integration::calc_weight_smearing(const int nk, const int nk_irreducible, int *map_to_irreducible_k,
+                                                double *weight, double *energy, const double e_ref, const int smearing_method)
+{
+    int i;
+    int knum;
+
+    double epsilon = this->epsilon * Hz_to_kayser / time_ry;
+
+    for (i = 0; i < nk_irreducible; ++i) weight[i] = 0.0;
+
+    if (smearing_method == 0) {
+        for (i = 0; i < nk; ++i) {
+           weight[map_to_irreducible_k[i]] += delta_lorentz(e_ref - energy[i], epsilon);
+        }
+    } else if (smearing_method == 1) {
+        for (i = 0; i < nk; ++i) {
+            weight[map_to_irreducible_k[i]] += delta_gauss(e_ref - energy[i], epsilon);
+        }
+    }
+
+    for (i = 0; i < nk_irreducible; ++i) weight[i] /= static_cast<double>(nk);
+}
+
+
 double Integration::volume(int *klist)
 {
     int i;
@@ -368,3 +426,4 @@ double Integration::refold(double x)
         return x;
     }
 }
+

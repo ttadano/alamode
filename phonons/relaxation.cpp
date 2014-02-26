@@ -261,24 +261,12 @@ void Relaxation::setup_relaxation()
         std::cout << std::endl;
         std::cout << " Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
         std::cout << std::endl;
-
-        if (integration->ismear == 0) {
-            std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = " << epsilon << " (cm^-1)" << std::endl;
-        } else if (integration->ismear == 1) {
-            std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = " << epsilon << " (cm^-1)" << std::endl;
-        } else if (integration->ismear == -1) {
-            std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
-        } else {
-            error->exit("setup_relaxation", "Invalid ksum_mode");
-        }
-        std::cout << std::endl;
     }
 
     memory->deallocate(relvec);
     memory->deallocate(invsqrt_mass_p);
 
-    epsilon *= time_ry / Hz_to_kayser;
-    MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+   
 
     if (mympi->my_rank == 0) {
         if (calc_fstate_omega) sym_permutation = false;
@@ -818,6 +806,8 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
     double multi;
     double f1, f2;
 
+    double epsilon = integration->epsilon;
+
     for (i = 0; i < N; ++i) ret[i] = 0.0;
 
     arr[0] = ns * kpoint->knum_minus[knum] + snum;
@@ -869,16 +859,16 @@ void Relaxation::calc_damping(const unsigned int N, double *T, const double omeg
 
                     if (integration->ismear == 0) {
                         ret[i] += v3_tmp *multi
-                            * ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
-                            + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                            - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                            + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                            * ( - n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon)
+                            + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
+                            - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon)
+                            + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon));
                     } else if (integration->ismear == 1) {
                         ret[i] += v3_tmp * multi
-                            * ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
-                            + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
-                            - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
-                            + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
+                            * ( - n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1], epsilon)
+                            + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1], epsilon)
+                            - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1], epsilon)
+                            + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1], epsilon));
                     }
                 }
             }
@@ -916,6 +906,8 @@ void Relaxation::calc_damping_tune(const unsigned int N, double *T, const double
     unsigned int nkz = kpoint->nkz;
 
     int iloc, jloc, kloc;
+
+    double epsilon = integration->epsilon;
 
     //	double **xks = kpoint->xk;
     //	double **eval= dynamical->eval_phonon;
@@ -961,10 +953,10 @@ void Relaxation::calc_damping_tune(const unsigned int N, double *T, const double
                     omega_inner[0] = dynamical->eval_phonon[ik][is];
                     omega_inner[1] = dynamical->eval_phonon[jk][js];
 
-                    delta_arr[ik][ns * is + js][0] = delta_lorentz(omega + omega_inner[0] + omega_inner[1]);
-                    delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] - omega_inner[1]);
-                    delta_arr[ik][ns * is + js][2] = delta_lorentz(omega - omega_inner[0] + omega_inner[1]);
-                    delta_arr[ik][ns * is + js][3] = delta_lorentz(omega + omega_inner[0] - omega_inner[1]);
+                    delta_arr[ik][ns * is + js][0] = delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon);
+                    delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon);
+                    delta_arr[ik][ns * is + js][2] = delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon);
+                    delta_arr[ik][ns * is + js][3] = delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon);
                 }
             }
         }
@@ -1048,6 +1040,8 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
 
     double f1, f2;
 
+    double epsilon = integration->epsilon;
+
     memory->allocate(v3_arr, pair_uniq[ik_in].size(), ns * ns);
     memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 2);
 
@@ -1073,10 +1067,10 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
 
                 v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
 
-                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                    - delta_lorentz(omega + omega_inner[0] + omega_inner[1]);
-                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                    - delta_lorentz(omega + omega_inner[0] - omega_inner[1]);
+                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
+                    - delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon);
+                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon)
+                    - delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon);
             }
         }   
     }
@@ -1289,6 +1283,8 @@ void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const doubl
     int iloc, jloc, kloc;
     unsigned int nks2 = nk * ns * ns;
 
+    double epsilon = integration->epsilon;
+
     for (iks = mympi->my_rank; iks < nks2; iks += mympi->nprocs) {
 
         ik = iks / (ns * ns);
@@ -1321,16 +1317,16 @@ void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const doubl
 
             if (integration->ismear == 0) {
                 v3_tmp2 = v3_tmp 
-                    * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1])
-                    + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1])
-                    - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1])
-                    + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1]));
+                    * (- n1 * delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon)
+                    + n1 * delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
+                    - n2 * delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon)
+                    + n2 * delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon));
             } else if (integration->ismear == 1) {
                 v3_tmp2 = v3_tmp
-                    * (- n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1])
-                    + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1])
-                    - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1])
-                    + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1]));
+                    * (- n1 * delta_gauss(omega + omega_inner[0] + omega_inner[1], epsilon)
+                    + n1 * delta_gauss(omega - omega_inner[0] - omega_inner[1], epsilon)
+                    - n2 * delta_gauss(omega - omega_inner[0] + omega_inner[1], epsilon)
+                    + n2 * delta_gauss(omega + omega_inner[0] - omega_inner[1], epsilon));
             }
 
             for (iat = 0; iat < natmin; ++iat) {
@@ -1505,6 +1501,8 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
     double prod_tmp[2];
     double **ret_mpi;
 
+    double epsilon = integration->epsilon;
+
     memory->allocate(ret_mpi, N, M);
 
     for (i = 0; i < N; ++i) {
@@ -1542,13 +1540,13 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
                     n1 = f1 + f2 + 1.0;
                     n2 = f1 - f2;
 
-                    prod_tmp[0] = n1 * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1]) 
-                        - delta_lorentz(omega0 + omega_inner[0] + omega_inner[1]));
-                    prod_tmp[1] = n2 * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1])
-                        - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1]));
+                    prod_tmp[0] = n1 * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon) 
+                        - delta_lorentz(omega0 + omega_inner[0] + omega_inner[1], epsilon));
+                    prod_tmp[1] = n2 * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1], epsilon)
+                        - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                     for (j = 0; j < M; ++j) {
-                        ret_mpi[i][j] += v3_tmp * multi * delta_lorentz(omega[j] - omega_inner[0])
+                        ret_mpi[i][j] += v3_tmp * multi * delta_lorentz(omega[j] - omega_inner[0], epsilon)
                             * (prod_tmp[0] + prod_tmp[1]);
                     }
                 }
@@ -1567,15 +1565,6 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
 
 }
 
-double Relaxation::delta_lorentz(const double omega)
-{
-    return epsilon / (omega*omega + epsilon*epsilon) / pi;
-}
-
-double Relaxation::delta_gauss(const double omega)
-{
-    return std::exp(- omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
-}
 
 void Relaxation::compute_mode_tau()
 {
@@ -1597,6 +1586,7 @@ void Relaxation::compute_mode_tau()
     memory->allocate(T_arr, NT);
     for (i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i)*dT;
 
+    double epsilon = integration->epsilon;
 
     if (calc_fstate_k) {
 
@@ -1690,10 +1680,10 @@ void Relaxation::compute_mode_tau()
                         for (js = 0; js < ns; ++js) {
                             V3norm = std::norm(V3_mode(mode, xk2, xk3, is, js, eval, evec));
 
-                            delta_tmp[0] = delta_lorentz(eval[0][mode] - eval[1][is] - eval[2][js])
-                                - delta_lorentz(eval[0][mode] + eval[1][is] + eval[2][js]);
-                            delta_tmp[1] = delta_lorentz(eval[0][mode] + eval[1][is] - eval[2][js])
-                                - delta_lorentz(eval[0][mode] - eval[1][is] + eval[2][js]);
+                            delta_tmp[0] = delta_lorentz(eval[0][mode] - eval[1][is] - eval[2][js], epsilon)
+                                - delta_lorentz(eval[0][mode] + eval[1][is] + eval[2][js], epsilon);
+                            delta_tmp[1] = delta_lorentz(eval[0][mode] + eval[1][is] - eval[2][js], epsilon)
+                                - delta_lorentz(eval[0][mode] - eval[1][is] + eval[2][js], epsilon);
 
                             for (iT = 0; iT < NT; ++iT) {
                                 T_tmp = T_arr[iT];

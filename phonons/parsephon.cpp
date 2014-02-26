@@ -280,7 +280,7 @@ void Input::parse_general_vars()
     dynamical->na_sigma = na_sigma;
     writes->nbands = nbands;
     dynamical->file_born = borninfo;
-    relaxation->epsilon = epsilon;
+    integration->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsinfo;
     gruneisen->delta_a = delta_a;
     integration->ismear = ismear;
@@ -293,7 +293,7 @@ void Input::parse_analysis_vars()
 {
     int i;
 
-    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS GRUNEISEN";
+    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS TDOS GRUNEISEN";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
@@ -301,6 +301,7 @@ void Input::parse_analysis_vars()
     bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_xsf, print_rmsd;
     bool projected_dos, gruneisen;
+    bool two_phonon_dos;
 
     double *isotope_factor;
     std::string ks_input;
@@ -313,6 +314,7 @@ void Input::parse_analysis_vars()
     print_rmsd = false;
 
     projected_dos = false;
+    two_phonon_dos = false;
     gruneisen = false;
 
     lclassical = false;
@@ -332,6 +334,7 @@ void Input::parse_analysis_vars()
     assign_val(print_rmsd, "PRINTRMSD", general_var_dict);
 
     assign_val(projected_dos, "PDOS", general_var_dict);
+    assign_val(two_phonon_dos, "TDOS", general_var_dict);
     assign_val(gruneisen, "GRUNEISEN", general_var_dict);
 
     assign_val(lclassical, "LCLASSICAL", general_var_dict);
@@ -376,6 +379,7 @@ void Input::parse_analysis_vars()
     writes->print_rmsd = print_rmsd;
 
     dos->projected_dos = projected_dos;
+    dos->two_phonon_dos = two_phonon_dos;
 
     conductivity->use_classical_Cv = lclassical;
     relaxation->quartic_mode = quartic_mode;

@@ -36,7 +36,6 @@ void Dynamical::setup_dynamical(std::string mode)
     if (mympi->my_rank == 0) {
         std::cout << std::endl << std::endl;
         std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-        std::cout << " Setting up conditions for the dynamical matrix ... ";
         if (nonanalytic) {
             std::cout << std::endl;
             std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
@@ -95,7 +94,6 @@ void Dynamical::setup_dynamical(std::string mode)
         }
 
     }
-    if (mympi->my_rank == 0) std::cout << "done!" << std::endl;
 }
 
 void Dynamical::eval_k(double *xk_in, double *kvec_in, double ****fc2_in, 
@@ -572,191 +570,41 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 
 void Dynamical::diagonalize_dynamical_all()
 {
+    int ik;
     unsigned int i;
-    unsigned int ik, is;
+    unsigned int is;
     unsigned int nk = kpoint->nk;
     bool require_evec; 
-
-    double **eval_phonon_mpi;
-    std::complex<double> ***evec_phonon_mpi;
-    std::complex<double> **evec_phonon_2d, **evec_phonon_mpi_2d;
-
-    int *nk_mpi, *displs;
-    int *displs_eval, *displs_evec;
-    int *ndata_eval, *ndata_evec;
-    int nk_s, nk_e;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl << " Diagonalizing dynamical matrices for all k points ...";
     }
 
     memory->allocate(eval_phonon, nk, neval);
-    memory->allocate(eval_phonon_mpi, nk, neval);
-
     if (eigenvectors) {
         require_evec = true;
         memory->allocate(evec_phonon, nk, neval, neval);
-        memory->allocate(evec_phonon_mpi, nk, neval, neval);
-        memory->allocate(evec_phonon_2d, nk, neval * neval);
-        memory->allocate(evec_phonon_mpi_2d, nk, neval * neval);
     } else {
         require_evec = false;
         memory->allocate(evec_phonon, nk, 1, 1);
-        memory->allocate(evec_phonon_mpi, nk, 1, 1);
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
 
-    memory->allocate(nk_mpi, mympi->nprocs);
-    memory->allocate(displs, mympi->nprocs);
-    memory->allocate(displs_eval, mympi->nprocs);
-    memory->allocate(displs_evec, mympi->nprocs);
-    memory->allocate(ndata_eval, mympi->nprocs);
-    memory->allocate(ndata_evec, mympi->nprocs);
-
-
-    if (mympi->my_rank == 0) {
-
-        for (i = 0; i < mympi->nprocs; ++i) {
-            nk_mpi[i] = nk / mympi->nprocs;
-        }
-        int res = nk - nk_mpi[0] * mympi->nprocs;
-
-        for (i = 0; i < mympi->nprocs; ++i) {
-            if (res % mympi->nprocs > i) {
-                nk_mpi[i] += 1;
-            }
-        }
-
-        displs[0] = 0;
-        for (int i = 1; i < mympi->nprocs; ++i) {
-            displs[i] = displs[i - 1] + nk_mpi[i - 1];
-        }
-    }
-
-    MPI_Bcast(&nk_mpi[0], mympi->nprocs, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&displs[0], mympi->nprocs, MPI_INT, 0, MPI_COMM_WORLD);
-
-    for (i = 0; i < mympi->nprocs; ++i) {
-        displs_eval[i] = neval * displs[i];
-        ndata_eval[i] = nk_mpi[i] * neval;
-        displs_evec[i] = neval * neval * displs[i];
-        ndata_evec[i] = nk_mpi[i] * neval * neval;
-    }
-
-    nk_s = displs[mympi->my_rank];
-
-    if (mympi->my_rank == mympi->nprocs -1) {
-        nk_e = nk;
-    } else {
-        nk_e = displs[mympi->my_rank + 1];
-    }
-
-    for (ik = nk_s; ik < nk_e; ++ik){
+#pragma omp parallel for private (is)
+    for (ik = 0; ik < nk; ++ik){
         if (fcs_phonon->is_fc2_ext) {
-            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon_mpi[ik], evec_phonon_mpi[ik], require_evec);
+            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
         } else {
-            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2, eval_phonon_mpi[ik], evec_phonon_mpi[ik], require_evec);
+            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
         }
 
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is){
-            eval_phonon_mpi[ik][is] = freq(eval_phonon_mpi[ik][is]);
+            eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
         }
     }
 
-    MPI_Allgatherv(&eval_phonon_mpi[nk_s][0], ndata_eval[mympi->my_rank], MPI_DOUBLE, &eval_phonon[0][0], ndata_eval, displs_eval, MPI_DOUBLE, MPI_COMM_WORLD);
-
-#if defined(MPI_COMPLEX16)
-    if (eigenvectors) {
-
-        unsigned int js;
-
-        for (ik = nk_s; ik < nk_e; ++ik) {
-            for (is = 0; is < neval; ++is) {
-                for (js = 0; js < neval; ++js) {
-                    evec_phonon_mpi_2d[ik][neval * is + js] = evec_phonon_mpi[ik][is][js];
-                }
-            }
-        }
-        MPI_Allgatherv(&evec_phonon_mpi_2d[nk_s][0], ndata_evec[mympi->my_rank], MPI_COMPLEX16, &evec_phonon_2d[0][0], ndata_evec, displs_evec, MPI_COMPLEX16, MPI_COMM_WORLD);
-
-        for (ik = 0; ik < nk; ++ik) {
-            for (is = 0; is < neval; ++is) {
-                for (js = 0; js < neval; ++js) {
-                    evec_phonon[ik][is][js] = evec_phonon_2d[ik][neval * is + js];
-                }
-            }
-        }
-    }
-#else
-    if (eigenvectors) {
-        unsigned int j, k;
-        std::complex<double> im(0.0, 1.0);
-
-        double **evec_phonon_re, **evec_phonon_im;
-        double **evec_phonon_mpi_re, **evec_phonon_mpi_im;
-
-        memory->allocate(evec_phonon_re, nk, neval * neval);
-        memory->allocate(evec_phonon_im, nk, neval * neval);
-        memory->allocate(evec_phonon_mpi_re, nk, neval * neval);
-        memory->allocate(evec_phonon_mpi_im, nk, neval * neval);
-
-        for (i = nk_s; i < nk_e; ++i) {
-            for (j = 0; j < neval; ++j) {
-                for (k = 0; k < neval; ++k) {
-                    evec_phonon_mpi_re[i][neval * j + k] = evec_phonon_mpi[i][j][k].real();
-                    evec_phonon_mpi_im[i][neval * j + k] = evec_phonon_mpi[i][j][k].imag();
-                }
-            }
-        }
-
-        MPI_Allgatherv(&evec_phonon_mpi_re[nk_s][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_re[0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
-        MPI_Allgatherv(&evec_phonon_mpi_im[nk_s][0], ndata_evec[mympi->my_rank], MPI_DOUBLE, &evec_phonon_im[0][0], ndata_evec, displs_evec, MPI_DOUBLE, MPI_COMM_WORLD);
-
-        for (i = 0; i < nk; ++i) {
-            for (j = 0; j < neval; ++j) {
-                for (k = 0; k < neval; ++k) {
-                    evec_phonon[i][j][k] = evec_phonon_re[i][neval * j + k] + im * evec_phonon_im[i][neval * j + k];
-                }
-            }
-        }
-
-        memory->deallocate(evec_phonon_re);
-        memory->deallocate(evec_phonon_im);
-        memory->deallocate(evec_phonon_mpi_re);
-        memory->deallocate(evec_phonon_mpi_im);
-    }
-#endif
-
-    memory->deallocate(eval_phonon_mpi);
-    memory->deallocate(evec_phonon_mpi);
-    memory->deallocate(nk_mpi);
-    memory->deallocate(displs);
-    memory->deallocate(ndata_eval);
-    memory->deallocate(ndata_evec);
-    memory->deallocate(displs_eval);
-    memory->deallocate(displs_evec);
-
-    if (eigenvectors) {
-        memory->deallocate(evec_phonon_2d);
-        memory->deallocate(evec_phonon_mpi_2d);
-    }
-
-    // 	for (ik = 0; ik < nk; ++ik){
-    // 		if (fcs_phonon->is_fc2_ext) {
-    // 			eval_k(kpoint->xk[ik], kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
-    // 		} else {
-    // 			eval_k(kpoint->xk[ik], kvec_na[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
-    // 		}
-    // 
-    // 		// Phonon energy is the square-root of the eigenvalue 
-    // 		for (is = 0; is < neval; ++is){
-    // 			eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
-    // 		}
-    // 	}
-
-    MPI_Barrier(MPI_COMM_WORLD);
     if (mympi->my_rank == 0) {
         std::cout << "done !" << std::endl;
     }

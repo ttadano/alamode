@@ -66,7 +66,7 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << "  RESTART = " << phon->restart_flag << std::endl;
-    std::cout << "  ISMEAR = " << integration->ismear << "; EPSILON = " << relaxation->epsilon << std::endl;
+    std::cout << "  ISMEAR = " << integration->ismear << "; EPSILON = " << integration->epsilon << std::endl;
     std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
     std::cout << "  KS_INPUT = " << relaxation->ks_input << "; QUARTIC = " << relaxation->quartic_mode << std::endl;
     std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << "; REALPART = " << relaxation->calc_realpart << std::endl;
@@ -186,7 +186,7 @@ void Writes::setup_result_io()
             if (ismear != integration->ismear) {
                 error->exit("setup_result_io", "Smearing method is not consistent");
             }
-            if (ismear != -1 && epsilon_tmp != relaxation->epsilon) {
+            if (ismear != -1 && epsilon_tmp != integration->epsilon) {
                 error->exit("setup_result_io", "Smearing width is not consistent");
             }
 
@@ -245,7 +245,7 @@ void Writes::setup_result_io()
 
             fs_result << "#SMEARING" << std::endl;
             fs_result << integration->ismear << std::endl;
-            fs_result << relaxation->epsilon << std::endl;
+            fs_result << integration->epsilon << std::endl;
             fs_result << "#END SMEARING" << std::endl;
 
             fs_result << "#TEMPERATURE" << std::endl;
@@ -259,21 +259,45 @@ void Writes::setup_result_io()
 
 void Writes::write_phonon_info()
 {
-    if (nbands < 0 || nbands > 3 * system->natmin) {
-        std::cout << "nbands < 0 or nbands > 3 * natmin" << std::endl;
-        std::cout << "All modes will be printed." << std::endl;    
-        nbands =  3 * system->natmin;
-    }
+//     if (nbands < 0 || nbands > 3 * system->natmin) {
+//         std::cout << "nbands < 0 or nbands > 3 * natmin" << std::endl;
+//         std::cout << "All modes will be printed." << std::endl;    
+//         nbands =  3 * system->natmin;
+//     }
 
-    if(kpoint->kpoint_mode == 1){
+    if (nbands < 0) {
+        nbands = 3 * system->natmin;
+    }
+ 
+    std::cout << std::endl;
+    std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+    std::cout << " The following files are created: " << std::endl;
+
+    
+    if (kpoint->kpoint_mode == 1){
         write_phonon_bands();
-        if (phonon_velocity->print_velocity) write_phonon_vel();
     }
 
-    if(dos->flag_dos) {
+    if (phonon_velocity->print_velocity) {
+        if (kpoint->kpoint_mode == 1) {
+            write_phonon_vel();
+        } else if (kpoint->kpoint_mode == 2) {
+            write_phonon_vel_all();
+        }
+    }
+
+    if (dos->flag_dos) {
         write_phonon_dos();
+
+        if (dos->two_phonon_dos) {
+            write_two_phonon_dos();
+        }
+
         write_thermodynamics();
-        if (phonon_velocity->print_velocity) write_phonon_vel_all();
+    }
+
+    if (print_rmsd) {
+        write_rmsd();
     }
 
     if(writeanime) {
@@ -284,9 +308,7 @@ void Writes::write_phonon_info()
         write_eigenvectors();
     }
 
-    if (print_rmsd) {
-        write_rmsd();
-    }
+
 }
 
 void Writes::write_phonon_bands()
@@ -315,6 +337,10 @@ void Writes::write_phonon_bands()
     }
 
     ofs_bands.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_bands;
+    std::cout << " : Phonon band structure" << std::endl;
+
 }
 
 void Writes::write_phonon_vel()
@@ -343,6 +369,9 @@ void Writes::write_phonon_vel()
     }
 
     ofs_vel.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_vel;
+    std::cout << " : Phonon velocity along given k path" << std::endl;
 }
 
 void Writes::write_phonon_vel_all()
@@ -394,15 +423,18 @@ void Writes::write_phonon_vel_all()
     ofs_vel.close();
 
     memory->deallocate(vel);
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_vel;
+    std::cout << " : Phonon velocity at all k points" << std::endl;
 }
 
 void Writes::write_phonon_dos()
 {
     int i, iat;
     std::ofstream ofs_dos;
-    std::string file_bands = input->job_title + ".dos";
+    std::string file_dos = input->job_title + ".dos";
 
-    ofs_dos.open(file_bands.c_str(), std::ios::out);
+    ofs_dos.open(file_dos.c_str(), std::ios::out);
     if(!ofs_dos) error->exit("write_phonon_dos", "cannot open file_dos");
 
     ofs_dos << "# Energy [cm^-1], TOTAL-DOS";
@@ -423,11 +455,42 @@ void Writes::write_phonon_dos()
     } 
     ofs_dos.close();
 
-    std::cout << std::endl << "Total DOS ";
-    if(dynamical->eigenvectors) {
-        std::cout << "and atom projected-DOS ";
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
+
+    if (dos->projected_dos) {
+        std::cout << " : Phonon DOS and atom projected DOS" << std::endl;
+    } else {
+        std::cout << " : Phonon DOS" << std::endl;
     }
-    std::cout << "are printed in the file: " << file_bands << std::endl << std::endl;
+}
+
+void Writes::write_two_phonon_dos()
+{  
+    int i, j;
+
+    std::string file_tdos;
+    std::ofstream ofs_tdos;
+
+    file_tdos = input->job_title + ".dos2";
+    ofs_tdos.open(file_tdos.c_str(), std::ios::out);
+
+    ofs_tdos << "# Two-phonon DOS " << std::endl;
+    ofs_tdos << "# delta(e+e1+e2), delta(e-e1-e2), delta(e-e1+e2), delta(e+e1-e2)" << std::endl;
+    ofs_tdos << "# Energy [cm^-1], TDOS" << std::endl;
+
+    int n = static_cast<int>((dos->emax * 2.0 - dos->emin) / dos->delta_e);
+
+    for (i = 0; i < n; ++i) {
+        ofs_tdos << std::setw(15) << dos->emin + dos->delta_e * static_cast<double>(i);
+
+        for (j = 0; j < 4; ++j) ofs_tdos << std::setw(15) << dos->dos2_phonon[i][j];
+        ofs_tdos << std::endl;
+    }
+    ofs_tdos.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_tdos;
+    std::cout << " : Two-phonon DOS" << std::endl;
 }
 
 void Writes::write_mode_anime()
@@ -481,7 +544,6 @@ void Writes::write_mode_anime()
     unsigned int m;
     i = 0;
 
-
     for (ik = 0; ik < nk; ++ik){
         for (imode = 0; imode < nbands; ++imode){
             ofs_anime << "PRIMCOORD " << std::setw(10) << i + 1 << std::endl;
@@ -518,6 +580,8 @@ void Writes::write_mode_anime()
     memory->deallocate(kd_tmp);
 
     ofs_anime.close();
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_anime;
+    std::cout << " : XcrysDen AXSF file to visualize phonon mode" << std::endl;
 }
 
 void Writes::write_eigenvectors()
@@ -574,6 +638,9 @@ void Writes::write_eigenvectors()
         ofs_evec << std::endl;
     }
     ofs_evec.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_evec;
+    std::cout << " : Eigenvector of all k points" << std::endl;
 }
 
 double Writes::in_kayser(const double x)
@@ -598,10 +665,10 @@ void Writes::write_thermodynamics()
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if(!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
     ofs_thermo << "# Temperature [K], Internal Energy [Ry], Heat Capacity / kB" << std::endl;
-
-    TD = 1000.0;
-    phonon_thermodynamics->Debye_T(Tmax, TD);
-    std::cout << "TD = " << TD << std::endl;
+// 
+//     TD = 1000.0;
+//     phonon_thermodynamics->Debye_T(Tmax, TD);
+//     std::cout << "TD = " << TD << std::endl;
 
     for (i = 0; i <= NT; ++i){
         T = Tmin + dT * static_cast<double>(i);
@@ -612,6 +679,9 @@ void Writes::write_thermodynamics()
     }
 
     ofs_thermo.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_thermo;
+    std::cout << " : Thermodynamic quantities" << std::endl;
 }
 
 void Writes::write_gruneisen()
@@ -718,6 +788,9 @@ void Writes::write_rmsd()
         ofs_rmsd << std::endl;
     }
     ofs_rmsd.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_rmsd;
+    std::cout << " : Root-mean-square-displacement (RMSD)" << std::endl;
 
 }
 
