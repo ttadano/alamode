@@ -67,6 +67,7 @@ void Isotope::calc_isotope_selfenergy(int knum, int snum, double omega, double &
     int natmin = system->natmin;
 
     double omega1;
+    double epsilon = integration->epsilon;
 
     ret = 0.0;
 
@@ -88,7 +89,7 @@ void Isotope::calc_isotope_selfenergy(int knum, int snum, double omega, double &
 
             omega1 = dynamical->eval_phonon[ik][is];
 
-            ret += omega1 * relaxation->delta_lorentz(omega - omega1) * prod;
+            ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
             //		ret += relaxation->delta_lorentz(omega - omega1) * prod;
         }
     }

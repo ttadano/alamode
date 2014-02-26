@@ -165,7 +165,7 @@ void PHON::execute_phonons()
 
     if (dos->flag_dos) {
         integration->setup_integration();
-        dos->calc_dos2();
+        dos->calc_dos_all();
     }
 
     if (mympi->my_rank == 0) {

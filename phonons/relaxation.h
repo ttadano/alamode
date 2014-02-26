@@ -76,7 +76,7 @@ namespace PHON_NS {
         void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);	 
         void calc_damping_tetra_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***); 
         void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-        double epsilon;
+
         bool quartic_mode;
         bool ks_analyze_mode;
         bool atom_project_mode;
@@ -87,9 +87,6 @@ namespace PHON_NS {
         bool use_triplet_symmetry;
 
         std::string ks_input;
-
-        double delta_lorentz(const double);
-        double delta_gauss(const double);
 
         std::complex<double> V3(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);

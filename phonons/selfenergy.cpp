@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "phonon_thermodynamics.h"
 #include "mathfunctions.h"
+#include "integration.h"
 
 using namespace PHON_NS;
 
@@ -19,7 +20,7 @@ void Selfenergy::setup_selfenergy()
 {
     nk = kpoint->nk;	
     ns = dynamical->neval;
-    epsilon = relaxation->epsilon;
+    epsilon = integration->epsilon;
 }
 
 
