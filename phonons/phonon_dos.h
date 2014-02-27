@@ -13,18 +13,17 @@ namespace PHON_NS
         ~Dos();
 
         void setup();
-        bool flag_dos;
-
         void calc_dos_all();
 
-        double emin, emax, delta_e;
+        bool flag_dos;
+        bool projected_dos, two_phonon_dos;
+
         int n_energy;
+        double emin, emax, delta_e;
         double *energy_dos;
         double *dos_phonon;
         double **pdos_phonon;
         double **dos2_phonon;
-
-        bool projected_dos, two_phonon_dos;
 
     private:
         unsigned int nk_irreducible;
@@ -33,9 +32,8 @@ namespace PHON_NS
 
         void calc_dos(const unsigned int, int *, double **, const unsigned int, double *, 
             double *, const unsigned int, const int, std::vector<std::vector<KpointList> > &);
-        void calc_atom_projected_dos(const unsigned int, int *, double **, const unsigned int, double *,
-            double **, const unsigned int, const unsigned int, const int, 
-            std::complex<double> ***, std::vector<std::vector<KpointList> > &);
+        void calc_atom_projected_dos(const unsigned int, double **, const unsigned int, double *,
+            double **, const unsigned int, const unsigned int, const int, std::complex<double> ***);
 
         void calc_two_phonon_dos(const unsigned int, double *, double **, const int,
             std::vector<std::vector<KpointList> >);

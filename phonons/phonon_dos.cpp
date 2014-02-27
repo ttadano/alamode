@@ -114,9 +114,8 @@ void Dos::calc_dos_all()
 
     
     if (projected_dos) {
-        calc_atom_projected_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
-            pdos_phonon, neval, system->natmin, integration->ismear, 
-            dynamical->evec_phonon, kpoint->kpoint_irred_all);        
+        calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
+            pdos_phonon, neval, system->natmin, integration->ismear, dynamical->evec_phonon);        
     }
     memory->deallocate(eval);
 
@@ -171,39 +170,43 @@ void PHON_NS::Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, doubl
     if (mympi->my_rank == 0) std::cout << " done." << std::endl;
 }
 
-void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk_irreducible, int *map_k, double **eval, const unsigned int n, 
-                                           double *energy, double **ret, const unsigned int neval, const unsigned int natmin, const int smearing_method,
-                                           std::complex<double> ***evec, std::vector<std::vector<KpointList> > &kpinfo )
+void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const unsigned int n, double *energy,
+                                           double **ret, const unsigned int neval, const unsigned int natmin, const int smearing_method,
+                                           std::complex<double> ***evec)
 {
     // Calculate atom projected phonon-DOS
 
     int i;
     unsigned int j, k;
     unsigned int ik, imode, iat, icrd;
+    int *kmap_identity;
     double *weight;
     double **proj;
 
     if (mympi->my_rank == 0) std::cout << " PDOS = 1 : Calculating atom-projected phonon DOS ...";
 
-    memory->allocate(proj, neval, nk_irreducible);
+    memory->allocate(kmap_identity, nk);
+    memory->allocate(proj, neval, nk);
 
+
+    for (i = 0; i < nk; ++i) kmap_identity[i] = i;
+    
     for (iat = 0; iat < natmin; ++iat){
 
         for (imode = 0; imode < neval; ++imode){
-            for (i = 0; i < nk_irreducible; ++i){
-                ik = kpinfo[i][0].knum;
-
+            for (i = 0; i < nk; ++i){
+              
                 proj[imode][i] = 0.0;
 
                 for (icrd = 0; icrd < 3; ++icrd){
-                    proj[imode][i] += std::norm(evec[ik][imode][3 * iat + icrd]);
+                    proj[imode][i] += std::norm(evec[i][imode][3 * iat + icrd]);
                 }
             }
         }
 
 #pragma omp parallel private (weight, k, j)
         {
-            memory->allocate(weight, nk_irreducible);
+            memory->allocate(weight, nk);
 
 #pragma omp for
             for (i = 0; i < n; ++i){
@@ -211,12 +214,12 @@ void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk_irreducible, in
 
                 for (k = 0; k < neval; ++k) {
                     if (smearing_method == -1) {
-                        integration->calc_weight_tetrahedron(nk_irreducible, map_k, weight, eval[k], energy[i]);
+                        integration->calc_weight_tetrahedron(nk, kmap_identity, weight, eval[k], energy[i]);
                     } else {
-                        integration->calc_weight_smearing(kpinfo, weight, eval[k], energy[i], smearing_method);
+                        integration->calc_weight_smearing(nk, nk, kmap_identity, weight, eval[k], energy[i], smearing_method);
                     }
 
-                    for (j = 0; j < nk_irreducible; ++j) {
+                    for (j = 0; j < nk; ++j) {
                         ret[iat][i] += proj[k][j] * weight[j];
                     }
                 }
@@ -226,6 +229,7 @@ void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk_irreducible, in
         }
     }
     memory->deallocate(proj);
+    memory->deallocate(kmap_identity);
 
     if (mympi->my_rank == 0) std::cout << " done." << std::endl;
 }
@@ -279,7 +283,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double **ret
 
             for (ik = 0; ik < kpinfo.size(); ++ik) {
 
-                multi = static_cast<double>(kpinfo[ik].size());
+                multi = static_cast<double>(kpinfo[ik].size()) / static_cast<double>(nk);
                 knum = kpinfo[ik][0].knum;
 
                 for (i = 0; i < n; ++i) {
