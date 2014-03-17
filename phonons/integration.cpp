@@ -262,7 +262,6 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
     int i, j;
     double vol;
     double vol_tot;
-    int knum;
 
     double g;
     double I1, I2, I3, I4;
@@ -344,8 +343,8 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
 void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList> > &kpinfo,
                                                 double *weight, double *energy, const double e_ref, const int smearing_method)
 {
-    int i;
-    int knum;
+    unsigned int i;
+    unsigned int knum;
 
     double epsilon = this->epsilon * Hz_to_kayser / time_ry;
 
@@ -366,9 +365,9 @@ void PHON_NS::Integration::calc_weight_smearing(const int nk, const int nk_irred
                                                 double *weight, double *energy, const double e_ref, const int smearing_method)
 {
     int i;
-    int knum;
 
     double epsilon = this->epsilon * Hz_to_kayser / time_ry;
+    double invnk = 1.0 / static_cast<double>(nk);
 
     for (i = 0; i < nk_irreducible; ++i) weight[i] = 0.0;
 
@@ -382,7 +381,7 @@ void PHON_NS::Integration::calc_weight_smearing(const int nk, const int nk_irred
         }
     }
 
-    for (i = 0; i < nk_irreducible; ++i) weight[i] /= static_cast<double>(nk);
+    for (i = 0; i < nk_irreducible; ++i) weight[i] *= invnk;
 }
 
 

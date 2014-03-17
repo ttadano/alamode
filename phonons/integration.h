@@ -54,7 +54,7 @@ namespace PHON_NS {
 
     inline double delta_lorentz(const double omega, const double epsilon)
     {
-        return epsilon / (omega*omega + epsilon*epsilon) / pi;
+        return inverse_pi * epsilon / (omega*omega + epsilon*epsilon);
     }
     inline double delta_gauss(const double omega, const double epsilon)
     {

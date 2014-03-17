@@ -293,14 +293,14 @@ void Input::parse_analysis_vars()
 {
     int i;
 
-    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS TDOS GRUNEISEN";
+    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS TDOS GRUNEISEN NEWFCS";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
     bool lclassical;
     bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_xsf, print_rmsd;
-    bool projected_dos, gruneisen;
+    bool projected_dos, print_gruneisen, print_newfcs;
     bool two_phonon_dos;
 
     double *isotope_factor;
@@ -315,7 +315,8 @@ void Input::parse_analysis_vars()
 
     projected_dos = false;
     two_phonon_dos = false;
-    gruneisen = false;
+    print_gruneisen = false;
+    print_newfcs = false;
 
     lclassical = false;
     quartic_mode = false;
@@ -335,7 +336,8 @@ void Input::parse_analysis_vars()
 
     assign_val(projected_dos, "PDOS", general_var_dict);
     assign_val(two_phonon_dos, "TDOS", general_var_dict);
-    assign_val(gruneisen, "GRUNEISEN", general_var_dict);
+    assign_val(print_gruneisen, "GRUNEISEN", general_var_dict);
+    assign_val(print_newfcs, "NEWFCS", general_var_dict);
 
     assign_val(lclassical, "LCLASSICAL", general_var_dict);
     assign_val(quartic_mode, "QUARTIC", general_var_dict);
@@ -360,19 +362,6 @@ void Input::parse_analysis_vars()
         }
     }
 
-//     if (phon->mode == "PHONONS") {
-//         if (kpoint->kpoint_mode != 2) {
-//             if (print_rmsd) {
-//                 std::cout << " PRINTRMSD = 1 will be neglected when kpoint mode is not 2." << std::endl;
-//                 print_rmsd = false;
-//             }
-//         }
-//     } else if (phon->mode == "RTA") {
-// 
-//     }
-    
-
-
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     writes->writeanime = print_xsf;
@@ -389,6 +378,9 @@ void Input::parse_analysis_vars()
     relaxation->calc_fstate_k = fstate_k;
     isotope->include_isotope = include_isotope;
     relaxation->ks_input = ks_input;
+
+    gruneisen->print_gruneisen = print_gruneisen;
+    gruneisen->print_newfcs = print_newfcs;
 
 
     if (include_isotope) {

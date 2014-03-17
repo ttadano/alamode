@@ -15,7 +15,6 @@ using namespace PHON_NS;
 
 Isotope::Isotope(PHON *phon): Pointers(phon){};
 
-
 Isotope::~Isotope(){
     if (include_isotope) {
         memory->deallocate(isotope_factor);
@@ -33,7 +32,6 @@ void Isotope::setup_isotope_scattering()
 
     if (include_isotope) {
 
-
         if (mympi->my_rank > 0) {
             memory->allocate(isotope_factor, nkd);
         }
@@ -42,12 +40,12 @@ void Isotope::setup_isotope_scattering()
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
-            std::cout << "ISOTOPE = 1: " << std::endl;
-            std::cout << "Isotope scattering effects will be considered with the following scattering factors." << std::endl;
+            std::cout << " ISOTOPE = 1: Isotope scattering effects will be considered" << std::endl;
+            std::cout << "              with the following scattering factors." << std::endl;
 
             for (i = 0; i < nkd; ++i) {
                 std::cout << std::setw(5) << system->symbol_kd[i] << ":";
-                std::cout << std::setw(15) << isotope_factor[i] << std::endl;
+                std::cout << std::scientific << std::setw(15) << isotope_factor[i] << std::endl;
             }
             std::cout << std::endl;
         }
@@ -170,7 +168,7 @@ void Isotope::calc_isotope_selfenergy_all()
     if (include_isotope) {
 
         if (mympi->my_rank == 0) {
-            std::cout << "Calculating self-energies from isotope scatterings..." << std::endl;
+            std::cout << " Calculating self-energies from isotope scatterings ... ";
         }
 
         memory->allocate(gamma_tmp, nks);
@@ -182,8 +180,11 @@ void Isotope::calc_isotope_selfenergy_all()
             knum = kpoint->kpoint_irred_all[i / ns][0].knum;
             snum = i % ns;
             omega = dynamical->eval_phonon[knum][snum];
-            calc_isotope_selfenergy_tetra(knum, snum, omega, tmp);
-            //	calc_isotope_selfenergy(knum, snum, omega, tmp);
+            if (integration->ismear == -1) {
+                calc_isotope_selfenergy_tetra(knum, snum, omega, tmp);
+            } else {
+                calc_isotope_selfenergy(knum, snum, omega, tmp);
+            }
             gamma_loc[i] = tmp;
         }
 
@@ -199,7 +200,7 @@ void Isotope::calc_isotope_selfenergy_all()
         memory->deallocate(gamma_loc);
 
         if (mympi->my_rank == 0) {
-            std::cout << "Done !" << std::endl;
+            std::cout << "done!" << std::endl;
         }
 
         // 		double tmp2;

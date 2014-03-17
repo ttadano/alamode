@@ -34,12 +34,16 @@ namespace PHON_NS {
         ~Gruneisen();
 
         double delta_a;
+        bool print_gruneisen;
+        bool print_newfcs;
         void setup();
         std::complex<double> **gruneisen;
         void calc_gruneisen();
         void calc_gruneisen2();
         void calc_gruneisen3();
         void finish_gruneisen();
+        void write_newinfo_all();
+
 
     private:
         double ****fc2_plus, ****fc2_minus;
@@ -50,7 +54,6 @@ namespace PHON_NS {
         void prepare_newfc2();
         void prepare_newfc3();
         void write_newinfo(std::ifstream &, std::ofstream &, const double, double ****, std::vector<FcsClassExtent>, std::vector<FcsClassGru>);
-        void write_newinfo_all();
         void calc_dfc2_reciprocal(std::complex<double> **, double *);
         void calc_pressure();
 

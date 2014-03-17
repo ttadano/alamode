@@ -63,17 +63,17 @@ void Conductivity::setup_kappa()
             }
         }
 
-        std::cout.setf(std::ios::fixed);
-        std::cout << std::endl;
-        std::cout << " Tmin = " << std::setw(10) << system->Tmin; 
-        std::cout << " Tmax = " << std::setw(10) << system->Tmax; 
-        std::cout << " dT   = " << std::setw(10) << system->dT; 
-        std::cout << std::endl;
-
-        std::cout.unsetf(std::ios::fixed);
+//         std::cout.setf(std::ios::fixed);
+//         std::cout << std::endl;
+//         std::cout << " Tmin = " << std::setw(10) << system->Tmin; 
+//         std::cout << " Tmax = " << std::setw(10) << system->Tmax; 
+//         std::cout << " dT   = " << std::setw(10) << system->dT; 
+//         std::cout << std::endl;
+// 
+//         std::cout.unsetf(std::ios::fixed);
 
         if (use_classical_Cv == 1) {
-            std::cout << "Heat capacity will be replaced by kB (classical limit)" << std::endl;
+            std::cout << " CLASSICAL = 1 : Heat capacity will be replaced by kB (classical limit)" << std::endl;
         }
     }
 
@@ -232,8 +232,9 @@ void Conductivity::calc_anharmonic_tau()
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << "Total Number of (k, s) pairs to be calculated : " << nks_g << std::endl;
-        std::cout << "Assigned number of (k, s) pairs for each MPI threads below" << std::endl;
+        std::cout << " Start calculating anharmonic phonon self-energies" << std::endl;
+        std::cout << " Total Number of (k, s) pairs to be calculated : " << nks_g << std::endl;
+        std::cout << " Assigned number of (k, s) pairs for each MPI threads below" << std::endl;
         for (i = 0; i < mympi->nprocs; ++i) {
             std::cout << " RANK: " << std::setw(5) << i + 1;
             std::cout << std::setw(8) << "NKS: " << std::setw(5) << nks_thread[i] << std::endl;
@@ -312,7 +313,7 @@ void Conductivity::calc_anharmonic_tau()
                 }
                 writes->fs_result << "#END TAU_EACH" << std::endl;
             }
-            std::cout <<  "ELEMENT " << std::setw(5) << i + 1 << " done." << std::endl;
+            std::cout <<  " ELEMENT " << std::setw(5) << i + 1 << " done." << std::endl;
         }
     }
 }
