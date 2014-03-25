@@ -287,7 +287,7 @@ void Writes::wrtmisc(){
     ofs_info << "##INTERACTION LISTS" << std::endl;
     ofs_info << "Interaction List and Reference Vectors(Cartesian) for each order" << std::endl;
 
-    if (interaction->interaction_type == 0 || interaction->interaction_type == 1) {
+    if (interaction->interaction_type == 0 || interaction->interaction_type == 2) {
         for (order = 0; order < interaction->maxorder; ++order){
             ofs_info << "#LIST_" + interaction->str_order[order] << std::endl;
 
@@ -305,7 +305,7 @@ void Writes::wrtmisc(){
                 }
             }
         }
-    } else if (interaction->interaction_type == 2 || interaction->interaction_type == 3) {
+    } else if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
 
         // Special treatment for harmonic terms
 
@@ -418,7 +418,7 @@ void Writes::wrtmisc(){
         ishift += fcs->ndup[order].size();
     }
 
-    if (interaction->interaction_type == 2 || interaction->interaction_type == 3) {
+    if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
 
         ofs_info << "#FCS_HARMONIC_EXT" << std::endl;
 

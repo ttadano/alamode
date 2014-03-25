@@ -92,8 +92,8 @@ void Constraint::setup(){
 
     std::cout << std::endl;
 
-    if (impose_inv_R && interaction->interaction_type == 2) {
-        std::cout << "  WARNING: Rotational invariance and INTERTYPE = 2 should not be turned on simultaneously." << std::endl;
+    if (impose_inv_R && interaction->interaction_type == 1) {
+        std::cout << "  WARNING: Rotational invariance and INTERTYPE = 1 should not be turned on simultaneously." << std::endl;
         std::cout << "           This might generate inaccurate IFCs." << std::endl << std::endl;
     }
 

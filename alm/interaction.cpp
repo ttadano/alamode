@@ -48,14 +48,15 @@ void Interaction::init()
     if (interaction_type == 0) {
         std::cout << "  INTERTYPE = 0: Harmonic IFCs will be searched by using cutoff radii" << std::endl;
     } else if (interaction_type == 1) {
-        std::cout << "  INTERTYPE = 1: Harmonic IFCs will be automatically considered so that" << std::endl;
-        std::cout << "                 each interaction occurs only once" << std::endl;
-        std::cout << "                 The cutoff radii for HARMONIC below will be neglected." << std::endl;
-    } else if (interaction_type == 2) {
-        std::cout << "  INTERTYPE = 2: All the harmonic IFCs will be considered." << std::endl;
+        std::cout << "  INTERTYPE = 1: All the harmonic IFCs will be considered." << std::endl;
         std::cout << "                 If a interaction occurs more than once, the corresponding IFC" << std::endl;
         std::cout << "                 will be divided by the multiplicity P." << std::endl;
         std::cout << "                 The cutoff radii for HARMONIC below will be neglected." << std::endl;
+    } else if (interaction_type == 2) {
+        std::cout << "  INTERTYPE = 2: Harmonic IFCs will be automatically considered so that" << std::endl;
+        std::cout << "                 each interaction occurs only once" << std::endl;
+        std::cout << "                 The cutoff radii for HARMONIC below will be neglected." << std::endl;
+    
     } else if (interaction_type == 3) {
         std::cout << "  INTERTYPE = 3: This is test." << std::endl;
     } else {
@@ -353,7 +354,42 @@ void Interaction::search_interactions()
                 }
             }
         }
+
     } else if (interaction_type == 1) {
+
+        for (i = 0; i < natmin; ++i) {
+            iat = symmetry->map_p2s[i][0];
+
+            for (jat = 0; jat < nat; ++jat) {
+                dist = mindist_pairs[i][jat][0].dist;
+
+                // Consider all interactions even if the interaction occurs more than twice.
+                // Neglect cutoff radius for harmonic terms.
+
+                intpairs[i][0][ninter[i][0]] = jat;
+                ++ninter[i][0];
+                countint[i][jat][0] = mindist_pairs[i][jat].size();
+
+
+                for (order = 1; order < maxorder; ++order) {
+
+                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+
+                        if (!countint[i][jat][order]) {
+                            intpairs[i][order][ninter[i][order]] = jat;
+
+                            for(j = 0; j < 3; ++j){
+                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
+                            }
+                            ++ninter[i][order];
+                        }
+                        ++countint[i][jat][order];
+                    }
+                }
+            }
+        }
+
+    } else if (interaction_type == 2) {
 
         for (i = 0; i < natmin; ++i) {
             iat = symmetry->map_p2s[i][0];
@@ -391,39 +427,6 @@ void Interaction::search_interactions()
             }
         }
 
-    } else if (interaction_type == 2) {
-
-        for (i = 0; i < natmin; ++i) {
-            iat = symmetry->map_p2s[i][0];
-
-            for (jat = 0; jat < nat; ++jat) {
-                dist = mindist_pairs[i][jat][0].dist;
-
-                // Consider all interactions even if the interaction occurs more than twice.
-                // Neglect cutoff radius for harmonic terms.
-
-                intpairs[i][0][ninter[i][0]] = jat;
-                ++ninter[i][0];
-                countint[i][jat][0] = mindist_pairs[i][jat].size();
-
-
-                for (order = 1; order < maxorder; ++order) {
-
-                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-                        if (!countint[i][jat][order]) {
-                            intpairs[i][order][ninter[i][order]] = jat;
-
-                            for(j = 0; j < 3; ++j){
-                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
-                            }
-                            ++ninter[i][order];
-                        }
-                        ++countint[i][jat][order];
-                    }
-                }
-            }
-        }
     } else if (interaction_type == 3) {
 
         for (i = 0; i < natmin; ++i) {
@@ -466,7 +469,7 @@ void Interaction::search_interactions()
         error->exit("search_interactions", "This cannot happen.");
     }
 
-    if (interaction_type != 2) {
+    if (interaction_type != 1) {
         if(maxval(natmin, nat, order, countint) > 1) {
             error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
         }
