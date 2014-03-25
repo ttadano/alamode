@@ -40,6 +40,9 @@ void Symmetry::init()
     int i, j;
     int nat = system->nat;
 
+    std::cout << " SYMMETRY" << std::endl;
+    std::cout << " ========" << std::endl << std::endl;
+
     setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord, system->kd);
 
     memory->allocate(tnons, nsym, 3);
@@ -59,7 +62,7 @@ void Symmetry::init()
         ++isym;
     }
 
-    std::cout << "Number of symmetry operations = " << nsym << std::endl;
+    std::cout << "  Number of symmetry operations = " << nsym << std::endl;
     memory->allocate(symrel, nsym, 3, 3);
     symop_in_cart(system->lavec, system->rlavec);
 
@@ -68,10 +71,10 @@ void Symmetry::init()
     symop_availability_check(symrel, sym_available, nsym, nsym_fc);
 
     if (nsym_fc == nsym) {
-        std::cout << "All symmetry operations will be used to reduce the number of force constants." << std::endl;
+        std::cout << "  All symmetry operations will be used to reduce the number of force constants." << std::endl;
     } else {
-        std::cout << nsym_fc << " symmetry operations out of " << nsym << " will be used to reduce the number of parameters." << std::endl;
-        std::cout << "Other " << nsym - nsym_fc << " symmetry operations will be imposed as constraints." << std::endl;
+        std::cout << "  " << nsym_fc << " symmetry operations out of " << nsym << " will be used to reduce the number of parameters." << std::endl;
+        std::cout << "  Other " << nsym - nsym_fc << " symmetry operations will be imposed as constraints." << std::endl;
     }
     std::cout << std::endl;
 
@@ -84,8 +87,8 @@ void Symmetry::init()
     genmaps(nat, system->xcoord, map_sym, map_p2s, map_s2p);
 
     std::cout << std::endl;
-    std::cout << "**Cell-Atom Correspondens Below**" << std::endl;
-    std::cout << std::setw(6) << "CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
+    std::cout << "  **Cell-Atom Correspondens Below**" << std::endl;
+    std::cout << std::setw(6) << " CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
 
     for (int i = 0; i < ntran; ++i){
         std::cout << std::setw(6) << i + 1 << " | ";
@@ -100,15 +103,8 @@ void Symmetry::init()
     std::cout << std::endl;
 
     timer->print_elapsed();
-
-    if (alm->mode == "fitting") {
-        std::cout << "Input Filenames" << std::endl;
-        std::cout << "  Displacement: " << files->file_disp << std::endl;
-        std::cout << "  Force       : " << files->file_force << std::endl;
-        std::cout << std::endl;
-
-        timer->print_elapsed();
-    }
+    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
 }
 
 void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned int &nnp, double aa[3][3], double bb[3][3], double **x, int *kd)
@@ -121,8 +117,9 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
 
         // Automatically find symmetries.
 
-        std::cout << "NSYM = 0 is given: Trying to find symmetry operations." << std::endl;
-        std::cout << "Please be patient. This can take a while for a large supercell." << std::endl << std::endl;
+        std::cout << "  NSYM = 0 : Trying to find symmetry operations." << std::endl;
+        std::cout << "             Please be patient. " << std::endl;
+        std::cout << "             This can take a while for a large supercell." << std::endl << std::endl;
 
         findsym(nat, aa, x, SymmList);
 
@@ -130,7 +127,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
         nsym = SymmList.size();
 
         if (is_printsymmetry) {
-            std::cout << "PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO file." << std::endl << std::endl;
+            std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file." << std::endl << std::endl;
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
             ofs_sym << nnp << std::endl;
@@ -154,7 +151,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
 
         // Identity operation only !
 
-        std::cout << "NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
+        std::cout << "  NSYM = 1 : Only the identity matrix will be considered." << std::endl << std::endl;
 
         int rot_tmp[3][3], tran_tmp[3];
 
@@ -174,7 +171,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
     } 
     else {
 
-        std::cout << "NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
+        std::cout << "  NSYM > 1 : Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
 
         int nsym2;
         int rot_tmp[3][3], tran_tmp[3];
@@ -182,7 +179,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
         ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2 >> nnp;
 
-        if(nsym != nsym2) error->exit("gensym", "nsym in the given file and the input file are not consistent.");
+        if(nsym != nsym2) error->exit("setup_symmetry_operations", "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
@@ -690,12 +687,12 @@ void Symmetry::pure_translations()
     natmin = system->nat / ntran;
 
     if (ntran > 1) {
-        std::cout << "Given system is not primitive cell." << std::endl;
-        std::cout << std::setw(8) <<  ntran << " translation operations exist." << std::endl;
+        std::cout << "  Given system is not primitive cell." << std::endl;
+        std::cout << "  There are " << std::setw(5) <<  ntran << " translation operations." << std::endl;
     } else {
-        std::cout << "Given system is a primitive cell." << std::endl;
+        std::cout << "  Given system is a primitive cell." << std::endl;
     }
-    std::cout << "Each cell contains " << natmin << " atoms" << std::endl;
+    std::cout << "  Primitive cell contains " << natmin << " atoms" << std::endl;
 
     memory->allocate(symnum_tran, ntran);
 

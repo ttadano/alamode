@@ -22,6 +22,10 @@ void Fcs::init(){
 
     int i;
     int maxorder = interaction->maxorder;
+
+    std::cout << " FORCE CONSTANT" << std::endl;
+    std::cout << " ==============" << std::endl << std::endl;
+
     memory->allocate(nints, maxorder);
     memory->allocate(nzero, maxorder);
 
@@ -33,14 +37,13 @@ void Fcs::init(){
 
     std::cout << std::endl;
     for(i = 0; i < maxorder; ++i){
-        std::cout << "Number of " << std::setw(9) << interaction->str_order[i] << " FCs (nzero): " << ndup[i].size();
+        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] << " FCs (nzero): " << ndup[i].size();
         std::cout << " ( " << nzero[i] << " ) " << std::endl;
     }
     std::cout << std::endl;
 
     // sort fc_set
 
-    std::cout << "Sorting interaction arrays ...";
     for(int order = 0; order < maxorder; ++order){
         if(ndup[order].size() > 0) {
             std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
@@ -53,11 +56,12 @@ void Fcs::init(){
             }
         }
     }
-    std::cout << " done." << std::endl;
 
     memory->deallocate(nints);
     memory->deallocate(nzero);
     timer->print_elapsed();
+    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
 }
 
 
@@ -85,7 +89,7 @@ void Fcs::generate_fclists(int maxorder)
     bool is_zero;
     bool *is_searched;
 
-    std::cout << "Generating Symmetrically-Independent Parameters ..." << std::endl;
+    std::cout << "  Finding symmetrically-independent force constants ..." << std::endl;
 
     memory->allocate(atmn, maxorder + 1);
     memory->allocate(atmn_mapped, maxorder + 1);
@@ -97,7 +101,7 @@ void Fcs::generate_fclists(int maxorder)
 
     for(order = 0; order < maxorder; ++order){
 
-        std::cout << std::setw(8) << interaction->str_order[order] << " ..." << std::endl;
+        std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
 
         fc_set[order].clear();
         ndup[order].clear();
@@ -204,7 +208,7 @@ void Fcs::generate_fclists(int maxorder)
 
         memory->deallocate(xyzcomponent);
         list_found.clear();
-        std::cout << ".. done. " << std::endl;
+        std::cout << " done. " << std::endl;
     } //close order loop
 
     memory->deallocate(atmn);
@@ -215,7 +219,7 @@ void Fcs::generate_fclists(int maxorder)
     memory->deallocate(ind_mapped_tmp);
     memory->deallocate(is_searched);
 
-    std::cout << "Finished !" << std::endl;
+    std::cout << "  Finished!" << std::endl;
 }
 
 double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *arr2)

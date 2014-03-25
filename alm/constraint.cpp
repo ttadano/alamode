@@ -4,6 +4,7 @@
 #include "fcs.h"
 #include "symmetry.h"
 #include "system.h"
+#include "timer.h"
 #include "combination.h"
 #include "constants.h"
 #include "error.h"
@@ -32,63 +33,68 @@ Constraint::~Constraint() {
 
 void Constraint::setup(){
 
+    std::cout << " CONSTRAINT" << std::endl;
+    std::cout << " ==========" << std::endl << std::endl;
+
+
     switch (constraint_mode) {
     case 0: // do nothing
         exist_constraint = false;
-        std::cout << "ICONST = 0: Constraint will NOT be considered." << std::endl;
-        std::cout << "            Correct phonon dispersion may not obtained." << std::endl;
+        std::cout << "  ICONST = 0: Constraint will NOT be considered." << std::endl;
+        std::cout << "              Correct phonon dispersion may not be obtained." << std::endl;
         break;
     case 1: 
         impose_inv_T = true;
-        std::cout << "ICONST = 1: Constraints for translational invariance will be considered." << std::endl;
+        std::cout << "  ICONST = 1: Constraints for translational invariance will be considered." << std::endl;
         break;
     case 2:
         impose_inv_T = true;
         fix_harmonic = true;
-        std::cout << "ICONST = 2: Constraints for translational invariance will be considered." << std::endl;
-        std::cout << "            Also, HARMONIC terms will be fixed to the value given in" << fc2_file << std::endl;
+        std::cout << "  ICONST = 2: Constraints for translational invariance will be considered." << std::endl;
+        std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
         break;
     case 3:
         impose_inv_T = true;
         impose_inv_R = true;
-        std::cout << "ICONST = 3: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
-        std::cout << "            Rotational invariance of the maximum order will be neglected" << std::endl;
+        std::cout << "  ICONST = 3: Constraints for translational and rotational invariance will be considered." << std::endl;
+        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
         break;
     case 4:
         impose_inv_T = true;
         impose_inv_R = true;
         fix_harmonic = true;
-        std::cout << "ICONST = 4: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
-        std::cout << "            Rotational invariance of the maximum order will be neglected" << std::endl;
-        std::cout << "            Also, HARMONIC terms will be fixed to the value given in" << fc2_file << std::endl;
+        std::cout << "  ICONST = 4: Constraints for translational and rotational invariance will be considered." << std::endl;
+        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
+        std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
         break;
     case 5:
         impose_inv_T = true;
         impose_inv_R = true;
         exclude_last_R = false;
-        std::cout << "ICONST = 5: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "  ICONST = 5: Constraints for translational and rotational invariance will be considered." << std::endl;
+        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
         break;
     case 6:
         impose_inv_T = true;
         impose_inv_R = true;
         fix_harmonic = true;
         exclude_last_R = false;
-        std::cout << "ICONST = 6: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "            Axis of rotation is " << rotation_axis << std::endl;
-        std::cout << "            Also, HARMONIC terms will be fixed to the value given in" << fc2_file << std::endl;
+        std::cout << "  ICONST = 6: Constraints for translational and rotational invariance will be considered." << std::endl;
+        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
         break;
     default:
         error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
         break;
     }
 
+    std::cout << std::endl;
 
     if (impose_inv_R && interaction->interaction_type == 2) {
-        std::cout << "WARNING: Rotational invariance and INTERTYPE = 2 should not be turned on simultaneously." << std::endl;
-        std::cout << "         This might generate inaccurate IFCs." << std::endl << std::endl;
+        std::cout << "  WARNING: Rotational invariance and INTERTYPE = 2 should not be turned on simultaneously." << std::endl;
+        std::cout << "           This might generate inaccurate IFCs." << std::endl << std::endl;
     }
 
 
@@ -127,10 +133,9 @@ void Constraint::setup(){
             if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
         }
 
-        std::cout << "********************* Constraint Information *********************" << std::endl;
-        std::cout << "Number of Constraints (Translational, Rotational Self, Rotational Cross)" << std::endl;
+        std::cout << "  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:" << std::endl;
         for (order = 0; order < maxorder; ++order){
-            std::cout << std::setw(8) << interaction->str_order[order];
+            std::cout << "   " << std::setw(8) << interaction->str_order[order];
             std::cout << std::setw(5) << const_translation[order].size();
             std::cout << std::setw(5) << const_rotation_self[order].size();
             std::cout << std::setw(5) << const_rotation_cross[order].size();
@@ -139,15 +144,16 @@ void Constraint::setup(){
         std::cout << std::endl;
 
         if(extra_constraint_from_symmetry){
-            std::cout << "There are additional constraints from crystal symmetry." << std::endl;
-            std::cout << "The number of the constraints of each order:" << std::endl;
+            std::cout << "  There are additional constraints from crystal symmetry." << std::endl;
+            std::cout << "  The number of such constraints for each order:" << std::endl;
             for (order = 0; order < maxorder; ++order){
-                std::cout << std::setw(8) << interaction->str_order[order];
+                std::cout << "   " << std::setw(8) << interaction->str_order[order];
                 std::cout << std::setw(5) << const_symmetry[order].size();
                 std::cout << std::endl;
             }
             std::cout << std::endl;
         }
+
 
         memory->allocate(const_self, maxorder);
         for (order = 0; order < maxorder; ++order) const_self[order].clear();
@@ -192,15 +198,21 @@ void Constraint::setup(){
             const_translation[order].clear();
             const_rotation_self[order].clear();
         }
-
-        std::cout << "After Reduction (Constraint Self, Constraint Cross)" << std::endl;
+        if (extra_constraint_from_symmetry) {
+            std::cout << "  Constraints of T-inv, R-inv (self), and those from crystal symmetry are merged." << std::endl;
+        } else {
+            std::cout << "  Constraints of T-inv and R-inv (self) are merged." << std::endl;
+        }
+        std::cout << "  If there are redundant constraints, they are removed in this process." << std::endl;
+        std::cout << std::endl;
+        std::cout << "  Number of inequivalent constraints (self, cross) : " << std::endl;
         for (order = 0; order < maxorder; ++order){
-            std::cout << std::setw(8) << interaction->str_order[order];
+            std::cout << "   " << std::setw(8) << interaction->str_order[order];
             std::cout << std::setw(5) << const_self[order].size();
             std::cout << std::setw(5) << const_rotation_cross[order].size();
             std::cout << std::endl;
         }
-        std::cout << "******************************************************************" << std::endl << std::endl;
+        std::cout << std::endl;
 
         Pmax = 0;
         for (order = 0; order < maxorder; ++order){
@@ -214,12 +226,16 @@ void Constraint::setup(){
         memory->allocate(const_rhs, Pmax);
 
         calc_constraint_matrix(N, P);
-        std::cout << "Total number of constraints: " << P << std::endl << std::endl;
+        std::cout << "  Total number of constraints = " << P << std::endl << std::endl;
 
         memory->deallocate(const_translation);
         memory->deallocate(const_rotation_self);
         memory->deallocate(const_rotation_cross);
         memory->deallocate(const_self);
+
+        timer->print_elapsed();
+        std::cout << " --------------------------------------------------------------" << std::endl;
+        std::cout << std::endl;
     }
 }
 
@@ -231,8 +247,6 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     int icol, irow;
     double *arr_tmp;
     std::set<ConstraintClass> const_total;
-
-    std::cout << "Generating Constraint Matrix ...";
 
     const_total.clear();
     memory->allocate(arr_tmp, N);
@@ -276,8 +290,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     P = const_total.size();
 
     if(fix_harmonic) {
-        std::cout << "Harmonic Force Constants will be fixed to the values in the given reference file: " << fc2_file << std::endl;
-        std::cout << "Constraint Matrix for Harmonic fcs will be updated." << std::endl << std::endl;
+        std::cout << "  Harmonic force constants will be fixed to the values of the reference " << fc2_file << std::endl;
+        std::cout << "  Constraint information for HARMONIC will be updated accordingly." << std::endl << std::endl;
         P += fcs->ndup[0].size();
     }
 
@@ -326,11 +340,21 @@ void Constraint::constraint_from_symmetry()
     int *atm_index, *atm_index_symm;
     int *xyz_index;
 
+    bool has_constraint_from_symm = false;
     double c_tmp;
     double *arr_constraint;
 
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
+
+    for (isym = 0; isym < symmetry->nsym; ++isym) {
+     if(symmetry->sym_available[isym]) continue;
+     has_constraint_from_symm = true;
+    }
+
+    if (has_constraint_from_symm) {
+        std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
+    }
 
     memory->allocate(ind, maxorder + 1);
     memory->allocate(atm_index, maxorder + 1);
@@ -341,8 +365,14 @@ void Constraint::constraint_from_symmetry()
 
         nparams = fcs->ndup[order].size();
 
-        if (nparams == 0) continue; // No parameters ... skip!
-
+        if (has_constraint_from_symm) {
+            std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
+            if (nparams == 0) {
+                std::cout << "  No parameters! Skipped."<< std::endl;
+                continue;
+            }
+        }
+        
         // Generate temporary list of parameters
         list_found.clear();
         for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
@@ -398,12 +428,20 @@ void Constraint::constraint_from_symmetry()
         memory->deallocate(xyzcomponent);
         memory->deallocate(arr_constraint);
         remove_redundant_rows(nparams, const_symmetry[order], eps8);
+
+        if (has_constraint_from_symm) {
+            std::cout << " done." << std::endl;
+        }
     }
 
     memory->deallocate(ind);
     memory->deallocate(atm_index);
     memory->deallocate(atm_index_symm);
     memory->deallocate(xyz_index);
+
+    if (has_constraint_from_symm) {
+         std::cout << "  Finished !" << std::endl << std::endl;
+    }
 }
 
 void Constraint::translational_invariance()
@@ -432,18 +470,18 @@ void Constraint::translational_invariance()
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
 
-    std::cout << "Start generating constraints for translational invariance ..." << std::endl;
+    std::cout << "  Generating constraints for translational invariance ..." << std::endl;
 
     memory->allocate(ind, maxorder + 1);
 
     for (order = 0; order < maxorder; ++order){
 
-        std::cout << std::setw(8) << interaction->str_order[order] << " ...";
+        std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
 
         nparams = fcs->ndup[order].size();
 
         if (nparams == 0) {
-            std::cout << "No parameters! ... skipped."<< std::endl;
+            std::cout << "  No parameters! Skipped."<< std::endl;
             continue;
         }
 
@@ -567,7 +605,7 @@ void Constraint::translational_invariance()
     }
     memory->deallocate(ind);
 
-    std::cout << "Finished !" << std::endl << std::endl;
+    std::cout << "  Finished !" << std::endl << std::endl;
 }
 
 void Constraint::rotational_invariance()
@@ -575,7 +613,7 @@ void Constraint::rotational_invariance()
 
     // Create constraints for the rotational invariance
 
-    std::cout << "Start generating constraint matrix for rotational invariance..." << std::endl;
+    std::cout << "  Generating constraints for rotational invariance ..." << std::endl;
 
 #ifdef _DEBUG
     std::ofstream ofs_constraint;
@@ -622,11 +660,11 @@ void Constraint::rotational_invariance()
         nparams[order] = fcs->ndup[order].size();
 
         if (order == 0) {
-            std::cout << "Constraints between " << std::setw(8) << "1st-order IFCs (which are zero) and " 
+            std::cout << "   Constraints between " << std::setw(8) << "1st-order IFCs (which are zero) and " 
                 << std::setw(8) << interaction->str_order[order] << " ...";
             nparam_sub = nparams[order];
         } else {
-            std::cout << "Constraints between " << std::setw(8) << interaction->str_order[order - 1] << " and "
+            std::cout << "   Constraints between " << std::setw(8) << interaction->str_order[order - 1] << " and "
                 << std::setw(8) << interaction->str_order[order] << " ...";
             nparam_sub = nparams[order] + nparams[order - 1];
         }
@@ -941,7 +979,7 @@ void Constraint::rotational_invariance()
             }
         } // iat
 
-        std::cout << " done" << std::endl;
+        std::cout << " done." << std::endl;
 
         if (order > 0) {
             memory->deallocate(xyzcomponent);
@@ -958,7 +996,7 @@ void Constraint::rotational_invariance()
         remove_redundant_rows(nparams[order], const_rotation_self[order], eps6);
     }
 
-    std::cout << std::endl;
+    std::cout << "  Finished !" << std::endl << std::endl;
 
     memory->deallocate(ind);
     memory->deallocate(nparams);

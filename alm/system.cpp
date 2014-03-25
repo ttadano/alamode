@@ -22,14 +22,17 @@ void System::init(){
 
     int i, j;
 
+    std::cout << " SYSTEM" << std::endl;
+    std::cout << " ======" << std::endl << std::endl;
+
     recips(lavec, rlavec);
 
     std::cout.setf(std::ios::scientific);
 
-    std::cout << "Lattice Vector" << std::endl;
-    std::cout << " " << lavec[0][0] << " " << lavec[1][0] << " " << lavec[2][0] << " : a1" << std::endl;
-    std::cout << " " << lavec[0][1] << " " << lavec[1][1] << " " << lavec[2][1] << " : a2" << std::endl;
-    std::cout << " " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
+    std::cout << "  Lattice Vector" << std::endl;
+    std::cout << "   " << lavec[0][0] << " " << lavec[1][0] << " " << lavec[2][0] << " : a1" << std::endl;
+    std::cout << "   " << lavec[0][1] << " " << lavec[1][1] << " " << lavec[2][1] << " : a2" << std::endl;
+    std::cout << "   " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
     std::cout << std::endl;
 
     double vec_tmp[3][3];
@@ -40,17 +43,23 @@ void System::init(){
     }
 
     cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
-    std::cout << " Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
+    std::cout << "  Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
 
-    std::cout << std::endl << "Reciprocal Lattice Vector" << std::endl;
-    std::cout << " " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
-    std::cout << " " << rlavec[1][0] << " " << rlavec[1][1] << " " << rlavec[1][2] << " : b2" << std::endl;
-    std::cout << " " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
+    std::cout << "  Reciprocal Lattice Vector" << std::endl;
+    std::cout << "   " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
+    std::cout << "   " << rlavec[1][0] << " " << rlavec[1][1] << " " << rlavec[1][2] << " : b2" << std::endl;
+    std::cout << "   " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
     std::cout << std::endl;
 
-    std::cout << "Atomic positions in fractional coordinate and atomic species" << std::endl;
+    std::cout << "  Atomic species:" << std::endl;
+    for (i = 0; i < nkd; ++i) {
+        std::cout << std::setw(6) << i + 1 << std::setw(5) << kdname[i] << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "  Atomic positions in fractional basis and atomic species" << std::endl;
     for (i = 0; i < nat; ++i) {
-        std::cout << std::setw(5) << i + 1;
+        std::cout << std::setw(6) << i + 1;
         std::cout << std::setw(15) << xcoord[i][0];
         std::cout << std::setw(15) << xcoord[i][1];
         std::cout << std::setw(15) << xcoord[i][2];
@@ -70,6 +79,10 @@ void System::init(){
     }
     frac2cart(x_cartesian);
     setup_atomic_class(kd);
+
+    timer->print_elapsed();
+    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
 }
 
 void System::recips(double aa[3][3], double bb[3][3])

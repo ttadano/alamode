@@ -71,7 +71,7 @@ void Input::parse_general_vars(){
     double tolerance;
 
     std::vector<std::string> kdname_v, periodic_v;
-    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC INTERTYPE PRINTSYMM TOLERANCE DBASIS";
+    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC INTERTYPE PRINTSYM TOLERANCE DBASIS";
     std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
@@ -106,10 +106,10 @@ void Input::parse_general_vars(){
         nsym= boost::lexical_cast<int>(general_var_dict["NSYM"]);
     }
 
-    if (general_var_dict["PRINTSYMM"].empty()) {
+    if (general_var_dict["PRINTSYM"].empty()) {
         is_printsymmetry = 0;
     } else {
-        is_printsymmetry = boost::lexical_cast<int>(general_var_dict["PRINTSYMM"]);
+        is_printsymmetry = boost::lexical_cast<int>(general_var_dict["PRINTSYM"]);
     }
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
