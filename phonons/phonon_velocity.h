@@ -19,5 +19,8 @@ namespace PHON_NS {
 
     private:
         double diff(double *, const unsigned int, double);
+
+        void calc_phonon_vel_band(double **);
+        void calc_phonon_vel_mesh(double **);
     };
 }

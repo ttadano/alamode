@@ -66,9 +66,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         execute_interpolation();
 
-    } else if (mode == "GRUNEISEN") {
-
-        execute_gruneisen();
+//     } else if (mode == "GRUNEISEN") {
+// 
+//         execute_gruneisen();
 
     } else {
 
@@ -151,6 +151,11 @@ void PHON::execute_phonons()
         std::cout << "                                                             " << std::endl;
         std::cout << "      Phonon calculation within harmonic approximation       " << std::endl;
         std::cout << "      Harmonic force constants will be used.                 " << std::endl;
+
+        if (gruneisen->print_gruneisen) {
+            std::cout << std::endl;
+            std::cout << "      GRUNEISEN = 1 : Cubic force constants are necessarily." << std::endl;
+        }
         std::cout << std::endl;
     }
 
@@ -159,24 +164,30 @@ void PHON::execute_phonons()
     dos->setup();
     dynamical->diagonalize_dynamical_all();
 
-    if (kpoint->kpoint_mode == 1)  {
-        phonon_velocity->calc_phonon_vel_band();
-    }
+    phonon_velocity->calc_group_velocity(kpoint->kpoint_mode);
 
     if (dos->flag_dos) {
         integration->setup_integration();
         dos->calc_dos_all();
     }
 
+    gruneisen->setup();
+
+    if (gruneisen->print_gruneisen) {
+        gruneisen->calc_gruneisen();
+        // gruneisen->calc_gruneisen2();
+    }
+//     if (gruneisen->print_newfcs) {
+//         gruneisen->calc_newfcs();
+//     }
+
     if (mympi->my_rank == 0) {
         writes->write_phonon_info();
+   //     gruneisen->write_newinfo_all();
     }
 
     dynamical->finish_dynamical();
-
-    if (kpoint->kpoint_mode == 1) {
-        memory->deallocate(phonon_velocity->phvel);
-    }
+    gruneisen->finish_gruneisen();
 
     if (dos->flag_dos) {
         integration->finish_integration();
@@ -264,27 +275,27 @@ void PHON::execute_interpolation()
     // 		relaxation->setup_relaxation();
 }
 
-void PHON::execute_gruneisen()
-{
-
-    if (mympi->my_rank == 0) {
-        std::cout << "                      MODE = Gruneisen                       " << std::endl;
-        std::cout << "                                                             " << std::endl;
-        std::cout << "             Calculation of Gruneisen parameters.            " << std::endl;
-        std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
-        std::cout << std::endl;
-    }
-
-    setup_base();
-
-    dos->setup();
-    dynamical->diagonalize_dynamical_all();
-
-    if (mympi->my_rank == 0) {
-        gruneisen->setup();
-        gruneisen->calc_gruneisen();
-        // gruneisen->calc_gruneisen2();
-        writes->write_gruneisen();
-        gruneisen->finish_gruneisen();
-    }
-}
+// void PHON::execute_gruneisen()
+// {
+// 
+//     if (mympi->my_rank == 0) {
+//         std::cout << "                      MODE = Gruneisen                       " << std::endl;
+//         std::cout << "                                                             " << std::endl;
+//         std::cout << "             Calculation of Gruneisen parameters.            " << std::endl;
+//         std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
+//         std::cout << std::endl;
+//     }
+// 
+//     setup_base();
+// 
+//     dos->setup();
+//     dynamical->diagonalize_dynamical_all();
+// 
+//     if (mympi->my_rank == 0) {
+//         gruneisen->setup();
+//         gruneisen->calc_gruneisen();
+//         // gruneisen->calc_gruneisen2();
+//         writes->write_gruneisen();
+//         gruneisen->finish_gruneisen();
+//     }
+// }

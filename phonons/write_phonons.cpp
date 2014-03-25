@@ -23,6 +23,7 @@
 #include "integration.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
@@ -41,36 +42,70 @@ void Writes::write_input_vars()
     std::cout << " ------------------------------------------------------------" << std::endl;
     std::cout << " General:" << std::endl;
     std::cout << "  PREFIX = " << input->job_title << std::endl;
-    std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance << std::endl;
-    std::cout << "  PRINTSYMM = " << symmetry->printsymmetry << std::endl;
-    std::cout << "  TREVSYM = " << symmetry->time_reversal_sym << std::endl;
-    std::cout << "  CELLDIM = ";
-    for (i = 0; i < 3; ++i) std::cout << std::setw(4) << system->cell_dimension[i];
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl;
 
     std::cout << "  MODE = " << phon->mode << std::endl;
     std::cout << "  FCSINFO = " << fcs_phonon->file_fcs << std::endl;
+    std::cout << "  RESTART = " << phon->restart_flag << std::endl;
     std::cout << std::endl;
 
-    std::cout << "  EIGENVECTOR = " << dynamical->eigenvectors << std::endl;
-    std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
-    std::cout << "  PRINTXSF = " << writes->writeanime << "; NBANDS = " << writes->nbands << std::endl;
+
+    std::cout << "  NKD = " << system->nkd << "; KD = ";
+    for (i = 0; i < system->nkd; ++i) {
+        std::cout << std::setw(4) << system->symbol_kd[i];
+    }
+    std::cout << std::endl;
+    std::cout << "  MASS = ";
+    for (i = 0; i < system->nkd; ++i) {
+        std::cout << std::setw(10) << system->mass_kd[i];
+    }
+    std::cout << std::endl << std::endl;
+
+    std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance << std::endl;
+    std::cout << "  PRINTSYMM = " << symmetry->printsymmetry << std::endl;
+    std::cout << "  TREVSYM = " << symmetry->time_reversal_sym << std::endl;
+    std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
+    std::cout << std::endl;
+//     std::cout << "  CELLDIM = ";
+//     for (i = 0; i < 3; ++i) std::cout << std::setw(4) << system->cell_dimension[i];
+//     std::cout << std::endl << std::endl;
+
+   
+     std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
+
+    std::cout << "  NBANDS = " << writes->nbands << std::endl;
     std::cout << "  TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
-    std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
     std::cout << "  EMIN = " << dos->emin << "; EMAX = " << dos->emax << "; DELTA_E = " << dos->delta_e << std::endl;
     std::cout << std::endl;
-
-    std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
 
     std::cout << "  DELTA_A = " << gruneisen->delta_a << std::endl;
     std::cout << std::endl;
 
-    std::cout << "  RESTART = " << phon->restart_flag << std::endl;
     std::cout << "  ISMEAR = " << integration->ismear << "; EPSILON = " << integration->epsilon << std::endl;
-    std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
-    std::cout << "  KS_INPUT = " << relaxation->ks_input << "; QUARTIC = " << relaxation->quartic_mode << std::endl;
-    std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << "; REALPART = " << relaxation->calc_realpart << std::endl;
+    std::cout << std::endl << std::endl;
 
+    std::cout << " Analysis:" << std::endl;
+    std::cout << "  PDOS = " << dos->projected_dos << "; TDOS = " << dos->two_phonon_dos << std::endl;
+    std::cout << "  GRUNEISEN = " << gruneisen->print_gruneisen << std::endl;
+    std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
+    std::cout << "  PRINTVEC = " << dynamical->print_eigenvectors << std::endl;
+    std::cout << "  PRINTXSF = " << writes->writeanime << std::endl;
+    std::cout << "  PRINTRMSD = " << writes->print_rmsd << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
+    std::cout << "  ISOFACT = ";
+    for (i = 0; i < system->nkd; ++i) {
+        std::cout << std::scientific << std::setw(10) << isotope->isotope_factor[i];
+    }
+    std::cout << std::endl;
+    std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
+    std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
+    std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
+    std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
+    std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
+    std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+    std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
     std::cout << std::endl << std::endl;
 
     std::cout << " Kpoint:" << std::endl;
@@ -308,6 +343,10 @@ void Writes::write_phonon_info()
         write_eigenvectors();
     }
 
+    if (gruneisen->print_gruneisen) {
+        write_gruneisen();
+    }
+
 
 }
 
@@ -326,6 +365,35 @@ void Writes::write_phonon_bands()
     double *kaxis = kpoint->kaxis;
     double **eval = dynamical->eval_phonon;
 
+    int kcount = 0;
+
+    std::string str_tmp = "NONE";
+    std::string str_kpath = "";
+    std::string str_kval = "";
+
+    for (i = 0; i < kpoint->kpInp.size(); ++i) {
+        if (str_tmp != kpoint->kpInp[i].kpelem[0]) {
+            str_tmp = kpoint->kpInp[i].kpelem[0];
+            str_kpath += " " + str_tmp;
+ 
+            std::ostringstream ss;
+            ss << std::fixed << std::setprecision(6) << kpoint->kaxis[kcount];
+            str_kval += " " + ss.str();
+        }
+        kcount += std::atoi(kpoint->kpInp[i].kpelem[8].c_str());
+
+        if (str_tmp != kpoint->kpInp[i].kpelem[4]) {
+            str_tmp = kpoint->kpInp[i].kpelem[4];
+            str_kpath += " " + str_tmp;
+
+            std::ostringstream ss;
+            ss << std::fixed << std::setprecision(6) << kpoint->kaxis[kcount-1];
+            str_kval += " " + ss.str();
+        }
+    }
+
+    ofs_bands << "# " << str_kpath << std::endl;
+    ofs_bands << "#" << str_kval << std::endl;
     ofs_bands << "# k-axis, Eigenvalues [cm^-1]" << std::endl;
 
     for (i = 0; i < nk; ++i){
@@ -388,9 +456,6 @@ void Writes::write_phonon_vel_all()
 
     double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
     double **eval = dynamical->eval_phonon;
-    double **vel;
-
-    memory->allocate(vel, ns, 3);
 
     ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
@@ -403,26 +468,24 @@ void Writes::write_phonon_vel_all()
         }
         ofs_vel << std::endl;
 
-        phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
-
-        for (j = 0; j < ns; ++j){
-            rotvec(vel[j], vel[j], system->lavec_p, 'T');
-            for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
-        }
+//         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
+// 
+//         for (j = 0; j < ns; ++j){
+//             rotvec(vel[j], vel[j], system->lavec_p, 'T');
+//             for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
+//         }
 
         for (j = 0; j < ns; ++j){
             ofs_vel << std::setw(5) << i;
             ofs_vel << std::setw(5) << j;
             ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
-            ofs_vel << std::setw(15) << std::sqrt(std::pow(vel[j][0], 2) + std::pow(vel[j][1], 2) + std::pow(vel[j][2], 2))*Ry_to_SI_vel;
+            ofs_vel << std::setw(15) << phonon_velocity->phvel[i][j]*Ry_to_SI_vel;
             ofs_vel << std::endl;
         }
         ofs_vel << std::endl;
     }
 
     ofs_vel.close();
-
-    memory->deallocate(vel);
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_vel;
     std::cout << " : Phonon velocity at all k points" << std::endl;
@@ -689,8 +752,6 @@ void Writes::write_gruneisen()
 
     if (kpoint->kpoint_mode == 1) {
         if (nbands < 0 || nbands > 3 * system->natmin) {
-            std::cout << "WARNING: nbands < 0 or nbands > 3 * natmin" << std::endl;
-            std::cout << "All modes will be printed." << std::endl;    
             nbands =  3 * system->natmin;
         }
 
@@ -717,6 +778,9 @@ void Writes::write_gruneisen()
         }
 
         ofs_gruneisen.close();
+
+        std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_gru;
+        std::cout << " : Gruneisen parameters along given k-path" << std::endl;
 
     } else {
 
@@ -749,6 +813,10 @@ void Writes::write_gruneisen()
         }
 
         ofs_gruall.close();
+
+
+        std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_gruall;
+        std::cout << " : Gruneisen parameters at all k points" << std::endl;
     }
 }
 
@@ -827,7 +895,7 @@ void Writes::write_kappa()
         ofs_kl.close();
 
         std::cout << std::endl;
-        std::cout << "Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
+        std::cout << " Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
     }
 }
 

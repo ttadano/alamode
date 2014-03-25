@@ -27,52 +27,51 @@ void Writes::write_input_vars()
     unsigned int i;
 
     std::cout << std::endl;
-    std::cout << "Input variables below:" << std::endl;
-    std::cout << "---------------------------------------------------" << std::endl;
-    std::cout << "General:" << std::endl;
-    std::cout << " PREFIX = " << files->job_title << std::endl;
-    std::cout << " MODE = " << alm->mode << std::endl;
-    std::cout << " NAT = " << system->nat << "; NKD = " << system->nkd << std::endl;
-    std::cout << " NSYM = " << symmetry->nsym << "; PRINTSYMM = " << symmetry->is_printsymmetry
+    std::cout << " Input variables below:" << std::endl;
+    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " General:" << std::endl;
+    std::cout << "  PREFIX = " << files->job_title << std::endl;
+    std::cout << "  MODE = " << alm->mode << std::endl;
+    std::cout << "  NAT = " << system->nat << "; NKD = " << system->nkd << std::endl;
+    std::cout << "  NSYM = " << symmetry->nsym << "; PRINTSYM = " << symmetry->is_printsymmetry
         << "; TOLERANCE = " << symmetry->tolerance << std::endl;
-    std::cout << " KD = ";
+    std::cout << "  KD = ";
     for (i = 0; i < system->nkd; ++i) std::cout << std::setw(4) << system->kdname[i];
     std::cout << std::endl;
-    std::cout << " PERIODIC = ";
+    std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
-    std::cout << std::endl;
-    std::cout << " INTERTYPE = " << interaction->interaction_type << std::endl;
-    std::cout << std::endl;
+    std::cout << std::endl << std::endl;
+   
 
     if (alm->mode == "suggest") {
-        std::cout << " DBASIS = " << displace->disp_basis << std::endl;
+        std::cout << "  DBASIS = " << displace->disp_basis << std::endl;
         std::cout << std::endl;
     }
 
-    std::cout << "Interaction:" << std::endl;	
-    std::cout << " NORDER = " << interaction->maxorder << std::endl;
-    std::cout << " NBODY = ";
+    std::cout << " Interaction:" << std::endl;	
+    std::cout << "  NORDER = " << interaction->maxorder << std::endl;
+    std::cout << "  INTERTYPE = " << interaction->interaction_type << std::endl;
+    std::cout << "  NBODY = ";
     for (i = 0; i < interaction->maxorder; ++i) std::cout << std::setw(3) << interaction->nbody_include[i];
     std::cout << std::endl;
-    std::cout << " ILONG = " << ewald->is_longrange << "; FLONG = " << ewald->file_longrange << std::endl;
+    std::cout << "  ILONG = " << ewald->is_longrange << "; FLONG = " << ewald->file_longrange << std::endl;
     std::cout << std::endl;
 
     if (alm->mode == "fitting") {
-        std::cout << "Fitting:" << std::endl;
-        std::cout << " DFILE = " << files->file_disp << std::endl;
-        std::cout << " FFILE = " << files->file_force << std::endl;
-        std::cout << " NDATA = " << system->ndata << "; NSTART = " << system->nstart
+        std::cout << " Fitting:" << std::endl;
+        std::cout << "  DFILE = " << files->file_disp << std::endl;
+        std::cout << "  FFILE = " << files->file_force << std::endl;
+        std::cout << "  NDATA = " << system->ndata << "; NSTART = " << system->nstart
             << "; NEND = " << system->nend << "; NSKIP = " << system->nskip << std::endl;
-        std::cout << " NBOOT = " << fitting->nboot << std::endl;
-        std::cout << " MULTDAT = " << symmetry->multiply_data << std::endl;
-        std::cout << " ICONST = " << constraint->constraint_mode << std::endl;
-        std::cout << " ROTAXIS = " << constraint->rotation_axis << std::endl;
-        std::cout << " FC2INFO = " << constraint->fc2_file << std::endl;
-        std::cout << " REFINFO = " << symmetry->refsys_file << std::endl;
+        std::cout << "  NBOOT = " << fitting->nboot << std::endl;
+        std::cout << "  MULTDAT = " << symmetry->multiply_data << std::endl;
+        std::cout << "  ICONST = " << constraint->constraint_mode << std::endl;
+        std::cout << "  ROTAXIS = " << constraint->rotation_axis << std::endl;
+        std::cout << "  FC2INFO = " << constraint->fc2_file << std::endl;
+        std::cout << "  REFINFO = " << symmetry->refsys_file << std::endl;
         std::cout << std::endl;
     }
-
-    std::cout << "---------------------------------------------------" << std::endl;
+    std::cout << " --------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 
 }
@@ -225,7 +224,7 @@ void Writes::wrtfcs()
     memory->deallocate(str_fcs);
     ofs_fcs.close();
 
-    std::cout << std::endl << "Force Constants are written to file: " << files->file_fcs << std::endl;
+    std::cout << std::endl << " Force constants are written to file: " << files->file_fcs << std::endl;
 }
 
 void Writes::wrtmisc(){
@@ -288,7 +287,7 @@ void Writes::wrtmisc(){
     ofs_info << "##INTERACTION LISTS" << std::endl;
     ofs_info << "Interaction List and Reference Vectors(Cartesian) for each order" << std::endl;
 
-    if (interaction->interaction_type == 0 || interaction->interaction_type == 1) {
+    if (interaction->interaction_type == 0 || interaction->interaction_type == 2) {
         for (order = 0; order < interaction->maxorder; ++order){
             ofs_info << "#LIST_" + interaction->str_order[order] << std::endl;
 
@@ -306,7 +305,7 @@ void Writes::wrtmisc(){
                 }
             }
         }
-    } else if (interaction->interaction_type == 2 || interaction->interaction_type == 3) {
+    } else if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
 
         // Special treatment for harmonic terms
 
@@ -419,7 +418,7 @@ void Writes::wrtmisc(){
         ishift += fcs->ndup[order].size();
     }
 
-    if (interaction->interaction_type == 2 || interaction->interaction_type == 3) {
+    if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
 
         ofs_info << "#FCS_HARMONIC_EXT" << std::endl;
 
@@ -469,7 +468,7 @@ void Writes::wrtmisc(){
     memory->deallocate(ncount);
     memory->deallocate(pair_tmp);
 
-    std::cout << std::endl << "Miscellaneous information needed for post-process was stored to file: " << files->file_info << std::endl;
+    std::cout << " Information for post-process is stored to file: " << files->file_info << std::endl;
 }
 
 void Writes::write_displacement_pattern()
@@ -482,6 +481,8 @@ void Writes::write_displacement_pattern()
     int counter;
 
     std::ofstream ofs_pattern;
+
+    std::cout << " Suggested displacement patterns are printed in the following files: " << std::endl;
 
     for (order = 0; order < maxorder; ++order) {
         ofs_pattern.open(files->file_disp_pattern[order].c_str(), std::ios::out);
@@ -509,9 +510,9 @@ void Writes::write_displacement_pattern()
 
         ofs_pattern.close();
 
-        std::cout << "Suggested displacement patterns for " << interaction->str_order[order] 
-        << " are printed in file " << files->file_disp_pattern[order] << std::endl;
+        std::cout << "  " << interaction->str_order[order] << " : " << files->file_disp_pattern[order] << std::endl;
     }
+    std::cout << std::endl;
 }
 
 void Writes::write_misc_xml()
@@ -608,7 +609,7 @@ void Writes::write_misc_xml()
             std::to_string(fcs->fc_set[0][ihead].elems[0])
             + " " + std::to_string(fcs->fc_set[0][ihead].elems[1]));
         child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[j][pair_tmp[1]].size());
-        std::cout << fcs->fc_set[0][ihead].coef << std::endl;
+       // std::cout << fcs->fc_set[0][ihead].coef << std::endl;
         ihead += fcs->ndup[0][ui];
         ++k;
     }

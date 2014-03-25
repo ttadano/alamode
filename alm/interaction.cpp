@@ -39,30 +39,34 @@ void Interaction::init()
     int nat = system->nat;
     int nkd = system->nkd;
 
+    std::cout << " INTERACTION" << std::endl;
+    std::cout << " ===========" << std::endl << std::endl;
+
     memory->allocate(str_order, maxorder);
     set_ordername();
 
     if (interaction_type == 0) {
-        std::cout << "INTERTYPE = 0: Harmonic IFCs will be searched by using cutoff radii" << std::endl;
+        std::cout << "  INTERTYPE = 0: Harmonic IFCs will be searched by using cutoff radii" << std::endl;
     } else if (interaction_type == 1) {
-        std::cout << "INTERTYPE = 1: Harmonic IFCs will be automatically considered so that" << std::endl;
-        std::cout << "               each interaction occurs only once" << std::endl;
-        std::cout << "               The cutoff radii for HARMONIC below will be neglected." << std::endl;
+        std::cout << "  INTERTYPE = 1: All the harmonic IFCs will be considered." << std::endl;
+        std::cout << "                 If a interaction occurs more than once, the corresponding IFC" << std::endl;
+        std::cout << "                 will be divided by the multiplicity P." << std::endl;
+        std::cout << "                 The cutoff radii for HARMONIC below will be neglected." << std::endl;
     } else if (interaction_type == 2) {
-        std::cout << "INTERTYPE = 2: All the harmonic IFCs will be considered." << std::endl;
-        std::cout << "               If a interaction occurs more than once, the corresponding IFC" << std::endl;
-        std::cout << "               will be divided by the multiplicity P." << std::endl;
-        std::cout << "               The cutoff radii for HARMONIC below will be neglected." << std::endl;
+        std::cout << "  INTERTYPE = 2: Harmonic IFCs will be automatically considered so that" << std::endl;
+        std::cout << "                 each interaction occurs only once" << std::endl;
+        std::cout << "                 The cutoff radii for HARMONIC below will be neglected." << std::endl;
+    
     } else if (interaction_type == 3) {
-        std::cout << "INTERTYPE = 3: This is test." << std::endl;
+        std::cout << "  INTERTYPE = 3: This is test." << std::endl;
     } else {
         error->exit("interaction->init", "This cannot happen");
     }
     std::cout << std::endl;
-    std::cout << "*** Cutoff Radii Matrix in Bohr Unit. (nkd x nkd matrix) ***" << std::endl;
+    std::cout << "  +++ Cutoff Radii Matrix in Bohr Unit (NKD x NKD matrix) +++" << std::endl;
 
     for (i = 0; i < maxorder; ++i){
-        std::cout << std::setw(9) << str_order[i] << std::endl; 
+        std::cout << "  " <<  std::setw(9) << str_order[i] << std::endl; 
         for (j = 0; j < nkd; ++j){
             for (k = 0; k < nkd; ++k){
                 std::cout << std::setw(9) << rcs[i][j][k];
@@ -76,12 +80,6 @@ void Interaction::init()
         if(!is_periodic[i]) nsize[i] = 0;
     }
 
-    std::cout << std::endl << "Periodicity Flags (0: Non-Periodic, else: Periodic)" << std::endl;
-    std::cout 
-        << "a axis: " << std::setw(3) << is_periodic[0] << std::endl
-        << "b axis: " << std::setw(3) << is_periodic[1] << std::endl
-        << "c axis: " << std::setw(3) << is_periodic[2] << std::endl << std::endl;
-
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
     memory->allocate(xcrd, nneib, nat, 3);
     memory->allocate(distlist, nat, nat);
@@ -89,11 +87,12 @@ void Interaction::init()
     memory->allocate(mindist_pairs, symmetry->natmin, nat);
 
     calc_distlist(nat, system->xcoord);
-
     search_interactions();
     calc_minvec();
 
     timer->print_elapsed();
+    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
 }
 
 double Interaction::distance(double *x1, double *x2)
@@ -203,8 +202,8 @@ void Interaction::calc_distlist(int nat, double **xf)
     }
 
     std::cout << std::endl;
-    std::cout << "List of neighboring atoms below." << std::endl;
-    std::cout << "Format [N th-nearest shell, distance in Bohr (Number of atoms on the shell)]" << std::endl << std::endl;
+    std::cout << "  List of neighboring atoms below." << std::endl;
+    std::cout << "  Format [N th-nearest shell, distance in Bohr (Number of atoms on the shell)]" << std::endl << std::endl;
 
     int nthnearest;
     std::vector<int> atomlist;
@@ -230,15 +229,15 @@ void Interaction::calc_distlist(int nat, double **xf)
 
                     if (nthnearest > 1) std::cout << std::setw(13) << " ";
 
-                    std::cout << std::setw(3) << nthnearest << std::setw(8) << dist_tmp << " (" << std::setw(3) << atomlist.size() << ")";
+                    std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp << " (" << std::setw(3) << atomlist.size() << ")";
                     std::cout << " -";
 
                     icount = 0;
                     for (k = 0; k < atomlist.size(); ++k) {
 
-                        if (icount % 10 == 0 && icount > 0) {
+                        if (icount % 4 == 0 && icount > 0) {
                             std::cout << std::endl;
-                            std::cout << std::setw(32) << " ";
+                            std::cout << std::setw(34) << " ";
                         }
                         ++icount;
 
@@ -355,7 +354,42 @@ void Interaction::search_interactions()
                 }
             }
         }
+
     } else if (interaction_type == 1) {
+
+        for (i = 0; i < natmin; ++i) {
+            iat = symmetry->map_p2s[i][0];
+
+            for (jat = 0; jat < nat; ++jat) {
+                dist = mindist_pairs[i][jat][0].dist;
+
+                // Consider all interactions even if the interaction occurs more than twice.
+                // Neglect cutoff radius for harmonic terms.
+
+                intpairs[i][0][ninter[i][0]] = jat;
+                ++ninter[i][0];
+                countint[i][jat][0] = mindist_pairs[i][jat].size();
+
+
+                for (order = 1; order < maxorder; ++order) {
+
+                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+
+                        if (!countint[i][jat][order]) {
+                            intpairs[i][order][ninter[i][order]] = jat;
+
+                            for(j = 0; j < 3; ++j){
+                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
+                            }
+                            ++ninter[i][order];
+                        }
+                        ++countint[i][jat][order];
+                    }
+                }
+            }
+        }
+
+    } else if (interaction_type == 2) {
 
         for (i = 0; i < natmin; ++i) {
             iat = symmetry->map_p2s[i][0];
@@ -393,39 +427,6 @@ void Interaction::search_interactions()
             }
         }
 
-    } else if (interaction_type == 2) {
-
-        for (i = 0; i < natmin; ++i) {
-            iat = symmetry->map_p2s[i][0];
-
-            for (jat = 0; jat < nat; ++jat) {
-                dist = mindist_pairs[i][jat][0].dist;
-
-                // Consider all interactions even if the interaction occurs more than twice.
-                // Neglect cutoff radius for harmonic terms.
-
-                intpairs[i][0][ninter[i][0]] = jat;
-                ++ninter[i][0];
-                countint[i][jat][0] = mindist_pairs[i][jat].size();
-
-
-                for (order = 1; order < maxorder; ++order) {
-
-                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-                        if (!countint[i][jat][order]) {
-                            intpairs[i][order][ninter[i][order]] = jat;
-
-                            for(j = 0; j < 3; ++j){
-                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
-                            }
-                            ++ninter[i][order];
-                        }
-                        ++countint[i][jat][order];
-                    }
-                }
-            }
-        }
     } else if (interaction_type == 3) {
 
         for (i = 0; i < natmin; ++i) {
@@ -468,7 +469,7 @@ void Interaction::search_interactions()
         error->exit("search_interactions", "This cannot happen.");
     }
 
-    if (interaction_type != 2) {
+    if (interaction_type != 1) {
         if(maxval(natmin, nat, order, countint) > 1) {
             error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
         }
@@ -493,17 +494,19 @@ void Interaction::search_interactions()
     memory->allocate(interacting_atom_pairs, maxorder);
 
     intlist.clear();
+    std::cout << std::endl;
+    std::cout << "  List of interacting atom pairs considered for each order:" << std::endl;
     for(order = 0; order < maxorder; ++order){
 
         interacting_atom_pairs[order].clear();
 
-        std::cout << std::endl << "***" << str_order[order] << "***" << std::endl;
+        std::cout << std::endl << "   ***" << str_order[order] << "***" << std::endl;
 
         for(i = 0; i < natmin; ++i){
 
             if(ninter[i][order] == 0) {
-                std::cout << "No interacting atoms! ... skipped" << std::endl;
-                continue; // no interaction atoms
+                std::cout << "   No interacting atoms! Skipped." << std::endl;
+                continue; // no interaction
             }
 
             iat = symmetry->map_p2s[i][0];
@@ -520,14 +523,23 @@ void Interaction::search_interactions()
 #endif
             // write atoms inside the cutoff radius
             int id = 0;
-            std::cout << "Atom " << std::setw(5) << iat + 1  
+            std::cout << "    Atom " << std::setw(5) << iat + 1  
                 << "(" << std::setw(3) << system->kdname[system->kd[iat]-1] << ")" << " interacts with atoms ... " << std::endl;
-            for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
-                std::cout << std::setw(5) << *it + 1 << "(" << std::setw(3) << system->kdname[system->kd[*it]-1] << ")";
-                if(!(++id%15)) std::cout << std::endl;
+
+            for (int id = 0; id < intlist.size(); ++id) {
+                if (id%6 == 0) {
+                    if (id == 0) {
+                        std::cout << "   ";
+                    } else {
+                        std::cout << std::endl;
+                        std::cout << "   ";
+                    }
+                }
+                std::cout << std::setw(5) << intlist[id] + 1 << "(" << std::setw(3) << system->kdname[system->kd[intlist[id]]-1] << ")";
             }
-            std::cout << std::endl;
-            std::cout << "Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl << std::endl;
+
+            std::cout << std::endl << std::endl;
+            std::cout << "    Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl << std::endl;
 
             int *intarr;        
             memory->allocate(intarr, order + 2);
@@ -573,9 +585,12 @@ void Interaction::search_interactions()
 
         pairs[order].clear();
 
-        std::cout << "For " << std::setw(8) << interaction->str_order[order] << ", ";
-        std::cout << "only " << std::setw(2) << nbody_include[order];
-        std::cout << "-body interaction (and below) will be considered." << std::endl;
+        if (order + 2 > nbody_include[order]) {
+            std::cout << "  For " << std::setw(8) << interaction->str_order[order] << ", ";
+            std::cout << "interactions related to more than" << std::setw(2) << nbody_include[order];
+            std::cout << " atoms will be neglected." << std::endl;
+        }
+        
 
         memory->allocate(pair_tmp, order + 2);
 

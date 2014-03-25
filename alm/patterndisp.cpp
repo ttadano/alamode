@@ -20,8 +20,7 @@ void Displace::gen_displacement_pattern()
     int maxorder = interaction->maxorder;
     std::vector<int> group_tmp;
 
-
-    std::cout << "Generating displacement patterns in ";
+    std::cout << " Generating displacement patterns in ";
     if (disp_basis[0] == 'C') {
         std::cout << "Cartesian coordinate...";
     } else {

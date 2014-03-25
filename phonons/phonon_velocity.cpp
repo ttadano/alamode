@@ -16,8 +16,11 @@ using namespace PHON_NS;
 
 Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon){}
 
-Phonon_velocity::~Phonon_velocity(){}
-
+Phonon_velocity::~Phonon_velocity(){
+    if (print_velocity) {
+        memory->deallocate(phvel);
+    }
+}
 
 void Phonon_velocity::setup_velocity()
 {
@@ -26,10 +29,26 @@ void Phonon_velocity::setup_velocity()
 
 void Phonon_velocity::calc_group_velocity(const int kpmode)
 {
+    if (print_velocity) {
 
+        unsigned int nk = kpoint->nk;
+        unsigned int ns = dynamical->neval;
+
+        memory->allocate(phvel, nk, ns);
+
+        if (kpmode == 1) {
+        
+            calc_phonon_vel_band(phvel);
+
+        } else if (kpmode == 2) {
+
+            calc_phonon_vel_mesh(phvel);
+        }
+
+    }
 }
 
-void Phonon_velocity::calc_phonon_vel_band()
+void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
 {
     unsigned int i;
     unsigned int ik, idiff;
@@ -49,8 +68,6 @@ void Phonon_velocity::calc_phonon_vel_band()
     if (mympi->my_rank == 0) {
         std::cout << " Calculating group velocities of phonon along given k path ... ";
     }
-
-    memory->allocate(phvel, nk, n);
 
     ndiff = 2;
     memory->allocate(xk_shift, ndiff, 3);
@@ -96,7 +113,7 @@ void Phonon_velocity::calc_phonon_vel_band()
             for (idiff = 0; idiff < ndiff; ++idiff){
                 omega_tmp[idiff] = dynamical->freq(omega_shift[idiff][i]);
             }
-            phvel[ik][i] = diff(omega_tmp, ndiff, h);
+            phvel_out[ik][i] = diff(omega_tmp, ndiff, h);
         }
     }
     memory->deallocate(omega_tmp);
@@ -105,6 +122,36 @@ void Phonon_velocity::calc_phonon_vel_band()
     memory->deallocate(xk_tmp);
 
     memory->deallocate(evec_tmp);
+
+    if (mympi->my_rank == 0) {
+        std::cout << "done!" << std::endl;
+    }
+}
+
+void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out)
+{
+    unsigned int i, j, k;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+    double **vel;
+
+    if (mympi->my_rank == 0) {
+        std::cout << " Calculating group velocities of phonons at uniform grid ... ";
+    }
+
+    memory->allocate(vel, ns, 3);
+
+    for (i = 0; i < nk; ++i) {
+        phonon_vel_k(kpoint->xk[i], vel);
+
+        for (j = 0; j < ns; ++j){
+            rotvec(vel[j], vel[j], system->lavec_p, 'T');
+            for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
+            phvel_out[i][j] = std::sqrt(std::pow(vel[j][0], 2) + std::pow(vel[j][1], 2) + std::pow(vel[j][2], 2));
+        }
+    }
+
+    memory->deallocate(vel);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;

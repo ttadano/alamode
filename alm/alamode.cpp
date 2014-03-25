@@ -22,12 +22,18 @@ using namespace ALM_NS;
 
 ALM::ALM(int narg, char **arg)
 {
+    std::cout << " +------------------------------------------------------------+" << std::endl;
+    std::cout << " +                      Program ALM                           +" << std::endl;
+    std::cout << " +                           Ver. 0.4.1                       +" << std::endl;
+    std::cout << " +------------------------------------------------------------+" << std::endl;
+    std::cout << std::endl;
+
     timer = new Timer(this);
 
 #ifdef _OPENMP
-    std::cout << "Number of OpenMP threads = " << omp_get_max_threads() << std::endl << std::endl;
+    std::cout << " Number of OpenMP threads = " << omp_get_max_threads() << std::endl << std::endl;
 #endif
-    std::cout << "Job started at " << timer->DateAndTime() << std::endl;
+    std::cout << " Job started at " << timer->DateAndTime() << std::endl;
 
     input = new Input(this, narg, arg);
     create();
@@ -50,7 +56,7 @@ ALM::ALM(int narg, char **arg)
 
     finalize();
 
-    std::cout << std::endl << "Job finished at " << timer->DateAndTime() << std::endl;
+    std::cout << std::endl << " Job finished at " << timer->DateAndTime() << std::endl;
 }
 
 void ALM::create()

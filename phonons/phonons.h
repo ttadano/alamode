@@ -46,7 +46,7 @@ namespace PHON_NS
         void execute_phonons();
         void execute_RTA();
         void execute_interpolation();
-        void execute_gruneisen();
+        //void execute_gruneisen();
         void setup_base();
     };
 }

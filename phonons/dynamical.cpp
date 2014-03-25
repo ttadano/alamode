@@ -577,7 +577,7 @@ void Dynamical::diagonalize_dynamical_all()
     bool require_evec; 
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << " Diagonalizing dynamical matrices for all k points ...";
+        std::cout << std::endl << " Diagonalizing dynamical matrices for all k points ... ";
     }
 
     memory->allocate(eval_phonon, nk, neval);

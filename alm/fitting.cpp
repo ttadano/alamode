@@ -74,13 +74,25 @@ void Fitting::fitmain()
 
     double **amat, *fsum;
 
+
+    std::cout << " FITTING" << std::endl;
+    std::cout << " =======" << std::endl << std::endl;
+
+    std::cout << "  Reference files" << std::endl;
+    std::cout << "   Displacement: " << files->file_disp << std::endl;
+    std::cout << "   Force       : " << files->file_force << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "  NSTART = " << nstart << "; NEND = " << nend << std::endl;
+    std::cout << "  " << nend - nstart + 1 << " entries will be used for fitting." << std::endl << std::endl;
+
     data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti,symmetry->multiply_data);
 
     N = 0;
     for(i = 0; i < maxorder; ++i){
         N += fcs->ndup[i].size();
     }
-    std::cout << "Total Number of Parameters : " << N << std::endl;
+    std::cout << "  Total Number of Parameters : " << N << std::endl << std::endl;
 
     M = 3 * natmin * ndata_used * nmulti;
 
@@ -90,7 +102,6 @@ void Fitting::fitmain()
     // Calculate matrix elements for fitting
 
     calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, amat, fsum);
-    timer->print_elapsed();
 
     /*
     // Calculate Hessian Matrix of Amat
@@ -143,7 +154,11 @@ void Fitting::fitmain()
     memory->deallocate(amat);
     memory->deallocate(fsum);
 
+    std::cout << std::endl;
     timer->print_elapsed();
+    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
+
 }
 
 void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, const int nend, 
@@ -170,7 +185,7 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
     if (multiply_data == 0) {
 
-        std::cout << "MULTDAT = 0: Don't multiply the displacement-force data sets." << std::endl << std::endl;
+        std::cout << " MULTDAT = 0: Given displacement-force data sets will be used as is." << std::endl << std::endl;
 
         nmulti = 1;
 
@@ -194,8 +209,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
     } else if (multiply_data == 1) {
 
-        std::cout << "MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
-        std::cout << "             by using pure translational operations only." << std::endl << std::endl;
+        std::cout << "  MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
+        std::cout << "               by using pure translational operations only." << std::endl << std::endl;
 
         nmulti = symmetry->ntran;
 
@@ -223,8 +238,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
     } else if (multiply_data == 2) {
 
-        std::cout << "MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl;
-        std::cout << "             (including rotational part) " << std::endl << std::endl;
+        std::cout << "  MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl;
+        std::cout << "               (including rotational part) " << std::endl << std::endl;
 
         nmulti = symmetry->nsym;
 
@@ -272,7 +287,7 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
 
     int M = M_End - M_Start;
 
-    std::cout << "Entering Fitting Routine: SVD without constraints" << std::endl << std::endl;
+    std::cout << "  Entering fitting routine: SVD without constraints" << std::endl;
 
     LWORK = 3 * std::min<int>(M, N) + std::max<int>(2*std::min<int>(M, N), std::max<int>(M, N));
     LWORK = 2 * LWORK;
@@ -296,12 +311,13 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
         f_square += std::pow(bvec[i], 2);
     }
 
+    std::cout << "  SVD has started ... ";
     // fitting with singular value decomposition
     dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
-    std::cout << "Finished !" << std::endl << std::endl;
+    std::cout << "finished !" << std::endl << std::endl;
 
-    std::cout << "RANK of the MATRIX: " << nrank << std::endl;
+    std::cout << "  RANK of the matrix = " << nrank << std::endl;
     if(nrank < N) error->warn("fit_without_constraints", 
         "Matrix is rank-deficient. Force constants could not be determined uniquely :(");
 
@@ -310,8 +326,8 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
         for (i = N; i < M; ++i){
             f_residual += std::pow(fsum2[i], 2);
         }
-        std::cout << std::endl << "Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
-        std::cout << "Fitting Error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
+        std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
+        std::cout << "  Fitting error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
     }
 
     for (i = 0; i < N; ++i){
@@ -333,7 +349,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
 
     int M = M_End - M_Start;
 
-    std::cout << "Entering Fitting Routine: QRD with constraints" << std::endl << std::endl;
+    std::cout << "  Entering fitting routine: QRD with constraints" << std::endl;
 
     memory->allocate(mat_tmp, (M + P) * N);
     memory->allocate(fsum2, M);
@@ -357,11 +373,11 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
 
     if(nrank != N){
         std::cout << std::endl;
-        std::cout << "!!WARNING: rank ( (A) ) ! = N" << std::endl;
+        std::cout << "  WARNING: rank ( (A) ) ! = N" << std::endl;
         std::cout << "                ( (B) )      " << std::endl;
-        std::cout << "rank = " << nrank << " N = " << N << std::endl;
-        std::cout << "This must be a problem when solving equality constrained LSE problem with DGGLSE." << std::endl;
-        std::cout << "Please change the cutoff radius or {u,f} data." << std::endl << std::endl;
+        std::cout << "  rank = " << nrank << " N = " << N << std::endl;
+        std::cout << "  This must be a problem when solving equality constrained LSE problem with DGGLSE." << std::endl;
+        std::cout << "  Please change the cutoff radius or {u,f} data." << std::endl << std::endl;
     }
 
     f_square = 0.0;
@@ -371,7 +387,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
         f_square += std::pow(bvec[i], 2);
     }
 
-    std::cout << "QR-Decomposition Started ...";
+    std::cout << "  QR-Decomposition has started ...";
 
     double *amat_mod, *cmat_mod;
     memory->allocate(amat_mod, M * N);
@@ -411,8 +427,8 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
     for (i = N - P; i < M; ++i){
         f_residual += std::pow(fsum2[i], 2);
     }
-    std::cout << std::endl << "Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
-    std::cout << "Fitting Error (%) : "<< std::sqrt(f_residual/f_square) * 100.0 << std::endl;
+    std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
+    std::cout << "  Fitting error (%) : "<< std::sqrt(f_residual/f_square) * 100.0 << std::endl;
 
     // copy fcs to bvec
 
@@ -463,10 +479,12 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
     memory->allocate(cmat_mod, P * N);
     memory->allocate(const_tmp, P);
 
-    std::cout << "nskip = -1: Bootstrap Fitting Started!!" << std::endl;
-    std::cout << "Relative errors and FCS are stored in file: " << file_fcs_bootstrap << std::endl;
+    std::cout << "  NSKIP < 0: Bootstrap analysis for error estimation." << std::endl;
+    std::cout << "             The number of trials is NBOOT (=" << nboot << ")" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  Relative errors and FCs are stored in file: " << file_fcs_bootstrap << std::endl;
 
-    ofs_fcs_boot << "# Relative Error(%), FCS..." ;
+    ofs_fcs_boot << "# Relative Error(%), FCs ..." ;
 
     for (i = 0; i < interaction->maxorder; ++i){
         ofs_fcs_boot << std::setw(10) << fcs->ndup[i].size();
@@ -534,8 +552,10 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
         }
         ofs_fcs_boot << std::endl;
     }
+    ofs_fcs_boot.close();
 
-    std::cout << "Bootstrap Fitting Finished" << std::endl;
+    std::cout << "  Bootstrap analysis finished." << std::endl;
+    std::cout << "  Normal fitting will be performed" << std::endl;
 }
 
 void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_used, const int nmulti, const int nskip, double **amat, double *bvec, double **cmat, double *dvec)
@@ -571,8 +591,10 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     memory->allocate(cmat_mod, P * N);
     memory->allocate(const_tmp, P);
 
-    std::cout << "nskip != 0: Consecutive Fitting Started!!" << std::endl;
-    std::cout << "Relative errors and FCS are stored in file: " << file_fcs_sequence << std::endl;
+    std::cout << "  NSKIP > 0: Fitting will be performed consecutively" << std::endl;
+    std::cout << "             with variously changing NEMD as NEND = NSTART + i*NSKIP" << std::endl;
+    std::cout << std::endl;
+    std::cout << "  Relative errors and FCs will be stored in the file " << file_fcs_sequence << std::endl;
 
     ofs_fcs_seq << "# Relative Error(%), FCS..." ;
 
@@ -649,6 +671,8 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     memory->deallocate(x);
 
     ofs_fcs_seq.close();
+
+    std::cout << "  Consecutive fitting finished." << std::endl;
 }
 
 void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin, const int ndata_fit, const int nmulti, const int maxorder, double **amat, double *bvec)
@@ -657,7 +681,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
     int irow;
     int ncycle;
 
-    std::cout << "Calculation of Matrix Elements for Direct Fitting Started ..." << std::endl;
+    std::cout << "  Calculation of matrix elements for direct fitting started ... ";
     for (i = 0; i < M; ++i){
         for (j = 0; j < N; ++j){
             amat[i][j] = 0.0;
@@ -722,7 +746,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
     }
 
-    std::cout << " Finished !" << std::endl;
+    std::cout << "done!" << std::endl << std::endl;
 }
 
 

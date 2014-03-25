@@ -8,6 +8,7 @@
 #include "phonons.h"
 #include "relaxation.h"
 #include "constants.h"
+#include "gruneisen.h"
 #include <string>
 #include <iomanip>
 #include <fstream>
@@ -35,13 +36,28 @@ void Fcs_phonon::setup(std::string mode)
     }
 
     MPI_Bcast(&relaxation->quartic_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-    if (mode == "PHONONS" || mode == "INTERPOLATION") {
+    if (mode == "PHONONS") {
         require_cubic = false;
         require_quartic = false;
         maxorder = 1;
 
-    } else if (mode == "RTA" || mode == "GRUNEISEN") {
+        if (gruneisen->print_gruneisen) {
+            require_cubic = true;
+            maxorder = 2;
+        }
+        if (gruneisen->print_newfcs) {
+            require_cubic = true;
+            maxorder = 2;
+
+            if (relaxation->quartic_mode) {
+                require_quartic = true;
+                maxorder = 3;
+            }
+        }
+
+    } else if (mode == "RTA") {
         require_cubic = true;
 
         if (relaxation->quartic_mode) {
