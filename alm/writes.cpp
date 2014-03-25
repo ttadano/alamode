@@ -40,9 +40,8 @@ void Writes::write_input_vars()
     std::cout << std::endl;
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
-    std::cout << std::endl;
-    std::cout << "  INTERTYPE = " << interaction->interaction_type << std::endl;
-    std::cout << std::endl;
+    std::cout << std::endl << std::endl;
+   
 
     if (alm->mode == "suggest") {
         std::cout << "  DBASIS = " << displace->disp_basis << std::endl;
@@ -51,6 +50,7 @@ void Writes::write_input_vars()
 
     std::cout << " Interaction:" << std::endl;	
     std::cout << "  NORDER = " << interaction->maxorder << std::endl;
+    std::cout << "  INTERTYPE = " << interaction->interaction_type << std::endl;
     std::cout << "  NBODY = ";
     for (i = 0; i < interaction->maxorder; ++i) std::cout << std::setw(3) << interaction->nbody_include[i];
     std::cout << std::endl;

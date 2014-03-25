@@ -59,19 +59,18 @@ void Input::parce_input()
     parse_atomic_positions();
 }
 
-
 void Input::parse_general_vars(){
 
     int i;
     std::string prefix, mode, str_tmp, str_disp_basis;
-    int nat, nkd, nsym, interaction_type;
+    int nat, nkd, nsym;
     int is_printsymmetry;
     bool is_periodic[3];
     std::string *kdname;
     double tolerance;
 
     std::vector<std::string> kdname_v, periodic_v;
-    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC INTERTYPE PRINTSYM TOLERANCE DBASIS";
+    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS";
     std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
@@ -137,14 +136,6 @@ void Input::parse_general_vars(){
         error->exit("parse_general_vars", "Invalid number of entries for PERIODIC");
     }
 
-    if (general_var_dict["INTERTYPE"].empty()) {
-        interaction_type = 0;
-    } else {
-        interaction_type = boost::lexical_cast<int>(general_var_dict["INTERTYPE"]);
-    }
-    if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
-
-
     if (general_var_dict["TOLERANCE"].empty()) {
         tolerance = 1.0e-8;
     } else {
@@ -163,7 +154,6 @@ void Input::parse_general_vars(){
         }
     }
 
-
     files->job_title = prefix;
     alm->mode = mode;
     system->nat = nat;
@@ -180,7 +170,7 @@ void Input::parse_general_vars(){
     for (i = 0; i < 3; ++i) {
         interaction->is_periodic[i] = is_periodic[i];
     }
-    interaction->interaction_type = interaction_type;
+   
 
     if (mode == "suggest") displace->disp_basis = str_disp_basis;
 
@@ -213,14 +203,14 @@ void Input::parse_cell_parameter() {
 
 void Input::parse_interaction_vars() {
 
-    int i;
+    int i, interaction_type;
     int maxorder;
     bool is_longrange;
     int *nbody_include;
     std::string file_longrange;
 
     std::vector<std::string> nbody_v;
-    std::string str_allowed_list = "NORDER NBODY ILONG FLONG";
+    std::string str_allowed_list = "NORDER NBODY INTERTYPE ILONG FLONG";
     std::string str_no_defaults = "NORDER";
     std::vector<std::string> no_defaults;
 
@@ -241,6 +231,14 @@ void Input::parse_interaction_vars() {
     maxorder = boost::lexical_cast<int>(interaction_var_dict["NORDER"]);
 
     if (maxorder < 1) error->exit("parse_interaction_vars", "maxorder has to be a positive integer");
+
+    if (interaction_var_dict["INTERTYPE"].empty()) {
+        interaction_type = 0;
+    } else {
+        interaction_type = boost::lexical_cast<int>(interaction_var_dict["INTERTYPE"]);
+    }
+    if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
+
 
     memory->allocate(nbody_include, maxorder);
 
@@ -283,6 +281,7 @@ void Input::parse_interaction_vars() {
     ewald->file_longrange = file_longrange;
 
     interaction->maxorder = maxorder;
+    interaction->interaction_type = interaction_type;
     memory->allocate(interaction->nbody_include, maxorder);
 
     for (i = 0; i < maxorder; ++i){
