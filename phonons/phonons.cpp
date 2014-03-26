@@ -19,9 +19,12 @@
 #include "interpolation.h"
 #include "relaxation.h"
 #include "conductivity.h"
-#include <omp.h>
 #include "isotope.h"
 #include "selfenergy.h"
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 using namespace PHON_NS;
 

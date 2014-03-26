@@ -23,8 +23,24 @@ Input::Input(ALM *alm, int narg, char **arg): Pointers(alm) {}
 
 Input::~Input() {}
 
-void Input::parce_input()
+void Input::parce_input(int narg, char **arg)
 {
+
+    if (narg == 1) {
+
+        from_stdin = true;
+
+    } else {
+
+        from_stdin = false;
+
+        ifs_input.open(arg[1], std::ios::in);
+        if (!ifs_input) {
+            std::cout << "No such file or directory: " << arg[1] << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
     if (!locate_tag("&general")) {
         error->exit("parse_input", "&general entry not found in the input file");
     }
@@ -75,7 +91,11 @@ void Input::parse_general_vars(){
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
 
-    std::cin.ignore();
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
 
     get_var_dict(str_allowed_list, general_var_dict);
 
@@ -188,12 +208,20 @@ void Input::parse_cell_parameter() {
     double a;
     double lavec_tmp[3][3];
 
-    std::cin >> a;
+    if (from_stdin) {
+        std::cin >> a;
 
-    std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-    std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-    std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+        std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
+        std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
+        std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+    } else {
+        ifs_input >> a;
 
+        ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
+        ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
+        ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+    }
+    
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             system->lavec[i][j] = a * lavec_tmp[i][j];
@@ -213,11 +241,15 @@ void Input::parse_interaction_vars() {
     std::string str_allowed_list = "NORDER NBODY INTERTYPE ILONG FLONG";
     std::string str_no_defaults = "NORDER";
     std::vector<std::string> no_defaults;
-
     std::map<std::string, std::string> interaction_var_dict;
 
 
-    std::cin.ignore();
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
+
     get_var_dict(str_allowed_list, interaction_var_dict);
 
     boost::split(no_defaults, str_no_defaults, boost::is_space());
@@ -301,14 +333,24 @@ void Input::parse_cutoff_radii() {
     int nkd = system->nkd;
     int maxorder = interaction->maxorder;
 
-    std::cin.ignore();
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
 
     memory->allocate(rcs, maxorder, nkd, nkd);
 
     for (i = 0; i < maxorder; ++i) {
         for (j = 0; j < nkd; ++j) { 
             for (k = 0; k < nkd; ++k) {
-                std::cin >> rcs[i][j][k];
+
+                if (from_stdin) {
+                    std::cin >> rcs[i][j][k];
+                } else {
+                    ifs_input >> rcs[i][j][k];
+                }
+
             }
         }
         for (j = 0; j < nkd; ++j) {
@@ -320,16 +362,15 @@ void Input::parse_cutoff_radii() {
 
     memory->allocate(interaction->rcs, maxorder, nkd, nkd);
 
-
     for (i = 0; i < maxorder; ++i) {
         for (j = 0; j < nkd; ++j) {
             for (k = 0; k < nkd; ++k) {
                 interaction->rcs[i][j][k] = rcs[i][j][k];
-            } }
+            } 
+        }
     }
 
     memory->deallocate(rcs);
-
 }
 
 void Input::parse_fitting_vars() {
@@ -347,7 +388,12 @@ void Input::parse_fitting_vars() {
     std::map<std::string, std::string> fitting_var_dict;
 
 
-    std::cin.ignore();
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
+
     get_var_dict(str_allowed_list, fitting_var_dict);
 
     boost::split(no_defaults, str_no_defaults, boost::is_space());
@@ -462,27 +508,55 @@ void Input::parse_atomic_positions() {
 
     int nat = system->nat;
 
-    std::cin.ignore();
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
 
     str_v.clear();
 
-    while(std::getline(std::cin, line)) {
+    if (from_stdin) {
 
-        pos_first_comment_tag = line.find_first_of('#');
+        while(std::getline(std::cin, line)) {
 
-        if (pos_first_comment_tag == std::string::npos) {
-            line_wo_comment = line;
-        } else {
-            line_wo_comment = line.substr(0, pos_first_comment_tag);
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+
+            boost::trim_left(line_wo_comment);
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            str_v.push_back(line_wo_comment);
         }
 
+    } else {
 
-        boost::trim_left(line_wo_comment);
-        if (line_wo_comment.empty()) continue;
-        if (is_endof_entry(line_wo_comment)) break;
+        while(std::getline(ifs_input, line)) {
 
-        str_v.push_back(line_wo_comment);
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+
+            boost::trim_left(line_wo_comment);
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            str_v.push_back(line_wo_comment);
+        }
     }
+    
 
     if (str_v.size() != nat) {
         error->exit("parse_atomic_positions", "The number of entries for atomic positions should be NAT");
@@ -541,61 +615,122 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 
     var_dict.clear();
 
-    while (std::getline(std::cin, line)) {
+    if (from_stdin) {
+        while (std::getline(std::cin, line)) {
 
-        // Ignore comment region
-        pos_first_comment_tag = line.find_first_of('#');
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-        if (pos_first_comment_tag == std::string::npos) {
-            line_wo_comment = line;
-        } else {
-            line_wo_comment = line.substr(0, pos_first_comment_tag);
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_left(line_wo_comment);
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            //	std::cout << line_wo_comment << std::endl;
+
+            // Split the input line by ';'
+
+            boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+
+            for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
+
+                // Split the input entry by '='
+
+                std::string str_tmp = boost::trim_copy(*it);
+
+                if (!str_tmp.empty()) {
+
+                    boost::split(str_varval, str_tmp, boost::is_any_of("="));
+
+                    if (str_varval.size() != 2) {
+                        error->exit("get_var_dict", "Unacceptable format");
+                    }
+
+                    key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
+                    val = boost::trim_copy(str_varval[1]);
+
+                    if (keyword_set.find(key) == keyword_set.end()) {
+                        std::cout << "Could not recognize the variable " << key << std::endl;
+                        error->exit("get_var_dict", "Invalid variable found");
+                    }
+
+                    if (var_dict.find(key) != var_dict.end()) {
+                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+                        error->exit("get_var_dict", "Redundant input parameter");
+                    }
+
+                    // If everything is OK, add the variable and the corresponding value
+                    // to the dictionary.
+
+                    var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
+                }
+            }
         }
 
-        boost::trim_left(line_wo_comment);
-        if (line_wo_comment.empty()) continue;
-        if (is_endof_entry(line_wo_comment)) break;
+    } else {
 
-        //	std::cout << line_wo_comment << std::endl;
+        while (std::getline(ifs_input, line)) {
 
-        // Split the input line by ';'
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-        boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
 
-        for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
+            boost::trim_left(line_wo_comment);
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
 
-            // Split the input entry by '='
+            //	std::cout << line_wo_comment << std::endl;
 
-            std::string str_tmp = boost::trim_copy(*it);
+            // Split the input line by ';'
 
-            if (!str_tmp.empty()) {
+            boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 
-                boost::split(str_varval, str_tmp, boost::is_any_of("="));
+            for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
-                if (str_varval.size() != 2) {
-                    error->exit("get_var_dict", "Unacceptable format");
+                // Split the input entry by '='
+
+                std::string str_tmp = boost::trim_copy(*it);
+
+                if (!str_tmp.empty()) {
+
+                    boost::split(str_varval, str_tmp, boost::is_any_of("="));
+
+                    if (str_varval.size() != 2) {
+                        error->exit("get_var_dict", "Unacceptable format");
+                    }
+
+                    key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
+                    val = boost::trim_copy(str_varval[1]);
+
+                    if (keyword_set.find(key) == keyword_set.end()) {
+                        std::cout << "Could not recognize the variable " << key << std::endl;
+                        error->exit("get_var_dict", "Invalid variable found");
+                    }
+
+                    if (var_dict.find(key) != var_dict.end()) {
+                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+                        error->exit("get_var_dict", "Redundant input parameter");
+                    }
+
+                    // If everything is OK, add the variable and the corresponding value
+                    // to the dictionary.
+
+                    var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
                 }
-
-                key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
-                val = boost::trim_copy(str_varval[1]);
-
-                if (keyword_set.find(key) == keyword_set.end()) {
-                    std::cout << "Could not recognize the variable " << key << std::endl;
-                    error->exit("get_var_dict", "Invalid variable found");
-                }
-
-                if (var_dict.find(key) != var_dict.end()) {
-                    std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
-                    error->exit("get_var_dict", "Redundant input parameter");
-                }
-
-                // If everything is OK, add the variable and the corresponding value
-                // to the dictionary.
-
-                var_dict.insert(std::map<std::string, std::string>::value_type(key, val));
             }
         }
     }
+
     keyword_set.clear();
 }
 
@@ -605,17 +740,35 @@ int Input::locate_tag(std::string key){
     int ret = 0;
     std::string line;
 
-    std::cin.clear();
-    std::cin.seekg(0, std::ios_base::beg);
+    if (from_stdin) {
+     
+        std::cin.clear();
+        std::cin.seekg(0, std::ios_base::beg);
 
-    while (std::cin >> line) {
-        boost::to_lower(line);
-        if (line == key){
-            ret = 1;
-            break;
+        while (std::cin >> line) {
+            boost::to_lower(line);
+            if (line == key){
+                ret = 1;
+                break;
+            }
         }
+        return ret;
+
+    } else {
+
+        ifs_input.clear();
+        ifs_input.seekg(0, std::ios_base::beg);
+
+        while (ifs_input >> line) {
+            boost::to_lower(line);
+            if (line == key) {
+                ret = 1;
+                break;
+            }
+        }
+        return ret;
     }
-    return ret;
+ 
 }
 
 bool Input::is_endof_entry(std::string str) {
