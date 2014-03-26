@@ -66,11 +66,15 @@ for filename in sys.stdin:
 ylabel("Frequency [cm${}^{-1}$]", fontsize=18)
 
 xmin, xmax, ymin, ymax= plt.axis()
+
+xmax = k[-1]
 ymin = float(sys.argv[1])
 ymax = float(sys.argv[2])
 plt.axis([ xmin, xmax, ymin, ymax ])
+
 plt.xticks(kpval, kpname, fontsize=18)
 plt.yticks(fontsize=14)
+
 plt.grid('on', which='major')
 
 legend(loc='lower right')
