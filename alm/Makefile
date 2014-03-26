@@ -8,14 +8,12 @@
 CXX = icpc 
 CXXFLAGS = -O2 -xHOST -openmp 
 #CXXFLAGS = -O2 -xHOST -openmp -D_USE_EIGEN
+INCLUDE = -I../include -I/home/stsune/tadano/include
 
 CXXL = ${CXX}
 LDFLAGS = -mkl
 
-INCLUDE = -I../include -I/home/stsune/tadano/include
-
 LAPACK = 
-
 LIBS = ${LAPACK}
 
 #-----------------------------------------------
