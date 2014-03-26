@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pointers.h"
+#include <fstream>
 #include <string>
 #include <map>
 #include <vector>
@@ -10,9 +11,12 @@ namespace ALM_NS {
     public:
         Input(class ALM *, int, char **);
         ~Input();
-        void parce_input();
+        void parce_input(int, char **);
 
     private:
+        std::ifstream ifs_input;
+        bool from_stdin;
+
         int locate_tag(std::string);
         void split_str_by_space(const std::string, std::vector<std::string>&);
         void parse_general_vars();
