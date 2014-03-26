@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
-#include <boost/algorithm/combination.hpp>
+#include "../external/combination.hpp"
 #include <boost/lexical_cast.hpp>
 #include "files.h"
 #include "interaction.h"

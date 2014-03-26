@@ -1,16 +1,33 @@
 .SUFFIXES: .h .cpp
+#-----------------------------------------------
+# Makefile for the program 'ALM'.
+# Please modify the variables properly.
+# We recommend to use Intel c++ compiler.
+#-----------------------------------------------
+
+CXX = icpc 
+CXXFLAGS = -O2 -xHOST -openmp 
+#CXXFLAGS = -O2 -xHOST -openmp -D_USE_EIGEN
+INCLUDE = -I../include -I/home/stsune/tadano/include
+
+CXXL = ${CXX}
+LDFLAGS = -mkl
+
+LAPACK = 
+LIBS = ${LAPACK}
+
+#-----------------------------------------------
+# General rules 
+#-----------------------------------------------
 
 .cpp.o:
-	${CXX} ${CXXFLAGS} -c $<
-
-CXX = icpc -I /home/stsune/tadano/include -I ../common
-CXXFLAGS = -O2 -xSSE4.1 -mkl -vec-report1 -openmp -openmp-report1  -D_USE_EIGEN -D_VSL
-LDFLAGS = -mkl
+	${CXX} ${CXXFLAGS} ${INCLUDE} -c $<
 
 PROG = alm
 
-CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp fitting.cpp input.cpp interaction.cpp \
-	main.cpp memory.cpp symmetry.cpp system.cpp ewald.cpp timer.cpp writes.cpp patterndisp.cpp
+CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp \
+	fitting.cpp input.cpp interaction.cpp main.cpp memory.cpp \
+	patterndisp.cpp symmetry.cpp system.cpp ewald.cpp timer.cpp writes.cpp 
 
 OBJS= ${CXXSRC:.cpp=.o}
 
@@ -19,7 +36,7 @@ default: alm
 all: ${PROG}
 
 alm: ${OBJS}
-	${CXX} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
+	${CXXL} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
 
 clean:
 	rm -f ${OBJS}

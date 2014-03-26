@@ -1,11 +1,26 @@
 .SUFFIXES: .h .cpp
+#-----------------------------------------------
+# Makefile for the program 'ALM'.
+# Please modify the variables properly.
+# We recommend to use Intel c++ compiler.
+#-----------------------------------------------
+
+MPICXX = mpicxx 
+CXXFLAGS = -O3 -xHOST -openmp 
+INCLUDE = -I../include -I/home/stsune/tadano/include
+
+LINKER = ${MPICXX}
+LDFLAGS = -mkl 
+
+LAPACK = 
+LIBS = ${LAPACK}
+
+#----------------------------------------------
+# General rules
+#----------------------------------------------
 
 .cpp.o:
-	${CXX} ${CXXFLAGS} -c $<
-
-CXX = mpicxx -I ~/include -I ../common
-CXXFLAGS = -O3 -xSSE3 -openmp -vec-report0 
-LDFLAGS = -mkl 
+	${MPICXX} ${CXXFLAGS} ${INCLUDE} -c $<
 
 PROG = phonons
 
@@ -23,7 +38,7 @@ default: phonons
 all: ${PROG}
 
 phonons: ${OBJS}
-	${CXX} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
+	${LINKER} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
 
 clean:
 	rm -f ${OBJS}
