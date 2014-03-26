@@ -2,7 +2,7 @@
 
 #include<vector>
 #include<set>
-#include<boost/algorithm/combination.hpp>
+#include "../external/combination.hpp"
 
 namespace ALM_NS
 {
