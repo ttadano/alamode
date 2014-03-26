@@ -94,10 +94,13 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
-    std::cout << "  ISOFACT = ";
-    for (i = 0; i < system->nkd; ++i) {
-        std::cout << std::scientific << std::setw(10) << isotope->isotope_factor[i];
+    if (isotope->include_isotope) {
+        std::cout << "  ISOFACT = ";
+        for (i = 0; i < system->nkd; ++i) {
+            std::cout << std::scientific << std::setw(10) << isotope->isotope_factor[i];
+        }
     }
+    
     std::cout << std::endl;
     std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
     std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
