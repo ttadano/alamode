@@ -1,3 +1,13 @@
+/*
+ phonons.cpp
+
+ Copyright (c) 2014 Terumasa Tadano
+
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
+*/
+
 #include "mpi_common.h"
 #include <iostream>
 #include "phonons.h"
@@ -144,7 +154,6 @@ void PHON::setup_base()
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical(mode);
-
 }
 
 void PHON::execute_phonons()
