@@ -3,7 +3,7 @@
 from pylab import *
 import sys
 import matplotlib.pyplot as plt
-#import numpy as np
+
 il= 0
 ip= 0
 color= ['b', 'g', 'r', 'm', 'k', 'c', 'y', 'r']
