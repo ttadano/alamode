@@ -34,7 +34,7 @@ ALM::ALM(int narg, char **arg)
 {
     std::cout << " +------------------------------------------------------------+" << std::endl;
     std::cout << " +                      Program ALM                           +" << std::endl;
-    std::cout << " +                           Ver. 0.4.1                       +" << std::endl;
+    std::cout << " +                           Ver. 0.9.0                       +" << std::endl;
     std::cout << " +------------------------------------------------------------+" << std::endl;
     std::cout << std::endl;
 
