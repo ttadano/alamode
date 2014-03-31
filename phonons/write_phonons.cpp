@@ -513,6 +513,25 @@ void Writes::write_phonon_dos()
     ofs_dos.open(file_dos.c_str(), std::ios::out);
     if(!ofs_dos) error->exit("write_phonon_dos", "cannot open file_dos");
 
+    ofs_dos << "#";
+    for (i = 0; i < system->nkd; ++i) {
+        ofs_dos << std::setw(5) << system->symbol_kd[i];
+    }
+    ofs_dos << std::endl;
+    ofs_dos << "#";
+
+    unsigned int *nat_each_kd;
+    memory->allocate(nat_each_kd, system->nkd);
+    for (i = 0; i < system->nkd; ++i) nat_each_kd[i] = 0;
+    for (i = 0; i < system->natmin; ++i) {
+        ++nat_each_kd[system->kd[system->map_p2s[i][0]]];
+    }
+    for (i = 0; i < system->nkd; ++i) {
+        ofs_dos << std::setw(5) << nat_each_kd[i];
+    }
+    ofs_dos << std::endl;
+    memory->deallocate(nat_each_kd);
+
     ofs_dos << "# Energy [cm^-1], TOTAL-DOS";
     if (dynamical->eigenvectors){
         ofs_dos << ", Atom Projected-DOS";   
