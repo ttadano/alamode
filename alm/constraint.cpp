@@ -316,7 +316,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     icol = 0;
 
     if(fix_harmonic){
-        system->load_reference_system();
+       //  system->load_reference_system();
+       system->load_reference_system_xml();
 
         irow += fcs->ndup[0].size();
         icol += fcs->ndup[0].size();

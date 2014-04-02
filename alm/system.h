@@ -23,6 +23,7 @@ namespace ALM_NS {
         void recips(double [3][3], double [3][3]);
         void frac2cart(double **);
         void load_reference_system();
+        void load_reference_system_xml();
 
         int nat, nkd;
         int ndata, nstart, nend, nskip;
@@ -32,15 +33,11 @@ namespace ALM_NS {
         double **x_cartesian;
         std::string *kdname;
 
-        int nat_s, nkd_s;
-        double lavec_s[3][3];
-        int *kd_s;
-        double **xcoord_s;
+
 
         unsigned int nclassatom;
         std::vector<unsigned int> *atomlist_class;
 
-        int *map_ref;
         double cell_volume;
 
     private:

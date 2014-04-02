@@ -21,6 +21,11 @@
 #include "fcs.h"
 #include "symmetry.h"
 #include "fitting.h"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace ALM_NS;
 
@@ -160,11 +165,109 @@ void System::frac2cart(double **xf)
 }
 
 
+void System::load_reference_system_xml()
+{
+    using namespace boost::property_tree;
+    ptree pt;
+
+    int nat_ref, natmin_ref, ntran_ref;
+    int **intpair_ref;
+    double *fc2_ref;
+
+    read_xml(constraint->fc2_file, pt);
+
+    if (boost::optional<std::string> str_entry = pt.get_optional<std::string>("Structure.NumberOfAtoms")) {
+        nat_ref = boost::lexical_cast<int>(str_entry.get());
+    } else {
+        error->exit("load_reference_system_xml", "<NumberOfAtoms> not found.");
+    }
+
+    if (boost::optional<std::string> str_entry = pt.get_optional<std::string>("Symmetry.NumberOfTranslations")) {
+        ntran_ref = boost::lexical_cast<int>(str_entry.get());
+    } else {
+        error->exit("load_reference_system_xml", "<NumberOfTranslations> not found.");
+    }
+
+    natmin_ref = nat_ref / ntran_ref;
+    if (natmin_ref != symmetry->natmin) {
+        error->exit("load_reference_system_xml", "The number of atoms in the primitive cell is not consistent.");
+    }
+
+    int nfc2_ref;
+    if (boost::optional<std::string> str_entry = pt.get_optional<std::string>("ForceConstants.HarmonicUnique.NFC2")) {
+        nfc2_ref = boost::lexical_cast<int>(str_entry.get());
+    } else {
+        error->exit("load_reference_system_xml", "<NFC2> not found.");
+    }
+
+    if (nfc2_ref != fcs->ndup[0].size()) {
+        error->exit("load_reference_system_xml", "The number of harmonic force constants is not the same.");
+    }
+
+    memory->allocate(intpair_ref, nfc2_ref, 2);
+    memory->allocate(fc2_ref, nfc2_ref);
+
+    int counter = 0;
+
+    BOOST_FOREACH (const ptree::value_type& child, pt.get_child("ForceConstants.HarmonicUnique")) {
+        if (child.first == "FC2") {
+            const ptree& child2 = child.second;
+            const std::string str_intpair = child2.get<std::string>("<xmlattr>.pairs");
+            const std::string str_multiplicity = child2.get<std::string>("<xmlattr>.multiplicity");
+
+            std::istringstream is(str_intpair);
+            is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
+            fc2_ref[counter] = boost::lexical_cast<double>(child2.data());
+            ++counter;
+        }
+    }
+
+    int i;
+    std::set<FcProperty> list_found;
+    std::set<FcProperty>::iterator iter_found;
+    int *ind;
+    memory->allocate(ind, 2);
+
+    list_found.clear();
+
+    for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p){
+        FcProperty list_tmp = *p; // Using copy constructor
+        for (i = 0; i < 2; ++i){
+            ind[i] = list_tmp.elems[i];
+        }
+        list_found.insert(FcProperty(2, list_tmp.coef, ind, list_tmp.mother));
+    }
+
+    for (i = 0; i < nfc2_ref; ++i){
+        constraint->const_mat[i][i] = 1.0;
+    }
+
+    for (i = 0; i < nfc2_ref; ++i){
+        iter_found = list_found.find(FcProperty(2, 1.0, intpair_ref[i], 1));
+        if(iter_found == list_found.end()) {
+            error->exit("load_reference_system", "Cannot find equivalent force constant, number: ", i + 1);
+        }
+        FcProperty arrtmp = *iter_found;
+        constraint->const_rhs[arrtmp.mother] = fc2_ref[i];
+    }
+
+    memory->deallocate(intpair_ref);
+    memory->deallocate(ind);
+    memory->deallocate(fc2_ref);
+    list_found.clear();
+}
+
 void System::load_reference_system()
 {
     int i;
     int iat, jat;
     int icrd;
+
+    int nat_s, nkd_s;
+    double lavec_s[3][3];
+    int *kd_s;
+    double **xcoord_s;
+    int *map_ref;
 
     std::ifstream ifs_fc2;
 
@@ -271,6 +374,8 @@ void System::load_reference_system()
     ifs_fc2.clear();
     ifs_fc2.seekg(0, std::ios_base::beg);
 
+    double *fc2_ref;
+
     bool is_found_fc2 = false;
 
     while(!ifs_fc2.eof() && !is_found_fc2)
@@ -287,11 +392,11 @@ void System::load_reference_system()
 
             is_found_fc2 = true;
 
-            memory->allocate(fitting->fc2_ref, nparam_harmonic);
+            memory->allocate(fc2_ref, nparam_harmonic);
             memory->allocate(intpair_tmp, nparam_harmonic, 2);
 
             for (i = 0; i < nparam_harmonic; ++i){
-                ifs_fc2 >> fitting->fc2_ref[i] >> intpair_tmp[i][0] >> intpair_tmp[i][1];
+                ifs_fc2 >> fc2_ref[i] >> intpair_tmp[i][0] >> intpair_tmp[i][1];
             }
 
             std::set<FcProperty> list_found;
@@ -319,11 +424,12 @@ void System::load_reference_system()
                     error->exit("load_reference_system", "Cannot find equivalent force constant, number: ", i + 1);
                 }
                 FcProperty arrtmp = *iter_found;
-                constraint->const_rhs[arrtmp.mother] = fitting->fc2_ref[i];
+                constraint->const_rhs[arrtmp.mother] = fc2_ref[i];
             }
 
             memory->deallocate(intpair_tmp);
             memory->deallocate(ind);
+            memory->deallocate(fc2_ref);
             list_found.clear();
         }
     }

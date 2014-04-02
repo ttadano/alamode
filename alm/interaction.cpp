@@ -41,6 +41,7 @@ Interaction::~Interaction() {
     memory->deallocate(relvec);
     memory->deallocate(nbody_include);
     memory->deallocate(pairs);
+    memory->deallocate(mindist_pairs);
 }
 
 void Interaction::init()

@@ -89,14 +89,7 @@ void Writes::write_input_vars()
 void Writes::writeall()
 {
     wrtfcs();
-
-    ofs_info.open(files->file_info.c_str(), std::ios::out);
-    if(!ofs_info) error->exit("writeall", "cannot open file_info");
-
-    wrtmisc();
     write_misc_xml();
-
-    ofs_info.close();
 }
 
 void Writes::wrtfcs()
@@ -247,6 +240,10 @@ void Writes::wrtmisc(){
     int ihead, order;
     unsigned int ui;
 
+
+    ofs_info.open(files->file_info.c_str(), std::ios::out);
+    if(!ofs_info) error->exit("writeall", "cannot open file_info");
+
     ofs_info << "##SYSTEM INFO" << std::endl;
     ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
     for (j = 0; j < 3; ++j){
@@ -309,7 +306,8 @@ void Writes::wrtmisc(){
                 for (m = 0; m < interaction->ninter[k][order]; ++m){
                     ofs_info << std::setw(6) << iat + 1 << std::setw(6) << interaction->intpairs[k][order][m] + 1;
                     for (i = 0; i < 3; ++i){
-                        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << interaction->relvec[k][order][m][i];
+                        ofs_info << std::scientific << std::setprecision(16) 
+                            << std::setw(25) << interaction->relvec[k][order][m][i];
                     }
                     ofs_info << std::endl;
                 }
@@ -338,7 +336,8 @@ void Writes::wrtmisc(){
                 for (k = 0; k < interaction->mindist_pairs[i][j].size(); ++k) {
                     ofs_info << std::setw(6) << iat + 1 << std::setw(6) << j + 1;
                     for (m = 0; m < 3; ++m) {
-                        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << interaction->mindist_pairs[i][j][k].relvec[m];
+                        ofs_info << std::scientific << std::setprecision(16) 
+                            << std::setw(25) << interaction->mindist_pairs[i][j][k].relvec[m];
                     }
                     ofs_info << std::endl;
                 }
@@ -356,7 +355,8 @@ void Writes::wrtmisc(){
                 for (m = 0; m < interaction->ninter[k][order]; ++m){
                     ofs_info << std::setw(6) << iat + 1 << std::setw(6) << interaction->intpairs[k][order][m] + 1;
                     for (i = 0; i < 3; ++i){
-                        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << interaction->relvec[k][order][m][i];
+                        ofs_info << std::scientific << std::setprecision(16) 
+                            << std::setw(25) << interaction->relvec[k][order][m][i];
                     }
                     ofs_info << std::endl;
                 }
@@ -381,7 +381,7 @@ void Writes::wrtmisc(){
     ofs_info << "All force constants and interaction info" << std::endl;
 
 
-    for(int order = 0; order < interaction->maxorder; ++order){
+    for (int order = 0; order < interaction->maxorder; ++order){
         ofs_info << "#FCS_" + interaction->str_order[order] << std::endl;
 
         int nelem = 0;
@@ -413,12 +413,14 @@ void Writes::wrtmisc(){
         ofs_info << std::endl;
 
         // This sorting is necessary for linking to molecular dynamics program.
-        std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
+        // std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
 
         for(std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it){
             FcProperty fctmp = *it;
             ip = fctmp.mother + ishift;
-            ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ip]*fctmp.coef << std::endl;
+            ofs_info << std::scientific << std::setprecision(16) 
+                << std::setw(25) << fitting->params[ip]*fctmp.coef << std::endl;
+            
             for(k = 0; k < order + 2; ++k){
                 ofs_info << std::setw(5) << fcs->easyvizint(fctmp.elems[k]);
             }
@@ -465,11 +467,14 @@ void Writes::wrtmisc(){
                 pair_tmp[k] = fctmp.elems[k] / 3;
             }
             j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-            for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
+            for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); 
+                it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
+                
                 ofs_info << std::setw(5) << j << std::setw(5) << fctmp.elems[0] % 3;
                 ofs_info << std::setw(8) << pair_tmp[1] << std::setw(5) <<  fctmp.elems[1] % 3;
                 ofs_info << std::setw(5) << (*it2).cell;
-                ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size()) << std::endl;
+                ofs_info << std::scientific << std::setprecision(16) << std::setw(25) 
+                    << fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size()) << std::endl;
             }
         }
 
@@ -477,6 +482,8 @@ void Writes::wrtmisc(){
 
     memory->deallocate(ncount);
     memory->deallocate(pair_tmp);
+
+    ofs_info.close();
 
     std::cout << " Information for post-process is stored to file: " << files->file_info << std::endl;
 }
@@ -605,7 +612,10 @@ void Writes::write_misc_xml()
 
     int ihead = 0;
     int k = 0;
-    int pair_tmp[2];
+    int nelem = interaction->maxorder + 1;
+    int *pair_tmp;
+
+    memory->allocate(pair_tmp, nelem);
 
     for (unsigned int ui = 0; ui < fcs->ndup[0].size(); ++ui){
         
@@ -616,15 +626,17 @@ void Writes::write_misc_xml()
 
         ptree &child = pt.add("ForceConstants.HarmonicUnique.FC2", double2string(fitting->params[k]));
         child.put("<xmlattr>.pairs", 
-            std::to_string(fcs->fc_set[0][ihead].elems[0])
-            + " " + std::to_string(fcs->fc_set[0][ihead].elems[1]));
+            boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[0])
+            + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
         child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[j][pair_tmp[1]].size());
        // std::cout << fcs->fc_set[0][ihead].coef << std::endl;
         ihead += fcs->ndup[0][ui];
         ++k;
     }
 
-    int ip;
+    int ip, ishift;
+
+    std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
 
     for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
         FcProperty fctmp = *it;
@@ -634,19 +646,64 @@ void Writes::write_misc_xml()
             pair_tmp[k] = fctmp.elems[k] / 3;
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
-            ptree &child = pt.add("ForceConstants.Harmonic.FC2", double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size())));
-            child.put("<xmlattr>.pair1", std::to_string(j + 1) + " " + std::to_string(fctmp.elems[0]%3 + 1));
-            child.put("<xmlattr>.pair2", std::to_string(pair_tmp[1] + 1) 
-                + " " + std::to_string(fctmp.elems[1]%3 + 1)
-                + " " + std::to_string((*it2).cell + 1));
+        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); 
+            it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
+            ptree &child = pt.add("ForceConstants.HARMONIC.FC2", 
+                double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size())));
+            
+            child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1) 
+                + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
+            child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(pair_tmp[1] + 1) 
+                + " " + boost::lexical_cast<std::string>(fctmp.elems[1]%3 + 1)
+                + " " + boost::lexical_cast<std::string>((*it2).cell + 1));
         }
+    }
+
+    ishift = fcs->ndup[0].size();
+
+    // Print anharmonic force constants to the xml file.
+    int order;
+    std::string elementname;
+    for (order = 1; order < interaction->maxorder; ++order) {
+
+        std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
+
+        for (std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it) {
+            FcProperty fctmp = *it;
+            ip = fctmp.mother + ishift;
+
+            for (k = 0; k < order + 2; ++k) {
+                pair_tmp[k] = fctmp.elems[k] / 3;
+            }
+            j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+
+            elementname = "ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2) 
+                + ".FC" + boost::lexical_cast<std::string>(order + 2);
+
+            ptree &child = pt.add(elementname, double2string(fitting->params[ip]*fctmp.coef));
+
+            child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
+                + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
+           
+            for (k = 1; k < order + 2; ++k) {
+                child.put("<xmlattr>.pair" + boost::lexical_cast<std::string>(k + 1),
+                    boost::lexical_cast<std::string>(pair_tmp[k] + 1) 
+                    + " " + boost::lexical_cast<std::string>(fctmp.elems[k]%3 + 1)
+                    // Append the cell index to which the interacting pair belongs.
+                    + " " + boost::lexical_cast<std::string>(interaction->mindist_pairs[j][pair_tmp[k]][0].cell + 1));
+            }
+        }
+        ishift += fcs->ndup[order].size();
     }
 
     using namespace boost::property_tree::xml_parser;
     const int indent = 2;
-    write_xml("test.xml", pt, std::locale(),
+
+    std::string file_xml = files->job_title + ".xml";
+    write_xml(file_xml, pt, std::locale(),
         xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+
+    std::cout << " Information for post-process is stored to file: " << file_xml << std::endl;
 }
 
 
@@ -655,7 +712,7 @@ std::string Writes::double2string(const double d){
     std::string rt;
     std::stringstream ss;
 
-    ss << std::scientific << std::setprecision(16) << d;
+    ss << std::scientific << std::setprecision(15) << d;
     ss >> rt;
     return rt;
 }
