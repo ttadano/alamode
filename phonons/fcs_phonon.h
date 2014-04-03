@@ -103,6 +103,9 @@ namespace PHON_NS {
         void load_fc2();
         void load_fcs();
         void load_fc2_ext();
+        void load_fc2_xml();
+        void load_fcs_xml();
+
         void examine_translational_invariance(const int, const unsigned int, const unsigned int,
             double *, std::vector<FcsClass> *);
 

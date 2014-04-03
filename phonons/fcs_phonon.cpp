@@ -19,14 +19,16 @@
 #include "relaxation.h"
 #include "constants.h"
 #include "gruneisen.h"
+#include "xml_parser.h"
 #include <string>
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
-
-#ifdef _USE_BOOST
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
-#endif
 
 using namespace PHON_NS;
 
@@ -91,10 +93,12 @@ void Fcs_phonon::setup(std::string mode)
         }
     }
 
-    if (mympi->my_rank == 0) load_fc2();
+     if (mympi->my_rank == 0) load_fc2();
 
     // This is not necessary
-    MPI_Bcast(&fc2[0][0][0][0], 9*natmin*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&fc2[0][0][0][0], 9*natmin*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+   //  if (mympi->my_rank == 0) load_fc2_xml();
 
     if (mympi->my_rank == 0) load_fc2_ext();
     MPI_Bcast(&is_fc2_ext, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
@@ -105,6 +109,7 @@ void Fcs_phonon::setup(std::string mode)
     if (mympi->my_rank == 0) {
         double *maxdev;
 
+       // load_fcs_xml();
         load_fcs();
 
         for (i = 0; i < maxorder; ++i){
@@ -127,6 +132,20 @@ void Fcs_phonon::setup(std::string mode)
     }
 
     MPI_Bcast_fc_class(maxorder);
+
+    for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
+        for (i = 0; i < 3; ++i) {
+            std::cout << " " << (*it).elems[i].atom;
+            std::cout << " " << (*it).elems[i].xyz;
+            std::cout << " " << (*it).elems[i].cell;
+            std::cout << "   ";
+        }
+        std::cout << (*it).fcs_val << std::endl;
+    }
+
+//     for (i = 0; i < force_constant[1].size(); ++i) {
+//         
+//     }
 
 }
 
@@ -172,6 +191,47 @@ void Fcs_phonon::load_fc2()
         }
     }
     ifs_fcs.close();
+}
+
+void Fcs_phonon::load_fc2_xml()
+{
+    using namespace boost::property_tree;
+
+    unsigned int atm1, atm2, xyz1, xyz2, cell_s;
+
+    ptree pt;
+    std::stringstream ss1, ss2;
+    FcsClassExtent fcext_tmp;
+
+    read_xml(file_fcs, pt);
+
+    fc2_ext.clear();
+
+    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("ForceConstants.HARMONIC")) {
+        const ptree& child = child_.second;
+        const std::string str_p1 = child.get<std::string>("<xmlattr>.pair1");
+        const std::string str_p2 = child.get<std::string>("<xmlattr>.pair2");
+
+        ss1.str("");
+        ss2.str("");
+        ss1.clear();
+        ss2.clear();
+
+        ss1 << str_p1;
+        ss2 << str_p2;
+
+        ss1 >> atm1 >> xyz1;
+        ss2 >> atm2 >> xyz2 >> cell_s;
+
+        fcext_tmp.atm1 = atm1 - 1;
+        fcext_tmp.xyz1 = xyz1 - 1;
+        fcext_tmp.atm2 = atm2 - 1;
+        fcext_tmp.xyz2 = xyz2 - 1;
+        fcext_tmp.cell_s = cell_s - 1;
+        fcext_tmp.fcs_val = boost::lexical_cast<double>(child.data());
+
+        fc2_ext.push_back(fcext_tmp);
+    }
 }
 
 void Fcs_phonon::load_fcs()
@@ -273,6 +333,85 @@ void Fcs_phonon::load_fcs()
     ifs_fcs.close();
 
     memory->deallocate(ind);
+    std::cout << "done !" << std::endl;
+}
+
+void Fcs_phonon::load_fcs_xml()
+{
+    using namespace boost::property_tree;
+    ptree pt;
+    unsigned int order;
+    std::string str_tag;
+    unsigned int i;
+    unsigned int atmn, xyz;
+
+    double fcs_val;
+
+    Triplet tri_tmp;
+    std::vector<unsigned int> ivec;
+    std::vector<Triplet> tri_vec;
+
+    std::stringstream ss;
+    std::string str_pairs;
+    std::string str_attr;
+
+    std::cout << "  Reading force constants from the info file ... ";
+
+    read_xml(file_fcs, pt);
+
+
+    for (order = 0; order < maxorder; ++order){
+
+        if (order == 0) {
+            str_tag = "ForceConstants.HARMONIC";
+        } else {
+            str_tag = "ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2);
+        }
+
+        boost::optional< ptree& > child_ = pt.get_child_optional(str_tag);
+
+        if (!child_) {
+            std::string str_tmp = str_tag + " flag not found in the XML file";
+             error->exit("load_fcs_xml", str_tmp.c_str());
+        }
+
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child(str_tag)) {
+            const ptree& child = child_.second;
+
+            fcs_val = boost::lexical_cast<double>(child.data());
+            ivec.clear();
+
+            for (i = 0; i < order + 2; ++i) {
+                str_attr = "<xmlattr>.pair" + boost::lexical_cast<std::string>(i + 1);
+                str_pairs = child.get<std::string>(str_attr);
+
+                ss.str("");
+                ss.clear();
+                ss << str_pairs;
+                ss >> atmn >> xyz;
+
+                ivec.push_back(3 * (atmn - 1) + xyz - 1);
+            }
+
+            if (std::abs(fcs_val) > eps) {
+                do {
+                    tri_vec.clear();
+
+                    for (i = 0; i < order + 2; ++i){
+                        tri_tmp.atom = system->map_s2p[ivec[i] / 3].atom_num;
+                        tri_tmp.cell = system->map_s2p[ivec[i] / 3].tran_num;
+                        tri_tmp.xyz  = ivec[i] % 3;
+
+                        tri_vec.push_back(tri_tmp);
+                    }
+
+                    force_constant[order].push_back(FcsClass(fcs_val, tri_vec));
+
+                } while (std::next_permutation(ivec.begin() + 1, ivec.end()));            
+            }
+        }
+    }
+
     std::cout << "done !" << std::endl;
 }
 

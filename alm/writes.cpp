@@ -89,6 +89,7 @@ void Writes::write_input_vars()
 void Writes::writeall()
 {
     wrtfcs();
+    wrtmisc();
     write_misc_xml();
 }
 
@@ -413,7 +414,7 @@ void Writes::wrtmisc(){
         ofs_info << std::endl;
 
         // This sorting is necessary for linking to molecular dynamics program.
-        // std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
+        std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
 
         for(std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it){
             FcProperty fctmp = *it;

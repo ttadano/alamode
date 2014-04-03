@@ -21,6 +21,7 @@
 #include "fcs.h"
 #include "symmetry.h"
 #include "fitting.h"
+#include "xml_parser.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
@@ -176,29 +177,17 @@ void System::load_reference_system_xml()
 
     read_xml(constraint->fc2_file, pt);
 
-    if (boost::optional<std::string> str_entry = pt.get_optional<std::string>("Structure.NumberOfAtoms")) {
-        nat_ref = boost::lexical_cast<int>(str_entry.get());
-    } else {
-        error->exit("load_reference_system_xml", "<NumberOfAtoms> not found.");
-    }
-
-    if (boost::optional<std::string> str_entry = pt.get_optional<std::string>("Symmetry.NumberOfTranslations")) {
-        ntran_ref = boost::lexical_cast<int>(str_entry.get());
-    } else {
-        error->exit("load_reference_system_xml", "<NumberOfTranslations> not found.");
-    }
-
+    nat_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Structure.NumberOfAtoms"));
+    ntran_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Symmetry.NumberOfTranslations"));
     natmin_ref = nat_ref / ntran_ref;
+
     if (natmin_ref != symmetry->natmin) {
         error->exit("load_reference_system_xml", "The number of atoms in the primitive cell is not consistent.");
     }
 
     int nfc2_ref;
-    if (boost::optional<std::string> str_entry = pt.get_optional<std::string>("ForceConstants.HarmonicUnique.NFC2")) {
-        nfc2_ref = boost::lexical_cast<int>(str_entry.get());
-    } else {
-        error->exit("load_reference_system_xml", "<NFC2> not found.");
-    }
+
+    nfc2_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "ForceConstants.HarmonicUnique.NFC2"));
 
     if (nfc2_ref != fcs->ndup[0].size()) {
         error->exit("load_reference_system_xml", "The number of harmonic force constants is not the same.");
@@ -209,15 +198,15 @@ void System::load_reference_system_xml()
 
     int counter = 0;
 
-    BOOST_FOREACH (const ptree::value_type& child, pt.get_child("ForceConstants.HarmonicUnique")) {
-        if (child.first == "FC2") {
-            const ptree& child2 = child.second;
-            const std::string str_intpair = child2.get<std::string>("<xmlattr>.pairs");
-            const std::string str_multiplicity = child2.get<std::string>("<xmlattr>.multiplicity");
+    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("ForceConstants.HarmonicUnique")) {
+        if (child_.first == "FC2") {
+            const ptree& child = child_.second;
+            const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
+            const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
 
             std::istringstream is(str_intpair);
             is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
-            fc2_ref[counter] = boost::lexical_cast<double>(child2.data());
+            fc2_ref[counter] = boost::lexical_cast<double>(child.data());
             ++counter;
         }
     }

@@ -19,6 +19,14 @@
 #include <iomanip>
 #include <fstream>
 #include "mathfunctions.h"
+#include "xml_parser.h"
+#include <sstream>
+#include <map>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
@@ -32,6 +40,7 @@ void System::setup()
 
     double **xtmp;
 
+   // load_system_info_xml();
     load_system_info();
 
     recips(lavec_s, rlavec_s);
@@ -131,7 +140,6 @@ void System::setup()
     MPI_Bcast(&cell_dimension[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-
     memory->allocate(kd_prim, natmin);
 
     for (i = 0; i < natmin; ++i) {
@@ -151,15 +159,20 @@ void System::load_system_info()
         std::string file_fcs = fcs_phonon->file_fcs;
         std::ifstream ifs_fcs;
 
+        bool flag_found = false;
+
         ifs_fcs.open(file_fcs.c_str(), std::ios::in);
         if(!ifs_fcs) error->exit("load_system_info", "cannot open file file_fcs");
 
         std::string str_tmp;
 
-        while(!ifs_fcs.eof())
+        while (!ifs_fcs.eof())
         {
             std::getline(ifs_fcs, str_tmp);
-            if(str_tmp == "##SYSTEM INFO"){
+
+            if (str_tmp == "##SYSTEM INFO"){
+
+                flag_found = true;
 
                 std::getline(ifs_fcs, str_tmp);
 
@@ -170,13 +183,10 @@ void System::load_system_info()
                 std::getline(ifs_fcs, str_tmp);
                 ifs_fcs >> nkd_tmp;
 
-                if (nkd != nkd_tmp) error->exit("load_system_info", "NKD in the info file is not consistent with that given in the input file.");
-                // 				memory->allocate(symbol_kd, nkd);
-                // 				memory->allocate(mass_kd, nkd);
-
-                // 				for (i = 0; i < nkd; ++i){
-                // 					ifs_fcs >> str_tmp >> symbol_kd[i] >> mass_kd[i];
-                // 				}
+                if (nkd != nkd_tmp) {
+                    error->exit("load_system_info", 
+                        "NKD in the info file is not consistent with that given in the input file.");
+                }
 
                 ifs_fcs.ignore();
                 std::getline(ifs_fcs, str_tmp);
@@ -202,6 +212,8 @@ void System::load_system_info()
             }
         }
         ifs_fcs.close();
+
+        if (!flag_found) error->exit("load_system_info", "##SYSTEM INFO tag not found.");
     }
 
     MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -232,6 +244,135 @@ void System::load_system_info()
     }
 
 }
+
+void System::load_system_info_xml()
+{
+    if (mympi->my_rank == 0) {
+ 
+        int i;
+        using namespace boost::property_tree;
+        ptree pt;
+        int nkd_tmp;
+
+        std::map<std::string, int> dict_atomic_kind;
+
+
+        read_xml(fcs_phonon->file_fcs, pt);
+
+        // Parse nat and ntran
+
+        nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Structure.NumberOfAtoms"));
+        nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Structure.NumberOfElements"));
+
+        if (nkd != nkd_tmp) error->exit("load_system_info", 
+            "NKD in the info file is not consistent with that given in the input file.");
+
+        ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Symmetry.NumberOfTranslations"));
+
+        natmin = nat / ntran;
+
+        // Parse lattice vectors
+
+        std::stringstream ss;
+
+        for (i = 0; i < 3; ++i) {
+            ss.str("");
+            ss.clear();
+            ss << get_value_from_xml(pt, 
+                "Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
+            ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
+        }
+
+        // Parse atomic elements and coordinates
+
+        memory->allocate(xr_s, nat, 3);
+        memory->allocate(kd, nat);
+        
+        unsigned int icount_kd = 0;
+
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Structure.AtomicElements")) {
+            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd++;
+        }
+
+        unsigned int index;
+
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Structure.Position")) {
+            const ptree& child = child_.second;
+            const std::string str_index = child.get<std::string>("<xmlattr>.index");
+            const std::string str_element = child.get<std::string>("<xmlattr>.element");
+
+            ss.str("");
+            ss.clear();
+            ss << child.data();
+
+            index = boost::lexical_cast<unsigned int>(str_index) - 1;
+
+            if (index >= nat) error->exit("load_system_info_xml", "index is out of range");
+
+            kd[index] = dict_atomic_kind[str_element];
+            ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
+        }
+
+        dict_atomic_kind.clear();
+
+        // Parse mapping information
+
+        memory->allocate(map_p2s, natmin, ntran);
+        memory->allocate(map_s2p, nat);
+
+        unsigned int tran, atom_p, atom_s;
+
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Symmetry.Translations")) {
+            const ptree& child = child_.second;
+            const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
+            const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
+
+            tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+            atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+            atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+
+            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                error->exit("load_system_info_xml", "index is out of range");
+            }
+
+            map_p2s[atom_p][tran] = atom_s;
+            map_s2p[atom_s].atom_num = atom_p;
+            map_s2p[atom_s].tran_num = tran;
+        }
+    }
+
+    MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&lavec_p[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    if (mympi->my_rank > 0){
+        memory->allocate(mass_kd, nkd);
+        memory->allocate(xr_s, nat, 3);
+        memory->allocate(kd, nat);
+        memory->allocate(map_p2s, natmin, ntran);
+        memory->allocate(map_s2p, nat);
+    }
+
+    MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+}
+
+// std::string System::get_value_from_xml(boost::property_tree::ptree pt_in, std::string str) 
+// {
+//     if (boost::optional<std::string> str_entry = pt_in.get_optional<std::string>(str)) {
+//         return str_entry.get();
+//     } else {
+//         error->exit("get_value_from_xml", 
+//             "Following entry is not found in the XML file : ", str.c_str());
+//     }
+// }
+
 
 void System::recips(double vec[3][3], double inverse[3][3])
 {
