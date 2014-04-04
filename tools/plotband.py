@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
 	for i in range(len(data_merged)):
 		plt.plot(data_merged[i][0:,0], data_merged[i][0:,1], 
-			linestyle=lsty[i], color=color[i], label=files[0])
+			linestyle=lsty[i], color=color[i], label=files[i])
 
 		for j in range(2, len(data_merged[i][0][0:])):
 			plt.plot(data_merged[i][0:,0], data_merged[i][0:,j], 
