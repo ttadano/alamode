@@ -408,7 +408,7 @@ void Interpolation::setup_damping()
         for (is = 0; is < ns; ++is) {
 
             for (i = 0; i < NT; ++i) {
-                damp[i][knum0][is] = conductivity->tau[ik * ns + is][i];
+                damp[i][knum0][is] = conductivity->damping3[ik * ns + is][i];
             }
         }
 

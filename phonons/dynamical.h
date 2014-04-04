@@ -46,11 +46,12 @@ namespace PHON_NS {
     private:
 
         void load_born();
-        // void calc_analytic_k(double *, double ****, std::complex<double> **);
         void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
         void calc_nonanalytic_k(double *, double *, double **);
         void modify_eigenvectors();
-        void modify_eigenvectors_sym();
+
+        // void calc_analytic_k(double *, double ****, std::complex<double> **);
+       // void modify_eigenvectors_sym();
 
         double **xshift_s;
         char UPLO;

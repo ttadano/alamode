@@ -136,8 +136,8 @@ void PHON::destroy_pointers()
     delete integration;
     delete phonon_velocity;
     delete phonon_thermodynamics;
-    //	delete relaxation;
-    //	delete selfenergy;
+    delete relaxation;
+    delete selfenergy;
     delete interpolation;
     delete conductivity;
     delete writes;
@@ -254,7 +254,7 @@ void PHON::execute_RTA()
     } else {
         conductivity->setup_kappa();
         conductivity->prepare_restart();
-        conductivity->calc_anharmonic_tau();
+        conductivity->calc_anharmonic_imagself();
         conductivity->compute_kappa();
         writes->write_kappa();
     }
@@ -273,6 +273,8 @@ void PHON::execute_RTA()
 
 void PHON::execute_interpolation()
 {
+    std::cout << " Sorry. This mode is not available." << std::endl;
+
     setup_base();
 
     dos->setup();
@@ -281,33 +283,5 @@ void PHON::execute_interpolation()
     interpolation->prepare_interpolation();
     interpolation->exec_interpolation();
     interpolation->finish_interpolation();
-
-    // 
-    // 		integration->setup_integration();
-    // 		relaxation->setup_relaxation();
 }
 
-// void PHON::execute_gruneisen()
-// {
-// 
-//     if (mympi->my_rank == 0) {
-//         std::cout << "                      MODE = Gruneisen                       " << std::endl;
-//         std::cout << "                                                             " << std::endl;
-//         std::cout << "             Calculation of Gruneisen parameters.            " << std::endl;
-//         std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
-//         std::cout << std::endl;
-//     }
-// 
-//     setup_base();
-// 
-//     dos->setup();
-//     dynamical->diagonalize_dynamical_all();
-// 
-//     if (mympi->my_rank == 0) {
-//         gruneisen->setup();
-//         gruneisen->calc_gruneisen();
-//         // gruneisen->calc_gruneisen2();
-//         writes->write_gruneisen();
-//         gruneisen->finish_gruneisen();
-//     }
-// }

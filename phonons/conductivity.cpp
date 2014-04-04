@@ -45,18 +45,19 @@ void Conductivity::setup_kappa()
 
     ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT);
     memory->allocate(Temperature, ntemp);
-    memory->allocate(tau_l, ntemp);
 
-    for (i = 0; i < ntemp; ++i) Temperature[i] = system->Tmin + static_cast<double>(i)*system->dT;
+    for (i = 0; i < ntemp; ++i) {
+        Temperature[i] = system->Tmin + static_cast<double>(i)*system->dT;
+    }
 
     nks_total = kpoint->nk_reduced * ns;
     nks_each_thread = nks_total / mympi->nprocs;
     nrem = nks_total - nks_each_thread * mympi->nprocs;
 
     if (nrem > 0) {
-        memory->allocate(tau, (nks_each_thread + 1)*mympi->nprocs, ntemp);
+        memory->allocate(damping3, (nks_each_thread + 1)*mympi->nprocs, ntemp);
     } else {
-        memory->allocate(tau, nks_total, ntemp);
+        memory->allocate(damping3, nks_total, ntemp);
     }
 
     if (mympi->my_rank == 0) {
@@ -72,15 +73,6 @@ void Conductivity::setup_kappa()
                 for (k = 0; k < 3; ++k) vel[i][j][k] *= Bohr_in_Angstrom*1.0e-10/time_ry;
             }
         }
-
-//         std::cout.setf(std::ios::fixed);
-//         std::cout << std::endl;
-//         std::cout << " Tmin = " << std::setw(10) << system->Tmin; 
-//         std::cout << " Tmax = " << std::setw(10) << system->Tmax; 
-//         std::cout << " dT   = " << std::setw(10) << system->dT; 
-//         std::cout << std::endl;
-// 
-//         std::cout.unsetf(std::ios::fixed);
 
         if (use_classical_Cv == 1) {
             std::cout << " CLASSICAL = 1 : Heat capacity will be replaced by kB (classical limit)" << std::endl;
@@ -117,10 +109,11 @@ void Conductivity::prepare_restart()
     vks_done.clear();
 
     if (mympi->my_rank == 0) {
+
         if (!phon->restart_flag) {
 
             writes->fs_result << "##Phonon Frequency" << std::endl;
-            writes->fs_result << "#K-point (Symmetrically reduced), Branch, Omega (cm^-1)" << std::endl;
+            writes->fs_result << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
 
             for (i = 0; i < kpoint->nk_reduced; ++i) {
                 ik = kpoint->kpoint_irred_all[i][0].knum;
@@ -137,7 +130,7 @@ void Conductivity::prepare_restart()
 
             while (writes->fs_result >> line_tmp) {
 
-                if (line_tmp == "#TAU_EACH") {
+                if (line_tmp == "#GAMMA_EACH") {
 
                     writes->fs_result >> nk_tmp >> ns_tmp;
                     writes->fs_result >> multiplicity;
@@ -149,7 +142,8 @@ void Conductivity::prepare_restart()
                     }
 
                     for (i = 0; i < ntemp; ++i) {
-                        writes->fs_result >> tau[nks_tmp][i];
+                        writes->fs_result >> damping3[nks_tmp][i];
+                        damping3[nks_tmp][i] *= time_ry / Hz_to_kayser;
                     }
                     vks_done.push_back(nks_tmp);
                 }
@@ -202,11 +196,11 @@ void Conductivity::finish_kappa()
         memory->deallocate(vel);
         memory->deallocate(kappa);
     }
-    memory->deallocate(tau);
+    memory->deallocate(damping3);
     memory->deallocate(Temperature);
 }
 
-void Conductivity::calc_anharmonic_tau()
+void Conductivity::calc_anharmonic_imagself()
 {
     unsigned int nks_g;
     unsigned int i, j, k;
@@ -218,6 +212,8 @@ void Conductivity::calc_anharmonic_tau()
     unsigned int ktmp;
 
     double omega, tau_tmp;
+    double *damping3_loc;
+
 
     // Distribute (k,s) to individual MPI threads
 
@@ -242,12 +238,12 @@ void Conductivity::calc_anharmonic_tau()
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " Start calculating anharmonic phonon self-energies" << std::endl;
-        std::cout << " Total Number of (k, s) pairs to be calculated : " << nks_g << std::endl;
-        std::cout << " Assigned number of (k, s) pairs for each MPI threads below" << std::endl;
+        std::cout << " Start calculating anharmonic phonon self-energies ... " << std::endl;
+        std::cout << " Total Number of phonon modes to be calculated : " << nks_g << std::endl;
+        std::cout << " All modes are distributed to MPI threads as the following :" << std::endl;
         for (i = 0; i < mympi->nprocs; ++i) {
             std::cout << " RANK: " << std::setw(5) << i + 1;
-            std::cout << std::setw(8) << "NKS: " << std::setw(5) << nks_thread[i] << std::endl;
+            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << std::endl;
         }
         std::cout << std::endl;
 
@@ -266,13 +262,16 @@ void Conductivity::calc_anharmonic_tau()
         vks_l.push_back(-1);
     }
 
+    memory->allocate(damping3_loc, ntemp);
+
+
     for (i = 0; i < nk_tmp; ++i) {
 
         iks = vks_l[i];
 
         if (iks == -1) {
 
-            for (j = 0; j < ntemp; ++j) tau_l[j] = 0.0; // do nothing
+            for (j = 0; j < ntemp; ++j) damping3_loc[j] = eps; // do nothing
 
         } else {
 
@@ -284,48 +283,55 @@ void Conductivity::calc_anharmonic_tau()
             if (integration->ismear == 0 || integration->ismear == 1) {
                 //		relaxation->calc_damping(ntemp, Temperature, omega, knum, snum, tau_l);
                 // relaxation->calc_damping_tune(ntemp, Temperature, omega, knum, snum, tau_l);
-                 relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, tau_l);
+                 relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, damping3_loc);
             } else if (integration->ismear == -1) {
-                relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, tau_l);
+                relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, damping3_loc);
             }
         }
 
-        MPI_Gather(&tau_l[0], ntemp, MPI_DOUBLE, tau[nshift_restart + i*mympi->nprocs], ntemp, MPI_DOUBLE, 0, MPI_COMM_WORLD);	
+        MPI_Gather(&damping3_loc[0], ntemp, MPI_DOUBLE, damping3[nshift_restart + i*mympi->nprocs], ntemp, MPI_DOUBLE, 0, MPI_COMM_WORLD);	
 
         if (mympi->my_rank == 0) {
-            for (j = 0; j < mympi->nprocs; ++j) {
-
-                iks_g = i*mympi->nprocs + j + nshift_restart;
-
-                if (iks_g >= kpoint->nk_reduced*ns) break;
-
-                writes->fs_result << "#TAU_EACH" << std::endl;
-                writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
-
-                nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
-
-                writes->fs_result << nk_equiv << std::endl;
-                for (k = 0; k < nk_equiv; ++k) {
-                    ktmp = kpoint->kpoint_irred_all[iks_g/ ns][k].knum;
-                    writes->fs_result << std::setw(15) << vel[ktmp][iks_g % ns][0];
-                    writes->fs_result << std::setw(15) << vel[ktmp][iks_g % ns][1];
-                    writes->fs_result << std::setw(15) << vel[ktmp][iks_g % ns][2] << std::endl;
-                }
-
-                for (k = 0; k < ntemp; ++k) {
-                    tau_tmp = tau[iks_g][k];
-                    if (std::abs(tau_tmp) < eps) {
-                        //	tau[iks_g][k] = 0.0; 
-                    } else {
-                        tau[iks_g][k] = time_ry * 1.0e+12 / (2.0 * tau_tmp);
-                    }
-                    writes->fs_result << std::setw(15) << tau[iks_g][k] << std::endl;
-                }
-                writes->fs_result << "#END TAU_EACH" << std::endl;
-            }
-            std::cout <<  " ELEMENT " << std::setw(5) << i + 1 << " done." << std::endl;
+            write_result_gamma(i, nshift_restart, vel, damping3);
+            std::cout <<  " MODE " << std::setw(5) << i + 1 << " done." << std::endl;
         }
     }
+
+    memory->deallocate(damping3_loc);
+}
+
+void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int nshift,
+                                      double ***vel_in, double **damp_in)
+{
+        unsigned int np = mympi->nprocs;
+        unsigned int j, k, iks_g;
+        unsigned int nk_equiv;
+        unsigned int ktmp;
+
+        for (j = 0; j < np; ++j) {
+
+            iks_g = ik * np + j + nshift;
+
+            if (iks_g >= kpoint->nk_reduced*ns) break;
+
+            writes->fs_result << "#GAMMA_EACH" << std::endl;
+            writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
+
+            nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
+
+            writes->fs_result << nk_equiv << std::endl;
+            for (k = 0; k < nk_equiv; ++k) {
+                ktmp = kpoint->kpoint_irred_all[iks_g/ ns][k].knum;
+                writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
+                writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
+                writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
+            }
+
+            for (k = 0; k < ntemp; ++k) {
+                writes->fs_result << std::setw(15) << damp_in[iks_g][k] *  Hz_to_kayser / time_ry << std::endl;
+            }
+            writes->fs_result << "#END GAMMA_EACH" << std::endl;
+        }
 }
 
 void Conductivity::compute_kappa()
@@ -345,7 +351,11 @@ void Conductivity::compute_kappa()
         double vv_tmp;
         int ieq;
 
-        average_self_energy_at_degenerate_point(kpoint->nk_reduced*ns, ntemp, tau);
+        double **lifetime;
+
+        memory->allocate(lifetime, kpoint->nk_reduced*ns, ntemp);
+
+        average_self_energy_at_degenerate_point(kpoint->nk_reduced*ns, ntemp, damping3);
 
         if (isotope->include_isotope) {
             for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
@@ -353,7 +363,13 @@ void Conductivity::compute_kappa()
                 snum = iks % ns;
 
                 for (i = 0; i < ntemp; ++i) {
-                    tau[iks][i] = 1.0 / (1.0 / tau[iks][i] + 2.0 * isotope->gamma_isotope[iks/ns][snum] * 1.0e-12 / time_ry);
+                    lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / (damping3[iks][i] +  isotope->gamma_isotope[iks/ns][snum]);
+                }
+            }
+        } else {
+            for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
+                for (i = 0; i < ntemp; ++i) {
+                    lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damping3[iks][i];
                 }
             }
         }
@@ -383,9 +399,9 @@ void Conductivity::compute_kappa()
                         }
 
                         if (use_classical_Cv == 1) {
-                            kappa[i][j][k] +=  phonon_thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * tau[iks][i];
+                            kappa[i][j][k] +=  phonon_thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
                         } else {
-                            kappa[i][j][k] +=  phonon_thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * tau[iks][i];
+                            kappa[i][j][k] +=  phonon_thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
                         }
                     }
                     // Convert to SI unit
@@ -393,11 +409,12 @@ void Conductivity::compute_kappa()
                 }
             }
         }
+        memory->deallocate(lifetime);
     }
 }
 
 
-void Conductivity::average_self_energy_at_degenerate_point(const int n, const int m, double **lifetime)
+void Conductivity::average_self_energy_at_degenerate_point(const int n, const int m, double **damping)
 {
     int i, j, k, l;
     int nkr = kpoint->nk_reduced;
@@ -438,13 +455,6 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n, const in
             }
         }
         degeneracy_at_k.push_back(ideg);
-// 
-//         std::cout << kpoint->xk[ik][0] << " " << kpoint->xk[ik][1] << " " << kpoint->xk[ik][2] << std::endl;
-//         for (j = 0; j < degeneracy_at_k.size(); ++j) {
-//             std::cout << degeneracy_at_k[j] << std::endl;
-//         }
-//         std::cout<< std::endl;
-
 
         is = 0;
         for (j = 0; j < degeneracy_at_k.size(); ++j) {
@@ -456,13 +466,13 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n, const in
 
                 for (k = is; k < is + ideg; ++k) {
                     for (l = 0; l < m; ++l) {
-                        damping_sum[l] += 1.0 / lifetime[ns * i + k][l];
+                        damping_sum[l] += damping[ns * i + k][l];
                     }
                 }
 
                 for (k = is; k < is + ideg; ++k) {
                     for (l = 0; l < m; ++l) {
-                        lifetime[ns * i + k][l] = static_cast<double>(ideg) / damping_sum[l];
+                        damping[ns * i + k][l] = damping_sum[l] / static_cast<double>(ideg);
                     }
                 }
             }
@@ -470,4 +480,6 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n, const in
             is += ideg;
         }
     }
+    memory->deallocate(damping_sum);
+
 }

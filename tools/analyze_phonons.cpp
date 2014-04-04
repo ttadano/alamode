@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	double vel_tmp[3];
+    double damp_tmp;
 
 	for (i = 0; i < nk; ++i) {
 		for (j = 0; j < ns; ++j) {
@@ -89,7 +90,8 @@ int main(int argc, char *argv[]) {
 			}
 
 			for (k = 0; k < nt; ++k) {
-				ifs >> tau[k][i][j];				
+				ifs >> damp_tmp;
+                tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
 			}
 			ifs.ignore();
 			getline(ifs,str);

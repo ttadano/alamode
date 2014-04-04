@@ -22,13 +22,13 @@ namespace PHON_NS {
         ~Conductivity();
         void setup_kappa();
         void prepare_restart();
-        void calc_anharmonic_tau();
+        void calc_anharmonic_imagself();
         void compute_kappa();
         void finish_kappa();
 
         int use_classical_Cv;
         unsigned int ntemp;
-        double **tau;
+        double **damping3;
         double ***kappa;
         double *Temperature;
 
@@ -36,10 +36,10 @@ namespace PHON_NS {
         double ***vel;
         unsigned int nk, ns;
         int nshift_restart;
-        double *tau_l;
         std::vector<int> vks, vks_l, vks_done;
         std::set<int> vks_job;
 
+        void write_result_gamma(const unsigned int, const unsigned int, double ***, double **);
         void average_self_energy_at_degenerate_point(const int, const int, double **);
     };
 }
