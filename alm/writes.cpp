@@ -571,8 +571,10 @@ void Writes::write_misc_xml()
     pt.put("Structure.NumberOfElements", system_structure.nspecies);
 
     for (i = 0; i < system_structure.nspecies; ++i) {
-        pt.put("Structure.AtomicElements.element", system->kdname[i]);
+      ptree &child = pt.add("Structure.AtomicElements.element", system->kdname[i]);
+      child.put("<xmlattr>.number", i + 1);
     }
+
     for (i = 0; i < 3; ++i) {
         str_pos[i].clear();
         for (j = 0; j < 3; ++j) {

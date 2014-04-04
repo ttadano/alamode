@@ -192,10 +192,10 @@ void System::load_system_info_from_XML()
         memory->allocate(xr_s, nat, 3);
         memory->allocate(kd, nat);
         
-        unsigned int icount_kd = 0;
-
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Structure.AtomicElements")) {
-            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd++;
+  	  const ptree& child = child_.second;
+	  const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+	  dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
         }
 
         unsigned int index;
