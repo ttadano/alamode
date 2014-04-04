@@ -603,12 +603,9 @@ void Dynamical::diagonalize_dynamical_all()
 
 #pragma omp parallel for private (is)
     for (ik = 0; ik < nk; ++ik){
-        if (fcs_phonon->is_fc2_ext) {
-            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
-        } else {
-            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2, eval_phonon[ik], evec_phonon[ik], require_evec);
-        }
-
+      
+        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
+       
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is){
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
@@ -973,8 +970,8 @@ void Dynamical::modify_eigenvectors_sym()
             knum_sym = kpoint->get_knum(Sk[0], Sk[1], Sk[2]);
             if (knum_sym == -1) error->exit("modify_eigenvectors_sym", "kpoint not found");
 
-            calc_analytic_k(k, fcs_phonon->fc2, dmat);
-            calc_analytic_k(Sk, fcs_phonon->fc2, dmat_sym);
+            calc_analytic_k(k, fcs_phonon->fc2_ext, dmat);
+            calc_analytic_k(Sk, fcs_phonon->fc2_ext, dmat_sym);
 
             //	std::cout << "#isym = " << std::setw(5) << isym << " ik -> ik_sym " << std::setw(5) << ik + 1 << std::setw(5) << knum_sym + 1;
             // 			for (i = 0; i < 3; ++i) std::cout << std::setw(15) << k[i];

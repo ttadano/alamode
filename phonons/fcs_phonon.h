@@ -89,7 +89,7 @@ namespace PHON_NS {
         void setup(std::string);
         unsigned int maxorder;
         std::string file_fcs;
-        double ****fc2;
+        // double ****fc2;
 
         std::vector<FcsClass> *force_constant;
         std::vector<FcsClassExtent> fc2_ext;
@@ -100,16 +100,16 @@ namespace PHON_NS {
         bool require_cubic;
         bool require_quartic;
 
-        void load_fc2();
-        void load_fcs();
-        void load_fc2_ext();
+       // void load_fc2();
+       // void load_fcs();
+       // void load_fc2_ext();
         void load_fc2_xml();
         void load_fcs_xml();
 
         void examine_translational_invariance(const int, const unsigned int, const unsigned int,
             double *, std::vector<FcsClass> *);
 
-        unsigned int coordinate_index(const char);
+     //   unsigned int coordinate_index(const char);
         void MPI_Bcast_fc_class(const unsigned int);
         void MPI_Bcast_fc2_ext();
     };

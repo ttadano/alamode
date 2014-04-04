@@ -689,11 +689,9 @@ void Interpolation::prepare_dymat_for_interpolation()
     memory->allocate(eigvec, nk_ref, ns, ns);
 
     for (ik = 0; ik < nk_ref; ++ik){
-        if (fcs_phonon->is_fc2_ext) {
+        
             dynamical->eval_k(xk_interpolate[ik], kvec_na_interpolate[ik], fcs_phonon->fc2_ext, eigval[ik], eigvec[ik], true);
-        } else {
-            dynamical->eval_k(xk_interpolate[ik], kvec_na_interpolate[ik], fcs_phonon->fc2, eigval[ik], eigvec[ik], true);
-        }
+        
 
         for (is = 0; is < ns; ++is){
             eigval[ik][is] = dynamical->freq(eigval[ik][is]);

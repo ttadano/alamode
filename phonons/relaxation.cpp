@@ -1644,7 +1644,7 @@ void Relaxation::compute_mode_tau()
             if (norm > eps) for (j = 0; j < 3; ++j) kvec[j] /= norm;
             for (j = 0; j < 3; ++j) xk1[j] = dynamical->fold(xk1[j]);
 
-            dynamical->eval_k(xk1, kvec, fcs_phonon->fc2, eval[0], evec[0], true);
+            dynamical->eval_k(xk1, kvec, fcs_phonon->fc2_ext, eval[0], evec[0], true);
             for (j = 0; j < ns; ++j) eval[0][j] = dynamical->freq(eval[0][j]);
 
 
@@ -1673,7 +1673,7 @@ void Relaxation::compute_mode_tau()
 
                     if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
 
-                    dynamical->eval_k(xk2, kvec, fcs_phonon->fc2, eval[1], evec[1], true);
+                    dynamical->eval_k(xk2, kvec, fcs_phonon->fc2_ext, eval[1], evec[1], true);
 
                     for (l = 0; l < 3; ++l) kvec[l] = xk3[l];
                     rotvec(kvec, kvec, system->rlavec_p, 'T');
@@ -1681,7 +1681,7 @@ void Relaxation::compute_mode_tau()
 
                     if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
 
-                    dynamical->eval_k(xk3, kvec, fcs_phonon->fc2, eval[2], evec[2], true);
+                    dynamical->eval_k(xk3, kvec, fcs_phonon->fc2_ext, eval[2], evec[2], true);
 
                     for (l = 0; l < ns; ++l) {
                         eval[1][l] = dynamical->freq(eval[1][l]);

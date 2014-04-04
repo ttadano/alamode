@@ -40,8 +40,8 @@ void System::setup()
 
     double **xtmp;
 
-   // load_system_info_xml();
-    load_system_info();
+    load_system_info_xml();
+  //  load_system_info();
 
     recips(lavec_s, rlavec_s);
     recips(lavec_p, rlavec_p);

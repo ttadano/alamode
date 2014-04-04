@@ -112,11 +112,8 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
             rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p, 'T');
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
-            if (fcs_phonon->is_fc2_ext) {
                 dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
-            } else {
-                dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik], fcs_phonon->fc2, omega_shift[idiff], evec_tmp, false); 
-            }
+
         }
 
         for (i = 0; i < n; ++i){
@@ -217,11 +214,9 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
         }
 
         for (idiff = 0; idiff < ndiff; ++idiff) {
-            if (fcs_phonon->is_fc2_ext) {
+           
                 dynamical->eval_k(xk_shift[idiff], kvec_na_tmp[0], fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
-            } else {
-                dynamical->eval_k(xk_shift[idiff], kvec_na_tmp[1], fcs_phonon->fc2, omega_shift[idiff], evec_tmp, false);
-            }
+           
         }
 
         for (j = 0; j < n; ++j) {

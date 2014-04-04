@@ -89,15 +89,10 @@ void Gruneisen::calc_gruneisen()
 
         for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[ik][i];
 
-        if (fcs_phonon->is_fc2_ext) {
             dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
             dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
             dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
-        } else {
-            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fcs_phonon->fc2, eval_orig, evec_tmp, false);
-            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus, eval_plus[ik], evec_tmp, false);
-            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus, eval_minus[ik], evec_tmp, false);
-        }
+      
 
 
         for (is = 0; is < ns; ++is) {
@@ -160,13 +155,9 @@ void Gruneisen::finish_gruneisen()
     if (print_gruneisen || print_newfcs) {
         memory->deallocate(dfc2);
 
-        if (fcs_phonon->is_fc2_ext) {
             fc2_plus_ext.clear();
             fc2_minus_ext.clear();
-        } else {
-            memory->deallocate(fc2_plus);
-            memory->deallocate(fc2_minus);
-        }
+        
     }
 }
 
@@ -250,7 +241,7 @@ void Gruneisen::prepare_newfc2()
     double dfc2_tmp;
     FcsClassExtent dfc2_ext_tmp;
 
-    if (fcs_phonon->is_fc2_ext) {
+  //  if (fcs_phonon->is_fc2_ext) {
         fc2_plus_ext.clear();
         fc2_minus_ext.clear();
 
@@ -317,21 +308,21 @@ void Gruneisen::prepare_newfc2()
             }
         }
 
-    } else {
-        memory->allocate(fc2_plus, system->natmin, system->nat, 3, 3);
-        memory->allocate(fc2_minus, system->natmin, system->nat, 3, 3);
-
-        for (iat = 0; iat < natmin; ++iat){
-            for (jat = 0; jat < nat; ++jat){
-                for (icrd = 0; icrd < 3; ++icrd){
-                    for (jcrd = 0; jcrd < 3; ++jcrd){
-                        fc2_plus[iat][jat][icrd][jcrd]  = fcs_phonon->fc2[iat][jat][icrd][jcrd] + delta_a * dfc2[iat][jat][icrd][jcrd];
-                        fc2_minus[iat][jat][icrd][jcrd] = fcs_phonon->fc2[iat][jat][icrd][jcrd] - delta_a * dfc2[iat][jat][icrd][jcrd];
-                    }
-                }
-            }
-        }
-    }
+//     } else {
+//         memory->allocate(fc2_plus, system->natmin, system->nat, 3, 3);
+//         memory->allocate(fc2_minus, system->natmin, system->nat, 3, 3);
+// 
+//         for (iat = 0; iat < natmin; ++iat){
+//             for (jat = 0; jat < nat; ++jat){
+//                 for (icrd = 0; icrd < 3; ++icrd){
+//                     for (jcrd = 0; jcrd < 3; ++jcrd){
+//                         fc2_plus[iat][jat][icrd][jcrd]  = fcs_phonon->fc2[iat][jat][icrd][jcrd] + delta_a * dfc2[iat][jat][icrd][jcrd];
+//                         fc2_minus[iat][jat][icrd][jcrd] = fcs_phonon->fc2[iat][jat][icrd][jcrd] - delta_a * dfc2[iat][jat][icrd][jcrd];
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
 
 
@@ -962,57 +953,57 @@ void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const doub
 }
 
 
-void Gruneisen::calc_pressure()
-{
-    // Test function for calculating P
-
-    int i, j, k;
-    int icrd, jcrd;
-    int itran;
-    int natmin = system->natmin;
-    int nat = system->nat;
-
-    int atom0, atom1;
-
-    double R1[3], R2[3];
-    double volume;
-    double pressure;
-    double sum = 0.0;
-
-    for (itran = 0; itran < system->ntran; ++itran) {
-
-        for (i = 0; i < natmin; ++i) {
-            atom0 = system->map_p2s[i][0];
-            atom1 = system->map_p2s[i][itran];
-
-            for (k = 0; k < 3; ++k) R1[k] = system->xr_s[atom1][k];
-
-            rotvec(R1, R1, system->lavec_s);
-
-            for (j = 0; j < nat; ++j) {
-
-                for (k = 0; k < 3; ++k) {
-                    R2[k] = system->xr_s[j][k];
-                    R2[k] += system->xr_s[atom1][k] - system->xr_s[atom0][k];
-                    if (R2[k] >= 1.0) R2[k] -= 1.0;
-                }
-                rotvec(R2, R2, system->lavec_s);
-
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    for (jcrd = 0; jcrd < 3; ++jcrd) {
-                        sum += fcs_phonon->fc2[i][j][icrd][jcrd] * R1[icrd] * R2[jcrd];
-                    }
-                }
-            }
-
-        }
-    }
-
-    volume = system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30 * static_cast<double>(system->ntran);
-    sum *= Ryd;
-    pressure = - delta_a * sum / (3.0 * volume) * 1.0e-9;
-
-    std::cout << "Pressure (GPa) = " << pressure << std::endl;
-    std::cout << "Bulk Modulus (GPa) = " << sum / (9.0 * volume) * 1.0e-9 << std::endl;
-}
+// void Gruneisen::calc_pressure()
+// {
+//     // Test function for calculating P
+// 
+//     int i, j, k;
+//     int icrd, jcrd;
+//     int itran;
+//     int natmin = system->natmin;
+//     int nat = system->nat;
+// 
+//     int atom0, atom1;
+// 
+//     double R1[3], R2[3];
+//     double volume;
+//     double pressure;
+//     double sum = 0.0;
+// 
+//     for (itran = 0; itran < system->ntran; ++itran) {
+// 
+//         for (i = 0; i < natmin; ++i) {
+//             atom0 = system->map_p2s[i][0];
+//             atom1 = system->map_p2s[i][itran];
+// 
+//             for (k = 0; k < 3; ++k) R1[k] = system->xr_s[atom1][k];
+// 
+//             rotvec(R1, R1, system->lavec_s);
+// 
+//             for (j = 0; j < nat; ++j) {
+// 
+//                 for (k = 0; k < 3; ++k) {
+//                     R2[k] = system->xr_s[j][k];
+//                     R2[k] += system->xr_s[atom1][k] - system->xr_s[atom0][k];
+//                     if (R2[k] >= 1.0) R2[k] -= 1.0;
+//                 }
+//                 rotvec(R2, R2, system->lavec_s);
+// 
+//                 for (icrd = 0; icrd < 3; ++icrd) {
+//                     for (jcrd = 0; jcrd < 3; ++jcrd) {
+//                         sum += fcs_phonon->fc2[i][j][icrd][jcrd] * R1[icrd] * R2[jcrd];
+//                     }
+//                 }
+//             }
+// 
+//         }
+//     }
+// 
+//     volume = system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30 * static_cast<double>(system->ntran);
+//     sum *= Ryd;
+//     pressure = - delta_a * sum / (3.0 * volume) * 1.0e-9;
+// 
+//     std::cout << "Pressure (GPa) = " << pressure << std::endl;
+//     std::cout << "Bulk Modulus (GPa) = " << sum / (9.0 * volume) * 1.0e-9 << std::endl;
+// }
 
