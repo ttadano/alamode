@@ -58,7 +58,7 @@ namespace ALM_NS{
 
     private:
         void wrtfcs();
-        void wrtmisc();
+      //  void wrtmisc();
         void write_misc_xml();
 
         std::ofstream ofs_info;

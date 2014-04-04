@@ -89,7 +89,6 @@ void Writes::write_input_vars()
 void Writes::writeall()
 {
     wrtfcs();
-    wrtmisc();
     write_misc_xml();
 }
 
@@ -231,263 +230,263 @@ void Writes::wrtfcs()
     std::cout << std::endl << " Force constants are written to file: " << files->file_fcs << std::endl;
 }
 
-void Writes::wrtmisc(){
-
-    // Write miscellaneous information to file_info 
-    // for subsequent calculations (phonons, md, alm)
-
-    int i, j, k, m;
-    int iat;
-    int ihead, order;
-    unsigned int ui;
-
-
-    ofs_info.open(files->file_info.c_str(), std::ios::out);
-    if(!ofs_info) error->exit("writeall", "cannot open file_info");
-
-    ofs_info << "##SYSTEM INFO" << std::endl;
-    ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
-    for (j = 0; j < 3; ++j){
-        for(i = 0; i < 3; ++i){
-            ofs_info <<  std::setw(25) << std::setprecision(16) << system->lavec[i][j]; // Be careful to the transpose of (i,j)
-        }
-        ofs_info << std::endl;
-    }
-
-    ofs_info << "Atomic Species" << std::endl;
-    ofs_info << std::setw(6) << system->nkd << std::endl;
-
-    for(i = 0; i < system->nkd; ++i){
-        ofs_info << std::setw(5) << system->kdname[i];
-    }
-    ofs_info << std::endl;
-    ofs_info << "Translational Symmetry Information" << std::endl;
-    ofs_info << std::setw(6) << system->nat << std::setw(6) << symmetry->natmin << std::setw(6) << symmetry->ntran << std::endl;
-    ofs_info << std::setw(11) << "'Atoms'" << std::setw(11) << "'Species'" 
-        << std::setw(75) <<  "'Atomic Coordinates (Fractional)'                      " 
-        << std::setw(15) << "'TRANSLATION'" << std::setw(15) << "'INDEX IN THE CELL'" << std::endl;
-    for(i = 0; i < system->nat; ++i){
-        ofs_info << std::setw(11) << i + 1 << std::setw(11) << system->kd[i];
-        for(j = 0; j < 3; ++j){
-            ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << system->xcoord[i][j];
-        }
-        ofs_info << std::setw(15) << symmetry->map_s2p[i].tran_num + 1 
-            << std::setw(15) << symmetry->map_s2p[i].atom_num + 1 << std::endl;
-    }
-
-    ofs_info << "##HARMONIC FORCE CONSTANTS" << std::endl;
-    ofs_info << fcs->ndup[0].size() << std::endl;
-
-
-    ihead = 0;
-    k = 0;
-    for (ui = 0; ui < fcs->ndup[0].size(); ++ui){
-
-        ofs_info << std::scientific << std::setprecision(16) << std::setw(25) <<  fitting->params[k];
-        for (i = 0; i < 2; ++i){
-            ofs_info << std::setw(7) << fcs->fc_set[0][ihead].elems[i];    
-        }
-        ofs_info << std::endl;
-        ihead += fcs->ndup[0][ui];
-        ++k;
-    }
-
-    ofs_info << "##INTERACTION LISTS" << std::endl;
-    ofs_info << "Interaction List and Reference Vectors(Cartesian) for each order" << std::endl;
-
-    if (interaction->interaction_type == 0 || interaction->interaction_type == 2) {
-        for (order = 0; order < interaction->maxorder; ++order){
-            ofs_info << "#LIST_" + interaction->str_order[order] << std::endl;
-
-            for (k = 0; k < symmetry->natmin; ++k) ofs_info << std::setw(6) << interaction->ninter[k][order];
-            ofs_info << std::endl;
-
-            for (k = 0; k < symmetry->natmin; ++k){
-                iat = symmetry->map_p2s[k][0];
-                for (m = 0; m < interaction->ninter[k][order]; ++m){
-                    ofs_info << std::setw(6) << iat + 1 << std::setw(6) << interaction->intpairs[k][order][m] + 1;
-                    for (i = 0; i < 3; ++i){
-                        ofs_info << std::scientific << std::setprecision(16) 
-                            << std::setw(25) << interaction->relvec[k][order][m][i];
-                    }
-                    ofs_info << std::endl;
-                }
-            }
-        }
-    } else if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
-
-        // Special treatment for harmonic terms
-
-        int ninter_tmp;
-        ninter_tmp = 0;
-        ofs_info << "#LIST_HARMONIC" << std::endl;
-
-        for (i = 0; i < symmetry->natmin; ++i) {
-            ninter_tmp = 0;
-            for (j = 0; j < system->nat; ++j) {
-                ninter_tmp += interaction->mindist_pairs[i][j].size();
-            }
-            ofs_info << std::setw(6) << ninter_tmp;
-        }
-        ofs_info << std::endl;
-
-        for (i = 0; i < symmetry->natmin; ++i) {
-            iat = symmetry->map_p2s[i][0];
-            for (j = 0; j < system->nat; ++j) {
-                for (k = 0; k < interaction->mindist_pairs[i][j].size(); ++k) {
-                    ofs_info << std::setw(6) << iat + 1 << std::setw(6) << j + 1;
-                    for (m = 0; m < 3; ++m) {
-                        ofs_info << std::scientific << std::setprecision(16) 
-                            << std::setw(25) << interaction->mindist_pairs[i][j][k].relvec[m];
-                    }
-                    ofs_info << std::endl;
-                }
-            }
-        }
-
-        for (order = 1; order < interaction->maxorder; ++order){
-            ofs_info << "#LIST_" + interaction->str_order[order] << std::endl;
-
-            for (k = 0; k < symmetry->natmin; ++k) ofs_info << std::setw(6) << interaction->ninter[k][order];
-            ofs_info << std::endl;
-
-            for (k = 0; k < symmetry->natmin; ++k){
-                iat = symmetry->map_p2s[k][0];
-                for (m = 0; m < interaction->ninter[k][order]; ++m){
-                    ofs_info << std::setw(6) << iat + 1 << std::setw(6) << interaction->intpairs[k][order][m] + 1;
-                    for (i = 0; i < 3; ++i){
-                        ofs_info << std::scientific << std::setprecision(16) 
-                            << std::setw(25) << interaction->relvec[k][order][m][i];
-                    }
-                    ofs_info << std::endl;
-                }
-            }
-        }
-    } else {
-        error->exit("wrtmisc", "This cannot happen.");
-    }
-
-    int *ncount;
-    int ind_tmp;
-    int id;
-
-    int ip = 0;
-    int ishift = 0;
-    int *pair_tmp;
-
-    memory->allocate(ncount, 3*symmetry->natmin);
-    memory->allocate(pair_tmp, interaction->maxorder + 1);
-
-    ofs_info << "##FORCE CONSTANTS" << std::endl;
-    ofs_info << "All force constants and interaction info" << std::endl;
-
-
-    for (int order = 0; order < interaction->maxorder; ++order){
-        ofs_info << "#FCS_" + interaction->str_order[order] << std::endl;
-
-        int nelem = 0;
-        for(std::vector<int>::iterator it = fcs->ndup[order].begin(); it != fcs->ndup[order].end(); ++it){
-            nelem += *it;
-        }
-        ofs_info << std::setw(10) << nelem << std::endl;
-
-        for(i = 0; i < 3*symmetry->natmin; ++i) ncount[i] = 0;
-
-        id = 0;
-
-        for(ui = 0; ui < fcs->ndup[order].size(); ++ui){
-            for(j = 0; j < fcs->ndup[order][ui]; ++j){
-                ind_tmp = fcs->fc_set[order][id].elems[0];
-                for(k = 0; k < symmetry->natmin; ++k){
-                    if(ind_tmp / 3 == symmetry->map_p2s[k][0]) {
-                        ++ncount[3 * k + ind_tmp % 3];
-                        break;
-                    }
-                }
-                ++id;
-            }
-        }
-
-        for(i = 0; i < 3*symmetry->natmin; ++i){
-            ofs_info << std::setw(6) << ncount[i];
-        }
-        ofs_info << std::endl;
-
-        // This sorting is necessary for linking to molecular dynamics program.
-        std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
-
-        for(std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it){
-            FcProperty fctmp = *it;
-            ip = fctmp.mother + ishift;
-            ofs_info << std::scientific << std::setprecision(16) 
-                << std::setw(25) << fitting->params[ip]*fctmp.coef << std::endl;
-            
-            for(k = 0; k < order + 2; ++k){
-                ofs_info << std::setw(5) << fcs->easyvizint(fctmp.elems[k]);
-            }
-            ofs_info << std::endl;
-        }
-
-        ishift += fcs->ndup[order].size();
-    }
-
-    if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
-
-        ofs_info << "#FCS_HARMONIC_EXT" << std::endl;
-
-        for (i = 0; i < 3*symmetry->natmin; ++i) ncount[i] = 0;
-
-        for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
-            FcProperty fctmp = *it;
-
-            for (k = 0; k < 2; ++k) {
-                pair_tmp[k] = fctmp.elems[k] / 3;
-            }
-            j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-            ncount[3 * j + fctmp.elems[0] % 3] += interaction->mindist_pairs[j][pair_tmp[1]].size();
-        }
-
-
-        int nelem = 0;
-        for (i = 0; i < 3*symmetry->natmin; ++i) nelem += ncount[i];
-
-        ofs_info << std::setw(10) << nelem << std::endl;
-
-
-        for(i = 0; i < 3*symmetry->natmin; ++i){
-            ofs_info << std::setw(6) << ncount[i];
-        }
-        ofs_info << std::endl;
-
-
-        for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
-            FcProperty fctmp = *it;
-            ip = fctmp.mother;
-
-            for (k = 0; k < 2; ++k) {
-                pair_tmp[k] = fctmp.elems[k] / 3;
-            }
-            j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-            for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); 
-                it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
-                
-                ofs_info << std::setw(5) << j << std::setw(5) << fctmp.elems[0] % 3;
-                ofs_info << std::setw(8) << pair_tmp[1] << std::setw(5) <<  fctmp.elems[1] % 3;
-                ofs_info << std::setw(5) << (*it2).cell;
-                ofs_info << std::scientific << std::setprecision(16) << std::setw(25) 
-                    << fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size()) << std::endl;
-            }
-        }
-
-    }
-
-    memory->deallocate(ncount);
-    memory->deallocate(pair_tmp);
-
-    ofs_info.close();
-
-    std::cout << " Information for post-process is stored to file: " << files->file_info << std::endl;
-}
+// void Writes::wrtmisc(){
+// 
+//     // Write miscellaneous information to file_info 
+//     // for subsequent calculations (phonons, md, alm)
+// 
+//     int i, j, k, m;
+//     int iat;
+//     int ihead, order;
+//     unsigned int ui;
+// 
+// 
+//     ofs_info.open(files->file_info.c_str(), std::ios::out);
+//     if(!ofs_info) error->exit("writeall", "cannot open file_info");
+// 
+//     ofs_info << "##SYSTEM INFO" << std::endl;
+//     ofs_info << "Lattice Vector (in Bohr unit)" << std::endl;
+//     for (j = 0; j < 3; ++j){
+//         for(i = 0; i < 3; ++i){
+//             ofs_info <<  std::setw(25) << std::setprecision(16) << system->lavec[i][j]; // Be careful to the transpose of (i,j)
+//         }
+//         ofs_info << std::endl;
+//     }
+// 
+//     ofs_info << "Atomic Species" << std::endl;
+//     ofs_info << std::setw(6) << system->nkd << std::endl;
+// 
+//     for(i = 0; i < system->nkd; ++i){
+//         ofs_info << std::setw(5) << system->kdname[i];
+//     }
+//     ofs_info << std::endl;
+//     ofs_info << "Translational Symmetry Information" << std::endl;
+//     ofs_info << std::setw(6) << system->nat << std::setw(6) << symmetry->natmin << std::setw(6) << symmetry->ntran << std::endl;
+//     ofs_info << std::setw(11) << "'Atoms'" << std::setw(11) << "'Species'" 
+//         << std::setw(75) <<  "'Atomic Coordinates (Fractional)'                      " 
+//         << std::setw(15) << "'TRANSLATION'" << std::setw(15) << "'INDEX IN THE CELL'" << std::endl;
+//     for(i = 0; i < system->nat; ++i){
+//         ofs_info << std::setw(11) << i + 1 << std::setw(11) << system->kd[i];
+//         for(j = 0; j < 3; ++j){
+//             ofs_info << std::scientific << std::setprecision(16) << std::setw(25) << system->xcoord[i][j];
+//         }
+//         ofs_info << std::setw(15) << symmetry->map_s2p[i].tran_num + 1 
+//             << std::setw(15) << symmetry->map_s2p[i].atom_num + 1 << std::endl;
+//     }
+// 
+//     ofs_info << "##HARMONIC FORCE CONSTANTS" << std::endl;
+//     ofs_info << fcs->ndup[0].size() << std::endl;
+// 
+// 
+//     ihead = 0;
+//     k = 0;
+//     for (ui = 0; ui < fcs->ndup[0].size(); ++ui){
+// 
+//         ofs_info << std::scientific << std::setprecision(16) << std::setw(25) <<  fitting->params[k];
+//         for (i = 0; i < 2; ++i){
+//             ofs_info << std::setw(7) << fcs->fc_set[0][ihead].elems[i];    
+//         }
+//         ofs_info << std::endl;
+//         ihead += fcs->ndup[0][ui];
+//         ++k;
+//     }
+// 
+//     ofs_info << "##INTERACTION LISTS" << std::endl;
+//     ofs_info << "Interaction List and Reference Vectors(Cartesian) for each order" << std::endl;
+// 
+//     if (interaction->interaction_type == 0 || interaction->interaction_type == 2) {
+//         for (order = 0; order < interaction->maxorder; ++order){
+//             ofs_info << "#LIST_" + interaction->str_order[order] << std::endl;
+// 
+//             for (k = 0; k < symmetry->natmin; ++k) ofs_info << std::setw(6) << interaction->ninter[k][order];
+//             ofs_info << std::endl;
+// 
+//             for (k = 0; k < symmetry->natmin; ++k){
+//                 iat = symmetry->map_p2s[k][0];
+//                 for (m = 0; m < interaction->ninter[k][order]; ++m){
+//                     ofs_info << std::setw(6) << iat + 1 << std::setw(6) << interaction->intpairs[k][order][m] + 1;
+//                     for (i = 0; i < 3; ++i){
+//                         ofs_info << std::scientific << std::setprecision(16) 
+//                             << std::setw(25) << interaction->relvec[k][order][m][i];
+//                     }
+//                     ofs_info << std::endl;
+//                 }
+//             }
+//         }
+//     } else if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
+// 
+//         // Special treatment for harmonic terms
+// 
+//         int ninter_tmp;
+//         ninter_tmp = 0;
+//         ofs_info << "#LIST_HARMONIC" << std::endl;
+// 
+//         for (i = 0; i < symmetry->natmin; ++i) {
+//             ninter_tmp = 0;
+//             for (j = 0; j < system->nat; ++j) {
+//                 ninter_tmp += interaction->mindist_pairs[i][j].size();
+//             }
+//             ofs_info << std::setw(6) << ninter_tmp;
+//         }
+//         ofs_info << std::endl;
+// 
+//         for (i = 0; i < symmetry->natmin; ++i) {
+//             iat = symmetry->map_p2s[i][0];
+//             for (j = 0; j < system->nat; ++j) {
+//                 for (k = 0; k < interaction->mindist_pairs[i][j].size(); ++k) {
+//                     ofs_info << std::setw(6) << iat + 1 << std::setw(6) << j + 1;
+//                     for (m = 0; m < 3; ++m) {
+//                         ofs_info << std::scientific << std::setprecision(16) 
+//                             << std::setw(25) << interaction->mindist_pairs[i][j][k].relvec[m];
+//                     }
+//                     ofs_info << std::endl;
+//                 }
+//             }
+//         }
+// 
+//         for (order = 1; order < interaction->maxorder; ++order){
+//             ofs_info << "#LIST_" + interaction->str_order[order] << std::endl;
+// 
+//             for (k = 0; k < symmetry->natmin; ++k) ofs_info << std::setw(6) << interaction->ninter[k][order];
+//             ofs_info << std::endl;
+// 
+//             for (k = 0; k < symmetry->natmin; ++k){
+//                 iat = symmetry->map_p2s[k][0];
+//                 for (m = 0; m < interaction->ninter[k][order]; ++m){
+//                     ofs_info << std::setw(6) << iat + 1 << std::setw(6) << interaction->intpairs[k][order][m] + 1;
+//                     for (i = 0; i < 3; ++i){
+//                         ofs_info << std::scientific << std::setprecision(16) 
+//                             << std::setw(25) << interaction->relvec[k][order][m][i];
+//                     }
+//                     ofs_info << std::endl;
+//                 }
+//             }
+//         }
+//     } else {
+//         error->exit("wrtmisc", "This cannot happen.");
+//     }
+// 
+//     int *ncount;
+//     int ind_tmp;
+//     int id;
+// 
+//     int ip = 0;
+//     int ishift = 0;
+//     int *pair_tmp;
+// 
+//     memory->allocate(ncount, 3*symmetry->natmin);
+//     memory->allocate(pair_tmp, interaction->maxorder + 1);
+// 
+//     ofs_info << "##FORCE CONSTANTS" << std::endl;
+//     ofs_info << "All force constants and interaction info" << std::endl;
+// 
+// 
+//     for (int order = 0; order < interaction->maxorder; ++order){
+//         ofs_info << "#FCS_" + interaction->str_order[order] << std::endl;
+// 
+//         int nelem = 0;
+//         for(std::vector<int>::iterator it = fcs->ndup[order].begin(); it != fcs->ndup[order].end(); ++it){
+//             nelem += *it;
+//         }
+//         ofs_info << std::setw(10) << nelem << std::endl;
+// 
+//         for(i = 0; i < 3*symmetry->natmin; ++i) ncount[i] = 0;
+// 
+//         id = 0;
+// 
+//         for(ui = 0; ui < fcs->ndup[order].size(); ++ui){
+//             for(j = 0; j < fcs->ndup[order][ui]; ++j){
+//                 ind_tmp = fcs->fc_set[order][id].elems[0];
+//                 for(k = 0; k < symmetry->natmin; ++k){
+//                     if(ind_tmp / 3 == symmetry->map_p2s[k][0]) {
+//                         ++ncount[3 * k + ind_tmp % 3];
+//                         break;
+//                     }
+//                 }
+//                 ++id;
+//             }
+//         }
+// 
+//         for(i = 0; i < 3*symmetry->natmin; ++i){
+//             ofs_info << std::setw(6) << ncount[i];
+//         }
+//         ofs_info << std::endl;
+// 
+//         // This sorting is necessary for linking to molecular dynamics program.
+//         std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
+// 
+//         for(std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it){
+//             FcProperty fctmp = *it;
+//             ip = fctmp.mother + ishift;
+//             ofs_info << std::scientific << std::setprecision(16) 
+//                 << std::setw(25) << fitting->params[ip]*fctmp.coef << std::endl;
+//             
+//             for(k = 0; k < order + 2; ++k){
+//                 ofs_info << std::setw(5) << fcs->easyvizint(fctmp.elems[k]);
+//             }
+//             ofs_info << std::endl;
+//         }
+// 
+//         ishift += fcs->ndup[order].size();
+//     }
+// 
+//     if (interaction->interaction_type == 1 || interaction->interaction_type == 3) {
+// 
+//         ofs_info << "#FCS_HARMONIC_EXT" << std::endl;
+// 
+//         for (i = 0; i < 3*symmetry->natmin; ++i) ncount[i] = 0;
+// 
+//         for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
+//             FcProperty fctmp = *it;
+// 
+//             for (k = 0; k < 2; ++k) {
+//                 pair_tmp[k] = fctmp.elems[k] / 3;
+//             }
+//             j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+//             ncount[3 * j + fctmp.elems[0] % 3] += interaction->mindist_pairs[j][pair_tmp[1]].size();
+//         }
+// 
+// 
+//         int nelem = 0;
+//         for (i = 0; i < 3*symmetry->natmin; ++i) nelem += ncount[i];
+// 
+//         ofs_info << std::setw(10) << nelem << std::endl;
+// 
+// 
+//         for(i = 0; i < 3*symmetry->natmin; ++i){
+//             ofs_info << std::setw(6) << ncount[i];
+//         }
+//         ofs_info << std::endl;
+// 
+// 
+//         for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
+//             FcProperty fctmp = *it;
+//             ip = fctmp.mother;
+// 
+//             for (k = 0; k < 2; ++k) {
+//                 pair_tmp[k] = fctmp.elems[k] / 3;
+//             }
+//             j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+//             for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); 
+//                 it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
+//                 
+//                 ofs_info << std::setw(5) << j << std::setw(5) << fctmp.elems[0] % 3;
+//                 ofs_info << std::setw(8) << pair_tmp[1] << std::setw(5) <<  fctmp.elems[1] % 3;
+//                 ofs_info << std::setw(5) << (*it2).cell;
+//                 ofs_info << std::scientific << std::setprecision(16) << std::setw(25) 
+//                     << fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size()) << std::endl;
+//             }
+//         }
+// 
+//     }
+// 
+//     memory->deallocate(ncount);
+//     memory->deallocate(pair_tmp);
+// 
+//     ofs_info.close();
+// 
+//     std::cout << " Information for post-process is stored to file: " << files->file_info << std::endl;
+// }
 
 void Writes::write_displacement_pattern()
 {
