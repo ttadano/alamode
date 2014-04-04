@@ -12,13 +12,14 @@ import datetime
 import subprocess
 
 parser = optparse.OptionParser()
-parser.add_option('-t', '--temp')
+parser.add_option('-t', '--temp', help="target temperature to be analyzed")
 parser.add_option('-m', '--mode')
 parser.add_option('-k', '--kpoint')
-parser.add_option('-c', '--calc')
+parser.add_option('-c', '--calc', help="select which to print. tau, kappa, kappa_size are available.")
 parser.add_option('-l', '--length')
 parser.add_option('-d', '--direction')
-parser.add_option('-a', '--average')
+parser.add_option('--noavg', action="store_false", dest="average_gamma", default=True, 
+	help="don't average the damping function at degenerate points")
 
 options, args = parser.parse_args()
 file_result = args[0]
@@ -34,10 +35,10 @@ if __name__ == '__main__':
 
     calc = options.calc
 
-    if options.average == None:
-        avg = 0
+    if options.average_gamma:
+        avg = "1"
     else:
-        avg = options.average
+        avg = "0"
 
     if calc == "tau":
         if options.temp == None: # Damping function 

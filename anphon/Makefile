@@ -1,6 +1,6 @@
 .SUFFIXES: .h .cpp
 #-----------------------------------------------
-# Makefile for the program 'ALM'.
+# Makefile for the program 'ANPHON'.
 # Please modify the variables properly.
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
@@ -22,7 +22,7 @@ LIBS = ${LAPACK}
 .cpp.o:
 	${MPICXX} ${CXXFLAGS} ${INCLUDE} -c $<
 
-PROG = phonons
+PROG = anphon
 
 CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
@@ -33,11 +33,11 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 
 OBJS= ${CXXSRC:.cpp=.o}
 
-default: phonons
+default: anphon
 
 all: ${PROG}
 
-phonons: ${OBJS}
+anphon: ${OBJS}
 	${LINKER} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
 
 clean:
