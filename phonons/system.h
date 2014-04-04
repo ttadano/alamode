@@ -51,10 +51,7 @@ namespace PHON_NS {
 
     private:
 
-        unsigned int *kd_prim;
-        void load_system_info();
-        void load_system_info_xml();
-      //  std::string get_value_from_xml(boost::property_tree::ptree, std::string);
+        void load_system_info_from_XML();
         void recips(double [3][3], double [3][3]);
         void setup_atomic_class(unsigned int, unsigned int *);
     };

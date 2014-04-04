@@ -1,11 +1,11 @@
 /*
- gruneisen.cpp
+gruneisen.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
@@ -44,18 +44,18 @@ void Gruneisen::setup()
 
     memory->allocate(gruneisen, kpoint->nk, dynamical->neval);
 
-//     if (mympi->my_rank == 0) {
-//         if (print_newfcs) {
-//             if (relaxation->quartic_mode) {
-//                 std::cout << " NEWFCS = 1 : Harmonic and cubic force constants of " << std::endl;
-//             }
-//             else {
-//                 std::cout << " NEWFCS = 1 : Harmonic force constants of " << std::endl;
-//             }
-//             std::cout << "              expanded/compressed systems will be estimated" << std::endl;
-//             std::cout << "              with DELTA_A = " << std::setw(5) << delta_a << std::endl;
-//         }
-//     }
+    //     if (mympi->my_rank == 0) {
+    //         if (print_newfcs) {
+    //             if (relaxation->quartic_mode) {
+    //                 std::cout << " NEWFCS = 1 : Harmonic and cubic force constants of " << std::endl;
+    //             }
+    //             else {
+    //                 std::cout << " NEWFCS = 1 : Harmonic force constants of " << std::endl;
+    //             }
+    //             std::cout << "              expanded/compressed systems will be estimated" << std::endl;
+    //             std::cout << "              with DELTA_A = " << std::setw(5) << delta_a << std::endl;
+    //         }
+    //     }
 }
 
 
@@ -89,10 +89,10 @@ void Gruneisen::calc_gruneisen()
 
         for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[ik][i];
 
-            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
-            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
-            dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
-      
+        dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_orig, evec_tmp, false);
+        dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
+        dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
+
 
 
         for (is = 0; is < ns; ++is) {
@@ -100,44 +100,44 @@ void Gruneisen::calc_gruneisen()
         }
     }
 
-//     for (ik = 0; ik < nk; ++ik) {
-//         for (is = 0; is < ns; ++is) {
-//             eval_plus[ik][is] = dynamical->freq(eval_plus[ik][is]);
-//             eval_minus[ik][is] = dynamical->freq(eval_minus[ik][is]);
-//         }
-//     }
-// 
-//     if (kpoint->kpoint_mode == 1) {
-//         std::string file_band_plus, file_band_minus;
-// 
-//         file_band_plus = input->job_title + ".band_+";
-//         file_band_minus = input->job_title + ".band_-";
-// 
-//         std::ofstream ofs_plus, ofs_minus;
-// 
-//         ofs_plus.open(file_band_plus.c_str(), std::ios::out);
-//         if (!ofs_plus) error->exit("calc_gruneisen", "Could not create band_plus file.");
-//         ofs_minus.open(file_band_minus.c_str(), std::ios::out);
-//         if (!ofs_minus) error->exit("calc_gruneisen", "Could not create band_minus file.");
-// 
-//         ofs_plus << "# Phonon energy (cm^-1) of the system expanded by " << std::setw(10) << delta_a * 100 << " %." << std::endl;
-//         ofs_minus << "# Phonon energy (cm^-1) of the system compressed by " << std::setw(10) << delta_a * 100 << " %." << std::endl;
-// 
-//         for (ik = 0; ik < nk; ++ik){
-//             ofs_plus << std::setw(8) << std::fixed << kpoint->kaxis[ik];
-//             ofs_minus << std::setw(8) << std::fixed << kpoint->kaxis[ik];
-// 
-//             for (is = 0; is < ns; ++is){
-//                 ofs_plus << std::setw(15) << std::scientific << writes->in_kayser(eval_plus[ik][is]);
-//                 ofs_minus << std::setw(15) << std::scientific << writes->in_kayser(eval_minus[ik][is]);
-//             }
-//             ofs_plus << std::endl;
-//             ofs_minus << std::endl;
-//         }
-// 
-//         ofs_plus.close();
-//         ofs_minus.close();
-//     }
+    //     for (ik = 0; ik < nk; ++ik) {
+    //         for (is = 0; is < ns; ++is) {
+    //             eval_plus[ik][is] = dynamical->freq(eval_plus[ik][is]);
+    //             eval_minus[ik][is] = dynamical->freq(eval_minus[ik][is]);
+    //         }
+    //     }
+    // 
+    //     if (kpoint->kpoint_mode == 1) {
+    //         std::string file_band_plus, file_band_minus;
+    // 
+    //         file_band_plus = input->job_title + ".band_+";
+    //         file_band_minus = input->job_title + ".band_-";
+    // 
+    //         std::ofstream ofs_plus, ofs_minus;
+    // 
+    //         ofs_plus.open(file_band_plus.c_str(), std::ios::out);
+    //         if (!ofs_plus) error->exit("calc_gruneisen", "Could not create band_plus file.");
+    //         ofs_minus.open(file_band_minus.c_str(), std::ios::out);
+    //         if (!ofs_minus) error->exit("calc_gruneisen", "Could not create band_minus file.");
+    // 
+    //         ofs_plus << "# Phonon energy (cm^-1) of the system expanded by " << std::setw(10) << delta_a * 100 << " %." << std::endl;
+    //         ofs_minus << "# Phonon energy (cm^-1) of the system compressed by " << std::setw(10) << delta_a * 100 << " %." << std::endl;
+    // 
+    //         for (ik = 0; ik < nk; ++ik){
+    //             ofs_plus << std::setw(8) << std::fixed << kpoint->kaxis[ik];
+    //             ofs_minus << std::setw(8) << std::fixed << kpoint->kaxis[ik];
+    // 
+    //             for (is = 0; is < ns; ++is){
+    //                 ofs_plus << std::setw(15) << std::scientific << writes->in_kayser(eval_plus[ik][is]);
+    //                 ofs_minus << std::setw(15) << std::scientific << writes->in_kayser(eval_minus[ik][is]);
+    //             }
+    //             ofs_plus << std::endl;
+    //             ofs_minus << std::endl;
+    //         }
+    // 
+    //         ofs_plus.close();
+    //         ofs_minus.close();
+    //     }
 
 
     memory->deallocate(evec_tmp);
@@ -155,9 +155,9 @@ void Gruneisen::finish_gruneisen()
     if (print_gruneisen || print_newfcs) {
         memory->deallocate(dfc2);
 
-            fc2_plus_ext.clear();
-            fc2_minus_ext.clear();
-        
+        fc2_plus_ext.clear();
+        fc2_minus_ext.clear();
+
     }
 }
 
@@ -173,7 +173,7 @@ void Gruneisen::prepare_delta_fc2()
     unsigned int natmin = system->natmin;
     unsigned int nat = system->nat;
 
- //   std::cout << "Preparing delta FC2 from cubic force constants ...";
+    //   std::cout << "Preparing delta FC2 from cubic force constants ...";
 
     memory->allocate(dfc2, natmin, nat, 3, 3);
 
@@ -222,7 +222,7 @@ void Gruneisen::prepare_delta_fc2()
     }
 #endif
 
- //   std::cout << "done !" << std::endl;
+    //   std::cout << "done !" << std::endl;
 }
 
 void Gruneisen::prepare_newfc2()
@@ -241,88 +241,88 @@ void Gruneisen::prepare_newfc2()
     double dfc2_tmp;
     FcsClassExtent dfc2_ext_tmp;
 
-  //  if (fcs_phonon->is_fc2_ext) {
-        fc2_plus_ext.clear();
-        fc2_minus_ext.clear();
+    //  if (fcs_phonon->is_fc2_ext) {
+    fc2_plus_ext.clear();
+    fc2_minus_ext.clear();
 
-        for (std::vector<FcsClassExtent>::const_iterator it = fcs_phonon->fc2_ext.begin(); it != fcs_phonon->fc2_ext.end(); ++it) {
-            fc2_plus_ext.push_back(*it);
-            fc2_minus_ext.push_back(*it);
-        }
+    for (std::vector<FcsClassExtent>::const_iterator it = fcs_phonon->fc2_ext.begin(); it != fcs_phonon->fc2_ext.end(); ++it) {
+        fc2_plus_ext.push_back(*it);
+        fc2_minus_ext.push_back(*it);
+    }
 
-        for (iat = 0; iat < natmin; ++iat) {
-            for (jat = 0; jat < nat; ++jat) {
+    for (iat = 0; iat < natmin; ++iat) {
+        for (jat = 0; jat < nat; ++jat) {
 
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    xdiff[icrd] = system->xr_s[jat][icrd] - system->xr_s[system->map_p2s[iat][0]][icrd];
+            for (icrd = 0; icrd < 3; ++icrd) {
+                xdiff[icrd] = system->xr_s[jat][icrd] - system->xr_s[system->map_p2s[iat][0]][icrd];
 
-                    if (std::abs(xdiff[icrd]-0.5) < eps || std::abs(xdiff[icrd] + 0.5) < eps) {
-                        //	error->exit("prepare_newfc2", "multiple interaction exist. This should not occur.");
-                    } else if (xdiff[icrd] > 0.5) {
-                        cell[icrd] = -1;
-                    } else if (xdiff[icrd] < -0.5) {
-                        cell[icrd] = 1;
-                    } else {
-                        cell[icrd] = 0;
-                    }
+                if (std::abs(xdiff[icrd]-0.5) < eps || std::abs(xdiff[icrd] + 0.5) < eps) {
+                    //	error->exit("prepare_newfc2", "multiple interaction exist. This should not occur.");
+                } else if (xdiff[icrd] > 0.5) {
+                    cell[icrd] = -1;
+                } else if (xdiff[icrd] < -0.5) {
+                    cell[icrd] = 1;
+                } else {
+                    cell[icrd] = 0;
                 }
+            }
 
-                counter = 0;
-                ncell = 0;
-                for (icell = -1; icell <= 1; ++icell) {
-                    for (jcell = -1; jcell <= 1; ++jcell) {
-                        for (kcell = -1; kcell <= 1; ++kcell) {
+            counter = 0;
+            ncell = 0;
+            for (icell = -1; icell <= 1; ++icell) {
+                for (jcell = -1; jcell <= 1; ++jcell) {
+                    for (kcell = -1; kcell <= 1; ++kcell) {
 
-                            if (icell == 0 && jcell == 0 && kcell == 0) continue;
+                        if (icell == 0 && jcell == 0 && kcell == 0) continue;
 
-                            ++counter;
+                        ++counter;
 
-                            if (icell == cell[0] && jcell == cell[1] && kcell == cell[2]) {
-                                ncell = counter;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    for (jcrd = 0; jcrd < 3; ++jcrd) {
-                        dfc2_tmp = dfc2[iat][jat][icrd][jcrd];
-
-                        if (std::abs(dfc2_tmp) > eps) {
-                            //	std::cout << iat << " " << jat << " " << ncell << " " <<  icrd << " " << jcrd << std::endl;
-                            dfc2_ext_tmp.atm1 = iat;
-                            dfc2_ext_tmp.atm2 = jat;
-                            dfc2_ext_tmp.cell_s = ncell;
-                            dfc2_ext_tmp.xyz1 = icrd;
-                            dfc2_ext_tmp.xyz2 = jcrd;
-
-                            dfc2_ext_tmp.fcs_val = delta_a * dfc2_tmp;
-                            fc2_plus_ext.push_back(dfc2_ext_tmp);
-
-                            dfc2_ext_tmp.fcs_val = -delta_a * dfc2_tmp;
-                            fc2_minus_ext.push_back(dfc2_ext_tmp);
+                        if (icell == cell[0] && jcell == cell[1] && kcell == cell[2]) {
+                            ncell = counter;
+                            break;
                         }
                     }
                 }
             }
-        }
 
-//     } else {
-//         memory->allocate(fc2_plus, system->natmin, system->nat, 3, 3);
-//         memory->allocate(fc2_minus, system->natmin, system->nat, 3, 3);
-// 
-//         for (iat = 0; iat < natmin; ++iat){
-//             for (jat = 0; jat < nat; ++jat){
-//                 for (icrd = 0; icrd < 3; ++icrd){
-//                     for (jcrd = 0; jcrd < 3; ++jcrd){
-//                         fc2_plus[iat][jat][icrd][jcrd]  = fcs_phonon->fc2[iat][jat][icrd][jcrd] + delta_a * dfc2[iat][jat][icrd][jcrd];
-//                         fc2_minus[iat][jat][icrd][jcrd] = fcs_phonon->fc2[iat][jat][icrd][jcrd] - delta_a * dfc2[iat][jat][icrd][jcrd];
-//                     }
-//                 }
-//             }
-//         }
-//     }
+            for (icrd = 0; icrd < 3; ++icrd) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    dfc2_tmp = dfc2[iat][jat][icrd][jcrd];
+
+                    if (std::abs(dfc2_tmp) > eps) {
+                        //	std::cout << iat << " " << jat << " " << ncell << " " <<  icrd << " " << jcrd << std::endl;
+                        dfc2_ext_tmp.atm1 = iat;
+                        dfc2_ext_tmp.atm2 = jat;
+                        dfc2_ext_tmp.cell_s = ncell;
+                        dfc2_ext_tmp.xyz1 = icrd;
+                        dfc2_ext_tmp.xyz2 = jcrd;
+
+                        dfc2_ext_tmp.fcs_val = delta_a * dfc2_tmp;
+                        fc2_plus_ext.push_back(dfc2_ext_tmp);
+
+                        dfc2_ext_tmp.fcs_val = -delta_a * dfc2_tmp;
+                        fc2_minus_ext.push_back(dfc2_ext_tmp);
+                    }
+                }
+            }
+        }
+    }
+
+    //     } else {
+    //         memory->allocate(fc2_plus, system->natmin, system->nat, 3, 3);
+    //         memory->allocate(fc2_minus, system->natmin, system->nat, 3, 3);
+    // 
+    //         for (iat = 0; iat < natmin; ++iat){
+    //             for (jat = 0; jat < nat; ++jat){
+    //                 for (icrd = 0; icrd < 3; ++icrd){
+    //                     for (jcrd = 0; jcrd < 3; ++jcrd){
+    //                         fc2_plus[iat][jat][icrd][jcrd]  = fcs_phonon->fc2[iat][jat][icrd][jcrd] + delta_a * dfc2[iat][jat][icrd][jcrd];
+    //                         fc2_minus[iat][jat][icrd][jcrd] = fcs_phonon->fc2[iat][jat][icrd][jcrd] - delta_a * dfc2[iat][jat][icrd][jcrd];
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
 
 
@@ -364,7 +364,7 @@ void Gruneisen::prepare_newfc3()
     std::vector<FcsClassGru> fc3_copy, fc4_copy, dfc3;
     std::vector<FcsClassGru>::iterator it_lower;
 
-//    std::cout << " NEWFCS = 1Preparing new FC3 from quartic force constants ...";
+    //    std::cout << " NEWFCS = 1Preparing new FC3 from quartic force constants ...";
 
     fc4_copy.clear();
     dfc3.clear();
@@ -464,7 +464,7 @@ void Gruneisen::prepare_newfc3()
         }
     }
 
- //   std::cout << "done !" << std::endl;
+    //   std::cout << "done !" << std::endl;
 }
 
 void Gruneisen::calc_gruneisen2()
@@ -723,7 +723,7 @@ void Gruneisen::write_newinfo_all()
         ofs_minus.close();
         ifs_orig.close();
     }
-    
+
 }
 
 void Gruneisen::write_newinfo(std::ifstream &ifs, std::ofstream &ofs, const double delta,

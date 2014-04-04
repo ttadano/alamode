@@ -37,11 +37,11 @@ System::~System() {}
 void System::setup()
 {
     unsigned int i, j;
-
+    double vec_tmp[3][3];
+    unsigned int *kd_prim;
     double **xtmp;
 
-    load_system_info_xml();
-  //  load_system_info();
+    load_system_info_from_XML();
 
     recips(lavec_s, rlavec_s);
     recips(lavec_p, rlavec_p);
@@ -87,7 +87,6 @@ void System::setup()
         std::cout << "  " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
         std::cout << std::endl << std::endl;
 
-        double vec_tmp[3][3];
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
@@ -150,102 +149,7 @@ void System::setup()
     memory->deallocate(kd_prim);
 }
 
-void System::load_system_info()
-{
-    unsigned int i;
-    int nkd_tmp;
-
-    if (mympi->my_rank == 0) {
-        std::string file_fcs = fcs_phonon->file_fcs;
-        std::ifstream ifs_fcs;
-
-        bool flag_found = false;
-
-        ifs_fcs.open(file_fcs.c_str(), std::ios::in);
-        if(!ifs_fcs) error->exit("load_system_info", "cannot open file file_fcs");
-
-        std::string str_tmp;
-
-        while (!ifs_fcs.eof())
-        {
-            std::getline(ifs_fcs, str_tmp);
-
-            if (str_tmp == "##SYSTEM INFO"){
-
-                flag_found = true;
-
-                std::getline(ifs_fcs, str_tmp);
-
-                for (i = 0; i < 3; ++i){
-                    ifs_fcs >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
-                }
-                ifs_fcs.ignore();
-                std::getline(ifs_fcs, str_tmp);
-                ifs_fcs >> nkd_tmp;
-
-                if (nkd != nkd_tmp) {
-                    error->exit("load_system_info", 
-                        "NKD in the info file is not consistent with that given in the input file.");
-                }
-
-                ifs_fcs.ignore();
-                std::getline(ifs_fcs, str_tmp);
-                std::getline(ifs_fcs, str_tmp);
-                ifs_fcs >> nat >> natmin >> ntran;
-
-                memory->allocate(xr_s, nat, 3);
-                memory->allocate(kd, nat);
-                memory->allocate(map_p2s, natmin, ntran);
-                memory->allocate(map_s2p, nat);
-
-                unsigned int ikd, itran, icell;
-                std::getline(ifs_fcs, str_tmp);
-                std::getline(ifs_fcs, str_tmp);
-
-                for (i = 0; i < nat; ++i){
-                    ifs_fcs >> str_tmp >> ikd >> xr_s[i][0] >> xr_s[i][1] >> xr_s[i][2] >> itran >> icell;
-                    kd[i] = ikd - 1;
-                    map_p2s[icell - 1][itran - 1] = i;
-                    map_s2p[i].atom_num = icell - 1;
-                    map_s2p[i].tran_num = itran - 1;
-                }
-            }
-        }
-        ifs_fcs.close();
-
-        if (!flag_found) error->exit("load_system_info", "##SYSTEM INFO tag not found.");
-    }
-
-    MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&lavec_p[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    if (mympi->my_rank > 0){
-        memory->allocate(mass_kd, nkd);
-        memory->allocate(xr_s, nat, 3);
-        memory->allocate(kd, nat);
-        memory->allocate(map_p2s, natmin, ntran);
-        memory->allocate(map_s2p, nat);
-    }
-
-    MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    // need to define MPI_MYTYPE for the exchange of user defined class ?
-
-    for (i = 0; i < nat; ++i) {
-        MPI_Bcast(&map_s2p[i], sizeof(map_s2p[i]), MPI_BYTE, 0, MPI_COMM_WORLD);
-    }
-
-}
-
-void System::load_system_info_xml()
+void System::load_system_info_from_XML()
 {
     if (mympi->my_rank == 0) {
  
@@ -362,16 +266,6 @@ void System::load_system_info_xml()
     MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 }
-
-// std::string System::get_value_from_xml(boost::property_tree::ptree pt_in, std::string str) 
-// {
-//     if (boost::optional<std::string> str_entry = pt_in.get_optional<std::string>(str)) {
-//         return str_entry.get();
-//     } else {
-//         error->exit("get_value_from_xml", 
-//             "Following entry is not found in the XML file : ", str.c_str());
-//     }
-// }
 
 
 void System::recips(double vec[3][3], double inverse[3][3])

@@ -224,7 +224,6 @@ void Relaxation::setup_relaxation()
         }
     }
 
-//    MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_realpart, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&atom_project_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
@@ -288,12 +287,7 @@ void Relaxation::setup_relaxation()
     if (kpoint->kpoint_mode == 2) {
         generate_triplet_k(use_triplet_symmetry, sym_permutation);
     }
-    // gen_pair_uniq();
-    //if (mympi->my_rank == 1) gensym_kpairs();
-// 
-//     if (mympi->my_rank == 0) {
-//         std::cout << " done!" << std::endl;
-//     }
+
 }
 
 void Relaxation::setup_mode_analysis()
@@ -610,161 +604,7 @@ std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3, int
     return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
 }
 
-// void Relaxation::v3_test() {
-// 
-// 	int i;
-// 	unsigned int stmp[3], kstmp[3];
-// 	int nkplus, nkminus;
-// 	double k_tmp1[3], k_tmp2[3], k_tmp3[3];
-// 
-// 	nkplus = 1;
-// 	nkminus= kpoint->knum_minus[nkplus];
-// 
-// 
-// 	stmp[0] = 3;
-// 	stmp[1] = 1;
-// 	stmp[2] = 2;
-// 
-// 	k_tmp1[0] = 0.4; k_tmp1[1] = 0.0; k_tmp1[2] = 0.0;
-// 	k_tmp2[0] = -0.4; k_tmp2[1] = 0.4; k_tmp2[2] = 0.0;
-// 	k_tmp3[0] = 0.0; k_tmp3[1] = -0.4; k_tmp3[2] = 0.0;
-// 
-// 	kstmp[0] = kpoint->get_knum(k_tmp1[0], k_tmp1[1], k_tmp1[2]);
-// 	kstmp[1] = kpoint->get_knum(k_tmp2[0], k_tmp2[1], k_tmp2[2]);
-// 	kstmp[2] = kpoint->get_knum(k_tmp3[0], k_tmp3[1], k_tmp3[2]);
-// 
-// 	for (i = 0; i < 3; ++i) {
-// 		std::cout << std::setw(15) << kpoint->xk[kstmp[0]][i];
-// 	}
-// 	std::cout << std::endl;
-// 	for (i = 0; i < 3; ++i) {
-// 		std::cout << std::setw(15) << kpoint->xk[kstmp[1]][i];
-// 	}
-// 	std::cout << std::endl;
-// 	for (i = 0; i < 3; ++i) {
-// 		std::cout << std::setw(15) << kpoint->xk[kstmp[2]][i];
-// 	}
-// 	std::cout << std::endl;
-// 
-// 	kstmp[0] = ns * kpoint->get_knum(k_tmp1[0], k_tmp1[1], k_tmp1[2]) + stmp[0];
-// 	kstmp[1] = ns * kpoint->get_knum(k_tmp2[0], k_tmp2[1], k_tmp2[2]) + stmp[1];
-// 	kstmp[2] = ns * kpoint->get_knum(k_tmp3[0], k_tmp3[1], k_tmp3[2]) + stmp[2];
-// 
-// 
-// 	double t1, t2;
-// 	t1 = timer->elapsed();
-// 	std::cout << std::norm(V3(kstmp[0], kstmp[1], kstmp[2]));
-// 	t2 = timer->elapsed();
-// 	std::cout << std::setw(15) << t2 - t1 << std::endl;
-// 
-// 	t1 = timer->elapsed();
-// 	std::cout << std::norm(V3(kstmp));
-// 	t2 = timer->elapsed();
-// 	std::cout << std::setw(15) << t2 - t1 << std::endl;
-// 
-// 	t1 = timer->elapsed();
-// 	std::cout << std::norm(V32(kstmp));
-// 	t2 = timer->elapsed();
-// 	std::cout << std::setw(15) << t2 - t1 << std::endl;
-// 
-// // 	t1 = timer->elapsed();
-// // 	std::cout << std::norm(V33(kstmp));
-// // 	t2 = timer->elapsed();
-// // 	std::cout << std::setw(15) << t2 - t1 << std::endl;
-// 
-// 
-// 	error->exit("v3_test", "finished!");
-// 
-// 
-// 	unsigned int ik0, ik1;
-// 	int ik2;
-// 	unsigned int is0, is1, is2;
-// 	double omega1, omega2;
-// 	double norm;
-// 	double xk_tmp[3];
-// 
-// 	ik0 = 2;
-// 	is0 = 1;
-// 
-// 	for (ik1 = 0; ik1 < kpoint->nk; ++ik1) {
-// 
-// 		xk_tmp[0] = - (kpoint->xk[ik0][0] + kpoint->xk[ik1][0]);
-// 		xk_tmp[1] = - (kpoint->xk[ik0][1] + kpoint->xk[ik1][1]);
-// 		xk_tmp[2] = - (kpoint->xk[ik0][2] + kpoint->xk[ik1][2]);
-// 
-// 		ik2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
-// 
-// 		if (ik2 == -1) {
-// 			error->exit("hoge","hoge");
-// 		}
-// 
-// 		for (is1 = 0; is1 < ns; ++is1) {
-// 			for (is2 = 0; is2 < ns; ++is2) {
-// 				omega1 = dynamical->eval_phonon[ik1][is1];
-// 				omega2 = dynamical->eval_phonon[ik2][is2];
-// 
-// 				std::cout << std::setw(5) << ik1 << std::setw(5) << is1;
-// 				std::cout << std::setw(15) << writes->in_kayser(omega1);
-// 				std::cout << std::setw(5) << ik2 << std::setw(5) << is2;
-// 				std::cout << std::setw(15) << writes->in_kayser(omega2);
-// 
-// 
-// 				norm =   std::pow(std::fmod(kpoint->xk[ik0][0] + kpoint->xk[ik1][0] + kpoint->xk[ik2][0], 1.0), 2)
-// 					+ std::pow(std::fmod(kpoint->xk[ik0][1] + kpoint->xk[ik1][1] + kpoint->xk[ik2][1], 1.0), 2)
-// 					+ std::pow(std::fmod(kpoint->xk[ik0][2] + kpoint->xk[ik1][2] + kpoint->xk[ik2][2], 1.0), 2);
-// 				std::cout << std::setw(15) << norm;
-// 
-// 				kstmp[0] = ns * ik0 + is0;
-// 				kstmp[1] = ns * ik1 + is1;
-// 				kstmp[2] = ns * ik2 + is2;
-// 				std::cout << std::setw(15) << std::norm(V3(kstmp[0],kstmp[1],kstmp[2])) << std::endl;
-// 			}
-// 		}
-// 	}
-// 
-// 
-// }
-// 
-// 
-// void Relaxation::v4_test() {
-// 
-// 	int i;
-// 	unsigned int stmp[4], kstmp[4];
-// 	int nkplus, nkminus;
-// 
-// 	nkplus = 2;
-// 	nkminus= kpoint->knum_minus[nkplus];
-// 
-// 	stmp[0] = 0;
-// 	stmp[1] = 1;
-// 	stmp[2] = 2;
-// 	stmp[3] = 0;
-// 
-// 	for (i = 0; i < 4; ++i) {
-// 		std::cout << std::setw(15) << kpoint->xk[nkplus][i];
-// 	}
-// 	std::cout << std::endl;
-// 
-// 	for (i = 0; i < 4; ++i) {
-// 		kstmp[i] = dynamical->neval * nkplus + stmp[i];
-// 	}
-// 
-// 
-// 	std::cout << V4(kstmp) << std::endl;
-// 
-// 	for (i = 0; i < 4; ++i) {
-// 		kstmp[i] = dynamical->neval * nkminus + stmp[i];
-// 	}
-// 	for (i = 0; i < 4; ++i) {
-// 		std::cout << std::setw(15) << kpoint->xk[nkminus][i];
-// 	}
-// 	std::cout << std::endl;
-// 
-// 	std::cout << V4(kstmp) << std::endl;
-// 
-// 
-// 	error->exit("v4_test", "finished!");
-// }
+
 
 
 void Relaxation::calc_realpart_V4(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, double *ret)
@@ -2390,3 +2230,160 @@ void Relaxation::generate_triplet_k(const bool use_triplet_symmetry, const bool 
     memory->deallocate(symmetry_group_k);
     memory->deallocate(flag_found);
 }
+
+
+// void Relaxation::v3_test() {
+// 
+// 	int i;
+// 	unsigned int stmp[3], kstmp[3];
+// 	int nkplus, nkminus;
+// 	double k_tmp1[3], k_tmp2[3], k_tmp3[3];
+// 
+// 	nkplus = 1;
+// 	nkminus= kpoint->knum_minus[nkplus];
+// 
+// 
+// 	stmp[0] = 3;
+// 	stmp[1] = 1;
+// 	stmp[2] = 2;
+// 
+// 	k_tmp1[0] = 0.4; k_tmp1[1] = 0.0; k_tmp1[2] = 0.0;
+// 	k_tmp2[0] = -0.4; k_tmp2[1] = 0.4; k_tmp2[2] = 0.0;
+// 	k_tmp3[0] = 0.0; k_tmp3[1] = -0.4; k_tmp3[2] = 0.0;
+// 
+// 	kstmp[0] = kpoint->get_knum(k_tmp1[0], k_tmp1[1], k_tmp1[2]);
+// 	kstmp[1] = kpoint->get_knum(k_tmp2[0], k_tmp2[1], k_tmp2[2]);
+// 	kstmp[2] = kpoint->get_knum(k_tmp3[0], k_tmp3[1], k_tmp3[2]);
+// 
+// 	for (i = 0; i < 3; ++i) {
+// 		std::cout << std::setw(15) << kpoint->xk[kstmp[0]][i];
+// 	}
+// 	std::cout << std::endl;
+// 	for (i = 0; i < 3; ++i) {
+// 		std::cout << std::setw(15) << kpoint->xk[kstmp[1]][i];
+// 	}
+// 	std::cout << std::endl;
+// 	for (i = 0; i < 3; ++i) {
+// 		std::cout << std::setw(15) << kpoint->xk[kstmp[2]][i];
+// 	}
+// 	std::cout << std::endl;
+// 
+// 	kstmp[0] = ns * kpoint->get_knum(k_tmp1[0], k_tmp1[1], k_tmp1[2]) + stmp[0];
+// 	kstmp[1] = ns * kpoint->get_knum(k_tmp2[0], k_tmp2[1], k_tmp2[2]) + stmp[1];
+// 	kstmp[2] = ns * kpoint->get_knum(k_tmp3[0], k_tmp3[1], k_tmp3[2]) + stmp[2];
+// 
+// 
+// 	double t1, t2;
+// 	t1 = timer->elapsed();
+// 	std::cout << std::norm(V3(kstmp[0], kstmp[1], kstmp[2]));
+// 	t2 = timer->elapsed();
+// 	std::cout << std::setw(15) << t2 - t1 << std::endl;
+// 
+// 	t1 = timer->elapsed();
+// 	std::cout << std::norm(V3(kstmp));
+// 	t2 = timer->elapsed();
+// 	std::cout << std::setw(15) << t2 - t1 << std::endl;
+// 
+// 	t1 = timer->elapsed();
+// 	std::cout << std::norm(V32(kstmp));
+// 	t2 = timer->elapsed();
+// 	std::cout << std::setw(15) << t2 - t1 << std::endl;
+// 
+// // 	t1 = timer->elapsed();
+// // 	std::cout << std::norm(V33(kstmp));
+// // 	t2 = timer->elapsed();
+// // 	std::cout << std::setw(15) << t2 - t1 << std::endl;
+// 
+// 
+// 	error->exit("v3_test", "finished!");
+// 
+// 
+// 	unsigned int ik0, ik1;
+// 	int ik2;
+// 	unsigned int is0, is1, is2;
+// 	double omega1, omega2;
+// 	double norm;
+// 	double xk_tmp[3];
+// 
+// 	ik0 = 2;
+// 	is0 = 1;
+// 
+// 	for (ik1 = 0; ik1 < kpoint->nk; ++ik1) {
+// 
+// 		xk_tmp[0] = - (kpoint->xk[ik0][0] + kpoint->xk[ik1][0]);
+// 		xk_tmp[1] = - (kpoint->xk[ik0][1] + kpoint->xk[ik1][1]);
+// 		xk_tmp[2] = - (kpoint->xk[ik0][2] + kpoint->xk[ik1][2]);
+// 
+// 		ik2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+// 
+// 		if (ik2 == -1) {
+// 			error->exit("hoge","hoge");
+// 		}
+// 
+// 		for (is1 = 0; is1 < ns; ++is1) {
+// 			for (is2 = 0; is2 < ns; ++is2) {
+// 				omega1 = dynamical->eval_phonon[ik1][is1];
+// 				omega2 = dynamical->eval_phonon[ik2][is2];
+// 
+// 				std::cout << std::setw(5) << ik1 << std::setw(5) << is1;
+// 				std::cout << std::setw(15) << writes->in_kayser(omega1);
+// 				std::cout << std::setw(5) << ik2 << std::setw(5) << is2;
+// 				std::cout << std::setw(15) << writes->in_kayser(omega2);
+// 
+// 
+// 				norm =   std::pow(std::fmod(kpoint->xk[ik0][0] + kpoint->xk[ik1][0] + kpoint->xk[ik2][0], 1.0), 2)
+// 					+ std::pow(std::fmod(kpoint->xk[ik0][1] + kpoint->xk[ik1][1] + kpoint->xk[ik2][1], 1.0), 2)
+// 					+ std::pow(std::fmod(kpoint->xk[ik0][2] + kpoint->xk[ik1][2] + kpoint->xk[ik2][2], 1.0), 2);
+// 				std::cout << std::setw(15) << norm;
+// 
+// 				kstmp[0] = ns * ik0 + is0;
+// 				kstmp[1] = ns * ik1 + is1;
+// 				kstmp[2] = ns * ik2 + is2;
+// 				std::cout << std::setw(15) << std::norm(V3(kstmp[0],kstmp[1],kstmp[2])) << std::endl;
+// 			}
+// 		}
+// 	}
+// 
+// 
+// }
+// 
+// 
+// void Relaxation::v4_test() {
+// 
+// 	int i;
+// 	unsigned int stmp[4], kstmp[4];
+// 	int nkplus, nkminus;
+// 
+// 	nkplus = 2;
+// 	nkminus= kpoint->knum_minus[nkplus];
+// 
+// 	stmp[0] = 0;
+// 	stmp[1] = 1;
+// 	stmp[2] = 2;
+// 	stmp[3] = 0;
+// 
+// 	for (i = 0; i < 4; ++i) {
+// 		std::cout << std::setw(15) << kpoint->xk[nkplus][i];
+// 	}
+// 	std::cout << std::endl;
+// 
+// 	for (i = 0; i < 4; ++i) {
+// 		kstmp[i] = dynamical->neval * nkplus + stmp[i];
+// 	}
+// 
+// 
+// 	std::cout << V4(kstmp) << std::endl;
+// 
+// 	for (i = 0; i < 4; ++i) {
+// 		kstmp[i] = dynamical->neval * nkminus + stmp[i];
+// 	}
+// 	for (i = 0; i < 4; ++i) {
+// 		std::cout << std::setw(15) << kpoint->xk[nkminus][i];
+// 	}
+// 	std::cout << std::endl;
+// 
+// 	std::cout << V4(kstmp) << std::endl;
+// 
+// 
+// 	error->exit("v4_test", "finished!");
+// }
