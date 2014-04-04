@@ -249,9 +249,11 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
         atm_ref = system->map_p2s[atm1_p][tran_num];
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm_ref][i];
-            //			vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm2_s][i];
-            vec[i] -= xshift_s[icell][i];
+	  //vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm_ref][i];
+	  //	    std::cout << std::setw(15) << vec[i];	    
+	  //            vec[i] -= xshift_s[icell][i];
+	  vec[i] = system->xr_s[atm1_s][i] - (system->xr_s[atm2_s][i] + xshift_s[icell][i]);
+	  vec[i] += system->xr_s[system->map_p2s[atm2_p][0]][i] - system->xr_s[atm1_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
