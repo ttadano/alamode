@@ -1,11 +1,11 @@
 /*
- writes.cpp
+writes.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <fstream>
@@ -51,7 +51,7 @@ void Writes::write_input_vars()
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
     std::cout << std::endl << std::endl;
-   
+
 
     if (alm->mode == "suggest") {
         std::cout << "  DBASIS = " << displace->disp_basis << std::endl;
@@ -571,8 +571,8 @@ void Writes::write_misc_xml()
     pt.put("Structure.NumberOfElements", system_structure.nspecies);
 
     for (i = 0; i < system_structure.nspecies; ++i) {
-      ptree &child = pt.add("Structure.AtomicElements.element", system->kdname[i]);
-      child.put("<xmlattr>.number", i + 1);
+        ptree &child = pt.add("Structure.AtomicElements.element", system->kdname[i]);
+        child.put("<xmlattr>.number", i + 1);
     }
 
     for (i = 0; i < 3; ++i) {
@@ -620,7 +620,7 @@ void Writes::write_misc_xml()
     memory->allocate(pair_tmp, nelem);
 
     for (unsigned int ui = 0; ui < fcs->ndup[0].size(); ++ui){
-        
+
         for (i = 0; i < 2; ++i) {
             pair_tmp[i] = fcs->fc_set[0][ihead].elems[i] / 3;
         }
@@ -631,7 +631,7 @@ void Writes::write_misc_xml()
             boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[0])
             + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
         child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[j][pair_tmp[1]].size());
-       // std::cout << fcs->fc_set[0][ihead].coef << std::endl;
+        // std::cout << fcs->fc_set[0][ihead].coef << std::endl;
         ihead += fcs->ndup[0][ui];
         ++k;
     }
@@ -650,14 +650,14 @@ void Writes::write_misc_xml()
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
         for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); 
             it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
-            ptree &child = pt.add("ForceConstants.HARMONIC.FC2", 
-                double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size())));
-            
-            child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1) 
-                + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
-            child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(pair_tmp[1] + 1) 
-                + " " + boost::lexical_cast<std::string>(fctmp.elems[1]%3 + 1)
-                + " " + boost::lexical_cast<std::string>((*it2).cell + 1));
+                ptree &child = pt.add("ForceConstants.HARMONIC.FC2", 
+                    double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size())));
+
+                child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1) 
+                    + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
+                child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(pair_tmp[1] + 1) 
+                    + " " + boost::lexical_cast<std::string>(fctmp.elems[1]%3 + 1)
+                    + " " + boost::lexical_cast<std::string>((*it2).cell + 1));
         }
     }
 
@@ -686,7 +686,7 @@ void Writes::write_misc_xml()
 
             child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
                 + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
-           
+
             for (k = 1; k < order + 2; ++k) {
                 child.put("<xmlattr>.pair" + boost::lexical_cast<std::string>(k + 1),
                     boost::lexical_cast<std::string>(pair_tmp[k] + 1) 

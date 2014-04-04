@@ -104,7 +104,7 @@ void Dynamical::setup_dynamical(std::string mode)
     }
 }
 
-void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext,  
+void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext,
                        double *eval_out, std::complex<double> **evec_out, bool require_evec) {
 
     // Calculate phonon energy for the specific k-point given in fractional basis
@@ -215,9 +215,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
     int i, j;
     unsigned int atm1_s, atm2_s;
     unsigned int atm1_p, atm2_p;
-    unsigned int atm_ref;
     unsigned int xyz1, xyz2;
-    unsigned int tran_num;
     unsigned int icell;
 
     double vec[3];
@@ -240,20 +238,14 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
         atm2_s = (*it).atm2;
         xyz1 = (*it).xyz1;
         xyz2 = (*it).xyz2;
-
         icell = (*it).cell_s;
 
         atm1_s = system->map_p2s[atm1_p][0];
         atm2_p = system->map_s2p[atm2_s].atom_num;
-        tran_num = system->map_s2p[atm2_s].tran_num;
-        atm_ref = system->map_p2s[atm1_p][tran_num];
 
         for (i = 0; i < 3; ++i) {
-	  //vec[i] = system->xr_s[atm1_s][i] - system->xr_s[atm_ref][i];
-	  //	    std::cout << std::setw(15) << vec[i];	    
-	  //            vec[i] -= xshift_s[icell][i];
-	  vec[i] = system->xr_s[atm1_s][i] - (system->xr_s[atm2_s][i] + xshift_s[icell][i]);
-	  vec[i] += system->xr_s[system->map_p2s[atm2_p][0]][i] - system->xr_s[atm1_s][i];
+            vec[i] = system->xr_s[atm1_s][i] - (system->xr_s[atm2_s][i] + xshift_s[icell][i]);
+            vec[i] += system->xr_s[system->map_p2s[atm2_p][0]][i] - system->xr_s[atm1_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s);

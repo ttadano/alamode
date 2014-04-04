@@ -1,11 +1,11 @@
 /*
- system.cpp
+system.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
@@ -152,14 +152,13 @@ void System::setup()
 void System::load_system_info_from_XML()
 {
     if (mympi->my_rank == 0) {
- 
+
         int i;
         using namespace boost::property_tree;
         ptree pt;
         int nkd_tmp;
 
         std::map<std::string, int> dict_atomic_kind;
-
 
         read_xml(fcs_phonon->file_fcs, pt);
 
@@ -191,11 +190,11 @@ void System::load_system_info_from_XML()
 
         memory->allocate(xr_s, nat, 3);
         memory->allocate(kd, nat);
-        
+
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Structure.AtomicElements")) {
-  	  const ptree& child = child_.second;
-	  const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
-	  dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+            const ptree& child = child_.second;
+            const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
         }
 
         unsigned int index;
