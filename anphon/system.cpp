@@ -32,7 +32,16 @@ using namespace PHON_NS;
 
 System::System(PHON *phon): Pointers(phon) {}
 
-System::~System() {}
+System::~System() {
+	memory->deallocate(xr_p);
+	memory->deallocate(xr_s);
+	memory->deallocate(kd);
+	memory->deallocate(xc);
+	memory->deallocate(mass);
+	memory->deallocate(map_p2s);
+	memory->deallocate(map_s2p);
+	memory->deallocate(mass_kd);
+}
 
 void System::setup()
 {
@@ -264,6 +273,7 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p[0], nat*sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
 }
 
 
