@@ -20,7 +20,6 @@
 #include "fitting.h"
 #include "constraint.h"
 #include "fcs.h"
-#include "ewald.h"
 #include "patterndisp.h"
 #include <algorithm>
 #include <map>

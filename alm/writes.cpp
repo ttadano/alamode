@@ -16,7 +16,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "memory.h"
 #include "symmetry.h"
 #include "error.h"
-#include "ewald.h"
 #include "files.h"
 #include "fcs.h"
 #include "fitting.h"
