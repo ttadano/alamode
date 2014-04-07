@@ -108,7 +108,7 @@ void Constraint::setup(){
     }
 
 
-    if (exist_constraint){
+    if (exist_constraint) {
 
         int i;
         int maxorder = interaction->maxorder;
@@ -294,6 +294,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         }
         nshift += nparam;
     }
+
+    memory->deallocate(arr_tmp);
 
     remove_redundant_rows(N, const_total, eps8);
 

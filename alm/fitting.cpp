@@ -58,6 +58,8 @@ Fitting::Fitting(ALM *alm): Pointers(alm){
 Fitting::~Fitting() {
     if (alm->mode == "fitting") {
         memory->deallocate(params);
+        memory->deallocate(u);
+        memory->deallocate(f);
     }
 }
 
@@ -564,6 +566,14 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
     }
     ofs_fcs_boot.close();
 
+    memory->deallocate(x);
+    memory->deallocate(fsum2);
+    memory->deallocate(cmat_mod);
+    memory->deallocate(const_tmp);
+    memory->deallocate(amat_mod);
+    memory->deallocate(rnd_index);
+    memory->deallocate(WORK);
+
     std::cout << "  Bootstrap analysis finished." << std::endl;
     std::cout << "  Normal fitting will be performed" << std::endl;
 }
@@ -921,6 +931,7 @@ int Fitting::rank(int m, int n, double *mat)
         if(s[i] > eps12) ++rank;
     }
 
+    memory->deallocate(WORK);
     memory->deallocate(IWORK);
     memory->deallocate(s);
 
@@ -970,8 +981,8 @@ int Fitting::rank2(const int m_in, const int n_in, double **mat)
     }
 
     memory->deallocate(IWORK);
+    memory->deallocate(WORK);
     memory->deallocate(s);
-
     memory->deallocate(arr);
 
     return rank;

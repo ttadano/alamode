@@ -21,6 +21,8 @@ Files::Files(ALM *alm): Pointers(alm) {}
 Files::~Files() {
     if (alm->mode == "fitting") {
         closefiles();
+    } else if (alm->mode == "suggest") {
+        memory->deallocate(file_disp_pattern);
     }
 }
 

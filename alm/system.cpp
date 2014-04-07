@@ -32,7 +32,10 @@ using namespace ALM_NS;
 
 System::System(ALM *alm): Pointers(alm) {}
 
-System::~System() {}
+System::~System() {
+    memory->deallocate(x_cartesian);
+    memory->deallocate(atomlist_class);
+}
 
 void System::init(){
 
@@ -359,6 +362,8 @@ void System::load_reference_system()
 
     memory->deallocate(xtmp);
     memory->deallocate(xdiff);
+    memory->deallocate(xcoord_s);
+    memory->deallocate(kd_s);
 
     ifs_fc2.clear();
     ifs_fc2.seekg(0, std::ios_base::beg);

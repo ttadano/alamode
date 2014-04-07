@@ -43,6 +43,7 @@ Symmetry::~Symmetry() {
     memory->deallocate(map_p2s);
     memory->deallocate(map_s2p);
     memory->deallocate(symnum_tran);
+    memory->deallocate(sym_available);
 }
 
 void Symmetry::init()

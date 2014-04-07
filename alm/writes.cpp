@@ -703,6 +703,8 @@ void Writes::write_misc_xml()
     write_xml(file_xml, pt, std::locale(),
         xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
 
+    memory->deallocate(pair_tmp);
+
     std::cout << " Information for post-process is stored to file: " << file_xml << std::endl;
 }
 

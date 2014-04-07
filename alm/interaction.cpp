@@ -42,6 +42,8 @@ Interaction::~Interaction() {
     memory->deallocate(nbody_include);
     memory->deallocate(pairs);
     memory->deallocate(mindist_pairs);
+    memory->deallocate(minvec);
+    memory->deallocate(distall);
 }
 
 void Interaction::init()
@@ -655,7 +657,6 @@ void Interaction::calc_minvec()
     xset.clear();
 
     memory->allocate(minvec, natmin, nat, 3);
-    memory->allocate(x_neib, nat, 3);
     memory->allocate(dist_tmp, natmin, nat);
     memory->allocate(minloc, natmin, nat);
 
