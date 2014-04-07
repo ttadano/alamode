@@ -83,7 +83,8 @@ namespace PHON_NS {
 
         void calc_damping2(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         void calc_damping_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***);
-        void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);	 
+        void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);	
+        void calc_damping_tetra2(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *); 
         void calc_damping_tetra_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***); 
         void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
 

@@ -179,11 +179,11 @@ void Relaxation::setup_relaxation()
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl << std::endl;
-            std::cout << "**********************************************************" << std::endl;
-            std::cout << "    QUARTIC = 1: quartic_mode is on !                     " << std::endl;
-            std::cout << "    Be careful! This mode is still under test.            " << std::endl;
-            std::cout << "    There can be bugs and the computation is very heavy   " << std::endl;
-            std::cout << "**********************************************************" << std::endl;
+            std::cout << " **********************************************************" << std::endl;
+            std::cout << "     QUARTIC = 1: quartic_mode is on !                     " << std::endl;
+            std::cout << "     Be careful! This mode is still under test.            " << std::endl;
+            std::cout << "     There can be bugs and the computation is very heavy   " << std::endl;
+            std::cout << " **********************************************************" << std::endl;
             std::cout << std::endl;
         }
 
@@ -1097,6 +1097,108 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 
     memory->deallocate(v3_tmp);
     memory->deallocate(omega_inner);
+}
+
+void Relaxation::calc_damping_tetra2(const unsigned int N, double *T, const double omega, 
+                               const unsigned int ik_in, const unsigned int snum, double *ret)
+{
+
+    unsigned int i;
+    int ik;
+    unsigned int jk;
+    unsigned int is, js; 
+    unsigned int arr[3];
+
+    int k1, k2;
+
+    double T_tmp;
+    double n1, n2;
+    double v3_tmp;
+    double xk_tmp[3];
+    double omega_inner[2];
+
+    int knum, knum_minus;
+    double multi;
+
+    for (i = 0; i < N; ++i) ret[i] = 0.0;
+
+    int iloc, jloc, kloc;
+
+    double **v3_arr;
+    double ***delta_arr;
+    double ret_tmp;
+
+    double f1, f2;
+
+    double epsilon = integration->epsilon;
+
+    memory->allocate(v3_arr, pair_uniq[ik_in].size(), ns * ns);
+    memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 2);
+
+
+#pragma omp parallel for private(multi, knum, knum_minus, arr, k1, k2, is, js, omega_inner)
+    for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+        multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
+        knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+        knum_minus = kpoint->knum_minus[knum];
+
+        arr[0] = ns * knum_minus + snum;
+
+        k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+        k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+        for (is = 0; is < ns; ++is) {
+            arr[1] = ns * k1 + is;
+            omega_inner[0] = dynamical->eval_phonon[k1][is];
+
+            for (js = 0; js < ns; ++js) {
+                arr[2] = ns * k2 + js;
+                omega_inner[1] = dynamical->eval_phonon[k2][js];
+
+                v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
+
+                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
+                    - delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon);
+                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon)
+                    - delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon);
+            }
+        }   
+    }
+
+    for (i = 0; i < N; ++i) {
+        T_tmp = T[i];
+        ret_tmp = 0.0;
+
+#pragma omp parallel for private(k1, k2, is, js, omega_inner, n1, n2, f1, f2), reduction(+:ret_tmp)
+        for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+
+            k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+            k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+            for (is = 0; is < ns; ++is){
+                for (js = 0; js < ns; ++js) {
+
+                    omega_inner[0] = dynamical->eval_phonon[k1][is];
+                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+
+                    f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
+                    f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+                    n1 =  f1 + f2 + 1.0;
+                    n2 =  f1 - f2;
+
+                    ret_tmp += v3_arr[ik][ns * is + js] 
+                    * (n1 * delta_arr[ik][ns * is + js][0] - n2 * delta_arr[ik][ns * is + js][1]);
+                }
+            }
+        }
+        ret[i] = ret_tmp;
+    }
+
+    memory->deallocate(v3_arr);
+    memory->deallocate(delta_arr);
+
+    for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+
 }
 
 void Relaxation::calc_damping_atom(const unsigned  int N, double *T, const double omega, 
