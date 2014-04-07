@@ -21,7 +21,6 @@
 #include "constraint.h"
 #include "timer.h"
 #include "writes.h"
-#include "ewald.h"
 #include "patterndisp.h"
 
 #ifdef _OPENMP
@@ -79,7 +78,6 @@ void ALM::create()
     symmetry = new Symmetry(this);
     fitting = new Fitting(this);
     constraint = new Constraint(this);
-    ewald = new Ewald(this);
     displace = new Displace(this);
     writes = new Writes(this);
 }
@@ -91,8 +89,8 @@ void ALM::initialize()
     symmetry->init();
     interaction->init();
     fcs->init();
-    ewald->init();
 }
+
 ALM::~ALM()
 {
     finalize();
@@ -102,7 +100,6 @@ ALM::~ALM()
 
 void ALM::finalize()
 {
-    delete memory;
     delete files;
     delete interaction;
     delete fcs;
@@ -110,7 +107,7 @@ void ALM::finalize()
     delete system;
     delete fitting;
     delete constraint;
-    delete ewald;
     delete displace;
     delete writes;
+    delete memory;
 }

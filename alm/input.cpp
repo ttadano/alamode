@@ -23,8 +23,8 @@
 #include "ewald.h"
 #include "patterndisp.h"
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
 #include <map>
+#include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace ALM_NS;
@@ -318,9 +318,6 @@ void Input::parse_interaction_vars() {
     } else {
         file_longrange = "";
     }
-
-    ewald->is_longrange = is_longrange;
-    ewald->file_longrange = file_longrange;
 
     interaction->maxorder = maxorder;
     interaction->interaction_type = interaction_type;

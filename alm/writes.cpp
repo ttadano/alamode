@@ -63,9 +63,7 @@ void Writes::write_input_vars()
     std::cout << "  INTERTYPE = " << interaction->interaction_type << std::endl;
     std::cout << "  NBODY = ";
     for (i = 0; i < interaction->maxorder; ++i) std::cout << std::setw(3) << interaction->nbody_include[i];
-    std::cout << std::endl;
-    std::cout << "  ILONG = " << ewald->is_longrange << "; FLONG = " << ewald->file_longrange << std::endl;
-    std::cout << std::endl;
+    std::cout << std::endl << std::endl;
 
     if (alm->mode == "fitting") {
         std::cout << " Fitting:" << std::endl;

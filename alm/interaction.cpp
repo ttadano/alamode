@@ -271,25 +271,6 @@ void Interaction::calc_distlist(int nat, double **xf)
     }
 
     memory->deallocate(neighborlist);
-    // 
-    // 	std::cout << std::endl;
-    // 	std::cout << "List of distance (in Bohr)" << std::endl;
-    // 	for (i = 0; i < symmetry->natmin; ++i){
-    // 		icount = 0;
-    // 		iat = symmetry->map_p2s[i][0];
-    // 		std::cout << std::setw(5) << iat + 1 << " (" << std::setw(3) << system->kdname[system->kd[iat]-1] << "):  ";
-    // 		for (j = i; j < nat; ++j){
-    // 			if (icount && icount % 6 == 0) {
-    // 				std::cout << std::endl;
-    // 				std::cout << "              ";
-    // 			}
-    // 			++icount;
-    // 
-    // 			std::cout << std::setw(3) << j + 1 << "(" << std::setw(3) << system->kdname[system->kd[j]-1] << ")";
-    // 			std::cout << std::setw(8) << mindist_pairs[i][j][0].dist << "  ";
-    // 		}
-    // 		std::cout << std::endl << std::endl;
-    // 	}
 }
 
 void Interaction::search_interactions()
@@ -486,20 +467,6 @@ void Interaction::search_interactions()
         }
     }
 
-
-#ifdef _DEBUG
-    for (i = 0; i < natmin; i++){
-        iat = symmetry->map_p2s[i][0];
-        for (j = 0; j < nat; j++){
-            std::cout << std::setw(5) << iat << std::setw(5) << j + 1; 
-            for (order = 0; order < maxorder; ++order){
-                std::cout << std::setw(3) << countint[i][j][order];
-            }
-            std::cout << std::endl;
-        }
-    }
-#endif
-
     std::vector<int> intlist;
 
     memory->allocate(interacting_atom_pairs, maxorder);
@@ -527,11 +494,6 @@ void Interaction::search_interactions()
             }
             std::sort(intlist.begin(), intlist.end());
 
-#ifdef _DEBUG
-            for(std::vector<int>::iterator it = intlist.begin(); it != intlist.end(); ++it){
-                std::cout << std::setw(5) << iat + 1 << std::setw(7) << *it + 1<< std::endl;
-            }
-#endif
             // write atoms inside the cutoff radius
             int id = 0;
             std::cout << "    Atom " << std::setw(5) << iat + 1  
@@ -751,16 +713,6 @@ void Interaction::calc_minvec()
 
     for (i = 0; i < 3; ++i) x_center[i] = 0.0;
 
-#ifdef _DEBUG
-    std::cout << "Size of the cluster : " << xset.size() << std::endl;
-    for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
-        InteractionCluster x_tmp = *p;
-        for (i = 0; i < 3; ++i){
-            std::cout << std::setw(15) << x_tmp.x[i];
-        }
-        std::cout << std::endl;
-    }
-#endif
 
     for (std::set<InteractionCluster>::iterator p = xset.begin(); p != xset.end(); ++p){
         InteractionCluster x_tmp = *p;
