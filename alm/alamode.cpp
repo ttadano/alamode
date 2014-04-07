@@ -93,7 +93,6 @@ void ALM::initialize()
 
 ALM::~ALM()
 {
-    finalize();
     delete input;
     delete timer;
 }
