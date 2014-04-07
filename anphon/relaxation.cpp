@@ -285,7 +285,14 @@ void Relaxation::setup_relaxation()
     MPI_Bcast(&sym_permutation, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (kpoint->kpoint_mode == 2) {
+
         generate_triplet_k(use_triplet_symmetry, sym_permutation);
+
+//         if (integration->ismear == -1) {
+//             memory->allocate(nk_irreducible_tetra, kpoint->nk_reduced);
+//             memory->allocate(map_k_tetra, kpoint->nk_reduced, kpoint->nk);
+//             generate_map_k_for_tetrahedron();
+//         }
     }
 
 }
@@ -424,6 +431,13 @@ void Relaxation::finish_relaxation()
         memory->deallocate(e_tmp);
         memory->deallocate(f_tmp);
     }
+
+//     if (kpoint->kpoint_mode == 2) {
+//         if (integration->ismear == -1) {
+//             memory->deallocate(nk_irreducible_tetra);
+//             memory->deallocate(map_k_tetra);
+//         }
+//     }
 }
 
 std::complex<double> Relaxation::V3(const unsigned int ks[3])
@@ -897,12 +911,12 @@ void Relaxation::calc_damping2(const unsigned int N, double *T, const double ome
     memory->allocate(v3_arr, pair_uniq[ik_in].size(), ns * ns);
     memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 2);
 
+    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    knum_minus = kpoint->knum_minus[knum];
 
-#pragma omp parallel for private(multi, knum, knum_minus, arr, k1, k2, is, js, omega_inner)
+#pragma omp parallel for private(multi, arr, k1, k2, is, js, omega_inner)
     for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
-        knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-        knum_minus = kpoint->knum_minus[knum];
 
         arr[0] = ns * knum_minus + snum;
 
@@ -1102,68 +1116,103 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 void Relaxation::calc_damping_tetra2(const unsigned int N, double *T, const double omega, 
                                const unsigned int ik_in, const unsigned int snum, double *ret)
 {
+    int ik, ib;
 
-    unsigned int i;
-    int ik;
+    unsigned int i, j;
     unsigned int jk;
     unsigned int is, js; 
+    unsigned int k1, k2;
     unsigned int arr[3];
 
-    int k1, k2;
+    int knum, knum_minus;
 
     double T_tmp;
     double n1, n2;
-    double v3_tmp;
-    double xk_tmp[3];
-    double omega_inner[2];
-
-    int knum, knum_minus;
-    double multi;
-
-    for (i = 0; i < N; ++i) ret[i] = 0.0;
-
-    int iloc, jloc, kloc;
-
-    double **v3_arr;
-    double ***delta_arr;
-    double ret_tmp;
-
     double f1, f2;
 
+    double xk_tmp[3];
+    double omega_inner[2];
+    double multi;
+
+    double ret_tmp;
     double epsilon = integration->epsilon;
+
+    int *kmap_identity;
+    double **energy_tmp;
+    double **weight_tetra;
+    double **v3_arr;
+    double ***delta_arr;
+
+
+    for (i = 0; i < N; ++i) ret[i] = 0.0;
 
     memory->allocate(v3_arr, pair_uniq[ik_in].size(), ns * ns);
     memory->allocate(delta_arr, pair_uniq[ik_in].size(), ns * ns, 2);
 
+    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    knum_minus = kpoint->knum_minus[knum];
 
-#pragma omp parallel for private(multi, knum, knum_minus, arr, k1, k2, is, js, omega_inner)
-    for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
-        multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
-        knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-        knum_minus = kpoint->knum_minus[knum];
+    memory->allocate(kmap_identity, nk);
+    
+    for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
-        arr[0] = ns * knum_minus + snum;
 
-        k1 = pair_uniq[ik_in][ik].group[0].ks[0];
-        k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+#pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, multi, arr)
+    {
+        memory->allocate(energy_tmp, 3, nk);
+        memory->allocate(weight_tetra, 3, nk);
 
-        for (is = 0; is < ns; ++is) {
-            arr[1] = ns * k1 + is;
-            omega_inner[0] = dynamical->eval_phonon[k1][is];
+#pragma omp for
+        for (ib = 0; ib < ns * ns; ++ib) {
+            is = ib / ns;
+            js = ib % ns;
 
-            for (js = 0; js < ns; ++js) {
-                arr[2] = ns * k2 + js;
-                omega_inner[1] = dynamical->eval_phonon[k2][js];
+            for (k1 = 0; k1 < nk; ++k1) {
 
-                v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
+                // Prepare two-phonon frequency for tetrahedron method
 
-                delta_arr[ik][ns * is + js][0] = delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
-                    - delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon);
-                delta_arr[ik][ns * is + js][1] = delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon)
-                    - delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon);
+                for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] - kpoint->xk[k1][i];
+
+                k2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+
+                energy_tmp[0][k1] = dynamical->eval_phonon[k1][is] + dynamical->eval_phonon[k2][js];
+                energy_tmp[1][k1] = dynamical->eval_phonon[k1][is] - dynamical->eval_phonon[k2][js];
+                energy_tmp[2][k1] = -energy_tmp[1][k1];
             }
-        }   
+
+            for (i = 0; i < 3; ++i) {
+                integration->calc_weight_tetrahedron(nk, kmap_identity, weight_tetra[i], energy_tmp[i], omega);
+            }
+
+            for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+
+                multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
+
+                k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+                k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+                arr[0] = ns * knum_minus + snum;
+                arr[1] = ns * k1 + is;
+                arr[2] = ns * k2 + js;
+
+                v3_arr[ik][ib] = std::norm(V3(arr));
+
+                delta_arr[ik][ib][0] = 0.0;
+                delta_arr[ik][ib][1] = 0.0;
+
+                for (i = 0; i < pair_uniq[ik_in][ik].group.size(); ++i) {
+                    jk = pair_uniq[ik_in][ik].group[i].ks[0];
+                    delta_arr[ik][ib][0] += weight_tetra[0][jk];
+                    delta_arr[ik][ib][1] += weight_tetra[1][jk] - weight_tetra[2][jk];
+                }
+            }
+        }
+
+        memory->deallocate(energy_tmp);
+        memory->deallocate(weight_tetra);
     }
+
+
 
     for (i = 0; i < N; ++i) {
         T_tmp = T[i];
@@ -1196,8 +1245,9 @@ void Relaxation::calc_damping_tetra2(const unsigned int N, double *T, const doub
 
     memory->deallocate(v3_arr);
     memory->deallocate(delta_arr);
+    memory->deallocate(kmap_identity);
 
-    for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4) / static_cast<double>(nk);
+    for (i = 0; i < N; ++i) ret[i] *=  pi * std::pow(0.5, 4);
 
 }
 
@@ -2332,6 +2382,58 @@ void Relaxation::generate_triplet_k(const bool use_triplet_symmetry, const bool 
     memory->deallocate(symmetry_group_k);
     memory->deallocate(flag_found);
 }
+
+
+// void Relaxation::generate_map_k_for_tetrahedron()
+// {
+// 
+//     int ik_irred;
+//     int ik, ik_group;
+//     int k1, k2;
+//     int k0;
+// 
+//     int nk = kpoint->nk;
+// 
+//     bool *flag_found;
+// 
+//     memory->allocate(flag_found, nk);
+// 
+//     for (ik_irred = 0; ik_irred < kpoint->nk_reduced; ++ik_irred) {
+// 
+//         nk_irreducible_tetra[ik_irred] = pair_uniq[ik_irred].size();
+// 
+//         for (ik = 0; ik < nk; ++ik) {
+//             flag_found[ik] = false;
+//             map_k_tetra[ik_irred][ik] = ik;
+//         }
+// 
+//         for (ik = 0; ik < pair_uniq[ik_irred].size(); ++ik) {
+// 
+//           //  k0 = pair_uniq[ik_irred][ik].group[0].ks[0];
+// 
+//             for (ik_group = 0; ik_group < pair_uniq[ik_irred][ik].group.size(); ++ik_group) {
+// 
+//                 k1 = pair_uniq[ik_irred][ik].group[ik_group].ks[0];
+//            //     k2 = pair_uniq[ik_irred][ik].group[ik_group].ks[1];
+// 
+//                 std::cout << "ik_irred = " << ik_irred + 1 << " ik = " << ik + 1;
+//                 std::cout << " igroup = " << ik_group + 1<< " k1 = " << k1 + 1 << std::endl;
+// 
+//                 if (!flag_found[k1]) {
+//                     map_k_tetra[ik_irred][k1] = ik;
+//                     flag_found[k1] = true;
+//                 }
+// 
+//             }
+// 
+//         }
+// 
+//     }
+// 
+//     memory->deallocate(flag_found);
+// }
+// 
+//   
 
 
 // void Relaxation::v3_test() {

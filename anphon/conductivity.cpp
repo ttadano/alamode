@@ -285,7 +285,9 @@ void Conductivity::calc_anharmonic_imagself()
                 // relaxation->calc_damping_tune(ntemp, Temperature, omega, knum, snum, tau_l);
                  relaxation->calc_damping2(ntemp, Temperature, omega, iks/ns, snum, damping3_loc);
             } else if (integration->ismear == -1) {
-                relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, damping3_loc);
+          //      relaxation->calc_damping_tetra(ntemp, Temperature, omega, knum, snum, damping3_loc);
+                relaxation->calc_damping_tetra2(ntemp, Temperature, omega, iks/ns, snum, damping3_loc);
+
             }
         }
 

@@ -119,6 +119,9 @@ namespace PHON_NS {
         bool sym_permutation;
 
         std::vector<KsListGroup> *pair_uniq;
+// 
+//         int *nk_irreducible_tetra;
+//         int **map_k_tetra;
 
         void gensym_kpairs();
         void gen_pair_uniq();
@@ -128,6 +131,8 @@ namespace PHON_NS {
         bool is_symmorphic(const int);
 
         void generate_triplet_k(const bool, const bool);
+       // void generate_map_k_for_tetrahedron();
+
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double, const unsigned int, const double *, const unsigned int, const unsigned int, double **);
 
         int ngroup;
