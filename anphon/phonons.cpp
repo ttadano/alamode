@@ -26,7 +26,6 @@
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "integration.h"
-#include "interpolation.h"
 #include "relaxation.h"
 #include "conductivity.h"
 #include "isotope.h"
@@ -75,14 +74,6 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         execute_RTA();
 
-    } else if (mode == "INTERPOLATION") {
-
-        execute_interpolation();
-
-//     } else if (mode == "GRUNEISEN") {
-// 
-//         execute_gruneisen();
-
     } else {
 
         error->exit("phonons", "invalid mode");
@@ -116,7 +107,6 @@ void PHON::create_pointers()
     relaxation = new Relaxation(this);
     selfenergy = new Selfenergy(this);
     conductivity = new Conductivity(this);
-    interpolation = new Interpolation(this);
     writes = new Writes(this);
     dos = new Dos(this);
     gruneisen = new Gruneisen(this);
@@ -138,7 +128,6 @@ void PHON::destroy_pointers()
     delete phonon_thermodynamics;
     delete relaxation;
     delete selfenergy;
-    delete interpolation;
     delete conductivity;
     delete writes;
     delete dos;
@@ -269,19 +258,5 @@ void PHON::execute_RTA()
     if (!relaxation->ks_analyze_mode) {
         conductivity->finish_kappa();
     }
-}
-
-void PHON::execute_interpolation()
-{
-    std::cout << " Sorry. This mode is not available." << std::endl;
-
-    setup_base();
-
-    dos->setup();
-    dynamical->diagonalize_dynamical_all();
-
-    interpolation->prepare_interpolation();
-    interpolation->exec_interpolation();
-    interpolation->finish_interpolation();
 }
 
