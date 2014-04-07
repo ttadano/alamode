@@ -277,8 +277,6 @@ void Relaxation::setup_relaxation()
     memory->deallocate(relvec);
     memory->deallocate(invsqrt_mass_p);
 
-   
-
     if (mympi->my_rank == 0) {
         if (calc_fstate_omega) sym_permutation = false;
     }

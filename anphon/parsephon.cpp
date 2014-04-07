@@ -74,8 +74,13 @@ void Input::parce_input(int narg, char **arg)
     if (!locate_tag("&kpoint")) error->exit("parse_input", "&kpoint entry not found in the input file");
     parse_kpoints();
 
-    if (!locate_tag("&analysis")) error->exit("parse_input", "&analysis entry not found in the input file");
-    parse_analysis_vars();
+    bool use_defaults_for_analysis;
+    if (!locate_tag("&analysis")) {
+        use_defaults_for_analysis = true;
+    } else {
+        use_defaults_for_analysis = false;
+    }
+    parse_analysis_vars(use_defaults_for_analysis);
 
 }
 
@@ -299,11 +304,12 @@ void Input::parse_general_vars()
     general_var_dict.clear();
 }
 
-void Input::parse_analysis_vars()
+void Input::parse_analysis_vars(const bool use_default_values)
 {
     int i;
 
-    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS TDOS GRUNEISEN NEWFCS";
+    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
+                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS TDOS GRUNEISEN NEWFCS";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
@@ -315,7 +321,7 @@ void Input::parse_analysis_vars()
 
     double *isotope_factor;
     std::string ks_input;
-    std::map<std::string, std::string> general_var_dict;
+    std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v;
 
     print_xsf = false;
@@ -337,30 +343,31 @@ void Input::parse_analysis_vars()
     fstate_omega = false;
     fstate_k = false;
 
-    get_var_dict(str_allowed_list, general_var_dict);
+    if (!use_default_values) {
+        get_var_dict(str_allowed_list, analysis_var_dict);
 
-    assign_val(print_xsf, "PRINTXSF", general_var_dict);
-    assign_val(print_vel, "PRINTVEL", general_var_dict);
-    assign_val(print_evec, "PRINTEVEC", general_var_dict);
-    assign_val(print_rmsd, "PRINTRMSD", general_var_dict);
+        assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
+        assign_val(print_vel, "PRINTVEL", analysis_var_dict);
+        assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
+        assign_val(print_rmsd, "PRINTRMSD", analysis_var_dict);
 
-    assign_val(projected_dos, "PDOS", general_var_dict);
-    assign_val(two_phonon_dos, "TDOS", general_var_dict);
-    assign_val(print_gruneisen, "GRUNEISEN", general_var_dict);
-    assign_val(print_newfcs, "NEWFCS", general_var_dict);
+        assign_val(projected_dos, "PDOS", analysis_var_dict);
+        assign_val(two_phonon_dos, "TDOS", analysis_var_dict);
+        assign_val(print_gruneisen, "GRUNEISEN", analysis_var_dict);
+        assign_val(print_newfcs, "NEWFCS", analysis_var_dict);
 
-    assign_val(lclassical, "LCLASSICAL", general_var_dict);
-    assign_val(quartic_mode, "QUARTIC", general_var_dict);
-    assign_val(atom_project_mode, "ATOMPROJ", general_var_dict);
-    assign_val(calc_realpart, "REALPART", general_var_dict);
-    assign_val(include_isotope, "ISOTOPE", general_var_dict);
-    assign_val(fstate_omega, "FSTATE_W", general_var_dict);
-    assign_val(fstate_k, "FSTATE_K", general_var_dict);
-    assign_val(ks_input, "KS_INPUT", general_var_dict);
-
+        assign_val(lclassical, "LCLASSICAL", analysis_var_dict);
+        assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
+        assign_val(atom_project_mode, "ATOMPROJ", analysis_var_dict);
+        assign_val(calc_realpart, "REALPART", analysis_var_dict);
+        assign_val(include_isotope, "ISOTOPE", analysis_var_dict);
+        assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
+        assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
+        assign_val(ks_input, "KS_INPUT", analysis_var_dict);
+    }
 
     if (include_isotope) {
-        split_str_by_space(general_var_dict["ISOFACT"], isofact_v);
+        split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
 
         if (isofact_v.size() != system->nkd) {
             error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
@@ -401,7 +408,7 @@ void Input::parse_analysis_vars()
         memory->deallocate(isotope_factor);
     }
 
-    general_var_dict.clear();
+    analysis_var_dict.clear();
 }
 
 void Input::parse_cell_parameter()
