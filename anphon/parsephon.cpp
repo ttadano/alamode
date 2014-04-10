@@ -101,7 +101,7 @@ void Input::parse_general_vars()
     std::string borninfo, file_result;
     std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYMM CELLDIM FCSINFO TMIN TMAX DT \
+    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM CELLDIM FCSINFO TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
                                    DELTA_A RESTART TREVSYM NKD KD MASS TRISYM";
     std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
@@ -214,7 +214,7 @@ void Input::parse_general_vars()
 
     assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
     assign_val(tolerance, "TOLERANCE", general_var_dict);
-    assign_val(printsymmetry, "PRINTSYMM", general_var_dict);
+    assign_val(printsymmetry, "PRINTSYM", general_var_dict);
 
     assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
     assign_val(restart, "RESTART", general_var_dict);
