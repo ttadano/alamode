@@ -74,7 +74,7 @@ void Writes::write_input_vars()
         std::cout << "  MULTDAT = " << symmetry->multiply_data << std::endl;
         std::cout << "  ICONST = " << constraint->constraint_mode << std::endl;
         std::cout << "  ROTAXIS = " << constraint->rotation_axis << std::endl;
-        std::cout << "  FC2INFO = " << constraint->fc2_file << std::endl;
+        std::cout << "  FC2XML = " << constraint->fc2_file << std::endl;
         std::cout << "  REFINFO = " << symmetry->refsys_file << std::endl;
         std::cout << std::endl;
     }

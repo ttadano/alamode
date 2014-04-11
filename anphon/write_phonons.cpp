@@ -55,7 +55,7 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << "  MODE = " << phon->mode << std::endl;
-    std::cout << "  FCSINFO = " << fcs_phonon->file_fcs << std::endl;
+    std::cout << "  FCSXML = " << fcs_phonon->file_fcs << std::endl;
     std::cout << "  RESTART = " << phon->restart_flag << std::endl;
     std::cout << std::endl;
 
@@ -72,13 +72,10 @@ void Writes::write_input_vars()
     std::cout << std::endl << std::endl;
 
     std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance << std::endl;
-    std::cout << "  PRINTSYMM = " << symmetry->printsymmetry << std::endl;
+    std::cout << "  PRINTSYM = " << symmetry->printsymmetry << std::endl;
     std::cout << "  TREVSYM = " << symmetry->time_reversal_sym << std::endl;
     std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
     std::cout << std::endl;
-//     std::cout << "  CELLDIM = ";
-//     for (i = 0; i < 3; ++i) std::cout << std::setw(4) << system->cell_dimension[i];
-//     std::cout << std::endl << std::endl;
 
    
      std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
@@ -205,16 +202,16 @@ void Writes::setup_result_io()
             found_tag = false;
             while (fs_result >> line_tmp)
             {
-                if (line_tmp == "#FCSINFO") {
+                if (line_tmp == "#FCSXML") {
                     found_tag = true;
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #FCSINFO tag");
+            if (!found_tag) error->exit("setup_result_io", "Could not find #FCSXML tag");
 
             fs_result >> str_tmp;
             if (str_tmp != fcs_phonon->file_fcs) {
-                error->warn("setup_result_io", "FCSINFO is not consistent");
+                error->warn("setup_result_io", "FCSXML is not consistent");
             }
 
 
@@ -287,9 +284,9 @@ void Writes::setup_result_io()
             fs_result << conductivity->use_classical_Cv << std::endl;
             fs_result << "#END CLASSICAL" << std::endl;
 
-            fs_result << "#FCSINFO" << std::endl;
+            fs_result << "#FCSXML" << std::endl;
             fs_result << fcs_phonon->file_fcs << std::endl;
-            fs_result << "#END  FCSINFO" << std::endl;
+            fs_result << "#END  FCSXML" << std::endl;
 
             fs_result << "#SMEARING" << std::endl;
             fs_result << integration->ismear << std::endl;

@@ -101,10 +101,10 @@ void Input::parse_general_vars()
     std::string borninfo, file_result;
     std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM CELLDIM FCSINFO TMIN TMAX DT \
+    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM CELLDIM FCSXML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
                                    DELTA_A RESTART TREVSYM NKD KD MASS TRISYM";
-    std::string str_no_defaults = "PREFIX MODE FCSINFO NKD KD MASS";
+    std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
     std::vector<std::string> no_defaults, celldim_v;
     std::vector<std::string> kdname_v, masskd_v;
     std::map<std::string, std::string> general_var_dict;
@@ -141,7 +141,7 @@ void Input::parse_general_vars()
     nsym = my_cast<int>(general_var_dict["NSYM"]);
 #endif
 
-    fcsinfo = general_var_dict["FCSINFO"];
+    fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
 
     split_str_by_space(general_var_dict["KD"], kdname_v);

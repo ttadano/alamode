@@ -607,16 +607,16 @@ void Interpolation::parse_self_energy()
     found_tag = false;
     while (fs_result >> line_tmp)
     {
-        if (line_tmp == "#FCSINFO") {
+        if (line_tmp == "#FCSXML") {
             found_tag = true;
             break;
         }
     }
-    if (!found_tag) error->exit("setup_result_io", "Could not find #FCSINFO tag");
+    if (!found_tag) error->exit("setup_result_io", "Could not find #FCSXML tag");
 
     fs_result >> str_tmp;
     if (str_tmp != fcs_phonon->file_fcs) {
-        error->warn("setup_result_io", "FCSINFO is not consistent");
+        error->warn("setup_result_io", "FCSXML is not consistent");
     }
 
     found_tag = false;

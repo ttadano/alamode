@@ -463,11 +463,14 @@ void Interaction::search_interactions()
         error->exit("search_interactions", "This cannot happen.");
     }
 
+
     if (interaction_type != 1) {
-        if(maxval(natmin, nat, order, countint) > 1) {
+        if(maxval(natmin, nat, maxorder, countint) > 1) {
             error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
         }
     }
+
+    memory->deallocate(countint);
 
     std::vector<int> intlist;
 
@@ -550,7 +553,6 @@ void Interaction::search_interactions()
             memory->deallocate(intarr);
         }
     }
-    memory->deallocate(countint);
 
     std::cout << std::endl;
     int *pair_tmp;

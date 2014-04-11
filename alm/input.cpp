@@ -387,7 +387,7 @@ void Input::parse_fitting_vars() {
     std::string rotation_axis;
     std::string refsys_file, fc2_file;
 
-    std::string str_allowed_list = "NDATA NSTART NEND NSKIP NBOOT DFILE FFILE MULTDAT ICONST ROTAXIS REFINFO FC2INFO";
+    std::string str_allowed_list = "NDATA NSTART NEND NSKIP NBOOT DFILE FFILE MULTDAT ICONST ROTAXIS REFINFO FC2XML";
     std::string str_no_defaults = "NDATA DFILE FFILE";
     std::vector<std::string> no_defaults;
 
@@ -472,9 +472,9 @@ void Input::parse_fitting_vars() {
     }
 
     if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
-        fc2_file = fitting_var_dict["FC2INFO"];
+        fc2_file = fitting_var_dict["FC2XML"];
         if (fc2_file.empty()) {
-            error->exit("parse_fitting_vars", "FC2INFO has to be given when ICONST=2, 4, 6");
+            error->exit("parse_fitting_vars", "FC2XML has to be given when ICONST=2, 4, 6");
         }
     }
 
