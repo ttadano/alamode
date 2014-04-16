@@ -33,6 +33,7 @@ Constraint::~Constraint()
      if (exist_constraint && alm->mode == "fitting") {
           memory->deallocate(const_mat);
           memory->deallocate(const_rhs);
+          memory->deallocate(const_symmetry);
      }
 }
 
@@ -289,7 +290,7 @@ void Constraint::setup()
         std::cout << std::endl;
     }
 
-    memory->deallocate(const_symmetry);
+   // memory->deallocate(const_symmetry);
 }
 
 void Constraint::calc_constraint_matrix(const int N, int &P){
