@@ -34,16 +34,12 @@ Interaction::Interaction(ALM *alm) : Pointers(alm) {
 
 Interaction::~Interaction() {
     memory->deallocate(xcrd);
-    memory->deallocate(distlist);
     memory->deallocate(str_order);
-    memory->deallocate(ninter);
-    memory->deallocate(intpairs);
-    memory->deallocate(relvec);
     memory->deallocate(nbody_include);
     memory->deallocate(pairs);
     memory->deallocate(mindist_pairs);
     memory->deallocate(minvec);
-    memory->deallocate(distall);
+    memory->deallocate(interaction_pair);
 }
 
 void Interaction::init()
@@ -82,7 +78,11 @@ void Interaction::init()
         std::cout << "  " <<  std::setw(9) << str_order[i] << std::endl; 
         for (j = 0; j < nkd; ++j){
             for (k = 0; k < nkd; ++k){
-                std::cout << std::setw(9) << rcs[i][j][k];
+                if (rcs[i][j][k] < 0) {
+                    std::cout << std::setw(9) << "None";
+                } else {
+                    std::cout << std::setw(9) << rcs[i][j][k];
+                }
             }
             std::cout << std::endl;
         }
@@ -94,13 +94,15 @@ void Interaction::init()
     }
 
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
+    memory->allocate(mindist_pairs, nat, nat);
     memory->allocate(xcrd, nneib, nat, 3);
-    memory->allocate(distlist, nat, nat);
-    memory->allocate(distall, symmetry->natmin, nat);
-    memory->allocate(mindist_pairs, symmetry->natmin, nat);
 
-    calc_distlist(nat, system->xcoord);
-    search_interactions();
+    calc_distlist(nat, system->xcoord, mindist_pairs);
+
+    memory->allocate(interaction_pair, maxorder, symmetry->natmin);
+    memory->allocate(pairs, maxorder);
+
+    search_interactions(interaction_pair, pairs);
     calc_minvec();
 
     timer->print_elapsed();
@@ -117,7 +119,7 @@ double Interaction::distance(double *x1, double *x2)
     return dist;
 }
 
-void Interaction::calc_distlist(int nat, double **xf)
+void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mindist_pairs)
 {
     int icell = 0;
     int i, j, k;
@@ -127,6 +129,9 @@ void Interaction::calc_distlist(int nat, double **xf)
     double dist_tmp;
     double vec[3];
 
+    std::vector<DistInfo> **distall;
+
+    memory->allocate(distall, nat, nat);
 
     for (i = 0; i < nat; ++i){
         for (j = 0; j < 3; ++j){
@@ -151,32 +156,13 @@ void Interaction::calc_distlist(int nat, double **xf)
 
     for (icell = 0; icell < nneib; ++icell) system->frac2cart(xcrd[icell]);
 
-
-    for (i = 0; i < nat; ++i){
-        for (j = i; j < nat; ++j){
-            distlist[i][j] = distance(xcrd[0][i], xcrd[0][j]);
-            distlist[j][i] = distlist[i][j];
-        }
-    }
-
-    for (icell = 1; icell < nneib; ++icell){
-        for (i = 0; i < nat; ++i){
-            for (j = i; j < nat; ++j){
-                dist_tmp = distance(xcrd[0][i], xcrd[icell][j]);
-                distlist[i][j] = std::min<double>(dist_tmp, distlist[i][j]);
-                distlist[j][i] = distlist[i][j];
-            }
-        }
-    }
-
-    for (i = 0; i < symmetry->natmin; ++i) {
-        iat = symmetry->map_p2s[i][0];
+    for (i = 0; i < nat; ++i) {
         for (j = 0; j < nat; ++j) {
             for (icell = 0; icell < nneib; ++icell) {
 
-                dist_tmp = distance(xcrd[0][iat], xcrd[icell][j]);
+                dist_tmp = distance(xcrd[0][i], xcrd[icell][j]);
 
-                for (k = 0; k < 3; ++k) vec[k] = xcrd[icell][j][k] - xcrd[0][iat][k];
+                for (k = 0; k < 3; ++k) vec[k] = xcrd[icell][j][k] - xcrd[0][i][k];
 
                 distall[i][j].push_back(DistInfo(icell, dist_tmp, vec));
             }
@@ -184,11 +170,10 @@ void Interaction::calc_distlist(int nat, double **xf)
         }
     }
 
-
     // Construct the list with minimum distances.
 
     double dist_min;
-    for (i = 0; i < symmetry->natmin; ++i) {
+    for (i = 0; i < nat; ++i) {
         for (j = 0; j < nat; ++j) {
             mindist_pairs[i][j].clear();
 
@@ -201,6 +186,8 @@ void Interaction::calc_distlist(int nat, double **xf)
         }
     }
 
+    memory->deallocate(distall);
+
     std::vector<DistList> *neighborlist;
 
     memory->allocate(neighborlist, symmetry->natmin);
@@ -208,8 +195,10 @@ void Interaction::calc_distlist(int nat, double **xf)
     for (i = 0; i < symmetry->natmin; ++i) {
         neighborlist[i].clear();
 
+        iat = symmetry->map_p2s[i][0];
+
         for (j = 0; j < nat; ++j) {
-            neighborlist[i].push_back(DistList(j, mindist_pairs[i][j][0].dist));
+            neighborlist[i].push_back(DistList(j, mindist_pairs[iat][j][0].dist));
         }
         std::sort(neighborlist[i].begin(), neighborlist[i].end());
     }
@@ -271,206 +260,50 @@ void Interaction::calc_distlist(int nat, double **xf)
         }
         std::cout << std::endl;
     }
-
+    atomlist.clear();
     memory->deallocate(neighborlist);
 }
 
-void Interaction::search_interactions()
+void Interaction::search_interactions(std::vector<int> **interaction_list_out, std::set<IntList> *pair_out)
 {
-    int icell;
     int i, j;
-    int iat, jat;
     int order;
-
-    double dist;
-
     int natmin = symmetry->natmin;
+
+    int icell;
+    int iat, jat;
     int nat = system->nat;
+    int ikd, jkd;
 
-    int ***countint;
+    double cutoff_tmp;
+    std::set<IntList> *interacting_atom_pairs;
 
-    memory->allocate(countint, natmin, nat, maxorder);
-    memory->allocate(intpairs, natmin, maxorder, nat);
-    memory->allocate(ninter, natmin, maxorder);
-    memory->allocate(relvec, natmin, maxorder, nat, 3);
-
-    // initialize arrays
-    for (i = 0; i < natmin; ++i){
-        for (j = 0; j < nat; ++j){
-            for (order = 0; order < maxorder; ++order){
-                countint[i][j][order] = 0;
-            }
-        }
-    }
-
-    for (i = 0; i < natmin; ++i){
-        for (order = 0; order < maxorder; ++order){
-            for (j = 0; j < nat; ++j){
-                intpairs[i][order][j] = 0;
-            }
-        }
-    }
-
-    for (i = 0; i < natmin; ++i){
-        for (order = 0; order < maxorder; ++order){
-            ninter[i][order] = 0;
-        }
-    }
-    ///
-
-    if (interaction_type == 0) {
-
-        for (icell = 0; icell < nneib; ++icell){
-            for (i = 0; i < natmin; ++i){
-
-                iat = symmetry->map_p2s[i][0]; //index of an atom in the primitive cell
-
-                for (jat = 0; jat < nat; ++jat){
-
-                    dist = distance(xcrd[0][iat], xcrd[icell][jat]);
-
-                    for (order = 0; order < maxorder; ++order){
-
-                        if(dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-                            if(!countint[i][jat][order]) {
-                                intpairs[i][order][ninter[i][order]] = jat;
-
-                                // store relative vectors for molecular dynamics simulation
-                                for(j = 0; j < 3; ++j){
-                                    relvec[i][order][ninter[i][order]][j] = xcrd[icell][jat][j] - xcrd[0][iat][j];
-                                }
-                                ++ninter[i][order];
-                            }
-                            ++countint[i][jat][order];
-                        }
-                    }
-                }
-            }
-        }
-
-    } else if (interaction_type == 1) {
-
+    for (order = 0; order < maxorder; ++order) {
         for (i = 0; i < natmin; ++i) {
+            interaction_list_out[order][i].clear();
+
             iat = symmetry->map_p2s[i][0];
 
-            for (jat = 0; jat < nat; ++jat) {
-                dist = mindist_pairs[i][jat][0].dist;
-
-                // Consider all interactions even if the interaction occurs more than twice.
-                // Neglect cutoff radius for harmonic terms.
-
-                intpairs[i][0][ninter[i][0]] = jat;
-                ++ninter[i][0];
-                countint[i][jat][0] = mindist_pairs[i][jat].size();
-
-
-                for (order = 1; order < maxorder; ++order) {
-
-                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-                        if (!countint[i][jat][order]) {
-                            intpairs[i][order][ninter[i][order]] = jat;
-
-                            for(j = 0; j < 3; ++j){
-                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
-                            }
-                            ++ninter[i][order];
-                        }
-                        ++countint[i][jat][order];
-                    }
-                }
-            }
-        }
-
-    } else if (interaction_type == 2) {
-
-        for (i = 0; i < natmin; ++i) {
-            iat = symmetry->map_p2s[i][0];
+            ikd = system->kd[iat] - 1;
 
             for (jat = 0; jat < nat; ++jat) {
-                dist = mindist_pairs[i][jat][0].dist;
 
-                // Add to interaction list only when the interaction occurs once.
-                // Neglect cutoff radius for harmonic terms.
+                jkd = system->kd[jat] - 1;
 
-                if (mindist_pairs[i][jat].size() == 1) {
-                    intpairs[i][0][ninter[i][0]] = jat;
-                    for (j = 0; j < 3; ++j) {
-                        relvec[i][0][ninter[i][0]][j] = mindist_pairs[i][jat][0].relvec[j];
-                    }
-                    ++ninter[i][0];
-                    countint[i][jat][0] = 1;
-                }
+                cutoff_tmp = rcs[order][ikd][jkd];
 
-                for (order = 1; order < maxorder; ++order) {
+                if (cutoff_tmp < 0.0) {
+                    interaction_list_out[order][i].push_back(jat);
+                } else {
 
-                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-                        if (!countint[i][jat][order]) {
-                            intpairs[i][order][ninter[i][order]] = jat;
-
-                            for(j = 0; j < 3; ++j){
-                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
-                            }
-                            ++ninter[i][order];
-                        }
-                        ++countint[i][jat][order];
+                    if (mindist_pairs[iat][jat][0].dist <= cutoff_tmp) {
+                        interaction_list_out[order][i].push_back(jat);
                     }
                 }
-            }
-        }
-
-    } else if (interaction_type == 3) {
-
-        for (i = 0; i < natmin; ++i) {
-            iat = symmetry->map_p2s[i][0];
-
-            for (jat = 0; jat < nat; ++jat) {
-                dist = mindist_pairs[i][jat][0].dist;
-
-                // Add to interaction list when the distance between the corresponding
-                // atoms is smaller than the cutoff radius.
-
-                if (dist <= rcs[0][system->kd[iat] - 1][system->kd[jat] - 1]) {
-                    intpairs[i][0][ninter[i][0]] = jat;
-                    for (j = 0; j < 3; ++j) {
-                        relvec[i][0][ninter[i][0]][j] = mindist_pairs[i][jat][0].relvec[j];
-                    }
-                    ++ninter[i][0];
-                    countint[i][jat][0] = mindist_pairs[i][jat].size();
-                }
-
-                for (order = 1; order < maxorder; ++order) {
-
-                    if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
-
-                        if (!countint[i][jat][order]) {
-                            intpairs[i][order][ninter[i][order]] = jat;
-
-                            for(j = 0; j < 3; ++j){
-                                relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
-                            }
-                            ++ninter[i][order];
-                        }
-                        ++countint[i][jat][order];
-                    }
-                }
-            }
-        }
-
-    } else {
-        error->exit("search_interactions", "This cannot happen.");
-    }
-
-
-    if (interaction_type != 1) {
-        if(maxval(natmin, nat, maxorder, countint) > 1) {
-            error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
+            }            
         }
     }
-
-    memory->deallocate(countint);
+ 
 
     std::vector<int> intlist;
 
@@ -479,7 +312,7 @@ void Interaction::search_interactions()
     intlist.clear();
     std::cout << std::endl;
     std::cout << "  List of interacting atom pairs considered for each order:" << std::endl;
-    for(order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
 
         interacting_atom_pairs[order].clear();
 
@@ -487,15 +320,16 @@ void Interaction::search_interactions()
 
         for(i = 0; i < natmin; ++i){
 
-            if(ninter[i][order] == 0) {
+            if(interaction_list_out[order][i].size() == 0) {
                 std::cout << "   No interacting atoms! Skipped." << std::endl;
                 continue; // no interaction
             }
 
             iat = symmetry->map_p2s[i][0];
 
-            for(j = 0; j < ninter[i][order]; ++j){
-                intlist.push_back(intpairs[i][order][j]);
+            intlist.clear();
+            for (std::vector<int>::const_iterator it = interaction_list_out[order][i].begin(); it != interaction_list_out[order][i].end(); ++it) {
+                intlist.push_back((*it));
             }
             std::sort(intlist.begin(), intlist.end());
 
@@ -517,7 +351,7 @@ void Interaction::search_interactions()
             }
 
             std::cout << std::endl << std::endl;
-            std::cout << "    Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl << std::endl;
+            std::cout << "    Number of total interaction pairs (duplication allowed) = " << interaction_list_out[order][i].size() << std::endl << std::endl;
 
             int *intarr;        
             memory->allocate(intarr, order + 2);
@@ -541,7 +375,7 @@ void Interaction::search_interactions()
                             intarr[isize + 1] = data[isize];
                         }
 
-                        if(!is_incutoff(order+2, intarr)) continue;
+                        if(!is_incutoff2(order+2, intarr)) continue;
                         insort(order+2, intarr);
 
                         interacting_atom_pairs[order].insert(IntList(order + 2, intarr));
@@ -556,18 +390,17 @@ void Interaction::search_interactions()
 
     std::cout << std::endl;
     int *pair_tmp;
-    memory->allocate(pairs, maxorder);
 
-    for(order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order){
 
-        pairs[order].clear();
+        pair_out[order].clear();
 
         if (order + 2 > nbody_include[order]) {
             std::cout << "  For " << std::setw(8) << interaction->str_order[order] << ", ";
             std::cout << "interactions related to more than" << std::setw(2) << nbody_include[order];
             std::cout << " atoms will be neglected." << std::endl;
         }
-        
+
 
         memory->allocate(pair_tmp, order + 2);
 
@@ -579,12 +412,376 @@ void Interaction::search_interactions()
             // Ignore many-body case 
             if (nbody(order + 2, pair_tmp) > nbody_include[order]) continue;
 
-            pairs[order].insert(IntList(order + 2, pair_tmp));
+            pair_out[order].insert(IntList(order + 2, pair_tmp));
 
         }
         memory->deallocate(pair_tmp);
     }
     memory->deallocate(interacting_atom_pairs);
+}
+
+// 
+// void Interaction::search_interactions()
+// {
+//     int icell;
+//     int i, j;
+//     int iat, jat;
+//     int order;
+// 
+//     double dist;
+// 
+//     int natmin = symmetry->natmin;
+//     int nat = system->nat;
+// 
+//     int ***countint;
+// 
+//     memory->allocate(countint, natmin, nat, maxorder);
+//     memory->allocate(intpairs, natmin, maxorder, nat);
+//     memory->allocate(ninter, natmin, maxorder);
+//    //. memory->allocate(relvec, natmin, maxorder, nat, 3);
+// 
+//     // initialize arrays
+//     for (i = 0; i < natmin; ++i){
+//         for (j = 0; j < nat; ++j){
+//             for (order = 0; order < maxorder; ++order){
+//                 countint[i][j][order] = 0;
+//             }
+//         }
+//     }
+// 
+//     for (i = 0; i < natmin; ++i){
+//         for (order = 0; order < maxorder; ++order){
+//             for (j = 0; j < nat; ++j){
+//                 intpairs[i][order][j] = 0;
+//             }
+//         }
+//     }
+// 
+//     for (i = 0; i < natmin; ++i){
+//         for (order = 0; order < maxorder; ++order){
+//             ninter[i][order] = 0;
+//         }
+//     }
+//     ///
+// 
+//     if (interaction_type == 0) {
+// 
+//         for (icell = 0; icell < nneib; ++icell){
+//             for (i = 0; i < natmin; ++i){
+// 
+//                 iat = symmetry->map_p2s[i][0]; //index of an atom in the primitive cell
+// 
+//                 for (jat = 0; jat < nat; ++jat){
+// 
+//                     dist = distance(xcrd[0][iat], xcrd[icell][jat]);
+// 
+//                     for (order = 0; order < maxorder; ++order){
+// 
+//                         if(dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+// 
+//                             if(!countint[i][jat][order]) {
+//                                 intpairs[i][order][ninter[i][order]] = jat;
+// 
+//                                 // store relative vectors for molecular dynamics simulation
+// //                                 for(j = 0; j < 3; ++j){
+// //                                     relvec[i][order][ninter[i][order]][j] = xcrd[icell][jat][j] - xcrd[0][iat][j];
+// //                                 }
+//                                 ++ninter[i][order];
+//                             }
+//                             ++countint[i][jat][order];
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+// 
+//     } else if (interaction_type == 1) {
+// 
+//         for (i = 0; i < natmin; ++i) {
+//             iat = symmetry->map_p2s[i][0];
+// 
+//             for (jat = 0; jat < nat; ++jat) {
+//                 dist = mindist_pairs[i][jat][0].dist;
+// 
+//                 // Consider all interactions even if the interaction occurs more than twice.
+//                 // Neglect cutoff radius for harmonic terms.
+// 
+//                 intpairs[i][0][ninter[i][0]] = jat;
+//                 ++ninter[i][0];
+//                 countint[i][jat][0] = mindist_pairs[i][jat].size();
+// 
+// 
+//                 for (order = 1; order < maxorder; ++order) {
+// 
+//                     if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+// 
+//                         if (!countint[i][jat][order]) {
+//                             intpairs[i][order][ninter[i][order]] = jat;
+// 
+// //                             for(j = 0; j < 3; ++j){
+// //                                 relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
+// //                             }
+//                             ++ninter[i][order];
+//                         }
+//                         ++countint[i][jat][order];
+//                     }
+//                 }
+//             }
+//         }
+// 
+//     } else if (interaction_type == 2) {
+// 
+//         for (i = 0; i < natmin; ++i) {
+//             iat = symmetry->map_p2s[i][0];
+// 
+//             for (jat = 0; jat < nat; ++jat) {
+//                 dist = mindist_pairs[i][jat][0].dist;
+// 
+//                 // Add to interaction list only when the interaction occurs once.
+//                 // Neglect cutoff radius for harmonic terms.
+// 
+//                 if (mindist_pairs[i][jat].size() == 1) {
+//                     intpairs[i][0][ninter[i][0]] = jat;
+// //                     for (j = 0; j < 3; ++j) {
+// //                         relvec[i][0][ninter[i][0]][j] = mindist_pairs[i][jat][0].relvec[j];
+// //                     }
+//                     ++ninter[i][0];
+//                     countint[i][jat][0] = 1;
+//                 }
+// 
+//                 for (order = 1; order < maxorder; ++order) {
+// 
+//                     if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+// 
+//                         if (!countint[i][jat][order]) {
+//                             intpairs[i][order][ninter[i][order]] = jat;
+// 
+// //                             for(j = 0; j < 3; ++j){
+// //                                 relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
+// //                             }
+//                             ++ninter[i][order];
+//                         }
+//                         ++countint[i][jat][order];
+//                     }
+//                 }
+//             }
+//         }
+// 
+//     } else if (interaction_type == 3) {
+// 
+//         for (i = 0; i < natmin; ++i) {
+//             iat = symmetry->map_p2s[i][0];
+// 
+//             for (jat = 0; jat < nat; ++jat) {
+//                 dist = mindist_pairs[i][jat][0].dist;
+// 
+//                 // Add to interaction list when the distance between the corresponding
+//                 // atoms is smaller than the cutoff radius.
+// 
+//                 if (dist <= rcs[0][system->kd[iat] - 1][system->kd[jat] - 1]) {
+//                     intpairs[i][0][ninter[i][0]] = jat;
+// //                     for (j = 0; j < 3; ++j) {
+// //                         relvec[i][0][ninter[i][0]][j] = mindist_pairs[i][jat][0].relvec[j];
+// //                     }
+//                     ++ninter[i][0];
+//                     countint[i][jat][0] = mindist_pairs[i][jat].size();
+//                 }
+// 
+//                 for (order = 1; order < maxorder; ++order) {
+// 
+//                     if (dist <= rcs[order][system->kd[iat] - 1][system->kd[jat] - 1]) {
+// 
+//                         if (!countint[i][jat][order]) {
+//                             intpairs[i][order][ninter[i][order]] = jat;
+// 
+// //                             for(j = 0; j < 3; ++j){
+// //                                 relvec[i][order][ninter[i][order]][j] = mindist_pairs[i][jat][0].relvec[j];
+// //                             }
+//                             ++ninter[i][order];
+//                         }
+//                         ++countint[i][jat][order];
+//                     }
+//                 }
+//             }
+//         }
+// 
+//     } else {
+//         error->exit("search_interactions", "This cannot happen.");
+//     }
+// 
+// 
+//     if (interaction_type != 1) {
+//         if(maxval(natmin, nat, maxorder, countint) > 1) {
+//             error->warn("search_interactions", "Duplicate interaction exits\nThis will be a critical problem for a large cell MD.");
+//         }
+//     }
+// 
+//     memory->deallocate(countint);
+// 
+//     std::vector<int> intlist;
+// 
+//     memory->allocate(interacting_atom_pairs, maxorder);
+// 
+//     intlist.clear();
+//     std::cout << std::endl;
+//     std::cout << "  List of interacting atom pairs considered for each order:" << std::endl;
+//     for(order = 0; order < maxorder; ++order){
+// 
+//         interacting_atom_pairs[order].clear();
+// 
+//         std::cout << std::endl << "   ***" << str_order[order] << "***" << std::endl;
+// 
+//         for(i = 0; i < natmin; ++i){
+// 
+//             if(ninter[i][order] == 0) {
+//                 std::cout << "   No interacting atoms! Skipped." << std::endl;
+//                 continue; // no interaction
+//             }
+// 
+//             iat = symmetry->map_p2s[i][0];
+// 
+//             for(j = 0; j < ninter[i][order]; ++j){
+//                 intlist.push_back(intpairs[i][order][j]);
+//             }
+//             std::sort(intlist.begin(), intlist.end());
+// 
+//             // write atoms inside the cutoff radius
+//             int id = 0;
+//             std::cout << "    Atom " << std::setw(5) << iat + 1  
+//                 << "(" << std::setw(3) << system->kdname[system->kd[iat]-1] << ")" << " interacts with atoms ... " << std::endl;
+// 
+//             for (int id = 0; id < intlist.size(); ++id) {
+//                 if (id%6 == 0) {
+//                     if (id == 0) {
+//                         std::cout << "   ";
+//                     } else {
+//                         std::cout << std::endl;
+//                         std::cout << "   ";
+//                     }
+//                 }
+//                 std::cout << std::setw(5) << intlist[id] + 1 << "(" << std::setw(3) << system->kdname[system->kd[intlist[id]]-1] << ")";
+//             }
+// 
+//             std::cout << std::endl << std::endl;
+//             std::cout << "    Number of total interaction pairs (duplication allowed) = " << ninter[i][order] << std::endl << std::endl;
+// 
+//             int *intarr;        
+//             memory->allocate(intarr, order + 2);
+// 
+//             if(intlist.size() > 0) {
+//                 if(order == 0){
+//                     for(unsigned int ielem = 0; ielem < intlist.size(); ++ielem){
+//                         intarr[0] = iat;
+//                         intarr[1] = intlist[ielem];
+//                         insort(order+2, intarr);
+// 
+//                         interacting_atom_pairs[order].insert(IntList(order + 2, intarr));
+//                     }
+//                 } else if (order > 0) {
+//                     CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
+//                     do {
+//                         std::vector<int> data = g.now();
+//                         intarr[0] = iat;
+//                         intarr[1] = data[0];
+//                         for(unsigned int isize = 1; isize < data.size() ; ++isize){
+//                             intarr[isize + 1] = data[isize];
+//                         }
+// 
+//                         if(!is_incutoff(order+2, intarr)) continue;
+//                         insort(order+2, intarr);
+// 
+//                         interacting_atom_pairs[order].insert(IntList(order + 2, intarr));
+// 
+//                     } while(g.next());
+//                 }
+//             }
+//             intlist.clear();
+//             memory->deallocate(intarr);
+//         }
+//     }
+// 
+//     std::cout << std::endl;
+//     int *pair_tmp;
+//     memory->allocate(pairs, maxorder);
+// 
+//     for(order = 0; order < maxorder; ++order){
+// 
+//         pairs[order].clear();
+// 
+//         if (order + 2 > nbody_include[order]) {
+//             std::cout << "  For " << std::setw(8) << interaction->str_order[order] << ", ";
+//             std::cout << "interactions related to more than" << std::setw(2) << nbody_include[order];
+//             std::cout << " atoms will be neglected." << std::endl;
+//         }
+//         
+// 
+//         memory->allocate(pair_tmp, order + 2);
+// 
+//         for (std::set<IntList>::const_iterator it = interacting_atom_pairs[order].begin(); it != interacting_atom_pairs[order].end(); ++it) {
+//             for (j = 0; j < order + 2; ++j) {
+//                 pair_tmp[j] = (*it).iarray[j];
+//             }
+// 
+//             // Ignore many-body case 
+//             if (nbody(order + 2, pair_tmp) > nbody_include[order]) continue;
+// 
+//             pairs[order].insert(IntList(order + 2, pair_tmp));
+// 
+//         }
+//         memory->deallocate(pair_tmp);
+//     }
+//     memory->deallocate(interacting_atom_pairs);
+// }
+
+bool Interaction::is_incutoff2(const int n, int *atomnumlist) 
+{
+    int i, j;
+    int ncheck = n - 1;
+
+    int iat, jat, kat;
+    int jkd, kkd;
+
+    iat = atomnumlist[0];
+
+    int order = n - 2;
+   
+    bool in_cutoff_tmp;
+    double cutoff_tmp;
+    double dist_tmp;
+
+    std::vector<DistInfo>::const_iterator it, it2;
+
+    for (i = 0; i < ncheck; ++i) {
+
+        jat = atomnumlist[i + 1];
+        jkd = system->kd[jat] - 1;
+
+        for (j = i + 1; j < ncheck; ++j) {
+
+            kat = atomnumlist[j + 1];
+            kkd = system->kd[kat] - 1;
+
+            cutoff_tmp = rcs[order][jkd][kkd];
+
+            if (cutoff_tmp >= 0.0) {
+
+                in_cutoff_tmp = false;
+
+                for (it = mindist_pairs[iat][jat].begin(); it != mindist_pairs[iat][jat].end(); ++it) {
+                    for (it2 = mindist_pairs[iat][kat].begin(); it2 != mindist_pairs[iat][kat].end(); ++it2) {
+                        dist_tmp = distance(xcrd[(*it).cell][jat], xcrd[(*it2).cell][kat]);
+
+                        if (dist_tmp <= cutoff_tmp) {
+                            in_cutoff_tmp = true;
+                        }
+                    }
+                }
+                if (!in_cutoff_tmp) return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 bool Interaction::is_incutoff(int n, int *atomnumlist)
@@ -692,8 +889,8 @@ void Interaction::calc_minvec()
 
     for (i = 0;	i < natmin; ++i){
         iat = symmetry->map_p2s[i][0];
-        for (j = 0; j < ninter[i][0]; ++j){
-            jat = intpairs[i][0][j];
+        for (j = 0; j < interaction_pair[0][i].size(); ++j){
+            jat = interaction_pair[0][i][j];
             dist_tmp[i][jat] = distance(x_neib[0][iat], x_neib[0][jat]);
             minloc[i][jat] = 0;
             for (icell = 1; icell < nneib; ++icell){
@@ -708,8 +905,8 @@ void Interaction::calc_minvec()
     }
 
     for (i = 0; i < natmin; ++i){
-        for (j = 0; j < ninter[i][0]; ++j){
-            jat = intpairs[i][0][j];
+        for (j = 0; j < interaction_pair[0][i].size(); ++j){
+            jat = interaction_pair[0][i][j];
             xset.insert(InteractionCluster(x_neib[minloc[i][jat]][jat]));
         }
     }
@@ -740,8 +937,8 @@ void Interaction::calc_minvec()
 
         iat = symmetry->map_p2s[i][0];
 
-        for (j = 0; j < ninter[i][0]; ++j){
-            jat = intpairs[i][0][j];
+        for (j = 0; j < interaction_pair[0][i].size(); ++j){
+            jat = interaction_pair[0][i][j];
             for (k = 0; k < 3; ++k){
                 minvec[i][jat][k] = x_neib[minloc[i][jat]][jat][k] - x_center[k];
             }

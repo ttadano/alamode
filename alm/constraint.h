@@ -50,6 +50,7 @@ namespace ALM_NS
         int constraint_mode;
         int P;
         std::string fc2_file;
+        bool fix_harmonic;
 
         double **const_mat;
         double *const_rhs;
@@ -61,7 +62,6 @@ namespace ALM_NS
 
     private:
 
-        bool fix_harmonic;
         bool impose_inv_T, impose_inv_R, exclude_last_R;
 
         std::set<ConstraintClass> *const_translation;

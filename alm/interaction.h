@@ -87,7 +87,6 @@ namespace ALM_NS {
         int *nbody_include;
 
         double ***rcs;
-        double **distlist;
         std::vector<DistInfo> **mindist_pairs;
         std::set<IntList> *pairs;
 
@@ -101,15 +100,13 @@ namespace ALM_NS {
         int nneib;
         int maxorder;
         int interaction_type;
-        double ***xcrd;
 
-        int ***intpairs;
-        int **ninter;
-        double ****relvec;
+        std::vector<int> **interaction_pair;
 
         double ***minvec;
 
         bool is_incutoff(int, int *);
+        bool is_incutoff2(const int, int *);
 
         template <typename T>
         T maxval(int n, T *arr)
@@ -170,13 +167,13 @@ namespace ALM_NS {
 
     private:
         int nsize[3];
-        void calc_distlist(int, double **);
+        void calc_distlist(int, double **, std::vector<DistInfo> **);
         void search_interactions();
+        void search_interactions(std::vector<int> **, std::set<IntList> *);
         void set_ordername();
         void calc_minvec();
         int nbody(const int, const int *);
 
-        std::vector<DistInfo> **distall;
-        std::set<IntList> *interacting_atom_pairs;
+        double ***xcrd;
     };
 }

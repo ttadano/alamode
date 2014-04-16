@@ -33,6 +33,7 @@ namespace ALM_NS {
         void parse_cell_parameter();
         void parse_interaction_vars();
         void parse_cutoff_radii();
+        void parse_cutoff_radii2();
         void parse_fitting_vars();
         void parse_atomic_positions();
         bool is_endof_entry(std::string);

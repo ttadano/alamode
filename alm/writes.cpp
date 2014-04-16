@@ -143,8 +143,8 @@ void Writes::wrtfcs()
                     iat = fcs->fc_set[i][m].elems[0] / 3;
                     jat = fcs->fc_set[i][m].elems[1] / 3;
                     j = symmetry->map_s2p[iat].atom_num;
-                    ofs_fcs << std::setw(15) << interaction->distlist[fcs->fc_set[i][m].elems[0]/3][fcs->fc_set[i][m].elems[1]/3];
-                    ofs_fcs << std::setw(15) << interaction->mindist_pairs[j][jat].size();
+                    ofs_fcs << std::setw(15) << interaction->mindist_pairs[iat][jat][0].dist;
+                    ofs_fcs << std::setw(15) << interaction->mindist_pairs[iat][jat].size();
                 }
                 ofs_fcs << std::endl;
                 m += fcs->ndup[i][ui];
@@ -627,7 +627,7 @@ void Writes::write_misc_xml()
         child.put("<xmlattr>.pairs", 
             boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[0])
             + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
-        child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[j][pair_tmp[1]].size());
+        child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size());
         // std::cout << fcs->fc_set[0][ihead].coef << std::endl;
         ihead += fcs->ndup[0][ui];
         ++k;
@@ -645,10 +645,10 @@ void Writes::write_misc_xml()
             pair_tmp[k] = fctmp.elems[k] / 3;
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[j][pair_tmp[1]].begin(); 
-            it2 != interaction->mindist_pairs[j][pair_tmp[1]].end(); ++it2) {
+        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin(); 
+            it2 != interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].end(); ++it2) {
                 ptree &child = pt.add("ForceConstants.HARMONIC.FC2", 
-                    double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[j][pair_tmp[1]].size())));
+                    double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size())));
 
                 child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1) 
                     + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
@@ -689,7 +689,7 @@ void Writes::write_misc_xml()
                     boost::lexical_cast<std::string>(pair_tmp[k] + 1) 
                     + " " + boost::lexical_cast<std::string>(fctmp.elems[k]%3 + 1)
                     // Append the cell index to which the interacting pair belongs.
-                    + " " + boost::lexical_cast<std::string>(interaction->mindist_pairs[j][pair_tmp[k]][0].cell + 1));
+                    + " " + boost::lexical_cast<std::string>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[k]][0].cell + 1));
             }
         }
         ishift += fcs->ndup[order].size();

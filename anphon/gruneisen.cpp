@@ -93,8 +93,6 @@ void Gruneisen::calc_gruneisen()
         dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_plus_ext, eval_plus[ik], evec_tmp, false);
         dynamical->eval_k(xk_tmp, kpoint->kvec_na[ik], fc2_minus_ext, eval_minus[ik], evec_tmp, false);
 
-
-
         for (is = 0; is < ns; ++is) {
             gruneisen[ik][is] = (eval_plus[ik][is] - eval_minus[ik][is]) / (2.0 * delta_a) / (-6.0 * eval_orig[is]);
         }

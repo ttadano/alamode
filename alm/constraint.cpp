@@ -26,75 +26,75 @@
 
 using namespace ALM_NS;
 
-Constraint::Constraint(ALM *alm) : Pointers(alm){
-    impose_inv_T = false;
-    impose_inv_R = false;
-    fix_harmonic = false;
-    exist_constraint = true;
-    exclude_last_R = true;
-};
-Constraint::~Constraint() {
-    if (constraint_mode != 0 && alm->mode == "fitting") {
-        memory->deallocate(const_mat);
-        memory->deallocate(const_rhs);
-        memory->deallocate(const_symmetry);
-    }
-};
+Constraint::Constraint(ALM *alm) : Pointers(alm) {}
 
-void Constraint::setup(){
+Constraint::~Constraint() 
+{
+     if (exist_constraint && alm->mode == "fitting") {
+          memory->deallocate(const_mat);
+          memory->deallocate(const_rhs);
+     }
+}
+
+void Constraint::setup()
+{
 
     std::cout << " CONSTRAINT" << std::endl;
     std::cout << " ==========" << std::endl << std::endl;
 
-
     switch (constraint_mode) {
     case 0: // do nothing
-        exist_constraint = false;
-        std::cout << "  ICONST = 0: Constraint will NOT be considered." << std::endl;
-        std::cout << "              Correct phonon dispersion may not be obtained." << std::endl;
+        impose_inv_T = false;
+        impose_inv_R = false;
+        std::cout << "  ICONST = 0: Constraint for translational/rotational invariance" << std::endl;
+        std::cout << "              will NOT be considered." << std::endl;
         break;
     case 1: 
         impose_inv_T = true;
+        impose_inv_R = false;
         std::cout << "  ICONST = 1: Constraints for translational invariance will be considered." << std::endl;
         break;
+//     case 2:
+//         impose_inv_T = true;
+//         fix_harmonic = true;
+//         std::cout << "  ICONST = 2: Constraints for translational invariance will be considered." << std::endl;
+//         std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
+//         break;
     case 2:
         impose_inv_T = true;
-        fix_harmonic = true;
-        std::cout << "  ICONST = 2: Constraints for translational invariance will be considered." << std::endl;
-        std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
+        impose_inv_R = true;
+        exclude_last_R = true;
+        std::cout << "  ICONST = 2: Constraints for translational and rotational invariance will be considered." << std::endl;
+        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
         break;
+//     case 4:
+//         impose_inv_T = true;
+//         impose_inv_R = true;
+//         fix_harmonic = true;
+//         std::cout << "  ICONST = 4: Constraints for translational and rotational invariance will be considered." << std::endl;
+//         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+//         std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
+//         std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
+//         break;
+
     case 3:
         impose_inv_T = true;
         impose_inv_R = true;
+        exclude_last_R = false;
         std::cout << "  ICONST = 3: Constraints for translational and rotational invariance will be considered." << std::endl;
         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
-        std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
         break;
-    case 4:
-        impose_inv_T = true;
-        impose_inv_R = true;
-        fix_harmonic = true;
-        std::cout << "  ICONST = 4: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
-        std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
-        std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
-        break;
-    case 5:
-        impose_inv_T = true;
-        impose_inv_R = true;
-        exclude_last_R = false;
-        std::cout << "  ICONST = 5: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
-        break;
-    case 6:
-        impose_inv_T = true;
-        impose_inv_R = true;
-        fix_harmonic = true;
-        exclude_last_R = false;
-        std::cout << "  ICONST = 6: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
-        std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
-        break;
+//     case 6:
+//         impose_inv_T = true;
+//         impose_inv_R = true;
+//         fix_harmonic = true;
+//         exclude_last_R = false;
+//         std::cout << "  ICONST = 6: Constraints for translational and rotational invariance will be considered." << std::endl;
+//         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+//         std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
+//         break;
+
     default:
         error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
         break;
@@ -107,6 +107,26 @@ void Constraint::setup(){
         std::cout << "           This might generate inaccurate IFCs." << std::endl << std::endl;
     }
 
+    if (fix_harmonic) {
+        std::cout << "  FC2XML is given : Harmonic force constants will be " << std::endl;
+        std::cout << "                    fixed to the values given in " << fc2_file << std::endl;
+    }
+
+    extra_constraint_from_symmetry = false;
+    memory->allocate(const_symmetry, interaction->maxorder);
+    for (int order = 0; order < interaction->maxorder; ++order) {
+        const_symmetry[order].clear();
+    }
+    constraint_from_symmetry();
+    for (int order = 0; order < interaction->maxorder; ++order){
+        if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
+    }
+
+    if (impose_inv_T || fix_harmonic || extra_constraint_from_symmetry) {
+        exist_constraint = true;
+    } else {
+        exist_constraint = false;
+    }
 
     if (exist_constraint) {
 
@@ -115,20 +135,19 @@ void Constraint::setup(){
         int Pmax, order;
         int N = 0;
 
-        for(i = 0; i < maxorder; ++i){
+        for (i = 0; i < maxorder; ++i){
             N += fcs->ndup[i].size();
         }
 
         memory->allocate(const_translation, maxorder);
         memory->allocate(const_rotation_self, maxorder);
         memory->allocate(const_rotation_cross, maxorder);
-        memory->allocate(const_symmetry, maxorder);
 
         for (order = 0; order < maxorder; ++order){
             const_translation[order].clear();
             const_rotation_self[order].clear();
             const_rotation_cross[order].clear();
-            const_symmetry[order].clear();
+         //   const_symmetry[order].clear();
         }
 
         if (impose_inv_T) {
@@ -137,24 +156,26 @@ void Constraint::setup(){
         if (impose_inv_R) {
             rotational_invariance();
         }
-        extra_constraint_from_symmetry = false;
-        constraint_from_symmetry();
-        for (order = 0; order < maxorder; ++order){
-            if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
-        }
+//         extra_constraint_from_symmetry = false;
+//         constraint_from_symmetry();
+//         for (order = 0; order < maxorder; ++order){
+//             if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
+//         }
 
-        std::cout << "  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:" << std::endl;
-        for (order = 0; order < maxorder; ++order){
-            std::cout << "   " << std::setw(8) << interaction->str_order[order];
-            std::cout << std::setw(5) << const_translation[order].size();
-            std::cout << std::setw(5) << const_rotation_self[order].size();
-            std::cout << std::setw(5) << const_rotation_cross[order].size();
+        if (impose_inv_T || impose_inv_R) {
+            std::cout << "  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:" << std::endl;
+            for (order = 0; order < maxorder; ++order){
+                std::cout << "   " << std::setw(8) << interaction->str_order[order];
+                std::cout << std::setw(5) << const_translation[order].size();
+                std::cout << std::setw(5) << const_rotation_self[order].size();
+                std::cout << std::setw(5) << const_rotation_cross[order].size();
+                std::cout << std::endl;
+            }
             std::cout << std::endl;
         }
-        std::cout << std::endl;
 
-        if(extra_constraint_from_symmetry){
-            std::cout << "  There are additional constraints from crystal symmetry." << std::endl;
+        if (extra_constraint_from_symmetry) {
+            std::cout << "  There are constraints from crystal symmetry." << std::endl;
             std::cout << "  The number of such constraints for each order:" << std::endl;
             for (order = 0; order < maxorder; ++order){
                 std::cout << "   " << std::setw(8) << interaction->str_order[order];
@@ -164,12 +185,13 @@ void Constraint::setup(){
             std::cout << std::endl;
         }
 
-
         memory->allocate(const_self, maxorder);
         for (order = 0; order < maxorder; ++order) const_self[order].clear();
 
         int nparam;
         double *arr_tmp;
+
+        std::set<ConstraintClass>::const_iterator it_const;
 
         // Merge translational and rotational invariance excluding order-crossing constraints
 
@@ -178,36 +200,54 @@ void Constraint::setup(){
             nparam = fcs->ndup[order].size();
             memory->allocate(arr_tmp, nparam);
 
-            for (std::set<ConstraintClass>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
-
-                ConstraintClass const_pointer = *p;
-
-                for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+            for (it_const = const_translation[order].begin(); it_const != const_translation[order].end(); ++it_const) {
+                for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
             }
 
-            for (std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
-
-                ConstraintClass const_pointer = *p;
-
-                for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+            for (it_const = const_rotation_self[order].begin(); it_const != const_rotation_self[order].end(); ++it_const) {
+                for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
             }
 
-            for (std::set<ConstraintClass>::iterator p = const_symmetry[order].begin(); p != const_symmetry[order].end(); ++p){
-
-                ConstraintClass const_pointer = *p;
-
-                for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+            for (it_const = const_symmetry[order].begin(); it_const != const_symmetry[order].end(); ++it_const) {
+                for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
             }
+
+// 
+//             for (std::set<ConstraintClass>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
+// 
+//                 ConstraintClass const_pointer = *p;
+// 
+//                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+//                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+//             }
+
+//             for (std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
+// 
+//                 ConstraintClass const_pointer = *p;
+// 
+//                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+//                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+//             }
+
+//             for (std::set<ConstraintClass>::iterator p = const_symmetry[order].begin(); p != const_symmetry[order].end(); ++p){
+// 
+//                 ConstraintClass const_pointer = *p;
+// 
+//                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
+//                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+//             }
 
             remove_redundant_rows(nparam, const_self[order], eps8);
 
             memory->deallocate(arr_tmp);
             const_translation[order].clear();
             const_rotation_self[order].clear();
+            const_symmetry[order].clear();
         }
+
         if (extra_constraint_from_symmetry) {
             std::cout << "  Constraints of T-inv, R-inv (self), and those from crystal symmetry are merged." << std::endl;
         } else {
@@ -216,6 +256,7 @@ void Constraint::setup(){
         std::cout << "  If there are redundant constraints, they are removed in this process." << std::endl;
         std::cout << std::endl;
         std::cout << "  Number of inequivalent constraints (self, cross) : " << std::endl;
+        
         for (order = 0; order < maxorder; ++order){
             std::cout << "   " << std::setw(8) << interaction->str_order[order];
             std::cout << std::setw(5) << const_self[order].size();
@@ -247,6 +288,8 @@ void Constraint::setup(){
         std::cout << " --------------------------------------------------------------" << std::endl;
         std::cout << std::endl;
     }
+
+    memory->deallocate(const_symmetry);
 }
 
 void Constraint::calc_constraint_matrix(const int N, int &P){
@@ -556,8 +599,8 @@ void Constraint::translational_invariance()
                     }
                 }
             } else {
-                for (j = 0; j < interaction->ninter[i][order]; ++j){
-                    intlist.push_back(interaction->intpairs[i][order][j]);
+                for (j = 0; j < interaction->interaction_pair[order][i].size(); ++j){
+                    intlist.push_back(interaction->interaction_pair[order][i][j]);
                 }
                 std::sort(intlist.begin(), intlist.end());
 
@@ -714,8 +757,8 @@ void Constraint::rotational_invariance()
             if (order == 0){
 
                 interaction_list_now.clear();
-                for (j = 0; j < interaction->ninter[i][order]; ++j){
-                    interaction_list_now.push_back(interaction->intpairs[i][order][j]);
+                for (j = 0; j < interaction->interaction_pair[order][i].size(); ++j){
+                    interaction_list_now.push_back(interaction->interaction_pair[order][i][j]);
                 }
                 std::sort(interaction_list_now.begin(), interaction_list_now.end());
 
@@ -774,11 +817,11 @@ void Constraint::rotational_invariance()
                 interaction_list_old.clear();
                 interaction_list_now.clear();
 
-                for (j = 0; j < interaction->ninter[i][order]; ++j){
-                    interaction_list_now.push_back(interaction->intpairs[i][order][j]);
+                for (j = 0; j < interaction->interaction_pair[order][i].size(); ++j){
+                    interaction_list_now.push_back(interaction->interaction_pair[order][i][j]);
                 }
-                for (j = 0; j < interaction->ninter[i][order - 1]; ++j){
-                    interaction_list_old.push_back(interaction->intpairs[i][order - 1][j]);
+                for (j = 0; j < interaction->interaction_pair[order - 1][i].size(); ++j){
+                    interaction_list_old.push_back(interaction->interaction_pair[order - 1][i][j]);
                 }
 
                 std::sort(interaction_list_now.begin(), interaction_list_now.end());
