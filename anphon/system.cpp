@@ -173,13 +173,13 @@ void System::load_system_info_from_XML()
 
         // Parse nat and ntran
 
-        nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Structure.NumberOfAtoms"));
-        nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Structure.NumberOfElements"));
+        nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
+        nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfElements"));
 
         if (nkd != nkd_tmp) error->exit("load_system_info", 
             "NKD in the info file is not consistent with that given in the input file.");
 
-        ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Symmetry.NumberOfTranslations"));
+        ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
 
         natmin = nat / ntran;
 
@@ -191,7 +191,7 @@ void System::load_system_info_from_XML()
             ss.str("");
             ss.clear();
             ss << get_value_from_xml(pt, 
-                "Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
+                "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
             ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
         }
 
@@ -200,7 +200,7 @@ void System::load_system_info_from_XML()
         memory->allocate(xr_s, nat, 3);
         memory->allocate(kd, nat);
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Structure.AtomicElements")) {
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
             const ptree& child = child_.second;
             const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
             dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
@@ -208,7 +208,7 @@ void System::load_system_info_from_XML()
 
         unsigned int index;
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Structure.Position")) {
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
             const ptree& child = child_.second;
             const std::string str_index = child.get<std::string>("<xmlattr>.index");
             const std::string str_element = child.get<std::string>("<xmlattr>.element");
@@ -234,7 +234,7 @@ void System::load_system_info_from_XML()
 
         unsigned int tran, atom_p, atom_s;
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Symmetry.Translations")) {
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
             const ptree& child = child_.second;
             const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
             const std::string str_atom = child.get<std::string>("<xmlattr>.atom");

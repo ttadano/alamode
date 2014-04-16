@@ -778,7 +778,8 @@ void Constraint::rotational_invariance()
 
                             for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
-                            for (std::vector<int>::iterator iter_list = interaction_list_now.begin(); iter_list != interaction_list_now.end(); ++iter_list){
+                            for (std::vector<int>::iterator iter_list = interaction_list_now.begin(); 
+                                                           iter_list != interaction_list_now.end(); ++iter_list){
 
                                 jat = *iter_list;
                                 interaction_index[1] = 3 * jat + mu;

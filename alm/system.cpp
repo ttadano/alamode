@@ -180,8 +180,8 @@ void System::load_reference_system_xml()
 
     read_xml(constraint->fc2_file, pt);
 
-    nat_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Structure.NumberOfAtoms"));
-    ntran_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Symmetry.NumberOfTranslations"));
+    nat_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
+    ntran_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
     natmin_ref = nat_ref / ntran_ref;
 
     if (natmin_ref != symmetry->natmin) {
@@ -190,7 +190,7 @@ void System::load_reference_system_xml()
 
     int nfc2_ref;
 
-    nfc2_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "ForceConstants.HarmonicUnique.NFC2"));
+    nfc2_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
 
     if (nfc2_ref != fcs->ndup[0].size()) {
         error->exit("load_reference_system_xml", "The number of harmonic force constants is not the same.");
@@ -201,7 +201,7 @@ void System::load_reference_system_xml()
 
     int counter = 0;
 
-    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("ForceConstants.HarmonicUnique")) {
+    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
         if (child_.first == "FC2") {
             const ptree& child = child_.second;
             const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");

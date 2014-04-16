@@ -96,12 +96,11 @@ void Interaction::init()
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
     memory->allocate(mindist_pairs, nat, nat);
     memory->allocate(xcrd, nneib, nat, 3);
-
-    calc_distlist(nat, system->xcoord, mindist_pairs);
-
     memory->allocate(interaction_pair, maxorder, symmetry->natmin);
     memory->allocate(pairs, maxorder);
 
+    get_pairs_of_minimum_distance(nat, system->xcoord, mindist_pairs);
+    print_neighborlist(mindist_pairs);
     search_interactions(interaction_pair, pairs);
     calc_minvec();
 
@@ -119,16 +118,13 @@ double Interaction::distance(double *x1, double *x2)
     return dist;
 }
 
-void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mindist_pairs)
+void Interaction::get_pairs_of_minimum_distance(int nat, double **xf, std::vector<DistInfo> **mindist_pairs)
 {
     int icell = 0;
     int i, j, k;
     int isize, jsize, ksize;
-    unsigned int iat;
-    int icount;
     double dist_tmp;
     double vec[3];
-
     std::vector<DistInfo> **distall;
 
     memory->allocate(distall, nat, nat);
@@ -142,6 +138,7 @@ void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mi
     for (isize = -nsize[0]; isize <= nsize[0] ; ++isize){
         for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize){
             for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize){
+
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
 
                 ++icell;
@@ -170,7 +167,7 @@ void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mi
         }
     }
 
-    // Construct the list with minimum distances.
+    // Construct pairs of minimum distance.
 
     double dist_min;
     for (i = 0; i < nat; ++i) {
@@ -188,6 +185,17 @@ void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mi
 
     memory->deallocate(distall);
 
+
+}
+
+void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
+{
+    int i, j, k;
+    int iat;
+    int nat = system->nat;
+    int icount;
+
+    double dist_tmp;
     std::vector<DistList> *neighborlist;
 
     memory->allocate(neighborlist, symmetry->natmin);
@@ -198,7 +206,7 @@ void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mi
         iat = symmetry->map_p2s[i][0];
 
         for (j = 0; j < nat; ++j) {
-            neighborlist[i].push_back(DistList(j, mindist_pairs[iat][j][0].dist));
+            neighborlist[i].push_back(DistList(j, mindist[iat][j][0].dist));
         }
         std::sort(neighborlist[i].begin(), neighborlist[i].end());
     }
@@ -231,8 +239,8 @@ void Interaction::calc_distlist(int nat, double **xf, std::vector<DistInfo> **mi
 
                     if (nthnearest > 1) std::cout << std::setw(13) << " ";
 
-                    std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp << " (" << std::setw(3) << atomlist.size() << ")";
-                    std::cout << " -";
+                    std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp 
+                        << " (" << std::setw(3) << atomlist.size() << ") -";
 
                     icount = 0;
                     for (k = 0; k < atomlist.size(); ++k) {
@@ -269,21 +277,21 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
     int i, j;
     int order;
     int natmin = symmetry->natmin;
-
-    int icell;
     int iat, jat;
     int nat = system->nat;
     int ikd, jkd;
 
     double cutoff_tmp;
     std::set<IntList> *interacting_atom_pairs;
+    std::vector<int> intlist;
+
+    memory->allocate(interacting_atom_pairs, maxorder);
 
     for (order = 0; order < maxorder; ++order) {
         for (i = 0; i < natmin; ++i) {
             interaction_list_out[order][i].clear();
 
             iat = symmetry->map_p2s[i][0];
-
             ikd = system->kd[iat] - 1;
 
             for (jat = 0; jat < nat; ++jat) {
@@ -293,7 +301,9 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
                 cutoff_tmp = rcs[order][ikd][jkd];
 
                 if (cutoff_tmp < 0.0) {
+        
                     interaction_list_out[order][i].push_back(jat);
+               
                 } else {
 
                     if (mindist_pairs[iat][jat][0].dist <= cutoff_tmp) {
@@ -304,10 +314,6 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
         }
     }
  
-
-    std::vector<int> intlist;
-
-    memory->allocate(interacting_atom_pairs, maxorder);
 
     intlist.clear();
     std::cout << std::endl;
@@ -328,14 +334,15 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
             iat = symmetry->map_p2s[i][0];
 
             intlist.clear();
-            for (std::vector<int>::const_iterator it = interaction_list_out[order][i].begin(); it != interaction_list_out[order][i].end(); ++it) {
+            for (std::vector<int>::const_iterator it = interaction_list_out[order][i].begin(); 
+                                                 it != interaction_list_out[order][i].end(); ++it) {
                 intlist.push_back((*it));
             }
-            std::sort(intlist.begin(), intlist.end());
+            std::sort(intlist.begin(), intlist.end()); // Necessarily to sort here
 
             // write atoms inside the cutoff radius
             int id = 0;
-            std::cout << "    Atom " << std::setw(5) << iat + 1  
+            std::cout << "    Atom " << std::setw(5) << iat + 1
                 << "(" << std::setw(3) << system->kdname[system->kd[iat]-1] << ")" << " interacts with atoms ... " << std::endl;
 
             for (int id = 0; id < intlist.size(); ++id) {
@@ -347,23 +354,25 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
                         std::cout << "   ";
                     }
                 }
-                std::cout << std::setw(5) << intlist[id] + 1 << "(" << std::setw(3) << system->kdname[system->kd[intlist[id]]-1] << ")";
+                std::cout << std::setw(5) << intlist[id] + 1 << "(" 
+                    << std::setw(3) << system->kdname[system->kd[intlist[id]]-1] << ")";
             }
 
             std::cout << std::endl << std::endl;
-            std::cout << "    Number of total interaction pairs (duplication allowed) = " << interaction_list_out[order][i].size() << std::endl << std::endl;
+            std::cout << "    Number of total interaction pairs = " 
+                << interaction_list_out[order][i].size() << std::endl << std::endl;
 
             int *intarr;        
             memory->allocate(intarr, order + 2);
 
-            if(intlist.size() > 0) {
-                if(order == 0){
-                    for(unsigned int ielem = 0; ielem < intlist.size(); ++ielem){
+            if (intlist.size() > 0) {
+                if (order == 0){
+                    for (unsigned int ielem = 0; ielem < intlist.size(); ++ielem) {
                         intarr[0] = iat;
                         intarr[1] = intlist[ielem];
-                        insort(order+2, intarr);
+                        insort(2, intarr);
 
-                        interacting_atom_pairs[order].insert(IntList(order + 2, intarr));
+                        interacting_atom_pairs[0].insert(IntList(2, intarr));
                     }
                 } else if (order > 0) {
                     CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
@@ -371,11 +380,11 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
                         std::vector<int> data = g.now();
                         intarr[0] = iat;
                         intarr[1] = data[0];
-                        for(unsigned int isize = 1; isize < data.size() ; ++isize){
+                        for (unsigned int isize = 1; isize < data.size() ; ++isize) {
                             intarr[isize + 1] = data[isize];
                         }
 
-                        if(!is_incutoff2(order+2, intarr)) continue;
+                        if (!is_incutoff(order+2, intarr)) continue;
                         insort(order+2, intarr);
 
                         interacting_atom_pairs[order].insert(IntList(order + 2, intarr));
@@ -404,7 +413,8 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
 
         memory->allocate(pair_tmp, order + 2);
 
-        for (std::set<IntList>::const_iterator it = interacting_atom_pairs[order].begin(); it != interacting_atom_pairs[order].end(); ++it) {
+        for (std::set<IntList>::const_iterator it = interacting_atom_pairs[order].begin(); 
+                                              it != interacting_atom_pairs[order].end(); ++it) {
             for (j = 0; j < order + 2; ++j) {
                 pair_tmp[j] = (*it).iarray[j];
             }
@@ -733,23 +743,19 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
 //     memory->deallocate(interacting_atom_pairs);
 // }
 
-bool Interaction::is_incutoff2(const int n, int *atomnumlist) 
+bool Interaction::is_incutoff(const int n, int *atomnumlist) 
 {
     int i, j;
-    int ncheck = n - 1;
-
     int iat, jat, kat;
     int jkd, kkd;
-
-    iat = atomnumlist[0];
-
-    int order = n - 2;
-   
+    int ncheck = n - 1;
+    int order = n - 2;   
     bool in_cutoff_tmp;
     double cutoff_tmp;
     double dist_tmp;
-
     std::vector<DistInfo>::const_iterator it, it2;
+    
+    iat = atomnumlist[0];
 
     for (i = 0; i < ncheck; ++i) {
 
@@ -783,57 +789,57 @@ bool Interaction::is_incutoff2(const int n, int *atomnumlist)
 
     return true;
 }
-
-bool Interaction::is_incutoff(int n, int *atomnumlist)
-{
-    int i, j;
-    double **dist_tmp;
-    double tmp;
-    int *min_neib;
-    int ncheck = n - 1;
-
-    memory->allocate(dist_tmp, nneib, ncheck);
-    memory->allocate(min_neib, ncheck);
-
-    // distance from a reference atom[0] in the original cell
-    // to atom number atom[j](j > 0) in the neighboring cells.
-    for (i = 0; i < nneib; ++i){
-        for (j = 0; j < ncheck; ++j){
-            dist_tmp[i][j] = distance(xcrd[0][atomnumlist[0]], xcrd[i][atomnumlist[j+1]]);
-        }
-    }
-
-    // find the index of neighboring cells which minimize the distances.
-    for (i = 0; i < ncheck; ++i){
-
-        tmp = dist_tmp[0][i];
-        min_neib[i] = 0;
-
-        for (j = 1; j < nneib; ++j){
-            if(dist_tmp[j][i] < tmp) {
-                tmp = dist_tmp[j][i];
-                min_neib[i] = j;
-            }
-        }
-    }
-
-    // judge whether or not the given atom list interact with each other
-    for (i = 0; i < ncheck; ++i){
-        for (j =  i + 1; j < ncheck; ++j){
-
-            tmp = distance(xcrd[min_neib[i]][atomnumlist[i + 1]], xcrd[min_neib[j]][atomnumlist[j + 1]]);
-            if(tmp > rcs[ncheck - 1][system->kd[atomnumlist[i + 1]] - 1][system->kd[atomnumlist[j + 1]] - 1]){
-                memory->deallocate(dist_tmp);
-                memory->deallocate(min_neib);
-                return false;
-            }
-        }
-    }
-
-    memory->deallocate(dist_tmp);
-    memory->deallocate(min_neib);
-    return true;
-}
+// 
+// bool Interaction::is_incutoff(int n, int *atomnumlist)
+// {
+//     int i, j;
+//     double **dist_tmp;
+//     double tmp;
+//     int *min_neib;
+//     int ncheck = n - 1;
+// 
+//     memory->allocate(dist_tmp, nneib, ncheck);
+//     memory->allocate(min_neib, ncheck);
+// 
+//     // distance from a reference atom[0] in the original cell
+//     // to atom number atom[j](j > 0) in the neighboring cells.
+//     for (i = 0; i < nneib; ++i){
+//         for (j = 0; j < ncheck; ++j){
+//             dist_tmp[i][j] = distance(xcrd[0][atomnumlist[0]], xcrd[i][atomnumlist[j+1]]);
+//         }
+//     }
+// 
+//     // find the index of neighboring cells which minimize the distances.
+//     for (i = 0; i < ncheck; ++i){
+// 
+//         tmp = dist_tmp[0][i];
+//         min_neib[i] = 0;
+// 
+//         for (j = 1; j < nneib; ++j){
+//             if(dist_tmp[j][i] < tmp) {
+//                 tmp = dist_tmp[j][i];
+//                 min_neib[i] = j;
+//             }
+//         }
+//     }
+// 
+//     // judge whether or not the given atom list interact with each other
+//     for (i = 0; i < ncheck; ++i){
+//         for (j =  i + 1; j < ncheck; ++j){
+// 
+//             tmp = distance(xcrd[min_neib[i]][atomnumlist[i + 1]], xcrd[min_neib[j]][atomnumlist[j + 1]]);
+//             if(tmp > rcs[ncheck - 1][system->kd[atomnumlist[i + 1]] - 1][system->kd[atomnumlist[j + 1]] - 1]){
+//                 memory->deallocate(dist_tmp);
+//                 memory->deallocate(min_neib);
+//                 return false;
+//             }
+//         }
+//     }
+// 
+//     memory->deallocate(dist_tmp);
+//     memory->deallocate(min_neib);
+//     return true;
+// }
 
 void Interaction::calc_minvec()
 {
@@ -924,6 +930,9 @@ void Interaction::calc_minvec()
     for (i = 0; i < 3; ++i) x_center[i] /= static_cast<double>(xset.size()); 
 
     // It was found that the result does not depend on x_center.
+
+    for (i = 0; i < 3; ++i) x_center[i] = 100.0;
+
 
 #ifdef _DEBUG
     std::cout << "Coordinate of the center" << std::endl;

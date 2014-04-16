@@ -564,11 +564,11 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Structure.NumberOfAtoms", system_structure.nat);
-    pt.put("Structure.NumberOfElements", system_structure.nspecies);
+    pt.put("Data.Structure.NumberOfAtoms", system_structure.nat);
+    pt.put("Data.Structure.NumberOfElements", system_structure.nspecies);
 
     for (i = 0; i < system_structure.nspecies; ++i) {
-        ptree &child = pt.add("Structure.AtomicElements.element", system->kdname[i]);
+        ptree &child = pt.add("Data.Structure.AtomicElements.element", system->kdname[i]);
         child.put("<xmlattr>.number", i + 1);
     }
 
@@ -578,35 +578,35 @@ void Writes::write_misc_xml()
             str_pos[i] += " " + double2string(system_structure.lattice_vector[j][i]);
         }
     }
-    pt.put("Structure.LatticeVector", "");
-    pt.put("Structure.LatticeVector.a1", str_pos[0]);
-    pt.put("Structure.LatticeVector.a2", str_pos[1]);
-    pt.put("Structure.LatticeVector.a3", str_pos[2]);
+    pt.put("Data.Structure.LatticeVector", "");
+    pt.put("Data.Structure.LatticeVector.a1", str_pos[0]);
+    pt.put("Data.Structure.LatticeVector.a2", str_pos[1]);
+    pt.put("Data.Structure.LatticeVector.a3", str_pos[2]);
 
-    pt.put("Structure.Position", "");
+    pt.put("Data.Structure.Position", "");
     std::string str_tmp;
 
     for (i = 0; i < system_structure.nat; ++i) {
         str_tmp.clear();
         for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->xcoord[i][j]);
-        ptree &child = pt.add("Structure.Position.pos", str_tmp);
+        ptree &child = pt.add("Data.Structure.Position.pos", str_tmp);
         child.put("<xmlattr>.index", i + 1);
         child.put("<xmlattr>.element", system->kdname[system->kd[i] - 1]);
     }
 
-    pt.put("Symmetry.NumberOfTranslations", symmetry->ntran);
+    pt.put("Data.Symmetry.NumberOfTranslations", symmetry->ntran);
     for (i = 0; i < system_structure.ntran; ++i) {
         for (j = 0; j < system_structure.natmin; ++j) {
-            ptree &child = pt.add("Symmetry.Translations.map", symmetry->map_p2s[j][i] + 1);
+            ptree &child = pt.add("Data.Symmetry.Translations.map", symmetry->map_p2s[j][i] + 1);
             child.put("<xmlattr>.tran", i + 1);
             child.put("<xmlattr>.atom", j + 1);
         }
     }
 
-    pt.put("ForceConstants", "");
+    pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    pt.put("ForceConstants.HarmonicUnique.NFC2", fcs->ndup[0].size());
+    pt.put("Data.ForceConstants.HarmonicUnique.NFC2", fcs->ndup[0].size());
 
 
     int ihead = 0;
@@ -623,7 +623,7 @@ void Writes::write_misc_xml()
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
 
-        ptree &child = pt.add("ForceConstants.HarmonicUnique.FC2", double2string(fitting->params[k]));
+        ptree &child = pt.add("Data.ForceConstants.HarmonicUnique.FC2", double2string(fitting->params[k]));
         child.put("<xmlattr>.pairs", 
             boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[0])
             + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
@@ -647,7 +647,7 @@ void Writes::write_misc_xml()
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
         for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin(); 
             it2 != interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].end(); ++it2) {
-                ptree &child = pt.add("ForceConstants.HARMONIC.FC2", 
+                ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", 
                     double2string(fitting->params[ip]*fctmp.coef / static_cast<double>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size())));
 
                 child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1) 
@@ -676,7 +676,7 @@ void Writes::write_misc_xml()
             }
             j = symmetry->map_s2p[pair_tmp[0]].atom_num;
 
-            elementname = "ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2) 
+            elementname = "Data.ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2) 
                 + ".FC" + boost::lexical_cast<std::string>(order + 2);
 
             ptree &child = pt.add(elementname, double2string(fitting->params[ip]*fctmp.coef));

@@ -130,7 +130,7 @@ void Fcs_phonon::load_fc2_xml()
 
     fc2_ext.clear();
 
-    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("ForceConstants.HARMONIC")) {
+    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
         const ptree& child = child_.second;
         const std::string str_p1 = child.get<std::string>("<xmlattr>.pair1");
         const std::string str_p2 = child.get<std::string>("<xmlattr>.pair2");
@@ -184,9 +184,9 @@ void Fcs_phonon::load_fcs_xml()
     for (order = 0; order < maxorder; ++order){
 
         if (order == 0) {
-            str_tag = "ForceConstants.HARMONIC";
+            str_tag = "Data.ForceConstants.HARMONIC";
         } else {
-            str_tag = "ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2);
+            str_tag = "Data.ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2);
         }
 
         boost::optional< ptree& > child_ = pt.get_child_optional(str_tag);
