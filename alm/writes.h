@@ -57,7 +57,7 @@ namespace ALM_NS{
         void write_displacement_pattern();
 
     private:
-        void wrtfcs();
+        void write_force_constants();
       //  void wrtmisc();
         void write_misc_xml();
 

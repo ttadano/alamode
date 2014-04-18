@@ -55,12 +55,6 @@ void Constraint::setup()
         impose_inv_R = false;
         std::cout << "  ICONST = 1: Constraints for translational invariance will be considered." << std::endl;
         break;
-//     case 2:
-//         impose_inv_T = true;
-//         fix_harmonic = true;
-//         std::cout << "  ICONST = 2: Constraints for translational invariance will be considered." << std::endl;
-//         std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
-//         break;
     case 2:
         impose_inv_T = true;
         impose_inv_R = true;
@@ -69,16 +63,6 @@ void Constraint::setup()
         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
         std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
         break;
-//     case 4:
-//         impose_inv_T = true;
-//         impose_inv_R = true;
-//         fix_harmonic = true;
-//         std::cout << "  ICONST = 4: Constraints for translational and rotational invariance will be considered." << std::endl;
-//         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
-//         std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
-//         std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
-//         break;
-
     case 3:
         impose_inv_T = true;
         impose_inv_R = true;
@@ -86,16 +70,6 @@ void Constraint::setup()
         std::cout << "  ICONST = 3: Constraints for translational and rotational invariance will be considered." << std::endl;
         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
         break;
-//     case 6:
-//         impose_inv_T = true;
-//         impose_inv_R = true;
-//         fix_harmonic = true;
-//         exclude_last_R = false;
-//         std::cout << "  ICONST = 6: Constraints for translational and rotational invariance will be considered." << std::endl;
-//         std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
-//         std::cout << "              Also, HARMONIC terms will be fixed to the value given in " << fc2_file << std::endl;
-//         break;
-
     default:
         error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
         break;
@@ -103,10 +77,10 @@ void Constraint::setup()
 
     std::cout << std::endl;
 
-    if (impose_inv_R && interaction->interaction_type == 1) {
-        std::cout << "  WARNING: Rotational invariance and INTERTYPE = 1 should not be turned on simultaneously." << std::endl;
-        std::cout << "           This might generate inaccurate IFCs." << std::endl << std::endl;
-    }
+//     if (impose_inv_R && interaction->interaction_type == 1) {
+//         std::cout << "  WARNING: Rotational invariance and INTERTYPE = 1 should not be turned on simultaneously." << std::endl;
+//         std::cout << "           This might generate inaccurate IFCs." << std::endl << std::endl;
+//     }
 
     if (fix_harmonic) {
         std::cout << "  FC2XML is given : Harmonic force constants will be " << std::endl;
@@ -215,31 +189,6 @@ void Constraint::setup()
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
             }
-
-// 
-//             for (std::set<ConstraintClass>::iterator p = const_translation[order].begin(); p != const_translation[order].end(); ++p){
-// 
-//                 ConstraintClass const_pointer = *p;
-// 
-//                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
-//                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
-//             }
-
-//             for (std::set<ConstraintClass>::iterator p = const_rotation_self[order].begin(); p != const_rotation_self[order].end(); ++p){
-// 
-//                 ConstraintClass const_pointer = *p;
-// 
-//                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
-//                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
-//             }
-
-//             for (std::set<ConstraintClass>::iterator p = const_symmetry[order].begin(); p != const_symmetry[order].end(); ++p){
-// 
-//                 ConstraintClass const_pointer = *p;
-// 
-//                 for (i = 0; i < nparam; ++i) arr_tmp[i] = const_pointer.w_const[i];
-//                 const_self[order].insert(ConstraintClass(nparam, arr_tmp));
-//             }
 
             remove_redundant_rows(nparam, const_self[order], eps8);
 
@@ -699,6 +648,8 @@ void Constraint::rotational_invariance()
 
     bool valid_rotation_axis[3][3];
 
+    double vec_for_rot[3];
+
     std::vector<int> interaction_list, interaction_list_old, interaction_list_now;
 
     std::set<FcProperty> list_found;
@@ -706,6 +657,10 @@ void Constraint::rotational_invariance()
     std::set<FcProperty>::iterator iter_found;
 
     CombinationWithRepetition<int> g;
+
+    std::vector<int> atom_tmp;
+    std::vector<std::vector<int> > cell_dummy;
+    std::set<MinimumDistanceCluster>::iterator iter_cluster;
 
     setup_rotation_axis(valid_rotation_axis);
 
@@ -786,10 +741,33 @@ void Constraint::rotational_invariance()
                                 interaction_index[1] = 3 * jat + mu;
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
 
+                                atom_tmp.clear();
+                                atom_tmp.push_back(jat);
+                                cell_dummy.clear();
+                                iter_cluster = interaction->mindist_cluster[order][i].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+
+                                if (iter_cluster == interaction->mindist_cluster[order][i].end()) {
+                                    error->exit("rotational_invariance", "interaction not found ...");
+                                } else {
+                                    for (j = 0; j < 3; ++j) vec_for_rot[j] = 0.0;
+
+                                    int nsize_equiv = (*iter_cluster).cell.size();
+
+                                    for (j = 0; j < nsize_equiv; ++j) {
+                                        for (int k = 0; k < 3; ++k) {
+                                            vec_for_rot[k] += interaction->xcrd[(*iter_cluster).cell[j][0]][jat][k];
+                                        }
+                                    }
+
+                                    for (j = 0; j < 3; ++j) {
+                                        vec_for_rot[j] /= static_cast<double>(nsize_equiv);
+                                    }
+                                }
+
+
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;              
-                                    // This operation should be modified for INTERTYPE = 2, 3.
-                                    arr_constraint[arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
+                                      arr_constraint[arrtmp.mother] += arrtmp.coef * vec_for_rot[nu];
                                 }
 
                                 // Exchange mu <--> nu and repeat again. 
@@ -799,8 +777,7 @@ void Constraint::rotational_invariance()
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if(iter_found != list_found.end()){
                                     FcProperty arrtmp = *iter_found;                        
-                                    // This operation should be modified for INTERTYPE = 2, 3.
-                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
+                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * vec_for_rot[mu];
                                 }
                             }
 
@@ -878,6 +855,45 @@ void Constraint::rotational_invariance()
                                             interaction_atom[order + 1] = jat;
                                             if(!interaction->is_incutoff(order + 2, interaction_atom)) continue;
 
+                                            atom_tmp.clear();
+
+                                            for (j = 1; j < order + 2; ++j) {
+                                                atom_tmp.push_back(interaction_atom[j]);
+                                            }
+                                            std::sort(atom_tmp.begin(), atom_tmp.end());
+
+                                            iter_cluster = interaction->mindist_cluster[order][i].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+                                            if (iter_cluster != interaction->mindist_cluster[order][i].end()) {
+
+                                                int iloc = -1;
+
+                                                for (j = 0; j < atom_tmp.size(); ++j) {
+                                                    if (atom_tmp[j] == jat) {
+                                                        iloc = j;
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (iloc == -1) {
+                                                    error->exit("rotational_invariance", "This cannot happen.");
+                                                }
+
+                                                for (j = 0; j < 3; ++j) vec_for_rot[j] = 0.0;
+
+                                                int nsize_equiv = (*iter_cluster).cell.size();
+
+                                                for (j = 0; j < nsize_equiv; ++j) {
+                                                    for (int k = 0; k < 3; ++k) {
+                                                        vec_for_rot[k] += interaction->xcrd[(*iter_cluster).cell[j][iloc]][jat][k];
+                                                    }
+                                                }
+
+                                                for (j = 0; j < 3; ++j) {
+                                                    vec_for_rot[j] /= static_cast<double>(nsize_equiv);
+                                                }
+                                            }
+
+
                                             // mu, nu
 
                                             interaction_index[order + 1] = 3 * jat + mu;
@@ -888,7 +904,8 @@ void Constraint::rotational_invariance()
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
-                                                arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
+                                           //     arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
+                                                arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * vec_for_rot[nu];
                                             }
 
                                             // Exchange mu <--> nu and repeat again.
@@ -901,7 +918,8 @@ void Constraint::rotational_invariance()
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if(iter_found != list_found.end()){
                                                 FcProperty arrtmp = *iter_found;
-                                                arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
+                                            //    arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
+                                                 arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * vec_for_rot[mu];
                                             }
                                         }
 

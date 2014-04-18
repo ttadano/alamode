@@ -1,11 +1,11 @@
 /*
- input.cpp
+input.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "input.h"
@@ -68,9 +68,8 @@ void Input::parce_input(int narg, char **arg)
     if (!locate_tag("&cutoff")) {
         error->exit("parse_input", "&cutoff entry not found in the input file");
     }
-  //  parse_cutoff_radii();
-    parse_cutoff_radii2();
-    
+    parse_cutoff_radii();
+
 
 
     if (alm->mode == "fitting") {
@@ -201,7 +200,7 @@ void Input::parse_general_vars(){
     for (i = 0; i < 3; ++i) {
         interaction->is_periodic[i] = is_periodic[i];
     }
-   
+
 
     if (mode == "suggest") displace->disp_basis = str_disp_basis;
 
@@ -232,7 +231,7 @@ void Input::parse_cell_parameter() {
         ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
         ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
     }
-    
+
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             system->lavec[i][j] = a * lavec_tmp[i][j];
@@ -242,15 +241,18 @@ void Input::parse_cell_parameter() {
 
 void Input::parse_interaction_vars() {
 
-    int i, interaction_type;
+    int i;
     int maxorder;
     int *nbody_include;
 
-//     bool is_longrange;
-//     std::string file_longrange;
+
+    //     int interaction_type;
+    //     bool is_longrange;
+    //     std::string file_longrange;
 
     std::vector<std::string> nbody_v;
-    std::string str_allowed_list = "NORDER NBODY INTERTYPE";
+    //  std::string str_allowed_list = "NORDER NBODY INTERTYPE";
+    std::string str_allowed_list = "NORDER NBODY";
     std::string str_no_defaults = "NORDER";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> interaction_var_dict;
@@ -276,12 +278,12 @@ void Input::parse_interaction_vars() {
 
     if (maxorder < 1) error->exit("parse_interaction_vars", "maxorder has to be a positive integer");
 
-    if (interaction_var_dict["INTERTYPE"].empty()) {
-        interaction_type = 0;
-    } else {
-        interaction_type = boost::lexical_cast<int>(interaction_var_dict["INTERTYPE"]);
-    }
-    if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
+    //     if (interaction_var_dict["INTERTYPE"].empty()) {
+    //         interaction_type = 0;
+    //     } else {
+    //         interaction_type = boost::lexical_cast<int>(interaction_var_dict["INTERTYPE"]);
+    //     }
+    //     if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
 
 
     memory->allocate(nbody_include, maxorder);
@@ -305,24 +307,24 @@ void Input::parse_interaction_vars() {
     }
 
 
-//     if (interaction_var_dict["ILONG"].empty()) {
-//         is_longrange = false;
-//     } else {
-//         is_longrange = boost::lexical_cast<int>(interaction_var_dict["ILONG"]);
-//     }
-// 
-//     if (is_longrange) {
-//         if (interaction_var_dict["FLONG"].empty()) {
-//             error->exit("parse_interaction_vars", "FLONG is necessary when ILONG = 1");
-//         } else {
-//             file_longrange = interaction_var_dict["FLONG"];
-//         }
-//     } else {
-//         file_longrange = "";
-//     }
+    //     if (interaction_var_dict["ILONG"].empty()) {
+    //         is_longrange = false;
+    //     } else {
+    //         is_longrange = boost::lexical_cast<int>(interaction_var_dict["ILONG"]);
+    //     }
+    // 
+    //     if (is_longrange) {
+    //         if (interaction_var_dict["FLONG"].empty()) {
+    //             error->exit("parse_interaction_vars", "FLONG is necessary when ILONG = 1");
+    //         } else {
+    //             file_longrange = interaction_var_dict["FLONG"];
+    //         }
+    //     } else {
+    //         file_longrange = "";
+    //     }
 
     interaction->maxorder = maxorder;
-    interaction->interaction_type = interaction_type;
+    // interaction->interaction_type = interaction_type;
     memory->allocate(interaction->nbody_include, maxorder);
 
     for (i = 0; i < maxorder; ++i){
@@ -335,58 +337,59 @@ void Input::parse_interaction_vars() {
 
 }
 
-void Input::parse_cutoff_radii() {
+// void Input::parse_cutoff_radii() {
+// 
+//     int i, j, k;
+//     double ***rcs;
+//     int nkd = system->nkd;
+//     int maxorder = interaction->maxorder;
+// 
+//     if (from_stdin) {
+//         std::cin.ignore();
+//     } else {
+//         ifs_input.ignore();
+//     }
+// 
+//     memory->allocate(rcs, maxorder, nkd, nkd);
+// 
+//     for (i = 0; i < maxorder; ++i) {
+//         for (j = 0; j < nkd; ++j) { 
+//             for (k = 0; k < nkd; ++k) {
+// 
+//                 if (from_stdin) {
+//                     std::cin >> rcs[i][j][k];
+//                 } else {
+//                     ifs_input >> rcs[i][j][k];
+//                 }
+// 
+//             }
+//         }
+//         for (j = 0; j < nkd; ++j) {
+//             for (k = j + 1; k < nkd; ++k){
+//                 if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", i + 2);
+//             }
+//         }
+//     }
+// 
+//     memory->allocate(interaction->rcs, maxorder, nkd, nkd);
+// 
+//     for (i = 0; i < maxorder; ++i) {
+//         for (j = 0; j < nkd; ++j) {
+//             for (k = 0; k < nkd; ++k) {
+//                 interaction->rcs[i][j][k] = rcs[i][j][k];
+//             } 
+//         }
+//     }
+// 
+//     memory->deallocate(rcs);
+// }
 
-    int i, j, k;
-    double ***rcs;
-    int nkd = system->nkd;
-    int maxorder = interaction->maxorder;
-
-    if (from_stdin) {
-        std::cin.ignore();
-    } else {
-        ifs_input.ignore();
-    }
-
-    memory->allocate(rcs, maxorder, nkd, nkd);
-
-    for (i = 0; i < maxorder; ++i) {
-        for (j = 0; j < nkd; ++j) { 
-            for (k = 0; k < nkd; ++k) {
-
-                if (from_stdin) {
-                    std::cin >> rcs[i][j][k];
-                } else {
-                    ifs_input >> rcs[i][j][k];
-                }
-
-            }
-        }
-        for (j = 0; j < nkd; ++j) {
-            for (k = j + 1; k < nkd; ++k){
-                if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", i + 2);
-            }
-        }
-    }
-
-    memory->allocate(interaction->rcs, maxorder, nkd, nkd);
-
-    for (i = 0; i < maxorder; ++i) {
-        for (j = 0; j < nkd; ++j) {
-            for (k = 0; k < nkd; ++k) {
-                interaction->rcs[i][j][k] = rcs[i][j][k];
-            } 
-        }
-    }
-
-    memory->deallocate(rcs);
-}
-
-void Input::parse_cutoff_radii2() 
+void Input::parse_cutoff_radii() 
 {
     std::string line, line_wo_comment;
     std::string::size_type pos_first_comment_tag;
     std::vector<std::string> str_cutoff;
+
 
 
     if (from_stdin) {
@@ -450,6 +453,17 @@ void Input::parse_cutoff_radii2()
 
     double cutoff_tmp;
     double ***rcs;
+    bool ***undefined_cutoff;
+
+    memory->allocate(undefined_cutoff, maxorder, nkd, nkd);
+
+    for (order = 0; order < maxorder; ++order) {
+        for (i = 0; i < nkd; ++i) {
+            for (j = 0; j < nkd; ++j) {
+                undefined_cutoff[order][i][j] = true;
+            }
+        }
+    }
 
     memory->allocate(rcs, maxorder, nkd, nkd);
 
@@ -464,7 +478,7 @@ void Input::parse_cutoff_radii2()
     kd_map.insert(std::map<std::string, int>::value_type("*", -1));
 
     for (std::vector<std::string>::const_iterator it = str_cutoff.begin(); it != str_cutoff.end(); ++it){
-        
+
         split_str_by_space(*it, cutoff_line);
 
         if (cutoff_line.size() < maxorder + 1) {
@@ -486,39 +500,60 @@ void Input::parse_cutoff_radii2()
         ikd = kd_map[str_pair[0]];
         jkd = kd_map[str_pair[1]];
 
-            for (order = 0; order < maxorder; ++order) {
-                if (cutoff_line[order + 1] == "None") {
-                    // Minus value for cutoff radius.
-                    // This is a flag for neglecting cutoff radius
-                    cutoff_tmp = -1.0;
-                } else {
-                    cutoff_tmp = boost::lexical_cast<double>(cutoff_line[order + 1]);
-                }
-
-                if (ikd == -1 && jkd == -1) {
-                    for (i = 0; i < nkd; ++i) {
-                        for (j = 0; j < nkd; ++j) {
-                            rcs[order][i][j] = cutoff_tmp;
-                        }
-                    }
-                } else if (ikd == -1) {
-                    for (i = 0; i < nkd; ++i) {
-                        rcs[order][i][jkd] = cutoff_tmp;
-                        rcs[order][jkd][i] = cutoff_tmp;
-                    }
-                } else if (jkd == -1) {
-                    for (j = 0; j < nkd; ++j) {
-                        rcs[order][j][ikd] = cutoff_tmp;
-                        rcs[order][ikd][j] = cutoff_tmp;
-                    }
-                } else {
-                    rcs[order][ikd][jkd] = cutoff_tmp;
-                    rcs[order][jkd][ikd] = cutoff_tmp;
-                }
+        for (order = 0; order < maxorder; ++order) {
+            if (cutoff_line[order + 1] == "None") {
+                // Minus value for cutoff radius.
+                // This is a flag for neglecting cutoff radius
+                cutoff_tmp = -1.0;
+            } else {
+                cutoff_tmp = boost::lexical_cast<double>(cutoff_line[order + 1]);
             }
+
+            if (ikd == -1 && jkd == -1) {
+                for (i = 0; i < nkd; ++i) {
+                    for (j = 0; j < nkd; ++j) {
+                        rcs[order][i][j] = cutoff_tmp;
+                        undefined_cutoff[order][i][j] = false;
+                    }
+                }
+            } else if (ikd == -1) {
+                for (i = 0; i < nkd; ++i) {
+                    rcs[order][i][jkd] = cutoff_tmp;
+                    rcs[order][jkd][i] = cutoff_tmp;
+                    undefined_cutoff[order][i][jkd] = false;
+                    undefined_cutoff[order][jkd][i] = false;
+                }
+            } else if (jkd == -1) {
+                for (j = 0; j < nkd; ++j) {
+                    rcs[order][j][ikd] = cutoff_tmp;
+                    rcs[order][ikd][j] = cutoff_tmp;
+                    undefined_cutoff[order][j][ikd] = false;
+                    undefined_cutoff[order][ikd][j] = false;
+                }
+            } else {
+                rcs[order][ikd][jkd] = cutoff_tmp;
+                rcs[order][jkd][ikd] = cutoff_tmp;
+                undefined_cutoff[order][ikd][jkd] = false;
+                undefined_cutoff[order][jkd][ikd] = false;
+            }
+        }
     }
     element_allowed.clear();
     str_cutoff.clear();
+
+    for (order = 0; order < maxorder; ++order) {
+        for (j = 0; j < nkd; ++j) {
+            for (k = 0; k < nkd; ++k) {
+                if (undefined_cutoff[order][j][k]) {
+                    std::cout << " Cutoff radius for " << std::setw(3) << order + 2 << "th-order terms" << std::endl;
+                    std::cout << " are not defined between elements " << std::setw(3) << j + 1 
+                        << " and " << std::setw(3) << k + 1 << std::endl;
+                    error->exit("parse_cutoff_radii", "Incomplete cutoff radii");
+                }
+            }
+        }
+    }
+    memory->deallocate(undefined_cutoff);
 
     memory->allocate(interaction->rcs, maxorder, nkd, nkd);
 
@@ -634,12 +669,12 @@ void Input::parse_fitting_vars() {
         fix_harmonic = true;
     }
 
-//     if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
-//         fc2_file = fitting_var_dict["FC2XML"];
-//         if (fc2_file.empty()) {
-//             error->exit("parse_fitting_vars", "FC2XML has to be given when ICONST=2, 4, 6");
-//         }
-//     }
+    //     if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
+    //         fc2_file = fitting_var_dict["FC2XML"];
+    //         if (fc2_file.empty()) {
+    //             error->exit("parse_fitting_vars", "FC2XML has to be given when ICONST=2, 4, 6");
+    //         }
+    //     }
 
     if(constraint_flag >= 2) {
         rotation_axis = fitting_var_dict["ROTAXIS"];
@@ -726,7 +761,7 @@ void Input::parse_atomic_positions() {
             str_v.push_back(line_wo_comment);
         }
     }
-    
+
 
     if (str_v.size() != nat) {
         error->exit("parse_atomic_positions", "The number of entries for atomic positions should be NAT");
@@ -911,7 +946,7 @@ int Input::locate_tag(std::string key){
     std::string line;
 
     if (from_stdin) {
-     
+
         std::cin.clear();
         std::cin.seekg(0, std::ios_base::beg);
 
@@ -938,7 +973,7 @@ int Input::locate_tag(std::string key){
         }
         return ret;
     }
- 
+
 }
 
 bool Input::is_endof_entry(std::string str) {

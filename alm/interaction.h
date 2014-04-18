@@ -78,77 +78,79 @@ namespace ALM_NS {
         }
     }
 
+    class MinDistList {
+    public:
+        std::vector<int> cell;
+        std::vector<double> dist;
+
+        MinDistList();
+        MinDistList(const std::vector<int> cell_in, const std::vector<double> dist_in) {
+            for (std::vector<int>::const_iterator it = cell_in.begin(); it != cell_in.end(); ++it) {
+                cell.push_back(*it);
+            }
+            for (std::vector<double>::const_iterator it = dist_in.begin(); it != dist_in.end(); ++it) {
+                dist.push_back(*it);
+            }
+        }
+
+        friend bool compare_sum_distance(const MinDistList &a, const MinDistList &b) {
+            double dist_a = 0;
+            double dist_b = 0;
+
+            for (int i = 0; i < a.dist.size(); ++i) {
+                dist_a += a.dist[i];
+                dist_b += b.dist[i];
+            }
+            return dist_a < dist_b;
+        }
+    };
+
+    class MinimumDistanceCluster {
+    public:
+        std::vector<int> atom;
+        std::vector<std::vector<int> > cell;
+
+        MinimumDistanceCluster();
+
+        MinimumDistanceCluster(const std::vector<int> atom_in, const std::vector<std::vector<int> > cell_in) {
+            for (int i = 0; i < atom_in.size(); ++i) {
+                atom.push_back(atom_in[i]);
+            }
+            for (int i = 0; i < cell_in.size(); ++i) {
+                cell.push_back(cell_in[i]);
+            }
+        }
+
+        friend bool operator<(const MinimumDistanceCluster &a, const MinimumDistanceCluster &b) {
+            return lexicographical_compare(a.atom.begin(), a.atom.end(), b.atom.begin(), b.atom.end());
+        }
+    };
+
     class Interaction: protected Pointers {
     public:
         Interaction(class ALM *);
         ~Interaction();
-        void init();
+
+        bool is_periodic[3];
+        int nneib;
+        int maxorder;
+  //      int interaction_type;
 
         int *nbody_include;
 
         double ***rcs;
-        std::vector<DistInfo> **mindist_pairs;
-        std::set<IntList> *pairs;
-
-
-        double distance(double *, double *);
-
-        bool is_periodic[3];
+        double ***xcrd;
 
         std::string *str_order;
 
-        int nneib;
-        int maxorder;
-        int interaction_type;
-
+        std::vector<DistInfo> **mindist_pairs;
+        std::set<IntList> *pairs;
         std::vector<int> **interaction_pair;
+        std::set<MinimumDistanceCluster> **mindist_cluster;
 
-        double ***minvec;
-
+        void init();
+        double distance(double *, double *);
         bool is_incutoff(const int, int *);
-       // bool is_incutoff2(const int, int *);
-
-//         template <typename T>
-//         T maxval(int n, T *arr)
-//         {
-//             T tmp;
-//             tmp = arr[0];
-// 
-//             for (int i = 0; i < n; i++) {
-//                 tmp = std::max<T>(tmp, arr[i]);
-//             }
-//             return tmp;
-//         }
-// 
-//         template <typename T>
-//         T maxval(int n1, int n2, T **arr)
-//         {
-//             T tmp;
-//             tmp = arr[0][0];
-// 
-//             for (int i = 0; i < n1; i++) {
-//                 for (int j = 0; j < n2; j++){
-//                     tmp = std::max<T>(tmp, arr[i][j]);
-//                 } 
-//             }
-//             return tmp;
-//         }
-// 
-//         template <typename T>
-//         T maxval(int n1, int n2, int n3, T ***arr)
-//         {
-//             T tmp;
-//             tmp = arr[0][0][0];
-// 
-//             for (int i = 0; i < n1; i++) {
-//                 for (int j = 0; j < n2; j++){
-//                     for (int k = 0; k < n3; k++){
-//                         tmp = std::max<T>(tmp, arr[i][j][k]);
-//                     } 
-//                 }
-//             }
-//             return tmp;
-//         }
 
         template <typename T>
         void insort(int n, T *arr)
@@ -169,12 +171,12 @@ namespace ALM_NS {
         int nsize[3];
         void get_pairs_of_minimum_distance(int, double **, std::vector<DistInfo> **);
         void print_neighborlist(std::vector<DistInfo> **);
-        void search_interactions();
+  //      void search_interactions();
         void search_interactions(std::vector<int> **, std::set<IntList> *);
         void set_ordername();
-        void calc_minvec();
+        void calc_mindist_clusters(std::vector<int> **, std::vector<DistInfo> **, std::set<MinimumDistanceCluster> **);
         int nbody(const int, const int *);
+        void cell_combination(std::vector<std::vector<int> >, int, std::vector<int>, std::vector<std::vector<int> > &);
 
-        double ***xcrd;
     };
 }
