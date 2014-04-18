@@ -1092,7 +1092,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                             distance_list.push_back(MinDistList(comb_cell[j], dist_vector));
                         }
 
-                        std::sort(distance_list.begin(), distance_list.end(), compare_sum_distance);
+                        std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
 
                         comb_cell_min.clear();
 

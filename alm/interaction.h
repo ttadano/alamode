@@ -93,7 +93,7 @@ namespace ALM_NS {
             }
         }
 
-        friend bool compare_sum_distance(const MinDistList &a, const MinDistList &b) {
+        static bool compare_sum_distance(const MinDistList &a, const MinDistList &b) {
             double dist_a = 0;
             double dist_b = 0;
 
@@ -171,7 +171,6 @@ namespace ALM_NS {
         int nsize[3];
         void get_pairs_of_minimum_distance(int, double **, std::vector<DistInfo> **);
         void print_neighborlist(std::vector<DistInfo> **);
-  //      void search_interactions();
         void search_interactions(std::vector<int> **, std::set<IntList> *);
         void set_ordername();
         void calc_mindist_clusters(std::vector<int> **, std::vector<DistInfo> **, std::set<MinimumDistanceCluster> **);
