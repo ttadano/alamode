@@ -756,18 +756,26 @@ void Writes::write_thermodynamics()
     file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if(!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
-    ofs_thermo << "# Temperature [K], Internal Energy [Ry], Heat Capacity / kB" << std::endl;
-// 
-//     TD = 1000.0;
-//     phonon_thermodynamics->Debye_T(Tmax, TD);
-//     std::cout << "TD = " << TD << std::endl;
+    ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::endl;
+//  
+//     for (i = 0; i <= NT; ++i) {
+//    
+//         T = Tmin + dT * static_cast<double>(i);
+//         std::cout << " T = " << std::setw(15) << T;
+//         TD = 1000.0;
+//         phonon_thermodynamics->Debye_T(T, TD);
+//         std::cout << "TD = " << TD << std::endl;
+//     }
+    
 
     for (i = 0; i <= NT; ++i){
         T = Tmin + dT * static_cast<double>(i);
 
-        ofs_thermo << std::setw(15) << T;
-        ofs_thermo << std::setw(15) << phonon_thermodynamics->Internal_Energy(T);
-        ofs_thermo << std::setw(15) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann << std::endl;
+        ofs_thermo << std::setw(16) << T;
+        ofs_thermo << std::setw(18) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann;
+        ofs_thermo << std::setw(18) << phonon_thermodynamics->vibrational_entropy(T) / k_Boltzmann;
+        ofs_thermo << std::setw(18) << phonon_thermodynamics->internal_energy(T);
+        ofs_thermo << std::setw(18) << phonon_thermodynamics->free_energy(T) << std::endl;
     }
 
     ofs_thermo.close();
@@ -926,10 +934,4 @@ void Writes::write_kappa()
         std::cout << std::endl;
         std::cout << " Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
     }
-}
-
-
-void Writes::write_result_xml()
-{
-
 }

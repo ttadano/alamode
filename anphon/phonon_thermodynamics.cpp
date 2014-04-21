@@ -78,23 +78,6 @@ double Phonon_thermodynamics::fC(const double omega, const double T)
     }
 }
 
-void Phonon_thermodynamics::test_fB(const double T)
-{
-
-    unsigned int i, j;
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-
-    double omega;
-
-    for (i = 0; i < nk; ++i){
-        for (j = 0; j < ns; ++j){
-            omega = dynamical->eval_phonon[i][j];
-            std::cout << "omega = " << omega / (T_to_Ryd * T) << " ,fB = " << fB(omega, T) << std::endl;
-        }
-    }
-}
-
 double Phonon_thermodynamics::Cv_tot(const double T)
 {
     unsigned int ik, is;
@@ -161,11 +144,12 @@ void Phonon_thermodynamics::Debye_T(const double T, double &TD)
     double diff_C;
     double fdegfree = 1.0 / static_cast<double>(3.0 * system->natmin);
 
+    double Cv_tot_tmp = Cv_tot(T);
+
     if (T > eps) {
 
         do {   
-            //       std::cout << "T = " << T << " , TD = " << TD << std::endl;
-            diff_C = fdegfree * (Cv_tot(T) - Cv_Debye(T, TD)) / k_Boltzmann;
+            diff_C = fdegfree * (Cv_tot_tmp - Cv_Debye(T, TD)) / k_Boltzmann;
 
             TD_old = TD;
             TD = TD_old - diff_C * 10.0;
@@ -173,7 +157,7 @@ void Phonon_thermodynamics::Debye_T(const double T, double &TD)
     }
 }
 
-double Phonon_thermodynamics::Internal_Energy(const double T)
+double Phonon_thermodynamics::internal_energy(const double T)
 {
     unsigned int ik, is;
     unsigned int nk = kpoint->nk;
@@ -185,15 +169,69 @@ double Phonon_thermodynamics::Internal_Energy(const double T)
     for (ik = 0; ik < nk; ++ik){
         for (is = 0; is < ns; ++is){
             omega = dynamical->eval_phonon[ik][is];
-            if (omega <= 0.0) {
-                // exactly zero is anomalous
-                continue;
+
+            if (omega < eps8) continue;
+
+            ret += omega * coth_T(omega, T);
+        }
+    }
+    return ret * 0.5 / static_cast<double>(nk);
+}
+
+double Phonon_thermodynamics::vibrational_entropy(const double T)
+{
+    unsigned int ik, is;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+    double omega, x;
+    double ret = 0.0;
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            omega = dynamical->eval_phonon[ik][is];
+
+            if (omega < eps8) continue;
+            if (std::abs(T) < eps) continue;
+
+            x = omega / (T * T_to_Ryd);
+
+            ret += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
+        }
+    }
+
+    return -k_Boltzmann * ret / static_cast<double>(nk);
+}
+
+double Phonon_thermodynamics::free_energy(const double T)
+{
+    unsigned int ik, is;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+    double omega, x;
+    double ret = 0.0;
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            omega = dynamical->eval_phonon[ik][is];
+
+            if (omega < eps8) continue;
+
+            if (std::abs(T) < eps) {
+                ret += 0.5 * omega;
             } else {
-                ret += omega * coth_T(omega, T);
+                x = omega / (T * T_to_Ryd);
+                ret += 0.5 * x + std::log(1.0 - std::exp(-x));
             }
         }
     }
-    return ret / static_cast<double>(nk);
+
+    if (std::abs(T) < eps) {
+        return ret / static_cast<double>(nk);
+    } else {
+        return T * T_to_Ryd * ret / static_cast<double>(nk);
+    }
+
+
 }
 
 double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, const unsigned int ns2)
@@ -211,16 +249,15 @@ double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, 
 
             // Skip when omega is almost zero. 
             // (neglect divergent contributions from acoustic modes at gamma point)
-            if (omega < eps8) {
-                //				std::cout << "ik = " << ik << " is = " << is << " omega = " << omega << std::endl;
-                continue;
-            }
-            ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2])) * (fB(omega, T) + 0.5) / omega;
-
+            if (omega < eps8) continue;
+           
+            ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2])) 
+                * (fB(omega, T) + 0.5) / omega;
         }
     }
 
-    ret *= 1.0 / (static_cast<double>(nk) * std::sqrt(system->mass[system->map_p2s[ns1/3][0]] * system->mass[system->map_p2s[ns2/3][0]]));
+    ret *= 1.0 / (static_cast<double>(nk) 
+        * std::sqrt(system->mass[system->map_p2s[ns1/3][0]] * system->mass[system->map_p2s[ns2/3][0]]));
 
     // ret *= 2.0 * electron_mass / time_ry * Bohr_in_Angstrom * Bohr_in_Angstrom;
     // ret *= h_planck / (2.0 * pi); // Convert to SI unit 
@@ -231,11 +268,13 @@ double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, 
 
 double Phonon_thermodynamics::coth_T(const double omega, const double T)
 {
+    // This function returns coth(hbar*omega/2*kB*T)
+
     if (T < eps) {
         // if T = 0.0 and omega > 0, coth(hbar*omega/(2*kB*T)) = 1.0
         return 1.0;
     } else {
-        double x = omega / (T_to_Ryd * T);
+        double x = omega / (T_to_Ryd * T * 2.0);
         return 1.0 + 2.0 / (std::exp(2.0 * x) - 1.0);
     }
 }
