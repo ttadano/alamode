@@ -75,7 +75,7 @@ void Dynamical::setup_dynamical(std::string mode)
         if (phon->mode == "RTA") {
             eigenvectors = true;
         } else {
-            if (print_eigenvectors || writes->print_rmsd || writes->writeanime || dos->projected_dos) {
+            if (print_eigenvectors || writes->print_msd || writes->writeanime || dos->projected_dos) {
                 eigenvectors = true;
             }
         }

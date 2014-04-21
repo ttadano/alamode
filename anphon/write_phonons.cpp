@@ -97,7 +97,7 @@ void Writes::write_input_vars()
     std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
     std::cout << "  PRINTVEC = " << dynamical->print_eigenvectors << std::endl;
     std::cout << "  PRINTXSF = " << writes->writeanime << std::endl;
-    std::cout << "  PRINTRMSD = " << writes->print_rmsd << std::endl;
+    std::cout << "  PRINTMSD = " << writes->print_msd << std::endl;
     std::cout << std::endl;
 
     std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
@@ -341,8 +341,8 @@ void Writes::write_phonon_info()
         write_thermodynamics();
     }
 
-    if (print_rmsd) {
-        write_rmsd();
+    if (print_msd) {
+        write_msd();
     }
 
     if(writeanime) {
@@ -849,11 +849,11 @@ void Writes::write_gruneisen()
     }
 }
 
-void Writes::write_rmsd()
+void Writes::write_msd()
 {
     // Write room mean square displacement of atoms
 
-    std::string file_rmsd = input->job_title + ".rmsd";
+    std::string file_rmsd = input->job_title + ".msd";
     std::ofstream ofs_rmsd;
 
     unsigned int i, j;
@@ -868,8 +868,8 @@ void Writes::write_rmsd()
     ofs_rmsd.open(file_rmsd.c_str(), std::ios::out);
     if (!ofs_rmsd) error->exit("write_rmsd", "Could not open file_rmsd");
 
-    ofs_rmsd << "# Root Mean Square Displacements at a function of temperature." << std::endl;
-    ofs_rmsd << "# Temperature [K], u1_x, u1_y, u1_z, .... [Angstrom]" << std::endl;
+    ofs_rmsd << "# Mean Square Displacements at a function of temperature." << std::endl;
+    ofs_rmsd << "# Temperature [K], <(u_{1}^{x})^{2}>, <(u_{1}^{y})^{2}>, <(u_{1}^{z})^{2}>, .... [Angstrom^2]" << std::endl;
 
     NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
 
@@ -887,7 +887,7 @@ void Writes::write_rmsd()
     ofs_rmsd.close();
 
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_rmsd;
-    std::cout << " : Root-mean-square-displacement (RMSD)" << std::endl;
+    std::cout << " : Mean-square-displacement (MSD)" << std::endl;
 
 }
 

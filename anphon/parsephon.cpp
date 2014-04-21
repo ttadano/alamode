@@ -309,13 +309,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
-                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTRMSD PDOS TDOS GRUNEISEN NEWFCS";
+                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
     bool lclassical;
     bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
-    bool print_vel, print_evec, print_xsf, print_rmsd;
+    bool print_vel, print_evec, print_xsf, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
     bool two_phonon_dos;
 
@@ -327,7 +327,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     print_xsf = false;
     print_vel = false;
     print_evec = false;
-    print_rmsd = false;
+    print_msd = false;
 
     projected_dos = false;
     two_phonon_dos = false;
@@ -349,7 +349,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_vel, "PRINTVEL", analysis_var_dict);
         assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
-        assign_val(print_rmsd, "PRINTRMSD", analysis_var_dict);
+        assign_val(print_msd, "PRINTMSD", analysis_var_dict);
 
         assign_val(projected_dos, "PDOS", analysis_var_dict);
         assign_val(two_phonon_dos, "TDOS", analysis_var_dict);
@@ -382,7 +382,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     writes->writeanime = print_xsf;
-    writes->print_rmsd = print_rmsd;
+    writes->print_msd = print_msd;
 
     dos->projected_dos = projected_dos;
     dos->two_phonon_dos = two_phonon_dos;

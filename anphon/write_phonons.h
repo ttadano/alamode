@@ -31,7 +31,7 @@ namespace PHON_NS
         void write_result_xml();
 
         bool writeanime;
-        bool print_rmsd;
+        bool print_msd;
 
         double in_kayser(const double);
         int nbands;
@@ -49,7 +49,7 @@ namespace PHON_NS
         void write_mode_anime();
         void write_eigenvectors();
         void write_thermodynamics();
-        void write_rmsd();
+        void write_msd();
 
         double Ry_to_kayser;   
     };
