@@ -71,9 +71,6 @@ void Input::parce_input(int narg, char **arg)
     if (!locate_tag("&cell")) error->exit("parse_input", "&cell entry not found in the input file");
     parse_cell_parameter();
     
-    if (!locate_tag("&kpoint")) error->exit("parse_input", "&kpoint entry not found in the input file");
-    parse_kpoints();
-
     bool use_defaults_for_analysis;
     if (!locate_tag("&analysis")) {
         use_defaults_for_analysis = true;
@@ -81,6 +78,9 @@ void Input::parce_input(int narg, char **arg)
         use_defaults_for_analysis = false;
     }
     parse_analysis_vars(use_defaults_for_analysis);
+
+    if (!locate_tag("&kpoint")) error->exit("parse_input", "&kpoint entry not found in the input file");
+    parse_kpoints();
 
 }
 

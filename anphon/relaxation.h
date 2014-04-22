@@ -130,13 +130,24 @@ namespace PHON_NS {
         bool is_proper(const int);
         bool is_symmorphic(const int);
 
-        void generate_triplet_k(const bool, const bool);
-       // void generate_map_k_for_tetrahedron();
+        void prepare_relative_vector(std::vector<FcsClass>, const unsigned int, double ***);
+        void prepare_relative_vector(std::vector<FcsArrayWithCell>, const unsigned int, double ***);
 
-        void calc_frequency_resolved_final_state(const unsigned int, double *, const double, const unsigned int, const double *, const unsigned int, const unsigned int, double **);
+
+        void prepare_group_of_force_constants(std::vector<FcsClass>, const unsigned int, int &, std::vector<double> *&);
+        void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>, const unsigned int, int &, std::vector<double> *&);
+
+
+
+        void generate_triplet_k(const bool, const bool);
+
+        void calc_frequency_resolved_final_state(const unsigned int, double *, const double, 
+            const unsigned int, const double *, const unsigned int, const unsigned int, double **);
 
         int ngroup;
-        std::vector<FcsClass> *fcs_group;
+        int ngroup2;
+        std::vector<double> *fcs_group;
+        std::vector<double> *fcs_group2;
 
         double **v3_arr;
         double ***delta_arr;

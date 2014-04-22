@@ -27,18 +27,19 @@ using namespace PHON_NS;
 Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon){}
 
 Phonon_velocity::~Phonon_velocity(){
-    if (print_velocity) {
-        memory->deallocate(phvel);
+    if (phon->mode == "PHONONS") {
+        if (print_velocity) {
+            memory->deallocate(phvel);
+        }
     }
-}
-
-void Phonon_velocity::setup_velocity()
-{
-    MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 }
 
 void Phonon_velocity::calc_group_velocity(const int kpmode)
 {
+
+    MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+
     if (print_velocity) {
 
         unsigned int nk = kpoint->nk;

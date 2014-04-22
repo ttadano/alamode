@@ -81,6 +81,43 @@ namespace PHON_NS {
         }
     };
 
+    struct AtomCellSuper {
+        unsigned int index;
+        unsigned int tran;
+        unsigned int cell_s;
+    };
+
+    inline bool operator<(AtomCellSuper &a, AtomCellSuper &b) {
+        return a.index < b.index;
+    }
+
+    class FcsArrayWithCell {
+    public:
+        std::vector<AtomCellSuper> pairs;
+        double fcs_val;
+
+        FcsArrayWithCell(){};
+        FcsArrayWithCell(const double fcs_in, const std::vector<AtomCellSuper> pairs_in) {
+            fcs_val = fcs_in;
+
+            for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
+                pairs.push_back(*it);
+            }
+        }
+    };
+
+    inline bool operator<(const FcsArrayWithCell &a, const FcsArrayWithCell &b) {
+        std::vector<unsigned int> index_a, index_b;
+        index_a.clear();
+        index_b.clear();
+        for (int i = 0; i < a.pairs.size(); ++i) {
+            index_a.push_back(a.pairs[i].index);
+            index_b.push_back(b.pairs[i].index);
+        }
+        return lexicographical_compare(index_a.begin(), index_a.end(), index_b.begin(), index_b.end());
+    }
+
+
     class Fcs_phonon: protected Pointers {
     public:
         Fcs_phonon(class PHON *);
@@ -91,6 +128,7 @@ namespace PHON_NS {
         std::string file_fcs;
 
         std::vector<FcsClass> *force_constant;
+        std::vector<FcsArrayWithCell> *force_constant_with_cell;
         std::vector<FcsClassExtent> fc2_ext;
 
         bool is_fc2_ext;
@@ -103,9 +141,10 @@ namespace PHON_NS {
         void load_fcs_xml();
 
         void examine_translational_invariance(const int, const unsigned int, const unsigned int,
-            double *, std::vector<FcsClass> *);
+            double *, std::vector<FcsArrayWithCell> *);
 
         void MPI_Bcast_fc_class(const unsigned int);
+        void MPI_Bcast_fcs_array(const unsigned int);
         void MPI_Bcast_fc2_ext();
     };
 }

@@ -185,14 +185,19 @@ void Gruneisen::prepare_delta_fc2()
         }
     }
 
-    for (std::vector<FcsClass>::iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[1].begin(); it != fcs_phonon->force_constant_with_cell[1].end(); ++it) {
 
-        FcsClass fc3_tmp = *it;
+      //  FcsClass fc3_tmp = *it;
 
+//         for (i = 0; i < 3; ++i){
+//             nalpha[i] = fc3_tmp.elems[i].atom;
+//             ncell[i]  = fc3_tmp.elems[i].cell;
+//             ixyz[i] = fc3_tmp.elems[i].xyz;
+//         }
         for (i = 0; i < 3; ++i){
-            nalpha[i] = fc3_tmp.elems[i].atom;
-            ncell[i]  = fc3_tmp.elems[i].cell;
-            ixyz[i] = fc3_tmp.elems[i].xyz;
+            nalpha[i] = (*it).pairs[i].index / 3;
+            ncell[i]  = (*it).pairs[i].tran;
+            ixyz[i] = (*it).pairs[i].index % 3;
         }
 
         iat = system->map_p2s[nalpha[0]][ncell[0]];
@@ -200,12 +205,16 @@ void Gruneisen::prepare_delta_fc2()
         kat = system->map_p2s[nalpha[2]][ncell[2]];
 
         for (i = 0; i < 3; ++i) {
-            coord_tmp[i] = system->xr_s[kat][i] - system->xr_s[iat][i];
+//             coord_tmp[i] = system->xr_s[kat][i] - system->xr_s[iat][i];
+            coord_tmp[i] = system->xr_s[kat][i];
+
             coord_tmp[i] = dynamical->fold(coord_tmp[i]);
         }
         rotvec(coord_tmp, coord_tmp, system->lavec_s);
 
-        dfc2[nalpha[0]][jat][ixyz[0]][ixyz[1]] += fc3_tmp.fcs_val * coord_tmp[ixyz[2]];
+ //       dfc2[nalpha[0]][jat][ixyz[0]][ixyz[1]] += fc3_tmp.fcs_val * coord_tmp[ixyz[2]];
+  
+        dfc2[nalpha[0]][jat][ixyz[0]][ixyz[1]] += (*it).fcs_val * coord_tmp[ixyz[2]];
     }
 
 #ifdef _DEBUG

@@ -22,8 +22,6 @@ namespace PHON_NS {
         void calc_phonon_vel_band();
         void phonon_vel_k(double *, double **);
 
-        void setup_velocity();
-
         bool print_velocity;
         double **phvel;
 

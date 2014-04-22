@@ -1,11 +1,11 @@
 /*
- phonon_dos.cpp
+phonon_dos.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
@@ -39,8 +39,8 @@ Dos::~Dos(){
         if (two_phonon_dos) {
             memory->deallocate(dos2_phonon);
         }
+        memory->deallocate(kmap_irreducible);
     }
-    memory->deallocate(kmap_irreducible);
 }
 
 void Dos::setup()
@@ -80,26 +80,27 @@ void Dos::setup()
             int n_energy2 = static_cast<int>((emax * 2.0 - emin) / delta_e);
             memory->allocate(dos2_phonon, n_energy2, 4);
         }
-    }
 
-    int ***symmetry_tmp;
 
-    memory->allocate(kmap_irreducible, kpoint->nk);
-    memory->allocate(symmetry_tmp, symmetry->nsym, 3, 3);
+        int ***symmetry_tmp;
 
-    for (i = 0; i < symmetry->nsym; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            for (int k = 0; k < 3; ++k) {
-                symmetry_tmp[i][j][k] = symmetry->SymmList[i].symop[3 * j + k];
+        memory->allocate(kmap_irreducible, kpoint->nk);
+        memory->allocate(symmetry_tmp, symmetry->nsym, 3, 3);
+
+        for (i = 0; i < symmetry->nsym; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                for (int k = 0; k < 3; ++k) {
+                    symmetry_tmp[i][j][k] = symmetry->SymmList[i].symop[3 * j + k];
+                }
             }
         }
+
+        kpoint->generate_irreducible_kmap(kmap_irreducible, nk_irreducible, k_irreducible,
+            kpoint->nkx, kpoint->nky, kpoint->nkz, 
+            kpoint->xk, symmetry->nsym, symmetry_tmp);
+
+        memory->deallocate(symmetry_tmp);
     }
-
-    kpoint->generate_irreducible_kmap(kmap_irreducible, nk_irreducible, k_irreducible,
-        kpoint->nkx, kpoint->nky, kpoint->nkz, 
-        kpoint->xk, symmetry->nsym, symmetry_tmp);
-
-    memory->deallocate(symmetry_tmp);
 }
 
 void Dos::calc_dos_all()
@@ -122,7 +123,7 @@ void Dos::calc_dos_all()
     calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
         dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
 
-    
+
     if (projected_dos) {
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
             pdos_phonon, neval, system->natmin, integration->ismear, dynamical->evec_phonon);        
@@ -136,9 +137,9 @@ void Dos::calc_dos_all()
         memory->allocate(energy2, n_energy2);
 
         for (i = 0; i < n_energy2; ++i) {
-                energy2[i] = emin + delta_e * static_cast<double>(i);
+            energy2[i] = emin + delta_e * static_cast<double>(i);
         }
-        
+
         calc_two_phonon_dos(n_energy2, energy2, dos2_phonon, integration->ismear, kpoint->kpoint_irred_all);       
         memory->deallocate(energy2);
     }
@@ -200,12 +201,12 @@ void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk, double **eval,
 
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
-    
+
     for (iat = 0; iat < natmin; ++iat){
 
         for (imode = 0; imode < neval; ++imode){
             for (i = 0; i < nk; ++i){
-              
+
                 proj[imode][i] = 0.0;
 
                 for (icrd = 0; icrd < 3; ++icrd){

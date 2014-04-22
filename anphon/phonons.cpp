@@ -218,9 +218,8 @@ void PHON::execute_RTA()
 
     setup_base();
 
-    dos->setup();
-
     if (kpoint->kpoint_mode < 3) {
+        dos->setup();
         dynamical->diagonalize_dynamical_all();
     }
     relaxation->setup_mode_analysis();

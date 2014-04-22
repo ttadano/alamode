@@ -1,11 +1,11 @@
 /*
- relaxation.cpp
+relaxation.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
@@ -48,6 +48,15 @@ Relaxation::~Relaxation(){};
 
 void Relaxation::setup_relaxation()
 {
+
+    nk = kpoint->nk;
+    ns = dynamical->neval;
+    nks = ns*nk;
+
+    unsigned int i, j, k;
+    double *invsqrt_mass_p;
+
+
     if (mympi->my_rank == 0) {
         std::cout << " Setting up the relaxation time calculation ...";
 
@@ -56,50 +65,8 @@ void Relaxation::setup_relaxation()
         }
     }
 
-    nk = kpoint->nk;
-    ns = dynamical->neval;
-    nks = ns*nk;
 
-    unsigned int i, j, k;
-    double mat_convert[3][3];
-    double ***relvec;
-    double *invsqrt_mass_p;
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j){
-            mat_convert[i][j] = 0.0;
-            for (k = 0; k < 3; ++k){
-                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s[k][j]; 
-            }
-        }
-    }
-
-    memory->allocate(relvec, system->nat, system->nat, 3);
     memory->allocate(invsqrt_mass_p, system->natmin);
-
-    if (mympi->my_rank == 0) {
-
-        double vec[3];
-
-        for (i = 0; i < system->nat; ++i){
-            for (j = 0; j < system->nat; ++j){
-
-                for (k = 0; k < 3; ++k){
-
-                    vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
-                    vec[k] = dynamical->fold(vec[k]);
-
-                    vec[k] += system->xr_s[system->map_p2s[system->map_s2p[j].atom_num][0]][k]
-                    -system->xr_s[system->map_p2s[system->map_s2p[i].atom_num][0]][k];
-
-
-                    relvec[i][j][k] = -vec[k];
-                }
-                rotvec(relvec[i][j], relvec[i][j], mat_convert);
-            }
-        }
-    }
-    MPI_Bcast(&relvec[0][0][0], 3*system->nat*system->nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     for (i = 0; i < system->natmin; ++i){
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
@@ -107,71 +74,39 @@ void Relaxation::setup_relaxation()
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
     std::sort(fcs_phonon->force_constant[1].begin(), fcs_phonon->force_constant[1].end());
+    std::sort(fcs_phonon->force_constant_with_cell[1].begin(), fcs_phonon->force_constant_with_cell[1].end());
 
-
-    // Find the number of groups which has different evecs.
-    ngroup = 0;
-
-    int arr_old[3] = {-1, -1, -1};
-    int arr_tmp[3];
-    for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
-        for (i = 0; i < 3; ++i) arr_tmp[i] = 3 * (*it).elems[i].atom + (*it).elems[i].xyz;
-
-        if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
-            ++ngroup;
-            for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
-        }
-    }
-
-    memory->allocate(fcs_group, ngroup);
-
-    for (i = 0; i < 3; ++i) arr_old[i] = -1;
-    int igroup = -1;
-    for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
-        for (i = 0; i < 3; ++i) arr_tmp[i] = 3 * (*it).elems[i].atom + (*it).elems[i].xyz;
-
-        if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
-            ++igroup;
-            for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
-        }
-        fcs_group[igroup].push_back(*it);  
-    }
+   // prepare_group_of_force_constants(fcs_phonon->force_constant[1], 3, ngroup, fcs_group);
+    prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3, ngroup, fcs_group);
 
     memory->allocate(v3_arr, nk, ns*ns);
     memory->allocate(delta_arr, nk, ns*ns, 4);
 
-    memory->allocate(vec_for_v3, 3, 2, fcs_phonon->force_constant[1].size());
-    memory->allocate(invmass_for_v3, fcs_phonon->force_constant[1].size());
+    memory->allocate(vec_for_v3, 3, 2, fcs_phonon->force_constant_with_cell[1].size());
+    memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
+    memory->allocate(evec_index, fcs_phonon->force_constant_with_cell[1].size(), 3);
+
 
     j = 0;
-    unsigned int atom_num[3];
-
-    for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[1].begin(); it != fcs_phonon->force_constant[1].end(); ++it) {
-
-        for (i = 0; i < 3; ++i) atom_num[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
-
-        for (i = 0; i < 3; ++i) {
-            vec_for_v3[i][0][j] = relvec[atom_num[1]][atom_num[0]][i];
-            vec_for_v3[i][1][j] = relvec[atom_num[2]][atom_num[0]][i];
-        }
-
+    for (std::vector<FcsArrayWithCell>::const_iterator it  = fcs_phonon->force_constant_with_cell[1].begin();
+                                                       it != fcs_phonon->force_constant_with_cell[1].end(); ++it) {
         invmass_for_v3[j] 
-        = invsqrt_mass_p[(*it).elems[0].atom] 
-        * invsqrt_mass_p[(*it).elems[1].atom] 
-        * invsqrt_mass_p[(*it).elems[2].atom];
+        = invsqrt_mass_p[(*it).pairs[0].index / 3]
+        * invsqrt_mass_p[(*it).pairs[1].index / 3]
+        * invsqrt_mass_p[(*it).pairs[2].index / 3];
 
-        ++j;     
+        ++j;
     }
 
-    memory->allocate(evec_index, fcs_phonon->force_constant[1].size(), 3);
+   //  prepare_relative_vector(fcs_phonon->force_constant[1], 3, vec_for_v3);
+    prepare_relative_vector(fcs_phonon->force_constant_with_cell[1], 3, vec_for_v3);
 
-    for (i = 0; i < fcs_phonon->force_constant[1].size(); ++i) {
+    for (i = 0; i < fcs_phonon->force_constant_with_cell[1].size(); ++i) {
         for (j = 0; j < 3; ++j) {
-            evec_index[i][j] 
-            = 3 * fcs_phonon->force_constant[1][i].elems[j].atom 
-                + fcs_phonon->force_constant[1][i].elems[j].xyz;
+            evec_index[i][j] = fcs_phonon->force_constant_with_cell[1][i].pairs[j].index;
         }
     }
+
 
     if (quartic_mode) {
 
@@ -187,39 +122,36 @@ void Relaxation::setup_relaxation()
             std::cout << std::endl;
         }
 
-        memory->allocate(vec_for_v4, fcs_phonon->force_constant[2].size(), 3, 3);
-        memory->allocate(invmass_for_v4, fcs_phonon->force_constant[2].size());
+        std::sort(fcs_phonon->force_constant[2].begin(), fcs_phonon->force_constant[2].end());
+        std::sort(fcs_phonon->force_constant_with_cell[2].begin(), fcs_phonon->force_constant_with_cell[2].end());
+
+       // prepare_group_of_force_constants(fcs_phonon->force_constant[2], 4, ngroup2, fcs_group2);
+        prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4, ngroup2, fcs_group2);
+
+        memory->allocate(vec_for_v4, fcs_phonon->force_constant_with_cell[2].size(), 3, 3);
+        memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
+        memory->allocate(evec_index4, fcs_phonon->force_constant_with_cell[2].size(), 4);
+
 
         j = 0;
         unsigned int atom_num4[4];
 
-        for (std::vector<FcsClass>::const_iterator it = fcs_phonon->force_constant[2].begin(); 
-            it != fcs_phonon->force_constant[2].end(); ++it) {
-
-                for (i = 0; i < 4; ++i) atom_num4[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
-
-                for (i = 0; i < 3; ++i) {
-                    vec_for_v4[j][i][0] = relvec[atom_num4[1]][atom_num4[0]][i];
-                    vec_for_v4[j][i][1] = relvec[atom_num4[2]][atom_num4[0]][i];
-                    vec_for_v4[j][i][2] = relvec[atom_num4[3]][atom_num4[0]][i];
-                }
-
+        for (std::vector<FcsArrayWithCell>::const_iterator it  = fcs_phonon->force_constant_with_cell[2].begin(); 
+                                                           it != fcs_phonon->force_constant_with_cell[2].end(); ++it) {
                 invmass_for_v4[j] 
-                = invsqrt_mass_p[(*it).elems[0].atom] 
-                * invsqrt_mass_p[(*it).elems[1].atom] 
-                * invsqrt_mass_p[(*it).elems[2].atom] 
-                * invsqrt_mass_p[(*it).elems[3].atom];
+                = invsqrt_mass_p[(*it).pairs[0].index / 3] 
+                * invsqrt_mass_p[(*it).pairs[1].index / 3] 
+                * invsqrt_mass_p[(*it).pairs[2].index / 3] 
+                * invsqrt_mass_p[(*it).pairs[3].index / 3];
 
                 ++j;     
         }
+        // prepare_relative_vector(fcs_phonon->force_constant[2], 4, vec_for_v4);
+        prepare_relative_vector(fcs_phonon->force_constant_with_cell[2], 4, vec_for_v4);
 
-        memory->allocate(evec_index4, fcs_phonon->force_constant[2].size(), 4);
-
-        for (i = 0; i < fcs_phonon->force_constant[2].size(); ++i) {
+        for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
             for (j = 0; j < 4; ++j) {
-                evec_index4[i][j] 
-                = 3 * fcs_phonon->force_constant[2][i].elems[j].atom 
-                    + fcs_phonon->force_constant[2][i].elems[j].xyz;
+                evec_index4[i][j] = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
             }
         }
     }
@@ -235,7 +167,7 @@ void Relaxation::setup_relaxation()
         memory->allocate(f_tmp, 4, nk);
     }
 
-    if (mympi->my_rank == 0) {
+    if (mympi->my_rank == 0 && kpoint->kpoint_mode == 2) {
 
         unsigned int nk_near = 0;
         double domega_min;
@@ -274,7 +206,6 @@ void Relaxation::setup_relaxation()
         std::cout << std::endl;
     }
 
-    memory->deallocate(relvec);
     memory->deallocate(invsqrt_mass_p);
 
     if (mympi->my_rank == 0) {
@@ -286,14 +217,349 @@ void Relaxation::setup_relaxation()
 
         generate_triplet_k(use_triplet_symmetry, sym_permutation);
 
-//         if (integration->ismear == -1) {
-//             memory->allocate(nk_irreducible_tetra, kpoint->nk_reduced);
-//             memory->allocate(map_k_tetra, kpoint->nk_reduced, kpoint->nk);
-//             generate_map_k_for_tetrahedron();
-//         }
+        //         if (integration->ismear == -1) {
+        //             memory->allocate(nk_irreducible_tetra, kpoint->nk_reduced);
+        //             memory->allocate(map_k_tetra, kpoint->nk_reduced, kpoint->nk);
+        //             generate_map_k_for_tetrahedron();
+        //         }
     }
 
+    std::cout << " done!" << std::endl;
+
 }
+
+void Relaxation::prepare_relative_vector(std::vector<FcsClass> fcs_in, const unsigned int N, double ***vec_out)
+{
+
+    unsigned int i, j, k;
+    double mat_convert[3][3];
+    double ***relvec;
+
+
+    unsigned int nat = system->nat;
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j){
+            mat_convert[i][j] = 0.0;
+            for (k = 0; k < 3; ++k){
+                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s[k][j]; 
+            }
+        }
+    }
+
+    memory->allocate(relvec, nat, nat, 3);
+
+    if (mympi->my_rank == 0) {
+
+        double vec[3];
+
+        for (i = 0; i < system->nat; ++i){
+            for (j = 0; j < system->nat; ++j){
+
+                for (k = 0; k < 3; ++k){
+
+                    vec[k] = system->xr_s[i][k] - system->xr_s[j][k];
+                    vec[k] = dynamical->fold(vec[k]);
+
+                    vec[k] += system->xr_s[system->map_p2s[system->map_s2p[j].atom_num][0]][k]
+                    -system->xr_s[system->map_p2s[system->map_s2p[i].atom_num][0]][k];
+
+
+                    relvec[i][j][k] = -vec[k];
+                }
+                rotvec(relvec[i][j], relvec[i][j], mat_convert);
+            }
+        }
+    }
+    MPI_Bcast(&relvec[0][0][0], 3*nat*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
+    j = 0;
+    unsigned int *atom_num;
+    memory->allocate(atom_num, N);
+
+    for (std::vector<FcsClass>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+
+        for (i = 0; i < N; ++i) atom_num[i] = system->map_p2s[(*it).elems[i].atom][(*it).elems[i].cell];
+
+        for (i = 0; i < 3; ++i) {
+            for (k = 0; k < N - 1; ++k) {
+                vec_out[i][k][j] = relvec[atom_num[k + 1]][atom_num[0]][i];
+            }
+//             vec_out[i][0][j] = relvec[atom_num[1]][atom_num[0]][i];
+//             vec_out[i][1][j] = relvec[atom_num[2]][atom_num[0]][i];
+        }
+
+        ++j;     
+    }
+
+    memory->deallocate(atom_num);
+    memory->deallocate(relvec);
+}
+
+void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in, const unsigned int N, double ***vec_out)
+{
+
+    int i, j, k;
+    int ix, iy, iz;
+
+    double vec[3];
+    double **xshift_s;
+
+    unsigned int atm1_s, atm2_s;
+    unsigned int atm1_p, atm2_p;
+    unsigned int xyz1, xyz2;
+    unsigned int icell;
+
+    std::vector<unsigned int> atm_super, atm_prim;
+    std::vector<unsigned int> xyz;
+    std::vector<unsigned int> cells;
+
+    double mat_convert[3][3];
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j){
+            mat_convert[i][j] = 0.0;
+            for (k = 0; k < 3; ++k){
+                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s[k][j]; 
+            }
+        }
+    }
+
+
+    memory->allocate(xshift_s, 27, 3);
+
+    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
+
+    icell =0;
+
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                ++icell;
+
+                xshift_s[icell][0] = static_cast<double>(ix);
+                xshift_s[icell][1] = static_cast<double>(iy);
+                xshift_s[icell][2] = static_cast<double>(iz);
+            }
+        }
+    }
+
+    unsigned int atm_p, atm_s;
+    unsigned int tran_tmp;
+
+    unsigned int icount = 0;
+
+
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+
+        atm_super.clear();
+        atm_prim.clear();
+        xyz.clear();
+        cells.clear();
+
+        for (i = 0; i < (*it).pairs.size(); ++i) {
+            atm_p = (*it).pairs[i].index / 3;
+            tran_tmp = (*it).pairs[i].tran;
+            atm_s = system->map_p2s[atm_p][tran_tmp];
+
+            atm_prim.push_back(atm_p);
+            atm_super.push_back(atm_s);
+            cells.push_back((*it).pairs[i].cell_s);
+        }
+
+
+        for (i = 0; i < N - 1; ++i) {
+
+            for (j = 0; j < 3; ++j) {
+                vec[j] = system->xr_s[atm_super[i + 1]][j] + xshift_s[cells[i + 1]][j] 
+                - system->xr_s[system->map_p2s[atm_prim[i + 1]][0]][j];
+            }
+
+            rotvec(vec, vec, mat_convert);
+
+            for (j = 0; j < 3; ++j) {
+                vec_out[j][i][icount] = -vec[j];
+            }
+        }
+        ++icount;
+    }
+    memory->deallocate(xshift_s);
+}
+
+void Relaxation::prepare_group_of_force_constants(std::vector<FcsClass> fcs_in, const unsigned int N, int &number_of_groups, std::vector<double> *&fcs_group_out) 
+{
+    // Find the number of groups which has different evecs.
+
+    unsigned int i;
+    number_of_groups = 0;
+
+    std::vector<int> arr_old, arr_tmp;
+
+    arr_old.clear();
+    for (i = 0; i < N; ++i) {
+        arr_old.push_back(-1);
+    }
+
+    for (std::vector<FcsClass>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+
+        arr_tmp.clear();
+
+        for (i = 0; i < (*it).elems.size(); ++i) {
+            arr_tmp.push_back(3 * (*it).elems[i].atom + (*it).elems[i].xyz);
+        }
+
+        if (arr_tmp != arr_old) {
+            ++number_of_groups;
+            arr_old.clear();
+            arr_old.reserve(arr_tmp.size());
+            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+        }
+    }
+
+    memory->allocate(fcs_group_out, number_of_groups);
+
+    int igroup = -1;
+
+    arr_old.clear();
+    for (i = 0; i < N; ++i) {
+        arr_old.push_back(-1);
+    }
+
+
+    for (std::vector<FcsClass>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+
+        arr_tmp.clear();
+
+        for (i = 0; i < (*it).elems.size(); ++i) {
+            arr_tmp.push_back(3 * (*it).elems[i].atom + (*it).elems[i].xyz);
+        }
+
+        if (arr_tmp != arr_old) {
+            ++igroup;
+            arr_old.clear();
+            arr_old.reserve(arr_tmp.size());
+            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+        }
+        fcs_group_out[igroup].push_back((*it).fcs_val);  
+    }
+  
+// 
+//     int arr_old[3] = {-1, -1, -1};
+//     int arr_tmp[3];
+// 
+// 
+// 
+//     for (std::vector<FcsClass>::const_iterator it = fcs_in[1].begin(); it != fcs_in[1].end(); ++it) {
+//         for (i = 0; i < 3; ++i) arr_tmp[i] = 3 * (*it).elems[i].atom + (*it).elems[i].xyz;
+// 
+//         if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
+//             ++number_of_groups;
+//             for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
+//         }
+//     }
+// 
+//     memory->allocate(fcs_group_out, number_of_groups);
+// 
+//     for (i = 0; i < 3; ++i) arr_old[i] = -1;
+//     int igroup = -1;
+//     for (std::vector<FcsClass>::const_iterator it = fcs_in[1].begin(); it != fcs_in[1].end(); ++it) {
+//         for (i = 0; i < 3; ++i) arr_tmp[i] = 3 * (*it).elems[i].atom + (*it).elems[i].xyz;
+// 
+//         if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
+//             ++igroup;
+//             for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
+//         }
+//         fcs_group_out[igroup].push_back((*it).fcs_val);  
+//     }
+
+}
+
+void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> fcs_in, const unsigned int N, int &number_of_groups, std::vector<double> *&fcs_group_out) 
+{
+    // Find the number of groups which has different evecs.
+
+    unsigned int i;
+    number_of_groups = 0;
+
+
+    std::vector<int> arr_old, arr_tmp;
+
+    arr_old.clear();
+    for (i = 0; i < N; ++i) {
+        arr_old.push_back(-1);
+    }
+
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+
+        arr_tmp.clear();
+
+        for (i = 0; i < (*it).pairs.size(); ++i) {
+            arr_tmp.push_back((*it).pairs[i].index);
+        }
+
+        if (arr_tmp != arr_old) {
+            ++number_of_groups;
+            arr_old.clear();
+            arr_old.reserve(arr_tmp.size());
+            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+        }
+
+        //         for (i = 0; i < 3; ++i) arr_tmp[i] = (*it).pairs[i].index;
+        // 
+        //         if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
+        //             ++number_of_groups;
+        //             for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
+        //         }
+    }
+
+    memory->allocate(fcs_group_out, number_of_groups);
+
+    // for (i = 0; i < 3; ++i) arr_old[i] = -1;
+    int igroup = -1;
+
+    arr_old.clear();
+    for (i = 0; i < N; ++i) {
+        arr_old.push_back(-1);
+    }
+
+
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+
+        arr_tmp.clear();
+
+        for (i = 0; i < (*it).pairs.size(); ++i) {
+            arr_tmp.push_back((*it).pairs[i].index);
+        }
+
+        if (arr_tmp != arr_old) {
+            ++igroup;
+            arr_old.clear();
+            arr_old.reserve(arr_tmp.size());
+            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+        }
+
+        //         for (i = 0; i < 3; ++i) arr_tmp[i] = (*it).pairs[i].index;
+        // 
+        //         if (arr_tmp[0] != arr_old[0] || arr_tmp[1] != arr_old[1] || arr_tmp[2] != arr_old[2]) {
+        //             ++igroup;
+        //             for (i = 0; i < 3; ++i) arr_old[i] = arr_tmp[i];
+        //         }
+        fcs_group_out[igroup].push_back((*it).fcs_val);  
+    }
+    // 
+    //     for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in[1].begin(); it != fcs_in[1].end(); ++it) {
+    //         for (i = 0; i < 3; ++i) {
+    //             std::cout << std::setw(5) << (*it).pairs[i].index;
+    //             std::cout << std::setw(5) << (*it).pairs[i].tran;
+    //         }
+    //         std::cout << std::setw(15) << std::scientific <<  (*it).fcs_val << std::endl;
+    //     }
+
+}
+
 
 void Relaxation::setup_mode_analysis()
 {
@@ -425,17 +691,24 @@ void Relaxation::finish_relaxation()
     memory->deallocate(v3_arr);
     memory->deallocate(delta_arr);
 
+    if (quartic_mode) {
+        memory->deallocate(vec_for_v4);
+        memory->deallocate(invmass_for_v4);
+        memory->deallocate(evec_index4);
+        memory->deallocate(fcs_group2);
+    }
+
     if (integration->ismear == -1) {
         memory->deallocate(e_tmp);
         memory->deallocate(f_tmp);
     }
 
-//     if (kpoint->kpoint_mode == 2) {
-//         if (integration->ismear == -1) {
-//             memory->deallocate(nk_irreducible_tetra);
-//             memory->deallocate(map_k_tetra);
-//         }
-//     }
+    //     if (kpoint->kpoint_mode == 2) {
+    //         if (integration->ismear == -1) {
+    //             memory->deallocate(nk_irreducible_tetra);
+    //             memory->deallocate(map_k_tetra);
+    //         }
+    //     }
 }
 
 std::complex<double> Relaxation::V3(const unsigned int ks[3])
@@ -482,7 +755,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
             + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
             + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
 
-            ctmp = fcs_group[i][j].fcs_val * invmass_for_v3[ielem] * std::exp(im*phase);
+            ctmp = fcs_group[i][j] * invmass_for_v3[ielem] * std::exp(im*phase);
             ret_in += ctmp;
 
             ++ielem;
@@ -546,48 +819,101 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 // 	return (ret_re + im * ret_im) / std::sqrt(omega[0] * omega[1] * omega[2]);
 // }
 
-std::complex<double> Relaxation::V4(const unsigned int ks[4]) 
-{
+ std::complex<double> Relaxation::V4(const unsigned int ks[4]) 
+ {
+ 
+     unsigned int i, j, ielem;
+     unsigned int kn[4], sn[4];
+ 
+     double phase;
+     double omega[4];
+ 
+     std::complex<double> ctmp, ret_in, vec_tmp;
+     std::complex<double> ret = std::complex<double>(0.0, 0.0);
+ 
+     for (i = 0; i < 4; ++i){
+         kn[i] = ks[i] / ns;
+         sn[i] = ks[i] % ns;
+         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
+     }
+ 
+     ielem = 0;
+ 
+     for (i = 0; i < ngroup2; ++i) {
+ 
+         vec_tmp = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[ielem][0]] 
+         * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[ielem][1]]
+         * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[ielem][2]]
+         * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[ielem][3]];
+ 
+         ret_in = std::complex<double>(0.0, 0.0);
+ 
+         for (j = 0; j < fcs_group2[i].size(); ++j) {
+             phase =
+                 vec_for_v4[ielem][0][0] * kpoint->xk[kn[1]][0] 
+             + vec_for_v4[ielem][1][0] * kpoint->xk[kn[1]][1] 
+             + vec_for_v4[ielem][2][0] * kpoint->xk[kn[1]][2]
+             + vec_for_v4[ielem][0][1] * kpoint->xk[kn[2]][0] 
+             + vec_for_v4[ielem][1][1] * kpoint->xk[kn[2]][1] 
+             + vec_for_v4[ielem][2][1] * kpoint->xk[kn[2]][2]
+             + vec_for_v4[ielem][0][2] * kpoint->xk[kn[3]][0] 
+             + vec_for_v4[ielem][1][2] * kpoint->xk[kn[3]][1] 
+             + vec_for_v4[ielem][2][2] * kpoint->xk[kn[3]][2];
+ 
+             ctmp = fcs_group2[i][j] * invmass_for_v4[ielem] * std::exp(im * phase);
+             ret_in += ctmp;
+ 
+             ++ielem;
+         }
+         ret += ret_in * vec_tmp;
+     }
+ 
+     return ret / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
+ }
 
-    unsigned int i, ielem;
-    unsigned int kn[4], sn[4];
 
-    double phase;
-    double omega[4];
-
-    std::complex<double> ctmp;
-    std::complex<double> ret = std::complex<double>(0.0, 0.0);
-
-    for (i = 0; i < 4; ++i){
-        kn[i] = ks[i] / ns;
-        sn[i] = ks[i] % ns;
-        omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
-    }
-
-    for (ielem = 0; ielem < fcs_phonon->force_constant[2].size(); ++ielem) {
-
-        phase = 
-            vec_for_v4[ielem][0][0] * kpoint->xk[kn[1]][0] 
-        + vec_for_v4[ielem][1][0] * kpoint->xk[kn[1]][1] 
-        + vec_for_v4[ielem][2][0] * kpoint->xk[kn[1]][2]
-        + vec_for_v4[ielem][0][1] * kpoint->xk[kn[2]][0] 
-        + vec_for_v4[ielem][1][1] * kpoint->xk[kn[2]][1] 
-        + vec_for_v4[ielem][2][1] * kpoint->xk[kn[2]][2]
-        + vec_for_v4[ielem][0][2] * kpoint->xk[kn[3]][0] 
-        + vec_for_v4[ielem][1][2] * kpoint->xk[kn[3]][1] 
-        + vec_for_v4[ielem][2][2] * kpoint->xk[kn[3]][2];
-
-        ctmp = fcs_phonon->force_constant[2][ielem].fcs_val * invmass_for_v4[ielem] * std::exp(im*phase)
-            * dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[ielem][0]] 
-        * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[ielem][1]] 
-        * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[ielem][2]] 
-        * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[ielem][3]];
-
-        ret += ctmp;
-    }
-
-    return ret / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
-}
+// std::complex<double> Relaxation::V4(const unsigned int ks[4]) 
+// {
+// 
+//     unsigned int i, j, ielem;
+//     unsigned int kn[4], sn[4];
+// 
+//     double phase;
+//     double omega[4];
+// 
+//     std::complex<double> ctmp;
+//     std::complex<double> ret = std::complex<double>(0.0, 0.0);
+// 
+//     for (i = 0; i < 4; ++i){
+//         kn[i] = ks[i] / ns;
+//         sn[i] = ks[i] % ns;
+//         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
+//     }
+// 
+//     for (ielem = 0; ielem < fcs_phonon->force_constant[2].size(); ++ielem) {
+// 
+//         phase = 
+//             vec_for_v4[ielem][0][0] * kpoint->xk[kn[1]][0] 
+//         + vec_for_v4[ielem][1][0] * kpoint->xk[kn[1]][1] 
+//         + vec_for_v4[ielem][2][0] * kpoint->xk[kn[1]][2]
+//         + vec_for_v4[ielem][0][1] * kpoint->xk[kn[2]][0] 
+//         + vec_for_v4[ielem][1][1] * kpoint->xk[kn[2]][1] 
+//         + vec_for_v4[ielem][2][1] * kpoint->xk[kn[2]][2]
+//         + vec_for_v4[ielem][0][2] * kpoint->xk[kn[3]][0] 
+//         + vec_for_v4[ielem][1][2] * kpoint->xk[kn[3]][1] 
+//         + vec_for_v4[ielem][2][2] * kpoint->xk[kn[3]][2];
+// 
+//         ctmp = fcs_phonon->force_constant[2][ielem].fcs_val * invmass_for_v4[ielem] * std::exp(im*phase)
+//             * dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[ielem][0]] 
+//         * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[ielem][1]] 
+//         * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[ielem][2]] 
+//         * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[ielem][3]];
+// 
+//         ret += ctmp;
+//     }
+// 
+//     return ret / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
+// }
 
 std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3, int is, int js, double **eval, std::complex<double> ***evec)
 {
@@ -599,7 +925,7 @@ std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3, int
     double phase;
     std::complex<double> ctmp = std::complex<double>(0.0, 0.0);
 
-    for (ielem = 0; ielem < fcs_phonon->force_constant[1].size(); ++ielem) {
+    for (ielem = 0; ielem < fcs_phonon->force_constant_with_cell[1].size(); ++ielem) {
 
         phase = vec_for_v3[0][0][ielem] * xk2[0] 
         + vec_for_v3[1][0][ielem] * xk2[1]
@@ -609,13 +935,12 @@ std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3, int
         + vec_for_v3[2][1][ielem] * xk3[2];
 
 
-        ctmp += fcs_phonon->force_constant[1][ielem].fcs_val * invmass_for_v3[ielem] * std::exp(im * phase)
+        ctmp += fcs_phonon->force_constant_with_cell[1][ielem].fcs_val * invmass_for_v3[ielem] * std::exp(im * phase)
             * evec[0][mode][evec_index[ielem][0]] * evec[1][is][evec_index[ielem][1]] * evec[2][js][evec_index[ielem][2]];
     }
 
     return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
 }
-
 
 
 
@@ -1112,7 +1437,7 @@ void Relaxation::calc_damping_tetra(const unsigned int N, double *T, const doubl
 }
 
 void Relaxation::calc_damping_tetra2(const unsigned int N, double *T, const double omega, 
-                               const unsigned int ik_in, const unsigned int snum, double *ret)
+                                     const unsigned int ik_in, const unsigned int snum, double *ret)
 {
     int ik, ib;
 
@@ -1151,7 +1476,7 @@ void Relaxation::calc_damping_tetra2(const unsigned int N, double *T, const doub
     knum_minus = kpoint->knum_minus[knum];
 
     memory->allocate(kmap_identity, nk);
-    
+
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
 
@@ -1486,7 +1811,7 @@ void Relaxation::calc_damping_tetra_atom(const unsigned int N, double *T, const 
 }
 
 void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, double *T, const double omega0, 
-                                                      const unsigned int M, const double *omega, const unsigned int ik_in, const unsigned int snum, double **ret)
+                                                     const unsigned int M, const double *omega, const unsigned int ik_in, const unsigned int snum, double **ret)
 {
     int i, j, ik;
 
