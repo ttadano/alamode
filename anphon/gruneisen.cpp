@@ -209,7 +209,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
     std::vector<FcsAlignedForGruneisen> fcs_aligned;
 
     std::vector<AtomCellSuper> pairs_vec;
-    std::vector<unsigned int> arr_old, arr_tmp;
+    std::vector<int> arr_old, arr_tmp;
 
     unsigned int norder = fcs_in[0].pairs.size();
     unsigned int nelems;
