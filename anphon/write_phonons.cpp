@@ -52,13 +52,9 @@ void Writes::write_input_vars()
     std::cout << " ------------------------------------------------------------" << std::endl;
     std::cout << " General:" << std::endl;
     std::cout << "  PREFIX = " << input->job_title << std::endl;
-    std::cout << std::endl;
-
     std::cout << "  MODE = " << phon->mode << std::endl;
     std::cout << "  FCSXML = " << fcs_phonon->file_fcs << std::endl;
-    std::cout << "  RESTART = " << phon->restart_flag << std::endl;
     std::cout << std::endl;
-
 
     std::cout << "  NKD = " << system->nkd << "; KD = ";
     for (i = 0; i < system->nkd; ++i) {
@@ -69,58 +65,83 @@ void Writes::write_input_vars()
     for (i = 0; i < system->nkd; ++i) {
         std::cout << std::setw(10) << system->mass_kd[i];
     }
-    std::cout << std::endl << std::endl;
-
-    std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance << std::endl;
-    std::cout << "  PRINTSYM = " << symmetry->printsymmetry << std::endl;
-    std::cout << "  TREVSYM = " << symmetry->time_reversal_sym << std::endl;
-    std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
+    std::cout << std::endl;
+    std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance;
+    std::cout << "; PRINTSYM = " << symmetry->printsymmetry << std::endl;
+    // std::cout << "  TREVSYM = " << symmetry->time_reversal_sym << std::endl;
+ 
     std::cout << std::endl;
 
-   
-     std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << "; BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
+     std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << std::endl;
+     if (dynamical->nonanalytic) {
+         std::cout << "  BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
+     }
+    std::cout << std::endl;
+    if (writes->nbands >= 0) {
+        std::cout << "  NBANDS = " << writes->nbands << std::endl;
+    }
 
-    std::cout << "  NBANDS = " << writes->nbands << std::endl;
     std::cout << "  TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
     std::cout << "  EMIN = " << dos->emin << "; EMAX = " << dos->emax << "; DELTA_E = " << dos->delta_e << std::endl;
     std::cout << std::endl;
 
-    std::cout << "  DELTA_A = " << gruneisen->delta_a << std::endl;
-    std::cout << std::endl;
-
     std::cout << "  ISMEAR = " << integration->ismear << "; EPSILON = " << integration->epsilon << std::endl;
-    std::cout << std::endl << std::endl;
-
-    std::cout << " Analysis:" << std::endl;
-    std::cout << "  PDOS = " << dos->projected_dos << "; TDOS = " << dos->two_phonon_dos << std::endl;
-    std::cout << "  GRUNEISEN = " << gruneisen->print_gruneisen << std::endl;
-    std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
-    std::cout << "  PRINTVEC = " << dynamical->print_eigenvectors << std::endl;
-    std::cout << "  PRINTXSF = " << writes->writeanime << std::endl;
-    std::cout << "  PRINTMSD = " << writes->print_msd << std::endl;
     std::cout << std::endl;
 
-    std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
-    if (isotope->include_isotope) {
-        std::cout << "  ISOFACT = ";
-        for (i = 0; i < system->nkd; ++i) {
-            std::cout << std::scientific << std::setw(10) << isotope->isotope_factor[i];
-        }
+    if (phon->mode == "RTA") {
+        std::cout << "  RESTART = " << phon->restart_flag << std::endl;
+        std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
+        std::cout << std::endl;
     }
-    
     std::cout << std::endl;
-    std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
-    std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
-    std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
-    std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
-    std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
-    std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
-    std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
-    std::cout << std::endl << std::endl;
 
     std::cout << " Kpoint:" << std::endl;
     std::cout << "  KPMODE (1st entry for &kpoint) = " << kpoint->kpoint_mode << std::endl;
     std::cout << std::endl;
+    std::cout << std::endl;
+
+    std::cout << " Analysis:" << std::endl;
+    if (phon->mode == "PHONONS") {
+        std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
+        std::cout << "  PRINTVEC = " << dynamical->print_eigenvectors << std::endl;
+        std::cout << "  PRINTXSF = " << writes->writeanime << std::endl;
+        std::cout << std::endl;
+
+        if (kpoint->kpoint_mode == 2) {
+             std::cout << "  PDOS = " << dos->projected_dos << "; TDOS = " << dos->two_phonon_dos << std::endl;
+             std::cout << "  PRINTMSD = " << writes->print_msd << std::endl;
+             std::cout << std::endl;
+        }
+        std::cout << "  GRUNEISEN = " << gruneisen->print_gruneisen << std::endl;
+        std::cout << "  NEWFCS = " << gruneisen->print_newfcs;
+        if (gruneisen->print_newfcs) {
+            std::cout << "; DELTA_A = " << gruneisen->delta_a << std::endl;
+            std::cout << "  QUARTIC = " << relaxation->quartic_mode;
+        }
+        std::cout << std::endl;
+
+    } else if (phon->mode == "RTA") {
+        std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
+        if (isotope->include_isotope) {
+            std::cout << "  ISOFACT = ";
+            for (i = 0; i < system->nkd; ++i) {
+                std::cout << std::scientific << std::setw(10) << isotope->isotope_factor[i];
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
+        std::cout << std::endl;
+        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
+        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
+        std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
+        std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
+        std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
+        std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+    } else {
+        error->exit("write_input_vars", "This cannot happen");
+    }
+   
+    std::cout << std::endl << std::endl;
     std::cout << " ------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }

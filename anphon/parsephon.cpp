@@ -87,7 +87,7 @@ void Input::parce_input(int narg, char **arg)
 void Input::parse_general_vars()
 {
     int i;
-    int nsym, celldim[3], nbands, ismear, nkd;
+    int nsym, nbands, ismear, nkd;
     double *masskd;
     double Tmin, Tmax, dT, na_sigma, epsilon;
     double emin, emax, delta_e, delta_a;
@@ -101,7 +101,7 @@ void Input::parse_general_vars()
     std::string borninfo, file_result;
     std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM CELLDIM FCSXML TMIN TMAX DT \
+    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
                                    DELTA_A RESTART TREVSYM NKD KD MASS TRISYM";
     std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
@@ -200,8 +200,6 @@ void Input::parse_general_vars()
 
     delta_a = 0.001;
 
-    for (i = 0; i < 3; ++i) celldim[i] = 0;
-
     // Assign given values
 
     assign_val(Tmin, "TMIN", general_var_dict);
@@ -230,34 +228,34 @@ void Input::parse_general_vars()
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
-
-    str_tmp = general_var_dict["CELLDIM"];
-
-    if (!str_tmp.empty()) {
-
-        std::istringstream is(str_tmp);
-
-        while (1) {
-            str_tmp.clear();
-            is >> str_tmp;
-            if (str_tmp.empty()) {
-                break;
-            }
-            celldim_v.push_back(str_tmp);
-        }
-
-        if (celldim_v.size() != 3) {
-            error->exit("parse_general_vars", "The number of entries for CELLDIM has to be 3.");
-        }
-
-        for (i = 0; i < 3; ++i) {
-#ifdef _USE_BOOST
-            celldim[i] = boost::lexical_cast<int>(celldim_v[i]);
-#else
-            celldim[i] = my_cast<int>(celldim_v[i]);
-#endif
-        }
-    }
+// 
+//     str_tmp = general_var_dict["CELLDIM"];
+// 
+//     if (!str_tmp.empty()) {
+// 
+//         std::istringstream is(str_tmp);
+// 
+//         while (1) {
+//             str_tmp.clear();
+//             is >> str_tmp;
+//             if (str_tmp.empty()) {
+//                 break;
+//             }
+//             celldim_v.push_back(str_tmp);
+//         }
+// 
+//         if (celldim_v.size() != 3) {
+//             error->exit("parse_general_vars", "The number of entries for CELLDIM has to be 3.");
+//         }
+// 
+//         for (i = 0; i < 3; ++i) {
+// #ifdef _USE_BOOST
+//             celldim[i] = boost::lexical_cast<int>(celldim_v[i]);
+// #else
+//             celldim[i] = my_cast<int>(celldim_v[i]);
+// #endif
+//         }
+//     }
 
     job_title = prefix;
     writes->file_result = file_result;
@@ -285,11 +283,6 @@ void Input::parse_general_vars()
     dos->emax = emax;
     dos->emin = emin;
     dos->delta_e = delta_e;
-
-
-    for (i = 0; i < 3; ++i) {
-        system->cell_dimension[i] = celldim[i];
-    }
 
     dynamical->nonanalytic = nonanalytic;
     dynamical->na_sigma = na_sigma;

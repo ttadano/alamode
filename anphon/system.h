@@ -30,7 +30,6 @@ namespace PHON_NS {
 
         unsigned int nat, natmin, ntran;
         unsigned int *kd, nkd;
-        unsigned int cell_dimension[3];
 
         unsigned int nclassatom;
         std::vector<unsigned int> *atomlist_class;
