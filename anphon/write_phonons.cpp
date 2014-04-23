@@ -360,10 +360,7 @@ void Writes::write_phonon_info()
         }
 
         write_thermodynamics();
-    }
-
-    if (print_msd) {
-        write_msd();
+        if (print_msd) write_msd();
     }
 
     if(writeanime) {
