@@ -90,7 +90,7 @@ void Input::parse_general_vars()
     int nsym, nbands, ismear, nkd;
     double *masskd;
     double Tmin, Tmax, dT, na_sigma, epsilon;
-    double emin, emax, delta_e, delta_a;
+    double emin, emax, delta_e;
     double tolerance;
     bool printsymmetry;
     bool nonanalytic, restart;
@@ -103,7 +103,7 @@ void Input::parse_general_vars()
     std::string str_tmp;
     std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   DELTA_A RESTART TREVSYM NKD KD MASS TRISYM";
+                                   RESTART TREVSYM NKD KD MASS TRISYM";
     std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
     std::vector<std::string> no_defaults, celldim_v;
     std::vector<std::string> kdname_v, masskd_v;
@@ -198,7 +198,6 @@ void Input::parse_general_vars()
     epsilon = 10.0;
     na_sigma = 0.1;
 
-    delta_a = 0.001;
 
     // Assign given values
 
@@ -224,7 +223,6 @@ void Input::parse_general_vars()
     assign_val(epsilon, "EPSILON", general_var_dict);
     assign_val(na_sigma, "NA_SIGMA", general_var_dict);
 
-    assign_val(delta_a, "DELTA_A", general_var_dict);
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
@@ -290,7 +288,6 @@ void Input::parse_general_vars()
     dynamical->file_born = borninfo;
     integration->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsinfo;
-    gruneisen->delta_a = delta_a;
     integration->ismear = ismear;
     relaxation->use_triplet_symmetry = use_triplet_symmetry;
 
@@ -302,7 +299,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
-                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS";
+                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
@@ -312,6 +309,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool projected_dos, print_gruneisen, print_newfcs;
     bool two_phonon_dos;
 
+    double delta_a;
     double *isotope_factor;
     std::string ks_input;
     std::map<std::string, std::string> analysis_var_dict;
@@ -326,6 +324,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     two_phonon_dos = false;
     print_gruneisen = false;
     print_newfcs = false;
+
+    delta_a = 0.001;
 
     lclassical = false;
     quartic_mode = false;
@@ -348,6 +348,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(two_phonon_dos, "TDOS", analysis_var_dict);
         assign_val(print_gruneisen, "GRUNEISEN", analysis_var_dict);
         assign_val(print_newfcs, "NEWFCS", analysis_var_dict);
+        assign_val(delta_a, "DELTA_A", analysis_var_dict);
 
         assign_val(lclassical, "LCLASSICAL", analysis_var_dict);
         assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
@@ -391,7 +392,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     gruneisen->print_gruneisen = print_gruneisen;
     gruneisen->print_newfcs = print_newfcs;
-
+    gruneisen->delta_a = delta_a;
 
     if (include_isotope) {
         memory->allocate(isotope->isotope_factor, system->nkd);
