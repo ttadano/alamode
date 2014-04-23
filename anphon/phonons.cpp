@@ -177,13 +177,14 @@ void PHON::execute_phonons()
     if (gruneisen->print_gruneisen) {
         gruneisen->calc_gruneisen();
     }
-//     if (gruneisen->print_newfcs) {
-//         gruneisen->calc_newfcs();
-//     }
 
     if (mympi->my_rank == 0) {
         writes->write_phonon_info();
    //     gruneisen->write_newinfo_all();
+
+        if (gruneisen->print_newfcs) {
+            gruneisen->write_new_fcsxml_all();
+        }
     }
 
     dynamical->finish_dynamical();

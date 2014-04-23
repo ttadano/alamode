@@ -18,23 +18,23 @@
 
 namespace PHON_NS {
 
-    class FcsClassGru {
-    public:
-        std::vector<int> elems;
-        double fcs_val;
-
-        FcsClassGru();
-        FcsClassGru(const int n, int *arr, double fcs) {
-            for (int i = 0; i < n; ++i) {
-                elems.push_back(arr[i]);
-            }
-            fcs_val = fcs;
-        }
-    };
-
-    inline bool operator<(const FcsClassGru &a, const FcsClassGru &b) {
-        return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
-    }
+//     class FcsClassGru {
+//     public:
+//         std::vector<int> elems;
+//         double fcs_val;
+// 
+//         FcsClassGru();
+//         FcsClassGru(const int n, int *arr, double fcs) {
+//             for (int i = 0; i < n; ++i) {
+//                 elems.push_back(arr[i]);
+//             }
+//             fcs_val = fcs;
+//         }
+//     };
+// 
+//     inline bool operator<(const FcsClassGru &a, const FcsClassGru &b) {
+//         return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
+//     }
 
     class FcsAlignedForGruneisen {
     public:
@@ -79,25 +79,17 @@ namespace PHON_NS {
         void setup();
         std::complex<double> **gruneisen;
         void calc_gruneisen();
-        void calc_gruneisen_old();
         void finish_gruneisen();
-        void write_newinfo_all();
+        void write_new_fcsxml_all();
 
 
     private:
         double **xshift_s;
-
-    //    std::vector<FcsClassExtent> fc2_plus_ext, fc2_minus_ext;
-        std::vector<FcsClassGru> fc3_plus, fc3_minus;
-        std::vector<FcsArrayWithCell> delta_fc2;
-        void prepare_delta_fc2();
-//         void prepare_newfc2();
-//         void prepare_newfc2_mod();
-        void prepare_newfc3();
-        void write_newinfo(std::ifstream &, std::ofstream &, const double, double ****, std::vector<FcsClassExtent>, std::vector<FcsClassGru>);
+        std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
+        void prepare_delta_fcs(const std::vector<FcsArrayWithCell>, std::vector<FcsArrayWithCell> &);
         void calc_dfc2_reciprocal(std::complex<double> **, double *);
-       // void calc_dfc2_reciprocal_mod(std::complex<double> **, double *);
-
+        void write_new_fcsxml(const std::string, const double);
+        std::string double2string(const double);
         // void calc_pressure();
 
     };
