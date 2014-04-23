@@ -87,7 +87,7 @@ namespace PHON_NS {
         unsigned int cell_s;
     };
 
-    inline bool operator<(AtomCellSuper &a, AtomCellSuper &b) {
+    inline bool operator<(const AtomCellSuper &a, const AtomCellSuper &b) {
         return a.index < b.index;
     }
 
