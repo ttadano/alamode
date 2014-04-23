@@ -26,6 +26,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "write_phonons.h"
 #include "phonon_dos.h"
+#include "gruneisen.h"
 
 using namespace PHON_NS;
 
@@ -75,7 +76,7 @@ void Dynamical::setup_dynamical(std::string mode)
         if (phon->mode == "RTA") {
             eigenvectors = true;
         } else {
-            if (print_eigenvectors || writes->print_msd || writes->writeanime || dos->projected_dos) {
+            if (print_eigenvectors || writes->print_msd || writes->writeanime || dos->projected_dos || gruneisen->print_gruneisen) {
                 eigenvectors = true;
             }
         }

@@ -30,12 +30,42 @@ namespace PHON_NS {
             }
             fcs_val = fcs;
         }
-
     };
 
     inline bool operator<(const FcsClassGru &a, const FcsClassGru &b) {
-        //	return std::lexicographical_compare(a.elems.begin(), a.elems.end() - 1, b.elems.begin(), b.elems.end() - 1);
         return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
+    }
+
+    class FcsAlignedForGruneisen {
+    public:
+        std::vector<AtomCellSuper> pairs;
+        double fcs_val;
+
+        FcsAlignedForGruneisen(){};
+        FcsAlignedForGruneisen(const double fcs_in, const std::vector<AtomCellSuper> pairs_in) {
+            fcs_val = fcs_in;
+
+            for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
+                pairs.push_back(*it);
+            }
+        }
+    };
+
+    inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b) {
+        std::vector<unsigned int> array_a, array_b;
+        array_a.clear();
+        array_b.clear();
+        for (int i = 0; i < a.pairs.size(); ++i) {
+            array_a.push_back(a.pairs[i].index/3);
+            array_a.push_back(a.pairs[i].tran);
+            array_a.push_back(a.pairs[i].cell_s);
+            array_a.push_back(a.pairs[i].index%3);
+            array_b.push_back(b.pairs[i].index/3);
+            array_b.push_back(b.pairs[i].tran);
+            array_b.push_back(b.pairs[i].cell_s);
+            array_b.push_back(b.pairs[i].index%3);
+        }
+        return std::lexicographical_compare(array_a.begin(), array_a.end(), array_b.begin(), array_b.end());
     }
 
     class Gruneisen: protected Pointers {
@@ -49,22 +79,25 @@ namespace PHON_NS {
         void setup();
         std::complex<double> **gruneisen;
         void calc_gruneisen();
-        void calc_gruneisen2();
-        void calc_gruneisen3();
+        void calc_gruneisen_old();
         void finish_gruneisen();
         void write_newinfo_all();
 
 
     private:
-        double ****fc2_plus, ****fc2_minus;
-        double ****dfc2;
-        std::vector<FcsClassExtent> fc2_plus_ext, fc2_minus_ext;
+        double **xshift_s;
+
+    //    std::vector<FcsClassExtent> fc2_plus_ext, fc2_minus_ext;
         std::vector<FcsClassGru> fc3_plus, fc3_minus;
+        std::vector<FcsArrayWithCell> delta_fc2;
         void prepare_delta_fc2();
-        void prepare_newfc2();
+//         void prepare_newfc2();
+//         void prepare_newfc2_mod();
         void prepare_newfc3();
         void write_newinfo(std::ifstream &, std::ofstream &, const double, double ****, std::vector<FcsClassExtent>, std::vector<FcsClassGru>);
         void calc_dfc2_reciprocal(std::complex<double> **, double *);
+       // void calc_dfc2_reciprocal_mod(std::complex<double> **, double *);
+
         // void calc_pressure();
 
     };

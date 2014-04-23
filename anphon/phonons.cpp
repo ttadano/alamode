@@ -176,7 +176,6 @@ void PHON::execute_phonons()
 
     if (gruneisen->print_gruneisen) {
         gruneisen->calc_gruneisen();
-        // gruneisen->calc_gruneisen2();
     }
 //     if (gruneisen->print_newfcs) {
 //         gruneisen->calc_newfcs();
