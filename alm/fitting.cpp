@@ -58,8 +58,6 @@ Fitting::Fitting(ALM *alm): Pointers(alm){
 Fitting::~Fitting() {
     if (alm->mode == "fitting") {
         memory->deallocate(params);
-        memory->deallocate(u);
-        memory->deallocate(f);
     }
 }
 
@@ -84,6 +82,7 @@ void Fitting::fitmain()
     int nmulti;
     int ndata_used = nend - nstart + 1;
 
+    double **u, **f;
     double **amat, *fsum;
 
 
@@ -98,7 +97,7 @@ void Fitting::fitmain()
     std::cout << "  NSTART = " << nstart << "; NEND = " << nend << std::endl;
     std::cout << "  " << nend - nstart + 1 << " entries will be used for fitting." << std::endl << std::endl;
 
-    data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti,symmetry->multiply_data);
+    data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti, symmetry->multiply_data, u, f);
 
     N = 0;
     for(i = 0; i < maxorder; ++i){
@@ -113,7 +112,10 @@ void Fitting::fitmain()
 
     // Calculate matrix elements for fitting
 
-    calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, amat, fsum);
+    calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
+
+    memory->deallocate(u);
+    memory->deallocate(f);
 
     /*
     // Calculate Hessian Matrix of Amat
@@ -174,7 +176,7 @@ void Fitting::fitmain()
 }
 
 void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, const int nend, 
-                              const int ndata_used, int &nmulti, const int multiply_data) 
+                              const int ndata_used, int &nmulti, const int multiply_data, double **&u, double **&f) 
 {
     int i, j, k;
     int idata, itran, isym;
@@ -695,7 +697,7 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     std::cout << "  Consecutive fitting finished." << std::endl;
 }
 
-void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin, const int ndata_fit, const int nmulti, const int maxorder, double **amat, double *bvec)
+void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin, const int ndata_fit, const int nmulti, const int maxorder, double **u, double **f, double **amat, double *bvec)
 {
     int i, j;
     int irow;

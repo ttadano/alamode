@@ -35,7 +35,7 @@ namespace ALM_NS {
         double *params;
         unsigned int nboot;
 
-        double **u, **f;
+      //  double **u, **f;
 
 #ifdef _VSL
         VSLStreamStatePtr stream;
@@ -47,13 +47,13 @@ namespace ALM_NS {
 
         int inprim_index(const int);
         void wrtfcs(const double *);
-        void data_multiplier(const int, const int, const int, const int, const int, int &, const int);
+        void data_multiplier(const int, const int, const int, const int, const int, int &, const int, double **&, double **&);
         void fit_without_constraints(int, int, int, double **, double *);
         void fit_with_constraints(int, int, int, int, double **, double *, double **, double *);
         void fit_consecutively(int, int, const int, const int,
             const int, const int, double **, double *, double **, double *);
         void calc_matrix_elements(const int, const int, const int, 
-            const int, const int, const int, const int, double **, double *);
+            const int, const int, const int, const int, double **, double **, double **, double *);
         void fit_bootstrap(int, int, int, int, int, double **, double *, double **, double *);
         double gamma(const int, const int *);
         int factorial(const int);       
