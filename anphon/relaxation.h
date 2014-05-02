@@ -77,18 +77,13 @@ namespace PHON_NS {
         void setup_relaxation();
         void finish_relaxation();
         void setup_mode_analysis();
-        void compute_mode_tau();
-        void calc_damping(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-        void calc_damping_tune(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-
-        void calc_damping2(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-        void calc_damping_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***);
-        void calc_damping_tetra(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);	
-        void calc_damping_tetra2(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *); 
-        void calc_damping_tetra_atom(const unsigned int, double *, const double, const unsigned int, const unsigned int, double ***); 
+        void perform_mode_analysis();
+       
+        void calc_damping_smearing(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+        void calc_damping_tetrahedron(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *); 
         void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
 
-        bool quartic_mode;
+        int quartic_mode;
         bool ks_analyze_mode;
         bool atom_project_mode;
         bool calc_realpart;
@@ -110,7 +105,6 @@ namespace PHON_NS {
         std::vector<KsListMode> kslist_fstate_k;
         std::complex<double> im;
 
-        double **e_tmp, **f_tmp;
         double ***vec_for_v3, *invmass_for_v3;
         double ***vec_for_v4, *invmass_for_v4;
         int **evec_index;
@@ -119,30 +113,20 @@ namespace PHON_NS {
         bool sym_permutation;
 
         std::vector<KsListGroup> *pair_uniq;
-// 
-//         int *nk_irreducible_tetra;
-//         int **map_k_tetra;
-
-        void gensym_kpairs();
-        void gen_pair_uniq();
 
         int knum_sym(const int, const int);
         bool is_proper(const int);
         bool is_symmorphic(const int);
 
-        void prepare_relative_vector(std::vector<FcsClass>, const unsigned int, double ***);
         void prepare_relative_vector(std::vector<FcsArrayWithCell>, const unsigned int, double ***);
-
-
-        void prepare_group_of_force_constants(std::vector<FcsClass>, const unsigned int, int &, std::vector<double> *&);
         void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>, const unsigned int, int &, std::vector<double> *&);
-
-
-
+        void print_minimum_energy_diff();
         void generate_triplet_k(const bool, const bool);
-
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double, 
             const unsigned int, const double *, const unsigned int, const unsigned int, double **);
+
+        void print_momentum_resolved_final_state(const unsigned int, double *, const double);
+        void print_frequency_resolved_final_state(const unsigned int, double *);
 
         int ngroup;
         int ngroup2;

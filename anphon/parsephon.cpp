@@ -304,10 +304,12 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool include_isotope;
     bool fstate_omega, fstate_k;
     bool lclassical;
-    bool quartic_mode, ks_analyze_mode, atom_project_mode, calc_realpart;
+    bool ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_xsf, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
     bool two_phonon_dos;
+
+    int quartic_mode;
 
     double delta_a;
     double *isotope_factor;
@@ -328,7 +330,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     delta_a = 0.001;
 
     lclassical = false;
-    quartic_mode = false;
+    quartic_mode = 0;
     ks_analyze_mode = false;
     atom_project_mode = false;
     calc_realpart = false;

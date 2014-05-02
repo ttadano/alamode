@@ -50,7 +50,7 @@ void Fcs_phonon::setup(std::string mode)
         std::cout << " ==============" << std::endl << std::endl;
     }
 
-    MPI_Bcast(&relaxation->quartic_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&relaxation->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mode == "PHONONS") {
@@ -66,7 +66,7 @@ void Fcs_phonon::setup(std::string mode)
             require_cubic = true;
             maxorder = 2;
 
-            if (relaxation->quartic_mode) {
+            if (relaxation->quartic_mode > 0) {
                 require_quartic = true;
                 maxorder = 3;
             }
@@ -75,7 +75,7 @@ void Fcs_phonon::setup(std::string mode)
     } else if (mode == "RTA") {
         require_cubic = true;
 
-        if (relaxation->quartic_mode) {
+        if (relaxation->quartic_mode > 0) {
             maxorder = 3;
             require_quartic = true;
         } else {

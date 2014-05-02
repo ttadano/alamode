@@ -17,6 +17,23 @@
 #include <string>
 
 namespace PHON_NS {
+
+    class DistWithCell {
+    public:
+        int cell;
+        double dist;
+
+        DistWithCell();
+        DistWithCell(const int n, const double d) {
+            cell = n;
+            dist = d;
+        }
+    };
+
+    inline bool operator<(const DistWithCell a, const DistWithCell b) {
+        return a.dist < b.dist;
+    }
+
     class Dynamical: protected Pointers {
     public:
         Dynamical(class PHON *);
@@ -48,7 +65,11 @@ namespace PHON_NS {
         void load_born();
         void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
         void calc_nonanalytic_k(double *, double *, double **);
+        void calc_nonanalytic_k2(double *, double *, std::vector<FcsClassExtent>, std::complex<double> **);
         void modify_eigenvectors();
+
+        void prepare_mindist_list(std::vector<int> **);
+        double distance(double *, double *);
 
         // void calc_analytic_k(double *, double ****, std::complex<double> **);
        // void modify_eigenvectors_sym();
@@ -58,6 +79,8 @@ namespace PHON_NS {
         std::complex<double> ***dymat;
         double dielec[3][3];
         double ***borncharge;
+
+        std::vector<int> **mindist_list;
     };
 
     extern "C" {

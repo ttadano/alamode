@@ -217,9 +217,9 @@ void PHON::execute_RTA()
     }
 
     setup_base();
+    dos->setup();
 
     if (kpoint->kpoint_mode < 3) {
-        dos->setup();
         dynamical->diagonalize_dynamical_all();
     }
     relaxation->setup_mode_analysis();
@@ -238,7 +238,7 @@ void PHON::execute_RTA()
     isotope->calc_isotope_selfenergy_all();
 
     if (relaxation->ks_analyze_mode) {
-        relaxation->compute_mode_tau();
+        relaxation->perform_mode_analysis();
     } else {
         conductivity->setup_kappa();
         conductivity->prepare_restart();

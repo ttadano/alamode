@@ -76,7 +76,8 @@ void Dynamical::setup_dynamical(std::string mode)
         if (phon->mode == "RTA") {
             eigenvectors = true;
         } else {
-            if (print_eigenvectors || writes->print_msd || writes->writeanime || dos->projected_dos || gruneisen->print_gruneisen) {
+            if (print_eigenvectors || writes->print_msd || writes->writeanime 
+                || dos->projected_dos || gruneisen->print_gruneisen) {
                 eigenvectors = true;
             }
         }
@@ -102,7 +103,112 @@ void Dynamical::setup_dynamical(std::string mode)
             std::cout << std::endl;
         }
 
+        memory->allocate(mindist_list, system->natmin, system->nat);
+        prepare_mindist_list(mindist_list);
+
+//         for (i = 0; i < system->natmin; ++i) {
+//             for (int j = 0; j < system->nat; ++j) {
+//                 std::cout << std::setw(5) << i + 1;
+//                 std::cout << std::setw(5) << j + 1 << std::endl;
+// 
+//                 for (int k = 0; k < mindist_list[i][j].size(); ++k) {
+//                     std::cout << std::setw(5) << mindist_list[i][j][k] << std::endl;
+//                 }
+//             }
+//         }
     }
+}
+
+void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
+{
+    unsigned int i, j, k;
+    unsigned int icell;
+    unsigned int nneib = 27;
+
+    double dist_tmp;
+    double ***xcrd;
+    double vec[3];
+
+    unsigned int iat;
+    unsigned int nat = system->nat;
+    unsigned int natmin = system->natmin;
+    int isize, jsize, ksize;
+
+    std::vector<DistWithCell> **distall;
+
+    memory->allocate(distall, natmin, nat);
+    memory->allocate(xcrd, nneib, nat, 3);
+
+    for (i = 0; i < nat; ++i){
+        for (j = 0; j < 3; ++j){
+            xcrd[0][i][j] = system->xr_s[i][j];
+        }
+    }
+    icell = 0;
+    for (isize = -1; isize <= 1; ++isize){
+        for (jsize = -1; jsize <= 1; ++jsize){
+            for (ksize = -1; ksize <= 1; ++ksize){
+
+                if (isize == 0 && jsize == 0 && ksize == 0) continue;
+
+                ++icell;
+                for (i = 0; i < nat; ++i){
+                    xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
+                    xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
+                }
+            }
+        }
+    }
+
+    for (icell = 0; icell < nneib; ++icell) {
+        for (i = 0; i < nat; ++i) {
+            rotvec(xcrd[icell][i], xcrd[icell][i], system->lavec_s);
+        }
+    }
+
+    for (i = 0; i < natmin; ++i) {
+        iat = system->map_p2s[i][0];
+        for (j = 0; j < nat; ++j) {
+            distall[i][j].clear();
+            for (icell = 0; icell < nneib; ++icell) {
+
+                dist_tmp = distance(xcrd[0][iat], xcrd[icell][j]);
+                distall[i][j].push_back(DistWithCell(icell, dist_tmp));
+            }
+            std::sort(distall[i][j].begin(), distall[i][j].end());
+        }
+    }
+
+
+
+    // Construct pairs of minimum distance.
+
+    double dist_min;
+    for (i = 0; i < natmin; ++i) {
+        for (j = 0; j < nat; ++j) {
+            mindist_out[i][j].clear();
+
+            dist_min = distall[i][j][0].dist;
+            for (std::vector<DistWithCell>::const_iterator it = distall[i][j].begin(); it != distall[i][j].end(); ++it) {
+                if (std::abs((*it).dist - dist_min) < eps8) {
+                    mindist_out[i][j].push_back((*it).cell);
+                }
+            }
+        }
+    }
+
+    memory->deallocate(distall);
+    memory->deallocate(xcrd);
+}
+
+double Dynamical::distance(double *x1, double *x2)
+{
+    double dist;    
+    dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
+    dist = std::sqrt(dist);
+
+    return dist;
 }
 
 void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext,
@@ -125,35 +231,39 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
         memory->allocate(dymat_na_k, neval, neval);
         memory->allocate(dymat_na_mod, neval, neval);
 
+   //     calc_nonanalytic_k2(xk_in, kvec_in, fc2_ext, dymat_na_mod);
+        
         calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
+         double xdiff[3];
+         double phase;
+         std::complex<double> im(0.0, 1.0);
+         unsigned int icrd, jcrd;
+ 
+         // Multiply a phase factor for the non-analytic term.
+         for (i = 0; i < system->natmin; ++i) {
+             for (j = 0; j < system->natmin; ++j) {
+ 
+                 for (icrd = 0; icrd < 3; ++icrd) {
+                     xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd]
+                     - system->xr_s[system->map_p2s[j][0]][icrd];
+                 }
+ 
+                 rotvec(xdiff, xdiff, system->lavec_s);
+                 rotvec(xdiff, xdiff, system->rlavec_p);
+ 
+                 phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
+ 
+                 for (icrd = 0; icrd < 3; ++icrd) {
+                     for (jcrd = 0; jcrd < 3; ++jcrd) {
+                          dymat_na_mod[3 * i + icrd][3 * j + jcrd] = dymat_na_k[3 * i + icrd][3 * j + jcrd] 
+                          * exp(im * phase);
+              //           dymat_na_mod[3 * i + icrd][3 * j + jcrd] *= exp(im * phase);
+                     }
+                 }
+             }
+         }
 
-        double xdiff[3];
-        double phase;
-        std::complex<double> im(0.0, 1.0);
-        unsigned int icrd, jcrd;
-
-        // Multiply a phase factor for the non-analytic term.
-        for (i = 0; i < system->natmin; ++i) {
-            for (j = 0; j < system->natmin; ++j) {
-
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd]
-                    - system->xr_s[system->map_p2s[j][0]][icrd];
-                }
-
-                rotvec(xdiff, xdiff, system->lavec_s);
-                rotvec(xdiff, xdiff, system->rlavec_p);
-
-                phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
-
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    for (jcrd = 0; jcrd < 3; ++jcrd) {
-                        dymat_na_mod[3 * i + icrd][3 * j + jcrd] = dymat_na_k[3 * i + icrd][3 * j + jcrd] 
-                        * exp(im * phase);
-                    }
-                }
-            }
-        }
+        
 
         for (i = 0; i < neval; ++i) {
             for (j = 0; j < neval; ++j) {
@@ -208,8 +318,6 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     memory->deallocate(WORK);
     memory->deallocate(amat);
 }
-
-
 
 void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_out)
 {
@@ -308,7 +416,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
 
-                        dymat_na_out[3 * iat + i][3 * jat + j] = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
+                        dymat_na_out[3 * iat + i][3 * jat + j] 
+                        = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
 
                     }
                 }
@@ -327,6 +436,121 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
         }
     }
 }
+
+void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_na_out)
+{
+    unsigned int i, j, k;
+    unsigned int iat, jat;
+    unsigned int atm_p1, atm_p2;
+    double kepsilon[3];
+    double kz1[3], kz2[3];
+    double denom, norm2;
+    double born_tmp[3][3];
+    double xk_tmp[3];
+    double factor;
+    double vec[3];
+
+    double phase;
+    std::complex<double> im(0.0, 1.0);
+    std::complex<double> exp_phase = std::complex<double>(0.0, 0.0);
+
+    int itran, icell;  
+    std::complex<double> exp_phase_tmp = std::complex<double>(0.0, 0.0);
+
+    std::cout << "xk = ";
+    for (i = 0; i < 3; ++i) { 
+        std::cout << std::setw(15) << xk_in[i];
+    }
+    std::cout << std::endl;
+
+    for (i = 0; i < neval; ++i) {
+        for (j = 0; j < neval; ++j) {
+            dymat_na_out[i][j] = std::complex<double>(0.0, 0.0);
+        }
+    }
+
+    rotvec(kepsilon, kvec_na_in, dielec);
+    denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
+
+    int atm_s2, cell;
+
+    if (denom > eps) {
+
+        for (iat = 0; iat < system->natmin; ++iat) {
+            atm_p1 = system->map_p2s[iat][0];
+
+            for (i = 0; i <3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    born_tmp[i][j] = borncharge[iat][i][j];
+                }
+            }
+
+            rotvec(kz1, kvec_na_in, born_tmp, 'T');
+
+            for (jat = 0; jat < system->natmin; ++jat) {
+                atm_p2 = system->map_p2s[jat][0];
+
+
+                for (i = 0; i <3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        born_tmp[i][j] = borncharge[jat][i][j];
+                    }
+                }
+
+                rotvec(kz2, kvec_na_in, born_tmp, 'T');
+
+                exp_phase = std::complex<double>(0.0, 0.0);
+
+                for (i = 0; i < system->ntran; ++i) {
+
+                    exp_phase_tmp = std::complex<double>(0.0, 0.0);
+                    atm_s2 = system->map_p2s[jat][i];
+
+                    for (j = 0; j < mindist_list[iat][atm_s2].size(); ++j) {
+                        cell = mindist_list[iat][atm_s2][j];
+
+                        for (k = 0; k < 3; ++k) {
+                            vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
+                                   - system->xr_s[system->map_p2s[iat][0]][k];
+                        }
+
+                        rotvec(vec, vec, system->lavec_s);
+                        rotvec(vec, vec, system->rlavec_p);
+
+                        phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+
+                        exp_phase_tmp += std::exp(im * phase);
+                    }
+                    exp_phase += exp_phase_tmp / static_cast<double>(mindist_list[iat][atm_s2].size());
+                }
+                exp_phase /= static_cast<double>(system->ntran);
+
+              //  std::cout << std::setw(15) << exp_phase.real() << std::setw(15) << exp_phase.imag() << std::endl; 
+
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        dymat_na_out[3 * iat + i][3 * jat + j] 
+                        = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2])) * exp_phase;
+                    }
+                }
+            }
+        }
+    }
+
+//     rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
+//     norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
+
+  //     factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
+
+       factor = 8.0 * pi / system->volume_p;
+     for (i = 0; i < neval; ++i) {
+         for (j = 0; j < neval; ++j) {
+             dymat_na_out[i][j] *= factor;
+         }
+     }
+}
+
 
 void Dynamical::diagonalize_dynamical_all()
 {

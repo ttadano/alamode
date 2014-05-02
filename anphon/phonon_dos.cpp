@@ -30,7 +30,7 @@ using namespace PHON_NS;
 Dos::Dos(PHON *phon): Pointers(phon){}
 
 Dos::~Dos(){
-    if(flag_dos) {
+    if (flag_dos) {
         memory->deallocate(energy_dos);
         memory->deallocate(dos_phonon);
         if (projected_dos) {

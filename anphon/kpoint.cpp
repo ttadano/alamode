@@ -48,6 +48,9 @@ Kpoint::~Kpoint() {
 
         if (kpoint_mode == 2) {
             memory->deallocate(knum_minus);
+        }
+
+        if (kpoint_mode == 1) {
             if (mympi->my_rank == 0) memory->deallocate(kaxis);
         }
     }

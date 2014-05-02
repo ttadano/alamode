@@ -63,7 +63,7 @@ void Gruneisen::setup()
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[1], delta_fc2);
     }
 
-    if (print_newfcs && relaxation->quartic_mode) {
+    if (print_newfcs && relaxation->quartic_mode > 0) {
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3);
     }
     if (print_gruneisen) {
@@ -73,7 +73,7 @@ void Gruneisen::setup()
     if (mympi->my_rank == 0) {
         if (print_newfcs) {
             std::cout << std::endl;
-            if (relaxation->quartic_mode) {
+            if (relaxation->quartic_mode > 0) {
                 std::cout << " NEWFCS = 1 : Harmonic and cubic force constants of " << std::endl;
             }
             else {
