@@ -540,8 +540,7 @@ void Writes::write_displacement_pattern()
 
             ++counter;
 
-            ofs_pattern << std::setw(5) << counter << ":" << std::endl;
-
+            ofs_pattern << std::setw(5) << counter << ":" << std::setw(5) << entry.atoms.size() << std::endl;
             for (i = 0; i < entry.atoms.size(); ++i) {
                 ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
                 for (j = 0; j < 3; ++j) {

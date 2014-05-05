@@ -1,11 +1,11 @@
 /*
- patterndisp.cpp
+patterndisp.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <iostream>
@@ -41,20 +41,17 @@ void Displace::gen_displacement_pattern()
 
     for (order = 0; order < maxorder; ++order) {
 
-        if (fcs->ndup[order].size() > 0) {
+        m = 0;
 
-            m = 0;
+        for (i = 0; i < fcs->ndup[order].size(); ++i) {
 
-            for (i = 0; i < fcs->ndup[order].size(); ++i) {
+            group_tmp.clear();
 
-                group_tmp.clear();
-
-                for (j = 0; j < order + 1; ++j) {
-                    group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
-                }
-                dispset[order].insert(DispAtomSet(group_tmp));
-                m += fcs->ndup[order][i];
+            for (j = 0; j < order + 1; ++j) {
+                group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
             }
+            dispset[order].insert(DispAtomSet(group_tmp));
+            m += fcs->ndup[order][i];
         }
     }
 
@@ -82,10 +79,6 @@ void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmoni
     double **pos_disp;
 
     std::vector<DirectionVec> directionlist_tmp, direction_new;
-    //	std::vector<SymmetryOperation> symmlist_notran;
-
-
-    //	symmetry->gensym_notran(symmlist_notran);	
 
     memory->allocate(flag_disp, nat, 3);
 
@@ -210,9 +203,20 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
     int atom_tmp;
     double disp_tmp[3];
     double norm;
+    double *direc_tmp;
 
     std::vector<int> atoms;
     std::vector<double> directions;
+
+    std::vector<std::vector<int> > *sign_prod;
+    std::vector<int> vec_tmp;
+
+    memory->allocate(sign_prod, N);
+
+    for (order = 0; order < N; ++order) {
+        vec_tmp.clear();
+        generate_signvecs(order + 1, sign_prod[order], vec_tmp);
+    }
 
     for (order = 0; order < N; ++order) {
 
@@ -222,46 +226,53 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
             // Special treatment for harmonic terms
 
-            for (std::vector<DispDirectionHarmonic>::iterator it = disp_harm.begin(); it != disp_harm.end(); ++it) {
-                DispDirectionHarmonic disp_now = *it;
+            for (std::vector<DispDirectionHarmonic>::iterator it  = disp_harm.begin(); 
+                it != disp_harm.end(); ++it) {
+                    DispDirectionHarmonic disp_now = *it;
 
 
-                atom_tmp = disp_now.atom;
+                    atom_tmp = disp_now.atom;
 
-                for (std::vector<DirectionVec>::iterator it2 = disp_now.directionlist.begin(); it2 != disp_now.directionlist.end(); ++it2) {
+                    for (std::vector<DirectionVec>::iterator it2  = disp_now.directionlist.begin(); 
+                        it2 != disp_now.directionlist.end(); ++it2) {
 
-                    atoms.clear();
-                    directions.clear();
+                            atoms.clear();
+                            directions.clear();
 
-                    atoms.push_back(disp_now.atom);
+                            atoms.push_back(disp_now.atom);
 
-                    for (i = 0; i < 3; ++i) {
-                        disp_tmp[i] = (*it2).direction[i];
-                    }
-                    norm = disp_tmp[0] * disp_tmp[0] + disp_tmp[1] * disp_tmp[1] + disp_tmp[2] * disp_tmp[2];
-                    for (i = 0; i < 3; ++i) disp_tmp[i] /= std::sqrt(norm);
+                            for (i = 0; i < 3; ++i) {
+                                disp_tmp[i] = (*it2).direction[i];
+                            }
+                            norm = disp_tmp[0] * disp_tmp[0] + disp_tmp[1] * disp_tmp[1] + disp_tmp[2] * disp_tmp[2];
+                            for (i = 0; i < 3; ++i) disp_tmp[i] /= std::sqrt(norm);
 
-                    if (disp_basis[0] == 'F') {
-                        rotvec(disp_tmp, disp_tmp, system->rlavec);
-                        for (i = 0; i < 3; ++i) disp_tmp[i] /= 2.0 * pi;
-                    }
+                            if (disp_basis[0] == 'F') {
+                                rotvec(disp_tmp, disp_tmp, system->rlavec);
+                                for (i = 0; i < 3; ++i) disp_tmp[i] /= 2.0 * pi;
+                            }
 
-                    for (i = 0; i < 3; ++i) directions.push_back(disp_tmp[i]);
-                    pattern[order].push_back(AtomWithDirection(atoms, directions));		
+                            for (i = 0; i < sign_prod[0].size(); ++i) {
+                                directions.clear();
 
-                    directions.clear();
-                    for (i = 0; i < 3; ++i) directions.push_back(-disp_tmp[i]);
-                    pattern[order].push_back(AtomWithDirection(atoms, directions));
-
-                }			
+                                for (j = 0; j < 3; ++j) {
+                                    directions.push_back(disp_tmp[j] * static_cast<double>(sign_prod[order][i][0]));
+                                }
+                                pattern[order].push_back(AtomWithDirection(atoms, directions));		
+                            }
+                    }			
             }
 
         } else {
 
             // Anharmonic terms
 
+            int natom_disp;
             std::vector<int>::iterator loc;
             std::vector<int> nums;
+            std::vector<double> directions_copy;
+            double sign_double;
+
 
             for (std::set<DispAtomSet>::iterator it = dispset[order].begin(); it != dispset[order].end(); ++it) {
 
@@ -294,10 +305,50 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
                     for (j = 0; j < 3; ++j) directions.push_back(disp_tmp[j]);
                 }
 
-                pattern[order].push_back(AtomWithDirection(atoms, directions));
-            }
+                natom_disp = atoms.size();
 
+                directions_copy.clear();
+                std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
+                
+                for (std::vector<std::vector<int> >::const_iterator it = sign_prod[natom_disp - 1].begin(); 
+                    it != sign_prod[natom_disp - 1].end(); ++it) {
+
+                        directions.clear();
+
+                        for (i = 0; i < (*it).size(); ++i) {
+                            sign_double = static_cast<double>((*it)[i]);
+                            for (j = 0; j < 3; ++j) {
+                                directions.push_back(directions_copy[3 * i + j] * sign_double);
+                            }
+                        }
+                        pattern[order].push_back(AtomWithDirection(atoms, directions));
+                }               
+            }
         }
     }
 
+    memory->deallocate(sign_prod);
+}
+
+void Displace::generate_signvecs(const int N, std::vector<std::vector<int> > &sign, std::vector<int> vec)
+{
+    // returns the product of signs ('+','-')
+
+    if (N == 0) {
+        sign.push_back(vec);
+        vec.clear();
+    } else {
+        std::vector<int> vec_tmp;
+
+        vec_tmp.clear();
+        std::copy(vec.begin(), vec.end(), std::back_inserter(vec_tmp));
+
+        vec_tmp.push_back(1);
+        generate_signvecs(N - 1, sign, vec_tmp);
+
+        vec_tmp.clear();
+        std::copy(vec.begin(), vec.end(), std::back_inserter(vec_tmp));
+        vec_tmp.push_back(-1);
+        generate_signvecs(N - 1, sign, vec_tmp);
+    }
 }
