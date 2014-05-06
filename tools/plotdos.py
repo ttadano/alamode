@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 #parser options
-parser = optparse.OptionParser()
+usage = "usage: %prog [options] file1.dos file2.dos ... "
+parser = optparse.OptionParser(usage=usage)
 
 parser.add_option("--pdos", action="store_true", dest="print_pdos", default=False, 
 	help="print atom-projected phonon DOS")
@@ -134,7 +135,7 @@ if __name__ == '__main__':
 	nfiles = len(files)
 
 	if nfiles == 0:
-		print "Usage: python plotdos.py [options] file1.dos file2.dos ..."
+		print "Usage: plotdos.py [options] file1.dos file2.dos ..."
 		print "For details of available options, please type\n$ python plotdos.py -h"
 		exit(1)
 	else:
