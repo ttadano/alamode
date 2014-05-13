@@ -387,11 +387,18 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
 
     if(nrank != N){
         std::cout << std::endl;
-        std::cout << "  WARNING: rank ( (A) ) ! = N" << std::endl;
-        std::cout << "                ( (B) )      " << std::endl;
-        std::cout << "  rank = " << nrank << " N = " << N << std::endl;
-        std::cout << "  This must be a problem when solving equality constrained LSE problem with DGGLSE." << std::endl;
-        std::cout << "  Please change the cutoff radius or {u,f} data." << std::endl << std::endl;
+        std::cout << " **************************************************************************" << std::endl;
+        std::cout << "  WARNING : rank deficient.                                                " << std::endl;
+        std::cout << "  rank ( (A) ) ! = N            A: Fitting matrix     B: Constraint matrix " << std::endl;
+        std::cout << "       ( (B) )                  N: The number of parameters                " << std::endl;
+        std::cout << "  rank = " << nrank << " N = " << N << std::endl << std::endl;
+        std::cout << "  This can cause a difficulty in solving the fitting problem properly      " << std::endl;
+        std::cout << "  with DGGLSE, especially when the difference is large. Please check if    " << std::endl;
+        std::cout << "  you obtain reliable force constants in the .fcs file.                    " << std::endl;
+        std::cout << "  This issue may be resolved by setting MULTDAT = 2 in the &fitting field. " << std::endl;
+        std::cout << "  If not, you may need to reduce the cutoff radii and/or increase NDATA    " << std::endl;
+        std::cout << "  by giving linearly-independent displacement patterns.                    " << std::endl;
+        std::cout << " **************************************************************************" << std::endl;
     }
 
     f_square = 0.0;
