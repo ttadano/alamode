@@ -81,7 +81,7 @@ namespace PHON_NS {
        
         void calc_damping_smearing(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
         void calc_damping_tetrahedron(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *); 
-        void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+      //  void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
 
         int quartic_mode;
         bool ks_analyze_mode;

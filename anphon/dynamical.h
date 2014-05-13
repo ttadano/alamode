@@ -56,6 +56,7 @@ namespace PHON_NS {
 
         // void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
         void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
+        void modify_eigenvectors();
 
         double fold(double);
         double freq(const double);
@@ -66,7 +67,6 @@ namespace PHON_NS {
         void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
         void calc_nonanalytic_k(double *, double *, double **);
         void calc_nonanalytic_k2(double *, double *, std::vector<FcsClassExtent>, std::complex<double> **);
-        void modify_eigenvectors();
 
         void prepare_mindist_list(std::vector<int> **);
         double distance(double *, double *);

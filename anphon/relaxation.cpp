@@ -118,7 +118,7 @@ void Relaxation::setup_relaxation()
         std::sort(fcs_phonon->force_constant_with_cell[2].begin(), fcs_phonon->force_constant_with_cell[2].end());
         prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4, ngroup2, fcs_group2);
 
-        memory->allocate(vec_for_v4, fcs_phonon->force_constant_with_cell[2].size(), 3, 3);
+        memory->allocate(vec_for_v4, 3, 3, fcs_phonon->force_constant_with_cell[2].size());
         memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
         memory->allocate(evec_index4, fcs_phonon->force_constant_with_cell[2].size(), 4);
 
@@ -140,6 +140,8 @@ void Relaxation::setup_relaxation()
                 evec_index4[i][j] = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
             }
         }
+
+        dynamical->modify_eigenvectors();
     }
     memory->deallocate(invsqrt_mass_p);
 
@@ -155,6 +157,16 @@ void Relaxation::setup_relaxation()
     MPI_Bcast(&sym_permutation, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (kpoint->kpoint_mode == 2) {
+
+        if (ks_analyze_mode && use_triplet_symmetry) {
+            use_triplet_symmetry = false;
+            if (mympi->my_rank == 0) {
+                std::cout << std::endl;
+                std::cout << " TRISYM was automatically set to 0." << std::endl;
+                std::cout << std::endl;
+            }
+        }
+
         generate_triplet_k(use_triplet_symmetry, sym_permutation);
     }
 
@@ -586,15 +598,15 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
 
         for (j = 0; j < fcs_group2[i].size(); ++j) {
             phase =
-                vec_for_v4[ielem][0][0] * kpoint->xk[kn[1]][0] 
-            + vec_for_v4[ielem][1][0] * kpoint->xk[kn[1]][1] 
-            + vec_for_v4[ielem][2][0] * kpoint->xk[kn[1]][2]
-            + vec_for_v4[ielem][0][1] * kpoint->xk[kn[2]][0] 
-            + vec_for_v4[ielem][1][1] * kpoint->xk[kn[2]][1] 
-            + vec_for_v4[ielem][2][1] * kpoint->xk[kn[2]][2]
-            + vec_for_v4[ielem][0][2] * kpoint->xk[kn[3]][0] 
-            + vec_for_v4[ielem][1][2] * kpoint->xk[kn[3]][1] 
-            + vec_for_v4[ielem][2][2] * kpoint->xk[kn[3]][2];
+              vec_for_v4[0][0][ielem] * kpoint->xk[kn[1]][0] 
+            + vec_for_v4[1][0][ielem] * kpoint->xk[kn[1]][1] 
+            + vec_for_v4[2][0][ielem] * kpoint->xk[kn[1]][2]
+            + vec_for_v4[0][1][ielem] * kpoint->xk[kn[2]][0] 
+            + vec_for_v4[1][1][ielem] * kpoint->xk[kn[2]][1] 
+            + vec_for_v4[2][1][ielem] * kpoint->xk[kn[2]][2]
+            + vec_for_v4[0][2][ielem] * kpoint->xk[kn[3]][0] 
+            + vec_for_v4[1][2][ielem] * kpoint->xk[kn[3]][1] 
+            + vec_for_v4[2][2][ielem] * kpoint->xk[kn[3]][2];
 
             ctmp = fcs_group2[i][j] * invmass_for_v4[ielem] * std::exp(im * phase);
             ret_in += ctmp;
@@ -632,41 +644,41 @@ std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3,
     return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
 }
 
-
-void Relaxation::calc_realpart_V4(const unsigned int N, double *T, const double omega, 
-                                  const unsigned int knum, const unsigned int snum, double *ret)
-{
-    unsigned int i, ik, is;
-    unsigned int arr[4];
-    double n1, omega1;
-    double v4_tmp, T_tmp;
-
-    for (i = 0; i < N; ++i) ret[i] = 0.0;
-
-    arr[0] = ns * kpoint->knum_minus[knum] + snum;
-    arr[1] = ns * knum + snum;
-
-    for (ik = 0; ik < nk; ++ik) {
-        for (is = 0; is < ns; ++is) {
-
-            arr[2] = ns * ik + is;
-            arr[3] = ns * kpoint->knum_minus[ik] + is;
-
-            v4_tmp = V4(arr).real();
-
-            omega1 = dynamical->eval_phonon[ik][is];
-
-            for (i = 0; i < N; ++i) {
-                T_tmp = T[i];
-                n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-
-                ret[i] += v4_tmp * (2.0 * n1 + 1.0);
-            }
-        }
-    }
-
-    for (i = 0; i < N; ++i) ret[i] *= - 1.0 / (8.0 * static_cast<double>(nk));
-}
+// 
+// void Relaxation::calc_realpart_V4(const unsigned int N, double *T, const double omega, 
+//                                   const unsigned int knum, const unsigned int snum, double *ret)
+// {
+//     unsigned int i, ik, is;
+//     unsigned int arr[4];
+//     double n1, omega1;
+//     double v4_tmp, T_tmp;
+// 
+//     for (i = 0; i < N; ++i) ret[i] = 0.0;
+// 
+//     arr[0] = ns * kpoint->knum_minus[knum] + snum;
+//     arr[1] = ns * knum + snum;
+// 
+//     for (ik = 0; ik < nk; ++ik) {
+//         for (is = 0; is < ns; ++is) {
+// 
+//             arr[2] = ns * ik + is;
+//             arr[3] = ns * kpoint->knum_minus[ik] + is;
+// 
+//             v4_tmp = V4(arr).real();
+// 
+//             omega1 = dynamical->eval_phonon[ik][is];
+// 
+//             for (i = 0; i < N; ++i) {
+//                 T_tmp = T[i];
+//                 n1 = phonon_thermodynamics->fB(omega1, T_tmp);
+// 
+//                 ret[i] += v4_tmp * (2.0 * n1 + 1.0);
+//             }
+//         }
+//     }
+// 
+//     for (i = 0; i < N; ++i) ret[i] *= - 1.0 / (8.0 * static_cast<double>(nk));
+// }
 
 
 void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const double omega, 
