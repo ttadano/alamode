@@ -55,7 +55,7 @@ void Displace::gen_displacement_pattern()
         }
     }
 
-    estimate_best_direction_harmonic(disp_harm);
+    // estimate_best_direction_harmonic(disp_harm);
 
     memory->allocate(pattern_all, maxorder);
     generate_pattern_all(maxorder, pattern_all);
@@ -222,48 +222,48 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
         pattern[order].clear();
 
-        if (order == 0) {
+//        if (order == 0) {
 
             // Special treatment for harmonic terms
 
-            for (std::vector<DispDirectionHarmonic>::iterator it  = disp_harm.begin(); 
-                it != disp_harm.end(); ++it) {
-                    DispDirectionHarmonic disp_now = *it;
+//             for (std::vector<DispDirectionHarmonic>::iterator it  = disp_harm.begin(); 
+//                 it != disp_harm.end(); ++it) {
+//                     DispDirectionHarmonic disp_now = *it;
+// 
+// 
+//                     atom_tmp = disp_now.atom;
+// 
+//                     for (std::vector<DirectionVec>::iterator it2  = disp_now.directionlist.begin(); 
+//                         it2 != disp_now.directionlist.end(); ++it2) {
+// 
+//                             atoms.clear();
+//                             directions.clear();
+// 
+//                             atoms.push_back(disp_now.atom);
+// 
+//                             for (i = 0; i < 3; ++i) {
+//                                 disp_tmp[i] = (*it2).direction[i];
+//                             }
+//                             norm = disp_tmp[0] * disp_tmp[0] + disp_tmp[1] * disp_tmp[1] + disp_tmp[2] * disp_tmp[2];
+//                             for (i = 0; i < 3; ++i) disp_tmp[i] /= std::sqrt(norm);
+// 
+//                             if (disp_basis[0] == 'F') {
+//                                 rotvec(disp_tmp, disp_tmp, system->rlavec);
+//                                 for (i = 0; i < 3; ++i) disp_tmp[i] /= 2.0 * pi;
+//                             }
+// 
+//                             for (i = 0; i < sign_prod[0].size(); ++i) {
+//                                 directions.clear();
+// 
+//                                 for (j = 0; j < 3; ++j) {
+//                                     directions.push_back(disp_tmp[j] * static_cast<double>(sign_prod[order][i][0]));
+//                                 }
+//                                 pattern[order].push_back(AtomWithDirection(atoms, directions));		
+//                             }
+//                     }			
+//             }
 
-
-                    atom_tmp = disp_now.atom;
-
-                    for (std::vector<DirectionVec>::iterator it2  = disp_now.directionlist.begin(); 
-                        it2 != disp_now.directionlist.end(); ++it2) {
-
-                            atoms.clear();
-                            directions.clear();
-
-                            atoms.push_back(disp_now.atom);
-
-                            for (i = 0; i < 3; ++i) {
-                                disp_tmp[i] = (*it2).direction[i];
-                            }
-                            norm = disp_tmp[0] * disp_tmp[0] + disp_tmp[1] * disp_tmp[1] + disp_tmp[2] * disp_tmp[2];
-                            for (i = 0; i < 3; ++i) disp_tmp[i] /= std::sqrt(norm);
-
-                            if (disp_basis[0] == 'F') {
-                                rotvec(disp_tmp, disp_tmp, system->rlavec);
-                                for (i = 0; i < 3; ++i) disp_tmp[i] /= 2.0 * pi;
-                            }
-
-                            for (i = 0; i < sign_prod[0].size(); ++i) {
-                                directions.clear();
-
-                                for (j = 0; j < 3; ++j) {
-                                    directions.push_back(disp_tmp[j] * static_cast<double>(sign_prod[order][i][0]));
-                                }
-                                pattern[order].push_back(AtomWithDirection(atoms, directions));		
-                            }
-                    }			
-            }
-
-        } else {
+  //      } else {
 
             // Anharmonic terms
 
@@ -325,7 +325,7 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
                 }               
             }
         }
-    }
+ //   }
 
     memory->deallocate(sign_prod);
 }
