@@ -394,11 +394,12 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
         std::cout << "  rank = " << nrank << " N = " << N << std::endl << std::endl;
         std::cout << "  This can cause a difficulty in solving the fitting problem properly      " << std::endl;
         std::cout << "  with DGGLSE, especially when the difference is large. Please check if    " << std::endl;
-        std::cout << "  you obtain reliable force constants in the .fcs file.                    " << std::endl;
+        std::cout << "  you obtain reliable force constants in the .fcs file.                    " << std::endl << std::endl;
         std::cout << "  This issue may be resolved by setting MULTDAT = 2 in the &fitting field. " << std::endl;
         std::cout << "  If not, you may need to reduce the cutoff radii and/or increase NDATA    " << std::endl;
         std::cout << "  by giving linearly-independent displacement patterns.                    " << std::endl;
         std::cout << " **************************************************************************" << std::endl;
+        std::cout << std::endl;
     }
 
     f_square = 0.0;
