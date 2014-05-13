@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 #parser options
-parser = optparse.OptionParser()
+usage = "usage: %prog [options] file1.bands file2.bands ... "
+parser = optparse.OptionParser(usage=usage)
 
 parser.add_option("--nokey", action="store_false", dest="print_key", default=True, 
 	help="don't print the key in the figure")
@@ -126,7 +127,7 @@ if __name__ == '__main__':
 	nfiles = len(files)
 
 	if nfiles == 0:
-		print "Usage: python plotband.py [options] file1.bands file2.bands ..."
+		print "Usage: plotband.py [options] file1.bands file2.bands ..."
 		print "For details of available options, please type\n$ python plotband.py -h"
 		exit(1)
 	else:
