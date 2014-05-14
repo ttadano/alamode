@@ -25,7 +25,7 @@ namespace ALM_NS{
 
         AtomProperty(){};
         AtomProperty(const AtomProperty &other)
-            : x(x), y(y), z(z), kind(kind), atom(atom), tran(tran) {};
+            : x(other.x), y(other.y), z(other.z), kind(other.kind), atom(other.atom), tran(other.tran) {};
         AtomProperty(const double *pos, const int kind_in, const int atom_in, const int tran_in) {
             x = pos[0];
             y = pos[1];
