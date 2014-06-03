@@ -18,11 +18,14 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "symmetry.h"
 #include "constants.h"
 #include "mathfunctions.h"
+#include <map>
 
 using namespace ALM_NS;
 
 Displace::Displace(ALM *alm) : Pointers(alm) {}
-Displace::~Displace() {}
+Displace::~Displace() {
+    memory->deallocate(pattern_all);
+}
 
 void Displace::gen_displacement_pattern()
 {
@@ -47,154 +50,24 @@ void Displace::gen_displacement_pattern()
 
             group_tmp.clear();
 
+            // Store first order + 1 indexes as a necessarily displacement pattern
             for (j = 0; j < order + 1; ++j) {
                 group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
             }
+            // Avoid equivalent entries using set.
             dispset[order].insert(DispAtomSet(group_tmp));
             m += fcs->ndup[order][i];
         }
     }
 
-    // estimate_best_direction_harmonic(disp_harm);
-
     memory->allocate(pattern_all, maxorder);
+
     generate_pattern_all(maxorder, pattern_all);
+
+    memory->deallocate(dispset);
 
     std::cout << " done!" << std::endl;
 }
-
-void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmonic> &disp_harm)
-{
-    int i, j, k, l;
-    int nsym_disp, nsym_max;
-    int ii, jj;
-    int direc;
-    int nat = system->nat;
-    int **flag_disp;
-
-    double factor = 1.0e-5;
-    double dprod, norm1, norm2;
-    double direc_tmp[3];
-    double disp_tmp[3], disp_tmp_frac[3], disp_best[3];
-    double **pos_disp;
-
-    std::vector<DirectionVec> directionlist_tmp, direction_new;
-
-    memory->allocate(flag_disp, nat, 3);
-
-    for (i = 0; i < nat; ++i) {
-        for (j = 0; j < 3; ++j) {
-            flag_disp[i][j] = 0;
-        }
-    }
-
-    for (std::set<DispAtomSet>::iterator it = dispset[0].begin(); it != dispset[0].end(); ++it) {
-        int index_tmp = (*it).atomset[0];
-        flag_disp[index_tmp / 3][index_tmp % 3] = 1;
-    }
-
-    for (i = 0; i < nat; ++i) {
-
-        directionlist_tmp.clear();
-
-        for (j = 0; j < 3; ++j) {
-            if (flag_disp[i][j] == 1) {
-                for (k = 0; k < 3; ++k) {
-                    direc_tmp[k] = 0.0;
-                }
-                direc_tmp[j] = 1.0;
-                directionlist_tmp.push_back(direc_tmp);
-            }
-        }
-        if (directionlist_tmp.size() > 0) {
-            disp_harm.push_back(DispDirectionHarmonic(i, directionlist_tmp));
-        }
-    }
-    memory->deallocate(flag_disp);
-
-    memory->allocate(pos_disp, nat, 3);
-
-    for (i = 0; i < disp_harm.size(); ++i) {
-
-        direction_new.clear();
-
-        for (j = 0; j < disp_harm[i].directionlist.size(); ++j) {
-
-            for (k = 0; k < 3; ++k) {
-                disp_tmp[k] = disp_harm[i].directionlist[j].direction[k];
-                if (std::abs(disp_tmp[k]) > eps) direc = k;
-            }
-            rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
-
-
-            for (k = 0; k < nat; ++k) {
-                for (l = 0; l < 3; ++l) {
-                    pos_disp[k][l] = system->xcoord[k][l];
-                }
-            }
-
-            for (l = 0; l < 3; ++l) pos_disp[disp_harm[i].atom][l] += factor * disp_tmp_frac[l];
-
-            nsym_max = symmetry->numsymop(nat, pos_disp, symmetry->tolerance);
-
-            for (k = 0; k < 3; ++k) disp_best[k] = disp_tmp[k];
-
-            for (ii = 1; ii >= -1; --ii) {
-                for (jj = 1; jj >= -1; --jj) {
-                    disp_tmp[direc] = 1.0;
-                    disp_tmp[(direc + 1) % 3] = static_cast<double>(ii);
-                    disp_tmp[(direc + 2) % 3] = static_cast<double>(jj);
-
-                    rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
-
-                    for (k = 0; k < nat; ++k) {
-                        for (l = 0; l < 3; ++l) {
-                            pos_disp[k][l] = system->xcoord[k][l];
-                        }
-                    }
-
-                    for (l = 0; l < 3; ++l) pos_disp[disp_harm[i].atom][l] += factor * disp_tmp_frac[l];
-                    nsym_disp = symmetry->numsymop(nat, pos_disp, symmetry->tolerance);
-
-                    if (nsym_disp > nsym_max) {
-                        bool isok = true;
-
-                        for (k = 0; k < direction_new.size(); ++k) {
-                            dprod = 0.0;
-                            norm1 = 0.0;
-                            norm2 = 0.0;
-
-                            for (l = 0; l < 3; ++l) {
-                                dprod = direction_new[k].direction[l] * disp_tmp[l];
-                                norm1 = std::pow(direction_new[k].direction[l], 2);
-                                norm2 = std::pow(disp_tmp[l], 2);
-                            }
-                            if (std::abs(dprod - std::sqrt(norm1*norm2)) < eps10) {
-                                isok = false;
-                            }
-                        }
-
-                        if (isok) {
-                            nsym_max = nsym_disp;
-                            for (l = 0; l < 3; ++l) disp_best[l] = disp_tmp[l];
-                        }
-                    }
-                }
-            }
-            direction_new.push_back(disp_best);
-        }
-
-
-        disp_harm_best.push_back(DispDirectionHarmonic(disp_harm[i].atom, direction_new));
-    }
-
-    memory->deallocate(pos_disp);
-
-    std::copy(disp_harm_best.begin(), disp_harm_best.end(), disp_harm.begin());
-
-    disp_harm_best.clear();
-}
-
 
 void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> *pattern)
 {
@@ -207,9 +80,14 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
     std::vector<int> atoms;
     std::vector<double> directions;
-
-    std::vector<std::vector<int> > *sign_prod;
+    std::vector<std::vector<int> > *sign_prod, sign_reduced;
     std::vector<int> vec_tmp;
+
+    int natom_disp;
+    double sign_double;
+    std::vector<int>::iterator loc;
+    std::vector<int> nums;
+    std::vector<double> directions_copy;
 
     memory->allocate(sign_prod, N);
 
@@ -222,110 +100,70 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
         pattern[order].clear();
 
-//        if (order == 0) {
+        for (std::set<DispAtomSet>::iterator it = dispset[order].begin(); it != dispset[order].end(); ++it) {
 
-            // Special treatment for harmonic terms
+            atoms.clear();
+            directions.clear();
+            nums.clear();
 
-//             for (std::vector<DispDirectionHarmonic>::iterator it  = disp_harm.begin(); 
-//                 it != disp_harm.end(); ++it) {
-//                     DispDirectionHarmonic disp_now = *it;
-// 
-// 
-//                     atom_tmp = disp_now.atom;
-// 
-//                     for (std::vector<DirectionVec>::iterator it2  = disp_now.directionlist.begin(); 
-//                         it2 != disp_now.directionlist.end(); ++it2) {
-// 
-//                             atoms.clear();
-//                             directions.clear();
-// 
-//                             atoms.push_back(disp_now.atom);
-// 
-//                             for (i = 0; i < 3; ++i) {
-//                                 disp_tmp[i] = (*it2).direction[i];
-//                             }
-//                             norm = disp_tmp[0] * disp_tmp[0] + disp_tmp[1] * disp_tmp[1] + disp_tmp[2] * disp_tmp[2];
-//                             for (i = 0; i < 3; ++i) disp_tmp[i] /= std::sqrt(norm);
-// 
-//                             if (disp_basis[0] == 'F') {
-//                                 rotvec(disp_tmp, disp_tmp, system->rlavec);
-//                                 for (i = 0; i < 3; ++i) disp_tmp[i] /= 2.0 * pi;
-//                             }
-// 
-//                             for (i = 0; i < sign_prod[0].size(); ++i) {
-//                                 directions.clear();
-// 
-//                                 for (j = 0; j < 3; ++j) {
-//                                     directions.push_back(disp_tmp[j] * static_cast<double>(sign_prod[order][i][0]));
-//                                 }
-//                                 pattern[order].push_back(AtomWithDirection(atoms, directions));		
-//                             }
-//                     }			
-//             }
+            for (i = 0; i < (*it).atomset.size(); ++i) {
 
-  //      } else {
+                atom_tmp = (*it).atomset[i] / 3;
 
-            // Anharmonic terms
+                loc = std::find(nums.begin(), nums.end(), (*it).atomset[i]);
 
-            int natom_disp;
-            std::vector<int>::iterator loc;
-            std::vector<int> nums;
-            std::vector<double> directions_copy;
-            double sign_double;
+                // nums must not contain equivalent entries.
+                if (loc != nums.end()) continue;
 
+                nums.push_back((*it).atomset[i]);
+                atoms.push_back(atom_tmp);
 
-            for (std::set<DispAtomSet>::iterator it = dispset[order].begin(); it != dispset[order].end(); ++it) {
-
-                atoms.clear();
-                directions.clear();
-
-                nums.clear();
-
-                for (i = 0; i < (*it).atomset.size(); ++i) {
-
-                    atom_tmp = (*it).atomset[i] / 3;
-
-                    loc = std::find(nums.begin(), nums.end(), (*it).atomset[i]);
-
-                    if (loc != nums.end()) continue;
-
-                    nums.push_back((*it).atomset[i]);
-                    atoms.push_back(atom_tmp);
-
-                    for (j = 0; j < 3; ++j) {
-                        disp_tmp[j] = 0.0;
-                    }
-                    disp_tmp[(*it).atomset[i] % 3] = 1.0;
-
-                    if (disp_basis[0] == 'F') {
-                        rotvec(disp_tmp, disp_tmp, system->rlavec);
-                        for (j = 0; j < 3; ++j) disp_tmp[j] /= 2.0 * pi;
-                    }
-
-                    for (j = 0; j < 3; ++j) directions.push_back(disp_tmp[j]);
+                for (j = 0; j < 3; ++j) {
+                    disp_tmp[j] = 0.0;
                 }
+                disp_tmp[(*it).atomset[i] % 3] = 1.0;
 
-                natom_disp = atoms.size();
+               
 
-                directions_copy.clear();
-                std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
-                
-                for (std::vector<std::vector<int> >::const_iterator it = sign_prod[natom_disp - 1].begin(); 
-                    it != sign_prod[natom_disp - 1].end(); ++it) {
-
-                        directions.clear();
-
-                        for (i = 0; i < (*it).size(); ++i) {
-                            sign_double = static_cast<double>((*it)[i]);
-                            for (j = 0; j < 3; ++j) {
-                                directions.push_back(directions_copy[3 * i + j] * sign_double);
-                            }
-                        }
-                        pattern[order].push_back(AtomWithDirection(atoms, directions));
-                }               
+                for (j = 0; j < 3; ++j) directions.push_back(disp_tmp[j]);
             }
+
+            natom_disp = atoms.size();          
+
+            find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1], nums, sign_reduced);
+
+            directions_copy.clear();
+            std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
+
+//             for (std::vector<std::vector<int> >::const_iterator it = sign_prod[natom_disp - 1].begin(); 
+//                 it != sign_prod[natom_disp - 1].end(); ++it) {
+
+               for (std::vector<std::vector<int> >::const_iterator it = sign_reduced.begin(); 
+                             it != sign_reduced.end(); ++it) {
+                    directions.clear();
+
+                    for (i = 0; i < (*it).size(); ++i) {
+                        sign_double = static_cast<double>((*it)[i]);
+
+                        for (j = 0; j < 3; ++j) {
+                            disp_tmp[j] = directions_copy[3 * i + j] * sign_double;
+                        }
+
+                        if (disp_basis[0] == 'F') { 
+                            rotvec(disp_tmp, disp_tmp, system->rlavec);
+                            for (j = 0; j < 3; ++j) {
+                                disp_tmp[j] /= 2.0 * pi;
+                            }
+                        } 
+
+                        for (j = 0; j < 3; ++j) {
+                            directions.push_back(disp_tmp[j]);
+                        }
+                    }
+                    pattern[order].push_back(AtomWithDirection(atoms, directions));
+            }               
         }
- //   }
+    }
 
     memory->deallocate(sign_prod);
 }
@@ -352,3 +190,324 @@ void Displace::generate_signvecs(const int N, std::vector<std::vector<int> > &si
         generate_signvecs(N - 1, sign, vec_tmp);
     }
 }
+
+void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int> > sign_in, 
+                                      std::vector<int> pair_in, std::vector<std::vector<int> > &sign_out) 
+{
+    int isym, i, j, k;
+    int mapped_atom;
+    int mapped_index;
+    bool flag_avail;
+
+    std::vector<int> symnum_vec;
+    std::vector<int>::iterator loc;
+    std::vector<int> atom_tmp, pair_tmp;
+    std::vector<std::vector<int> > sign_found;
+    std::vector<int> sign_tmp;
+
+
+    double disp_tmp;
+    double **disp, **disp_sym;
+    int nat = system->nat;
+    std::vector<int> list_disp_atom;
+    std::vector<IndexWithSign> index_for_sort;
+
+
+    memory->allocate(disp, nat, 3);
+    memory->allocate(disp_sym, nat, 3);
+
+    sign_out.clear();
+    symnum_vec.clear();
+    list_disp_atom.clear();
+
+    for (i = 0; i < pair_in.size(); ++i) {
+        list_disp_atom.push_back(pair_in[i]/ 3);
+    }
+    list_disp_atom.erase(std::unique(list_disp_atom.begin(), list_disp_atom.end() ), list_disp_atom.end());
+
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            disp[i][j] = 0.0;
+        }
+    }
+
+    for (i = 0; i < pair_in.size(); ++i) {
+        disp[pair_in[i]/3][pair_in[i]%3] = 1.0;
+    }
+
+    // Find symmetry operations which can be used to
+    // reduce the number of sign patterns (+, -) of displacements
+
+    for (isym = 0; isym < symmetry->nsym; ++isym) {
+
+        flag_avail = true;
+        pair_tmp.clear();
+
+        for (i = 0; i < N; ++i) {
+            if (!flag_avail) break;
+
+            mapped_atom = symmetry->map_sym[pair_in[i] / 3][isym];
+            mapped_index = 3 * mapped_atom + pair_in[i] % 3;
+
+            loc = std::find(pair_in.begin(), pair_in.end(), mapped_index);
+            if (loc == pair_in.end()) {
+                flag_avail = false;
+            }
+
+            pair_tmp.push_back(mapped_index);
+        }
+
+        if (!flag_avail) continue;
+
+        // The symmetry may be useful only when the pair doesn't change
+        // by the symmetry operation.
+        std::sort(pair_tmp.begin(), pair_tmp.end());
+
+        if (pair_tmp == pair_in) {
+
+            pair_tmp.clear();
+
+            for (i = 0; i < list_disp_atom.size(); ++i) {
+                mapped_atom = symmetry->map_sym[list_disp_atom[i]][isym];
+
+                for (j = 0; j < 3; ++j) {
+                    disp_sym[mapped_atom][j] = 0.0;
+                    for (k = 0; k < 3; ++k) {
+                        disp_sym[mapped_atom][j] += symmetry->symrel[isym][j][k] * disp[list_disp_atom[i]][k];
+                    }
+
+                    disp_tmp = disp_sym[mapped_atom][j];
+                    if (std::abs(disp_tmp) > eps) {
+                        pair_tmp.push_back(3 * mapped_atom + j);
+                    }
+                }
+            }
+
+            std::sort(pair_tmp.begin(), pair_tmp.end());
+
+            if (pair_tmp == pair_in) {
+                symnum_vec.push_back(isym);
+            }
+        }
+    }
+
+
+    // Now find unique pairs of displacement directions 
+
+    sign_found.clear();
+
+    for (std::vector<std::vector<int> >::const_iterator it = sign_in.begin(); it != sign_in.end(); ++it) {
+
+        // if the sign has already been found before, cycle the loop.
+        // else, add the current sign pairs to the return variable.
+        if (std::find(sign_found.begin(), sign_found.end(), (*it)) != sign_found.end()) {
+            continue;
+        } else {
+            sign_out.push_back(*it);
+        }
+
+        for (i = 0; i < system->nat; ++i) {
+            for (j = 0; j < 3; ++j) {
+                disp[i][j] = 0.0;
+            }
+        }
+
+        for (i = 0; i < N; ++i) {
+            disp[pair_in[i]/3][pair_in[i]%3] = static_cast<double>((*it)[i]);
+        }
+
+//         std::cout << "Original: ";
+//         for (i = 0; i < (*it).size(); ++i) {
+//             std::cout << std::setw(5) << (*it)[i];
+//         }
+//         std::cout << std::endl;
+
+        for (isym = 0; isym < symnum_vec.size(); ++isym) {
+
+            index_for_sort.clear();
+
+            for (i = 0; i < list_disp_atom.size(); ++i) {
+                mapped_atom = symmetry->map_sym[list_disp_atom[i]][symnum_vec[isym]];
+
+                for (j = 0; j < 3; ++j) {
+                    disp_sym[mapped_atom][j] = 0.0;
+                    for (k = 0; k < 3; ++k) {
+                        disp_sym[mapped_atom][j] += symmetry->symrel[symnum_vec[isym]][j][k] * disp[list_disp_atom[i]][k];
+                    }
+                    disp_tmp = disp_sym[mapped_atom][j];
+
+                    if (std::abs(disp_tmp) > eps) {
+
+                        if (disp_tmp < 0.0) {
+                            index_for_sort.push_back(IndexWithSign(3 * mapped_atom + j, -1));
+                        } else {
+                            index_for_sort.push_back(IndexWithSign(3 * mapped_atom + j, 1));
+                        }
+                    }
+                }
+
+            }
+            std::sort(index_for_sort.begin(), index_for_sort.end());
+
+            sign_tmp.clear();
+
+            for (i = 0; i < index_for_sort.size(); ++i) {
+                sign_tmp.push_back(index_for_sort[i].sign);
+            }
+
+//             std::cout << "Sym " << isym + 1 << ": " ;
+//             for (i = 0; i < sign_tmp.size(); ++i) {
+//                 std::cout << std::setw(5) << sign_tmp[i];
+//             }
+//             std::cout << std::endl;
+            if (sign_tmp.size() == N && std::find(sign_found.begin(), sign_found.end(), sign_tmp) == sign_found.end()) {
+                sign_found.push_back(sign_tmp);
+                std::sort(sign_found.begin(), sign_found.end());
+            }
+        }
+    }
+
+//     std::cout << "Sign_out : " << std::endl;
+//     for (std::vector<std::vector<int> >::const_iterator it = sign_out.begin(); it != sign_out.end(); ++it) {
+//         for (i = 0; i < (*it).size(); ++i) {
+//             std::cout << std::setw(5) << (*it)[i];
+//         }
+//         std::cout << std::endl;
+//     }
+//     
+
+    memory->deallocate(disp);
+    memory->deallocate(disp_sym);
+}
+
+// void Displace::estimate_best_direction_harmonic(std::vector<DispDirectionHarmonic> &disp_harm)
+// {
+//     int i, j, k, l;
+//     int nsym_disp, nsym_max;
+//     int ii, jj;
+//     int direc;
+//     int nat = system->nat;
+//     int **flag_disp;
+// 
+//     double factor = 1.0e-5;
+//     double dprod, norm1, norm2;
+//     double direc_tmp[3];
+//     double disp_tmp[3], disp_tmp_frac[3], disp_best[3];
+//     double **pos_disp;
+// 
+//     std::vector<DirectionVec> directionlist_tmp, direction_new;
+// 
+//     memory->allocate(flag_disp, nat, 3);
+// 
+//     for (i = 0; i < nat; ++i) {
+//         for (j = 0; j < 3; ++j) {
+//             flag_disp[i][j] = 0;
+//         }
+//     }
+// 
+//     for (std::set<DispAtomSet>::iterator it = dispset[0].begin(); it != dispset[0].end(); ++it) {
+//         int index_tmp = (*it).atomset[0];
+//         flag_disp[index_tmp / 3][index_tmp % 3] = 1;
+//     }
+// 
+//     for (i = 0; i < nat; ++i) {
+// 
+//         directionlist_tmp.clear();
+// 
+//         for (j = 0; j < 3; ++j) {
+//             if (flag_disp[i][j] == 1) {
+//                 for (k = 0; k < 3; ++k) {
+//                     direc_tmp[k] = 0.0;
+//                 }
+//                 direc_tmp[j] = 1.0;
+//                 directionlist_tmp.push_back(direc_tmp);
+//             }
+//         }
+//         if (directionlist_tmp.size() > 0) {
+//             disp_harm.push_back(DispDirectionHarmonic(i, directionlist_tmp));
+//         }
+//     }
+//     memory->deallocate(flag_disp);
+// 
+//     memory->allocate(pos_disp, nat, 3);
+// 
+//     for (i = 0; i < disp_harm.size(); ++i) {
+// 
+//         direction_new.clear();
+// 
+//         for (j = 0; j < disp_harm[i].directionlist.size(); ++j) {
+// 
+//             for (k = 0; k < 3; ++k) {
+//                 disp_tmp[k] = disp_harm[i].directionlist[j].direction[k];
+//                 if (std::abs(disp_tmp[k]) > eps) direc = k;
+//             }
+//             rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
+// 
+// 
+//             for (k = 0; k < nat; ++k) {
+//                 for (l = 0; l < 3; ++l) {
+//                     pos_disp[k][l] = system->xcoord[k][l];
+//                 }
+//             }
+// 
+//             for (l = 0; l < 3; ++l) pos_disp[disp_harm[i].atom][l] += factor * disp_tmp_frac[l];
+// 
+//             nsym_max = symmetry->numsymop(nat, pos_disp, symmetry->tolerance);
+// 
+//             for (k = 0; k < 3; ++k) disp_best[k] = disp_tmp[k];
+// 
+//             for (ii = 1; ii >= -1; --ii) {
+//                 for (jj = 1; jj >= -1; --jj) {
+//                     disp_tmp[direc] = 1.0;
+//                     disp_tmp[(direc + 1) % 3] = static_cast<double>(ii);
+//                     disp_tmp[(direc + 2) % 3] = static_cast<double>(jj);
+// 
+//                     rotvec(disp_tmp_frac, disp_tmp, system->rlavec);
+// 
+//                     for (k = 0; k < nat; ++k) {
+//                         for (l = 0; l < 3; ++l) {
+//                             pos_disp[k][l] = system->xcoord[k][l];
+//                         }
+//                     }
+// 
+//                     for (l = 0; l < 3; ++l) pos_disp[disp_harm[i].atom][l] += factor * disp_tmp_frac[l];
+//                     nsym_disp = symmetry->numsymop(nat, pos_disp, symmetry->tolerance);
+// 
+//                     if (nsym_disp > nsym_max) {
+//                         bool isok = true;
+// 
+//                         for (k = 0; k < direction_new.size(); ++k) {
+//                             dprod = 0.0;
+//                             norm1 = 0.0;
+//                             norm2 = 0.0;
+// 
+//                             for (l = 0; l < 3; ++l) {
+//                                 dprod = direction_new[k].direction[l] * disp_tmp[l];
+//                                 norm1 = std::pow(direction_new[k].direction[l], 2);
+//                                 norm2 = std::pow(disp_tmp[l], 2);
+//                             }
+//                             if (std::abs(dprod - std::sqrt(norm1*norm2)) < eps10) {
+//                                 isok = false;
+//                             }
+//                         }
+// 
+//                         if (isok) {
+//                             nsym_max = nsym_disp;
+//                             for (l = 0; l < 3; ++l) disp_best[l] = disp_tmp[l];
+//                         }
+//                     }
+//                 }
+//             }
+//             direction_new.push_back(disp_best);
+//         }
+// 
+// 
+//         disp_harm_best.push_back(DispDirectionHarmonic(disp_harm[i].atom, direction_new));
+//     }
+// 
+//     memory->deallocate(pos_disp);
+// 
+//     std::copy(disp_harm_best.begin(), disp_harm_best.end(), disp_harm.begin());
+// 
+//     disp_harm_best.clear();
+// }

@@ -85,6 +85,22 @@ namespace ALM_NS {
         return std::lexicographical_compare(a.atomset.begin(), a.atomset.end(), b.atomset.begin(), b.atomset.end());
     }
 
+    
+    class IndexWithSign {
+    public:
+        int ind, sign;
+
+        IndexWithSign();
+        IndexWithSign(const int ind_in, const int sign_in) {
+            ind = ind_in;
+            sign = sign_in;
+        }
+    };
+
+    inline bool operator<(const IndexWithSign &a, const IndexWithSign &b) {
+        return a.ind < b.ind;
+    }
+
     class Displace: protected Pointers {
     public:
         Displace (class ALM *);
@@ -97,10 +113,11 @@ namespace ALM_NS {
     private:
         std::set<DispAtomSet> *dispset;
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
-        void estimate_best_direction_harmonic(std::vector<DispDirectionHarmonic> &);
+      //  void estimate_best_direction_harmonic(std::vector<DispDirectionHarmonic> &);
         void generate_pattern_all(const int, std::vector<AtomWithDirection> *);
 
         void generate_signvecs(const int, std::vector<std::vector <int> > &, std::vector<int>);
-
+        void find_unique_sign_pairs(const int, std::vector<std::vector<int> >, 
+            std::vector<int>, std::vector<std::vector<int> > &);
     };
 }
