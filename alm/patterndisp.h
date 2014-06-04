@@ -106,6 +106,8 @@ namespace ALM_NS {
         Displace (class ALM *);
         ~Displace();
 
+        bool trim_dispsign_for_evenfunc;
+
         std::string disp_basis;
         std::vector<AtomWithDirection> *pattern_all;
         void gen_displacement_pattern();

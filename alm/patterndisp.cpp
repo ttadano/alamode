@@ -50,10 +50,14 @@ void Displace::gen_displacement_pattern()
 
             group_tmp.clear();
 
-            // Store first order + 1 indexes as a necessarily displacement pattern
+            // Store first order + 1 indexes as a necessarily displacement pattern.
+            // Here, duplicate entries will be removed. 
+            // For example, (iij) will be reduced to (ij).
             for (j = 0; j < order + 1; ++j) {
                 group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
             }
+            group_tmp.erase(std::unique(group_tmp.begin(), group_tmp.end()), group_tmp.end());
+
             // Avoid equivalent entries using set.
             dispset[order].insert(DispAtomSet(group_tmp));
             m += fcs->ndup[order][i];
@@ -85,7 +89,6 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
     int natom_disp;
     double sign_double;
-    std::vector<int>::iterator loc;
     std::vector<int> nums;
     std::vector<double> directions_copy;
 
@@ -110,11 +113,6 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
                 atom_tmp = (*it).atomset[i] / 3;
 
-                loc = std::find(nums.begin(), nums.end(), (*it).atomset[i]);
-
-                // nums must not contain equivalent entries.
-                if (loc != nums.end()) continue;
-
                 nums.push_back((*it).atomset[i]);
                 atoms.push_back(atom_tmp);
 
@@ -123,23 +121,24 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
                 }
                 disp_tmp[(*it).atomset[i] % 3] = 1.0;
 
-               
-
                 for (j = 0; j < 3; ++j) directions.push_back(disp_tmp[j]);
             }
 
             natom_disp = atoms.size();          
 
-            find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1], nums, sign_reduced);
+            if (trim_dispsign_for_evenfunc) {
+                find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1], nums, sign_reduced);
+            } else {
+                sign_reduced.clear();
+                std::copy(sign_prod[natom_disp - 1].begin(), sign_prod[natom_disp - 1].end(), 
+                    std::back_inserter(sign_reduced));
+            }
 
             directions_copy.clear();
             std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
 
-//             for (std::vector<std::vector<int> >::const_iterator it = sign_prod[natom_disp - 1].begin(); 
-//                 it != sign_prod[natom_disp - 1].end(); ++it) {
-
-               for (std::vector<std::vector<int> >::const_iterator it = sign_reduced.begin(); 
-                             it != sign_reduced.end(); ++it) {
+            for (std::vector<std::vector<int> >::const_iterator it = sign_reduced.begin(); 
+                it != sign_reduced.end(); ++it) {
                     directions.clear();
 
                     for (i = 0; i < (*it).size(); ++i) {
@@ -197,21 +196,20 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int> 
     int isym, i, j, k;
     int mapped_atom;
     int mapped_index;
+    int nat = system->nat;
+
     bool flag_avail;
+
+    double disp_tmp;
+    double **disp, **disp_sym;
 
     std::vector<int> symnum_vec;
     std::vector<int>::iterator loc;
     std::vector<int> atom_tmp, pair_tmp;
     std::vector<std::vector<int> > sign_found;
     std::vector<int> sign_tmp;
-
-
-    double disp_tmp;
-    double **disp, **disp_sym;
-    int nat = system->nat;
     std::vector<int> list_disp_atom;
     std::vector<IndexWithSign> index_for_sort;
-
 
     memory->allocate(disp, nat, 3);
     memory->allocate(disp_sym, nat, 3);
@@ -316,12 +314,6 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int> 
             disp[pair_in[i]/3][pair_in[i]%3] = static_cast<double>((*it)[i]);
         }
 
-//         std::cout << "Original: ";
-//         for (i = 0; i < (*it).size(); ++i) {
-//             std::cout << std::setw(5) << (*it)[i];
-//         }
-//         std::cout << std::endl;
-
         for (isym = 0; isym < symnum_vec.size(); ++isym) {
 
             index_for_sort.clear();
@@ -355,26 +347,12 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int> 
                 sign_tmp.push_back(index_for_sort[i].sign);
             }
 
-//             std::cout << "Sym " << isym + 1 << ": " ;
-//             for (i = 0; i < sign_tmp.size(); ++i) {
-//                 std::cout << std::setw(5) << sign_tmp[i];
-//             }
-//             std::cout << std::endl;
             if (sign_tmp.size() == N && std::find(sign_found.begin(), sign_found.end(), sign_tmp) == sign_found.end()) {
                 sign_found.push_back(sign_tmp);
                 std::sort(sign_found.begin(), sign_found.end());
             }
         }
     }
-
-//     std::cout << "Sign_out : " << std::endl;
-//     for (std::vector<std::vector<int> >::const_iterator it = sign_out.begin(); it != sign_out.end(); ++it) {
-//         for (i = 0; i < (*it).size(); ++i) {
-//             std::cout << std::setw(5) << (*it)[i];
-//         }
-//         std::cout << std::endl;
-//     }
-//     
 
     memory->deallocate(disp);
     memory->deallocate(disp_sym);

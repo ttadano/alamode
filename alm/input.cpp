@@ -91,12 +91,12 @@ void Input::parse_general_vars(){
     std::string prefix, mode, str_tmp, str_disp_basis;
     int nat, nkd, nsym;
     int is_printsymmetry;
-    bool is_periodic[3];
+    bool is_periodic[3], trim_dispsign_for_evenfunc;
     std::string *kdname;
     double tolerance;
 
     std::vector<std::string> kdname_v, periodic_v;
-    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS";
+    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS TRIMEVEN";
     std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
@@ -113,7 +113,8 @@ void Input::parse_general_vars(){
 
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
         if (general_var_dict.find(*it) == general_var_dict.end()) {
-            error->exit("parse_general_vars", "The following variable is not found in &general input region: ", (*it).c_str());
+            error->exit("parse_general_vars", 
+                "The following variable is not found in &general input region: ", (*it).c_str());
         }
     }
 
@@ -182,6 +183,13 @@ void Input::parse_general_vars(){
         if (str_disp_basis[0] != 'C' && str_disp_basis[0] != 'F') {
             error->exit("parse_general_vars", "Invalid DBASIS");
         }
+
+        if (general_var_dict["TRIMEVEN"].empty()) {
+            trim_dispsign_for_evenfunc = true;
+        } else {
+            trim_dispsign_for_evenfunc = boost::lexical_cast<bool>(general_var_dict["TRIMEVEN"]);
+        }
+
     }
 
     files->job_title = prefix;
@@ -202,7 +210,10 @@ void Input::parse_general_vars(){
     }
 
 
-    if (mode == "suggest") displace->disp_basis = str_disp_basis;
+    if (mode == "suggest") {
+        displace->disp_basis = str_disp_basis;
+        displace->trim_dispsign_for_evenfunc = trim_dispsign_for_evenfunc;
+    }
 
     memory->deallocate(kdname);
 
