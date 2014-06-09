@@ -1007,7 +1007,8 @@ int Interaction::nbody(const int n, const int *arr)
     return ret;
 }
 
-void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, std::vector<DistInfo> **mindist_pair_in, std::set<MinimumDistanceCluster> **mindist_cluster_out)
+void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, std::vector<DistInfo> **mindist_pair_in, 
+                                        std::set<MinimumDistanceCluster> **mindist_cluster_out)
 {
     std::vector<MinDistList> distance_list;
 
@@ -1036,8 +1037,8 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
             iat = symmetry->map_p2s[i][0];
 
             intlist.clear();
-            for (std::vector<int>::const_iterator it = interaction_pair_in[order][i].begin(); 
-                it != interaction_pair_in[order][i].end(); ++it) {
+            for (std::vector<int>::const_iterator it  = interaction_pair_in[order][i].begin(); 
+                                                  it != interaction_pair_in[order][i].end(); ++it) {
                     intlist.push_back((*it));
             }
             std::sort(intlist.begin(), intlist.end()); // Necessarily to sort here
@@ -1108,11 +1109,20 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                                 sum_dist += distance_list[j].dist[k];
                             }
 
-                            if (std::abs(sum_dist - sum_dist_min) < eps8) {
-                                comb_cell_min.push_back(distance_list[j].cell);
-                            } else {
-                                break;
-                            }    
+                            // In the following, only pairs having minimum sum of distances
+                            // are stored. However, we found that this treatment didn't
+                            // return a reliable value of phonon linewidth.
+                            
+                            // if (std::abs(sum_dist - sum_dist_min) < eps8) {
+                            //    comb_cell_min.push_back(distance_list[j].cell);
+                            // } else {
+                            //    break;
+                            // }
+
+                            // Therefore, we consider all duplicate pairs
+                             
+                            comb_cell_min.push_back(distance_list[j].cell);
+
                         }
 
                         mindist_cluster_out[order][i].insert(MinimumDistanceCluster(data, comb_cell_min));
