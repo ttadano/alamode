@@ -23,6 +23,7 @@ namespace PHON_NS
         Writes(class PHON *);
         ~Writes();
         void write_phonon_info();
+        void print_phonon_energy();
         void write_selfenergy();
         void write_gruneisen();
         void setup_result_io();

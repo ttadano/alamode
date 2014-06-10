@@ -92,6 +92,7 @@ void Kpoint::kpoint_setups(std::string mode)
                 }
                 std::cout << std::endl;
             }
+            std::cout << std::endl;
         }
 
         break;
@@ -211,7 +212,6 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo, unsigned int &n,
     n = kpinfo.size();
     MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    std::cout << n << std::endl;
     memory->allocate(k, n, 3);
     memory->allocate(kdirec, n, 3);
 

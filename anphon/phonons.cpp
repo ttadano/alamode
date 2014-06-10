@@ -179,6 +179,8 @@ void PHON::execute_phonons()
     }
 
     if (mympi->my_rank == 0) {
+        writes->print_phonon_energy();
+
         writes->write_phonon_info();
    //     gruneisen->write_newinfo_all();
 

@@ -323,6 +323,77 @@ void Writes::setup_result_io()
     }
 }
 
+void Writes::print_phonon_energy()
+{
+    unsigned int i;
+    unsigned int ik, is;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+    unsigned int knum;
+
+    double kayser_to_THz = 0.0299792458;
+
+    std::cout << std::endl;
+
+    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
+    
+        for (ik = 0; ik < nk; ++ik) {
+            std::cout << " # k point " << std::setw(5) << ik + 1;
+            std::cout << " : (";
+
+            for (i = 0; i < 3; ++i) {
+                std::cout << std::fixed << std::setprecision(4) << std::setw(8) << kpoint->xk[ik][i];
+                if (i < 2) std::cout << ",";
+            }
+            std::cout << ")" << std::endl;
+
+            std::cout << "   Mode, Frequency " << std::endl;
+
+            for (is = 0; is < ns; ++is) {
+                std::cout << std::setw(7) << is + 1;
+                std::cout << std::fixed << std::setprecision(4) << std::setw(12) 
+                    << in_kayser(dynamical->eval_phonon[ik][is]);
+                std::cout << " cm^-1  (";
+                std::cout << std::fixed << std::setprecision(4) << std::setw(12) 
+                    << kayser_to_THz * in_kayser(dynamical->eval_phonon[ik][is]);
+                std::cout << " THz )" << std::endl; 
+            }
+            std::cout << std::endl;
+        }
+
+    } else if (kpoint->kpoint_mode == 2) {
+    
+        for (ik = 0; ik < kpoint->kpoint_irred_all.size(); ++ik){
+
+            std::cout << " # Irred. k point" << std::setw(5) << ik + 1;
+            std::cout << " : (";
+
+            for (i = 0; i < 3; ++i) {
+                std::cout << std::fixed << std::setprecision(4) << std::setw(8) 
+                    << kpoint->kpoint_irred_all[ik][0].kval[i];
+                if (i < 2) std::cout << ",";
+            }
+            std::cout << ")" << std::endl;
+
+            std::cout << "   Mode, Frequency " << std::endl;
+
+            knum = kpoint->kpoint_irred_all[ik][0].knum;
+
+            for (is = 0; is < ns; ++is) {
+                std::cout << std::setw(7) << is + 1;
+                std::cout << std::fixed << std::setprecision(4) << std::setw(12) 
+                    << in_kayser(dynamical->eval_phonon[knum][is]);
+                std::cout << " cm^-1  (";
+                std::cout << std::fixed << std::setprecision(4) << std::setw(12) 
+                    << kayser_to_THz * in_kayser(dynamical->eval_phonon[knum][is]);
+                std::cout << " THz )" << std::endl; 
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }   
+}
+
 void Writes::write_phonon_info()
 {
 //     if (nbands < 0 || nbands > 3 * system->natmin) {

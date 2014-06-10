@@ -26,7 +26,8 @@ using namespace PHON_NS;
 Isotope::Isotope(PHON *phon): Pointers(phon){};
 
 Isotope::~Isotope(){
-    if (include_isotope) {
+
+    if (phon->mode == "RTA" && include_isotope) {
         memory->deallocate(isotope_factor);
         memory->deallocate(gamma_isotope);
     }
