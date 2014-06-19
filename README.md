@@ -28,7 +28,9 @@ More detailed instruction may be found in the user's guide.
 
 
 ## Documentation
-User's guide can be found in the doc/ directory.
+Please refer to the following webpage.
+http://alamode.readthedocs.org
+
 
 ## License
 Copyright (c) 2014 Terumasa Tadano
