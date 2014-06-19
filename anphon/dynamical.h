@@ -43,8 +43,9 @@ namespace PHON_NS {
         void finish_dynamical();
 
         unsigned int neval;
-        bool eigenvectors, nonanalytic;
+        bool eigenvectors;
         bool print_eigenvectors;
+        unsigned int nonanalytic;
 
         std::string file_born;
         double na_sigma;
@@ -65,7 +66,7 @@ namespace PHON_NS {
 
         void load_born();
         void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
-        void calc_nonanalytic_k(double *, double *, double **);
+        void calc_nonanalytic_k(double *, double *, std::complex<double> **);
         void calc_nonanalytic_k2(double *, double *, std::vector<FcsClassExtent>, std::complex<double> **);
 
         void prepare_mindist_list(std::vector<int> **);

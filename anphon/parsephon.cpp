@@ -88,12 +88,13 @@ void Input::parse_general_vars()
 {
     int i;
     int nsym, nbands, ismear, nkd;
+    unsigned int nonanalytic;
     double *masskd;
     double Tmin, Tmax, dT, na_sigma, epsilon;
     double emin, emax, delta_e;
     double tolerance;
     bool printsymmetry;
-    bool nonanalytic, restart;
+    bool restart;
     bool sym_time_reversal, use_triplet_symmetry;
 
     struct stat st;
@@ -176,7 +177,7 @@ void Input::parse_general_vars()
     emax = 1000.0;
     delta_e = 10.0;
 
-    nonanalytic = false;
+    nonanalytic = 0;
     nsym = 0;
     tolerance = 1.0e-8;
     printsymmetry = false;
@@ -226,34 +227,9 @@ void Input::parse_general_vars()
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
-// 
-//     str_tmp = general_var_dict["CELLDIM"];
-// 
-//     if (!str_tmp.empty()) {
-// 
-//         std::istringstream is(str_tmp);
-// 
-//         while (1) {
-//             str_tmp.clear();
-//             is >> str_tmp;
-//             if (str_tmp.empty()) {
-//                 break;
-//             }
-//             celldim_v.push_back(str_tmp);
-//         }
-// 
-//         if (celldim_v.size() != 3) {
-//             error->exit("parse_general_vars", "The number of entries for CELLDIM has to be 3.");
-//         }
-// 
-//         for (i = 0; i < 3; ++i) {
-// #ifdef _USE_BOOST
-//             celldim[i] = boost::lexical_cast<int>(celldim_v[i]);
-// #else
-//             celldim[i] = my_cast<int>(celldim_v[i]);
-// #endif
-//         }
-//     }
+    if (nonanalytic < 0 || nonanalytic > 2) {
+        error->exit("parse_general_vars", "NONANALYTIC should be 0, 1, or 2.");
+    }
 
     job_title = prefix;
     writes->file_result = file_result;

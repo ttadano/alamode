@@ -45,9 +45,16 @@ void Dynamical::setup_dynamical(std::string mode)
     if (mympi->my_rank == 0) {
         std::cout << std::endl << std::endl;
         std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-        if (nonanalytic) {
+        if (nonanalytic == 1) {
             std::cout << std::endl;
-            std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be considered. " << std::endl;
+            std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be included " << std::endl;
+            std::cout << "                    by the Parlinski's method." << std::endl;
+            std::cout << "                    The damping factor for the non-analytic term : " << na_sigma << std::endl;
+            std::cout << std::endl;
+        } else if (nonanalytic == 2) {
+            std::cout << std::endl;
+            std::cout << "  NONANALYTIC = 2 : Non-analytic part of the dynamical matrix will be included " << std::endl;
+            std::cout << "                    by the mixed-space approach." << std::endl;
             std::cout << std::endl;
         }
     }
@@ -96,12 +103,6 @@ void Dynamical::setup_dynamical(std::string mode)
         MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&borncharge[0][0][0], 9*system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-        if (mympi->my_rank == 0) {
-            std::cout << std::endl;
-            std::cout << "  Damping factor for the non-analytic term: " << na_sigma << std::endl;
-            std::cout << std::endl;
-        }
 
         memory->allocate(mindist_list, system->natmin, system->nat);
         prepare_mindist_list(mindist_list);
@@ -217,10 +218,7 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     // Calculate phonon energy for the specific k-point given in fractional basis
 
     unsigned int i, j;
-
     std::complex<double> **dymat_k;
-    double **dymat_na_k;
-    std::complex<double> **dymat_na_mod;
 
     memory->allocate(dymat_k, neval, neval);
 
@@ -228,50 +226,24 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
 
     if (nonanalytic) {
 
+        std::complex<double> **dymat_na_k;
+
         memory->allocate(dymat_na_k, neval, neval);
-        memory->allocate(dymat_na_mod, neval, neval);
-
-   //     calc_nonanalytic_k2(xk_in, kvec_in, fc2_ext, dymat_na_mod);
         
-        calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
-         double xdiff[3];
-         double phase;
-         std::complex<double> im(0.0, 1.0);
-         unsigned int icrd, jcrd;
- 
-         // Multiply a phase factor for the non-analytic term.
-         for (i = 0; i < system->natmin; ++i) {
-             for (j = 0; j < system->natmin; ++j) {
- 
-                 for (icrd = 0; icrd < 3; ++icrd) {
-                     xdiff[icrd] = system->xr_s[system->map_p2s[i][0]][icrd]
-                     - system->xr_s[system->map_p2s[j][0]][icrd];
-                 }
- 
-                 rotvec(xdiff, xdiff, system->lavec_s);
-                 rotvec(xdiff, xdiff, system->rlavec_p);
- 
-                 phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
- 
-                 for (icrd = 0; icrd < 3; ++icrd) {
-                     for (jcrd = 0; jcrd < 3; ++jcrd) {
-                          dymat_na_mod[3 * i + icrd][3 * j + jcrd] = dymat_na_k[3 * i + icrd][3 * j + jcrd] 
-                          * exp(im * phase);
-              //           dymat_na_mod[3 * i + icrd][3 * j + jcrd] *= exp(im * phase);
-                     }
-                 }
-             }
-         }
+        if (nonanalytic == 1) {
+            calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
+        } else if (nonanalytic == 2) {
+            calc_nonanalytic_k2(xk_in, kvec_in, fc2_ext, dymat_na_k);
+        }        
 
-        
+        // Add non-analytic correction
 
         for (i = 0; i < neval; ++i) {
             for (j = 0; j < neval; ++j) {
-                dymat_k[i][j] += dymat_na_mod[i][j];
+                dymat_k[i][j] += dymat_na_k[i][j];
             }
         }
         memory->deallocate(dymat_na_k);
-        memory->deallocate(dymat_na_mod);
     }
 
     char JOBZ;
@@ -328,9 +300,8 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
     unsigned int icell;
 
     double vec[3];
-    std::complex<double> phase;
+    double phase;
     std::complex<double> im(0.0, 1.0);
-
     std::complex<double> **ctmp;
 
     memory->allocate(ctmp, 3*system->natmin, 3*system->natmin);
@@ -353,8 +324,8 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
         atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[system->map_p2s[atm2_p][0]][i] 
-                  - (system->xr_s[atm2_s][i] + xshift_s[icell][i]);
+            vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
+                   - system->xr_s[system->map_p2s[atm2_p][0]][i] ;
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -362,25 +333,32 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 
         phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
-        dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] += (*it).fcs_val * std::exp(-im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+        dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] 
+        += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
     }
 }
 
-void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **dymat_na_out)
+void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::complex<double> **dymat_na_out)
 {
+    // Calculate the non-analytic part of dynamical matrices 
+    // by Parlinski's method.
+
     unsigned int i, j;
     unsigned int iat, jat;
     unsigned int atm_p1, atm_p2;
+    unsigned int natmin = system->natmin;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double denom, norm2;
     double born_tmp[3][3];
-    double xk_tmp[3];
-    double factor;
+    double xk_tmp[3], xdiff[3];
+    double factor, phase;
+    std::complex<double> im(0.0, 1.0);
+
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
-            dymat_na_out[i][j] = 0.0;
+            dymat_na_out[i][j] = std::complex<double>(0.0, 0.0);
         }
     }
 
@@ -389,9 +367,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 
     if (denom > eps) {
 
-        for (iat = 0; iat < system->natmin; ++iat) {
+        for (iat = 0; iat < natmin; ++iat) {
             atm_p1 = system->map_p2s[iat][0];
-
 
             for (i = 0; i <3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -401,7 +378,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
 
             rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
-            for (jat = 0; jat < system->natmin; ++jat) {
+            for (jat = 0; jat < natmin; ++jat) {
                 atm_p2 = system->map_p2s[jat][0];
 
 
@@ -435,33 +412,51 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, double **d
             dymat_na_out[i][j] *= factor;
         }
     }
+
+    // Multiply an additional phase factor for the non-analytic term.
+
+    for (iat = 0; iat < natmin; ++iat) {
+        for (jat = 0; jat < natmin; ++jat) {
+
+            for (i = 0; i < 3; ++i) {
+                xdiff[i] = system->xr_s[system->map_p2s[iat][0]][i]
+                         - system->xr_s[system->map_p2s[jat][0]][i];
+            }
+
+            rotvec(xdiff, xdiff, system->lavec_s);
+            rotvec(xdiff, xdiff, system->rlavec_p);
+
+            phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
+
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    dymat_na_out[3 * iat + i][3 * jat + j] *= exp(im * phase);
+                }
+            }
+        }
+    }
 }
 
-void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_na_out)
+void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, 
+                                    std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_na_out)
 {
+    // Calculate the non-analytic part of dynamical matrices 
+    // by the mixed-space approach.
+
     unsigned int i, j, k;
     unsigned int iat, jat;
-    unsigned int atm_p1, atm_p2;
+    unsigned int atm_p1, atm_p2, atm_s2;
+    unsigned int natmin = system->natmin;
+    unsigned int itran, icell, cell;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double denom, norm2;
     double born_tmp[3][3];
-    double xk_tmp[3];
-    double factor;
-    double vec[3];
-
-    double phase;
+    double xk_tmp[3], vec[3];
+    double factor, phase;
     std::complex<double> im(0.0, 1.0);
-    std::complex<double> exp_phase = std::complex<double>(0.0, 0.0);
+    std::complex<double> exp_phase, exp_phase_tmp;
 
-    int itran, icell;  
-    std::complex<double> exp_phase_tmp = std::complex<double>(0.0, 0.0);
-
-    std::cout << "xk = ";
-    for (i = 0; i < 3; ++i) { 
-        std::cout << std::setw(15) << xk_in[i];
-    }
-    std::cout << std::endl;
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -472,11 +467,9 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, std::vect
     rotvec(kepsilon, kvec_na_in, dielec);
     denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
 
-    int atm_s2, cell;
-
     if (denom > eps) {
 
-        for (iat = 0; iat < system->natmin; ++iat) {
+        for (iat = 0; iat < natmin; ++iat) {
             atm_p1 = system->map_p2s[iat][0];
 
             for (i = 0; i <3; ++i) {
@@ -487,7 +480,7 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, std::vect
 
             rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
-            for (jat = 0; jat < system->natmin; ++jat) {
+            for (jat = 0; jat < natmin; ++jat) {
                 atm_p2 = system->map_p2s[jat][0];
 
 
@@ -506,12 +499,14 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, std::vect
                     exp_phase_tmp = std::complex<double>(0.0, 0.0);
                     atm_s2 = system->map_p2s[jat][i];
 
+                    // Average over mirror atoms
+
                     for (j = 0; j < mindist_list[iat][atm_s2].size(); ++j) {
                         cell = mindist_list[iat][atm_s2][j];
 
                         for (k = 0; k < 3; ++k) {
                             vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
-                                   - system->xr_s[system->map_p2s[iat][0]][k];
+                                   - system->xr_s[atm_p2][k];
                         }
 
                         rotvec(vec, vec, system->lavec_s);
@@ -537,16 +532,12 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, std::vect
             }
         }
     }
-
-//     rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
-//     norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
-
-  //     factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
-
-       factor = 8.0 * pi / system->volume_p;
-     for (i = 0; i < neval; ++i) {
-         for (j = 0; j < neval; ++j) {
-             dymat_na_out[i][j] *= factor;
+    
+    factor = 8.0 * pi / system->volume_p;
+    
+    for (i = 0; i < neval; ++i) {
+        for (j = 0; j < neval; ++j) {
+            dymat_na_out[i][j] *= factor;
          }
      }
 }
