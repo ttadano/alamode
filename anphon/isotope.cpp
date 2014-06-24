@@ -98,14 +98,18 @@ void Isotope::calc_isotope_selfenergy(int knum, int snum, double omega, double &
 
             omega1 = dynamical->eval_phonon[ik][is];
 
-            ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
-            //		ret += relaxation->delta_lorentz(omega - omega1) * prod;
+            if (integration->ismear == 0) {
+                ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
+//            ret += delta_lorentz(omega - omega1, epsilon) * prod;
+            } else {
+                ret += omega1 * delta_gauss(omega - omega1, epsilon) * prod;
+            }
         }
     }
 
 
     ret *= pi * omega * 0.25 / static_cast<double>(nk);
-    //	ret *= pi * omega * omega * 0.25 / static_cast<double>(nk);
+    // ret *= pi * omega * omega * 0.25 / static_cast<double>(nk);
 }
 
 
@@ -149,7 +153,7 @@ void Isotope::calc_isotope_selfenergy_tetra(int knum, int snum, double omega, do
             }
 
             //			weight[is][ik] = prod;
-            weight[is][ik] = prod * dynamical->eval_phonon[ik][is];
+                   weight[is][ik] = prod * eval[is][ik];
         }
     }
 
@@ -214,28 +218,34 @@ void Isotope::calc_isotope_selfenergy_all()
             std::cout << "done!" << std::endl;
         }
 
-        // 		double tmp2;
-        // 
-        // 		for (i = 0; i < kpoint->nk_reduced; ++i) {
-        // 
-        // 			for (int k = 0; k < ns; ++k) {
-        // 				for (j = 0; j < kpoint->nk_equiv[i]; ++j) {
-        // 					knum = kpoint->k_reduced[i][j];
-        // 
-        // 					omega = dynamical->eval_phonon[knum][k];
-        // 					calc_isotope_selfenergy(knum, k, omega, tmp);
-        // 					calc_isotope_selfenergy_tetra(knum, k, omega, tmp2);
-        // 
-        // 					std::cout << " i = " << std::setw(5) << i;
-        // 					std::cout << " k = " << std::setw(5) << k;
-        // 					std::cout << " j = " << std::setw(5) << j;
-        // 					std::cout << " omega = " << std::setw(15) << omega;
-        // 					std::cout << " ret1 = " << std::setw(15) << tmp;
-        // 					std::cout << " ret2 = " << std::setw(15) << tmp2 << std::endl;
-        // 				}
-        // 			}
-        // 		}
-        // 		error->exit("hoge", "hoge");
+/*
+        double tmp2;
+
+        for (i = 0; i < kpoint->nk_reduced; ++i) {
+            for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
+                knum = kpoint->kpoint_irred_all[i][0].knum;
+                
+                for (int k = 0; k < ns; ++k) {
+
+                    omega = dynamical->eval_phonon[knum][k];
+
+                    calc_isotope_selfenergy(knum, snum, omega, tmp);
+                    calc_isotope_selfenergy_tetra(knum, snum, omega, tmp2);
+         
+                    std::cout << " ik = " << std::setw(5) << i + 1;
+                    std::cout << " j = " << std::setw(5) << j + 1;
+                    std::cout << " snum = " << std::setw(5) << k + 1;
+                    std::cout << " omega = " << std::setw(15) << omega;
+                    std::cout << " ret1 = " << std::setw(15) << tmp;
+                    std::cout << " ret2 = " << std::setw(15) << tmp2 << std::endl;
+                }
+            }
+        }
+
+        error->exit("hoge", "hoge");
+
+*/
+
     }
 }
 
