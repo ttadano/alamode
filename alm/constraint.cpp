@@ -195,7 +195,6 @@ void Constraint::setup()
             memory->deallocate(arr_tmp);
             const_translation[order].clear();
             const_rotation_self[order].clear();
-            const_symmetry[order].clear();
         }
 
         if (extra_constraint_from_symmetry) {
@@ -238,8 +237,6 @@ void Constraint::setup()
         std::cout << " --------------------------------------------------------------" << std::endl;
         std::cout << std::endl;
     }
-
-   // memory->deallocate(const_symmetry);
 }
 
 void Constraint::calc_constraint_matrix(const int N, int &P){

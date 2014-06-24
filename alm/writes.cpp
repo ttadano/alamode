@@ -184,7 +184,7 @@ void Writes::write_force_constants()
 
     if (constraint->extra_constraint_from_symmetry) {
 
-        ofs_fcs << " -------------- Constraints from crystal symmetry --------------" << std::endl;
+        ofs_fcs << " -------------- Constraints from crystal symmetry --------------" << std::endl << std::endl;;
         for (order = 0; order < maxorder; ++order) {
             int nparam = fcs->ndup[order].size();
 
@@ -192,13 +192,13 @@ void Writes::write_force_constants()
             for (std::set<ConstraintClass>::iterator p  = constraint->const_symmetry[order].begin(); 
                                                      p != constraint->const_symmetry[order].end(); 
                                                      ++p) {
-                ofs_fcs << "  0 = ";
+                ofs_fcs << "   0 = " << std::scientific << std::setprecision(6);
                 ConstraintClass const_pointer = *p;
                 for (j = 0; j < nparam; ++j){
                     if (std::abs(const_pointer.w_const[j]) > eps8) {
-                        str_tmp = "(FC" + boost::lexical_cast<std::string>(order + 2) 
+                        str_tmp = " * (FC" + boost::lexical_cast<std::string>(order + 2) 
                             + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
-                        ofs_fcs << std::setw(15) << std::showpos << const_pointer.w_const[j];
+                        ofs_fcs << std::setw(10) << std::right << std::showpos << const_pointer.w_const[j];
                         ofs_fcs << std::setw(12) << std::left << str_tmp;
                     }
                 }
