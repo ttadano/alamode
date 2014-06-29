@@ -28,6 +28,8 @@ parser.add_option("--emin", action="store", type="float", dest="emin",
 	help="minimum value of the energy axis")
 parser.add_option("--emax", action="store", type="float", dest="emax",
 	help="maximum value of the energy axis")
+parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", default=False,
+	help="normalize the x axis to unity.")
 
 
 #font styles
@@ -93,6 +95,26 @@ def change_scale(array, str_scale):
 		print "Band structure will be shown in units of cm^{-1}"
 		return array
 
+def normalize_to_unity(array, array_axis):
+
+	for i in range(len(array)):
+		max_val = array[i][-1][0]
+
+		factor_normalize = 1.0 / max_val
+
+		for j in range(len(array[i])):
+			array[i][j][0] *= factor_normalize
+
+
+	max_val = array_axis[-1]
+	factor_normalize = 1.0 / max_val
+
+	for i in range(len(array_axis)):
+		array_axis[i] *= factor_normalize
+
+
+	return array, array_axis
+
 
 def get_xy_minmax(array):
 	
@@ -141,6 +163,9 @@ if __name__ == '__main__':
 		data_merged.append(data_tmp)
 
 	data_merged = change_scale(data_merged, options.unitname)
+
+	if options.normalize_xaxis:
+		data_merged, xticksvars = normalize_to_unity(data_merged, xticksvars)
 
 	xmin, xmax, ymin, ymax = get_xy_minmax(data_merged)
 
