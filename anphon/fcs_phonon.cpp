@@ -126,12 +126,17 @@ void Fcs_phonon::load_fc2_xml()
     using namespace boost::property_tree;
 
     unsigned int atm1, atm2, xyz1, xyz2, cell_s;
-
     ptree pt;
     std::stringstream ss1, ss2;
     FcsClassExtent fcext_tmp;
 
-    read_xml(file_fcs, pt);
+    try {
+        read_xml(file_fcs, pt);
+    } 
+    catch (std::exception &e) {
+    	std::string str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
+        error->exit("load_fc2_xml", str_error.c_str());
+    }
 
     fc2_ext.clear();
 
@@ -185,10 +190,15 @@ void Fcs_phonon::load_fcs_xml()
     std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
 
 
-    std::cout << "  Reading force constants from the info file ... ";
-
-    read_xml(file_fcs, pt);
-
+    std::cout << "  Reading force constants from the XML file ... ";
+     
+    try {
+        read_xml(file_fcs, pt);
+    } 
+    catch (std::exception &e) {
+    	std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
+        error->exit("load_fcs_xml", str_error.c_str());
+    }
 
     for (order = 0; order < maxorder; ++order){
 

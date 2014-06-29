@@ -168,7 +168,13 @@ void System::load_system_info_from_XML()
 
         std::map<std::string, int> dict_atomic_kind;
 
-        read_xml(fcs_phonon->file_fcs, pt);
+        try {
+            read_xml(fcs_phonon->file_fcs, pt);
+        } 
+        catch (std::exception &e) {
+            std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
+            error->exit("load_system_info_from_XML", str_error.c_str());
+        }
 
         // Parse nat and ntran
 

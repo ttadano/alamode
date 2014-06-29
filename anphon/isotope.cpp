@@ -65,8 +65,12 @@ void Isotope::setup_isotope_scattering()
     }
 }
 
-void Isotope::calc_isotope_selfenergy(int knum, int snum, double omega, double &ret)
+void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const double omega, double &ret)
 {
+    // Compute phonon selfenergy of phonon (knum, snum) 
+    // due to phonon-isotope scatterings.
+    // Delta functions are replaced by smearing functions with width EPSILON.
+
     int iat, icrd;
     int ik, is;
     double prod;
@@ -89,12 +93,11 @@ void Isotope::calc_isotope_selfenergy(int knum, int snum, double omega, double &
 
                 dprod = std::complex<double>(0.0, 0.0);
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
+                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
-
                 prod += isotope_factor[iat] * std::norm(dprod);
             }
-
 
             omega1 = dynamical->eval_phonon[ik][is];
 
@@ -107,14 +110,17 @@ void Isotope::calc_isotope_selfenergy(int knum, int snum, double omega, double &
         }
     }
 
-
     ret *= pi * omega * 0.25 / static_cast<double>(nk);
     // ret *= pi * omega * omega * 0.25 / static_cast<double>(nk);
 }
 
 
-void Isotope::calc_isotope_selfenergy_tetra(int knum, int snum, double omega, double &ret)
+void Isotope::calc_isotope_selfenergy_tetra(const int knum, const int snum, const double omega, double &ret)
 {
+    // Compute phonon selfenergy of phonon (knum, snum) 
+    // due to phonon-isotope scatterings.
+    // This version employs the tetrahedron method.
+
     int iat, icrd;
     int ik, is;
     double prod;
@@ -146,12 +152,11 @@ void Isotope::calc_isotope_selfenergy_tetra(int knum, int snum, double omega, do
 
                 dprod = std::complex<double>(0.0, 0.0);
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
+                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
-
                 prod += isotope_factor[iat] * std::norm(dprod);
             }
-
             //			weight[is][ik] = prod;
                    weight[is][ik] = prod * eval[is][ik];
         }
@@ -168,17 +173,13 @@ void Isotope::calc_isotope_selfenergy_tetra(int knum, int snum, double omega, do
 
 void Isotope::calc_isotope_selfenergy_all()
 {
-
+    int i, j;
     int nk = kpoint->nk;
     int ns = dynamical->neval;
-    int i, j;
-
     int nks = kpoint->nk_reduced * ns;
-
-    double *gamma_tmp, *gamma_loc;
-    double tmp, omega;
-
     int knum, snum;
+    double tmp, omega;
+    double *gamma_tmp, *gamma_loc;
 
     if (include_isotope) {
 
@@ -245,7 +246,6 @@ void Isotope::calc_isotope_selfenergy_all()
         error->exit("hoge", "hoge");
 
 */
-
     }
 }
 

@@ -48,8 +48,8 @@ namespace PHON_NS {
         void get_var_dict(std::string, std::map<std::string, std::string> &);
         void split_str_by_space(const std::string, std::vector<std::string>&);
 
-        bool is_endof_entry(std::string);
-        template<typename T> void assign_val(T&, std::string, std::map<std::string, std::string>);
+        bool is_endof_entry(const std::string);
+        template<typename T> void assign_val(T&, const std::string, std::map<std::string, std::string>);
 
         std::vector<std::string> my_split(const std::string &str, char delim)
         {

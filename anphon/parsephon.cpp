@@ -86,6 +86,8 @@ void Input::parce_input(int narg, char **arg)
 
 void Input::parse_general_vars()
 {
+    // Read input parameters in the &general-field.
+  
     int i;
     int nsym, nbands, ismear, nkd;
     unsigned int nonanalytic;
@@ -125,7 +127,8 @@ void Input::parse_general_vars()
 
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
         if (general_var_dict.find(*it) == general_var_dict.end()) {
-            error->exit("parse_general_vars", "The following variable is not found in &general input region: ", (*it).c_str());
+            error->exit("parse_general_vars", 
+             "The following variable is not found in &general input region: ", (*it).c_str());
         }
     }
 
@@ -184,7 +187,8 @@ void Input::parse_general_vars()
     sym_time_reversal = false;
     use_triplet_symmetry = true;
 
-    // if file_result exists in the current directory, restart mode will be automatically turned on.
+    // if file_result exists in the current directory, 
+    // restart mode will be automatically turned on.
 
     if (stat(file_result.c_str(), &st) == 0) {
         restart = true;
@@ -227,9 +231,11 @@ void Input::parse_general_vars()
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
-    if (nonanalytic < 0 || nonanalytic > 2) {
+    if (nonanalytic > 2) {
         error->exit("parse_general_vars", "NONANALYTIC should be 0, 1, or 2.");
     }
+    
+    // Copy the values to appropriate classes.
 
     job_title = prefix;
     writes->file_result = file_result;
@@ -272,6 +278,7 @@ void Input::parse_general_vars()
 
 void Input::parse_analysis_vars(const bool use_default_values)
 {
+    // Read input parameters in the &analysis field.
     int i;
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
@@ -292,6 +299,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     std::string ks_input;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v;
+   
+    // Default values
 
     print_xsf = false;
     print_vel = false;
@@ -313,6 +322,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     include_isotope = false;
     fstate_omega = false;
     fstate_k = false;
+    
+    // Assign values to variables
 
     if (!use_default_values) {
         get_var_dict(str_allowed_list, analysis_var_dict);
@@ -351,6 +362,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         }
     }
 
+    // Copy the values to appropriate classes
+
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     writes->writeanime = print_xsf;
@@ -385,6 +398,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
 void Input::parse_cell_parameter()
 {
+    // Read the cell parameter
 
     int i, j;
     double a;
@@ -411,8 +425,10 @@ void Input::parse_cell_parameter()
     }
 }
 
-void Input::parse_kpoints() {
-
+void Input::parse_kpoints() 
+{
+    // Read the settings in the &kpoint field.
+    
     int kpmode;
     std::string line, str_tmp;
     std::vector<std::string> kpelem;
@@ -744,7 +760,7 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 }
 
 
-bool Input::is_endof_entry(std::string str)
+bool Input::is_endof_entry(const std::string str)
 {
 
     if (str[0] == '/') {
@@ -773,7 +789,7 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
     str_tmp.clear();
 }
 
-template<typename T> void Input::assign_val(T &val, std::string key, std::map<std::string, std::string> dict)
+template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
 {
 
     if (!dict[key].empty()) {
