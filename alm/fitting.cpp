@@ -622,7 +622,7 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     memory->allocate(const_tmp, P);
 
     std::cout << "  NSKIP > 0: Fitting will be performed consecutively" << std::endl;
-    std::cout << "             with variously changing NEMD as NEND = NSTART + i*NSKIP" << std::endl;
+    std::cout << "             with variously changing NEND as NEND = NSTART + i*NSKIP" << std::endl;
     std::cout << std::endl;
     std::cout << "  Relative errors and FCs will be stored in the file " << file_fcs_sequence << std::endl;
 
