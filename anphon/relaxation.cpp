@@ -1342,8 +1342,7 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT, dou
 
 void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, double *T_arr, double epsilon)
 {
-
-    int i, j, k, l;
+    int i, j, k, l, m;
     int iT;
     int is, js;
     int nklist;
@@ -1353,7 +1352,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
     double f1, f2, n1, n2;
     double norm, T_tmp;
     double V3norm;
-    double **eval;
+    double **eval, **eval2;
     double **gamma_k, **gamma_k_mpi;
     double delta_tmp[2];
 
@@ -1366,7 +1365,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
         std::cout << std::endl;
         if (integration->ismear == -1) {
             std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
-            std::cout << " Sorry. ISMEAR = -1 is not used with FSTATE_K = 1.";
+            std::cout << " Sorry. Currently, ISMEAR = -1 cannot be used with FSTATE_K = 1.";
             error->exit("calc_momentum_resolved_final_state", "exit.");
         } else if (integration->ismear == 0) {
             std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = " 
@@ -1380,15 +1379,528 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
 
         std::cout << std::endl;
         std::cout << " FSTATE_K = 1 : Calculate the momentum-resolved final state amplitude" << std::endl;
-        std::cout << "                due to 3-phonon interactions for given " << kslist_fstate_k.size() 
-            << " entries." << std::endl;
+        std::cout << "                due to 3-phonon interactions for given " 
+                  << kslist_fstate_k.size() << " entries." << std::endl;
         std::cout << std::endl;
     }
+    
+    double **xk_plane, **xk_plane2;
+    double **kvec_plane;
+    int nk1_plane, nk2_plane, nk_plane;
+    double xk_vec1[3], xk_vec2[3];
+    double div1, div2;
+    double *eval_tmp;
+    double omega_sum[3];
+    double frac;
+    int knum_triangle[3];
+    std::vector<std::vector<double> > ***kplist_conserved; 
+    std::vector<KpointListWithCoordinate> ***kplist_for_target_mode;
+    std::vector<double> xk_vec;
+    double xk_norm[3], xk_tmp[3];
+    double norm1, norm2, dprod, norm_ref;
+    double theta, theta_ref;
+
+    memory->allocate(kplist_conserved, ns, ns, 2);
+    memory->allocate(kplist_for_target_mode, ns, ns, kslist_fstate_k.size());
+
+    theta_ref = 0.0;
+        
+    // Loop over k point planes
+
+    for (i = 0; i < kpoint->kp_plane_geometry.size(); ++i) {
+
+        nk1_plane = kpoint->kp_plane_geometry[i].npoints[0];
+        nk2_plane = kpoint->kp_plane_geometry[i].npoints[1];
+
+        div1 = 1.0 / static_cast<double>(nk1_plane - 1);
+        div2 = 1.0 / static_cast<double>(nk2_plane - 1);
+
+        nk_plane = nk1_plane * nk2_plane;
+
+        for (j = 0; j < 3; ++j) {
+            xk_vec1[j] = kpoint->kp_plane_geometry[i].xk_edges[0][j] 
+                       - kpoint->kp_plane_geometry[i].xk_origin[j];
+            xk_vec2[j] = kpoint->kp_plane_geometry[i].xk_edges[1][j] 
+                       - kpoint->kp_plane_geometry[i].xk_origin[j];
+        }
+
+
+        for (j = 0; j < 3; ++j) {
+            xk_norm[j] = xk_vec1[j];
+        }
+
+        rotvec(xk_norm, xk_norm, system->rlavec_p, 'T');
+        norm_ref = std::sqrt(xk_norm[0] * xk_norm[0] + xk_norm[1] * xk_norm[1] + xk_norm[2] * xk_norm[2]);
+
+        memory->allocate(xk_plane, nk_plane, 3);
+        memory->allocate(xk_plane2, nk_plane, 3);
+        memory->allocate(kvec_plane, nk_plane, 3);
+        memory->allocate(eval, nk_plane, ns);
+        memory->allocate(eval2, nk_plane, ns);
+        memory->allocate(eval_tmp, ns);
+        memory->allocate(evec, 1, 1, 1);
+
+        // Constructing xk's for the plane
+        m = 0;
+        for (j = 0; j < nk1_plane; ++j) {
+            for (k = 0; k < nk2_plane; ++k) {
+                for (l = 0; l < 3; ++l) {
+                    xk_plane[m][l] = kpoint->kp_plane_geometry[i].xk_origin[l] 
+                        + xk_vec1[l] * static_cast<double>(j) * div1 
+                        + xk_vec2[l] * static_cast<double>(k) * div2;
+                }
+                ++m;
+            }
+        }
+        
+        // Get frequencies of each k point
+
+        for (j = 0; j < nk_plane; ++j) {
+
+            for (k = 0; k < 3; ++k) kvec_plane[j][k] = dynamical->fold(xk_plane[j][k]);
+            rotvec(kvec_plane[j], kvec_plane[j], system->rlavec_p, 'T');
+            norm = std::sqrt(kvec_plane[j][0] * kvec_plane[j][0] 
+                             + kvec_plane[j][1] * kvec_plane[j][1] 
+                             + kvec_plane[j][2] * kvec_plane[j][2]);
+
+            if (norm > eps) {
+                for (k = 0; k < 3; ++k) kvec_plane[j][k] /= norm;
+            }
+        }
+
+        for (j = 0; j < nk_plane; ++j) {
+            dynamical->eval_k(xk_plane[j], kvec_plane[j], fcs_phonon->fc2_ext, eval[j], evec[0], false);            
+            for (k = 0; k < ns; ++k) {
+                eval[j][k] = dynamical->freq(eval[j][k]);
+            }
+        }
+
+        // Loop over k points to analyze the final state amplitude
+
+        for (j = 0; j < kslist_fstate_k.size(); ++j) {
+
+            for (k = 0; k < 3; ++k) xk1[k] = -kslist_fstate_k[j].xk[k];
+            mode = kslist_fstate_k[j].nmode;
+
+            for (k = 0; k < 3; ++k) kvec[k] = dynamical->fold(xk1[k]);
+            rotvec(kvec, kvec, system->rlavec_p, 'T');
+            norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+            if (norm > eps) {
+                for (k = 0; k < 3; ++k) kvec[k] /= norm;
+            }
+
+            for (k = 0; k < 3; ++k) xk1[k] = dynamical->fold(xk1[k]);
+
+            dynamical->eval_k(xk1, kvec, fcs_phonon->fc2_ext, eval_tmp, evec[0], false);
+            for (k = 0; k < ns; ++k) eval_tmp[k] = dynamical->freq(eval_tmp[k]);
+
+            // Calculate xk's for the third index that satisfy the momentum conservation
+
+            for (k = 0; k < nk_plane; ++k) {
+                for (l = 0; l < 3; ++l) {
+                    xk_plane2[k][l] = dynamical->fold(-xk1[l]-xk_plane[k][l]);
+                }
+            }
+
+            // Get frequencis of each k point
+
+            for (k = 0; k < nk_plane; ++k) {
+                for (l = 0; l < 3; ++l) kvec_plane[k][l] = xk_plane2[k][l];
+                rotvec(kvec_plane[k], kvec_plane[k], system->rlavec_p, 'T');
+                norm = std::sqrt(kvec_plane[k][0] * kvec_plane[k][0] 
+                                 + kvec_plane[k][1] * kvec_plane[k][1] 
+                                 + kvec_plane[k][2] * kvec_plane[k][2]);
+
+                if (norm > eps) {
+                    for (l = 0; l < 3; ++l) kvec_plane[k][l] /= norm;
+                }
+            }
+
+            for (k = 0; k < nk_plane; ++k) {
+                dynamical->eval_k(xk_plane2[k], kvec_plane[k], fcs_phonon->fc2_ext, eval2[k], evec[0], false);            
+                for (l = 0; l < ns; ++l) {
+                    eval2[k][l] = dynamical->freq(eval2[k][l]);
+                }
+            }
+
+            // Find a list of k points which satisfy the energy conservation
+
+            for (std::vector<KpointPlaneTriangle>::const_iterator it = kpoint->kp_planes_tri[i].begin();
+                 it != kpoint->kp_planes_tri[i].end(); ++it) 
+            {
+
+                // K point indexes for each triangle
+                for (k = 0; k < 3; ++k) knum_triangle[k] = (*it).knum[k];
+                
+                for (is = 0; is < ns; ++is) {
+                    for (js = 0; js < ns; ++js) {
+
+                        // The case of delta(w1 - w2 - w3) 
+
+                        for (k = 0; k < 3; ++k) {
+                            omega_sum[k] = eval_tmp[mode] - eval[knum_triangle[k]][is] - eval2[knum_triangle[k]][js];
+                        }
+                        if ((omega_sum[0] > 0.0 && omega_sum[1] > 0.0 && omega_sum[2] > 0.0) ||
+                            (omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0)) continue;
+                        
+                        if (omega_sum[0] * omega_sum[1] < 0.0) {
+                            xk_vec.clear();
+
+                            frac = - omega_sum[0] / (omega_sum[1] - omega_sum[0]);
+                            
+                            for (k = 0; k < 3; ++k) {
+                                xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k] + frac * xk_plane[knum_triangle[1]][k]);
+                            }
+                            kplist_conserved[is][js][0].push_back(xk_vec);
+                        }
+
+                        if (omega_sum[0] * omega_sum[2] < 0.0) {
+                            xk_vec.clear();
+
+                            frac = - omega_sum[0] / (omega_sum[2] - omega_sum[0]);
+
+                            for (k = 0; k < 3; ++k) {
+                                xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k] + frac * xk_plane[knum_triangle[2]][k]);
+                            }
+                            kplist_conserved[is][js][0].push_back(xk_vec);
+                        }
+
+                        if (omega_sum[1] * omega_sum[2] < 0.0) {
+                            xk_vec.clear();
+
+                            frac = - omega_sum[1] / (omega_sum[2] - omega_sum[1]);
+                            
+                            for (k = 0; k < 3; ++k) {
+                                xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[1]][k] + frac * xk_plane[knum_triangle[2]][k]);
+                            }
+                            kplist_conserved[is][js][0].push_back(xk_vec);
+                        }
+
+                        // The case of delta(w1 - w2 + w3)
+
+                        for (k = 0; k < 3; ++k) {
+                            omega_sum[k] = eval_tmp[mode] - eval[knum_triangle[k]][is] + eval2[knum_triangle[k]][js];
+                        }
+                        if ((omega_sum[0] > 0.0 && omega_sum[1] > 0.0 && omega_sum[2] > 0.0) ||
+                            (omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0)) continue;
+                        
+                        if (omega_sum[0] * omega_sum[1] < 0.0) {
+                            xk_vec.clear();
+
+                            frac = - omega_sum[0] / (omega_sum[1] - omega_sum[0]);
+                            
+                            for (k = 0; k < 3; ++k) {
+                                xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k] + frac * xk_plane[knum_triangle[1]][k]);
+                            }
+                            kplist_conserved[is][js][1].push_back(xk_vec);
+                        }
+
+                        if (omega_sum[0] * omega_sum[2] < 0.0) {
+                            xk_vec.clear();
+
+                            frac = - omega_sum[0] / (omega_sum[2] - omega_sum[0]);
+
+                            for (k = 0; k < 3; ++k) {
+                                xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k] + frac * xk_plane[knum_triangle[2]][k]);
+                            }
+                            kplist_conserved[is][js][1].push_back(xk_vec);
+                        }
+
+                        if (omega_sum[1] * omega_sum[2] < 0.0) {
+                            xk_vec.clear();
+
+                            frac = - omega_sum[1] / (omega_sum[2] - omega_sum[1]);
+                            
+                            for (k = 0; k < 3; ++k) {
+                                xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[1]][k] + frac * xk_plane[knum_triangle[2]][k]);
+                            }
+                            kplist_conserved[is][js][1].push_back(xk_vec);
+                        }
+                    }
+                }
+            }
+
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+
+                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][0].begin();
+                         it2 != kplist_conserved[is][js][0].end(); ++it2) {
+                        
+                        for (k = 0; k < 3; ++k) {
+                            xk_tmp[k] = (*it2)[k];
+                        }
+                        rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
+
+                        norm1 = 0.0;
+                        dprod = 0.0;
+                        for (k = 0; k < 3; ++k) {
+                            norm1 += xk_tmp[k] * xk_tmp[k];
+                            dprod += xk_tmp[k] * xk_norm[k];
+                        }
+                        theta = std::acos(dprod/(norm_ref*std::sqrt(norm1)));
+                        
+                        kplist_for_target_mode[is][js][j].push_back(KpointListWithCoordinate(*it2, std::cos(theta + theta_ref) * std::sqrt(norm1),
+                                                                                             std::sin(theta + theta_ref) * std::sqrt(norm1), i, 0));
+                    }
+
+                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][1].begin();
+                         it2 != kplist_conserved[is][js][1].end(); ++it2) {
+                        
+                        for (k = 0; k < 3; ++k) {
+                            xk_tmp[k] = (*it2)[k];
+                        }
+                        rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
+
+                        norm1 = 0.0;
+                        dprod = 0.0;
+                        for (k = 0; k < 3; ++k) {
+                            norm1 += xk_tmp[k] * xk_tmp[k];
+                            dprod += xk_tmp[k] * xk_norm[k];
+                        }
+                        theta = std::acos(dprod/(norm_ref*std::sqrt(norm1)));
+                        
+                        kplist_for_target_mode[is][js][j].push_back(KpointListWithCoordinate(*it2, std::cos(theta + theta_ref) * std::sqrt(norm1),
+                                                                                             std::sin(theta + theta_ref) * std::sqrt(norm1), i, 1));
+                    }
+
+                    kplist_conserved[is][js][0].clear();
+                    kplist_conserved[is][js][1].clear();
+                }
+            }
+        }
+
+        memory->deallocate(xk_plane);
+        memory->deallocate(xk_plane2);
+        memory->deallocate(kvec_plane);
+        memory->deallocate(eval);
+        memory->deallocate(eval2);
+        memory->deallocate(eval_tmp);
+        memory->deallocate(evec);
+
+        rotvec(xk_vec1, xk_vec1, system->rlavec_p, 'T');
+        rotvec(xk_vec2, xk_vec2, system->rlavec_p, 'T');
+
+        norm1 = 0.0;
+        norm2 = 0.0;
+        dprod = 0.0;
+        for (j = 0; j < 3; ++j) {
+            norm1 += xk_vec1[j] * xk_vec1[j];
+            norm2 += xk_vec2[j] * xk_vec2[j];
+            dprod += xk_vec1[j] * xk_vec2[j];
+        }
+        theta = std::acos(dprod / std::sqrt(norm1*norm2));
+
+        theta_ref += theta;
+    }
+
+    memory->deallocate(kplist_conserved);
+
+
+    std::vector<std::vector<double> > **final_state_xy;
+    std::vector<double> triplet_xyG;
+    std::vector<int> small_group_k;
+    double pos_x, pos_y;
+    int selection_type;
+
+    int isym;
+
+
+    double srot[3][3];
+    double xk_sym[3], xk_orig[3];
+    double srot_inv[3][3], srot_inv_t[3][3];
+    double ***symop_k;
+    double diff;
+
+    memory->allocate(symop_k, symmetry->nsym, 3, 3);
+    memory->allocate(final_state_xy, kslist_fstate_k.size(), NT);
 
     memory->allocate(eval, 3, ns);
     memory->allocate(evec, 3, ns, ns);
 
+    for (i = 0; i < kslist_fstate_k.size(); ++i) {
 
+        for (j = 0; j < 3; ++j) xk1[j] = -kslist_fstate_k[i].xk[j];
+        mode = kslist_fstate_k[i].nmode;
+
+        for (j = 0; j < 3; ++j) kvec[j] = dynamical->fold(xk1[j]);
+        rotvec(kvec, kvec, system->rlavec_p, 'T');
+        norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+        if (norm > eps) for (j = 0; j < 3; ++j) kvec[j] /= norm;
+        for (j = 0; j < 3; ++j) xk1[j] = dynamical->fold(xk1[j]);
+
+        dynamical->eval_k(xk1, kvec, fcs_phonon->fc2_ext, eval[0], evec[0], true);
+        for (j = 0; j < ns; ++j) eval[0][j] = dynamical->freq(eval[0][j]);
+
+        small_group_k.clear();
+
+        for (isym = 0; isym < symmetry->nsym; ++isym) {
+            for (j = 0; j < 3; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    srot[j][k] = static_cast<double>(symmetry->SymmList[isym].symop[3 * j + k]);
+                }
+            }
+
+            invmat3(srot_inv, srot);
+            transpose3(srot_inv_t, srot_inv);
+
+            for (j = 0; j < 3; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    symop_k[isym][j][k] = srot_inv_t[j][k];
+                }
+            }
+
+            rotvec(xk_sym, xk1, symop_k[isym]);
+
+            for (j = 0; j < 3; ++j) xk_sym[j] = xk_sym[j] - nint(xk_sym[j]);
+            
+            diff = 0.0;
+            for (j = 0; j < 3; ++j) diff += std::pow(xk_sym[j] - xk1[j], 2);
+            
+            if (std::sqrt(diff) < eps8) {
+                small_group_k.push_back(isym);
+            }
+            
+        }
+
+        if (mympi->my_rank == 0) {
+            std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
+            std::cout << "  Phonon at k = (";
+            for (j = 0; j < 3; ++j) {
+                std::cout << std::setw(10) << std::fixed << kslist_fstate_k[i].xk[j];
+                if (j < 2) std::cout << ",";
+            }
+            std::cout << ")" << std::endl;
+            std::cout << "  Mode index = " << std::setw(5) << mode + 1 << std::endl;
+            std::cout << "  Frequency (cm^-1) : " << std::setw(15) << writes->in_kayser(eval[0][mode]) << std::endl;
+
+            int count_kp = 0;
+
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    count_kp += kplist_for_target_mode[is][js][i].size();
+                }
+            }
+            std::cout << "  Number of k points satisfying the selection rule : "  << count_kp << std::endl;
+            std::cout << "  Number of symmetry operations at k point : "  << small_group_k.size() << std::endl << std::endl;
+        }
+
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+
+                nklist = kplist_for_target_mode[is][js][i].size();
+
+                if (nklist == 0) continue;
+
+                memory->allocate(gamma_k, nklist, NT);
+
+                for (k = 0; k < nklist; ++k) {
+                    for (l = 0; l < NT; ++l) {
+                        gamma_k[k][l] = 0.0;
+                    }
+                }
+
+                for (k = 0; k < nklist; ++k) {
+
+                    for (l = 0; l < 3; ++l) xk2[l] = dynamical->fold(kplist_for_target_mode[is][js][i][k].xk[l]);
+
+                    for (isym = 0; isym < small_group_k.size(); ++isym) {
+
+                        rotvec(xk_sym, xk2, symop_k[small_group_k[isym]]);
+
+                        for (l = 0; l < 3; ++l) xk3[l] = dynamical->fold(-xk1[l]-xk_sym[l]);
+
+                        for (l = 0; l < 3; ++l) kvec[l] = xk_sym[l];
+                        rotvec(kvec, kvec, system->rlavec_p, 'T');
+                        norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+                        if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
+
+                        dynamical->eval_k(xk_sym, kvec, fcs_phonon->fc2_ext, eval[1], evec[1], true);
+
+                        for (l = 0; l < 3; ++l) kvec[l] = xk3[l];
+                        rotvec(kvec, kvec, system->rlavec_p, 'T');
+                        norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+
+                        if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
+                    
+                        dynamical->eval_k(xk3, kvec, fcs_phonon->fc2_ext, eval[2], evec[2], true);
+
+                        for (l = 0; l < ns; ++l) {
+                            eval[1][l] = dynamical->freq(eval[1][l]);
+                            eval[2][l] = dynamical->freq(eval[2][l]);
+                        }
+
+                        V3norm = std::norm(V3_mode(mode, xk_sym, xk3, is, js, eval, evec));
+                    
+                        for (iT = 0; iT < NT; ++iT) {
+                            T_tmp = T_arr[iT];
+
+                            f1 = phonon_thermodynamics->fB(eval[1][is], T_tmp);
+                            f2 = phonon_thermodynamics->fB(eval[2][js], T_tmp);
+                            n1 = f1 + f2 + 1.0;
+                            n2 = f1 - f2;
+                        
+                            if (selection_type == 0) {
+                                gamma_k[k][iT] += V3norm * n1;  
+                            } else if (selection_type == 1) {
+                                gamma_k[k][iT] += V3norm * n2;
+                            }
+                        }
+                    }
+
+                    for (iT = 0; iT < NT; ++iT) gamma_k[k][iT] *= pi * std::pow(0.5, 4) / static_cast<double>(small_group_k.size());
+
+                    pos_x = kplist_for_target_mode[is][js][i][k].x;
+                    pos_y = kplist_for_target_mode[is][js][i][k].y;
+                    selection_type = kplist_for_target_mode[is][js][i][k].selection_type;
+
+                    for (iT = 0; iT < NT; ++iT) {
+                        triplet_xyG.clear();
+                        triplet_xyG.push_back(pos_x);
+                        triplet_xyG.push_back(pos_y);
+                        triplet_xyG.push_back(gamma_k[k][iT]);
+                        final_state_xy[i][iT].push_back(triplet_xyG);
+                    }
+
+                }
+                memory->deallocate(gamma_k);
+            }
+        }
+
+        if (mympi->my_rank == 0) {
+
+            file_mode_tau = input->job_title + ".fk." + boost::lexical_cast<std::string>(i + 1);
+            ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
+            if (!ofs_mode_tau) error->exit("compute_mode_tau", "Cannot open file file_mode_tau");
+
+            ofs_mode_tau << "## Momentum-resolved final state amplitude" << std::endl;
+            
+            ofs_mode_tau << "# " << "Gamma at ";
+            for (l = 0; l < 3; ++l) ofs_mode_tau << std::setw(10) << -xk1[l];
+            ofs_mode_tau << " , mode = " << mode + 1 << std::endl;
+            ofs_mode_tau << " # Temperature [K], coordinate in FBZ, final state amplitude" << std::endl;
+            for (iT = 0; iT < NT; ++iT) {
+                for (k = 0; k < final_state_xy[i][iT].size(); ++k) {
+                    ofs_mode_tau << std::setw(10) << T_arr[iT];
+                    ofs_mode_tau << std::setw(15) << final_state_xy[i][iT][k][0];
+                    ofs_mode_tau << std::setw(15) << final_state_xy[i][iT][k][1];
+                    ofs_mode_tau << std::setw(15) << final_state_xy[i][iT][k][2] << std::endl;
+                }
+            }
+            
+            ofs_mode_tau.close();
+            std::cout << "  The result is saved in " << file_mode_tau << std::endl;
+            std::cout << std::endl;
+        }
+    }
+    
+    memory->deallocate(kplist_for_target_mode);
+    memory->deallocate(final_state_xy);
+    memory->deallocate(symop_k);
+
+/*
     for (i = 0; i < kslist_fstate_k.size(); ++i) {
 
         for (j = 0; j < 3; ++j) xk1[j] = -kslist_fstate_k[i].xk[j];
@@ -1457,7 +1969,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
 
                 for (is = 0; is < ns; ++is) {
                     for (js = 0; js < ns; ++js) {
-                        V3norm = std::norm(V3_mode(mode, xk2, xk3, is, js, eval, evec));
+                        // V3norm = std::norm(V3_mode(mode, xk2, xk3, is, js, eval, evec));
+                        V3norm = 1.0;
 
                         if (integration->ismear == 0) {
                             delta_tmp[0] = delta_lorentz(eval[0][mode] - eval[1][is] - eval[2][js], epsilon)
@@ -1471,7 +1984,6 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
                                 - delta_gauss(eval[0][mode] - eval[1][is] + eval[2][js], epsilon);
                         }
 
-
                         for (iT = 0; iT < NT; ++iT) {
                             T_tmp = T_arr[iT];
 
@@ -1484,7 +1996,6 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
                         }
                     }
                 }
-
                 for (iT = 0; iT < NT; ++iT) gamma_k_mpi[k][iT] *= pi * std::pow(0.5, 4);
             }
 
@@ -1500,7 +2011,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
 
                 ofs_mode_tau << "# " << "Gamma at ";
                 for (l = 0; l < 3; ++l) ofs_mode_tau << std::setw(10) << -xk1[l];
-                ofs_mode_tau << " , mode = " << mode << std::endl;
+                ofs_mode_tau << " , mode = " << mode + 1 << std::endl;
 
                 for (iT = 0; iT < NT; ++iT) {
                     ofs_mode_tau << "# T = " << std::setw(10) << T_arr[iT] << std::endl;
@@ -1521,6 +2032,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
             memory->deallocate(gamma_k_mpi);
         }
     }
+*/
     memory->deallocate(eval);
     memory->deallocate(evec);
 }

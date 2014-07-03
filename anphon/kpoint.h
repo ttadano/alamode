@@ -56,6 +56,26 @@ namespace PHON_NS {
         }
     };
 
+    class KpointPlaneGeometry {
+    public:
+        double xk_origin[3];
+        double xk_edges[2][3];
+        int npoints[2];
+
+        KpointPlaneGeometry(){};
+
+        KpointPlaneGeometry(double *xk_origin_in, double *xk_edge1_in, double *xk_edge2_in, int *num) {
+            for (int i = 0; i < 3; ++i) {
+                xk_origin[i] = xk_origin_in[i];
+                xk_edges[0][i] = xk_edge1_in[i];
+                xk_edges[1][i] = xk_edge2_in[i];
+            }
+            for (int i = 0; i < 2; ++i) {
+                npoints[i] = num[i];
+            }
+        }
+    };
+
     class KpointPlane {
     public:
         double k[3];
@@ -66,6 +86,23 @@ namespace PHON_NS {
         KpointPlane(double *xk_in, int *n_in) {
             for (int i = 0; i < 3; ++i) k[i] = xk_in[i];
             for (int i = 0; i < 2; ++i) n[i] = n_in[i];
+        }
+    };
+
+    class KpointPlaneTriangle {
+    public:
+        int index;
+        double knum[3];
+
+        KpointPlaneTriangle(){};
+
+        KpointPlaneTriangle(int index_in, int *nk_in)
+        {
+            index = index_in;
+
+            for (int i = 0; i < 3; ++i) {
+                knum[i] = nk_in[i];
+            }
         }
     };
 
@@ -91,6 +128,8 @@ namespace PHON_NS {
 
         unsigned int nplanes;
         std::vector<KpointPlane> *kp_planes; 
+        std::vector<KpointPlaneGeometry> kp_plane_geometry;
+        std::vector<KpointPlaneTriangle> *kp_planes_tri;
         unsigned int nk_reduced;
         std::map<int, int> kmap_to_irreducible;
 
@@ -112,7 +151,7 @@ namespace PHON_NS {
 
         void reduce_kpoints(const unsigned int, double **, const unsigned int [3], std::vector<std::vector<KpointList> > &);
         void gen_nkminus(const unsigned int, unsigned int *, double **);
-        void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *);
+        void gen_kpoints_plane(std::vector<KpointInp>, std::vector<KpointPlane> *, std::vector<KpointPlaneTriangle> *);
         bool in_first_BZ(double *);
 
         void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &);

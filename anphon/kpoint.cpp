@@ -517,14 +517,24 @@ void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo, unsigned int &np
     MPI_Bcast(&nplane, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     memory->allocate(kp_plane, nplane);
-
+    memory->allocate(kp_planes_tri, nplane);
+//    std::cout << "OK" << std::endl;    
     if (mympi->my_rank == 0) {
-        gen_kpoints_plane(kpinfo, kp_plane);
+        gen_kpoints_plane(kpinfo, kp_plane, kp_planes_tri);
+
+//        for (i = 0; i < nplane; ++i) {
+//            for (std::vector<KpointPlaneTriangle>::const_iterator it = kp_planes_tri[i].begin(); it != kp_planes_tri[i].end(); ++it) {
+//                std::cout << (*it).index << std::endl;
+//                std::cout << (*it).xk1[0] << " " << (*it).xk1[1] << " " << (*it).xk1[2] << std::endl;
+//                std::cout << (*it).xk2[0] << " " << (*it).xk2[1] << " " << (*it).xk2[2] << std::endl;
+//                std::cout << (*it).xk3[0] << " " << (*it).xk3[1] << " " << (*it).xk3[2] << std::endl;
+//                std::cout << (*it).inside_FBZ << std::endl;
+//            }
+//        }
     }
 
     mpi_broadcast_kplane_vector(nplane, kp_plane);
 }
-
 
 
 void Kpoint::gen_kmesh(const bool usesym, const unsigned int nk_in[3], double **xk_out,
@@ -680,9 +690,9 @@ void Kpoint::reduce_kpoints(const unsigned int nsym, double **xkr, const unsigne
     memory->deallocate(symop_k);
 }
 
-
-
-void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<KpointPlane> *kpout) {
+void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, 
+                               std::vector<KpointPlane> *kpout, 
+                               std::vector<KpointPlaneTriangle> *kpout_tri) {
 
     int i, j;
     int nplane = kplist.size();
@@ -690,20 +700,32 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<Kpoint
     int N1, N2;
     int ik1, ik2;
 
+    int number_of_tiles, number_of_triangle_tiles;
+    int **triangle;
+
     double frac1, frac2;
     double xk_tmp[3];
-    double xk1[3], xk2[3];
+    double xk0[3], xk1[3], xk2[3], xk3[3];
+    double **xk;
     double dprod, norm1, norm2, costheta;
     int n_in[2];
+    int m;
+    int n1, n2, n3, n4;
+    bool is_inside_FBZ;
+    int itri;
 
     for (i = 0; i < nplane; ++i) {
         N1 = std::atoi(kplist[i].kpelem[3].c_str());
         N2 = std::atoi(kplist[i].kpelem[7].c_str());
 
-        frac1 = 1.0 / static_cast<double>(N1);
-        frac2 = 1.0 / static_cast<double>(N2);
+        n_in[0] = N1;
+        n_in[1] = N2;
+
+        frac1 = 1.0 / static_cast<double>(N1-1);
+        frac2 = 1.0 / static_cast<double>(N2-1);
 
         for (j = 0; j < 3; ++j) {
+            xk0[j] = 0.0;
             xk1[j] = std::atof(kplist[i].kpelem[j].c_str());
             xk2[j] = std::atof(kplist[i].kpelem[4 + j].c_str());
         }
@@ -722,6 +744,8 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<Kpoint
             error->exit("gen_kpoints_plane", "Two vectors have to be linearly independent with each other.");
         }
 
+        kp_plane_geometry.push_back(KpointPlaneGeometry(xk0, xk1, xk2, n_in));
+
         for (ik1 = 0; ik1 < N1; ++ik1) {
             for (ik2 = 0; ik2 < N2; ++ik2) {
 
@@ -735,9 +759,66 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist, std::vector<Kpoint
                 }
             }
         }
+
+        memory->allocate(xk, N1*N2, 3);
+        
+        m = 0;
+        for (ik1 = 0; ik1 < N1; ++ik1) {
+            for (ik2 = 0; ik2 < N2; ++ik2) {
+
+                for (j = 0; j < 3; ++j) {
+                    xk[m][j] = static_cast<double>(ik1) * frac1 * xk1[j] + static_cast<double>(ik2) * frac2 * xk2[j]; 
+                }
+                ++m;
+            }
+        }
+        
+        number_of_tiles = (N1 - 1) * (N2 - 1);
+        number_of_triangle_tiles = 2 * number_of_tiles;
+        
+        memory->allocate(triangle, number_of_triangle_tiles, 3);
+
+        for (ik1 = 0; ik1 < N1 - 1; ++ik1) {
+            for (ik2 = 0; ik2 < N2 - 1; ++ik2) {
+              
+                n1 = ik2 + ik1 * N2;
+                n2 = ik2 + (ik1 + 1) * N2;
+                n3 = (ik2 + 1) + ik1 * N2;
+                n4 = (ik2 + 1) + (ik1 + 1) * N2;
+
+                m = 2 * (ik2 + ik1 * (N2 - 1));
+
+                triangle[m][0] = n1;
+                triangle[m][1] = n2;
+                triangle[m][2] = n4;
+                
+                ++m;
+
+                triangle[m][0] = n1;
+                triangle[m][1] = n3;
+                triangle[m][2] = n4;
+
+            }
+        }
+        
+        for (itri = 0; itri < number_of_triangle_tiles; ++itri) {
+            
+            for (j = 0; j < 3; ++j) {
+                xk1[j] = xk[triangle[itri][0]][j];
+                xk2[j] = xk[triangle[itri][1]][j];
+                xk3[j] = xk[triangle[itri][2]][j];
+            }
+
+            is_inside_FBZ = in_first_BZ(xk1) || in_first_BZ(xk2) || in_first_BZ(xk3);
+            if (is_inside_FBZ) {
+                kpout_tri[i].push_back(KpointPlaneTriangle(itri, triangle[itri]));
+            }
+        }
+        
+        memory->deallocate(xk);
+        memory->deallocate(triangle);
     }
 }
-
 
 void Kpoint::gen_nkminus(const unsigned int nk, unsigned int *minus_k, double **xk_in)
 {

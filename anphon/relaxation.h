@@ -69,6 +69,26 @@ namespace PHON_NS {
         }
     };
 
+    class KpointListWithCoordinate {
+    public:
+        double xk[3];
+        double x, y;
+        int plane;
+        int selection_type;
+
+        KpointListWithCoordinate();
+
+        KpointListWithCoordinate(const std::vector<double> &a, const double x_in, const double y_in, 
+                                 const int plane_in, const int selection_type_in){
+            for (int i = 0; i < 3; ++i) xk[i] = a[i];
+            x = x_in;
+            y = y_in;
+            plane = plane_in;
+            selection_type = selection_type_in;
+        }
+    };
+
+
     class Relaxation: protected Pointers {
     public:
         Relaxation(class PHON *);
