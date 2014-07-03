@@ -129,7 +129,7 @@ void System::recips(double aa[3][3], double bb[3][3])
     - aa[2][0] * aa[1][1] * aa[0][2]
     - aa[1][0] * aa[0][1] * aa[2][2];
 
-    if(det < eps12) {
+    if (std::abs(det) < eps12) {
         error->exit("recips", "Lattice Vector is singular");
     }
 
@@ -178,7 +178,14 @@ void System::load_reference_system_xml()
     int **intpair_ref;
     double *fc2_ref;
 
-    read_xml(constraint->fc2_file, pt);
+    
+    try {
+        read_xml(constraint->fc2_file, pt);
+    }
+    catch (std::exception &e) {
+        std::string str_error = "Cannot open file FC2XML ( " + constraint->fc2_file + " )";
+        error->exit("load_reference_system_xml", str_error.c_str());
+    }
 
     nat_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
     ntran_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
