@@ -104,8 +104,14 @@ void Writes::write_input_vars()
     if (phon->mode == "PHONONS") {
         std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
         std::cout << "  PRINTVEC = " << dynamical->print_eigenvectors << std::endl;
-        std::cout << "  PRINTXSF = " << writes->writeanime << std::endl;
+        std::cout << "  PRINTXSF = " << writes->print_xsf << std::endl;
         std::cout << std::endl;
+
+        if (print_anime) {
+            std::cout << "  ANIME = ";
+            std::cout << "  ANIME_CELL = ";
+            std::cout << std::endl;
+        }
 
         if (kpoint->kpoint_mode == 2) {
              std::cout << "  PDOS = " << dos->projected_dos << "; TDOS = " << dos->two_phonon_dos << std::endl;
@@ -396,16 +402,15 @@ void Writes::print_phonon_energy()
 
 void Writes::write_phonon_info()
 {
-//     if (nbands < 0 || nbands > 3 * system->natmin) {
-//         std::cout << "nbands < 0 or nbands > 3 * natmin" << std::endl;
-//         std::cout << "All modes will be printed." << std::endl;    
-//         nbands =  3 * system->natmin;
-//     }
-
     if (nbands < 0) {
         nbands = 3 * system->natmin;
     }
  
+
+    if (print_anime) {
+        write_normal_mode_animation(anime_kpoint, anime_cellsize);
+    }
+
     std::cout << std::endl;
     std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
     std::cout << " The following files are created: " << std::endl;
@@ -434,8 +439,8 @@ void Writes::write_phonon_info()
         if (print_msd) write_msd();
     }
 
-    if(writeanime) {
-        write_mode_anime();
+    if (print_xsf) {
+        write_normal_mode_direction();
     }
 
     if (dynamical->print_eigenvectors) {
@@ -444,6 +449,12 @@ void Writes::write_phonon_info()
 
     if (gruneisen->print_gruneisen) {
         write_gruneisen();
+    }
+
+    if (print_anime) {
+        std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left
+            << input->job_title + ".anime*.axsf";
+        std::cout << " : AXSF files for animate phonon modes" << std::endl;
     }
 
 
@@ -674,7 +685,7 @@ void Writes::write_two_phonon_dos()
     std::cout << " : Two-phonon DOS" << std::endl;
 }
 
-void Writes::write_mode_anime()
+void Writes::write_normal_mode_direction()
 {
     std::ofstream ofs_anime;
     std::string file_anime = input->job_title + ".axsf";
@@ -1023,4 +1034,194 @@ void Writes::write_kappa()
         std::cout << std::endl;
         std::cout << " Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
     }
+}
+
+
+void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned int ncell[3])
+{
+    unsigned int i, j, k;
+    unsigned int iband, istep;
+    std::complex<double> **evec;
+    double *eval, **evec_mag, **evec_theta;
+    double **disp_mag, *mass;
+    double *phase_cell;
+    unsigned int ns = dynamical->neval;
+
+    double norm, dmod[3];
+    double xk[3], kvec[3];
+    std::ofstream ofs_anime;
+    std::ostringstream ss;
+    std::string file_anime;
+
+    unsigned int natmin = system->natmin;
+    double ***xmod;
+    unsigned int nsuper = ncell[0] * ncell[1] * ncell[2];
+
+    std::string *kd_tmp;
+
+    unsigned int ix, iy, iz;
+    unsigned int icell = 0;
+    double lavec_super[3][3];
+    unsigned int nsteps = 100;
+    unsigned int ntmp = nbands;
+    unsigned int ndigits = 0;
+    double phase_time;
+    double disp_factor = 1.0;
+
+    for (i = 0; i < 3; ++i) {
+        xk[i] = xk_in[i];
+    }
+
+    std::cout << " ANIME-tag is given: Making animation files for the given" << std::endl;
+    std::cout << "                     k point ( ";
+    std::cout << std::setw(5) << xk[0] << ", " 
+        << std::setw(5) << xk[1] << ", " 
+        << std::setw(5) << xk[2] << ")." << std::endl;
+    std::cout << "                     ANIME_CELLSIZE = ";
+    std::cout << std::setw(3) << ncell[0] << std::setw(3) << ncell[1] << std::setw(3) << ncell[2] << std::endl;
+
+    for (i = 0; i < 3; ++i) dmod[i] = std::fmod(xk[i] * static_cast<double>(ncell[i]), 1.0);
+
+    if (std::sqrt(dmod[0]*dmod[0] + dmod[1]*dmod[1] + dmod[2]*dmod[2]) > eps12) {
+        error->warn("write_normal_mode_animation", "The supercell size is not commensurate with given k point.");
+    }
+
+    rotvec(kvec, xk, system->rlavec_p, 'T');
+    norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1]  + kvec[2] * kvec[2]);
+    if (norm > eps) {
+        for (i = 0; i < 3; ++i) kvec[i] /= norm;
+    }
+
+    memory->allocate(eval, ns);
+    memory->allocate(evec, ns, ns);
+    memory->allocate(evec_mag, ns, ns);
+    memory->allocate(evec_theta, ns, ns);
+    memory->allocate(disp_mag, ns, ns);
+    
+    dynamical->eval_k(xk, kvec, fcs_phonon->fc2_ext, eval, evec, true);            
+
+    for (i = 0; i < ns; ++i) {
+        for (j = 0; j < ns; ++j) {
+            evec_mag[i][j] = std::abs(evec[i][j]);
+            evec_theta[i][j] = std::arg(evec[i][j]);
+        }
+    }
+    
+    memory->allocate(xmod, nsuper, natmin, 3);
+    memory->allocate(kd_tmp, natmin);
+    memory->allocate(mass, natmin);
+    memory->allocate(phase_cell, nsuper);
+
+    for (ix = 0; ix < ncell[0]; ++ix) {
+        for (iy = 0; iy < ncell[1]; ++iy) {
+            for (iz = 0; iz < ncell[2]; ++iz) {
+
+                phase_cell[icell] = pi * (xk_in[0] * static_cast<double>(ix) + xk_in[1] * static_cast<double>(iy) + xk_in[2] * static_cast<double>(iz));
+
+                for (i = 0; i < natmin; ++i) {
+                    xmod[icell][i][0] = (system->xr_p[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
+                    xmod[icell][i][1] = (system->xr_p[i][1] + static_cast<double>(iy)) / static_cast<double>(ncell[1]);
+                    xmod[icell][i][2] = (system->xr_p[i][2] + static_cast<double>(iz)) / static_cast<double>(ncell[2]);
+                }
+                ++icell;
+            }
+        }
+    }
+
+    for (i = 0; i < natmin; ++i){
+        k = system->map_p2s[i][0];
+        kd_tmp[i] = system->symbol_kd[system->kd[k]];
+        mass[i] = system->mass[k];
+    }
+
+    for (i = 0; i < 3; ++i){
+        lavec_super[i][0] = system->lavec_p[i][0] * ncell[0] *Bohr_in_Angstrom;
+        lavec_super[i][1] = system->lavec_p[i][1] * ncell[1] *Bohr_in_Angstrom;
+        lavec_super[i][2] = system->lavec_p[i][2] * ncell[2] *Bohr_in_Angstrom;
+    }
+
+    double mass_min = mass[0];
+
+    for (i = 0; i < natmin; ++i) {
+        if (mass[i] < mass_min) mass_min = mass[i];
+    }
+
+    for (i = 0; i < ns; ++i) {
+        for (j = 0; j < ns; ++j) {
+            disp_mag[i][j] = disp_factor * std::sqrt(mass_min/mass[j/3]) * evec_mag[i][j];
+        }
+    }
+
+    for (i = 0; i < nsuper; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            rotvec(xmod[i][j], xmod[i][j], lavec_super);
+        }
+    }
+
+
+    while (ntmp > 0) {
+        ++ndigits;
+        ntmp /= 10;
+    }
+
+    for (iband = 0; iband < nbands; ++iband) {
+
+        eval[iband] = dynamical->freq(eval[iband]);
+        ss.str("");
+        ss.clear();
+        ss << std::setw(ndigits) << std::setfill('0') << iband+1;
+        std::string result = ss.str();
+
+        file_anime = input->job_title + ".anime" + result + ".axsf";
+
+        ofs_anime.open(file_anime.c_str(), std::ios::out);
+        if(!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
+         
+        ofs_anime.setf(std::ios::scientific);
+
+        ofs_anime << "ANIMSTEPS " << nsteps << std::endl;
+        ofs_anime << "CRYSTAL" << std::endl;
+        ofs_anime << "PRIMVEC" << std::endl;
+
+        for (i = 0; i < 3; ++i){
+            for (j = 0; j < 3; ++j){
+                ofs_anime << std::setw(15) << lavec_super[j][i];
+            }
+            ofs_anime << std::endl;
+        }
+
+        for (istep = 0; istep < nsteps; ++istep) {
+            
+            phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
+
+            ofs_anime << "PRIMCOORD " << std::setw(10) << istep + 1 << std::endl;
+            ofs_anime << std::setw(10) << natmin*nsuper << std::setw(10) << 1 << std::endl;
+
+            for (i = 0; i < nsuper; ++i) {
+                for (j = 0; j < natmin; ++j) {
+
+                    ofs_anime << std::setw(10) << kd_tmp[j];
+
+                    for (k = 0; k < 3; ++k){
+                        ofs_anime << std::setw(15) << xmod[i][j][k] + disp_mag[j][k] * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                    }
+                    ofs_anime << std::endl;
+                }
+            }
+        }
+        
+        ofs_anime.close();
+    }
+
+
+    memory->deallocate(xmod);
+    memory->deallocate(kd_tmp);
+    memory->deallocate(eval);
+    memory->deallocate(evec);
+    memory->deallocate(phase_cell);
+    memory->deallocate(evec_mag);
+    memory->deallocate(evec_theta);
+    memory->deallocate(disp_mag);
+    memory->deallocate(mass);
+
 }

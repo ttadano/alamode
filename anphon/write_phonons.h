@@ -30,8 +30,12 @@ namespace PHON_NS
         void write_input_vars();
         void write_kappa();
 
-        bool writeanime;
+        bool print_xsf;
         bool print_msd;
+        bool print_anime;
+
+        unsigned int anime_cellsize[3];
+        double anime_kpoint[3];
 
         double in_kayser(const double);
         int nbands;
@@ -46,7 +50,8 @@ namespace PHON_NS
         void write_phonon_vel_all();
         void write_phonon_dos();
         void write_two_phonon_dos();
-        void write_mode_anime();
+        void write_normal_mode_direction();
+        void write_normal_mode_animation(const double [3], const unsigned int [3]);
         void write_eigenvectors();
         void write_thermodynamics();
         void write_msd();

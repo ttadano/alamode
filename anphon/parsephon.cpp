@@ -282,15 +282,17 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
-                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A";
+                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
+                                   ANIME ANIME_CELLSIZE";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
     bool lclassical;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
-    bool print_vel, print_evec, print_xsf, print_msd;
+    bool print_vel, print_evec, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
     bool two_phonon_dos;
+    bool print_xsf, print_anime;
 
     int quartic_mode;
 
@@ -298,11 +300,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
     double *isotope_factor;
     std::string ks_input;
     std::map<std::string, std::string> analysis_var_dict;
-    std::vector<std::string> isofact_v;
+    std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
    
     // Default values
 
     print_xsf = false;
+    print_anime = false;
+
     print_vel = false;
     print_evec = false;
     print_msd = false;
@@ -328,7 +332,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     if (!use_default_values) {
         get_var_dict(str_allowed_list, analysis_var_dict);
 
-        assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_vel, "PRINTVEL", analysis_var_dict);
         assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
         assign_val(print_msd, "PRINTMSD", analysis_var_dict);
@@ -347,13 +350,21 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
+
+        assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
+
+        if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
+            print_anime = false;
+        } else {
+            print_anime = true;
+        }
     }
 
     if (include_isotope) {
         split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
 
         if (isofact_v.size() != system->nkd) {
-            error->exit("parse_general_vars", "The number of entries for ISOFACT is inconsistent with NKD");
+            error->exit("parse_analysis_vars", "The number of entries for ISOFACT is inconsistent with NKD");
         } else {
             memory->allocate(isotope_factor, system->nkd);
             for (i = 0; i < system->nkd; ++i){
@@ -362,11 +373,34 @@ void Input::parse_analysis_vars(const bool use_default_values)
         }
     }
 
+    if (print_anime) {
+        split_str_by_space(analysis_var_dict["ANIME"], anime_kpoint);
+
+        if (anime_kpoint.size() != 3) {
+            error->exit("parse_analysis_vars", "The number of entries for ANIME should be 3.");
+        }
+
+        split_str_by_space(analysis_var_dict["ANIME_CELLSIZE"], anime_cellsize);
+
+        if (anime_cellsize.size() != 3) {
+            error->exit("parse_analysis_vars", "The number of entries for ANIME_CELLSIZE should be 3.");
+        }
+    }
+
     // Copy the values to appropriate classes
 
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
-    writes->writeanime = print_xsf;
+    writes->print_xsf = print_xsf;
+    writes->print_anime = print_anime;
+
+    if (print_anime) {
+        for (i = 0; i < 3; ++i) {
+            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
+            writes->anime_cellsize[i] = my_cast<unsigned int>(anime_cellsize[i]);
+        }
+    }
+
     writes->print_msd = print_msd;
 
     dos->projected_dos = projected_dos;
