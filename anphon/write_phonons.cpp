@@ -1112,6 +1112,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
     memory->allocate(mass, natmin);
     memory->allocate(phase_cell, nsuper);
 
+    double **xtmp;
+    memory->allocate(xtmp, natmin, 3);
+    for (i = 0; i < natmin; ++i) {
+        rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xtmp[i], xtmp[i], system->rlavec_p);
+        for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
+    }
+
+
     for (ix = 0; ix < ncell[0]; ++ix) {
         for (iy = 0; iy < ncell[1]; ++iy) {
             for (iz = 0; iz < ncell[2]; ++iz) {
@@ -1119,14 +1128,16 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
                 phase_cell[icell] = pi * (xk_in[0] * static_cast<double>(ix) + xk_in[1] * static_cast<double>(iy) + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
-                    xmod[icell][i][0] = (system->xr_p[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
-                    xmod[icell][i][1] = (system->xr_p[i][1] + static_cast<double>(iy)) / static_cast<double>(ncell[1]);
-                    xmod[icell][i][2] = (system->xr_p[i][2] + static_cast<double>(iz)) / static_cast<double>(ncell[2]);
+                    xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
+                    xmod[icell][i][1] = (xtmp[i][1] + static_cast<double>(iy)) / static_cast<double>(ncell[1]);
+                    xmod[icell][i][2] = (xtmp[i][2] + static_cast<double>(iz)) / static_cast<double>(ncell[2]);
                 }
                 ++icell;
             }
         }
     }
+
+    memory->deallocate(xtmp);
 
     for (i = 0; i < natmin; ++i){
         k = system->map_p2s[i][0];
