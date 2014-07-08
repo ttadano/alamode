@@ -1146,7 +1146,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         for (iy = 0; iy < ncell[1]; ++iy) {
             for (iz = 0; iz < ncell[2]; ++iz) {
 
-                phase_cell[icell] = pi * (xk_in[0] * static_cast<double>(ix) 
+                phase_cell[icell] = 2.0 * pi * (xk_in[0] * static_cast<double>(ix) 
                     + xk_in[1] * static_cast<double>(iy) 
                     + xk_in[2] * static_cast<double>(iz));
 
