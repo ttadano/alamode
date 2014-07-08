@@ -385,11 +385,18 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_cellsize.size() != 3) {
             error->exit("parse_analysis_vars", "The number of entries for ANIME_CELLSIZE should be 3.");
         }
+        if (my_cast<int>(anime_cellsize[0]) < 1 || 
+            my_cast<int>(anime_cellsize[1]) < 1 ||
+            my_cast<int>(anime_cellsize[2]) < 1) {
+                error->exit("parse_analysis_vars", "Please give positive integers in ANIME_CELLSIZE.");
+        }
 
         assign_val(anime_format, "ANIME_FORMAT", analysis_var_dict);
-        std::transform(anime_format.begin(), anime_format.end(), anime_format.begin(), std::toupper);
+        std::transform(anime_format.begin(), anime_format.end(), anime_format.begin(), toupper);
 
-        if (anime_format != "XSF" && anime_format != "XYZ") {
+        if (anime_format.empty()) anime_format = "XYZ";
+
+        if (anime_format != "XSF" && anime_format != "AXSF" && anime_format != "XYZ") {
             error->exit("parse_analysis_vars", "Invalid ANIME_FORMAT");
         }
     }

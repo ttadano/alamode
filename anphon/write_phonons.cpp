@@ -1220,7 +1220,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
     }
 
 
-    if (anime_format == "XSF") {
+    if (anime_format == "XSF" || anime_format == "AXSF") {
 
         // Save animation to AXSF (XcrysDen) files
 
@@ -1236,6 +1236,16 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 
             ofs_anime.open(file_anime.c_str(), std::ios::out);
             if(!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
+
+            ofs_anime.unsetf(std::ios::scientific);
+
+            ofs_anime << "# Animation of a phonon mode" << std::endl;
+            ofs_anime << "# K point : ";
+            for (i = 0; i < 3; ++i) ofs_anime << std::setw(8) << xk_in[i];
+            ofs_anime << std::endl;
+            ofs_anime << "# Mode index : " << std::setw(4) << iband + 1 << std::endl;
+            ofs_anime << "# Frequency (cm^-1) : " << in_kayser(eval[iband]) << std::endl;
+            ofs_anime << std::endl;
 
             ofs_anime.setf(std::ios::scientific);
 
@@ -1297,14 +1307,20 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 
                 phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
 
-                ofs_anime << std::setw(10) << natmin*nsuper << std::endl;
+                ofs_anime.unsetf(std::ios::scientific);
 
-                ofs_anime << "Step" << std::setw(10) << istep + 1 << std::endl;
+                ofs_anime << natmin*nsuper << std::endl;
+                ofs_anime << "Mode " << std::setw(4) << iband + 1 << " at (";
+                for (i = 0; i < 3; ++i) ofs_anime << std::setw(8) << xk_in[i];
+                ofs_anime << "), Frequency (cm^-1) = " << in_kayser(eval[iband]) 
+                    << ", Time step = " << std::setw(4) << istep + 1 << std::endl;
+
+                ofs_anime.setf(std::ios::scientific);
 
                 for (i = 0; i < nsuper; ++i) {
                     for (j = 0; j < natmin; ++j) {
 
-                        ofs_anime << std::setw(10) << kd_tmp[j];
+                        ofs_anime << std::setw(4) << kd_tmp[j];
 
                         for (k = 0; k < 3; ++k){
                             ofs_anime << std::setw(15) 
