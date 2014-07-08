@@ -283,7 +283,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE";
+                                   ANIME ANIME_CELLSIZE ANIME_FORMAT";
 
     bool include_isotope;
     bool fstate_omega, fstate_k;
@@ -298,7 +298,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     double delta_a;
     double *isotope_factor;
-    std::string ks_input;
+    std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
    
@@ -385,6 +385,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_cellsize.size() != 3) {
             error->exit("parse_analysis_vars", "The number of entries for ANIME_CELLSIZE should be 3.");
         }
+
+        assign_val(anime_format, "ANIME_FORMAT", analysis_var_dict);
+        std::transform(anime_format.begin(), anime_format.end(), anime_format.begin(), std::toupper);
+
+        if (anime_format != "XSF" && anime_format != "XYZ") {
+            error->exit("parse_analysis_vars", "Invalid ANIME_FORMAT");
+        }
     }
 
     // Copy the values to appropriate classes
@@ -399,6 +406,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
             writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
             writes->anime_cellsize[i] = my_cast<unsigned int>(anime_cellsize[i]);
         }
+        writes->anime_format = anime_format;
     }
 
     writes->print_msd = print_msd;

@@ -41,6 +41,7 @@ namespace PHON_NS
         int nbands;
 
         std::string file_result;
+        std::string anime_format;
         std::fstream fs_result;
 
     private:

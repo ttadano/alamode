@@ -109,7 +109,12 @@ void Writes::write_input_vars()
 
         if (print_anime) {
             std::cout << "  ANIME = ";
+            for (i = 0; i < 3; ++i) std::cout << std::setw(5) << anime_kpoint[i];
+            std::cout << std::endl;
             std::cout << "  ANIME_CELL = ";
+            for (i = 0; i < 3; ++i) std::cout << std::setw(5) << anime_cellsize[i];
+            std::cout << std::endl;
+            std::cout << "  ANIME_FORMAT = " << anime_format << std::endl;
             std::cout << std::endl;
         }
 
@@ -452,9 +457,15 @@ void Writes::write_phonon_info()
     }
 
     if (print_anime) {
-        std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left
-            << input->job_title + ".anime*.axsf";
-        std::cout << " : AXSF files for animate phonon modes" << std::endl;
+        if (anime_format == "XSF" || anime_format == "AXSF") {
+            std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left
+                << input->job_title + ".anime*.axsf";
+            std::cout << " : AXSF files for animate phonon modes" << std::endl;
+        } else if (anime_format == "XYZ") {
+            std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left
+                << input->job_title + ".anime*.xyz";
+            std::cout << " : XYZ files for animate phonon modes" << std::endl;
+        }
     }
 
 
@@ -1041,44 +1052,47 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 {
     unsigned int i, j, k;
     unsigned int iband, istep;
-    std::complex<double> **evec;
+    unsigned int ns = dynamical->neval;
+    unsigned int natmin = system->natmin;
+    unsigned int nsuper = ncell[0] * ncell[1] * ncell[2];
+    unsigned int ix, iy, iz;
+    unsigned int icell;
+    unsigned int nsteps = 20;
+    unsigned int ntmp = nbands;
+    unsigned int ndigits = 0;
+
+    double phase_time;
+    double max_disp_factor = 0.1;
+    double lavec_super[3][3];
+    double norm, dmod[3];
+    double xk[3], kvec[3];
+
     double *eval, **evec_mag, **evec_theta;
     double **disp_mag, *mass;
     double *phase_cell;
-    unsigned int ns = dynamical->neval;
+    double ***xmod, **xtmp;
 
-    double norm, dmod[3];
-    double xk[3], kvec[3];
+    std::complex<double> **evec;
+
     std::ofstream ofs_anime;
     std::ostringstream ss;
     std::string file_anime;
-
-    unsigned int natmin = system->natmin;
-    double ***xmod;
-    unsigned int nsuper = ncell[0] * ncell[1] * ncell[2];
-
     std::string *kd_tmp;
 
-    unsigned int ix, iy, iz;
-    unsigned int icell = 0;
-    double lavec_super[3][3];
-    unsigned int nsteps = 100;
-    unsigned int ntmp = nbands;
-    unsigned int ndigits = 0;
-    double phase_time;
-    double disp_factor = 1.0;
+
 
     for (i = 0; i < 3; ++i) {
         xk[i] = xk_in[i];
     }
-
+    std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
     std::cout << " ANIME-tag is given: Making animation files for the given" << std::endl;
     std::cout << "                     k point ( ";
     std::cout << std::setw(5) << xk[0] << ", " 
         << std::setw(5) << xk[1] << ", " 
         << std::setw(5) << xk[2] << ")." << std::endl;
-    std::cout << "                     ANIME_CELLSIZE = ";
+    std::cout << " ANIME_CELLSIZE = ";
     std::cout << std::setw(3) << ncell[0] << std::setw(3) << ncell[1] << std::setw(3) << ncell[2] << std::endl;
+    std::cout << " ANIME_FORMAT = " << anime_format << std::endl;
 
     for (i = 0; i < 3; ++i) dmod[i] = std::fmod(xk[i] * static_cast<double>(ncell[i]), 1.0);
 
@@ -1092,11 +1106,19 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         for (i = 0; i < 3; ++i) kvec[i] /= norm;
     }
 
+    // Allocation
+
     memory->allocate(eval, ns);
     memory->allocate(evec, ns, ns);
     memory->allocate(evec_mag, ns, ns);
     memory->allocate(evec_theta, ns, ns);
     memory->allocate(disp_mag, ns, ns);
+    memory->allocate(xmod, nsuper, natmin, 3);
+    memory->allocate(kd_tmp, natmin);
+    memory->allocate(mass, natmin);
+    memory->allocate(phase_cell, nsuper);
+
+    // Get eigenvalues and eigenvectors at xk
     
     dynamical->eval_k(xk, kvec, fcs_phonon->fc2_ext, eval, evec, true);            
 
@@ -1107,25 +1129,26 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         }
     }
     
-    memory->allocate(xmod, nsuper, natmin, 3);
-    memory->allocate(kd_tmp, natmin);
-    memory->allocate(mass, natmin);
-    memory->allocate(phase_cell, nsuper);
+    // Get fractional coordinates of atoms in a primitive cell
 
-    double **xtmp;
     memory->allocate(xtmp, natmin, 3);
+
     for (i = 0; i < natmin; ++i) {
         rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
         rotvec(xtmp[i], xtmp[i], system->rlavec_p);
         for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
     }
 
+    // Prepare fractional coordinates of atoms in the supercell
+    icell = 0;
 
     for (ix = 0; ix < ncell[0]; ++ix) {
         for (iy = 0; iy < ncell[1]; ++iy) {
             for (iz = 0; iz < ncell[2]; ++iz) {
 
-                phase_cell[icell] = pi * (xk_in[0] * static_cast<double>(ix) + xk_in[1] * static_cast<double>(iy) + xk_in[2] * static_cast<double>(iz));
+                phase_cell[icell] = pi * (xk_in[0] * static_cast<double>(ix) 
+                    + xk_in[1] * static_cast<double>(iy) 
+                    + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
                     xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
@@ -1139,17 +1162,23 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 
     memory->deallocate(xtmp);
 
+    // Prepare atomic symbols and masses
+
     for (i = 0; i < natmin; ++i){
         k = system->map_p2s[i][0];
         kd_tmp[i] = system->symbol_kd[system->kd[k]];
         mass[i] = system->mass[k];
     }
 
+    // Prepare lattice vectors of the supercell
+
     for (i = 0; i < 3; ++i){
-        lavec_super[i][0] = system->lavec_p[i][0] * ncell[0] *Bohr_in_Angstrom;
-        lavec_super[i][1] = system->lavec_p[i][1] * ncell[1] *Bohr_in_Angstrom;
-        lavec_super[i][2] = system->lavec_p[i][2] * ncell[2] *Bohr_in_Angstrom;
+        lavec_super[i][0] = system->lavec_p[i][0] * ncell[0] * Bohr_in_Angstrom;
+        lavec_super[i][1] = system->lavec_p[i][1] * ncell[1] * Bohr_in_Angstrom;
+        lavec_super[i][2] = system->lavec_p[i][2] * ncell[2] * Bohr_in_Angstrom;
     }
+
+    // Normalize the magnitude of displacements
 
     double mass_min = mass[0];
 
@@ -1157,11 +1186,27 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         if (mass[i] < mass_min) mass_min = mass[i];
     }
 
+    double max_disp_mag, disp_mag_tmp;
+
     for (i = 0; i < ns; ++i) {
+
+        max_disp_mag = 0.0;
+        
         for (j = 0; j < ns; ++j) {
-            disp_mag[i][j] = disp_factor * std::sqrt(mass_min/mass[j/3]) * evec_mag[i][j];
+            disp_mag[i][j] = std::sqrt(mass_min/mass[j/3]) * evec_mag[i][j];
         }
+
+        for (j = 0; j < natmin; ++j) {
+            disp_mag_tmp = 0.0;
+            for (k = 0; k < 3; ++k) disp_mag_tmp += std::pow(disp_mag[i][3 * j + k], 2);
+            disp_mag_tmp = std::sqrt(disp_mag_tmp);
+            max_disp_mag = std::max(max_disp_mag, disp_mag_tmp);
+        }
+
+        for (j = 0; j < ns; ++j) disp_mag[i][j] *= max_disp_factor / max_disp_mag;
     }
+
+    // Convert atomic positions to Cartesian coordinate
 
     for (i = 0; i < nsuper; ++i) {
         for (j = 0; j < natmin; ++j) {
@@ -1169,61 +1214,112 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         }
     }
 
-
     while (ntmp > 0) {
         ++ndigits;
         ntmp /= 10;
     }
 
-    for (iband = 0; iband < nbands; ++iband) {
 
-        eval[iband] = dynamical->freq(eval[iband]);
-        ss.str("");
-        ss.clear();
-        ss << std::setw(ndigits) << std::setfill('0') << iband+1;
-        std::string result = ss.str();
+    if (anime_format == "XSF") {
 
-        file_anime = input->job_title + ".anime" + result + ".axsf";
+        // Save animation to AXSF (XcrysDen) files
 
-        ofs_anime.open(file_anime.c_str(), std::ios::out);
-        if(!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
-         
-        ofs_anime.setf(std::ios::scientific);
+        for (iband = 0; iband < nbands; ++iband) {
 
-        ofs_anime << "ANIMSTEPS " << nsteps << std::endl;
-        ofs_anime << "CRYSTAL" << std::endl;
-        ofs_anime << "PRIMVEC" << std::endl;
+            eval[iband] = dynamical->freq(eval[iband]);
+            ss.str("");
+            ss.clear();
+            ss << std::setw(ndigits) << std::setfill('0') << iband+1;
+            std::string result = ss.str();
 
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
-                ofs_anime << std::setw(15) << lavec_super[j][i];
+            file_anime = input->job_title + ".anime" + result + ".axsf";
+
+            ofs_anime.open(file_anime.c_str(), std::ios::out);
+            if(!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
+
+            ofs_anime.setf(std::ios::scientific);
+
+            ofs_anime << "ANIMSTEPS " << nsteps << std::endl;
+            ofs_anime << "CRYSTAL" << std::endl;
+            ofs_anime << "PRIMVEC" << std::endl;
+
+            for (i = 0; i < 3; ++i){
+                for (j = 0; j < 3; ++j){
+                    ofs_anime << std::setw(15) << lavec_super[j][i];
+                }
+                ofs_anime << std::endl;
             }
-            ofs_anime << std::endl;
-        }
 
-        for (istep = 0; istep < nsteps; ++istep) {
-            
-            phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
+            for (istep = 0; istep < nsteps; ++istep) {
 
-            ofs_anime << "PRIMCOORD " << std::setw(10) << istep + 1 << std::endl;
-            ofs_anime << std::setw(10) << natmin*nsuper << std::setw(10) << 1 << std::endl;
+                phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
 
-            for (i = 0; i < nsuper; ++i) {
-                for (j = 0; j < natmin; ++j) {
+                ofs_anime << "PRIMCOORD " << std::setw(10) << istep + 1 << std::endl;
+                ofs_anime << std::setw(10) << natmin*nsuper << std::setw(10) << 1 << std::endl;
 
-                    ofs_anime << std::setw(10) << kd_tmp[j];
+                for (i = 0; i < nsuper; ++i) {
+                    for (j = 0; j < natmin; ++j) {
 
-                    for (k = 0; k < 3; ++k){
-                        ofs_anime << std::setw(15) << xmod[i][j][k] + disp_mag[j][k] * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                        ofs_anime << std::setw(10) << kd_tmp[j];
+
+                        for (k = 0; k < 3; ++k){
+                            ofs_anime << std::setw(15) 
+                                << xmod[i][j][k] + disp_mag[j][k] * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                        }
+                        ofs_anime << std::endl;
                     }
-                    ofs_anime << std::endl;
                 }
             }
-        }
-        
-        ofs_anime.close();
-    }
 
+            ofs_anime.close();
+        }
+
+    } else if (anime_format == "XYZ") {
+
+        // Save animation to XYZ files
+
+        for (iband = 0; iband < nbands; ++iband) {
+
+            eval[iband] = dynamical->freq(eval[iband]);
+            ss.str("");
+            ss.clear();
+            ss << std::setw(ndigits) << std::setfill('0') << iband+1;
+            std::string result = ss.str();
+
+            file_anime = input->job_title + ".anime" + result + ".xyz";
+
+            ofs_anime.open(file_anime.c_str(), std::ios::out);
+            if(!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
+
+            ofs_anime.setf(std::ios::scientific);
+
+            for (istep = 0; istep < nsteps; ++istep) {
+
+                phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
+
+                ofs_anime << std::setw(10) << natmin*nsuper << std::endl;
+
+                ofs_anime << "Step" << std::setw(10) << istep + 1 << std::endl;
+
+                for (i = 0; i < nsuper; ++i) {
+                    for (j = 0; j < natmin; ++j) {
+
+                        ofs_anime << std::setw(10) << kd_tmp[j];
+
+                        for (k = 0; k < 3; ++k){
+                            ofs_anime << std::setw(15) 
+                                << xmod[i][j][k] + disp_mag[j][k] * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                        }
+                        ofs_anime << std::endl;
+                    }
+                }
+            }
+
+            ofs_anime.close();
+        }
+
+    }
+   
 
     memory->deallocate(xmod);
     memory->deallocate(kd_tmp);
