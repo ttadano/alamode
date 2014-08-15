@@ -21,23 +21,23 @@ Error::~Error() {}
 
 void Error::warn(const char *file, const char *message)
 {
-    std::cout << "WARNING in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << " WARNING in " << file << "  MESSAGE: " << message << std::endl;
 }
 
 void Error::exit(const char *file, const char *message)
 {
-    std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << " ERROR in " << file << "  MESSAGE: " << message << std::endl;
     std::exit(EXIT_FAILURE);
 }
 
 void Error::exit(const char *file, const char *message, int info)
 {
-    std::cout << "ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);
 }
 
 void Error::exit(const char *file, const char *message, const char *info)
 {
-    std::cout << "ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);
 }
