@@ -1046,7 +1046,7 @@ void Relaxation::perform_mode_analysis()
     std::string file_linewidth, file_shift, file_fstate_w;
 
 
-    NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+    NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     memory->allocate(T_arr, NT);
     for (i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i)*dT;
 

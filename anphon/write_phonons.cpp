@@ -140,14 +140,16 @@ void Writes::write_input_vars()
             }
             std::cout << std::endl;
         }
-        std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
-        std::cout << std::endl;
-        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
-        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
-        std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
-        std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
-        std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
-        std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+	
+	//        std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
+	//        std::cout << std::endl;
+	//        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
+	//        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
+        // std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
+        // std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
+        // std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
+	//  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+
     } else {
         error->exit("write_input_vars", "This cannot happen");
     }
@@ -467,8 +469,6 @@ void Writes::write_phonon_info()
             std::cout << " : XYZ files for animate phonon modes" << std::endl;
         }
     }
-
-
 }
 
 void Writes::write_phonon_bands()
@@ -861,14 +861,15 @@ void Writes::write_thermodynamics()
     double T, TD;
     std::string file_thermo;
 
-    NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+    NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_thermo;
     file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if(!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
     ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::endl;
-//  
+
+
 //     for (i = 0; i <= NT; ++i) {
 //    
 //         T = Tmin + dT * static_cast<double>(i);
@@ -879,7 +880,7 @@ void Writes::write_thermodynamics()
 //     }
     
 
-    for (i = 0; i <= NT; ++i){
+    for (i = 0; i <  NT; ++i){
         T = Tmin + dT * static_cast<double>(i);
 
         ofs_thermo << std::setw(16) << T;
@@ -990,7 +991,7 @@ void Writes::write_msd()
     ofs_rmsd << "# Mean Square Displacements at a function of temperature." << std::endl;
     ofs_rmsd << "# Temperature [K], <(u_{1}^{x})^{2}>, <(u_{1}^{y})^{2}>, <(u_{1}^{z})^{2}>, .... [Angstrom^2]" << std::endl;
 
-    NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+    NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     for (i = 0; i < NT; ++i) {
 
@@ -1335,7 +1336,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         }
 
     }
-   
 
     memory->deallocate(xmod);
     memory->deallocate(kd_tmp);
@@ -1346,5 +1346,4 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
     memory->deallocate(evec_theta);
     memory->deallocate(disp_mag);
     memory->deallocate(mass);
-
 }
