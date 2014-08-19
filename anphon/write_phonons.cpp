@@ -784,7 +784,7 @@ void Writes::write_normal_mode_direction()
 
     ofs_anime.close();
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_anime;
-    std::cout << " : XcrysDen AXSF file to visualize phonon mode" << std::endl;
+    std::cout << " : XcrysDen AXSF file to visualize phonon mode directions" << std::endl;
 }
 
 void Writes::write_eigenvectors()
