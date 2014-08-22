@@ -1,6 +1,6 @@
 .SUFFIXES: .h .cpp
 #-----------------------------------------------
-# Makefile for the program 'ANPHONM'.
+# Makefile for the program 'ANPHON'.
 # Please modify the variables properly.
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
@@ -13,7 +13,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework vecLib
 
 LAPACK = -llapack
-LIBS = ${LAPACK} -lfftw3
+LIBS = ${LAPACK} 
 
 #----------------------------------------------
 # General rules
