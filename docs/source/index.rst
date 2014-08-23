@@ -20,6 +20,7 @@ Users Guide
    tutorial
    input/inputalm
    input/inputanphon
+   output
    formalism/formalism_alm.rst
    formalism/formalism_anphon.rst
 

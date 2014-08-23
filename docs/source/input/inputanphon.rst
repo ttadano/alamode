@@ -112,17 +112,19 @@ List of input variables
 
 ````
 
-* NONALAYTIC-tag = 0 | 1
+* NONALAYTIC-tag = 0 | 1 | 2
 
- === ============================================================
+ === ===================================================================================
   0  | Non-analytic correction is not considered.
 
-  1  | Non-analytic correction will be considered.
-     | Appropriate ``NA_SIGMA`` and ``BORNINFO`` should be given.
- === ============================================================
+  1  | Include the non-analytic correction by the damping method proposed by Parlinski.
+
+  2  | Include the non-analytic correction by the mixed-space approach 
+ === ===================================================================================
 
  :Default: 0
  :Type: Integer
+ :Description: When ``NONANALYTIC > 0``, appropriate ``NA_SIGMA`` and ``BORNINFO`` have to be given.
 
 ````
 
@@ -322,7 +324,8 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
  :Default: 0
  :Type: Integer
- :Description: This may be useful to visualize phonon modes at gamma (0, 0, 0) by XCrysDen. The option is valid only when ``MODE = phonons``.
+ :Description: This is to visualize the direction of vibrational modes at gamma (0, 0, 0) by XCrySDen. 
+               This option is valid only when ``MODE = phonons``.
 
 ````
 
@@ -403,6 +406,37 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
                Here, :math:`f_{i}` is the fraction of :math:`i`\ th isotope of an element having mass :math:`m_{i}`, 
                and :math:`\bar{m}=\sum_{i}f_{i}m_{i}` is the average mass, respectively. 
                This quantity is equivalent to :math:`g_{2}` appearing in the original paper by S. Tamura [Phys. Rev. B, 27, 858.].
+
+
+````
+
+* ANIME-tag = k1, k2, k3
+
+ :Default: None
+ :Type: Array of doubles
+ :Description: This tag is to animate vibrational mode. k1, k2, and k3 specify the momentum of phonon modes to animate,
+               which should be given in units of the reciprocal lattice vector. For example, ``ANIME = 0.0 0.0 0.5`` will 
+               animate phonon modes at (0, 0, 1/2). When ``ANIME`` is given, ``ANIME_CELLSIZE`` is also necessarily.
+               You can choose the format of animation files, either AXSF or XYZ, by ``ANIME_FORMAT`` tag.
+
+
+````
+
+* ANIME_CELLSIZE-tag = L1, L2, L3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: This tag specifies the cell size for animation. L1, L2, and L3 should be large enough to be 
+               commensurate with the reciprocal point given by the ``ANIME`` tag.
+
+````
+
+* ANIME_FORMAT = xsf | xyz
+
+ :Default: xyz
+ :Type: String
+ :Description: When ``ANIME_FORMAT = xsf``, ``PREFIX``.anime???.axsf files are created for XcrySDen.
+               When ``ANIME_FORMAT = xyz``, ``PREFIX``.anime???.xyz files are created for VMD (and any other supporting softwares such as Jmol).
 
 
 ````

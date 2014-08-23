@@ -1,8 +1,11 @@
 Download
 ========
 
-The latest stable version of the package ALAMODE can be downloaded from `this link <http://white.phys.s.u-tokyo.ac.jp/~tadano/alamode/alamode-0.9.0.tar.gz>`_.
+You can download the latest and previous versions of ALAMODE at http://sourceforge.net/projects/alamode .
 
-We will also provide the Git repository of ALAMODE shortly.
+You can also download the package from the git repository as
 
+    $ git clone http://github.com/ttadano/alamode.git
+
+    
 

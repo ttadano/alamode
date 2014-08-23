@@ -45,15 +45,25 @@ it is necessarily to add the non\-analytic part of the dynamical matrix defined 
 
 where :math:`\Omega` is the volume of the primitive cell, :math:`Z_{\kappa}^{*}` is the Born effective charge tensor of atom :math:`\kappa`, 
 and :math:`\epsilon^{\infty}` is the dielectric constant tensor, respectively.
-In the current implementation of *anphon*, we employ the Parlinski's way [1]_ to recover the analytic behavior at :math:`\boldsymbol{q}` points away from the zone-center. Hence, the total dynamical matrix is given by
+In program *anphon*, either the Parlinski's way [1]_ or the mixed-space approach [2]_ can be used. 
+In the Parlinski's approach (``NONANALYTIC = 1``), the total dynamical matrix is given by
 
 .. math::
 
     D(\boldsymbol{q}) + D^{\textrm{NA}}(\boldsymbol{q})\exp{(-q^{2}/\sigma^{2})},
 
-where :math:`\sigma` is a damping factor which must be chosen carefully so that the non-analytic contribution
+where :math:`\sigma` is a damping factor. 
+:math:`\sigma` must be chosen carefully so that the non-analytic contribution
 becomes negligible at Brillouin zone boundaries.
-To include the non-analytic term, one needs to set ``NONANALYTIC = 1`` and give appropriate ``BORNINFO`` and ``NA_SIGMA`` tags.
+In the mixed-space approach (``NONANALYTIC = 2``), the total dynamical matrix is given by
+
+.. math::
+
+    D(\boldsymbol{q}) + D^{\textrm{NA}}(\boldsymbol{q})\frac{1}{N}\sum_{\ell^{\prime}}\exp{\left[i\boldsymbol{q}\cdot(\boldsymbol{r}(\ell^{\prime})-\boldsymbol{r}(\ell))\right]}.
+
+The second term vanishes at commensurate :math:`\boldsymbol{q}` points other than :math:`\Gamma` point (:math:`\boldsymbol{q} = 0`).
+
+To include the non-analytic term, one needs to set ``NONANALYTIC > 0`` and give appropriate ``BORNINFO`` and ``NA_SIGMA`` tags.
 
 
 Group velocity
@@ -214,14 +224,14 @@ Phonon linewidth :math:`\Gamma_{\boldsymbol{q}j}`, which is the imaginary part o
      & \left. \hspace{12mm} - (n_{1}-n_{2})\delta{(\omega - \omega_{1} + \omega_{2})} + (n_{1}-n_{2})\delta{(\omega + \omega_{1} - \omega_{2})} \right].
 
 The computation of equation :eq:`selfmod` is the most expensive part of the thermal conductivity calculations.
-Therefore, we employ the crystal symmetry to reduce the number of triplet pairs :math:`(\boldsymbol{q}j,\boldsymbol{q}^{\prime}j^{\prime},\boldsymbol{q}^{\prime\prime}j^{\prime\prime})` of :math:`V^{(3)}` to calculated.
+Therefore, we employ the crystal symmetry to reduce the number of triplet pairs :math:`(\boldsymbol{q}j,\boldsymbol{q}^{\prime}j^{\prime},\boldsymbol{q}^{\prime\prime}j^{\prime\prime})` of :math:`V^{(3)}` to calculate.
 To disable the reduction, please set ``TRISYM = 0``.
 
 
 Isotope scattering
 ------------------
 
-The effect of isotope scatterings can be considered by the mass perturbation approach proposed by S. Tamura [2]_ by the ``ISOTOPE``-tag.
+The effect of isotope scatterings can be considered by the mass perturbation approach proposed by S. Tamura [3]_ by the ``ISOTOPE``-tag.
 The corresponding phonon linewidth is given by
 
 .. math::
@@ -285,7 +295,7 @@ such as phonon DOS or energy conservation surface related to three-phonon proces
 enough to avoid unscientific oscillations. Choosing appropriate value for :math:`\epsilon` is not a trivial task
 since it may depend on the phonon structure and the density of :math:`\boldsymbol{q}` points.
 
-To avoid such issues, the program *anphon* employs the tetrahedron method [3]_ by default (``ISMEAR = -1``)
+To avoid such issues, the program *anphon* employs the tetrahedron method [4]_ by default (``ISMEAR = -1``)
 for numerical evaluations of Brillouin zone integration containing :math:`\delta(\omega)`.
 When the tetrahedron method is used, the ``EPSILON``-tag is neglected.
 We recommend to use the tetrahedron method whenever possible, even though it may slightly increase the computational cost.
@@ -294,6 +304,8 @@ We recommend to use the tetrahedron method whenever possible, even though it may
 
 .. [1] K\. Parlinski, Z. Q. Li, and Y. Kawazoe, Phys. Rev. Lett. **81**, 3298 (1998).
 
-.. [2] S\. -I. Tamura, Phys. Rev. B **27**, 858 (1983).
+.. [2] Y\. Wang *et al.*, J. Phys.: Condens. Matter **22**, 202201 (2010).
 
-.. [3] P\. E. Bl\ |umulaut_o|\ chl, O. Jepsen, and O. K. Andersen, Phys. Rev. B **49**, 1450555 (1994).
+.. [3] S\. -I. Tamura, Phys. Rev. B **27**, 858 (1983).
+
+.. [4] P\. E. Bl\ |umulaut_o|\ chl, O. Jepsen, and O. K. Andersen, Phys. Rev. B **49**, 1450555 (1994).

@@ -29,21 +29,23 @@ vasprun.xml files.
 Optional requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
-* Python, Numpy, and Matplotlib
-* Xcrysden_
+* Python (> 2.6), Numpy, and Matplotlib
+* XcrySDen_ or VMD_
 
-We provide some small scrips written in Python for visualizing phonon dispersion relations, phonon DOSs, etc.
+We provide some small scrips written in Python (Python 2) for visualizing phonon dispersion relations, phonon DOSs, etc.
 To use these scripts, one need to install the above Python packages.
-Xcrysden may be useful to visualize a zone-center normal mode. 
+Additionally, XcrySDen is necessarily to visualize the normal mode directions and animate the normal mode.
+VMD may be more useful to make an animation, but it may be replaced by any other visualization softwares which support the XYZ format.
 
-.. _Xcrysden : http://www.xcrysden.org
+.. _XcrySDen : http://www.xcrysden.org
+.. _VMD : http://www.ks.uiuc.edu/Research/vmd/
 
 How to install
 --------------
 
 .. highlight:: bash
 
-1. Download the package from the download page.
+1. Download the package from the download page or from the git repository.
 
 2. Change directory to the location of the downloaded file and untar the file as follows::
 
@@ -56,10 +58,15 @@ How to install
   * external/ : Third-party include files
   * include/ : Commonly-used include files
   * tools/ : Small auxiliary programs and scripts
+  * docs/ : Source files for making documents
 
 3. Edit the Makefiles
 
-  The directories alm/, anphon/, and tools/ contain separate Makefiles.
-  Please modify the Makefiles appropriately by changing variables such as CXX, CXXFLAGS, INCLUDE.
+  In directories alm/ and anphon/, we provide sample Makefiles for gcc and Intel compiler. 
+  Please copy one of them as ``Makefile`` and modify it appropriately.
+  To enable OpenMP parallelizations, please add the ``-openmp`` (Intel) or ``-fopenmp`` (gcc) option in ``CXXFLAGS``.
+  In addition, the directory containing the boost/ subdirectory must be given in ``INCLUDE``. 
+
 
 4. Make executables by make command.
+

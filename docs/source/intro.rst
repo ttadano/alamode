@@ -13,8 +13,8 @@ Features
 
 ALAMODE consists of two main programs **alm** and **anphon** written in C++, and some subsidiary Python scripts.
 
-The program alm can estimate harmonic and anharmonic interatomic force constants (IFCs) based on the supercell approach.
-The program anphon can compute phonon properties using the estimated IFCs. Currently, it can compute the following quantities:
+The program *alm* can estimate harmonic and anharmonic interatomic force constants (IFCs) based on the supercell approach.
+The program *anphon* can compute phonon properties using the estimated IFCs. Currently, it can compute the following quantities:
 
 * Phonon dispersion, Phonon DOS, Atom-projected phonon DOS
 * Thermodynamic functions (vibrational entropy, free energy, internal energy)
@@ -26,6 +26,14 @@ The program anphon can compute phonon properties using the estimated IFCs. Curre
 * Lattice thermal conductivity
 
 In addition, a python script may be used to estimate the cumulative thermal conductivity as a function of phonon mean-free-path.
+
+
+Links
+-----
+
+* Download page  : http://sourceforge.net/projects/alamode
+* Documentation  : http://alamode.readthedocs.org
+* Git repository : http://github.com/ttadano/alamode
 
 
 License
