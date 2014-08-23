@@ -789,16 +789,18 @@ void Writes::write_normal_mode_direction()
 
 void Writes::write_eigenvectors()
 {
+    unsigned int i, j, k;
+    unsigned int nk = kpoint->nk;
+    unsigned int neval = dynamical->neval;
+    double omega2;
     std::ofstream ofs_evec;
     std::string file_evec = input->job_title + ".evec";
 
     ofs_evec.open(file_evec.c_str(), std::ios::out);
     if(!ofs_evec) error->exit("write_eigenvectors", "cannot open file_evec");
-
     ofs_evec.setf(std::ios::scientific);
-    unsigned int i, j, k;
 
-    ofs_evec << "Lattice vectors of the primitive lattice" << std::endl;
+    ofs_evec << "# Lattice vectors of the primitive cell" << std::endl;
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
@@ -808,6 +810,7 @@ void Writes::write_eigenvectors()
     }
 
     ofs_evec << std::endl;
+    ofs_evec << "# Reciprocal lattice vectors of the primitive cell" << std::endl;
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
@@ -816,21 +819,27 @@ void Writes::write_eigenvectors()
         ofs_evec << std::endl;
     }
 
-    unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
-
-    ofs_evec << "Modes and k-points information below" << std::endl;
-    ofs_evec << std::setw(10) << nbands;
-    ofs_evec << std::setw(10) << nk << std::endl;
+    ofs_evec << std::endl;
+    ofs_evec << "# Number of phonon modes: " << std::setw(10) << nbands << std::endl;
+    ofs_evec << "# Number of k points : " << std::setw(10) << nk << std::endl << std::endl;
+    ofs_evec << "# Eigenvalues and eigenvectors for each phonon modes below:" << std::endl << std::endl;
 
     for (i = 0; i < nk; ++i){
-        ofs_evec << "#" << std::setw(10) << i + 1;
+        ofs_evec << "## kpoint " << std::setw(7) << i + 1 << " : ";
         for (j = 0; j < 3; ++j){
             ofs_evec << std::setw(15) << kpoint->xk[i][j];
         }
         ofs_evec << std::endl;
         for (j = 0; j < nbands; ++j){
-            ofs_evec << std::setw(15) << dynamical->eval_phonon[i][j] << std::endl;
+            omega2 = dynamical->eval_phonon[i][j];
+            if (omega2 >= 0.0) {
+                omega2 = omega2 * omega2;
+            } else {
+                omega2 = - omega2 * omega2;
+            }
+
+            ofs_evec << "### mode " << std::setw(8) << j + 1 << " : ";
+            ofs_evec << std::setw(15) << omega2 << std::endl;
 
             for (k = 0; k < neval; ++k){
                 ofs_evec << std::setw(15) << real(dynamical->evec_phonon[i][j][k]);
