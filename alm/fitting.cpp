@@ -182,20 +182,38 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     int idata, itran, isym;
     int n_mapped;
     double u_rot[3], f_rot[3];
-    double ***u_tmp, ***f_tmp;
+    double u_in, f_in;
+    double *u_tmp, *f_tmp;
+    std::vector<int> vec_data;
+    unsigned int nline_f, nline_u;
+    unsigned int nreq;
 
-    memory->allocate(u_tmp, ndata, nat, 3);
-    memory->allocate(f_tmp, ndata, nat, 3);
+    nreq = 3 * nat * ndata;
 
-    files->ifs_disp.seekg(0, std::ios::beg);
-    files->ifs_force.seekg(0, std::ios::beg);
+    memory->allocate(u_tmp, nreq);
+    memory->allocate(f_tmp, nreq);
 
-    for (i = 0; i < ndata; ++i) {
-        for (j = 0; j < nat; ++j) {
-            files->ifs_disp >> u_tmp[i][j][0] >> u_tmp[i][j][1] >> u_tmp[i][j][2];
-            files->ifs_force >> f_tmp[i][j][0] >> f_tmp[i][j][1] >> f_tmp[i][j][2];
-        }
+    // Read displacements from DFILE
+
+    nline_u = 0;
+    while (files->ifs_disp >> u_in) {
+      u_tmp[nline_u++] = u_in;
+      if (nline_u == nreq) break;
     }
+    if (nline_u < nreq) error->exit("data_multiplier", 
+				    "The number of lines in DFILE is too small for the given NDATA = ", ndata);
+
+    // Read forces from FFILE
+
+    nline_f = 0;
+    while (files->ifs_force >> f_in) {
+      f_tmp[nline_f++] = f_in;
+      if (nline_f == nreq) break;
+    }
+    if (nline_f < nreq) error->exit("data_multiplier", 
+				    "The number of lines in FFILE is too small for the given NDATA = ", ndata);
+
+    // Multiply data
 
     if (multiply_data == 0) {
 
@@ -214,8 +232,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
             for (j = 0; j < nat; ++j) {
                 for (k = 0; k < 3; ++k) {
-                    u[idata][3 * j + k] = u_tmp[i][j][k];
-                    f[idata][3 * j + k] = f_tmp[i][j][k];
+		  u[idata][3 * j + k] = u_tmp[3*nat*i + 3*j + k];
+		  f[idata][3 * j + k] = f_tmp[3*nat*i + 3*j + k];
                 }
             }
             ++idata;
@@ -242,8 +260,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
                     n_mapped = symmetry->map_sym[j][symmetry->symnum_tran[itran]];
 
                     for (k = 0; k < 3; ++k) {
-                        u[idata][3 * n_mapped + k] = u_tmp[i][j][k];
-                        f[idata][3 * n_mapped + k] = f_tmp[i][j][k];
+                        u[idata][3 * n_mapped + k] = u_tmp[3*nat*i + 3*j + k];
+                        f[idata][3 * n_mapped + k] = f_tmp[3*nat*i + 3*j + k];
                     }
                 }
                 ++idata;
@@ -266,20 +284,26 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
             if (i < nstart - 1) continue;
             if (i > nend - 1) break;
 
+#pragma omp parallel for private(j, n_mapped, k, u_rot, f_rot)
             for (isym = 0; isym < symmetry->nsym; ++isym) {
                 for (j = 0; j < nat; ++j) {
                     n_mapped = symmetry->map_sym[j][isym];
 
-                    rotvec(u_rot, u_tmp[i][j], symmetry->symrel[isym]);
-                    rotvec(f_rot, f_tmp[i][j], symmetry->symrel[isym]);
+		    for (k = 0; k < 3; ++k) {
+		      u_rot[k] = u_tmp[3*nat*i + 3*j + k];
+		      f_rot[k] = f_tmp[3*nat*i + 3*j + k];
+		    }
+
+                    rotvec(u_rot, u_rot, symmetry->symrel[isym]);
+                    rotvec(f_rot, f_rot, symmetry->symrel[isym]);
 
                     for (k = 0; k < 3; ++k) {
-                        u[idata][3 * n_mapped + k] = u_rot[k];
-                        f[idata][3 * n_mapped + k] = f_rot[k];
+                        u[nmulti * idata + isym][3 * n_mapped + k] = u_rot[k];
+                        f[nmulti * idata + isym][3 * n_mapped + k] = f_rot[k];
                     }
                 }
-                ++idata;
             }
+	    ++idata;
         }
 
     } else {
@@ -353,7 +377,8 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
     memory->deallocate(S);
 }
 
-void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double **amat, double *bvec, double **cmat, double *dvec)
+void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
+				   double **amat, double *bvec, double **cmat, double *dvec)
 {
     int i, j, k;
     int nrank;
@@ -462,7 +487,8 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P, double 
     memory->deallocate(fsum2);
 }
 
-void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti, double **amat, double *bvec, double **cmat, double *dvec)
+void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti, 
+			    double **amat, double *bvec, double **cmat, double *dvec)
 {
     int i, j, k, l;
     int M_Start, M_End;
@@ -588,7 +614,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
     std::cout << "  Normal fitting will be performed" << std::endl;
 }
 
-void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_used, const int nmulti, const int nskip, double **amat, double *bvec, double **cmat, double *dvec)
+void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_used, const int nmulti, const int nskip, 
+				double **amat, double *bvec, double **cmat, double *dvec)
 {
     int i, j, k;
     int iend;
@@ -705,7 +732,9 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     std::cout << "  Consecutive fitting finished." << std::endl;
 }
 
-void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin, const int ndata_fit, const int nmulti, const int maxorder, double **u, double **f, double **amat, double *bvec)
+void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin, 
+				   const int ndata_fit, const int nmulti, const int maxorder, 
+				   double **u, double **f, double **amat, double *bvec)
 {
     int i, j;
     int irow;
@@ -867,36 +896,6 @@ int Fitting::factorial(const int n)
 //    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
 //    return qr.rank();
 //}
-
-
-/* unsuccessful
-int Fitting::getRankEigen(int m, int p, int n)
-{
-using namespace Eigen;
-MatrixXd mat(m + p, n);
-
-
-int i, j;
-int k = 0;
-for(i = 0; i < m; ++i){
-for(j = 0; j < n; ++j){
-mat(k, j) = amat[i][j];
-}
-++k;
-}
-std::cout <<"OK";
-
-for(i = 0; i < p; ++i){
-for(j = 0; j < n; ++j){
-mat(k, j) = const_mat[i][j];
-}
-++k;
-}
-std::cout <<"OK";
-ColPivHouseholderQR<MatrixXd> qr(mat);
-return qr.rank();
-}
-*/
 
 //int Fitting::rank(int m, int n, double *mat)
 //{

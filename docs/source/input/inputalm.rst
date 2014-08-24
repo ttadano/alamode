@@ -320,7 +320,7 @@ Format of DFILE and FFILE
 
 The displacement-force data sets obtained by first-principles (or classical force-field) calculations
 have to be saved to ``DFILE`` and ``FFILE`` to estimate IFCs with ``MODE = fitting``.
-In ``DFILE``, please explicitly specify the atomic displacements :math:`u_{\alpha}(\ell\kappa)` in units of Bohr as follows:
+In ``DFILE``, please explicitly specify the atomic displacements :math:`u_{\alpha}(\ell\kappa)` **in units of Bohr** as follows:
  
 .. math::
     :nowrap:
@@ -334,4 +334,4 @@ In ``DFILE``, please explicitly specify the atomic displacements :math:`u_{\alph
 
 When there are ``NAT`` atoms in the supercell and ``NDATA`` data sets, 
 there should be  ``NAT`` :math:`\times` ``NDATA`` lines in the ``DFILE`` without blank lines.
-In ``FFILE``, please specify the corresponding atomic forces in units of Ryd/Bohr.
+In ``FFILE``, please specify the corresponding atomic forces **in units of Ryd/Bohr**.

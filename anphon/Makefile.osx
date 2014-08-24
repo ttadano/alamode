@@ -1,6 +1,6 @@
 .SUFFIXES: .h .cpp
 #-----------------------------------------------
-# Makefile for the program 'ANPHONM'.
+# Makefile for the program 'ANPHON'.
 # Please modify the variables properly.
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
@@ -13,7 +13,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework vecLib
 
 LAPACK = -llapack
-LIBS = ${LAPACK} -lfftw3
+LIBS = ${LAPACK} 
 
 #----------------------------------------------
 # General rules
@@ -28,8 +28,7 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
 	phonon_dos.cpp phonon_velocity.cpp integration.cpp relaxation.cpp \
 	phonon_thermodynamics.cpp conductivity.cpp symmetry_core.cpp \
-        mpi_common.cpp gruneisen.cpp isotope.cpp \
-        selfenergy.cpp
+        mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
