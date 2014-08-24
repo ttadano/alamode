@@ -37,13 +37,14 @@ except ImportError:
 
 usage = "usage: %prog [options]  */vasprun.xml"
 parser = optparse.OptionParser(usage=usage)
-parser.add_option('-u', '--unit', action="store", type="string", dest="unitname", default="Rydberg",
-    help="print atomic displacements and forces in units of UNIT. Available options are original, Rydberg (default), and Hartree.")
-parser.add_option('-e', '--extract', help="specify which quantity to extract. Available options are disp, force and energy.")
-parser.add_option('-i', '--input', help="Original POSCAR file with equilibrium atomic positions (default: POSCAR)")
+parser.add_option('--unit', action="store", type="string", dest="unitname", default="Rydberg",
+    help="print atomic displacements and forces in units of UNIT. Available options are eV, Rydberg (default), and Hartree.")
+parser.add_option('--get', help="specify which quantity to extract. Available options are disp, force and energy.")
+parser.add_option('--poscar', help="Original POSCAR file with equilibrium atomic positions (default: POSCAR)")
 
 
 def read_POSCAR(file_in):
+
     file_pos = open(file_in, 'r')
     
     str_tmp = file_pos.readline()
@@ -63,7 +64,14 @@ def read_POSCAR(file_in):
     invlavec = lavec.I
 
     elements = file_pos.readline().rstrip().split()
-    nat_elem = [int(tmp) for tmp in file_pos.readline().rstrip().split()]
+
+    if elements[0].isdigit():
+        nat_elem = [int(tmp) for tmp in elements]
+        elements = []
+
+    else:
+        nat_elem = [int(tmp) for tmp in file_pos.readline().rstrip().split()]
+
 
     nat = np.sum(nat_elem)
     basis = file_pos.readline().rstrip()
@@ -208,15 +216,15 @@ if __name__ == "__main__":
         print "For details of available options, please type\n$ python extVASP.py -h"
         exit(1)
 
-    if options.input == None:
+    if options.poscar == None:
         file_poscar = "POSCAR"
     else:
-        file_poscar = options.input
+        file_poscar = options.poscar
 
     Bohr_radius = 0.52917721092 #Angstrom
     Rydberg_to_eV = 13.60569253
 
-    if options.unitname == "original":
+    if options.unitname == "eV":
         convert_unit = False
         disp_conv_factor = 1.0
         energy_conv_factor = 1.0
@@ -238,19 +246,17 @@ if __name__ == "__main__":
     print_force = False
     print_energy = False
 
-    if options.extract == "disp":
+    if options.get == "disp":
         print_disp = True
-    elif options.extract == "force":
+    elif options.get == "force":
         print_force = True
-    elif options.extract == "energy":
+    elif options.get == "energy":
         print_energy = True
     else:
-        print "Please specify which quantity to extract by the --extract option."
+        print "Please specify which quantity to extract by the --get option."
         exit(1)
 
     aa, aa_inv, elems, nats, x_frac0 = read_POSCAR(file_poscar)
-    #print "Total number of atoms: ", np.sum(nats)
-
 
 
     if print_disp:
