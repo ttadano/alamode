@@ -5,7 +5,12 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
+#Intel compiler
+#CXX = icpc
+
+# OSX
 CXX = c++
+
 CXXFLAGS = -O2 
 INCLUDE = -I../include 
 

@@ -140,14 +140,16 @@ void Writes::write_input_vars()
             }
             std::cout << std::endl;
         }
-        std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
-        std::cout << std::endl;
-        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
-        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
-        std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
-        std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
-        std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
-        std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+	
+	//        std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
+	//        std::cout << std::endl;
+	//        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
+	//        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
+        // std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
+        // std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
+        // std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
+	//  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+
     } else {
         error->exit("write_input_vars", "This cannot happen");
     }
@@ -467,8 +469,6 @@ void Writes::write_phonon_info()
             std::cout << " : XYZ files for animate phonon modes" << std::endl;
         }
     }
-
-
 }
 
 void Writes::write_phonon_bands()
@@ -784,21 +784,23 @@ void Writes::write_normal_mode_direction()
 
     ofs_anime.close();
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_anime;
-    std::cout << " : XcrysDen AXSF file to visualize phonon mode" << std::endl;
+    std::cout << " : XcrysDen AXSF file to visualize phonon mode directions" << std::endl;
 }
 
 void Writes::write_eigenvectors()
 {
+    unsigned int i, j, k;
+    unsigned int nk = kpoint->nk;
+    unsigned int neval = dynamical->neval;
+    double omega2;
     std::ofstream ofs_evec;
     std::string file_evec = input->job_title + ".evec";
 
     ofs_evec.open(file_evec.c_str(), std::ios::out);
     if(!ofs_evec) error->exit("write_eigenvectors", "cannot open file_evec");
-
     ofs_evec.setf(std::ios::scientific);
-    unsigned int i, j, k;
 
-    ofs_evec << "Lattice vectors of the primitive lattice" << std::endl;
+    ofs_evec << "# Lattice vectors of the primitive cell" << std::endl;
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
@@ -808,6 +810,7 @@ void Writes::write_eigenvectors()
     }
 
     ofs_evec << std::endl;
+    ofs_evec << "# Reciprocal lattice vectors of the primitive cell" << std::endl;
 
     for (i = 0; i < 3; ++i){
         for (j = 0; j < 3; ++j){
@@ -816,21 +819,27 @@ void Writes::write_eigenvectors()
         ofs_evec << std::endl;
     }
 
-    unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
-
-    ofs_evec << "Modes and k-points information below" << std::endl;
-    ofs_evec << std::setw(10) << nbands;
-    ofs_evec << std::setw(10) << nk << std::endl;
+    ofs_evec << std::endl;
+    ofs_evec << "# Number of phonon modes: " << std::setw(10) << nbands << std::endl;
+    ofs_evec << "# Number of k points : " << std::setw(10) << nk << std::endl << std::endl;
+    ofs_evec << "# Eigenvalues and eigenvectors for each phonon modes below:" << std::endl << std::endl;
 
     for (i = 0; i < nk; ++i){
-        ofs_evec << "#" << std::setw(10) << i + 1;
+        ofs_evec << "## kpoint " << std::setw(7) << i + 1 << " : ";
         for (j = 0; j < 3; ++j){
             ofs_evec << std::setw(15) << kpoint->xk[i][j];
         }
         ofs_evec << std::endl;
         for (j = 0; j < nbands; ++j){
-            ofs_evec << std::setw(15) << dynamical->eval_phonon[i][j] << std::endl;
+            omega2 = dynamical->eval_phonon[i][j];
+            if (omega2 >= 0.0) {
+                omega2 = omega2 * omega2;
+            } else {
+                omega2 = - omega2 * omega2;
+            }
+
+            ofs_evec << "### mode " << std::setw(8) << j + 1 << " : ";
+            ofs_evec << std::setw(15) << omega2 << std::endl;
 
             for (k = 0; k < neval; ++k){
                 ofs_evec << std::setw(15) << real(dynamical->evec_phonon[i][j][k]);
@@ -861,14 +870,15 @@ void Writes::write_thermodynamics()
     double T, TD;
     std::string file_thermo;
 
-    NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+    NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_thermo;
     file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if(!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
     ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::endl;
-//  
+
+
 //     for (i = 0; i <= NT; ++i) {
 //    
 //         T = Tmin + dT * static_cast<double>(i);
@@ -879,7 +889,7 @@ void Writes::write_thermodynamics()
 //     }
     
 
-    for (i = 0; i <= NT; ++i){
+    for (i = 0; i <  NT; ++i){
         T = Tmin + dT * static_cast<double>(i);
 
         ofs_thermo << std::setw(16) << T;
@@ -990,7 +1000,7 @@ void Writes::write_msd()
     ofs_rmsd << "# Mean Square Displacements at a function of temperature." << std::endl;
     ofs_rmsd << "# Temperature [K], <(u_{1}^{x})^{2}>, <(u_{1}^{y})^{2}>, <(u_{1}^{z})^{2}>, .... [Angstrom^2]" << std::endl;
 
-    NT = static_cast<unsigned int>((Tmax - Tmin) / dT);
+    NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     for (i = 0; i < NT; ++i) {
 
@@ -1335,7 +1345,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         }
 
     }
-   
 
     memory->deallocate(xmod);
     memory->deallocate(kd_tmp);
@@ -1346,5 +1355,4 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
     memory->deallocate(evec_theta);
     memory->deallocate(disp_mag);
     memory->deallocate(mass);
-
 }

@@ -43,7 +43,7 @@ void Conductivity::setup_kappa()
     nk = kpoint->nk;
     ns = dynamical->neval;
 
-    ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT);
+    ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
     memory->allocate(Temperature, ntemp);
 
     for (i = 0; i < ntemp; ++i) {
