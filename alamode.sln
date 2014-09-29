@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "alm", "alm\alm.vcxproj", "{0FFEA662-D4F1-4D18-A920-B61EE02A7F21}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "anphon", "anphon\anphon.vcxproj", "{80B34241-B404-47A5-B4C6-DA735D121433}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0FFEA662-D4F1-4D18-A920-B61EE02A7F21}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0FFEA662-D4F1-4D18-A920-B61EE02A7F21}.Debug|Win32.Build.0 = Debug|Win32
+		{0FFEA662-D4F1-4D18-A920-B61EE02A7F21}.Release|Win32.ActiveCfg = Release|Win32
+		{0FFEA662-D4F1-4D18-A920-B61EE02A7F21}.Release|Win32.Build.0 = Release|Win32
+		{80B34241-B404-47A5-B4C6-DA735D121433}.Debug|Win32.ActiveCfg = Debug|Win32
+		{80B34241-B404-47A5-B4C6-DA735D121433}.Debug|Win32.Build.0 = Debug|Win32
+		{80B34241-B404-47A5-B4C6-DA735D121433}.Release|Win32.ActiveCfg = Release|Win32
+		{80B34241-B404-47A5-B4C6-DA735D121433}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
