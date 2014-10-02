@@ -893,10 +893,10 @@ void Writes::write_thermodynamics()
         T = Tmin + dT * static_cast<double>(i);
 
         ofs_thermo << std::setw(16) << T;
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann;
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->vibrational_entropy(T) / k_Boltzmann;
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->internal_energy(T);
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->free_energy(T) << std::endl;
+        ofs_thermo << std::setw(18) << thermodynamics->Cv_tot(T) / k_Boltzmann;
+        ofs_thermo << std::setw(18) << thermodynamics->vibrational_entropy(T) / k_Boltzmann;
+        ofs_thermo << std::setw(18) << thermodynamics->internal_energy(T);
+        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T) << std::endl;
     }
 
     ofs_thermo.close();
@@ -1008,7 +1008,7 @@ void Writes::write_msd()
         ofs_rmsd << std::setw(15) << T;
 
         for (j = 0; j < ns; ++j){
-            d2_tmp = phonon_thermodynamics->disp2_avg(T, j, j);
+            d2_tmp = thermodynamics->disp2_avg(T, j, j);
             ofs_rmsd << std::setw(15) << std::sqrt(d2_tmp)*Bohr_in_Angstrom;
         }
         ofs_rmsd << std::endl;

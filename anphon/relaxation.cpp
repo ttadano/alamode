@@ -773,12 +773,12 @@ void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const do
             for (is = 0; is < ns; ++is){
 
                 omega_inner[0] = dynamical->eval_phonon[k1][is];
-                f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
+                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
 
                 for (js = 0; js < ns; ++js) {
 
                     omega_inner[1] = dynamical->eval_phonon[k2][js];
-                    f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
 
                     n1 =  f1 + f2 + 1.0;
                     n2 =  f1 - f2;
@@ -916,12 +916,12 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
             for (is = 0; is < ns; ++is){
 
                 omega_inner[0] = dynamical->eval_phonon[k1][is];
-                f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
+                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
 
                 for (js = 0; js < ns; ++js) {
 
                     omega_inner[1] = dynamical->eval_phonon[k2][js];
-                    f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
 
                     n1 =  f1 + f2 + 1.0;
                     n2 =  f1 - f2;
@@ -994,8 +994,8 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
 
-                    f1 = phonon_thermodynamics->fB(omega_inner[0], T_tmp);
-                    f2 = phonon_thermodynamics->fB(omega_inner[1], T_tmp);
+                    f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
                     n1 = f1 + f2 + 1.0;
                     n2 = f1 - f2;
 
@@ -1843,8 +1843,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
                         for (iT = 0; iT < NT; ++iT) {
                             T_tmp = T_arr[iT];
 
-                            f1 = phonon_thermodynamics->fB(eval[1][is], T_tmp);
-                            f2 = phonon_thermodynamics->fB(eval[2][js], T_tmp);
+                            f1 = thermodynamics->fB(eval[1][is], T_tmp);
+                            f2 = thermodynamics->fB(eval[2][js], T_tmp);
                             n1 = f1 + f2 + 1.0;
                             n2 = f1 - f2;
 

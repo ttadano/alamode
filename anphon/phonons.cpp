@@ -103,7 +103,7 @@ void PHON::create_pointers()
     dynamical = new Dynamical(this);
     integration = new Integration(this);
     phonon_velocity = new Phonon_velocity(this);
-    phonon_thermodynamics = new Phonon_thermodynamics(this);
+    thermodynamics = new Thermodynamics(this);
     relaxation = new Relaxation(this);
     selfenergy = new Selfenergy(this);
     conductivity = new Conductivity(this);
@@ -125,7 +125,7 @@ void PHON::destroy_pointers()
     delete dynamical;
     delete integration;
     delete phonon_velocity;
-    delete phonon_thermodynamics;
+    delete thermodynamics;
     delete relaxation;
     delete selfenergy;
     delete conductivity;
