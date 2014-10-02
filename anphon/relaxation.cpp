@@ -25,7 +25,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "memory.h"
 #include "parsephon.h"
 #include "phonon_dos.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "phonon_velocity.h"
 #include "relaxation.h"
 #include "selfenergy.h"
@@ -851,8 +851,8 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
 
 #pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, arr)
     {
-        memory->allocate(energy_tmp, 2, nk);
-        memory->allocate(weight_tetra, 2, nk);
+        memory->allocate(energy_tmp, 3, nk);
+        memory->allocate(weight_tetra, 3, nk);
 
 #pragma omp for
         for (ib = 0; ib < ns2; ++ib) {
@@ -869,13 +869,14 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
 
                 energy_tmp[0][k1] = dynamical->eval_phonon[k1][is] + dynamical->eval_phonon[k2][js];
                 energy_tmp[1][k1] = dynamical->eval_phonon[k1][is] - dynamical->eval_phonon[k2][js];
+                energy_tmp[2][k1] = -energy_tmp[1][k1];
             }
 
-            for (i = 0; i < 2; ++i) {
+            for (i = 0; i < 3; ++i) {
                 integration->calc_weight_tetrahedron(nk, kmap_identity, weight_tetra[i], energy_tmp[i], omega);
             }
 
-            for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+            for (ik = 0; ik < npair_uniq; ++ik) {
 
                 k1 = pair_uniq[ik_in][ik].group[0].ks[0];
                 k2 = pair_uniq[ik_in][ik].group[0].ks[1];
@@ -891,8 +892,8 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
 
                 for (i = 0; i < pair_uniq[ik_in][ik].group.size(); ++i) {
                     jk = pair_uniq[ik_in][ik].group[i].ks[0];
-                    delta_arr[ik][ib][0] += weight_tetra[0][jk];
-                    delta_arr[ik][ib][1] += 2.0 * weight_tetra[1][jk];
+                    delta_arr[ik][ib][0] += weight_tetra[0][jk];            
+                    delta_arr[ik][ib][1] += weight_tetra[1][jk] - weight_tetra[2][jk];
                 }
             }
         }

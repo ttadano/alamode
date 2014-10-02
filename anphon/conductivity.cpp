@@ -19,7 +19,7 @@
 #include "kpoint.h"
 #include "memory.h"
 #include "parsephon.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "phonon_velocity.h"
 #include "relaxation.h"
 #include "system.h"

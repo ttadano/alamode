@@ -22,7 +22,7 @@
 #include "fcs_phonon.h"
 #include "dynamical.h"
 #include "phonon_velocity.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "integration.h"

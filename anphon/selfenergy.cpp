@@ -15,7 +15,7 @@
 #include "dynamical.h"
 #include "kpoint.h"
 #include "memory.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "mathfunctions.h"
 #include "integration.h"
 
