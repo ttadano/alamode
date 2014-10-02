@@ -152,9 +152,5 @@ namespace PHON_NS {
         int ngroup2;
         std::vector<double> *fcs_group;
         std::vector<double> *fcs_group2;
-
-        double **v3_arr;
-        double ***delta_arr;
-
     };
 }

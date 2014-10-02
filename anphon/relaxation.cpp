@@ -71,8 +71,6 @@ void Relaxation::setup_relaxation()
     std::sort(fcs_phonon->force_constant_with_cell[1].begin(), fcs_phonon->force_constant_with_cell[1].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3, ngroup, fcs_group);
 
-    memory->allocate(v3_arr, nk, ns*ns);
-    memory->allocate(delta_arr, nk, ns*ns, 4);
     memory->allocate(vec_for_v3, 3, 2, fcs_phonon->force_constant_with_cell[1].size());
     memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
     memory->allocate(evec_index, fcs_phonon->force_constant_with_cell[1].size(), 3);
@@ -107,11 +105,11 @@ void Relaxation::setup_relaxation()
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl << std::endl;
-            std::cout << " **********************************************************" << std::endl;
-            std::cout << "     QUARTIC = 1: quartic_mode is on !                     " << std::endl;
-            std::cout << "     Be careful! This mode is still under test.            " << std::endl;
-            std::cout << "     There can be bugs and the computation is very heavy   " << std::endl;
-            std::cout << " **********************************************************" << std::endl;
+            std::cout << " ************************************************************" << std::endl;
+            std::cout << "     QUARTIC = 1: quartic_mode is on !                       " << std::endl;
+            std::cout << "     Be careful! This mode is still under test.              " << std::endl;
+            std::cout << "     There can be bugs and the computation is very expensive." << std::endl;
+            std::cout << " ************************************************************" << std::endl;
             std::cout << std::endl;
         }
 
@@ -181,8 +179,6 @@ void Relaxation::finish_relaxation()
     memory->deallocate(invmass_for_v3);
     memory->deallocate(evec_index);
     memory->deallocate(fcs_group);
-    memory->deallocate(v3_arr);
-    memory->deallocate(delta_arr);
 
     if (quartic_mode > 0) {
         memory->deallocate(vec_for_v4);
