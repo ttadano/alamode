@@ -32,7 +32,6 @@ namespace PHON_NS {
             relaxation(ptr->relaxation),
             selfenergy(ptr->selfenergy),
             conductivity(ptr->conductivity),
-            interpolation(ptr->interpolation),
             writes(ptr->writes),
             dos(ptr->dos),
             gruneisen(ptr->gruneisen),
@@ -56,7 +55,6 @@ namespace PHON_NS {
         Relaxation *&relaxation;
         Selfenergy *&selfenergy;
         Conductivity *&conductivity;
-        Interpolation *&interpolation;
         Writes *&writes;
         Dos *&dos;
         Gruneisen *&gruneisen;

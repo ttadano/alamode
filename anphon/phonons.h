@@ -40,7 +40,6 @@ namespace PHON_NS
         class Relaxation *relaxation;
         class Selfenergy *selfenergy;
         class Conductivity *conductivity;
-        class Interpolation *interpolation;
         class Writes *writes;
         class Dos *dos;
         class Gruneisen *gruneisen;
