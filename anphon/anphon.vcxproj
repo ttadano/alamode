@@ -91,12 +91,12 @@
     <ClCompile Include="parsephon.cpp" />
     <ClCompile Include="phonons.cpp" />
     <ClCompile Include="phonon_dos.cpp" />
-    <ClCompile Include="phonon_thermodynamics.cpp" />
     <ClCompile Include="phonon_velocity.cpp" />
     <ClCompile Include="relaxation.cpp" />
     <ClCompile Include="selfenergy.cpp" />
     <ClCompile Include="symmetry_core.cpp" />
     <ClCompile Include="system.cpp" />
+    <ClCompile Include="thermodynamics.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="write_phonons.cpp" />
   </ItemGroup>
@@ -114,13 +114,13 @@
     <ClInclude Include="parsephon.h" />
     <ClInclude Include="phonons.h" />
     <ClInclude Include="phonon_dos.h" />
-    <ClInclude Include="phonon_thermodynamics.h" />
     <ClInclude Include="phonon_velocity.h" />
     <ClInclude Include="pointers.h" />
     <ClInclude Include="relaxation.h" />
     <ClInclude Include="selfenergy.h" />
     <ClInclude Include="symmetry_core.h" />
     <ClInclude Include="system.h" />
+    <ClInclude Include="thermodynamics.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="write_phonons.h" />
   </ItemGroup>

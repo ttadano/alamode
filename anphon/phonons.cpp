@@ -22,7 +22,7 @@
 #include "fcs_phonon.h"
 #include "dynamical.h"
 #include "phonon_velocity.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "integration.h"
@@ -103,7 +103,7 @@ void PHON::create_pointers()
     dynamical = new Dynamical(this);
     integration = new Integration(this);
     phonon_velocity = new Phonon_velocity(this);
-    phonon_thermodynamics = new Phonon_thermodynamics(this);
+    thermodynamics = new Thermodynamics(this);
     relaxation = new Relaxation(this);
     selfenergy = new Selfenergy(this);
     conductivity = new Conductivity(this);
@@ -125,7 +125,7 @@ void PHON::destroy_pointers()
     delete dynamical;
     delete integration;
     delete phonon_velocity;
-    delete phonon_thermodynamics;
+    delete thermodynamics;
     delete relaxation;
     delete selfenergy;
     delete conductivity;

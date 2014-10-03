@@ -15,7 +15,7 @@
 #include "dynamical.h"
 #include "kpoint.h"
 #include "memory.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "mathfunctions.h"
 #include "integration.h"
 
@@ -133,8 +133,8 @@ void Selfenergy::selfenergy_a(const unsigned int N, double *T, const double omeg
 
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
-                    n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-                    n2 = phonon_thermodynamics->fB(omega2, T_tmp);
+                    n1 = thermodynamics->fB(omega1, T_tmp);
+                    n2 = thermodynamics->fB(omega2, T_tmp);
 
                     ret_mpi[i] += v3_tmp * ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1]); 
                 }
@@ -192,7 +192,7 @@ void Selfenergy::selfenergy_b(const unsigned int N, double *T, const double omeg
             v4_tmp = relaxation->V4(arr_quartic);
 
             for (i = 0; i < N; ++i) {
-                n1 = phonon_thermodynamics->fB(omega1, T[i]);
+                n1 = thermodynamics->fB(omega1, T[i]);
                 ret_mpi[i] += v4_tmp * (2.0 * n1 + 1.0);
             }
         }
@@ -285,9 +285,9 @@ void Selfenergy::selfenergy_c(const unsigned int N, double *T, const double omeg
                         for (i = 0; i < N; ++i) {
                             T_tmp = T[i];
 
-                            n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-                            n2 = phonon_thermodynamics->fB(omega2, T_tmp);
-                            n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+                            n1 = thermodynamics->fB(omega1, T_tmp);
+                            n2 = thermodynamics->fB(omega2, T_tmp);
+                            n3 = thermodynamics->fB(omega3, T_tmp);
 
                             n12 = n1 * n2;
                             n23 = n2 * n3;
@@ -420,10 +420,10 @@ void Selfenergy::selfenergy_d(const unsigned int N, double *T, const double omeg
                             for (i = 0; i < N; ++i) {
                                 T_tmp = T[i];
 
-                                n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-                                n2 = phonon_thermodynamics->fB(omega2, T_tmp);
-                                n3 = phonon_thermodynamics->fB(omega3, T_tmp);
-                                n4 = phonon_thermodynamics->fB(omega4, T_tmp);
+                                n1 = thermodynamics->fB(omega1, T_tmp);
+                                n2 = thermodynamics->fB(omega2, T_tmp);
+                                n3 = thermodynamics->fB(omega3, T_tmp);
+                                n4 = thermodynamics->fB(omega4, T_tmp);
 
                                 ret_mpi[i] += v_prod
                                     * ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1])
@@ -563,8 +563,8 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
                                         for (i = 0; i < N; ++i) {
                                             T_tmp = T[i];
 
-                                            n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                            n4 = phonon_thermodynamics->fB(dp4, T_tmp);
+                                            n1 = thermodynamics->fB(dp1, T_tmp);
+                                            n4 = thermodynamics->fB(dp4, T_tmp);
 
 
                                             if (std::abs(T_tmp) < eps) {
@@ -573,7 +573,7 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
                                                 // which is zero when T = 0.
                                                 T_inv = 0.0; 
                                             } else {
-                                                T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+                                                T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                             }
 
                                             prod_tmp[i] += static_cast<double>(ip4) * omega_sum
@@ -585,7 +585,7 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
                                 for (i = 0; i < N; ++i) {
                                     T_tmp = T[i];
 
-                                    n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+                                    n3 = thermodynamics->fB(omega3, T_tmp);
                                     ret_mpi[i] += v_prod * (2.0 * n3 + 1.0) * prod_tmp[i];
                                 }
                             }
@@ -637,10 +637,10 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
                                 for (i = 0; i < N; ++i) {
                                     T_tmp = T[i];
 
-                                    n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-                                    n2 = phonon_thermodynamics->fB(omega2, T_tmp);
-                                    n3 = phonon_thermodynamics->fB(omega3, T_tmp);
-                                    n4 = phonon_thermodynamics->fB(omega4, T_tmp);
+                                    n1 = thermodynamics->fB(omega1, T_tmp);
+                                    n2 = thermodynamics->fB(omega2, T_tmp);
+                                    n3 = thermodynamics->fB(omega3, T_tmp);
+                                    n4 = thermodynamics->fB(omega4, T_tmp);
 
                                     ret_mpi[i] += v_prod * (2.0 * n3 + 1.0) 
                                         * ((1.0 + n1) * omega_prod[0] + n1 * omega_prod[1] 
@@ -809,15 +809,15 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
                                                     for (i = 0; i < N; ++i) {
                                                         T_tmp = T[i];
 
-                                                        n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                                        n2 = phonon_thermodynamics->fB(dp2, T_tmp);
-                                                        n3 = phonon_thermodynamics->fB(dp3, T_tmp);
-                                                        n4 = phonon_thermodynamics->fB(dp4, T_tmp);
+                                                        n1 = thermodynamics->fB(dp1, T_tmp);
+                                                        n2 = thermodynamics->fB(dp2, T_tmp);
+                                                        n3 = thermodynamics->fB(dp3, T_tmp);
+                                                        n4 = thermodynamics->fB(dp4, T_tmp);
 
                                                         if (std::abs(T_tmp) < eps) {
                                                             T_inv = 0.0;
                                                         } else {
-                                                            T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+                                                            T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                                         }
 
                                                         ret_mpi[i] += v3_prod * static_cast<double>(ip2*ip3*ip4)
@@ -859,11 +859,11 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
                                                         for (i = 0; i < N; ++i) {
                                                             T_tmp = T[i];
 
-                                                            n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                                            n2 = phonon_thermodynamics->fB(dp2, T_tmp);
-                                                            n3 = phonon_thermodynamics->fB(dp3, T_tmp);
-                                                            n4 = phonon_thermodynamics->fB(dp4, T_tmp);
-                                                            n5 = phonon_thermodynamics->fB(dp5, T_tmp);
+                                                            n1 = thermodynamics->fB(dp1, T_tmp);
+                                                            n2 = thermodynamics->fB(dp2, T_tmp);
+                                                            n3 = thermodynamics->fB(dp3, T_tmp);
+                                                            n4 = thermodynamics->fB(dp4, T_tmp);
+                                                            n5 = thermodynamics->fB(dp5, T_tmp);
 
                                                             ret_mpi[i] += v3_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
                                                                 * ((1.0 + n3 + n4) * (-(1.0 + n1 + n2) * D15 * D134 * omega_sum[0] 
@@ -1012,10 +1012,10 @@ void Selfenergy::selfenergy_g(const unsigned int N, double *T, const double omeg
                                             for (i = 0; i < N; ++i) {
                                                 T_tmp = T[i];
 
-                                                n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                                n2 = phonon_thermodynamics->fB(dp2, T_tmp);
-                                                n3 = phonon_thermodynamics->fB(dp3, T_tmp);
-                                                n4 = phonon_thermodynamics->fB(dp4, T_tmp);
+                                                n1 = thermodynamics->fB(dp1, T_tmp);
+                                                n2 = thermodynamics->fB(dp2, T_tmp);
+                                                n3 = thermodynamics->fB(dp3, T_tmp);
+                                                n4 = thermodynamics->fB(dp4, T_tmp);
 
                                                 ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) * D124 
                                                     * ((1.0 + n1 + n2 + n3 + n4 + n1 * n3 + n1 * n4 + n2 * n3 + n2 * n4) * omega_sum[0] 
@@ -1191,11 +1191,11 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
                                                     for (i = 0; i < N; ++i) {
                                                         T_tmp = T[i];
 
-                                                        n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                                        n2 = phonon_thermodynamics->fB(dp2, T_tmp);
-                                                        n3 = phonon_thermodynamics->fB(dp3, T_tmp);
-                                                        n4 = phonon_thermodynamics->fB(dp4, T_tmp);
-                                                        n5 = phonon_thermodynamics->fB(dp5, T_tmp);
+                                                        n1 = thermodynamics->fB(dp1, T_tmp);
+                                                        n2 = thermodynamics->fB(dp2, T_tmp);
+                                                        n3 = thermodynamics->fB(dp3, T_tmp);
+                                                        n4 = thermodynamics->fB(dp4, T_tmp);
+                                                        n5 = thermodynamics->fB(dp5, T_tmp);
 
                                                         N12 = n1 - n2;
                                                         N34 = n3 - n4;
@@ -1343,9 +1343,9 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
                                             for (i = 0; i < N; ++i) {
                                                 T_tmp = T[i];
 
-                                                n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                                n2 = phonon_thermodynamics->fB(dp2, T_tmp);
-                                                n3 = phonon_thermodynamics->fB(dp3, T_tmp);
+                                                n1 = thermodynamics->fB(dp1, T_tmp);
+                                                n2 = thermodynamics->fB(dp2, T_tmp);
+                                                n3 = thermodynamics->fB(dp3, T_tmp);
 
                                                 N_prod[0] = (1.0 + n1) * (1.0 + n3) + n2 * (1.0 + n2 + n3);
                                                 N_prod[1] = n2 * (1.0 + n2) * (1.0 + n2 + n3);
@@ -1353,7 +1353,7 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
                                                 if (std::abs(T_tmp) < eps) {
                                                     T_inv = 0.0;
                                                 } else {
-                                                    T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+                                                    T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                                 }
 
                                                 ret_mpi[i] += v_prod * static_cast<double>(ip1*ip3)
@@ -1403,10 +1403,10 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
                                                 for (i = 0; i < N; ++i) {
                                                     T_tmp = T[i];
 
-                                                    n1 = phonon_thermodynamics->fB(dp1, T_tmp);
-                                                    n2 = phonon_thermodynamics->fB(dp2, T_tmp);
-                                                    n3 = phonon_thermodynamics->fB(dp3, T_tmp);
-                                                    n4 = phonon_thermodynamics->fB(dp4, T_tmp);
+                                                    n1 = thermodynamics->fB(dp1, T_tmp);
+                                                    n2 = thermodynamics->fB(dp2, T_tmp);
+                                                    n3 = thermodynamics->fB(dp3, T_tmp);
+                                                    n4 = thermodynamics->fB(dp4, T_tmp);
 
                                                     ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) 
                                                         * ((1.0 + n1 + n3) * D24 * (n4 * D134 - n2 * D123) + D123 * D134 * n1 * n3);
@@ -1508,13 +1508,13 @@ void Selfenergy::selfenergy_j(const unsigned int N, double *T, const double omeg
                             for (i = 0; i < N; ++i) {
                                 T_tmp = T[i];
 
-                                n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-                                n2 = phonon_thermodynamics->fB(omega2, T_tmp);
+                                n1 = thermodynamics->fB(omega1, T_tmp);
+                                n2 = thermodynamics->fB(omega2, T_tmp);
 
                                 if (std::abs(T_tmp) < eps) {
                                     T_inv = 0.0;
                                 } else {
-                                    T_inv = 1.0 / (phonon_thermodynamics->T_to_Ryd * T_tmp);
+                                    T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                 }
 
                                 ret_mpi[i] += v_prod * (2.0 * n2 + 1.0) * (-2.0 * (1.0 + n1) * n1 * T_inv - (2.0 * n1 + 1.0) * omega1_inv);
@@ -1538,9 +1538,9 @@ void Selfenergy::selfenergy_j(const unsigned int N, double *T, const double omeg
                             for (i = 0; i < N; ++i) {
                                 T_tmp = T[i];
 
-                                n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-                                n2 = phonon_thermodynamics->fB(omega2, T_tmp);
-                                n3 = phonon_thermodynamics->fB(omega3, T_tmp);
+                                n1 = thermodynamics->fB(omega1, T_tmp);
+                                n2 = thermodynamics->fB(omega2, T_tmp);
+                                n3 = thermodynamics->fB(omega3, T_tmp);
 
                                 ret_mpi[i] += v_prod * 2.0 * ((n1 - n3) * D13[0] - (1.0 + n1 + n3) * D13[1]);
                             }

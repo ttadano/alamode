@@ -54,9 +54,6 @@
     <ClCompile Include="phonon_dos.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="phonon_thermodynamics.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="phonon_velocity.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -79,6 +76,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="write_phonons.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="thermodynamics.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -119,9 +119,6 @@
     <ClInclude Include="phonon_dos.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="phonon_thermodynamics.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="phonon_velocity.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -147,6 +144,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="write_phonons.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="thermodynamics.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
