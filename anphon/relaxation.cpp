@@ -13,9 +13,13 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <iomanip>
 #include <algorithm>
 #include <vector>
+#include <set>
+#include <boost/lexical_cast.hpp>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif 
+
 #include "conductivity.h"
 #include "dynamical.h"
 #include "error.h"
@@ -35,9 +39,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "timer.h"
 #include "constants.h"
 #include "mathfunctions.h"
-#include <set>
 #include "integration.h"
-#include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
@@ -75,6 +77,8 @@ void Relaxation::setup_relaxation()
     memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
     memory->allocate(evec_index, fcs_phonon->force_constant_with_cell[1].size(), 3);
 
+    
+
     memory->allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->natmin; ++i){
@@ -98,6 +102,23 @@ void Relaxation::setup_relaxation()
             evec_index[i][j] = fcs_phonon->force_constant_with_cell[1][i].pairs[j].index;
         }
     }
+
+    use_tuned_ver = true;
+    if (use_tuned_ver) {
+
+        if (!(kpoint->nkx == kpoint->nky && kpoint->nky == kpoint->nkz)) {
+            error->exit("setup_relaxation", "Use of the tuned version is currently limited when nkx = nky = nkz.");
+        }
+
+        memory->allocate(exp_phase, 2 * kpoint->nkx - 1);
+        int N = static_cast<int>(kpoint->nkx);
+        double phase;
+        for (int ii = 0; ii < 2 * N - 1; ++ii) {
+            phase = 2.0 * pi * static_cast<double>(ii - N + 1) / static_cast<double>(N);
+            exp_phase[ii] = std::exp(im * phase);
+        }
+    }
+
 
     if (quartic_mode > 0) {
 
@@ -179,6 +200,8 @@ void Relaxation::finish_relaxation()
     memory->deallocate(invmass_for_v3);
     memory->deallocate(evec_index);
     memory->deallocate(fcs_group);
+
+    if (use_tuned_ver) memory->deallocate(exp_phase);
 
     if (quartic_mode > 0) {
         memory->deallocate(vec_for_v4);
@@ -513,20 +536,14 @@ void Relaxation::setup_mode_analysis()
 
 std::complex<double> Relaxation::V3(const unsigned int ks[3])
 {
-
     unsigned int i, j, ielem;
     unsigned int kn[3], sn[3];
     unsigned int nsize_group;
 
-    int pos = -1;
+    double phase, omega[3];
 
-    double phase;
-    double omega[3];
-
-    std::complex<double> ctmp;
     std::complex<double> ret = std::complex<double>(0.0, 0.0);
     std::complex<double> ret_in, vec_tmp;
-
 
     for (i = 0; i < 3; ++i){
         kn[i] = ks[i] / ns;
@@ -554,9 +571,63 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
             + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0] 
             + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
             + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
+            
+            ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * std::exp(im*phase);
 
-            ctmp = fcs_group[i][j] * invmass_for_v3[ielem] * std::exp(im*phase);
-            ret_in += ctmp;
+            ++ielem;
+        }
+        ret += ret_in * vec_tmp;
+    }
+
+    return ret / std::sqrt(omega[0] * omega[1] * omega[2]);
+}
+
+std::complex<double> Relaxation::V3_tune(const unsigned int ks[3])
+{
+
+    unsigned int i, j, ielem;
+    unsigned int kn[3], sn[3];
+    unsigned int nsize_group;
+
+    double phase, omega[3];
+
+    std::complex<double> ret = std::complex<double>(0.0, 0.0);
+    std::complex<double> ret_in, vec_tmp;
+
+    int loc;
+    int N = static_cast<int>(kpoint->nkx);
+    double inv2pi = 1.0 / (2.0 * pi);
+    double dnkx = static_cast<double>(kpoint->nkx);
+
+    for (i = 0; i < 3; ++i){
+        kn[i] = ks[i] / ns;
+        sn[i] = ks[i] % ns;
+        omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
+    }
+
+    ielem = 0;
+
+    for (i = 0; i < ngroup; ++i) {
+
+        vec_tmp = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]] 
+        * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
+        * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+
+        ret_in = std::complex<double>(0.0, 0.0);
+
+        nsize_group = fcs_group[i].size();
+
+        for (j = 0; j < nsize_group; ++j) {
+
+            phase = vec_for_v3[0][0][ielem] * kpoint->xk[kn[1]][0] 
+            + vec_for_v3[1][0][ielem] * kpoint->xk[kn[1]][1]
+            + vec_for_v3[2][0][ielem] * kpoint->xk[kn[1]][2]
+            + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0] 
+            + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
+            + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
+  
+            loc = nint(phase * dnkx * inv2pi) % N + N - 1;
+            ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase[loc];
 
             ++ielem;
         }
@@ -743,7 +814,11 @@ void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const do
                 arr[2] = ns * k2 + js;
                 omega_inner[1] = dynamical->eval_phonon[k2][js];
 
-                v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
+                if (use_tuned_ver) {
+                    v3_arr[ik][ns * is + js] = std::norm(V3_tune(arr)) * multi;
+                } else {
+                    v3_arr[ik][ns * is + js] = std::norm(V3(arr)) * multi;
+                }
 
                 if (integration->ismear == 0) {
                     delta_arr[ik][ns * is + js][0] = delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
@@ -885,7 +960,11 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
                 arr[1] = ns * k1 + is;
                 arr[2] = ns * k2 + js;
 
-                v3_arr[ik][ib] = std::norm(V3(arr));
+                if (use_tuned_ver) {
+                    v3_arr[ik][ib] = std::norm(V3_tune(arr));
+                } else {
+                    v3_arr[ik][ib] = std::norm(V3(arr));
+                }
 
                 delta_arr[ik][ib][0] = 0.0;
                 delta_arr[ik][ib][1] = 0.0;
