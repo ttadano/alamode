@@ -46,7 +46,7 @@ parser.add_option('--xTAPP',
 def read_POSCAR(file_in):
 
     file_pos = open(file_in, 'r')
-    
+
     file_pos.readline()
     a = float(file_pos.readline().rstrip())
     lavec = np.zeros((3, 3))
@@ -60,8 +60,8 @@ def read_POSCAR(file_in):
         for j in range(3):
             lavec[i, j] = a * float(arr[j])
 
-    lavec = np.matrix(lavec).transpose()
-    invlavec = lavec.I
+    lavec = lavec.transpose()
+    invlavec = np.linalg.inv(lavec)
 
     elements = file_pos.readline().rstrip().split()
 
@@ -79,16 +79,15 @@ def read_POSCAR(file_in):
     for i in range(nat):
         arr = file_pos.readline().rstrip().split()
         for j in range(3):
-            x[i, j] = float(arr[j])
+            x[i][j] = float(arr[j])
 
     if basis == "Direct" or basis == "direct" or basis == "D" or basis == "d":
-        xf = np.matrix(x)
+        xf = x
     else:
-        xf = np.matrix(x)
-        for i in range(nat):
-            xf[i, :] = xf[i, :] * invlavec.transpose()
+        xf = np.dot(x, invlavec)
 
     file_pos.close()
+
     return lavec, invlavec, elements, nat_elem, xf
 
 
@@ -101,9 +100,9 @@ def write_POSCAR(prefix, counter, header, nzerofills,
     f.write("%s\n" % "1.0")
 
     for i in range(3):
-        f.write("%20.15f %20.15f %20.15f\n" % (lavec[0, i],
-                                               lavec[1, i],
-                                               lavec[2, i]))
+        f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
+                                               lavec[1][i],
+                                               lavec[2][i]))
 
     for i in range(len(elems)):
         f.write("%s " % elems[i])
@@ -118,7 +117,7 @@ def write_POSCAR(prefix, counter, header, nzerofills,
 
     for i in range(len(disp)):
         for j in range(3):
-            f.write("%20.15f" % (coord[i, j] + disp[i, j]))
+            f.write("%20.15f" % (coord[i][j] + disp[i][j]))
         f.write("\n")
     f.close()
 
