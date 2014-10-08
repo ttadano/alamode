@@ -186,7 +186,7 @@ def print_displacements(str_files, lavec, nat, x0, require_conversion, conversio
             line = f.readline()
 
         if not found_tag:
-            print "atom_position tag not found in %s" % seach_target
+            print "atom_position tag not found in %s" % search_target
             exit(1)
 
 
@@ -229,7 +229,7 @@ def print_atomicforces(str_files, nat, require_conversion, conversion_factor):
             line = f.readline()
 
         if not found_tag:
-            print "force tag not found in %s" % seach_target
+            print "force tag not found in %s" % search_target
             exit(1)
 
 
@@ -261,7 +261,7 @@ def print_energies(str_files, require_conversion, conversion_factor):
                     break
         
         if not found_tag:
-            print "total_energy tag not found in %s" % seach_target
+            print "total_energy tag not found in %s" % search_target
             exit(1)
 
 

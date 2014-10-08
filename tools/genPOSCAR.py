@@ -241,7 +241,7 @@ if __name__ == '__main__':
 		print "--mag option not given. Default value will be used."
 
 	else:
-		disp_length = float(options.magnitude)
+		disp_length = float(options.mag)
 	
 	print "Atomic displacement of %f angstrom will be used." % disp_length
 
