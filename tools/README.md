@@ -6,6 +6,7 @@ Each Python scripts does the followings:
 * extVASP.py : script for VASP users which extvacts atomic displacements/forces from vasprun.xml files
 * plotband.py : script for visualizing phonon bands
 * plotdos.py : script for visualizing phonon DOS
+* displace.py : script to generate input files of displaced configurations for VASP, Quantum-ESPRESSO, and xTAPP.
 * analyze_phonons.* : programs for analyzing phonon lifetimes, mean-free-path, and thermal-conductivity 
 using the .result file as an input
 
