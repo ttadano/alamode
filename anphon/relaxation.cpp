@@ -76,9 +76,6 @@ void Relaxation::setup_relaxation()
     memory->allocate(vec_for_v3, 3, 2, fcs_phonon->force_constant_with_cell[1].size());
     memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
     memory->allocate(evec_index, fcs_phonon->force_constant_with_cell[1].size(), 3);
-
-    
-
     memory->allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->natmin; ++i){
@@ -103,20 +100,39 @@ void Relaxation::setup_relaxation()
         }
     }
 
-    use_tuned_ver = true;
+    use_tuned_ver = false;
     if (use_tuned_ver) {
 
         if (!(kpoint->nkx == kpoint->nky && kpoint->nky == kpoint->nkz)) {
             error->exit("setup_relaxation", "Use of the tuned version is currently limited when nkx = nky = nkz.");
         }
 
-        memory->allocate(exp_phase, 2 * kpoint->nkx - 1);
-        int N = static_cast<int>(kpoint->nkx);
-        double phase;
-        for (int ii = 0; ii < 2 * N - 1; ++ii) {
-            phase = 2.0 * pi * static_cast<double>(ii - N + 1) / static_cast<double>(N);
-            exp_phase[ii] = std::exp(im * phase);
+        nk_grid[0] = kpoint->nkx;
+        nk_grid[1] = kpoint->nky;
+        nk_grid[2] = kpoint->nkz;
+
+        for (i = 0; i < 3; ++i) {
+            dnk[i] = static_cast<double>(nk_grid[i]);
         }
+
+        memory->allocate(exp_phase, 2 * nk_grid[0] - 1, 2 * nk_grid[1] - 1, 2 * nk_grid[2] - 1);
+        double phase[3];
+
+        for (int ii = 0; ii < 2 * nk_grid[0] - 1; ++ii) {
+            phase[0] = 2.0 * pi * static_cast<double>(ii - nk_grid[0] + 1) / dnk[0];
+            for (int jj = 0; jj < 2 * nk_grid[1] - 1; ++jj) {
+                phase[1] = 2.0 * pi * static_cast<double>(jj - nk_grid[1] + 1) / dnk[1];
+                for (int kk = 0; kk < 2 * nk_grid[2] - 1; ++kk) {
+                    phase[2] = 2.0 * pi * static_cast<double>(kk - nk_grid[2] + 1) / dnk[2];
+                    exp_phase[ii][jj][kk] = std::exp(im * (phase[0] + phase[1] + phase[2]));
+                }
+            }
+        }
+
+//         for (int ii = 0; ii < 2 * N - 1; ++ii) {
+//             phase = 2.0 * pi * static_cast<double>(ii - N + 1) / static_cast<double>(N);
+//             exp_phase[ii] = std::exp(im * phase);
+//         }
     }
 
 
@@ -584,20 +600,18 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 
 std::complex<double> Relaxation::V3_tune(const unsigned int ks[3])
 {
-
+    int ii;
     unsigned int i, j, ielem;
     unsigned int kn[3], sn[3];
     unsigned int nsize_group;
 
-    double phase, omega[3];
+    double phase[3], omega[3];
 
     std::complex<double> ret = std::complex<double>(0.0, 0.0);
     std::complex<double> ret_in, vec_tmp;
 
-    int loc;
-    int N = static_cast<int>(kpoint->nkx);
+    int loc[3];
     double inv2pi = 1.0 / (2.0 * pi);
-    double dnkx = static_cast<double>(kpoint->nkx);
 
     for (i = 0; i < 3; ++i){
         kn[i] = ks[i] / ns;
@@ -610,8 +624,8 @@ std::complex<double> Relaxation::V3_tune(const unsigned int ks[3])
     for (i = 0; i < ngroup; ++i) {
 
         vec_tmp = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]] 
-        * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
-        * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+                * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
+                * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
 
         ret_in = std::complex<double>(0.0, 0.0);
 
@@ -619,15 +633,14 @@ std::complex<double> Relaxation::V3_tune(const unsigned int ks[3])
 
         for (j = 0; j < nsize_group; ++j) {
 
-            phase = vec_for_v3[0][0][ielem] * kpoint->xk[kn[1]][0] 
-            + vec_for_v3[1][0][ielem] * kpoint->xk[kn[1]][1]
-            + vec_for_v3[2][0][ielem] * kpoint->xk[kn[1]][2]
-            + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0] 
-            + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
-            + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
+            for (ii = 0; ii < 3; ++ii) {
+                phase[ii] = vec_for_v3[ii][0][ielem] * kpoint->xk[kn[1]][ii] 
+                          + vec_for_v3[ii][1][ielem] * kpoint->xk[kn[2]][ii];
+
+                loc[ii] = nint(phase[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
+            }
   
-            loc = nint(phase * dnkx * inv2pi) % N + N - 1;
-            ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase[loc];
+            ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase[loc[0]][loc[1]][loc[2]];
 
             ++ielem;
         }

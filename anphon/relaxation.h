@@ -153,7 +153,10 @@ namespace PHON_NS {
         int ngroup2;
         std::vector<double> *fcs_group;
         std::vector<double> *fcs_group2;
-        std::complex<double> *exp_phase;
+        std::complex<double> ***exp_phase;
+
+        int nk_grid[3];
+        double dnk[3];
 
         bool use_tuned_ver;
     };
