@@ -9,7 +9,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	string str;
 
-	cout << "# Phonon analyzer Ver. 1.0" << endl;
+	cout << "# Phonon analyzer Ver. 1.0.1" << endl;
 
 	calc = argv[2];
     average_gamma = atoi(argv[3]);
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	ifs >> tmin >> tmax >> dt;
-	nt = static_cast<int>((tmax-tmin)/dt);
+	nt = static_cast<int>((tmax-tmin)/dt) + 1;
 	allocate(temp, nt);
 	for (i = 0; i < nt; ++i) temp[i] = tmin + dt * static_cast<double>(i);
 
@@ -101,7 +101,6 @@ int main(int argc, char *argv[]) {
 	ifs.close();
 
     if (average_gamma) average_gamma_at_degenerate_point(omega, tau, nt, nk, ns);
-
 
 	if (calc == "tau") {
 		beg_k = atoi(argv[4]) - 1;
