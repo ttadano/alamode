@@ -102,6 +102,9 @@ void Relaxation::setup_relaxation()
     // For accelerating function V3 by avoiding continual call of std::exp.
 
     use_tuned_ver = true;
+
+    MPI_Bcast(&use_tuned_ver, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
     if (use_tuned_ver) {
 
         nk_grid[0] = kpoint->nkx;
@@ -644,7 +647,6 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 
 std::complex<double> Relaxation::V3_tune(const unsigned int ks[3])
 {
-    int ii;
     unsigned int i, j, ielem;
     unsigned int kn[3], sn[3];
     unsigned int nsize_group;
