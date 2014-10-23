@@ -24,11 +24,14 @@ namespace PHON_NS {
 
         bool print_velocity;
         double **phvel;
+        double ***phvel_xyz;
 
     private:
         double diff(double *, const unsigned int, double);
 
         void calc_phonon_vel_band(double **);
-        void calc_phonon_vel_mesh(double **);
+        void calc_phonon_vel_mesh(double **, double ***);
+
+        bool print_velocity_xyz;
     };
 }

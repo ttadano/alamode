@@ -571,40 +571,66 @@ void Writes::write_phonon_vel_all()
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if(!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
 
-    unsigned int i, j, k;
+    unsigned int i, j, k, ii;
+    unsigned int knum;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
     double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
     double **eval = dynamical->eval_phonon;
 
-    ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
+    ofs_vel << "# Phonon group velocity at all reducible k points." << std::endl;
+    ofs_vel << "# irred. knum, knum, mode num, frequency [cm^-1], "
+               "|velocity| [m/sec], velocity_(x,y,z) [m/sec]" << std::endl << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
-    for (i = 0; i < nk; ++i){
+    for (i = 0; i < kpoint->nk_reduced; ++i) {
+        ofs_vel << "# Irreducible k point  : " << std::setw(8) << i + 1;
+        ofs_vel << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
 
-        ofs_vel << "# ik = " << std::setw(8);
-        for (j = 0; j < 3; ++j){
-            ofs_vel << std::setw(15) << kpoint->xk[i][j];
-        }
-        ofs_vel << std::endl;
+        for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
+            knum = kpoint->kpoint_irred_all[i][j].knum;
+            ofs_vel << "## xk = " << std::setw(3);
+            for (k = 0; k < 3; ++k) ofs_vel << std::setw(15) << kpoint->xk[knum][k];
+            ofs_vel << std::endl;
 
-//         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
-// 
-//         for (j = 0; j < ns; ++j){
-//             rotvec(vel[j], vel[j], system->lavec_p, 'T');
-//             for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
-//         }
-
-        for (j = 0; j < ns; ++j){
-            ofs_vel << std::setw(5) << i;
-            ofs_vel << std::setw(5) << j;
-            ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
-            ofs_vel << std::setw(15) << phonon_velocity->phvel[i][j]*Ry_to_SI_vel;
+            for (k = 0; k < ns; ++k){
+                ofs_vel << std::setw(7) << i + 1;
+                ofs_vel << std::setw(8) << knum + 1;
+                ofs_vel << std::setw(5) << k + 1;
+                ofs_vel << std::setw(10) << std::fixed << std::setprecision(2) << in_kayser(eval[knum][k]);
+                ofs_vel << std::setw(10) <<  std::fixed 
+                    << std::setprecision(2) << phonon_velocity->phvel[knum][k]*Ry_to_SI_vel;
+                for (ii = 0; ii < 3; ++ii) {
+                    ofs_vel << std::setw(10) << std::fixed << std::setprecision(2) 
+                        << phonon_velocity->phvel_xyz[knum][k][ii]*Ry_to_SI_vel;
+                }
+                ofs_vel << std::endl;
+            }
             ofs_vel << std::endl;
         }
+
         ofs_vel << std::endl;
     }
+// 
+// 
+//     for (i = 0; i < nk; ++i){
+// 
+//         ofs_vel << "# ik = " << std::setw(8);
+//         for (j = 0; j < 3; ++j){
+//             ofs_vel << std::setw(15) << kpoint->xk[i][j];
+//         }
+//         ofs_vel << std::endl;
+// 
+//         for (j = 0; j < ns; ++j){
+//             ofs_vel << std::setw(5) << i;
+//             ofs_vel << std::setw(5) << j;
+//             ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
+//             ofs_vel << std::setw(15) << phonon_velocity->phvel[i][j]*Ry_to_SI_vel;
+//             ofs_vel << std::endl;
+//         }
+//         ofs_vel << std::endl;
+//     }
 
     ofs_vel.close();
 
