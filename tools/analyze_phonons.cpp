@@ -9,8 +9,8 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	string str;
 
-	cout << "# Phonon analyzer Ver. 1.0.1" << endl;
-
+	cout << "# Result analyzer ver. 1.0.1" << endl;
+	cout << "# Input file : " << argv[1] << endl;
 	calc = argv[2];
     average_gamma = atoi(argv[3]);
 
@@ -143,7 +143,9 @@ int main(int argc, char *argv[]) {
 
 		calc_kappa();
 
-	} else if (calc == "kappa_size") {
+	} else if (calc == "cumulative") {
+
+		// Print the cumulative thermal conductivity
 
 		double max_len, d_len;
 		int size_flag[3];
@@ -171,7 +173,10 @@ int main(int argc, char *argv[]) {
 
 		calc_kappa_size(max_len, d_len, itemp, size_flag);
 	
-	} else if (calc == "kappa_size2" ) {
+	} else if (calc == "kappa_matthiessen" ) {
+
+		// Print the thermal conductivity with boundary effects
+		// considered by the Matthiessen's rule.
 
 		double max_len, d_len;
 		int size_flag[3];
@@ -346,9 +351,9 @@ void calc_kappa_size(double max_length, double delta_length, int itemp, int flag
 	double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
 
 
-	cout << "# Size dependent thermal conductivity at temperature " << temp[itemp] << " K." << endl;
+	cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
 	cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
-	cout << "# Size change flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
+	cout << "# Boundary direction flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
 	cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
 

@@ -7,11 +7,11 @@
 # Copyright (c) 2014 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
-# Please see the file 'LICENCE.txt' in the root directory 
+# Please see the file 'LICENCE.txt' in the root directory
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 """
-This python script is a simple user interface to 
+This python script is a simple user interface to
 the C++ analyzer program "analyze_phonons.cpp".
 To execute this script, the above c++ program has to be
 compiled and made executable.
@@ -19,24 +19,42 @@ compiled and made executable.
 import sys
 import os
 import optparse
-import datetime
 import subprocess
 
 parser = optparse.OptionParser()
-parser.add_option('--temp', help="Target temperature to analyze")
-parser.add_option('--mode', help="Specify phonon mode index to print.")
-parser.add_option('--kpoint', help="Specify k-point index to print.")
-parser.add_option('--calc', metavar='MODE',
-                 help=('Specify mode. Available options are the following: \n'
-                       'tau (Lifetime, mean-free-path, etc.), kappa : Print thermal conductivity. \n\n'
-                        'cumulative     : Print cumulative thermal conductivity. Please specify the --length option.'
-                        'kappa_boundary : Print thermal conductivity with the boundary scattering considered using the Mtthiessens rule. Please specify the --length option.'))
+parser.add_option('--temp', help="target temperature to analyze")
+parser.add_option('--mode', help="specify phonon mode index to print")
+parser.add_option('--kpoint', help="specify k-point index to print")
 
-parser.add_option('--length')
-parser.add_option('--direction')
+parser.add_option('--calc', metavar='tau|kappa|cumulative',
+                  help=('specify what to print. Available options are '
+                        'tau (Lifetime, mean-free-path, etc.), '
+                        'kappa (Thermal conductivity), and '
+                        'cumulative (Cumulative thermal conductivity). '
+                        'When --calc=cumulative, please specify the '
+                        '--direction option.'))
+
 parser.add_option('--noavg', action="store_false", dest="average_gamma",
-                  default=True,
-                  help="don't average the damping function at degenerate points")
+                  default=True, help="do not average the damping function \
+at degenerate points")
+
+group = optparse.OptionGroup(parser,
+                             "The following options are available/necessary \
+when --calc=cumulative ")
+
+group.add_option('--length', metavar="Lmax:dL",
+                 help="specify the maximum value of system size L and its \
+step dL in units of nm. \
+The default value is --length=1000:10 .")
+
+group.add_option('--direction', metavar="1|2|3", help="specify which \
+direction (xyz) to consider the size effect. \
+When --direction=1 (2, 3), phonon mean-free-paths (ell) \
+along x (y, z) are compared with the system size L. Then, \
+the cumulative thermal conductivity is calculated by considering \
+phonon modes satisfying ell <= L.")
+
+parser.add_option_group(group)
 
 options, args = parser.parse_args()
 file_result = args[0]
@@ -48,8 +66,8 @@ analyze_obj = dir_obj + "/analyze_phonons "
 def print_temperature_dep_lifetime():
 
     if options.kpoint is None or options.mode is None:
-        sys.exit("Invalid combination of --temp, --kpoint, \
-                  and --mode options")
+        sys.exit("Please specify the temperature by --temp option, \
+or specify both --kpoint and --mode when --calc=tau")
     else:
         if len(options.kpoint.split(':')) != 1:
             sys.exit("Invalid usage of --kpoint for --calc=tau")
@@ -93,8 +111,9 @@ def print_lifetime_at_given_temperature():
         else:
             sys.exit("Invalid usage of --mode for --calc=tau")
 
-    command = analyze_obj + file_result + " " + calc + " " + avg + " " + str(beg_k) + " " + str(end_k) \
-        + " " + str(beg_s) + " " + str(end_s) + " " + options.temp
+    command = analyze_obj + file_result + " " + calc + " " + avg + " "\
+        + str(beg_k) + " " + str(end_k) + " "\
+        + str(beg_s) + " " + str(end_s) + " " + options.temp
 
     subprocess.call(command, shell=True)
 
@@ -166,7 +185,7 @@ def print_cumulative_thermal_conductivity():
         for i in range(len(options.direction.split(':'))):
             size_flag[int(arr[i])-1] = 1
 
-    command = analyze_obj + file_result + " kappa_size " + avg + " "\
+    command = analyze_obj + file_result + " " + calc + " " + avg + " "\
         + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
         + str(d_len) + " " + options.temp + " " + str(size_flag[0]) \
         + " " + str(size_flag[1]) + " " + str(size_flag[2])
@@ -175,10 +194,6 @@ def print_cumulative_thermal_conductivity():
 
 
 if __name__ == '__main__':
-
-    print "#", datetime.datetime.today()
-    print "# Input file : ", file_result
-    print "#"
 
     calc = options.calc
 
@@ -201,13 +216,12 @@ if __name__ == '__main__':
         else:
             print_lifetime_at_given_temperature()
 
+    elif calc == "kappa":
+        print_thermal_conductivity()
+
     # Compute cumulative thermal conductivity.
     elif calc == "cumulative":
         print_cumulative_thermal_conductivity()
-
-    # Compute thermal conductivity
-    elif calc == "kappa":
-        print_thermal_conductivity()
 
     else:
         sys.exit("Invalid --calc option given")
