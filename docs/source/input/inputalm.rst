@@ -245,7 +245,7 @@ fractional coordinate of an atom. There should be ``NAT`` such lines in the &pos
 "&fitting"-field
 +++++++++++++++++
 
-This field is necessarily when ``MODE = fitting``.
+This field is necessary when ``MODE = fitting``.
 
 * **DFILE**-tag : File name containing atomic displacements in Cartesian coordinate
 
@@ -282,7 +282,7 @@ This field is necessarily when ``MODE = fitting``.
 * ICONST-tag = 0 | 1 | 2 | 3
 
  ===== =========================================================================
-   0    No constrans
+   0    No constraints
    1    Constraints for translational invariance will be imposed between IFCs.
    2   | In addition to ``ICONST = 1``, constraints for rotational invariance
        | will be imposed up to (``NORDER`` + 1)th order.
@@ -296,7 +296,7 @@ This field is necessarily when ``MODE = fitting``.
 
 ````
 
-* ROTAXIS-tag : Rotation axis used to estimate constraints for rotational invariance. This entry is necessarily when ``ICONST > 1``.
+* ROTAXIS-tag : Rotation axis used to estimate constraints for rotational invariance. This entry is necessary when ``ICONST > 1``.
 
  :Default: None
  :Type: String

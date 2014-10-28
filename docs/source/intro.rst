@@ -1,3 +1,15 @@
+.. raw:: html
+
+    <script type="text/javascript"><!--
+      function gen_mail_to_link(name, lhs,rhs)
+      {
+       document.write("<br>");
+       document.write(name + " (<A HREF=\"mailto");
+       document.write(":" + lhs + "@");
+       document.write(rhs + "\">" + lhs + "@" + rhs + "<\/A>)"); } 
+       // --> </SCRIPT>
+
+
 About
 =====
 
@@ -63,6 +75,10 @@ This project is support by a Grant-in-Aid for Scientific Research on Innovative 
 Author
 ------
 
-Terumasa Tadano (terumasa.tadano{at}gmail.com)
+
+.. raw:: html
+
+    <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
 Current affiliation: Department of Physics, The University of Tokyo, Japan
+

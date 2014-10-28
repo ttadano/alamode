@@ -8,6 +8,7 @@ The starting point of the computational methodology is to approximate the potent
 by a Taylor expansion with respect to atomic displacements by
 
 .. math::
+    :label: U_Taylor
 
     &U - U_{0} = \sum_{n=1}^{N} U_{n} = U_{1} + U_{2} + U_{3} + \cdots, \\
     &U_{n} = \frac{1}{n!} \sum_{\substack{\ell_{1}\kappa_{1}, \dots, \ell_{n}\kappa_{n} \\ \mu_{1},\dots, \mu_{n}}} \Phi_{\mu_{1}\dots\mu_{n}}(\ell_{1}\kappa_{1};\dots;\ell_{n}\kappa_{n}) \; u_{\mu_{1}}(\ell_{1}\kappa_{1})\cdots u_{\mu_{n}}(\ell_{n}\kappa_{n}).
@@ -64,7 +65,7 @@ The are several relationships between IFCs which may be used to reduce the numbe
 Constraints between IFCs
 ------------------------
 
-Since the potential energy is invariant under rigid translation and rotation, it may be necessarily for IFCs to satisfy corresponding constraints.
+Since the potential energy is invariant under rigid translation and rotation, it may be necessary for IFCs to satisfy corresponding constraints.
 
 The constraints for translational invariance are given by
 
@@ -108,3 +109,30 @@ and
     - \Phi_{\mu_{1}\mu}(\ell_{1}\kappa_{1};\ell_{2}\kappa_{2})\delta_{\nu,\mu_{2}} = 0.
   
 When ``NORDER = 1``, equation :eq:`constrot1` will be considered if ``ICONST = 2``, whereas equation :eq:`constrot2` will be neglected. To further consider equation :eq:`constrot2`, please use ``ICONST = 3``, though it may enforce a number of harmonic IFCs to be zero since cubic terms don't exist in harmonic calculations (``NORDER = 1``).
+
+
+.. _fitting_formalism:
+
+Estimate IFCs by least-square fitting
+-------------------------------------
+
+The code **alm** extracts harmonic and anharmonic IFCs from a displacement-force data set by solving the following linear least-square problem:
+
+.. math::
+   :label: lsq
+
+   \text{minimize} \ \ \chi^{2} = \sum_{t}^{m} \sum_{i} \|F_{i,t}^{\mathrm{DFT}} - F_{i,t}^{\mathrm{ALM}} \|^{2}.
+
+Here, :math:`m` is the number of atomic configurations and the index :math:`i = (\ell,\kappa,\mu)` is the triplet of coordinates. 
+The model force :math:`F_{i,t}^{\mathrm{ALM}}` is a linear function of IFCs :math:`\{\Phi\}` which can be obtained by differentiating :math:`U` (Eq. :eq:`U_Taylor`) by :math:`u_{i}`.
+The parameters (IFCs) are determined so as to best mimic the atomic forces obtained by DFT calculations, :math:`F_{i,t}^{\mathrm{DFT}}`. 
+
+To evaluate goodness of fit, **alm** reports the relative error :math:`\sigma` defined by
+
+.. math::
+   :label: fitting_error
+
+   \sigma = \sqrt{\frac{\chi^{2}}{\sum_{t}^{m}\sum_{i} (F_{i,t}^{\mathrm{DFT}})^{2}}},
+
+where the numerator is the residual of fit and the denominator is the square sum of DFT forces.
+
