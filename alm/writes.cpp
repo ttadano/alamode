@@ -331,7 +331,7 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ALM_version", "0.9.1");
+    pt.put("Data.ALM_version", "0.9.2");
     pt.put("Data.Fitting.DisplaceFile", files->file_disp);
     pt.put("Data.Fitting.ForceFile", files->file_force);
     pt.put("Data.Fitting.Constraint", constraint->constraint_mode);
