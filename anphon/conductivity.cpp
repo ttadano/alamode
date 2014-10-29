@@ -380,11 +380,12 @@ void Conductivity::compute_kappa()
 
                     kappa[i][j][k] = 0.0;
 
+		    if (Temperature[i] < eps) continue;
+
                     for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
 
                         knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
                         snum = iks % ns;
-
 
                         omega = dynamical->eval_phonon[knum][snum];
 
