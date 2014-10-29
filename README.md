@@ -38,4 +38,4 @@ This software is released under the MIT license.
 For license rights and limitations, see LICENSE.txt file.
 
 ## Author
-Terumasa Tadano (terumasa.tadano{at}.gmail.com)
+Terumasa Tadano (Department of Physics, The University of Tokyo, Japan)
