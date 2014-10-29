@@ -315,7 +315,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ANPHON_version", "0.9.0");
+    pt.put("Data.ANPHON_version", "0.9.2");
     pt.put("Data.Description.OriginalXML", fcs_phonon->file_fcs);
     pt.put("Data.Description.Delta_A", double2string(change_ratio_of_a));
 

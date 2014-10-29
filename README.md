@@ -1,5 +1,5 @@
 # ALAMODE
-* Version 0.9.1 (Beta)
+* Version 0.9.2 (Beta)
 
 - - -
 
@@ -24,7 +24,7 @@ The directories alm/, anphon/, and tools/ contain separate Makefiles.
 Please modify the Makefiles appropriately by changing variables such as 
 CXX, CXXFLAGS, or MPICXX. Then, execute "make" will create the binary for
 each program.
-More detailed instruction may be found in the user's guide.
+More detailed instruction can be found in the Documentation below.
 
 
 ## Documentation
