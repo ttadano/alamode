@@ -36,7 +36,7 @@ Then, equation :eq:`omega2` can be denoted as
 
 
 hen one needs to capture the LO\-TO splitting near the zone-center by the supercell approach,
-it is necessarily to add the non\-analytic part of the dynamical matrix defined by
+it is necessary to add the non\-analytic part of the dynamical matrix defined by
 
 .. math::
 
@@ -273,7 +273,7 @@ Delta function
 --------------
 
 In order to compute the phonon DOSs and the imaginary part of phonon self-energies,
-it is necessarily to evaluate the Brillouin-zone integration containing Dirac's delta function.
+it is necessary to evaluate the Brillouin-zone integration containing Dirac's delta function.
 For that purpose, we provide 3 options through the ``ISMEAR``-tag.
 
 When ``ISMEAR = 0``, the delta function is replaced by the Lorentzian function as

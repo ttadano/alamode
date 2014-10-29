@@ -132,7 +132,7 @@ List of input variables
  
  :Default: None
  :Type: Double
- :Description: This entry is necessarily when ``NONANALYTIC = 1``. The definition of ``NA_SIGMA`` is described in the formalism section.
+ :Description: This entry is necessary when ``NONANALYTIC = 1``. The definition of ``NA_SIGMA`` is described in the formalism section.
 
 ````
 
@@ -146,7 +146,7 @@ List of input variables
 
 * TMIN, TMAX, DT-tags : Temperature range and its stride in units of Kelvin
 
- :Detaulf: ``TMIN = 0``, ``TMAX = 1000``, ``DT = 10``
+ :Default: ``TMIN = 0``, ``TMAX = 1000``, ``DT = 10``
  :Type: Double
 
 ````
@@ -180,7 +180,7 @@ List of input variables
 
 ````
 
-* TRISYM-tag : Flag to use symmetry operations to reduce the number of triples of :math:`k` kpoints for self-energy calculations
+* TRISYM-tag : Flag to use symmetry operations to reduce the number of triples of :math:`k` points for self-energy calculations
 
  === =======================================================
   0   Symmetry will not be used
@@ -416,7 +416,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  :Type: Array of doubles
  :Description: This tag is to animate vibrational mode. k1, k2, and k3 specify the momentum of phonon modes to animate,
                which should be given in units of the reciprocal lattice vector. For example, ``ANIME = 0.0 0.0 0.5`` will 
-               animate phonon modes at (0, 0, 1/2). When ``ANIME`` is given, ``ANIME_CELLSIZE`` is also necessarily.
+               animate phonon modes at (0, 0, 1/2). When ``ANIME`` is given, ``ANIME_CELLSIZE`` is also necessary.
                You can choose the format of animation files, either AXSF or XYZ, by ``ANIME_FORMAT`` tag.
 
 
@@ -436,7 +436,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  :Default: xyz
  :Type: String
  :Description: When ``ANIME_FORMAT = xsf``, ``PREFIX``.anime???.axsf files are created for XcrySDen.
-               When ``ANIME_FORMAT = xyz``, ``PREFIX``.anime???.xyz files are created for VMD (and any other supporting softwares such as Jmol).
+               When ``ANIME_FORMAT = xyz``, ``PREFIX``.anime???.xyz files are created for VMD (and any other supporting software such as Jmol).
 
 
 ````
@@ -446,7 +446,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 Format of BORNINFO
 ~~~~~~~~~~~~~~~~~~
 
-When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessarily to set ``NONANALYTIC = 1`` and
+When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessary to set ``NONANALYTIC = 1`` and
 provide ``BORNINFO`` file containing dielectric tensor :math:`\epsilon^{\infty}` and Born effective charge :math:`Z^{*}`.
 In ``BORNINFO`` file, dielectric tensor should be written in first 3 lines which is followed by Born effective charge tensors
 for each atoms as the following.

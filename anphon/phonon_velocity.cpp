@@ -30,6 +30,10 @@ Phonon_velocity::~Phonon_velocity(){
     if (phon->mode == "PHONONS") {
         if (print_velocity) {
             memory->deallocate(phvel);
+
+            if (print_velocity_xyz) {
+                memory->deallocate(phvel_xyz);
+            }
         }
     }
 }
@@ -38,7 +42,7 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
 {
 
     MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-
+    print_velocity_xyz = false;
 
     if (print_velocity) {
 
@@ -52,8 +56,9 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
             calc_phonon_vel_band(phvel);
 
         } else if (kpmode == 2) {
-
-            calc_phonon_vel_mesh(phvel);
+            print_velocity_xyz = true;
+            memory->allocate(phvel_xyz, nk, ns, 3);
+            calc_phonon_vel_mesh(phvel, phvel_xyz);
         }
 
     }
@@ -113,7 +118,8 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
             rotvec(xk_shift[idiff], xk_shift[idiff], system->lavec_p, 'T');
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
-            dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
+            dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik], 
+                fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
 
         }
 
@@ -136,7 +142,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
     }
 }
 
-void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out)
+void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out, double ***phvel3_out)
 {
     unsigned int i, j, k;
     unsigned int nk = kpoint->nk;
@@ -154,8 +160,13 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out)
 
         for (j = 0; j < ns; ++j){
             rotvec(vel[j], vel[j], system->lavec_p, 'T');
-            for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
-            phvel_out[i][j] = std::sqrt(std::pow(vel[j][0], 2) + std::pow(vel[j][1], 2) + std::pow(vel[j][2], 2));
+            for (k = 0; k < 3; ++k) {
+                vel[j][k] /= 2.0 * pi;
+                phvel3_out[i][j][k] = vel[j][k];
+            }
+            phvel_out[i][j] = std::sqrt(std::pow(vel[j][0], 2) 
+                                      + std::pow(vel[j][1], 2) 
+                                      + std::pow(vel[j][2], 2));
         }
     }
 
@@ -205,18 +216,25 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
         rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->rlavec_p, 'T');
         rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
 
-        norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0] + kvec_na_tmp[0][1] * kvec_na_tmp[0][1] + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
+        norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0] 
+        + kvec_na_tmp[0][1] * kvec_na_tmp[0][1] 
+        + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
+        
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[0][j] /= norm;
         }
-        norm = std::sqrt(kvec_na_tmp[1][0] * kvec_na_tmp[1][0] + kvec_na_tmp[1][1] * kvec_na_tmp[1][1] + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
+        norm = std::sqrt(kvec_na_tmp[1][0] * kvec_na_tmp[1][0] 
+        + kvec_na_tmp[1][1] * kvec_na_tmp[1][1] 
+        + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
+        
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[1][j] /= norm;
         }
 
         for (idiff = 0; idiff < ndiff; ++idiff) {
 
-            dynamical->eval_k(xk_shift[idiff], kvec_na_tmp[0], fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
+            dynamical->eval_k(xk_shift[idiff], kvec_na_tmp[0], 
+                fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
 
         }
 

@@ -50,9 +50,9 @@ void Files::setfilenames()
 void Files::openfiles()
 {
     ifs_disp.open(file_disp.c_str(), std::ios::in);
-    if(!ifs_disp) error->exit("openfiles", "cannot open disp file");
+    if (!ifs_disp) error->exit("openfiles", "cannot open disp file");
     ifs_force.open(file_force.c_str(), std::ios::in);
-    if(!ifs_force) error->exit("openfiles", "cannot open force file");
+    if (!ifs_force) error->exit("openfiles", "cannot open force file");
 }
 
 void Files::closefiles()

@@ -1,11 +1,11 @@
 /*
- fitting.cpp
+fitting.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory 
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <iostream>
@@ -100,7 +100,7 @@ void Fitting::fitmain()
     data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti, symmetry->multiply_data, u, f);
 
     N = 0;
-    for(i = 0; i < maxorder; ++i){
+    for (i = 0; i < maxorder; ++i) {
         N += fcs->ndup[i].size();
     }
     std::cout << "  Total Number of Parameters : " << N << std::endl << std::endl;
@@ -128,12 +128,13 @@ void Fitting::fitmain()
     M_Start = 0;
     M_End = 3 * natmin * ndata_used * nmulti;
 
-    if (nskip == 0){
+    if (nskip == 0) {
 
         // Fitting with singular value decomposition or QR-Decomposition
 
         if (constraint->exist_constraint) {
-            fit_with_constraints(N, M_Start, M_End, P, amat, fsum, constraint->const_mat, constraint->const_rhs);
+            fit_with_constraints(N, M_Start, M_End, P, amat, fsum, 
+                constraint->const_mat, constraint->const_rhs);
         } else {
             fit_without_constraints(N, M_Start, M_End, amat, fsum);
         }
@@ -143,7 +144,8 @@ void Fitting::fitmain()
         // Execute fittings consecutively with different input data.
 
         if (constraint->exist_constraint) {
-            fit_consecutively(N, P, natmin, ndata_used, nmulti, nskip, amat, fsum, constraint->const_mat, constraint->const_rhs);
+            fit_consecutively(N, P, natmin, ndata_used, nmulti, nskip, amat, fsum, 
+                constraint->const_mat, constraint->const_rhs);
         } else {
             error->exit("fitmain", "nskip has to be 0 when constraint_mode = 0");
         }
@@ -152,8 +154,10 @@ void Fitting::fitmain()
         // Execute bootstrap simulation for estimating deviations of parameters.
 
         if (constraint->exist_constraint) {
-            fit_bootstrap(N, P, natmin, ndata_used, nmulti, amat, fsum, constraint->const_mat, constraint->const_rhs);
-            fit_with_constraints(N, M_Start, M_End, P, amat, fsum, constraint->const_mat, constraint->const_rhs);
+            fit_bootstrap(N, P, natmin, ndata_used, nmulti, amat, fsum, 
+                constraint->const_mat, constraint->const_rhs);
+            fit_with_constraints(N, M_Start, M_End, P, amat, fsum, 
+                constraint->const_mat, constraint->const_rhs);
         } else {
             error->exit("fitmain", "bootstrap analysis for LSE without constraint is not supported yet");
         }
@@ -163,7 +167,7 @@ void Fitting::fitmain()
 
     memory->allocate(params, N);
 
-    for(i = 0; i < N; ++i) params[i] = fsum[i];
+    for (i = 0; i < N; ++i) params[i] = fsum[i];
 
     memory->deallocate(amat);
     memory->deallocate(fsum);
@@ -197,21 +201,21 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
     nline_u = 0;
     while (files->ifs_disp >> u_in) {
-      u_tmp[nline_u++] = u_in;
-      if (nline_u == nreq) break;
+        u_tmp[nline_u++] = u_in;
+        if (nline_u == nreq) break;
     }
     if (nline_u < nreq) error->exit("data_multiplier", 
-				    "The number of lines in DFILE is too small for the given NDATA = ", ndata);
+        "The number of lines in DFILE is too small for the given NDATA = ", ndata);
 
     // Read forces from FFILE
 
     nline_f = 0;
     while (files->ifs_force >> f_in) {
-      f_tmp[nline_f++] = f_in;
-      if (nline_f == nreq) break;
+        f_tmp[nline_f++] = f_in;
+        if (nline_f == nreq) break;
     }
     if (nline_f < nreq) error->exit("data_multiplier", 
-				    "The number of lines in FFILE is too small for the given NDATA = ", ndata);
+        "The number of lines in FFILE is too small for the given NDATA = ", ndata);
 
     // Multiply data
 
@@ -232,8 +236,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
             for (j = 0; j < nat; ++j) {
                 for (k = 0; k < 3; ++k) {
-		  u[idata][3 * j + k] = u_tmp[3*nat*i + 3*j + k];
-		  f[idata][3 * j + k] = f_tmp[3*nat*i + 3*j + k];
+                    u[idata][3 * j + k] = u_tmp[3*nat*i + 3*j + k];
+                    f[idata][3 * j + k] = f_tmp[3*nat*i + 3*j + k];
                 }
             }
             ++idata;
@@ -289,10 +293,10 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
                 for (j = 0; j < nat; ++j) {
                     n_mapped = symmetry->map_sym[j][isym];
 
-		    for (k = 0; k < 3; ++k) {
-		      u_rot[k] = u_tmp[3*nat*i + 3*j + k];
-		      f_rot[k] = f_tmp[3*nat*i + 3*j + k];
-		    }
+                    for (k = 0; k < 3; ++k) {
+                        u_rot[k] = u_tmp[3*nat*i + 3*j + k];
+                        f_rot[k] = f_tmp[3*nat*i + 3*j + k];
+                    }
 
                     rotvec(u_rot, u_rot, symmetry->symrel[isym]);
                     rotvec(f_rot, f_rot, symmetry->symrel[isym]);
@@ -303,7 +307,7 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
                     }
                 }
             }
-	    ++idata;
+            ++idata;
         }
 
     } else {
@@ -338,37 +342,38 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
     memory->allocate(fsum2, M);
 
     k = 0;
-    for (j = 0; j < N; ++j){
-        for(i = M_Start; i < M_End; ++i){
+    for (j = 0; j < N; ++j) {
+        for (i = M_Start; i < M_End; ++i) {
             amat_mod[k++] = amat[i][j];
         }
     }
     j = 0;
-    for (i = M_Start; i < M_End; ++i){
+    for (i = M_Start; i < M_End; ++i) {
         fsum2[j++] = bvec[i];
         f_square += std::pow(bvec[i], 2);
     }
 
     std::cout << "  SVD has started ... ";
-    // fitting with singular value decomposition
+   
+    // Fitting with singular value decomposition
     dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
     std::cout << "finished !" << std::endl << std::endl;
 
     std::cout << "  RANK of the matrix = " << nrank << std::endl;
-    if(nrank < N) error->warn("fit_without_constraints", 
+    if (nrank < N) error->warn("fit_without_constraints", 
         "Matrix is rank-deficient. Force constants could not be determined uniquely :(");
 
-    if(nrank == N) {
+    if (nrank == N) {
         double f_residual = 0.0;
-        for (i = N; i < M; ++i){
+        for (i = N; i < M; ++i) {
             f_residual += std::pow(fsum2[i], 2);
         }
         std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
         std::cout << "  Fitting error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
     }
 
-    for (i = 0; i < N; ++i){
+    for (i = 0; i < N; ++i) {
         bvec[i] = fsum2[i];
     }
     memory->deallocate(fsum2);
@@ -378,11 +383,10 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
 }
 
 void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
-				   double **amat, double *bvec, double **cmat, double *dvec)
+                                   double **amat, double *bvec, double **cmat, double *dvec)
 {
     int i, j, k;
     int nrank;
-    double *mat_tmp;
     double f_square, f_residual;
     double *fsum2;
 
@@ -390,27 +394,50 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     std::cout << "  Entering fitting routine: QRD with constraints" << std::endl;
 
-    memory->allocate(mat_tmp, (M + P) * N);
     memory->allocate(fsum2, M);
 
-    k = 0;
 
-    for(j = 0; j < N; ++j){
-        for(i = M_Start; i < M_End; ++i){
-            mat_tmp[k++] = amat[i][j];
+#ifdef _USE_EIGEN
+
+    double **mat_tmp2;
+    memory->allocate(mat_tmp2, M + P, N);
+    for (i = 0; i < M; ++i) {
+        for (j = 0; j < N; ++j) {
+            mat_tmp2[i][j] = amat[M_Start + i][j];
+        }
+    }
+    for (i = 0; i < P; ++i) {
+        for (j = 0; j < N; ++j) {
+            mat_tmp2[M + i][j] = cmat[i][j];
         }
     }
 
-    for(j = 0; j < N; ++j){
-        for(i = 0; i < P; ++i){
+    nrank = getRankEigen(M+P, N, mat_tmp2);
+    memory->deallocate(mat_tmp2);
+
+#else
+
+    double *mat_tmp;
+
+    memory->allocate(mat_tmp, (M + P) * N);
+
+    k = 0;
+
+    for (j = 0; j < N; ++j) {
+        for (i = 0; i < M; ++i) {
+            mat_tmp[k++] = amat[M_Start + i][j];
+        }
+        for (i = 0; i < P; ++i) {
             mat_tmp[k++] = cmat[i][j];
         }
     }
 
-    nrank = rank((M+P), N, mat_tmp);
+    nrank = rankQRD((M+P), N, mat_tmp, eps12);
     memory->deallocate(mat_tmp);
 
-    if(nrank != N){
+#endif
+
+    if (nrank != N) {
         std::cout << std::endl;
         std::cout << " **************************************************************************" << std::endl;
         std::cout << "  WARNING : rank deficient.                                                " << std::endl;
@@ -429,7 +456,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     f_square = 0.0;
     j = 0;
-    for (i = M_Start; i < M_End; ++i){
+    for (i = M_Start; i < M_End; ++i) {
         fsum2[j++] = bvec[i];
         f_square += std::pow(bvec[i], 2);
     }
@@ -442,14 +469,14 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     // transpose matrix A and C
     k = 0;
-    for(j = 0; j < N; ++j){
-        for(i = M_Start; i < M_End; ++i){
+    for (j = 0; j < N; ++j) {
+        for (i = M_Start; i < M_End; ++i) {
             amat_mod[k++] = amat[i][j];
         }
     }
     k = 0;
-    for (j = 0; j < N; ++j){
-        for(i = 0; i < P; ++i){
+    for (j = 0; j < N; ++j) {
+        for (i = 0; i < P; ++i) {
             cmat_mod[k++] = cmat[i][j];
         }
     }
@@ -471,7 +498,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     std::cout << " finished. " << std::endl;
 
     f_residual = 0.0;
-    for (i = N - P; i < M; ++i){
+    for (i = N - P; i < M; ++i) {
         f_residual += std::pow(fsum2[i], 2);
     }
     std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
@@ -479,7 +506,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     // copy fcs to bvec
 
-    for(i = 0; i < N; ++i){
+    for (i = 0; i < N; ++i) {
         bvec[i] = x[i];
     }
 
@@ -488,7 +515,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 }
 
 void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti, 
-			    double **amat, double *bvec, double **cmat, double *dvec)
+                            double **amat, double *bvec, double **cmat, double *dvec)
 {
     int i, j, k, l;
     int M_Start, M_End;
@@ -534,7 +561,7 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
 
     ofs_fcs_boot << "# Relative Error(%), FCs ..." ;
 
-    for (i = 0; i < interaction->maxorder; ++i){
+    for (i = 0; i < interaction->maxorder; ++i) {
         ofs_fcs_boot << std::setw(10) << fcs->ndup[i].size();
     }
     ofs_fcs_boot << std::endl;
@@ -551,51 +578,51 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
         // Use Intel MKL VSL if available
         viRngUniform(VSL_METHOD_IUNIFORM_STD, stream, ndata_used, rnd_index, 0, ndata_used);
 #else
-        for (i = 0; i < ndata_used; ++i){
+        for (i = 0; i < ndata_used; ++i) {
             rnd_index[i] = std::rand() % ndata_used; // random number uniformly distributed in [0, ndata_used)
         }
 #endif
 
         f_square = 0.0;
         k = 0;
-        for (i = 0; i < ndata_used; ++i){
+        for (i = 0; i < ndata_used; ++i) {
             iloc = rnd_index[i];
-            for (j = iloc * mset; j < (iloc + 1) * mset; ++j){
+            for (j = iloc * mset; j < (iloc + 1) * mset; ++j) {
                 fsum2[k++] = bvec[j];
                 f_square += std::pow(bvec[j], 2);
             }
         }
         l = 0;
-        for(j = 0; j < N; ++j){
-            for(i = 0; i < ndata_used; ++i){
+        for (j = 0; j < N; ++j) {
+            for (i = 0; i < ndata_used; ++i) {
                 iloc = rnd_index[i];
-                for (k = iloc * mset; k < (iloc + 1) * mset; ++k){
+                for (k = iloc * mset; k < (iloc + 1) * mset; ++k) {
                     amat_mod[l++] = amat[k][j];
                 }
             }
         }
 
         k = 0;
-        for (j = 0; j < N; ++j){
-            for(i = 0; i < P; ++i){
+        for (j = 0; j < N; ++j) {
+            for (i = 0; i < P; ++i) {
                 cmat_mod[k++] = cmat[i][j];
             }
         }
 
-        for (i = 0; i < P; ++i){
+        for (i = 0; i < P; ++i) {
             const_tmp[i] = dvec[i];
         }     
 
         dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, const_tmp, x, WORK, &LWORK, &INFO);
 
         f_residual = 0.0;
-        for (i = N - P; i < M; ++i){
+        for (i = N - P; i < M; ++i) {
             f_residual += std::pow(fsum2[i], 2);
         }
 
         ofs_fcs_boot << 100.0 * std::sqrt(f_residual/f_square);
 
-        for (i = 0; i < N; ++i){
+        for (i = 0; i < N; ++i) {
             ofs_fcs_boot << std::setw(15) << x[i];
         }
         ofs_fcs_boot << std::endl;
@@ -615,7 +642,7 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
 }
 
 void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_used, const int nmulti, const int nskip, 
-				double **amat, double *bvec, double **cmat, double *dvec)
+                                double **amat, double *bvec, double **cmat, double *dvec)
 {
     int i, j, k;
     int iend;
@@ -655,7 +682,7 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
 
     ofs_fcs_seq << "# Relative Error(%), FCS..." ;
 
-    for (i = 0; i < interaction->maxorder; ++i){
+    for (i = 0; i < interaction->maxorder; ++i) {
         ofs_fcs_seq << std::setw(10) << fcs->ndup[i].size();
     }
     ofs_fcs_seq << std::endl;
@@ -669,7 +696,7 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
 
         f_square = 0.0;
         j = 0;
-        for (i = M_Start; i < M_End; ++i){
+        for (i = M_Start; i < M_End; ++i) {
             fsum2[j++] = bvec[i];
             f_square += std::pow(bvec[i], 2);
         }
@@ -678,20 +705,20 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
 
         // Transpose matrix A
         k = 0;
-        for(j = 0; j < N; ++j){
-            for(i = M_Start; i < M_End; ++i){
+        for (j = 0; j < N; ++j) {
+            for (i = M_Start; i < M_End; ++i) {
                 amat_mod[k++] = amat[i][j];
             }
         }
 
         k = 0;
-        for (j = 0; j < N; ++j){
-            for(i = 0; i < P; ++i){
+        for (j = 0; j < N; ++j) {
+            for (i = 0; i < P; ++i) {
                 cmat_mod[k++] = cmat[i][j];
             }
         }
 
-        for (i = 0; i < P; ++i){
+        for (i = 0; i < P; ++i) {
             const_tmp[i] = dvec[i];
         }
 
@@ -706,20 +733,20 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
         memory->deallocate(WORK);
 
         f_residual = 0.0;
-        for (i = N - P; i < M; ++i){
+        for (i = N - P; i < M; ++i) {
             f_residual += std::pow(fsum2[i], 2);
         }
 
         ofs_fcs_seq << 100.0 * std::sqrt(f_residual/f_square);
 
-        for (i = 0; i < N; ++i){
+        for (i = 0; i < N; ++i) {
             ofs_fcs_seq << std::setw(15) << x[i];
         }
         ofs_fcs_seq << std::endl;
         memory->deallocate(fsum2);
     }
 
-    for (i = 0; i < N; ++i){
+    for (i = 0; i < N; ++i) {
         bvec[i] = x[i];
     }
 
@@ -733,16 +760,16 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
 }
 
 void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin, 
-				   const int ndata_fit, const int nmulti, const int maxorder, 
-				   double **u, double **f, double **amat, double *bvec)
+                                   const int ndata_fit, const int nmulti, const int maxorder, 
+                                   double **u, double **f, double **amat, double *bvec)
 {
     int i, j;
     int irow;
     int ncycle;
 
     std::cout << "  Calculation of matrix elements for direct fitting started ... ";
-    for (i = 0; i < M; ++i){
-        for (j = 0; j < N; ++j){
+    for (i = 0; i < M; ++i) {
+        for (j = 0; j < N; ++j) {
             amat[i][j] = 0.0;
         }
         bvec[i] = 0.0;
@@ -764,12 +791,12 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 #ifdef _OPENMP
 #pragma omp for schedule(guided)
 #endif
-        for(irow = 0; irow < ncycle; ++irow){
+        for (irow = 0; irow < ncycle; ++irow) {
 
             // generate r.h.s vector B
-            for (i = 0; i < natmin; ++i){
+            for (i = 0; i < natmin; ++i) {
                 iat = symmetry->map_p2s[i][0];
-                for (j = 0; j < 3; ++j){
+                for (j = 0; j < 3; ++j) {
                     im = 3 * i + j + 3 * natmin * irow;
                     bvec[im] = f[irow][3 * iat + j];
                 }
@@ -780,16 +807,16 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
             idata = 3 * natmin * irow;
             iparam = 0;
 
-            for(order = 0; order < maxorder; ++order){
+            for (order = 0; order < maxorder; ++order) {
 
                 mm = 0;
 
-                for(std::vector<int>::iterator iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter){
-                    for (i = 0; i < *iter; ++i){
+                for (std::vector<int>::iterator iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
+                    for (i = 0; i < *iter; ++i) {
                         ind[0] = fcs->fc_set[order][mm].elems[0];
                         k = idata + inprim_index(fcs->fc_set[order][mm].elems[0]);
                         amat_tmp = 1.0;
-                        for(j = 1; j < order + 2; ++j){
+                        for (j = 1; j < order + 2; ++j) {
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
                         }
@@ -815,8 +842,8 @@ int Fitting::inprim_index(const int n)
     int atmn = n / 3;
     int crdn = n % 3;
 
-    for (int i = 0; i < symmetry->natmin; ++i){
-        if(symmetry->map_p2s[i][0] == atmn){
+    for (int i = 0; i < symmetry->natmin; ++i) {
+        if (symmetry->map_p2s[i][0] == atmn) {
             in = 3 * i + crdn;
             break;
         }
@@ -848,20 +875,20 @@ double Fitting::gamma(const int n, const int *arr)
 
     nsame[0] = 1;
 
-    for(i = 1; i < n; ++i){
-        if(arr_tmp[i] == arr_tmp[i-1]) {
+    for (i = 1; i < n; ++i) {
+        if (arr_tmp[i] == arr_tmp[i-1]) {
             ++nsame[iuniq];
         } else {
             ++nsame[++iuniq];
             ++nuniq;
         }
 
-        if(arr[i] == ind_front) ++nsame_to_front;
+        if (arr[i] == ind_front) ++nsame_to_front;
     }
 
     int denom = 1;
 
-    for(i = 0; i < nuniq; ++i){
+    for (i = 0; i < nuniq; ++i) {
         denom *= factorial(nsame[i]);
     }
 
@@ -873,50 +900,89 @@ double Fitting::gamma(const int n, const int *arr)
 
 int Fitting::factorial(const int n)
 {
-    if(n == 1 || n == 0){
+    if (n == 1 || n == 0) {
         return 1;
-    }else{
+    } else {
         return n * factorial(n - 1);
     }
 }
 
-//int Fitting::rank(const int m, const int n, double **mat)
-//{
-//  using namespace Eigen;
-// 
-//    MatrixXd mat_tmp(m, n);
-//
-//    int i, j;
-//
-//    for(i = 0; i < m; ++i){
-//        for(j = 0; j < n; ++j){
-//            mat_tmp(i,j) = mat[i][j];
-//        }
-//    }
-//    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
-//    return qr.rank();
-//}
+#ifdef _USE_EIGEN
+int Fitting::getRankEigen(const int m, const int n, double **mat)
+{
+    using namespace Eigen;
 
-//int Fitting::rank(int m, int n, double *mat)
-//{
-//    int LWORK = 10 * n;
-//    int INFO;
-//    double *WORK, *TAU;
-//    int lda = m;
-//    
-//    int nmin = std::min<int>(m, n);
-//
-//    memory->allocate(WORK, LWORK);
-//    memory->allocate(TAU, n);
-//
-//    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
-//
-//
-//}
+    MatrixXd mat_tmp(m, n);
 
-int Fitting::rank(int m, int n, double *mat)
+    int i, j;
+
+    for (i = 0; i < m; ++i) {
+        for (j = 0; j < n; ++j) {
+            mat_tmp(i,j) = mat[i][j];
+        }
+    }
+    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
+    return qr.rank();
+}
+#endif
+
+int Fitting::rankQRD(const int m, const int n, double *mat, const double tolerance)
+{
+    // Return the rank of matrix mat revealed by the column pivoting QR decomposition
+    // The matrix mat is destroyed.
+
+    int m_ = m;
+    int n_ = n;
+
+    int LDA = m_;
+
+    int LWORK = 10 * n_;
+    int INFO;
+    int *JPVT;
+    double *WORK, *TAU;
+
+    int nmin = std::min<int>(m_, n_);
+
+    memory->allocate(JPVT, n_);
+    memory->allocate(WORK, LWORK);
+    memory->allocate(TAU, nmin);
+
+    for (int i = 0; i < n_; ++i) JPVT[i] = 0;
+
+    dgeqp3_(&m_, &n_, mat, &LDA, JPVT, TAU, WORK, &LWORK, &INFO);
+
+    memory->deallocate(JPVT);
+    memory->deallocate(WORK);
+    memory->deallocate(TAU);
+
+    if (std::abs(mat[0]) < eps) return 0;
+
+    double **mat_tmp;
+    memory->allocate(mat_tmp, m_, n_);
+
+    int k = 0;
+
+    for (int j = 0; j < n_; ++j) {
+        for (int i = 0; i < m_; ++i) {
+            mat_tmp[i][j] = mat[k++];
+        }
+    }
+
+    int nrank = 0;
+    for (int i = 0; i < nmin; ++i) {
+        if (std::abs(mat_tmp[i][i]) > tolerance * std::abs(mat[0])) ++nrank;
+    }
+
+    memory->deallocate(mat_tmp);
+
+    return nrank;
+}
+
+int Fitting::rankSVD(const int m, const int n, double *mat, const double tolerance)
 {
     int i;
+    int m_ = m;
+    int n_ = n;
 
     int LWORK = 10 * m;
     int INFO;
@@ -933,11 +999,11 @@ int Fitting::rank(int m, int n, double *mat)
 
     char mode[]  = "N";
 
-    dgesdd_(mode, &m, &n, mat, &m, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO); 
+    dgesdd_(mode, &m_, &n_, mat, &m_, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO); 
 
     int rank = 0;
-    for(i = 0; i < nmin; ++i){
-        if(s[i] > eps12) ++rank;
+    for (i = 0; i < nmin; ++i) {
+        if (s[i] > s[0] * tolerance) ++rank;
     }
 
     memory->deallocate(WORK);
@@ -947,7 +1013,7 @@ int Fitting::rank(int m, int n, double *mat)
     return rank;
 }
 
-int Fitting::rank2(const int m_in, const int n_in, double **mat) 
+int Fitting::rankSVD2(const int m_in, const int n_in, double **mat, const double tolerance) 
 {
     // Reveal the rank of matrix mat without destroying the matrix elements
 
@@ -985,8 +1051,8 @@ int Fitting::rank2(const int m_in, const int n_in, double **mat)
     dgesdd_(mode, &m, &n, arr, &m, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO); 
 
     int rank = 0;
-    for(i = 0; i < nmin; ++i){
-        if(s[i] > eps12) ++rank;
+    for (i = 0; i < nmin; ++i){
+        if (s[i] > s[0] * tolerance) ++rank;
     }
 
     memory->deallocate(IWORK);

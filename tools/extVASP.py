@@ -108,7 +108,6 @@ def print_displacements(xml_files, lavec, nat, x0, require_conversion, conversio
         for j in range(3):
             x0[i, j] = round(x0[i, j], 8)
 
-
     x = np.zeros((nat, 3))
 
     lavec_transpose = lavec.transpose()

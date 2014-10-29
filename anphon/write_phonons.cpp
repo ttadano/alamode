@@ -22,7 +22,7 @@
 #include "memory.h"
 #include "parsephon.h"
 #include "phonon_dos.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "phonon_velocity.h"
 #include "relaxation.h"
 #include "symmetry_core.h"
@@ -571,40 +571,66 @@ void Writes::write_phonon_vel_all()
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if(!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
 
-    unsigned int i, j, k;
+    unsigned int i, j, k, ii;
+    unsigned int knum;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
     double Ry_to_SI_vel = Bohr_in_Angstrom*1.0e-10/time_ry;
     double **eval = dynamical->eval_phonon;
 
-    ofs_vel << "# Frequency [cm^-1], |Velocity| [m / sec]" << std::endl;
+    ofs_vel << "# Phonon group velocity at all reducible k points." << std::endl;
+    ofs_vel << "# irred. knum, knum, mode num, frequency [cm^-1], "
+               "|velocity| [m/sec], velocity_(x,y,z) [m/sec]" << std::endl << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
-    for (i = 0; i < nk; ++i){
+    for (i = 0; i < kpoint->nk_reduced; ++i) {
+        ofs_vel << "# Irreducible k point  : " << std::setw(8) << i + 1;
+        ofs_vel << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
 
-        ofs_vel << "# ik = " << std::setw(8);
-        for (j = 0; j < 3; ++j){
-            ofs_vel << std::setw(15) << kpoint->xk[i][j];
-        }
-        ofs_vel << std::endl;
+        for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
+            knum = kpoint->kpoint_irred_all[i][j].knum;
+            ofs_vel << "## xk = " << std::setw(3);
+            for (k = 0; k < 3; ++k) ofs_vel << std::setw(15) << kpoint->xk[knum][k];
+            ofs_vel << std::endl;
 
-//         phonon_velocity->phonon_vel_k(kpoint->xk[i], vel);
-// 
-//         for (j = 0; j < ns; ++j){
-//             rotvec(vel[j], vel[j], system->lavec_p, 'T');
-//             for (k = 0; k < 3; ++k) vel[j][k] /= 2.0 * pi;
-//         }
-
-        for (j = 0; j < ns; ++j){
-            ofs_vel << std::setw(5) << i;
-            ofs_vel << std::setw(5) << j;
-            ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
-            ofs_vel << std::setw(15) << phonon_velocity->phvel[i][j]*Ry_to_SI_vel;
+            for (k = 0; k < ns; ++k){
+                ofs_vel << std::setw(7) << i + 1;
+                ofs_vel << std::setw(8) << knum + 1;
+                ofs_vel << std::setw(5) << k + 1;
+                ofs_vel << std::setw(10) << std::fixed << std::setprecision(2) << in_kayser(eval[knum][k]);
+                ofs_vel << std::setw(10) <<  std::fixed 
+                    << std::setprecision(2) << phonon_velocity->phvel[knum][k]*Ry_to_SI_vel;
+                for (ii = 0; ii < 3; ++ii) {
+                    ofs_vel << std::setw(10) << std::fixed << std::setprecision(2) 
+                        << phonon_velocity->phvel_xyz[knum][k][ii]*Ry_to_SI_vel;
+                }
+                ofs_vel << std::endl;
+            }
             ofs_vel << std::endl;
         }
+
         ofs_vel << std::endl;
     }
+// 
+// 
+//     for (i = 0; i < nk; ++i){
+// 
+//         ofs_vel << "# ik = " << std::setw(8);
+//         for (j = 0; j < 3; ++j){
+//             ofs_vel << std::setw(15) << kpoint->xk[i][j];
+//         }
+//         ofs_vel << std::endl;
+// 
+//         for (j = 0; j < ns; ++j){
+//             ofs_vel << std::setw(5) << i;
+//             ofs_vel << std::setw(5) << j;
+//             ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
+//             ofs_vel << std::setw(15) << phonon_velocity->phvel[i][j]*Ry_to_SI_vel;
+//             ofs_vel << std::endl;
+//         }
+//         ofs_vel << std::endl;
+//     }
 
     ofs_vel.close();
 
@@ -893,10 +919,10 @@ void Writes::write_thermodynamics()
         T = Tmin + dT * static_cast<double>(i);
 
         ofs_thermo << std::setw(16) << T;
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->Cv_tot(T) / k_Boltzmann;
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->vibrational_entropy(T) / k_Boltzmann;
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->internal_energy(T);
-        ofs_thermo << std::setw(18) << phonon_thermodynamics->free_energy(T) << std::endl;
+        ofs_thermo << std::setw(18) << thermodynamics->Cv_tot(T) / k_Boltzmann;
+        ofs_thermo << std::setw(18) << thermodynamics->vibrational_entropy(T) / k_Boltzmann;
+        ofs_thermo << std::setw(18) << thermodynamics->internal_energy(T);
+        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T) << std::endl;
     }
 
     ofs_thermo.close();
@@ -1008,7 +1034,7 @@ void Writes::write_msd()
         ofs_rmsd << std::setw(15) << T;
 
         for (j = 0; j < ns; ++j){
-            d2_tmp = phonon_thermodynamics->disp2_avg(T, j, j);
+            d2_tmp = thermodynamics->disp2_avg(T, j, j);
             ofs_rmsd << std::setw(15) << std::sqrt(d2_tmp)*Bohr_in_Angstrom;
         }
         ofs_rmsd << std::endl;

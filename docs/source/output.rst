@@ -17,12 +17,12 @@ Output files of alm
 
  Harmonic and anharmonic force constants in Rydberg atomic units.
  In the first section, only symmetry-reduced force constants are printed.
- All symmetry-related force constans are shown in the following section with the symmetry prefactor (:math:`\pm 1`).
+ All symmetry-related force constants are shown in the following section with the symmetry prefactor (:math:`\pm 1`).
  Created when ``MODE = fitting``.
 
 * ``PREFIX``.xml
 
- A XML file containing necessarily information for performing phonon calculations.
+ A XML file containing necessary information for performing phonon calculations.
  The files can be read by *anphon* using the ``FCSXML``-tag.
  Created when ``MODE = fitting``.
 

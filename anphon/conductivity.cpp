@@ -19,7 +19,7 @@
 #include "kpoint.h"
 #include "memory.h"
 #include "parsephon.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "phonon_velocity.h"
 #include "relaxation.h"
 #include "system.h"
@@ -380,11 +380,12 @@ void Conductivity::compute_kappa()
 
                     kappa[i][j][k] = 0.0;
 
+		    if (Temperature[i] < eps) continue;
+
                     for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
 
                         knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
                         snum = iks % ns;
-
 
                         omega = dynamical->eval_phonon[knum][snum];
 
@@ -397,9 +398,9 @@ void Conductivity::compute_kappa()
                         }
 
                         if (use_classical_Cv == 1) {
-                            kappa[i][j][k] +=  phonon_thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
+                            kappa[i][j][k] +=  thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
                         } else {
-                            kappa[i][j][k] +=  phonon_thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
+                            kappa[i][j][k] +=  thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
                         }
                     }
                     // Convert to SI unit

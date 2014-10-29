@@ -115,6 +115,8 @@ namespace PHON_NS {
         std::string ks_input;
 
         std::complex<double> V3(const unsigned int [3]);
+        std::complex<double> V3_tune(const unsigned int [3]);
+        std::complex<double> V3_tune2(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
 
         std::complex<double> V3_mode(int,  double *, double *, int, int, double **, std::complex<double> ***);
@@ -152,9 +154,13 @@ namespace PHON_NS {
         int ngroup2;
         std::vector<double> *fcs_group;
         std::vector<double> *fcs_group2;
+        std::complex<double> *exp_phase, ***exp_phase3;
 
-        double **v3_arr;
-        double ***delta_arr;
+        int nk_grid[3];
+        int nk_represent;
+        unsigned int tune_type;
+        double dnk[3];
 
+        bool use_tuned_ver;
     };
 }

@@ -36,11 +36,10 @@ namespace PHON_NS
         class Fcs_phonon *fcs_phonon;
         class Dynamical *dynamical;
         class Phonon_velocity *phonon_velocity;
-        class Phonon_thermodynamics *phonon_thermodynamics;
+        class Thermodynamics *thermodynamics;
         class Relaxation *relaxation;
         class Selfenergy *selfenergy;
         class Conductivity *conductivity;
-        class Interpolation *interpolation;
         class Writes *writes;
         class Dos *dos;
         class Gruneisen *gruneisen;

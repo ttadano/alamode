@@ -13,10 +13,10 @@
 #include "pointers.h"
 
 namespace PHON_NS {
-    class Phonon_thermodynamics: protected Pointers {
+    class Thermodynamics: protected Pointers {
     public:
-        Phonon_thermodynamics(class PHON *);
-        ~Phonon_thermodynamics();
+        Thermodynamics(class PHON *);
+        ~Thermodynamics();
 
         double T_to_Ryd;     
 

@@ -35,7 +35,8 @@ Symmetry::Symmetry(ALM *alm) : Pointers(alm)
     file_sym = "SYMM_INFO";
 }
 
-Symmetry::~Symmetry() {
+Symmetry::~Symmetry() 
+{
     memory->deallocate(tnons);
     memory->deallocate(symrel_int);
     memory->deallocate(symrel);
@@ -60,14 +61,14 @@ void Symmetry::init()
     memory->allocate(symrel_int, nsym, 3, 3);
 
     int isym = 0;
-    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
+    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
         SymmetryOperation symop_tmp = *iter;
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
                 symrel_int[isym][i][j] = symop_tmp.symop[3 * i + j];
             }
         }
-        for (i = 0; i < 3; ++i){
+        for (i = 0; i < 3; ++i) {
             tnons[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp);
         }
         ++isym;
@@ -101,7 +102,7 @@ void Symmetry::init()
     std::cout << "  **Cell-Atom Correspondens Below**" << std::endl;
     std::cout << std::setw(6) << " CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
 
-    for (int i = 0; i < ntran; ++i){
+    for (int i = 0; i < ntran; ++i) {
         std::cout << std::setw(6) << i + 1 << " | ";
         for (int j = 0; j < natmin; ++j)  {
             std::cout << std::setw(5) << map_p2s[j][i] + 1;
@@ -124,7 +125,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
 
     SymmList.clear();
 
-    if(nsym == 0) {
+    if (nsym == 0) {
 
         // Automatically find symmetries.
 
@@ -143,13 +144,13 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
             ofs_sym << nsym << std::endl;
             ofs_sym << nnp << std::endl;
 
-            for(std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
+            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 SymmetryOperation sym_tmp = *p;
-                for (i = 0; i < 9; ++i){
+                for (i = 0; i < 9; ++i) {
                     ofs_sym << std::setw(4) << sym_tmp.symop[i];
                 }
                 ofs_sym << std::setw(7) << " ";
-                for(i = 9; i < 12; ++i){
+                for (i = 9; i < 12; ++i) {
                     ofs_sym << sym_tmp.symop[i] << std::setw(4);
                 }
                 ofs_sym << std::endl;
@@ -158,7 +159,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
             ofs_sym.close();
         }
     } 
-    else if(nsym == 1) {
+    else if (nsym == 1) {
 
         // Identity operation only !
 
@@ -166,9 +167,9 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
 
         int rot_tmp[3][3], tran_tmp[3];
 
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
-                if(i == j) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                if (i == j) {
                     rot_tmp[i][j] = 1;
                 } else {
                     rot_tmp[i][j] = 0;
@@ -190,7 +191,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
         ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2 >> nnp;
 
-        if(nsym != nsym2) error->exit("setup_symmetry_operations", "nsym in the given file and the input file are not consistent.");
+        if (nsym != nsym2) error->exit("setup_symmetry_operations", "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
@@ -225,10 +226,10 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
     find_nnp_for_translation(nnp, CrystalSymmList);
 
     symop.clear();
-    for(std::vector<SymmetryOperationTransFloat>::iterator p = CrystalSymmList.begin(); p != CrystalSymmList.end(); ++p){
+    for (std::vector<SymmetryOperationTransFloat>::iterator p = CrystalSymmList.begin(); p != CrystalSymmList.end(); ++p) {
         SymmetryOperationTransFloat sym_tmp = *p;
 
-        for(i = 0; i < 3; ++i){
+        for (i = 0; i < 3; ++i) {
             tran_int[i] = nint(static_cast<double>(nnp) * sym_tmp.tran[i]);
             if (tran_int[i] < 0) tran_int[i] += nnp;
         }
@@ -360,8 +361,8 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
-
+void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList)
+{
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
     double x_rot[3];
@@ -474,8 +475,8 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
     }
 }
 
-void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryOperationTransFloat> symminfo) {
-
+void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryOperationTransFloat> symminfo) 
+{
     int i;
 
     ret = 1;
@@ -606,18 +607,16 @@ int Symmetry::numsymop(int nat, double **x, double tolerance)
     return ret;
 }
 
-void Symmetry::gensym_notran(std::vector<SymmetryOperation> &sym_notran) {
-
+void Symmetry::gensym_notran(std::vector<SymmetryOperation> &sym_notran) 
+{
     sym_notran.clear();
 
     for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
-
         if ((*it).symop[9] == 0 && (*it).symop[10] == 0 && (*it).symop[11] == 0) {
             sym_notran.push_back(*it);
         }
     }
 }
-
 
 void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
@@ -627,8 +626,8 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
     Eigen::Matrix3d aa, bb, sym_tmp;
     Eigen::Matrix3d sym_crt;
 
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
             aa(i,j) = lavec[i][j];
             bb(i,j) = rlavec[i][j];
         }
@@ -639,12 +638,10 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
     double tmp[3][3];
 #endif
 
-
-
     for (int isym = 0; isym < nsym; ++isym) {
 
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
 #ifdef _USE_EIGEN
                 sym_tmp(i,j) = static_cast<double>(symrel_int[isym][i][j]);
 #else
@@ -654,30 +651,29 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
         }
 #ifdef _USE_EIGEN
         sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
                 symrel[isym][i][j] = sym_crt(i,j);
             }
         }
 #else
         matmul3(tmp, sym_tmp, rlavec);
         matmul3(sym_crt, lavec, tmp);
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
                 symrel[isym][i][j] = sym_crt[i][j] / (2.0 * pi);
             }
         }
 #endif
-
-
     }
 
 #ifdef _DEBUG
 
     std::cout << "Symmetry Operations in Cartesian Coordinate" << std::endl;
-    for (int isym = 0; isym < nsym; ++isym){
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+    for (int isym = 0; isym < nsym; ++isym) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
                 std::cout << std::setw(8) << symrel[isym][i][j];    
             }
         }
@@ -709,7 +705,7 @@ void Symmetry::pure_translations()
 
     int isym = 0;
 
-    for (i = 0; i < nsym; ++i){
+    for (i = 0; i < nsym; ++i) {
         if (is_translation(symrel_int[i])) 	symnum_tran[isym++] = i;
     }
 }
@@ -724,9 +720,8 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     double tmp[3], diff; 
     double rot_double[3][3];
 
-
-    for(iat = 0; iat < nat; ++iat){
-        for(isym = 0; isym < nsym; ++isym){
+    for (iat = 0; iat < nat; ++iat) {
+        for (isym = 0; isym < nsym; ++isym) {
             map_sym[iat][isym] = -1;
         }
     }
@@ -734,7 +729,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 #ifdef  _OPENMP
 #pragma omp parallel for private(i, j, rot_double, itype, ii, iat, xnew, jj, jat, tmp, diff, isym)
 #endif
-    for (isym = 0; isym < nsym; ++isym){
+    for (isym = 0; isym < nsym; ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -778,10 +773,10 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 
     jat = 0;
     int atomnum_translated;
-    for (iat = 0; iat < nat; ++iat){
+    for (iat = 0; iat < nat; ++iat) {
 
-        if(is_checked[iat]) continue;
-        for (i = 0; i < ntran; ++i){
+        if (is_checked[iat]) continue;
+        for (i = 0; i < ntran; ++i) {
             atomnum_translated = map_sym[iat][symnum_tran[i]];
             map_p2s[jat][i] = atomnum_translated;
             is_checked[atomnum_translated] = true;
@@ -791,8 +786,8 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
 
     memory->deallocate(is_checked);
 
-    for (iat = 0; iat < natmin; ++iat){
-        for (i  = 0; i < ntran; ++i){
+    for (iat = 0; iat < natmin; ++iat) {
+        for (i  = 0; i < ntran; ++i) {
             atomnum_translated = map_p2s[iat][i];
             map_s2p[atomnum_translated].atom_num = iat;
             map_s2p[atomnum_translated].tran_num = i;
@@ -800,8 +795,8 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     }
 }
 
-bool Symmetry::is_translation(int **rot) {
-
+bool Symmetry::is_translation(int **rot) 
+{
     bool ret;
 
     ret = 
@@ -811,366 +806,6 @@ bool Symmetry::is_translation(int **rot) {
 
     return ret;
 }
-
-// void Symmetry::data_multiplier(int nat, int ndata, int multiply_data)
-// {
-// 	int i, j, k, itran;
-// 	int n_map;
-// 	double **u, **f;
-// 	double ***u_sym, ***f_sym;
-// 
-// 	files->ofs_disp_sym.open(files->file_disp_sym.c_str(), std::ios::out | std::ios::binary);
-// 	files->ofs_force_sym.open(files->file_force_sym.c_str(), std::ios::out | std::ios::binary);
-// 
-// 	if(!files->ofs_disp_sym)  error->exit("data_multiplier", "cannot open file_disp"); 
-// 	if(!files->ofs_force_sym) error->exit("data_multiplier", "cannot open file_force");
-// 
-// 	if(multiply_data == 3) {
-// 
-// 		std::cout << "MULTDAT = 3: Displacement-force data will be expanded to the bigger supercell" << std::endl;
-// 		std::cout << "**WARNING: This is not fully tested.**" << std::endl << std::endl;
-// 
-// 		int nsym_ref = 0;
-// 		unsigned int nnp_ref;
-// 
-// 		// Read from reference file
-// 
-// 		std::ifstream ifs_refsys;
-// 		ifs_refsys.open(refsys_file.c_str(), std::ios::in);
-// 		if(!ifs_refsys) error->exit("data_multiplier", "cannot open refsys_file");
-// 
-// 		double lavec_ref[3][3], rlavec_ref[3][3];
-// 		int nat_ref;
-// 
-// 		for (i = 0; i < 3; ++i){
-// 			for (j = 0; j < 3; ++j){
-// 				ifs_refsys >> lavec_ref[j][i];
-// 			}
-// 		}
-// 		system->recips(lavec_ref, rlavec_ref);
-// 		ifs_refsys >> nat_ref >> nnp_ref;
-// 
-// 		int *kd_ref;
-// 		double **x_ref;
-// 
-// 		memory->allocate(kd_ref, nat_ref);
-// 		memory->allocate(x_ref, nat_ref, 3);
-// 
-// 		for (i = 0; i < nat_ref; ++i){
-// 			ifs_refsys >> kd_ref[i];
-// 			for (j = 0; j < 3; ++j){
-// 				ifs_refsys >> x_ref[i][j];
-// 			}
-// 		}
-// 		ifs_refsys.close();
-// 
-// 		// Generate symmetry operations of the reference system
-// 
-// 		findsym(nat_ref, lavec_ref, x_ref, SymmList);
-// 
-// 		nsym_ref = SymmList.size();
-// 
-// 		double **tnons_ref;
-// 		int ***symrel_int_ref;
-// 
-// 		memory->allocate(tnons_ref, nsym_ref, 3);
-// 		memory->allocate(symrel_int_ref, nsym_ref, 3, 3);
-// 
-// 		int isym = 0;
-// 
-// 		ntran_ref = 0;
-// 
-// 		for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter){
-// 			SymmetryOperation symop_tmp = *iter;
-// 			for (i = 0; i < 3; ++i){
-// 				for (j = 0; j < 3; ++j){
-// 					symrel_int_ref[isym][i][j] = symop_tmp.symop[3 * i + j];
-// 				}
-// 			}
-// 			for (i = 0; i < 3; ++i){
-// 				tnons_ref[isym][i] = static_cast<double>(symop_tmp.symop[i + 9]) / static_cast<double>(nnp_ref);
-// 			}
-// 
-// 			if (is_translation(symrel_int_ref[isym])) ++ntran_ref;
-// 
-// 			++isym;
-// 		}
-// 		SymmList.clear();
-// 
-// 		double **xnew, tmp[3];
-// 		int **map_sym_ref;
-// 		int *symnum_tran_ref;
-// 
-// 		bool map_found;
-// 		int iat, jat, icrd, jcrd;
-// 		double dist;
-// 
-// 
-// 		memory->allocate(symnum_tran_ref, ntran_ref);
-// 		itran = 0;
-// 
-// 		for (isym = 0; isym < nsym_ref; ++isym) {
-// 			if (is_translation(symrel_int_ref[isym])) symnum_tran_ref[itran++] = isym;
-// 		}
-// 
-// 		memory->allocate(xnew, nat_ref, 3);
-// 		memory->allocate(map_sym_ref, nat_ref, nsym_ref);
-// 
-// 		for(iat = 0; iat < nat_ref; ++iat){
-// 			for(isym = 0; isym < nsym_ref; ++isym){
-// 				map_sym_ref[iat][isym] = -1;
-// 			}
-// 		}
-// 
-// 		for (isym = 0; isym < nsym_ref; ++isym){
-// 			for (iat = 0; iat < nat_ref; ++iat){
-// 
-// 				for (i = 0; i < 3; ++i){
-// 					xnew[iat][i] = static_cast<double>(symrel_int_ref[isym][i][0]) * x_ref[iat][0] 
-// 					+ static_cast<double>(symrel_int_ref[isym][i][1]) * x_ref[iat][1] 
-// 					+ static_cast<double>(symrel_int_ref[isym][i][2]) * x_ref[iat][2] 
-// 					+ tnons_ref[isym][i];
-// 				}
-// 
-// 				for (jat = 0; jat < nat_ref; ++jat){
-// 					for (i = 0; i < 3; ++i){
-// 						tmp[i] = std::fmod(std::abs(xnew[iat][i] - x_ref[jat][i]), 1.0);
-// 						tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
-// 					}
-// 
-// 					dist = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-// 					if(dist < tolerance * tolerance) {
-// 						map_sym_ref[iat][isym] = jat;
-// 						break;
-// 					}
-// 				}
-// 				if (map_sym_ref[iat][isym] == -1) error->exit("data_multiplier", "cannot find symmetry for operation # ", isym + 1);
-// 			}
-// 		}
-// 		memory->deallocate(xnew); 
-// 
-// 
-// 		// Generate mapping information of larger supercell to smaller one.
-// 
-// 		int **map_large_to_small;
-// 		double xtmp[3], xdiff[3], xshift[3];
-// 
-// 		memory->allocate(map_large_to_small, ntran_ref, nat);
-// 
-// 		for (itran = 0; itran < ntran_ref; ++itran){
-// 
-// 			for (icrd = 0; icrd < 3; ++icrd) {
-// 				xshift[icrd] = x_ref[0][icrd] - x_ref[map_sym_ref[0][symnum_tran_ref[itran]]][icrd];
-// 			}
-// 
-// 			for (iat = 0; iat < nat; ++iat) {
-// 
-// 				map_found = false;
-// 
-// 				rotvec(xtmp, system->xcoord[iat], system->lavec);
-// 				rotvec(xtmp, xtmp, rlavec_ref);
-// 
-// 				for (icrd = 0; icrd < 3; ++icrd) {
-// 					xtmp[icrd] /= 2.0 * pi;
-// 				}
-// 
-// 				for (jat = 0; jat < nat_ref; ++jat) {
-// 
-// 					for (jcrd = 0; jcrd < 3; ++jcrd) {
-// 						xdiff[jcrd] = xtmp[jcrd] - x_ref[jat][jcrd] - xshift[jcrd];
-// 						xdiff[jcrd] = std::fmod(xdiff[jcrd], 1.0);
-// 					}
-// 					dist = xdiff[0]*xdiff[0] + xdiff[1]*xdiff[1] + xdiff[2]*xdiff[2];
-// 
-// 					if (dist < tolerance * tolerance && kd_ref[jat] == system->kd[iat]) {
-// 						map_large_to_small[itran][iat] = jat;
-// 						map_found = true;
-// 						break;
-// 					}
-// 				}
-// 
-// 				if (!map_found) error->exit("data_multiplier", "cannot find equivalent atom");
-// 			}
-// 
-// 			std::cout << "itran = " << itran << std::endl;
-// 			for (iat = 0; iat < nat; ++iat) {
-// 				std::cout << "iat = " << iat << " mapped = " << map_large_to_small[itran][iat] << std::endl;
-// 			}
-// 		}
-// 
-// 		// Write mapped displacement-force data set
-// 
-// 		memory->allocate(u_sym, ntran_ref, nat, 3);
-// 		memory->allocate(f_sym, ntran_ref, nat, 3);
-// 
-// 		memory->allocate(u, nat_ref, 3);
-// 		memory->allocate(f, nat_ref, 3);
-// 
-// 		for (i = 0; i < ndata; ++i){
-// 			for (j = 0; j < nat_ref; ++j){
-// 				files->ifs_disp  >> u[j][0] >> u[j][1] >> u[j][2];
-// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-// 			}
-// 
-// 			for (itran = 0; itran < ntran_ref; ++itran){
-// 				for (j = 0; j < nat; ++j){
-// 					for (k = 0; k < 3; ++k){
-// 						n_map = map_large_to_small[itran][j];
-// 						u_sym[itran][j][k] = u[n_map][k];
-// 						f_sym[itran][j][k] = f[n_map][k];
-// 					}
-// 				}
-// 			}
-// 
-// 			for (itran = 0; itran < ntran_ref; ++itran){
-// 				for (j = 0; j < nat; ++j){
-// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
-// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
-// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
-// 				}
-// 			} 
-// 
-// 		}
-// 		//	error->exit("hoge", "hoge");
-// 
-// 	} else if (multiply_data == 2) {
-// 
-// 		std::cout << "MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl << std::endl;
-// 
-// 		int isym;
-// 
-// 		memory->allocate(u, nat, 3);
-// 		memory->allocate(f, nat, 3);
-// 
-// 		memory->allocate(u_sym, nsym, nat, 3);
-// 		memory->allocate(f_sym, nsym, nat, 3);
-// 
-// 		for (i = 0; i < ndata; ++i) {
-// 			for (j = 0; j < nat; ++j) {
-// 				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-// 			}
-// 
-// 			for (isym = 0; isym < nsym; ++isym) {
-// 				for (j = 0; j < nat; ++j) {
-// 					n_map = map_sym[j][isym];
-// 
-// 					for (k = 0; k < 3; ++k) {
-// 						u_sym[isym][n_map][k] = u[j][k];
-// 						f_sym[isym][n_map][k] = f[j][k];
-// 					}
-// 				}
-// 			}
-// 
-// 			for (isym = 0; isym < nsym; ++isym) {
-// 				for (j = 0; j < nat; ++j) {
-// 					files->ofs_disp_sym.write((char *) &u_sym[isym][j][0], sizeof(double));
-// 					files->ofs_disp_sym.write((char *) &u_sym[isym][j][1], sizeof(double));
-// 					files->ofs_disp_sym.write((char *) &u_sym[isym][j][2], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[isym][j][0], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[isym][j][1], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[isym][j][2], sizeof(double));
-// 				}
-// 			}
-// 		}
-// 
-// 		std::cout << "Symmetrically equivalent displacements and forces data are" << std::endl;
-// 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
-// 
-// 	} else if (multiply_data == 1) {
-// 
-// 		std::cout << "MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
-// 		std::cout << "             by using pure translational operations only." << std::endl << std::endl;
-// 
-// 		memory->allocate(u, nat, 3);
-// 		memory->allocate(f, nat, 3);
-// 
-// 		memory->allocate(u_sym, ntran, nat, 3);
-// 		memory->allocate(f_sym, ntran, nat, 3);
-// 
-// 		for (i = 0; i < ndata; ++i){
-// 			for (j = 0; j < nat; ++j){
-// 				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-// 			}
-// 
-// 
-// 			for (itran = 0; itran < ntran; ++itran){
-// 				for (j = 0; j < nat; ++j){
-// 					n_map = map_sym[j][symnum_tran[itran]];
-// 
-// 					for (k = 0; k < 3; ++k){
-// 						u_sym[itran][n_map][k] = u[j][k];
-// 						f_sym[itran][n_map][k] = f[j][k];
-// 					}
-// 				}
-// 			}
-// 
-// 			for (itran = 0; itran < ntran; ++itran){
-// 				for (j = 0; j < nat; ++j){
-// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][0], sizeof(double));
-// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][1], sizeof(double));
-// 					files->ofs_disp_sym.write((char *) &u_sym[itran][j][2], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][0], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][1], sizeof(double));
-// 					files->ofs_force_sym.write((char *) &f_sym[itran][j][2], sizeof(double));
-// 				}
-// 			}
-// 		}
-// 		std::cout << "Symmetrically (Only translational part) equivalent displacements and forces data are" << std::endl;
-// 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
-// 
-// 	} else if (multiply_data == 0) {
-// 
-// 		std::cout << "MULTDAT = 0: Just copy DFILE and FFILE to DFILE.SYM and FFILE.SYM" << std::endl << std::endl;
-// 
-// 		memory->allocate(u, nat, 3);
-// 		memory->allocate(f, nat, 3);
-// 		memory->allocate(u_sym, 1, 1, 1);
-// 		memory->allocate(f_sym, 1, 1, 1);
-// 
-// 		for (i = 0; i < ndata; ++i) {
-// 			for (j = 0; j < nat; ++j) {
-// 				files->ifs_disp >> u[j][0] >> u[j][1] >> u[j][2];
-// 				files->ifs_force >> f[j][0] >> f[j][1] >> f[j][2];
-// 			}
-// 			for (j = 0; j < nat; ++j){
-// 				files->ofs_disp_sym.write((char *) &u[j][0], sizeof(double));
-// 				files->ofs_disp_sym.write((char *) &u[j][1], sizeof(double));
-// 				files->ofs_disp_sym.write((char *) &u[j][2], sizeof(double));
-// 				files->ofs_force_sym.write((char *) &f[j][0], sizeof(double));
-// 				files->ofs_force_sym.write((char *) &f[j][1], sizeof(double));
-// 				files->ofs_force_sym.write((char *) &f[j][2], sizeof(double));
-// 			}
-// 		}
-// 
-// 		ntran = 1;
-// 
-// 		std::cout << "Displacements and forces data are" << std::endl;
-// 		std::cout << "stored in files: " << files->file_disp_sym << " " << files->file_force_sym << std::endl;
-// 
-// 	} else if (multiply_data == -1) {
-// 
-// 		std::cout << "MULTDAT = -1: Not implemented yet" << std::endl << std::endl;
-// 
-// 		ntran = 1;
-// 		memory->allocate(u, 1, 1);
-// 		memory->allocate(f, 1, 1);
-// 		memory->allocate(u_sym, 1, 1, 1);
-// 		memory->allocate(f_sym, 1, 1, 1);
-// 	} 
-// 
-// 	files->ofs_disp_sym.close();
-// 	files->ofs_force_sym.close();
-// 
-// 	memory->deallocate(u);
-// 	memory->deallocate(f);
-// 	memory->deallocate(u_sym);
-// 	memory->deallocate(f_sym);
-// }
 
 void Symmetry::print_symmetrized_coordinate(double **x)
 {
@@ -1194,13 +829,13 @@ void Symmetry::print_symmetrized_coordinate(double **x)
     memory->allocate(x_symm, nat, 3);
     memory->allocate(x_avg, nat, 3);
 
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
             x_avg[i][j] = 0.0;
         }
     }
 
-    for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p){
+    for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
         SymmetryOperation symm_tmp = *p;
 
         ++isym;
@@ -1242,13 +877,13 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         rot[2][2] = static_cast<double>((m11 * m22 - m12 * m21) * det);
 #endif
 
-        for (i = 9; i < 12; ++i){
+        for (i = 9; i < 12; ++i) {
             tran[i - 9] = symm_tmp.symop[i];
         }
 
-        for (i = 0; i < nat; ++i){
+        for (i = 0; i < nat; ++i) {
 
-            for (j = 0; j < 3; ++j){   
+            for (j = 0; j < 3; ++j) {   
 #ifdef _USE_EIGEN
                 wsi(j) = x[i][j] - static_cast<double>(tran[j]) / static_cast<double>(nnp);
 #else 
@@ -1264,7 +899,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
             l = -1;
 
-            for (j = 0; j < nat; ++j){
+            for (j = 0; j < nat; ++j) {
                 for (k = 0; k < 3; ++k) {
 #ifdef _USE_EIGEN
                     vsi(k) = x[j][k];
@@ -1286,7 +921,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
                 if (diff < tolerance * tolerance) l = j;
             }
 
-            for (j = 0; j < 3; ++j){
+            for (j = 0; j < 3; ++j) {
 #ifdef _USE_EIGEN
                 x_symm[l][j] = usi(j);
 #else 
@@ -1295,7 +930,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
                 do {
                     if (x_symm[l][j] < 0.0) {
                         x_symm[l][j] += 1.0;
-                    } else if (x_symm[l][j] > 1.0){
+                    } else if (x_symm[l][j] > 1.0) {
                         x_symm[l][j] -= 1.0;
                     }
                 } while(x_symm[l][j] < 0.0 || x_symm[l][j] > 1.0);
@@ -1303,32 +938,32 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
         }
 
-        for (i = 0; i < nat; ++i){
-            for (j = 0; j < 3; ++j){
+        for (i = 0; i < nat; ++i) {
+            for (j = 0; j < 3; ++j) {
                 std::cout << std::setw(15) << std::fixed << x_symm[i][j];
             }
             std::cout << " ( ";
-            for (j = 0; j < 3; ++j){
+            for (j = 0; j < 3; ++j) {
                 std::cout << std::setw(15) << std::scientific << x_symm[i][j]-x[i][j];
             }
             std::cout << " )" << std::endl;
 
-            for (j = 0; j < 3; ++j){
+            for (j = 0; j < 3; ++j) {
                 x_avg[i][j] += x_symm[i][j];
             }
         }
 
     }
 
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
             x_avg[i][j] /= static_cast<double>(SymmList.size());
         }
     }
 
     std::cout << "Symmetrically Averaged Coordinate" << std::endl;
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
             std::cout << std::setw(15) << std::fixed << std::setprecision(9) << x_avg[i][j];
         }
         std::cout << std::endl;
@@ -1348,16 +983,16 @@ void Symmetry::symop_availability_check(double ***rot, bool *flag, const int n, 
 
     nsym_fc = 0;
 
-    for (i = 0; i < nsym; ++i){
+    for (i = 0; i < nsym; ++i) {
 
         nfinite = 0;
-        for (j = 0; j < 3; ++j){
-            for (k = 0; k < 3; ++k){
+        for (j = 0; j < 3; ++j) {
+            for (k = 0; k < 3; ++k) {
                 if(std::abs(rot[i][j][k]) > eps) ++nfinite;
             }
         }
 
-        if (nfinite == 3){
+        if (nfinite == 3) {
             ++nsym_fc;
             flag[i] = true;
         } else {

@@ -16,7 +16,7 @@
 #include "error.h"
 #include "kpoint.h"
 #include "memory.h"
-#include "phonon_thermodynamics.h"
+#include "thermodynamics.h"
 #include "phonon_velocity.h"
 #include "pointers.h"
 #include "system.h"
@@ -24,13 +24,13 @@
 
 using namespace PHON_NS;
 
-Phonon_thermodynamics::Phonon_thermodynamics(PHON *phon): Pointers(phon) {
+Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon) {
     T_to_Ryd = k_Boltzmann / Ryd;
 }
 
-Phonon_thermodynamics::~Phonon_thermodynamics(){};
+Thermodynamics::~Thermodynamics(){};
 
-double Phonon_thermodynamics::Cv(const double omega, const double T)
+double Thermodynamics::Cv(const double omega, const double T)
 {
     double x;
 
@@ -42,7 +42,7 @@ double Phonon_thermodynamics::Cv(const double omega, const double T)
     }
 }
 
-double Phonon_thermodynamics::Cv_classical(const double omega, const double T)
+double Thermodynamics::Cv_classical(const double omega, const double T)
 {
     double x;
 
@@ -54,7 +54,7 @@ double Phonon_thermodynamics::Cv_classical(const double omega, const double T)
     }
 }
 
-double Phonon_thermodynamics::fB(const double omega, const double T)
+double Thermodynamics::fB(const double omega, const double T)
 {
     double x;
 
@@ -66,7 +66,7 @@ double Phonon_thermodynamics::fB(const double omega, const double T)
     }
 }
 
-double Phonon_thermodynamics::fC(const double omega, const double T)
+double Thermodynamics::fC(const double omega, const double T)
 {
     double x;
 
@@ -78,7 +78,7 @@ double Phonon_thermodynamics::fC(const double omega, const double T)
     }
 }
 
-double Phonon_thermodynamics::Cv_tot(const double T)
+double Thermodynamics::Cv_tot(const double T)
 {
     unsigned int ik, is;
     unsigned int nk = kpoint->nk;
@@ -97,7 +97,7 @@ double Phonon_thermodynamics::Cv_tot(const double T)
     return ret / static_cast<double>(nk);
 }
 
-double Phonon_thermodynamics::Cv_Debye(const double T, const double TD)
+double Thermodynamics::Cv_Debye(const double T, const double TD)
 {
     unsigned int natmin = system->natmin;
     unsigned int i;
@@ -138,7 +138,7 @@ double Phonon_thermodynamics::Cv_Debye(const double T, const double TD)
     }
 }
 
-void Phonon_thermodynamics::Debye_T(const double T, double &TD)
+void Thermodynamics::Debye_T(const double T, double &TD)
 {    
     double TD_old;
     double diff_C;
@@ -157,7 +157,7 @@ void Phonon_thermodynamics::Debye_T(const double T, double &TD)
     }
 }
 
-double Phonon_thermodynamics::internal_energy(const double T)
+double Thermodynamics::internal_energy(const double T)
 {
     unsigned int ik, is;
     unsigned int nk = kpoint->nk;
@@ -178,7 +178,7 @@ double Phonon_thermodynamics::internal_energy(const double T)
     return ret * 0.5 / static_cast<double>(nk);
 }
 
-double Phonon_thermodynamics::vibrational_entropy(const double T)
+double Thermodynamics::vibrational_entropy(const double T)
 {
     unsigned int ik, is;
     unsigned int nk = kpoint->nk;
@@ -202,7 +202,7 @@ double Phonon_thermodynamics::vibrational_entropy(const double T)
     return -k_Boltzmann * ret / static_cast<double>(nk);
 }
 
-double Phonon_thermodynamics::free_energy(const double T)
+double Thermodynamics::free_energy(const double T)
 {
     unsigned int ik, is;
     unsigned int nk = kpoint->nk;
@@ -234,7 +234,7 @@ double Phonon_thermodynamics::free_energy(const double T)
 
 }
 
-double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, const unsigned int ns2)
+double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const unsigned int ns2)
 {
     double ret = 0.0;
     unsigned int ik, is;
@@ -266,7 +266,7 @@ double Phonon_thermodynamics::disp2_avg(const double T, const unsigned int ns1, 
     return ret;
 }
 
-double Phonon_thermodynamics::coth_T(const double omega, const double T)
+double Thermodynamics::coth_T(const double omega, const double T)
 {
     // This function returns coth(hbar*omega/2*kB*T)
 

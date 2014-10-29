@@ -32,13 +32,14 @@ using namespace ALM_NS;
 
 System::System(ALM *alm): Pointers(alm) {}
 
-System::~System() {
+System::~System() 
+{
     memory->deallocate(x_cartesian);
     memory->deallocate(atomlist_class);
 }
 
-void System::init(){
-
+void System::init()
+{
     int i, j;
 
     std::cout << " SYSTEM" << std::endl;
@@ -55,8 +56,8 @@ void System::init(){
     std::cout << std::endl;
 
     double vec_tmp[3][3];
-    for (i = 0; i < 3; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
             vec_tmp[i][j] = lavec[j][i];
         }
     }
@@ -91,8 +92,8 @@ void System::init(){
 
     memory->allocate(x_cartesian, nat, 3);
 
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
             x_cartesian[i][j] = xcoord[i][j];
         }
     }
@@ -157,17 +158,16 @@ void System::frac2cart(double **xf)
     double *x_tmp;
     memory->allocate(x_tmp, 3);
 
-    for (i = 0; i < nat; ++i){
+    for (i = 0; i < nat; ++i) {
 
         rotvec(x_tmp, xf[i], lavec);
 
-        for (j = 0; j < 3; ++j){
+        for (j = 0; j < 3; ++j) {
             xf[i][j] = x_tmp[j];
         }
     }
     memory->deallocate(x_tmp);
 }
-
 
 void System::load_reference_system_xml()
 {
@@ -177,8 +177,7 @@ void System::load_reference_system_xml()
     int nat_ref, natmin_ref, ntran_ref;
     int **intpair_ref;
     double *fc2_ref;
-
-    
+   
     try {
         read_xml(constraint->fc2_file, pt);
     }
@@ -229,21 +228,21 @@ void System::load_reference_system_xml()
 
     list_found.clear();
 
-    for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p){
+    for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p) {
         FcProperty list_tmp = *p; // Using copy constructor
-        for (i = 0; i < 2; ++i){
+        for (i = 0; i < 2; ++i) {
             ind[i] = list_tmp.elems[i];
         }
         list_found.insert(FcProperty(2, list_tmp.coef, ind, list_tmp.mother));
     }
 
-    for (i = 0; i < nfc2_ref; ++i){
+    for (i = 0; i < nfc2_ref; ++i) {
         constraint->const_mat[i][i] = 1.0;
     }
 
-    for (i = 0; i < nfc2_ref; ++i){
+    for (i = 0; i < nfc2_ref; ++i) {
         iter_found = list_found.find(FcProperty(2, 1.0, intpair_ref[i], 1));
-        if(iter_found == list_found.end()) {
+        if (iter_found == list_found.end()) {
             error->exit("load_reference_system", "Cannot find equivalent force constant, number: ", i + 1);
         }
         FcProperty arrtmp = *iter_found;
@@ -283,12 +282,12 @@ void System::load_reference_system()
     while(!ifs_fc2.eof() && !is_found_system)
     {
         std::getline(ifs_fc2, str_tmp);
-        if(str_tmp == "##SYSTEM INFO"){
+        if (str_tmp == "##SYSTEM INFO") {
 
             is_found_system = true;
 
             std::getline(ifs_fc2, str_tmp);
-            for (i = 0; i < 3; ++i){
+            for (i = 0; i < 3; ++i) {
                 ifs_fc2 >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
             ifs_fc2.ignore();
@@ -317,7 +316,7 @@ void System::load_reference_system()
             unsigned int ikd, itran, icell;
             std::getline(ifs_fc2, str_tmp);
             std::getline(ifs_fc2, str_tmp);
-            for (i = 0; i < nat_s; ++i){
+            for (i = 0; i < nat_s; ++i) {
                 ifs_fc2 >> str_tmp >> ikd >> xcoord_s[i][0] >> xcoord_s[i][1] >> xcoord_s[i][2] >> itran >> icell;
                 kd_s[i] = ikd;
                 symmetry->map_p2s_s[icell - 1][itran - 1] = i;
@@ -326,7 +325,7 @@ void System::load_reference_system()
             }
         }
     }
-    if(!is_found_system) error->exit("load_reference_system", "SYSTEM INFO flag not found in the fc2_file");
+    if (!is_found_system) error->exit("load_reference_system", "SYSTEM INFO flag not found in the fc2_file");
 
     //
     // Generate Mapping Information (big supercell -> small supercell)
@@ -343,7 +342,7 @@ void System::load_reference_system()
     bool map_found;
     double dist;
 
-    for (iat = 0; iat < nat_s; ++iat){
+    for (iat = 0; iat < nat_s; ++iat) {
         map_found = false;
 
         rotvec(xtmp, xcoord_s[iat], lavec_s);
@@ -351,8 +350,8 @@ void System::load_reference_system()
 
         for (icrd = 0; icrd < 3; ++icrd) xtmp[icrd] /= 2.0 * pi;
 
-        for (jat = 0; jat < nat; ++jat){
-            for (icrd = 0; icrd < 3; ++icrd){
+        for (jat = 0; jat < nat; ++jat) {
+            for (icrd = 0; icrd < 3; ++icrd) {
                 xdiff[icrd] = xtmp[icrd] - xcoord[jat][icrd];
                 xdiff[icrd] = std::fmod(xdiff[icrd], 1.0);
             }
@@ -364,7 +363,7 @@ void System::load_reference_system()
                 break;
             }
         }
-        if(!map_found) error->exit("load_reference_system", "Could not find an equivalent atom for atom ", iat + 1);
+        if (!map_found) error->exit("load_reference_system", "Could not find an equivalent atom for atom ", iat + 1);
     }
 
     memory->deallocate(xtmp);
@@ -382,10 +381,10 @@ void System::load_reference_system()
     while(!ifs_fc2.eof() && !is_found_fc2)
     {
         std::getline(ifs_fc2, str_tmp);
-        if(str_tmp == "##HARMONIC FORCE CONSTANTS")
+        if (str_tmp == "##HARMONIC FORCE CONSTANTS")
         {
             ifs_fc2 >> nparam_harmonic_ref;
-            if(nparam_harmonic_ref < nparam_harmonic) {
+            if (nparam_harmonic_ref < nparam_harmonic) {
                 error->exit("load_reference_system", "Reference file doesn't contain necessary fc2. (too few)");
             } else if (nparam_harmonic_ref > nparam_harmonic){
                 error->exit("load_reference_system","Reference file contains extra force constants." );
@@ -396,7 +395,7 @@ void System::load_reference_system()
             memory->allocate(fc2_ref, nparam_harmonic);
             memory->allocate(intpair_tmp, nparam_harmonic, 2);
 
-            for (i = 0; i < nparam_harmonic; ++i){
+            for (i = 0; i < nparam_harmonic; ++i) {
                 ifs_fc2 >> fc2_ref[i] >> intpair_tmp[i][0] >> intpair_tmp[i][1];
             }
 
@@ -406,7 +405,7 @@ void System::load_reference_system()
             memory->allocate(ind, 2);
 
             list_found.clear();
-            for(std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p){
+            for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p) {
                 FcProperty list_tmp = *p; // Using copy constructor
                 for (i = 0; i < 2; ++i){
                     ind[i] = list_tmp.elems[i];
@@ -414,14 +413,14 @@ void System::load_reference_system()
                 list_found.insert(FcProperty(2, list_tmp.coef, ind, list_tmp.mother));
             }
 
-            for (i = 0; i < nparam_harmonic; ++i){
+            for (i = 0; i < nparam_harmonic; ++i) {
                 constraint->const_mat[i][i] = 1.0;
             }
 
-            for (i = 0; i < nparam_harmonic; ++i){
+            for (i = 0; i < nparam_harmonic; ++i) {
 
                 iter_found = list_found.find(FcProperty(2, 1.0, intpair_tmp[i], 1));
-                if(iter_found == list_found.end()) {
+                if (iter_found == list_found.end()) {
                     error->exit("load_reference_system", "Cannot find equivalent force constant, number: ", i + 1);
                 }
                 FcProperty arrtmp = *iter_found;
@@ -450,8 +449,8 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
     return vol;
 }
 
-void System::setup_atomic_class(int *kd) {
-
+void System::setup_atomic_class(int *kd) 
+{
     // This function can be modified when one needs to 
     // compute symmetry operations of spin polarized systems.
 
@@ -468,7 +467,7 @@ void System::setup_atomic_class(int *kd) {
 
     for (i = 0; i < nat; ++i) {
         int count = 0;
-        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
+        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it) {
             if (kd[i] == (*it)) {
                 atomlist_class[count].push_back(i);
             }
