@@ -26,16 +26,16 @@ namespace ALM_NS {
         ~Fitting();
 
         void fitmain();
-        // int rank(const int, const int, double **);
+        int rank(const int, const int, double **);
         int rank(int, int, double *);
         int rank2(const int, const int, double **);
+        int rankQR(const int, const int, double *, const double);
 
-        // int getRankEigen(const int, const int,const  int);
-
+#ifdef _USE_EIGEN
+        int getRankEigen(const int, const int, double **);
+#endif
         double *params;
         unsigned int nboot;
-
-      //  double **u, **f;
 
 #ifdef _VSL
         VSLStreamStatePtr stream;
@@ -75,6 +75,9 @@ namespace ALM_NS {
 
         void dgeqrf_(int *m, int *n, double *a, double *tau,
             double *work, int *lwork, int *info);
+
+        void dgeqp3_(int *m, int *n, double *a, int *lda, int *jpvt,
+            double *tau, double *work, int *lwork, int *info);
     }
 
 }

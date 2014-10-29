@@ -382,7 +382,6 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 {
     int i, j, k;
     int nrank;
-    double *mat_tmp;
     double f_square, f_residual;
     double *fsum2;
 
@@ -390,25 +389,48 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     std::cout << "  Entering fitting routine: QRD with constraints" << std::endl;
 
-    memory->allocate(mat_tmp, (M + P) * N);
     memory->allocate(fsum2, M);
+
+
+#ifdef _USE_EIGEN
+ 
+    double **mat_tmp2;
+    memory->allocate(mat_tmp2, M + P, N);
+    for (i = 0; i < M; ++i) {
+        for (j = 0; j < N; ++j) {
+            mat_tmp2[i][j] = amat[M_Start + i][j];
+        }
+    }
+    for (i = 0; i < P; ++i) {
+        for (j = 0; j < N; ++j) {
+            mat_tmp2[M + i][j] = cmat[i][j];
+        }
+    }
+
+    nrank = getRankEigen(M+P, N, mat_tmp2);
+    memory->deallocate(mat_tmp2);
+
+#else
+
+    double *mat_tmp;
+
+    memory->allocate(mat_tmp, (M + P) * N);
 
     k = 0;
 
     for(j = 0; j < N; ++j){
-        for(i = M_Start; i < M_End; ++i){
-            mat_tmp[k++] = amat[i][j];
+        for(i = 0; i < M; ++i){
+            mat_tmp[k++] = amat[M_Start + i][j];
         }
-    }
-
-    for(j = 0; j < N; ++j){
         for(i = 0; i < P; ++i){
             mat_tmp[k++] = cmat[i][j];
         }
     }
 
-    nrank = rank((M+P), N, mat_tmp);
+    nrank = rankQR((M+P), N, mat_tmp, eps12);
     memory->deallocate(mat_tmp);
+
+#endif
 
     if(nrank != N){
         std::cout << std::endl;
@@ -880,39 +902,76 @@ int Fitting::factorial(const int n)
     }
 }
 
-//int Fitting::rank(const int m, const int n, double **mat)
-//{
-//  using namespace Eigen;
-// 
-//    MatrixXd mat_tmp(m, n);
-//
-//    int i, j;
-//
-//    for(i = 0; i < m; ++i){
-//        for(j = 0; j < n; ++j){
-//            mat_tmp(i,j) = mat[i][j];
-//        }
-//    }
-//    ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
-//    return qr.rank();
-//}
+#ifdef _USE_EIGEN
+int Fitting::getRankEigen(const int m, const int n, double **mat)
+{
+ using namespace Eigen;
 
-//int Fitting::rank(int m, int n, double *mat)
-//{
-//    int LWORK = 10 * n;
-//    int INFO;
-//    double *WORK, *TAU;
-//    int lda = m;
-//    
-//    int nmin = std::min<int>(m, n);
-//
-//    memory->allocate(WORK, LWORK);
-//    memory->allocate(TAU, n);
-//
-//    dgeqrf_(&m, &n, mat, TAU, WORK, &LWORK, &INFO);
-//
-//
-//}
+   MatrixXd mat_tmp(m, n);
+
+   int i, j;
+
+   for(i = 0; i < m; ++i){
+       for(j = 0; j < n; ++j){
+           mat_tmp(i,j) = mat[i][j];
+       }
+   }
+   ColPivHouseholderQR<MatrixXd> qr(mat_tmp);
+   return qr.rank();
+}
+#endif
+
+int Fitting::rankQR(const int m, const int n, double *mat, const double tolerance)
+{
+    // Return the rank of matrix mat revealed by the colum pivoting QR decomposition
+    // The matrix mat is destroyed.
+
+    int m_ = m;
+    int n_ = n;
+
+    int LDA = m_;
+
+    int LWORK = 10 * n_;
+    int INFO;
+    int *JPVT;
+    double *WORK, *TAU;
+
+    int nmin = std::min<int>(m_, n_);
+
+    memory->allocate(JPVT, n_);
+    memory->allocate(WORK, LWORK);
+    memory->allocate(TAU, nmin);
+
+    for (int i = 0; i < n_; ++i) JPVT[i] = 0;
+
+    dgeqp3_(&m_, &n_, mat, &LDA, JPVT, TAU, WORK, &LWORK, &INFO);
+
+    memory->deallocate(JPVT);
+    memory->deallocate(WORK);
+    memory->deallocate(TAU);
+
+    if (std::abs(mat[0]) < eps) return 0;
+
+    double **mat_tmp;
+    memory->allocate(mat_tmp, m_, n_);
+
+    int k = 0;
+
+    for (int j = 0; j < n_; ++j) {
+        for (int i = 0; i < m_; ++i) {
+            mat_tmp[i][j] = mat[k++];
+        }
+    }
+
+    int nrank = 0;
+    for (int i = 0; i < nmin; ++i) {
+        if (std::abs(mat_tmp[i][i]) > tolerance * std::abs(mat[0])) ++nrank;
+    }
+
+    memory->deallocate(mat_tmp);
+
+   return nrank;
+}
 
 int Fitting::rank(int m, int n, double *mat)
 {
@@ -986,7 +1045,7 @@ int Fitting::rank2(const int m_in, const int n_in, double **mat)
 
     int rank = 0;
     for(i = 0; i < nmin; ++i){
-        if(s[i] > eps12) ++rank;
+        if(s[i] > s[0] * eps12) ++rank;
     }
 
     memory->deallocate(IWORK);
