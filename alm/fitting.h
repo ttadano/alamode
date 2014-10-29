@@ -26,22 +26,15 @@ namespace ALM_NS {
         ~Fitting();
 
         void fitmain();
-        int rank(const int, const int, double **);
-        int rank(int, int, double *);
-        int rank2(const int, const int, double **);
-        int rankQR(const int, const int, double *, const double);
 
-#ifdef _USE_EIGEN
-        int getRankEigen(const int, const int, double **);
-#endif
         double *params;
         unsigned int nboot;
+        unsigned int seed;
 
 #ifdef _VSL
         VSLStreamStatePtr stream;
         int brng;
 #endif
-        unsigned int seed;
 
     private:
 
@@ -56,7 +49,13 @@ namespace ALM_NS {
             const int, const int, const int, const int, double **, double **, double **, double *);
         void fit_bootstrap(int, int, int, int, int, double **, double *, double **, double *);
         double gamma(const int, const int *);
-        int factorial(const int);       
+        int factorial(const int);
+        int rankSVD(const int, const int, double *, const double);
+        int rankQRD(const int, const int, double *, const double);
+        int rankSVD2(const int, const int, double **, const double);
+#ifdef _USE_EIGEN
+        int getRankEigen(const int, const int, double **);
+#endif
     };
 
     extern "C" {

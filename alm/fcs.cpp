@@ -39,14 +39,14 @@ void Fcs::init(){
     memory->allocate(nints, maxorder);
     memory->allocate(nzero, maxorder);
 
-    for(i = 0; i < maxorder; ++i) nzero[i] = 0;
+    for (i = 0; i < maxorder; ++i) nzero[i] = 0;
 
     fc_set = new std::vector<FcProperty> [maxorder];
     ndup = new std::vector<int> [maxorder];
     generate_fclists(maxorder);
 
     std::cout << std::endl;
-    for(i = 0; i < maxorder; ++i){
+    for (i = 0; i < maxorder; ++i) {
         std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] << " FCs (nzero): " << ndup[i].size();
         std::cout << " ( " << nzero[i] << " ) " << std::endl;
     }
@@ -54,12 +54,12 @@ void Fcs::init(){
 
     // sort fc_set
 
-    for(int order = 0; order < maxorder; ++order){
-        if(ndup[order].size() > 0) {
+    for (int order = 0; order < maxorder; ++order) {
+        if (ndup[order].size() > 0) {
             std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
             int nbegin = ndup[order][0];
             int nend;
-            for(unsigned int mm = 1; mm < ndup[order].size(); ++mm){
+            for (unsigned int mm = 1; mm < ndup[order].size(); ++mm) {
                 nend  = nbegin + ndup[order][mm];
                 std::sort(fc_set[order].begin() + nbegin, fc_set[order].begin() + nend);
                 nbegin += ndup[order][mm];
@@ -109,7 +109,7 @@ void Fcs::generate_fclists(int maxorder)
     memory->allocate(ind_mapped_tmp, maxorder + 1);
     memory->allocate(is_searched, 3 * nat);
 
-    for(order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
 
         std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
 
@@ -124,12 +124,12 @@ void Fcs::generate_fclists(int maxorder)
 
         std::set<IntList> list_found;
 
-        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter){
+        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter) {
 
             IntList list_tmp = *iter;
             for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
 
-            for (i1 = 0; i1 < nxyz; ++i1){
+            for (i1 = 0; i1 < nxyz; ++i1) {
                 for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
 
                 if (!is_ascending(order + 2, ind)) continue;
@@ -140,20 +140,20 @@ void Fcs::generate_fclists(int maxorder)
 
                 is_zero = false;
 
-                if(list_found.find(IntList(order + 2, ind)) != list_found.end()) continue; // Already exits!
+                if (list_found.find(IntList(order + 2, ind)) != list_found.end()) continue; // Already exits!
 
                 // Search symmetrically-dependent parameter set
 
                 int ndeps = 0;
 
-                for (isym = 0; isym < symmetry->nsym; ++isym){
+                for (isym = 0; isym < symmetry->nsym; ++isym) {
 
-                    if(!symmetry->sym_available[isym]) continue;
+                    if (!symmetry->sym_available[isym]) continue;
 
                     for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
 
-                    for (i2 = 0; i2 < nxyz; ++i2){
+                    for (i2 = 0; i2 < nxyz; ++i2) {
                         c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
                         if (std::abs(c_tmp) > eps12) {
                             for (i = 0; i < order + 2; ++i) ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
@@ -162,9 +162,9 @@ void Fcs::generate_fclists(int maxorder)
                             std::swap(ind_mapped[0], ind_mapped[i_prim]);
                             sort_tail(order + 2, ind_mapped);
 
-                            if (!is_zero){
+                            if (!is_zero) {
                                 bool zeroflag = true;
-                                for (i = 0; i < order + 2; ++i){
+                                for (i = 0; i < order + 2; ++i) {
                                     zeroflag = zeroflag & (ind[i] == ind_mapped[i]);
                                 }
                                 zeroflag = zeroflag & (std::abs(c_tmp + 1.0) < eps8);
@@ -173,7 +173,7 @@ void Fcs::generate_fclists(int maxorder)
 
                             // Add to found list (set) and fcset (vector) if the created is new one.
 
-                            if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()){
+                            if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()) {
                                 list_found.insert(IntList(order + 2, ind_mapped));
 
                                 fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped, nmother));
@@ -185,8 +185,8 @@ void Fcs::generate_fclists(int maxorder)
 
                                 for (i = 0; i < 3 * nat; ++i) is_searched[i] = false;
                                 is_searched[ind_mapped[0]] = true;
-                                for (i = 1; i < order + 2; ++i){
-                                    if((!is_searched[ind_mapped[i]]) && is_inprim(ind_mapped[i])){
+                                for (i = 1; i < order + 2; ++i) {
+                                    if ((!is_searched[ind_mapped[i]]) && is_inprim(ind_mapped[i])) {
 
                                         for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                         std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
@@ -205,7 +205,7 @@ void Fcs::generate_fclists(int maxorder)
                     }
                 } // close symmetry loop
 
-                if(is_zero){
+                if (is_zero) {
                     for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
                     ++nzero[order];
                 } else {             
@@ -237,7 +237,7 @@ double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *
     double tmp = 1.0;
     int i;
 
-    for (i = 0; i < n; ++i){
+    for (i = 0; i < n; ++i) {
         tmp *= symmetry->symrel[symnum][arr2[i]][arr1[i]];
     }
     return tmp;
@@ -246,8 +246,8 @@ double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *
 bool Fcs::is_ascending(const int n, const int *arr)
 {
     int i;
-    for (i = 0; i < n - 1; ++i){
-        if(arr[i] > arr[i+1]) return false;
+    for (i = 0; i < n - 1; ++i) {
+        if (arr[i] > arr[i+1]) return false;
     }
     return true;
 }
@@ -261,12 +261,12 @@ int Fcs::min_inprim(const int n, const int *arr)
 
     memory->allocate(ind, n);
 
-    for (i = 0; i < n; ++i){
+    for (i = 0; i < n; ++i) {
 
         ind[i] = 3 * system->nat;
         atmnum = arr[i] / 3;
 
-        for (j = 0; j < natmin; ++j){
+        for (j = 0; j < natmin; ++j) {
             if (symmetry->map_p2s[j][0] == atmnum) {
                 ind[i] = arr[i];
                 continue;
@@ -277,8 +277,8 @@ int Fcs::min_inprim(const int n, const int *arr)
     int minval = ind[0];
     minloc = 0;
 
-    for (i = 0; i < n; ++i){
-        if(ind[i] < minval){
+    for (i = 0; i < n; ++i) {
+        if (ind[i] < minval) {
             minval = ind[i];
             minloc = i;
         }
@@ -293,23 +293,23 @@ bool Fcs::is_inprim(const int n, const int *arr)
     int i, j;
     int natmin = symmetry->natmin;
 
-    for (i = 0; i < n; ++i){
-        for (j = 0; j < natmin; ++j){
-            if(symmetry->map_p2s[j][0] == arr[i]) return true;
+    for (i = 0; i < n; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            if (symmetry->map_p2s[j][0] == arr[i]) return true;
         }
     }
     return false;
 }
 
-bool Fcs::is_inprim(const int n){
-
+bool Fcs::is_inprim(const int n)
+{
     int i, atmn;
     int natmin = symmetry->natmin;
 
     atmn = n / 3;
 
-    for (i = 0; i < natmin; ++i){
-        if(symmetry->map_p2s[i][0] == atmn) return true;
+    for (i = 0; i < natmin; ++i) {
+        if (symmetry->map_p2s[i][0] == atmn) return true;
     }
 
     return false;
@@ -322,7 +322,7 @@ void Fcs::get_xyzcomponent(int n, int **xyz)
     std::vector<int> v;
     int i;
 
-    for(i = 0; i < n; ++i){
+    for (i = 0; i < n; ++i) {
         v.push_back(0);
         v.push_back(1);
         v.push_back(2);
@@ -339,8 +339,8 @@ void Fcs::get_xyzcomponent(int n, int **xyz)
     } while(boost::next_partial_permutation(v.begin(), v.begin() + n, v.end()));
 }
 
-void Fcs::sort_tail(const int n, int *arr){
-
+void Fcs::sort_tail(const int n, int *arr)
+{
     int i, m;
 
     m = n - 1;
@@ -348,13 +348,13 @@ void Fcs::sort_tail(const int n, int *arr){
 
     memory->allocate(ind_tmp, m);
 
-    for (i = 0; i < m; ++i){
+    for (i = 0; i < m; ++i) {
         ind_tmp[i] = arr[i + 1];
     }
 
     interaction->insort(m, ind_tmp);
 
-    for (i = 0; i < m; ++i){
+    for (i = 0; i < m; ++i) {
         arr[i + 1] = ind_tmp[i];
     }
 

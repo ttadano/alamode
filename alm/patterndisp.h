@@ -115,7 +115,6 @@ namespace ALM_NS {
     private:
         std::set<DispAtomSet> *dispset;
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
-      //  void estimate_best_direction_harmonic(std::vector<DispDirectionHarmonic> &);
         void generate_pattern_all(const int, std::vector<AtomWithDirection> *);
 
         void generate_signvecs(const int, std::vector<std::vector <int> > &, std::vector<int>);

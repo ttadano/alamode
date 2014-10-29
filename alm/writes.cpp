@@ -117,13 +117,13 @@ void Writes::write_force_constants()
     ofs_fcs << " ---------------------------------------------------------------" << std::endl;
 
     memory->allocate(str_fcs, maxorder);
-    for (order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
         str_fcs[order] = "*FC" + boost::lexical_cast<std::string>(order + 2);
     }
 
     k = 0;
 
-    for (order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
 
         m = 0;
 
@@ -131,7 +131,7 @@ void Writes::write_force_constants()
 
             ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
 
-            for (ui = 0; ui < fcs->ndup[order].size(); ++ui){
+            for (ui = 0; ui < fcs->ndup[order].size(); ++ui) {
 
                 ofs_fcs << std::setw(8) << k + 1 << std::setw(8) << ui + 1 
                     << std::setw(18) << std::setprecision(7) << std::scientific <<  fitting->params[k];
@@ -161,7 +161,7 @@ void Writes::write_force_constants()
                 }
                 ofs_fcs << std::setw(4) << multiplicity;
 
-                for (l = 0; l < order + 2; ++l){
+                for (l = 0; l < order + 2; ++l) {
                     ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[order][m].elems[l]);    
                 }
                 if (order==0) {
@@ -192,7 +192,7 @@ void Writes::write_force_constants()
                                                      ++p) {
                 ofs_fcs << "   0 = " << std::scientific << std::setprecision(6);
                 ConstraintClass const_pointer = *p;
-                for (j = 0; j < nparam; ++j){
+                for (j = 0; j < nparam; ++j) {
                     if (std::abs(const_pointer.w_const[j]) > eps8) {
                         str_tmp = " * (FC" + boost::lexical_cast<std::string>(order + 2) 
                             + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
@@ -209,7 +209,7 @@ void Writes::write_force_constants()
 
     ofs_fcs.unsetf(std::ios::showpos);
 
-    for (order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
         str_fcs[order] = "**FC" + boost::lexical_cast<std::string>(order + 2);
     }
 
@@ -226,7 +226,7 @@ void Writes::write_force_constants()
         if (fcs->ndup[order].size() > 0) {
             ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
 
-            for (unsigned int iuniq = 0; iuniq < fcs->ndup[order].size(); ++iuniq){
+            for (unsigned int iuniq = 0; iuniq < fcs->ndup[order].size(); ++iuniq) {
 
                 str_tmp = "  # FC" + boost::lexical_cast<std::string>(order + 2) + "_";
                 str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
@@ -234,10 +234,10 @@ void Writes::write_force_constants()
                 ofs_fcs << str_tmp << std::setw(5) << fcs->ndup[order][iuniq] 
                 << std::setw(16) << std::scientific << std::setprecision(7) << fitting->params[ip] << std::endl;
 
-                for (j = 0; j < fcs->ndup[order][iuniq]; ++j){
+                for (j = 0; j < fcs->ndup[order][iuniq]; ++j) {
                     ofs_fcs << std::setw(5) << j + 1 << std::setw(12)
                         << std::setprecision(5) << std::fixed << fcs->fc_set[order][id].coef;
-                    for (k = 0; k < order + 2; ++k){
+                    for (k = 0; k < order + 2; ++k) {
                         ofs_fcs << std::setw(6) << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
                     }
                     ofs_fcs << std::endl;
@@ -257,10 +257,8 @@ void Writes::write_force_constants()
 void Writes::write_displacement_pattern()
 {
     int i, j;
-
     int order;
     int maxorder = interaction->maxorder;
-
     int counter;
 
     std::ofstream ofs_pattern;
@@ -390,7 +388,7 @@ void Writes::write_misc_xml()
 
     memory->allocate(pair_tmp, nelem);
 
-    for (unsigned int ui = 0; ui < fcs->ndup[0].size(); ++ui){
+    for (unsigned int ui = 0; ui < fcs->ndup[0].size(); ++ui) {
 
         for (i = 0; i < 2; ++i) {
             pair_tmp[i] = fcs->fc_set[0][ihead].elems[i] / 3;
@@ -507,8 +505,8 @@ void Writes::write_misc_xml()
 }
 
 
-std::string Writes::double2string(const double d){
-
+std::string Writes::double2string(const double d)
+{
     std::string rt;
     std::stringstream ss;
 
