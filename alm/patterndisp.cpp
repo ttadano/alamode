@@ -18,6 +18,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "symmetry.h"
 #include "constants.h"
 #include "mathfunctions.h"
+#include "constraint.h"
 #include <map>
 
 using namespace ALM_NS;
@@ -32,6 +33,70 @@ void Displace::gen_displacement_pattern()
     int i, j, m, order;
     int maxorder = interaction->maxorder;
     std::vector<int> group_tmp;
+    std::set<ConstraintClass> *constsym;
+
+    std::vector<int> pairs;
+    std::vector<std::vector<int> > *constpairs;
+    std::set<int> *include_set;
+
+    memory->allocate(constsym, maxorder);
+    memory->allocate(constpairs, maxorder);
+
+    constraint->constraint_from_symmetry(constsym);
+
+    for (order = 0; order < maxorder; ++order) {
+
+        int nparams = fcs->ndup[order].size();
+
+        for (std::set<ConstraintClass>::const_iterator it = constsym[order].begin(); 
+            it != constsym[order].end(); ++it) {
+            pairs.clear();
+            for (i = 0; i < nparams; ++i) {
+                if (std::abs((*it).w_const[i])> eps12) {
+                    pairs.push_back(i);
+                }
+            }
+            constpairs[order].push_back(pairs);
+        }
+    }
+
+// 
+//     for (order = 0; order < maxorder; ++order) {
+//         std::sort(constpairs[order].begin(), constpairs[order].end());
+//         for (i = 0; i < constpairs[order].size(); ++i) {
+//             for (j = 0; j < constpairs[order][i].size(); ++j) {
+//                 std::cout << std::setw(5) << constpairs[order][i][j];
+//             }
+//             std::cout << std::endl;
+//         }
+//         std::cout << std::endl;
+//     }
+
+    std::set<int>::iterator iter_found;
+
+    memory->allocate(include_set, maxorder);
+    for (order = 0; order < maxorder; ++order) {
+        include_set[order].clear();
+        int nparams = fcs->ndup[order].size();
+
+        for (i = 0; i < nparams; ++i) {
+            include_set[order].insert(i);
+        }
+
+        for (i = 0; i < constpairs[order].size(); ++i) {
+            
+            // Is there any clever way to trim displacement patterns?
+            int len = constpairs[order][i].size();
+        //    int target = constpairs[order][i][len - 1];
+            
+            int target = constpairs[order][i][0];
+
+            iter_found = include_set[order].find(target);
+            if (iter_found != include_set[order].end()) {
+                include_set[order].erase(iter_found);
+            }
+        }
+    }
 
     std::cout << " Generating displacement patterns in ";
     if (disp_basis[0] == 'C') {
@@ -48,27 +113,35 @@ void Displace::gen_displacement_pattern()
 
         for (i = 0; i < fcs->ndup[order].size(); ++i) {
 
-            group_tmp.clear();
+            if (include_set[order].find(i) != include_set[order].end()) {
 
-            // Store first order + 1 indexes as a necessarily displacement pattern.
-            // Here, duplicate entries will be removed. 
-            // For example, (iij) will be reduced to (ij).
-            for (j = 0; j < order + 1; ++j) {
-                group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
+                group_tmp.clear();
+
+                // Store first order + 1 indexes as a necessarily displacement pattern.
+                // Here, duplicate entries will be removed. 
+                // For example, (iij) will be reduced to (ij).
+                for (j = 0; j < order + 1; ++j) {
+                    group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
+                }
+                group_tmp.erase(std::unique(group_tmp.begin(), group_tmp.end()), group_tmp.end());
+
+                // Avoid equivalent entries using set.
+                dispset[order].insert(DispAtomSet(group_tmp));
+
             }
-            group_tmp.erase(std::unique(group_tmp.begin(), group_tmp.end()), group_tmp.end());
-
-            // Avoid equivalent entries using set.
-            dispset[order].insert(DispAtomSet(group_tmp));
+           
             m += fcs->ndup[order][i];
         }
     }
+    memory->deallocate(include_set);
 
     memory->allocate(pattern_all, maxorder);
 
     generate_pattern_all(maxorder, pattern_all);
 
     memory->deallocate(dispset);
+    memory->deallocate(constsym);
+    memory->deallocate(constpairs);
 
     std::cout << " done!" << std::endl;
 }
