@@ -442,6 +442,10 @@ void Writes::write_phonon_info()
             write_two_phonon_dos();
         }
 
+        if (dos->scattering_phase_space) {
+            write_scattering_phase_space();
+        }
+
         write_thermodynamics();
         if (print_msd) write_msd();
     }
@@ -697,6 +701,7 @@ void Writes::write_phonon_dos()
 void Writes::write_two_phonon_dos()
 {  
     int i, j;
+    int ik;
 
     std::string file_tdos;
     std::ofstream ofs_tdos;
@@ -704,22 +709,58 @@ void Writes::write_two_phonon_dos()
     file_tdos = input->job_title + ".dos2";
     ofs_tdos.open(file_tdos.c_str(), std::ios::out);
 
-    ofs_tdos << "# Two-phonon DOS " << std::endl;
-    ofs_tdos << "# delta(e+e1+e2), delta(e-e1-e2), delta(e-e1+e2), delta(e+e1-e2)" << std::endl;
-    ofs_tdos << "# Energy [cm^-1], TDOS" << std::endl;
+    ofs_tdos << "# Two-phonon DOS (TDOS) for all irreducible k points. " << std::endl;
+    ofs_tdos << "# Energy [cm^-1], emission delta(e-e1-e2), absorption delta (e-e1+e2)" << std::endl;
 
-    int n = static_cast<int>((dos->emax * 2.0 - dos->emin) / dos->delta_e);
+    int n = dos->n_energy;
 
-    for (i = 0; i < n; ++i) {
-        ofs_tdos << std::setw(15) << dos->emin + dos->delta_e * static_cast<double>(i);
+    for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
 
-        for (j = 0; j < 4; ++j) ofs_tdos << std::setw(15) << dos->dos2_phonon[i][j];
+        ofs_tdos << "# Irred. kpoint : " << std::setw(5) << ik + 1 << std::endl;
+        for (i = 0; i < n; ++i) {
+            ofs_tdos << std::setw(15) << dos->emin + dos->delta_e * static_cast<double>(i);
+
+            for (j = 0; j < 2; ++j) ofs_tdos << std::setw(15) << dos->dos2_phonon[ik][i][j];
+            ofs_tdos << std::endl;
+        }
         ofs_tdos << std::endl;
     }
+   
     ofs_tdos.close();
 
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_tdos;
     std::cout << " : Two-phonon DOS" << std::endl;
+}
+
+void Writes::write_scattering_phase_space()
+{  
+    int i, j;
+    int ik, is;
+
+    std::string file_sps;
+    std::ofstream ofs_sps;
+
+    file_sps = input->job_title + ".sps";
+    ofs_sps.open(file_sps.c_str(), std::ios::out);
+
+    ofs_sps << "# Total scattering phase space [cm]: " << std::scientific << dos->total_sps3 << std::endl;
+    ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
+    ofs_sps << "# Irred. k, mode, sps [cm]" << std::endl;
+
+    for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+        for (is = 0; is < dynamical->neval; ++is) {
+            ofs_sps << std::setw(5) << ik + 1;
+            ofs_sps << std::setw(5) << is + 1;
+            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is];
+            ofs_sps << std::endl;
+        }
+        ofs_sps << std::endl;
+    }
+
+    ofs_sps.close();
+
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_sps;
+    std::cout << " : Three-phonon scattering phase space" << std::endl;
 }
 
 void Writes::write_normal_mode_direction()
