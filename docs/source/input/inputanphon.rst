@@ -372,7 +372,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
  === ===================================================================
   0   Do not compute two-phonon DOS
-  1   Two-phonon DOS will be stored in ``PREFIX``.tdos
+  1   Two-phonon DOSs will be stored in ``PREFIX``.tdos
  === ===================================================================
  
  :Default: 0
@@ -382,6 +382,20 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  .. Note::
 
   Calculation of two-phonon DOS is computationally expensive.
+
+````
+
+* SPS-tag = 0 | 1
+
+ === ====================================================================================
+  0   Do not compute scattering phase space
+  1   Total and mode-decomposed scattering phase space will be stored in ``PREFIX``.sps
+ === ====================================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: This flag is available only when ``KPMODE = phonons`` and *KPMODE* = 2.
+
 
 ````
 

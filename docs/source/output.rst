@@ -37,28 +37,33 @@ Output files of anphon
 
 * ``PREFIX``.bands
 
- Phonon dispersion along give :math:`k` paths in units of cm :sup:`-1`.
+ Phonon dispersion along given :math:`k` paths in units of cm :sup:`-1`.
  Created when ``MODE = phonons`` with **KPMODE** = 1.
 
 * ``PREFIX``.dos
 
  Phonon density of states (DOS). Atom projected phonon DOSs are also printed when ``PDOS = 1``.
- Created when ``MODE == phonons`` with **KPMODE** = 2.
+ Created when ``MODE = phonons`` with **KPMODE** = 2.
 
 * ``PREFIX``.tdos
 
- Two-phonon density of states. 
- Created when ``MODE == phonons`` with **KPMODE** = 2 and ``TDOS = 1``.
+ Two-phonon density of states for all irreducible :math:'k' points. 
+ Created when ``MODE = phonons`` with **KPMODE** = 2 and ``TDOS = 1``.
 
 * ``PREFIX``.thermo
 
  Constant volume heat capacity, vibrational entropy, internal energy, and vibrational free energy.
- Created when ``MODE == phonons`` with **KPMODE** = 2.
+ Created when ``MODE = phonons`` with **KPMODE** = 2.
 
 * ``PREFIX``.msd
  
  Mean-square-displacements of atoms.
- Created when ``MODE == phonons`` with **KPMODE** = 2 and ``PRINTMSD = 1``.
+ Created when ``MODE = phonons`` with **KPMODE** = 2 and ``PRINTMSD = 1``.
+
+ * ``PREFIX``.sps
+
+ Total and mode-decomposed scattering phase space. 
+ Created when ``MODE = phonons`` with **KPMODE** = 2 and ``SPS = 1``.
 
 * ``PREFIX``.phvel
 

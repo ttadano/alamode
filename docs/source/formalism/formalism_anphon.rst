@@ -147,16 +147,36 @@ If ``PDOS = 1`` is given, the program also print the atom-projected phonon DOS w
  
     \mathrm{PDOS}(\kappa;\omega) = \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}|\boldsymbol{e}(\kappa;\boldsymbol{q}j)|^{2}\delta(\omega - \omega_{\boldsymbol{q}j}).
 
-In addition, ``TDOS``-tag is available to compute the two-phonon DOS which is defined by
+In addition, ``TDOS``-tag is available to compute the two-phonon DOS defined by
 
 .. math::
 
-    \mathrm{DOS2}(\sigma_{1}\sigma_{2};\omega) = \frac{1}{N_{q}^{2}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}, j_{1}, j_{2}}
-    \delta(\omega+\sigma_{1}\omega_{\boldsymbol{q}_{1}j_{1}}+\sigma_{2}\omega_{\boldsymbol{q}_{2}j_{2}}),
+    \mathrm{DOS2}(\omega;\boldsymbol{q};\pm) = \frac{1}{N_{q}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}, j_{1}, j_{2}}
+    \delta(\omega\pm\omega_{\boldsymbol{q}_{1}j_{1}}-\omega_{\boldsymbol{q}_{2}j_{2}})\delta_{\boldsymbol{q}\pm\boldsymbol{q}_{1},\boldsymbol{q}_{2}+\boldsymbol{G}},
 
-where :math:`\sigma_{1,2}=\pm 1`. Please note that the computation of the two-phonon DOS can be expensive
+where :math:`\boldsymbol{G}` is a reciprocal lattice vector. The sign :math:`\pm` correspond to absorption and emission processes, respectively. Please note that the computation of the two-phonon DOS can be expensive
 especially when :math:`N_{q}` or :math:`N_{\kappa}` is large.
 
+Scattering phase space
+-----------------------
+
+When *KPMODE* = 2 and ``SPS = 1``, the three-phonon scattering phase space :math:`P_{3}` is calculated and saved to the file ``PREFIX``.sps. :math:`P_{3}` is defined as
+
+.. math::
+    
+    P_{3}(\boldsymbol{q}j) = \frac{1}{3m^{3}} (2P_{3}^{(+)}(\boldsymbol{q}j) + P_{3}^{(-)}(\boldsymbol{q}j)),
+
+where :math:`m` is the number of phonon branches and 
+
+.. math::
+    
+    P_{3}^{(\pm)}(\boldsymbol{q}j) = \frac{1}{N_{q}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}, j_{1}, j_{2}}\delta(\omega_{\boldsymbol{q}j}\pm\omega_{\boldsymbol{q}_{1}j_{1}}-\omega_{\boldsymbol{q}_{2}j_{2}})\delta_{\boldsymbol{q}\pm\boldsymbol{q}_{1},\boldsymbol{q}_{2}+\boldsymbol{G}}.
+
+*anphon* also print the total scattering phase space
+
+.. math::
+
+    P_{3} = \frac{1}{N_{q}}\sum_{\boldsymbol{q}} P_{3}(\boldsymbol{q}j).
 
 Gr\ |umulaut_u|\ neisen parameter
 ---------------------------------
