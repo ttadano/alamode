@@ -35,7 +35,7 @@ Then, equation :eq:`omega2` can be denoted as
     \Lambda(\boldsymbol{q}) = W^{\dagger}(\boldsymbol{q})D(\boldsymbol{q})W(\boldsymbol{q}).
 
 
-hen one needs to capture the LO\-TO splitting near the zone-center by the supercell approach,
+When one needs to capture the LO\-TO splitting near the zone-center by the supercell approach,
 it is necessary to add the non\-analytic part of the dynamical matrix defined by
 
 .. math::
@@ -111,7 +111,7 @@ Mean square displacement
 ------------------------
 
 
-The mean square displacement tensor of atom $\kappa$ is given by
+The mean square displacement tensor of atom :math:`\kappa` is given by
 
 .. math::
     :nowrap:
