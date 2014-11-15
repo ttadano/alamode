@@ -215,7 +215,7 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
 
             if (neighborlist[i][j].dist < eps8) continue; // distance is zero
 
-            if (std::abs(neighborlist[i][j].dist - dist_tmp) > eps8) {
+            if (std::abs(neighborlist[i][j].dist - dist_tmp) > eps6) {
 
                 if (atomlist.size() > 0) {
                     nthnearest += 1;
