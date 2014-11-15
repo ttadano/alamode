@@ -706,7 +706,7 @@ void Writes::write_two_phonon_dos()
     std::string file_tdos;
     std::ofstream ofs_tdos;
 
-    file_tdos = input->job_title + ".dos2";
+    file_tdos = input->job_title + ".tdos";
     ofs_tdos.open(file_tdos.c_str(), std::ios::out);
 
     ofs_tdos << "# Two-phonon DOS (TDOS) for all irreducible k points. " << std::endl;
