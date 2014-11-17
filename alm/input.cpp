@@ -348,60 +348,11 @@ void Input::parse_interaction_vars()
 
 }
 
-// void Input::parse_cutoff_radii() {
-// 
-//     int i, j, k;
-//     double ***rcs;
-//     int nkd = system->nkd;
-//     int maxorder = interaction->maxorder;
-// 
-//     if (from_stdin) {
-//         std::cin.ignore();
-//     } else {
-//         ifs_input.ignore();
-//     }
-// 
-//     memory->allocate(rcs, maxorder, nkd, nkd);
-// 
-//     for (i = 0; i < maxorder; ++i) {
-//         for (j = 0; j < nkd; ++j) { 
-//             for (k = 0; k < nkd; ++k) {
-// 
-//                 if (from_stdin) {
-//                     std::cin >> rcs[i][j][k];
-//                 } else {
-//                     ifs_input >> rcs[i][j][k];
-//                 }
-// 
-//             }
-//         }
-//         for (j = 0; j < nkd; ++j) {
-//             for (k = j + 1; k < nkd; ++k){
-//                 if (rcs[i][j][k] != rcs[i][k][j]) error->exit("input", "Inconsistent cutoff radius rcs for order =", i + 2);
-//             }
-//         }
-//     }
-// 
-//     memory->allocate(interaction->rcs, maxorder, nkd, nkd);
-// 
-//     for (i = 0; i < maxorder; ++i) {
-//         for (j = 0; j < nkd; ++j) {
-//             for (k = 0; k < nkd; ++k) {
-//                 interaction->rcs[i][j][k] = rcs[i][j][k];
-//             } 
-//         }
-//     }
-// 
-//     memory->deallocate(rcs);
-// }
-
 void Input::parse_cutoff_radii() 
 {
     std::string line, line_wo_comment;
     std::string::size_type pos_first_comment_tag;
     std::vector<std::string> str_cutoff;
-
-
 
     if (from_stdin) {
         std::cin.ignore();
@@ -423,7 +374,6 @@ void Input::parse_cutoff_radii()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-
             boost::trim_left(line_wo_comment);
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -441,7 +391,6 @@ void Input::parse_cutoff_radii()
             } else {
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
-
 
             boost::trim_left(line_wo_comment);
             if (line_wo_comment.empty()) continue;
@@ -577,7 +526,6 @@ void Input::parse_cutoff_radii()
     }
 
     memory->deallocate(rcs);
-
 }
 
 void Input::parse_fitting_vars() 
@@ -586,15 +534,15 @@ void Input::parse_fitting_vars()
     std::string dfile, ffile;
     int multiply_data, constraint_flag;
     std::string rotation_axis;
-    std::string refsys_file, fc2_file;
+    std::string fc2_file, fc3_file;
 
-    std::string str_allowed_list = "NDATA NSTART NEND NSKIP NBOOT DFILE FFILE MULTDAT ICONST ROTAXIS REFINFO FC2XML";
+    std::string str_allowed_list = "NDATA NSTART NEND NSKIP NBOOT DFILE FFILE MULTDAT ICONST ROTAXIS FC2XML FC3XML";
     std::string str_no_defaults = "NDATA DFILE FFILE";
     std::vector<std::string> no_defaults;
 
     std::map<std::string, std::string> fitting_var_dict;
 
-    bool fix_harmonic;
+    bool fix_harmonic, fix_cubic;
 
     if (from_stdin) {
         std::cin.ignore();
@@ -660,13 +608,6 @@ void Input::parse_fitting_vars()
         multiply_data = boost::lexical_cast<int>(fitting_var_dict["MULTDAT"]);
     }
 
-    if (multiply_data == 3) {
-        refsys_file = fitting_var_dict["REFINFO"];
-        if (refsys_file.empty()) {
-            error->exit("parse_fitting_vars", "REFINFO tag has to be given when MULTDAT=3");
-        } 
-    }
-
     if (fitting_var_dict["ICONST"].empty()) {
         constraint_flag = 1;
     } else {
@@ -680,12 +621,12 @@ void Input::parse_fitting_vars()
         fix_harmonic = true;
     }
 
-    //     if(constraint_flag == 2 || constraint_flag == 4 || constraint_flag == 6) {
-    //         fc2_file = fitting_var_dict["FC2XML"];
-    //         if (fc2_file.empty()) {
-    //             error->exit("parse_fitting_vars", "FC2XML has to be given when ICONST=2, 4, 6");
-    //         }
-    //     }
+    fc3_file = fitting_var_dict["FC3XML"];
+    if (fc3_file.empty()) {
+        fix_cubic = false;
+    } else {
+        fix_cubic = true;
+    }
 
     if (constraint_flag >= 2) {
         rotation_axis = fitting_var_dict["ROTAXIS"];
@@ -707,7 +648,8 @@ void Input::parse_fitting_vars()
     constraint->rotation_axis = rotation_axis;
     constraint->fc2_file = fc2_file;
     constraint->fix_harmonic = fix_harmonic;
-    symmetry->refsys_file = refsys_file;
+    constraint->fc3_file = fc3_file;
+    constraint->fix_cubic = fix_cubic;
 
     fitting_var_dict.clear();
 }

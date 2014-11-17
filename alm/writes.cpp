@@ -74,6 +74,7 @@ void Writes::write_input_vars()
         std::cout << "  ICONST = " << constraint->constraint_mode << std::endl;
         std::cout << "  ROTAXIS = " << constraint->rotation_axis << std::endl;
         std::cout << "  FC2XML = " << constraint->fc2_file << std::endl;
+        std::cout << "  FC3XML = " << constraint->fc3_file << std::endl;
         std::cout << std::endl;
     }
     std::cout << " --------------------------------------------------------------" << std::endl;
@@ -380,7 +381,6 @@ void Writes::write_misc_xml()
 
     pt.put("Data.ForceConstants.HarmonicUnique.NFC2", fcs->ndup[0].size());
 
-
     int ihead = 0;
     int k = 0;
     int nelem = interaction->maxorder + 1;
@@ -401,6 +401,42 @@ void Writes::write_misc_xml()
             + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
         child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size());
         ihead += fcs->ndup[0][ui];
+        ++k;
+    }
+    ihead = 0;
+
+    std::vector<int> atom_tmp;
+    std::vector<std::vector<int> > cell_dummy;
+    std::set<MinimumDistanceCluster>::iterator iter_cluster;
+    int multiplicity;
+
+    pt.put("Data.ForceConstants.CubicUnique.NFC3", fcs->ndup[1].size());
+    for (unsigned int ui = 0; ui < fcs->ndup[1].size(); ++ui) {
+        for (i = 0; i < 3; ++i) {
+            pair_tmp[i] = fcs->fc_set[1][ihead].elems[i] / 3;
+        }
+        j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+
+        atom_tmp.clear();
+        for (i = 1; i < 3; ++i) {
+            atom_tmp.push_back(pair_tmp[i]);
+        }
+        std::sort(atom_tmp.begin(), atom_tmp.end());
+
+        iter_cluster = interaction->mindist_cluster[1][j].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+        if (iter_cluster == interaction->mindist_cluster[1][j].end()) {
+            error->exit("load_reference_system_xml", "Cubic force constant is not found.");
+        } else {
+            multiplicity = (*iter_cluster).cell.size();
+        }
+
+        ptree &child = pt.add("Data.ForceConstants.CubicUnique.FC3", double2string(fitting->params[k]));
+        child.put("<xmlattr>.pairs", 
+            boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[0])
+            + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[1])
+            + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[2]));
+        child.put("<xmlattr>.multiplicity", multiplicity);
+        ihead += fcs->ndup[1][ui];
         ++k;
     }
 
@@ -433,10 +469,10 @@ void Writes::write_misc_xml()
 
     // Print anharmonic force constants to the xml file.
 
-    std::vector<int> atom_tmp;
-    std::vector<std::vector<int> > cell_dummy;
-    std::set<MinimumDistanceCluster>::iterator iter_cluster;
-    int imult, multiplicity;
+//     std::vector<int> atom_tmp;
+//     std::vector<std::vector<int> > cell_dummy;
+//    std::set<MinimumDistanceCluster>::iterator iter_cluster;
+    int imult;
 
     int order;
     std::string elementname;

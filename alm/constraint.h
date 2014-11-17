@@ -49,8 +49,8 @@ namespace ALM_NS
 
         int constraint_mode;
         int P;
-        std::string fc2_file;
-        bool fix_harmonic;
+        std::string fc2_file, fc3_file;
+        bool fix_harmonic, fix_cubic;
 
         double **const_mat;
         double *const_rhs;

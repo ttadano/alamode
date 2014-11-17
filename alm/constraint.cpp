@@ -80,6 +80,14 @@ void Constraint::setup()
     if (fix_harmonic) {
         std::cout << "  FC2XML is given : Harmonic force constants will be " << std::endl;
         std::cout << "                    fixed to the values given in " << fc2_file << std::endl;
+        std::cout << std::endl;
+    }
+
+    fix_cubic = fix_cubic & (interaction->maxorder > 1);
+    if (fix_cubic) {
+        std::cout << "  FC3XML is given : Cubic force constants will be " << std::endl;
+        std::cout << "                    fixed to the values given in " << fc3_file << std::endl;
+        std::cout << std::endl;
     }
 
     extra_constraint_from_symmetry = false;
@@ -89,7 +97,7 @@ void Constraint::setup()
         if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
     }
 
-    if (impose_inv_T || fix_harmonic || extra_constraint_from_symmetry) {
+    if (impose_inv_T || fix_harmonic || fix_cubic || extra_constraint_from_symmetry) {
         exist_constraint = true;
     } else {
         exist_constraint = false;
@@ -114,7 +122,6 @@ void Constraint::setup()
             const_translation[order].clear();
             const_rotation_self[order].clear();
             const_rotation_cross[order].clear();
-         //   const_symmetry[order].clear();
         }
 
         if (impose_inv_T) {
@@ -209,6 +216,10 @@ void Constraint::setup()
             Pmax -= const_self[0].size();
             Pmax += fcs->ndup[0].size();
         }
+        if (fix_cubic) {
+            Pmax -= const_self[1].size();
+            Pmax += fcs->ndup[1].size();
+        }
         memory->allocate(const_mat, Pmax, N);
         memory->allocate(const_rhs, Pmax);
 
@@ -245,10 +256,12 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
     for (order = 0; order < maxorder; ++order) {
         int nparam = fcs->ndup[order].size();
 
-        if (order > 0 || !fix_harmonic) {
+        if ((order == 0 && !fix_harmonic) || (order == 1 && !fix_cubic) || order > 1) {
+      //  if (order > 0 || !fix_harmonic) {
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
 
-            for (std::set<ConstraintClass>::iterator p = const_self[order].begin(); p != const_self[order].end(); ++p) {
+            for (std::set<ConstraintClass>::iterator p = const_self[order].begin();
+                                                     p != const_self[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam; ++i) {
                     arr_tmp[nshift + i] = const_now.w_const[i];
@@ -261,7 +274,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         if (order > 0) {
             int nparam2 = fcs->ndup[order - 1].size() + fcs->ndup[order].size();
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
-            for (std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p) {
+            for (std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); 
+                                                     p != const_rotation_cross[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam2; ++i){
                     arr_tmp[nshift2 + i] = const_now.w_const[i];
@@ -279,10 +293,18 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
 
     P = const_total.size();
 
-    if(fix_harmonic) {
-        std::cout << "  Harmonic force constants will be fixed to the values of the reference " << fc2_file << std::endl;
-        std::cout << "  Constraint information for HARMONIC will be updated accordingly." << std::endl << std::endl;
+    if (fix_harmonic) {
+        std::cout << "  Harmonic force constants will be fixed to the values " << std::endl;
+        std::cout << "  of the reference " << fc2_file << std::endl;
+        std::cout << "  Constraint for HARMONIC IFCs will be updated accordingly." << std::endl << std::endl;
         P += fcs->ndup[0].size();
+    }
+
+    if (fix_cubic) {
+        std::cout << "  Cubic force constants will be fixed to the values " << std::endl;
+        std::cout << "  of the reference " << fc3_file << std::endl;
+        std::cout << "  Constraint for ANHARM3 IFCs will be updated accordingly." << std::endl << std::endl;
+        P += fcs->ndup[1].size();
     }
 
     for (i = 0; i < P; ++i) {
@@ -296,11 +318,36 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
     icol = 0;
 
     if (fix_harmonic) {
-       //  system->load_reference_system();
-       system->load_reference_system_xml();
+        double *const_rhs_tmp;
+        int nfcs_tmp = fcs->ndup[0].size();
+        memory->allocate(const_rhs_tmp, nfcs_tmp);
+        system->load_reference_system_xml(fc2_file, 0, const_rhs_tmp);
 
-        irow += fcs->ndup[0].size();
-        icol += fcs->ndup[0].size();
+        for (i = 0; i < nfcs_tmp; ++i) {
+            const_mat[i][i] = 1.0;
+            const_rhs[i] = const_rhs_tmp[i];
+        }
+
+        irow += nfcs_tmp;
+        icol += nfcs_tmp;
+        memory->deallocate(const_rhs_tmp);
+    }
+
+    if (fix_cubic) {
+        int ishift = fcs->ndup[0].size();
+        double *const_rhs_tmp;
+        int nfcs_tmp = fcs->ndup[1].size();
+        memory->allocate(const_rhs_tmp, nfcs_tmp);
+        system->load_reference_system_xml(fc3_file, 1, const_rhs_tmp);
+
+        for (i = 0; i < nfcs_tmp; ++i) {
+            const_mat[i+ishift][i+ishift] = 1.0;
+            const_rhs[i+ishift] = const_rhs_tmp[i];
+        }
+
+        irow += nfcs_tmp;
+        icol += nfcs_tmp;
+        memory->deallocate(const_rhs_tmp);
     }
 
     for (std::set<ConstraintClass>::iterator p = const_total.begin(); p != const_total.end(); ++p) {
@@ -344,11 +391,6 @@ void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
     if (has_constraint_from_symm) {
         std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
     }
-
-//     memory->allocate(ind, maxorder + 1);
-//     memory->allocate(atm_index, maxorder + 1);
-//     memory->allocate(atm_index_symm, maxorder + 1);
-//     memory->allocate(xyz_index, maxorder + 1);
 
     memory->allocate(index_tmp, maxorder + 1);
 
