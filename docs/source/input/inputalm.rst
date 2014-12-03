@@ -310,6 +310,13 @@ This field is necessary when ``MODE = fitting``.
  :Type: String
  :Description: When ``FC2XML``-tag is given, harmonic force constants will be fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition be the same as that in the ``FC2XML`` file.
 
+````
+
+* FC3XML-tag : XML file to which the cubic terms will be fixed upon fitting
+
+ :Default: None
+ :Type: String
+ :Description: Same as the ``FC2XML``-tag, but ``FC3XML`` is to fix cubic force constants. 
 
 ````
 
