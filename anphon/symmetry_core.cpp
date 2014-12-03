@@ -311,7 +311,8 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
+void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int> *atomclass, double **x, 
+				     std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
 
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -547,7 +548,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
                         tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);	
                     }
                     diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-                    if (diff < eps12) {
+                    if (diff < tolerance * tolerance) {
                         num_mapped = j;
                         break;
                     }
