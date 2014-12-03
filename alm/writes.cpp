@@ -24,7 +24,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "patterndisp.h"
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
+#include <boost/version.hpp>
 
 using namespace ALM_NS;
 
@@ -536,8 +536,14 @@ void Writes::write_misc_xml()
     const int indent = 2;
 
     std::string file_xml = files->job_title + ".xml";
+
+#if BOOST_VERSION >= 105600
     write_xml(file_xml, pt, std::locale(),
-        xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+	      xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
+#else
+    write_xml(file_xml, pt, std::locale(),
+	      xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+#endif
 
     memory->deallocate(pair_tmp);
 
