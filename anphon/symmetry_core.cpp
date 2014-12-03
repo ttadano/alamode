@@ -133,7 +133,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, unsigned int 
     } 
     else {
 
-        std::cout << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO file" << std::endl << std::endl;
+        std::cout << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO_PRIM file" << std::endl << std::endl;
 
         int nsym2;
         int rot_tmp[3][3], tran_tmp[3];

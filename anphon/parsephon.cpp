@@ -214,6 +214,7 @@ void Input::parse_general_vars()
     assign_val(emax, "EMAX", general_var_dict);
     assign_val(delta_e, "DELTA_E", general_var_dict);
 
+    assign_val(nsym, "NSYM", general_var_dict);
     assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
     assign_val(tolerance, "TOLERANCE", general_var_dict);
     assign_val(printsymmetry, "PRINTSYM", general_var_dict);
