@@ -96,7 +96,7 @@ void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const doub
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
                              * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[iat] * std::norm(dprod);
+                prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
             }
 
             omega1 = dynamical->eval_phonon[ik][is];
@@ -155,7 +155,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum, const int snum, cons
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
                              * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[iat] * std::norm(dprod);
+                prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
             }
             //			weight[is][ik] = prod;
                    weight[is][ik] = prod * eval[is][ik];
