@@ -24,7 +24,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "patterndisp.h"
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
+#include <boost/version.hpp>
 
 using namespace ALM_NS;
 
@@ -74,6 +74,7 @@ void Writes::write_input_vars()
         std::cout << "  ICONST = " << constraint->constraint_mode << std::endl;
         std::cout << "  ROTAXIS = " << constraint->rotation_axis << std::endl;
         std::cout << "  FC2XML = " << constraint->fc2_file << std::endl;
+        std::cout << "  FC3XML = " << constraint->fc3_file << std::endl;
         std::cout << std::endl;
     }
     std::cout << " --------------------------------------------------------------" << std::endl;
@@ -188,19 +189,19 @@ void Writes::write_force_constants()
 
 
             for (std::set<ConstraintClass>::iterator p  = constraint->const_symmetry[order].begin(); 
-                                                     p != constraint->const_symmetry[order].end(); 
-                                                     ++p) {
-                ofs_fcs << "   0 = " << std::scientific << std::setprecision(6);
-                ConstraintClass const_pointer = *p;
-                for (j = 0; j < nparam; ++j) {
-                    if (std::abs(const_pointer.w_const[j]) > eps8) {
-                        str_tmp = " * (FC" + boost::lexical_cast<std::string>(order + 2) 
-                            + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
-                        ofs_fcs << std::setw(10) << std::right << std::showpos << const_pointer.w_const[j];
-                        ofs_fcs << std::setw(12) << std::left << str_tmp;
+                p != constraint->const_symmetry[order].end(); 
+                ++p) {
+                    ofs_fcs << "   0 = " << std::scientific << std::setprecision(6);
+                    ConstraintClass const_pointer = *p;
+                    for (j = 0; j < nparam; ++j) {
+                        if (std::abs(const_pointer.w_const[j]) > eps8) {
+                            str_tmp = " * (FC" + boost::lexical_cast<std::string>(order + 2) 
+                                + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
+                            ofs_fcs << std::setw(10) << std::right << std::showpos << const_pointer.w_const[j];
+                            ofs_fcs << std::setw(12) << std::left << str_tmp;
+                        }
                     }
-                }
-                ofs_fcs << std::endl;
+                    ofs_fcs << std::endl;
             }
             ofs_fcs << std::endl;
         }
@@ -274,19 +275,19 @@ void Writes::write_displacement_pattern()
         ofs_pattern << "Basis : " << displace->disp_basis[0] << std::endl;
 
         for (std::vector<AtomWithDirection>::iterator it  = displace->pattern_all[order].begin(); 
-	                                              it != displace->pattern_all[order].end(); ++it) {
-            AtomWithDirection entry = *it;
+            it != displace->pattern_all[order].end(); ++it) {
+                AtomWithDirection entry = *it;
 
-            ++counter;
+                ++counter;
 
-            ofs_pattern << std::setw(5) << counter << ":" << std::setw(5) << entry.atoms.size() << std::endl;
-            for (i = 0; i < entry.atoms.size(); ++i) {
-                ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
-                for (j = 0; j < 3; ++j) {
-                    ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
-                }
-                ofs_pattern << std::endl;
-            }	
+                ofs_pattern << std::setw(5) << counter << ":" << std::setw(5) << entry.atoms.size() << std::endl;
+                for (i = 0; i < entry.atoms.size(); ++i) {
+                    ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
+                    for (j = 0; j < 3; ++j) {
+                        ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
+                    }
+                    ofs_pattern << std::endl;
+                }	
         }
 
         ofs_pattern.close();
@@ -331,7 +332,7 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ALM_version", "0.9.2");
+    pt.put("Data.ALM_version", "0.9.3");
     pt.put("Data.Fitting.DisplaceFile", files->file_disp);
     pt.put("Data.Fitting.ForceFile", files->file_force);
     pt.put("Data.Fitting.Constraint", constraint->constraint_mode);
@@ -380,7 +381,6 @@ void Writes::write_misc_xml()
 
     pt.put("Data.ForceConstants.HarmonicUnique.NFC2", fcs->ndup[0].size());
 
-
     int ihead = 0;
     int k = 0;
     int nelem = interaction->maxorder + 1;
@@ -402,6 +402,46 @@ void Writes::write_misc_xml()
         child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size());
         ihead += fcs->ndup[0][ui];
         ++k;
+    }
+    ihead = 0;
+
+    std::vector<int> atom_tmp;
+    std::vector<std::vector<int> > cell_dummy;
+    std::set<MinimumDistanceCluster>::iterator iter_cluster;
+    int multiplicity;
+
+    if (interaction->maxorder > 1) {
+
+        pt.put("Data.ForceConstants.CubicUnique.NFC3", fcs->ndup[1].size());
+
+        for (unsigned int ui = 0; ui < fcs->ndup[1].size(); ++ui) {
+            for (i = 0; i < 3; ++i) {
+                pair_tmp[i] = fcs->fc_set[1][ihead].elems[i] / 3;
+            }
+            j = symmetry->map_s2p[pair_tmp[0]].atom_num;
+
+            atom_tmp.clear();
+            for (i = 1; i < 3; ++i) {
+                atom_tmp.push_back(pair_tmp[i]);
+            }
+            std::sort(atom_tmp.begin(), atom_tmp.end());
+
+            iter_cluster = interaction->mindist_cluster[1][j].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+            if (iter_cluster == interaction->mindist_cluster[1][j].end()) {
+                error->exit("load_reference_system_xml", "Cubic force constant is not found.");
+            } else {
+                multiplicity = (*iter_cluster).cell.size();
+            }
+
+            ptree &child = pt.add("Data.ForceConstants.CubicUnique.FC3", double2string(fitting->params[k]));
+            child.put("<xmlattr>.pairs", 
+                boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[0])
+                + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[1])
+                + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[2]));
+            child.put("<xmlattr>.multiplicity", multiplicity);
+            ihead += fcs->ndup[1][ui];
+            ++k;
+        }
     }
 
     int ip, ishift;
@@ -433,10 +473,10 @@ void Writes::write_misc_xml()
 
     // Print anharmonic force constants to the xml file.
 
-    std::vector<int> atom_tmp;
-    std::vector<std::vector<int> > cell_dummy;
-    std::set<MinimumDistanceCluster>::iterator iter_cluster;
-    int imult, multiplicity;
+    //     std::vector<int> atom_tmp;
+    //     std::vector<std::vector<int> > cell_dummy;
+    //    std::set<MinimumDistanceCluster>::iterator iter_cluster;
+    int imult;
 
     int order;
     std::string elementname;
@@ -496,8 +536,14 @@ void Writes::write_misc_xml()
     const int indent = 2;
 
     std::string file_xml = files->job_title + ".xml";
+
+#if BOOST_VERSION >= 105600
     write_xml(file_xml, pt, std::locale(),
-        xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+	      xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
+#else
+    write_xml(file_xml, pt, std::locale(),
+	      xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+#endif
 
     memory->deallocate(pair_tmp);
 

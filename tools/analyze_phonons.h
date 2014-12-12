@@ -36,6 +36,7 @@ void calc_tau_temp(int, int);
 void calc_kappa();
 void calc_kappa_size(double, double, int, int [3]);
 void calc_kappa_size2(double, double, int, int [3]);
+void calc_kappa_boundary(const double);
 double Cv(double, double);
 
 void average_gamma_at_degenerate_point(double **, double ***, const int, const int, const int);

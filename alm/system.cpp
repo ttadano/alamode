@@ -169,20 +169,26 @@ void System::frac2cart(double **xf)
     memory->deallocate(x_tmp);
 }
 
-void System::load_reference_system_xml()
+void System::load_reference_system_xml(std::string file_reference_fcs, const int order_fcs, double *const_out)
 {
     using namespace boost::property_tree;
     ptree pt;
 
     int nat_ref, natmin_ref, ntran_ref;
     int **intpair_ref;
-    double *fc2_ref;
+    std::string str_error;
+    double *fcs_ref;
+    int nfcs_ref;
    
     try {
-        read_xml(constraint->fc2_file, pt);
+        read_xml(file_reference_fcs, pt);
     }
     catch (std::exception &e) {
-        std::string str_error = "Cannot open file FC2XML ( " + constraint->fc2_file + " )";
+        if (order_fcs == 0) {
+            str_error = "Cannot open file FC2XML ( " + file_reference_fcs + " )";
+        } else if (order_fcs == 1) {
+            str_error = "Cannot open file FC3XML ( " + file_reference_fcs + " )";
+        }
         error->exit("load_reference_system_xml", str_error.c_str());
     }
 
@@ -194,29 +200,50 @@ void System::load_reference_system_xml()
         error->exit("load_reference_system_xml", "The number of atoms in the primitive cell is not consistent.");
     }
 
-    int nfc2_ref;
+    if (order_fcs == 0) {
+        nfcs_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
 
-    nfc2_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
+        if (nfcs_ref != fcs->ndup[0].size()) {
+            error->exit("load_reference_system_xml", "The number of harmonic force constants is not the same.");
+        }
 
-    if (nfc2_ref != fcs->ndup[0].size()) {
-        error->exit("load_reference_system_xml", "The number of harmonic force constants is not the same.");
+    } else if (order_fcs == 1) {
+        nfcs_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.NFC3"));
+
+        if (nfcs_ref != fcs->ndup[1].size()) {
+            error->exit("load_reference_system_xml", "The number of cubic force constants is not the same.");
+        }
     }
-
-    memory->allocate(intpair_ref, nfc2_ref, 2);
-    memory->allocate(fc2_ref, nfc2_ref);
+    memory->allocate(fcs_ref, nfcs_ref);
+    memory->allocate(intpair_ref, nfcs_ref, 3);
 
     int counter = 0;
 
-    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
-        if (child_.first == "FC2") {
-            const ptree& child = child_.second;
-            const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
-            const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
+    if (order_fcs == 0) {
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
+            if (child_.first == "FC2") {
+                const ptree& child = child_.second;
+                const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
+                const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
 
-            std::istringstream is(str_intpair);
-            is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
-            fc2_ref[counter] = boost::lexical_cast<double>(child.data());
-            ++counter;
+                std::istringstream is(str_intpair);
+                is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
+                fcs_ref[counter] = boost::lexical_cast<double>(child.data());
+                ++counter;
+            }
+        }
+    } else if (order_fcs == 1) {
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.CubicUnique")) {
+            if (child_.first == "FC3") {
+                const ptree& child = child_.second;
+                const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
+                const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
+
+                std::istringstream is(str_intpair);
+                is >> intpair_ref[counter][0] >> intpair_ref[counter][1] >> intpair_ref[counter][2];
+                fcs_ref[counter] = boost::lexical_cast<double>(child.data());
+                ++counter;
+            }
         }
     }
 
@@ -224,34 +251,36 @@ void System::load_reference_system_xml()
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
     int *ind;
-    memory->allocate(ind, 2);
+    int nterms = order_fcs + 2;
+    memory->allocate(ind, nterms);
 
     list_found.clear();
 
-    for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p) {
+    for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin(); 
+                                           p != fcs->fc_set[order_fcs].end(); ++p) {
         FcProperty list_tmp = *p; // Using copy constructor
-        for (i = 0; i < 2; ++i) {
+        for (i = 0; i < nterms; ++i) {
             ind[i] = list_tmp.elems[i];
         }
-        list_found.insert(FcProperty(2, list_tmp.coef, ind, list_tmp.mother));
+        list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
     }
+// 
+//     for (i = 0; i < nfcs_ref; ++i) {
+//         constraint->const_mat[i][i] = 1.0;
+//     }
 
-    for (i = 0; i < nfc2_ref; ++i) {
-        constraint->const_mat[i][i] = 1.0;
-    }
-
-    for (i = 0; i < nfc2_ref; ++i) {
-        iter_found = list_found.find(FcProperty(2, 1.0, intpair_ref[i], 1));
+    for (i = 0; i < nfcs_ref; ++i) {
+        iter_found = list_found.find(FcProperty(nterms, 1.0, intpair_ref[i], 1));
         if (iter_found == list_found.end()) {
             error->exit("load_reference_system", "Cannot find equivalent force constant, number: ", i + 1);
         }
         FcProperty arrtmp = *iter_found;
-        constraint->const_rhs[arrtmp.mother] = fc2_ref[i];
+        const_out[arrtmp.mother] = fcs_ref[i];
     }
 
     memory->deallocate(intpair_ref);
+    memory->deallocate(fcs_ref);
     memory->deallocate(ind);
-    memory->deallocate(fc2_ref);
     list_found.clear();
 }
 

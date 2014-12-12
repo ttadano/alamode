@@ -10,7 +10,11 @@ CXXFLAGS = -O2 -g
 INCLUDE = -I../include 
 
 LINKER = ${MPICXX}
-LDFLAGS = -framework vecLib
+
+## Mavericks
+#LDFLAGS = -framework vecLib
+## Yosemite
+LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack
 LIBS = ${LAPACK} 

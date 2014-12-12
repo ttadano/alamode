@@ -127,7 +127,7 @@ namespace ALM_NS {
 
         bool *sym_available;
 
-        std::string file_sym, refsys_file;
+        std::string file_sym;
         std::ofstream ofs_sym;
         std::ifstream ifs_sym;
 

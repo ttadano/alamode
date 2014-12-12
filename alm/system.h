@@ -23,7 +23,7 @@ namespace ALM_NS {
         void recips(double [3][3], double [3][3]);
         void frac2cart(double **);
         void load_reference_system();
-        void load_reference_system_xml();
+        void load_reference_system_xml(std::string, const int, double *);
 
         int nat, nkd;
         int ndata, nstart, nend, nskip;

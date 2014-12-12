@@ -49,8 +49,8 @@ namespace ALM_NS
 
         int constraint_mode;
         int P;
-        std::string fc2_file;
-        bool fix_harmonic;
+        std::string fc2_file, fc3_file;
+        bool fix_harmonic, fix_cubic;
 
         double **const_mat;
         double *const_rhs;
@@ -59,6 +59,8 @@ namespace ALM_NS
         bool extra_constraint_from_symmetry;
         std::string rotation_axis;
         std::set<ConstraintClass> *const_symmetry;
+
+        void constraint_from_symmetry(std::set<ConstraintClass> *);
 
     private:
 
@@ -74,11 +76,8 @@ namespace ALM_NS
 
         void translational_invariance();
         void rotational_invariance();
-        void constraint_from_symmetry();
         void calc_constraint_matrix(const int, int &);
-
         void setup_rotation_axis(bool [3][3]);
-
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);
         void rref(int, int, double **, int &, double tolerance =eps12);

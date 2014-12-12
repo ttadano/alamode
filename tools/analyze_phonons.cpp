@@ -204,6 +204,21 @@ int main(int argc, char *argv[]) {
 
 		calc_kappa_size2(max_len, d_len, itemp, size_flag);
 
+	} else if (calc == "kappa_boundary") {
+
+		// Print the temperature dependence of thermal conductivity 
+		// with boundary effects considered by the Matthiessen's rule.
+
+		double len_boundary;
+
+		beg_s = atoi(argv[4]) - 1;
+		end_s = atoi(argv[5]);
+
+		if (end_s == 0) end_s = ns;
+
+		len_boundary = atof(argv[6]);
+
+		calc_kappa_boundary(len_boundary);
 	}
 
 	return 0;
@@ -317,6 +332,64 @@ void calc_kappa()
 					for (j = 0; j < 3; ++j) {
 						for (k = 0; k < 3; ++k) {
 							kappa[it][j][k] += c_tmp * tau_tmp * vel[ik][is][i][j] * vel[ik][is][i][k];
+						}
+					}
+				}
+
+			}
+		}
+
+		cout << setw(10) << temp[it];
+		for (i = 0; i < 3; ++i) {
+			for (j = 0; j < 3; ++j) {
+				cout << setw(15) << kappa[it][i][j]*factor;
+			}
+		}
+		cout << endl;
+
+	}
+
+	deallocate(kappa);
+}
+
+void calc_kappa_boundary(const double len_boundary) 
+{
+	int it, ik, is;
+	double ***kappa;
+	double c_tmp, tau_tmp;
+	double mfp_tmp, vel_norm;
+
+	allocate(kappa,nt,3,3);
+
+	double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+
+	cout << "# Temperature dependence of thermal conductivity with boundary effects." << endl;
+	cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+	cout << "# Size of boundary " << len_boundary << " [nm]" << endl;
+	cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
+
+	for (i = 0; i < nt; ++i) {
+		for (j = 0; j < 3; ++j) {
+			for (k = 0; k < 3; ++k) {
+				kappa[i][j][k] = 0.0;
+			}
+		}
+	}
+
+	for (it = 0; it < nt; ++it) {
+		for (ik = 0; ik < nk; ++ik) {
+			for (is = beg_s; is < end_s; ++is) {
+
+				tau_tmp = tau[it][ik][is];
+				c_tmp = Cv(omega[ik][is], temp[it]);
+
+				vel_norm = vel[ik][is][0][0] * vel[ik][is][0][0] + vel[ik][is][0][1] * vel[ik][is][0][1] + vel[ik][is][0][2] * vel[ik][is][0][2];
+				mfp_tmp = std::sqrt(vel_norm) * tau_tmp * 0.001;
+
+				for (i = 0; i < n_weight[ik]; ++i) {
+					for (j = 0; j < 3; ++j) {
+						for (k = 0; k < 3; ++k) {
+							kappa[it][j][k] += c_tmp * vel[ik][is][i][j] * vel[ik][is][i][k] * tau_tmp * len_boundary / (len_boundary + 2.0 * mfp_tmp);
 						}
 					}
 				}

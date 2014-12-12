@@ -27,6 +27,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/version.hpp>
 
 using namespace PHON_NS;
 
@@ -315,7 +316,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ANPHON_version", "0.9.2");
+    pt.put("Data.ANPHON_version", "0.9.3");
     pt.put("Data.Description.OriginalXML", fcs_phonon->file_fcs);
     pt.put("Data.Description.Delta_A", double2string(change_ratio_of_a));
 
@@ -425,8 +426,14 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
 
     using namespace boost::property_tree::xml_parser;
     const int indent = 2;
+
+#if BOOST_VERSION >= 105600
     write_xml(filename_xml, pt, std::locale(),
-        xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+	      xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
+#else
+    write_xml(filename_xml, pt, std::locale(),
+	      xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+#endif
 }
 
 

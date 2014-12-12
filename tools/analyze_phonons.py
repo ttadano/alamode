@@ -26,17 +26,22 @@ parser.add_option('--temp', help="target temperature to analyze")
 parser.add_option('--mode', help="specify phonon mode index to print")
 parser.add_option('--kpoint', help="specify k-point index to print")
 
-parser.add_option('--calc', metavar='tau|kappa|cumulative',
+parser.add_option('--calc', metavar='tau|kappa|cumulative|kappa_boundary',
                   help=('specify what to print. Available options are '
                         'tau (Lifetime, mean-free-path, etc.), '
-                        'kappa (Thermal conductivity), and '
-                        'cumulative (Cumulative thermal conductivity). '
+                        'kappa (Thermal conductivity), '
+                        'cumulative (Cumulative thermal conductivity), '
+                        'and kappa_boundary (Thermal conductivity with boundary effect). '
                         'When --calc=cumulative, please specify the '
-                        '--direction option.'))
+                        '--direction option. When --calc=kappa_boundary, '
+                        'please specify the --size option.'))
 
 parser.add_option('--noavg', action="store_false", dest="average_gamma",
                   default=True, help="do not average the damping function \
 at degenerate points")
+
+parser.add_option('--size', help="specify the grain boundary size in units of \
+nm. The default value is 1000 nm.")
 
 group = optparse.OptionGroup(parser,
                              "The following options are available/necessary \
@@ -142,6 +147,35 @@ def print_thermal_conductivity():
     subprocess.call(command, shell=True)
 
 
+def print_thermal_conductivity_with_boundary():
+
+    if not (options.kpoint is None):
+        print "# Warning: --kpoint option is discarded"
+
+    if options.mode is None:
+        beg_s = 1
+        end_s = 0
+    else:
+        if len(options.mode.split(':')) == 1:
+            beg_s = int(options.mode)
+            end_s = beg_s
+        elif len(options.mode.split(':')) == 2:
+            arr = options.mode.split(':')
+            beg_s, end_s = int(arr[0]), int(arr[1])
+        else:
+            sys.exit("Invalid usage of --mode for --calc=kappa_boundary")
+
+    if options.size is None:
+        boundary_size = 1000.0
+    else:
+        boundary_size = float(options.size)
+
+    command = analyze_obj + file_result + " " + calc + " " + avg\
+        + " " + str(beg_s) + " " + str(end_s) + " " + str(boundary_size)
+
+    subprocess.call(command, shell=True)
+
+
 def print_cumulative_thermal_conductivity():
 
     if options.temp is None:
@@ -222,6 +256,9 @@ if __name__ == '__main__':
     # Compute cumulative thermal conductivity.
     elif calc == "cumulative":
         print_cumulative_thermal_conductivity()
+
+    elif calc == "kappa_boundary":
+        print_thermal_conductivity_with_boundary()
 
     else:
         sys.exit("Invalid --calc option given")

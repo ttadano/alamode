@@ -77,27 +77,27 @@ void Constraint::setup()
 
     std::cout << std::endl;
 
-//     if (impose_inv_R && interaction->interaction_type == 1) {
-//         std::cout << "  WARNING: Rotational invariance and INTERTYPE = 1 should not be turned on simultaneously." << std::endl;
-//         std::cout << "           This might generate inaccurate IFCs." << std::endl << std::endl;
-//     }
-
     if (fix_harmonic) {
         std::cout << "  FC2XML is given : Harmonic force constants will be " << std::endl;
         std::cout << "                    fixed to the values given in " << fc2_file << std::endl;
+        std::cout << std::endl;
+    }
+
+    fix_cubic = fix_cubic & (interaction->maxorder > 1);
+    if (fix_cubic) {
+        std::cout << "  FC3XML is given : Cubic force constants will be " << std::endl;
+        std::cout << "                    fixed to the values given in " << fc3_file << std::endl;
+        std::cout << std::endl;
     }
 
     extra_constraint_from_symmetry = false;
     memory->allocate(const_symmetry, interaction->maxorder);
-    for (int order = 0; order < interaction->maxorder; ++order) {
-        const_symmetry[order].clear();
-    }
-    constraint_from_symmetry();
+    constraint_from_symmetry(const_symmetry);
     for (int order = 0; order < interaction->maxorder; ++order) {
         if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
     }
 
-    if (impose_inv_T || fix_harmonic || extra_constraint_from_symmetry) {
+    if (impose_inv_T || fix_harmonic || fix_cubic || extra_constraint_from_symmetry) {
         exist_constraint = true;
     } else {
         exist_constraint = false;
@@ -122,7 +122,6 @@ void Constraint::setup()
             const_translation[order].clear();
             const_rotation_self[order].clear();
             const_rotation_cross[order].clear();
-         //   const_symmetry[order].clear();
         }
 
         if (impose_inv_T) {
@@ -131,11 +130,6 @@ void Constraint::setup()
         if (impose_inv_R) {
             rotational_invariance();
         }
-//         extra_constraint_from_symmetry = false;
-//         constraint_from_symmetry();
-//         for (order = 0; order < maxorder; ++order){
-//             if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
-//         }
 
         if (impose_inv_T || impose_inv_R) {
             std::cout << "  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:" << std::endl;
@@ -222,6 +216,10 @@ void Constraint::setup()
             Pmax -= const_self[0].size();
             Pmax += fcs->ndup[0].size();
         }
+        if (fix_cubic) {
+            Pmax -= const_self[1].size();
+            Pmax += fcs->ndup[1].size();
+        }
         memory->allocate(const_mat, Pmax, N);
         memory->allocate(const_rhs, Pmax);
 
@@ -239,7 +237,8 @@ void Constraint::setup()
     }
 }
 
-void Constraint::calc_constraint_matrix(const int N, int &P){
+void Constraint::calc_constraint_matrix(const int N, int &P)
+{
 
     int i, j;
     int maxorder = interaction->maxorder;
@@ -257,10 +256,12 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     for (order = 0; order < maxorder; ++order) {
         int nparam = fcs->ndup[order].size();
 
-        if (order > 0 || !fix_harmonic) {
+        if ((order == 0 && !fix_harmonic) || (order == 1 && !fix_cubic) || order > 1) {
+      //  if (order > 0 || !fix_harmonic) {
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
 
-            for (std::set<ConstraintClass>::iterator p = const_self[order].begin(); p != const_self[order].end(); ++p) {
+            for (std::set<ConstraintClass>::iterator p = const_self[order].begin();
+                                                     p != const_self[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam; ++i) {
                     arr_tmp[nshift + i] = const_now.w_const[i];
@@ -273,7 +274,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
         if (order > 0) {
             int nparam2 = fcs->ndup[order - 1].size() + fcs->ndup[order].size();
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
-            for (std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); p != const_rotation_cross[order].end(); ++p) {
+            for (std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin(); 
+                                                     p != const_rotation_cross[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam2; ++i){
                     arr_tmp[nshift2 + i] = const_now.w_const[i];
@@ -291,10 +293,18 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
 
     P = const_total.size();
 
-    if(fix_harmonic) {
-        std::cout << "  Harmonic force constants will be fixed to the values of the reference " << fc2_file << std::endl;
-        std::cout << "  Constraint information for HARMONIC will be updated accordingly." << std::endl << std::endl;
+    if (fix_harmonic) {
+        std::cout << "  Harmonic force constants will be fixed to the values " << std::endl;
+        std::cout << "  of the reference " << fc2_file << std::endl;
+        std::cout << "  Constraint for HARMONIC IFCs will be updated accordingly." << std::endl << std::endl;
         P += fcs->ndup[0].size();
+    }
+
+    if (fix_cubic) {
+        std::cout << "  Cubic force constants will be fixed to the values " << std::endl;
+        std::cout << "  of the reference " << fc3_file << std::endl;
+        std::cout << "  Constraint for ANHARM3 IFCs will be updated accordingly." << std::endl << std::endl;
+        P += fcs->ndup[1].size();
     }
 
     for (i = 0; i < P; ++i) {
@@ -308,11 +318,36 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     icol = 0;
 
     if (fix_harmonic) {
-       //  system->load_reference_system();
-       system->load_reference_system_xml();
+        double *const_rhs_tmp;
+        int nfcs_tmp = fcs->ndup[0].size();
+        memory->allocate(const_rhs_tmp, nfcs_tmp);
+        system->load_reference_system_xml(fc2_file, 0, const_rhs_tmp);
 
-        irow += fcs->ndup[0].size();
-        icol += fcs->ndup[0].size();
+        for (i = 0; i < nfcs_tmp; ++i) {
+            const_mat[i][i] = 1.0;
+            const_rhs[i] = const_rhs_tmp[i];
+        }
+
+        irow += nfcs_tmp;
+        icol += nfcs_tmp;
+        memory->deallocate(const_rhs_tmp);
+    }
+
+    if (fix_cubic) {
+        int ishift = fcs->ndup[0].size();
+        double *const_rhs_tmp;
+        int nfcs_tmp = fcs->ndup[1].size();
+        memory->allocate(const_rhs_tmp, nfcs_tmp);
+        system->load_reference_system_xml(fc3_file, 1, const_rhs_tmp);
+
+        for (i = 0; i < nfcs_tmp; ++i) {
+            const_mat[i+ishift][i+ishift] = 1.0;
+            const_rhs[i+ishift] = const_rhs_tmp[i];
+        }
+
+        irow += nfcs_tmp;
+        icol += nfcs_tmp;
+        memory->deallocate(const_rhs_tmp);
     }
 
     for (std::set<ConstraintClass>::iterator p = const_total.begin(); p != const_total.end(); ++p) {
@@ -325,7 +360,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P){
     const_total.clear();
 }
 
-void Constraint::constraint_from_symmetry()
+void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
 {
     // Create constraint matrices arising from the crystal symmetry.
 
@@ -335,36 +370,31 @@ void Constraint::constraint_from_symmetry()
     int order;
     int maxorder = interaction->maxorder;
 
-    int *ind;
+    int *index_tmp;
     int **xyzcomponent;
     int nparams;
-    int i_prim;
-
-    int *atm_index, *atm_index_symm;
-    int *xyz_index;
 
     bool has_constraint_from_symm = false;
-    double c_tmp;
-    double *arr_constraint;
+
 
     std::set<FcProperty> list_found;
-    std::set<FcProperty>::iterator iter_found;
 
     for (isym = 0; isym < symmetry->nsym; ++isym) {
      if (symmetry->sym_available[isym]) continue;
      has_constraint_from_symm = true;
     }
 
+    for (order = 0; order < maxorder; ++order) {
+        const_out[order].clear();
+    }
+
     if (has_constraint_from_symm) {
         std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
     }
 
-    memory->allocate(ind, maxorder + 1);
-    memory->allocate(atm_index, maxorder + 1);
-    memory->allocate(atm_index_symm, maxorder + 1);
-    memory->allocate(xyz_index, maxorder + 1);
+    memory->allocate(index_tmp, maxorder + 1);
 
-    for (order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
 
         nparams = fcs->ndup[order].size();
 
@@ -378,69 +408,96 @@ void Constraint::constraint_from_symmetry()
         
         // Generate temporary list of parameters
         list_found.clear();
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
+        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
             FcProperty list_tmp = *p; // Using copy constructor
-            for (i = 0; i < order + 2; ++i) ind[i] = list_tmp.elems[i];
-            list_found.insert(FcProperty(order + 2, list_tmp.coef, ind, list_tmp.mother));
+            for (i = 0; i < order + 2; ++i) index_tmp[i] = list_tmp.elems[i];
+            list_found.insert(FcProperty(order + 2, list_tmp.coef, index_tmp, list_tmp.mother));
         }
 
         nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
         memory->allocate(xyzcomponent, nxyz, order + 2);
         fcs->get_xyzcomponent(order + 2, xyzcomponent);
 
-        memory->allocate(arr_constraint, nparams);
 
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p){
-            FcProperty list_tmp = *p; // Using copy constructor
-            for (i = 0; i < order + 2; ++i){
-                atm_index[i] = list_tmp.elems[i] / 3;
-                xyz_index[i] = list_tmp.elems[i] % 3;
+  //      memory->allocate(arr_constraint, nparams);
+
+        int nfcs = fcs->fc_set[order].size();
+
+#pragma omp parallel 
+        {
+            int i_prim;
+
+            int *ind;
+            int *atm_index, *atm_index_symm;
+            int *xyz_index;
+            double c_tmp;
+            double *arr_constraint;
+
+            std::set<FcProperty>::iterator iter_found;
+
+            memory->allocate(arr_constraint, nparams);
+            memory->allocate(ind, order + 2);
+            memory->allocate(atm_index, order + 2);
+            memory->allocate(atm_index_symm, order + 2);
+            memory->allocate(xyz_index, order + 2);
+
+#pragma omp for private(i, isym, ixyz) 
+            for (int ii = 0; ii < nfcs; ++ii) {
+                FcProperty list_tmp = fcs->fc_set[order][ii];
+
+                for (i = 0; i < order + 2; ++i){
+                    atm_index[i] = list_tmp.elems[i] / 3;
+                    xyz_index[i] = list_tmp.elems[i] % 3;
+                }
+
+                for (isym = 0; isym < symmetry->nsym; ++isym) {      
+
+                    if (symmetry->sym_available[isym]) continue;
+
+                    for (i = 0; i < order + 2; ++i) atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
+                    if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
+
+                    for (i = 0; i < nparams; ++i) arr_constraint[i] = 0.0;
+
+                    arr_constraint[list_tmp.mother] = -list_tmp.coef;
+
+                    for (ixyz = 0; ixyz < nxyz; ++ixyz) {
+                        for (i = 0; i < order + 2; ++i) ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
+
+                        i_prim = fcs->min_inprim(order + 2, ind);
+                        std::swap(ind[0], ind[i_prim]);
+                        fcs->sort_tail(order + 2, ind);
+
+                        iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
+                        if (iter_found != list_found.end()) {
+                            c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
+                            arr_constraint[(*iter_found).mother] += (*iter_found).coef * c_tmp;
+                        }
+                    }
+
+                    if (!is_allzero(nparams, arr_constraint)) {
+#pragma omp critical
+                        const_out[order].insert(ConstraintClass(nparams, arr_constraint));
+                    }
+                }        
             }
 
-            for (isym = 0; isym < symmetry->nsym; ++isym) {      
-
-                if(symmetry->sym_available[isym]) continue;
-
-                for (i = 0; i < order + 2; ++i) atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
-                if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
-
-                for (i = 0; i < nparams; ++i) arr_constraint[i] = 0.0;
-
-                arr_constraint[list_tmp.mother] = -list_tmp.coef;
-
-                for (ixyz = 0; ixyz < nxyz; ++ixyz) {
-                    for (i = 0; i < order + 2; ++i) ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
-
-                    i_prim = fcs->min_inprim(order + 2, ind);
-                    std::swap(ind[0], ind[i_prim]);
-                    fcs->sort_tail(order + 2, ind);
-
-                    iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
-                    if(iter_found != list_found.end()) {
-                        c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-                        arr_constraint[(*iter_found).mother] += (*iter_found).coef * c_tmp;
-                    }
-                }
-
-                if(!is_allzero(nparams, arr_constraint)){
-                    const_symmetry[order].insert(ConstraintClass(nparams, arr_constraint));
-                }
-
-            }        
+            memory->deallocate(arr_constraint);
+            memory->deallocate(ind);
+            memory->deallocate(atm_index);
+            memory->deallocate(atm_index_symm);
+            memory->deallocate(xyz_index);
         }
+
         memory->deallocate(xyzcomponent);
-        memory->deallocate(arr_constraint);
-        remove_redundant_rows(nparams, const_symmetry[order], eps8);
+        remove_redundant_rows(nparams, const_out[order], eps8);
 
         if (has_constraint_from_symm) {
             std::cout << " done." << std::endl;
         }
     }
 
-    memory->deallocate(ind);
-    memory->deallocate(atm_index);
-    memory->deallocate(atm_index_symm);
-    memory->deallocate(xyz_index);
+    memory->deallocate(index_tmp);
 
     if (has_constraint_from_symm) {
          std::cout << "  Finished !" << std::endl << std::endl;
