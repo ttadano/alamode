@@ -73,7 +73,7 @@ void Fitting::fitmain()
     int nend = system->nend;
     int nskip = system->nskip;
 
-    int N, M;
+    int N, M, N_new;
     int maxorder = interaction->maxorder;
     int P = constraint->P;
 
@@ -84,7 +84,7 @@ void Fitting::fitmain()
 
     double **u, **f;
     double **amat, *fsum;
-
+    double *fsum_orig;
 
     std::cout << " FITTING" << std::endl;
     std::cout << " =======" << std::endl << std::endl;
@@ -107,23 +107,35 @@ void Fitting::fitmain()
 
     M = 3 * natmin * ndata_used * nmulti;
 
-    memory->allocate(amat, M, N);
-    memory->allocate(fsum, M);
+    if (constraint->constraint_algebraic) {
+        N_new = 0;
+        for (i = 0; i < maxorder; ++i) {
+            N_new += constraint->index_bimap[i].size();
+        }
+        std::cout << "  Total Number of Free Parameters : " << N_new << std::endl << std::endl;
+
+        memory->allocate(amat, M, N_new);
+        memory->allocate(fsum, M);
+        memory->allocate(fsum_orig, M);
+
+        calc_matrix_elements_algebraic_constraint(M, N, N_new, nat, natmin, ndata_used, 
+            nmulti, maxorder, u, f, amat, fsum, fsum_orig);
+
+    } else {
+        memory->allocate(amat, M, N);
+        memory->allocate(fsum, M);
+
+        calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
+
+    }
+
 
     // Calculate matrix elements for fitting
 
-    calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
+    // calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
 
     memory->deallocate(u);
     memory->deallocate(f);
-
-    /*
-    // Calculate Hessian Matrix of Amat
-
-    std::cout << "Calculating Covariance Matrix for error estimation" << std::endl;
-    memory->allocate(varcovar, N, N);
-    calc_covariance(M, N);
-    timer->print_elapsed(); */
 
     M_Start = 0;
     M_End = 3 * natmin * ndata_used * nmulti;
@@ -132,7 +144,10 @@ void Fitting::fitmain()
 
         // Fitting with singular value decomposition or QR-Decomposition
 
-        if (constraint->exist_constraint) {
+        if (constraint->constraint_algebraic) {
+            fit_algebraic_constraints(N_new, M_Start, M_End, amat, fsum, fsum_orig, maxorder);
+
+        } else if (constraint->exist_constraint) {
             fit_with_constraints(N, M_Start, M_End, P, amat, fsum, 
                 constraint->const_mat, constraint->const_rhs);
         } else {
@@ -167,7 +182,20 @@ void Fitting::fitmain()
 
     memory->allocate(params, N);
 
-    for (i = 0; i < N; ++i) params[i] = fsum[i];
+    if (constraint->constraint_algebraic) {
+
+        for (i = 0; i < N; ++i) {
+            params[i] = fsum_orig[i];
+        }
+
+        memory->deallocate(fsum_orig);
+
+    } else {
+
+        for (i = 0; i < N; ++i) params[i] = fsum[i];
+
+    }
+
 
     memory->deallocate(amat);
     memory->deallocate(fsum);
@@ -514,6 +542,102 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     memory->deallocate(fsum2);
 }
 
+void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **amat, double *bvec, double *bvec_orig,
+                                        const int maxorder)
+{
+    int i, j, k;
+    int nrhs = 1, nrank, INFO, LWORK;
+    double *WORK, *S, *amat_mod;
+    double rcond = -1.0;
+    double f_square = 0.0;
+    double *fsum2;
+
+    int M = M_End - M_Start;
+
+    std::cout << "  Entering fitting routine: SVD with constraints considered algebraically." << std::endl;
+
+    LWORK = 3 * std::min<int>(M, N) + std::max<int>(2*std::min<int>(M, N), std::max<int>(M, N));
+    LWORK = 2 * LWORK;
+
+    memory->allocate(WORK, LWORK);
+    memory->allocate(S, N);
+
+    // transpose matrix A
+    memory->allocate(amat_mod, M * N);
+    memory->allocate(fsum2, M);
+
+    k = 0;
+    for (j = 0; j < N; ++j) {
+        for (i = M_Start; i < M_End; ++i) {
+            amat_mod[k++] = amat[i][j];
+        }
+    }
+    j = 0;
+    for (i = M_Start; i < M_End; ++i) {
+        fsum2[j++] = bvec[i];
+        f_square += std::pow(bvec_orig[i], 2);
+    }
+
+    std::cout << "  SVD has started ... ";
+
+    // Fitting with singular value decomposition
+    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
+
+    std::cout << "finished !" << std::endl << std::endl;
+
+    std::cout << "  RANK of the matrix = " << nrank << std::endl;
+    if (nrank < N) error->warn("fit_without_constraints", 
+        "Matrix is rank-deficient. Force constants could not be determined uniquely :(");
+
+    if (nrank == N) {
+        double f_residual = 0.0;
+        for (i = N; i < M; ++i) {
+            f_residual += std::pow(fsum2[i], 2);
+        }
+        std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
+        std::cout << "  Fitting error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
+    }
+
+
+    int ishift = 0;
+    int iparam = 0;
+    double tmp;
+    int inew, iold;
+
+
+    for (i = 0; i < maxorder; ++i) {
+        for (j = 0; j < constraint->const_fix[i].size(); ++j) {
+            bvec_orig[constraint->const_fix[i][j].p_index_target + ishift] = constraint->const_fix[i][j].val_to_fix;
+        }
+
+        for (boost::bimap<int, int>::const_iterator it = constraint->index_bimap[i].begin(); 
+            it != constraint->index_bimap[i].end(); ++it) {
+                inew = (*it).left + iparam;
+                iold = (*it).right + ishift;
+
+                bvec_orig[iold] = fsum2[inew];
+        }
+
+        for (j = 0; j < constraint->const_relate[i].size(); ++j) {
+            tmp = 0.0;
+
+            for (k = 0; k < constraint->const_relate[i][j].alpha.size(); ++k) {
+                tmp += constraint->const_relate[i][j].alpha[k] * bvec_orig[constraint->const_relate[i][j].p_index_orig[k] + ishift];
+            }
+            bvec_orig[constraint->const_relate[i][j].p_index_target + ishift] = tmp;
+        }
+
+        ishift += fcs->ndup[i].size();
+        iparam += constraint->index_bimap[i].size();
+    }
+
+    memory->deallocate(fsum2);
+    memory->deallocate(amat_mod);
+    memory->deallocate(WORK);
+    memory->deallocate(S);
+}
+
+
 void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti, 
                             double **amat, double *bvec, double **cmat, double *dvec)
 {
@@ -830,6 +954,146 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
         memory->deallocate(ind);
 
+    }
+
+    std::cout << "done!" << std::endl << std::endl;
+}
+
+
+void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N, const int N_new, const int nat, 
+                                                        const int natmin, const int ndata_fit, const int nmulti, 
+                                                        const int maxorder, double **u, double **f, double **amat, 
+                                                        double *bvec, double *bvec_orig)
+{
+    int i, j;
+    int irow;
+    int ncycle;
+
+    std::cout << "  Calculation of matrix elements for direct fitting started ... ";
+
+
+    for (i = 0; i < M; ++i) {
+        for (j = 0; j < N_new; ++j) {
+            amat[i][j] = 0.0;
+        }
+        bvec[i] = 0.0;
+        bvec_orig[i] = 0.0;
+    }
+
+    ncycle = ndata_fit * nmulti;
+
+    { 
+        int *ind;
+        int mm, order, iat, k;
+        int im, idata, iparam;
+        int ishift;
+        int iold, inew;
+        double amat_tmp;
+        double **amat_orig;
+        double **amat_mod;
+
+
+        memory->allocate(ind, maxorder + 1);
+        memory->allocate(amat_orig, 3 * natmin, N);
+        memory->allocate(amat_mod, 3 * natmin, N_new);
+
+        for (irow = 0; irow < ncycle; ++irow) {
+
+            // generate r.h.s vector B
+            for (i = 0; i < natmin; ++i) {
+                iat = symmetry->map_p2s[i][0];
+                for (j = 0; j < 3; ++j) {
+                    im = 3 * i + j + 3 * natmin * irow;
+                    bvec[im] = f[irow][3 * iat + j];
+                    bvec_orig[im] = f[irow][3 * iat + j];
+                }
+            }
+
+            for (i = 0; i < 3 * natmin; ++i) {
+                for (j = 0; j < N; ++j) {
+                    amat_orig[i][j] = 0.0;
+                }
+                for (j = 0; j < N_new; ++j) {
+                    amat_mod[i][j] = 0.0;
+                }
+            }
+
+            // generate l.h.s. matrix A
+
+            idata = 3 * natmin * irow;
+            iparam = 0;
+
+            for (order = 0; order < maxorder; ++order) {
+
+                mm = 0;
+
+                for (std::vector<int>::iterator iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
+                    for (i = 0; i < *iter; ++i) {
+                        ind[0] = fcs->fc_set[order][mm].elems[0];
+                  //      k = idata + inprim_index(fcs->fc_set[order][mm].elems[0]);
+                        k = inprim_index(ind[0]);
+
+                        amat_tmp = 1.0;
+                        for (j = 1; j < order + 2; ++j) {
+                            ind[j] = fcs->fc_set[order][mm].elems[j];
+                            amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
+                        }
+                        amat_orig[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+                        ++mm;
+                    }
+                    ++iparam;
+                }
+            }
+
+            ishift = 0;
+            iparam = 0;
+
+            for (order = 0; order < maxorder; ++order) {
+
+                for (i = 0; i < constraint->const_fix[order].size(); ++i) {
+
+                    for (j = 0; j < 3 * natmin; ++j) {
+                        bvec[j + idata] -=  constraint->const_fix[order][i].val_to_fix 
+                                         * amat_orig[j][ishift + constraint->const_fix[order][i].p_index_target];
+                    }
+                }
+
+                for (boost::bimap<int, int>::const_iterator it = constraint->index_bimap[order].begin(); 
+                    it != constraint->index_bimap[order].end(); ++it) {
+                        inew = (*it).left + iparam;
+                        iold = (*it).right + ishift;
+                     
+                    for (j = 0; j < 3 * natmin; ++j) {
+                            amat_mod[j][inew] = amat_orig[j][iold];
+                   }
+                }
+
+                for (i = 0; i < constraint->const_relate[order].size(); ++i) {
+                    iold = constraint->const_relate[order][i].p_index_target + ishift;
+
+                    for (j = 0; j < constraint->const_relate[order][i].alpha.size(); ++j) {
+                        inew = constraint->index_bimap[order].right.at(constraint->const_relate[order][i].p_index_orig[j]) + iparam;
+                        for (k = 0; k < 3 * natmin; ++k) {
+                            amat_mod[k][inew] -= amat_orig[k][iold] * constraint->const_relate[order][i].alpha[j];
+                        }
+                    }
+                }
+
+                ishift += fcs->ndup[order].size();
+                iparam += constraint->index_bimap[order].size();
+            }
+
+            for (i = 0; i < 3 * natmin; ++i) {
+                for (j = 0; j < N_new; ++j) {
+                    amat[i + idata][j] = amat_mod[i][j];
+                }
+            }
+
+        }
+
+        memory->deallocate(ind);
+        memory->deallocate(amat_orig);
+        memory->deallocate(amat_mod);
     }
 
     std::cout << "done!" << std::endl << std::endl;
