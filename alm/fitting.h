@@ -42,11 +42,15 @@ namespace ALM_NS {
         void wrtfcs(const double *);
         void data_multiplier(const int, const int, const int, const int, const int, int &, const int, double **&, double **&);
         void fit_without_constraints(int, int, int, double **, double *);
+        void fit_algebraic_constraints(int, int, int, double **, double *, double *, const int);
+
         void fit_with_constraints(int, int, int, int, double **, double *, double **, double *);
         void fit_consecutively(int, int, const int, const int,
             const int, const int, double **, double *, double **, double *);
         void calc_matrix_elements(const int, const int, const int, 
             const int, const int, const int, const int, double **, double **, double **, double *);
+        void calc_matrix_elements_algebraic_constraint(const int, const int, const int, const int, 
+            const int, const int, const int, const int, double **, double **, double **, double *, double *);
         void fit_bootstrap(int, int, int, int, int, double **, double *, double **, double *);
         double gamma(const int, const int *);
         int factorial(const int);

@@ -19,6 +19,7 @@
 #include "constants.h"
 #include "error.h"
 #include "fitting.h"
+#include <boost/bimap.hpp>
 
 #ifdef _USE_EIGEN
 #include <Eigen/Dense>
@@ -31,9 +32,17 @@ Constraint::Constraint(ALM *alm) : Pointers(alm) {}
 Constraint::~Constraint() 
 {
      if (exist_constraint && alm->mode == "fitting") {
-          memory->deallocate(const_mat);
-          memory->deallocate(const_rhs);
+
           memory->deallocate(const_symmetry);
+
+          if (constraint_algebraic) {
+              memory->deallocate(const_fix);
+              memory->deallocate(const_relate);
+              memory->deallocate(index_bimap);
+          } else {
+              memory->deallocate(const_mat);
+              memory->deallocate(const_rhs);
+          }
      }
 }
 
@@ -42,6 +51,9 @@ void Constraint::setup()
 
     std::cout << " CONSTRAINT" << std::endl;
     std::cout << " ==========" << std::endl << std::endl;
+
+    constraint_algebraic = constraint_mode / 10;
+    constraint_mode = constraint_mode % 10;
 
     switch (constraint_mode) {
     case 0: // do nothing
@@ -208,23 +220,71 @@ void Constraint::setup()
         }
         std::cout << std::endl;
 
-        Pmax = 0;
-        for (order = 0; order < maxorder; ++order) {
-            Pmax += const_self[order].size() + const_rotation_cross[order].size();
-        }
-        if (fix_harmonic) {
-            Pmax -= const_self[0].size();
-            Pmax += fcs->ndup[0].size();
-        }
-        if (fix_cubic) {
-            Pmax -= const_self[1].size();
-            Pmax += fcs->ndup[1].size();
-        }
-        memory->allocate(const_mat, Pmax, N);
-        memory->allocate(const_rhs, Pmax);
+        if (constraint_algebraic) {
 
-        calc_constraint_matrix(N, P);
-        std::cout << "  Total number of constraints = " << P << std::endl << std::endl;
+            std::cout << "  ICONST >= 10 : Constraints will be considered algebraically." << std::endl << std::endl;
+
+            if (impose_inv_R) {
+                std::cout << "  WARNING : Order-crossing constraints for rotational invariance will be neglected." << std::endl;
+            }
+
+            memory->allocate(const_fix, maxorder);
+            memory->allocate(const_relate, maxorder);
+            memory->allocate(index_bimap, maxorder);
+
+            get_mapping_constraint(maxorder, const_self, const_fix, const_relate, index_bimap);
+
+            for (order = 0; order < maxorder; ++order) {
+                std::cout << "  Number of free" << std::setw(9) << interaction->str_order[order] << " FCs : " << index_bimap[order].size() << std::endl;
+            }
+            std::cout << std::endl;
+// 
+//             for (order = 0; order < maxorder; ++order) {
+//                 std::cout << "Size const_fix = " << const_fix[order].size() << std::endl;
+// 
+//                 for (i = 0; i < const_fix[order].size(); ++i) {
+//                     std::cout << std::setw(5) << const_fix[order][i].p_index_target 
+//                         << std::setw(15) << const_fix[order][i].val_to_fix << std::endl;
+//                 }
+// 
+//                 std::cout << "Size const_relate = " << const_relate[order].size() << std::endl;
+// 
+//                 for (i = 0; i < const_relate[order].size(); ++i) {
+//                     std::cout << std::setw(5) << const_relate[order][i].p_index_target << " : ";
+//                     for (int j = 0; j < const_relate[order][i].alpha.size(); ++j) {
+//                         std::cout << "( " << std::setw(5) << const_relate[order][i].p_index_orig[j];
+//                         std::cout << ", " << std::setw(15) << const_relate[order][i].alpha[j] << " )  ";
+//                     }
+//                     std::cout << std::endl;
+//                 }
+// 
+//                 std::cout << "Number of freely optimizable parameters = " << index_bimap[order].size() << std::endl;
+//                 for (boost::bimap<int, int>::const_iterator it = index_bimap[order].begin(); it != index_bimap[order].end(); ++it) {
+//                     std::cout << std::setw(5) << (*it).left << std::setw(5) << (*it).right << std::endl;
+//                 }
+//             }
+
+        } else {
+
+            Pmax = 0;
+            for (order = 0; order < maxorder; ++order) {
+                Pmax += const_self[order].size() + const_rotation_cross[order].size();
+            }
+            if (fix_harmonic) {
+                Pmax -= const_self[0].size();
+                Pmax += fcs->ndup[0].size();
+            }
+            if (fix_cubic) {
+                Pmax -= const_self[1].size();
+                Pmax += fcs->ndup[1].size();
+            }
+            memory->allocate(const_mat, Pmax, N);
+            memory->allocate(const_rhs, Pmax);
+
+            calc_constraint_matrix(N, P);
+            std::cout << "  Total number of constraints = " << P << std::endl << std::endl;
+
+        }
 
         memory->deallocate(const_translation);
         memory->deallocate(const_rotation_self);
@@ -358,7 +418,138 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         ++irow;
     }
     const_total.clear();
+
 }
+
+
+void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass> *const_in, 
+                                        std::vector<ConstraintTypeFix> *const_fix_out, 
+                                        std::vector<ConstraintTypeRelate> *const_relate_out,
+                                        boost::bimap<int, int> *index_bimap_out) 
+{
+    int order;
+    unsigned int i;
+    double const_tol = eps8;
+
+    bool *fix_forceconstant;
+    std::string *file_forceconstant;
+
+    memory->allocate(fix_forceconstant, nmax);
+    memory->allocate(file_forceconstant, nmax);
+
+    for (i = 0; i < nmax; ++i) {
+        fix_forceconstant[i] = false;
+        file_forceconstant[i] = "";
+    }
+    fix_forceconstant[0] = fix_harmonic;
+    fix_forceconstant[1] = fix_cubic;
+    if (fix_forceconstant[0]) file_forceconstant[0] = fc2_file;
+    if (fix_forceconstant[1]) file_forceconstant[1] = fc3_file;
+
+    int nparam;
+    for (order = 0; order < nmax; ++order) {
+        
+        nparam = fcs->ndup[order].size();
+
+        if (fix_forceconstant[order]) {
+
+            double *const_rhs_tmp;
+            memory->allocate(const_rhs_tmp, nparam);
+            system->load_reference_system_xml(file_forceconstant[order], order, const_rhs_tmp);
+
+            for (i = 0; i < nparam; ++i) {
+                const_fix_out[order].push_back(ConstraintTypeFix(i, const_rhs_tmp[i]));
+            }
+            memory->deallocate(const_rhs_tmp);
+
+        } else {
+
+            int p_index_target;
+            std::vector<double> alpha_tmp;
+            std::vector<unsigned int> p_index_tmp;
+
+            for (std::set<ConstraintClass>::reverse_iterator p = const_in[order].rbegin(); 
+                p != const_in[order].rend(); ++p) {
+
+                p_index_target = -1;
+                for (i = 0; i < nparam; ++i) {
+                    if (std::abs((*p).w_const[i]) > const_tol) {
+                        p_index_target = i;
+                        break;
+                    }
+                }
+
+                if (p_index_target == -1) {
+                    error->exit("get_mapping_constraint", "No finite entry found in the constraint.");
+                }
+
+                alpha_tmp.clear();
+                p_index_tmp.clear();
+
+                for (i = p_index_target + 1; i < nparam; ++i) {
+                    if (std::abs((*p).w_const[i]) > const_tol) {
+                        alpha_tmp.push_back((*p).w_const[i]);
+                        p_index_tmp.push_back(i);
+                    }
+                }
+
+                if (alpha_tmp.size() > 0) {
+                    const_relate_out[order].push_back(ConstraintTypeRelate(p_index_target, alpha_tmp, p_index_tmp));
+                } else {
+                    const_fix_out[order].push_back(ConstraintTypeFix(p_index_target, 0.0));
+                }
+            }
+        }
+    }
+
+
+    std::vector<int> *has_constraint;
+    memory->allocate(has_constraint, nmax);
+
+    for (order = 0; order < nmax; ++order) {
+
+        nparam = fcs->ndup[order].size();
+
+        for (i = 0; i < nparam; ++i) {
+            has_constraint[order].push_back(0);
+        }
+
+        for (i = 0; i < const_fix_out[order].size(); ++i) {
+            has_constraint[order][const_fix_out[order][i].p_index_target] = 1;
+        }
+
+        for (i = 0; i < const_relate_out[order].size(); ++i) {
+            has_constraint[order][const_relate_out[order][i].p_index_target] = 2;
+        }
+//         std::cout << "has_constraint ? " << std::endl;
+// 
+//         for (i = 0; i < nparam; ++i) {
+//             std::cout << "index = " << std::setw(5) << i;
+//             std::cout << " has_const = " << std::setw(5) << has_constraint[order][i];
+//             std::cout << std::endl;
+//         }
+    }
+
+    int icount;
+
+    for (order = 0; order < nmax; ++order) {
+        nparam = fcs->ndup[order].size();
+
+        icount = 0;
+        for (i = 0; i < nparam; ++i) {
+
+            if (!has_constraint[order][i]) {
+                index_bimap_out[order].insert(boost::bimap<int, int>::value_type(icount, i));
+           //     index_map_out[order].push_back(std::make_pair(icount, i));
+                ++icount;
+            }
+        }
+    }
+
+
+    memory->deallocate(has_constraint);
+}
+
 
 void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
 {
