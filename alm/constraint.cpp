@@ -32,14 +32,16 @@ Constraint::Constraint(ALM *alm) : Pointers(alm) {}
 Constraint::~Constraint() 
 {
      if (exist_constraint && alm->mode == "fitting") {
-          memory->deallocate(const_mat);
-          memory->deallocate(const_rhs);
+
           memory->deallocate(const_symmetry);
 
           if (constraint_algebraic) {
               memory->deallocate(const_fix);
               memory->deallocate(const_relate);
               memory->deallocate(index_bimap);
+          } else {
+              memory->deallocate(const_mat);
+              memory->deallocate(const_rhs);
           }
      }
 }
@@ -49,6 +51,9 @@ void Constraint::setup()
 
     std::cout << " CONSTRAINT" << std::endl;
     std::cout << " ==========" << std::endl << std::endl;
+
+    constraint_algebraic = constraint_mode / 10;
+    constraint_mode = constraint_mode % 10;
 
     switch (constraint_mode) {
     case 0: // do nothing
@@ -215,9 +220,13 @@ void Constraint::setup()
         }
         std::cout << std::endl;
 
-        constraint_algebraic = true;
-
         if (constraint_algebraic) {
+
+            std::cout << "  ICONST >= 10 : Constraints will be considered algebraically." << std::endl << std::endl;
+
+            if (impose_inv_R) {
+                std::cout << "  WARNING : Order-crossing constraints for rotational invariance will be neglected." << std::endl;
+            }
 
             memory->allocate(const_fix, maxorder);
             memory->allocate(const_relate, maxorder);
@@ -226,52 +235,56 @@ void Constraint::setup()
             get_mapping_constraint(maxorder, const_self, const_fix, const_relate, index_bimap);
 
             for (order = 0; order < maxorder; ++order) {
-                std::cout << "Size const_fix = " << const_fix[order].size() << std::endl;
-
-                for (i = 0; i < const_fix[order].size(); ++i) {
-                    std::cout << std::setw(5) << const_fix[order][i].p_index_target 
-                        << std::setw(15) << const_fix[order][i].val_to_fix << std::endl;
-                }
-
-                std::cout << "Size const_relate = " << const_relate[order].size() << std::endl;
-
-                for (i = 0; i < const_relate[order].size(); ++i) {
-                    std::cout << std::setw(5) << const_relate[order][i].p_index_target << " : ";
-                    for (int j = 0; j < const_relate[order][i].alpha.size(); ++j) {
-                        std::cout << "( " << std::setw(5) << const_relate[order][i].p_index_orig[j];
-                        std::cout << ", " << std::setw(15) << const_relate[order][i].alpha[j] << " )  ";
-                    }
-                    std::cout << std::endl;
-                }
-
-                std::cout << "Number of freely optimizable parameters = " << index_bimap[order].size() << std::endl;
-                for (boost::bimap<int, int>::const_iterator it = index_bimap[order].begin(); it != index_bimap[order].end(); ++it) {
-                    std::cout << std::setw(5) << (*it).left << std::setw(5) << (*it).right << std::endl;
-                }
+                std::cout << "  Number of free" << std::setw(9) << interaction->str_order[order] << " FCs : " << index_bimap[order].size() << std::endl;
             }
+            std::cout << std::endl;
+// 
+//             for (order = 0; order < maxorder; ++order) {
+//                 std::cout << "Size const_fix = " << const_fix[order].size() << std::endl;
+// 
+//                 for (i = 0; i < const_fix[order].size(); ++i) {
+//                     std::cout << std::setw(5) << const_fix[order][i].p_index_target 
+//                         << std::setw(15) << const_fix[order][i].val_to_fix << std::endl;
+//                 }
+// 
+//                 std::cout << "Size const_relate = " << const_relate[order].size() << std::endl;
+// 
+//                 for (i = 0; i < const_relate[order].size(); ++i) {
+//                     std::cout << std::setw(5) << const_relate[order][i].p_index_target << " : ";
+//                     for (int j = 0; j < const_relate[order][i].alpha.size(); ++j) {
+//                         std::cout << "( " << std::setw(5) << const_relate[order][i].p_index_orig[j];
+//                         std::cout << ", " << std::setw(15) << const_relate[order][i].alpha[j] << " )  ";
+//                     }
+//                     std::cout << std::endl;
+//                 }
+// 
+//                 std::cout << "Number of freely optimizable parameters = " << index_bimap[order].size() << std::endl;
+//                 for (boost::bimap<int, int>::const_iterator it = index_bimap[order].begin(); it != index_bimap[order].end(); ++it) {
+//                     std::cout << std::setw(5) << (*it).left << std::setw(5) << (*it).right << std::endl;
+//                 }
+//             }
 
-//             memory->deallocate(const_fix);
-//             memory->deallocate(const_relate);
-//             memory->deallocate(index_bimap);
-        }
+        } else {
 
-        Pmax = 0;
-        for (order = 0; order < maxorder; ++order) {
-            Pmax += const_self[order].size() + const_rotation_cross[order].size();
-        }
-        if (fix_harmonic) {
-            Pmax -= const_self[0].size();
-            Pmax += fcs->ndup[0].size();
-        }
-        if (fix_cubic) {
-            Pmax -= const_self[1].size();
-            Pmax += fcs->ndup[1].size();
-        }
-        memory->allocate(const_mat, Pmax, N);
-        memory->allocate(const_rhs, Pmax);
+            Pmax = 0;
+            for (order = 0; order < maxorder; ++order) {
+                Pmax += const_self[order].size() + const_rotation_cross[order].size();
+            }
+            if (fix_harmonic) {
+                Pmax -= const_self[0].size();
+                Pmax += fcs->ndup[0].size();
+            }
+            if (fix_cubic) {
+                Pmax -= const_self[1].size();
+                Pmax += fcs->ndup[1].size();
+            }
+            memory->allocate(const_mat, Pmax, N);
+            memory->allocate(const_rhs, Pmax);
 
-        calc_constraint_matrix(N, P);
-        std::cout << "  Total number of constraints = " << P << std::endl << std::endl;
+            calc_constraint_matrix(N, P);
+            std::cout << "  Total number of constraints = " << P << std::endl << std::endl;
+
+        }
 
         memory->deallocate(const_translation);
         memory->deallocate(const_rotation_self);
@@ -416,7 +429,7 @@ void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass
 {
     int order;
     unsigned int i;
-    double const_tol = eps12;
+    double const_tol = eps8;
 
     bool *fix_forceconstant;
     std::string *file_forceconstant;
@@ -508,13 +521,13 @@ void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass
         for (i = 0; i < const_relate_out[order].size(); ++i) {
             has_constraint[order][const_relate_out[order][i].p_index_target] = 2;
         }
-        std::cout << "has_constraint ? " << std::endl;
-
-        for (i = 0; i < nparam; ++i) {
-            std::cout << "index = " << std::setw(5) << i;
-            std::cout << " has_const = " << std::setw(5) << has_constraint[order][i];
-            std::cout << std::endl;
-        }
+//         std::cout << "has_constraint ? " << std::endl;
+// 
+//         for (i = 0; i < nparam; ++i) {
+//             std::cout << "index = " << std::setw(5) << i;
+//             std::cout << " has_const = " << std::setw(5) << has_constraint[order][i];
+//             std::cout << std::endl;
+//         }
     }
 
     int icount;

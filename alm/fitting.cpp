@@ -624,7 +624,7 @@ void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **
             for (k = 0; k < constraint->const_relate[i][j].alpha.size(); ++k) {
                 tmp += constraint->const_relate[i][j].alpha[k] * bvec_orig[constraint->const_relate[i][j].p_index_orig[k] + ishift];
             }
-            bvec_orig[constraint->const_relate[i][j].p_index_target + ishift] = tmp;
+            bvec_orig[constraint->const_relate[i][j].p_index_target + ishift] = -tmp;
         }
 
         ishift += fcs->ndup[i].size();
@@ -969,6 +969,7 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
     int irow;
     int ncycle;
 
+
     std::cout << "  Calculation of matrix elements for direct fitting started ... ";
 
 
@@ -991,7 +992,6 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
         double amat_tmp;
         double **amat_orig;
         double **amat_mod;
-
 
         memory->allocate(ind, maxorder + 1);
         memory->allocate(amat_orig, 3 * natmin, N);
@@ -1069,9 +1069,11 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
                 }
 
                 for (i = 0; i < constraint->const_relate[order].size(); ++i) {
+
                     iold = constraint->const_relate[order][i].p_index_target + ishift;
 
                     for (j = 0; j < constraint->const_relate[order][i].alpha.size(); ++j) {
+                       
                         inew = constraint->index_bimap[order].right.at(constraint->const_relate[order][i].p_index_orig[j]) + iparam;
                         for (k = 0; k < 3 * natmin; ++k) {
                             amat_mod[k][inew] -= amat_orig[k][iold] * constraint->const_relate[order][i].alpha[j];
