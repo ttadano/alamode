@@ -39,7 +39,7 @@ void Isotope::setup_isotope_scattering()
     int i;
     int nkd = system->nkd;
 
-    MPI_Bcast(&include_isotope, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&include_isotope, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (include_isotope) {
 
@@ -51,7 +51,7 @@ void Isotope::setup_isotope_scattering()
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
-            std::cout << " ISOTOPE = 1: Isotope scattering effects will be considered" << std::endl;
+            std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered" << std::endl;
             std::cout << "              with the following scattering factors." << std::endl;
 
             for (i = 0; i < nkd; ++i) {
@@ -247,5 +247,7 @@ void Isotope::calc_isotope_selfenergy_all()
 
 */
     }
+
+
 }
 

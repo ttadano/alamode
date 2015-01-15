@@ -286,7 +286,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
                                    ANIME ANIME_CELLSIZE ANIME_FORMAT SPS";
 
-    bool include_isotope;
     bool fstate_omega, fstate_k;
     bool lclassical;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
@@ -296,6 +295,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool print_xsf, print_anime;
 
     int quartic_mode;
+    int include_isotope;
+
 
     double delta_a;
     double *isotope_factor;
@@ -325,7 +326,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     ks_analyze_mode = false;
     atom_project_mode = false;
     calc_realpart = false;
-    include_isotope = false;
+    include_isotope = 0;
     fstate_omega = false;
     fstate_k = false;
     

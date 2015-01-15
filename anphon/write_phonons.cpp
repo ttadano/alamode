@@ -1120,10 +1120,60 @@ void Writes::write_kappa()
         ofs_kl.close();
 
         std::cout << std::endl;
+        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
         std::cout << " Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
     }
 }
 
+void Writes::write_selfenergy_isotope()
+{
+    unsigned int i, j, k;
+    unsigned int ns = dynamical->neval;
+    unsigned int knum;
+    double **eval = dynamical->eval_phonon;
+    double **gamma_iso = isotope->gamma_isotope;
+
+    if (mympi->my_rank == 0) {
+        if (isotope->include_isotope == 2) {
+
+            std::string file_iso = input->job_title + ".self_isotope";
+            std::ofstream ofs_iso;
+
+            ofs_iso.open(file_iso.c_str(), std::ios::out);
+            if (!ofs_iso) error->exit("write_selfenergy_isotope", "Could not open file_iso");
+
+            ofs_iso << "# Phonon selfenergy due to phonon-isotope scatterings for the irreducible k points." << std::endl;
+            ofs_iso << "# Irred. knum, mode num, frequency [cm^-1], Gamma_iso [cm^-1]" << std::endl << std::endl;
+
+            for (i = 0; i < kpoint->nk_reduced; ++i) {
+                ofs_iso << "# Irreducible k point  : " << std::setw(8) << i + 1;
+                ofs_iso << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
+
+                knum = kpoint->kpoint_irred_all[i][0].knum;
+
+                ofs_iso << "## xk = " << std::setw(3);
+                for (k = 0; k < 3; ++k) ofs_iso << std::setw(15) << kpoint->xk[knum][k];
+                ofs_iso << std::endl;
+
+                for (k = 0; k < ns; ++k){
+                    ofs_iso << std::setw(7) << i + 1;
+                    ofs_iso << std::setw(5) << k + 1;
+                    ofs_iso << std::setw(15) << in_kayser(eval[knum][k]);
+                    ofs_iso << std::setw(15) << in_kayser(gamma_iso[i][k]);
+                    ofs_iso << std::endl;
+                }
+                ofs_iso << std::endl;
+            }
+
+
+            std::cout << std::endl;
+            std::cout << " ISOTOPE = 2: Phonon selfenergy due to phonon-isotope " << std::endl;
+            std::cout << "              scatterings is stored in the file " << file_iso << std::endl;
+
+            ofs_iso.close();
+        }
+    }
+}
 
 void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned int ncell[3])
 {

@@ -247,6 +247,7 @@ void PHON::execute_RTA()
         conductivity->calc_anharmonic_imagself();
         conductivity->compute_kappa();
         writes->write_kappa();
+        writes->write_selfenergy_isotope();
     }
 
     if (kpoint->kpoint_mode == 2) {
