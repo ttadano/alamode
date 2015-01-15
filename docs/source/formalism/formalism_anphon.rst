@@ -268,6 +268,7 @@ where :math:`g_{2}` is a dimensionless factor given by
 Here, :math:`f_{i}` is the fraction of :math:`i`\ th isotope of an element having mass :math:`m_i`, 
 and :math:`M_{\kappa}=\sum_{i}f_{i}m_{i}(\kappa)` is the average mass, respectively.
 The :math:`g_{2}` values should be provided by the ``ISOFACT``-tag.
+The average mass :math:`M_{\kappa}` is substituted by the value specified in the ``MASS``-tag.
 
 Lattice thermal conductivity
 ----------------------------
