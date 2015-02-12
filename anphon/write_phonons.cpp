@@ -442,8 +442,10 @@ void Writes::write_phonon_info()
             write_two_phonon_dos();
         }
 
-        if (dos->scattering_phase_space) {
+        if (dos->scattering_phase_space == 1) {
             write_scattering_phase_space();
+        } else if (dos->scattering_phase_space == 2) {
+            write_scattering_amplitude();
         }
 
         write_thermodynamics();
@@ -620,26 +622,7 @@ void Writes::write_phonon_vel_all()
 
         ofs_vel << std::endl;
     }
-    // 
-    // 
-    //     for (i = 0; i < nk; ++i){
-    // 
-    //         ofs_vel << "# ik = " << std::setw(8);
-    //         for (j = 0; j < 3; ++j){
-    //             ofs_vel << std::setw(15) << kpoint->xk[i][j];
-    //         }
-    //         ofs_vel << std::endl;
-    // 
-    //         for (j = 0; j < ns; ++j){
-    //             ofs_vel << std::setw(5) << i;
-    //             ofs_vel << std::setw(5) << j;
-    //             ofs_vel << std::setw(15) << in_kayser(eval[i][j]);
-    //             ofs_vel << std::setw(15) << phonon_velocity->phvel[i][j]*Ry_to_SI_vel;
-    //             ofs_vel << std::endl;
-    //         }
-    //         ofs_vel << std::endl;
-    //     }
-
+ 
     ofs_vel.close();
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_vel;
@@ -765,6 +748,69 @@ void Writes::write_scattering_phase_space()
 
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_sps;
     std::cout << " : Three-phonon scattering phase space" << std::endl;
+}
+
+
+void Writes::write_scattering_amplitude()
+{
+    int i, j;
+    unsigned int knum;
+    unsigned int is;
+    unsigned int ns = dynamical->neval;
+
+    std::string file_w = input->job_title + ".sps_Bose";
+    std::ofstream ofs_w;
+
+    double Tmin = system->Tmin;
+    double Tmax = system->Tmax;
+    double dT = system->dT;
+    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    //    static const double factor = std::pow(time_ry, 4) * 1.0e+48;
+    //    static const double factor = 1.0 / std::pow(Ry_to_kayser, 4.0);
+    static const double factor = 1.0 / Ry_to_kayser;
+
+    double omega;
+
+    ofs_w.open(file_w.c_str(), std::ios::out);
+
+    ofs_w << "# Scattering phase space with the Bose-Einstein distribution function" << std::endl;
+    ofs_w << "# Irreducible kpoints " << std::endl;
+    for (i = 0; i < kpoint->kpoint_irred_all.size(); ++i) {
+        ofs_w << "#" << std::setw(5) << i + 1;
+
+        knum = kpoint->kpoint_irred_all[i][0].knum;
+        for (j = 0; j < 3; ++j) ofs_w << std::setw(15) << kpoint->xk[knum][j];
+        ofs_w << std::endl;
+    }
+    ofs_w << std::endl;
+    ofs_w << "# k, mode, frequency (cm^-1), temperature, W+ (absorption) (cm), W- (emission) (cm)" << std::endl << std::endl;
+
+    for (i = 0; i < kpoint->kpoint_irred_all.size(); ++i) {
+
+        knum = kpoint->kpoint_irred_all[i][0].knum;
+
+        for (is = 0; is < ns; ++is) {
+
+            omega = in_kayser(dynamical->eval_phonon[knum][is]);
+
+            for (j = 0; j < NT; ++j) {
+                ofs_w << std::setw(5) << i + 1 << std::setw(5) << is + 1 << std::setw(15) << omega;
+                ofs_w << std::setw(8) << Tmin + static_cast<double>(j) * dT;
+                ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][1] * factor;
+                ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][0] * factor;
+                ofs_w << std::endl;
+            }
+            ofs_w << std::endl;
+        }
+        ofs_w << std::endl;
+    }
+
+    ofs_w.close();
+    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_w;
+    std::cout << " : Three-phonon scattering phase space " << std::endl;
+    std::cout << " " << std::setw(input->job_title.length() + 16) << " " 
+        << "with the Bose distribution function" << std::endl;
 }
 
 void Writes::write_normal_mode_direction()
@@ -1507,9 +1553,7 @@ void Writes::write_participation_ratio()
     memory->allocate(participation_ratio, nk, neval);
     memory->allocate(atomic_participation_ratio, nk, neval, natmin);
 
-    //    dynamical->calc_participation_ratio_all(dynamical->evec_phonon, participation_ratio);
     dynamical->calc_participation_ratio_all(dynamical->evec_phonon, participation_ratio, atomic_participation_ratio);
-
 
     ofs_pr << "# Participation ratio of each phonon modes at k points" << std::endl;
     if (kpoint->kpoint_mode == 1) {
@@ -1574,3 +1618,4 @@ void Writes::write_participation_ratio()
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_apr;
     std::cout << " : Atomic participation ratio for all k points" << std::endl;
 }
+

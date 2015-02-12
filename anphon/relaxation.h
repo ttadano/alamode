@@ -109,6 +109,7 @@ namespace PHON_NS {
         bool calc_realpart;
         bool calc_fstate_omega;
         bool calc_fstate_k;
+        bool print_V3;
 
         bool use_triplet_symmetry;
 

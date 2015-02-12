@@ -291,12 +291,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
-    bool two_phonon_dos, scattering_phase_space;
+    bool two_phonon_dos;
     bool print_xsf, print_anime;
     bool print_V3, participation_ratio;
 
     int quartic_mode;
     int include_isotope;
+    int scattering_phase_space;
 
     double delta_a;
     double *isotope_factor;
@@ -315,7 +316,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     projected_dos = false;
     two_phonon_dos = false;
-    scattering_phase_space = false;
+    scattering_phase_space = 0;
     print_gruneisen = false;
     print_newfcs = false;
     print_V3 = false;
@@ -437,6 +438,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     relaxation->calc_realpart = calc_realpart;
     relaxation->calc_fstate_omega = fstate_omega;
     relaxation->calc_fstate_k = fstate_k;
+    relaxation->print_V3 = print_V3;
     isotope->include_isotope = include_isotope;
     relaxation->ks_input = ks_input;
 
