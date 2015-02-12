@@ -182,7 +182,6 @@ void PHON::execute_phonons()
         writes->print_phonon_energy();
 
         writes->write_phonon_info();
-   //     gruneisen->write_newinfo_all();
 
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();

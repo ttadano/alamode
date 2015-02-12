@@ -58,6 +58,7 @@ namespace PHON_NS
         void write_eigenvectors();
         void write_thermodynamics();
         void write_msd();
+        void write_participation_ratio();
 
         double Ry_to_kayser;   
     };
