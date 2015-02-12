@@ -1143,6 +1143,42 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
 
 }
 
+void Relaxation::calc_V3norm2(const unsigned int ik_in, const unsigned int snum, double **ret)
+{
+    int ib;
+    unsigned int ik;
+    unsigned int is, js;
+    unsigned int k1, k2;
+    unsigned int arr[3];
+    unsigned int knum, knum_minus;
+
+    int ns2 = ns * ns;
+
+    double factor = std::pow(0.5, 3) * std::pow(Hz_to_kayser / time_ry, 2);
+
+    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    knum_minus = kpoint->knum_minus[knum];
+
+#pragma omp parallel for private(is, js, ik, k1, k2, arr)
+    for (ib = 0; ib < ns2; ++ib) {
+        is = ib / ns;
+        js = ib % ns;
+
+        for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+
+            k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+            k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+            arr[0] = ns * knum_minus + snum;
+            arr[1] = ns * k1 + is;
+            arr[2] = ns * k2 + js;
+
+            ret[ik][ib] = std::norm(V3(arr)) * factor;
+        }
+    }
+
+}
+
 void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, double *T, const double omega0, 
                                                      const unsigned int M, const double *omega, const unsigned int ik_in, const unsigned int snum, double **ret)
 {
@@ -1259,7 +1295,88 @@ void Relaxation::perform_mode_analysis()
 
     double epsilon = integration->epsilon;
 
-    if (calc_fstate_k) {
+    if (print_V3) {
+
+        double **v3norm;
+        std::string file_V3;
+        std::ofstream ofs_V3;
+
+        int ik_irred;
+        unsigned int nk_size;
+        unsigned int ib, is, js, k1, k2;
+
+        for (i = 0; i < kslist.size(); ++i) {
+            knum = kslist[i] / ns;
+            snum = kslist[i] % ns;
+
+            omega = dynamical->eval_phonon[knum][snum];
+
+            if (mympi->my_rank == 0) {
+                std::cout << std::endl;
+                std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
+                std::cout << "  Phonon at k = (";
+                for (j = 0; j < 3; ++j) {
+                    std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                    if (j < 2) std::cout << ",";
+                }
+                std::cout << ")" << std::endl;
+                std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
+                std::cout << "  Frequency (cm^-1) : " << std::setw(15) << writes->in_kayser(omega) << std::endl;
+            }
+
+            ik_irred = kpoint->kmap_to_irreducible[knum];
+            nk_size = pair_uniq[ik_irred].size();
+
+            memory->allocate(v3norm, nk_size, ns * ns);
+
+            calc_V3norm2(ik_irred, snum, v3norm);
+
+            if (mympi->my_rank == 0) {
+
+                file_V3 = input->job_title + ".V3." + boost::lexical_cast<std::string>(i + 1);
+                ofs_V3.open(file_V3.c_str(), std::ios::out);
+                if (!ofs_V3) error->exit("perform_mode_analysis", "Cannot open file file_V3");
+
+                ofs_V3 << "# xk = ";
+
+                for (j = 0; j < 3; ++j) {
+                    ofs_V3 << std::setw(15) << kpoint->xk[knum][j];
+                }
+                ofs_V3 << std::endl;
+                ofs_V3 << "# mode = " << snum + 1<< std::endl;
+                ofs_V3 << "# Frequency = " << writes->in_kayser(omega) << std::endl;
+                ofs_V3 << "## Temperature dependence of Gamma for given mode" << std::endl;
+                ofs_V3 << "## q', j', omega(q'j') (cm^-1), q'', j'', omega(q''j'') (cm^-1), |V3(-qj,q'j',q''j'')| " << std::endl;
+
+                for (j = 0; j < nk_size; ++j) {
+
+                    k1 = pair_uniq[ik_irred][j].group[0].ks[0];
+                    k2 = pair_uniq[ik_irred][j].group[0].ks[1];
+
+                    ib = 0;
+
+                    for (is = 0; is < ns; ++is) {
+                        for (js = 0; js < ns; ++js) {
+                            ofs_V3 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
+                            ofs_V3 << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                            ofs_V3 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
+                            ofs_V3 << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                            ofs_V3 << std::setw(15) << v3norm[j][ib];
+                            ofs_V3 << std::endl;
+
+                            ++ib;
+                        }
+                        ofs_V3 << std::endl;
+                    }
+                }
+
+                ofs_V3.close();
+
+            }
+            memory->deallocate(v3norm);
+        }
+
+    } else if (calc_fstate_k) {
 
         // Momentum-resolved final state amplitude
         print_momentum_resolved_final_state(NT, T_arr, epsilon);
