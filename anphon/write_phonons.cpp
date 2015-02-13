@@ -766,10 +766,6 @@ void Writes::write_scattering_amplitude()
     double dT = system->dT;
     unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-    //    static const double factor = std::pow(time_ry, 4) * 1.0e+48;
-    //    static const double factor = 1.0 / std::pow(Ry_to_kayser, 4.0);
-    static const double factor = 1.0 / Ry_to_kayser;
-
     double omega;
 
     ofs_w.open(file_w.c_str(), std::ios::out);
@@ -797,8 +793,8 @@ void Writes::write_scattering_amplitude()
             for (j = 0; j < NT; ++j) {
                 ofs_w << std::setw(5) << i + 1 << std::setw(5) << is + 1 << std::setw(15) << omega;
                 ofs_w << std::setw(8) << Tmin + static_cast<double>(j) * dT;
-                ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][1] * factor;
-                ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][0] * factor;
+                ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][1];
+                ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][0];
                 ofs_w << std::endl;
             }
             ofs_w << std::endl;

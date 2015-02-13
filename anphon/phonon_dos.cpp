@@ -648,7 +648,7 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
     unsigned int i, is, js, k1, k2;
     unsigned int iT;
     unsigned int ns2 = ns * ns;
-    double omega1, omega2;
+    double omega0, omega1, omega2;
     double temp;
     double ret1, ret2;
     double n1, n2, f1, f2;
@@ -664,6 +664,8 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
     memory->allocate(kmap_identity, nk);
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
+
+    omega0 = writes->in_kayser(omega);
 
 #pragma omp parallel private(i, is, js, k1, k2, omega1, omega2, energy_tmp, weight)
     {
@@ -682,18 +684,18 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
                 omega1 = eval[k1][is];
                 omega2 = eval[k2][js];
 
-                energy_tmp[0][k1] = omega1 + omega2;
-                energy_tmp[1][k1] = omega1 - omega2;
+                energy_tmp[0][k1] = writes->in_kayser(omega1 + omega2);
+                energy_tmp[1][k1] = writes->in_kayser(omega1 - omega2);
             }
 
             if (smearing_method == -1) {
                 for (i = 0; i < 2; ++i) {
-                    integration->calc_weight_tetrahedron(nk, kmap_identity, weight[i], energy_tmp[i], omega);
+                    integration->calc_weight_tetrahedron(nk, kmap_identity, weight[i], energy_tmp[i], omega0);
                 }
             } else {
                 for (i = 0; i < 2; ++i) {
                     integration->calc_weight_smearing(nk, nk, kmap_identity, weight[i],
-                        energy_tmp[i], omega, smearing_method);
+                        energy_tmp[i], omega0, smearing_method);
                 }
             }
             

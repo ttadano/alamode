@@ -399,6 +399,21 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 ````
 
+* PRINTPR-tag = 0 | 1
+
+ === ====================================================================================
+  0   Do not compute the (atomic) participation ratio
+  1   Compute participation ratio and atomic participation ratio, which will be 
+      stored in  ``PREFIX``.pr and ``PREFIX``.apr respectively.
+ === ====================================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: This flag is available when ``KPMODE = phonons``.
+
+
+````
+
 * ISOTOPE-tag = 0 | 1
 
  === =========================================================================

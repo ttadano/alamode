@@ -60,10 +60,20 @@ Output files of anphon
  Mean-square-displacements of atoms.
  Created when ``MODE = phonons`` with **KPMODE** = 2 and ``PRINTMSD = 1``.
 
- * ``PREFIX``.sps
+* ``PREFIX``.sps
 
  Total and mode-decomposed scattering phase space. 
  Created when ``MODE = phonons`` with **KPMODE** = 2 and ``SPS = 1``.
+
+* ``PREFIX``.pr
+
+ Participation ratio of every phonon modes. 
+ Created when ``MODE = phonons`` and ``PRINTPR = 1``.
+
+* ``PREFIX``.apr
+
+ Atomic participation ratio of every phonon modes. 
+ Created when ``MODE = phonons`` and ``PRINTPR = 1``.
 
 * ``PREFIX``.phvel
 
