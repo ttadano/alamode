@@ -1,3 +1,23 @@
+
+# Ver. 0.9.4 (2015-02-16)
+
+## New
+
+- New tag PRINTPR (anphon) for calculating (atomic) participation ratio
+
+- Implement ISOTOPE = 2 to print the selfenergy due to phonon-isotope scatterings (anphon)
+
+## Changes
+
+- Stop printing "nzero" in alm because it may be confusing.
+
+## Fix
+
+- Fixed a bug related to PDOS (anphon)
+
+- Fixed issue in displace.py for QE
+
+
 # Ver. 0.9.3 (2014-12-12)
 
 ## New

@@ -399,16 +399,33 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 ````
 
-* ISOTOPE-tag = 0 | 1
+* PRINTPR-tag = 0 | 1
 
- === ===================================================================
-  0   Do not consider phonon-isotope scatterings
-  1   Consider phonon-isotope scatterings
- === ===================================================================
+ === ====================================================================================
+  0   Do not compute the (atomic) participation ratio
+  1   Compute participation ratio and atomic participation ratio, which will be 
+      stored in  ``PREFIX``.pr and ``PREFIX``.apr respectively.
+ === ====================================================================================
  
  :Default: 0
  :Type: Integer
- :Description: When ``MODE = RTA`` and ``ISOTOPE = 1``, phonon scatterings due to isotopes will be considered perturbatively. ``ISOFACT`` should be properly given.
+ :Description: This flag is available when ``KPMODE = phonons``.
+
+
+````
+
+* ISOTOPE-tag = 0 | 1
+
+ === =========================================================================
+  0   Do not consider phonon-isotope scatterings
+  1   Consider phonon-isotope scatterings
+  2   Consider phonon-isotope scatterings as in ``ISOTOPE = 1`` and 
+      the corresponding selfenergy will be stored in ``PREFIX``.gamma_isotope
+ === =========================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: When ``MODE = RTA`` and ``ISOTOPE = 1 or 2``, phonon scatterings due to isotopes will be considered perturbatively. ``ISOFACT`` should be properly given.
 
 ````
 

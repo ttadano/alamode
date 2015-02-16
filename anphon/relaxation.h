@@ -109,6 +109,7 @@ namespace PHON_NS {
         bool calc_realpart;
         bool calc_fstate_omega;
         bool calc_fstate_k;
+        bool print_V3;
 
         bool use_triplet_symmetry;
 
@@ -120,6 +121,7 @@ namespace PHON_NS {
         std::complex<double> V4(const unsigned int [4]);
 
         std::complex<double> V3_mode(int,  double *, double *, int, int, double **, std::complex<double> ***);
+        void calc_V3norm2(const unsigned int, const unsigned int, double **);
 
     private:
         unsigned int nk, ns, nks;

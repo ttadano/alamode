@@ -47,7 +47,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     if (mympi->my_rank == 0) {
         std::cout << " +------------------------------------------------------------+" << std::endl;
         std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver. 0.9.3                       +" << std::endl;
+        std::cout << " +                           Ver. 0.9.4                       +" << std::endl;
         std::cout << " +------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
@@ -182,7 +182,6 @@ void PHON::execute_phonons()
         writes->print_phonon_energy();
 
         writes->write_phonon_info();
-   //     gruneisen->write_newinfo_all();
 
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
@@ -247,6 +246,7 @@ void PHON::execute_RTA()
         conductivity->calc_anharmonic_imagself();
         conductivity->compute_kappa();
         writes->write_kappa();
+        writes->write_selfenergy_isotope();
     }
 
     if (kpoint->kpoint_mode == 2) {

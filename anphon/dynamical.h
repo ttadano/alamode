@@ -46,6 +46,7 @@ namespace PHON_NS {
         bool eigenvectors;
         bool print_eigenvectors;
         unsigned int nonanalytic;
+        bool participation_ratio;
 
         std::string file_born;
         double na_sigma;
@@ -62,6 +63,8 @@ namespace PHON_NS {
         double fold(double);
         double freq(const double);
 
+        void calc_participation_ratio_all(std::complex<double> ***, double**, double ***);
+
     private:
 
         void load_born();
@@ -70,6 +73,7 @@ namespace PHON_NS {
         void calc_nonanalytic_k2(double *, double *, std::vector<FcsClassExtent>, std::complex<double> **);
 
         void prepare_mindist_list(std::vector<int> **);
+        void calc_atomic_participation_ratio(std::complex<double> *, double*);
         double distance(double *, double *);
 
         // void calc_analytic_k(double *, double ****, std::complex<double> **);

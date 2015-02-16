@@ -131,7 +131,8 @@ def get_namelist(file_in, namelist_tag):
 
     with open(file_in) as openfileobject:
         for line in openfileobject:
-            if namelist_tag in line:
+            line_upper = line.upper()
+            if namelist_tag in line_upper:
                 flag_add = True
                 list_out.append(line)
             elif line.strip() == "/":
@@ -459,6 +460,9 @@ def get_system_info(list_in):
         obj_split = obj.rstrip().split(',')
         for subobj in obj_split:
             if subobj:
+                index = subobj.find('=')
+                if index > 0:
+                    subobj = subobj[:index] + " = " + subobj[index+1:]
                 list_mod.append(subobj)
 
     str_input = ""

@@ -628,10 +628,10 @@ void Input::parse_fitting_vars()
         fix_cubic = true;
     }
 
-    if (constraint_flag >= 2) {
+    if (constraint_flag % 10 >= 2) {
         rotation_axis = fitting_var_dict["ROTAXIS"];
         if (rotation_axis.empty()) {
-            error->exit("parse_fitting_vars", "ROTAXIS has to be given when ICONST>=3");
+            error->exit("parse_fitting_vars", "ROTAXIS has to be given when ICONST=2 or 3");
         }
     }
 

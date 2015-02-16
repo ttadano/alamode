@@ -27,7 +27,7 @@ namespace PHON_NS
 
         bool flag_dos;
         bool projected_dos, two_phonon_dos;
-        bool scattering_phase_space;
+        int scattering_phase_space;
 
         int n_energy;
         double emin, emax, delta_e;
@@ -36,6 +36,9 @@ namespace PHON_NS
         double **pdos_phonon;
         double ***dos2_phonon;
         double total_sps3, **sps3_mode;
+        double ****sps3_with_bose;
+
+ 
 
     private:
         unsigned int nk_irreducible;
@@ -51,6 +54,11 @@ namespace PHON_NS
             std::vector<std::vector<KpointList> >);
         void calc_total_scattering_phase_space(double **, const int, 
             std::vector<std::vector<KpointList> >, double **, double &);
+        void calc_scattering_phase_space_with_Bose(double **, const int, 
+            std::vector<std::vector<KpointList> >, double ****);
+        void calc_scattering_phase_space_with_Bose_mode(const unsigned int, const unsigned int, const unsigned int,
+            const double, double **, double *, unsigned int *, const int, double **);
+
 
     };
 }

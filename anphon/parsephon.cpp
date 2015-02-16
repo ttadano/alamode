@@ -284,18 +284,20 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS";
+                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR";
 
-    bool include_isotope;
     bool fstate_omega, fstate_k;
     bool lclassical;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
-    bool two_phonon_dos, scattering_phase_space;
+    bool two_phonon_dos;
     bool print_xsf, print_anime;
+    bool print_V3, participation_ratio;
 
     int quartic_mode;
+    int include_isotope;
+    int scattering_phase_space;
 
     double delta_a;
     double *isotope_factor;
@@ -314,9 +316,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     projected_dos = false;
     two_phonon_dos = false;
-    scattering_phase_space = false;
+    scattering_phase_space = 0;
     print_gruneisen = false;
     print_newfcs = false;
+    print_V3 = false;
+    participation_ratio = false;
 
     delta_a = 0.001;
 
@@ -325,7 +329,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     ks_analyze_mode = false;
     atom_project_mode = false;
     calc_realpart = false;
-    include_isotope = false;
+    include_isotope = 0;
     fstate_omega = false;
     fstate_k = false;
     
@@ -355,6 +359,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
+        assign_val(print_V3, "PRINTV3", analysis_var_dict);
+        assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;
@@ -408,6 +414,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
+    dynamical->participation_ratio = participation_ratio;
     writes->print_xsf = print_xsf;
     writes->print_anime = print_anime;
 
@@ -431,6 +438,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     relaxation->calc_realpart = calc_realpart;
     relaxation->calc_fstate_omega = fstate_omega;
     relaxation->calc_fstate_k = fstate_k;
+    relaxation->print_V3 = print_V3;
     isotope->include_isotope = include_isotope;
     relaxation->ks_input = ks_input;
 

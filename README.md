@@ -1,5 +1,5 @@
 # ALAMODE
-* Version 0.9.3 (Beta)
+* Version 0.9.4 (Beta)
 
 - - -
 

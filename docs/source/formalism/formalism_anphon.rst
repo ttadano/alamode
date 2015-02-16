@@ -157,6 +157,27 @@ In addition, ``TDOS``-tag is available to compute the two-phonon DOS defined by
 where :math:`\boldsymbol{G}` is a reciprocal lattice vector. The sign :math:`\pm` correspond to absorption and emission processes, respectively. Please note that the computation of the two-phonon DOS can be expensive
 especially when :math:`N_{q}` or :math:`N_{\kappa}` is large.
 
+
+(Atomic) participation ratio
+----------------------------
+
+Participation ratio (PR) and atomic participation ratio (APR) defined in the following may be useful to analyze the localized nature of the phonon mode :math:`\boldsymbol{q}j`.
+
+* Participation ratio (PR)
+
+.. math::
+
+    PR_{\boldsymbol{q}j} = \left(\sum_{\kappa}^{N_{\kappa}} \frac{|\boldsymbol{e}(\kappa;\boldsymbol{q}j)|^{2}}{M_{\kappa}}\right)^{2} \Bigg/
+    N_{\kappa} \sum_{\kappa}^{N_{\kappa}} \frac{|\boldsymbol{e}(\kappa;\boldsymbol{q}j)|^{4}}{M_{\kappa}^{2}}
+
+* Atomic participation ratio (APR)
+
+.. math::
+
+    APR_{\boldsymbol{q}j,\kappa} = \frac{|\boldsymbol{e}(\kappa;\boldsymbol{q}j)|^{2}}{M_{\kappa}} \Bigg/ \left(  N_{\kappa} \sum_{\kappa}^{N_{\kappa}} \frac{|\boldsymbol{e}(\kappa;\boldsymbol{q}j)|^{4}}{M_{\kappa}^{2}} \right)^{1/2}
+
+For an extended eigenmode, the PR value is of order 1, whereas for a localized eigenmodes PR is of order :math:`1/N_{\kappa}` [3]_. APR is an atomic decomposition of PR that satisfies :math:`PR_{\boldsymbol{q}j} = \sum_{\kappa} (APR_{\boldsymbol{q}j,\kappa})^{2}`. To print the PR and APR, please set ``MODE = phonons`` and ``PRINTPR = 1`` in the ``&analysis`` entry field. 
+
 Scattering phase space
 -----------------------
 
@@ -201,7 +222,7 @@ which is given by
      &= \sum_{\ell^{\prime\prime},\kappa^{\prime\prime},\lambda}\Phi_{\mu\nu\lambda}(\ell\kappa;\ell^{\prime}\kappa^{\prime};\ell^{\prime\prime}\kappa^{\prime\prime})r_{\lambda}(\ell^{\prime\prime}\kappa^{\prime\prime}).
     \end{align}
 
-Please set ``GRUNEISEN = 1`` and give an appropriate ``FCSXML`` file containing cubic IFCs to print Gr|umulaut_u|neisen parameters.
+Please set ``GRUNEISEN = 1`` and give an appropriate ``FCSXML`` file containing cubic IFCs to print Gr\ |umulaut_u|\ neisen parameters.
 
 
 Anharmonic self-energy
@@ -251,7 +272,7 @@ To disable the reduction, please set ``TRISYM = 0``.
 Isotope scattering
 ------------------
 
-The effect of isotope scatterings can be considered by the mass perturbation approach proposed by S. Tamura [3]_ by the ``ISOTOPE``-tag.
+The effect of isotope scatterings can be considered by the mass perturbation approach proposed by S. Tamura [4]_ by the ``ISOTOPE``-tag.
 The corresponding phonon linewidth is given by
 
 .. math::
@@ -268,6 +289,7 @@ where :math:`g_{2}` is a dimensionless factor given by
 Here, :math:`f_{i}` is the fraction of :math:`i`\ th isotope of an element having mass :math:`m_i`, 
 and :math:`M_{\kappa}=\sum_{i}f_{i}m_{i}(\kappa)` is the average mass, respectively.
 The :math:`g_{2}` values should be provided by the ``ISOFACT``-tag.
+The average mass :math:`M_{\kappa}` is substituted by the value specified in the ``MASS``-tag.
 
 Lattice thermal conductivity
 ----------------------------
@@ -315,7 +337,7 @@ such as phonon DOS or energy conservation surface related to three-phonon proces
 enough to avoid unscientific oscillations. Choosing appropriate value for :math:`\epsilon` is not a trivial task
 since it may depend on the phonon structure and the density of :math:`\boldsymbol{q}` points.
 
-To avoid such issues, the program *anphon* employs the tetrahedron method [4]_ by default (``ISMEAR = -1``)
+To avoid such issues, the program *anphon* employs the tetrahedron method [5]_ by default (``ISMEAR = -1``)
 for numerical evaluations of Brillouin zone integration containing :math:`\delta(\omega)`.
 When the tetrahedron method is used, the ``EPSILON``-tag is neglected.
 We recommend to use the tetrahedron method whenever possible, even though it may slightly increase the computational cost.
@@ -326,6 +348,8 @@ We recommend to use the tetrahedron method whenever possible, even though it may
 
 .. [2] Y\. Wang *et al.*, J. Phys.: Condens. Matter **22**, 202201 (2010).
 
-.. [3] S\. -I. Tamura, Phys. Rev. B **27**, 858 (1983).
+.. [3] J\. Hafner and M. Krajci, J. Phys.: Condens. Matter **5**, 2489 (1993).
 
-.. [4] P\. E. Bl\ |umulaut_o|\ chl, O. Jepsen, and O. K. Andersen, Phys. Rev. B **49**, 1450555 (1994).
+.. [4] S\. -I. Tamura, Phys. Rev. B **27**, 858 (1983).
+
+.. [5] P\. E. Bl\ |umulaut_o|\ chl, O. Jepsen, and O. K. Andersen, Phys. Rev. B **49**, 1450555 (1994).

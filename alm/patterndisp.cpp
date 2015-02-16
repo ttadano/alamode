@@ -25,7 +25,9 @@ using namespace ALM_NS;
 
 Displace::Displace(ALM *alm) : Pointers(alm) {}
 Displace::~Displace() {
-    memory->deallocate(pattern_all);
+    if (alm->mode == "suggest") {
+        memory->deallocate(pattern_all);
+    }
 }
 
 void Displace::gen_displacement_pattern()

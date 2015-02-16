@@ -60,10 +60,20 @@ Output files of anphon
  Mean-square-displacements of atoms.
  Created when ``MODE = phonons`` with **KPMODE** = 2 and ``PRINTMSD = 1``.
 
- * ``PREFIX``.sps
+* ``PREFIX``.sps
 
  Total and mode-decomposed scattering phase space. 
  Created when ``MODE = phonons`` with **KPMODE** = 2 and ``SPS = 1``.
+
+* ``PREFIX``.pr
+
+ Participation ratio of every phonon modes. 
+ Created when ``MODE = phonons`` and ``PRINTPR = 1``.
+
+* ``PREFIX``.apr
+
+ Atomic participation ratio of every phonon modes. 
+ Created when ``MODE = phonons`` and ``PRINTPR = 1``.
 
 * ``PREFIX``.phvel
 
@@ -117,3 +127,9 @@ Output files of anphon
 
  Lattice thermal conductivity tensor.
  Created when ``MODE = RTA``.
+
+* ``PREFIX``.gamma_isotope
+
+Phonon selfenergy due to isotope scatterings calculated by the Tamura's formula.
+Created when ``MODE = RTA`` and ``ISOTOPE = 2``.
+

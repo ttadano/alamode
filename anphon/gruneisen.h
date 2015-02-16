@@ -87,10 +87,12 @@ namespace PHON_NS {
         double **xshift_s;
         std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
         void prepare_delta_fcs(const std::vector<FcsArrayWithCell>, std::vector<FcsArrayWithCell> &);
+        //  double calc_stress_energy2(const std::vector<FcsArrayWithCell>);
+        //  void calc_stress_energy3(const std::vector<FcsArrayWithCell>, double ****);
         void calc_dfc2_reciprocal(std::complex<double> **, double *);
         void write_new_fcsxml(const std::string, const double);
         std::string double2string(const double);
-        // void calc_pressure();
+        // void print_stress_energy();
 
     };
 }

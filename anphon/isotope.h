@@ -20,7 +20,7 @@ namespace PHON_NS
         Isotope(class PHON *);
         ~Isotope();
 
-        bool include_isotope;
+        int include_isotope;
         double *isotope_factor;
 
         double **gamma_isotope;
