@@ -465,13 +465,13 @@ void Dos::calc_total_scattering_phase_space(double **omega, const int smearing_m
             sps_sum1 += multi * sps_tmp1;
             sps_sum2 += multi * sps_tmp2;
 
-            ret_mode[ik][is] = (sps_tmp1 + 2.0 * sps_tmp2) / (3.0 * static_cast<double>(std::pow(ns,3)));
+            ret_mode[ik][is] = (sps_tmp1 + 2.0 * sps_tmp2) / (3.0 * static_cast<double>(std::pow(ns,3.0)));
         }   
     }
 
     memory->deallocate(kmap_identity);
 
-    ret = (sps_sum1 + 2.0 * sps_sum2) / (3.0 * static_cast<double>(std::pow(ns, 3)));
+    ret = (sps_sum1 + 2.0 * sps_sum2) / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
 
     if (mympi->my_rank == 0) {
         std::cout << "done." << std::endl;
