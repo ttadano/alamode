@@ -88,8 +88,6 @@ void Fcs::generate_fclists(int maxorder)
     int nxyz;
     unsigned int isym;
 
-    IntList list_tmp;
-
     double c_tmp;
 
     int **xyzcomponent;
@@ -127,8 +125,7 @@ void Fcs::generate_fclists(int maxorder)
 
         for (std::set<IntList>::iterator iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter) {
 
-            IntList list_tmp = *iter;
-            for (i = 0; i < order + 2; ++i) atmn[i] = list_tmp.iarray[i];
+            for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
 
             for (i1 = 0; i1 < nxyz; ++i1) {
                 for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
