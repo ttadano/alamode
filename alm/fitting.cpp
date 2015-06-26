@@ -97,7 +97,8 @@ void Fitting::fitmain()
     std::cout << "  NSTART = " << nstart << "; NEND = " << nend << std::endl;
     std::cout << "  " << nend - nstart + 1 << " entries will be used for fitting." << std::endl << std::endl;
 
-    data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti, symmetry->multiply_data, u, f);
+    data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti, symmetry->multiply_data, u, f,
+                    files->file_disp, files->file_force);
 
     N = 0;
     for (i = 0; i < maxorder; ++i) {
@@ -208,7 +209,8 @@ void Fitting::fitmain()
 }
 
 void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, const int nend, 
-                              const int ndata_used, int &nmulti, const int multiply_data, double **&u, double **&f) 
+                              const int ndata_used, int &nmulti, const int multiply_data, double **&u, double **&f,
+                              const std::string file_disp, const std::string file_force) 
 {
     int i, j, k;
     int idata, itran, isym;
@@ -220,6 +222,13 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     unsigned int nline_f, nline_u;
     unsigned int nreq;
 
+    std::ifstream ifs_disp, ifs_force;
+
+    ifs_disp.open(file_disp.c_str(), std::ios::in);
+    if (!ifs_disp) error->exit("openfiles", "cannot open disp file");
+    ifs_force.open(file_force.c_str(), std::ios::in);
+    if (!ifs_force) error->exit("openfiles", "cannot open force file");
+
     nreq = 3 * nat * ndata;
 
     memory->allocate(u_tmp, nreq);
@@ -228,7 +237,7 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     // Read displacements from DFILE
 
     nline_u = 0;
-    while (files->ifs_disp >> u_in) {
+    while (ifs_disp >> u_in) {
         u_tmp[nline_u++] = u_in;
         if (nline_u == nreq) break;
     }
@@ -238,7 +247,7 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     // Read forces from FFILE
 
     nline_f = 0;
-    while (files->ifs_force >> f_in) {
+    while (ifs_force >> f_in) {
         f_tmp[nline_f++] = f_in;
         if (nline_f == nreq) break;
     }
@@ -344,6 +353,9 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
     memory->deallocate(u_tmp);
     memory->deallocate(f_tmp);
+
+    ifs_disp.close();
+    ifs_force.close();
 }
 
 void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **amat, double *bvec)
@@ -969,10 +981,14 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
     int irow;
     int ncycle;
 
-
     std::cout << "  Calculation of matrix elements for direct fitting started ... ";
 
+    ncycle = ndata_fit * nmulti;
 
+
+#ifdef _OPENMP
+#pragma omp parallel for private(j)
+#endif
     for (i = 0; i < M; ++i) {
         for (j = 0; j < N_new; ++j) {
             amat[i][j] = 0.0;
@@ -981,8 +997,9 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
         bvec_orig[i] = 0.0;
     }
 
-    ncycle = ndata_fit * nmulti;
-
+#ifdef _OPENMP
+#pragma omp parallel private(irow, i, j)
+#endif
     { 
         int *ind;
         int mm, order, iat, k;
@@ -997,6 +1014,9 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
         memory->allocate(amat_orig, 3 * natmin, N);
         memory->allocate(amat_mod, 3 * natmin, N_new);
 
+#ifdef _OPENMP
+#pragma omp for schedule(guided)
+#endif
         for (irow = 0; irow < ncycle; ++irow) {
 
             // generate r.h.s vector B

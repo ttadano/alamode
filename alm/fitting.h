@@ -31,16 +31,22 @@ namespace ALM_NS {
         unsigned int nboot;
         unsigned int seed;
 
+        void data_multiplier(const int, const int, const int, const int, const int, int &, const int, double **&, double **&,
+                             const std::string, const std::string);
+        void calc_matrix_elements_algebraic_constraint(const int, const int, const int, const int, 
+            const int, const int, const int, const int, double **, double **, double **, double *, double *);
+
 #ifdef _VSL
         VSLStreamStatePtr stream;
         int brng;
 #endif
 
+        double gamma(const int, const int *);
+
     private:
 
         int inprim_index(const int);
         void wrtfcs(const double *);
-        void data_multiplier(const int, const int, const int, const int, const int, int &, const int, double **&, double **&);
         void fit_without_constraints(int, int, int, double **, double *);
         void fit_algebraic_constraints(int, int, int, double **, double *, double *, const int);
 
@@ -49,10 +55,9 @@ namespace ALM_NS {
             const int, const int, double **, double *, double **, double *);
         void calc_matrix_elements(const int, const int, const int, 
             const int, const int, const int, const int, double **, double **, double **, double *);
-        void calc_matrix_elements_algebraic_constraint(const int, const int, const int, const int, 
-            const int, const int, const int, const int, double **, double **, double **, double *, double *);
+       
         void fit_bootstrap(int, int, int, int, int, double **, double *, double **, double *);
-        double gamma(const int, const int *);
+//        double gamma(const int, const int *);
         int factorial(const int);
         int rankSVD(const int, const int, double *, const double);
         int rankQRD(const int, const int, double *, const double);
