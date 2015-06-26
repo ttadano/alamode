@@ -233,7 +233,7 @@ The anharmonic self-energy due to cubic anharmonicity to the lowest order is giv
 .. math::
     :label: self3
 
-    \Sigma_{\boldsymbol{q}j}(i\omega_m) &= \frac{1}{2}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
+    \Sigma_{\boldsymbol{q}j}(i\omega_m) &= \frac{1}{2\hbar^{2}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
     |V^{(3)}_{-\boldsymbol{q}j,\boldsymbol{q}_{1}j_{1},\boldsymbol{q}_{2}j_{2}}|^{2} \notag \\
     & \times \left[ \frac{n_{1}+n_{2} + 1}{i\omega_{m} + \omega_{1} + \omega_{2}} - \frac{n_{1}+n_{2} + 1}{i\omega_{m} - \omega_{1} - \omega_{2}} 
     + \frac{n_{1}-n_{2}}{i\omega_{m} - \omega_{1} + \omega_{2}} - \frac{n_{1}-n_{2}}{i\omega_{m} + \omega_{1} - \omega_{2}} \right],
@@ -259,7 +259,7 @@ Phonon linewidth :math:`\Gamma_{\boldsymbol{q}j}`, which is the imaginary part o
 .. math::
     :label: selfmod
 
-     \Gamma^{\mathrm{anh}}_{\boldsymbol{q}j}(\omega) &= \frac{\pi}{2}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
+     \Gamma^{\mathrm{anh}}_{\boldsymbol{q}j}(\omega) &= \frac{\pi}{2\hbar^{2}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
      |V^{(3)}_{-\boldsymbol{q}j,\boldsymbol{q}_{1}j_{1},\boldsymbol{q}_{2}j_{2}}|^{2} \notag \\
      & \times \left[ -(n_{1}+n_{2} + 1)\delta{(\omega + \omega_{1} + \omega_{2})} + (n_{1}+n_{2} + 1) \delta{(\omega - \omega_{1} - \omega_{2})} \right. \notag \\
      & \left. \hspace{12mm} - (n_{1}-n_{2})\delta{(\omega - \omega_{1} + \omega_{2})} + (n_{1}-n_{2})\delta{(\omega + \omega_{1} - \omega_{2})} \right].
