@@ -29,7 +29,7 @@ Optional requirements
 * Python (> 2.6), Numpy, and Matplotlib
 * XcrySDen_ or VMD_
 
-We provide some small scrips written in Python (Python 2) for visualizing phonon dispersion relations, phonon DOSs, etc.
+We provide some small scripts written in Python (Python 2) for visualizing phonon dispersion relations, phonon DOSs, etc.
 To use these scripts, one need to install the above Python packages.
 Additionally, XcrySDen is necessary to visualize the normal mode directions and animate the normal mode.
 VMD may be more useful to make an animation, but it may be replaced by any other visualization software which support the XYZ format.

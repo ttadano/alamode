@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Data>
-  <ALM_version>0.9.2</ALM_version>
+  <ALM_version>0.9.5</ALM_version>
   <Fitting>
     <DisplaceFile>disp3.dat</DisplaceFile>
     <ForceFile>force3.dat</ForceFile>
@@ -183,6 +183,45 @@
       <FC2 pairs="0 82" multiplicity="1">-5.171455786632795e-04</FC2>
       <FC2 pairs="0 111" multiplicity="8">-6.950838757474652e-04</FC2>
     </HarmonicUnique>
+    <CubicUnique>
+      <NFC3>36</NFC3>
+      <FC3 pairs="0 1 2" multiplicity="1">3.682318452992087e-01</FC3>
+      <FC3 pairs="0 0 6" multiplicity="1">1.329516780045762e-03</FC3>
+      <FC3 pairs="0 0 7" multiplicity="1">1.137512366579100e-03</FC3>
+      <FC3 pairs="0 1 6" multiplicity="1">-4.604105549282116e-05</FC3>
+      <FC3 pairs="0 1 7" multiplicity="1">-9.024137829433208e-04</FC3>
+      <FC3 pairs="0 1 8" multiplicity="1">9.845793442069301e-04</FC3>
+      <FC3 pairs="0 0 49" multiplicity="1">-1.140436299842368e-03</FC3>
+      <FC3 pairs="0 0 48" multiplicity="1">-2.142887467535431e-03</FC3>
+      <FC3 pairs="0 0 50" multiplicity="1">-1.673031588847887e-03</FC3>
+      <FC3 pairs="0 1 56" multiplicity="1">4.732059152899078e-04</FC3>
+      <FC3 pairs="0 1 54" multiplicity="1">-2.067732421909357e-03</FC3>
+      <FC3 pairs="0 0 24" multiplicity="1">-3.531895380512889e-02</FC3>
+      <FC3 pairs="0 0 25" multiplicity="1">-6.843115219609119e-02</FC3>
+      <FC3 pairs="0 1 24" multiplicity="1">-6.848253533455041e-02</FC3>
+      <FC3 pairs="0 1 26" multiplicity="1">-9.450032592850593e-02</FC3>
+      <FC3 pairs="0 6 24" multiplicity="1">-1.667031524313937e-03</FC3>
+      <FC3 pairs="0 7 24" multiplicity="1">-5.809770596262902e-04</FC3>
+      <FC3 pairs="0 7 25" multiplicity="1">8.561294058173256e-04</FC3>
+      <FC3 pairs="0 7 26" multiplicity="1">-1.771057142348666e-03</FC3>
+      <FC3 pairs="0 25 46" multiplicity="1">1.402452579700677e-03</FC3>
+      <FC3 pairs="0 25 47" multiplicity="1">-2.171463896239396e-03</FC3>
+      <FC3 pairs="0 24 50" multiplicity="1">-1.672925271627092e-05</FC3>
+      <FC3 pairs="0 6 48" multiplicity="1">-3.921476992824665e-04</FC3>
+      <FC3 pairs="0 6 49" multiplicity="1">4.634339865816093e-04</FC3>
+      <FC3 pairs="0 7 48" multiplicity="1">9.917403921741580e-05</FC3>
+      <FC3 pairs="0 7 49" multiplicity="1">6.173609086398368e-04</FC3>
+      <FC3 pairs="0 7 50" multiplicity="1">7.188896115999663e-04</FC3>
+      <FC3 pairs="0 7 56" multiplicity="1">-4.465016140728072e-05</FC3>
+      <FC3 pairs="0 50 55" multiplicity="1">-2.239558091313363e-04</FC3>
+      <FC3 pairs="0 6 144" multiplicity="1">-1.038533186063269e-04</FC3>
+      <FC3 pairs="0 6 145" multiplicity="1">-8.830182089455876e-05</FC3>
+      <FC3 pairs="0 7 144" multiplicity="1">-1.020134538755834e-04</FC3>
+      <FC3 pairs="0 7 145" multiplicity="1">1.762396085237347e-05</FC3>
+      <FC3 pairs="0 7 146" multiplicity="1">-1.430536785708404e-04</FC3>
+      <FC3 pairs="0 7 152" multiplicity="1">-2.179138887700176e-04</FC3>
+      <FC3 pairs="0 50 67" multiplicity="1">-1.495749160722596e-04</FC3>
+    </CubicUnique>
     <HARMONIC>
       <FC2 pair1="1 1" pair2="1 1 1">2.761745250568871e-01</FC2>
       <FC2 pair1="1 1" pair2="2 1 1">-6.097528708260577e-04</FC2>

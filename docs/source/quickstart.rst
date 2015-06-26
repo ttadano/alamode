@@ -48,7 +48,7 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
   Then, please prepare necessary input files for a DFT engine (or a classical force field engine) 
   and calculate atomic forces for each displaced configuration.
   Once the atomic forces are calculated for all configurations, please collect the atomic displacements and atomic forces to separate files, say `disp_all.dat` and `force_all.dat`, in Rydberg atomic units. 
-  The details of file format is described in :ref:`this page <label_format_DFILE>`.
+  The detail of the file format is described in :ref:`this page <label_format_DFILE>`.
 
   .. Note::
     We provide some auxiliary Python scripts to expedite the above procedure for VASP and xTAPP users.

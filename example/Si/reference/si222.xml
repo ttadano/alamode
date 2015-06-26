@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Data>
-  <ALM_version>0.9.2</ALM_version>
+  <ALM_version>0.9.5</ALM_version>
   <Fitting>
     <DisplaceFile>disp.dat</DisplaceFile>
     <ForceFile>force.dat</ForceFile>

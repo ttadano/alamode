@@ -141,7 +141,7 @@ The one-phonon DOS is given by
 
     \mathrm{DOS}(\omega) = \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}\delta(\omega - \omega_{\boldsymbol{q}j}).
 
-If ``PDOS = 1`` is given, the program also print the atom-projected phonon DOS which is given by
+If ``PDOS = 1`` is given, the program also prints the atom-projected phonon DOS which is given by
 
 .. math::
  
@@ -253,7 +253,7 @@ where :math:`i\omega_{m}` is the Matsubara frequency. In equation :eq:`self3`, w
     e_{\mu}(\kappa;\boldsymbol{q}j)e_{\nu}(\kappa^{\prime};\boldsymbol{q}^{\prime}j^{\prime})e_{\lambda}(\kappa^{\prime\prime};\boldsymbol{q}^{\prime\prime}j^{\prime\prime}) \; ,
     
 
-which becomes zero unless :math:`\boldsymbol{q}+\boldsymbol{q}^{\prime}+\boldsymbol{q}^{\prime\prime}` is a integral multiple of :math:`\boldsymbol{G}=n_{1}\boldsymbol{b}_{1}+n_{2}\boldsymbol{b}_{2}+n_{3}\boldsymbol{b}_{3}`.
+which becomes zero unless :math:`\boldsymbol{q}+\boldsymbol{q}^{\prime}+\boldsymbol{q}^{\prime\prime}` is an integral multiple of :math:`\boldsymbol{G}=n_{1}\boldsymbol{b}_{1}+n_{2}\boldsymbol{b}_{2}+n_{3}\boldsymbol{b}_{3}`.
 Phonon linewidth :math:`\Gamma_{\boldsymbol{q}j}`, which is the imaginary part of the phonon self-energy, can be obtained by the analytic continuation to the real axis (:math:`i\omega_{m}\to \omega + i0^{+}`) as
 
 .. math::
@@ -286,7 +286,7 @@ where :math:`g_{2}` is a dimensionless factor given by
 
     g_{2}(\kappa)=\sum_{i}f_{i}(\kappa)\left(1 - \frac{m_{i}(\kappa)}{M_{\kappa}}\right)^{2}.
 
-Here, :math:`f_{i}` is the fraction of :math:`i`\ th isotope of an element having mass :math:`m_i`, 
+Here, :math:`f_{i}` is the fraction of the :math:`i`\ th isotope of an element having mass :math:`m_i`, 
 and :math:`M_{\kappa}=\sum_{i}f_{i}m_{i}(\kappa)` is the average mass, respectively.
 The :math:`g_{2}` values should be provided by the ``ISOFACT``-tag.
 The average mass :math:`M_{\kappa}` is substituted by the value specified in the ``MASS``-tag.
@@ -333,14 +333,14 @@ When ``ISMEAR = 1``, the delta function is replaced by the Gaussian function as
 which decays faster than the Lorentzian function. 
 For both cases, :math:`\epsilon` should be given by the ``EPSILON``-tag, which must be chosen carefully
 to avoid any unscientific results. :math:`\epsilon` should be small enough to capture detailed phonon structures 
-such as phonon DOS or energy conservation surface related to three-phonon process, but it should be large
-enough to avoid unscientific oscillations. Choosing appropriate value for :math:`\epsilon` is not a trivial task
+such as phonon DOS or energy conservation surface related to three-phonon processes, but it should be large
+enough to avoid unscientific oscillations. Choosing an appropriate value for :math:`\epsilon` is not a trivial task
 since it may depend on the phonon structure and the density of :math:`\boldsymbol{q}` points.
 
 To avoid such issues, the program *anphon* employs the tetrahedron method [5]_ by default (``ISMEAR = -1``)
 for numerical evaluations of Brillouin zone integration containing :math:`\delta(\omega)`.
 When the tetrahedron method is used, the ``EPSILON``-tag is neglected.
-We recommend to use the tetrahedron method whenever possible, even though it may slightly increase the computational cost.
+We recommend using the tetrahedron method whenever possible, even though it may slightly increase the computational cost.
 
 ````
 
