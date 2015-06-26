@@ -92,7 +92,7 @@ void Dynamical::setup_dynamical(std::string mode)
 
 
     MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&nonanalytic, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nonanalytic, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (nonanalytic) {
         memory->allocate(borncharge, system->natmin, 3, 3);
@@ -230,6 +230,8 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
 
     if (nonanalytic) {
 
+        // Add non-analytic correction
+
         std::complex<double> **dymat_na_k;
 
         memory->allocate(dymat_na_k, neval, neval);
@@ -240,14 +242,25 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
             calc_nonanalytic_k2(xk_in, kvec_in, fc2_ext, dymat_na_k);
         }        
 
-        // Add non-analytic correction
-
         for (i = 0; i < neval; ++i) {
             for (j = 0; j < neval; ++j) {
                 dymat_k[i][j] += dymat_na_k[i][j];
             }
         }
         memory->deallocate(dymat_na_k);
+    }
+
+    // Force the dynamical matrix be real when k point is
+    // zone-center or zone-boundaries.
+
+    if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2)
+                  + std::pow(std::fmod(xk_in[1], 0.5), 2)
+                  + std::pow(std::fmod(xk_in[2], 0.5), 2)) < eps) {
+        for (i= 0; i < 3 * system->natmin; ++i) {
+            for (j = 0; j < 3 * system->natmin; ++j) {
+                dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
+            }
+        }
     }
 
     char JOBZ;

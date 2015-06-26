@@ -90,11 +90,14 @@ namespace ALM_NS
         std::string rotation_axis;
         std::set<ConstraintClass> *const_symmetry;
 
-        void constraint_from_symmetry(std::set<ConstraintClass> *);
         std::vector<ConstraintTypeFix> *const_fix;
         std::vector<ConstraintTypeRelate> *const_relate;
         boost::bimap<int, int> *index_bimap;
 
+        void constraint_from_symmetry(std::set<ConstraintClass> *);
+        void get_mapping_constraint(const int, std::set<ConstraintClass> *, 
+            std::vector<ConstraintTypeFix> *, std::vector<ConstraintTypeRelate> *,
+            boost::bimap<int, int> *, const bool);
 
     private:
 
@@ -113,9 +116,7 @@ namespace ALM_NS
         void translational_invariance();
         void rotational_invariance();
         void calc_constraint_matrix(const int, int &);
-        void get_mapping_constraint(const int, std::set<ConstraintClass> *, 
-            std::vector<ConstraintTypeFix> *, std::vector<ConstraintTypeRelate> *,
-            boost::bimap<int, int> *);
+        
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);

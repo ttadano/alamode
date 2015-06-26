@@ -7,7 +7,7 @@ Making input files for *alm*
 Format of input files
 ~~~~~~~~~~~~~~~~~~~~~
 
-Each input file should consists of entry fields.
+Each input file should consist of entry fields.
 Available entry fields are 
 
 **&general**, **&interaction**, **&cutoff**, **&cell**, **&position**, and **&fitting**.
@@ -149,7 +149,7 @@ List of input variables
 +++++++++++++++
 
 In this entry field, one needs to specify cutoff radii of interaction for each order in units of Bohr. 
-In the current implementation, cutoff radii should be defined for every possible pairs of atomic elements. 
+In the current implementation, cutoff radii should be defined for every possible pair of atomic elements. 
 For example, the cutoff entry for a harmonic calculation (``NORDER = 1``) of Si (``NKD = 1``) should be like
 ::
 
@@ -178,8 +178,7 @@ which means that all possible harmonic terms between Si-Si atoms will be include
 
 .. caution::
 
-  Writing None for anharmonic terms can greatly increase the number of parameters, 
-  and hereby increase the computational cost.
+  Writing None for anharmonic terms can greatly increase the number of parameters and thereby increase the computational cost.
 
 When there are more than two atomic elements, please specify the cutoff radii between every possible pairs of atomic elements. In the case of MgO (``NKD = 2``), the cutoff entry should be like
 ::
@@ -300,7 +299,7 @@ This field is necessary when ``MODE = fitting``.
 
  :Default: None
  :Type: String
- :Example: When one wants to consider the rotational invariance around :math:`x`\ -axis, one should give ``ROTAXIS = x``. If one needs additional constraints for the rotation around :math:`y`\ -axis, ``ROTAXIS`` should be ``ROTAXIS = xy``. 
+ :Example: When one wants to consider the rotational invariance around the :math:`x`\ -axis, one should give ``ROTAXIS = x``. If one needs additional constraints for the rotation around the :math:`y`\ -axis, ``ROTAXIS`` should be ``ROTAXIS = xy``. 
 
 ````
 

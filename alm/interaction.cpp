@@ -249,6 +249,29 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
                 atomlist.push_back(neighborlist[i][j].atom);
             }
         }
+        if (atomlist.size() > 0) {
+            nthnearest += 1;
+
+            if (nthnearest > 1) std::cout << std::setw(13) << " ";
+
+            std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp 
+                << " (" << std::setw(3) << atomlist.size() << ") -";
+
+            icount = 0;
+            for (k = 0; k < atomlist.size(); ++k) {
+
+                if (icount % 4 == 0 && icount > 0) {
+                    std::cout << std::endl;
+                    std::cout << std::setw(34) << " ";
+                }
+                ++icount;
+
+                std::cout << std::setw(4) << atomlist[k] + 1; 
+                std::cout <<  "(" << std::setw(3) << system->kdname[system->kd[atomlist[k]] - 1] << ")";
+
+            }
+            std::cout << std::endl;
+        }
         std::cout << std::endl;
     }
     atomlist.clear();
@@ -508,7 +531,10 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
     std::vector<std::vector<int> > pairs_icell, comb_cell, comb_cell_min;
     std::vector<int> accum_tmp;
     std::vector<int> atom_tmp, cell_tmp;
+    std::vector<int> intpair_uniq, cellpair;
+    std::vector<int> group_atom;
 
+    int icount;
 
     for (order = 0; order < maxorder; ++order) {
         for (i = 0; i < symmetry->natmin; ++i) {
@@ -522,7 +548,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                                                   it != interaction_pair_in[order][i].end(); ++it) {
                     intlist.push_back((*it));
             }
-            std::sort(intlist.begin(), intlist.end()); // Necessarily to sort here
+            std::sort(intlist.begin(), intlist.end()); // Need to sort here
 
             if (intlist.size() > 0) {
                 if (order == 0){
@@ -546,9 +572,25 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                     do {
                         std::vector<int> data = g.now();
 
+                        intpair_uniq.clear();
+                        group_atom.clear();
+                        icount = 1;
+
+                        for (j = 0; j < order; ++j) {
+                            if (data[j] == data[j+1]) {
+                                ++icount;
+                            } else {
+                                group_atom.push_back(icount);
+                                intpair_uniq.push_back(data[j]);
+                                icount = 1;
+                            }
+                        }
+                        group_atom.push_back(icount);
+                        intpair_uniq.push_back(data[order]);
+
                         pairs_icell.clear();
-                        for (j = 0; j < order + 1; ++j) {
-                            jat = data[j];
+                        for (j = 0; j < intpair_uniq.size(); ++j) {
+                            jat = intpair_uniq[j];
                             cell_vector.clear();
 
                             for (ii = 0; ii < mindist_pair_in[iat][jat].size(); ++ii) {
@@ -563,47 +605,32 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 
                         distance_list.clear();
                         for (j = 0; j < comb_cell.size(); ++j) {
+
+                            cellpair.clear();
+                            
+                            for (k = 0; k < group_atom.size(); ++k) {
+                                for (ii = 0; ii < group_atom[k]; ++ii) {
+                                    cellpair.push_back(comb_cell[j][k]);
+                                }
+                            }
+
                             dist_vector.clear();
 
-                            for (k = 0; k < comb_cell[j].size(); ++k) {
-                                for (ii = k + 1; ii < comb_cell[j].size(); ++ii) {
-                                    dist_tmp = distance(xcrd[comb_cell[j][k]][data[k]], xcrd[comb_cell[j][ii]][data[ii]]);
+                            for (k = 0; k < cellpair.size(); ++k) {
+                                for (ii = k + 1; ii < cellpair.size(); ++ii) {
+                                    dist_tmp = distance(xcrd[cellpair[k]][data[k]], xcrd[cellpair[ii]][data[ii]]);
                                     dist_vector.push_back(dist_tmp);
                                 }
                             }
-                            distance_list.push_back(MinDistList(comb_cell[j], dist_vector));
+                            distance_list.push_back(MinDistList(cellpair, dist_vector));
                         }
 
                         std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
 
                         comb_cell_min.clear();
 
-                        sum_dist_min = 0.0;
-                        for (j = 0; j < distance_list[0].dist.size(); ++j) {
-                            sum_dist_min += distance_list[0].dist[j];
-                        }
-
                         for (j = 0; j < distance_list.size(); ++j) {
-                            sum_dist = 0.0;
-
-                            for (k = 0; k < distance_list[j].dist.size(); ++k) {
-                                sum_dist += distance_list[j].dist[k];
-                            }
-
-                            // In the following, only pairs having minimum sum of distances
-                            // are stored. However, we found that this treatment didn't
-                            // return a reliable value of phonon linewidth.
-                            
-                            // if (std::abs(sum_dist - sum_dist_min) < eps8) {
-                            //    comb_cell_min.push_back(distance_list[j].cell);
-                            // } else {
-                            //    break;
-                            // }
-
-                            // Therefore, we consider all duplicate pairs
-                             
                             comb_cell_min.push_back(distance_list[j].cell);
-
                         }
 
                         mindist_cluster_out[order][i].insert(MinimumDistanceCluster(data, comb_cell_min));

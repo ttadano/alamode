@@ -409,8 +409,6 @@ void Conductivity::compute_kappa()
             }
         }
         memory->deallocate(lifetime);
-
-        std::cout << "" << std::endl;
     }
 }
 

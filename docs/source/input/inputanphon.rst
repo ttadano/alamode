@@ -7,7 +7,7 @@ Making input files for *anphon*
 Format of input files
 ~~~~~~~~~~~~~~~~~~~~~
 
-Each input file should consists of entry fields.
+Each input file should consist of entry fields.
 Available entry fields are 
 
 **&general**, **&cell**, **&analysis**, and **&kpoint**.
@@ -243,7 +243,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 * **KPMODE = 0** : Calculate phonon frequencies at given :math:`k` points
 
- For example, if one wishes to calculate phonon frequencies at Gamma (0, 0, 0) and X (0, 1/2, 1/2) of a FCC crystal, 
+ For example, if one wishes to calculate phonon frequencies at Gamma (0, 0, 0) and X (0, 1/2, 1/2) of an FCC crystal, 
  the ``&kpoint`` entry should be written as
  ::
 
@@ -434,7 +434,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  :Default: 0
  :Type: Array of doubles
  :Description: Isotope factor is a dimensionless value defined by :math:`\sum_{i} f_{i} (1 - m_{i}/\bar{m})^{2}`. 
-               Here, :math:`f_{i}` is the fraction of :math:`i`\ th isotope of an element having mass :math:`m_{i}`, 
+               Here, :math:`f_{i}` is the fraction of the :math:`i`\ th isotope of an element having mass :math:`m_{i}`, 
                and :math:`\bar{m}=\sum_{i}f_{i}m_{i}` is the average mass, respectively. 
                This quantity is equivalent to :math:`g_{2}` appearing in the original paper by S. Tamura [Phys. Rev. B, 27, 858.].
 
@@ -479,8 +479,8 @@ Format of BORNINFO
 
 When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessary to set ``NONANALYTIC = 1`` and
 provide ``BORNINFO`` file containing dielectric tensor :math:`\epsilon^{\infty}` and Born effective charge :math:`Z^{*}`.
-In ``BORNINFO`` file, dielectric tensor should be written in first 3 lines which is followed by Born effective charge tensors
-for each atoms as the following.
+In ``BORNINFO`` file, the dielectric tensor should be written in first 3 lines which are followed by Born effective charge tensors
+for each atom as the following.
 
 .. math::
    :nowrap:

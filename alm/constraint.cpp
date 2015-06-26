@@ -232,7 +232,7 @@ void Constraint::setup()
             memory->allocate(const_relate, maxorder);
             memory->allocate(index_bimap, maxorder);
 
-            get_mapping_constraint(maxorder, const_self, const_fix, const_relate, index_bimap);
+            get_mapping_constraint(maxorder, const_self, const_fix, const_relate, index_bimap, false);
 
             for (order = 0; order < maxorder; ++order) {
                 std::cout << "  Number of free" << std::setw(9) << interaction->str_order[order] << " FCs : " << index_bimap[order].size() << std::endl;
@@ -425,7 +425,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
 void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass> *const_in, 
                                         std::vector<ConstraintTypeFix> *const_fix_out, 
                                         std::vector<ConstraintTypeRelate> *const_relate_out,
-                                        boost::bimap<int, int> *index_bimap_out) 
+                                        boost::bimap<int, int> *index_bimap_out, const bool is_suggest_mode) 
 {
     int order;
     unsigned int i;
@@ -441,10 +441,13 @@ void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass
         fix_forceconstant[i] = false;
         file_forceconstant[i] = "";
     }
-    fix_forceconstant[0] = fix_harmonic;
-    fix_forceconstant[1] = fix_cubic;
-    if (fix_forceconstant[0]) file_forceconstant[0] = fc2_file;
-    if (fix_forceconstant[1]) file_forceconstant[1] = fc3_file;
+
+    if (!is_suggest_mode) {
+        fix_forceconstant[0] = fix_harmonic;
+        fix_forceconstant[1] = fix_cubic;
+        if (fix_forceconstant[0]) file_forceconstant[0] = fc2_file;
+        if (fix_forceconstant[1]) file_forceconstant[1] = fc3_file;
+    }
 
     int nparam;
     for (order = 0; order < nmax; ++order) {
@@ -701,6 +704,7 @@ void Constraint::translational_invariance()
 
     int i, j;
     int iat, jat, icrd, jcrd;
+    int idata;
     int order;
     int maxorder = interaction->maxorder;
 
@@ -720,6 +724,7 @@ void Constraint::translational_invariance()
     std::vector<int> intlist, data;
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
+    std::vector<std::vector<int> > data_vec;
 
     std::cout << "  Generating constraints for translational invariance ..." << std::endl;
 
@@ -799,6 +804,91 @@ void Constraint::translational_invariance()
                 }
                 std::sort(intlist.begin(), intlist.end());
 
+                data_vec.clear();
+
+                CombinationWithRepetition<int> g2(intlist.begin(), intlist.end(), order);
+                do {
+                    data = g2.now();
+
+                    intarr[0] = iat;
+                    for (isize = 0; isize < data.size(); ++isize) {
+                        intarr[isize + 1] = data[isize];
+                    }
+
+                    // Skip if the atoms don't interact with each other.
+                    if (!interaction->is_incutoff(order + 1, intarr)) continue;
+
+                    data_vec.push_back(data);
+                } while(g2.next());
+
+                int ndata = data_vec.size();
+
+#pragma omp parallel
+                {
+                    int *intarr_omp, *intarr_copy_omp;
+                    double *arr_constraint_omp;
+
+                    memory->allocate(intarr_omp, order + 2);
+                    memory->allocate(intarr_copy_omp, order + 2);
+                    memory->allocate(arr_constraint_omp, nparams);
+
+                    std::vector<int> data_omp;
+
+#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found), schedule(guided)
+                    for (idata = 0; idata < ndata; ++idata) {
+
+                        data_omp = data_vec[idata];
+
+                        intarr_omp[0] = iat;
+                        for (isize = 0; isize < data_omp.size(); ++isize) {
+                            intarr_omp[isize + 1] = data_omp[isize];
+                        }
+                        if (!interaction->is_incutoff(order + 1, intarr_omp)) continue;
+
+
+                        // Loop for xyz component
+                        for (ixyz = 0; ixyz < nxyz; ++ixyz) {
+                            for (jcrd = 0; jcrd < 3; ++jcrd) {
+
+                                // Reset the temporary array for another constraint
+                                for (j = 0; j < nparams; ++j) arr_constraint_omp[j] = 0.0;
+
+                                for (jat = 0; jat < 3 * nat; jat += 3) {
+                                    intarr_omp[order + 1] = jat / 3;
+
+                                    if (!interaction->is_incutoff(order + 2, intarr_omp)) continue;
+
+                                    for (j = 0; j < order + 1; ++j) {
+                                        intarr_copy_omp[j] = 3 * intarr_omp[j] + xyzcomponent[ixyz][j];
+                                    }
+                                    intarr_copy_omp[order + 1] = jat + jcrd;
+
+                                    fcs->sort_tail(order + 2, intarr_copy_omp);
+
+                                    iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr_copy_omp, 1));
+                                    if (iter_found != list_found.end()) {
+                                        FcProperty arrtmp = *iter_found;
+                                        arr_constraint_omp[arrtmp.mother] += arrtmp.coef;                                
+                                    } 
+
+                                }
+                                if (!is_allzero(nparams,arr_constraint_omp)) {
+#pragma omp critical
+                                    const_translation[order].insert(ConstraintClass(nparams, arr_constraint_omp));
+                                }
+                            }
+                        }
+
+
+                    }
+
+                    memory->deallocate(intarr_omp);
+                    memory->deallocate(intarr_copy_omp);
+                    memory->deallocate(arr_constraint_omp);
+                }
+
+ /*          
+
                 CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order);
                 do {
                     data = g.now();
@@ -842,6 +932,7 @@ void Constraint::translational_invariance()
                     }
 
                 } while(g.next());
+                */
                 intlist.clear();
             }
         }
@@ -1325,7 +1416,11 @@ void Constraint::rotational_invariance()
 
 void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set, const double tolerance)
 {
-#ifdef _USE_EIGEN
+#ifdef _USE_EIGEN_DISABLE
+
+    // This function doesn't make the reduced row echelon form of the constraint matrix.
+    // It just returns the image of the matrix, though they are similar.
+
     using namespace Eigen;
 
     int nrow = n;

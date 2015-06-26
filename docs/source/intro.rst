@@ -67,7 +67,7 @@ If you used ALAMODE, please cite the following article:
 Acknowledgement
 ---------------
 
-This project is support by a Grant-in-Aid for Scientific Research on Innovative Areas 
+This project was supported by a Grant-in-Aid for Scientific Research on Innovative Areas 
 'Materials Design through Computics: Complex Correlation and Non-Equilibrium Dynamics'.
 (http://computics-material.jp)
 
@@ -80,5 +80,5 @@ Author
 
     <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
-Current affiliation: Department of Physics, The University of Tokyo, Japan
+Current affiliation: Department of Applied Physics, The University of Tokyo, Japan
 

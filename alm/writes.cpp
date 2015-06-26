@@ -90,11 +90,14 @@ void Writes::writeall()
 
 void Writes::write_force_constants()
 {
-    int order, j, k, l, m;
+    int order, i, j, k, l, m, ll;
     int iat, jat;
     unsigned int ui;
     int multiplicity;
     int maxorder = interaction->maxorder;
+    int isize, jsize, ksize, icell;
+    int *ind, *cell;
+    double dist, ***xcrd;
     std::string *str_fcs;
     std::string str_tmp;
     std::ofstream ofs_fcs;
@@ -106,18 +109,51 @@ void Writes::write_force_constants()
     if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
 
     ofs_fcs <<  " ******************** Force Constants (FCs) ********************" << std::endl;
-    ofs_fcs <<  " *     Force constants are printed in Rydberg atomic unit      *" << std::endl;
+    ofs_fcs <<  " *     Force constants are printed in Rydberg atomic units.    *" << std::endl;
     ofs_fcs <<  " *     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.   *" << std::endl;
     ofs_fcs <<  " *     FC?: Ry/a0^?                                            *" << std::endl;
     ofs_fcs <<  " *     a0= Bohr radius                                         *" << std::endl;
+    ofs_fcs <<  " *                                                             *" << std::endl;
+    ofs_fcs <<  " *     The value shown in the last column is the distance      *" << std::endl;
+    ofs_fcs <<  " *     between the most distant atomic pairs.                  *" << std::endl;
     ofs_fcs <<  " ***************************************************************" << std::endl;
     ofs_fcs << std::endl;
-    ofs_fcs << " ---------------------------------------------------------------" << std::endl;
-    ofs_fcs << "      Index              FCs         P       Pairs      Distance" << std::endl;
-    ofs_fcs << " (Global, Local)              (Multiplicity)           (for FC2)" << std::endl;
-    ofs_fcs << " ---------------------------------------------------------------" << std::endl;
+    ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
+    ofs_fcs << "      Index              FCs         P        Pairs     Distance [Bohr]" << std::endl;
+    ofs_fcs << " (Global, Local)              (Multiplicity)                           " << std::endl;
+    ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
 
     memory->allocate(str_fcs, maxorder);
+    memory->allocate(ind, maxorder + 1);
+    memory->allocate(cell, maxorder + 1);
+    memory->allocate(xcrd, 27, system->nat, 3);
+    
+    icell = 0;
+    
+    for (i = 0; i < system->nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            xcrd[0][i][j] = system->xcoord[i][j];
+        }
+    }
+
+    for (isize = -1; isize <= 1 ; ++isize) {
+        for (jsize = -1; jsize <= 1 ; ++jsize) {
+            for (ksize = -1; ksize <= 1 ; ++ksize) {
+
+                if (isize == 0 && jsize == 0 && ksize == 0) continue;
+
+                ++icell;
+                for (i = 0; i < system->nat; ++i) {
+                    xcrd[icell][i][0] = system->xcoord[i][0] + static_cast<double>(isize);
+                    xcrd[icell][i][1] = system->xcoord[i][1] + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = system->xcoord[i][2] + static_cast<double>(ksize);
+                }
+            }
+        }
+    }
+
+    for (icell = 0; icell < 27; ++icell) system->frac2cart(xcrd[icell]);
+    
     for (order = 0; order < maxorder; ++order) {
         str_fcs[order] = "*FC" + boost::lexical_cast<std::string>(order + 2);
     }
@@ -171,6 +207,23 @@ void Writes::write_force_constants()
                     j = symmetry->map_s2p[iat].atom_num;
                     ofs_fcs << std::setw(12) << std::setprecision(3) 
                         << std::fixed << interaction->mindist_pairs[iat][jat][0].dist;
+                } else {
+                    cell[0] = 0;
+                    for (l = 0; l < order + 1; ++l) {
+                        cell[l+1] = (*iter_cluster).cell[0][l];
+                    }
+                    for (l = 0; l < order + 2; ++l) {
+                        ind[l] = fcs->fc_set[order][m].elems[l] / 3;
+                    }
+                    dist = 0.0;
+
+                    for (l = 0; l < order + 2; ++l) {
+                        for (ll = l; ll < order + 2; ++ll) {
+                            dist = std::max<double>(dist, interaction->distance(xcrd[cell[l]][ind[l]], xcrd[cell[ll]][ind[ll]]));
+                        }
+                    }
+                    ofs_fcs << std::setw(12) << std::setprecision(3) 
+                            << std::fixed << dist;
                 }
                 ofs_fcs << std::endl;
                 m += fcs->ndup[order][ui];
@@ -180,6 +233,10 @@ void Writes::write_force_constants()
     }
 
     ofs_fcs << std::endl;
+
+    memory->deallocate(ind);
+    memory->deallocate(cell);
+    memory->deallocate(xcrd);
 
     if (constraint->extra_constraint_from_symmetry) {
 
@@ -332,7 +389,7 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ALM_version", "0.9.4");
+    pt.put("Data.ALM_version", "0.9.5");
     pt.put("Data.Fitting.DisplaceFile", files->file_disp);
     pt.put("Data.Fitting.ForceFile", files->file_force);
     pt.put("Data.Fitting.Constraint", constraint->constraint_mode);

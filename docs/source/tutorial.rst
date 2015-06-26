@@ -62,7 +62,7 @@ To do so, you first need to decide the magnitude of displacements :math:`\Delta 
 
 Then, prepare input files necessary to run an external DFT code for each configurations.
 Since this procedure is a little tiresome, we provide a subsidiary Python script for VASP, Quantum-ESPRESSO (QE), and xTAPP.
-Using the script :red:`displace.py` in the tools/ directory, you can generate the the necessary input files as follows:
+Using the script :red:`displace.py` in the tools/ directory, you can generate the necessary input files as follows:
 
     **QE**
     ::
@@ -81,7 +81,7 @@ Using the script :red:`displace.py` in the tools/ directory, you can generate th
 
 
 The ``--mag`` option specifies the displacement length in units of Angstrom. 
-You need to specify a input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, or ``--xTAPP``.
+You need to specify an input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, or ``--xTAPP``.
 
 Then, calculate atomic forces for all the configurations.
 
@@ -203,7 +203,7 @@ Then, the phonon dispersion is shown by a pop-up window as follows:
 .. image:: ../img/si_phband.png
    :scale: 75
 
-You can save the figure as png, eps, or other format from this window.
+You can save the figure as png, eps, or other formats from this window.
 You can also change the energy unit of phonon frequency from cm\ :sup:`-1` to THz or meV by the ``--unit`` option. 
 For more detail of the usage of :red:`plotband.py`, type
 ::
