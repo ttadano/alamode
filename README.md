@@ -1,5 +1,5 @@
 # ALAMODE
-* Version 0.9.4 (Beta)
+* Version 0.9.5 (Beta)
 
 - - -
 
@@ -38,4 +38,4 @@ This software is released under the MIT license.
 For license rights and limitations, see LICENSE.txt file.
 
 ## Author
-Terumasa Tadano (Department of Physics, The University of Tokyo, Japan)
+Terumasa Tadano (Department of Applied Physics, The University of Tokyo, Japan)
