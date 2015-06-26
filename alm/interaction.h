@@ -99,6 +99,8 @@ namespace ALM_NS {
 
             for (int i = 0; i < a.dist.size(); ++i) {
                 dist_a += a.dist[i];
+            }
+            for (int i = 0; i < b.dist.size(); ++i) {
                 dist_b += b.dist[i];
             }
             return dist_a < dist_b;
