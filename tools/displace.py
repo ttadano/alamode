@@ -254,9 +254,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             tz = a * math.sqrt((1.0 + 2.0 * cosalpha) / 3.)
 
             if ibrav == 5:
-                lavec = np.array([tx, -ty, tz],
+                lavec = np.array([[tx, -ty, tz],
                                  [0.0, 2.0 * ty, tz],
-                                 [-tx, -ty, tz])
+                                 [-tx, -ty, tz]])
 
             else:
                 a_prime = a / math.sqrt(3.0)
@@ -266,9 +266,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
                 u *= a_prime
                 v *= a_prime
 
-                lavec = np.array([u, v, v],
+                lavec = np.array([[u, v, v],
                                  [v, u, v],
-                                 [v, v, u])
+                                 [v, v, u]])
 
     elif ibrav == 6:
 
@@ -279,9 +279,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
         else:
             a = celldm[0]
             c = celldm[0] * celldm[2]
-            lavec = np.array([a, 0.0, 0.0],
+            lavec = np.array([[a, 0.0, 0.0],
                              [0.0, a, 0.0],
-                             [0.0, 0.0, c])
+                             [0.0, 0.0, c]])
 
     elif ibrav == 7:
 
@@ -292,9 +292,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
         else:
             a = celldm[0]
             c = celldm[0] * celldm[2]
-            lavec = np.array([a / 2.0, -a / 2.0, c / 2.0],
+            lavec = np.array([[a / 2.0, -a / 2.0, c / 2.0],
                              [a / 2.0,  a / 2.0, c / 2.0],
-                             [-a / 2.0, -a / 2.0, c / 2.0])
+                             [-a / 2.0, -a / 2.0, c / 2.0]])
 
     elif ibrav == 8:
 
@@ -308,9 +308,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             b = celldm[0] * celldm[1]
             c = celldm[0] * celldm[2]
 
-            lavec = np.array([a, 0.0, 0.0],
+            lavec = np.array([[a, 0.0, 0.0],
                              [0.0, b, 0.0],
-                             [0.0, 0.0, c])
+                             [0.0, 0.0, c]])
 
     elif ibrav == 9 or ibrav == -9:
 
@@ -325,13 +325,13 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             c = celldm[0] * celldm[2]
 
             if ibrav == 9:
-                lavec = np.array([a / 2., b / 2., 0.0],
+                lavec = np.array([[a / 2., b / 2., 0.0],
                                  [-a / 2., b / 2., 0.0],
-                                 [0.0, 0.0, c])
+                                 [0.0, 0.0, c]])
             else:
-                lavec = np.array([a / 2., -b / 2., 0.0],
+                lavec = np.array([[a / 2., -b / 2., 0.0],
                                  [a / 2., b / 2., 0.0],
-                                 [0.0, 0.0, c])
+                                 [0.0, 0.0, c]])
 
     elif ibrav == 10:
 
@@ -344,9 +344,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             a = celldm[0] / 2.0
             b = celldm[0] * celldm[1] / 2.0
             c = celldm[0] * celldm[2] / 2.0
-            lavec = np.array([a, 0.0, c],
+            lavec = np.array([[a, 0.0, c],
                              [a, b, 0.0],
-                             [0.0, b, c])
+                             [0.0, b, c]])
 
     elif ibrav == 11:
 
@@ -359,9 +359,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             a = celldm[0] / 2.0
             b = celldm[0] * celldm[1] / 2.0
             c = celldm[0] * celldm[2] / 2.0
-            lavec = np.array([a, b, c],
+            lavec = np.array([[a, b, c],
                              [-a, b, c],
-                             [-a, -b, c])
+                             [-a, -b, c]])
 
     elif ibrav == 12:
 
@@ -376,9 +376,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             b = celldm[0] * celldm[1]
             c = celldm[0] * celldm[2]
             gamma = math.acos(celldm[3])
-            lavec = np.array([a, 0.0, 0.0],
+            lavec = np.array([[a, 0.0, 0.0],
                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
-                             [0.0, 0.0, c])
+                             [0.0, 0.0, c]])
 
     elif ibrav == -12:
 
@@ -393,9 +393,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             b = celldm[0] * celldm[1]
             c = celldm[0] * celldm[2]
             beta = math.acos(celldm[4])
-            lavec = np.array([a, 0.0, 0.0],
+            lavec = np.array([[a, 0.0, 0.0],
                              [0.0, b, 0.0],
-                             [c * math.cos(beta), 0.0, c * math.sin(beta)])
+                             [c * math.cos(beta), 0.0, c * math.sin(beta)]])
 
     elif ibrav == 13:
 
@@ -410,9 +410,9 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             b = celldm[0] * celldm[1]
             c = celldm[0] * celldm[2]
             gamma = math.acos(celldm[4])
-            lavec = np.array([a / 2.0, 0.0, -c / 2.0],
+            lavec = np.array([[a / 2.0, 0.0, -c / 2.0],
                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
-                             [a / 2.0, 0.0, c / 2.0])
+                             [a / 2.0, 0.0, c / 2.0]])
 
     elif ibrav == 14:
 
@@ -429,12 +429,12 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             beta = math.acos(celldm[4])
             gamma = math.acos(celldm[5])
 
-            lavec = np.array([a, 0.0, 0.0],
+            lavec = np.array([[a, 0.0, 0.0],
                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
                              [c * math.cos(beta), 
                               c * (math.cos(alpha) - math.cos(beta) * math.cos(gamma)) / math.sin(gamma),
                               c * math.sqrt(1.0 + 2.0 * math.cos(alpha) * math.cos(beta) * math.cos(gamma) 
-                              - math.cos(alpha)**2 - math.cos(beta)**2 - math.cos(gamma)**2) / math.sin(gamma)])
+                              - math.cos(alpha)**2 - math.cos(beta)**2 - math.cos(gamma)**2) / math.sin(gamma)]])
 
     else:
 
