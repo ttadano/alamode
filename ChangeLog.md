@@ -1,3 +1,22 @@
+# Ver. 0.9.5 (2015-06-28)
+
+## New
+
+- PERIODIC tag for low dimensional systems
+
+## Changes
+
+- Print distances for anharmonic terms in PREFIX.fcs
+
+- Improved the way to define the multiplicity of force constants
+
+- OpenMP parallelization for generating constraints between force constants
+
+## Fix
+
+- Fixed a minor bug in interaction.cpp
+
+- Fixed a bug in displace.py for QE
 
 # Ver. 0.9.4 (2015-02-16)
 

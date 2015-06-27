@@ -243,7 +243,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 * **KPMODE = 0** : Calculate phonon frequencies at given :math:`k` points
 
- For example, if one wishes to calculate phonon frequencies at Gamma (0, 0, 0) and X (0, 1/2, 1/2) of an FCC crystal, 
+ For example, if one wants to calculate phonon frequencies at Gamma (0, 0, 0) and X (0, 1/2, 1/2) of an FCC crystal, 
  the ``&kpoint`` entry should be written as
  ::
 
@@ -255,7 +255,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 * **KPMODE = 1** : Band dispersion calculation
 
- For example, if one wishes to calculate phonon dispersion relations along G\-K\-X\-G\-L of a FCC crystal, 
+ For example, if one wants to calculate phonon dispersion relations along G\-K\-X\-G\-L of a FCC crystal, 
  the ``&kpoint`` entry should be written as follows::
 
   &kpoint
