@@ -109,15 +109,14 @@ void Writes::write_force_constants()
     ofs_fcs.open(files->file_fcs.c_str(), std::ios::out);
     if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
 
-    ofs_fcs <<  " ******************** Force Constants (FCs) ********************" << std::endl;
-    ofs_fcs <<  " *     Force constants are printed in Rydberg atomic units.    *" << std::endl;
-    ofs_fcs <<  " *     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.   *" << std::endl;
-    ofs_fcs <<  " *     FC?: Ry/a0^?                                            *" << std::endl;
-    ofs_fcs <<  " *     a0= Bohr radius                                         *" << std::endl;
-    ofs_fcs <<  " *                                                             *" << std::endl;
-    ofs_fcs <<  " *     The value shown in the last column is the distance      *" << std::endl;
-    ofs_fcs <<  " *     between the most distant atomic pairs.                  *" << std::endl;
-    ofs_fcs <<  " ***************************************************************" << std::endl;
+    ofs_fcs <<  " *********************** Force Constants (FCs) ***********************" << std::endl;
+    ofs_fcs <<  " *        Force constants are printed in Rydberg atomic units.       *" << std::endl;
+    ofs_fcs <<  " *        FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.      *" << std::endl;
+    ofs_fcs <<  " *        FC?: Ry/a0^?     a0 = Bohr radius                          *" << std::endl;
+    ofs_fcs <<  " *                                                                   *" << std::endl;
+    ofs_fcs <<  " *        The value shown in the last column is the distance         *" << std::endl;
+    ofs_fcs <<  " *        between the most distant atomic pairs.                     *" << std::endl;
+    ofs_fcs <<  " *********************************************************************" << std::endl;
     ofs_fcs << std::endl;
     ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
     ofs_fcs << "      Index              FCs         P        Pairs     Distance [Bohr]" << std::endl;
