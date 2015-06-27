@@ -90,8 +90,8 @@ void Input::parse_general_vars()
     int i;
     std::string prefix, mode, str_tmp, str_disp_basis;
     int nat, nkd, nsym;
-    int is_printsymmetry;
-    bool is_periodic[3], trim_dispsign_for_evenfunc;
+    int is_printsymmetry, is_periodic[3];
+    bool trim_dispsign_for_evenfunc;
     std::string *kdname;
     double tolerance;
 

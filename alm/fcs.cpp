@@ -149,6 +149,12 @@ void Fcs::generate_fclists(int maxorder)
                     if (!symmetry->sym_available[isym]) continue;
 
                     for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
+                    // Special treatment for non-periodic cases
+                    if (!(interaction->is_periodic[0] & 
+                          interaction->is_periodic[1] & 
+                          interaction->is_periodic[2])) {
+                        if (!interaction->is_incutoff(order+2, atmn_mapped)) continue;
+                    }
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
 
                     for (i2 = 0; i2 < nxyz; ++i2) {

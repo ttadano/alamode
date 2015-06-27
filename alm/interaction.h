@@ -133,10 +133,9 @@ namespace ALM_NS {
         Interaction(class ALM *);
         ~Interaction();
 
-        bool is_periodic[3];
+        int is_periodic[3];
         int nneib;
         int maxorder;
-  //      int interaction_type;
 
         int *nbody_include;
 

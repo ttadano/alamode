@@ -18,6 +18,7 @@
 #include "constants.h"
 #include "timer.h"
 #include "error.h"
+#include "interaction.h"
 #include "files.h"
 #include <cmath>
 #include <vector>
@@ -55,7 +56,8 @@ void Symmetry::init()
     std::cout << " SYMMETRY" << std::endl;
     std::cout << " ========" << std::endl << std::endl;
 
-    setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord, system->kd);
+    setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, 
+                             system->xcoord, system->kd, interaction->is_periodic);
 
     memory->allocate(tnons, nsym, 3);
     memory->allocate(symrel_int, nsym, 3, 3);
@@ -119,7 +121,8 @@ void Symmetry::init()
     std::cout << std::endl;
 }
 
-void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned int &nnp, double aa[3][3], double bb[3][3], double **x, int *kd)
+void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned int &nnp, 
+                                        double aa[3][3], double bb[3][3], double **x, int *kd, const int periodic_flag[3])
 {
     int i, j;
 
@@ -133,7 +136,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
         std::cout << "             Please be patient. " << std::endl;
         std::cout << "             This can take a while for a large supercell." << std::endl << std::endl;
 
-        findsym(nat, aa, x, SymmList);
+        findsym(nat, aa, x, periodic_flag, SymmList);
 
         std::sort(SymmList.begin() + 1, SymmList.end());
         nsym = SymmList.size();
@@ -209,7 +212,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned in
 #endif
 }
 
-void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop) {
+void Symmetry::findsym(int nat, double aa[3][3], double **x, const int periodic_flag[3], std::vector<SymmetryOperation> &symop) {
 
     unsigned int i;
     int tran_int[3];
@@ -220,7 +223,8 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
     LatticeSymmList.clear();
     find_lattice_symmetry(aa, LatticeSymmList);
     CrystalSymmList.clear();
-    find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x, LatticeSymmList, CrystalSymmList);
+    find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x, periodic_flag, 
+                          LatticeSymmList, CrystalSymmList);
 
     //	findsym(nat, nnp, kd, aa, bb, x);
     find_nnp_for_translation(nnp, CrystalSymmList);
@@ -361,7 +365,9 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList)
+void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, const int periodic_flag[3], 
+                                     std::vector<RotationMatrix> LatticeSymmList, 
+                                     std::vector<SymmetryOperationTransFloat> &CrystalSymmList)
 {
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -421,15 +427,18 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
                 tran[i] = tran[i] - nint(tran[i]);
             }
 
-            isok = true;
+            if ((std::abs(tran[0]) > eps12 && !periodic_flag[0]) ||
+                (std::abs(tran[1]) > eps12 && !periodic_flag[1]) ||
+                (std::abs(tran[2]) > eps12 && !periodic_flag[2])) continue;
 
             is_identity_matrix = 
                 ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
                 + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
                 + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
                 + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
-
             if (is_identity_matrix) continue;
+
+            isok = true;
 
             for (itype = 0; itype < nclass; ++itype) {
 
@@ -450,8 +459,12 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
                         lat = atomclass[itype][kk];
 
                         for (i = 0; i < 3; ++i) {
-                            tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
-                            tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                            if (periodic_flag[i]) {
+                                tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
+                                tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                            } else {
+                                tmp[i] = std::abs(x[lat][i] - x_rot_tmp[i]);
+                            }
                         }
                         diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
                         if (diff < tolerance * tolerance) {
