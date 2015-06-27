@@ -96,7 +96,7 @@ namespace ALM_NS {
 
         void init();
         void setup_symmetry_operation(int, unsigned int&, unsigned int&, double[3][3], double[3][3], 
-            double **, int *, const int [3]);
+            double **, int *);
 
         unsigned int nsym, nnp;
         int ntran, natmin;
@@ -135,7 +135,7 @@ namespace ALM_NS {
 
     private:
 
-        void findsym(int, double [3][3], double **, const int [3], std::vector<SymmetryOperation> &);
+        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
         bool is_translation(int **);
 
         void symop_in_cart(double [3][3], double[3][3]);
@@ -144,7 +144,7 @@ namespace ALM_NS {
         void symop_availability_check(double ***, bool *, const int, int &);
 
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
-        void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x, const int [3],
+        void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x,
             std::vector<RotationMatrix>, std::vector<SymmetryOperationTransFloat> &);
         void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperationTransFloat>);
 
