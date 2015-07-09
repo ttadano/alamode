@@ -68,7 +68,7 @@ void Relaxation::setup_relaxation()
     }
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
-    // This sorting is necessarily.
+    // This sorting is necessary.
     std::sort(fcs_phonon->force_constant_with_cell[1].begin(), fcs_phonon->force_constant_with_cell[1].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3, ngroup, fcs_group);
 

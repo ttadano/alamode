@@ -155,7 +155,7 @@ void PHON::execute_phonons()
 
         if (gruneisen->print_gruneisen) {
             std::cout << std::endl;
-            std::cout << "      GRUNEISEN = 1 : Cubic force constants are necessarily." << std::endl;
+            std::cout << "      GRUNEISEN = 1 : Cubic force constants are necessary." << std::endl;
         }
         std::cout << std::endl;
     }
