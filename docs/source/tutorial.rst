@@ -18,6 +18,12 @@ Input files prepared for this tutorial are located in the **example/** directory
 Silicon
 -------
 
+.. figure:: ../img/si222.png
+   :scale: 40%
+   :align: center
+
+   Silicon. 2x2x2 conventional supercell
+
 In the following, (anharmonic) phonon properties of bulk silicon (Si) are calculated by a 2x2x2 conventional cell containing 64 atoms. 
 
 #. :ref:`Get displacement pattern by alm <tutorial_Si_step1>`
@@ -201,7 +207,8 @@ For visualizing phonon dispersion relations, we provide a Python script :red:`pl
 Then, the phonon dispersion is shown by a pop-up window as follows:
 
 .. image:: ../img/si_phband.png
-   :scale: 75
+   :scale: 60
+   :align: center
 
 You can save the figure as png, eps, or other formats from this window.
 You can also change the energy unit of phonon frequency from cm\ :sup:`-1` to THz or meV by the ``--unit`` option. 
@@ -233,7 +240,8 @@ The command
 will show the phonon DOS of Si by a pop-up window:
 
 .. image:: ../img/si_phdos.png
-   :scale: 75
+   :scale: 60
+   :align: center
 
 To obtain more sharp DOS, try again with a denser :math:`k` grid and a smaller ``DELTA_E`` value.
 
@@ -358,12 +366,25 @@ You can extract phonon lifetime from this file as::
     gnuplot> set logscale y
     gnuplot> plot "tau300K.dat" using 3:4 w p
 
+.. figure:: ../img/si_tau.png
+   :scale: 40%
+   :align: center
+
+   Phonon lifetime of Si at 300 K
+
 You can also estimate the cumulative thermal conductivity by
 ::
 
     $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 --direction 1 > cumulative_300K.dat
     $ gnuplot
+    gnuplot> set logscale x
     gnuplot> plot "cumulative_300K.dat" using 1:2 w lp
+
+.. figure:: ../img/si_cumulative.png
+   :scale: 40%
+   :align: center
+
+   Cumulative thermal conductivity of Si at 300 K
 
 The script :red:`analyze_phonons.py` can be found in the tools/ directory.
 To use the script, compile the C++ code :red:`analyze_phonons.cpp` in the same directory and rename *a.out* to *analyze_phonons* (or edit the Makefile and type make).
