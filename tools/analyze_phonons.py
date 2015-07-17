@@ -26,13 +26,14 @@ parser.add_option('--temp', help="target temperature to analyze")
 parser.add_option('--mode', help="specify phonon mode index to print")
 parser.add_option('--kpoint', help="specify k-point index to print")
 
-parser.add_option('--calc', metavar='tau|kappa|cumulative|kappa_boundary',
+parser.add_option('--calc', metavar='tau|kappa|cumulative|cumulative2|kappa_boundary',
                   help=('specify what to print. Available options are '
                         'tau (Lifetime, mean-free-path, etc.), '
                         'kappa (Thermal conductivity), '
                         'cumulative (Cumulative thermal conductivity), '
+                        'cumulative2 (Cumulative thermal conductivity with specific xyz-directions), '
                         'and kappa_boundary (Thermal conductivity with boundary effect). '
-                        'When --calc=cumulative, please specify the '
+                        'When --calc=cumulative2, please specify the '
                         '--direction option. When --calc=kappa_boundary, '
                         'please specify the --size option.'))
 
@@ -43,14 +44,14 @@ at degenerate points")
 parser.add_option('--size', help="specify the grain boundary size in units of \
 nm. The default value is 1000 nm.")
 
-group = optparse.OptionGroup(parser,
-                             "The following options are available/necessary \
-when --calc=cumulative ")
-
-group.add_option('--length', metavar="Lmax:dL",
+parser.add_option('--length', metavar="Lmax:dL",
                  help="specify the maximum value of system size L and its \
 step dL in units of nm. \
 The default value is --length=1000:10 .")
+
+group = optparse.OptionGroup(parser,
+                             "The following options are available/necessary \
+when --calc=cumulative2 ")
 
 group.add_option('--direction', metavar="1|2|3", help="specify which \
 direction (xyz) to consider the size effect. \
@@ -176,10 +177,10 @@ def print_thermal_conductivity_with_boundary():
     subprocess.call(command, shell=True)
 
 
-def print_cumulative_thermal_conductivity():
+def print_cumulative_thermal_conductivity(cumulative_mode):
 
     if options.temp is None:
-        sys.exit("--temp is necessary when --calc=cumulative")
+        sys.exit("--temp is necessary when --calc=%s" % cumulative_mode)
 
     if not (options.kpoint is None):
         print "# Warning: --kpoint option is discarded"
@@ -195,7 +196,7 @@ def print_cumulative_thermal_conductivity():
             arr = options.mode.split(':')
             beg_s, end_s = int(arr[0]), int(arr[1])
         else:
-            sys.exit("Invalid usage of --mode for --calc=cumulative")
+            sys.exit("Invalid usage of --mode for --calc=%s" % cumulative_mode)
 
     if options.length is None:
         max_len = 1000.0
@@ -206,23 +207,29 @@ def print_cumulative_thermal_conductivity():
     else:
         sys.exit("Invalid usage of --length option")
 
-    size_flag = [0]*3
+    if cumulative_mode == "cumulative":
+        command = analyze_obj + file_result + " " + calc + " " + avg + " "\
+            + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
+            + str(d_len) + " " + options.temp
 
-    if options.direction is None:
-        for i in range(3):
-            size_flag[i] = 0
     else:
-        if len(options.direction.split(':')) > 3:
-            sys.exit("Invalid usage of --direction")
+        size_flag = [0]*3
 
-        arr = options.direction.split(':')
-        for i in range(len(options.direction.split(':'))):
-            size_flag[int(arr[i])-1] = 1
+        if options.direction is None:
+            for i in range(3):
+                size_flag[i] = 0
+        else:
+            if len(options.direction.split(':')) > 3:
+                sys.exit("Invalid usage of --direction")
 
-    command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-        + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
-        + str(d_len) + " " + options.temp + " " + str(size_flag[0]) \
-        + " " + str(size_flag[1]) + " " + str(size_flag[2])
+            arr = options.direction.split(':')
+            for i in range(len(options.direction.split(':'))):
+                size_flag[int(arr[i])-1] = 1
+
+        command = analyze_obj + file_result + " " + calc + " " + avg + " "\
+            + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
+            + str(d_len) + " " + options.temp + " " + str(size_flag[0]) \
+            + " " + str(size_flag[1]) + " " + str(size_flag[2])
 
     subprocess.call(command, shell=True)
 
@@ -254,8 +261,8 @@ if __name__ == '__main__':
         print_thermal_conductivity()
 
     # Compute cumulative thermal conductivity.
-    elif calc == "cumulative":
-        print_cumulative_thermal_conductivity()
+    elif calc == "cumulative" or calc == "cumulative2":
+        print_cumulative_thermal_conductivity(calc)
 
     elif calc == "kappa_boundary":
         print_thermal_conductivity_with_boundary()
