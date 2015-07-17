@@ -375,7 +375,7 @@ You can extract phonon lifetime from this file as::
 You can also estimate the cumulative thermal conductivity by
 ::
 
-    $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 --direction 1 > cumulative_300K.dat
+    $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 > cumulative_300K.dat
     $ gnuplot
     gnuplot> set logscale x
     gnuplot> plot "cumulative_300K.dat" using 1:2 w lp
