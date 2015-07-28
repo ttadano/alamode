@@ -125,6 +125,22 @@ List of input variables
 
 ````
 
+* PERIODIC-tag = PERIODIC[1], PERIODIC[2], PERIODIC[3] 
+
+ ===== ====================================================
+   0   | Do not consider periodic boundary conditions when
+       | searching for interacting atoms.
+
+   1   | Consider periodic boundary conditions when
+       | searching for interacting atoms.
+ ===== ====================================================
+
+ :Default: 1 1 1
+ :type: Array of integers
+ :Description: This tag is useful for generating interacting atoms in low dimensional systems. When ``PERIODIC[i]`` is zero, periodic boundary condition is turned off along the direction of the lattice vector :math:`\boldsymbol{a}_{i}`.
+
+````
+
 "&interaction"-field
 ++++++++++++++++++++
 
@@ -141,7 +157,7 @@ List of input variables
  
  :Default: ``NBODY`` = [2, 3, 4, ..., ``NORDER`` + 1]
  :Type: Array of integers
- :Example: If one wishes to exclude three-body interactions from cubic force constants, one should explicitly give ``NBODY = 2 2``.
+ :Example: If one wants to exclude three-body interactions from cubic force constants, one should explicitly give ``NBODY = 2 2``.
 
 ````
 
@@ -161,7 +177,7 @@ This means that the cutoff radii of 10 :math:`a_{0}` will be used for harmonic S
 Please note that the first column should be two character strings, which are contained in the ``KD``-tag, 
 connected by a hyphen (’-’). 
 
-When one wishes to consider cubic terms (``NORDER = 2``), please specify the cutoff radius for cubic terms in the third column as the following::
+When one wants to consider cubic terms (``NORDER = 2``), please specify the cutoff radius for cubic terms in the third column as the following::
 
  
  &cutoff
@@ -178,7 +194,7 @@ which means that all possible harmonic terms between Si-Si atoms will be include
 
 .. caution::
 
-  Writing None for anharmonic terms can greatly increase the number of parameters and thereby increase the computational cost.
+  Setting 'None' for anharmonic terms can greatly increase the number of parameters and thereby increase the computational cost.
 
 When there are more than two atomic elements, please specify the cutoff radii between every possible pairs of atomic elements. In the case of MgO (``NKD = 2``), the cutoff entry should be like
 ::
@@ -274,7 +290,7 @@ This field is necessary when ``MODE = fitting``.
 
  :Default: ``NSTART = 1``, ``NEND = NDATA``
  :Type: Integer
- :Example: When one wishes to use the data in the range of [20:30] out of 50 entries, one should set ``NSTART = 20`` and ``NEND = 30``.
+ :Example: To use the data in the range of [20:30] out of 50 entries, the tags should be ``NSTART = 20`` and ``NEND = 30``.
 
 ````
 

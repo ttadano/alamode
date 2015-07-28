@@ -233,7 +233,7 @@ The anharmonic self-energy due to cubic anharmonicity to the lowest order is giv
 .. math::
     :label: self3
 
-    \Sigma_{\boldsymbol{q}j}(i\omega_m) &= \frac{1}{2}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
+    \Sigma_{\boldsymbol{q}j}(i\omega_m) &= \frac{1}{2\hbar^{2}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
     |V^{(3)}_{-\boldsymbol{q}j,\boldsymbol{q}_{1}j_{1},\boldsymbol{q}_{2}j_{2}}|^{2} \notag \\
     & \times \left[ \frac{n_{1}+n_{2} + 1}{i\omega_{m} + \omega_{1} + \omega_{2}} - \frac{n_{1}+n_{2} + 1}{i\omega_{m} - \omega_{1} - \omega_{2}} 
     + \frac{n_{1}-n_{2}}{i\omega_{m} - \omega_{1} + \omega_{2}} - \frac{n_{1}-n_{2}}{i\omega_{m} + \omega_{1} - \omega_{2}} \right],
@@ -259,7 +259,7 @@ Phonon linewidth :math:`\Gamma_{\boldsymbol{q}j}`, which is the imaginary part o
 .. math::
     :label: selfmod
 
-     \Gamma^{\mathrm{anh}}_{\boldsymbol{q}j}(\omega) &= \frac{\pi}{2}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
+     \Gamma^{\mathrm{anh}}_{\boldsymbol{q}j}(\omega) &= \frac{\pi}{2\hbar^{2}}\sum_{\boldsymbol{q}_{1},\boldsymbol{q}_{2}}\sum_{j_{1},j_{2}}
      |V^{(3)}_{-\boldsymbol{q}j,\boldsymbol{q}_{1}j_{1},\boldsymbol{q}_{2}j_{2}}|^{2} \notag \\
      & \times \left[ -(n_{1}+n_{2} + 1)\delta{(\omega + \omega_{1} + \omega_{2})} + (n_{1}+n_{2} + 1) \delta{(\omega - \omega_{1} - \omega_{2})} \right. \notag \\
      & \left. \hspace{12mm} - (n_{1}-n_{2})\delta{(\omega - \omega_{1} + \omega_{2})} + (n_{1}-n_{2})\delta{(\omega + \omega_{1} - \omega_{2})} \right].
@@ -309,7 +309,24 @@ The phonon lifetime is estimated using the Matthiessen's rule as
 
 The lattice thermal conductivity will be written to the file ``PREFIX``.kl.
 
+Cumulative thermal conductivity
+-------------------------------
 
+The accumulative lattice thermal conductivity :math:`\kappa_{\mathrm{ph,acc}}^{\mu\nu}(L)` is defined as
+
+.. math::
+  
+  \kappa_{\mathrm{ph,acc}}^{\mu\mu}(L) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\Theta (L-|\boldsymbol{v}_{\boldsymbol{q}j}|\tau_{\boldsymbol{q}j}),
+
+where :math:`\Theta(x)` is the step function. This quantity can be calculated by using the script ``analyze_phonons.py`` with ``--calc cumulative`` flag. 
+One can also use another definition for the accumulative thermal conductivity:
+
+.. math::
+  
+  \kappa_{\mathrm{ph,acc}}^{\mu\nu}(L) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\Theta (L-|v_{\boldsymbol{q}j}^{\mu}|\tau_{\boldsymbol{q}j}).
+
+In this case, the contribution to the total thermal conductivity is limited only from phonon modes whose mean-free-path along the :math:`\mu`\ -direction is smaller than :math:`L`.
+To calculate this, please use the ``--calc cumulative2`` flag and specify the direction :math:`\mu` by the ``--direction`` option.
 
 Delta function
 --------------

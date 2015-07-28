@@ -119,7 +119,7 @@ void Displace::gen_displacement_pattern()
 
                 group_tmp.clear();
 
-                // Store first order + 1 indexes as a necessarily displacement pattern.
+                // Store first order + 1 indexes as a necessary displacement pattern.
                 // Here, duplicate entries will be removed. 
                 // For example, (iij) will be reduced to (ij).
                 for (j = 0; j < order + 1; ++j) {

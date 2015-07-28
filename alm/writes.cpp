@@ -97,6 +97,7 @@ void Writes::write_force_constants()
     int maxorder = interaction->maxorder;
     int isize, jsize, ksize, icell;
     int *ind, *cell;
+    int nneib, nsize[3];
     double dist, ***xcrd;
     std::string *str_fcs;
     std::string str_tmp;
@@ -108,25 +109,27 @@ void Writes::write_force_constants()
     ofs_fcs.open(files->file_fcs.c_str(), std::ios::out);
     if(!ofs_fcs) error->exit("openfiles", "cannot open fcs file");
 
-    ofs_fcs <<  " ******************** Force Constants (FCs) ********************" << std::endl;
-    ofs_fcs <<  " *     Force constants are printed in Rydberg atomic units.    *" << std::endl;
-    ofs_fcs <<  " *     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.   *" << std::endl;
-    ofs_fcs <<  " *     FC?: Ry/a0^?                                            *" << std::endl;
-    ofs_fcs <<  " *     a0= Bohr radius                                         *" << std::endl;
-    ofs_fcs <<  " *                                                             *" << std::endl;
-    ofs_fcs <<  " *     The value shown in the last column is the distance      *" << std::endl;
-    ofs_fcs <<  " *     between the most distant atomic pairs.                  *" << std::endl;
-    ofs_fcs <<  " ***************************************************************" << std::endl;
+    ofs_fcs <<  " *********************** Force Constants (FCs) ***********************" << std::endl;
+    ofs_fcs <<  " *        Force constants are printed in Rydberg atomic units.       *" << std::endl;
+    ofs_fcs <<  " *        FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.      *" << std::endl;
+    ofs_fcs <<  " *        FC?: Ry/a0^?     a0 = Bohr radius                          *" << std::endl;
+    ofs_fcs <<  " *                                                                   *" << std::endl;
+    ofs_fcs <<  " *        The value shown in the last column is the distance         *" << std::endl;
+    ofs_fcs <<  " *        between the most distant atomic pairs.                     *" << std::endl;
+    ofs_fcs <<  " *********************************************************************" << std::endl;
     ofs_fcs << std::endl;
     ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
     ofs_fcs << "      Index              FCs         P        Pairs     Distance [Bohr]" << std::endl;
     ofs_fcs << " (Global, Local)              (Multiplicity)                           " << std::endl;
     ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
 
+    for (i = 0; i < 3; ++i) nsize[i] = interaction->is_periodic[i];
+    nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
+
     memory->allocate(str_fcs, maxorder);
     memory->allocate(ind, maxorder + 1);
     memory->allocate(cell, maxorder + 1);
-    memory->allocate(xcrd, 27, system->nat, 3);
+    memory->allocate(xcrd, nneib, system->nat, 3);
     
     icell = 0;
     
@@ -136,9 +139,9 @@ void Writes::write_force_constants()
         }
     }
 
-    for (isize = -1; isize <= 1 ; ++isize) {
-        for (jsize = -1; jsize <= 1 ; ++jsize) {
-            for (ksize = -1; ksize <= 1 ; ++ksize) {
+    for (isize = -nsize[0]; isize <= nsize[0] ; ++isize) {
+        for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize) {
+            for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize) {
 
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
 
@@ -152,7 +155,7 @@ void Writes::write_force_constants()
         }
     }
 
-    for (icell = 0; icell < 27; ++icell) system->frac2cart(xcrd[icell]);
+    for (icell = 0; icell < nneib; ++icell) system->frac2cart(xcrd[icell]);
     
     for (order = 0; order < maxorder; ++order) {
         str_fcs[order] = "*FC" + boost::lexical_cast<std::string>(order + 2);
@@ -164,14 +167,14 @@ void Writes::write_force_constants()
 
         m = 0;
 
-        if(fcs->ndup[order].size() > 0) {
+        if (fcs->ndup[order].size() > 0) {
 
             ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
 
             for (ui = 0; ui < fcs->ndup[order].size(); ++ui) {
 
                 ofs_fcs << std::setw(8) << k + 1 << std::setw(8) << ui + 1 
-                    << std::setw(18) << std::setprecision(7) << std::scientific <<  fitting->params[k];
+                    << std::setw(18) << std::setprecision(7) << std::scientific << fitting->params[k];
 
 
                 atom_tmp.clear();
@@ -190,6 +193,7 @@ void Writes::write_force_constants()
                 if (iter_cluster != interaction->mindist_cluster[order][j].end()) {
                     multiplicity = (*iter_cluster).cell.size();
                 } else {
+                    std::cout << std::setw(5) << j;
                     for (l = 0; l < order + 1; ++l) {
                         std::cout << std::setw(5) << atom_tmp[l];
                     }
@@ -413,6 +417,12 @@ void Writes::write_misc_xml()
     pt.put("Data.Structure.LatticeVector.a2", str_pos[1]);
     pt.put("Data.Structure.LatticeVector.a3", str_pos[2]);
 
+    std::stringstream ss;
+    ss << interaction->is_periodic[0] << " " 
+       << interaction->is_periodic[1] << " " 
+       << interaction->is_periodic[2];
+    pt.put("Data.Structure.Periodicity", ss.str());
+
     pt.put("Data.Structure.Position", "");
     std::string str_tmp;
 
@@ -503,6 +513,36 @@ void Writes::write_misc_xml()
 
     int ip, ishift;
 
+
+    // To make the anphon code compatible with the alm code, we convert the cell index
+    // so that it always takes values between 1-27 irrespective of the is_periodic flag.
+    int *cell_index_convert, nsize[3], nneib, icell, icount;
+    for (i = 0; i < 3; ++i) nsize[i] = interaction->is_periodic[i];
+    nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
+
+    memory->allocate(cell_index_convert, nneib);
+
+    cell_index_convert[0] = 0;
+    icount = 0;
+    icell = 0;
+
+    for (i = -1; i <= 1; ++i) {
+        for (j = -1; j <= 1; ++j) {
+            for (k = -1; k <= 1; ++k) {
+                if (i == 0 && j == 0 && k == 0) continue;
+
+                ++icell;
+
+                if (std::abs(i) <= nsize[0] && 
+                    std::abs(j) <= nsize[1] && 
+                    std::abs(k) <= nsize[2]) 
+                {
+                    cell_index_convert[++icount] = icell;
+                }
+            }
+        }
+    }
+
     std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
 
     for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
@@ -522,7 +562,7 @@ void Writes::write_misc_xml()
                     + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
                 child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(pair_tmp[1] + 1) 
                     + " " + boost::lexical_cast<std::string>(fctmp.elems[1]%3 + 1)
-                    + " " + boost::lexical_cast<std::string>((*it2).cell + 1));
+                    + " " + boost::lexical_cast<std::string>(cell_index_convert[(*it2).cell] + 1));
         }
     }
 
@@ -530,9 +570,6 @@ void Writes::write_misc_xml()
 
     // Print anharmonic force constants to the xml file.
 
-    //     std::vector<int> atom_tmp;
-    //     std::vector<std::vector<int> > cell_dummy;
-    //    std::set<MinimumDistanceCluster>::iterator iter_cluster;
     int imult;
 
     int order;
@@ -579,7 +616,7 @@ void Writes::write_misc_xml()
                             boost::lexical_cast<std::string>(pair_tmp[k] + 1) 
                             + " " + boost::lexical_cast<std::string>(fctmp.elems[k]%3 + 1)
                             // Append the cell index to which the interacting pair belongs.
-                            + " " + boost::lexical_cast<std::string>(cell_now[k - 1] + 1));
+                            + " " + boost::lexical_cast<std::string>(cell_index_convert[cell_now[k - 1]] + 1));
                     }
                 }
             } else {
@@ -603,6 +640,7 @@ void Writes::write_misc_xml()
 #endif
 
     memory->deallocate(pair_tmp);
+    memory->deallocate(cell_index_convert);
 
     std::cout << " Information for post-process is stored to file: " << file_xml << std::endl;
 }

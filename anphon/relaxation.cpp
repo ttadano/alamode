@@ -68,7 +68,7 @@ void Relaxation::setup_relaxation()
     }
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
-    // This sorting is necessarily.
+    // This sorting is necessary.
     std::sort(fcs_phonon->force_constant_with_cell[1].begin(), fcs_phonon->force_constant_with_cell[1].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3, ngroup, fcs_group);
 
@@ -1345,8 +1345,8 @@ void Relaxation::perform_mode_analysis()
                 ofs_V3 << std::endl;
                 ofs_V3 << "# mode = " << snum + 1<< std::endl;
                 ofs_V3 << "# Frequency = " << writes->in_kayser(omega) << std::endl;
-                ofs_V3 << "## Temperature dependence of Gamma for given mode" << std::endl;
-                ofs_V3 << "## q', j', omega(q'j') (cm^-1), q'', j'', omega(q''j'') (cm^-1), |V3(-qj,q'j',q''j'')| " << std::endl;
+                ofs_V3 << "## Temperature dependence of |V3|^2 for given mode" << std::endl;
+                ofs_V3 << "## q', j', omega(q'j') (cm^-1), q'', j'', omega(q''j'') (cm^-1), |V3(-qj,q'j',q''j'')| (cm^-2)" << std::endl;
 
                 for (j = 0; j < nk_size; ++j) {
 

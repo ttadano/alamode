@@ -62,7 +62,7 @@ void Interaction::init()
         std::cout << "  " <<  std::setw(9) << str_order[i] << std::endl; 
         for (j = 0; j < nkd; ++j) {
             for (k = 0; k < nkd; ++k) {
-                if (rcs[i][j][k] < 0) {
+                if (rcs[i][j][k] < 0.0) {
                     std::cout << std::setw(9) << "None";
                 } else {
                     std::cout << std::setw(9) << rcs[i][j][k];
@@ -438,7 +438,7 @@ bool Interaction::is_incutoff(const int n, int *atomnumlist)
 {
     int i, j;
     int iat, jat, kat;
-    int jkd, kkd;
+    int ikd, jkd, kkd;
     int ncheck = n - 1;
     int order = n - 2;   
     bool in_cutoff_tmp;
@@ -447,16 +447,23 @@ bool Interaction::is_incutoff(const int n, int *atomnumlist)
     std::vector<DistInfo>::const_iterator it, it2;
 
     iat = atomnumlist[0];
+    ikd = system->kd[iat] - 1;
 
     for (i = 0; i < ncheck; ++i) {
 
         jat = atomnumlist[i + 1];
         jkd = system->kd[jat] - 1;
 
+        if (rcs[order][ikd][jkd] >= 0.0 && 
+            (mindist_pairs[iat][jat][0].dist > rcs[order][ikd][jkd])) return false;
+
         for (j = i + 1; j < ncheck; ++j) {
 
             kat = atomnumlist[j + 1];
             kkd = system->kd[kat] - 1;
+
+            if (rcs[order][ikd][kkd] >= 0.0 && 
+                (mindist_pairs[iat][kat][0].dist > rcs[order][ikd][kkd])) return false;
 
             cutoff_tmp = rcs[order][jkd][kkd];
 
@@ -644,7 +651,8 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 }
 
 
-void Interaction::cell_combination(std::vector<std::vector<int> > array, int i, std::vector<int> accum, std::vector<std::vector<int> > &comb)
+void Interaction::cell_combination(std::vector<std::vector<int> > array, int i, 
+                                   std::vector<int> accum, std::vector<std::vector<int> > &comb)
 {
     if (i == array.size())  {
         comb.push_back(accum); 

@@ -18,6 +18,7 @@
 #include "constants.h"
 #include "timer.h"
 #include "error.h"
+#include "interaction.h"
 #include "files.h"
 #include <cmath>
 #include <vector>
@@ -55,7 +56,8 @@ void Symmetry::init()
     std::cout << " SYMMETRY" << std::endl;
     std::cout << " ========" << std::endl << std::endl;
 
-    setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, system->xcoord, system->kd);
+    setup_symmetry_operation(nat, nsym, nnp, system->lavec, system->rlavec, 
+                             system->xcoord, system->kd);
 
     memory->allocate(tnons, nsym, 3);
     memory->allocate(symrel_int, nsym, 3, 3);
@@ -119,7 +121,8 @@ void Symmetry::init()
     std::cout << std::endl;
 }
 
-void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned int &nnp, double aa[3][3], double bb[3][3], double **x, int *kd)
+void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, unsigned int &nnp, 
+                                        double aa[3][3], double bb[3][3], double **x, int *kd)
 {
     int i, j;
 
@@ -220,7 +223,8 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
     LatticeSymmList.clear();
     find_lattice_symmetry(aa, LatticeSymmList);
     CrystalSymmList.clear();
-    find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x, LatticeSymmList, CrystalSymmList);
+    find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x,
+                          LatticeSymmList, CrystalSymmList);
 
     //	findsym(nat, nnp, kd, aa, bb, x);
     find_nnp_for_translation(nnp, CrystalSymmList);
@@ -361,7 +365,9 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList)
+void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, 
+                                     std::vector<RotationMatrix> LatticeSymmList, 
+                                     std::vector<SymmetryOperationTransFloat> &CrystalSymmList)
 {
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -398,7 +404,8 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
     CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
 
 
-    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
+    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); 
+                                               it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
         iat = atomclass[0][0];
 
@@ -421,15 +428,18 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
                 tran[i] = tran[i] - nint(tran[i]);
             }
 
-            isok = true;
+            if ((std::abs(tran[0]) > eps12 && !interaction->is_periodic[0]) ||
+                (std::abs(tran[1]) > eps12 && !interaction->is_periodic[1]) ||
+                (std::abs(tran[2]) > eps12 && !interaction->is_periodic[2])) continue;
 
             is_identity_matrix = 
                 ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
                 + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
                 + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
                 + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
-
             if (is_identity_matrix) continue;
+
+            isok = true;
 
             for (itype = 0; itype < nclass; ++itype) {
 
