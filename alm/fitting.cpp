@@ -360,7 +360,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
 
 void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **amat, double *bvec)
 {
-    int i, j, k;
+    int i, j;
+    unsigned long k;
     int nrhs = 1, nrank, INFO, LWORK;
     double *WORK, *S, *amat_mod;
     double rcond = -1.0;
@@ -425,7 +426,8 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
 void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
                                    double **amat, double *bvec, double **cmat, double *dvec)
 {
-    int i, j, k;
+    int i, j;
+    unsigned long k;
     int nrank;
     double f_square, f_residual;
     double *fsum2;
@@ -500,12 +502,12 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
         fsum2[j++] = bvec[i];
         f_square += std::pow(bvec[i], 2);
     }
-
     std::cout << "  QR-Decomposition has started ...";
 
     double *amat_mod, *cmat_mod;
     memory->allocate(amat_mod, M * N);
     memory->allocate(cmat_mod, P * N);
+
 
     // transpose matrix A and C
     k = 0;
@@ -523,7 +525,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     // Fitting
 
-    int LWORK = P + std::min<int>(M, N) + 100 * std::max<int>(M, N);
+    int LWORK = P + std::min<int>(M, N) + 10 * std::max<int>(M, N);
     int INFO;
     double *WORK, *x;
     memory->allocate(WORK, LWORK);
@@ -557,7 +559,8 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **amat, double *bvec, double *bvec_orig,
                                         const int maxorder)
 {
-    int i, j, k;
+    int i, j;
+    unsigned long k;
     int nrhs = 1, nrank, INFO, LWORK;
     double *WORK, *S, *amat_mod;
     double rcond = -1.0;
@@ -653,7 +656,8 @@ void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **
 void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti, 
                             double **amat, double *bvec, double **cmat, double *dvec)
 {
-    int i, j, k, l;
+    int i, j;
+    unsigned long k, l;
     int M_Start, M_End;
     int mset;
     unsigned int iboot;
@@ -780,7 +784,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
 void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_used, const int nmulti, const int nskip, 
                                 double **amat, double *bvec, double **cmat, double *dvec)
 {
-    int i, j, k;
+    int i, j;
+    unsigned long k;
     int iend;
     int M_Start, M_End;
     int mset;
@@ -1246,7 +1251,7 @@ int Fitting::rankQRD(const int m, const int n, double *mat, const double toleran
     double **mat_tmp;
     memory->allocate(mat_tmp, m_, n_);
 
-    int k = 0;
+    unsigned long k = 0;
 
     for (int j = 0; j < n_; ++j) {
         for (int i = 0; i < m_; ++i) {
