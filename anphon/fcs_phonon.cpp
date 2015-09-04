@@ -35,7 +35,6 @@ using namespace PHON_NS;
 Fcs_phonon::Fcs_phonon(PHON *phon): Pointers(phon) {}
 
 Fcs_phonon::~Fcs_phonon(){
-    memory->deallocate(force_constant);
     memory->deallocate(force_constant_with_cell);
 }
 
@@ -84,29 +83,27 @@ void Fcs_phonon::setup(std::string mode)
         }
     }
 
-    if (mympi->my_rank == 0) load_fc2_xml();
-    is_fc2_ext = true;
-
-    MPI_Bcast(&is_fc2_ext, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast_fc2_ext();
-
-    memory->allocate(force_constant, maxorder);
     memory->allocate(force_constant_with_cell, maxorder);
 
     if (mympi->my_rank == 0) {
         double *maxdev;
 
+        load_fc2_xml();
         load_fcs_xml();
 
         for (i = 0; i < maxorder; ++i){
             std::cout << "  Number of non-zero IFCs for " << i + 2 << " order: ";
-            std::cout << force_constant[i].size() << std::endl;
+            if (i == 0) {
+                std::cout << fc2_ext.size() << std::endl;
+            } else {
+                std::cout << force_constant_with_cell[i].size() << std::endl;
+            }
         }
         std::cout << std::endl;
 
         memory->allocate(maxdev, maxorder);
-        examine_translational_invariance(maxorder, system->nat, system->natmin, 
-            maxdev, force_constant_with_cell);
+        examine_translational_invariance(maxorder, system->nat_anharm, system->natmin, 
+            maxdev, fc2_ext, force_constant_with_cell);
 
         std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
         for (i = 0; i < maxorder; ++i) {
@@ -117,9 +114,10 @@ void Fcs_phonon::setup(std::string mode)
         memory->deallocate(maxdev);
     }
 
-    MPI_Bcast_fc_class(maxorder);
+    MPI_Bcast_fc2_ext();
     MPI_Bcast_fcs_array(maxorder);
 }
+
 
 void Fcs_phonon::load_fc2_xml()
 {
@@ -130,12 +128,22 @@ void Fcs_phonon::load_fc2_xml()
     std::stringstream ss1, ss2;
     FcsClassExtent fcext_tmp;
 
-    try {
-        read_xml(file_fcs, pt);
-    } 
-    catch (std::exception &e) {
-    	std::string str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
-        error->exit("load_fc2_xml", str_error.c_str());
+    if (update_fc2) {
+        try {
+            read_xml(file_fc2, pt);
+        } 
+        catch (std::exception &e) {
+            std::string str_error = "Cannot open file FC2XML ( " + file_fcs + " )";
+            error->exit("load_fc2_xml", str_error.c_str());
+        }
+    } else {
+        try {
+            read_xml(file_fcs, pt);
+        } 
+        catch (std::exception &e) {
+            std::string str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
+            error->exit("load_fc2_xml", str_error.c_str());
+        }
     }
 
     fc2_ext.clear();
@@ -234,11 +242,11 @@ void Fcs_phonon::load_fcs_xml()
                 if (i == 0) {
 
                     ss >> atmn >> xyz;
-                    ivec_tmp.index = 3 * system->map_p2s[atmn - 1][0] + xyz - 1;
+                    ivec_tmp.index = 3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1;
                     ivec_tmp.cell_s = 0;
                     ivec_tmp.tran = 0; // dummy
                     ivec_with_cell.push_back(ivec_tmp);
-                    ivec.push_back(3 * system->map_p2s[atmn - 1][0] + xyz - 1);
+                    ivec.push_back(3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1);
 
                 } else {
 
@@ -253,21 +261,7 @@ void Fcs_phonon::load_fcs_xml()
 
             }
 
-            if (std::abs(fcs_val) > eps) {
-                do {
-                    tri_vec.clear();
-
-                    for (i = 0; i < order + 2; ++i){
-                        tri_tmp.atom = system->map_s2p[ivec[i] / 3].atom_num;
-                        tri_tmp.cell = system->map_s2p[ivec[i] / 3].tran_num;
-                        tri_tmp.xyz  = ivec[i] % 3;
-
-                        tri_vec.push_back(tri_tmp);
-                    }
-
-                    force_constant[order].push_back(FcsClass(fcs_val, tri_vec));
-
-                } while (std::next_permutation(ivec.begin() + 1, ivec.end()));   
+            if (std::abs(fcs_val) > eps) { 
 
                 do {
                     
@@ -276,9 +270,9 @@ void Fcs_phonon::load_fcs_xml()
                     for (i = 0; i < ivec_with_cell.size(); ++i) {
                         atmn = ivec_with_cell[i].index / 3;
                         xyz = ivec_with_cell[i].index % 3;
-                        ivec_tmp.index = 3 * system->map_s2p[atmn].atom_num + xyz;
+                        ivec_tmp.index = 3 * system->map_s2p_anharm[atmn].atom_num + xyz;
                         ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
-                        ivec_tmp.tran = system->map_s2p[atmn].tran_num;
+                        ivec_tmp.tran = system->map_s2p_anharm[atmn].tran_num;
                         ivec_copy.push_back(ivec_tmp);
                     }
 
@@ -395,7 +389,8 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 
 
 void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat, const unsigned int natmin, 
-                                                  double *ret, std::vector<FcsArrayWithCell> *fcs)
+                                                  double *ret, std::vector<FcsClassExtent> fc2,
+                                                  std::vector<FcsArrayWithCell> *fcs)
 {
     int i, j, k, l, m;
     int nsize;
@@ -420,9 +415,8 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
-       //         sum2[3 * (*it).elems[0].atom + (*it).elems[0].xyz][(*it).elems[1].xyz] += (*it).fcs_val;
-                  sum2[(*it).pairs[0].index][(*it).pairs[1].index%3] += (*it).fcs_val;
+            for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
+                  sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
             }
 
             for (j = 0; j < 3 * natmin; ++j) {
@@ -446,9 +440,6 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
             }
 
             for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
-//                 j = 3 * (*it).elems[0].atom + (*it).elems[0].xyz;
-//                 k = 3 * (natmin * (*it).elems[1].cell + (*it).elems[1].atom) + (*it).elems[1].xyz;
-//                 l = (*it).elems[2].xyz;
                 j = (*it).pairs[0].index;
                 k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
                 l = (*it).pairs[2].index % 3;
@@ -480,10 +471,6 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
             }
 
             for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
-//                 j = 3 * (*it).elems[0].atom + (*it).elems[0].xyz;
-//                 k = 3 * (natmin * (*it).elems[1].cell + (*it).elems[1].atom) + (*it).elems[1].xyz;
-//                 l = 3 * (natmin * (*it).elems[2].cell + (*it).elems[2].atom) + (*it).elems[2].xyz;
-//                 m = (*it).elems[3].xyz;
                 j = (*it).pairs[0].index;
                 k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
                 l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;

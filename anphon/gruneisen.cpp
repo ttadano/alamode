@@ -62,7 +62,6 @@ void Gruneisen::setup()
     }
 
     if (print_gruneisen || print_newfcs) {
-
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[1], delta_fc2);
     }
 
@@ -88,6 +87,7 @@ void Gruneisen::setup()
     }
 
  //   print_stress_energy();
+
 }
 
 void Gruneisen::finish_gruneisen()
@@ -185,22 +185,22 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 
         tran = (*it).pairs[1].tran;
         cell_s = (*it).pairs[1].cell_s;
-
-        atm1_s = system->map_p2s[atm1][0];
-        atm2_s = system->map_p2s[atm2][tran];
+        
+        atm1_s = system->map_p2s_anharm[atm1][0];
+        atm2_s = system->map_p2s_anharm[atm2][tran];
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[atm2_s][i] + xshift_s[cell_s][i] 
-            - system->xr_s[system->map_p2s[atm2][0]][i];
+            vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[cell_s][i] 
+            - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
         }
 
-        rotvec(vec, vec, system->lavec_s);
+        rotvec(vec, vec, system->lavec_s_anharm);
         rotvec(vec, vec, system->rlavec_p);
 
         phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2] 
-        += (*it).fcs_val * std::exp(-im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+        += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
     }
 
 }
@@ -269,11 +269,11 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
         }
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[system->map_p2s[(*it).pairs[norder - 1].index / 3][(*it).pairs[norder - 1].tran]][i]
+            vec[i] = system->xr_s_anharm[system->map_p2s_anharm[(*it).pairs[norder - 1].index / 3][(*it).pairs[norder - 1].tran]][i]
                    + xshift_s[(*it).pairs[norder - 1].cell_s][i];
         }
 
-        rotvec(vec, vec, system->lavec_s);
+        rotvec(vec, vec, system->lavec_s_anharm);
 
         fcs_tmp += (*it).fcs_val * vec[(*it).pairs[norder - 1].index % 3];
     }
@@ -286,6 +286,11 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
 void Gruneisen::write_new_fcsxml_all()
 {
     std::cout << std::endl;
+
+    if (fcs_phonon->update_fc2) {
+        error->warn("write_new_fcsxml_all",
+            "NEWFCS = 1 cannot be combined with the FC2XML.");
+    } else {
     std::cout << " NEWFCS = 1 : Following XML files are created. " << std::endl;
 
     std::string file_xml;
@@ -303,6 +308,7 @@ void Gruneisen::write_new_fcsxml_all()
     std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_xml;
     std::cout << " : Force constants of the system compressed by "
         << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+    }
 }
 
 void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double change_ratio_of_a)
@@ -556,6 +562,7 @@ std::string Gruneisen::double2string(const double d){
 //         }
 //     }
 // }
+// 
 // 
 // void Gruneisen::print_stress_energy()
 // {

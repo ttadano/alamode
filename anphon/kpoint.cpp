@@ -518,7 +518,7 @@ void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo, unsigned int &np
 
     memory->allocate(kp_plane, nplane);
     memory->allocate(kp_planes_tri, nplane);
-//    std::cout << "OK" << std::endl;    
+
     if (mympi->my_rank == 0) {
         gen_kpoints_plane(kpinfo, kp_plane, kp_planes_tri);
 
@@ -547,7 +547,6 @@ void Kpoint::gen_kmesh(const bool usesym, const unsigned int nk_in[3], double **
     unsigned int nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
     int nsym;
 
-    // std::cout << "Generating uniform k-point grid ..." << std::endl;
 
     memory->allocate(xkr, nk_tot, 3);
 
@@ -561,6 +560,7 @@ void Kpoint::gen_kmesh(const bool usesym, const unsigned int nk_in[3], double **
             }
         }
     }
+
     if (usesym) {
         nsym = symmetry->SymmList.size();
     } else {
@@ -638,7 +638,9 @@ void Kpoint::reduce_kpoints(const unsigned int nsym, double **xkr, const unsigne
 
             for (i = 0; i < 3; ++i) xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
 
-            nloc = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+//            nloc = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+
+            nloc = get_knum(xk_sym, nk_in);
 
             if (nloc == -1) {
 
@@ -663,7 +665,8 @@ void Kpoint::reduce_kpoints(const unsigned int nsym, double **xkr, const unsigne
             if (symmetry->time_reversal_sym) {
 
                 for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0; 
-                nloc = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+//                nloc = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+                nloc = get_knum(xk_sym, nk_in);
 
                 if (nloc == -1) {
 
@@ -864,6 +867,34 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
         kloc = (nint(kz*dkz + 2.0 * dkz)) % nkz;
 
         return kloc + nkz * jloc + nky * nkz * iloc;
+    }
+}
+
+int Kpoint::get_knum(const double xk[3], const unsigned int nk[3])
+{
+    int i;
+    double diff[3];
+    double dnk[3];
+    double norm;
+
+    for (i = 0; i < 3; ++i) dnk[i]= static_cast<double>(nk[i]);
+    for (i = 0; i < 3; ++i) diff[i] = static_cast<double>(nint(xk[i]*dnk[i])) - xk[i] * dnk[i];
+         
+    norm = std::sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
+
+    if (norm >= eps12) {
+
+        return -1;
+
+    } else {
+
+        int iloc, jloc, kloc;
+
+        iloc = (nint(xk[0]*dnk[0] + 2.0 * dnk[0])) % nk[0];
+        jloc = (nint(xk[1]*dnk[1] + 2.0 * dnk[1])) % nk[1];
+        kloc = (nint(xk[2]*dnk[2] + 2.0 * dnk[2])) % nk[2];
+
+        return kloc + nk[2] * jloc + nk[1] * nk[2] * iloc;
     }
 }
 

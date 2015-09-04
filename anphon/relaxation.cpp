@@ -340,7 +340,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in, c
         for (j = 0; j < 3; ++j){
             mat_convert[i][j] = 0.0;
             for (k = 0; k < 3; ++k){
-                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s[k][j]; 
+                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s_anharm[k][j]; 
             }
         }
     }
@@ -379,7 +379,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in, c
         for (i = 0; i < (*it).pairs.size(); ++i) {
             atm_p = (*it).pairs[i].index / 3;
             tran_tmp = (*it).pairs[i].tran;
-            atm_s = system->map_p2s[atm_p][tran_tmp];
+            atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
 
             atm_prim.push_back(atm_p);
             atm_super.push_back(atm_s);
@@ -390,14 +390,14 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in, c
         for (i = 0; i < N - 1; ++i) {
 
             for (j = 0; j < 3; ++j) {
-                vec[j] = system->xr_s[atm_super[i + 1]][j] + xshift_s[cells[i + 1]][j] 
-                - system->xr_s[system->map_p2s[atm_prim[i + 1]][0]][j];
+                vec[j] = system->xr_s_anharm[atm_super[i + 1]][j] + xshift_s[cells[i + 1]][j] 
+                - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][j];
             }
 
             rotvec(vec, vec, mat_convert);
 
             for (j = 0; j < 3; ++j) {
-                vec_out[j][i][icount] = -vec[j];
+                vec_out[j][i][icount] = vec[j];
             }
         }
         ++icount;

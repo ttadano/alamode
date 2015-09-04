@@ -125,13 +125,13 @@ namespace PHON_NS {
 
         void setup(std::string);
         unsigned int maxorder;
-        std::string file_fcs;
+        std::string file_fcs, file_fc2;
 
         std::vector<FcsClass> *force_constant;
         std::vector<FcsArrayWithCell> *force_constant_with_cell;
         std::vector<FcsClassExtent> fc2_ext;
 
-        bool is_fc2_ext;
+        bool update_fc2;
 
     private:
         bool require_cubic;
@@ -141,7 +141,8 @@ namespace PHON_NS {
         void load_fcs_xml();
 
         void examine_translational_invariance(const int, const unsigned int, const unsigned int,
-            double *, std::vector<FcsArrayWithCell> *);
+            double *, std::vector<FcsClassExtent>, std::vector<FcsArrayWithCell> *);
+
 
         void MPI_Bcast_fc_class(const unsigned int);
         void MPI_Bcast_fcs_array(const unsigned int);

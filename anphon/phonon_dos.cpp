@@ -138,10 +138,8 @@ void Dos::calc_dos_all()
             eval[k][j] = writes->in_kayser(dynamical->eval_phonon[j][k]);
         }
     }
-
     calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
         dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
-
 
     if (projected_dos) {
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
@@ -162,7 +160,7 @@ void Dos::calc_dos_all()
     }
 }
 
-void PHON_NS::Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, double **eval, 
+void Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, double **eval, 
                             const unsigned int n, double *energy, double *ret, const unsigned int neval, const int smearing_method,
                             std::vector<std::vector<KpointList> > &kpinfo)
 {
@@ -198,7 +196,7 @@ void PHON_NS::Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, doubl
     if (mympi->my_rank == 0) std::cout << " done." << std::endl;
 }
 
-void PHON_NS::Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const unsigned int n, double *energy,
+void Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const unsigned int n, double *energy,
                                            double **ret, const unsigned int neval, const unsigned int natmin, const int smearing_method,
                                            std::complex<double> ***evec)
 {
@@ -747,3 +745,4 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
     memory->deallocate(delta_arr);
     memory->deallocate(kmap_identity);
 }
+
