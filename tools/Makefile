@@ -21,9 +21,9 @@ INCLUDE = -I../include
 .cpp.o:
 	${CXX} ${CXXFLAGS} ${INCLUDE} -c $<
 
-PROG = analyze_phonons
+PROG = analyze_phonons qe2alm
 
-CXXSRC = analyze_phonons.cpp
+CXXSRC = analyze_phonons.cpp qe2alm.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
@@ -31,8 +31,11 @@ default: all
 
 all: ${PROG}
 
-analyze_phonons: ${OBJS}
-	${CXX} ${CXXFLAGS} -o $@ ${OBJS} 
+analyze_phonons: analyze_phonons.o
+	${CXX} ${CXXFLAGS} -o $@ $<
+
+qe2alm: qe2alm.o
+	${CXX} ${CXXFLAGS} -o $@ $<
 
 clean:
 	rm -f ${OBJS}
