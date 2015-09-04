@@ -33,18 +33,18 @@ using namespace PHON_NS;
 System::System(PHON *phon): Pointers(phon) {}
 
 System::~System() {
-	memory->deallocate(xr_p);
-	memory->deallocate(xr_s);
+    memory->deallocate(xr_p);
+    memory->deallocate(xr_s);
     memory->deallocate(xr_s_anharm);
-	memory->deallocate(kd);
+    memory->deallocate(kd);
     memory->deallocate(kd_anharm);
-	memory->deallocate(xc);
-	memory->deallocate(mass);
-	memory->deallocate(map_p2s);
+    memory->deallocate(xc);
+    memory->deallocate(mass);
+    memory->deallocate(map_p2s);
     memory->deallocate(map_p2s_anharm);
-	memory->deallocate(map_s2p);
+    memory->deallocate(map_s2p);
     memory->deallocate(map_s2p_anharm);
-	memory->deallocate(mass_kd);
+    memory->deallocate(mass_kd);
 }
 
 void System::setup()
@@ -437,7 +437,7 @@ void System::load_system_info_from_XML()
         memory->allocate(map_p2s, natmin, ntran);
         memory->allocate(map_p2s_anharm, natmin, ntran_anharm);
         memory->allocate(map_s2p, nat);
-        memory->allocate(map_s2p, nat_anharm);
+        memory->allocate(map_s2p_anharm, nat_anharm);
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
