@@ -76,6 +76,14 @@ List of input variables
 
 ````
 
+* FC2XML-tag : XML file containing harmonic force constants for different size of supercell
+
+ :Default: None
+ :Type: String
+ :Description: When ``FC2XML`` is given, the harmonic force constants in this file will be used for calculating dynamical matricies. It is possible to use different size of supercell for harmonic and anharmonic terms, which are specified by ``FC2XML`` and ``FCSXML`` respectively.
+
+````
+
 * NSYM-tag = 0 | 1 | nsym
 
  ===== ======================================================================
