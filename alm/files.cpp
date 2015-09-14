@@ -19,8 +19,8 @@ using namespace ALM_NS;
 
 Files::Files(ALM *alm): Pointers(alm) {}
 Files::~Files() {
-    if (alm->mode == "fitting") {
-        closefiles();
+    if (alm->mode == "fitting" || alm->mode == "lasso") {
+//        closefiles();
     } else if (alm->mode == "suggest") {
         memory->deallocate(file_disp_pattern);
     }
@@ -65,5 +65,5 @@ void Files::init()
 {
     setfilenames();
 
-    if (alm->mode == "fitting") openfiles();
+//    if (alm->mode == "fitting" || alm->mode == "lasso") openfiles();
 }

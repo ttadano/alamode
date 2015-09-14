@@ -309,7 +309,24 @@ The phonon lifetime is estimated using the Matthiessen's rule as
 
 The lattice thermal conductivity will be written to the file ``PREFIX``.kl.
 
+Cumulative thermal conductivity
+-------------------------------
 
+The accumulative lattice thermal conductivity :math:`\kappa_{\mathrm{ph,acc}}^{\mu\nu}(L)` is defined as
+
+.. math::
+  
+  \kappa_{\mathrm{ph,acc}}^{\mu\mu}(L) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\Theta (L-|\boldsymbol{v}_{\boldsymbol{q}j}|\tau_{\boldsymbol{q}j}),
+
+where :math:`\Theta(x)` is the step function. This quantity can be calculated by using the script ``analyze_phonons.py`` with ``--calc cumulative`` flag. 
+One can also use another definition for the accumulative thermal conductivity:
+
+.. math::
+  
+  \kappa_{\mathrm{ph,acc}}^{\mu\nu}(L) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\Theta (L-|v_{\boldsymbol{q}j}^{\mu}|\tau_{\boldsymbol{q}j}).
+
+In this case, the contribution to the total thermal conductivity is limited only from phonon modes whose mean-free-path along the :math:`\mu`\ -direction is smaller than :math:`L`.
+To calculate this, please use the ``--calc cumulative2`` flag and specify the direction :math:`\mu` by the ``--direction`` option.
 
 Delta function
 --------------

@@ -156,6 +156,7 @@ void Writes::write_force_constants()
     }
 
     for (icell = 0; icell < nneib; ++icell) system->frac2cart(xcrd[icell]);
+
     
     for (order = 0; order < maxorder; ++order) {
         str_fcs[order] = "*FC" + boost::lexical_cast<std::string>(order + 2);
@@ -178,15 +179,11 @@ void Writes::write_force_constants()
 
 
                 atom_tmp.clear();
-
                 for (l = 1; l < order + 2; ++l) {
                     atom_tmp.push_back(fcs->fc_set[order][m].elems[l] / 3);
                 }
-
                 j = symmetry->map_s2p[fcs->fc_set[order][m].elems[0]/3].atom_num;
-
                 std::sort(atom_tmp.begin(), atom_tmp.end());
-
 
                 iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
 
@@ -393,7 +390,7 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ALM_version", "0.9.5");
+    pt.put("Data.ALM_version", "0.9.6");
     pt.put("Data.Fitting.DisplaceFile", files->file_disp);
     pt.put("Data.Fitting.ForceFile", files->file_force);
     pt.put("Data.Fitting.Constraint", constraint->constraint_mode);

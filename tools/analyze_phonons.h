@@ -1,3 +1,13 @@
+/*
+ analyze_phonons.h
+
+ Copyright (c) 2014 Terumasa Tadano
+
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
+*/
+
 #pragma once
 
 #include <string>
@@ -34,9 +44,10 @@ int average_gamma;
 void calc_tau(int);
 void calc_tau_temp(int, int);
 void calc_kappa();
-void calc_kappa_size(double, double, int, int [3]);
-void calc_kappa_size2(double, double, int, int [3]);
+void calc_kappa_cumulative(double, double, int);
+void calc_kappa_cumulative2(double, double, int, int [3]);
 void calc_kappa_boundary(const double);
+void calc_kappa_boundary2(double, double, int, int [3]);
 double Cv(double, double);
 
 void average_gamma_at_degenerate_point(double **, double ***, const int, const int, const int);

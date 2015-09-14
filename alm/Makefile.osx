@@ -5,9 +5,9 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-# Use gcc 4.9 to use OpenMP 
+# Use gcc >= 4.8 to use OpenMP 
 # OpenMP-enabled gcc can be installed via homebrew
-CXX = g++-4.9
+CXX = g++-5
 CXXFLAGS = -O2 -fopenmp
 INCLUDE = -I../include
 

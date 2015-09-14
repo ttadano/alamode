@@ -135,6 +135,7 @@ namespace PHON_NS {
 
 
         int get_knum(const double, const double, const double);
+        int get_knum(const double [3], const unsigned int [3]);
 
         void generate_irreducible_kmap(int *, unsigned int &, std::vector<int> &,
             const unsigned int, const unsigned int, const unsigned int, 

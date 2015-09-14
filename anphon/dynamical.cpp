@@ -1,11 +1,11 @@
 /*
-dynamical.cpp
+ dynamical.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014 Terumasa Tadano
 
-This file is distributed under the terms of the MIT license.
-Please see the file 'LICENCE.txt' in the root directory 
-or http://opensource.org/licenses/mit-license.php for information.
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
@@ -217,8 +217,8 @@ double Dynamical::distance(double *x1, double *x2)
 
 
 void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext,
-                       double *eval_out, std::complex<double> **evec_out, bool require_evec) {
-
+                       double *eval_out, std::complex<double> **evec_out, bool require_evec) 
+{
     // Calculate phonon energy for the specific k-point given in fractional basis
 
     unsigned int i, j;
@@ -235,7 +235,7 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
         std::complex<double> **dymat_na_k;
 
         memory->allocate(dymat_na_k, neval, neval);
-        
+
         if (nonanalytic == 1) {
             calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
         } else if (nonanalytic == 2) {
@@ -253,9 +253,10 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     // Force the dynamical matrix be real when k point is
     // zone-center or zone-boundaries.
 
-    if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2)
-                  + std::pow(std::fmod(xk_in[1], 0.5), 2)
-                  + std::pow(std::fmod(xk_in[2], 0.5), 2)) < eps) {
+    if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0) 
+                + std::pow(std::fmod(xk_in[1], 0.5), 2.0) 
+                + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
+
         for (i= 0; i < 3 * system->natmin; ++i) {
             for (j = 0; j < 3 * system->natmin; ++j) {
                 dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
@@ -277,8 +278,9 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
 
     unsigned int k = 0;
     int n = dynamical->neval;
-    for(i = 0; i < neval; ++i){
-        for (j = 0; j < neval; ++j){
+
+    for (j = 0; j < neval; ++j) {
+        for (i = 0; i < neval; ++i) {
             amat[k++] = dymat_k[i][j];
         }
     }
@@ -294,11 +296,13 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     // Perform diagonalization
     zheev_(&JOBZ, &UPLO, &n, amat, &n, eval_out, WORK, &LWORK, RWORK, &INFO);
 
-    if (eigenvectors && require_evec){
+    if (eigenvectors && require_evec) {
         k = 0;
-        for(i = 0; i < neval; ++i){
-            for (j = 0; j < neval; ++j){
-                evec_out[i][j] = amat[k++];
+        // Here we transpose the matrix evec_out so that 
+        // evec_out[i] becomes phonon eigenvector of i-th mode.
+        for (j = 0; j < neval; ++j) {
+            for (i = 0; i < neval; ++i) {
+                evec_out[j][i] = amat[k++];
             }
         }
     }
@@ -317,15 +321,17 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
     unsigned int xyz1, xyz2;
     unsigned int icell;
 
+    int nmode = 3 * system->natmin;
+
     double vec[3];
     double phase;
     std::complex<double> im(0.0, 1.0);
     std::complex<double> **ctmp;
 
-    memory->allocate(ctmp, 3*system->natmin, 3*system->natmin);
+    memory->allocate(ctmp, nmode, nmode);
 
-    for (i = 0; i < 3*system->natmin; ++i) {
-        for (j = 0; j < 3*system->natmin; ++j) {
+    for (i = 0; i < nmode; ++i) {
+        for (j = 0; j < nmode; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);
         }
     }
@@ -540,9 +546,6 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
                 }
                 exp_phase /= static_cast<double>(system->ntran);
 
-              //  std::cout << std::setw(15) << exp_phase.real() << std::setw(15) << exp_phase.imag() << std::endl; 
-
-
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         dymat_na_out[3 * iat + i][3 * jat + j] 
@@ -552,9 +555,9 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
             }
         }
     }
-    
+
     factor = 8.0 * pi / system->volume_p;
-    
+
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
             dymat_na_out[i][j] *= factor;
@@ -589,7 +592,8 @@ void Dynamical::diagonalize_dynamical_all()
 #pragma omp parallel for private (is)
     for (ik = 0; ik < nk; ++ik){
 
-        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, eval_phonon[ik], evec_phonon[ik], require_evec);
+        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, 
+               eval_phonon[ik], evec_phonon[ik], require_evec);
 
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is){
@@ -686,6 +690,9 @@ void Dynamical::load_born()
             }
         }
     }
+    ifs_born.close();
+
+    
     std::cout << "  Dielectric constants and Born effective charges are read from " 
         << file_born << "." << std::endl << std::endl;
     std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
@@ -712,13 +719,8 @@ void Dynamical::load_born()
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             sum_born[i][j] = 0.0;
-        }
-    }
-
-    for (i = 0; i < system->natmin; ++i) {
-        for (j = 0; j < 3; ++j) {
-            for (k = 0; k < 3; ++k) {
-                sum_born[j][k] += borncharge[i][j][k];
+            for (k = 0; k < system->natmin; ++k) {
+                sum_born[i][j] += borncharge[k][i][j];
             }
         }
     }
@@ -823,7 +825,7 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, doub
     for (iat = 0; iat < natmin; ++iat) {
         ret[iat] = (std::norm(evec[3 * iat]) 
             + std::norm(evec[3 * iat + 1]) 
-            + std::norm(evec[3 * iat + 2])) / system->mass[iat];
+            + std::norm(evec[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
     }
 
     sum = 0.0;
