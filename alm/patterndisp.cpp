@@ -20,6 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "constraint.h"
 #include <map>
+#include <boost/bimap.hpp>
 
 using namespace ALM_NS;
 
@@ -38,67 +39,45 @@ void Displace::gen_displacement_pattern()
     std::set<ConstraintClass> *constsym;
 
     std::vector<int> pairs;
-    std::vector<std::vector<int> > *constpairs;
     std::set<int> *include_set;
+    std::set<DispAtomSet> *dispset;
+
+    std::vector<ConstraintTypeFix> *const_fix_tmp;
+    std::vector<ConstraintTypeRelate> *const_relate_tmp;
+    boost::bimap<int, int> *index_bimap_tmp;
 
     memory->allocate(constsym, maxorder);
-    memory->allocate(constpairs, maxorder);
+    memory->allocate(const_fix_tmp, maxorder);
+    memory->allocate(const_relate_tmp, maxorder);
+    memory->allocate(index_bimap_tmp, maxorder);
 
     constraint->constraint_from_symmetry(constsym);
+    constraint->get_mapping_constraint(maxorder, constsym, const_fix_tmp, 
+        const_relate_tmp, index_bimap_tmp, true);
 
     for (order = 0; order < maxorder; ++order) {
-
-        int nparams = fcs->ndup[order].size();
-
-        for (std::set<ConstraintClass>::const_iterator it = constsym[order].begin(); 
-            it != constsym[order].end(); ++it) {
-            pairs.clear();
-            for (i = 0; i < nparams; ++i) {
-                if (std::abs((*it).w_const[i])> eps12) {
-                    pairs.push_back(i);
-                }
-            }
-            constpairs[order].push_back(pairs);
-        }
+        std::cout << "  Number of free" << std::setw(9) << interaction->str_order[order] << " FCs : " 
+            << index_bimap_tmp[order].size() << std::endl;
     }
+    std::cout << std::endl;
 
-// 
-//     for (order = 0; order < maxorder; ++order) {
-//         std::sort(constpairs[order].begin(), constpairs[order].end());
-//         for (i = 0; i < constpairs[order].size(); ++i) {
-//             for (j = 0; j < constpairs[order][i].size(); ++j) {
-//                 std::cout << std::setw(5) << constpairs[order][i][j];
-//             }
-//             std::cout << std::endl;
-//         }
-//         std::cout << std::endl;
-//     }
-
-    std::set<int>::iterator iter_found;
+    memory->deallocate(constsym);
+    memory->deallocate(const_fix_tmp);
+    memory->deallocate(const_relate_tmp);
 
     memory->allocate(include_set, maxorder);
+
     for (order = 0; order < maxorder; ++order) {
         include_set[order].clear();
-        int nparams = fcs->ndup[order].size();
 
-        for (i = 0; i < nparams; ++i) {
-            include_set[order].insert(i);
-        }
-
-        for (i = 0; i < constpairs[order].size(); ++i) {
-            
-            // Is there any clever way to trim displacement patterns?
-            int len = constpairs[order][i].size();
-        //    int target = constpairs[order][i][len - 1];
-            
-            int target = constpairs[order][i][0];
-
-            iter_found = include_set[order].find(target);
-            if (iter_found != include_set[order].end()) {
-                include_set[order].erase(iter_found);
-            }
+        for (boost::bimap<int, int>::const_iterator it = index_bimap_tmp[order].begin(); 
+            it != index_bimap_tmp[order].end(); ++it) {
+                include_set[order].insert((*it).right);
         }
     }
+
+    memory->deallocate(index_bimap_tmp);
+
 
     std::cout << " Generating displacement patterns in ";
     if (disp_basis[0] == 'C') {
@@ -131,41 +110,34 @@ void Displace::gen_displacement_pattern()
                 dispset[order].insert(DispAtomSet(group_tmp));
 
             }
-           
+
             m += fcs->ndup[order][i];
         }
     }
     memory->deallocate(include_set);
 
     memory->allocate(pattern_all, maxorder);
-
-    generate_pattern_all(maxorder, pattern_all);
+    generate_pattern_all(maxorder, pattern_all, dispset);
 
     memory->deallocate(dispset);
-    memory->deallocate(constsym);
-    memory->deallocate(constpairs);
+
 
     std::cout << " done!" << std::endl;
 }
 
-void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> *pattern)
+void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> *pattern, 
+                                    std::set<DispAtomSet> *dispset_in)
 {
     int i, j;
     int order;
-    int atom_tmp;
-    double disp_tmp[3];
-    double norm;
-    double *direc_tmp;
-
-    std::vector<int> atoms;
-    std::vector<double> directions;
-    std::vector<std::vector<int> > *sign_prod, sign_reduced;
-    std::vector<int> vec_tmp;
-
-    int natom_disp;
+    int atom_tmp, natom_disp;
     double sign_double;
-    std::vector<int> nums;
-    std::vector<double> directions_copy;
+    double disp_tmp[3];
+
+    std::vector<int> atoms, vec_tmp, nums;
+    std::vector<double> directions, directions_copy;
+    std::vector<std::vector<int> > *sign_prod, sign_reduced;
+
 
     memory->allocate(sign_prod, N);
 
@@ -178,7 +150,8 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
         pattern[order].clear();
 
-        for (std::set<DispAtomSet>::iterator it = dispset[order].begin(); it != dispset[order].end(); ++it) {
+        for (std::set<DispAtomSet>::iterator it = dispset_in[order].begin(); 
+            it != dispset_in[order].end(); ++it) {
 
             atoms.clear();
             directions.clear();

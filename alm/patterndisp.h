@@ -113,9 +113,9 @@ namespace ALM_NS {
         void gen_displacement_pattern();
 
     private:
-        std::set<DispAtomSet> *dispset;
+    //    std::set<DispAtomSet> *dispset;
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
-        void generate_pattern_all(const int, std::vector<AtomWithDirection> *);
+        void generate_pattern_all(const int, std::vector<AtomWithDirection> *, std::set<DispAtomSet> *);
 
         void generate_signvecs(const int, std::vector<std::vector <int> > &, std::vector<int>);
         void find_unique_sign_pairs(const int, std::vector<std::vector<int> >, 

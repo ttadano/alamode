@@ -98,13 +98,14 @@ void Input::parse_general_vars()
     bool printsymmetry;
     bool restart;
     bool sym_time_reversal, use_triplet_symmetry;
+    bool update_fc2;
 
     struct stat st;
-    std::string prefix, mode, fcsinfo;
+    std::string prefix, mode, fcsinfo, fc2info;
     std::string borninfo, file_result;
     std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML TMIN TMAX DT \
+    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML FC2XML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
                                    RESTART TREVSYM NKD KD MASS TRISYM";
     std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
@@ -198,6 +199,7 @@ void Input::parse_general_vars()
 
     nbands = -1;
     borninfo = "";
+    fc2info = "";
 
     ismear = -1;
     epsilon = 10.0;
@@ -224,6 +226,7 @@ void Input::parse_general_vars()
 
     assign_val(nbands, "NBANDS", general_var_dict);
     assign_val(borninfo, "BORNINFO", general_var_dict);
+    assign_val(fc2info, "FC2XML", general_var_dict);
 
     assign_val(ismear, "ISMEAR", general_var_dict);
     assign_val(epsilon, "EPSILON", general_var_dict);
@@ -271,6 +274,14 @@ void Input::parse_general_vars()
     dynamical->file_born = borninfo;
     integration->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsinfo;
+    if (!fc2info.empty()) {
+        update_fc2 = true;
+    } else {
+        update_fc2 = false;
+    }
+    fcs_phonon->file_fc2 = fc2info;
+    fcs_phonon->update_fc2 = update_fc2;
+
     integration->ismear = ismear;
     relaxation->use_triplet_symmetry = use_triplet_symmetry;
 

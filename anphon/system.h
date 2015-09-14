@@ -25,25 +25,29 @@ namespace PHON_NS {
 
         double lavec_s[3][3], rlavec_s[3][3];
         double lavec_p[3][3], rlavec_p[3][3];
+        double lavec_s_anharm[3][3], rlavec_s_anharm[3][3];
         double **xr_p, **xr_s, **xc;
+        double **xr_s_anharm;
         double volume_p;
 
         unsigned int nat, natmin, ntran;
+        unsigned int nat_anharm, ntran_anharm;
         unsigned int *kd, nkd;
+        unsigned int *kd_anharm;
 
         unsigned int nclassatom;
         std::vector<unsigned int> *atomlist_class;
 
-        unsigned int **map_p2s;
+        unsigned int **map_p2s, **map_p2s_anharm;
         class Maps {
         public:
             unsigned int atom_num;
             unsigned int tran_num;
         };
-        Maps *map_s2p;
+        Maps *map_s2p, *map_s2p_anharm;
 
         std::string *symbol_kd;
-        double *mass_kd, *mass;
+        double *mass_kd, *mass, *mass_anharm;
 
         double Tmin, Tmax, dT;
         double volume(double [3], double [3], double [3]);

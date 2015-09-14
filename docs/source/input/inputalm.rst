@@ -304,6 +304,8 @@ This field is necessary when ``MODE = fitting``.
    3   | In addition to ``ICONST = 2``, constraints for rotational invariance
        | between (``NORDER`` + 1)th order and (``NORDER`` + 2)th order, which
        | are zero, will be considered. 
+  11   | Same as ``ICONST = 1`` but the constraint is imposed algebraically
+       | rather than numerically.
  ===== =========================================================================
 
  :Default: 1
@@ -311,7 +313,7 @@ This field is necessary when ``MODE = fitting``.
 
 ````
 
-* ROTAXIS-tag : Rotation axis used to estimate constraints for rotational invariance. This entry is necessary when ``ICONST > 1``.
+* ROTAXIS-tag : Rotation axis used to estimate constraints for rotational invariance. This entry is necessary when ``ICONST = 2, 3``.
 
  :Default: None
  :Type: String

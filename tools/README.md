@@ -6,21 +6,18 @@ Each Python scripts does the followings:
 * extract.py : script to extract atomic displacements, forces, and total energies from output files.
 * plotband.py : script for visualizing phonon bands
 * plotdos.py : script for visualizing phonon DOS
-* analyze\_phonons.\* : programs for analyzing phonon lifetimes, mean-free-path, and (cumulative) thermal-conductivity 
-using the .result file as an input
 
 To use the scripts, Python environment (+ Numpy) is necessary.
 Matplotlib is also required for plotband.py and plotdos.py. 
 
 Usage of each script may be found in the header part of the source.
 
+Each c++ code does the followings:
 
-The following scripts are deprecated, and will be removed from the package in a future release.
-Please use displace.py or extract.py.
+* analyze\_phonons.\* : programs for analyzing phonon lifetimes, mean-free-path, 
+and (cumulative) thermal-conductivity using the .result file as an input
+* qe2alm.\* : program to convert Quantum-ESPRESSO force constant files to 
+ALAMODE xml files.
 
-* genPOSCAR.py : script for VASP users which makes POSCAR files of displaced configurations
-* genCG.py : script for xTAPP users which makes \*.cg files of displaced configurations
-* extVASP.py : script for VASP users which extvacts atomic displacements/forces from vasprun.xml files
-* extTAPP.py : script for xTAPP users which extvacts atomic displacements/forces from \*.str files
-
+To use these code, please edit the Makefile and do make.
 

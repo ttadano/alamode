@@ -116,7 +116,7 @@ void Fcs::generate_fclists(int maxorder)
         ndup[order].clear();
         nmother = 0;
 
-        nxyz = static_cast<int>(pow(static_cast<long double>(3), order + 2));
+        nxyz = static_cast<int>(std::pow(3.0, order + 2));
 
         memory->allocate(xyzcomponent, nxyz, order + 2);
         get_xyzcomponent(order + 2, xyzcomponent);
