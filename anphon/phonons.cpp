@@ -47,7 +47,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     if (mympi->my_rank == 0) {
         std::cout << " +------------------------------------------------------------+" << std::endl;
         std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver. 0.9.5                       +" << std::endl;
+        std::cout << " +                           Ver. 0.9.6                       +" << std::endl;
         std::cout << " +------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
