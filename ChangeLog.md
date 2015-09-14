@@ -1,3 +1,28 @@
+# Ver. 0.9.6 (2015-09-14)
+
+## New
+
+- New option ICONST=11 for ALM which considers translational invariance algebraically
+
+- FC2XML-tag for ANPHON. Using this tag, it is now possible to employ different size of 
+   supercells for harmonic and anharmonic terms.
+
+- qe2alm.cpp in the tools/ directory which converts Quantum-ESPRESSO fc files to ALAMODE xml files.
+
+## Changes
+
+- Changed the meaning of --calc=cumulative in analyze_phonons.py. 
+   The --calc=cumulative in the previous version is now equivalent to --calc=cumulative2.
+
+- Updated tutorial
+
+## Fix
+
+- Fix bugs related to memory allocation
+
+- Fix an issue in extract.py for QE
+
+
 # Ver. 0.9.5 (2015-06-28)
 
 ## New

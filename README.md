@@ -1,5 +1,5 @@
 # ALAMODE
-* Version 0.9.5 (Beta)
+* Version 0.9.6 (Beta)
 
 - - -
 
@@ -33,7 +33,7 @@ http://alamode.readthedocs.org
 
 
 ## License
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015 Terumasa Tadano
 This software is released under the MIT license. 
 For license rights and limitations, see LICENSE.txt file.
 
