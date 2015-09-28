@@ -202,16 +202,20 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
 
     x0 = np.round(x0, 8)
     x = np.zeros((nat, 3))
+    disp = np.zeros((nat, 3))
 
     lavec /= Bohr_to_angstrom
     lavec_transpose = lavec.transpose()
     lavec_transpose_inv = np.linalg.inv(lavec_transpose)
 
     search_flag = "site n.     atom                  positions (alat units)"
+    search_flag2 = "ATOMIC_POSITIONS (crystal)"
 
     for search_target in pwout_files:
 
         found_tag = False
+        x_list = []
+        num_data_disp = 0
 
         f = open(search_target, 'r')
 
@@ -246,7 +250,47 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
             disp *= conversion_factor
 
         for i in range(nat):
-            print "%15.7F %15.7F %15.7F" % (disp[i][0], disp[i][1], disp[i][2])
+            print "%15.7F %15.7F %15.7F" % (disp[i][0], 
+                                            disp[i][1], 
+                                            disp[i][2])
+
+        # Search other entries containing atomis position
+
+        while line:
+
+            if search_flag2 in line:
+                num_data_disp += 1
+
+                for i in range(nat):
+                    line = f.readline()
+                    x[i][:] = [float(t) for t in line.rstrip().split()[1:4]]
+                    for j in range(3):
+                        x_list.append(x[i][j])
+
+            line = f.readline()
+            
+        if num_data_disp > 1:
+            icount = 0
+            for step in range(num_data_disp-1):
+                for i in range(nat):
+                    for j in range(3):
+                        x[i][j] = x_list[icount]
+                        icount += 1
+
+                disp = x - x0
+                for i in range(nat):
+                    disp[i][:] = [refold(disp[i][j]) for j in range(3)]
+
+                disp = np.dot(disp, lavec_transpose)
+
+                if require_conversion:
+                    disp *= conversion_factor
+
+                for i in range(nat):
+                    print "%15.7F %15.7F %15.7F" % (disp[i][0], 
+                                                    disp[i][1], 
+                                                    disp[i][2])
+
 
 
 def print_atomicforces_QE(str_files, nat, 
@@ -275,7 +319,14 @@ def print_atomicforces_QE(str_files, nat,
                     line = f.readline()
                     force[i][:] = [float(t) for t in line.rstrip().split()[6:9]]
 
-                break
+                if require_conversion:
+                    force *= conversion_factor
+
+                for i in range(nat):
+                    print "%19.11E %19.11E %19.11E" % (force[i][0],
+                                                       force[i][1],
+                                                       force[i][2])
+
 
             line = f.readline()
 
@@ -283,13 +334,7 @@ def print_atomicforces_QE(str_files, nat,
             print "%s tag not found in %s" % (search_tag, search_target)
             exit(1)
 
-        if require_conversion:
-            force *= conversion_factor
 
-        for i in range(nat):
-            print "%19.11E %19.11E %19.11E" % (force[i][0],
-                                               force[i][1],
-                                               force[i][2])
 
 
 def print_energies_QE(str_files, require_conversion, conversion_factor):
@@ -311,7 +356,6 @@ def print_energies_QE(str_files, require_conversion, conversion_factor):
                     print "%19.11E" % etot
 
                     found_tag = True
-                    break
 
         if not found_tag:
             print "%s tag not found in %s" % (search_tag, search_target)
