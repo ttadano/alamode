@@ -517,7 +517,7 @@ void Relaxation::setup_mode_analysis()
                     knum_tmp = kpoint->get_knum(ktmp[0], ktmp[1], ktmp[2]);
 
                     if (knum_tmp == -1) error->exit("setup_mode_analysis", 
-                        "Given kpoint is not exist in given k-point grid.");
+                        "Given kpoint does not exist in given k-point grid.");
                     if (snum_tmp <= 0 || snum_tmp > dynamical->neval) {
                         error->exit("setup_mode_analysis", "Mode index out of range.");
                     }
@@ -1345,7 +1345,7 @@ void Relaxation::perform_mode_analysis()
                 ofs_V3 << std::endl;
                 ofs_V3 << "# mode = " << snum + 1<< std::endl;
                 ofs_V3 << "# Frequency = " << writes->in_kayser(omega) << std::endl;
-                ofs_V3 << "## Temperature dependence of |V3|^2 for given mode" << std::endl;
+                ofs_V3 << "## Matrix elements |V3|^2 for given mode" << std::endl;
                 ofs_V3 << "## q', j', omega(q'j') (cm^-1), q'', j'', omega(q''j'') (cm^-1), |V3(-qj,q'j',q''j'')| (cm^-2)" << std::endl;
 
                 for (j = 0; j < nk_size; ++j) {
