@@ -166,7 +166,7 @@ In the log file :red:`si_alm2.log`, the :ref:`fitting error<fitting_formalism>` 
 Try
 ::
 
-  $ grep Fitting error si_alm2.log
+  $ grep "Fitting error" si_alm2.log
   Fitting error (%) : 1.47766
 
 The other file :red:`si222.xml` contains crystal structure, symmetry, IFCs, and all other information necessary for subsequent phonon calculations.

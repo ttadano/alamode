@@ -130,6 +130,6 @@ Output files of anphon
 
 * ``PREFIX``.gamma_isotope
 
-Phonon selfenergy due to isotope scatterings calculated by the Tamura's formula.
-Created when ``MODE = RTA`` and ``ISOTOPE = 2``.
+ Phonon selfenergy due to isotope scatterings calculated by the Tamura's formula.
+ Created when ``MODE = RTA`` and ``ISOTOPE = 2``.
 
