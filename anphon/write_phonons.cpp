@@ -1122,7 +1122,7 @@ void Writes::write_msd()
 
         for (j = 0; j < ns; ++j){
             d2_tmp = thermodynamics->disp2_avg(T, j, j);
-            ofs_rmsd << std::setw(15) << std::sqrt(d2_tmp)*Bohr_in_Angstrom;
+            ofs_rmsd << std::setw(15) << d2_tmp*std::pow(Bohr_in_Angstrom, 2.0);
         }
         ofs_rmsd << std::endl;
     }
