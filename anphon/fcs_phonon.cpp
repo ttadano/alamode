@@ -389,7 +389,7 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 
 
 void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat, const unsigned int natmin, 
-                                                  double *ret, std::vector<FcsClassExtent> fc2,
+                                                  double *ret, std::vector<FcsClassExtent> &fc2,
                                                   std::vector<FcsArrayWithCell> *fcs)
 {
     int i, j, k, l, m;
@@ -399,6 +399,11 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
     double **sum2;
     double ***sum3;
     double ****sum4;
+
+    bool force_asr = false;
+    FcsClassExtent fc2_tmp;
+    std::vector<FcsClassExtent>::iterator it_target;
+
 
     for (i = 0; i < n; ++i) ret[i] = 0.0;
 
@@ -417,6 +422,39 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
 
             for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
                   sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+            }
+
+            if (force_asr) {
+                std::cout << "  force_asr = true: Modify harmonic force constans so that the ASR is satisfied." << std::endl;
+                for (j = 0; j < natmin; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        for (m = 0; m < 3; ++m) {
+                            fc2_tmp.atm1 = j;
+                            fc2_tmp.xyz1 = k;
+                            fc2_tmp.atm2 = system->map_p2s[j][0];
+                            fc2_tmp.xyz2 = m;
+                            fc2_tmp.cell_s = 0;
+                            fc2_tmp.fcs_val = sum2[3*j+k][m];
+                            it_target = std::find(fc2.begin(),fc2.end(),fc2_tmp);
+                            if (std::abs(fc2_tmp.fcs_val) > eps12) {
+                                if (it_target != fc2.end()) {
+                                    fc2[it_target-fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
+                                } else {
+                                    error->exit("examine_translational_invariance", "Corresponding IFC not found.");
+                                }
+                            }
+                        }
+                    }
+                }
+                for (j = 0; j < 3 * natmin; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        sum2[j][k] = 0.0;
+                    }
+                }
+
+                for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
+                    sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+                }
             }
 
             for (j = 0; j < 3 * natmin; ++j) {
