@@ -602,7 +602,7 @@ void Kpoint::reduce_kpoints(const unsigned int nsym, double **xkr, const unsigne
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                srot[i][j] = static_cast<double>(symmetry->SymmList[isym].symop[3 * i + j]);
+                srot[i][j] = static_cast<double>(symmetry->SymmList[isym].rot[i][j]);
             }
         }
 

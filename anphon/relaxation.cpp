@@ -2062,7 +2062,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
         for (isym = 0; isym < symmetry->nsym; ++isym) {
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
-                    srot[j][k] = static_cast<double>(symmetry->SymmList[isym].symop[3 * j + k]);
+                    srot[j][k] = static_cast<double>(symmetry->SymmList[isym].rot[j][k]);
                 }
             }
 
@@ -2374,7 +2374,7 @@ int Relaxation::knum_sym(const int nk_in, const int symop_num) {
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            srot[i][j] = static_cast<double>(symmetry->SymmList[symop_num].symop[3 * i + j]);
+            srot[i][j] = static_cast<double>(symmetry->SymmList[symop_num].rot[i][j]);
         }
     }
 
@@ -2402,7 +2402,7 @@ bool Relaxation::is_proper(const int isym)
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            S[i][j] = static_cast<double>(symmetry->SymmList[isym].symop[3 * i + j]);
+            S[i][j] = static_cast<double>(symmetry->SymmList[isym].rot[i][j]);
         }
     }
 
@@ -2427,9 +2427,9 @@ bool Relaxation::is_symmorphic(const int isym)
     int tran[3];
     bool ret;
 
-    for (i = 0; i < 3; ++i) tran[i] = symmetry->SymmList[isym].symop[9 + i];
+    for (i = 0; i < 3; ++i) tran[i] = symmetry->SymmList[isym].tran[i];
 
-    if (tran[0] == 0 && tran[1] == 0 && tran[2] == 0) {
+    if (std::abs(tran[0]) < eps && std::abs(tran[1]) < eps && std::abs(tran[2]) < eps) {
         ret = true;
     } else {
         ret = false;

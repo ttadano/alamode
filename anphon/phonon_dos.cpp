@@ -107,7 +107,7 @@ void Dos::setup()
         for (i = 0; i < symmetry->nsym; ++i) {
             for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
-                    symmetry_tmp[i][j][k] = symmetry->SymmList[i].symop[3 * j + k];
+                    symmetry_tmp[i][j][k] = symmetry->SymmList[i].rot[j][k];
                 }
             }
         }
