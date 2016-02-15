@@ -614,6 +614,10 @@ void Symmetry::pure_translations()
     }
     std::cout << "  Primitive cell contains " << natmin << " atoms" << std::endl;
 
+    if (system->nat % ntran) {
+        error->exit("pure_translations", "nat != natmin * ntran. Something is wrong in the structure.");
+    }
+
     memory->allocate(symnum_tran, ntran);
 
     int isym = 0;
