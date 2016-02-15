@@ -63,7 +63,7 @@ void Symmetry::init()
     memory->allocate(symrel_int, nsym, 3, 3);
 
     int isym = 0;
-    for (std::vector<SymmetryOperationTransFloat>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
+    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
 	      symrel_int[isym][i][j] = (*iter).rot[i][j];
@@ -147,7 +147,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (std::vector<SymmetryOperationTransFloat>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
 		  for (j = 0; j < 3; ++j) {
                     ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -183,7 +183,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
             tran_tmp[i] = 0.0;
         }
 
-        SymmList.push_back(SymmetryOperationTransFloat(rot_tmp, tran_tmp));
+        SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
 
     } else {
 
@@ -206,7 +206,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
 		    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
 		    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
-            SymmList.push_back(SymmetryOperationTransFloat(rot_tmp, tran_tmp));
+            SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
         }
         ifs_sym.close();
     }
@@ -216,7 +216,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
 #endif
 }
 
-void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperationTransFloat> &symop_all) {
+void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop_all) {
 
     std::vector<RotationMatrix> LatticeSymmList;
 
@@ -355,7 +355,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 
 void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, 
                                      std::vector<RotationMatrix> LatticeSymmList, 
-                                     std::vector<SymmetryOperationTransFloat> &CrystalSymmList)
+                                     std::vector<SymmetryOperation> &CrystalSymmList)
 {
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -389,7 +389,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
         tran[i] = 0.0;
     }
 
-    CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
+    CrystalSymmList.push_back(SymmetryOperation(rot_int, tran));
 
 
     for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); 
@@ -466,7 +466,7 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-                CrystalSymmList.push_back(SymmetryOperationTransFloat((*it_latsym).mat, tran));
+                CrystalSymmList.push_back(SymmetryOperation((*it_latsym).mat, tran));
             }
         }
 
@@ -771,7 +771,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         }
     }
 
-    for (std::vector<SymmetryOperationTransFloat>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
+    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
 
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;

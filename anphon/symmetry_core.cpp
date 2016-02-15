@@ -93,7 +93,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (std::vector<SymmetryOperationTransFloat>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                   for (j = 0; j < 3; ++j) {
                     ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -129,7 +129,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
             tran_tmp[i] = 0.0;
         }
 
-        SymmList.push_back(SymmetryOperationTransFloat(rot_tmp, tran_tmp));
+        SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
 
     } else {
 
@@ -150,14 +150,14 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 		    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
 		    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
-            SymmList.push_back(SymmetryOperationTransFloat(rot_tmp, tran_tmp));
+            SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
         }
         ifs_sym.close();
     }
 }
 
 
-void Symmetry::findsym(int N, double aa[3][3], double **x, std::vector<SymmetryOperationTransFloat> &symop_all) {
+void Symmetry::findsym(int N, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop_all) {
 
     std::vector<RotationMatrix> LatticeSymmList;
 
@@ -295,7 +295,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 }
 
 void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int> *atomclass, double **x, 
-				     std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperationTransFloat> &CrystalSymmList){
+				     std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperation> &CrystalSymmList){
 
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -329,7 +329,7 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
         tran[i] = 0.0;
     }
 
-    CrystalSymmList.push_back(SymmetryOperationTransFloat(rot_int, tran));
+    CrystalSymmList.push_back(SymmetryOperation(rot_int, tran));
 
 
     for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
@@ -402,7 +402,7 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-                CrystalSymmList.push_back(SymmetryOperationTransFloat((*it_latsym).mat, tran));
+                CrystalSymmList.push_back(SymmetryOperation((*it_latsym).mat, tran));
             }
         }
 
@@ -485,7 +485,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
     memory->allocate(map_tmp, natmin);
 
-    for (std::vector<SymmetryOperationTransFloat>::iterator isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
+    for (std::vector<SymmetryOperation>::iterator isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -554,7 +554,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 }
 
 
-void Symmetry::broadcast_symmlist(std::vector<SymmetryOperationTransFloat> &sym)
+void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym)
 {
     int i, j, k;
     int n;
@@ -589,7 +589,7 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperationTransFloat> &sym)
 	    }
 	    tran[j] = tran_tmp[i][j];
 	  }
-            sym.push_back(SymmetryOperationTransFloat(rot,tran));
+            sym.push_back(SymmetryOperation(rot,tran));
         }
     }
 

@@ -81,9 +81,9 @@ namespace PHON_NS {
         }
 
         bool operator==(const FcsClassExtent &a) const {
-            return this->atm1 == a.atm1 & this->atm2 == a.atm2 
-                 & this->xyz1 == a.xyz1 & this->xyz2 == a.xyz2
-                 & this->cell_s == a.cell_s;
+            return (this->atm1 == a.atm1) & (this->atm2 == a.atm2) 
+                 & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
+                 & (this->cell_s == a.cell_s);
              }
     };
 
