@@ -21,6 +21,7 @@
 
 namespace PHON_NS {
 
+  /*
     class SymmetryOperation {
     public:
         std::vector<int> symop;
@@ -58,6 +59,7 @@ namespace PHON_NS {
     inline bool operator<(const SymmetryOperation a, const SymmetryOperation b){
         return std::lexicographical_compare(a.symop.begin(), a.symop.end(), b.symop.begin(), b.symop.end());
     }
+  */
 
     class SymmetryOperationTransFloat {
     public:
@@ -154,31 +156,27 @@ namespace PHON_NS {
         Symmetry(class PHON *);
         ~Symmetry();
 
-        unsigned int nsym, nnp;
+        unsigned int nsym;
         bool symmetry_flag, time_reversal_sym;
         bool printsymmetry;
-
         double tolerance;
-
-        std::string file_sym;
-        std::vector<SymmetryOperation> SymmList;
+        std::vector<SymmetryOperationTransFloat> SymmList;
         std::vector<SymmetryOperationWithMapping> SymmListWithMap;
+
         void setup_symmetry();
-        void setup_symmetry_operation(int, unsigned int&, unsigned int&, double[3][3], double[3][3], 
-            double **, unsigned int *);
-        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
 
     private:
 
-        std::ofstream ofs_sym;
-        std::ifstream ifs_sym;
+        std::string file_sym;
 
+        void setup_symmetry_operation(int, unsigned int&, double[3][3], double[3][3], 
+            double **, unsigned int *);
+        void findsym(int, double [3][3], double **, std::vector<SymmetryOperationTransFloat> &);
         void gensym_withmap(double **, unsigned int *);
-
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
         void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x, 
             std::vector<RotationMatrix>, std::vector<SymmetryOperationTransFloat> &);
         void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperationTransFloat>);
-        void broadcast_symmlist(std::vector<SymmetryOperation> &);
+        void broadcast_symmlist(std::vector<SymmetryOperationTransFloat> &);
     };
 }

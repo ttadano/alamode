@@ -21,6 +21,7 @@
 
 namespace ALM_NS {
 
+  /*
     class SymmetryOperation {
     public:
         std::vector<int> symop;
@@ -52,6 +53,7 @@ namespace ALM_NS {
     inline bool operator<(const SymmetryOperation a, const SymmetryOperation b){
         return std::lexicographical_compare(a.symop.begin(), a.symop.end(), b.symop.begin(), b.symop.end());
     }
+  */
 
     class SymmetryOperationTransFloat {
     public:
@@ -95,62 +97,46 @@ namespace ALM_NS {
         ~Symmetry();
 
         void init();
-        void setup_symmetry_operation(int, unsigned int&, unsigned int&, double[3][3], double[3][3], 
-            double **, int *);
 
-        unsigned int nsym, nnp;
-        int ntran, natmin;
-        int nsym_s, ntran_s, natmin_s; // for reference system (supercell?)
-        int ntran_ref;
-
+        unsigned int nsym, ntran, natmin;
         int is_printsymmetry;
         int multiply_data;
-
-        int ***symrel_int;
         int *symnum_tran;
+
         double tolerance;
         double ***symrel;
         double **tnons;
 
         int **map_sym;
         int **map_p2s;
-        int **map_p2s_s;
+
         class Maps {
         public:
             int atom_num;
             int tran_num;
         };
-        Maps *map_s2p, *map_s2p_s;
-
-        void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
-
+        Maps *map_s2p;
         bool *sym_available;
-
-        std::string file_sym;
-        std::ofstream ofs_sym;
-        std::ifstream ifs_sym;
-
-        void gensym_notran(std::vector<SymmetryOperation> &);
-        int numsymop(int, double **x, double);
 
     private:
 
-        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
+        void setup_symmetry_operation(int, unsigned int&, double[3][3], double[3][3], 
+				      double **, int *);
+        void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
+        void findsym(int, double [3][3], double **, std::vector<SymmetryOperationTransFloat> &);
         bool is_translation(int **);
-
         void symop_in_cart(double [3][3], double[3][3]);
         void pure_translations();
         void print_symmetrized_coordinate(double **);
         void symop_availability_check(double ***, bool *, const int, int &);
-
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
         void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x,
             std::vector<RotationMatrix>, std::vector<SymmetryOperationTransFloat> &);
-        void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperationTransFloat>);
+	//        void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperationTransFloat>);
 
-        std::vector<SymmetryOperation> SymmList;
+        std::string file_sym;
+        int ***symrel_int;
+        std::vector<SymmetryOperationTransFloat> SymmList;
     };
-
-
 }
 

@@ -290,12 +290,14 @@ void System::load_reference_system()
     int iat, jat;
     int icrd;
 
-    int nat_s, nkd_s;
+    unsigned int nat_s, nkd_s;
+    unsigned int natmin_ref, ntran_ref;
     double lavec_s[3][3];
     int *kd_s;
     double **xcoord_s;
     int *map_ref;
-
+    int **map_p2s_s;
+    Symmetry::Maps *map_s2p_s;
     std::ifstream ifs_fc2;
 
     ifs_fc2.open(constraint->fc2_file.c_str(), std::ios::in);
@@ -326,9 +328,9 @@ void System::load_reference_system()
             std::getline(ifs_fc2, str_tmp);
             std::getline(ifs_fc2, str_tmp);
 
-            ifs_fc2 >> nat_s >> symmetry->natmin_s >> symmetry->ntran_s;
+            ifs_fc2 >> nat_s >> natmin_ref >> ntran_ref;
 
-            if (symmetry->natmin_s != symmetry->natmin) {
+            if (natmin_ref != symmetry->natmin) {
                 error->exit("load_reference_system", "The number of atoms in the primitive cell is not consistent");
             }
 
@@ -339,8 +341,8 @@ void System::load_reference_system()
 
             memory->allocate(xcoord_s, nat_s, 3);
             memory->allocate(kd_s, nat_s);
-            memory->allocate(symmetry->map_p2s_s, symmetry->natmin_s, symmetry->ntran_s);
-            memory->allocate(symmetry->map_s2p_s, nat_s);
+            memory->allocate(map_p2s_s, natmin_ref, ntran_ref);
+            memory->allocate(map_s2p_s, nat_s);
 
             unsigned int ikd, itran, icell;
             std::getline(ifs_fc2, str_tmp);
@@ -348,9 +350,9 @@ void System::load_reference_system()
             for (i = 0; i < nat_s; ++i) {
                 ifs_fc2 >> str_tmp >> ikd >> xcoord_s[i][0] >> xcoord_s[i][1] >> xcoord_s[i][2] >> itran >> icell;
                 kd_s[i] = ikd;
-                symmetry->map_p2s_s[icell - 1][itran - 1] = i;
-                symmetry->map_s2p_s[i].atom_num = icell - 1;
-                symmetry->map_s2p_s[i].tran_num = itran - 1;
+                map_p2s_s[icell - 1][itran - 1] = i;
+                map_s2p_s[i].atom_num = icell - 1;
+                map_s2p_s[i].tran_num = itran - 1;
             }
         }
     }
