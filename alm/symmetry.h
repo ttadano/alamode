@@ -41,6 +41,21 @@ namespace ALM_NS {
                 tran[i] = tran_in[i];
             }
         }
+
+        bool operator<(const SymmetryOperation &a) const {
+            std::vector<double> v1, v2;
+            for (int i = 0; i < 3; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    v1.push_back(rot[i][j]);
+                    v2.push_back(a.rot[i][j]);
+                }
+            }
+            for (int i = 0; i < 3; ++i) {
+                v1.push_back(tran[i]);
+                v2.push_back(a.tran[i]);
+            }
+            return std::lexicographical_compare(v1.begin(),v1.end(),v2.begin(),v2.end());
+        }
     };
 
     class RotationMatrix {

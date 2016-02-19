@@ -138,24 +138,27 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
         std::cout << "             This can take a while for a large supercell." << std::endl << std::endl;
 
         findsym(nat, aa, x, SymmList);
+        // The order in SymmList changes for each run because it was generated
+        // with OpenMP. Therefore, we sort the list here to have the same result. 
+        std::sort(SymmList.begin()+1,SymmList.end());
         nsym = SymmList.size();
 
         if (is_printsymmetry) {
-	  std::ofstream ofs_sym;
+            std::ofstream ofs_sym;
             std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file." 
-		      << std::endl << std::endl;
+                << std::endl << std::endl;
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
             for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
-		  for (j = 0; j < 3; ++j) {
-                    ofs_sym << std::setw(4) << (*p).rot[i][j];
-		  }
+                    for (j = 0; j < 3; ++j) {
+                        ofs_sym << std::setw(4) << (*p).rot[i][j];
+                    }
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-		  ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
+                    ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
                 }
                 ofs_sym << std::endl;
             }
@@ -170,7 +173,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
         std::cout << "  NSYM = 1 : Only the identity matrix will be considered." << std::endl << std::endl;
 
         int rot_tmp[3][3];
-	double tran_tmp[3];
+        double tran_tmp[3];
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -191,20 +194,20 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
 
         int nsym2;
         int rot_tmp[3][3];
-	double tran_tmp[3];
-	std::ifstream ifs_sym;
+        double tran_tmp[3];
+        std::ifstream ifs_sym;
 
         ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2; 
 
         if (nsym != nsym2) error->exit("setup_symmetry_operations", 
-				       "nsym in the given file and the input file are not consistent.");
+            "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-		    >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
-		    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-		    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+            >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
+            >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+            >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
             SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
         }
@@ -903,7 +906,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         }
     }
 
-    std::cout << "Symmetrically Averaged Coordinate" << std::endl;
+    std::cout << "Symmetry Averaged Coordinate" << std::endl;
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
             std::cout << std::setw(20) << std::scientific << std::setprecision(9) << x_avg[i][j];
