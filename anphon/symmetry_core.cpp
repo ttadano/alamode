@@ -85,7 +85,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         findsym(N, aa, x, SymmList);
 
-	//        std::sort(SymmList.begin() + 1, SymmList.end());
+        std::sort(SymmList.begin() + 1, SymmList.end());
         nsym = SymmList.size();
 
         if (printsymmetry) {
@@ -95,13 +95,13 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
             for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
-                  for (j = 0; j < 3; ++j) {
-                    ofs_sym << std::setw(4) << (*p).rot[i][j];
-                  }
+                    for (j = 0; j < 3; ++j) {
+                        ofs_sym << std::setw(4) << (*p).rot[i][j];
+                    }
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-                  ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
+                    ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
                 }
                 ofs_sym << std::endl;
             }
@@ -116,7 +116,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
         std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
 
         int rot_tmp[3][3];
-	double tran_tmp[3];
+        double tran_tmp[3];
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
@@ -137,7 +137,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         int nsym2;
         int rot_tmp[3][3];
-	double tran_tmp[3];
+        double tran_tmp[3];
 
         ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2;
@@ -146,9 +146,9 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-		    >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
-		    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-		    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+            >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
+            >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+            >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
             SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
         }
