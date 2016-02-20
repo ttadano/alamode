@@ -87,16 +87,21 @@ void Input::parce_input(int narg, char **arg)
 
 void Input::parse_general_vars()
 {
-    int i;
+    int i, j;
     std::string prefix, mode, str_tmp, str_disp_basis;
     int nat, nkd, nsym;
     int is_printsymmetry, is_periodic[3];
+    int icount, ncount;
     bool trim_dispsign_for_evenfunc;
+    bool lspin;
+    int noncollinear, trevsym;
     std::string *kdname;
+    double **magmom, magmag;
     double tolerance;
 
-    std::vector<std::string> kdname_v, periodic_v;
-    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS TRIMEVEN";
+    std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
+    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS TRIMEVEN\
+                                   MAGMOM NONCOLLINEAR TREVSYM";
     std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
@@ -173,6 +178,86 @@ void Input::parse_general_vars()
         tolerance = boost::lexical_cast<double>(general_var_dict["TOLERANCE"]);
     }
 
+    // Convert MAGMOM input to array
+    memory->allocate(magmom, nat, 3);
+    lspin = false;
+
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            magmom[i][j] = 0.0;
+        }
+    }
+
+    if (general_var_dict["NONCOLLINEAR"].empty()) {
+        noncollinear = 0;
+    } else {
+        noncollinear = boost::lexical_cast<int>(general_var_dict["NONCOLLINEAR"]);
+    }
+    if (general_var_dict["TREVSYM"].empty()) {
+        trevsym = 1;
+    } else {
+        trevsym = boost::lexical_cast<int>(general_var_dict["TREVSYM"]);
+    }
+
+    if (!general_var_dict["MAGMOM"].empty()) {
+        lspin = true;
+
+        if (noncollinear) {
+            icount = 0;
+            split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
+            for (std::vector<std::string>::const_iterator it = magmom_v.begin(); it != magmom_v.end(); ++it) {
+                 if ((*it).find("*") != std::string::npos) {
+                     error->exit("parse_general_vars", "Wild card '*' is not supported when NONCOLLINEAR = 1.");
+                 } else {
+                     magmag = boost::lexical_cast<double>((*it));
+                     if (icount/3 >= nat) {
+                         error->exit("parse_general_vars", "Too many entries for MAGMOM.");
+                     }
+                     magmom[icount/3][icount%3] = magmag;
+                     ++icount;
+                 }
+            }
+
+            if (icount != 3 * nat) {
+                error->exit("parse_general_vars", "Number of entries for MAGMOM must be 3*NAT when NONCOLLINEAR = 1.");
+            }
+        } else {
+            icount = 0;
+            split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
+            for (std::vector<std::string>::const_iterator it = magmom_v.begin(); it != magmom_v.end(); ++it) {
+
+                if ((*it).find("*") != std::string::npos) {
+                    if ((*it) == "*") {
+                        error->exit("parse_general_vars", "Please place '*' without space for the MAGMOM-tag.");
+                    }
+                    boost::split(str_split, (*it), boost::is_any_of("*"));
+                    if (str_split.size() != 2) {
+                        error->exit("parse_general_vars", "Invalid format for the MAGMOM-tag.");
+                    } else {
+                        if (str_split[0].empty() || str_split[1].empty()) {
+                            error->exit("parse_general_vars", "Please place '*' without space for the MAGMOM-tag.");
+                        }
+                        magmag = boost::lexical_cast<double>(str_split[1]);
+                        ncount = boost::lexical_cast<int>(str_split[0]);
+
+                        for (i = icount; i < icount + ncount; ++i) {
+                            magmom[i][2] = magmag;
+                        }
+                        icount += ncount;
+                    }
+
+                } else {
+                    magmag = boost::lexical_cast<double>((*it));
+                    magmom[icount++][2] = magmag;
+                }
+            }
+            if (icount != nat) {
+                error->exit("parse_general_vars", "Number of entries for MAGMOM must be NAT.");
+            }
+        }   
+    }
+
+
     if (mode == "suggest") {
         if (general_var_dict["DBASIS"].empty()) {
             str_disp_basis = "Cart";
@@ -201,6 +286,7 @@ void Input::parse_general_vars()
     symmetry->tolerance = tolerance;
 
     memory->allocate(system->kdname, nkd);
+    memory->allocate(system->magmom, nat, 3);
 
     for (i = 0; i < nkd; ++i) {
         system->kdname[i] = kdname[i];
@@ -208,7 +294,14 @@ void Input::parse_general_vars()
     for (i = 0; i < 3; ++i) {
         interaction->is_periodic[i] = is_periodic[i];
     }
-
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            system->magmom[i][j] = magmom[i][j];
+        }
+    }
+    system->lspin = lspin;
+    system->noncollinear = noncollinear;
+    symmetry->trev_sym_mag = trevsym;
 
     if (mode == "suggest") {
         displace->disp_basis = str_disp_basis;
@@ -216,6 +309,7 @@ void Input::parse_general_vars()
     }
 
     memory->deallocate(kdname);
+    memory->deallocate(magmom);
 
     kdname_v.clear();
     periodic_v.clear();

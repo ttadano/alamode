@@ -1,7 +1,7 @@
 /*
 fitting.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014,2015 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -63,11 +63,11 @@ Fitting::~Fitting() {
 
 void Fitting::fitmain()
 {
+    int i;
     int nat = system->nat;
     int natmin = symmetry->natmin;
     int ntran = symmetry->ntran;
 
-    int i;
     int ndata = system->ndata;
     int nstart = system->nstart;
     int nend = system->nend;
@@ -77,14 +77,13 @@ void Fitting::fitmain()
     int maxorder = interaction->maxorder;
     int P = constraint->P;
 
-    int M_Start, M_End;
-
     int nmulti;
     int ndata_used = nend - nstart + 1;
 
     double **u, **f;
     double **amat, *fsum;
     double *fsum_orig;
+    double *param_tmp;
 
     std::cout << " FITTING" << std::endl;
     std::cout << " =======" << std::endl << std::endl;
@@ -95,9 +94,12 @@ void Fitting::fitmain()
     std::cout << std::endl;
 
     std::cout << "  NSTART = " << nstart << "; NEND = " << nend << std::endl;
-    std::cout << "  " << nend - nstart + 1 << " entries will be used for fitting." << std::endl << std::endl;
+    std::cout << "  " << ndata_used << " entries will be used for fitting." << std::endl << std::endl;
 
-    data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti, symmetry->multiply_data, u, f,
+    // Read displacement-force training data set from files
+
+    data_multiplier(nat, ndata, nstart, nend, ndata_used, nmulti, 
+                    symmetry->multiply_data, u, f,
                     files->file_disp, files->file_force);
 
     N = 0;
@@ -106,9 +108,12 @@ void Fitting::fitmain()
     }
     std::cout << "  Total Number of Parameters : " << N << std::endl << std::endl;
 
+    // Calculate matrix elements for fitting
+
     M = 3 * natmin * ndata_used * nmulti;
 
     if (constraint->constraint_algebraic) {
+
         N_new = 0;
         for (i = 0; i < maxorder; ++i) {
             N_new += constraint->index_bimap[i].size();
@@ -123,36 +128,33 @@ void Fitting::fitmain()
             nmulti, maxorder, u, f, amat, fsum, fsum_orig);
 
     } else {
+
         memory->allocate(amat, M, N);
         memory->allocate(fsum, M);
 
         calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
-
     }
-
-
-    // Calculate matrix elements for fitting
-
-    // calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
 
     memory->deallocate(u);
     memory->deallocate(f);
 
-    M_Start = 0;
-    M_End = 3 * natmin * ndata_used * nmulti;
+    // Execute fitting
+
+    memory->allocate(param_tmp, N);
 
     if (nskip == 0) {
 
         // Fitting with singular value decomposition or QR-Decomposition
 
         if (constraint->constraint_algebraic) {
-            fit_algebraic_constraints(N_new, M_Start, M_End, amat, fsum, fsum_orig, maxorder);
+            fit_algebraic_constraints(N_new, M, amat, fsum, param_tmp, 
+                                      fsum_orig, maxorder);
 
         } else if (constraint->exist_constraint) {
-            fit_with_constraints(N, M_Start, M_End, P, amat, fsum, 
-                constraint->const_mat, constraint->const_rhs);
+            fit_with_constraints(N, M, P, amat, fsum, param_tmp,
+                                 constraint->const_mat, constraint->const_rhs);
         } else {
-            fit_without_constraints(N, M_Start, M_End, amat, fsum);
+            fit_without_constraints(N, M, amat, fsum, param_tmp);
         }
 
     } else if (nskip > 0) {
@@ -161,7 +163,7 @@ void Fitting::fitmain()
 
         if (constraint->exist_constraint) {
             fit_consecutively(N, P, natmin, ndata_used, nmulti, nskip, amat, fsum, 
-                constraint->const_mat, constraint->const_rhs);
+                              constraint->const_mat, constraint->const_rhs);
         } else {
             error->exit("fitmain", "nskip has to be 0 when constraint_mode = 0");
         }
@@ -171,9 +173,9 @@ void Fitting::fitmain()
 
         if (constraint->exist_constraint) {
             fit_bootstrap(N, P, natmin, ndata_used, nmulti, amat, fsum, 
-                constraint->const_mat, constraint->const_rhs);
-            fit_with_constraints(N, M_Start, M_End, P, amat, fsum, 
-                constraint->const_mat, constraint->const_rhs);
+                          constraint->const_mat, constraint->const_rhs);
+            fit_with_constraints(N, M, P, amat, fsum, param_tmp,
+                                 constraint->const_mat, constraint->const_rhs);
         } else {
             error->exit("fitmain", "bootstrap analysis for LSE without constraint is not supported yet");
         }
@@ -186,20 +188,19 @@ void Fitting::fitmain()
     if (constraint->constraint_algebraic) {
 
         for (i = 0; i < N; ++i) {
-            params[i] = fsum_orig[i];
+            params[i] = param_tmp[i];
         }
-
         memory->deallocate(fsum_orig);
 
     } else {
 
-        for (i = 0; i < N; ++i) params[i] = fsum[i];
+        for (i = 0; i < N; ++i) params[i] = param_tmp[i];
 
     }
 
-
     memory->deallocate(amat);
     memory->deallocate(fsum);
+    memory->deallocate(param_tmp);
 
     std::cout << std::endl;
     timer->print_elapsed();
@@ -358,46 +359,47 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     ifs_force.close();
 }
 
-void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **amat, double *bvec)
+void Fitting::fit_without_constraints(int N, int M, double **amat, double *bvec, double *param_out)
 {
     int i, j;
     unsigned long k;
     int nrhs = 1, nrank, INFO, LWORK;
-    double *WORK, *S, *amat_mod;
+    int LMIN, LMAX;
     double rcond = -1.0;
     double f_square = 0.0;
-    double *fsum2;
-
-    int M = M_End - M_Start;
+    double *WORK, *S, *amat_mod, *fsum2;
 
     std::cout << "  Entering fitting routine: SVD without constraints" << std::endl;
 
-    LWORK = 3 * std::min<int>(M, N) + std::max<int>(2*std::min<int>(M, N), std::max<int>(M, N));
+    LMIN = std::min<int>(M, N);
+    LMAX = std::max<int>(M, N);
+
+    LWORK = 3*LMIN + std::max<int>(2*LMIN, LMAX);
     LWORK = 2 * LWORK;
 
     memory->allocate(WORK, LWORK);
-    memory->allocate(S, N);
+    memory->allocate(S, LMIN);
 
     // transpose matrix A
     memory->allocate(amat_mod, M * N);
-    memory->allocate(fsum2, M);
+    memory->allocate(fsum2, LMAX);
 
     k = 0;
     for (j = 0; j < N; ++j) {
-        for (i = M_Start; i < M_End; ++i) {
+        for (i = 0; i < M; ++i) {
             amat_mod[k++] = amat[i][j];
         }
     }
-    j = 0;
-    for (i = M_Start; i < M_End; ++i) {
-        fsum2[j++] = bvec[i];
+    for (i = 0; i < M; ++i) {
+        fsum2[i] = bvec[i];
         f_square += std::pow(bvec[i], 2);
     }
+    for (i = M; i < LMAX; ++i) fsum2[i] = 0.0;
 
     std::cout << "  SVD has started ... ";
    
     // Fitting with singular value decomposition
-    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
+    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &LMAX, S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
     std::cout << "finished !" << std::endl << std::endl;
 
@@ -415,16 +417,18 @@ void Fitting::fit_without_constraints(int N, int M_Start, int M_End, double **am
     }
 
     for (i = 0; i < N; ++i) {
-        bvec[i] = fsum2[i];
+        param_out[i] = fsum2[i];
     }
-    memory->deallocate(fsum2);
-    memory->deallocate(amat_mod);
+
     memory->deallocate(WORK);
     memory->deallocate(S);
+    memory->deallocate(fsum2);
+    memory->deallocate(amat_mod);
 }
 
-void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
-                                   double **amat, double *bvec, double **cmat, double *dvec)
+void Fitting::fit_with_constraints(int N, int M, int P,
+                                   double **amat, double *bvec, double *param_out, 
+                                   double **cmat, double *dvec)
 {
     int i, j;
     unsigned long k;
@@ -432,12 +436,9 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     double f_square, f_residual;
     double *fsum2;
 
-    int M = M_End - M_Start;
-
     std::cout << "  Entering fitting routine: QRD with constraints" << std::endl;
 
     memory->allocate(fsum2, M);
-
 
 #ifdef _USE_EIGEN
 
@@ -445,7 +446,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     memory->allocate(mat_tmp2, M + P, N);
     for (i = 0; i < M; ++i) {
         for (j = 0; j < N; ++j) {
-            mat_tmp2[i][j] = amat[M_Start + i][j];
+            mat_tmp2[i][j] = amat[i][j];
         }
     }
     for (i = 0; i < P; ++i) {
@@ -467,7 +468,7 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     for (j = 0; j < N; ++j) {
         for (i = 0; i < M; ++i) {
-            mat_tmp[k++] = amat[M_Start + i][j];
+            mat_tmp[k++] = amat[i][j];
         }
         for (i = 0; i < P; ++i) {
             mat_tmp[k++] = cmat[i][j];
@@ -497,9 +498,8 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     }
 
     f_square = 0.0;
-    j = 0;
-    for (i = M_Start; i < M_End; ++i) {
-        fsum2[j++] = bvec[i];
+    for (i = 0; i < M; ++i) {
+        fsum2[i] = bvec[i];
         f_square += std::pow(bvec[i], 2);
     }
     std::cout << "  QR-Decomposition has started ...";
@@ -508,11 +508,10 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     memory->allocate(amat_mod, M * N);
     memory->allocate(cmat_mod, P * N);
 
-
     // transpose matrix A and C
     k = 0;
     for (j = 0; j < N; ++j) {
-        for (i = M_Start; i < M_End; ++i) {
+        for (i = 0; i < M; ++i) {
             amat_mod[k++] = amat[i][j];
         }
     }
@@ -533,10 +532,6 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
 
     dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, dvec, x, WORK, &LWORK, &INFO);
 
-    memory->deallocate(amat_mod);
-    memory->deallocate(cmat_mod);
-    memory->deallocate(WORK);
-
     std::cout << " finished. " << std::endl;
 
     f_residual = 0.0;
@@ -549,54 +544,59 @@ void Fitting::fit_with_constraints(int N, int M_Start, int M_End, int P,
     // copy fcs to bvec
 
     for (i = 0; i < N; ++i) {
-        bvec[i] = x[i];
+        param_out[i] = x[i];
     }
 
+    memory->deallocate(amat_mod);
+    memory->deallocate(cmat_mod);
+    memory->deallocate(WORK);
     memory->deallocate(x);
     memory->deallocate(fsum2);
 }
 
-void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **amat, double *bvec, double *bvec_orig,
+void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bvec, 
+                                        double *param_out, double *bvec_orig,
                                         const int maxorder)
 {
     int i, j;
     unsigned long k;
     int nrhs = 1, nrank, INFO, LWORK;
-    double *WORK, *S, *amat_mod;
+    int LMIN, LMAX;
     double rcond = -1.0;
     double f_square = 0.0;
-    double *fsum2;
-
-    int M = M_End - M_Start;
+    double *WORK, *S, *amat_mod, *fsum2;
 
     std::cout << "  Entering fitting routine: SVD with constraints considered algebraically." << std::endl;
 
-    LWORK = 3 * std::min<int>(M, N) + std::max<int>(2*std::min<int>(M, N), std::max<int>(M, N));
+    LMIN = std::min<int>(M, N);
+    LMAX = std::max<int>(M, N);
+
+    LWORK = 3*LMIN + std::max<int>(2*LMIN, LMAX);
     LWORK = 2 * LWORK;
 
     memory->allocate(WORK, LWORK);
-    memory->allocate(S, N);
+    memory->allocate(S, LMIN);
 
     // transpose matrix A
     memory->allocate(amat_mod, M * N);
-    memory->allocate(fsum2, M);
+    memory->allocate(fsum2, LMAX);
 
     k = 0;
     for (j = 0; j < N; ++j) {
-        for (i = M_Start; i < M_End; ++i) {
+        for (i = 0; i < M; ++i) {
             amat_mod[k++] = amat[i][j];
         }
     }
-    j = 0;
-    for (i = M_Start; i < M_End; ++i) {
-        fsum2[j++] = bvec[i];
+    for (i = 0; i < M; ++i) {
+        fsum2[i] = bvec[i];
         f_square += std::pow(bvec_orig[i], 2);
     }
+    for (i = M; i < LMAX; ++i) fsum2[i] = 0.0;
 
     std::cout << "  SVD has started ... ";
 
     // Fitting with singular value decomposition
-    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &M, S, &rcond, &nrank, WORK, &LWORK, &INFO);
+    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &LMAX, S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
     std::cout << "finished !" << std::endl << std::endl;
 
@@ -613,16 +613,14 @@ void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **
         std::cout << "  Fitting error (%) : "<< sqrt(f_residual/f_square) * 100.0 << std::endl;
     }
 
-
     int ishift = 0;
     int iparam = 0;
     double tmp;
     int inew, iold;
 
-
     for (i = 0; i < maxorder; ++i) {
         for (j = 0; j < constraint->const_fix[i].size(); ++j) {
-            bvec_orig[constraint->const_fix[i][j].p_index_target + ishift] = constraint->const_fix[i][j].val_to_fix;
+            param_out[constraint->const_fix[i][j].p_index_target + ishift] = constraint->const_fix[i][j].val_to_fix;
         }
 
         for (boost::bimap<int, int>::const_iterator it = constraint->index_bimap[i].begin(); 
@@ -630,26 +628,26 @@ void Fitting::fit_algebraic_constraints(int N, int M_Start, int M_End, double **
                 inew = (*it).left + iparam;
                 iold = (*it).right + ishift;
 
-                bvec_orig[iold] = fsum2[inew];
+                param_out[iold] = fsum2[inew];
         }
 
         for (j = 0; j < constraint->const_relate[i].size(); ++j) {
             tmp = 0.0;
 
             for (k = 0; k < constraint->const_relate[i][j].alpha.size(); ++k) {
-                tmp += constraint->const_relate[i][j].alpha[k] * bvec_orig[constraint->const_relate[i][j].p_index_orig[k] + ishift];
+                tmp += constraint->const_relate[i][j].alpha[k] * param_out[constraint->const_relate[i][j].p_index_orig[k] + ishift];
             }
-            bvec_orig[constraint->const_relate[i][j].p_index_target + ishift] = -tmp;
+            param_out[constraint->const_relate[i][j].p_index_target + ishift] = -tmp;
         }
 
         ishift += fcs->ndup[i].size();
         iparam += constraint->index_bimap[i].size();
     }
 
-    memory->deallocate(fsum2);
-    memory->deallocate(amat_mod);
     memory->deallocate(WORK);
     memory->deallocate(S);
+    memory->deallocate(fsum2);
+    memory->deallocate(amat_mod);
 }
 
 

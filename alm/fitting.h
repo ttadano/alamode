@@ -47,10 +47,10 @@ namespace ALM_NS {
 
         int inprim_index(const int);
         void wrtfcs(const double *);
-        void fit_without_constraints(int, int, int, double **, double *);
-        void fit_algebraic_constraints(int, int, int, double **, double *, double *, const int);
+        void fit_without_constraints(int, int, double **, double *, double *);
+        void fit_algebraic_constraints(int, int, double **, double *, double *, double *, const int);
 
-        void fit_with_constraints(int, int, int, int, double **, double *, double **, double *);
+        void fit_with_constraints(int, int, int, double **, double *, double *, double **, double *);
         void fit_consecutively(int, int, const int, const int,
             const int, const int, double **, double *, double **, double *);
         void calc_matrix_elements(const int, const int, const int, 
@@ -81,7 +81,7 @@ namespace ALM_NS {
             double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
             int *lwork, int *iwork, int *info);
 
-        void dgeqrf_(int *m, int *n, double *a, double *tau,
+        void dgeqrf_(int *m, int *n, double *a, int *lda, double *tau,
             double *work, int *lwork, int *info);
 
         void dgeqp3_(int *m, int *n, double *a, int *lda, int *jpvt,

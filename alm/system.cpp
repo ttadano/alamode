@@ -36,6 +36,7 @@ System::~System()
 {
     memory->deallocate(x_cartesian);
     memory->deallocate(atomlist_class);
+    memory->deallocate(magmom);
 }
 
 void System::init()
@@ -99,6 +100,29 @@ void System::init()
     }
     frac2cart(x_cartesian);
     setup_atomic_class(kd);
+
+    if (lspin) {
+        std::cout << "  MAGMOM is given. The magnetic moments of each atom are as follows:" << std::endl;
+        for (i = 0; i < nat; ++i) {
+            std::cout << std::setw(6) << i + 1;
+            std::cout << std::setw(5) << magmom[i][0];
+            std::cout << std::setw(5) << magmom[i][1];
+            std::cout << std::setw(5) << magmom[i][2];
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        if (noncollinear == 0) {
+            std::cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables." << std::endl;
+        } else if (noncollinear == 1) {
+            std::cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << std::endl;
+            if (symmetry->trev_sym_mag) {
+                std::cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group" << std::endl;
+            } else {
+                std::cout << "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group" << std::endl;
+            }
+        }
+        std::cout << std::endl << std::endl;
+    }
 
     timer->print_elapsed();
     std::cout << " --------------------------------------------------------------" << std::endl;
@@ -482,29 +506,47 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 
 void System::setup_atomic_class(int *kd) 
 {
-    // This function can be modified when one needs to 
-    // compute symmetry operations of spin polarized systems.
+    // In the case of collinear calculation, spin moments are considered as scalar
+    // variables. Therefore, the same elements with different magnetic moments are
+    // considered as different types. In noncollinear calculations, 
+    // magnetic moments are not considered in this stage. They will be treated
+    // separately in symmetry.cpp where spin moments will be rotated and flipped 
+    // using time-reversal symmetry.
 
     unsigned int i;
-    std::set<unsigned int> kd_uniq;
-    kd_uniq.clear();
+    AtomType type_tmp;
+    std::set<AtomType> set_type;
+    set_type.clear();
 
     for (i = 0; i < nat; ++i) {
-        kd_uniq.insert(kd[i]);
+        type_tmp.element = kd[i];
+
+        if (noncollinear == 0) {
+            type_tmp.magmom = magmom[i][2];
+        } else {
+            type_tmp.magmom = 0.0;
+        }
+        set_type.insert(type_tmp);
     }
-    nclassatom = kd_uniq.size();
+
+    nclassatom = set_type.size();
 
     memory->allocate(atomlist_class, nclassatom);
 
     for (i = 0; i < nat; ++i) {
         int count = 0;
-        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it) {
-            if (kd[i] == (*it)) {
-                atomlist_class[count].push_back(i);
+        for (std::set<AtomType>::iterator it = set_type.begin(); it != set_type.end(); ++it) {
+            if (noncollinear) {
+                if (kd[i] == (*it).element) {
+                    atomlist_class[count].push_back(i);
+                }
+            } else {
+                if (kd[i] == (*it).element && std::abs(magmom[i][2] - (*it).magmom) < eps6) {
+                    atomlist_class[count].push_back(i);
+                }
             }
             ++count;
         }
     }
-
-    kd_uniq.clear();
+    set_type.clear();
 }

@@ -1,7 +1,7 @@
 /*
  symmetry.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -97,6 +97,8 @@ namespace ALM_NS {
             int tran_num;
         };
         Maps *map_s2p;
+
+        int trev_sym_mag;
         bool *sym_available;
 
     private:
@@ -106,6 +108,8 @@ namespace ALM_NS {
         void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
         void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
         bool is_translation(int **);
+        bool is_proper(double [3][3]);
+
         void symop_in_cart(double [3][3], double[3][3]);
         void pure_translations();
         void print_symmetrized_coordinate(double **);

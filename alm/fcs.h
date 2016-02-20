@@ -43,7 +43,6 @@ namespace ALM_NS {
         }    
     };
 
-
     inline bool operator<(const FcProperty a, const FcProperty b){
         return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
     }

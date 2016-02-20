@@ -105,14 +105,36 @@ namespace ALM_NS {
             }
             return dist_a < dist_b;
         }
+
+        static bool compare_max_distance(const MinDistList &a, const MinDistList &b)  {
+            // This function works properly when dvec_a.size() > 0 and dvec_b.size() > 0
+            std::vector<double> dvec_a, dvec_b;
+            std::copy(a.dist.begin(), a.dist.end(), std::back_inserter(dvec_a));
+            std::copy(b.dist.begin(), b.dist.end(), std::back_inserter(dvec_b));
+            double max_dist_a = *std::max_element(dvec_a.begin(), dvec_a.end());
+            double max_dist_b = *std::max_element(dvec_b.begin(), dvec_b.end());
+
+            return max_dist_a < max_dist_b;
+        }
     };
 
     class MinimumDistanceCluster {
     public:
         std::vector<int> atom;
         std::vector<std::vector<int> > cell;
+        double distmax;
 
         MinimumDistanceCluster();
+
+        MinimumDistanceCluster(const std::vector<int> atom_in, const std::vector<std::vector<int> > cell_in, const double dist_in) {
+            for (int i = 0; i < atom_in.size(); ++i) {
+                atom.push_back(atom_in[i]);
+            }
+            for (int i = 0; i < cell_in.size(); ++i) {
+                cell.push_back(cell_in[i]);
+            }
+            distmax = dist_in;
+        }
 
         MinimumDistanceCluster(const std::vector<int> atom_in, const std::vector<std::vector<int> > cell_in) {
             for (int i = 0; i < atom_in.size(); ++i) {
@@ -140,10 +162,11 @@ namespace ALM_NS {
         int *nbody_include;
 
         double ***rcs;
-        double ***xcrd;
+        double ***x_image;
+        int *exist_image;
 
         std::string *str_order;
-
+        std::vector<DistInfo> **distall;
         std::vector<DistInfo> **mindist_pairs;
         std::set<IntList> *pairs;
         std::vector<int> **interaction_pair;
@@ -151,7 +174,8 @@ namespace ALM_NS {
 
         void init();
         double distance(double *, double *);
-        bool is_incutoff(const int, int *);
+        bool is_incutoff(const int, int *, const int);
+        bool is_incutoff2(const int, int *, const int);
 
         template <typename T>
         void insort(int n, T *arr)
@@ -170,13 +194,19 @@ namespace ALM_NS {
 
     private:
         int nsize[3];
-        void get_pairs_of_minimum_distance(int, double **, std::vector<DistInfo> **);
+        void generate_coordinate_of_periodic_images(const unsigned int, double **, 
+                                                    const int [3], double ***, int *);
+        void get_pairs_of_minimum_distance(int, double ***, int *, std::vector<DistInfo> **, std::vector<DistInfo> **);
         void print_neighborlist(std::vector<DistInfo> **);
         void search_interactions(std::vector<int> **, std::set<IntList> *);
         void set_ordername();
-        void calc_mindist_clusters(std::vector<int> **, std::vector<DistInfo> **, std::set<MinimumDistanceCluster> **);
+        void calc_mindist_clusters(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
+                                    int *, std::set<MinimumDistanceCluster> **);
+        void calc_mindist_clusters2(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
+                                    int *, std::set<MinimumDistanceCluster> **);
         int nbody(const int, const int *);
         void cell_combination(std::vector<std::vector<int> >, int, std::vector<int>, std::vector<std::vector<int> > &);
+        void generate_pairs(std::set<IntList> *, std::set<MinimumDistanceCluster> **);
 
     };
 }
