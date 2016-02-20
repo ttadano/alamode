@@ -600,6 +600,7 @@ void Writes::write_phonon_vel_all()
 
         for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
             knum = kpoint->kpoint_irred_all[i][j].knum;
+
             ofs_vel << "## xk =    ";
             for (k = 0; k < 3; ++k) ofs_vel << std::setw(15) << std::fixed << std::setprecision(10) << kpoint->xk[knum][k];
             ofs_vel << std::endl;

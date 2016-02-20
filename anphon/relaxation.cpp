@@ -1143,41 +1143,6 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
 
 }
 
-void Relaxation::calc_V3norm2(const unsigned int ik_in, const unsigned int snum, double **ret)
-{
-    int ib;
-    unsigned int ik;
-    unsigned int is, js;
-    unsigned int k1, k2;
-    unsigned int arr[3];
-    unsigned int knum, knum_minus;
-
-    int ns2 = ns * ns;
-
-    double factor = std::pow(0.5, 3) * std::pow(Hz_to_kayser / time_ry, 2);
-
-    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    knum_minus = kpoint->knum_minus[knum];
-
-#pragma omp parallel for private(is, js, ik, k1, k2, arr)
-    for (ib = 0; ib < ns2; ++ib) {
-        is = ib / ns;
-        js = ib % ns;
-
-        for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
-
-            k1 = pair_uniq[ik_in][ik].group[0].ks[0];
-            k2 = pair_uniq[ik_in][ik].group[0].ks[1];
-
-            arr[0] = ns * knum_minus + snum;
-            arr[1] = ns * k1 + is;
-            arr[2] = ns * k2 + js;
-
-            ret[ik][ib] = std::norm(V3(arr)) * factor;
-        }
-    }
-
-}
 
 void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, double *T, const double omega0, 
                                                      const unsigned int M, const double *omega, const unsigned int ik_in, const unsigned int snum, double **ret)
@@ -1272,6 +1237,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N, doubl
 
     memory->deallocate(ret_mpi);
 }
+
 
 void Relaxation::perform_mode_analysis()
 {
@@ -2527,4 +2493,40 @@ void Relaxation::generate_triplet_k(const bool use_triplet_symmetry, const bool 
     memory->deallocate(num_group_k);
     memory->deallocate(symmetry_group_k);
     memory->deallocate(flag_found);
+}
+
+
+void Relaxation::calc_V3norm2(const unsigned int ik_in, const unsigned int snum, double **ret)
+{
+    int ib;
+    unsigned int ik;
+    unsigned int is, js;
+    unsigned int k1, k2;
+    unsigned int arr[3];
+    unsigned int knum, knum_minus;
+
+    int ns2 = ns * ns;
+
+    double factor = std::pow(0.5, 3) * std::pow(Hz_to_kayser / time_ry, 2);
+
+    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    knum_minus = kpoint->knum_minus[knum];
+
+#pragma omp parallel for private(is, js, ik, k1, k2, arr)
+    for (ib = 0; ib < ns2; ++ib) {
+        is = ib / ns;
+        js = ib % ns;
+
+        for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
+
+            k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+            k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+            arr[0] = ns * knum_minus + snum;
+            arr[1] = ns * k1 + is;
+            arr[2] = ns * k2 + js;
+
+            ret[ik][ib] = std::norm(V3(arr)) * factor;
+        }
+    }
 }

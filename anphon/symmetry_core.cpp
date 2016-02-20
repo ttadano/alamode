@@ -85,7 +85,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         findsym(N, aa, x, SymmList);
 
-	//        std::sort(SymmList.begin() + 1, SymmList.end());
+        std::sort(SymmList.begin() + 1, SymmList.end());
         nsym = SymmList.size();
 
         if (printsymmetry) {
@@ -95,13 +95,13 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
             for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
-                  for (j = 0; j < 3; ++j) {
-                    ofs_sym << std::setw(4) << (*p).rot[i][j];
-                  }
+                    for (j = 0; j < 3; ++j) {
+                        ofs_sym << std::setw(4) << (*p).rot[i][j];
+                    }
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-                  ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
+                    ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
                 }
                 ofs_sym << std::endl;
             }
@@ -116,7 +116,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
         std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
 
         int rot_tmp[3][3];
-	double tran_tmp[3];
+        double tran_tmp[3];
 
         for (i = 0; i < 3; ++i){
             for (j = 0; j < 3; ++j){
@@ -137,7 +137,7 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         int nsym2;
         int rot_tmp[3][3];
-	double tran_tmp[3];
+        double tran_tmp[3];
 
         ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2;
@@ -146,9 +146,9 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-		    >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
-		    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-		    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+            >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
+            >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+            >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
             SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
         }
@@ -300,10 +300,11 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
     double x_rot[3];
-    double rot[3][3];
+    double rot[3][3], rot_tmp[3][3], rot_cart[3][3];
     double tran[3];
     double x_rot_tmp[3];
     double tmp[3];
+    double mag[3], mag_rot[3];
     double diff;
 
     int rot_int[3][3];
@@ -313,6 +314,7 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
 
     bool is_found;
     bool isok;
+    bool mag_sym1, mag_sym2;
 
     bool is_identity_matrix;
 
@@ -345,7 +347,8 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
         rotvec(x_rot, x[iat], rot);
 
 #ifdef _OPENMP
-#pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, i, itype, jj, kk, is_identity_matrix)
+#pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, \
+    i, j, itype, jj, kk, is_identity_matrix, mag, mag_rot, rot_tmp, rot_cart, mag_sym1, mag_sym2)
 #endif
         for (ii = 0; ii < atomclass[0].size(); ++ii) {
             jat = atomclass[0][ii];
@@ -387,7 +390,8 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
                             tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
                             tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
                         }
-                        diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                        diff = tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2];
+
                         if (diff < tolerance * tolerance) {
                             is_found = true;
                             break;
@@ -397,6 +401,46 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
                     if (!is_found) isok = false;
                 }
             }
+
+            if (isok && system->lspin && system->noncollinear) {
+                for (i = 0; i < 3; ++i) {
+                    mag[i] = system->magmom[jat][i];
+                    mag_rot[i] = system->magmom[iat][i];
+                }
+
+                matmul3(rot_tmp, rot, system->rlavec_p);
+                matmul3(rot_cart, system->lavec_p, rot_tmp);
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        rot_cart[i][j] /= (2.0 * pi);
+                    }
+                }
+                rotvec(mag_rot, mag_rot, rot_cart);
+
+                // In the case of improper rotation, the factor -1 should be multiplied
+                // because the inversion operation doesn't flip the spin.
+                if (!is_proper(rot_cart)) {
+                    for (i = 0; i < 3; ++i) {
+                        mag_rot[i] = -mag_rot[i];
+                    }
+                }
+
+                mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
+                          + std::pow(mag[1] - mag_rot[1], 2.0)
+                          + std::pow(mag[2] - mag_rot[2], 2.0) ) < eps6;
+
+                mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
+                          + std::pow(mag[1] + mag_rot[1], 2.0)
+                          + std::pow(mag[2] + mag_rot[2], 2.0) ) < eps6;
+
+                if (!mag_sym1 && !mag_sym2) {
+                    isok = false;
+                } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
+                    isok = false;
+                }
+            }
+
 
             if (isok) {
 #ifdef _OPENMP
@@ -595,4 +639,24 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym)
 
     memory->deallocate(rot_tmp);
     memory->deallocate(tran_tmp);
+}
+
+bool Symmetry::is_proper(double rot[3][3])
+{
+    double det;
+    bool ret;
+
+    det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
+        - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
+        + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
+
+    if (std::abs(det - 1.0) < eps12) {
+        ret = true;
+    } else if (std::abs(det + 1.0) < eps12) {
+        ret = false;
+    } else {
+        error->exit("is_proper", "This cannot happen.");
+    }
+
+    return ret;
 }

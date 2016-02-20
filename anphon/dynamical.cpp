@@ -329,7 +329,6 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
     std::complex<double> **ctmp;
 
     memory->allocate(ctmp, nmode, nmode);
-
     for (i = 0; i < nmode; ++i) {
         for (j = 0; j < nmode; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);

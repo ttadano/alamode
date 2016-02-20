@@ -45,7 +45,7 @@ void Gruneisen::setup()
 
     for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
 
-    icell =0;
+    icell = 0;
 
     for (ix = -1; ix <= 1; ++ix) {
         for (iy = -1; iy <= 1; ++iy) {
@@ -85,7 +85,6 @@ void Gruneisen::setup()
             std::cout << "              with DELTA_A = " << std::setw(5) << delta_a << std::endl;
         }
     }
-
  //   print_stress_energy();
 
 }
@@ -105,6 +104,7 @@ void Gruneisen::finish_gruneisen()
 
 }
 
+
 void Gruneisen::calc_gruneisen()
 {
     unsigned int is, ik;
@@ -122,9 +122,10 @@ void Gruneisen::calc_gruneisen()
     }
 
     for (ik = 0; ik < nk; ++ik){
-        for (is = 0; is < ns; ++is){
 
-            calc_dfc2_reciprocal(dfc2_reciprocal, kpoint->xk[ik]);
+        calc_dfc2_reciprocal(dfc2_reciprocal, kpoint->xk[ik]);
+            
+        for (is = 0; is < ns; ++is){
 
             gruneisen[ik][is] = std::complex<double>(0.0, 0.0);
 
@@ -189,6 +190,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         atm1_s = system->map_p2s_anharm[atm1][0];
         atm2_s = system->map_p2s_anharm[atm2][tran];
 
+
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[cell_s][i] 
             - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
@@ -200,25 +202,30 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2] 
-        += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
-    }
+            += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
 
+    }
 }
+
 
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, std::vector<FcsArrayWithCell> &delta_fcs)
 {
     unsigned int i;
-
+    int iat, jat, kat;
+    int icrd, jcrd, kcrd;
     double vec[3];
     double fcs_tmp = 0.0;
 
     std::vector<FcsAlignedForGruneisen> fcs_aligned;
-
     std::vector<AtomCellSuper> pairs_vec;
-    std::vector<int> arr_old, arr_tmp;
+    std::vector<int> index_old, index_now;
+    std::vector<int> index_with_cell;
+    std::set<std::vector<int> > set_index_uniq;
+    AtomCellSuper pairs_tmp;
 
     unsigned int norder = fcs_in[0].pairs.size();
     unsigned int nelems;
+    unsigned int nmulti;
 
     delta_fcs.clear();
     fcs_aligned.clear();
@@ -226,61 +233,122 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
     for (std::vector<FcsArrayWithCell>::const_iterator it  = fcs_in.begin(); it != fcs_in.end(); ++it) {
             fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
     }
-
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
 
-    delta_fcs.clear();
-    arr_old.clear();
+    index_old.clear();
+    nelems = 2 * (norder - 2) + 1;
+    for (i = 0; i < nelems; ++i) index_old.push_back(-1);
 
-    nelems = 4 * (norder - 2) + 2;
-
-    for (i = 0; i < nelems; ++i) arr_old.push_back(-1);
+    index_with_cell.clear();
+    set_index_uniq.clear();
 
     for (std::vector<FcsAlignedForGruneisen>::const_iterator it = fcs_aligned.begin(); it != fcs_aligned.end(); ++it) {
 
-        arr_tmp.clear();
+        index_now.clear();
+        index_with_cell.clear();
 
-        arr_tmp.push_back((*it).pairs[0].index / 3);
-        arr_tmp.push_back((*it).pairs[0].index % 3);
+        index_now.push_back((*it).pairs[0].index);
+        index_with_cell.push_back((*it).pairs[0].index);
 
         for (i = 1; i < norder - 1; ++i) {
-            arr_tmp.push_back((*it).pairs[i].index / 3);
-            arr_tmp.push_back((*it).pairs[i].tran);
-            arr_tmp.push_back((*it).pairs[i].cell_s);
-            arr_tmp.push_back((*it).pairs[i].index % 3);
+            index_now.push_back((*it).pairs[i].index);
+            index_now.push_back((*it).pairs[i].tran);
+
+            index_with_cell.push_back((*it).pairs[i].index);
+            index_with_cell.push_back((*it).pairs[i].tran);
+            index_with_cell.push_back((*it).pairs[i].cell_s);
         }
-       
 
-        if (arr_tmp != arr_old) {
+        if (index_now != index_old) {
 
-            if (arr_old[0] != -1) { // Neglect the initial entry
-                delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
+            if (index_old[0] != -1) {
+
+                nmulti = set_index_uniq.size();
+                fcs_tmp /= static_cast<double>(nmulti); 
+
+                if (std::abs(fcs_tmp) > eps15) {
+                    for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin();
+                         it2 != set_index_uniq.end(); ++it2) {
+
+                        pairs_vec.clear();
+
+                        pairs_tmp.index = (*it2)[0];
+                        pairs_tmp.tran = 0;
+                        pairs_tmp.cell_s = 0;
+                        pairs_vec.push_back(pairs_tmp);
+                        for (i = 1; i < norder - 1; ++i) {
+                            pairs_tmp.index = (*it2)[3*i-2];
+                            pairs_tmp.tran = (*it2)[3*i-1];
+                            pairs_tmp.cell_s = (*it2)[3*i];
+                            pairs_vec.push_back(pairs_tmp);
+                        }
+                        delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
+                    }
+                }
+                set_index_uniq.clear();
             }
-
-            pairs_vec.clear();
-            for (i = 0; i < norder - 1; ++i) {
-                pairs_vec.push_back((*it).pairs[i]);
-            }           
-
+            
             fcs_tmp = 0.0;
-            arr_old.clear();
-            arr_old.reserve(arr_tmp.size());
-            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+            index_old.clear();
+            index_old.reserve(index_now.size());
+            std::copy(index_now.begin(), index_now.end(), std::back_inserter(index_old));
         }
+
+        set_index_uniq.insert(index_with_cell);
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[system->map_p2s_anharm[(*it).pairs[norder - 1].index / 3][(*it).pairs[norder - 1].tran]][i]
+                   - system->xr_s_anharm[system->map_p2s_anharm[(*it).pairs[0].index / 3][0]][i]
                    + xshift_s[(*it).pairs[norder - 1].cell_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
 
         fcs_tmp += (*it).fcs_val * vec[(*it).pairs[norder - 1].index % 3];
+
+        iat = system->map_p2s_anharm[(*it).pairs[0].index/3][0];
+        icrd = (*it).pairs[0].index%3;
+        jat = system->map_p2s_anharm[(*it).pairs[1].index/3][(*it).pairs[1].tran];
+        jcrd = (*it).pairs[1].index%3;
+        kat = system->map_p2s_anharm[(*it).pairs[2].index/3][(*it).pairs[2].tran];
+        kcrd = (*it).pairs[2].index%3;
+/*
+        std::cout << std::setw(5) << iat + 1 << std::setw(5) << icrd + 1;
+        std::cout << std::setw(5) << jat + 1 << std::setw(5) << jcrd + 1;
+        std::cout << std::setw(5) << (*it).pairs[1].cell_s + 1;
+        std::cout << std::setprecision(10) << std::setw(25)<< (*it).fcs_val << std::setw(25) << vec[(*it).pairs[2].index % 3];
+        std::cout << std::setw(5) << kat + 1 << std::setw(5) << kcrd + 1;
+        std::cout << std::setw(5) << (*it).pairs[2].cell_s + 1 << std::endl;
+*/
+        
     }
 
-    delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
+    nmulti = set_index_uniq.size();
+    fcs_tmp /= static_cast<double>(nmulti); 
+
+    if (std::abs(fcs_tmp) > eps15) {
+        for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin();
+             it2 != set_index_uniq.end(); ++it2) {
+
+            pairs_vec.clear();
+
+            pairs_tmp.index = (*it2)[0];
+            pairs_tmp.tran = 0;
+            pairs_tmp.cell_s = 0;
+            pairs_vec.push_back(pairs_tmp);
+            for (i = 1; i < norder - 1; ++i) {
+                pairs_tmp.index = (*it2)[3*i-2];
+                pairs_tmp.tran = (*it2)[3*i-1];
+                pairs_tmp.cell_s = (*it2)[3*i];
+                pairs_vec.push_back(pairs_tmp);
+            }
+            delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
+        }
+    }
 
     fcs_aligned.clear();
+    set_index_uniq.clear();
+    
 }
 
 void Gruneisen::write_new_fcsxml_all()
@@ -291,23 +359,23 @@ void Gruneisen::write_new_fcsxml_all()
         error->warn("write_new_fcsxml_all",
             "NEWFCS = 1 cannot be combined with the FC2XML.");
     } else {
-    std::cout << " NEWFCS = 1 : Following XML files are created. " << std::endl;
+        std::cout << " NEWFCS = 1 : Following XML files are created. " << std::endl;
 
-    std::string file_xml;
+        std::string file_xml;
 
-    file_xml = input->job_title + "_+.xml";
-    write_new_fcsxml(file_xml, delta_a);
+        file_xml = input->job_title + "_+.xml";
+        write_new_fcsxml(file_xml, delta_a);
 
-    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_xml;
-    std::cout << " : Force constants of the system expanded by " 
-        << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+        std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_xml;
+        std::cout << " : Force constants of the system expanded by " 
+            << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
 
-    file_xml = input->job_title + "_-.xml";
-    write_new_fcsxml(file_xml, -delta_a);
+        file_xml = input->job_title + "_-.xml";
+        write_new_fcsxml(file_xml, -delta_a);
 
-    std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_xml;
-    std::cout << " : Force constants of the system compressed by "
-        << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+        std::cout << "  " <<  std::setw(input->job_title.length() + 12) << std::left << file_xml;
+        std::cout << " : Force constants of the system compressed by "
+            << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
     }
 }
 

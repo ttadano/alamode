@@ -14,6 +14,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "error.h"
 #include "memory.h"
 #include "constants.h"
+#include "symmetry_core.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -45,6 +46,7 @@ System::~System() {
     memory->deallocate(map_s2p);
     memory->deallocate(map_s2p_anharm);
     memory->deallocate(mass_kd);
+    memory->deallocate(magmom);
 }
 
 void System::setup()
@@ -153,6 +155,30 @@ void System::setup()
 
         memory->deallocate(xtmp);
 
+        if (lspin) {
+            std::cout << "  MagneticMoments entry found in the XML file. " << std::endl;
+            std::cout << "  Magnetic moment in Cartesian coordinates: " << std::endl;
+            for (i = 0; i < natmin; ++i) {
+                std::cout << std::setw(4) << i + 1 << ":";
+                for (j = 0; j < 3; ++j) {
+                    std::cout << std::setw(15) << magmom[i][j];
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+            if (noncollinear == 0) {
+                std::cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << std::endl;
+            } else if (noncollinear == 1) {
+                std::cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << std::endl;
+                if (symmetry->trev_sym_mag) {
+                    std::cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << std::endl;
+                } else {
+                    std::cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" << std::endl;
+                }
+            }
+            std::cout << std::endl;
+        }
+
         std::cout << "  Mass of atomic species (u):" << std::endl;
         for (i = 0; i < nkd; ++i) {
             std::cout << std::setw(4) << symbol_kd[i] << ":";
@@ -181,7 +207,14 @@ void System::setup()
     for (i = 0; i < natmin; ++i) {
         kd_prim[i] = kd[map_p2s[i][0]];
     }
-    setup_atomic_class(natmin, kd_prim);
+    MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    if (mympi->my_rank > 0) {
+        memory->allocate(magmom, natmin, 3);
+    }
+    MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    setup_atomic_class(natmin, kd_prim, magmom);
 
     memory->deallocate(kd_prim);
 }
@@ -286,6 +319,63 @@ void System::load_system_info_from_XML()
             map_s2p[atom_s].tran_num = tran;
         }
 
+        // Parse magnetic moments
+
+        double **magmom_tmp;
+        memory->allocate(magmom_tmp, nat, 3);
+        memory->allocate(magmom, natmin, 3);
+
+        lspin = true;
+        try {
+            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
+                if (child_.first == "mag") {
+                    const ptree& child = child_.second;
+                    const std::string str_index = child.get<std::string>("<xmlattr>.index");
+
+                    ss.str("");
+                    ss.clear();
+                    ss << child.data();
+
+                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
+
+                    if (index >= nat) error->exit("load_system_info_xml", "index is out of range");
+
+                    ss >> magmom_tmp[index][0] >> magmom_tmp[index][1] >> magmom_tmp[index][2];
+                }
+            }
+
+        } catch(...) {
+            lspin = false;
+        }
+
+        if (lspin) {
+            for (i = 0; i < natmin; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    magmom[i][j] = magmom_tmp[map_p2s[i][0]][j];
+                }
+            }
+
+            try {
+                noncollinear = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.Noncollinear"));
+            } catch(...) {
+                noncollinear = 0;
+            }
+
+            try {
+                symmetry->trev_sym_mag = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.TimeReversalSymmetry"));
+            } catch(...) {
+                symmetry->trev_sym_mag = true;
+            }
+        } else {
+            for (i = 0; i < natmin; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    magmom[i][j] = 0.0;
+                }
+            }
+            noncollinear = 0;
+            symmetry->trev_sym_mag = true;
+        }
+        memory->deallocate(magmom_tmp);
 
         // Now, replicate the information for anharmonic terms.
 
@@ -427,6 +517,7 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0){
         memory->allocate(mass_kd, nkd);
@@ -438,6 +529,9 @@ void System::load_system_info_from_XML()
         memory->allocate(map_p2s_anharm, natmin, ntran_anharm);
         memory->allocate(map_s2p, nat);
         memory->allocate(map_s2p_anharm, nat_anharm);
+        if (lspin) {
+            memory->allocate(magmom, natmin, 3);
+        }
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -449,6 +543,8 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&map_p2s_anharm[0][0], natmin*ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p[0], nat*sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p_anharm[0], nat_anharm*sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    if (lspin) MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 }
 
 
@@ -493,31 +589,50 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 }
 
 
-void System::setup_atomic_class(unsigned int N, unsigned int *kd) {
+void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmom_in) {
 
-    // This function can be modified when one needs to 
-    // compute symmetry operations of spin polarized systems.
+
+    // In the case of collinear calculation, spin moments are considered as scalar
+    // variables. Therefore, the same elements with different magnetic moments are
+    // considered as different types. In noncollinear calculations, 
+    // magnetic moments are not considered in this stage. They will be treated
+    // separately in symmetry.cpp where spin moments will be rotated and flipped 
+    // using time-reversal symmetry.
 
     unsigned int i;
-    std::set<unsigned int> kd_uniq;
-    kd_uniq.clear();
+    AtomType type_tmp;
+    std::set<AtomType> set_type;
+    set_type.clear();
 
     for (i = 0; i < N; ++i) {
-        kd_uniq.insert(kd[i]);
+        type_tmp.element = kd[i];
+
+        if (noncollinear == 0) {
+            type_tmp.magmom = magmom_in[i][2];
+        } else {
+            type_tmp.magmom = 0.0;
+        }
+        set_type.insert(type_tmp);
     }
-    nclassatom = kd_uniq.size();
+
+    nclassatom = set_type.size();
 
     memory->allocate(atomlist_class, nclassatom);
 
     for (i = 0; i < N; ++i) {
         int count = 0;
-        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
-            if (kd[i] == (*it)) {
-                atomlist_class[count].push_back(i);
+        for (std::set<AtomType>::iterator it = set_type.begin(); it != set_type.end(); ++it) {
+            if (noncollinear) {
+                if (kd[i] == (*it).element) {
+                    atomlist_class[count].push_back(i);
+                }
+            } else {
+                if (kd[i] == (*it).element && std::abs(magmom[i][2] - (*it).magmom) < eps6) {
+                    atomlist_class[count].push_back(i);
+                }
             }
             ++count;
         }
     }
-
-    kd_uniq.clear();
+    set_type.clear();
 }

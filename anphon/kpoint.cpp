@@ -642,6 +642,7 @@ void Kpoint::reduce_kpoints(const unsigned int nsym, double **xkr, const unsigne
 
             nloc = get_knum(xk_sym, nk_in);
 
+
             if (nloc == -1) {
 
                 error->exit("reduce_kpoints", "Cannot find the kpoint");

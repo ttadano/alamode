@@ -135,7 +135,6 @@ void PHON::destroy_pointers()
     delete isotope;
 }
 
-
 void PHON::setup_base()
 {
     system->setup();
