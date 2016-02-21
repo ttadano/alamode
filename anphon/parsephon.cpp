@@ -560,7 +560,7 @@ void Input::parse_kpoints()
             error->exit("parse_kpoints", "KPMODE = 3 is valid only when FSTATE_K is true.");
         }
 
-        ifs_input.ignore();
+        ifs_input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         while (std::getline(ifs_input, line)) {
 
@@ -571,6 +571,8 @@ void Input::parse_kpoints()
 
             std::istringstream is(line);
 
+            std::cout << "line = " << line << std::endl;
+
             while (1) {
                 str_tmp.clear();
                 is >> str_tmp;
@@ -579,6 +581,7 @@ void Input::parse_kpoints()
                 }
                 kpelem.push_back(str_tmp);
             }
+            std::cout << "kpelem.size = " << kpelem.size() << std::endl;
 
             if (kpmode == 0 && kpelem.size() != 3) {
                 error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
