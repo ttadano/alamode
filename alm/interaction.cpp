@@ -75,10 +75,6 @@ void Interaction::init()
         std::cout << std::endl;
     }
 
-//    for (i = 0; i < 3; ++i) {
-//        if(!is_periodic[i]) nsize[i] = 0;
-//    }
-
     nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
     memory->allocate(x_image, nneib, nat, 3);
     memory->allocate(exist_image, nneib);

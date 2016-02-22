@@ -586,7 +586,8 @@ void Input::parse_cutoff_radii()
         jkd = kd_map[str_pair[1]];
 
         for (order = 0; order < maxorder; ++order) {
-            if (cutoff_line[order + 1] == "None") {
+   //         if (cutoff_line[order + 1] == "None") {
+            if (cutoff_line[order+1][0] == 'N' or cutoff_line[order+1][0] == 'n') {
                 // Minus value for cutoff radius.
                 // This is a flag for neglecting cutoff radius
                 cutoff_tmp = -1.0;
