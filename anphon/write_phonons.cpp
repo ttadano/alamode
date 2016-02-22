@@ -1552,27 +1552,42 @@ void Writes::write_participation_ratio()
     dynamical->calc_participation_ratio_all(dynamical->evec_phonon, participation_ratio, atomic_participation_ratio);
 
     ofs_pr << "# Participation ratio of each phonon modes at k points" << std::endl;
+
     if (kpoint->kpoint_mode == 1) {
+
+        ofs_pr << "# kpoint, mode, PR[kpoint][mode]" << std::endl;
+
         for (i = 0; i < nk; ++i) {
-            ofs_pr << "#" << std::setw(10) << i + 1;
+            ofs_pr << "#" << std::setw(8) << i + 1;
+            ofs_pr << " xk = ";
             for (j = 0; j < 3; ++j) {
                 ofs_pr << std::setw(15) << kpoint->xk[i][j];
             }
             ofs_pr << std::endl;
             for (j = 0; j < nbands; ++j) {
+                ofs_pr << std::setw(8) << i + 1;
+                ofs_pr << std::setw(5) << j + 1;
                 ofs_pr << std::setw(15) << participation_ratio[i][j];
+                ofs_pr << std::endl;
             }
             ofs_pr << std::endl;
         }
+
     } else if (kpoint->kpoint_mode == 2) {
+
+        ofs_pr << "# irred. kpoint, mode, frequency[kpoint][mode] (cm^-1), PR[kpoint][mode]" << std::endl;
+
         for (i = 0; i < kpoint->nk_reduced; ++i) {
             knum = kpoint->kpoint_irred_all[i][0].knum;
-            ofs_pr << "#" << std::setw(10) << i + 1;
+            ofs_pr << "#" << std::setw(8) << i + 1;
+            ofs_pr << " xk = ";
             for (j = 0; j < 3; ++j) {
                 ofs_pr << std::setw(15) << kpoint->xk[knum][j];
             }
             ofs_pr << std::endl;
             for (j = 0; j < nbands; ++j) {
+                ofs_pr << std::setw(8) << i + 1;
+                ofs_pr << std::setw(5) << j + 1;
                 ofs_pr << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][j]);
                 ofs_pr << std::setw(15) << participation_ratio[knum][j];
                 ofs_pr << std::endl;
@@ -1585,26 +1600,55 @@ void Writes::write_participation_ratio()
 
     ofs_apr << "# Atomic participation ratio of each phonon modes at k points" << std::endl;
 
-    for (i = 0; i < kpoint->nk_reduced; ++i) {
-        knum = kpoint->kpoint_irred_all[i][0].knum;
+    if (kpoint->kpoint_mode == 1) {
 
-        ofs_apr << "#" << std::setw(10) << i + 1;
-        for (j = 0; j < 3; ++j) {
-            ofs_apr << std::setw(15) << kpoint->xk[knum][j];
-        }
-        ofs_apr << std::endl;
-        for (j = 0; j < nbands; ++j) {
-            for (k = 0; k < natmin; ++k) {
-                ofs_apr << std::setw(5) << i + 1;
-                ofs_apr << std::setw(5) << j + 1;
-                ofs_apr << std::setw(5) << k + 1;
-                ofs_apr << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][j]);
-                ofs_apr << std::setw(15) << atomic_participation_ratio[knum][j][k];
-                ofs_apr << std::endl;
+        ofs_apr << "# kpoint, mode, atom, APR[kpoint][mode][atom]" << std::endl;
+
+        for (i = 0; i < nk; ++i) {
+            ofs_apr << "#" << std::setw(8) << i + 1;
+            ofs_apr << " xk = ";
+            for (j = 0; j < 3; ++j) {
+                ofs_apr << std::setw(15) << kpoint->xk[i][j];
             }
+            ofs_apr << std::endl;
+            for (j = 0; j < nbands; ++j) {
+                for (k = 0; k < natmin; ++k) {
+                    ofs_apr << std::setw(8) << i + 1;
+                    ofs_apr << std::setw(5) << j + 1;
+                    ofs_apr << std::setw(5) << k + 1;
+                    ofs_apr << std::setw(15) << atomic_participation_ratio[i][j][k];
+                    ofs_apr << std::endl;
+                }
+            }
+            ofs_apr << std::endl;
         }
-        ofs_pr << std::endl;
+    } else if (kpoint->kpoint_mode == 2) {
+
+        ofs_apr << "# irred. kpoint, mode, atom, frequency[kpoint][mode] (cm^-1), APR[kpoint][mode][atom]" << std::endl;
+
+        for (i = 0; i < kpoint->nk_reduced; ++i) {
+            knum = kpoint->kpoint_irred_all[i][0].knum;
+
+            ofs_apr << "#" << std::setw(8) << i + 1;
+            ofs_apr << " xk = ";
+            for (j = 0; j < 3; ++j) {
+                ofs_apr << std::setw(15) << kpoint->xk[knum][j];
+            }
+            ofs_apr << std::endl;
+            for (j = 0; j < nbands; ++j) {
+                for (k = 0; k < natmin; ++k) {
+                    ofs_apr << std::setw(8) << i + 1;
+                    ofs_apr << std::setw(5) << j + 1;
+                    ofs_apr << std::setw(5) << k + 1;
+                    ofs_apr << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][j]);
+                    ofs_apr << std::setw(15) << atomic_participation_ratio[knum][j][k];
+                    ofs_apr << std::endl;
+                }
+            }
+            ofs_apr << std::endl;
+        }
     }
+
 
     memory->deallocate(participation_ratio);
     memory->deallocate(atomic_participation_ratio);
