@@ -623,7 +623,7 @@ void Writes::write_phonon_vel_all()
 
         ofs_vel << std::endl;
     }
- 
+
     ofs_vel.close();
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_vel;
@@ -722,7 +722,6 @@ void Writes::write_two_phonon_dos()
 
 void Writes::write_scattering_phase_space()
 {  
-    int i, j;
     int ik, is;
 
     std::string file_sps;
@@ -981,7 +980,7 @@ void Writes::write_thermodynamics()
     double Tmax = system->Tmax;
     double dT = system->dT;
 
-    double T, TD;
+    double T;
     std::string file_thermo;
 
     NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
@@ -1174,7 +1173,7 @@ void Writes::write_kappa()
 
 void Writes::write_selfenergy_isotope()
 {
-    unsigned int i, j, k;
+    unsigned int i, k;
     unsigned int ns = dynamical->neval;
     unsigned int knum;
     double **eval = dynamical->eval_phonon;

@@ -57,7 +57,7 @@ void Symmetry::init()
     std::cout << " ========" << std::endl << std::endl;
 
     setup_symmetry_operation(nat, nsym, system->lavec, system->rlavec, 
-                             system->xcoord, system->kd);
+        system->xcoord, system->kd);
 
     memory->allocate(tnons, nsym, 3);
     memory->allocate(symrel_int, nsym, 3, 3);
@@ -66,11 +66,11 @@ void Symmetry::init()
     for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-	      symrel_int[isym][i][j] = (*iter).rot[i][j];
+                symrel_int[isym][i][j] = (*iter).rot[i][j];
             }
         }
         for (i = 0; i < 3; ++i) {
-	  tnons[isym][i] = (*iter).tran[i];
+            tnons[isym][i] = (*iter).tran[i];
         }
         ++isym;
     }
@@ -87,9 +87,9 @@ void Symmetry::init()
         std::cout << "  All symmetry operations will be used to reduce the number of force constants." << std::endl;
     } else {
         std::cout << "  " << nsym_fc << " symmetry operations out of " 
-		  << nsym << " will be used to reduce the number of parameters." << std::endl;
+            << nsym << " will be used to reduce the number of parameters." << std::endl;
         std::cout << "  Other " << nsym - nsym_fc 
-		  << " symmetry operations will be imposed as constraints." << std::endl;
+            << " symmetry operations will be imposed as constraints." << std::endl;
     }
     std::cout << std::endl;
 
@@ -230,7 +230,7 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
     // Generate all the space group operations with translational vectors
     symop_all.clear();
     find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x,
-                          LatticeSymmList, symop_all);
+        LatticeSymmList, symop_all);
 
     LatticeSymmList.clear();
 }
@@ -398,122 +398,122 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 
 
     for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); 
-                                               it_latsym != LatticeSymmList.end(); ++it_latsym) {
+        it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
-        iat = atomclass[0][0];
+            iat = atomclass[0][0];
 
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                rot[i][j] = static_cast<double>((*it_latsym).mat[i][j]);
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    rot[i][j] = static_cast<double>((*it_latsym).mat[i][j]);
+                }
             }
-        }
 
-        rotvec(x_rot, x[iat], rot);
+            rotvec(x_rot, x[iat], rot);
 
 #ifdef _OPENMP
 #pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, \
-        i, j, itype, jj, kk, is_identity_matrix, mag, mag_rot, rot_tmp, rot_cart, mag_sym1, mag_sym2)
+    i, j, itype, jj, kk, is_identity_matrix, mag, mag_rot, rot_tmp, rot_cart, mag_sym1, mag_sym2)
 #endif
-        for (ii = 0; ii < atomclass[0].size(); ++ii) {
-            jat = atomclass[0][ii];
+            for (ii = 0; ii < atomclass[0].size(); ++ii) {
+                jat = atomclass[0][ii];
 
-            for (i = 0; i < 3; ++i) {
-                tran[i] = x[jat][i] - x_rot[i];
-                tran[i] = tran[i] - nint(tran[i]);
-            }
+                for (i = 0; i < 3; ++i) {
+                    tran[i] = x[jat][i] - x_rot[i];
+                    tran[i] = tran[i] - nint(tran[i]);
+                }
 
-            if ((std::abs(tran[0]) > eps12 && !interaction->is_periodic[0]) ||
-                (std::abs(tran[1]) > eps12 && !interaction->is_periodic[1]) ||
-                (std::abs(tran[2]) > eps12 && !interaction->is_periodic[2])) continue;
+                if ((std::abs(tran[0]) > eps12 && !interaction->is_periodic[0]) ||
+                    (std::abs(tran[1]) > eps12 && !interaction->is_periodic[1]) ||
+                    (std::abs(tran[2]) > eps12 && !interaction->is_periodic[2])) continue;
 
-            is_identity_matrix = 
-                ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
-                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
-            if (is_identity_matrix) continue;
+                is_identity_matrix = 
+                    ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
+                    + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                    + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
+                if (is_identity_matrix) continue;
 
-            isok = true;
+                isok = true;
 
-            for (itype = 0; itype < nclass; ++itype) {
+                for (itype = 0; itype < nclass; ++itype) {
 
-                for (jj = 0; jj < atomclass[itype].size(); ++jj) {
+                    for (jj = 0; jj < atomclass[itype].size(); ++jj) {
 
-                    kat = atomclass[itype][jj];
+                        kat = atomclass[itype][jj];
 
-                    rotvec(x_rot_tmp, x[kat], rot);
-
-                    for (i = 0; i < 3; ++i) {
-                        x_rot_tmp[i] += tran[i];
-                    }
-
-                    is_found = false;
-
-                    for (kk = 0; kk < atomclass[itype].size(); ++kk) {
-
-                        lat = atomclass[itype][kk];
+                        rotvec(x_rot_tmp, x[kat], rot);
 
                         for (i = 0; i < 3; ++i) {
-                            tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
-                            tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                            x_rot_tmp[i] += tran[i];
                         }
-                        diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-                        if (diff < tolerance * tolerance) {
-                            is_found = true;
-                            break;
+
+                        is_found = false;
+
+                        for (kk = 0; kk < atomclass[itype].size(); ++kk) {
+
+                            lat = atomclass[itype][kk];
+
+                            for (i = 0; i < 3; ++i) {
+                                tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
+                                tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                            }
+                            diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                            if (diff < tolerance * tolerance) {
+                                is_found = true;
+                                break;
+                            }
                         }
-                    }
 
-                    if (!is_found) isok = false;
-                }
-            }
-
-            if (isok && system->lspin && system->noncollinear) {
-                for (i = 0; i < 3; ++i) {
-                    mag[i] = system->magmom[jat][i];
-                    mag_rot[i] = system->magmom[iat][i];
-                }
-
-                matmul3(rot_tmp, rot, system->rlavec);
-                matmul3(rot_cart, system->lavec, rot_tmp);
-
-                for (i = 0; i < 3; ++i) {
-                    for (j = 0; j < 3; ++j) {
-                        rot_cart[i][j] /= (2.0 * pi);
+                        if (!is_found) isok = false;
                     }
                 }
-                rotvec(mag_rot, mag_rot, rot_cart);
 
-                // In the case of improper rotation, the factor -1 should be multiplied
-                // because the inversion operation doesn't flip the spin.
-                if (!is_proper(rot_cart)) {
+                if (isok && system->lspin && system->noncollinear) {
                     for (i = 0; i < 3; ++i) {
-                        mag_rot[i] = -mag_rot[i];
+                        mag[i] = system->magmom[jat][i];
+                        mag_rot[i] = system->magmom[iat][i];
+                    }
+
+                    matmul3(rot_tmp, rot, system->rlavec);
+                    matmul3(rot_cart, system->lavec, rot_tmp);
+
+                    for (i = 0; i < 3; ++i) {
+                        for (j = 0; j < 3; ++j) {
+                            rot_cart[i][j] /= (2.0 * pi);
+                        }
+                    }
+                    rotvec(mag_rot, mag_rot, rot_cart);
+
+                    // In the case of improper rotation, the factor -1 should be multiplied
+                    // because the inversion operation doesn't flip the spin.
+                    if (!is_proper(rot_cart)) {
+                        for (i = 0; i < 3; ++i) {
+                            mag_rot[i] = -mag_rot[i];
+                        }
+                    }
+
+                    mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
+                        + std::pow(mag[1] - mag_rot[1], 2.0)
+                        + std::pow(mag[2] - mag_rot[2], 2.0) ) < eps6;
+
+                    mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
+                        + std::pow(mag[1] + mag_rot[1], 2.0)
+                        + std::pow(mag[2] + mag_rot[2], 2.0) ) < eps6;
+
+                    if (!mag_sym1 && !mag_sym2) {
+                        isok = false;
+                    } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
+                        isok = false;
                     }
                 }
 
-                mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
-                          + std::pow(mag[1] - mag_rot[1], 2.0)
-                          + std::pow(mag[2] - mag_rot[2], 2.0) ) < eps6;
-
-                mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
-                          + std::pow(mag[1] + mag_rot[1], 2.0)
-                          + std::pow(mag[2] + mag_rot[2], 2.0) ) < eps6;
-
-                if (!mag_sym1 && !mag_sym2) {
-                    isok = false;
-                } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
-                    isok = false;
-                }
-            }
-
-            if (isok) {
+                if (isok) {
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-                CrystalSymmList.push_back(SymmetryOperation((*it_latsym).mat, tran));
+                    CrystalSymmList.push_back(SymmetryOperation((*it_latsym).mat, tran));
+                }
             }
-        }
 
     }
 }
@@ -521,58 +521,58 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
 /*
 void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryOperationTransFloat> symminfo) 
 {
-    int i;
+int i;
 
-    ret = 1;
+ret = 1;
 
-    std::set<double> translation_set;
-    double tran_tmp;
-    double tran_numerator;
-    bool is_integer;
-    bool is_found;
+std::set<double> translation_set;
+double tran_tmp;
+double tran_numerator;
+bool is_integer;
+bool is_found;
 
-    translation_set.clear();
+translation_set.clear();
 
-    for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
+for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
 
-        for (i = 0; i < 3; ++i) {
-            tran_tmp = std::abs((*it).tran[i]);
+for (i = 0; i < 3; ++i) {
+tran_tmp = std::abs((*it).tran[i]);
 
-            if (translation_set.find(tran_tmp) == translation_set.end()) {
-                translation_set.insert(tran_tmp);
-            }
-        }
-    }
+if (translation_set.find(tran_tmp) == translation_set.end()) {
+translation_set.insert(tran_tmp);
+}
+}
+}
 
-    is_found = false;
+is_found = false;
 
-    while(1) {
+while(1) {
 
-        is_integer = true;
+is_integer = true;
 
-        for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
+for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
 
-            tran_numerator = (*it) * static_cast<double>(ret);
-            if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
-                is_integer = false;
-                break;
-            }
-        }
+tran_numerator = (*it) * static_cast<double>(ret);
+if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
+is_integer = false;
+break;
+}
+}
 
-        if (is_integer) {
-            is_found = true;
-            break;
-        }
+if (is_integer) {
+is_found = true;
+break;
+}
 
-        if (ret > 1000) break;
-        ++ret;
-    }
+if (ret > 1000) break;
+++ret;
+}
 
 
-    if (!is_found) {
-        // This should not happen.
-        error->exit("find_nnp_for_translation", "Cannot find nnp.");
-    }
+if (!is_found) {
+// This should not happen.
+error->exit("find_nnp_for_translation", "Cannot find nnp.");
+}
 }
 */
 
@@ -835,7 +835,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         m32 = (*it).rot[2][1];
         m33 = (*it).rot[2][2];
 
-	for (i = 0; i < 3; ++i) tran[i] = (*it).tran[i];
+        for (i = 0; i < 3; ++i) tran[i] = (*it).tran[i];
 
         det = m11 * (m22 * m33 - m32 * m23)
             - m21 * (m12 * m33 - m32 * m13)
@@ -866,9 +866,9 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         for (i = 0; i < nat; ++i) {
             for (j = 0; j < 3; ++j) {   
 #ifdef _USE_EIGEN
-	      wsi(j) = x[i][j] - tran[j];
+                wsi(j) = x[i][j] - tran[j];
 #else 
-	      wsi[j] = x[i][j] - tran[j];
+                wsi[j] = x[i][j] - tran[j];
 #endif
             }
 
@@ -900,11 +900,11 @@ void Symmetry::print_symmetrized_coordinate(double **x)
                 double diff = tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2];
 #endif
                 if (diff < tolerance * tolerance) {
-		  l = j;
-		  break;
-		}
+                    l = j;
+                    break;
+                }
             }
-	    if (l == -1) error->exit("print_symmetrized_coordinate", "This cannot happen.");
+            if (l == -1) error->exit("print_symmetrized_coordinate", "This cannot happen.");
 
             for (j = 0; j < 3; ++j) {
 #ifdef _USE_EIGEN
@@ -912,15 +912,15 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 #else 
                 x_symm[l][j] = usi[j];
 #endif
-		/*
+                /*
                 do {
-                    if (x_symm[l][j] < 0.0) {
-                        x_symm[l][j] += 1.0;
-                    } else if (x_symm[l][j] >= 1.0) {
-                        x_symm[l][j] -= 1.0;
-                    }
+                if (x_symm[l][j] < 0.0) {
+                x_symm[l][j] += 1.0;
+                } else if (x_symm[l][j] >= 1.0) {
+                x_symm[l][j] -= 1.0;
+                }
                 } while(x_symm[l][j] < 0.0 || x_symm[l][j] >= 1.0);
-		*/
+                */
             }
 
         }

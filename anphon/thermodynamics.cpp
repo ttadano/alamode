@@ -250,7 +250,7 @@ double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const u
             // Skip when omega is almost zero. 
             // (neglect divergent contributions from acoustic modes at gamma point)
             if (omega < eps8) continue;
-           
+
             ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2])) 
                 * (fB(omega, T) + 0.5) / omega;
         }

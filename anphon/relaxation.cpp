@@ -1,7 +1,7 @@
 /*
 relaxation.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -56,7 +56,7 @@ void Relaxation::setup_relaxation()
     ns = dynamical->neval;
     nks = ns*nk;
 
-    unsigned int i, j, k;
+    unsigned int i, j;
     double *invsqrt_mass_p;
 
     if (mympi->my_rank == 0) {
@@ -132,11 +132,11 @@ void Relaxation::setup_relaxation()
         } else if (nk_grid[0] == 1 && nk_grid[1] == 1) {
             nk_represent = nk_grid[2];
             tune_type = 0;
-        
+
         } else if (nk_grid[1] == 1 && nk_grid[2] == 1) {
             nk_represent = nk_grid[0];
             tune_type = 0;
-        
+
         } else if (nk_grid[2] == 1 && nk_grid[0] == 1) {
             nk_represent = nk_grid[1];
             tune_type = 0;
@@ -148,7 +148,7 @@ void Relaxation::setup_relaxation()
         int ii, jj, kk;
 
         if (tune_type == 0) {
-            
+
             double phase;
 
             memory->allocate(exp_phase, 2 * nk_represent - 1);
@@ -325,9 +325,6 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in, c
     double vec[3];
     double **xshift_s;
 
-    unsigned int atm1_s, atm2_s;
-    unsigned int atm1_p, atm2_p;
-    unsigned int xyz1, xyz2;
     unsigned int icell;
 
     std::vector<unsigned int> atm_super, atm_prim;
@@ -634,7 +631,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
             + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0] 
             + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
             + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
-            
+
             ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * std::exp(im*phase);
 
             ++ielem;
@@ -681,11 +678,11 @@ std::complex<double> Relaxation::V3_tune(const unsigned int ks[3])
         for (j = 0; j < nsize_group; ++j) {
 
             phase = vec_for_v3[0][0][ielem] * kpoint->xk[kn[1]][0] 
-                  + vec_for_v3[1][0][ielem] * kpoint->xk[kn[1]][1]
-                  + vec_for_v3[2][0][ielem] * kpoint->xk[kn[1]][2]
-                  + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0] 
-                  + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
-                  + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
+            + vec_for_v3[1][0][ielem] * kpoint->xk[kn[1]][1]
+            + vec_for_v3[2][0][ielem] * kpoint->xk[kn[1]][2]
+            + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0] 
+            + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1] 
+            + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
 
             loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
@@ -725,8 +722,8 @@ std::complex<double> Relaxation::V3_tune2(const unsigned int ks[3])
     for (i = 0; i < ngroup; ++i) {
 
         vec_tmp = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]] 
-                * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
-                * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+        * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
+        * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
 
         ret_in = std::complex<double>(0.0, 0.0);
 
@@ -736,11 +733,11 @@ std::complex<double> Relaxation::V3_tune2(const unsigned int ks[3])
 
             for (ii = 0; ii < 3; ++ii) {
                 phase[ii] = vec_for_v3[ii][0][ielem] * kpoint->xk[kn[1]][ii] 
-                          + vec_for_v3[ii][1][ielem] * kpoint->xk[kn[2]][ii];
+                + vec_for_v3[ii][1][ielem] * kpoint->xk[kn[2]][ii];
 
                 loc[ii] = nint(phase[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
             }
-  
+
             ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase3[loc[0]][loc[1]][loc[2]];
 
             ++ielem;
@@ -875,7 +872,6 @@ void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const do
 
     unsigned int i;
     int ik;
-    unsigned int jk;
     unsigned int is, js; 
     unsigned int arr[3];
 
@@ -884,16 +880,12 @@ void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const do
 
     double T_tmp;
     double n1, n2;
-    double v3_tmp;
-    double xk_tmp[3];
     double omega_inner[2];
 
     int knum, knum_minus;
     double multi;
 
     for (i = 0; i < N; ++i) ret[i] = 0.0;
-
-    int iloc, jloc, kloc;
 
     double **v3_arr;
     double ***delta_arr;
@@ -1001,7 +993,7 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
     int ik, ib;
     int ns2 = ns * ns;
 
-    unsigned int i, j;
+    unsigned int i;
     unsigned int jk;
     unsigned int is, js; 
     unsigned int k1, k2;
@@ -1643,8 +1635,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
     double norm, T_tmp;
     double V3norm;
     double **eval, **eval2;
-    double **gamma_k, **gamma_k_mpi;
-    double delta_tmp[2];
+    double **gamma_k;
 
     std::complex<double> ***evec;
 
@@ -1997,7 +1988,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT, doub
 
 
     double srot[3][3];
-    double xk_sym[3], xk_orig[3];
+    double xk_sym[3];
     double srot_inv[3][3], srot_inv_t[3][3];
     double ***symop_k;
     double diff;
@@ -2390,7 +2381,7 @@ bool Relaxation::is_proper(const int isym)
 bool Relaxation::is_symmorphic(const int isym)
 {
     int i;
-    int tran[3];
+    double tran[3];
     bool ret;
 
     for (i = 0; i < 3; ++i) tran[i] = symmetry->SymmList[isym].tran[i];

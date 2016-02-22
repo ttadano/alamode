@@ -1,7 +1,7 @@
 /*
  system.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -203,7 +203,7 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     std::string str_error;
     double *fcs_ref;
     int nfcs_ref;
-   
+
     try {
         read_xml(file_reference_fcs, pt);
     }
@@ -281,17 +281,17 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     list_found.clear();
 
     for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin(); 
-                                           p != fcs->fc_set[order_fcs].end(); ++p) {
-        FcProperty list_tmp = *p; // Using copy constructor
-        for (i = 0; i < nterms; ++i) {
-            ind[i] = list_tmp.elems[i];
-        }
-        list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
+        p != fcs->fc_set[order_fcs].end(); ++p) {
+            FcProperty list_tmp = *p; // Using copy constructor
+            for (i = 0; i < nterms; ++i) {
+                ind[i] = list_tmp.elems[i];
+            }
+            list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
     }
-// 
-//     for (i = 0; i < nfcs_ref; ++i) {
-//         constraint->const_mat[i][i] = 1.0;
-//     }
+    // 
+    //     for (i = 0; i < nfcs_ref; ++i) {
+    //         constraint->const_mat[i][i] = 1.0;
+    //     }
 
     for (i = 0; i < nfcs_ref; ++i) {
         iter_found = list_found.find(FcProperty(nterms, 1.0, intpair_ref[i], 1));

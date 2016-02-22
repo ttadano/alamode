@@ -58,7 +58,6 @@ namespace ALM_NS{
 
     private:
         void write_force_constants();
-      //  void wrtmisc();
         void write_misc_xml();
 
         std::ofstream ofs_info;

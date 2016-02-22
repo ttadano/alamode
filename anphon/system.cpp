@@ -213,7 +213,7 @@ void System::setup()
     }
     MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    
+
     setup_atomic_class(natmin, kd_prim, magmom);
 
     memory->deallocate(kd_prim);

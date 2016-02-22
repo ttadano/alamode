@@ -40,7 +40,7 @@ Fcs_phonon::~Fcs_phonon(){
 
 void Fcs_phonon::setup(std::string mode)
 {
-    unsigned int i, j, icrd, jcrd;
+    unsigned int i;
     unsigned int nat = system->nat;
     unsigned int natmin = system->natmin;
 
@@ -186,7 +186,6 @@ void Fcs_phonon::load_fcs_xml()
 
     double fcs_val;
 
-    Triplet tri_tmp;
     std::vector<unsigned int> ivec;
     std::vector<Triplet> tri_vec;
 
@@ -199,12 +198,12 @@ void Fcs_phonon::load_fcs_xml()
 
 
     std::cout << "  Reading force constants from the XML file ... ";
-     
+
     try {
         read_xml(file_fcs, pt);
     } 
     catch (std::exception &e) {
-    	std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
+        std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
         error->exit("load_fcs_xml", str_error.c_str());
     }
 
@@ -264,7 +263,7 @@ void Fcs_phonon::load_fcs_xml()
             if (std::abs(fcs_val) > eps) { 
 
                 do {
-                    
+
                     ivec_copy.clear();
 
                     for (i = 0; i < ivec_with_cell.size(); ++i) {
@@ -421,7 +420,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
             }
 
             for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
-                  sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+                sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
             }
 
             if (force_asr) {
@@ -512,8 +511,8 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 j = (*it).pairs[0].index;
                 k = 3 * system->map_p2s_anharm[(*it).pairs[1].index/3][(*it).pairs[1].tran] + (*it).pairs[1].index %3;
                 l = 3 * system->map_p2s_anharm[(*it).pairs[2].index/3][(*it).pairs[2].tran] + (*it).pairs[2].index %3;
-//                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
-//                l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;
+                //                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
+                //                l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;
                 m = (*it).pairs[3].index % 3;
 
                 sum4[j][k][l][m] += (*it).fcs_val;

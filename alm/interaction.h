@@ -195,15 +195,15 @@ namespace ALM_NS {
     private:
         int nsize[3];
         void generate_coordinate_of_periodic_images(const unsigned int, double **, 
-                                                    const int [3], double ***, int *);
+            const int [3], double ***, int *);
         void get_pairs_of_minimum_distance(int, double ***, int *, std::vector<DistInfo> **, std::vector<DistInfo> **);
         void print_neighborlist(std::vector<DistInfo> **);
         void search_interactions(std::vector<int> **, std::set<IntList> *);
         void set_ordername();
         void calc_mindist_clusters(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
-                                    int *, std::set<MinimumDistanceCluster> **);
+            int *, std::set<MinimumDistanceCluster> **);
         void calc_mindist_clusters2(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
-                                    int *, std::set<MinimumDistanceCluster> **);
+            int *, std::set<MinimumDistanceCluster> **);
         int nbody(const int, const int *);
         void cell_combination(std::vector<std::vector<int> >, int, std::vector<int>, std::vector<std::vector<int> > &);
         void generate_pairs(std::set<IntList> *, std::set<MinimumDistanceCluster> **);

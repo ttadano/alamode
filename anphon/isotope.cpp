@@ -94,7 +94,7 @@ void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const doub
                 dprod = std::complex<double>(0.0, 0.0);
                 for (icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
-                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                        * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
             }
@@ -103,7 +103,7 @@ void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const doub
 
             if (integration->ismear == 0) {
                 ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
-//            ret += delta_lorentz(omega - omega1, epsilon) * prod;
+                //            ret += delta_lorentz(omega - omega1, epsilon) * prod;
             } else {
                 ret += omega1 * delta_gauss(omega - omega1, epsilon) * prod;
             }
@@ -153,12 +153,12 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum, const int snum, cons
                 dprod = std::complex<double>(0.0, 0.0);
                 for (icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
-                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                        * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
             }
             //			weight[is][ik] = prod;
-                   weight[is][ik] = prod * eval[is][ik];
+            weight[is][ik] = prod * eval[is][ik];
         }
     }
 
@@ -219,33 +219,33 @@ void Isotope::calc_isotope_selfenergy_all()
             std::cout << "done!" << std::endl;
         }
 
-/*
+        /*
         double tmp2;
 
         for (i = 0; i < kpoint->nk_reduced; ++i) {
-            for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
-                knum = kpoint->kpoint_irred_all[i][0].knum;
-                
-                for (int k = 0; k < ns; ++k) {
+        for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
+        knum = kpoint->kpoint_irred_all[i][0].knum;
 
-                    omega = dynamical->eval_phonon[knum][k];
+        for (int k = 0; k < ns; ++k) {
 
-                    calc_isotope_selfenergy(knum, snum, omega, tmp);
-                    calc_isotope_selfenergy_tetra(knum, snum, omega, tmp2);
-         
-                    std::cout << " ik = " << std::setw(5) << i + 1;
-                    std::cout << " j = " << std::setw(5) << j + 1;
-                    std::cout << " snum = " << std::setw(5) << k + 1;
-                    std::cout << " omega = " << std::setw(15) << omega;
-                    std::cout << " ret1 = " << std::setw(15) << tmp;
-                    std::cout << " ret2 = " << std::setw(15) << tmp2 << std::endl;
-                }
-            }
+        omega = dynamical->eval_phonon[knum][k];
+
+        calc_isotope_selfenergy(knum, snum, omega, tmp);
+        calc_isotope_selfenergy_tetra(knum, snum, omega, tmp2);
+
+        std::cout << " ik = " << std::setw(5) << i + 1;
+        std::cout << " j = " << std::setw(5) << j + 1;
+        std::cout << " snum = " << std::setw(5) << k + 1;
+        std::cout << " omega = " << std::setw(15) << omega;
+        std::cout << " ret1 = " << std::setw(15) << tmp;
+        std::cout << " ret2 = " << std::setw(15) << tmp2 << std::endl;
+        }
+        }
         }
 
         error->exit("hoge", "hoge");
 
-*/
+        */
     }
 
 

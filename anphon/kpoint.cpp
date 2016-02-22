@@ -1,7 +1,7 @@
 /*
  kpoint.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -61,7 +61,6 @@ void Kpoint::kpoint_setups(std::string mode)
     symmetry->symmetry_flag = true;
 
     unsigned int i, j;
-    unsigned int ik, jk;
     std::string str_tmp;
 
     MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -511,8 +510,6 @@ void PHON_NS::Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane, std
 
 void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo, unsigned int &nplane, std::vector<KpointPlane> *&kp_plane)
 {
-    int i, j;
-
     nplane = kpinfo.size();
     MPI_Bcast(&nplane, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
@@ -901,7 +898,7 @@ int Kpoint::get_knum(const double xk[3], const unsigned int nk[3])
 
 bool Kpoint::in_first_BZ(double *xk_in) {
 
-    int i, j, k, m;
+    int i, j, k;
     int nmax = 1;
     double tmp[3];
     double dist, dist_min;

@@ -85,7 +85,7 @@ namespace ALM_NS {
         return std::lexicographical_compare(a.atomset.begin(), a.atomset.end(), b.atomset.begin(), b.atomset.end());
     }
 
-    
+
     class IndexWithSign {
     public:
         int ind, sign;
@@ -113,7 +113,6 @@ namespace ALM_NS {
         void gen_displacement_pattern();
 
     private:
-    //    std::set<DispAtomSet> *dispset;
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
         void generate_pattern_all(const int, std::vector<AtomWithDirection> *, std::set<DispAtomSet> *);
 

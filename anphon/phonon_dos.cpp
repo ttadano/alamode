@@ -122,12 +122,10 @@ void Dos::setup()
 
 void Dos::calc_dos_all()
 {
-    int i;
     unsigned int j, k;
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;
-    double *weight;
 
     bool print_w = true;
 
@@ -161,8 +159,8 @@ void Dos::calc_dos_all()
 }
 
 void Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, double **eval, 
-                            const unsigned int n, double *energy, double *ret, const unsigned int neval, const int smearing_method,
-                            std::vector<std::vector<KpointList> > &kpinfo)
+                   const unsigned int n, double *energy, double *ret, const unsigned int neval, const int smearing_method,
+                   std::vector<std::vector<KpointList> > &kpinfo)
 {
     int i, j, k;
     double *weight;
@@ -197,14 +195,14 @@ void Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, double **eval,
 }
 
 void Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const unsigned int n, double *energy,
-                                           double **ret, const unsigned int neval, const unsigned int natmin, const int smearing_method,
-                                           std::complex<double> ***evec)
+                                  double **ret, const unsigned int neval, const unsigned int natmin, const int smearing_method,
+                                  std::complex<double> ***evec)
 {
     // Calculate atom projected phonon-DOS
 
     int i;
     unsigned int j, k;
-    unsigned int ik, imode, iat, icrd;
+    unsigned int imode, iat, icrd;
     int *kmap_identity;
     double *weight;
     double **proj;
@@ -278,7 +276,6 @@ void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double ***re
 
     int *kmap_identity;
 
-    double multi;
     double **e_tmp;    
     double **weight;
     double emax2 = 2.0 * emax;
@@ -370,7 +367,7 @@ void Dos::calc_total_scattering_phase_space(double **omega, const int smearing_m
                                             std::vector<std::vector<KpointList> > kpinfo, 
                                             double **ret_mode, double &ret)
 {
-    int i, j, k;
+    int i, j;
     int is, ik;
     int knum;
 
@@ -483,30 +480,21 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval, const int smearin
     unsigned int i, j, k;
     unsigned int knum, snum;
     double xk_tmp[3];
-    double **energy_tmp;
-    double **weight_tetra;
-    double ***delta_arr;
-    double *omega_prod;
     double **ret_mode;
-    double omega0, omega1, omega2;
-    double temp;
-    double f1, f2, n1, n2;
+    double omega0;
     double Tmin = system->Tmin;
     double Tmax = system->Tmax;
     double dT = system->dT;
     double *temperature;
     int N;
-    int ik, ib, iT;
+    int ik, iT;
     unsigned int nk_irred = kpoint->nk_reduced;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
-    unsigned int is, js;
     unsigned int k1, k2;
     unsigned int imode;
     unsigned int *k2_arr;
     unsigned int ns2 = ns * ns;
-    double ret1, ret2;
-    //    double ***send_buf;
     double **recv_buf;
     double omega_max = emax;
     double omega_min = emin;
@@ -609,7 +597,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval, const int smearin
             2*N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     }
 
-   count = 0;
+    count = 0;
     for (ik = 0; ik < nk_irred; ++ik) {
 
         knum = kp_info[ik][0].knum;
@@ -618,7 +606,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval, const int smearin
 
             omega0 = writes->in_kayser(eval[knum][imode]);
             if (omega0 < omega_min || omega0 > omega_max) continue;
-            
+
             for (iT = 0; iT < N; ++iT) {
                 ret[ik][imode][iT][0] = recv_buf[count][2 * iT];
                 ret[ik][imode][iT][1] = recv_buf[count][2 * iT + 1];
@@ -626,7 +614,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval, const int smearin
             ++count;
         }
     }
-        
+
     memory->deallocate(ret_mode);
     memory->deallocate(k2_arr);
     memory->deallocate(recv_buf);
@@ -696,7 +684,7 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
                         energy_tmp[i], omega0, smearing_method);
                 }
             }
-            
+
 
             for (k1 = 0; k1 < nk; ++k1) {
                 delta_arr[k1][ib][0] = weight[0][k1];

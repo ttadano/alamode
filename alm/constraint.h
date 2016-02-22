@@ -1,7 +1,7 @@
 /*
  constraint.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -46,10 +46,6 @@ namespace ALM_NS
         unsigned int p_index_target;
         double val_to_fix;
 
-//         ConstraintTypeFix(const ConstraintTypeFix &a) {
-//             p_index_target = a.p_index_target;
-//             val_to_fix = a.val_to_fix;
-//         }
         ConstraintTypeFix(const unsigned int index_in, const double val_in) {
             p_index_target = index_in;
             val_to_fix = val_in;
@@ -80,7 +76,7 @@ namespace ALM_NS
         int P;
         std::string fc2_file, fc3_file;
         bool fix_harmonic, fix_cubic;
-        bool constraint_algebraic;
+        int constraint_algebraic;
 
         double **const_mat;
         double *const_rhs;
@@ -109,14 +105,12 @@ namespace ALM_NS
 
         std::set<ConstraintClass> *const_self;
 
-     //   std::vector<std::pair<int, int> > *index_mapping;
-
         int levi_civita(const int, const int, const int);
 
         void translational_invariance();
         void rotational_invariance();
         void calc_constraint_matrix(const int, int &);
-        
+
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
         void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);

@@ -1,7 +1,7 @@
 /*
  symmetry_core.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -70,7 +70,7 @@ void Symmetry::setup_symmetry()
 }
 
 void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][3], double bb[3][3], 
-					double **x, unsigned int *kd)
+                                        double **x, unsigned int *kd)
 {
     int i, j;
     std::ofstream ofs_sym;
@@ -168,7 +168,7 @@ void Symmetry::findsym(int N, double aa[3][3], double **x, std::vector<SymmetryO
     // Generate all the space group operations with translational vectors
     symop_all.clear();
     find_crystal_symmetry(N, system->nclassatom, system->atomlist_class, x, 
-			  LatticeSymmList, symop_all);
+        LatticeSymmList, symop_all);
 
     LatticeSymmList.clear();
 }
@@ -295,7 +295,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
 }
 
 void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int> *atomclass, double **x, 
-				     std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperation> &CrystalSymmList){
+                                     std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperation> &CrystalSymmList){
 
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -427,12 +427,12 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
                 }
 
                 mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
-                          + std::pow(mag[1] - mag_rot[1], 2.0)
-                          + std::pow(mag[2] - mag_rot[2], 2.0) ) < eps6;
+                    + std::pow(mag[1] - mag_rot[1], 2.0)
+                    + std::pow(mag[2] - mag_rot[2], 2.0) ) < eps6;
 
                 mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
-                          + std::pow(mag[1] + mag_rot[1], 2.0)
-                          + std::pow(mag[2] + mag_rot[2], 2.0) ) < eps6;
+                    + std::pow(mag[1] + mag_rot[1], 2.0)
+                    + std::pow(mag[2] + mag_rot[2], 2.0) ) < eps6;
 
                 if (!mag_sym1 && !mag_sym2) {
                     isok = false;
@@ -454,71 +454,12 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
 }
 
 
-/*
-void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryOperationTransFloat> symminfo) {
-
-    int i;
-
-    ret = 1;
-
-    std::set<double> translation_set;
-    double tran_tmp;
-    double tran_numerator;
-    bool is_integer;
-    bool is_found;
-
-    translation_set.clear();
-
-    for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
-
-        for (i = 0; i < 3; ++i) {
-            tran_tmp = std::abs((*it).tran[i]);
-
-            if (translation_set.find(tran_tmp) == translation_set.end()) {
-                translation_set.insert(tran_tmp);
-            }
-        }
-    }
-
-    is_found = false;
-
-    while(1) {
-
-        is_integer = true;
-
-        for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
-
-            tran_numerator = (*it) * static_cast<double>(ret);
-            if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
-                is_integer = false;
-                break;
-            }
-        }
-
-        if (is_integer) {
-            is_found = true;
-            break;
-        }
-
-        if (ret > 1000) break;
-        ++ret;
-    }
-
-
-    if (!is_found) {
-        // This should not happen.
-        error->exit("find_nnp_for_translation", "Cannot find nnp.");
-    }
-}
-*/
-
-
 void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 {
     // Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
     double S[3][3], T[3][3], S_recip[3][3], mat_tmp[3][3];
-    double shift[3], x_mod[3], S_double[3][3], tmp[3];
+    double shift[3], x_mod[3], tmp[3];
     double diff;
     unsigned int *map_tmp;
     int i, j, k;
@@ -533,12 +474,12 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-	      T[i][j] = static_cast<double>((*isym).rot[i][j]);
+                T[i][j] = static_cast<double>((*isym).rot[i][j]);
             }
         }
 
         for (i = 0; i < 3; ++i) {
-	  shift[i] = (*isym).tran[i];
+            shift[i] = (*isym).tran[i];
         }
 
         invmat3(mat_tmp, T);
@@ -615,10 +556,10 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym)
     if (mympi->my_rank == 0) {
         for (i = 0; i < n; ++i) {
             for (j = 0; j < 3; ++j) {
-	      for (k = 0; k < 3; ++k) {
-                rot_tmp[i][j][k] = sym[i].rot[j][k];
-	      }
-	      tran_tmp[i][j] = sym[i].tran[j];
+                for (k = 0; k < 3; ++k) {
+                    rot_tmp[i][j][k] = sym[i].rot[j][k];
+                }
+                tran_tmp[i][j] = sym[i].tran[j];
             }
         }
     }
@@ -627,12 +568,12 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym)
 
     if (mympi->my_rank > 0) {
         for (i = 0; i < n; ++i) {
-	  for (j = 0; j < 3; ++j) {
-	    for (k = 0; k < 3; ++k) {
-	      rot[j][k] = rot_tmp[i][j][k];
-	    }
-	    tran[j] = tran_tmp[i][j];
-	  }
+            for (j = 0; j < 3; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    rot[j][k] = rot_tmp[i][j][k];
+                }
+                tran[j] = tran_tmp[i][j];
+            }
             sym.push_back(SymmetryOperation(rot,tran));
         }
     }

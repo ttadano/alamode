@@ -1,7 +1,7 @@
 /*
  conductivity.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -203,15 +203,11 @@ void Conductivity::finish_kappa()
 void Conductivity::calc_anharmonic_imagself()
 {
     unsigned int nks_g;
-    unsigned int i, j, k;
+    unsigned int i, j;
     unsigned int knum, snum;
     unsigned int *nks_thread;
     int iks;
-    unsigned int iks_g;
-    unsigned int nk_equiv;
-    unsigned int ktmp;
-
-    double omega, tau_tmp;
+    double omega;
     double *damping3_loc;
 
 
@@ -281,7 +277,7 @@ void Conductivity::calc_anharmonic_imagself()
             omega = dynamical->eval_phonon[knum][snum];
 
             if (integration->ismear == 0 || integration->ismear == 1) {
-                 relaxation->calc_damping_smearing(ntemp, Temperature, omega, iks/ns, snum, damping3_loc);
+                relaxation->calc_damping_smearing(ntemp, Temperature, omega, iks/ns, snum, damping3_loc);
             } else if (integration->ismear == -1) {
                 relaxation->calc_damping_tetrahedron(ntemp, Temperature, omega, iks/ns, snum, damping3_loc);
             }
@@ -301,35 +297,35 @@ void Conductivity::calc_anharmonic_imagself()
 void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int nshift,
                                       double ***vel_in, double **damp_in)
 {
-        unsigned int np = mympi->nprocs;
-        unsigned int j, k, iks_g;
-        unsigned int nk_equiv;
-        unsigned int ktmp;
+    unsigned int np = mympi->nprocs;
+    unsigned int j, k, iks_g;
+    unsigned int nk_equiv;
+    unsigned int ktmp;
 
-        for (j = 0; j < np; ++j) {
+    for (j = 0; j < np; ++j) {
 
-            iks_g = ik * np + j + nshift;
+        iks_g = ik * np + j + nshift;
 
-            if (iks_g >= kpoint->nk_reduced*ns) break;
+        if (iks_g >= kpoint->nk_reduced*ns) break;
 
-            writes->fs_result << "#GAMMA_EACH" << std::endl;
-            writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
+        writes->fs_result << "#GAMMA_EACH" << std::endl;
+        writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
 
-            nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
+        nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
 
-            writes->fs_result << nk_equiv << std::endl;
-            for (k = 0; k < nk_equiv; ++k) {
-                ktmp = kpoint->kpoint_irred_all[iks_g/ ns][k].knum;
-                writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
-                writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
-                writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
-            }
-
-            for (k = 0; k < ntemp; ++k) {
-                writes->fs_result << std::setw(15) << damp_in[iks_g][k] *  Hz_to_kayser / time_ry << std::endl;
-            }
-            writes->fs_result << "#END GAMMA_EACH" << std::endl;
+        writes->fs_result << nk_equiv << std::endl;
+        for (k = 0; k < nk_equiv; ++k) {
+            ktmp = kpoint->kpoint_irred_all[iks_g/ ns][k].knum;
+            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
+            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
+            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
         }
+
+        for (k = 0; k < ntemp; ++k) {
+            writes->fs_result << std::setw(15) << damp_in[iks_g][k] *  Hz_to_kayser / time_ry << std::endl;
+        }
+        writes->fs_result << "#END GAMMA_EACH" << std::endl;
+    }
 }
 
 void Conductivity::compute_kappa()
@@ -380,7 +376,7 @@ void Conductivity::compute_kappa()
 
                     kappa[i][j][k] = 0.0;
 
-		    if (Temperature[i] < eps) continue;
+                    if (Temperature[i] < eps) continue;
 
                     for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
 

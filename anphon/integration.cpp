@@ -267,7 +267,7 @@ double Integration::dos_integration(double *energy, const double e_ref)
 
 
 void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_irreducible_k, 
-                                            double *weight, double *energy, const double e_ref)
+                                          double *weight, double *energy, const double e_ref)
 {
     int i, j;
     double vol;
@@ -296,7 +296,7 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
         }
 
         std::sort(tetra_data.begin(), tetra_data.end());
-       
+
         e1 = tetra_data[0].e;
         e2 = tetra_data[1].e;
         e3 = tetra_data[2].e;
@@ -383,7 +383,7 @@ void PHON_NS::Integration::calc_weight_smearing(const int nk, const int nk_irred
 
     if (smearing_method == 0) {
         for (i = 0; i < nk; ++i) {
-           weight[map_to_irreducible_k[i]] += delta_lorentz(e_ref - energy[i], epsilon);
+            weight[map_to_irreducible_k[i]] += delta_lorentz(e_ref - energy[i], epsilon);
         }
     } else if (smearing_method == 1) {
         for (i = 0; i < nk; ++i) {

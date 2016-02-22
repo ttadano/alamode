@@ -53,7 +53,7 @@ namespace ALM_NS {
         std::string *kdname;
 
         unsigned int nclassatom;
-       
+
         std::vector<unsigned int> *atomlist_class;
         bool lspin;
         double cell_volume;

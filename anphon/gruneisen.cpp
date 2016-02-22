@@ -1,7 +1,7 @@
 /*
 gruneisen.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -85,7 +85,7 @@ void Gruneisen::setup()
             std::cout << "              with DELTA_A = " << std::setw(5) << delta_a << std::endl;
         }
     }
- //   print_stress_energy();
+    //   print_stress_energy();
 
 }
 
@@ -124,7 +124,7 @@ void Gruneisen::calc_gruneisen()
     for (ik = 0; ik < nk; ++ik){
 
         calc_dfc2_reciprocal(dfc2_reciprocal, kpoint->xk[ik]);
-            
+
         for (is = 0; is < ns; ++is){
 
             gruneisen[ik][is] = std::complex<double>(0.0, 0.0);
@@ -132,8 +132,8 @@ void Gruneisen::calc_gruneisen()
             for (i = 0; i < ns; ++i){
                 for (j = 0; j < ns; ++j){
                     gruneisen[ik][is] += std::conj(dynamical->evec_phonon[ik][is][i])
-                                       * dfc2_reciprocal[i][j] 
-                                       * dynamical->evec_phonon[ik][is][j];
+                        * dfc2_reciprocal[i][j] 
+                    * dynamical->evec_phonon[ik][is][j];
                 }
             }
 
@@ -186,7 +186,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
 
         tran = (*it).pairs[1].tran;
         cell_s = (*it).pairs[1].cell_s;
-        
+
         atm1_s = system->map_p2s_anharm[atm1][0];
         atm2_s = system->map_p2s_anharm[atm2][tran];
 
@@ -202,7 +202,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2] 
-            += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+        += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
 
     }
 }
@@ -231,7 +231,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
     fcs_aligned.clear();
 
     for (std::vector<FcsArrayWithCell>::const_iterator it  = fcs_in.begin(); it != fcs_in.end(); ++it) {
-            fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
+        fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
 
@@ -268,26 +268,26 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
 
                 if (std::abs(fcs_tmp) > eps15) {
                     for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin();
-                         it2 != set_index_uniq.end(); ++it2) {
+                        it2 != set_index_uniq.end(); ++it2) {
 
-                        pairs_vec.clear();
+                            pairs_vec.clear();
 
-                        pairs_tmp.index = (*it2)[0];
-                        pairs_tmp.tran = 0;
-                        pairs_tmp.cell_s = 0;
-                        pairs_vec.push_back(pairs_tmp);
-                        for (i = 1; i < norder - 1; ++i) {
-                            pairs_tmp.index = (*it2)[3*i-2];
-                            pairs_tmp.tran = (*it2)[3*i-1];
-                            pairs_tmp.cell_s = (*it2)[3*i];
+                            pairs_tmp.index = (*it2)[0];
+                            pairs_tmp.tran = 0;
+                            pairs_tmp.cell_s = 0;
                             pairs_vec.push_back(pairs_tmp);
-                        }
-                        delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
+                            for (i = 1; i < norder - 1; ++i) {
+                                pairs_tmp.index = (*it2)[3*i-2];
+                                pairs_tmp.tran = (*it2)[3*i-1];
+                                pairs_tmp.cell_s = (*it2)[3*i];
+                                pairs_vec.push_back(pairs_tmp);
+                            }
+                            delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
                     }
                 }
                 set_index_uniq.clear();
             }
-            
+
             fcs_tmp = 0.0;
             index_old.clear();
             index_old.reserve(index_now.size());
@@ -298,8 +298,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[system->map_p2s_anharm[(*it).pairs[norder - 1].index / 3][(*it).pairs[norder - 1].tran]][i]
-                   - system->xr_s_anharm[system->map_p2s_anharm[(*it).pairs[0].index / 3][0]][i]
-                   + xshift_s[(*it).pairs[norder - 1].cell_s][i];
+            - system->xr_s_anharm[system->map_p2s_anharm[(*it).pairs[0].index / 3][0]][i]
+            + xshift_s[(*it).pairs[norder - 1].cell_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
@@ -312,15 +312,15 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
         jcrd = (*it).pairs[1].index%3;
         kat = system->map_p2s_anharm[(*it).pairs[2].index/3][(*it).pairs[2].tran];
         kcrd = (*it).pairs[2].index%3;
-/*
+        /*
         std::cout << std::setw(5) << iat + 1 << std::setw(5) << icrd + 1;
         std::cout << std::setw(5) << jat + 1 << std::setw(5) << jcrd + 1;
         std::cout << std::setw(5) << (*it).pairs[1].cell_s + 1;
         std::cout << std::setprecision(10) << std::setw(25)<< (*it).fcs_val << std::setw(25) << vec[(*it).pairs[2].index % 3];
         std::cout << std::setw(5) << kat + 1 << std::setw(5) << kcrd + 1;
         std::cout << std::setw(5) << (*it).pairs[2].cell_s + 1 << std::endl;
-*/
-        
+        */
+
     }
 
     nmulti = set_index_uniq.size();
@@ -328,27 +328,27 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
 
     if (std::abs(fcs_tmp) > eps15) {
         for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin();
-             it2 != set_index_uniq.end(); ++it2) {
+            it2 != set_index_uniq.end(); ++it2) {
 
-            pairs_vec.clear();
+                pairs_vec.clear();
 
-            pairs_tmp.index = (*it2)[0];
-            pairs_tmp.tran = 0;
-            pairs_tmp.cell_s = 0;
-            pairs_vec.push_back(pairs_tmp);
-            for (i = 1; i < norder - 1; ++i) {
-                pairs_tmp.index = (*it2)[3*i-2];
-                pairs_tmp.tran = (*it2)[3*i-1];
-                pairs_tmp.cell_s = (*it2)[3*i];
+                pairs_tmp.index = (*it2)[0];
+                pairs_tmp.tran = 0;
+                pairs_tmp.cell_s = 0;
                 pairs_vec.push_back(pairs_tmp);
-            }
-            delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
+                for (i = 1; i < norder - 1; ++i) {
+                    pairs_tmp.index = (*it2)[3*i-2];
+                    pairs_tmp.tran = (*it2)[3*i-1];
+                    pairs_tmp.cell_s = (*it2)[3*i];
+                    pairs_vec.push_back(pairs_tmp);
+                }
+                delta_fcs.push_back(FcsArrayWithCell(fcs_tmp, pairs_vec));
         }
     }
 
     fcs_aligned.clear();
     set_index_uniq.clear();
-    
+
 }
 
 void Gruneisen::write_new_fcsxml_all()
@@ -486,20 +486,20 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
 
         for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc3.begin(); it != delta_fc3.end(); ++it) {
 
-                if (std::abs((*it).fcs_val) < eps12) continue;
+            if (std::abs((*it).fcs_val) < eps12) continue;
 
-                if ((*it).pairs[1].index > (*it).pairs[2].index) continue;
+            if ((*it).pairs[1].index > (*it).pairs[2].index) continue;
 
-                ptree &child = pt.add("Data.ForceConstants.ANHARM3.FC3", double2string(change_ratio_of_a * (*it).fcs_val));
+            ptree &child = pt.add("Data.ForceConstants.ANHARM3.FC3", double2string(change_ratio_of_a * (*it).fcs_val));
 
-                child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
-                    + " " + boost::lexical_cast<std::string>((*it).pairs[0].index %3 + 1));
-                child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1) 
-                    + " " + boost::lexical_cast<std::string>((*it).pairs[1].index % 3 + 1)
-                    + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
-                child.put("<xmlattr>.pair3", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + 1) 
-                    + " " + boost::lexical_cast<std::string>((*it).pairs[2].index % 3 + 1)
-                    + " " + boost::lexical_cast<std::string>((*it).pairs[2].cell_s + 1));
+            child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
+                + " " + boost::lexical_cast<std::string>((*it).pairs[0].index %3 + 1));
+            child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1) 
+                + " " + boost::lexical_cast<std::string>((*it).pairs[1].index % 3 + 1)
+                + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
+            child.put("<xmlattr>.pair3", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + 1) 
+                + " " + boost::lexical_cast<std::string>((*it).pairs[2].index % 3 + 1)
+                + " " + boost::lexical_cast<std::string>((*it).pairs[2].cell_s + 1));
         }
     }
 
@@ -508,10 +508,10 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
 
 #if BOOST_VERSION >= 105600
     write_xml(filename_xml, pt, std::locale(),
-	      xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
+        xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
 #else
     write_xml(filename_xml, pt, std::locale(),
-	      xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+        xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
 #endif
 }
 

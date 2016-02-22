@@ -1,11 +1,11 @@
 /*
-input.cpp
+ input.cpp
 
-Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
-This file is distributed under the terms of the MIT license.
-Please see the file 'LICENCE.txt' in the root directory 
-or http://opensource.org/licenses/mit-license.php for information.
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "input.h"
@@ -204,16 +204,16 @@ void Input::parse_general_vars()
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
             for (std::vector<std::string>::const_iterator it = magmom_v.begin(); it != magmom_v.end(); ++it) {
-                 if ((*it).find("*") != std::string::npos) {
-                     error->exit("parse_general_vars", "Wild card '*' is not supported when NONCOLLINEAR = 1.");
-                 } else {
-                     magmag = boost::lexical_cast<double>((*it));
-                     if (icount/3 >= nat) {
-                         error->exit("parse_general_vars", "Too many entries for MAGMOM.");
-                     }
-                     magmom[icount/3][icount%3] = magmag;
-                     ++icount;
-                 }
+                if ((*it).find("*") != std::string::npos) {
+                    error->exit("parse_general_vars", "Wild card '*' is not supported when NONCOLLINEAR = 1.");
+                } else {
+                    magmag = boost::lexical_cast<double>((*it));
+                    if (icount/3 >= nat) {
+                        error->exit("parse_general_vars", "Too many entries for MAGMOM.");
+                    }
+                    magmom[icount/3][icount%3] = magmag;
+                    ++icount;
+                }
             }
 
             if (icount != 3 * nat) {
@@ -329,80 +329,80 @@ void Input::parse_cell_parameter()
 
     if (from_stdin) {
 
-      while (std::getline(std::cin, line)) {
+        while (std::getline(std::cin, line)) {
 
-	// Ignore comment region
-	pos_first_comment_tag = line.find_first_of('#');
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-	if (pos_first_comment_tag == std::string::npos) {
-	  line_wo_comment = line;
-	} else {
-	  line_wo_comment = line.substr(0, pos_first_comment_tag);
-	}
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
 
-	boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
 
-	if (line_wo_comment.empty()) continue;
-	if (is_endof_entry(line_wo_comment)) break;
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
 
-	line_vec.push_back(line_wo_comment);
-      }
+            line_vec.push_back(line_wo_comment);
+        }
 
     } else {
-      while (std::getline(ifs_input, line)) {
+        while (std::getline(ifs_input, line)) {
 
-	// Ignore comment region
-	pos_first_comment_tag = line.find_first_of('#');
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-	if (pos_first_comment_tag == std::string::npos) {
-	  line_wo_comment = line;
-	} else {
-	  line_wo_comment = line.substr(0, pos_first_comment_tag);
-	}
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
 
-	boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
 
-	if (line_wo_comment.empty()) continue;
-	if (is_endof_entry(line_wo_comment)) break;
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
 
-	line_vec.push_back(line_wo_comment);
-      }
+            line_vec.push_back(line_wo_comment);
+        }
     }
 
     if (line_vec.size() != 4) {
-      error->exit("parse_cell_parameter", "Too few or too much lines for the &cell field.\n \
-		     The number of valid lines for the &cell field should be 4.");
+        error->exit("parse_cell_parameter", "Too few or too much lines for the &cell field.\n \
+                                            The number of valid lines for the &cell field should be 4.");
     }
 
     for (i = 0; i < 4; ++i) {
 
-      line = line_vec[i];
-      boost::split(line_split, line, boost::is_any_of("\t "), boost::token_compress_on);
-	
-      if (i == 0) {
-	// Lattice factor a
-	if (line_split.size() == 1) {
-	  a = boost::lexical_cast<double>(line_split[0]);
-	} else {
-	  error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
-	}
-	
-      } else {
-	// Lattice vectors a1, a2, a3
-	if (line_split.size() == 3) {
-	  for (j = 0; j < 3; ++j) {
-	    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
-	  }
-	} else {
-	  error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
-	}
-      }
+        line = line_vec[i];
+        boost::split(line_split, line, boost::is_any_of("\t "), boost::token_compress_on);
+
+        if (i == 0) {
+            // Lattice factor a
+            if (line_split.size() == 1) {
+                a = boost::lexical_cast<double>(line_split[0]);
+            } else {
+                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+            }
+
+        } else {
+            // Lattice vectors a1, a2, a3
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+            }
+        }
     }
 
     for (i = 0; i < 3; ++i) {
-      for (j = 0; j < 3; ++j) {
-	system->lavec[i][j] = a * lavec_tmp[i][j];
-      }
+        for (j = 0; j < 3; ++j) {
+            system->lavec[i][j] = a * lavec_tmp[i][j];
+        }
     }
 }
 
@@ -432,7 +432,7 @@ void Input::parse_interaction_vars()
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (interaction_var_dict.find(*it) == interaction_var_dict.end()) {
             error->exit("parse_interaction_vars", 
-			"The following variable is not found in &interaction input region: ", (*it).c_str());
+                "The following variable is not found in &interaction input region: ", (*it).c_str());
         }
     }
 
@@ -586,8 +586,8 @@ void Input::parse_cutoff_radii()
         jkd = kd_map[str_pair[1]];
 
         for (order = 0; order < maxorder; ++order) {
-   //         if (cutoff_line[order + 1] == "None") {
-            if (cutoff_line[order+1][0] == 'N' or cutoff_line[order+1][0] == 'n') {
+            // Accept any strings starting with 'N' or 'n' as 'None'
+            if ((cutoff_line[order+1][0] == 'N') || (cutoff_line[order+1][0] == 'n')) {
                 // Minus value for cutoff radius.
                 // This is a flag for neglecting cutoff radius
                 cutoff_tmp = -1.0;
