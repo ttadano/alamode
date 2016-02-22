@@ -55,7 +55,6 @@ void Input::parce_input(int narg, char **arg)
     }
     parse_general_vars();
 
-
     if (!locate_tag("&cell")) {
         error->exit("parse_input", "&cell entry not found in the input file");
     }
@@ -130,20 +129,19 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars", "Invalid MODE variable");
     }
 
-    nat = boost::lexical_cast<int>(general_var_dict["NAT"]);
-    nkd = boost::lexical_cast<int>(general_var_dict["NKD"]);
-
+    assign_val(nat, "NAT", general_var_dict);
+    assign_val(nkd, "NKD", general_var_dict);
 
     if (general_var_dict["NSYM"].empty()) {
         nsym = 0;
     } else {
-        nsym= boost::lexical_cast<int>(general_var_dict["NSYM"]);
+        assign_val(nsym, "NSYM", general_var_dict);
     }
 
     if (general_var_dict["PRINTSYM"].empty()) {
         is_printsymmetry = 0;
     } else {
-        is_printsymmetry = boost::lexical_cast<int>(general_var_dict["PRINTSYM"]);
+        assign_val(is_printsymmetry, "PRINTSYM", general_var_dict);
     }
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -165,7 +163,12 @@ void Input::parse_general_vars()
         }
     } else if (periodic_v.size() == 3) {
         for (i = 0; i < 3; ++i) {
-            is_periodic[i] = boost::lexical_cast<int>(periodic_v[i]);
+            try{
+                is_periodic[i] = boost::lexical_cast<int>(periodic_v[i]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_general_vars", "The PERIODIC tag must be a set of integers.");
+            }
         }
     } else {
         error->exit("parse_general_vars", "Invalid number of entries for PERIODIC");
@@ -174,7 +177,7 @@ void Input::parse_general_vars()
     if (general_var_dict["TOLERANCE"].empty()) {
         tolerance = 1.0e-8;
     } else {
-        tolerance = boost::lexical_cast<double>(general_var_dict["TOLERANCE"]);
+        assign_val(tolerance, "TOLERANCE", general_var_dict);
     }
 
     // Convert MAGMOM input to array
@@ -190,12 +193,12 @@ void Input::parse_general_vars()
     if (general_var_dict["NONCOLLINEAR"].empty()) {
         noncollinear = 0;
     } else {
-        noncollinear = boost::lexical_cast<int>(general_var_dict["NONCOLLINEAR"]);
+        assign_val(noncollinear, "NONCOLLINEAR", general_var_dict);
     }
     if (general_var_dict["TREVSYM"].empty()) {
         trevsym = 1;
     } else {
-        trevsym = boost::lexical_cast<int>(general_var_dict["TREVSYM"]);
+        assign_val(trevsym, "TREVSYM", general_var_dict);
     }
 
     if (!general_var_dict["MAGMOM"].empty()) {
@@ -275,7 +278,7 @@ void Input::parse_general_vars()
         if (general_var_dict["TRIMEVEN"].empty()) {
             trim_dispsign_for_evenfunc = true;
         } else {
-            trim_dispsign_for_evenfunc = boost::lexical_cast<bool>(general_var_dict["TRIMEVEN"]);
+            assign_val(trim_dispsign_for_evenfunc, "TRIMEVEN", general_var_dict);
         }
 
     }
@@ -441,12 +444,7 @@ void Input::parse_interaction_vars()
         }
     }
 
-    try {
-        maxorder = boost::lexical_cast<int>(interaction_var_dict["NORDER"]);
-    } catch (std::exception &e) {
-        std::cerr << "Detect exception: " << e.what() << std::endl;
-        error->exit("parse_interaction_vars", "Invalid value for NORDER");
-    }
+    assign_val(maxorder, "NORDER", interaction_var_dict);
     if (maxorder < 1) error->exit("parse_interaction_vars", "maxorder has to be a positive integer");
 
     memory->allocate(nbody_include, maxorder);
@@ -459,7 +457,12 @@ void Input::parse_interaction_vars()
         }
     } else if (nbody_v.size() == maxorder) {
         for (i = 0; i < maxorder; ++i) {
-            nbody_include[i] = boost::lexical_cast<int>(nbody_v[i]);
+            try {
+                nbody_include[i] = boost::lexical_cast<int>(nbody_v[i]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_interaction_vars", "NBODY must be an integer.");
+            }
         }
     } else {
         error->exit("parse_interaction_vars", "The number of entry of NBODY has to be equal to NORDER");
@@ -696,22 +699,22 @@ void Input::parse_fitting_vars()
         }
     }
 
-    ndata = boost::lexical_cast<int>(fitting_var_dict["NDATA"]);
+    assign_val(ndata, "NDATA", fitting_var_dict);
 
     if (fitting_var_dict["NSTART"].empty()) {
         nstart = 1;
     } else {
-        nstart= boost::lexical_cast<int>(fitting_var_dict["NSTART"]);
+        assign_val(nstart, "NSTART", fitting_var_dict);
     }
     if (fitting_var_dict["NEND"].empty()) {
         nend = ndata;
     } else {
-        nend = boost::lexical_cast<int>(fitting_var_dict["NEND"]);
+        assign_val(nend, "NEND", fitting_var_dict);
     }
     if (fitting_var_dict["NSKIP"].empty()) {
         nskip = 0;
     } else {
-        nskip = boost::lexical_cast<int>(fitting_var_dict["NSKIP"]);
+        assign_val(nskip, "NSKIP", fitting_var_dict);
     }
 
     if (ndata <= 0 || nstart <= 0 || nend <= 0 
@@ -719,14 +722,13 @@ void Input::parse_fitting_vars()
             error->exit("parce_fitting_vars", "ndata, nstart, nend are not consistent with each other");
     }
 
-
     if (nskip < -1) error->exit("parce_fitting_vars", "nskip has to be larger than -2.");
     if (nskip == -1) {
 
         if (fitting_var_dict["NBOOT"].empty()) {
             error->exit("parse_fitting_vars", "NBOOT has to be given when NSKIP=-1");
         } else {
-            nboot = boost::lexical_cast<int>(fitting_var_dict["NBOOT"]);
+            assign_val(nboot, "NBOOT", fitting_var_dict);
         }
 
         if (nboot <= 0) error->exit("parce_input", "nboot has to be a positive integer");
@@ -741,13 +743,13 @@ void Input::parse_fitting_vars()
     if (fitting_var_dict["MULTDAT"].empty()) {
         multiply_data = 1;
     } else {
-        multiply_data = boost::lexical_cast<int>(fitting_var_dict["MULTDAT"]);
+        assign_val(multiply_data, "MULTDAT", fitting_var_dict);
     }
 
     if (fitting_var_dict["ICONST"].empty()) {
         constraint_flag = 1;
     } else {
-        constraint_flag = boost::lexical_cast<int>(fitting_var_dict["ICONST"]);
+        assign_val(constraint_flag, "ICONST", fitting_var_dict);
     }
 
     fc2_file = fitting_var_dict["FC2XML"];
@@ -865,7 +867,12 @@ void Input::parse_atomic_positions()
         split_str_by_space(str_v[i], pos_line);
 
         if (pos_line.size() == 4) {
-            kd[i] = boost::lexical_cast<int>(pos_line[0]);
+            try {
+                kd[i] = boost::lexical_cast<int>(pos_line[0]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_atomic_positions", "Invalid entry for the &position field at line ", i + 1);
+            }
 
             for (j = 0; j < 3; ++j) {
                 xeq[i][j] = boost::lexical_cast<double>(pos_line[j + 1]);
@@ -1090,4 +1097,21 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
         str_vec.push_back(str_tmp);
     }
     str_tmp.clear();
+}
+
+template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
+{
+    // Assign a value to the variable "key" using the boost::lexica_cast.
+
+    if (!dict[key].empty()) {
+        try {
+            val = boost::lexical_cast<T>(dict[key]);
+        } catch (std::exception &e) {
+            std::string str_tmp;
+            std::cout << e.what() << std::endl;
+            str_tmp = "Invalid entry for the " + key + " tag.\n";
+            str_tmp += " Please check the input value.";
+            error->exit("assign_val", str_tmp.c_str());
+        }
+    }
 }

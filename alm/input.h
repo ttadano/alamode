@@ -1,7 +1,7 @@
 /*
  input.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -37,5 +37,7 @@ namespace ALM_NS {
         void parse_atomic_positions();
         bool is_endof_entry(std::string);
         void get_var_dict(const std::string, std::map<std::string, std::string>&);
+
+        template<typename T> void assign_val(T&, const std::string, std::map<std::string, std::string>);
     };
 }

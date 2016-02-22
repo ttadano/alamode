@@ -135,13 +135,8 @@ void Input::parse_general_vars()
 
     file_result = prefix + ".result";
 
-#ifdef _USE_BOOST
-    boost::to_upper(mode);
-    nsym = boost::lexical_cast<int>(general_var_dict["NSYM"]);
-#else
     std::transform (mode.begin(), mode.end(), mode.begin(), toupper);
-    nsym = my_cast<int>(general_var_dict["NSYM"]);
-#endif
+    assign_val(nsym, "NSYM", general_var_dict);
 
     fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
@@ -306,6 +301,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int quartic_mode;
     int include_isotope;
     int scattering_phase_space;
+    unsigned int cellsize[3];
 
     double delta_a;
     double *isotope_factor;
@@ -402,10 +398,17 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_cellsize.size() != 3) {
             error->exit("parse_analysis_vars", "The number of entries for ANIME_CELLSIZE should be 3.");
         }
-        if (my_cast<int>(anime_cellsize[0]) < 1 || 
-            my_cast<int>(anime_cellsize[1]) < 1 ||
-            my_cast<int>(anime_cellsize[2]) < 1) {
+
+        for (i = 0; i < 3; ++i) {
+            try {
+                cellsize[i] = boost::lexical_cast<unsigned int>(anime_cellsize[i]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_analysis_vars", "ANIME_CELLSIZE must be a set of positive integers.");
+            }
+            if (cellsize[i] < 1) {
                 error->exit("parse_analysis_vars", "Please give positive integers in ANIME_CELLSIZE.");
+            }
         }
 
         assign_val(anime_format, "ANIME_FORMAT", analysis_var_dict);
@@ -429,7 +432,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     if (print_anime) {
         for (i = 0; i < 3; ++i) {
             writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-            writes->anime_cellsize[i] = my_cast<unsigned int>(anime_cellsize[i]);
+            writes->anime_cellsize[i] = cellsize[i];
         }
         writes->anime_format = anime_format;
     }
@@ -619,7 +622,12 @@ void Input::parse_kpoints()
         if (i == 0) {
             // kpmode 
             if (kpelem.size() == 1) {
-                kpmode = boost::lexical_cast<int>(kpelem[0]);
+                try {
+                    kpmode = boost::lexical_cast<int>(kpelem[0]);
+                } catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                    error->exit("parse_kpoints", "KPMODE must be an integer. [0, 1, or 2]");
+                }
 
                 if (!(kpmode >= 0 && kpmode <= 3)) {
                     error->exit("parse_kpoints", "KPMODE must be 0, 1, or 2.");
@@ -910,15 +918,21 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
 
 template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
 {
+    // Assign a value to the variable "key" using the boost::lexica_cast.
 
     if (!dict[key].empty()) {
-#ifdef _USE_BOOST
-        val = boost::lexical_cast<T>(dict[key]);
-#else
-        val = my_cast<T>(dict[key]);
-#endif
+        try {
+            val = boost::lexical_cast<T>(dict[key]);
+        } catch (std::exception &e) {
+            std::string str_tmp;
+            std::cout << e.what() << std::endl;
+            str_tmp = "Invalid entry for the " + key + " tag.\n";
+            str_tmp += " Please check the input value.";
+            error->exit("assign_val", str_tmp.c_str());
+        }
     }
 }
+
 
 template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
 {
