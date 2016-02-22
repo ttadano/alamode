@@ -55,6 +55,7 @@ void Input::parce_input(int narg, char **arg)
     }
     parse_general_vars();
 
+
     if (!locate_tag("&cell")) {
         error->exit("parse_input", "&cell entry not found in the input file");
     }
@@ -235,8 +236,12 @@ void Input::parse_general_vars()
                         if (str_split[0].empty() || str_split[1].empty()) {
                             error->exit("parse_general_vars", "Please place '*' without space for the MAGMOM-tag.");
                         }
-                        magmag = boost::lexical_cast<double>(str_split[1]);
-                        ncount = boost::lexical_cast<int>(str_split[0]);
+                        try {
+                             magmag = boost::lexical_cast<double>(str_split[1]);
+                             ncount = static_cast<int>(boost::lexical_cast<double>(str_split[0]));
+                        } catch (std::exception &e) {
+                            error->exit("parse_general_vars", "Bad format for MAGMOM.");
+                        }
 
                         for (i = icount; i < icount + ncount; ++i) {
                             magmom[i][2] = magmag;
@@ -436,8 +441,12 @@ void Input::parse_interaction_vars()
         }
     }
 
-    maxorder = boost::lexical_cast<int>(interaction_var_dict["NORDER"]);
-
+    try {
+        maxorder = boost::lexical_cast<int>(interaction_var_dict["NORDER"]);
+    } catch (std::exception &e) {
+        std::cerr << "Detect exception: " << e.what() << std::endl;
+        error->exit("parse_interaction_vars", "Invalid value for NORDER");
+    }
     if (maxorder < 1) error->exit("parse_interaction_vars", "maxorder has to be a positive integer");
 
     memory->allocate(nbody_include, maxorder);
@@ -587,6 +596,7 @@ void Input::parse_cutoff_radii()
 
         for (order = 0; order < maxorder; ++order) {
             // Accept any strings starting with 'N' or 'n' as 'None'
+            std::cout << cutoff_line[order+1] << std::endl;
             if ((cutoff_line[order+1][0] == 'N') || (cutoff_line[order+1][0] == 'n')) {
                 // Minus value for cutoff radius.
                 // This is a flag for neglecting cutoff radius
