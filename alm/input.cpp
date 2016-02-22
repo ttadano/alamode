@@ -1,7 +1,7 @@
 /*
 input.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -69,8 +69,6 @@ void Input::parce_input(int narg, char **arg)
         error->exit("parse_input", "&cutoff entry not found in the input file");
     }
     parse_cutoff_radii();
-
-
 
     if (alm->mode == "fitting") {
         if (!locate_tag("&fitting")) {
@@ -322,25 +320,89 @@ void Input::parse_cell_parameter()
     int i, j;
     double a;
     double lavec_tmp[3][3];
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    line_vec.clear();
 
     if (from_stdin) {
-        std::cin >> a;
 
-        std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-        std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-        std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+      while (std::getline(std::cin, line)) {
+
+	// Ignore comment region
+	pos_first_comment_tag = line.find_first_of('#');
+
+	if (pos_first_comment_tag == std::string::npos) {
+	  line_wo_comment = line;
+	} else {
+	  line_wo_comment = line.substr(0, pos_first_comment_tag);
+	}
+
+	boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+
+	if (line_wo_comment.empty()) continue;
+	if (is_endof_entry(line_wo_comment)) break;
+
+	line_vec.push_back(line_wo_comment);
+      }
+
     } else {
-        ifs_input >> a;
+      while (std::getline(ifs_input, line)) {
 
-        ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-        ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-        ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+	// Ignore comment region
+	pos_first_comment_tag = line.find_first_of('#');
+
+	if (pos_first_comment_tag == std::string::npos) {
+	  line_wo_comment = line;
+	} else {
+	  line_wo_comment = line.substr(0, pos_first_comment_tag);
+	}
+
+	boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+
+	if (line_wo_comment.empty()) continue;
+	if (is_endof_entry(line_wo_comment)) break;
+
+	line_vec.push_back(line_wo_comment);
+      }
+    }
+
+    if (line_vec.size() != 4) {
+      error->exit("parse_cell_parameter", "Too few or too much lines for the &cell field.\n \
+		     The number of valid lines for the &cell field should be 4.");
+    }
+
+    for (i = 0; i < 4; ++i) {
+
+      line = line_vec[i];
+      boost::split(line_split, line, boost::is_any_of("\t "), boost::token_compress_on);
+	
+      if (i == 0) {
+	// Lattice factor a
+	if (line_split.size() == 1) {
+	  a = boost::lexical_cast<double>(line_split[0]);
+	} else {
+	  error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+	}
+	
+      } else {
+	// Lattice vectors a1, a2, a3
+	if (line_split.size() == 3) {
+	  for (j = 0; j < 3; ++j) {
+	    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+	  }
+	} else {
+	  error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+	}
+      }
     }
 
     for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            system->lavec[i][j] = a * lavec_tmp[i][j];
-        }
+      for (j = 0; j < 3; ++j) {
+	system->lavec[i][j] = a * lavec_tmp[i][j];
+      }
     }
 }
 
@@ -350,13 +412,7 @@ void Input::parse_interaction_vars()
     int maxorder;
     int *nbody_include;
 
-
-    //     int interaction_type;
-    //     bool is_longrange;
-    //     std::string file_longrange;
-
     std::vector<std::string> nbody_v;
-    //  std::string str_allowed_list = "NORDER NBODY INTERTYPE";
     std::string str_allowed_list = "NORDER NBODY";
     std::string str_no_defaults = "NORDER";
     std::vector<std::string> no_defaults;
@@ -375,21 +431,14 @@ void Input::parse_interaction_vars()
 
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (interaction_var_dict.find(*it) == interaction_var_dict.end()) {
-            error->exit("parse_interaction_vars", "The following variable is not found in &interaction input region: ", (*it).c_str());
+            error->exit("parse_interaction_vars", 
+			"The following variable is not found in &interaction input region: ", (*it).c_str());
         }
     }
 
     maxorder = boost::lexical_cast<int>(interaction_var_dict["NORDER"]);
 
     if (maxorder < 1) error->exit("parse_interaction_vars", "maxorder has to be a positive integer");
-
-    //     if (interaction_var_dict["INTERTYPE"].empty()) {
-    //         interaction_type = 0;
-    //     } else {
-    //         interaction_type = boost::lexical_cast<int>(interaction_var_dict["INTERTYPE"]);
-    //     }
-    //     if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
-
 
     memory->allocate(nbody_include, maxorder);
 
@@ -411,25 +460,7 @@ void Input::parse_interaction_vars()
         error->warn("parce_input", "Harmonic interaction is always 2 body (except on-site 1 body)");
     }
 
-
-    //     if (interaction_var_dict["ILONG"].empty()) {
-    //         is_longrange = false;
-    //     } else {
-    //         is_longrange = boost::lexical_cast<int>(interaction_var_dict["ILONG"]);
-    //     }
-    // 
-    //     if (is_longrange) {
-    //         if (interaction_var_dict["FLONG"].empty()) {
-    //             error->exit("parse_interaction_vars", "FLONG is necessary when ILONG = 1");
-    //         } else {
-    //             file_longrange = interaction_var_dict["FLONG"];
-    //         }
-    //     } else {
-    //         file_longrange = "";
-    //     }
-
     interaction->maxorder = maxorder;
-    // interaction->interaction_type = interaction_type;
     memory->allocate(interaction->nbody_include, maxorder);
 
     for (i = 0; i < maxorder; ++i) {
