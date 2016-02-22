@@ -41,20 +41,22 @@ System::~System()
 
 void System::init()
 {
+    using namespace std;
+
     int i, j;
 
-    std::cout << " SYSTEM" << std::endl;
-    std::cout << " ======" << std::endl << std::endl;
+    cout << " SYSTEM" << endl;
+    cout << " ======" << endl << endl;
 
     recips(lavec, rlavec);
 
-    std::cout.setf(std::ios::scientific);
+    cout.setf(ios::scientific);
 
-    std::cout << "  Lattice Vector" << std::endl;
-    std::cout << "   " << lavec[0][0] << " " << lavec[1][0] << " " << lavec[2][0] << " : a1" << std::endl;
-    std::cout << "   " << lavec[0][1] << " " << lavec[1][1] << " " << lavec[2][1] << " : a2" << std::endl;
-    std::cout << "   " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
-    std::cout << std::endl;
+    cout << "  Lattice Vector" << endl;
+    cout << setw(16) << lavec[0][0] << setw(15) << lavec[1][0] << setw(15) << lavec[2][0] << " : a1" << endl;
+    cout << setw(16) << lavec[0][1] << setw(15) << lavec[1][1] << setw(15) << lavec[2][1] << " : a2" << endl;
+    cout << setw(16) << lavec[0][2] << setw(15) << lavec[1][2] << setw(15) << lavec[2][2] << " : a3" << endl;
+    cout << endl;
 
     double vec_tmp[3][3];
     for (i = 0; i < 3; ++i) {
@@ -64,30 +66,30 @@ void System::init()
     }
 
     cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
-    std::cout << "  Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
+    cout << "  Cell volume = " << cell_volume << " (a.u)^3" << endl << endl;
 
-    std::cout << "  Reciprocal Lattice Vector" << std::endl;
-    std::cout << "   " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
-    std::cout << "   " << rlavec[1][0] << " " << rlavec[1][1] << " " << rlavec[1][2] << " : b2" << std::endl;
-    std::cout << "   " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
-    std::cout << std::endl;
+    cout << "  Reciprocal Lattice Vector" << std::endl;
+    cout << setw(16) << rlavec[0][0] << setw(15) << rlavec[0][1] << setw(15) << rlavec[0][2] << " : b1" << endl;
+    cout << setw(16) << rlavec[1][0] << setw(15) << rlavec[1][1] << setw(15) << rlavec[1][2] << " : b2" << endl;
+    cout << setw(16) << rlavec[2][0] << setw(15) << rlavec[2][1] << setw(15) << rlavec[2][2] << " : b3" << endl;
+    cout << endl;
 
-    std::cout << "  Atomic species:" << std::endl;
+    cout << "  Atomic species:" << endl;
     for (i = 0; i < nkd; ++i) {
-        std::cout << std::setw(6) << i + 1 << std::setw(5) << kdname[i] << std::endl;
+        cout << setw(6) << i + 1 << setw(5) << kdname[i] << endl;
     }
-    std::cout << std::endl;
+    cout << endl;
 
-    std::cout << "  Atomic positions in fractional basis and atomic species" << std::endl;
+    cout << "  Atomic positions in fractional basis and atomic species" << endl;
     for (i = 0; i < nat; ++i) {
-        std::cout << std::setw(6) << i + 1;
-        std::cout << std::setw(15) << xcoord[i][0];
-        std::cout << std::setw(15) << xcoord[i][1];
-        std::cout << std::setw(15) << xcoord[i][2];
-        std::cout << std::setw(5) << kd[i] << std::endl;
+        cout << setw(6) << i + 1;
+        cout << setw(15) << xcoord[i][0];
+        cout << setw(15) << xcoord[i][1];
+        cout << setw(15) << xcoord[i][2];
+        cout << setw(5) << kd[i] << endl;
     }
-    std::cout << std::endl << std::endl;
-    std::cout.unsetf(std::ios::scientific);
+    cout << endl << endl;
+    cout.unsetf(ios::scientific);
 
     // Generate Cartesian coordinate
 
@@ -102,31 +104,31 @@ void System::init()
     setup_atomic_class(kd);
 
     if (lspin) {
-        std::cout << "  MAGMOM is given. The magnetic moments of each atom are as follows:" << std::endl;
+        cout << "  MAGMOM is given. The magnetic moments of each atom are as follows:" << endl;
         for (i = 0; i < nat; ++i) {
-            std::cout << std::setw(6) << i + 1;
-            std::cout << std::setw(5) << magmom[i][0];
-            std::cout << std::setw(5) << magmom[i][1];
-            std::cout << std::setw(5) << magmom[i][2];
-            std::cout << std::endl;
+            cout << setw(6) << i + 1;
+            cout << setw(5) << magmom[i][0];
+            cout << setw(5) << magmom[i][1];
+            cout << setw(5) << magmom[i][2];
+            cout << endl;
         }
-        std::cout << std::endl;
+        cout << endl;
         if (noncollinear == 0) {
-            std::cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables." << std::endl;
+            cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables." << endl;
         } else if (noncollinear == 1) {
-            std::cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << std::endl;
+            cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << endl;
             if (symmetry->trev_sym_mag) {
-                std::cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group" << std::endl;
+                cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group" << endl;
             } else {
-                std::cout << "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group" << std::endl;
+                cout << "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group" << endl;
             }
         }
-        std::cout << std::endl << std::endl;
+        cout << endl << endl;
     }
 
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
-    std::cout << std::endl;
+    cout << " --------------------------------------------------------------" << endl;
+    cout << endl;
 }
 
 void System::recips(double aa[3][3], double bb[3][3])

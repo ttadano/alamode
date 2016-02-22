@@ -51,6 +51,8 @@ System::~System() {
 
 void System::setup()
 {
+    using namespace std;
+
     unsigned int i, j;
     double vec_tmp[3][3];
     unsigned int *kd_prim;
@@ -74,34 +76,34 @@ void System::setup()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << " ------------------------------------------------------------" << std::endl;
-        std::cout << std::endl;
-        std::cout << " Crystal structure" << std::endl;
-        std::cout << " =================" << std::endl << std::endl;
-        std::cout << " Lattice Vectors:" << std::endl << std::endl;
-        std::cout.setf(std::ios::scientific);
+        cout << " ------------------------------------------------------------" << endl;
+        cout << endl;
+        cout << " Crystal structure" << endl;
+        cout << " =================" << endl << endl;
+        cout << " Lattice Vectors:" << endl << endl;
+        cout.setf(ios::scientific);
 
-        std::cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << std::endl << std::endl;
-        std::cout << "  " << lavec_s_anharm[0][0] << " " << lavec_s_anharm[1][0] << " " << lavec_s_anharm[2][0] << " : a1" << std::endl;
-        std::cout << "  " << lavec_s_anharm[0][1] << " " << lavec_s_anharm[1][1] << " " << lavec_s_anharm[2][1] << " : a2" << std::endl;
-        std::cout << "  " << lavec_s_anharm[0][2] << " " << lavec_s_anharm[1][2] << " " << lavec_s_anharm[2][2] << " : a3" << std::endl;
-        std::cout << std::endl;
+        cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << endl << endl;
+        cout << setw(16) << lavec_s_anharm[0][0] << setw(15) << lavec_s_anharm[1][0] << setw(15) << lavec_s_anharm[2][0] << " : a1" << endl;
+        cout << setw(16) << lavec_s_anharm[0][1] << setw(15) << lavec_s_anharm[1][1] << setw(15) << lavec_s_anharm[2][1] << " : a2" << endl;
+        cout << setw(16) << lavec_s_anharm[0][2] << setw(15) << lavec_s_anharm[1][2] << setw(15) << lavec_s_anharm[2][2] << " : a3" << endl;
+        cout << endl;
 
-        std::cout << "  " << rlavec_s_anharm[0][0] << " " << rlavec_s_anharm[0][1] << " " << rlavec_s_anharm[0][2] << " : b1" << std::endl;
-        std::cout << "  " << rlavec_s_anharm[1][0] << " " << rlavec_s_anharm[1][1] << " " << rlavec_s_anharm[1][2] << " : b2" << std::endl;
-        std::cout << "  " << rlavec_s_anharm[2][0] << " " << rlavec_s_anharm[2][1] << " " << rlavec_s_anharm[2][2] << " : b3" << std::endl;
-        std::cout << std::endl;
+        cout << setw(16) << rlavec_s_anharm[0][0] << setw(15) << rlavec_s_anharm[0][1] << setw(15) << rlavec_s_anharm[0][2] << " : b1" << endl;
+        cout << setw(16) << rlavec_s_anharm[1][0] << setw(15) << rlavec_s_anharm[1][1] << setw(15) << rlavec_s_anharm[1][2] << " : b2" << endl;
+        cout << setw(16) << rlavec_s_anharm[2][0] << setw(15) << rlavec_s_anharm[2][1] << setw(15) << rlavec_s_anharm[2][2] << " : b3" << endl;
+        cout << endl;
 
-        std::cout << " * Primitive cell " << std::endl << std::endl;
-        std::cout << "  " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
-        std::cout << "  " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
-        std::cout << "  " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
-        std::cout << std::endl;
+        cout << " * Primitive cell " << endl << endl;
+        cout << setw(16) << lavec_p[0][0] << setw(15) << lavec_p[1][0] << setw(15) << lavec_p[2][0] << " : a1" << endl;
+        cout << setw(16) << lavec_p[0][1] << setw(15) << lavec_p[1][1] << setw(15) << lavec_p[2][1] << " : a2" << endl;
+        cout << setw(16) << lavec_p[0][2] << setw(15) << lavec_p[1][2] << setw(15) << lavec_p[2][2] << " : a3" << endl;
+        cout << endl;
 
-        std::cout << "  " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
-        std::cout << "  " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
-        std::cout << "  " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
-        std::cout << std::endl << std::endl;
+        cout << setw(16) << rlavec_p[0][0] << setw(15) << rlavec_p[0][1] << setw(15) << rlavec_p[0][2] << " : b1" << endl;
+        cout << setw(16) << rlavec_p[1][0] << setw(15) << rlavec_p[1][1] << setw(15) << rlavec_p[1][2] << " : b2" << endl;
+        cout << setw(16) << rlavec_p[2][0] << setw(15) << rlavec_p[2][1] << setw(15) << rlavec_p[2][2] << " : b3" << endl;
+        cout << endl << endl;
 
 
         for (i = 0; i < 3; ++i){
@@ -111,28 +113,28 @@ void System::setup()
         }
         volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
-        std::cout << "  Volume of the primitive cell : " << volume_p << " (a.u.)^3" << std::endl << std::endl;
-        std::cout << "  Number of atoms in the supercell     : " << nat_anharm << std::endl;
-        std::cout << "  Number of atoms in the primitive cell: " << natmin << std::endl << std::endl;
+        cout << "  Volume of the primitive cell : " << volume_p << " (a.u.)^3" << endl << endl;
+        cout << "  Number of atoms in the supercell     : " << nat_anharm << endl;
+        cout << "  Number of atoms in the primitive cell: " << natmin << endl << endl;
 
         if (fcs_phonon->update_fc2) {
-            std::cout << std::endl;
-            std::cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in " << fcs_phonon->file_fc2 << std::endl;
-            std::cout << std::endl;
+            cout << endl;
+            cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in " << fcs_phonon->file_fc2 << endl;
+            cout << endl;
 
-            std::cout << " * Supercell for HARMONIC (from " << fcs_phonon->file_fc2 << " )" << std::endl << std::endl;
-            std::cout << "  " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
-            std::cout << "  " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
-            std::cout << "  " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
-            std::cout << std::endl;
+            cout << " * Supercell for HARMONIC (from " << fcs_phonon->file_fc2 << " )" << endl << endl;
+            cout << setw(16) << lavec_s[0][0] << setw(15) << lavec_s[1][0] << setw(15) << lavec_s[2][0] << " : a1" << endl;
+            cout << setw(16) << lavec_s[0][1] << setw(15) << lavec_s[1][1] << setw(15) << lavec_s[2][1] << " : a2" << endl;
+            cout << setw(16) << lavec_s[0][2] << setw(15) << lavec_s[1][2] << setw(15) << lavec_s[2][2] << " : a3" << endl;
+            cout << endl;
 
-            std::cout << "  " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
-            std::cout << "  " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
-            std::cout << "  " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
-            std::cout << std::endl;
+            cout << setw(16) << rlavec_s[0][0] << setw(15) << rlavec_s[0][1] << setw(15) << rlavec_s[0][2] << " : b1" << endl;
+            cout << setw(16) << rlavec_s[1][0] << setw(15) << rlavec_s[1][1] << setw(15) << rlavec_s[1][2] << " : b2" << endl;
+            cout << setw(16) << rlavec_s[2][0] << setw(15) << rlavec_s[2][1] << setw(15) << rlavec_s[2][2] << " : b3" << endl;
+            cout << endl;
 
-            std::cout << "  Number of atoms in the supercell (HARMONIC)   : " << nat << std::endl;
-            std::cout << std::endl;
+            cout << "  Number of atoms in the supercell (HARMONIC)   : " << nat << endl;
+            cout << endl;
         }
 
         memory->allocate(xtmp, natmin, 3);
@@ -143,48 +145,48 @@ void System::setup()
             for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
         }
 
-        std::cout << "  Atomic positions in the primitive cell (fractional):" << std::endl;
+        cout << "  Atomic positions in the primitive cell (fractional):" << endl;
         for (i = 0; i < natmin; ++i){
-            std::cout << std::setw(4) << i + 1 << ":";
+            cout << setw(4) << i + 1 << ":";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(15) << xtmp[i][j];
+                cout << setw(15) << xtmp[i][j];
             }
-            std::cout << std::setw(4) << symbol_kd[kd[map_p2s[i][0]]] << std::endl;
+            cout << setw(4) << symbol_kd[kd[map_p2s[i][0]]] << endl;
         }
-        std::cout << std::endl;
+        cout << endl;
 
         memory->deallocate(xtmp);
 
         if (lspin) {
-            std::cout << "  MagneticMoments entry found in the XML file. " << std::endl;
-            std::cout << "  Magnetic moment in Cartesian coordinates: " << std::endl;
+            cout << "  MagneticMoments entry found in the XML file. " << endl;
+            cout << "  Magnetic moment in Cartesian coordinates: " << endl;
             for (i = 0; i < natmin; ++i) {
-                std::cout << std::setw(4) << i + 1 << ":";
+                cout << setw(4) << i + 1 << ":";
                 for (j = 0; j < 3; ++j) {
-                    std::cout << std::setw(15) << magmom[i][j];
+                    cout << setw(15) << magmom[i][j];
                 }
-                std::cout << std::endl;
+                cout << endl;
             }
-            std::cout << std::endl;
+            cout << endl;
             if (noncollinear == 0) {
-                std::cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << std::endl;
+                cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << endl;
             } else if (noncollinear == 1) {
-                std::cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << std::endl;
+                cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << endl;
                 if (symmetry->trev_sym_mag) {
-                    std::cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << std::endl;
+                    cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
                 } else {
-                    std::cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" << std::endl;
+                    cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" << endl;
                 }
             }
-            std::cout << std::endl;
+            cout << endl;
         }
 
-        std::cout << "  Mass of atomic species (u):" << std::endl;
+        cout << "  Mass of atomic species (u):" << endl;
         for (i = 0; i < nkd; ++i) {
-            std::cout << std::setw(4) << symbol_kd[i] << ":";
-            std::cout << std::fixed << std::setw(12) << mass_kd[i] << std::endl;
+            cout << setw(4) << symbol_kd[i] << ":";
+            cout << fixed << setw(12) << mass_kd[i] << endl;
         }
-        std::cout << std::endl << std::endl;
+        cout << endl << endl;
     }
 
     // Atomic masses in Rydberg unit
