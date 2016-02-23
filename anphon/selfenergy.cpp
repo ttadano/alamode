@@ -65,6 +65,71 @@ void Selfenergy::mpi_reduce_complex(unsigned int N, std::complex<double> *in_mpi
 #endif
 }
 
+void Selfenergy::selfenergy_tadpole(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
+{
+    unsigned int i;
+    unsigned int ik2;
+    unsigned int is1, is2;
+    unsigned int arr_cubic1[3], arr_cubic2[3];
+    std::complex<double> v3_tmp1, v3_tmp2;
+    std::complex<double> *ret_mpi, *ret_tmp;
+
+    double T_tmp;
+    double n2;
+    double omega1, omega2;
+    double factor;
+
+    arr_cubic1[0] = ns * kpoint->knum_minus[knum] + snum;
+    arr_cubic1[1] = ns * knum + snum;
+
+    memory->allocate(ret_mpi, N);
+    memory->allocate(ret_tmp, N);
+
+    for (i = 0; i < N; ++i) ret[i] = std::complex<double>(0.0, 0.0);
+
+    for (is1 = 0; is1 < ns; ++is1) {
+        arr_cubic1[2] = is1;
+        arr_cubic2[0] = is1;
+        omega1 = dynamical->eval_phonon[0][is1];
+
+        if (omega1 < eps8) continue;
+
+        v3_tmp1 = relaxation->V3(arr_cubic1);
+
+        for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
+
+        for (ik2 = mympi->my_rank; ik2 < nk; ik2 += mympi->nprocs) {
+            for (is2 = 0; is2 < ns; ++is2) {
+                arr_cubic2[1] = ns * ik2 + is2;
+                arr_cubic2[2] = ns * kpoint->knum_minus[ik2] + is2;
+
+                v3_tmp2 = relaxation->V3(arr_cubic2);
+                omega2 = dynamical->eval_phonon[ik2][is2];
+
+                if (omega2 < eps8) continue;
+
+                for (i = 0; i < N; ++i) {
+                    T_tmp = T[i];
+                    n2 = thermodynamics->fB(omega2, T_tmp);
+                 //   ret[i] += v3_tmp1 * v3_tmp2 * (2.0*n2 + 1.0) / omega1; 
+                    ret_mpi[i] += v3_tmp2 * (2.0 * n2 + 1.0);
+                }
+            }
+        }
+        mpi_reduce_complex(N, ret_mpi, ret_tmp);
+       
+        for (i = 0; i < N; ++i) {
+            ret[i] += ret_tmp[i] * v3_tmp1 / omega1;
+        }
+    }
+
+    factor = -1.0 / (static_cast<double>(nk) * std::pow(2.0, 3));
+    for (i = 0; i < N; ++i) ret[i] *= factor;
+
+    memory->deallocate(ret_tmp);
+    memory->deallocate(ret_mpi);
+}
+
 void Selfenergy::selfenergy_a(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
 {
     /*

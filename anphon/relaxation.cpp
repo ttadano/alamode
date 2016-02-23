@@ -113,6 +113,8 @@ void Relaxation::setup_relaxation()
         if (calc_realpart && integration->ismear != 0) {
             error->exit("setup_relaxation", "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
         }
+        
+        dynamical->modify_eigenvectors();
     }
     
     if (kpoint->kpoint_mode == 2) {
@@ -1232,6 +1234,7 @@ void Relaxation::perform_mode_analysis()
 
         double *damping_a;
         double omega_shift;
+        std::complex<double> *self_tadpole;
         std::complex<double> *self_a, *self_b, *self_c, *self_d, *self_e;
         std::complex<double> *self_f, *self_g, *self_h, *self_i, *self_j;
 
@@ -1262,6 +1265,7 @@ void Relaxation::perform_mode_analysis()
         memory->allocate(damping_a, NT);
         memory->allocate(self_a, NT);
         memory->allocate(self_b, NT);
+        memory->allocate(self_tadpole, NT);
 
         if (quartic_mode == 2) {
             memory->allocate(self_c, NT);
@@ -1353,6 +1357,7 @@ void Relaxation::perform_mode_analysis()
 
             if (calc_realpart) {
 
+                selfenergy->selfenergy_tadpole(NT, T_arr, omega, knum, snum, self_tadpole);
                 selfenergy->selfenergy_a(NT, T_arr, omega, knum, snum, self_a);
 
                 if (quartic_mode == 1) {
@@ -1373,15 +1378,18 @@ void Relaxation::perform_mode_analysis()
                     ofs_shift << std::endl;
                     ofs_shift << "# mode = " << snum + 1<< std::endl;
                     ofs_shift << "# Frequency = " << writes->in_kayser(omega) << std::endl;
-                    ofs_shift << "## T[K], Shift3 (cm^-1) (bubble)";
+                    ofs_shift << "## T[K], Shift3 (cm^-1) (tadpole), Shift3 (cm^-1) (bubble)";
                     if (quartic_mode == 1) ofs_shift << ", Shift4 (cm^-1) (loop)";
                     ofs_shift << ", Shifted frequency (cm^-1)";
                     ofs_shift << std::endl;
 
-                    for (j = 0; j < NT; ++j) {
-                        ofs_shift << std::setw(10) << T_arr[j] << std::setw(15) << writes->in_kayser(-self_a[j].real());
 
-                        omega_shift = omega - self_a[j].real();
+                    for (j = 0; j < NT; ++j) {
+                        ofs_shift << std::setw(10) << T_arr[j];
+                        ofs_shift << std::setw(15) << writes->in_kayser(-self_tadpole[j].real());
+                        ofs_shift << std::setw(15) << writes->in_kayser(-self_a[j].real());
+
+                        omega_shift = omega - self_tadpole[j].real() - self_a[j].real();
 
                         if (quartic_mode == 1) { 
                             ofs_shift << std::setw(15) << writes->in_kayser(-self_b[j].real());
@@ -1389,6 +1397,7 @@ void Relaxation::perform_mode_analysis()
                         }
                         ofs_shift << std::setw(15) << writes->in_kayser(omega_shift);
                         ofs_shift << std::endl; 
+
                     }
 
                     ofs_shift.close();
@@ -1400,6 +1409,7 @@ void Relaxation::perform_mode_analysis()
         memory->deallocate(damping_a);
         memory->deallocate(self_a);
         memory->deallocate(self_b);
+        memory->deallocate(self_tadpole);
 
         if (quartic_mode == 2) {
             memory->deallocate(self_c);
@@ -2482,7 +2492,6 @@ void Relaxation::setup_quartic()
         }
     }
 
-    dynamical->modify_eigenvectors();
 
     memory->deallocate(invsqrt_mass_p);
 }

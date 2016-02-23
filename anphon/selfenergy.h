@@ -22,6 +22,7 @@ namespace PHON_NS {
         ~Selfenergy();
 
         void setup_selfenergy();
+        void selfenergy_tadpole(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
         void selfenergy_a(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
         void selfenergy_b(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
         void selfenergy_c(const unsigned int, double *, const double, const unsigned int, const unsigned int, std::complex<double> *);
