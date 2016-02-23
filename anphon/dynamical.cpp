@@ -43,9 +43,14 @@ void Dynamical::setup_dynamical(std::string mode)
     UPLO = 'U';
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << std::endl;
-        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-        if (nonanalytic == 1) {
+        std::cout << std::endl;
+        std::cout << " Dynamical matrix" << std::endl;
+        std::cout << " ================" << std::endl;
+        if (nonanalytic == 0) {
+            std::cout << std::endl;
+            std::cout << "  NONANALYTIC = 0 : No non-analytic correction. " << std::endl;
+            std::cout << std::endl;
+        } else if (nonanalytic == 1) {
             std::cout << std::endl;
             std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be included " << std::endl;
             std::cout << "                    by the Parlinski's method." << std::endl;
@@ -57,6 +62,8 @@ void Dynamical::setup_dynamical(std::string mode)
             std::cout << "                    by the mixed-space approach." << std::endl;
             std::cout << std::endl;
         }
+        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+
     }
 
     memory->allocate(xshift_s, 27, 3);
@@ -599,7 +606,7 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << "done !" << std::endl;
+        std::cout << "done!" << std::endl;
     }
 }
 

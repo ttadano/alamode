@@ -50,9 +50,8 @@ void Isotope::setup_isotope_scattering()
 
 
         if (mympi->my_rank == 0) {
-            std::cout << std::endl;
             std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered" << std::endl;
-            std::cout << "              with the following scattering factors." << std::endl;
+            std::cout << "               with the following scattering factors." << std::endl;
 
             for (i = 0; i < nkd; ++i) {
                 std::cout << std::setw(5) << system->symbol_kd[i] << ":";

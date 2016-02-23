@@ -150,7 +150,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out, double ***phvel3_
     double **vel;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Calculating group velocities of phonons at uniform grid ... ";
+        std::cout << " Calculating group velocities of phonons on uniform grid ... ";
     }
 
     memory->allocate(vel, ns, 3);

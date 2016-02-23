@@ -152,7 +152,7 @@ void Gruneisen::calc_gruneisen()
     memory->deallocate(dfc2_reciprocal);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done !" << std::endl;
+        std::cout << "done!" << std::endl;
     }
 }
 

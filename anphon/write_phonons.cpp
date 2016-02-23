@@ -165,6 +165,11 @@ void Writes::setup_result_io()
     if (mympi->my_rank == 0) {
 
         if (phon->restart_flag) {
+
+            std::cout << " RESTART = 1 : Restart from the interrupted run." << std::endl;
+            std::cout << "               Phonon lifetimes will be load from file " << file_result << std::endl;
+            std::cout << "               and check the consistency of the computatioal settings." << std::endl;
+
             // Restart
             fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
             if (!fs_result) {
@@ -347,6 +352,8 @@ void Writes::print_phonon_energy()
     double kayser_to_THz = 0.0299792458;
 
     std::cout << std::endl;
+    std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+    std::cout << " Phonon frequencies below:" << std::endl << std::endl;
 
     if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
 

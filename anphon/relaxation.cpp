@@ -60,12 +60,12 @@ void Relaxation::setup_relaxation()
     double *invsqrt_mass_p;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Setting up the relaxation time calculation ...";
-
-        if (calc_realpart && integration->ismear == -1) {
-            error->exit("setup_relaxation", "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
-        }
+        std::cout << std::endl;
+        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+        std::cout << " Now, move on to phonon lifetime calculations." << std::endl;
     }
+
+    setup_mode_analysis();
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
     // This sorting is necessary.
@@ -176,65 +176,9 @@ void Relaxation::setup_relaxation()
         }
     }
 
+    if (ks_analyze_mode) {
 
-    if (quartic_mode > 0) {
-
-        // This is for quartic vertexes.
-
-        if (mympi->my_rank == 0) {
-            std::cout << std::endl << std::endl;
-            std::cout << " ************************************************************" << std::endl;
-            std::cout << "     QUARTIC = 1: quartic_mode is on !                       " << std::endl;
-            std::cout << "     Be careful! This mode is still under test.              " << std::endl;
-            std::cout << "     There can be bugs and the computation is very expensive." << std::endl;
-            std::cout << " ************************************************************" << std::endl;
-            std::cout << std::endl;
-        }
-
-        std::sort(fcs_phonon->force_constant_with_cell[2].begin(), fcs_phonon->force_constant_with_cell[2].end());
-        prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4, ngroup2, fcs_group2);
-
-        memory->allocate(vec_for_v4, 3, 3, fcs_phonon->force_constant_with_cell[2].size());
-        memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
-        memory->allocate(evec_index4, fcs_phonon->force_constant_with_cell[2].size(), 4);
-
-        j = 0;
-        for (std::vector<FcsArrayWithCell>::const_iterator it  = fcs_phonon->force_constant_with_cell[2].begin(); 
-            it != fcs_phonon->force_constant_with_cell[2].end(); ++it) {
-                invmass_for_v4[j] 
-                = invsqrt_mass_p[(*it).pairs[0].index / 3] 
-                * invsqrt_mass_p[(*it).pairs[1].index / 3] 
-                * invsqrt_mass_p[(*it).pairs[2].index / 3] 
-                * invsqrt_mass_p[(*it).pairs[3].index / 3];
-
-                ++j;     
-        }
-        prepare_relative_vector(fcs_phonon->force_constant_with_cell[2], 4, vec_for_v4);
-
-        for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
-            for (j = 0; j < 4; ++j) {
-                evec_index4[i][j] = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
-            }
-        }
-
-        dynamical->modify_eigenvectors();
-    }
-    memory->deallocate(invsqrt_mass_p);
-
-    MPI_Bcast(&calc_realpart, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&atom_project_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&calc_fstate_omega, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-
-    if (mympi->my_rank == 0) {
-        //     if (kpoint->kpoint_mode == 2) print_minimum_energy_diff();
-        if (calc_fstate_omega) sym_permutation = false;
-    }
-    MPI_Bcast(&sym_permutation, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-
-    if (kpoint->kpoint_mode == 2) {
-
-        if (ks_analyze_mode && use_triplet_symmetry) {
+        if (kpoint->kpoint_mode == 2 && use_triplet_symmetry) {
             use_triplet_symmetry = false;
             if (mympi->my_rank == 0) {
                 std::cout << std::endl;
@@ -243,12 +187,67 @@ void Relaxation::setup_relaxation()
             }
         }
 
+        MPI_Bcast(&calc_realpart, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&atom_project_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&calc_fstate_omega, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+        if (mympi->my_rank == 0) {
+            if (calc_fstate_omega) sym_permutation = false;
+        }
+        MPI_Bcast(&sym_permutation, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+        if (quartic_mode > 0) {
+
+            // This is for quartic vertexes.
+
+            if (mympi->my_rank == 0) {
+                std::cout << " QUARTIC = 1 : Frequency shift due to the loop diagram associated with" << std::endl;
+                std::cout << "               quartic anharmonicity will be calculated." << std::endl;
+                std::cout << "               Please check the accuracy of the quartic IFCs " << std::endl;
+                std::cout << "               before doing serious calculations." << std::endl;
+                std::cout << std::endl;
+            }
+
+            std::sort(fcs_phonon->force_constant_with_cell[2].begin(), fcs_phonon->force_constant_with_cell[2].end());
+            prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4, ngroup2, fcs_group2);
+
+            memory->allocate(vec_for_v4, 3, 3, fcs_phonon->force_constant_with_cell[2].size());
+            memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
+            memory->allocate(evec_index4, fcs_phonon->force_constant_with_cell[2].size(), 4);
+
+            j = 0;
+            for (std::vector<FcsArrayWithCell>::const_iterator it  = fcs_phonon->force_constant_with_cell[2].begin(); 
+                it != fcs_phonon->force_constant_with_cell[2].end(); ++it) {
+                    invmass_for_v4[j] 
+                    = invsqrt_mass_p[(*it).pairs[0].index / 3] 
+                    * invsqrt_mass_p[(*it).pairs[1].index / 3] 
+                    * invsqrt_mass_p[(*it).pairs[2].index / 3] 
+                    * invsqrt_mass_p[(*it).pairs[3].index / 3];
+
+                    ++j;     
+            }
+            prepare_relative_vector(fcs_phonon->force_constant_with_cell[2], 4, vec_for_v4);
+
+            for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
+                for (j = 0; j < 4; ++j) {
+                    evec_index4[i][j] = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
+                }
+            }
+
+            dynamical->modify_eigenvectors();
+        }
+
+        if (calc_realpart && integration->ismear != 0) {
+            error->exit("setup_relaxation", "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
+        }
+    }
+    
+    if (kpoint->kpoint_mode == 2) {
         generate_triplet_k(use_triplet_symmetry, sym_permutation);
     }
 
-    if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
-    }
+    memory->deallocate(invsqrt_mass_p);
 }
 
 void Relaxation::finish_relaxation()
@@ -266,7 +265,7 @@ void Relaxation::finish_relaxation()
         }
     }
 
-    if (quartic_mode > 0) {
+    if (ks_analyze_mode && (quartic_mode > 0)) {
         memory->deallocate(vec_for_v4);
         memory->deallocate(invmass_for_v4);
         memory->deallocate(evec_index4);
@@ -274,47 +273,47 @@ void Relaxation::finish_relaxation()
     }
 }
 
-void Relaxation::print_minimum_energy_diff()
-{
-    int i, j;
-    unsigned int nk_near = 0;
-    double domega_min;
-    double dist_k_min, dist_k;
-    double xk_tmp[3], xk_tmp2[3];
-    int ik;
-
-    domega_min = 0.0;
-
-    if (nk > 1) {
-
-        for (i = 0; i < 3; ++i) {
-            xk_tmp[i] = 0.5;
-        }
-        rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
-        dist_k_min = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
-
-        for (ik = 1; ik < nk; ++ik) {
-            for (j = 0; j < 3; ++j) {
-                xk_tmp[j] = kpoint->xk[ik][j];
-            }
-            rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
-
-            dist_k = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
-
-            if (dist_k <= dist_k_min) {
-                dist_k_min = dist_k;
-                nk_near = ik;
-            }
-        }
-        domega_min =  writes->in_kayser(dynamical->eval_phonon[nk_near][0]);	
-    } else {
-        std::cout << "There is only 1 reciprocal point." << std::endl;
-    }
-
-    std::cout << std::endl;
-    std::cout << " Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
-    std::cout << std::endl;
-}
+// void Relaxation::print_minimum_energy_diff()
+// {
+//     int i, j;
+//     unsigned int nk_near = 0;
+//     double domega_min;
+//     double dist_k_min, dist_k;
+//     double xk_tmp[3], xk_tmp2[3];
+//     int ik;
+// 
+//     domega_min = 0.0;
+// 
+//     if (nk > 1) {
+// 
+//         for (i = 0; i < 3; ++i) {
+//             xk_tmp[i] = 0.5;
+//         }
+//         rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
+//         dist_k_min = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
+// 
+//         for (ik = 1; ik < nk; ++ik) {
+//             for (j = 0; j < 3; ++j) {
+//                 xk_tmp[j] = kpoint->xk[ik][j];
+//             }
+//             rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
+// 
+//             dist_k = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
+// 
+//             if (dist_k <= dist_k_min) {
+//                 dist_k_min = dist_k;
+//                 nk_near = ik;
+//             }
+//         }
+//         domega_min =  writes->in_kayser(dynamical->eval_phonon[nk_near][0]);	
+//     } else {
+//         std::cout << "There is only 1 reciprocal point." << std::endl;
+//     }
+// 
+//     std::cout << std::endl;
+//     std::cout << " Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
+//     std::cout << std::endl;
+// }
 
 void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in, const unsigned int N, double ***vec_out)
 {
@@ -471,11 +470,9 @@ void Relaxation::setup_mode_analysis()
     if (mympi->my_rank == 0) {
         if (!ks_input.empty()) {
             std::cout << std::endl;
-            std::cout << " KS_INPUT is given." << std::endl;
-            std::cout << " Analysis on specific k points will be performed " << std::endl;
-            std::cout << " instead of thermal conductivity calculations." << std::endl;
+            std::cout << " KS_INPUT-tag is given : Analysis on the specified phonon modes" << std::endl;
+            std::cout << " will be performed instead of thermal conductivity calculation." << std::endl;
             std::cout << std::endl;
-
 
             std::ifstream ifs_ks;
             ifs_ks.open(ks_input.c_str(), std::ios::in);
@@ -1358,7 +1355,7 @@ void Relaxation::perform_mode_analysis()
             if (calc_realpart) {
                 if (quartic_mode == 1) {
                     std::cout << " REALPART = 1 and " << std::endl;
-                    std::cout << " QUARTIC = 1      : Additionally, frequency shift of phonons due to 3-phonon" << std::endl;
+                    std::cout << " QUARTIC  = 1     : Additionally, frequency shift of phonons due to 3-phonon" << std::endl;
                     std::cout << "                    and 4-phonon interactions will be calculated." << std::endl;
                 } else {
                     std::cout << " REALPART = 1 : Additionally, frequency shift of phonons due to 3-phonon" << std::endl;
@@ -1370,13 +1367,14 @@ void Relaxation::perform_mode_analysis()
                 std::cout << std::endl;
                 std::cout << " QUARTIC = 2 : Additionally, phonon line width due to 4-phonon" << std::endl;
                 std::cout << "               interactions will be calculated." << std::endl;
-                std::cout << " WARNING: This is very very expensive." << std::endl;
+                std::cout << " WARNING     : This is very very expensive." << std::endl;
             }
         }
 
         memory->allocate(damping_a, NT);
         memory->allocate(self_a, NT);
         memory->allocate(self_b, NT);
+
         if (quartic_mode == 2) {
             memory->allocate(self_c, NT);
             memory->allocate(self_d, NT);
@@ -1416,13 +1414,13 @@ void Relaxation::perform_mode_analysis()
             }
             if (quartic_mode == 2) {
                 selfenergy->selfenergy_c(NT, T_arr, omega, knum, snum, self_c);
-                selfenergy->selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
-                selfenergy->selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
-                selfenergy->selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
-                selfenergy->selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
-                selfenergy->selfenergy_h(NT, T_arr, omega, knum, snum, self_h);
-                selfenergy->selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
-                selfenergy->selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
+             //   selfenergy->selfenergy_d(NT, T_arr, omega, knum, snum, self_d);
+             //   selfenergy->selfenergy_e(NT, T_arr, omega, knum, snum, self_e);
+             //   selfenergy->selfenergy_f(NT, T_arr, omega, knum, snum, self_f);
+//                 selfenergy->selfenergy_g(NT, T_arr, omega, knum, snum, self_g);
+//                 selfenergy->selfenergy_h(NT, T_arr, omega, knum, snum, self_h);
+//                 selfenergy->selfenergy_i(NT, T_arr, omega, knum, snum, self_i);
+//                 selfenergy->selfenergy_j(NT, T_arr, omega, knum, snum, self_j);
             }
 
             if (mympi->my_rank == 0) {
@@ -1438,9 +1436,9 @@ void Relaxation::perform_mode_analysis()
                 ofs_linewidth << std::endl;
                 ofs_linewidth << "# mode = " << snum + 1<< std::endl;
                 ofs_linewidth << "# Frequency = " << writes->in_kayser(omega) << std::endl;
-                ofs_linewidth << "## Temperature dependence of Gamma for given mode" << std::endl;
-                ofs_linewidth << "## T[K], Gamma3 (cm^-1)";
-                if (quartic_mode == 2) ofs_linewidth << ", Gamma4(cm^-1) <-- specific diagram only";
+                ofs_linewidth << "## Temperature dependence of 2*Gamma (FWHM) for the given mode" << std::endl;
+                ofs_linewidth << "## T[K], 2*Gamma3 (cm^-1) (bubble)";
+                if (quartic_mode == 2) ofs_linewidth << ", 2*Gamma4(cm^-1) <-- specific diagram only";
                 ofs_linewidth << std::endl;
 
                 for (j = 0; j < NT; ++j) {
@@ -1487,8 +1485,8 @@ void Relaxation::perform_mode_analysis()
                     ofs_shift << std::endl;
                     ofs_shift << "# mode = " << snum + 1<< std::endl;
                     ofs_shift << "# Frequency = " << writes->in_kayser(omega) << std::endl;
-                    ofs_shift << "## T[K], Shift3 (cm^-1)";
-                    if (quartic_mode == 1) ofs_shift << ", Shift4 (cm^-1) <-- linear term in lambda";
+                    ofs_shift << "## T[K], Shift3 (cm^-1) (bubble)";
+                    if (quartic_mode == 1) ofs_shift << ", Shift4 (cm^-1) (loop)";
                     ofs_shift << ", Shifted frequency (cm^-1)";
                     ofs_shift << std::endl;
 

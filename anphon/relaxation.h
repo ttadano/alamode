@@ -144,7 +144,7 @@ namespace PHON_NS {
 
         void prepare_relative_vector(std::vector<FcsArrayWithCell>, const unsigned int, double ***);
         void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>, const unsigned int, int &, std::vector<double> *&);
-        void print_minimum_energy_diff();
+     //   void print_minimum_energy_diff();
         void generate_triplet_k(const bool, const bool);
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double, 
             const unsigned int, const double *, const unsigned int, const unsigned int, double **);

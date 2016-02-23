@@ -207,7 +207,7 @@ void Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const un
     double *weight;
     double **proj;
 
-    if (mympi->my_rank == 0) std::cout << " PDOS = 1 : Calculating atom-projected phonon DOS ...";
+    if (mympi->my_rank == 0) std::cout << " PDOS = 1 : Calculating atom-projected phonon DOS ... ";
 
     memory->allocate(kmap_identity, nk);
     memory->allocate(proj, neval, nk);
@@ -255,7 +255,7 @@ void Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const un
     memory->deallocate(proj);
     memory->deallocate(kmap_identity);
 
-    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+    if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
 }
 
 
@@ -359,7 +359,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double ***re
     memory->deallocate(k_pair);
 
     if (mympi->my_rank == 0) {
-        std::cout << "done." << std::endl;
+        std::cout << "done!" << std::endl;
     }  
 }
 
@@ -384,7 +384,7 @@ void Dos::calc_total_scattering_phase_space(double **omega, const int smearing_m
     double sps_sum1, sps_sum2;
 
     if (mympi->my_rank == 0) {
-        std::cout << " SPS = 1 : Calculating three-phonon scattering phase space ..." << std::endl;
+        std::cout << " SPS = 1 : Calculating three-phonon scattering phase space ... ";
     }
 
     memory->allocate(kmap_identity, nk);
@@ -469,7 +469,7 @@ void Dos::calc_total_scattering_phase_space(double **omega, const int smearing_m
     ret = (sps_sum1 + 2.0 * sps_sum2) / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
 
     if (mympi->my_rank == 0) {
-        std::cout << "done." << std::endl;
+        std::cout << "done!" << std::endl;
     }  
 }
 
@@ -506,7 +506,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval, const int smearin
 
     if (mympi->my_rank == 0) {
         std::cout << " SPS = 2 : Calculating three-phonon scattering phase space" << std::endl;
-        std::cout << "           with the Bose distribution function ..." << std::endl;
+        std::cout << "           with the Bose distribution function ...";
     }
 
     N = static_cast<int>((Tmax - Tmin) / dT) + 1;
@@ -621,7 +621,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval, const int smearin
     memory->deallocate(temperature);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done." << std::endl;
+        std::cout << " done!" << std::endl;
     }
 }
 
