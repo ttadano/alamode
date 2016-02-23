@@ -143,7 +143,9 @@ void PHON::setup_base()
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical(mode);
     dos->setup();
-    std::cout << " Now, move on to phonon calculations." << std::endl;
+    if (mympi->my_rank == 0) {
+        std::cout << " Now, move on to phonon calculations." << std::endl;
+    }
 }
 
 void PHON::execute_phonons()
