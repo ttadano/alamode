@@ -5,7 +5,7 @@
 # Simple script to generate input files of given displacement patterns.
 # Currently, VASP, Quantum-ESPRESSO, and xTAPP are supported.
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -163,7 +163,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     if ibrav == 0:
 
         if list_CELL_PARAMETERS is None:
-            print "CELL_PARAMETER should be given when ibrav = 0."
+            print "CELL_PARAMETERS must be given when ibrav = 0."
             exit(1)
 
         else:
@@ -173,28 +173,39 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
             lavec = np.array(lavec)
 
-            mode = list_CELL_PARAMETERS[0].rstrip().split()[1]
+            mode = list_CELL_PARAMETERS[0].rstrip().split()
 
-            if mode == "alat":
+            if len(mode) == 1:
+                print "Error : Please specify either alat, bohr, or angstrom for CELL_PARAMETERS"
+                exit(1)
+            else:
+                mode_str = mode[1].lower()
+
+            if "alat" in mode_str:
 
                 if not celldm[0]:
-                    print "celldm(1) should be given when 'alat' is specified."
+                    print "celldm(1) must be given when 'alat' is used for CELL_PARAMETERS"
                     exit(1)
 
                 for i in range(3):
                     for j in range(3):
                         lavec[i][j] *= celldm[0]
 
-            elif mode == "angstrom":
+            elif "angstrom" in mode_str:
 
                 for i in range(3):
                     for j in range(3):
                         lavec[i][j] /= Bohr_to_angstrom
 
+            elif "bohr" not in mode_str:
+
+                print "Error : Invalid option for CELL_PARAMETERS: %s" % mode[1]
+                exit(1)
+
     elif ibrav == 1:
 
         if not celldm[0]:
-            print "celldm(1) should be given when ibrav = 1."
+            print "celldm(1) must be given when ibrav = 1."
             exit(1)
 
         else:
@@ -206,7 +217,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 2:
 
         if not celldm[0]:
-            print "celldm(1) should be given when ibrav = 2."
+            print "celldm(1) must be given when ibrav = 2."
             exit(1)
 
         else:
@@ -218,7 +229,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 3:
 
         if not celldm[0]:
-            print "celldm(1) should be given when ibrav = 3."
+            print "celldm(1) must be given when ibrav = 3."
             exit(1)
 
         else:
@@ -230,7 +241,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 4:
 
         if not celldm[0] or not celldm[2]:
-            print "celldm(1) and celldm(3) should be given when ibrav = 4."
+            print "celldm(1) and celldm(3) must be given when ibrav = 4."
             exit(1)
 
         else:
@@ -243,7 +254,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 5 or ibrav == -5:
 
         if not celldm[0] or not celldm[3]:
-            print "celldm(1) and celldm(4) should be given when ibrav = 5, -5."
+            print "celldm(1) and celldm(4) must be given when ibrav = 5, -5."
             exit(1)
 
         else:
@@ -273,7 +284,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 6:
 
         if not celldm[0] or not celldm[2]:
-            print "celldm(1) and celldm(3) should be given when ibrav = 6."
+            print "celldm(1) and celldm(3) must be given when ibrav = 6."
             exit(1)
 
         else:
@@ -286,7 +297,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 7:
 
         if not celldm[0] or not celldm[2]:
-            print "celldm(1) and celldm(3) should be given when ibrav = 7."
+            print "celldm(1) and celldm(3) must be given when ibrav = 7."
             exit(1)
 
         else:
@@ -299,7 +310,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 8:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) should be given\
+            print "celldm(1), celldm(2), and celldm(3) must be given\
              when ibrav = 8."
             exit(1)
 
@@ -315,7 +326,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 9 or ibrav == -9:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) should be given\
+            print "celldm(1), celldm(2), and celldm(3) must be given\
              when ibrav = 9 or -9."
             exit(1)
 
@@ -336,7 +347,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 10:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) should be given\
+            print "celldm(1), celldm(2), and celldm(3) must be given\
              when ibrav = 10."
             exit(1)
 
@@ -351,7 +362,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 11:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) should be given\
+            print "celldm(1), celldm(2), and celldm(3) must be given\
              when ibrav = 11."
             exit(1)
 
@@ -368,7 +379,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
         if not celldm[0] or not celldm[1] or not celldm[2] or \
            not celldm[3]:
             print "celldm(1), celldm(2), celldm(3), and celldm(4)\
-             should be given when ibrav = 12."
+             must be given when ibrav = 12."
             exit(1)
 
         else:
@@ -385,7 +396,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
         if not celldm[0] or not celldm[1] or not celldm[2] or \
            not celldm[4]:
             print "celldm(1), celldm(2), celldm(3), and celldm(5)\
-             should be given when ibrav = -12."
+             must be given when ibrav = -12."
             exit(1)
 
         else:
@@ -402,7 +413,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
         if not celldm[0] or not celldm[1] or not celldm[2] or\
            not celldm[3]:
             print "celldm(1), celldm(2), celldm(3), and celldm(4)\
-             should be given when ibrav = 13."
+             must be given when ibrav = 13."
             exit(1)
 
         else:
@@ -418,7 +429,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
         if not celldm[0] or not celldm[1] or not celldm[2] or \
            not celldm[3] or not celldm[4] or not celldm[5]:
-            print "All celldm should be given when ibrav = 14."
+            print "All celldm must be given when ibrav = 14."
             exit(1)
 
         else:
@@ -503,10 +514,6 @@ def get_system_info(list_in):
         if "celldm(6)" in entrylist[i]:
             celldm[5] = float(entrylist[i+2])
 
-    if not celldm[0]:
-        print "Please specify the lattice constant by celldm."
-        exit(1)
-
     return ibrav, celldm, nat, ntyp
 
 
@@ -532,14 +539,18 @@ def get_options(option_tag, taglists, file_in):
 def get_fractional_coordinate(aa, N, list_in, a_Bohr):
 
     Bohr_to_angstrom = 0.5291772108
-    a_angstrom = a_Bohr * Bohr_to_angstrom
 
     list_tmp = list_in[0].rstrip().split()
 
     if len(list_tmp) == 1:
-        mode = "alat"
+        print "Error : Please specify either alat, bohr, angstrom, or crystal for ATOMIC_POSITIONS"
+        exit(1)
     else:
-        mode = list_tmp[1]
+        mode_str = list_tmp[1].lower()
+
+    if "crystal_sg" in mode_str:
+        print "Error : Sorry. 'crystal_sg' is not supported in this script. Please use another option."
+        exit(1)
 
     xtmp = np.zeros((N, 3))
     kd = []
@@ -551,7 +562,9 @@ def get_fractional_coordinate(aa, N, list_in, a_Bohr):
 
     aa_inv = np.linalg.inv(aa)
 
-    if mode == "alat":
+    if "alat" in mode_str:
+        a_angstrom = a_Bohr * Bohr_to_angstrom
+
         for i in range(3):
             for j in range(3):
                 aa_inv[i][j] *= a_angstrom
@@ -559,7 +572,7 @@ def get_fractional_coordinate(aa, N, list_in, a_Bohr):
         for i in range(N):
             xtmp[i][:] = np.dot(xtmp[i][:], aa_inv.transpose())
 
-    elif mode == "bohr":
+    elif "bohr" in mode_str:
 
         for i in range(3):
             for j in range(3):
@@ -568,10 +581,14 @@ def get_fractional_coordinate(aa, N, list_in, a_Bohr):
         for i in range(N):
             xtmp[i][:] = np.dot(xtmp[i][:], aa_inv.transpose())
 
-    elif mode == "angstrom":
+    elif "angstrom" in mode_str:
 
         for i in range(N):
             xtmp[i][:] = np.dot(xtmp[i][:], aa_inv.transpose())
+
+    elif "crystal" not in mode_str:
+        print "Error : Invalid option for ATOMIC_POSITIONS: %s" % mode_str
+        exit(1)
 
     return kd, xtmp
 
@@ -1016,7 +1033,7 @@ if __name__ == '__main__':
         exit(1)
 
     if options.VASP is None and options.QE is None and options.xTAPP is None:
-        print "Error : Either --VASP, --QE, or --xTAPP option should be given."
+        print "Error : Either --VASP, --QE, or --xTAPP option must be given."
         exit(1)
 
     elif options.VASP and options.QE or options.VASP and options.xTAPP or \
