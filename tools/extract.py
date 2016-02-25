@@ -270,7 +270,7 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
             if search_flag2 in line:
 
                 if not basis:
-                    basis = list_CELL_PARAMETERS[0].rstrip().split()[1]
+                    basis = line.rstrip().split()[1]
 
                 num_data_disp += 1
 
