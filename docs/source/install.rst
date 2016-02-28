@@ -7,7 +7,7 @@ Requirement
 Mandatory requirements
 ~~~~~~~~~~~~~~~~~~~~~~
 
-* C++ compiler (Intel compiler is highly recommended.)
+* C++ compiler (Intel compiler is recommended.)
 * LAPACK library
 * MPI library (Either OpenMPI, MPICH2, or IntelMPI)
 * `Boost C++ library <http://www.boost.org>`_
@@ -50,13 +50,13 @@ How to install
 
   This will create a directory alamode-x.y.z containing the following sub-directories:
   
-  * alm/ : Source files for alm (force constant calculation)
-  * anphon/ : Source files for anphon (phonon calculation)
+  * alm/      : Source files for alm (force constant calculation)
+  * anphon/   : Source files for anphon (phonon calculation)
   * external/ : Third-party include files
-  * include/ : Commonly-used include files
-  * tools/ : Small auxiliary programs and scripts
-  * docs/ : Source files for making documents
-  * example/ : Example files
+  * include/  : Commonly-used include files
+  * tools/    : Small auxiliary programs and scripts
+  * docs/     : Source files for making documents
+  * example/  : Example files
 
 3. Edit the Makefiles
 
