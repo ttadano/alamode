@@ -420,7 +420,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             a = celldm[0]
             b = celldm[0] * celldm[1]
             c = celldm[0] * celldm[2]
-            gamma = math.acos(celldm[4])
+            gamma = math.acos(celldm[3])
             lavec = np.array([[a / 2.0, 0.0, -c / 2.0],
                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
                              [a / 2.0, 0.0, c / 2.0]])
