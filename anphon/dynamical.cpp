@@ -1,7 +1,7 @@
 /*
  dynamical.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -62,8 +62,6 @@ void Dynamical::setup_dynamical(std::string mode)
             std::cout << "                    by the mixed-space approach." << std::endl;
             std::cout << std::endl;
         }
-        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-
     }
 
     memory->allocate(xshift_s, 27, 3);
@@ -112,6 +110,10 @@ void Dynamical::setup_dynamical(std::string mode)
 
         memory->allocate(mindist_list, system->natmin, system->nat);
         prepare_mindist_list(mindist_list);
+    }
+
+    if (mympi->my_rank == 0) {
+        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
     }
 }
 
@@ -592,8 +594,9 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
-
+#ifdef _OPENMP
 #pragma omp parallel for private (is)
+#endif
     for (ik = 0; ik < nk; ++ik){
 
         eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, 

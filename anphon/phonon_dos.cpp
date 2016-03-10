@@ -1,7 +1,7 @@
 /*
 phonon_dos.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -166,12 +166,14 @@ void Dos::calc_dos(const unsigned int nk_irreducible, int *map_k, double **eval,
     double *weight;
 
     if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
-
+#ifdef _OPENMP
 #pragma omp parallel private (weight, k)
+#endif
     {
         memory->allocate(weight, nk_irreducible);
-
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for (i = 0; i < n; ++i) {
 
             ret[i] = 0.0;
@@ -227,12 +229,14 @@ void Dos::calc_atom_projected_dos(const unsigned int nk, double **eval, const un
                 }
             }
         }
-
+#ifdef _OPENMP
 #pragma omp parallel private (weight, k, j)
+#endif
         {
             memory->allocate(weight, nk);
-
+#ifdef _OPENMP
 #pragma omp for
+#endif
             for (i = 0; i < n; ++i){
                 ret[iat][i] = 0.0;
 
@@ -317,8 +321,9 @@ void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double ***re
 
             is = ib / ns;
             js = ib % ns;
-
+#ifdef _OPENMP
 #pragma omp parallel for private(loc)
+#endif
             for (jk = 0; jk < nk; ++jk) {
                 loc = k_pair[jk];
                 e_tmp[0][jk] = writes->in_kayser(dynamical->eval_phonon[jk][is] + dynamical->eval_phonon[loc][js]);
@@ -329,7 +334,9 @@ void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double ***re
             if (smearing_method == -1) {
 
                 for (j = 0; j < 2; ++j) {
+#ifdef _OPENMP
 #pragma omp parallel for private(k)
+#endif
                     for (i = 0; i < n; ++i) {
                         integration->calc_weight_tetrahedron(nk, kmap_identity, weight[i], e_tmp[j], energy[i]);
                         for (k = 0; k < nk; ++k) {
@@ -341,7 +348,9 @@ void Dos::calc_two_phonon_dos(const unsigned int n, double *energy, double ***re
             } else {
 
                 for (j = 0; j < 2; ++j) {
+#ifdef _OPENMP
 #pragma omp parallel for private(k)
+#endif
                     for (i = 0; i < n; ++i) {
                         integration->calc_weight_smearing(nk, nk, kmap_identity, weight[i], e_tmp[j], energy[i], smearing_method);
                         for (k = 0; k < nk; ++k) {
@@ -406,8 +415,9 @@ void Dos::calc_total_scattering_phase_space(double **omega, const int smearing_m
 
             sps_tmp1 = 0.0;
             sps_tmp2 = 0.0;
-
-#pragma omp parallel 
+#ifdef _OPENMP
+#pragma omp parallel
+#endif 
             {
                 double **e_tmp;    
                 double *weight;
@@ -417,8 +427,9 @@ void Dos::calc_total_scattering_phase_space(double **omega, const int smearing_m
 
                 memory->allocate(weight, nk);
                 memory->allocate(e_tmp, 2, nk);
-
+#ifdef _OPENMP
 #pragma omp for private(i, j), reduction(+: sps_tmp1, sps_tmp2)
+#endif
                 for (ib = 0; ib < ns2; ++ib) {
 
                     js = ib / ns;
@@ -652,13 +663,15 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
 
 
     omega0 = writes->in_kayser(omega);
-
+#ifdef _OPENMP
 #pragma omp parallel private(i, is, js, k1, k2, omega1, omega2, energy_tmp, weight)
+#endif
     {
         memory->allocate(energy_tmp, 2, nk);
         memory->allocate(weight, 2, nk);   
-
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for (ib = 0; ib < ns2; ++ib) {
             is = ib / ns;
             js = ib % ns;
@@ -701,8 +714,9 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk, cons
         temp = temperature[iT];
         ret1 = 0.0;
         ret2 = 0.0;
-
+#ifdef _OPENMP
 #pragma omp parallel for private(k1, k2, is, js, omega1, omega2, n1, n2, f1, f2), reduction(+:ret1, ret2)
+#endif
         for (ib = 0; ib < ns2; ++ib) {
 
             is = ib / ns;

@@ -803,8 +803,9 @@ void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const do
 
     knum = kpoint->kpoint_irred_all[ik_in][0].knum;
     knum_minus = kpoint->knum_minus[knum];
-
+#ifdef _OPENMP
 #pragma omp parallel for private(multi, arr, k1, k2, is, js, omega_inner)
+#endif
     for (ik = 0; ik < pair_uniq[ik_in].size(); ++ik) {
         multi = static_cast<double>(pair_uniq[ik_in][ik].group.size());
 
@@ -841,8 +842,9 @@ void Relaxation::calc_damping_smearing(const unsigned int N, double *T, const do
     for (i = 0; i < N; ++i) {
         T_tmp = T[i];
         ret_tmp = 0.0;
-
+#ifdef _OPENMP
 #pragma omp parallel for private(k1, k2, is, js, omega_inner, n1, n2, f1, f2), reduction(+:ret_tmp)
+#endif
         for (ik = 0; ik < npair_uniq; ++ik) {
 
             k1 = pair_uniq[ik_in][ik].group[0].ks[0];
@@ -926,13 +928,15 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
-
+#ifdef _OPENMP
 #pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, arr)
+#endif
     {
         memory->allocate(energy_tmp, 3, nk);
         memory->allocate(weight_tetra, 3, nk);
-
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for (ib = 0; ib < ns2; ++ib) {
             is = ib / ns;
             js = ib % ns;
@@ -984,8 +988,9 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N, double *T, const
     for (i = 0; i < N; ++i) {
         T_tmp = T[i];
         ret_tmp = 0.0;
-
+#ifdef _OPENMP
 #pragma omp parallel for private(k1, k2, is, js, omega_inner, n1, n2, f1, f2), reduction(+:ret_tmp)
+#endif
         for (ik = 0; ik < npair_uniq; ++ik) {
 
             k1 = pair_uniq[ik_in][ik].group[0].ks[0];
@@ -2396,8 +2401,9 @@ void Relaxation::calc_V3norm2(const unsigned int ik_in, const unsigned int snum,
 
     knum = kpoint->kpoint_irred_all[ik_in][0].knum;
     knum_minus = kpoint->knum_minus[knum];
-
+#ifdef _OPENMP
 #pragma omp parallel for private(is, js, ik, k1, k2, arr)
+#endif
     for (ib = 0; ib < ns2; ++ib) {
         is = ib / ns;
         js = ib % ns;
