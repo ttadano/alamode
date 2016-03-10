@@ -2,7 +2,7 @@
                  calculation = 'scf',
                 restart_mode = 'from_scratch' ,
                       outdir = './',
-                     pseudo_dir = './',
+                     pseudo_dir = '/home/tadano/etc/pseudo/',
                       prefix = 'si' ,
                      tprnfor = .true. ,
  /

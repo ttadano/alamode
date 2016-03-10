@@ -1530,6 +1530,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 
 void Writes::write_participation_ratio()
 {
+    unsigned int i, j, k;
+    unsigned int knum;
+    unsigned int nk = kpoint->nk;
+    unsigned int neval = dynamical->neval;
+    unsigned int natmin = system->natmin;
+
+    double **participation_ratio;
+    double ***atomic_participation_ratio;
+
     std::ofstream ofs_pr, ofs_apr;
     std::string file_pr = input->job_title + ".pr";
     std::string file_apr = input->job_title + ".apr";
@@ -1544,15 +1553,6 @@ void Writes::write_participation_ratio()
 
     ofs_apr.setf(std::ios::scientific);
 
-    unsigned int i, j, k;
-    unsigned int knum;
-    unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
-    unsigned int natmin = system->natmin;
-
-    double **participation_ratio;
-    double ***atomic_participation_ratio;
-
     memory->allocate(participation_ratio, nk, neval);
     memory->allocate(atomic_participation_ratio, nk, neval, natmin);
 
@@ -1560,7 +1560,7 @@ void Writes::write_participation_ratio()
 
     ofs_pr << "# Participation ratio of each phonon modes at k points" << std::endl;
 
-    if (kpoint->kpoint_mode == 1) {
+    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
 
         ofs_pr << "# kpoint, mode, PR[kpoint][mode]" << std::endl;
 
@@ -1607,7 +1607,7 @@ void Writes::write_participation_ratio()
 
     ofs_apr << "# Atomic participation ratio of each phonon modes at k points" << std::endl;
 
-    if (kpoint->kpoint_mode == 1) {
+    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
 
         ofs_apr << "# kpoint, mode, atom, APR[kpoint][mode][atom]" << std::endl;
 

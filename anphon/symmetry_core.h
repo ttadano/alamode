@@ -44,13 +44,21 @@ namespace PHON_NS {
             std::vector<double> v1, v2;
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
-                    v1.push_back(rot[i][j]);
-                    v2.push_back(a.rot[i][j]);
+                    v1.push_back(static_cast<double>(rot[i][j]));
+                    v2.push_back(static_cast<double>(a.rot[i][j]));
                 }
             }
             for (int i = 0; i < 3; ++i) {
-                v1.push_back(tran[i]);
-                v2.push_back(a.tran[i]);
+                if (tran[i] < 0.0) {
+                    v1.push_back(1.0+tran[i]);
+                } else {
+                    v1.push_back(tran[i]);
+                }
+                if (a.tran[i] < 0.0) {
+                    v2.push_back(1.0+a.tran[i]);
+                } else {
+                    v2.push_back(a.tran[i]);
+                }
             }
             return std::lexicographical_compare(v1.begin(),v1.end(),v2.begin(),v2.end());
         }

@@ -599,7 +599,6 @@ void Input::parse_cutoff_radii()
 
         for (order = 0; order < maxorder; ++order) {
             // Accept any strings starting with 'N' or 'n' as 'None'
-            std::cout << cutoff_line[order+1] << std::endl;
             if ((cutoff_line[order+1][0] == 'N') || (cutoff_line[order+1][0] == 'n')) {
                 // Minus value for cutoff radius.
                 // This is a flag for neglecting cutoff radius
