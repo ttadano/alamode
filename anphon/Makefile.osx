@@ -6,7 +6,7 @@
 #-----------------------------------------------
 
 MPICXX = mpic++
-CXXFLAGS = -O2 -g
+CXXFLAGS = -O2 -fopenmp
 INCLUDE = -I../include 
 
 LINKER = ${MPICXX}
