@@ -2551,17 +2551,22 @@ void Relaxation::store_exponential_for_acceleration( const int nk_in[3], int &nk
             double phase;
 
             memory->allocate(exp_phase, 2 * nkrep_out - 1);
+#ifdef _OPENMP
+#pragma omp parallel for private(phase)
+#endif
             for (ii = 0; ii < 2 * nkrep_out - 1; ++ii) {
                 phase = 2.0 * pi * static_cast<double>(ii - nkrep_out + 1) / static_cast<double>(nkrep_out);
                 exp_phase[ii] = std::exp(im * phase);
             }
 
         } else if (tune_type == 1) {
+
             double phase[3];
 
-            tune_type = 1;
             memory->allocate(exp_phase3, 2 * nk_grid[0] - 1, 2 * nk_grid[1] - 1, 2 * nk_grid[2] - 1);
-
+#ifdef _OPENMP
+#pragma omp parallel for private(phase, jj, kk)
+#endif
             for (ii = 0; ii < 2 * nk_grid[0] - 1; ++ii) {
                 phase[0] = 2.0 * pi * static_cast<double>(ii - nk_grid[0] + 1) / dnk[0];
                 for (jj = 0; jj < 2 * nk_grid[1] - 1; ++jj) {
