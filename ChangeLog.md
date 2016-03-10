@@ -1,3 +1,33 @@
+# Ver. 0.9.7 (2016-3-10)
+
+## New
+
+- New option SPS = 2 for anphon
+- New tag MAGMOM for considering collinear spin (alm). The format is same as VASP.
+- ALAMODE logo 
+
+## Changes
+
+- From this version, the variable 'NNP' for the translational part of 
+  space group operations will no longer be used. Because of this, 
+  file formats of SYMM_INFO and SYMM_INFO_PRIM also changed.
+
+- Comment lines in the &cell, &position, and &kpoints fields are supported.
+
+- Any words starting from 'N' or 'n' can be used instead of 'None' for the &cutoff field.
+
+## Fix
+
+- Fixed a bug in fitting.cpp (alm) regarding out-of-range of an array.
+- Fixed a bug in the calculation of the maximum distance for multi-body interaction clusters.
+- Fixed a bug in the calculation of constraints for translational invariance. 
+  This bug appeared in previous versions with some specific structures/cutoff radii.
+- anphon code incorrectly printed RMSD instead of MSD in previous versions. Fixed.
+- qe2alm.cpp now works with ibrav=0.
+- Fixed several issues in displace.py and extract.py for processing QE files.
+- PRINTPR now works properly when KPMODE = 0.
+
+
 # Ver. 0.9.6 (2015-09-14)
 
 ## New
