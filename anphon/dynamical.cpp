@@ -113,6 +113,7 @@ void Dynamical::setup_dynamical(std::string mode)
     }
 
     if (mympi->my_rank == 0) {
+        std::cout << std::endl;
         std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
     }
 }
