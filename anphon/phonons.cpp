@@ -1,7 +1,7 @@
 /*
  phonons.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -47,7 +47,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     if (mympi->my_rank == 0) {
         std::cout << " +------------------------------------------------------------+" << std::endl;
         std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver. 0.9.6                       +" << std::endl;
+        std::cout << " +                           Ver. 0.9.7                       +" << std::endl;
         std::cout << " +------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
