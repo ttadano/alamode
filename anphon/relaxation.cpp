@@ -55,8 +55,6 @@ void Relaxation::setup_relaxation()
     nk = kpoint->nk;
     ns = dynamical->neval;
     nks = ns*nk;
-
-    unsigned int i, j;
     int nk_tmp[3];
 
     if (mympi->my_rank == 0) {
