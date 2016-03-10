@@ -55,16 +55,28 @@ namespace PHON_NS {
         std::vector<unsigned int> array_a, array_b;
         array_a.clear();
         array_b.clear();
-        for (int i = 0; i < a.pairs.size(); ++i) {
-            array_a.push_back(a.pairs[i].index/3);
+        int len = a.pairs.size();
+        for (int i = 0; i < len - 1; ++i) {
+            array_a.push_back(a.pairs[i].index);
+//            array_a.push_back(a.pairs[i].index/3);
             array_a.push_back(a.pairs[i].tran);
-            array_a.push_back(a.pairs[i].cell_s);
-            array_a.push_back(a.pairs[i].index%3);
-            array_b.push_back(b.pairs[i].index/3);
+//            array_a.push_back(a.pairs[i].cell_s);
+//            array_a.push_back(a.pairs[i].index%3);
+            array_b.push_back(b.pairs[i].index);
+//            array_b.push_back(b.pairs[i].index/3);
             array_b.push_back(b.pairs[i].tran);
-            array_b.push_back(b.pairs[i].cell_s);
-            array_b.push_back(b.pairs[i].index%3);
+//            array_b.push_back(b.pairs[i].cell_s);
+//            array_b.push_back(b.pairs[i].index%3);
         }
+        for (int i = 0; i < len - 1; ++i) {
+            array_a.push_back(a.pairs[i].cell_s);
+            array_b.push_back(b.pairs[i].cell_s);
+        }
+        
+        array_a.push_back(a.pairs[len-1].index);
+        array_a.push_back(a.pairs[len-1].tran);
+        array_b.push_back(b.pairs[len-1].index);
+        array_b.push_back(b.pairs[len-1].tran);
         return std::lexicographical_compare(array_a.begin(), array_a.end(), array_b.begin(), array_b.end());
     }
 
@@ -81,7 +93,6 @@ namespace PHON_NS {
         void calc_gruneisen();
         void finish_gruneisen();
         void write_new_fcsxml_all();
-
 
     private:
         double **xshift_s;

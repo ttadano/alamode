@@ -150,7 +150,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out, double ***phvel3_
     double **vel;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Calculating group velocities of phonons at uniform grid ... ";
+        std::cout << " Calculating group velocities of phonons on uniform grid ... ";
     }
 
     memory->allocate(vel, ns, 3);
@@ -165,8 +165,8 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out, double ***phvel3_
                 phvel3_out[i][j][k] = vel[j][k];
             }
             phvel_out[i][j] = std::sqrt(std::pow(vel[j][0], 2) 
-                                      + std::pow(vel[j][1], 2) 
-                                      + std::pow(vel[j][2], 2));
+                + std::pow(vel[j][1], 2) 
+                + std::pow(vel[j][2], 2));
         }
     }
 
@@ -219,14 +219,14 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
         norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0] 
         + kvec_na_tmp[0][1] * kvec_na_tmp[0][1] 
         + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
-        
+
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[0][j] /= norm;
         }
         norm = std::sqrt(kvec_na_tmp[1][0] * kvec_na_tmp[1][0] 
         + kvec_na_tmp[1][1] * kvec_na_tmp[1][1] 
         + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
-        
+
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[1][j] /= norm;
         }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Data>
-  <ALM_version>0.9.5</ALM_version>
+  <ALM_version>0.9.7</ALM_version>
   <Fitting>
     <DisplaceFile>disp.dat</DisplaceFile>
     <ForceFile>force.dat</ForceFile>
@@ -17,6 +17,7 @@
       <a2> 0.000000000000000e+00 2.040600000000000e+01 0.000000000000000e+00</a2>
       <a3> 0.000000000000000e+00 0.000000000000000e+00 2.040600000000000e+01</a3>
     </LatticeVector>
+    <Periodicity>1 1 1</Periodicity>
     <Position>
       <pos index="1" element="Si"> 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00</pos>
       <pos index="2" element="Si"> 0.000000000000000e+00 0.000000000000000e+00 5.000000000000000e-01</pos>

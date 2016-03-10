@@ -1,10 +1,10 @@
 /*
  fcs.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
+ Please see the file 'LICENCE.txt' in the root directory
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
@@ -38,18 +38,16 @@ void Fcs::init(){
 
     memory->allocate(nints, maxorder);
     memory->allocate(nzero, maxorder);
+    memory->allocate(fc_set, maxorder);
+    memory->allocate(ndup, maxorder);
 
     for (i = 0; i < maxorder; ++i) nzero[i] = 0;
-
-    fc_set = new std::vector<FcProperty> [maxorder];
-    ndup = new std::vector<int> [maxorder];
     generate_fclists(maxorder);
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
         std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] << " FCs : " << ndup[i].size();
 	std::cout << std::endl;
-	//        std::cout << " ( " << nzero[i] << " ) " << std::endl;
     }
     std::cout << std::endl;
 
@@ -149,12 +147,7 @@ void Fcs::generate_fclists(int maxorder)
                     if (!symmetry->sym_available[isym]) continue;
 
                     for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
-                    // Special treatment for non-periodic cases
-                    if (!(interaction->is_periodic[0] & 
-                          interaction->is_periodic[1] & 
-                          interaction->is_periodic[2])) {
-                        if (!interaction->is_incutoff(order+2, atmn_mapped)) continue;
-                    }
+
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
 
                     for (i2 = 0; i2 < nxyz; ++i2) {
@@ -212,7 +205,7 @@ void Fcs::generate_fclists(int maxorder)
                 if (is_zero) {
                     for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
                     ++nzero[order];
-                } else {             
+                } else {
                     ndup[order].push_back(ndeps);
                     ++nmother;
                 }
@@ -379,5 +372,3 @@ std::string Fcs::easyvizint(const int n)
 
     return  str_tmp;
 }
-
-

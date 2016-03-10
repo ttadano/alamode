@@ -55,8 +55,14 @@ int main() {
 
     if (ibrav == 0) {
         for (i = 0; i < 3; ++i) {
-            ifs_fc2qe >> lavec[i][0] >> lavec[i][1] >> lavec[i][2];
+            ifs_fc2qe >> lavec[0][i] >> lavec[1][i] >> lavec[2][i];
         }
+
+	for (i = 0; i < 3; ++i) {
+	  for (j = 0; j < 3; ++j) {
+	    lavec[i][j] *= celldm[0];
+	  }
+	}
     } else {
         calc_lattice_vector(ibrav, celldm, lavec);
     }

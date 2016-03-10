@@ -79,6 +79,12 @@ namespace PHON_NS {
             cell_s = obj.cell_s;
             fcs_val = obj.fcs_val;
         }
+
+        bool operator==(const FcsClassExtent &a) const {
+            return (this->atm1 == a.atm1) & (this->atm2 == a.atm2) 
+                 & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
+                 & (this->cell_s == a.cell_s);
+             }
     };
 
     struct AtomCellSuper {
@@ -141,7 +147,7 @@ namespace PHON_NS {
         void load_fcs_xml();
 
         void examine_translational_invariance(const int, const unsigned int, const unsigned int,
-            double *, std::vector<FcsClassExtent>, std::vector<FcsArrayWithCell> *);
+            double *, std::vector<FcsClassExtent> &, std::vector<FcsArrayWithCell> *);
 
 
         void MPI_Bcast_fc_class(const unsigned int);

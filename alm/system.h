@@ -15,6 +15,23 @@
 #include <vector>
 
 namespace ALM_NS {
+
+    class AtomType {
+    public:
+        int element;
+        double magmom;
+        bool operator<(const AtomType &a) const {
+            if (this->element < a.element) {
+                return true;
+            } else if (this->element == a.element) {
+                return this->magmom < a.magmom;
+            } else {
+                return false;
+            } 
+        }
+    };
+
+
     class System: protected Pointers {
     public:
         System(class ALM *);
@@ -31,14 +48,17 @@ namespace ALM_NS {
         double lavec[3][3], rlavec[3][3];
         double **xcoord; // fractional coordinate
         double **x_cartesian;
+        double **magmom;
+        int noncollinear;
         std::string *kdname;
 
-
-
         unsigned int nclassatom;
-        std::vector<unsigned int> *atomlist_class;
 
+        std::vector<unsigned int> *atomlist_class;
+        bool lspin;
         double cell_volume;
+
+
 
     private:
         unsigned int coordinate_index(const char);

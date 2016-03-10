@@ -80,7 +80,7 @@ List of input variables
 
  :Default: None
  :Type: String
- :Description: When ``FC2XML`` is given, the harmonic force constants in this file will be used for calculating dynamical matricies. It is possible to use different size of supercell for harmonic and anharmonic terms, which are specified by ``FC2XML`` and ``FCSXML`` respectively.
+ :Description: When ``FC2XML`` is given, the harmonic force constants in this file will be used for calculating dynamical matrices. It is possible to use different size of supercell for harmonic and anharmonic terms, which are specified by ``FC2XML`` and ``FCSXML`` respectively.
 
 ````
 
@@ -359,7 +359,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  
  :Default: 0
  :Type: Integer
- :Description: This flag is available only when ``KPMODE = phonons`` and *KPMODE* = 2.
+ :Description: This flag is available only when ``MODE = phonons`` and *KPMODE* = 2.
 
 ````
 
@@ -372,7 +372,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
  :Default: 0
  :Type: Integer
- :Description: This flag is available only when ``KPMODE = phonons`` and *KPMODE* = 2.
+ :Description: This flag is available only when ``MODE = phonons`` and *KPMODE* = 2.
 
 ````
 
@@ -385,7 +385,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  
  :Default: 0
  :Type: Integer
- :Description: This flag is available only when ``KPMODE = phonons`` and *KPMODE* = 2.
+ :Description: This flag is available only when ``MODE = phonons`` and *KPMODE* = 2.
 
  .. Note::
 
@@ -393,16 +393,19 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 ````
 
-* SPS-tag = 0 | 1
+* SPS-tag = 0 | 1 | 2
 
  === ====================================================================================
   0   Do not compute scattering phase space
-  1   Total and mode-decomposed scattering phase space will be stored in ``PREFIX``.sps
+  1   Total and mode-decomposed scattering phase space involving three-phonon processes 
+      will be stored in ``PREFIX``.sps
+  2   Three-phonon scattering phase space with the Bose factor will be stored 
+      in ``PREFIX``.sps_Bose
  === ====================================================================================
  
  :Default: 0
  :Type: Integer
- :Description: This flag is available only when ``KPMODE = phonons`` and *KPMODE* = 2.
+ :Description: This flag is available only when ``MODE = phonons`` and *KPMODE* = 2.
 
 
 ````
@@ -417,7 +420,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  
  :Default: 0
  :Type: Integer
- :Description: This flag is available when ``KPMODE = phonons``.
+ :Description: This flag is available when ``MODE = phonons``.
 
 
 ````

@@ -1,7 +1,7 @@
 /*
  phonons.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -47,7 +47,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     if (mympi->my_rank == 0) {
         std::cout << " +------------------------------------------------------------+" << std::endl;
         std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver. 0.9.6                       +" << std::endl;
+        std::cout << " +                           Ver. 0.9.7                       +" << std::endl;
         std::cout << " +------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
@@ -135,7 +135,6 @@ void PHON::destroy_pointers()
     delete isotope;
 }
 
-
 void PHON::setup_base()
 {
     system->setup();
@@ -143,6 +142,10 @@ void PHON::setup_base()
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical(mode);
+    dos->setup();
+    if (mympi->my_rank == 0) {
+        std::cout << " Now, move on to phonon calculations." << std::endl;
+    }
 }
 
 void PHON::execute_phonons()
@@ -162,9 +165,7 @@ void PHON::execute_phonons()
 
     setup_base();
 
-    dos->setup();
     dynamical->diagonalize_dynamical_all();
-
     phonon_velocity->calc_group_velocity(kpoint->kpoint_mode);
 
     if (dos->flag_dos) {
@@ -173,14 +174,12 @@ void PHON::execute_phonons()
     }
 
     gruneisen->setup();
-
     if (gruneisen->print_gruneisen) {
         gruneisen->calc_gruneisen();
     }
 
     if (mympi->my_rank == 0) {
         writes->print_phonon_energy();
-
         writes->write_phonon_info();
 
         if (gruneisen->print_newfcs) {
@@ -218,29 +217,24 @@ void PHON::execute_RTA()
     }
 
     setup_base();
-    dos->setup();
 
     if (kpoint->kpoint_mode < 3) {
         dynamical->diagonalize_dynamical_all();
     }
-    relaxation->setup_mode_analysis();
-
-    if (!relaxation->ks_analyze_mode) {
-        writes->setup_result_io();
-    }
-
     if (kpoint->kpoint_mode == 2) {
         integration->setup_integration();
     }
-
-    relaxation->setup_relaxation();
-    selfenergy->setup_selfenergy();
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
+
+ //   relaxation->setup_mode_analysis();
+    relaxation->setup_relaxation();
+    selfenergy->setup_selfenergy();
 
     if (relaxation->ks_analyze_mode) {
         relaxation->perform_mode_analysis();
     } else {
+        writes->setup_result_io();
         conductivity->setup_kappa();
         conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();

@@ -1,11 +1,11 @@
 /*
-input.cpp
+ input.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
-This file is distributed under the terms of the MIT license.
-Please see the file 'LICENCE.txt' in the root directory 
-or http://opensource.org/licenses/mit-license.php for information.
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "input.h"
@@ -70,8 +70,6 @@ void Input::parce_input(int narg, char **arg)
     }
     parse_cutoff_radii();
 
-
-
     if (alm->mode == "fitting") {
         if (!locate_tag("&fitting")) {
             error->exit("parse_input", "&fitting entry not found in the input file");
@@ -87,16 +85,21 @@ void Input::parce_input(int narg, char **arg)
 
 void Input::parse_general_vars()
 {
-    int i;
+    int i, j;
     std::string prefix, mode, str_tmp, str_disp_basis;
     int nat, nkd, nsym;
     int is_printsymmetry, is_periodic[3];
+    int icount, ncount;
     bool trim_dispsign_for_evenfunc;
+    bool lspin;
+    int noncollinear, trevsym;
     std::string *kdname;
+    double **magmom, magmag;
     double tolerance;
 
-    std::vector<std::string> kdname_v, periodic_v;
-    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS TRIMEVEN";
+    std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
+    std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS TRIMEVEN\
+                                   MAGMOM NONCOLLINEAR TREVSYM";
     std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
@@ -126,20 +129,19 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars", "Invalid MODE variable");
     }
 
-    nat = boost::lexical_cast<int>(general_var_dict["NAT"]);
-    nkd = boost::lexical_cast<int>(general_var_dict["NKD"]);
-
+    assign_val(nat, "NAT", general_var_dict);
+    assign_val(nkd, "NKD", general_var_dict);
 
     if (general_var_dict["NSYM"].empty()) {
         nsym = 0;
     } else {
-        nsym= boost::lexical_cast<int>(general_var_dict["NSYM"]);
+        assign_val(nsym, "NSYM", general_var_dict);
     }
 
     if (general_var_dict["PRINTSYM"].empty()) {
         is_printsymmetry = 0;
     } else {
-        is_printsymmetry = boost::lexical_cast<int>(general_var_dict["PRINTSYM"]);
+        assign_val(is_printsymmetry, "PRINTSYM", general_var_dict);
     }
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -161,7 +163,12 @@ void Input::parse_general_vars()
         }
     } else if (periodic_v.size() == 3) {
         for (i = 0; i < 3; ++i) {
-            is_periodic[i] = boost::lexical_cast<int>(periodic_v[i]);
+            try{
+                is_periodic[i] = boost::lexical_cast<int>(periodic_v[i]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_general_vars", "The PERIODIC tag must be a set of integers.");
+            }
         }
     } else {
         error->exit("parse_general_vars", "Invalid number of entries for PERIODIC");
@@ -170,8 +177,92 @@ void Input::parse_general_vars()
     if (general_var_dict["TOLERANCE"].empty()) {
         tolerance = 1.0e-8;
     } else {
-        tolerance = boost::lexical_cast<double>(general_var_dict["TOLERANCE"]);
+        assign_val(tolerance, "TOLERANCE", general_var_dict);
     }
+
+    // Convert MAGMOM input to array
+    memory->allocate(magmom, nat, 3);
+    lspin = false;
+
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            magmom[i][j] = 0.0;
+        }
+    }
+
+    if (general_var_dict["NONCOLLINEAR"].empty()) {
+        noncollinear = 0;
+    } else {
+        assign_val(noncollinear, "NONCOLLINEAR", general_var_dict);
+    }
+    if (general_var_dict["TREVSYM"].empty()) {
+        trevsym = 1;
+    } else {
+        assign_val(trevsym, "TREVSYM", general_var_dict);
+    }
+
+    if (!general_var_dict["MAGMOM"].empty()) {
+        lspin = true;
+
+        if (noncollinear) {
+            icount = 0;
+            split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
+            for (std::vector<std::string>::const_iterator it = magmom_v.begin(); it != magmom_v.end(); ++it) {
+                if ((*it).find("*") != std::string::npos) {
+                    error->exit("parse_general_vars", "Wild card '*' is not supported when NONCOLLINEAR = 1.");
+                } else {
+                    magmag = boost::lexical_cast<double>((*it));
+                    if (icount/3 >= nat) {
+                        error->exit("parse_general_vars", "Too many entries for MAGMOM.");
+                    }
+                    magmom[icount/3][icount%3] = magmag;
+                    ++icount;
+                }
+            }
+
+            if (icount != 3 * nat) {
+                error->exit("parse_general_vars", "Number of entries for MAGMOM must be 3*NAT when NONCOLLINEAR = 1.");
+            }
+        } else {
+            icount = 0;
+            split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
+            for (std::vector<std::string>::const_iterator it = magmom_v.begin(); it != magmom_v.end(); ++it) {
+
+                if ((*it).find("*") != std::string::npos) {
+                    if ((*it) == "*") {
+                        error->exit("parse_general_vars", "Please place '*' without space for the MAGMOM-tag.");
+                    }
+                    boost::split(str_split, (*it), boost::is_any_of("*"));
+                    if (str_split.size() != 2) {
+                        error->exit("parse_general_vars", "Invalid format for the MAGMOM-tag.");
+                    } else {
+                        if (str_split[0].empty() || str_split[1].empty()) {
+                            error->exit("parse_general_vars", "Please place '*' without space for the MAGMOM-tag.");
+                        }
+                        try {
+                             magmag = boost::lexical_cast<double>(str_split[1]);
+                             ncount = static_cast<int>(boost::lexical_cast<double>(str_split[0]));
+                        } catch (std::exception &e) {
+                            error->exit("parse_general_vars", "Bad format for MAGMOM.");
+                        }
+
+                        for (i = icount; i < icount + ncount; ++i) {
+                            magmom[i][2] = magmag;
+                        }
+                        icount += ncount;
+                    }
+
+                } else {
+                    magmag = boost::lexical_cast<double>((*it));
+                    magmom[icount++][2] = magmag;
+                }
+            }
+            if (icount != nat) {
+                error->exit("parse_general_vars", "Number of entries for MAGMOM must be NAT.");
+            }
+        }   
+    }
+
 
     if (mode == "suggest") {
         if (general_var_dict["DBASIS"].empty()) {
@@ -187,7 +278,7 @@ void Input::parse_general_vars()
         if (general_var_dict["TRIMEVEN"].empty()) {
             trim_dispsign_for_evenfunc = true;
         } else {
-            trim_dispsign_for_evenfunc = boost::lexical_cast<bool>(general_var_dict["TRIMEVEN"]);
+            assign_val(trim_dispsign_for_evenfunc, "TRIMEVEN", general_var_dict);
         }
 
     }
@@ -201,6 +292,7 @@ void Input::parse_general_vars()
     symmetry->tolerance = tolerance;
 
     memory->allocate(system->kdname, nkd);
+    memory->allocate(system->magmom, nat, 3);
 
     for (i = 0; i < nkd; ++i) {
         system->kdname[i] = kdname[i];
@@ -208,7 +300,14 @@ void Input::parse_general_vars()
     for (i = 0; i < 3; ++i) {
         interaction->is_periodic[i] = is_periodic[i];
     }
-
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            system->magmom[i][j] = magmom[i][j];
+        }
+    }
+    system->lspin = lspin;
+    system->noncollinear = noncollinear;
+    symmetry->trev_sym_mag = trevsym;
 
     if (mode == "suggest") {
         displace->disp_basis = str_disp_basis;
@@ -216,6 +315,7 @@ void Input::parse_general_vars()
     }
 
     memory->deallocate(kdname);
+    memory->deallocate(magmom);
 
     kdname_v.clear();
     periodic_v.clear();
@@ -228,19 +328,83 @@ void Input::parse_cell_parameter()
     int i, j;
     double a;
     double lavec_tmp[3][3];
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    line_vec.clear();
 
     if (from_stdin) {
-        std::cin >> a;
 
-        std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-        std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-        std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+        while (std::getline(std::cin, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+
     } else {
-        ifs_input >> a;
+        while (std::getline(ifs_input, line)) {
 
-        ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-        ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-        ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    if (line_vec.size() != 4) {
+        error->exit("parse_cell_parameter", "Too few or too much lines for the &cell field.\n \
+                                            The number of valid lines for the &cell field should be 4.");
+    }
+
+    for (i = 0; i < 4; ++i) {
+
+        line = line_vec[i];
+        boost::split(line_split, line, boost::is_any_of("\t "), boost::token_compress_on);
+
+        if (i == 0) {
+            // Lattice factor a
+            if (line_split.size() == 1) {
+                a = boost::lexical_cast<double>(line_split[0]);
+            } else {
+                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+            }
+
+        } else {
+            // Lattice vectors a1, a2, a3
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+            }
+        }
     }
 
     for (i = 0; i < 3; ++i) {
@@ -256,13 +420,7 @@ void Input::parse_interaction_vars()
     int maxorder;
     int *nbody_include;
 
-
-    //     int interaction_type;
-    //     bool is_longrange;
-    //     std::string file_longrange;
-
     std::vector<std::string> nbody_v;
-    //  std::string str_allowed_list = "NORDER NBODY INTERTYPE";
     std::string str_allowed_list = "NORDER NBODY";
     std::string str_no_defaults = "NORDER";
     std::vector<std::string> no_defaults;
@@ -281,21 +439,13 @@ void Input::parse_interaction_vars()
 
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (interaction_var_dict.find(*it) == interaction_var_dict.end()) {
-            error->exit("parse_interaction_vars", "The following variable is not found in &interaction input region: ", (*it).c_str());
+            error->exit("parse_interaction_vars", 
+                "The following variable is not found in &interaction input region: ", (*it).c_str());
         }
     }
 
-    maxorder = boost::lexical_cast<int>(interaction_var_dict["NORDER"]);
-
+    assign_val(maxorder, "NORDER", interaction_var_dict);
     if (maxorder < 1) error->exit("parse_interaction_vars", "maxorder has to be a positive integer");
-
-    //     if (interaction_var_dict["INTERTYPE"].empty()) {
-    //         interaction_type = 0;
-    //     } else {
-    //         interaction_type = boost::lexical_cast<int>(interaction_var_dict["INTERTYPE"]);
-    //     }
-    //     if (interaction_type < 0 || interaction_type > 3) error->exit("parse_general_vars", "INTERTYPE should be 0, 1, 2 or 3.");
-
 
     memory->allocate(nbody_include, maxorder);
 
@@ -307,7 +457,12 @@ void Input::parse_interaction_vars()
         }
     } else if (nbody_v.size() == maxorder) {
         for (i = 0; i < maxorder; ++i) {
-            nbody_include[i] = boost::lexical_cast<int>(nbody_v[i]);
+            try {
+                nbody_include[i] = boost::lexical_cast<int>(nbody_v[i]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_interaction_vars", "NBODY must be an integer.");
+            }
         }
     } else {
         error->exit("parse_interaction_vars", "The number of entry of NBODY has to be equal to NORDER");
@@ -317,25 +472,7 @@ void Input::parse_interaction_vars()
         error->warn("parce_input", "Harmonic interaction is always 2 body (except on-site 1 body)");
     }
 
-
-    //     if (interaction_var_dict["ILONG"].empty()) {
-    //         is_longrange = false;
-    //     } else {
-    //         is_longrange = boost::lexical_cast<int>(interaction_var_dict["ILONG"]);
-    //     }
-    // 
-    //     if (is_longrange) {
-    //         if (interaction_var_dict["FLONG"].empty()) {
-    //             error->exit("parse_interaction_vars", "FLONG is necessary when ILONG = 1");
-    //         } else {
-    //             file_longrange = interaction_var_dict["FLONG"];
-    //         }
-    //     } else {
-    //         file_longrange = "";
-    //     }
-
     interaction->maxorder = maxorder;
-    // interaction->interaction_type = interaction_type;
     memory->allocate(interaction->nbody_include, maxorder);
 
     for (i = 0; i < maxorder; ++i) {
@@ -461,7 +598,8 @@ void Input::parse_cutoff_radii()
         jkd = kd_map[str_pair[1]];
 
         for (order = 0; order < maxorder; ++order) {
-            if (cutoff_line[order + 1] == "None") {
+            // Accept any strings starting with 'N' or 'n' as 'None'
+            if ((cutoff_line[order+1][0] == 'N') || (cutoff_line[order+1][0] == 'n')) {
                 // Minus value for cutoff radius.
                 // This is a flag for neglecting cutoff radius
                 cutoff_tmp = -1.0;
@@ -560,22 +698,22 @@ void Input::parse_fitting_vars()
         }
     }
 
-    ndata = boost::lexical_cast<int>(fitting_var_dict["NDATA"]);
+    assign_val(ndata, "NDATA", fitting_var_dict);
 
     if (fitting_var_dict["NSTART"].empty()) {
         nstart = 1;
     } else {
-        nstart= boost::lexical_cast<int>(fitting_var_dict["NSTART"]);
+        assign_val(nstart, "NSTART", fitting_var_dict);
     }
     if (fitting_var_dict["NEND"].empty()) {
         nend = ndata;
     } else {
-        nend = boost::lexical_cast<int>(fitting_var_dict["NEND"]);
+        assign_val(nend, "NEND", fitting_var_dict);
     }
     if (fitting_var_dict["NSKIP"].empty()) {
         nskip = 0;
     } else {
-        nskip = boost::lexical_cast<int>(fitting_var_dict["NSKIP"]);
+        assign_val(nskip, "NSKIP", fitting_var_dict);
     }
 
     if (ndata <= 0 || nstart <= 0 || nend <= 0 
@@ -583,14 +721,13 @@ void Input::parse_fitting_vars()
             error->exit("parce_fitting_vars", "ndata, nstart, nend are not consistent with each other");
     }
 
-
     if (nskip < -1) error->exit("parce_fitting_vars", "nskip has to be larger than -2.");
     if (nskip == -1) {
 
         if (fitting_var_dict["NBOOT"].empty()) {
             error->exit("parse_fitting_vars", "NBOOT has to be given when NSKIP=-1");
         } else {
-            nboot = boost::lexical_cast<int>(fitting_var_dict["NBOOT"]);
+            assign_val(nboot, "NBOOT", fitting_var_dict);
         }
 
         if (nboot <= 0) error->exit("parce_input", "nboot has to be a positive integer");
@@ -605,13 +742,13 @@ void Input::parse_fitting_vars()
     if (fitting_var_dict["MULTDAT"].empty()) {
         multiply_data = 1;
     } else {
-        multiply_data = boost::lexical_cast<int>(fitting_var_dict["MULTDAT"]);
+        assign_val(multiply_data, "MULTDAT", fitting_var_dict);
     }
 
     if (fitting_var_dict["ICONST"].empty()) {
         constraint_flag = 1;
     } else {
-        constraint_flag = boost::lexical_cast<int>(fitting_var_dict["ICONST"]);
+        assign_val(constraint_flag, "ICONST", fitting_var_dict);
     }
 
     fc2_file = fitting_var_dict["FC2XML"];
@@ -729,7 +866,12 @@ void Input::parse_atomic_positions()
         split_str_by_space(str_v[i], pos_line);
 
         if (pos_line.size() == 4) {
-            kd[i] = boost::lexical_cast<int>(pos_line[0]);
+            try {
+                kd[i] = boost::lexical_cast<int>(pos_line[0]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_atomic_positions", "Invalid entry for the &position field at line ", i + 1);
+            }
 
             for (j = 0; j < 3; ++j) {
                 xeq[i][j] = boost::lexical_cast<double>(pos_line[j + 1]);
@@ -954,4 +1096,21 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
         str_vec.push_back(str_tmp);
     }
     str_tmp.clear();
+}
+
+template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
+{
+    // Assign a value to the variable "key" using the boost::lexica_cast.
+
+    if (!dict[key].empty()) {
+        try {
+            val = boost::lexical_cast<T>(dict[key]);
+        } catch (std::exception &e) {
+            std::string str_tmp;
+            std::cout << e.what() << std::endl;
+            str_tmp = "Invalid entry for the " + key + " tag.\n";
+            str_tmp += " Please check the input value.";
+            error->exit("assign_val", str_tmp.c_str());
+        }
+    }
 }

@@ -20,7 +20,7 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
 2. Decide the size of supercell
 
   Next, please decide the size of a supercell. Here, one may use a conventional cell.
-  When the primitive cell is fairly large (:math:`a \sim 10` |Angstrom|), one may proceed with the primitive cell.
+  When the primitive cell is fairly large (:math:`a \sim 10` |Angstrom|), one may proceed using the primitive cell. 
 
 3. Prepare an input file for *alm*
 
@@ -52,7 +52,8 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
 
   .. Note::
     We provide some auxiliary Python scripts to expedite the above procedure for VASP, Quantum ESPRESSO, and xTAPP users.
-    The script files can be found in the tools/ directory. We are planning to support other software. 
+    The script files can be found in the tools/ directory. 
+    We are willing to support other software if necessary.
 
 
 5. Estimate IFCs by a least-squares fitting
@@ -93,20 +94,18 @@ Program anphon
   
   or ::
 
-    $ mpirun -np NP anphon anphon.in > anphon.log
+    $ mpirun -np NPROCS anphon anphon.in > anphon.log
 
-  Here, ``NP`` is the number of MPI threads. 
+  Here, ``NPROCS`` is the number of MPI threads. 
   If the code is compiled with the OpenMP option, the OpenMP parallelization can also be used by setting the ``OMP_NUM_THREADS`` variable as
   ::
 
     $ export OMP_NUM_THREADS=16
 
   The number 16 should be modified appropriately for your environment.
-
   
   .. Note::
-    MPI parallelization can accelerate the calculation when ``MODE = RTA``.
-    In the current implementation of the code, however, OpenMP parallelization is more efficient.
+    MPI+OpenMP hybrid parallelization is available when calculating thermal conductivity with ``MODE = RTA``, in which anharmonic self-energies of all :math:`N_{\boldsymbol{q},irred}\times N_{j}` phonon modes need to be calculated. Here :math:`N_{\boldsymbol{q},irred}` and :math:`N_{j}` are the number of irreducible :math:`q` points and the number of phonon branches, respectively. These phonon modes are distributed across ``NPROCS`` MPI threads, and phonon self-energies are calculated in parallel. OpenMP is used for the double loop over the :math:`N_{j}` branches inside the calculation of each phonon self-energy. Therefore, a good performance is expected when ``OMP_NUM_THREADS`` is a divisor of :math:`N_{j}^{2}`.
 
 
   When the calculation finishes normally, various files are generated in the working directory.
@@ -123,7 +122,7 @@ Program anphon
 3. Analyze the result
 
   One can plot the phonon dispersion relation or phonon DOS using gnuplot. 
-  Alternatively, one can use a small scripts in the ``tools/`` directory for visualizing these results.
+  Alternatively, one can use a small script in the ``tools/`` directory for visualizing these results.
   For example, 
   ::
 

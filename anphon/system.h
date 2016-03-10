@@ -16,6 +16,22 @@
 #include <boost/property_tree/ptree.hpp>
 
 namespace PHON_NS {
+
+    class AtomType {
+    public:
+        int element;
+        double magmom;
+        bool operator<(const AtomType &a) const {
+            if (this->element < a.element) {
+                return true;
+            } else if (this->element == a.element) {
+                return this->magmom < a.magmom;
+            } else {
+                return false;
+            } 
+        }
+    };
+
     class System: protected Pointers {
     public:
         System(class PHON *);
@@ -28,6 +44,7 @@ namespace PHON_NS {
         double lavec_s_anharm[3][3], rlavec_s_anharm[3][3];
         double **xr_p, **xr_s, **xc;
         double **xr_s_anharm;
+        double **magmom;
         double volume_p;
 
         unsigned int nat, natmin, ntran;
@@ -52,10 +69,13 @@ namespace PHON_NS {
         double Tmin, Tmax, dT;
         double volume(double [3], double [3], double [3]);
 
+        bool lspin, trevsym_mag;
+        int noncollinear;
+
     private:
 
         void load_system_info_from_XML();
         void recips(double [3][3], double [3][3]);
-        void setup_atomic_class(unsigned int, unsigned int *);
+        void setup_atomic_class(unsigned int, unsigned int *, double **);
     };
 }

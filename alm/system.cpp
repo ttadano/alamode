@@ -1,7 +1,7 @@
 /*
  system.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -36,24 +36,27 @@ System::~System()
 {
     memory->deallocate(x_cartesian);
     memory->deallocate(atomlist_class);
+    memory->deallocate(magmom);
 }
 
 void System::init()
 {
+    using namespace std;
+
     int i, j;
 
-    std::cout << " SYSTEM" << std::endl;
-    std::cout << " ======" << std::endl << std::endl;
+    cout << " SYSTEM" << endl;
+    cout << " ======" << endl << endl;
 
     recips(lavec, rlavec);
 
-    std::cout.setf(std::ios::scientific);
+    cout.setf(ios::scientific);
 
-    std::cout << "  Lattice Vector" << std::endl;
-    std::cout << "   " << lavec[0][0] << " " << lavec[1][0] << " " << lavec[2][0] << " : a1" << std::endl;
-    std::cout << "   " << lavec[0][1] << " " << lavec[1][1] << " " << lavec[2][1] << " : a2" << std::endl;
-    std::cout << "   " << lavec[0][2] << " " << lavec[1][2] << " " << lavec[2][2] << " : a3" << std::endl;
-    std::cout << std::endl;
+    cout << "  Lattice Vector" << endl;
+    cout << setw(16) << lavec[0][0] << setw(15) << lavec[1][0] << setw(15) << lavec[2][0] << " : a1" << endl;
+    cout << setw(16) << lavec[0][1] << setw(15) << lavec[1][1] << setw(15) << lavec[2][1] << " : a2" << endl;
+    cout << setw(16) << lavec[0][2] << setw(15) << lavec[1][2] << setw(15) << lavec[2][2] << " : a3" << endl;
+    cout << endl;
 
     double vec_tmp[3][3];
     for (i = 0; i < 3; ++i) {
@@ -63,30 +66,30 @@ void System::init()
     }
 
     cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
-    std::cout << "  Cell volume = " << cell_volume << " (a.u)^3" << std::endl << std::endl;
+    cout << "  Cell volume = " << cell_volume << " (a.u)^3" << endl << endl;
 
-    std::cout << "  Reciprocal Lattice Vector" << std::endl;
-    std::cout << "   " << rlavec[0][0] << " " << rlavec[0][1] << " " << rlavec[0][2] << " : b1" << std::endl;
-    std::cout << "   " << rlavec[1][0] << " " << rlavec[1][1] << " " << rlavec[1][2] << " : b2" << std::endl;
-    std::cout << "   " << rlavec[2][0] << " " << rlavec[2][1] << " " << rlavec[2][2] << " : b3" << std::endl;
-    std::cout << std::endl;
+    cout << "  Reciprocal Lattice Vector" << std::endl;
+    cout << setw(16) << rlavec[0][0] << setw(15) << rlavec[0][1] << setw(15) << rlavec[0][2] << " : b1" << endl;
+    cout << setw(16) << rlavec[1][0] << setw(15) << rlavec[1][1] << setw(15) << rlavec[1][2] << " : b2" << endl;
+    cout << setw(16) << rlavec[2][0] << setw(15) << rlavec[2][1] << setw(15) << rlavec[2][2] << " : b3" << endl;
+    cout << endl;
 
-    std::cout << "  Atomic species:" << std::endl;
+    cout << "  Atomic species:" << endl;
     for (i = 0; i < nkd; ++i) {
-        std::cout << std::setw(6) << i + 1 << std::setw(5) << kdname[i] << std::endl;
+        cout << setw(6) << i + 1 << setw(5) << kdname[i] << endl;
     }
-    std::cout << std::endl;
+    cout << endl;
 
-    std::cout << "  Atomic positions in fractional basis and atomic species" << std::endl;
+    cout << "  Atomic positions in fractional basis and atomic species" << endl;
     for (i = 0; i < nat; ++i) {
-        std::cout << std::setw(6) << i + 1;
-        std::cout << std::setw(15) << xcoord[i][0];
-        std::cout << std::setw(15) << xcoord[i][1];
-        std::cout << std::setw(15) << xcoord[i][2];
-        std::cout << std::setw(5) << kd[i] << std::endl;
+        cout << setw(6) << i + 1;
+        cout << setw(15) << xcoord[i][0];
+        cout << setw(15) << xcoord[i][1];
+        cout << setw(15) << xcoord[i][2];
+        cout << setw(5) << kd[i] << endl;
     }
-    std::cout << std::endl << std::endl;
-    std::cout.unsetf(std::ios::scientific);
+    cout << endl << endl;
+    cout.unsetf(ios::scientific);
 
     // Generate Cartesian coordinate
 
@@ -100,9 +103,32 @@ void System::init()
     frac2cart(x_cartesian);
     setup_atomic_class(kd);
 
+    if (lspin) {
+        cout << "  MAGMOM is given. The magnetic moments of each atom are as follows:" << endl;
+        for (i = 0; i < nat; ++i) {
+            cout << setw(6) << i + 1;
+            cout << setw(5) << magmom[i][0];
+            cout << setw(5) << magmom[i][1];
+            cout << setw(5) << magmom[i][2];
+            cout << endl;
+        }
+        cout << endl;
+        if (noncollinear == 0) {
+            cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables." << endl;
+        } else if (noncollinear == 1) {
+            cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << endl;
+            if (symmetry->trev_sym_mag) {
+                cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group" << endl;
+            } else {
+                cout << "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group" << endl;
+            }
+        }
+        cout << endl << endl;
+    }
+
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
-    std::cout << std::endl;
+    cout << " --------------------------------------------------------------" << endl;
+    cout << endl;
 }
 
 void System::recips(double aa[3][3], double bb[3][3])
@@ -179,7 +205,7 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     std::string str_error;
     double *fcs_ref;
     int nfcs_ref;
-   
+
     try {
         read_xml(file_reference_fcs, pt);
     }
@@ -257,17 +283,17 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     list_found.clear();
 
     for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin(); 
-                                           p != fcs->fc_set[order_fcs].end(); ++p) {
-        FcProperty list_tmp = *p; // Using copy constructor
-        for (i = 0; i < nterms; ++i) {
-            ind[i] = list_tmp.elems[i];
-        }
-        list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
+        p != fcs->fc_set[order_fcs].end(); ++p) {
+            FcProperty list_tmp = *p; // Using copy constructor
+            for (i = 0; i < nterms; ++i) {
+                ind[i] = list_tmp.elems[i];
+            }
+            list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
     }
-// 
-//     for (i = 0; i < nfcs_ref; ++i) {
-//         constraint->const_mat[i][i] = 1.0;
-//     }
+    // 
+    //     for (i = 0; i < nfcs_ref; ++i) {
+    //         constraint->const_mat[i][i] = 1.0;
+    //     }
 
     for (i = 0; i < nfcs_ref; ++i) {
         iter_found = list_found.find(FcProperty(nterms, 1.0, intpair_ref[i], 1));
@@ -290,12 +316,14 @@ void System::load_reference_system()
     int iat, jat;
     int icrd;
 
-    int nat_s, nkd_s;
+    unsigned int nat_s, nkd_s;
+    unsigned int natmin_ref, ntran_ref;
     double lavec_s[3][3];
     int *kd_s;
     double **xcoord_s;
     int *map_ref;
-
+    int **map_p2s_s;
+    Symmetry::Maps *map_s2p_s;
     std::ifstream ifs_fc2;
 
     ifs_fc2.open(constraint->fc2_file.c_str(), std::ios::in);
@@ -326,9 +354,9 @@ void System::load_reference_system()
             std::getline(ifs_fc2, str_tmp);
             std::getline(ifs_fc2, str_tmp);
 
-            ifs_fc2 >> nat_s >> symmetry->natmin_s >> symmetry->ntran_s;
+            ifs_fc2 >> nat_s >> natmin_ref >> ntran_ref;
 
-            if (symmetry->natmin_s != symmetry->natmin) {
+            if (natmin_ref != symmetry->natmin) {
                 error->exit("load_reference_system", "The number of atoms in the primitive cell is not consistent");
             }
 
@@ -339,8 +367,8 @@ void System::load_reference_system()
 
             memory->allocate(xcoord_s, nat_s, 3);
             memory->allocate(kd_s, nat_s);
-            memory->allocate(symmetry->map_p2s_s, symmetry->natmin_s, symmetry->ntran_s);
-            memory->allocate(symmetry->map_s2p_s, nat_s);
+            memory->allocate(map_p2s_s, natmin_ref, ntran_ref);
+            memory->allocate(map_s2p_s, nat_s);
 
             unsigned int ikd, itran, icell;
             std::getline(ifs_fc2, str_tmp);
@@ -348,9 +376,9 @@ void System::load_reference_system()
             for (i = 0; i < nat_s; ++i) {
                 ifs_fc2 >> str_tmp >> ikd >> xcoord_s[i][0] >> xcoord_s[i][1] >> xcoord_s[i][2] >> itran >> icell;
                 kd_s[i] = ikd;
-                symmetry->map_p2s_s[icell - 1][itran - 1] = i;
-                symmetry->map_s2p_s[i].atom_num = icell - 1;
-                symmetry->map_s2p_s[i].tran_num = itran - 1;
+                map_p2s_s[icell - 1][itran - 1] = i;
+                map_s2p_s[i].atom_num = icell - 1;
+                map_s2p_s[i].tran_num = itran - 1;
             }
         }
     }
@@ -480,29 +508,47 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 
 void System::setup_atomic_class(int *kd) 
 {
-    // This function can be modified when one needs to 
-    // compute symmetry operations of spin polarized systems.
+    // In the case of collinear calculation, spin moments are considered as scalar
+    // variables. Therefore, the same elements with different magnetic moments are
+    // considered as different types. In noncollinear calculations, 
+    // magnetic moments are not considered in this stage. They will be treated
+    // separately in symmetry.cpp where spin moments will be rotated and flipped 
+    // using time-reversal symmetry.
 
     unsigned int i;
-    std::set<unsigned int> kd_uniq;
-    kd_uniq.clear();
+    AtomType type_tmp;
+    std::set<AtomType> set_type;
+    set_type.clear();
 
     for (i = 0; i < nat; ++i) {
-        kd_uniq.insert(kd[i]);
+        type_tmp.element = kd[i];
+
+        if (noncollinear == 0) {
+            type_tmp.magmom = magmom[i][2];
+        } else {
+            type_tmp.magmom = 0.0;
+        }
+        set_type.insert(type_tmp);
     }
-    nclassatom = kd_uniq.size();
+
+    nclassatom = set_type.size();
 
     memory->allocate(atomlist_class, nclassatom);
 
     for (i = 0; i < nat; ++i) {
         int count = 0;
-        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it) {
-            if (kd[i] == (*it)) {
-                atomlist_class[count].push_back(i);
+        for (std::set<AtomType>::iterator it = set_type.begin(); it != set_type.end(); ++it) {
+            if (noncollinear) {
+                if (kd[i] == (*it).element) {
+                    atomlist_class[count].push_back(i);
+                }
+            } else {
+                if (kd[i] == (*it).element && std::abs(magmom[i][2] - (*it).magmom) < eps6) {
+                    atomlist_class[count].push_back(i);
+                }
             }
             ++count;
         }
     }
-
-    kd_uniq.clear();
+    set_type.clear();
 }

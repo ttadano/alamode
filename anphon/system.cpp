@@ -14,6 +14,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "error.h"
 #include "memory.h"
 #include "constants.h"
+#include "symmetry_core.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -45,10 +46,13 @@ System::~System() {
     memory->deallocate(map_s2p);
     memory->deallocate(map_s2p_anharm);
     memory->deallocate(mass_kd);
+    memory->deallocate(magmom);
 }
 
 void System::setup()
 {
+    using namespace std;
+
     unsigned int i, j;
     double vec_tmp[3][3];
     unsigned int *kd_prim;
@@ -72,34 +76,34 @@ void System::setup()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << " ------------------------------------------------------------" << std::endl;
-        std::cout << std::endl;
-        std::cout << " Crystal structure" << std::endl;
-        std::cout << " =================" << std::endl << std::endl;
-        std::cout << " Lattice Vectors:" << std::endl << std::endl;
-        std::cout.setf(std::ios::scientific);
+        cout << " ------------------------------------------------------------" << endl;
+        cout << endl;
+        cout << " Crystal structure" << endl;
+        cout << " =================" << endl << endl;
+        cout << " Lattice Vectors:" << endl << endl;
+        cout.setf(ios::scientific);
 
-        std::cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << std::endl << std::endl;
-        std::cout << "  " << lavec_s_anharm[0][0] << " " << lavec_s_anharm[1][0] << " " << lavec_s_anharm[2][0] << " : a1" << std::endl;
-        std::cout << "  " << lavec_s_anharm[0][1] << " " << lavec_s_anharm[1][1] << " " << lavec_s_anharm[2][1] << " : a2" << std::endl;
-        std::cout << "  " << lavec_s_anharm[0][2] << " " << lavec_s_anharm[1][2] << " " << lavec_s_anharm[2][2] << " : a3" << std::endl;
-        std::cout << std::endl;
+        cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << endl << endl;
+        cout << setw(16) << lavec_s_anharm[0][0] << setw(15) << lavec_s_anharm[1][0] << setw(15) << lavec_s_anharm[2][0] << " : a1" << endl;
+        cout << setw(16) << lavec_s_anharm[0][1] << setw(15) << lavec_s_anharm[1][1] << setw(15) << lavec_s_anharm[2][1] << " : a2" << endl;
+        cout << setw(16) << lavec_s_anharm[0][2] << setw(15) << lavec_s_anharm[1][2] << setw(15) << lavec_s_anharm[2][2] << " : a3" << endl;
+        cout << endl;
 
-        std::cout << "  " << rlavec_s_anharm[0][0] << " " << rlavec_s_anharm[0][1] << " " << rlavec_s_anharm[0][2] << " : b1" << std::endl;
-        std::cout << "  " << rlavec_s_anharm[1][0] << " " << rlavec_s_anharm[1][1] << " " << rlavec_s_anharm[1][2] << " : b2" << std::endl;
-        std::cout << "  " << rlavec_s_anharm[2][0] << " " << rlavec_s_anharm[2][1] << " " << rlavec_s_anharm[2][2] << " : b3" << std::endl;
-        std::cout << std::endl;
+        cout << setw(16) << rlavec_s_anharm[0][0] << setw(15) << rlavec_s_anharm[0][1] << setw(15) << rlavec_s_anharm[0][2] << " : b1" << endl;
+        cout << setw(16) << rlavec_s_anharm[1][0] << setw(15) << rlavec_s_anharm[1][1] << setw(15) << rlavec_s_anharm[1][2] << " : b2" << endl;
+        cout << setw(16) << rlavec_s_anharm[2][0] << setw(15) << rlavec_s_anharm[2][1] << setw(15) << rlavec_s_anharm[2][2] << " : b3" << endl;
+        cout << endl;
 
-        std::cout << " * Primitive cell " << std::endl << std::endl;
-        std::cout << "  " << lavec_p[0][0] << " " << lavec_p[1][0] << " " << lavec_p[2][0] << " : a1" << std::endl;
-        std::cout << "  " << lavec_p[0][1] << " " << lavec_p[1][1] << " " << lavec_p[2][1] << " : a2" << std::endl;
-        std::cout << "  " << lavec_p[0][2] << " " << lavec_p[1][2] << " " << lavec_p[2][2] << " : a3" << std::endl;
-        std::cout << std::endl;
+        cout << " * Primitive cell " << endl << endl;
+        cout << setw(16) << lavec_p[0][0] << setw(15) << lavec_p[1][0] << setw(15) << lavec_p[2][0] << " : a1" << endl;
+        cout << setw(16) << lavec_p[0][1] << setw(15) << lavec_p[1][1] << setw(15) << lavec_p[2][1] << " : a2" << endl;
+        cout << setw(16) << lavec_p[0][2] << setw(15) << lavec_p[1][2] << setw(15) << lavec_p[2][2] << " : a3" << endl;
+        cout << endl;
 
-        std::cout << "  " << rlavec_p[0][0] << " " << rlavec_p[0][1] << " " << rlavec_p[0][2] << " : b1" << std::endl;
-        std::cout << "  " << rlavec_p[1][0] << " " << rlavec_p[1][1] << " " << rlavec_p[1][2] << " : b2" << std::endl;
-        std::cout << "  " << rlavec_p[2][0] << " " << rlavec_p[2][1] << " " << rlavec_p[2][2] << " : b3" << std::endl;
-        std::cout << std::endl << std::endl;
+        cout << setw(16) << rlavec_p[0][0] << setw(15) << rlavec_p[0][1] << setw(15) << rlavec_p[0][2] << " : b1" << endl;
+        cout << setw(16) << rlavec_p[1][0] << setw(15) << rlavec_p[1][1] << setw(15) << rlavec_p[1][2] << " : b2" << endl;
+        cout << setw(16) << rlavec_p[2][0] << setw(15) << rlavec_p[2][1] << setw(15) << rlavec_p[2][2] << " : b3" << endl;
+        cout << endl << endl;
 
 
         for (i = 0; i < 3; ++i){
@@ -109,28 +113,28 @@ void System::setup()
         }
         volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
-        std::cout << "  Volume of the primitive cell : " << volume_p << " (a.u.)^3" << std::endl << std::endl;
-        std::cout << "  Number of atoms in the supercell     : " << nat_anharm << std::endl;
-        std::cout << "  Number of atoms in the primitive cell: " << natmin << std::endl << std::endl;
+        cout << "  Volume of the primitive cell : " << volume_p << " (a.u.)^3" << endl << endl;
+        cout << "  Number of atoms in the supercell     : " << nat_anharm << endl;
+        cout << "  Number of atoms in the primitive cell: " << natmin << endl << endl;
 
         if (fcs_phonon->update_fc2) {
-            std::cout << std::endl;
-            std::cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in " << fcs_phonon->file_fc2 << std::endl;
-            std::cout << std::endl;
+            cout << endl;
+            cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in " << fcs_phonon->file_fc2 << endl;
+            cout << endl;
 
-            std::cout << " * Supercell for HARMONIC (from " << fcs_phonon->file_fc2 << " )" << std::endl << std::endl;
-            std::cout << "  " << lavec_s[0][0] << " " << lavec_s[1][0] << " " << lavec_s[2][0] << " : a1" << std::endl;
-            std::cout << "  " << lavec_s[0][1] << " " << lavec_s[1][1] << " " << lavec_s[2][1] << " : a2" << std::endl;
-            std::cout << "  " << lavec_s[0][2] << " " << lavec_s[1][2] << " " << lavec_s[2][2] << " : a3" << std::endl;
-            std::cout << std::endl;
+            cout << " * Supercell for HARMONIC (from " << fcs_phonon->file_fc2 << " )" << endl << endl;
+            cout << setw(16) << lavec_s[0][0] << setw(15) << lavec_s[1][0] << setw(15) << lavec_s[2][0] << " : a1" << endl;
+            cout << setw(16) << lavec_s[0][1] << setw(15) << lavec_s[1][1] << setw(15) << lavec_s[2][1] << " : a2" << endl;
+            cout << setw(16) << lavec_s[0][2] << setw(15) << lavec_s[1][2] << setw(15) << lavec_s[2][2] << " : a3" << endl;
+            cout << endl;
 
-            std::cout << "  " << rlavec_s[0][0] << " " << rlavec_s[0][1] << " " << rlavec_s[0][2] << " : b1" << std::endl;
-            std::cout << "  " << rlavec_s[1][0] << " " << rlavec_s[1][1] << " " << rlavec_s[1][2] << " : b2" << std::endl;
-            std::cout << "  " << rlavec_s[2][0] << " " << rlavec_s[2][1] << " " << rlavec_s[2][2] << " : b3" << std::endl;
-            std::cout << std::endl;
+            cout << setw(16) << rlavec_s[0][0] << setw(15) << rlavec_s[0][1] << setw(15) << rlavec_s[0][2] << " : b1" << endl;
+            cout << setw(16) << rlavec_s[1][0] << setw(15) << rlavec_s[1][1] << setw(15) << rlavec_s[1][2] << " : b2" << endl;
+            cout << setw(16) << rlavec_s[2][0] << setw(15) << rlavec_s[2][1] << setw(15) << rlavec_s[2][2] << " : b3" << endl;
+            cout << endl;
 
-            std::cout << "  Number of atoms in the supercell (HARMONIC)   : " << nat << std::endl;
-            std::cout << std::endl;
+            cout << "  Number of atoms in the supercell (HARMONIC)   : " << nat << endl;
+            cout << endl;
         }
 
         memory->allocate(xtmp, natmin, 3);
@@ -141,24 +145,48 @@ void System::setup()
             for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
         }
 
-        std::cout << "  Atomic positions in the primitive cell (fractional):" << std::endl;
+        cout << "  Atomic positions in the primitive cell (fractional):" << endl;
         for (i = 0; i < natmin; ++i){
-            std::cout << std::setw(4) << i + 1 << ":";
+            cout << setw(4) << i + 1 << ":";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(15) << xtmp[i][j];
+                cout << setw(15) << xtmp[i][j];
             }
-            std::cout << std::setw(4) << symbol_kd[kd[map_p2s[i][0]]] << std::endl;
+            cout << setw(4) << symbol_kd[kd[map_p2s[i][0]]] << endl;
         }
-        std::cout << std::endl;
+        cout << endl;
 
         memory->deallocate(xtmp);
 
-        std::cout << "  Mass of atomic species (u):" << std::endl;
-        for (i = 0; i < nkd; ++i) {
-            std::cout << std::setw(4) << symbol_kd[i] << ":";
-            std::cout << std::fixed << std::setw(12) << mass_kd[i] << std::endl;
+        if (lspin) {
+            cout << "  MagneticMoments entry found in the XML file. " << endl;
+            cout << "  Magnetic moment in Cartesian coordinates: " << endl;
+            for (i = 0; i < natmin; ++i) {
+                cout << setw(4) << i + 1 << ":";
+                for (j = 0; j < 3; ++j) {
+                    cout << setw(15) << magmom[i][j];
+                }
+                cout << endl;
+            }
+            cout << endl;
+            if (noncollinear == 0) {
+                cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << endl;
+            } else if (noncollinear == 1) {
+                cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << endl;
+                if (symmetry->trev_sym_mag) {
+                    cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
+                } else {
+                    cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" << endl;
+                }
+            }
+            cout << endl;
         }
-        std::cout << std::endl << std::endl;
+
+        cout << "  Mass of atomic species (u):" << endl;
+        for (i = 0; i < nkd; ++i) {
+            cout << setw(4) << symbol_kd[i] << ":";
+            cout << fixed << setw(12) << mass_kd[i] << endl;
+        }
+        cout << endl << endl;
     }
 
     // Atomic masses in Rydberg unit
@@ -181,7 +209,14 @@ void System::setup()
     for (i = 0; i < natmin; ++i) {
         kd_prim[i] = kd[map_p2s[i][0]];
     }
-    setup_atomic_class(natmin, kd_prim);
+    MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    if (mympi->my_rank > 0) {
+        memory->allocate(magmom, natmin, 3);
+    }
+    MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    setup_atomic_class(natmin, kd_prim, magmom);
 
     memory->deallocate(kd_prim);
 }
@@ -286,6 +321,63 @@ void System::load_system_info_from_XML()
             map_s2p[atom_s].tran_num = tran;
         }
 
+        // Parse magnetic moments
+
+        double **magmom_tmp;
+        memory->allocate(magmom_tmp, nat, 3);
+        memory->allocate(magmom, natmin, 3);
+
+        lspin = true;
+        try {
+            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
+                if (child_.first == "mag") {
+                    const ptree& child = child_.second;
+                    const std::string str_index = child.get<std::string>("<xmlattr>.index");
+
+                    ss.str("");
+                    ss.clear();
+                    ss << child.data();
+
+                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
+
+                    if (index >= nat) error->exit("load_system_info_xml", "index is out of range");
+
+                    ss >> magmom_tmp[index][0] >> magmom_tmp[index][1] >> magmom_tmp[index][2];
+                }
+            }
+
+        } catch(...) {
+            lspin = false;
+        }
+
+        if (lspin) {
+            for (i = 0; i < natmin; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    magmom[i][j] = magmom_tmp[map_p2s[i][0]][j];
+                }
+            }
+
+            try {
+                noncollinear = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.Noncollinear"));
+            } catch(...) {
+                noncollinear = 0;
+            }
+
+            try {
+                symmetry->trev_sym_mag = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.TimeReversalSymmetry"));
+            } catch(...) {
+                symmetry->trev_sym_mag = true;
+            }
+        } else {
+            for (i = 0; i < natmin; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    magmom[i][j] = 0.0;
+                }
+            }
+            noncollinear = 0;
+            symmetry->trev_sym_mag = true;
+        }
+        memory->deallocate(magmom_tmp);
 
         // Now, replicate the information for anharmonic terms.
 
@@ -427,6 +519,7 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0){
         memory->allocate(mass_kd, nkd);
@@ -438,6 +531,9 @@ void System::load_system_info_from_XML()
         memory->allocate(map_p2s_anharm, natmin, ntran_anharm);
         memory->allocate(map_s2p, nat);
         memory->allocate(map_s2p_anharm, nat_anharm);
+        if (lspin) {
+            memory->allocate(magmom, natmin, 3);
+        }
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -449,6 +545,8 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&map_p2s_anharm[0][0], natmin*ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p[0], nat*sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p_anharm[0], nat_anharm*sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    if (lspin) MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 }
 
 
@@ -493,31 +591,50 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 }
 
 
-void System::setup_atomic_class(unsigned int N, unsigned int *kd) {
+void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmom_in) {
 
-    // This function can be modified when one needs to 
-    // compute symmetry operations of spin polarized systems.
+
+    // In the case of collinear calculation, spin moments are considered as scalar
+    // variables. Therefore, the same elements with different magnetic moments are
+    // considered as different types. In noncollinear calculations, 
+    // magnetic moments are not considered in this stage. They will be treated
+    // separately in symmetry.cpp where spin moments will be rotated and flipped 
+    // using time-reversal symmetry.
 
     unsigned int i;
-    std::set<unsigned int> kd_uniq;
-    kd_uniq.clear();
+    AtomType type_tmp;
+    std::set<AtomType> set_type;
+    set_type.clear();
 
     for (i = 0; i < N; ++i) {
-        kd_uniq.insert(kd[i]);
+        type_tmp.element = kd[i];
+
+        if (noncollinear == 0) {
+            type_tmp.magmom = magmom_in[i][2];
+        } else {
+            type_tmp.magmom = 0.0;
+        }
+        set_type.insert(type_tmp);
     }
-    nclassatom = kd_uniq.size();
+
+    nclassatom = set_type.size();
 
     memory->allocate(atomlist_class, nclassatom);
 
     for (i = 0; i < N; ++i) {
         int count = 0;
-        for (std::set<unsigned int>::iterator it = kd_uniq.begin(); it != kd_uniq.end(); ++it)  {
-            if (kd[i] == (*it)) {
-                atomlist_class[count].push_back(i);
+        for (std::set<AtomType>::iterator it = set_type.begin(); it != set_type.end(); ++it) {
+            if (noncollinear) {
+                if (kd[i] == (*it).element) {
+                    atomlist_class[count].push_back(i);
+                }
+            } else {
+                if (kd[i] == (*it).element && std::abs(magmom[i][2] - (*it).magmom) < eps6) {
+                    atomlist_class[count].push_back(i);
+                }
             }
             ++count;
         }
     }
-
-    kd_uniq.clear();
+    set_type.clear();
 }

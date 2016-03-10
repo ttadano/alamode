@@ -25,7 +25,7 @@ For example, &general entry field of program *alm* should be given like
     MODE = fitting
   /
 
-Multiple entries can be put in a single line. Also, any characters put on the right of sharp (“#”) character will be neglected. Therefore, the above example is equivalent to the following::
+Multiple entries can be put in a single line. Also, characters put on the right of sharp (“#”) will be neglected. Therefore, the above example is equivalent to the following::
   
   &general
     PREFIX = prefix; MODE = fitting  # Comment line
@@ -196,7 +196,7 @@ which means that all possible harmonic terms between Si-Si atoms will be include
 
   Setting 'None' for anharmonic terms can greatly increase the number of parameters and thereby increase the computational cost.
 
-When there are more than two atomic elements, please specify the cutoff radii between every possible pairs of atomic elements. In the case of MgO (``NKD = 2``), the cutoff entry should be like
+When there are more than two atomic elements, please specify the cutoff radii between every possible pair of atomic elements. In the case of MgO (``NKD = 2``), the cutoff entry should be like
 ::
  
  &cutoff
@@ -325,7 +325,7 @@ This field is necessary when ``MODE = fitting``.
 
  :Default: None
  :Type: String
- :Description: When ``FC2XML``-tag is given, harmonic force constants will be fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition be the same as that in the ``FC2XML`` file.
+ :Description: When ``FC2XML``-tag is given, harmonic force constants will be fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition is the same as that in the ``FC2XML`` file.
 
 ````
 

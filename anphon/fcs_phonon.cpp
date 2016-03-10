@@ -40,7 +40,7 @@ Fcs_phonon::~Fcs_phonon(){
 
 void Fcs_phonon::setup(std::string mode)
 {
-    unsigned int i, j, icrd, jcrd;
+    unsigned int i;
     unsigned int nat = system->nat;
     unsigned int natmin = system->natmin;
 
@@ -186,7 +186,6 @@ void Fcs_phonon::load_fcs_xml()
 
     double fcs_val;
 
-    Triplet tri_tmp;
     std::vector<unsigned int> ivec;
     std::vector<Triplet> tri_vec;
 
@@ -199,12 +198,12 @@ void Fcs_phonon::load_fcs_xml()
 
 
     std::cout << "  Reading force constants from the XML file ... ";
-     
+
     try {
         read_xml(file_fcs, pt);
     } 
     catch (std::exception &e) {
-    	std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
+        std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
         error->exit("load_fcs_xml", str_error.c_str());
     }
 
@@ -264,7 +263,7 @@ void Fcs_phonon::load_fcs_xml()
             if (std::abs(fcs_val) > eps) { 
 
                 do {
-                    
+
                     ivec_copy.clear();
 
                     for (i = 0; i < ivec_with_cell.size(); ++i) {
@@ -389,7 +388,7 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 
 
 void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat, const unsigned int natmin, 
-                                                  double *ret, std::vector<FcsClassExtent> fc2,
+                                                  double *ret, std::vector<FcsClassExtent> &fc2,
                                                   std::vector<FcsArrayWithCell> *fcs)
 {
     int i, j, k, l, m;
@@ -399,6 +398,11 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
     double **sum2;
     double ***sum3;
     double ****sum4;
+
+    bool force_asr = false;
+    FcsClassExtent fc2_tmp;
+    std::vector<FcsClassExtent>::iterator it_target;
+
 
     for (i = 0; i < n; ++i) ret[i] = 0.0;
 
@@ -416,7 +420,40 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
             }
 
             for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
-                  sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+                sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+            }
+
+            if (force_asr) {
+                std::cout << "  force_asr = true: Modify harmonic force constans so that the ASR is satisfied." << std::endl;
+                for (j = 0; j < natmin; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        for (m = 0; m < 3; ++m) {
+                            fc2_tmp.atm1 = j;
+                            fc2_tmp.xyz1 = k;
+                            fc2_tmp.atm2 = system->map_p2s[j][0];
+                            fc2_tmp.xyz2 = m;
+                            fc2_tmp.cell_s = 0;
+                            fc2_tmp.fcs_val = sum2[3*j+k][m];
+                            it_target = std::find(fc2.begin(),fc2.end(),fc2_tmp);
+                            if (std::abs(fc2_tmp.fcs_val) > eps12) {
+                                if (it_target != fc2.end()) {
+                                    fc2[it_target-fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
+                                } else {
+                                    error->exit("examine_translational_invariance", "Corresponding IFC not found.");
+                                }
+                            }
+                        }
+                    }
+                }
+                for (j = 0; j < 3 * natmin; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        sum2[j][k] = 0.0;
+                    }
+                }
+
+                for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
+                    sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+                }
             }
 
             for (j = 0; j < 3 * natmin; ++j) {
@@ -472,8 +509,10 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
 
             for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
                 j = (*it).pairs[0].index;
-                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
-                l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;
+                k = 3 * system->map_p2s_anharm[(*it).pairs[1].index/3][(*it).pairs[1].tran] + (*it).pairs[1].index %3;
+                l = 3 * system->map_p2s_anharm[(*it).pairs[2].index/3][(*it).pairs[2].tran] + (*it).pairs[2].index %3;
+                //                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
+                //                l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;
                 m = (*it).pairs[3].index % 3;
 
                 sum4[j][k][l][m] += (*it).fcs_val;

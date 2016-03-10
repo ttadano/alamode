@@ -92,7 +92,7 @@ namespace PHON_NS {
     class KpointPlaneTriangle {
     public:
         int index;
-        double knum[3];
+        int knum[3];
 
         KpointPlaneTriangle(){};
 

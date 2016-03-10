@@ -6,7 +6,7 @@
 # energies from output files.
 # Currently, VASP, Quantum-ESPRESSO, and xTAPP are supported.
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -198,6 +198,8 @@ def read_original_QE_mod(file_in):
 def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
                            require_conversion, conversion_factor):
 
+    import math
+
     Bohr_to_angstrom = 0.5291772108
 
     x0 = np.round(x0, 8)
@@ -206,6 +208,13 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
 
     lavec /= Bohr_to_angstrom
     lavec_transpose = lavec.transpose()
+
+    basis = ""
+
+    if not alat:
+        # if celldm[0] is empty, calculate it from lattice vector
+        alat = math.sqrt(np.dot(lavec_transpose[0][:], lavec_transpose[0][:]))
+
     lavec_transpose_inv = np.linalg.inv(lavec_transpose)
 
     search_flag = "site n.     atom                  positions (alat units)"
@@ -254,11 +263,15 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
                                             disp[i][1], 
                                             disp[i][2])
 
-        # Search other entries containing atomis position
+        # Search other entries containing atomic position
 
         while line:
 
             if search_flag2 in line:
+
+                if not basis:
+                    basis = line.rstrip().split()[1]
+
                 num_data_disp += 1
 
                 for i in range(nat):
@@ -270,6 +283,19 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
             line = f.readline()
             
         if num_data_disp > 1:
+
+            if "alat" in basis:
+                conversion_mat = alat * lavec_transpose_inv
+            elif "bohr" in basis:
+                conversion_mat = lavec_transpose_inv
+            elif "angstrom" in basis:
+                conversion_mat = lavec_transpose_inv / Bohr_to_angstrom
+            elif "crystal" in basis:
+                conversion_mat = np.identity(3)
+            else:
+                print "This cannot happen."
+                exit(1)
+
             icount = 0
             for step in range(num_data_disp-1):
                 for i in range(nat):
@@ -277,6 +303,7 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
                         x[i][j] = x_list[icount]
                         icount += 1
 
+                x = np.dot(x, conversion_mat)
                 disp = x - x0
                 for i in range(nat):
                     disp[i][:] = [refold(disp[i][j]) for j in range(3)]
@@ -515,7 +542,7 @@ $ python displace.py -h"
     Rydberg_to_eV = 13.60569253
 
     if options.VASP is None and options.QE is None and options.xTAPP is None:
-        print "Error : Either --VASP, --QE, or --xTAPP option should be given."
+        print "Error : Either --VASP, --QE, or --xTAPP option must be given."
         exit(1)
 
     elif options.VASP and options.QE or options.VASP and options.xTAPP or\

@@ -1,11 +1,11 @@
 /*
-writes.cpp
+ writes.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
-This file is distributed under the terms of the MIT license.
-Please see the file 'LICENCE.txt' in the root directory 
-or http://opensource.org/licenses/mit-license.php for information.
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <fstream>
@@ -63,6 +63,7 @@ void Writes::write_input_vars()
     if (alm->mode == "suggest") {
         std::cout << "  DBASIS = " << displace->disp_basis << std::endl;
         std::cout << std::endl;
+
     } else if (alm->mode == "fitting") {
         std::cout << " Fitting:" << std::endl;
         std::cout << "  DFILE = " << files->file_disp << std::endl;
@@ -90,15 +91,11 @@ void Writes::writeall()
 
 void Writes::write_force_constants()
 {
-    int order, i, j, k, l, m, ll;
-    int iat, jat;
+    int order, j, k, l, m;
     unsigned int ui;
     int multiplicity;
     int maxorder = interaction->maxorder;
-    int isize, jsize, ksize, icell;
-    int *ind, *cell;
-    int nneib, nsize[3];
-    double dist, ***xcrd;
+    double distmax;
     std::string *str_fcs;
     std::string str_tmp;
     std::ofstream ofs_fcs;
@@ -123,41 +120,8 @@ void Writes::write_force_constants()
     ofs_fcs << " (Global, Local)              (Multiplicity)                           " << std::endl;
     ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
 
-    for (i = 0; i < 3; ++i) nsize[i] = interaction->is_periodic[i];
-    nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
-
     memory->allocate(str_fcs, maxorder);
-    memory->allocate(ind, maxorder + 1);
-    memory->allocate(cell, maxorder + 1);
-    memory->allocate(xcrd, nneib, system->nat, 3);
-    
-    icell = 0;
-    
-    for (i = 0; i < system->nat; ++i) {
-        for (j = 0; j < 3; ++j) {
-            xcrd[0][i][j] = system->xcoord[i][j];
-        }
-    }
 
-    for (isize = -nsize[0]; isize <= nsize[0] ; ++isize) {
-        for (jsize = -nsize[1]; jsize <= nsize[1] ; ++jsize) {
-            for (ksize = -nsize[2]; ksize <= nsize[2] ; ++ksize) {
-
-                if (isize == 0 && jsize == 0 && ksize == 0) continue;
-
-                ++icell;
-                for (i = 0; i < system->nat; ++i) {
-                    xcrd[icell][i][0] = system->xcoord[i][0] + static_cast<double>(isize);
-                    xcrd[icell][i][1] = system->xcoord[i][1] + static_cast<double>(jsize);
-                    xcrd[icell][i][2] = system->xcoord[i][2] + static_cast<double>(ksize);
-                }
-            }
-        }
-    }
-
-    for (icell = 0; icell < nneib; ++icell) system->frac2cart(xcrd[icell]);
-
-    
     for (order = 0; order < maxorder; ++order) {
         str_fcs[order] = "*FC" + boost::lexical_cast<std::string>(order + 2);
     }
@@ -177,7 +141,6 @@ void Writes::write_force_constants()
                 ofs_fcs << std::setw(8) << k + 1 << std::setw(8) << ui + 1 
                     << std::setw(18) << std::setprecision(7) << std::scientific << fitting->params[k];
 
-
                 atom_tmp.clear();
                 for (l = 1; l < order + 2; ++l) {
                     atom_tmp.push_back(fcs->fc_set[order][m].elems[l] / 3);
@@ -189,6 +152,7 @@ void Writes::write_force_constants()
 
                 if (iter_cluster != interaction->mindist_cluster[order][j].end()) {
                     multiplicity = (*iter_cluster).cell.size();
+                    distmax = (*iter_cluster).distmax;
                 } else {
                     std::cout << std::setw(5) << j;
                     for (l = 0; l < order + 1; ++l) {
@@ -202,31 +166,8 @@ void Writes::write_force_constants()
                 for (l = 0; l < order + 2; ++l) {
                     ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[order][m].elems[l]);    
                 }
-                if (order==0) {
-                    iat = fcs->fc_set[order][m].elems[0] / 3;
-                    jat = fcs->fc_set[order][m].elems[1] / 3;
-                    j = symmetry->map_s2p[iat].atom_num;
-                    ofs_fcs << std::setw(12) << std::setprecision(3) 
-                        << std::fixed << interaction->mindist_pairs[iat][jat][0].dist;
-                } else {
-                    cell[0] = 0;
-                    for (l = 0; l < order + 1; ++l) {
-                        cell[l+1] = (*iter_cluster).cell[0][l];
-                    }
-                    for (l = 0; l < order + 2; ++l) {
-                        ind[l] = fcs->fc_set[order][m].elems[l] / 3;
-                    }
-                    dist = 0.0;
+                ofs_fcs << std::setw(12) << std::setprecision(3) << std::fixed << distmax << std::endl;
 
-                    for (l = 0; l < order + 2; ++l) {
-                        for (ll = l; ll < order + 2; ++ll) {
-                            dist = std::max<double>(dist, interaction->distance(xcrd[cell[l]][ind[l]], xcrd[cell[ll]][ind[ll]]));
-                        }
-                    }
-                    ofs_fcs << std::setw(12) << std::setprecision(3) 
-                            << std::fixed << dist;
-                }
-                ofs_fcs << std::endl;
                 m += fcs->ndup[order][ui];
                 ++k;
             }
@@ -234,10 +175,6 @@ void Writes::write_force_constants()
     }
 
     ofs_fcs << std::endl;
-
-    memory->deallocate(ind);
-    memory->deallocate(cell);
-    memory->deallocate(xcrd);
 
     if (constraint->extra_constraint_from_symmetry) {
 
@@ -390,7 +327,7 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ALM_version", "0.9.6");
+    pt.put("Data.ALM_version", "0.9.7");
     pt.put("Data.Fitting.DisplaceFile", files->file_disp);
     pt.put("Data.Fitting.ForceFile", files->file_force);
     pt.put("Data.Fitting.Constraint", constraint->constraint_mode);
@@ -416,8 +353,8 @@ void Writes::write_misc_xml()
 
     std::stringstream ss;
     ss << interaction->is_periodic[0] << " " 
-       << interaction->is_periodic[1] << " " 
-       << interaction->is_periodic[2];
+        << interaction->is_periodic[1] << " " 
+        << interaction->is_periodic[2];
     pt.put("Data.Structure.Periodicity", ss.str());
 
     pt.put("Data.Structure.Position", "");
@@ -437,6 +374,18 @@ void Writes::write_misc_xml()
             ptree &child = pt.add("Data.Symmetry.Translations.map", symmetry->map_p2s[j][i] + 1);
             child.put("<xmlattr>.tran", i + 1);
             child.put("<xmlattr>.atom", j + 1);
+        }
+    }
+
+    if (system->lspin) {
+        pt.put("Data.MagneticMoments","");
+        pt.put("Data.MagneticMoments.Noncollinear", system->noncollinear);
+        pt.put("Data.MagneticMoments.TimeReversalSymmetry", symmetry->trev_sym_mag);
+        for (i = 0; i < system_structure.nat; ++i) {
+            str_tmp.clear();
+            for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->magmom[i][j], 5);
+            ptree &child = pt.add("Data.MagneticMoments.mag", str_tmp);
+            child.put("<xmlattr>.index", i + 1);
         }
     }
 
@@ -510,36 +459,6 @@ void Writes::write_misc_xml()
 
     int ip, ishift;
 
-
-    // To make the anphon code compatible with the alm code, we convert the cell index
-    // so that it always takes values between 1-27 irrespective of the is_periodic flag.
-    int *cell_index_convert, nsize[3], nneib, icell, icount;
-    for (i = 0; i < 3; ++i) nsize[i] = interaction->is_periodic[i];
-    nneib = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
-
-    memory->allocate(cell_index_convert, nneib);
-
-    cell_index_convert[0] = 0;
-    icount = 0;
-    icell = 0;
-
-    for (i = -1; i <= 1; ++i) {
-        for (j = -1; j <= 1; ++j) {
-            for (k = -1; k <= 1; ++k) {
-                if (i == 0 && j == 0 && k == 0) continue;
-
-                ++icell;
-
-                if (std::abs(i) <= nsize[0] && 
-                    std::abs(j) <= nsize[1] && 
-                    std::abs(k) <= nsize[2]) 
-                {
-                    cell_index_convert[++icount] = icell;
-                }
-            }
-        }
-    }
-
     std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
 
     for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
@@ -559,7 +478,8 @@ void Writes::write_misc_xml()
                     + " " + boost::lexical_cast<std::string>(fctmp.elems[0]%3 + 1));
                 child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(pair_tmp[1] + 1) 
                     + " " + boost::lexical_cast<std::string>(fctmp.elems[1]%3 + 1)
-                    + " " + boost::lexical_cast<std::string>(cell_index_convert[(*it2).cell] + 1));
+                    + " " + boost::lexical_cast<std::string>((*it2).cell + 1));
+                //                          + " " + boost::lexical_cast<std::string>(cell_index_convert[(*it2).cell] + 1));
         }
     }
 
@@ -612,8 +532,7 @@ void Writes::write_misc_xml()
                         child.put("<xmlattr>.pair" + boost::lexical_cast<std::string>(k + 1),
                             boost::lexical_cast<std::string>(pair_tmp[k] + 1) 
                             + " " + boost::lexical_cast<std::string>(fctmp.elems[k]%3 + 1)
-                            // Append the cell index to which the interacting pair belongs.
-                            + " " + boost::lexical_cast<std::string>(cell_index_convert[cell_now[k - 1]] + 1));
+                            + " " + boost::lexical_cast<std::string>(cell_now[k - 1] + 1));
                     }
                 }
             } else {
@@ -630,25 +549,25 @@ void Writes::write_misc_xml()
 
 #if BOOST_VERSION >= 105600
     write_xml(file_xml, pt, std::locale(),
-	      xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
+        xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
 #else
     write_xml(file_xml, pt, std::locale(),
-	      xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
+        xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
 #endif
 
     memory->deallocate(pair_tmp);
-    memory->deallocate(cell_index_convert);
+    //    memory->deallocate(cell_index_convert);
 
     std::cout << " Information for post-process is stored to file: " << file_xml << std::endl;
 }
 
 
-std::string Writes::double2string(const double d)
+std::string Writes::double2string(const double d, const int nprec)
 {
     std::string rt;
     std::stringstream ss;
 
-    ss << std::scientific << std::setprecision(15) << d;
+    ss << std::scientific << std::setprecision(nprec) << d;
     ss >> rt;
     return rt;
 }

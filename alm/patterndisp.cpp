@@ -1,7 +1,7 @@
 /*
 patterndisp.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -153,62 +153,62 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
         for (std::set<DispAtomSet>::iterator it = dispset_in[order].begin(); 
             it != dispset_in[order].end(); ++it) {
 
-            atoms.clear();
-            directions.clear();
-            nums.clear();
+                atoms.clear();
+                directions.clear();
+                nums.clear();
 
-            for (i = 0; i < (*it).atomset.size(); ++i) {
+                for (i = 0; i < (*it).atomset.size(); ++i) {
 
-                atom_tmp = (*it).atomset[i] / 3;
+                    atom_tmp = (*it).atomset[i] / 3;
 
-                nums.push_back((*it).atomset[i]);
-                atoms.push_back(atom_tmp);
+                    nums.push_back((*it).atomset[i]);
+                    atoms.push_back(atom_tmp);
 
-                for (j = 0; j < 3; ++j) {
-                    disp_tmp[j] = 0.0;
-                }
-                disp_tmp[(*it).atomset[i] % 3] = 1.0;
-
-                for (j = 0; j < 3; ++j) directions.push_back(disp_tmp[j]);
-            }
-
-            natom_disp = atoms.size();          
-
-            if (trim_dispsign_for_evenfunc) {
-                find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1], nums, sign_reduced);
-            } else {
-                sign_reduced.clear();
-                std::copy(sign_prod[natom_disp - 1].begin(), sign_prod[natom_disp - 1].end(), 
-                    std::back_inserter(sign_reduced));
-            }
-
-            directions_copy.clear();
-            std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
-
-            for (std::vector<std::vector<int> >::const_iterator it = sign_reduced.begin(); 
-                it != sign_reduced.end(); ++it) {
-                    directions.clear();
-
-                    for (i = 0; i < (*it).size(); ++i) {
-                        sign_double = static_cast<double>((*it)[i]);
-
-                        for (j = 0; j < 3; ++j) {
-                            disp_tmp[j] = directions_copy[3 * i + j] * sign_double;
-                        }
-
-                        if (disp_basis[0] == 'F') { 
-                            rotvec(disp_tmp, disp_tmp, system->rlavec);
-                            for (j = 0; j < 3; ++j) {
-                                disp_tmp[j] /= 2.0 * pi;
-                            }
-                        } 
-
-                        for (j = 0; j < 3; ++j) {
-                            directions.push_back(disp_tmp[j]);
-                        }
+                    for (j = 0; j < 3; ++j) {
+                        disp_tmp[j] = 0.0;
                     }
-                    pattern[order].push_back(AtomWithDirection(atoms, directions));
-            }               
+                    disp_tmp[(*it).atomset[i] % 3] = 1.0;
+
+                    for (j = 0; j < 3; ++j) directions.push_back(disp_tmp[j]);
+                }
+
+                natom_disp = atoms.size();          
+
+                if (trim_dispsign_for_evenfunc) {
+                    find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1], nums, sign_reduced);
+                } else {
+                    sign_reduced.clear();
+                    std::copy(sign_prod[natom_disp - 1].begin(), sign_prod[natom_disp - 1].end(), 
+                        std::back_inserter(sign_reduced));
+                }
+
+                directions_copy.clear();
+                std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
+
+                for (std::vector<std::vector<int> >::const_iterator it = sign_reduced.begin(); 
+                    it != sign_reduced.end(); ++it) {
+                        directions.clear();
+
+                        for (i = 0; i < (*it).size(); ++i) {
+                            sign_double = static_cast<double>((*it)[i]);
+
+                            for (j = 0; j < 3; ++j) {
+                                disp_tmp[j] = directions_copy[3 * i + j] * sign_double;
+                            }
+
+                            if (disp_basis[0] == 'F') { 
+                                rotvec(disp_tmp, disp_tmp, system->rlavec);
+                                for (j = 0; j < 3; ++j) {
+                                    disp_tmp[j] /= 2.0 * pi;
+                                }
+                            } 
+
+                            for (j = 0; j < 3; ++j) {
+                                directions.push_back(disp_tmp[j]);
+                            }
+                        }
+                        pattern[order].push_back(AtomWithDirection(atoms, directions));
+                }               
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  parsephon.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -34,11 +34,8 @@
 #include "isotope.h"
 #include "phonon_velocity.h"
 #include "integration.h"
-
-#ifdef _USE_BOOST
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#endif
 
 using namespace PHON_NS;
 
@@ -67,10 +64,10 @@ void Input::parce_input(int narg, char **arg)
 
     if (!locate_tag("&general")) error->exit("parse_input", "&general entry not found in the input file");
     parse_general_vars();
-   
+
     if (!locate_tag("&cell")) error->exit("parse_input", "&cell entry not found in the input file");
     parse_cell_parameter();
-    
+
     bool use_defaults_for_analysis;
     if (!locate_tag("&analysis")) {
         use_defaults_for_analysis = true;
@@ -87,7 +84,7 @@ void Input::parce_input(int narg, char **arg)
 void Input::parse_general_vars()
 {
     // Read input parameters in the &general-field.
-  
+
     int i;
     int nsym, nbands, ismear, nkd;
     unsigned int nonanalytic;
@@ -129,7 +126,7 @@ void Input::parse_general_vars()
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
         if (general_var_dict.find(*it) == general_var_dict.end()) {
             error->exit("parse_general_vars", 
-             "The following variable is not found in &general input region: ", (*it).c_str());
+                "The following variable is not found in &general input region: ", (*it).c_str());
         }
     }
 
@@ -138,13 +135,8 @@ void Input::parse_general_vars()
 
     file_result = prefix + ".result";
 
-#ifdef _USE_BOOST
-    boost::to_upper(mode);
-    nsym = boost::lexical_cast<int>(general_var_dict["NSYM"]);
-#else
     std::transform (mode.begin(), mode.end(), mode.begin(), toupper);
-    nsym = my_cast<int>(general_var_dict["NSYM"]);
-#endif
+    assign_val(nsym, "NSYM", general_var_dict);
 
     fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
@@ -238,7 +230,7 @@ void Input::parse_general_vars()
     if (nonanalytic > 2) {
         error->exit("parse_general_vars", "NONANALYTIC should be 0, 1, or 2.");
     }
-    
+
     // Copy the values to appropriate classes.
 
     job_title = prefix;
@@ -309,13 +301,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int quartic_mode;
     int include_isotope;
     int scattering_phase_space;
+    unsigned int cellsize[3];
 
     double delta_a;
     double *isotope_factor;
     std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
-   
+
     // Default values
 
     print_xsf = false;
@@ -343,7 +336,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     include_isotope = 0;
     fstate_omega = false;
     fstate_k = false;
-    
+
     // Assign values to variables
 
     if (!use_default_values) {
@@ -405,10 +398,17 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_cellsize.size() != 3) {
             error->exit("parse_analysis_vars", "The number of entries for ANIME_CELLSIZE should be 3.");
         }
-        if (my_cast<int>(anime_cellsize[0]) < 1 || 
-            my_cast<int>(anime_cellsize[1]) < 1 ||
-            my_cast<int>(anime_cellsize[2]) < 1) {
+
+        for (i = 0; i < 3; ++i) {
+            try {
+                cellsize[i] = boost::lexical_cast<unsigned int>(anime_cellsize[i]);
+            } catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                error->exit("parse_analysis_vars", "ANIME_CELLSIZE must be a set of positive integers.");
+            }
+            if (cellsize[i] < 1) {
                 error->exit("parse_analysis_vars", "Please give positive integers in ANIME_CELLSIZE.");
+            }
         }
 
         assign_val(anime_format, "ANIME_FORMAT", analysis_var_dict);
@@ -432,7 +432,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     if (print_anime) {
         for (i = 0; i < 3; ++i) {
             writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-            writes->anime_cellsize[i] = my_cast<unsigned int>(anime_cellsize[i]);
+            writes->anime_cellsize[i] = cellsize[i];
         }
         writes->anime_format = anime_format;
     }
@@ -475,19 +475,83 @@ void Input::parse_cell_parameter()
     int i, j;
     double a;
     double lavec_tmp[3][3];
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    line_vec.clear();
 
     if (from_stdin) {
-        std::cin >> a;
 
-        std::cin >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-        std::cin >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-        std::cin >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+        while (std::getline(std::cin, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+
     } else {
-        ifs_input >> a;
+        while (std::getline(ifs_input, line)) {
 
-        ifs_input >> lavec_tmp[0][0] >> lavec_tmp[1][0] >> lavec_tmp[2][0]; // a1
-        ifs_input >> lavec_tmp[0][1] >> lavec_tmp[1][1] >> lavec_tmp[2][1]; // a2
-        ifs_input >> lavec_tmp[0][2] >> lavec_tmp[1][2] >> lavec_tmp[2][2]; // a3
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    if (line_vec.size() != 4) {
+        error->exit("parse_cell_parameter", "Too few or too much lines for the &cell field.\n \
+                                            The number of valid lines for the &cell field should be 4.");
+    }
+
+    for (i = 0; i < 4; ++i) {
+
+        line = line_vec[i];
+        boost::split(line_split, line, boost::is_any_of("\t "), boost::token_compress_on);
+
+        if (i == 0) {
+            // Lattice factor a
+            if (line_split.size() == 1) {
+                a = boost::lexical_cast<double>(line_split[0]);
+            } else {
+                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+            }
+
+        } else {
+            // Lattice vectors a1, a2, a3
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+            }
+        }
     }
 
     for (i = 0; i < 3; ++i) {
@@ -497,105 +561,100 @@ void Input::parse_cell_parameter()
     }
 }
 
+
 void Input::parse_kpoints() 
 {
     // Read the settings in the &kpoint field.
-    
-    int kpmode;
-    std::string line, str_tmp;
-    std::vector<std::string> kpelem;
+
+    int i, kpmode;
+    std::string line, line_wo_comment, str_tmp;
+    std::vector<std::string> kpelem, line_vec;
+    std::string::size_type pos_first_comment_tag;
+
+    line_vec.clear();
 
     if (from_stdin) {
 
-        std::cin >> kpmode;
-
-        if (!(kpmode >= 0 && kpmode <= 3)) {
-            error->exit("parse_kpoints", "Invalid KPMODE");
-        }
-
-        std::cin.ignore();
-
         while (std::getline(std::cin, line)) {
 
-            if (is_endof_entry(line)) {
-                break;
-            }
-            kpelem.clear();
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
 
-            std::istringstream is(line);
-
-            while (1) {
-                str_tmp.clear();
-                is >> str_tmp;
-                if (str_tmp.empty()) {
-                    break;
-                }
-                kpelem.push_back(str_tmp);
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            if (kpmode == 0 && kpelem.size() != 3) {
-                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
-            }
-            if (kpmode == 1 && kpelem.size() != 9) {
-                error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
-            }
-            if (kpmode == 2 && kpelem.size() != 3) {
-                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
-            }
-            if (kpmode == 3 && kpelem.size() != 8) {
-                error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
-            }
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
 
-            kpoint->kpInp.push_back(kpelem);
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
         }
+
     } else {
-
-        ifs_input >> kpmode;
-
-        if (!(kpmode >= 0 && kpmode <= 3)) {
-            error->exit("parse_kpoints", "Invalid KPMODE");
-        } 
-
-        if (!relaxation->calc_fstate_k && kpmode == 3) {
-            error->exit("parse_kpoints", "KPMODE = 3 is valid only when FSTATE_K is true.");
-        }
-
-        ifs_input.ignore();
-
         while (std::getline(ifs_input, line)) {
 
-            if (is_endof_entry(line)) {
-                break;
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
-            kpelem.clear();
 
-            std::istringstream is(line);
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
 
-            while (1) {
-                str_tmp.clear();
-                is >> str_tmp;
-                if (str_tmp.empty()) {
-                    break;
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    for (i = 0; i < line_vec.size(); ++i) {
+        line = line_vec[i];
+        boost::split(kpelem, line, boost::is_any_of("\t "), boost::token_compress_on);
+
+        if (i == 0) {
+            // kpmode 
+            if (kpelem.size() == 1) {
+                try {
+                    kpmode = boost::lexical_cast<int>(kpelem[0]);
+                } catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                    error->exit("parse_kpoints", "KPMODE must be an integer. [0, 1, or 2]");
                 }
-                kpelem.push_back(str_tmp);
+
+                if (!(kpmode >= 0 && kpmode <= 3)) {
+                    error->exit("parse_kpoints", "KPMODE must be 0, 1, or 2.");
+                }
+
+            } else {
+                error->exit("parse_kpoints", "Unacceptable format for the &kpoint field.");
             }
+
+        } else {
+            // Read each entry of kpoint
 
             if (kpmode == 0 && kpelem.size() != 3) {
-                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 0");
+                error->exit("parse_kpoints", "The number of columns must be 3 when KPMODE = 0");
             }
             if (kpmode == 1 && kpelem.size() != 9) {
-                error->exit("parse_kpoints", "The number of entries has to be 9 when KPMODE = 1");
+                error->exit("parse_kpoints", "The number of columns must be 9 when KPMODE = 1");
             }
             if (kpmode == 2 && kpelem.size() != 3) {
-                error->exit("parse_kpoints", "The number of entries has to be 3 when KPMODE = 2");
+                error->exit("parse_kpoints", "The number of columns must be 3 when KPMODE = 2");
             }
             if (kpmode == 3 && kpelem.size() != 8) {
-                error->exit("parse_kpoints", "The number of entries has to be 8 when KPMODE = 3");
+                error->exit("parse_kpoints", "The number of columns must be 8 when KPMODE = 3");
             }
 
             kpoint->kpInp.push_back(kpelem);
         }
-
     }
 
     kpoint->kpoint_mode = kpmode;
@@ -699,8 +758,6 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
 
-            //	std::cout << line_wo_comment << std::endl;
-
             // Split the input line by ';'
 #ifdef _USE_BOOST
             boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
@@ -771,8 +828,6 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 #endif
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
-
-            //	std::cout << line_wo_comment << std::endl;
 
             // Split the input line by ';'
 #ifdef _USE_BOOST
@@ -863,15 +918,21 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
 
 template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
 {
+    // Assign a value to the variable "key" using the boost::lexica_cast.
 
     if (!dict[key].empty()) {
-#ifdef _USE_BOOST
-        val = boost::lexical_cast<T>(dict[key]);
-#else
-        val = my_cast<T>(dict[key]);
-#endif
+        try {
+            val = boost::lexical_cast<T>(dict[key]);
+        } catch (std::exception &e) {
+            std::string str_tmp;
+            std::cout << e.what() << std::endl;
+            str_tmp = "Invalid entry for the " + key + " tag.\n";
+            str_tmp += " Please check the input value.";
+            error->exit("assign_val", str_tmp.c_str());
+        }
     }
 }
+
 
 template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
 {

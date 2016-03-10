@@ -1,7 +1,7 @@
 /*
  dynamical.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -43,9 +43,14 @@ void Dynamical::setup_dynamical(std::string mode)
     UPLO = 'U';
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << std::endl;
-        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-        if (nonanalytic == 1) {
+        std::cout << std::endl;
+        std::cout << " Dynamical matrix" << std::endl;
+        std::cout << " ================" << std::endl;
+        if (nonanalytic == 0) {
+            std::cout << std::endl;
+            std::cout << "  NONANALYTIC = 0 : No non-analytic correction. " << std::endl;
+            std::cout << std::endl;
+        } else if (nonanalytic == 1) {
             std::cout << std::endl;
             std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be included " << std::endl;
             std::cout << "                    by the Parlinski's method." << std::endl;
@@ -85,7 +90,7 @@ void Dynamical::setup_dynamical(std::string mode)
         } else {
             if (print_eigenvectors || writes->print_msd || writes->print_xsf || writes->print_anime
                 || dos->projected_dos || gruneisen->print_gruneisen || dynamical->participation_ratio) {
-                eigenvectors = true;
+                    eigenvectors = true;
             }
         }
     }
@@ -105,6 +110,11 @@ void Dynamical::setup_dynamical(std::string mode)
 
         memory->allocate(mindist_list, system->natmin, system->nat);
         prepare_mindist_list(mindist_list);
+    }
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl;
+        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
     }
 }
 
@@ -126,13 +136,12 @@ void PHON_NS::Dynamical::finish_dynamical()
 
 void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 {
-    unsigned int i, j, k;
+    unsigned int i, j;
     unsigned int icell;
     unsigned int nneib = 27;
 
     double dist_tmp;
     double ***xcrd;
-    double vec[3];
 
     unsigned int iat;
     unsigned int nat = system->nat;
@@ -254,14 +263,14 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     // zone-center or zone-boundaries.
 
     if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0) 
-                + std::pow(std::fmod(xk_in[1], 0.5), 2.0) 
-                + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
+        + std::pow(std::fmod(xk_in[1], 0.5), 2.0) 
+        + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
-        for (i= 0; i < 3 * system->natmin; ++i) {
-            for (j = 0; j < 3 * system->natmin; ++j) {
-                dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
+            for (i= 0; i < 3 * system->natmin; ++i) {
+                for (j = 0; j < 3 * system->natmin; ++j) {
+                    dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
+                }
             }
-        }
     }
 
     char JOBZ;
@@ -329,7 +338,6 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
     std::complex<double> **ctmp;
 
     memory->allocate(ctmp, nmode, nmode);
-
     for (i = 0; i < nmode; ++i) {
         for (j = 0; j < nmode; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);
@@ -349,7 +357,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                   - system->xr_s[system->map_p2s[atm2_p][0]][i] ;
+            - system->xr_s[system->map_p2s[atm2_p][0]][i] ;
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -445,7 +453,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
 
             for (i = 0; i < 3; ++i) {
                 xdiff[i] = system->xr_s[system->map_p2s[iat][0]][i]
-                         - system->xr_s[system->map_p2s[jat][0]][i];
+                - system->xr_s[system->map_p2s[jat][0]][i];
             }
 
             rotvec(xdiff, xdiff, system->lavec_s);
@@ -473,12 +481,12 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
     unsigned int iat, jat;
     unsigned int atm_p1, atm_p2, atm_s2;
     unsigned int natmin = system->natmin;
-    unsigned int itran, icell, cell;
+    unsigned int cell;
     double kepsilon[3];
     double kz1[3], kz2[3];
-    double denom, norm2;
+    double denom;
     double born_tmp[3][3];
-    double xk_tmp[3], vec[3];
+    double vec[3];
     double factor, phase;
     std::complex<double> im(0.0, 1.0);
     std::complex<double> exp_phase, exp_phase_tmp;
@@ -532,7 +540,7 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
 
                         for (k = 0; k < 3; ++k) {
                             vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
-                                   - system->xr_s[atm_p2][k];
+                            - system->xr_s[atm_p2][k];
                         }
 
                         rotvec(vec, vec, system->lavec_s);
@@ -561,15 +569,14 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
             dymat_na_out[i][j] *= factor;
-         }
-     }
+        }
+    }
 }
 
 
 void Dynamical::diagonalize_dynamical_all()
 {
     int ik;
-    unsigned int i;
     unsigned int is;
     unsigned int nk = kpoint->nk;
     bool require_evec; 
@@ -588,12 +595,13 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
-
+#ifdef _OPENMP
 #pragma omp parallel for private (is)
+#endif
     for (ik = 0; ik < nk; ++ik){
 
         eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, 
-               eval_phonon[ik], evec_phonon[ik], require_evec);
+            eval_phonon[ik], evec_phonon[ik], require_evec);
 
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is){
@@ -602,7 +610,7 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << "done !" << std::endl;
+        std::cout << "done!" << std::endl;
     }
 }
 
@@ -692,7 +700,7 @@ void Dynamical::load_born()
     }
     ifs_born.close();
 
-    
+
     std::cout << "  Dielectric constants and Born effective charges are read from " 
         << file_born << "." << std::endl << std::endl;
     std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;

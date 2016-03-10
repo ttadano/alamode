@@ -58,11 +58,10 @@ namespace ALM_NS{
 
     private:
         void write_force_constants();
-      //  void wrtmisc();
         void write_misc_xml();
 
         std::ofstream ofs_info;
-        std::string double2string(const double);
+        std::string double2string(const double, const int nprec = 15);
 
     };
 }

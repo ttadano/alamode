@@ -96,7 +96,6 @@ namespace PHON_NS {
 
         void setup_relaxation();
         void finish_relaxation();
-        void setup_mode_analysis();
         void perform_mode_analysis();
        
         void calc_damping_smearing(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
@@ -110,14 +109,14 @@ namespace PHON_NS {
         bool calc_fstate_omega;
         bool calc_fstate_k;
         bool print_V3;
+        bool use_tuned_ver;
+
 
         bool use_triplet_symmetry;
 
         std::string ks_input;
 
         std::complex<double> V3(const unsigned int [3]);
-        std::complex<double> V3_tune(const unsigned int [3]);
-        std::complex<double> V3_tune2(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
 
         std::complex<double> V3_mode(int,  double *, double *, int, int, double **, std::complex<double> ***);
@@ -142,9 +141,13 @@ namespace PHON_NS {
         bool is_proper(const int);
         bool is_symmorphic(const int);
 
+        void setup_mode_analysis();
+        void setup_cubic();
+        void setup_quartic();
+        void store_exponential_for_acceleration(const int nk[3], int &, std::complex<double> *, std::complex<double> ***);
         void prepare_relative_vector(std::vector<FcsArrayWithCell>, const unsigned int, double ***);
         void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>, const unsigned int, int &, std::vector<double> *&);
-        void print_minimum_energy_diff();
+     //   void print_minimum_energy_diff();
         void generate_triplet_k(const bool, const bool);
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double, 
             const unsigned int, const double *, const unsigned int, const unsigned int, double **);
@@ -163,6 +166,5 @@ namespace PHON_NS {
         unsigned int tune_type;
         double dnk[3];
 
-        bool use_tuned_ver;
     };
 }

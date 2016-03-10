@@ -66,7 +66,7 @@ As you can see in the file, there is only one displacement pattern for harmonic 
 Next, calculate atomic forces for all the displaced configurations defined in :red:`si222.pattern_HARMONIC`.
 To do so, you first need to decide the magnitude of displacements :math:`\Delta u`, which should be small so that anharmonic contributions are negligible. In ordinary case, :math:`\Delta u \sim 0.01` |Angstrom| is a reasonable choice. 
 
-Then, prepare input files necessary to run an external DFT code for each configurations.
+Then, prepare input files necessary to run an external DFT code for each configuration.
 Since this procedure is a little tiresome, we provide a subsidiary Python script for VASP, Quantum-ESPRESSO (QE), and xTAPP.
 Using the script :red:`displace.py` in the tools/ directory, you can generate the necessary input files as follows:
 
@@ -89,10 +89,25 @@ Using the script :red:`displace.py` in the tools/ directory, you can generate th
 The ``--mag`` option specifies the displacement length in units of Angstrom. 
 You need to specify an input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, or ``--xTAPP``.
 
-Then, calculate atomic forces for all the configurations.
+Then, calculate atomic forces for all the configurations. This can be done with a simple shell script 
+as follows::
 
-.. Note::
-   We recommend to make subdirectories for each configurations to avoid overwriting output files (such as disp1.pw.out, vasprun.xml, etc.).
+    !#/bin/bash
+
+    # Assume we have 20 displaced configurations for QE [disp01.pw.in,..., disp20.pw.in].
+
+    for ((i=1;i<=20;i++))
+    do
+        num=`echo $i | awk '{printf("%02d",$1)}'`
+        mkdir ${num}
+        cd ${num}
+        cp ../disp${num}.pw.in .
+        pw.x < disp${num}.pw.in > disp${num}.pw.out
+        cd ../
+    done
+
+.. important::
+   In QE, please set tprnfor=.true. to get atomic forces. 
 
 The next step is to collect the displacement data and force data by the Python script :red:`extract.py` (also in the tools/ directory). This script can extract atomic displacements, atomic forces, and total energies from multiple output files as follows:
 
@@ -166,7 +181,7 @@ In the log file :red:`si_alm2.log`, the :ref:`fitting error<fitting_formalism>` 
 Try
 ::
 
-  $ grep Fitting error si_alm2.log
+  $ grep "Fitting error" si_alm2.log
   Fitting error (%) : 1.47766
 
 The other file :red:`si222.xml` contains crystal structure, symmetry, IFCs, and all other information necessary for subsequent phonon calculations.
@@ -181,9 +196,9 @@ Open the file :red:`si_phband.in` and edit it for your system.
 
 .. literalinclude:: ../../example/Si/si_phband.in
 
-Please specify the XML file you obtained in the step 3 by the ``FCSXML``-tag as above. 
+Please specify the XML file you obtained in step 3 by the ``FCSXML``-tag as above. 
 In the **&cell**-field, you need to define the lattice vector of a **primitive cell**.
-In phonon dispersion calculations, the first entry in the **&kpoint**-field should be 1 (**KPOINT_MODE** = 1).
+In phonon dispersion calculations, the first entry in the **&kpoint**-field should be 1 (**KPMODE** = 1).
 
 Then, execute **anphon**
 ::
@@ -220,7 +235,7 @@ For more detail of the usage of :red:`plotband.py`, type
 Next, let us calculate the phonon DOS. Copy :red:`si_phband.in` to :red:`si_phdos.in` and edit the **&kpoint** field as follows::
 
     &kpoint
-      2
+      2  # KPMODE = 2: uniform mesh mode
       20 20 20
     /
 
@@ -248,8 +263,8 @@ To obtain more sharp DOS, try again with a denser :math:`k` grid and a smaller `
 
 .. _tutorial_Si_step5:
 
-5. Estimate anharmonic IFCs for thermal conductivity
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+5. Estimate cubic IFCs for thermal conductivity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Copy file :red:`si_alm.in` to :red:`si_alm2.in`. 
 Edit the **&general**, **&interaction**, and **&cutoff** fields of :red:`si_alm2.in` as the following::
@@ -298,7 +313,7 @@ In :red:`si_alm2.in`, change ``MODE = suggest`` to ``MODE = fitting`` and add th
       NDATA = 20
       DFILE = disp3.dat
       FFILE = force3.dat
-      FC2XML = si222.xml
+      FC2XML = si222.xml # Fix harmonic IFCs
     /
 
 By the ``FC2XML`` tag, harmonic IFCs are fixed to the values in :red:`si222.xml`.

@@ -1,7 +1,7 @@
 /*
  symmetry_core.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -23,52 +23,12 @@ namespace PHON_NS {
 
     class SymmetryOperation {
     public:
-        std::vector<int> symop;
-
-        SymmetryOperation();
-
-        // Declaration construction
-
-        SymmetryOperation(const SymmetryOperation &a)
-        {
-            for(std::vector<int>::const_iterator p = a.symop.begin(); p != a.symop.end(); ++p){
-                symop.push_back(*p);
-            }
-        }
-        SymmetryOperation(std::vector<int> a)
-        {
-            for(std::vector<int>::const_iterator p = a.begin(); p != a.end(); ++p){
-                symop.push_back(*p);
-            }
-        }
-
-        SymmetryOperation(const int rot[3][3], const int trans[3])
-        {
-            for (int i = 0; i < 3; ++i){
-                for (int j = 0; j < 3; ++j){
-                    symop.push_back(rot[i][j]);
-                }
-            }
-            for (int i = 0; i < 3; ++i){
-                symop.push_back(trans[i]);
-            }
-        }
-    };
-
-    inline bool operator<(const SymmetryOperation a, const SymmetryOperation b){
-        return std::lexicographical_compare(a.symop.begin(), a.symop.end(), b.symop.begin(), b.symop.end());
-    }
-
-    class SymmetryOperationTransFloat {
-    public:
         int rot[3][3];
         double tran[3];
 
-        SymmetryOperationTransFloat();
+        SymmetryOperation();
 
-        // Declaration construction
-
-        SymmetryOperationTransFloat(const int rot_in[3][3], const double tran_in[3])
+        SymmetryOperation(const int rot_in[3][3], const double tran_in[3])
         {
             for (int i = 0; i < 3; ++i){
                 for (int j = 0; j < 3; ++j){
@@ -78,6 +38,29 @@ namespace PHON_NS {
             for (int i = 0; i < 3; ++i){
                 tran[i] = tran_in[i];
             }
+        }
+
+        bool operator<(const SymmetryOperation &a) const {
+            std::vector<double> v1, v2;
+            for (int i = 0; i < 3; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    v1.push_back(static_cast<double>(rot[i][j]));
+                    v2.push_back(static_cast<double>(a.rot[i][j]));
+                }
+            }
+            for (int i = 0; i < 3; ++i) {
+                if (tran[i] < 0.0) {
+                    v1.push_back(1.0+tran[i]);
+                } else {
+                    v1.push_back(tran[i]);
+                }
+                if (a.tran[i] < 0.0) {
+                    v2.push_back(1.0+a.tran[i]);
+                } else {
+                    v2.push_back(a.tran[i]);
+                }
+            }
+            return std::lexicographical_compare(v1.begin(),v1.end(),v2.begin(),v2.end());
         }
     };
 
@@ -105,25 +88,6 @@ namespace PHON_NS {
 
         SymmetryOperationWithMapping();
 
-        SymmetryOperationWithMapping(const SymmetryOperationWithMapping &a) 
-        {
-            for (std::vector<double>::const_iterator p = a.rot.begin(); p != a.rot.end(); ++p) {
-                rot.push_back(*p);
-            }
-            for (std::vector<double>::const_iterator p = a.rot_real.begin(); p != a.rot_real.end(); ++p) {
-                rot_real.push_back(*p);
-            }
-            for (std::vector<double>::const_iterator p = a.rot_reciprocal.begin(); p != a.rot_reciprocal.end(); ++p) {
-                rot_reciprocal.push_back(*p);
-            }
-            for (std::vector<unsigned int>::const_iterator p = a.mapping.begin(); p != a.mapping.end(); ++p) {
-                mapping.push_back(*p);
-            }
-            for (unsigned int i = 0; i < 3; ++i) {
-                shift[i] = a.shift[i];
-            }
-        }
-
         SymmetryOperationWithMapping(const double S[3][3], const double T[3][3], const double R[3][3], 
             unsigned int *mapping_info, const unsigned int n, const double shift_in[3])
         {
@@ -145,40 +109,36 @@ namespace PHON_NS {
         } 
     };
 
-    inline bool operator<(const SymmetryOperationWithMapping a, const SymmetryOperationWithMapping b) {
-        return std::lexicographical_compare(a.rot.begin(), a.rot.end(), b.rot.begin(), b.rot.end());
-    }
 
     class Symmetry: protected Pointers {
     public:
         Symmetry(class PHON *);
         ~Symmetry();
 
-        unsigned int nsym, nnp;
+        unsigned int nsym;
         bool symmetry_flag, time_reversal_sym;
+        int trev_sym_mag;
         bool printsymmetry;
-
         double tolerance;
-
-        std::string file_sym;
         std::vector<SymmetryOperation> SymmList;
         std::vector<SymmetryOperationWithMapping> SymmListWithMap;
+
         void setup_symmetry();
-        void setup_symmetry_operation(int, unsigned int&, unsigned int&, double[3][3], double[3][3], 
-            double **, unsigned int *);
-        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
 
     private:
 
-        std::ofstream ofs_sym;
-        std::ifstream ifs_sym;
+        std::string file_sym;
 
+        void setup_symmetry_operation(int, unsigned int&, double[3][3], double[3][3], 
+            double **, unsigned int *);
+        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
         void gensym_withmap(double **, unsigned int *);
+        bool is_proper(double [3][3]);
 
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
         void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x, 
-            std::vector<RotationMatrix>, std::vector<SymmetryOperationTransFloat> &);
-        void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperationTransFloat>);
+            std::vector<RotationMatrix>, std::vector<SymmetryOperation> &);
+        void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperation>);
         void broadcast_symmlist(std::vector<SymmetryOperation> &);
     };
 }

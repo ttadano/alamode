@@ -13,38 +13,53 @@
 About
 =====
 
-What is ALAMODE ?
+What is ALAMODE?
 -----------------
 
-**ALAMODE** stands for **A**\ nharmonic **LA**\ ttice **MODE**\ l, 
-which is designed for estimating harmonic and anharmonic properties of lattice vibrations (phonons) in solids. 
-The code is written in C++ and MPI/OpenMP parallelization is implemented.
+**ALAMODE** is an open source software designed for analyzing lattice anharmonicity and lattice thermal conductivity of solids. By using an external DFT package such as VASP and Quantum ESPRESSO, you can extract harmonic and anharmonic force constants straightforwardly with ALAMODE. Using the calculated anharmonic force constants, you can also estimate lattice thermal conductivity, phonon linewidth, and other anharmonic phonon properties from first principles.
 
 Features
 --------
 
-ALAMODE consists of two main programs **alm** and **anphon** written in C++, and some subsidiary Python scripts.
+General
+^^^^^^^
 
-The program *alm* can estimate harmonic and anharmonic interatomic force constants (IFCs) based on the supercell approach.
-The program *anphon* can compute phonon properties using the estimated IFCs. Currently, it can compute the following quantities:
+* Extraction of harmonic and anharmonic force constants based on the supercell approach
+* Applicable to any crystal structures and low-dimensional systems
+* Accurate treatment of translational and rotational invariance
+* Interface to VASP, Quantum-ESPRESSO, and xTAPP codes
+* Mainly written in C++, parallelized with MPI+OpenMP
 
-* Phonon dispersion, Phonon DOS, Atom-projected phonon DOS
-* Thermodynamic functions (vibrational entropy, free energy, internal energy)
-* Mean square displacement
-* Heat capacity at constant volume
+Harmonic properties
+^^^^^^^^^^^^^^^^^^^
+* Phonon dispersion
+* Phonon DOS, atom-projected phonon DOS
+* Two-phonon DOS
+* Vibrational thermodynamic functions (heat capacity, entropy, free energy)
+* Mean-square displacement
+* Animation and visualization of phonon modes (requires VMD or XCrysDen)
+* 3-phonon scattering phase space
+* Phonon-isotope scattering rate
+* Participation ratio for analyzing localization of phonon modes
+
+Anharmonic properties
+^^^^^^^^^^^^^^^^^^^^^
+
+.. |umulaut_u|    unicode:: U+00FC
+
+* Gr\ |umulaut_u|\ neisen parameter via cubic force constants
+* Lattice thermal conductivity by BTE-RTA
+* Cumulative thermal conductivity
 * Phonon linewidth due to 3-phonon interactions
-* Phonon frequency shift
-* Phonon self-energy due to phonon-isotope scatterings
-* Lattice thermal conductivity
-
-In addition, a python script may be used to estimate the cumulative thermal conductivity as a function of phonon mean-free-path.
+* Phonon frequency shift due to 3- and 4-phonon interactions
+* Temperature-dependent effective potential method
 
 
 Links
 -----
 
-* Download page  : http://sourceforge.net/projects/alamode
-* Documentation  : http://alamode.readthedocs.org
+* Download page  : http://sourceforge.net/projects/alamode 
+* Documentation  : http://alamode.readthedocs.org (this page)
 * Git repository : http://github.com/ttadano/alamode
 
 
@@ -53,11 +68,16 @@ License
 
 .. |copy|   unicode:: U+000A9 
 
-Copyright |copy| 2014 Terumasa Tadano. See the LICENSE.txt file for license
-rights and limitations (MIT). 
+Copyright |copy| 2014, 2015, 2016 Terumasa Tadano
+
+This software is distributed under the MIT license.
+See the LICENSE.txt file for license rights and limitations. 
 
 
-If you used ALAMODE, please cite the following article:
+How to Cite ALAMODE
+-------------------
+
+Please cite the following article when you use ALAMODE:
 
   T\. Tadano, Y. Gohda, and S. Tsuneyuki, J. Phys.: Condens. Matter **26**\ , 225402 (2014) [Link_].
 
@@ -72,13 +92,15 @@ This project was supported by a Grant-in-Aid for Scientific Research on Innovati
 (http://computics-material.jp)
 
 
-Author
-------
-
+Author & Contact
+----------------
 
 .. raw:: html
 
     <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
-Current affiliation: Department of Applied Physics, The University of Tokyo, Japan
+Department of Applied Physics, 
+The University of Tokyo, Japan
+
+If you have any questions, suggestions, and problems regarding ALAMODE, please feel free to contact the author.
 

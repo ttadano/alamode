@@ -64,6 +64,4 @@ void Files::closefiles()
 void Files::init()
 {
     setfilenames();
-
-//    if (alm->mode == "fitting" || alm->mode == "lasso") openfiles();
 }
