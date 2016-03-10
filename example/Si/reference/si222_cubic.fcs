@@ -1,12 +1,11 @@
- ******************** Force Constants (FCs) ********************
- *     Force constants are printed in Rydberg atomic units.    *
- *     FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.   *
- *     FC?: Ry/a0^?                                            *
- *     a0= Bohr radius                                         *
- *                                                             *
- *     The value shown in the last column is the distance      *
- *     between the most distant atomic pairs.                  *
- ***************************************************************
+ *********************** Force Constants (FCs) ***********************
+ *        Force constants are printed in Rydberg atomic units.       *
+ *        FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.      *
+ *        FC?: Ry/a0^?     a0 = Bohr radius                          *
+ *                                                                   *
+ *        The value shown in the last column is the distance         *
+ *        between the most distant atomic pairs.                     *
+ *********************************************************************
 
  ----------------------------------------------------------------------
       Index              FCs         P        Pairs     Distance [Bohr]
