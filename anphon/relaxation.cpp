@@ -66,12 +66,6 @@ void Relaxation::setup_relaxation()
     setup_mode_analysis();
     setup_cubic();
 
-    use_tuned_ver = true;
-    nk_tmp[0] = kpoint->nkx;
-    nk_tmp[1] = kpoint->nky;
-    nk_tmp[2] = kpoint->nkz;
-    store_exponential_for_acceleration(nk_tmp, nk_represent, exp_phase, exp_phase3);
-
     if (ks_analyze_mode) {
 
         if (kpoint->kpoint_mode == 2 && use_triplet_symmetry) {
@@ -113,6 +107,16 @@ void Relaxation::setup_relaxation()
         }
         
         dynamical->modify_eigenvectors();
+    }
+   
+    if (calc_fstate_k) {
+        use_tuned_ver = false;
+    } else {
+        use_tuned_ver = true;
+        nk_tmp[0] = kpoint->nkx;
+        nk_tmp[1] = kpoint->nky;
+        nk_tmp[2] = kpoint->nkz;
+        store_exponential_for_acceleration(nk_tmp, nk_represent, exp_phase, exp_phase3);
     }
     
     if (kpoint->kpoint_mode == 2) {
