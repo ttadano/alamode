@@ -4,7 +4,7 @@
  Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
+ Please see the file 'LICENCE.txt' in the root directory
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
         }
 
         calc_kappa_cumulative2(max_len, d_len, itemp, size_flag);
-    
+
     } else if (calc == "kappa_matthiessen" ) {
 
         // Print the thermal conductivity with boundary effects
@@ -300,7 +300,7 @@ int main(int argc, char *argv[]) {
 
     } else if (calc == "kappa_boundary") {
 
-        // Print the temperature dependence of thermal conductivity 
+        // Print the temperature dependence of thermal conductivity
         // with boundary effects considered by the Matthiessen's rule.
 
         double len_boundary;
@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void calc_tau(int itemp) 
+void calc_tau(int itemp)
 {
     int ik, is;
 
@@ -343,7 +343,7 @@ void calc_tau(int itemp)
 
     for (ik = beg_k; ik < end_k; ++ik) {
         for (is = beg_s; is < end_s; ++is) {
-            
+
             tau_tmp = tau[itemp][ik][is];
             c_tmp = Cv(omega[ik][is], temp[itemp]);
 
@@ -404,7 +404,7 @@ void calc_tau_temp(int target_k, int target_s)
 
 }
 
-void calc_kappa() 
+void calc_kappa()
 {
     int it, ik, is;
     double ***kappa;
@@ -477,7 +477,7 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
     cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
     cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
     cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
-    cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied." << endl; 
+    cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied." << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
 
@@ -545,7 +545,7 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
     cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
     cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
     cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
-    cout << "# |v_{x,y,z}| < L is satisfied." << endl; 
+    cout << "# |v_{x,y,z}| < L is satisfied." << endl;
     cout << "# Boundary direction flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
@@ -600,7 +600,7 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
 
 }
 
-void calc_kappa_boundary(const double len_boundary) 
+void calc_kappa_boundary(const double len_boundary)
 {
     int it, ik, is;
     double ***kappa;
@@ -705,7 +705,7 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
                     for (j = 0; j < 3; ++j) {
                         mfp_tmp[j] = tau_tmp * abs(vel[ik][is][i][j]) * 0.001;
 
-                        if (flag[j]) {  
+                        if (flag[j]) {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
                                              * vel[ik][is][i][j]
@@ -757,7 +757,7 @@ int locate_tag(string key)
             break;
         }
     }
-    return ret; 
+    return ret;
 }
 
 double Cv(double omega, double temp)
