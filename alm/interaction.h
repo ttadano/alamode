@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <iterator>
 #include "listcomparison.h"
 #include "pointers.h"
 #include "constants.h"
