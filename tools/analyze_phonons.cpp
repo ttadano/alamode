@@ -103,7 +103,11 @@ int main(int argc, char *argv[]) {
 
             for (k = 0; k < nt; ++k) {
                 ifs >> damp_tmp;
-                tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
+                if (omega[i][j] < 0.0) {
+                   tau[k][i][j] = 0.0; // Neglect contributions from imaginary branches
+                } else {
+                   tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
+                }
             }
             ifs.ignore();
             getline(ifs,str);
