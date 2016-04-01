@@ -110,9 +110,10 @@ namespace PHON_NS {
         bool calc_fstate_k;
         bool print_V3;
         bool use_tuned_ver;
-
+	
 
         bool use_triplet_symmetry;
+		bool **is_imaginary;
 
         std::string ks_input;
 
@@ -154,6 +155,7 @@ namespace PHON_NS {
 
         void print_momentum_resolved_final_state(const unsigned int, double *, const double);
         void print_frequency_resolved_final_state(const unsigned int, double *);
+		void detect_imaginary_branches();
 
         int ngroup;
         int ngroup2;

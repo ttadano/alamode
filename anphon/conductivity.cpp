@@ -355,16 +355,28 @@ void Conductivity::compute_kappa()
             for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
                 knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
                 snum = iks % ns;
-
-                for (i = 0; i < ntemp; ++i) {
-                    lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / (damping3[iks][i] +  isotope->gamma_isotope[iks/ns][snum]);
-                }
+				if (relaxation->is_imaginary[iks / ns][snum]) {
+					for (i = 0; i < ntemp; ++i) {
+						lifetime[iks][i] = 0.0;;
+					}
+				} else {
+					for (i = 0; i < ntemp; ++i) {
+						lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / (damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum]);
+					}
+				}
             }
         } else {
             for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
-                for (i = 0; i < ntemp; ++i) {
-                    lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damping3[iks][i];
-                }
+
+				if (relaxation->is_imaginary[iks / ns][iks % ns]) {
+					for (i = 0; i < ntemp; ++i) {
+						lifetime[iks][i] = 0.0;
+					}
+				} else {
+					for (i = 0; i < ntemp; ++i) {
+						lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damping3[iks][i];
+					}
+				}
             }
         }
 

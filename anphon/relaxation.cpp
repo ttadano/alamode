@@ -63,6 +63,7 @@ void Relaxation::setup_relaxation()
         std::cout << " Now, move on to phonon lifetime calculations." << std::endl;
     }
 
+	detect_imaginary_branches();
     setup_mode_analysis();
     setup_cubic();
 
@@ -130,6 +131,7 @@ void Relaxation::finish_relaxation()
     memory->deallocate(invmass_for_v3);
     memory->deallocate(evec_index);
     memory->deallocate(fcs_group);
+	memory->deallocate(is_imaginary);
 
     if (use_tuned_ver) {
         if (tune_type == 0) {
@@ -145,6 +147,65 @@ void Relaxation::finish_relaxation()
         memory->deallocate(evec_index4);
         memory->deallocate(fcs_group2);
     }
+}
+
+void Relaxation::detect_imaginary_branches()
+{
+	int ik, is, i, j;
+	nk = kpoint->nk;
+	ns = dynamical->neval;
+	nks = ns*nk;
+	int knum;
+	double omega;
+	bool is_anyof_imaginary;
+	int ndup;
+
+	memory->allocate(is_imaginary, kpoint->nk_reduced, ns);
+
+	is_anyof_imaginary = false;
+	for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+		for (is = 0; is < ns; ++is) {
+			knum = kpoint->kpoint_irred_all[ik][0].knum;
+			omega = dynamical->eval_phonon[knum][is];
+
+			if (omega < 0.0) {
+				is_imaginary[ik][is] = true;
+				is_anyof_imaginary = true;
+			} else {
+				is_imaginary[ik][is] = false;
+			}
+		}
+	}
+
+	if (is_anyof_imaginary) {
+		int count = 0;
+		std::cout << std::endl;
+		std::cout << " WARNING: Imaginary frequency detected at the following branches:" << std::endl;
+		for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+			for (is = 0; is < ns; ++is) {
+				if (is_imaginary[ik][is]) {
+					ndup = kpoint->kpoint_irred_all[ik].size();
+					count += ndup;
+					for (i = 0; i < ndup; ++i) {
+						knum = kpoint->kpoint_irred_all[ik][i].knum;
+						omega = dynamical->eval_phonon[knum][is];
+						for (j = 0; j < 3; ++j) {
+							std::cout << std::setw(15) << kpoint->xk[knum][j];
+						}
+						std::cout << std::setw(4) << is + 1 << " :" 
+							<< std::setw(10) << std::fixed << writes->in_kayser(omega) << " (cm^-1)" << std::endl;
+						std::cout << std::scientific;
+					}
+				}
+			}
+		}
+		std::cout << std::setw(5) << count << " imaginary branches out of " << std::setw(5) << nks << " total branches." << std::endl;
+		std::cout << std::endl;
+		std::cout << " Phonon-phonon scattering rate and thermal conductivity involving these" << std::endl;
+		std::cout << " imaginary branches will be treated as zero in the following calculations." << std::endl;
+		std::cout << " If imaginary branches are acoustic phonons at Gamma point (0, 0, 0), " << std::endl;
+		std::cout << " you can safely ignore this warning." << std::endl << std::endl;
+	}
 }
 
 // void Relaxation::print_minimum_energy_diff()
@@ -487,6 +548,8 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
         sn[i] = ks[i] % ns;
         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
     }
+	// Return zero if any of the involving phonon has imaginary frequency
+	if (omega[0] < 0.0 || omega[1] < 0.0 || omega[2] < 0.0)  return 0.0;
 
     ielem = 0;
 
@@ -538,7 +601,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 
                     for (ii = 0; ii < 3; ++ii) {
                         phase3[ii] = vec_for_v3[ii][0][ielem] * kpoint->xk[kn[1]][ii] 
-                        + vec_for_v3[ii][1][ielem] * kpoint->xk[kn[2]][ii];
+							+ vec_for_v3[ii][1][ielem] * kpoint->xk[kn[2]][ii];
 
                         loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
@@ -580,7 +643,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
         }
     }
 
-    return ret / std::sqrt(omega[0] * omega[1] * omega[2]);
+	return ret / std::sqrt(omega[0] * omega[1] * omega[2]);
 }
 
 
@@ -712,6 +775,9 @@ std::complex<double> Relaxation::V3_mode(int mode, double *xk2, double *xk3,
 
     double phase;
     std::complex<double> ctmp = std::complex<double>(0.0, 0.0);
+
+	// Return zero if any of the involving phonon has imaginary frequency
+	if (eval[0][mode] < 0.0 || eval[1][is] < 0.0 || eval[2][js] < 0.0)  return 0.0;
 
     for (ielem = 0; ielem < fcs_phonon->force_constant_with_cell[1].size(); ++ielem) {
 
