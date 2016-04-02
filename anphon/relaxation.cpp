@@ -63,7 +63,7 @@ void Relaxation::setup_relaxation()
         std::cout << " Now, move on to phonon lifetime calculations." << std::endl;
     }
 
-	detect_imaginary_branches();
+    detect_imaginary_branches();
     setup_mode_analysis();
     setup_cubic();
 
@@ -176,8 +176,9 @@ void Relaxation::detect_imaginary_branches()
 			}
 		}
 	}
+        if (mympi->my_rank = 0) {
 
-	if (is_anyof_imaginary) {
+            if (is_anyof_imaginary) {
 		int count = 0;
 		std::cout << std::endl;
 		std::cout << " WARNING: Imaginary frequency detected at the following branches:" << std::endl;
@@ -205,7 +206,8 @@ void Relaxation::detect_imaginary_branches()
 		std::cout << " imaginary branches will be treated as zero in the following calculations." << std::endl;
 		std::cout << " If imaginary branches are acoustic phonons at Gamma point (0, 0, 0), " << std::endl;
 		std::cout << " you can safely ignore this warning." << std::endl << std::endl;
-	}
+            }
+        }
 }
 
 // void Relaxation::print_minimum_energy_diff()
