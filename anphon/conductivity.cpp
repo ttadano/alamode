@@ -241,7 +241,7 @@ void Conductivity::calc_anharmonic_imagself()
             std::cout << " RANK: " << std::setw(5) << i + 1;
             std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << std::endl;
         }
-        std::cout << std::endl;
+        std::cout << std::endl << std::flush;
 
         memory->deallocate(nks_thread);
     }
@@ -287,7 +287,7 @@ void Conductivity::calc_anharmonic_imagself()
 
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart, vel, damping3);
-            std::cout <<  " MODE " << std::setw(5) << i + 1 << " done." << std::endl;
+            std::cout <<  " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
         }
     }
 
