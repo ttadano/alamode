@@ -14,9 +14,10 @@
 #include <vector>
 #include <set>
 
-namespace PHON_NS {
-
-    class Conductivity: protected Pointers {
+namespace PHON_NS
+{
+    class Conductivity: protected Pointers
+    {
     public:
         Conductivity(class PHON *);
         ~Conductivity();
@@ -43,3 +44,4 @@ namespace PHON_NS {
         void average_self_energy_at_degenerate_point(const int, const int, double **);
     };
 }
+

@@ -41,3 +41,4 @@ void Error::exit(const char *file, const char *message, const char *info)
     std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);
 }
+

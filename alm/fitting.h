@@ -18,9 +18,10 @@
 #include "mkl_vsl.h"
 #endif
 
-namespace ALM_NS {
-
-    class Fitting: protected Pointers {
+namespace ALM_NS
+{
+    class Fitting: protected Pointers
+    {
     public:
         Fitting(class ALM *);
         ~Fitting();
@@ -31,10 +32,11 @@ namespace ALM_NS {
         unsigned int nboot;
         unsigned int seed;
 
-        void data_multiplier(const int, const int, const int, const int, const int, int &, const int, double **&, double **&,
-            const std::string, const std::string);
-        void calc_matrix_elements_algebraic_constraint(const int, const int, const int, const int, 
-            const int, const int, const int, const int, double **, double **, double **, double *, double *);
+        void data_multiplier(const int, const int, const int, const int, const int, int &,
+                             const int, double **&, double **&, const std::string, const std::string);
+        void calc_matrix_elements_algebraic_constraint(const int, const int, const int, const int,
+                                                       const int, const int, const int, const int,
+                                                       double **, double **, double **, double *, double *);
 
 #ifdef _VSL
         VSLStreamStatePtr stream;
@@ -52,9 +54,10 @@ namespace ALM_NS {
 
         void fit_with_constraints(int, int, int, double **, double *, double *, double **, double *);
         void fit_consecutively(int, int, const int, const int,
-            const int, const int, double **, double *, double **, double *);
-        void calc_matrix_elements(const int, const int, const int, 
-            const int, const int, const int, const int, double **, double **, double **, double *);
+                               const int, const int, double **, double *, double **, double *);
+        void calc_matrix_elements(const int, const int, const int,
+                                  const int, const int, const int, const int,
+                                  double **, double **, double **, double *);
 
         void fit_bootstrap(int, int, int, int, int, double **, double *, double **, double *);
 
@@ -67,25 +70,25 @@ namespace ALM_NS {
 #endif
     };
 
-    extern "C" {
-
-        void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,	
-            double *b, int *ldb, double *s, double *rcond, int *rank,
-            double *work, int *lwork, int *info);
+    extern "C"
+    {
+        void dgelss_(int *m, int *n, int *nrhs, double *a, int *lda,
+                     double *b, int *ldb, double *s, double *rcond, int *rank,
+                     double *work, int *lwork, int *info);
 
         void dgglse_(int *m, int *n, int *p, double *a, int *lda,
-            double *b, int *ldb, double *c, double *d, double *x,
-            double *work, int *lwork, int *info);
+                     double *b, int *ldb, double *c, double *d, double *x,
+                     double *work, int *lwork, int *info);
 
         void dgesdd_(const char *jobz, int *m, int *n, double *a, int *lda,
-            double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
-            int *lwork, int *iwork, int *info);
+                     double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
+                     int *lwork, int *iwork, int *info);
 
         void dgeqrf_(int *m, int *n, double *a, int *lda, double *tau,
-            double *work, int *lwork, int *info);
+                     double *work, int *lwork, int *info);
 
         void dgeqp3_(int *m, int *n, double *a, int *lda, int *jpvt,
-            double *tau, double *work, int *lwork, int *info);
+                     double *tau, double *work, int *lwork, int *info);
     }
-
 }
+

@@ -41,7 +41,8 @@ using namespace PHON_NS;
 
 Input::Input(PHON *phon): Pointers(phon) {}
 
-Input::~Input() {
+Input::~Input()
+{
     if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
 }
 
@@ -78,7 +79,6 @@ void Input::parce_input(int narg, char **arg)
 
     if (!locate_tag("&kpoint")) error->exit("parse_input", "&kpoint entry not found in the input file");
     parse_kpoints();
-
 }
 
 void Input::parse_general_vars()
@@ -123,10 +123,10 @@ void Input::parse_general_vars()
     no_defaults = my_split(str_no_defaults, ' ');
 #endif
 
-    for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
+    for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (general_var_dict.find(*it) == general_var_dict.end()) {
-            error->exit("parse_general_vars", 
-                "The following variable is not found in &general input region: ", (*it).c_str());
+            error->exit("parse_general_vars",
+                        "The following variable is not found in &general input region: ", (*it).c_str());
         }
     }
 
@@ -135,7 +135,7 @@ void Input::parse_general_vars()
 
     file_result = prefix + ".result";
 
-    std::transform (mode.begin(), mode.end(), mode.begin(), toupper);
+    std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
     assign_val(nsym, "NSYM", general_var_dict);
 
     fcsinfo = general_var_dict["FCSXML"];
@@ -147,7 +147,7 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars", "The number of entries for KD is inconsistent with NKD");
     } else {
         memory->allocate(kdname, nkd);
-        for (i = 0; i < nkd; ++i){
+        for (i = 0; i < nkd; ++i) {
             kdname[i] = kdname_v[i];
         }
     }
@@ -380,7 +380,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
             error->exit("parse_analysis_vars", "The number of entries for ISOFACT is inconsistent with NKD");
         } else {
             memory->allocate(isotope_factor, system->nkd);
-            for (i = 0; i < system->nkd; ++i){
+            for (i = 0; i < system->nkd; ++i) {
                 isotope_factor[i] = my_cast<double>(isofact_v[i]);
             }
         }
@@ -402,7 +402,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         for (i = 0; i < 3; ++i) {
             try {
                 cellsize[i] = boost::lexical_cast<unsigned int>(anime_cellsize[i]);
-            } catch (std::exception &e) {
+            }
+            catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
                 error->exit("parse_analysis_vars", "ANIME_CELLSIZE must be a set of positive integers.");
             }
@@ -546,7 +547,7 @@ void Input::parse_cell_parameter()
             // Lattice vectors a1, a2, a3
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
-                    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+                    lavec_tmp[j][i - 1] = boost::lexical_cast<double>(line_split[j]);
                 }
             } else {
                 error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
@@ -562,7 +563,7 @@ void Input::parse_cell_parameter()
 }
 
 
-void Input::parse_kpoints() 
+void Input::parse_kpoints()
 {
     // Read the settings in the &kpoint field.
 
@@ -624,7 +625,8 @@ void Input::parse_kpoints()
             if (kpelem.size() == 1) {
                 try {
                     kpmode = boost::lexical_cast<int>(kpelem[0]);
-                } catch (std::exception &e) {
+                }
+                catch (std::exception &e) {
                     std::cout << e.what() << std::endl;
                     error->exit("parse_kpoints", "KPMODE must be an integer. [0, 1, or 2]");
                 }
@@ -661,9 +663,8 @@ void Input::parse_kpoints()
 }
 
 
-int Input::locate_tag(std::string key)  
+int Input::locate_tag(std::string key)
 {
-
     int ret = 0;
     std::string line, line2;
 
@@ -683,12 +684,12 @@ int Input::locate_tag(std::string key)
             line2 = line;
             line = trim(line2);
 #endif
-            if (line == key){
+            if (line == key) {
                 ret = 1;
                 break;
             }
         }
-        return ret; 
+        return ret;
 
     } else {
 
@@ -704,19 +705,17 @@ int Input::locate_tag(std::string key)
             line2 = line;
             line = trim(line2);
 #endif
-            if (line == key){
+            if (line == key) {
                 ret = 1;
                 break;
             }
         }
-        return ret; 
+        return ret;
     }
-
 }
 
 void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict)
 {
-
     std::string line, key, val;
     std::string line_wo_comment, line_tmp;
     std::string::size_type pos_first_comment_tag;
@@ -889,7 +888,6 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 
 bool Input::is_endof_entry(const std::string str)
 {
-
     if (str[0] == '/') {
         return true;
     } else {
@@ -899,13 +897,12 @@ bool Input::is_endof_entry(const std::string str)
 
 void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec)
 {
-
     std::string str_tmp;
     std::istringstream is(str);
 
     str_vec.clear();
 
-    while(1) {
+    while (1) {
         str_tmp.clear();
         is >> str_tmp;
         if (str_tmp.empty()) {
@@ -916,14 +913,16 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
     str_tmp.clear();
 }
 
-template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
+template <typename T>
+void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.
 
     if (!dict[key].empty()) {
         try {
             val = boost::lexical_cast<T>(dict[key]);
-        } catch (std::exception &e) {
+        }
+        catch (std::exception &e) {
             std::string str_tmp;
             std::cout << e.what() << std::endl;
             str_tmp = "Invalid entry for the " + key + " tag.\n";
@@ -934,7 +933,8 @@ template<typename T> void Input::assign_val(T &val, const std::string key, std::
 }
 
 
-template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
+template <typename T_to, typename T_from>
+T_to Input::my_cast(T_from const &x)
 {
     std::stringstream ss;
     T_to ret;
@@ -944,3 +944,4 @@ template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
 
     return ret;
 }
+

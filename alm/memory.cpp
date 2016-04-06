@@ -15,3 +15,4 @@ using namespace ALM_NS;
 Memory::Memory(ALM *alm) : Pointers(alm) {}
 
 Memory::~Memory() {};
+

@@ -13,8 +13,10 @@
 #include <string>
 #include "pointers.h"
 
-namespace ALM_NS {
-    class Error : protected Pointers{
+namespace ALM_NS
+{
+    class Error : protected Pointers
+    {
     public:
         Error(class ALM *);
         ~Error();
@@ -25,3 +27,4 @@ namespace ALM_NS {
         void exit(const char *, const char *, const char *);
     };
 }
+

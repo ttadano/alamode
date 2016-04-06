@@ -23,10 +23,10 @@
 
 using namespace PHON_NS;
 
-Isotope::Isotope(PHON *phon): Pointers(phon){};
+Isotope::Isotope(PHON *phon): Pointers(phon) {};
 
-Isotope::~Isotope(){
-
+Isotope::~Isotope()
+{
     if (phon->mode == "RTA" && include_isotope) {
         memory->deallocate(isotope_factor);
         memory->deallocate(gamma_isotope);
@@ -92,7 +92,7 @@ void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const doub
 
                 dprod = std::complex<double>(0.0, 0.0);
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
+                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
                         * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
@@ -151,7 +151,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum, const int snum, cons
 
                 dprod = std::complex<double>(0.0, 0.0);
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd]) 
+                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
                         * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
@@ -246,7 +246,5 @@ void Isotope::calc_isotope_selfenergy_all()
 
         */
     }
-
-
 }
 

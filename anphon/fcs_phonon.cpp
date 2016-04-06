@@ -34,7 +34,8 @@ using namespace PHON_NS;
 
 Fcs_phonon::Fcs_phonon(PHON *phon): Pointers(phon) {}
 
-Fcs_phonon::~Fcs_phonon(){
+Fcs_phonon::~Fcs_phonon()
+{
     memory->deallocate(force_constant_with_cell);
 }
 
@@ -91,7 +92,7 @@ void Fcs_phonon::setup(std::string mode)
         load_fc2_xml();
         load_fcs_xml();
 
-        for (i = 0; i < maxorder; ++i){
+        for (i = 0; i < maxorder; ++i) {
             std::cout << "  Number of non-zero IFCs for " << i + 2 << " order: ";
             if (i == 0) {
                 std::cout << fc2_ext.size() << std::endl;
@@ -102,12 +103,12 @@ void Fcs_phonon::setup(std::string mode)
         std::cout << std::endl;
 
         memory->allocate(maxdev, maxorder);
-        examine_translational_invariance(maxorder, system->nat_anharm, system->natmin, 
-            maxdev, fc2_ext, force_constant_with_cell);
+        examine_translational_invariance(maxorder, system->nat_anharm, system->natmin,
+                                         maxdev, fc2_ext, force_constant_with_cell);
 
         std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
         for (i = 0; i < maxorder; ++i) {
-            std::cout << "   Order " << i + 2 << " : " << std::setw(12) 
+            std::cout << "   Order " << i + 2 << " : " << std::setw(12)
                 << std::scientific << maxdev[i] << std::endl;
         }
         std::cout << std::endl;
@@ -131,7 +132,7 @@ void Fcs_phonon::load_fc2_xml()
     if (update_fc2) {
         try {
             read_xml(file_fc2, pt);
-        } 
+        }
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FC2XML ( " + file_fcs + " )";
             error->exit("load_fc2_xml", str_error.c_str());
@@ -139,7 +140,7 @@ void Fcs_phonon::load_fc2_xml()
     } else {
         try {
             read_xml(file_fcs, pt);
-        } 
+        }
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
             error->exit("load_fc2_xml", str_error.c_str());
@@ -149,7 +150,7 @@ void Fcs_phonon::load_fc2_xml()
     fc2_ext.clear();
 
     BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
-        const ptree& child = child_.second;
+        const ptree &child = child_.second;
         const std::string str_p1 = child.get<std::string>("<xmlattr>.pair1");
         const std::string str_p2 = child.get<std::string>("<xmlattr>.pair2");
 
@@ -201,13 +202,13 @@ void Fcs_phonon::load_fcs_xml()
 
     try {
         read_xml(file_fcs, pt);
-    } 
+    }
     catch (std::exception &e) {
         std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
         error->exit("load_fcs_xml", str_error.c_str());
     }
 
-    for (order = 0; order < maxorder; ++order){
+    for (order = 0; order < maxorder; ++order) {
 
         if (order == 0) {
             str_tag = "Data.ForceConstants.HARMONIC";
@@ -215,7 +216,7 @@ void Fcs_phonon::load_fcs_xml()
             str_tag = "Data.ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2);
         }
 
-        boost::optional< ptree& > child_ = pt.get_child_optional(str_tag);
+        boost::optional<ptree&> child_ = pt.get_child_optional(str_tag);
 
         if (!child_) {
             std::string str_tmp = str_tag + " flag not found in the XML file";
@@ -223,7 +224,7 @@ void Fcs_phonon::load_fcs_xml()
         }
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child(str_tag)) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
 
             fcs_val = boost::lexical_cast<double>(child.data());
             ivec.clear();
@@ -260,7 +261,7 @@ void Fcs_phonon::load_fcs_xml()
 
             }
 
-            if (std::abs(fcs_val) > eps) { 
+            if (std::abs(fcs_val) > eps) {
 
                 do {
 
@@ -277,7 +278,7 @@ void Fcs_phonon::load_fcs_xml()
 
                     force_constant_with_cell[order].push_back(FcsArrayWithCell(fcs_val, ivec_copy));
 
-                } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));   
+                } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
             }
         }
     }
@@ -308,9 +309,9 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
         memory->allocate(ind, len, nelem, 3);
 
         if (mympi->my_rank == 0) {
-            for (j = 0; j < len; ++j){
+            for (j = 0; j < len; ++j) {
                 fcs_tmp[j] = force_constant[i][j].fcs_val;
-                for (k = 0; k < nelem; ++k){
+                for (k = 0; k < nelem; ++k) {
                     ind[j][k][0] = force_constant[i][j].elems[k].atom;
                     ind[j][k][1] = force_constant[i][j].elems[k].cell;
                     ind[j][k][2] = force_constant[i][j].elems[k].xyz;
@@ -319,19 +320,19 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
         }
 
         MPI_Bcast(&fcs_tmp[0], len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&ind[0][0][0], 3*nelem*len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&ind[0][0][0], 3 * nelem * len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank > 0) {
             force_constant[i].clear();
 
-            for (j = 0; j < len; ++j){
+            for (j = 0; j < len; ++j) {
 
                 tri_vec.clear();
 
-                for (k = 0; k < nelem; ++k){
+                for (k = 0; k < nelem; ++k) {
                     tri_tmp.atom = ind[j][k][0];
                     tri_tmp.cell = ind[j][k][1];
-                    tri_tmp.xyz  = ind[j][k][2];
+                    tri_tmp.xyz = ind[j][k][2];
 
                     tri_vec.push_back(tri_tmp);
                 }
@@ -369,7 +370,7 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
         }
     }
     MPI_Bcast(&fcs_tmp[0], nfcs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ind[0][0], nfcs*5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ind[0][0], nfcs * 5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank != 0) {
         for (i = 0; i < nfcs; ++i) {
@@ -387,7 +388,7 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 }
 
 
-void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat, const unsigned int natmin, 
+void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat, const unsigned int natmin,
                                                   double *ret, std::vector<FcsClassExtent> &fc2,
                                                   std::vector<FcsArrayWithCell> *fcs)
 {
@@ -411,7 +412,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
         nsize = fcs[i].size();
 
         if (i == 0) {
-            memory->allocate(sum2, 3*natmin, 3);
+            memory->allocate(sum2, 3 * natmin, 3);
 
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3; ++k) {
@@ -433,11 +434,11 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                             fc2_tmp.atm2 = system->map_p2s[j][0];
                             fc2_tmp.xyz2 = m;
                             fc2_tmp.cell_s = 0;
-                            fc2_tmp.fcs_val = sum2[3*j+k][m];
-                            it_target = std::find(fc2.begin(),fc2.end(),fc2_tmp);
+                            fc2_tmp.fcs_val = sum2[3 * j + k][m];
+                            it_target = std::find(fc2.begin(), fc2.end(), fc2_tmp);
                             if (std::abs(fc2_tmp.fcs_val) > eps12) {
                                 if (it_target != fc2.end()) {
-                                    fc2[it_target-fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
+                                    fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
                                     error->exit("examine_translational_invariance", "Corresponding IFC not found.");
                                 }
@@ -466,7 +467,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
 
         } else if (i == 1) {
 
-            memory->allocate(sum3, 3*natmin, 3*nat, 3);
+            memory->allocate(sum3, 3 * natmin, 3 * nat, 3);
 
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3 * nat; ++k) {
@@ -495,7 +496,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
 
         } else if (i == 2) {
 
-            memory->allocate(sum4, 3*natmin, 3*nat, 3*nat, 3);
+            memory->allocate(sum4, 3 * natmin, 3 * nat, 3 * nat, 3);
 
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3 * nat; ++k) {
@@ -509,8 +510,8 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
 
             for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
                 j = (*it).pairs[0].index;
-                k = 3 * system->map_p2s_anharm[(*it).pairs[1].index/3][(*it).pairs[1].tran] + (*it).pairs[1].index %3;
-                l = 3 * system->map_p2s_anharm[(*it).pairs[2].index/3][(*it).pairs[2].tran] + (*it).pairs[2].index %3;
+                k = 3 * system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + (*it).pairs[1].index % 3;
+                l = 3 * system->map_p2s_anharm[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + (*it).pairs[2].index % 3;
                 //                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
                 //                l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;
                 m = (*it).pairs[3].index % 3;
@@ -535,7 +536,6 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
         }
 
     }
-
 }
 
 
@@ -562,9 +562,9 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N)
         memory->allocate(ind, len, nelem, 3);
 
         if (mympi->my_rank == 0) {
-            for (j = 0; j < len; ++j){
+            for (j = 0; j < len; ++j) {
                 fcs_tmp[j] = force_constant_with_cell[i][j].fcs_val;
-                for (k = 0; k < nelem; ++k){
+                for (k = 0; k < nelem; ++k) {
                     ind[j][k][0] = force_constant_with_cell[i][j].pairs[k].index;
                     ind[j][k][1] = force_constant_with_cell[i][j].pairs[k].tran;
                     ind[j][k][2] = force_constant_with_cell[i][j].pairs[k].cell_s;
@@ -573,19 +573,19 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N)
         }
 
         MPI_Bcast(&fcs_tmp[0], len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&ind[0][0][0], 3*nelem*len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&ind[0][0][0], 3 * nelem * len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank > 0) {
             force_constant_with_cell[i].clear();
 
-            for (j = 0; j < len; ++j){
+            for (j = 0; j < len; ++j) {
 
                 ivec_array.clear();
 
-                for (k = 0; k < nelem; ++k){
+                for (k = 0; k < nelem; ++k) {
                     ivec_tmp.index = ind[j][k][0];
                     ivec_tmp.tran = ind[j][k][1];
-                    ivec_tmp.cell_s  = ind[j][k][2];
+                    ivec_tmp.cell_s = ind[j][k][2];
 
                     ivec_array.push_back(ivec_tmp);
                 }
@@ -597,3 +597,4 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N)
         memory->deallocate(ind);
     }
 }
+

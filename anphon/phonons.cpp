@@ -51,7 +51,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         std::cout << " +------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
-        std::cout << " Job started at " << timer->DateAndTime() <<  std::endl;
+        std::cout << " Job started at " << timer->DateAndTime() << std::endl;
         std::cout << " The number of MPI threads: " << mympi->nprocs << std::endl;
 #ifdef _OPENMP
         std::cout << " The number of OpenMP threads: " << omp_get_max_threads() << std::endl;
@@ -59,7 +59,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         std::cout << std::endl;
 
         input->parce_input(narg, arg);
-        writes->write_input_vars();    
+        writes->write_input_vars();
     }
 
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -86,7 +86,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     destroy_pointers();
 }
 
-PHON::~PHON(){
+PHON::~PHON()
+{
     delete input;
     delete mympi;
 }
@@ -227,7 +228,7 @@ void PHON::execute_RTA()
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
- //   relaxation->setup_mode_analysis();
+    //   relaxation->setup_mode_analysis();
     relaxation->setup_relaxation();
     selfenergy->setup_selfenergy();
 

@@ -30,8 +30,9 @@
 
 using namespace PHON_NS;
 
-Dynamical::Dynamical(PHON *phon): Pointers(phon){}
-Dynamical::~Dynamical(){}
+Dynamical::Dynamical(PHON *phon): Pointers(phon) {}
+
+Dynamical::~Dynamical() {}
 
 void Dynamical::setup_dynamical(std::string mode)
 {
@@ -90,7 +91,7 @@ void Dynamical::setup_dynamical(std::string mode)
         } else {
             if (print_eigenvectors || writes->print_msd || writes->print_xsf || writes->print_anime
                 || dos->projected_dos || gruneisen->print_gruneisen || dynamical->participation_ratio) {
-                    eigenvectors = true;
+                eigenvectors = true;
             }
         }
     }
@@ -105,7 +106,7 @@ void Dynamical::setup_dynamical(std::string mode)
         if (mympi->my_rank == 0) load_born();
 
         MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&borncharge[0][0][0], 9*system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         memory->allocate(mindist_list, system->natmin, system->nat);
@@ -153,20 +154,20 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
     memory->allocate(distall, natmin, nat);
     memory->allocate(xcrd, nneib, nat, 3);
 
-    for (i = 0; i < nat; ++i){
-        for (j = 0; j < 3; ++j){
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
             xcrd[0][i][j] = system->xr_s[i][j];
         }
     }
     icell = 0;
-    for (isize = -1; isize <= 1; ++isize){
-        for (jsize = -1; jsize <= 1; ++jsize){
-            for (ksize = -1; ksize <= 1; ++ksize){
+    for (isize = -1; isize <= 1; ++isize) {
+        for (jsize = -1; jsize <= 1; ++jsize) {
+            for (ksize = -1; ksize <= 1; ++ksize) {
 
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
 
                 ++icell;
-                for (i = 0; i < nat; ++i){
+                for (i = 0; i < nat; ++i) {
                     xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
                     xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
                     xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
@@ -217,7 +218,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 
 double Dynamical::distance(double *x1, double *x2)
 {
-    double dist;    
+    double dist;
     dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
     dist = std::sqrt(dist);
 
@@ -226,7 +227,7 @@ double Dynamical::distance(double *x1, double *x2)
 
 
 void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_ext,
-                       double *eval_out, std::complex<double> **evec_out, bool require_evec) 
+                       double *eval_out, std::complex<double> **evec_out, bool require_evec)
 {
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -249,7 +250,7 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
             calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
         } else if (nonanalytic == 2) {
             calc_nonanalytic_k2(xk_in, kvec_in, fc2_ext, dymat_na_k);
-        }        
+        }
 
         for (i = 0; i < neval; ++i) {
             for (j = 0; j < neval; ++j) {
@@ -262,15 +263,15 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     // Force the dynamical matrix be real when k point is
     // zone-center or zone-boundaries.
 
-    if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0) 
-        + std::pow(std::fmod(xk_in[1], 0.5), 2.0) 
+    if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0)
+        + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
         + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
-            for (i= 0; i < 3 * system->natmin; ++i) {
-                for (j = 0; j < 3 * system->natmin; ++j) {
-                    dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
-                }
+        for (i = 0; i < 3 * system->natmin; ++i) {
+            for (j = 0; j < 3 * system->natmin; ++j) {
+                dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
             }
+        }
     }
 
     char JOBZ;
@@ -279,7 +280,7 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     std::complex<double> *WORK;
 
     LWORK = (2 * neval - 1) * 10;
-    memory->allocate(RWORK, 3*neval - 2);
+    memory->allocate(RWORK, 3 * neval - 2);
     memory->allocate(WORK, LWORK);
 
     std::complex<double> *amat;
@@ -357,7 +358,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-            - system->xr_s[system->map_p2s[atm2_p][0]][i] ;
+                - system->xr_s[system->map_p2s[atm2_p][0]][i] ;
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -365,8 +366,8 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
 
         phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
-        dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2] 
-        += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+        dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
+            += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
     }
 }
 
@@ -403,7 +404,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
         for (iat = 0; iat < natmin; ++iat) {
             atm_p1 = system->map_p2s[iat][0];
 
-            for (i = 0; i <3; ++i) {
+            for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     born_tmp[i][j] = borncharge[iat][i][j];
                 }
@@ -415,7 +416,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
                 atm_p2 = system->map_p2s[jat][0];
 
 
-                for (i = 0; i <3; ++i) {
+                for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         born_tmp[i][j] = borncharge[jat][i][j];
                     }
@@ -426,8 +427,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
 
-                        dymat_na_out[3 * iat + i][3 * jat + j] 
-                        = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
+                        dymat_na_out[3 * iat + i][3 * jat + j]
+                            = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
 
                     }
                 }
@@ -453,7 +454,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
 
             for (i = 0; i < 3; ++i) {
                 xdiff[i] = system->xr_s[system->map_p2s[iat][0]][i]
-                - system->xr_s[system->map_p2s[jat][0]][i];
+                    - system->xr_s[system->map_p2s[jat][0]][i];
             }
 
             rotvec(xdiff, xdiff, system->lavec_s);
@@ -471,7 +472,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
 }
 
 
-void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in, 
+void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
                                     std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
@@ -506,7 +507,7 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
         for (iat = 0; iat < natmin; ++iat) {
             atm_p1 = system->map_p2s[iat][0];
 
-            for (i = 0; i <3; ++i) {
+            for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     born_tmp[i][j] = borncharge[iat][i][j];
                 }
@@ -518,7 +519,7 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
                 atm_p2 = system->map_p2s[jat][0];
 
 
-                for (i = 0; i <3; ++i) {
+                for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         born_tmp[i][j] = borncharge[jat][i][j];
                     }
@@ -540,7 +541,7 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
 
                         for (k = 0; k < 3; ++k) {
                             vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
-                            - system->xr_s[atm_p2][k];
+                                - system->xr_s[atm_p2][k];
                         }
 
                         rotvec(vec, vec, system->lavec_s);
@@ -556,8 +557,8 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
-                        dymat_na_out[3 * iat + i][3 * jat + j] 
-                        = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2])) * exp_phase;
+                        dymat_na_out[3 * iat + i][3 * jat + j]
+                            = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2])) * exp_phase;
                     }
                 }
             }
@@ -579,7 +580,7 @@ void Dynamical::diagonalize_dynamical_all()
     int ik;
     unsigned int is;
     unsigned int nk = kpoint->nk;
-    bool require_evec; 
+    bool require_evec;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl << " Diagonalizing dynamical matrices for all k points ... ";
@@ -598,13 +599,13 @@ void Dynamical::diagonalize_dynamical_all()
 #ifdef _OPENMP
 #pragma omp parallel for private (is)
 #endif
-    for (ik = 0; ik < nk; ++ik){
+    for (ik = 0; ik < nk; ++ik) {
 
-        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext, 
-            eval_phonon[ik], evec_phonon[ik], require_evec);
+        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
+               eval_phonon[ik], evec_phonon[ik], require_evec);
 
         // Phonon energy is the square-root of the eigenvalue 
-        for (is = 0; is < neval; ++is){
+        for (is = 0; is < neval; ++is) {
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
         }
     }
@@ -638,19 +639,19 @@ void Dynamical::modify_eigenvectors()
 
     for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
 
-    for (ik = 0; ik < nk; ++ik){
+    for (ik = 0; ik < nk; ++ik) {
 
         if (!flag_done[ik]) {
 
-            nk_inv = kpoint->knum_minus[ik];   
+            nk_inv = kpoint->knum_minus[ik];
 
-            for (is = 0; is < ns; ++is){
-                for (js = 0; js < ns; ++js){
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
                     evec_tmp[js] = evec_phonon[ik][is][js];
                     //	evec_tmp[js] = 0.5 * (std::conj(evec_phonon[ik][is][js]) + evec_phonon[nk_inv][is][js]);
                 }
 
-                for (js = 0; js < ns; ++js){
+                for (js = 0; js < ns; ++js) {
                     evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
                     //		evec_phonon[ik][is][js] = evec_tmp[js];
                     //		evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
@@ -701,7 +702,7 @@ void Dynamical::load_born()
     ifs_born.close();
 
 
-    std::cout << "  Dielectric constants and Born effective charges are read from " 
+    std::cout << "  Dielectric constants and Born effective charges are read from "
         << file_born << "." << std::endl << std::endl;
     std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
     for (i = 0; i < 3; ++i) {
@@ -713,7 +714,7 @@ void Dynamical::load_born()
     std::cout << std::endl;
     std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
     for (i = 0; i < system->natmin; ++i) {
-        std::cout << "  Atom" << std::setw(5) << i + 1 << "(" 
+        std::cout << "  Atom" << std::setw(5) << i + 1 << "("
             << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 
         for (j = 0; j < 3; ++j) {
@@ -755,7 +756,7 @@ void Dynamical::load_born()
         std::cout << std::endl;
         std::cout << "  New Born effective charge tensor in Cartesian coordinate." << std::endl;
         for (i = 0; i < system->natmin; ++i) {
-            std::cout << "  Atom" << std::setw(5) << i + 1 << "(" 
+            std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                 << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 
             for (j = 0; j < 3; ++j) {
@@ -775,7 +776,7 @@ double Dynamical::fold(double x)
 }
 
 
-double Dynamical::freq(const double x) 
+double Dynamical::freq(const double x)
 {
     if (std::abs(x) < eps) {
         // Special treatment to avoid the divergence of computation.
@@ -831,8 +832,8 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, doub
     for (iat = 0; iat < natmin; ++iat) ret[iat] = 0.0;
 
     for (iat = 0; iat < natmin; ++iat) {
-        ret[iat] = (std::norm(evec[3 * iat]) 
-            + std::norm(evec[3 * iat + 1]) 
+        ret[iat] = (std::norm(evec[3 * iat])
+            + std::norm(evec[3 * iat + 1])
             + std::norm(evec[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
     }
 
@@ -842,7 +843,4 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, doub
 
     for (iat = 0; iat < natmin; ++iat) ret[iat] /= std::sqrt(static_cast<double>(natmin) * sum);
 }
-
-
-
 

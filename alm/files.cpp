@@ -18,9 +18,11 @@
 using namespace ALM_NS;
 
 Files::Files(ALM *alm): Pointers(alm) {}
-Files::~Files() {
+
+Files::~Files()
+{
     if (alm->mode == "fitting" || alm->mode == "lasso") {
-//        closefiles();
+        //        closefiles();
     } else if (alm->mode == "suggest") {
         memory->deallocate(file_disp_pattern);
     }
@@ -41,7 +43,7 @@ void Files::setfilenames()
             if (i == 0) {
                 file_disp_pattern[i] = job_title + ".pattern_HARMONIC";
             } else {
-                file_disp_pattern[i] = job_title + ".pattern_ANHARM" + boost::lexical_cast<std::string>(i+2);
+                file_disp_pattern[i] = job_title + ".pattern_ANHARM" + boost::lexical_cast<std::string>(i + 2);
             }
         }
     }
@@ -65,3 +67,4 @@ void Files::init()
 {
     setfilenames();
 }
+

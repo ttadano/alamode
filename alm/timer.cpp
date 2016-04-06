@@ -77,3 +77,4 @@ std::string Timer::DateAndTime()
     return asctime(local);
 #endif
 }
+

@@ -24,11 +24,12 @@
 
 using namespace PHON_NS;
 
-Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon) {
+Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
+{
     T_to_Ryd = k_Boltzmann / Ryd;
 }
 
-Thermodynamics::~Thermodynamics(){};
+Thermodynamics::~Thermodynamics() {};
 
 double Thermodynamics::Cv(const double omega, const double T)
 {
@@ -38,7 +39,7 @@ double Thermodynamics::Cv(const double omega, const double T)
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);
-        return k_Boltzmann * std::pow(x/(2.0 * sinh(0.5*x)), 2);
+        return k_Boltzmann * std::pow(x / (2.0 * sinh(0.5 * x)), 2);
     }
 }
 
@@ -58,7 +59,7 @@ double Thermodynamics::fB(const double omega, const double T)
 {
     double x;
 
-    if (std::abs(T) < eps || omega < 0.0){
+    if (std::abs(T) < eps || omega < 0.0) {
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);
@@ -87,8 +88,8 @@ double Thermodynamics::Cv_tot(const double T)
 
     double ret = 0.0;
 
-    for (ik = 0; ik < nk; ++ik){
-        for (is = 0; is < ns; ++is){
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
             omega = dynamical->eval_phonon[ik][is];
             if (omega < 0.0) continue;
             ret += Cv(omega, T);
@@ -108,7 +109,7 @@ double Thermodynamics::Cv_Debye(const double T, const double TD)
     double ret;
     d_theta = 0.001;
 
-    if (TD < eps)  {
+    if (TD < eps) {
         error->exit("Cv_Debye", "Too small TD");
     }
     if (T < 0.0) {
@@ -122,24 +123,24 @@ double Thermodynamics::Cv_Debye(const double T, const double TD)
         theta_max = atan(x);
 
         ret = 0.0;
-        ntheta = static_cast<unsigned int>(theta_max/d_theta);
+        ntheta = static_cast<unsigned int>(theta_max / d_theta);
 
-        for (i = 0; i < ntheta; ++i){
+        for (i = 0; i < ntheta; ++i) {
             theta = static_cast<double>(i) * d_theta;
             y = tan(theta);
-            if (y > eps){
-                ret += std::pow(y, 4)*std::exp(y) / std::pow((std::exp(y) - 1.0) * cos(theta), 2);
+            if (y > eps) {
+                ret += std::pow(y, 4) * std::exp(y) / std::pow((std::exp(y) - 1.0) * cos(theta), 2);
             }
         }
         y = tan(theta_max);
-        ret += 0.5 * std::pow(y, 4)*std::exp(y) / std::pow((std::exp(y) - 1.0) * cos(theta_max), 2);
+        ret += 0.5 * std::pow(y, 4) * std::exp(y) / std::pow((std::exp(y) - 1.0) * cos(theta_max), 2);
 
-        return 9.0 * static_cast<double>(natmin) * k_Boltzmann * ret * d_theta/ std::pow(x, 3);
+        return 9.0 * static_cast<double>(natmin) * k_Boltzmann * ret * d_theta / std::pow(x, 3);
     }
 }
 
 void Thermodynamics::Debye_T(const double T, double &TD)
-{    
+{
     double TD_old;
     double diff_C;
     double fdegfree = 1.0 / static_cast<double>(3.0 * system->natmin);
@@ -148,12 +149,12 @@ void Thermodynamics::Debye_T(const double T, double &TD)
 
     if (T > eps) {
 
-        do {   
+        do {
             diff_C = fdegfree * (Cv_tot_tmp - Cv_Debye(T, TD)) / k_Boltzmann;
 
             TD_old = TD;
             TD = TD_old - diff_C * 10.0;
-        } while(std::abs(diff_C) > 1.0e-5);
+        } while (std::abs(diff_C) > 1.0e-5);
     }
 }
 
@@ -166,8 +167,8 @@ double Thermodynamics::internal_energy(const double T)
 
     double ret = 0.0;
 
-    for (ik = 0; ik < nk; ++ik){
-        for (is = 0; is < ns; ++is){
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
             omega = dynamical->eval_phonon[ik][is];
 
             if (omega < eps8) continue;
@@ -230,8 +231,6 @@ double Thermodynamics::free_energy(const double T)
     } else {
         return T * T_to_Ryd * ret / static_cast<double>(nk);
     }
-
-
 }
 
 double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const unsigned int ns2)
@@ -251,13 +250,13 @@ double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const u
             // (neglect divergent contributions from acoustic modes at gamma point)
             if (omega < eps8) continue;
 
-            ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2])) 
+            ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2]))
                 * (fB(omega, T) + 0.5) / omega;
         }
     }
 
-    ret *= 1.0 / (static_cast<double>(nk) 
-        * std::sqrt(system->mass[system->map_p2s[ns1/3][0]] * system->mass[system->map_p2s[ns2/3][0]]));
+    ret *= 1.0 / (static_cast<double>(nk)
+        * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]] * system->mass[system->map_p2s[ns2 / 3][0]]));
 
     // ret *= 2.0 * electron_mass / time_ry * Bohr_in_Angstrom * Bohr_in_Angstrom;
     // ret *= h_planck / (2.0 * pi); // Convert to SI unit 

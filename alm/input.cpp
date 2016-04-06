@@ -34,7 +34,6 @@ Input::~Input() {}
 
 void Input::parce_input(int narg, char **arg)
 {
-
     if (narg == 1) {
 
         from_stdin = true;
@@ -116,8 +115,8 @@ void Input::parse_general_vars()
 
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (general_var_dict.find(*it) == general_var_dict.end()) {
-            error->exit("parse_general_vars", 
-                "The following variable is not found in &general input region: ", (*it).c_str());
+            error->exit("parse_general_vars",
+                        "The following variable is not found in &general input region: ", (*it).c_str());
         }
     }
 
@@ -150,7 +149,7 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars", "The number of entries for KD is inconsistent with NKD");
     } else {
         memory->allocate(kdname, nkd);
-        for (i = 0; i < nkd; ++i){
+        for (i = 0; i < nkd; ++i) {
             kdname[i] = kdname_v[i];
         }
     }
@@ -163,9 +162,10 @@ void Input::parse_general_vars()
         }
     } else if (periodic_v.size() == 3) {
         for (i = 0; i < 3; ++i) {
-            try{
+            try {
                 is_periodic[i] = boost::lexical_cast<int>(periodic_v[i]);
-            } catch (std::exception &e) {
+            }
+            catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
                 error->exit("parse_general_vars", "The PERIODIC tag must be a set of integers.");
             }
@@ -212,10 +212,10 @@ void Input::parse_general_vars()
                     error->exit("parse_general_vars", "Wild card '*' is not supported when NONCOLLINEAR = 1.");
                 } else {
                     magmag = boost::lexical_cast<double>((*it));
-                    if (icount/3 >= nat) {
+                    if (icount / 3 >= nat) {
                         error->exit("parse_general_vars", "Too many entries for MAGMOM.");
                     }
-                    magmom[icount/3][icount%3] = magmag;
+                    magmom[icount / 3][icount % 3] = magmag;
                     ++icount;
                 }
             }
@@ -240,9 +240,10 @@ void Input::parse_general_vars()
                             error->exit("parse_general_vars", "Please place '*' without space for the MAGMOM-tag.");
                         }
                         try {
-                             magmag = boost::lexical_cast<double>(str_split[1]);
-                             ncount = static_cast<int>(boost::lexical_cast<double>(str_split[0]));
-                        } catch (std::exception &e) {
+                            magmag = boost::lexical_cast<double>(str_split[1]);
+                            ncount = static_cast<int>(boost::lexical_cast<double>(str_split[0]));
+                        }
+                        catch (std::exception &e) {
                             error->exit("parse_general_vars", "Bad format for MAGMOM.");
                         }
 
@@ -260,7 +261,7 @@ void Input::parse_general_vars()
             if (icount != nat) {
                 error->exit("parse_general_vars", "Number of entries for MAGMOM must be NAT.");
             }
-        }   
+        }
     }
 
 
@@ -323,7 +324,7 @@ void Input::parse_general_vars()
     general_var_dict.clear();
 }
 
-void Input::parse_cell_parameter() 
+void Input::parse_cell_parameter()
 {
     int i, j;
     double a;
@@ -399,7 +400,7 @@ void Input::parse_cell_parameter()
             // Lattice vectors a1, a2, a3
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
-                    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+                    lavec_tmp[j][i - 1] = boost::lexical_cast<double>(line_split[j]);
                 }
             } else {
                 error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
@@ -414,7 +415,7 @@ void Input::parse_cell_parameter()
     }
 }
 
-void Input::parse_interaction_vars() 
+void Input::parse_interaction_vars()
 {
     int i;
     int maxorder;
@@ -439,8 +440,8 @@ void Input::parse_interaction_vars()
 
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (interaction_var_dict.find(*it) == interaction_var_dict.end()) {
-            error->exit("parse_interaction_vars", 
-                "The following variable is not found in &interaction input region: ", (*it).c_str());
+            error->exit("parse_interaction_vars",
+                        "The following variable is not found in &interaction input region: ", (*it).c_str());
         }
     }
 
@@ -459,7 +460,8 @@ void Input::parse_interaction_vars()
         for (i = 0; i < maxorder; ++i) {
             try {
                 nbody_include[i] = boost::lexical_cast<int>(nbody_v[i]);
-            } catch (std::exception &e) {
+            }
+            catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
                 error->exit("parse_interaction_vars", "NBODY must be an integer.");
             }
@@ -476,16 +478,15 @@ void Input::parse_interaction_vars()
     memory->allocate(interaction->nbody_include, maxorder);
 
     for (i = 0; i < maxorder; ++i) {
-        interaction->nbody_include[i] = nbody_include[i];    
+        interaction->nbody_include[i] = nbody_include[i];
     }
 
     memory->deallocate(nbody_include);
     nbody_v.clear();
     no_defaults.clear();
-
 }
 
-void Input::parse_cutoff_radii() 
+void Input::parse_cutoff_radii()
 {
     std::string line, line_wo_comment;
     std::string::size_type pos_first_comment_tag;
@@ -501,7 +502,7 @@ void Input::parse_cutoff_radii()
 
     if (from_stdin) {
 
-        while(std::getline(std::cin, line)) {
+        while (std::getline(std::cin, line)) {
 
             pos_first_comment_tag = line.find_first_of('#');
 
@@ -519,7 +520,7 @@ void Input::parse_cutoff_radii()
         }
     } else {
 
-        while(std::getline(ifs_input, line)) {
+        while (std::getline(ifs_input, line)) {
 
             pos_first_comment_tag = line.find_first_of('#');
 
@@ -599,7 +600,7 @@ void Input::parse_cutoff_radii()
 
         for (order = 0; order < maxorder; ++order) {
             // Accept any strings starting with 'N' or 'n' as 'None'
-            if ((cutoff_line[order+1][0] == 'N') || (cutoff_line[order+1][0] == 'n')) {
+            if ((cutoff_line[order + 1][0] == 'N') || (cutoff_line[order + 1][0] == 'n')) {
                 // Minus value for cutoff radius.
                 // This is a flag for neglecting cutoff radius
                 cutoff_tmp = -1.0;
@@ -644,7 +645,7 @@ void Input::parse_cutoff_radii()
             for (k = 0; k < nkd; ++k) {
                 if (undefined_cutoff[order][j][k]) {
                     std::cout << " Cutoff radius for " << std::setw(3) << order + 2 << "th-order terms" << std::endl;
-                    std::cout << " are not defined between elements " << std::setw(3) << j + 1 
+                    std::cout << " are not defined between elements " << std::setw(3) << j + 1
                         << " and " << std::setw(3) << k + 1 << std::endl;
                     error->exit("parse_cutoff_radii", "Incomplete cutoff radii");
                 }
@@ -659,14 +660,14 @@ void Input::parse_cutoff_radii()
         for (j = 0; j < nkd; ++j) {
             for (k = 0; k < nkd; ++k) {
                 interaction->rcs[i][j][k] = rcs[i][j][k];
-            } 
+            }
         }
     }
 
     memory->deallocate(rcs);
 }
 
-void Input::parse_fitting_vars() 
+void Input::parse_fitting_vars()
 {
     int ndata, nstart, nend, nskip, nboot;
     std::string dfile, ffile;
@@ -716,9 +717,9 @@ void Input::parse_fitting_vars()
         assign_val(nskip, "NSKIP", fitting_var_dict);
     }
 
-    if (ndata <= 0 || nstart <= 0 || nend <= 0 
+    if (ndata <= 0 || nstart <= 0 || nend <= 0
         || nstart > ndata || nend > ndata || nstart > nend) {
-            error->exit("parce_fitting_vars", "ndata, nstart, nend are not consistent with each other");
+        error->exit("parce_fitting_vars", "ndata, nstart, nend are not consistent with each other");
     }
 
     if (nskip < -1) error->exit("parce_fitting_vars", "nskip has to be larger than -2.");
@@ -791,7 +792,7 @@ void Input::parse_fitting_vars()
     fitting_var_dict.clear();
 }
 
-void Input::parse_atomic_positions() 
+void Input::parse_atomic_positions()
 {
     int i, j;
     std::string line, line_wo_comment;
@@ -868,7 +869,8 @@ void Input::parse_atomic_positions()
         if (pos_line.size() == 4) {
             try {
                 kd[i] = boost::lexical_cast<int>(pos_line[0]);
-            } catch (std::exception &e) {
+            }
+            catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
                 error->exit("parse_atomic_positions", "Invalid entry for the &position field at line ", i + 1);
             }
@@ -899,10 +901,9 @@ void Input::parse_atomic_positions()
     memory->deallocate(kd);
     pos_line.clear();
     str_v.clear();
-
 }
 
-void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict) 
+void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict)
 {
     std::string line, key, val;
     std::string line_wo_comment;
@@ -1047,7 +1048,7 @@ int Input::locate_tag(std::string key)
 
         while (std::cin >> line) {
             boost::to_lower(line);
-            if (line == key){
+            if (line == key) {
                 ret = 1;
                 break;
             }
@@ -1068,10 +1069,9 @@ int Input::locate_tag(std::string key)
         }
         return ret;
     }
-
 }
 
-bool Input::is_endof_entry(std::string str) 
+bool Input::is_endof_entry(std::string str)
 {
     if (str[0] == '/') {
         return true;
@@ -1080,14 +1080,14 @@ bool Input::is_endof_entry(std::string str)
     }
 }
 
-void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec) 
+void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec)
 {
     std::string str_tmp;
     std::istringstream is(str);
 
     str_vec.clear();
 
-    while(1) {
+    while (1) {
         str_tmp.clear();
         is >> str_tmp;
         if (str_tmp.empty()) {
@@ -1098,14 +1098,16 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
     str_tmp.clear();
 }
 
-template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
+template <typename T>
+void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.
 
     if (!dict[key].empty()) {
         try {
             val = boost::lexical_cast<T>(dict[key]);
-        } catch (std::exception &e) {
+        }
+        catch (std::exception &e) {
             std::string str_tmp;
             std::cout << e.what() << std::endl;
             str_tmp = "Invalid entry for the " + key + " tag.\n";
@@ -1114,3 +1116,4 @@ template<typename T> void Input::assign_val(T &val, const std::string key, std::
         }
     }
 }
+

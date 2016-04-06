@@ -16,25 +16,30 @@
 #include <complex>
 #include <string>
 
-namespace PHON_NS {
-
-    class DistWithCell {
+namespace PHON_NS
+{
+    class DistWithCell
+    {
     public:
         int cell;
         double dist;
 
         DistWithCell();
-        DistWithCell(const int n, const double d) {
+
+        DistWithCell(const int n, const double d)
+        {
             cell = n;
             dist = d;
         }
     };
 
-    inline bool operator<(const DistWithCell a, const DistWithCell b) {
+    inline bool operator<(const DistWithCell a, const DistWithCell b)
+    {
         return a.dist < b.dist;
     }
 
-    class Dynamical: protected Pointers {
+    class Dynamical: protected Pointers
+    {
     public:
         Dynamical(class PHON *);
         ~Dynamical();
@@ -63,7 +68,7 @@ namespace PHON_NS {
         double fold(double);
         double freq(const double);
 
-        void calc_participation_ratio_all(std::complex<double> ***, double**, double ***);
+        void calc_participation_ratio_all(std::complex<double> ***, double **, double ***);
 
     private:
 
@@ -73,11 +78,11 @@ namespace PHON_NS {
         void calc_nonanalytic_k2(double *, double *, std::vector<FcsClassExtent>, std::complex<double> **);
 
         void prepare_mindist_list(std::vector<int> **);
-        void calc_atomic_participation_ratio(std::complex<double> *, double*);
+        void calc_atomic_participation_ratio(std::complex<double> *, double *);
         double distance(double *, double *);
 
         // void calc_analytic_k(double *, double ****, std::complex<double> **);
-       // void modify_eigenvectors_sym();
+        // void modify_eigenvectors_sym();
 
         double **xshift_s;
         char UPLO;
@@ -88,12 +93,13 @@ namespace PHON_NS {
         std::vector<int> **mindist_list;
     };
 
-    extern "C" {
-        void zheev_(const char *jobz, const char *uplo, int *n,	std::complex<double> *a, int *lda, 
-            double *w, std::complex<double> *work, int *lwork, double *rwork, int *info);
-        void zgemm_(const char *transa, const char *transb, int *m, int *n, int *k, 
-            std::complex<double> *alpha, std::complex<double> *a, int *lda, std::complex<double> *b, int *ldb, 
-            std::complex<double> *beta, std::complex<double> *c, int *ldc);
+    extern "C"
+    {
+        void zheev_(const char *jobz, const char *uplo, int *n, std::complex<double> *a, int *lda,
+                    double *w, std::complex<double> *work, int *lwork, double *rwork, int *info);
+        void zgemm_(const char *transa, const char *transb, int *m, int *n, int *k,
+                    std::complex<double> *alpha, std::complex<double> *a, int *lda, std::complex<double> *b, int *ldb,
+                    std::complex<double> *beta, std::complex<double> *c, int *ldc);
     }
 }
 

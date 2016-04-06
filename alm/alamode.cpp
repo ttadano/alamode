@@ -110,3 +110,4 @@ void ALM::finalize()
     delete writes;
     delete memory;
 }
+

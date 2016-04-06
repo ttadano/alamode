@@ -25,11 +25,12 @@
 
 using namespace ALM_NS;
 
-Fcs::Fcs(ALM *alm) : Pointers(alm){};
+Fcs::Fcs(ALM *alm) : Pointers(alm) {};
+
 Fcs::~Fcs() {};
 
-void Fcs::init(){
-
+void Fcs::init()
+{
     int i;
     int maxorder = interaction->maxorder;
 
@@ -47,7 +48,7 @@ void Fcs::init(){
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
         std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] << " FCs : " << ndup[i].size();
-	std::cout << std::endl;
+        std::cout << std::endl;
     }
     std::cout << std::endl;
 
@@ -59,7 +60,7 @@ void Fcs::init(){
             int nbegin = ndup[order][0];
             int nend;
             for (unsigned int mm = 1; mm < ndup[order].size(); ++mm) {
-                nend  = nbegin + ndup[order][mm];
+                nend = nbegin + ndup[order][mm];
                 std::sort(fc_set[order].begin() + nbegin, fc_set[order].begin() + nend);
                 nbegin += ndup[order][mm];
             }
@@ -244,7 +245,7 @@ bool Fcs::is_ascending(const int n, const int *arr)
 {
     int i;
     for (i = 0; i < n - 1; ++i) {
-        if (arr[i] > arr[i+1]) return false;
+        if (arr[i] > arr[i + 1]) return false;
     }
     return true;
 }
@@ -333,7 +334,7 @@ void Fcs::get_xyzcomponent(int n, int **xyz)
         xyz[m][0] = v[0];
         for (i = 1; i < n; ++i) xyz[m][i] = v[i];
         ++m;
-    } while(boost::next_partial_permutation(v.begin(), v.begin() + n, v.end()));
+    } while (boost::next_partial_permutation(v.begin(), v.begin() + n, v.end()));
 }
 
 void Fcs::sort_tail(const int n, int *arr)
@@ -370,5 +371,6 @@ std::string Fcs::easyvizint(const int n)
     str_tmp = boost::lexical_cast<std::string>(atmn);
     str_tmp += str_crd[crdn];
 
-    return  str_tmp;
+    return str_tmp;
 }
+

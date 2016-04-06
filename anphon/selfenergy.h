@@ -15,8 +15,10 @@
 #include <vector>
 #include <string>
 
-namespace PHON_NS {
-    class Selfenergy : protected Pointers {
+namespace PHON_NS
+{
+    class Selfenergy : protected Pointers
+    {
     public:
         Selfenergy(class PHON *phon);
         ~Selfenergy();
@@ -41,3 +43,4 @@ namespace PHON_NS {
         void mpi_reduce_complex(unsigned int, std::complex<double> *, std::complex<double> *);
     };
 }
+

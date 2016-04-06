@@ -15,21 +15,25 @@
 #include <vector>
 #include <set>
 
-namespace PHON_NS {
-
-    struct Triplet {
+namespace PHON_NS
+{
+    struct Triplet
+    {
         unsigned int atom, cell, xyz;
     };
 
-    class FcsClass {
+    class FcsClass
+    {
     public:
         std::vector<Triplet> elems;
         double fcs_val;
 
-        FcsClass(){};
-        FcsClass(const FcsClass &obj){
+        FcsClass() {};
+
+        FcsClass(const FcsClass &obj)
+        {
             fcs_val = obj.fcs_val;
-            for (std::vector<Triplet>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it){
+            for (std::vector<Triplet>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it) {
                 elems.push_back(*it);
             }
         }
@@ -37,7 +41,7 @@ namespace PHON_NS {
         FcsClass(const unsigned int n, const double val, const Triplet *arr)
         {
             fcs_val = val;
-            for (unsigned int i = 0; i < n; ++i){
+            for (unsigned int i = 0; i < n; ++i) {
                 elems.push_back(arr[i]);
             }
         }
@@ -45,14 +49,14 @@ namespace PHON_NS {
         FcsClass(const double val, const std::vector<Triplet> vec)
         {
             fcs_val = val;
-            for (std::vector<Triplet>::const_iterator it = vec.begin(); it != vec.end(); ++it){
+            for (std::vector<Triplet>::const_iterator it = vec.begin(); it != vec.end(); ++it) {
                 elems.push_back(*it);
             }
         }
-
     };
 
-    inline bool operator<(const FcsClass &a, const FcsClass &b) {
+    inline bool operator<(const FcsClass &a, const FcsClass &b)
+    {
         std::vector<int> a_tmp, b_tmp;
         a_tmp.clear();
         b_tmp.clear();
@@ -63,15 +67,18 @@ namespace PHON_NS {
         return lexicographical_compare(a_tmp.begin(), a_tmp.end(), b_tmp.begin(), b_tmp.end());
     }
 
-    class FcsClassExtent {
+    class FcsClassExtent
+    {
     public:
         unsigned int atm1, atm2;
         unsigned int xyz1, xyz2;
         unsigned int cell_s;
         double fcs_val;
 
-        FcsClassExtent(){};
-        FcsClassExtent(const FcsClassExtent &obj) {
+        FcsClassExtent() {};
+
+        FcsClassExtent(const FcsClassExtent &obj)
+        {
             atm1 = obj.atm1;
             atm2 = obj.atm2;
             xyz1 = obj.xyz1;
@@ -80,30 +87,36 @@ namespace PHON_NS {
             fcs_val = obj.fcs_val;
         }
 
-        bool operator==(const FcsClassExtent &a) const {
-            return (this->atm1 == a.atm1) & (this->atm2 == a.atm2) 
-                 & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
-                 & (this->cell_s == a.cell_s);
-             }
+        bool operator==(const FcsClassExtent &a) const
+        {
+            return (this->atm1 == a.atm1) & (this->atm2 == a.atm2)
+                & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
+                & (this->cell_s == a.cell_s);
+        }
     };
 
-    struct AtomCellSuper {
+    struct AtomCellSuper
+    {
         unsigned int index;
         unsigned int tran;
         unsigned int cell_s;
     };
 
-    inline bool operator<(const AtomCellSuper &a, const AtomCellSuper &b) {
+    inline bool operator<(const AtomCellSuper &a, const AtomCellSuper &b)
+    {
         return a.index < b.index;
     }
 
-    class FcsArrayWithCell {
+    class FcsArrayWithCell
+    {
     public:
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
 
-        FcsArrayWithCell(){};
-        FcsArrayWithCell(const double fcs_in, const std::vector<AtomCellSuper> pairs_in) {
+        FcsArrayWithCell() {};
+
+        FcsArrayWithCell(const double fcs_in, const std::vector<AtomCellSuper> pairs_in)
+        {
             fcs_val = fcs_in;
 
             for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
@@ -112,7 +125,8 @@ namespace PHON_NS {
         }
     };
 
-    inline bool operator<(const FcsArrayWithCell &a, const FcsArrayWithCell &b) {
+    inline bool operator<(const FcsArrayWithCell &a, const FcsArrayWithCell &b)
+    {
         std::vector<unsigned int> index_a, index_b;
         index_a.clear();
         index_b.clear();
@@ -124,7 +138,8 @@ namespace PHON_NS {
     }
 
 
-    class Fcs_phonon: protected Pointers {
+    class Fcs_phonon: protected Pointers
+    {
     public:
         Fcs_phonon(class PHON *);
         ~Fcs_phonon();
@@ -147,7 +162,7 @@ namespace PHON_NS {
         void load_fcs_xml();
 
         void examine_translational_invariance(const int, const unsigned int, const unsigned int,
-            double *, std::vector<FcsClassExtent> &, std::vector<FcsArrayWithCell> *);
+                                              double *, std::vector<FcsClassExtent> &, std::vector<FcsArrayWithCell> *);
 
 
         void MPI_Bcast_fc_class(const unsigned int);
@@ -155,3 +170,4 @@ namespace PHON_NS {
         void MPI_Bcast_fc2_ext();
     };
 }
+

@@ -14,15 +14,15 @@
 #include <fstream>
 #include "pointers.h"
 
-namespace ALM_NS {
-    class Files : protected Pointers {
+namespace ALM_NS
+{
+    class Files : protected Pointers
+    {
     public:
         Files(class ALM *);
         ~Files();
 
         void init();
-        void openfile(std::string, std::ifstream);
-        void openfile(std::string, std::ofstream);
 
         std::string job_title;
         std::string file_fcs, file_info;
@@ -45,3 +45,4 @@ namespace ALM_NS {
         void setfilenames();
     };
 }
+

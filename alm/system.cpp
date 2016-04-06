@@ -32,7 +32,7 @@ using namespace ALM_NS;
 
 System::System(ALM *alm): Pointers(alm) {}
 
-System::~System() 
+System::~System()
 {
     memory->deallocate(x_cartesian);
     memory->deallocate(atomlist_class);
@@ -149,12 +149,12 @@ void System::recips(double aa[3][3], double bb[3][3])
     */
 
     double det;
-    det = aa[0][0] * aa[1][1] * aa[2][2] 
-    + aa[1][0] * aa[2][1] * aa[0][2] 
-    + aa[2][0] * aa[0][1] * aa[1][2]
-    - aa[0][0] * aa[2][1] * aa[1][2] 
-    - aa[2][0] * aa[1][1] * aa[0][2]
-    - aa[1][0] * aa[0][1] * aa[2][2];
+    det = aa[0][0] * aa[1][1] * aa[2][2]
+        + aa[1][0] * aa[2][1] * aa[0][2]
+        + aa[2][0] * aa[0][1] * aa[1][2]
+        - aa[0][0] * aa[2][1] * aa[1][2]
+        - aa[2][0] * aa[1][1] * aa[0][2]
+        - aa[1][0] * aa[0][1] * aa[2][2];
 
     if (std::abs(det) < eps12) {
         error->exit("recips", "Lattice Vector is singular");
@@ -248,7 +248,7 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     if (order_fcs == 0) {
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
             if (child_.first == "FC2") {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
                 const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
 
@@ -261,7 +261,7 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     } else if (order_fcs == 1) {
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.CubicUnique")) {
             if (child_.first == "FC3") {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
                 const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
 
@@ -282,13 +282,13 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
 
     list_found.clear();
 
-    for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin(); 
-        p != fcs->fc_set[order_fcs].end(); ++p) {
-            FcProperty list_tmp = *p; // Using copy constructor
-            for (i = 0; i < nterms; ++i) {
-                ind[i] = list_tmp.elems[i];
-            }
-            list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
+    for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin();
+         p != fcs->fc_set[order_fcs].end(); ++p) {
+        FcProperty list_tmp = *p; // Using copy constructor
+        for (i = 0; i < nterms; ++i) {
+            ind[i] = list_tmp.elems[i];
+        }
+        list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
     }
     // 
     //     for (i = 0; i < nfcs_ref; ++i) {
@@ -327,7 +327,7 @@ void System::load_reference_system()
     std::ifstream ifs_fc2;
 
     ifs_fc2.open(constraint->fc2_file.c_str(), std::ios::in);
-    if(!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
+    if (!ifs_fc2) error->exit("calc_constraint_matrix", "cannot open file fc2_file");
 
     bool is_found_system = false;
 
@@ -336,8 +336,7 @@ void System::load_reference_system()
 
     std::string str_tmp;
 
-    while(!ifs_fc2.eof() && !is_found_system)
-    {
+    while (!ifs_fc2.eof() && !is_found_system) {
         std::getline(ifs_fc2, str_tmp);
         if (str_tmp == "##SYSTEM INFO") {
 
@@ -435,16 +434,14 @@ void System::load_reference_system()
 
     bool is_found_fc2 = false;
 
-    while(!ifs_fc2.eof() && !is_found_fc2)
-    {
+    while (!ifs_fc2.eof() && !is_found_fc2) {
         std::getline(ifs_fc2, str_tmp);
-        if (str_tmp == "##HARMONIC FORCE CONSTANTS")
-        {
+        if (str_tmp == "##HARMONIC FORCE CONSTANTS") {
             ifs_fc2 >> nparam_harmonic_ref;
             if (nparam_harmonic_ref < nparam_harmonic) {
                 error->exit("load_reference_system", "Reference file doesn't contain necessary fc2. (too few)");
-            } else if (nparam_harmonic_ref > nparam_harmonic){
-                error->exit("load_reference_system","Reference file contains extra force constants." );
+            } else if (nparam_harmonic_ref > nparam_harmonic) {
+                error->exit("load_reference_system", "Reference file contains extra force constants.");
             }
 
             is_found_fc2 = true;
@@ -464,7 +461,7 @@ void System::load_reference_system()
             list_found.clear();
             for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p) {
                 FcProperty list_tmp = *p; // Using copy constructor
-                for (i = 0; i < 2; ++i){
+                for (i = 0; i < 2; ++i) {
                     ind[i] = list_tmp.elems[i];
                 }
                 list_found.insert(FcProperty(2, list_tmp.coef, ind, list_tmp.mother));
@@ -491,7 +488,7 @@ void System::load_reference_system()
         }
     }
 
-    if(!is_found_fc2) error->exit("load_reference_system", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");
+    if (!is_found_fc2) error->exit("load_reference_system", "HARMONIC FORCE CONSTANTS flag not found in the fc2_file");
     ifs_fc2.close();
 }
 
@@ -499,14 +496,14 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 {
     double vol;
 
-    vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
-        + vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
-        + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
+    vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
+        + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
+        + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
 
     return vol;
 }
 
-void System::setup_atomic_class(int *kd) 
+void System::setup_atomic_class(int *kd)
 {
     // In the case of collinear calculation, spin moments are considered as scalar
     // variables. Therefore, the same elements with different magnetic moments are
@@ -552,3 +549,4 @@ void System::setup_atomic_class(int *kd)
     }
     set_type.clear();
 }
+

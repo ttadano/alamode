@@ -33,7 +33,8 @@ using namespace PHON_NS;
 
 System::System(PHON *phon): Pointers(phon) {}
 
-System::~System() {
+System::~System()
+{
     memory->deallocate(xr_p);
     memory->deallocate(xr_s);
     memory->deallocate(xr_s_anharm);
@@ -67,11 +68,11 @@ void System::setup()
     memory->allocate(xr_p, nat, 3);
     memory->allocate(xc, nat, 3);
 
-    for (i = 0; i < nat; ++i){
+    for (i = 0; i < nat; ++i) {
         rotvec(xc[i], xr_s[i], lavec_s);
         rotvec(xr_p[i], xc[i], rlavec_p);
-        for(j = 0; j < 3; ++j){
-            xr_p[i][j] /=  2.0 * pi;
+        for (j = 0; j < 3; ++j) {
+            xr_p[i][j] /= 2.0 * pi;
         }
     }
 
@@ -106,8 +107,8 @@ void System::setup()
         cout << endl << endl;
 
 
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
                 vec_tmp[i][j] = lavec_p[j][i];
             }
         }
@@ -146,7 +147,7 @@ void System::setup()
         }
 
         cout << "  Atomic positions in the primitive cell (fractional):" << endl;
-        for (i = 0; i < natmin; ++i){
+        for (i = 0; i < natmin; ++i) {
             cout << setw(4) << i + 1 << ":";
             for (j = 0; j < 3; ++j) {
                 cout << setw(15) << xtmp[i][j];
@@ -193,11 +194,11 @@ void System::setup()
 
     memory->allocate(mass, nat);
     memory->allocate(mass_anharm, nat_anharm);
-    for (i = 0; i < nat; ++i){
-        mass[i] = mass_kd[kd[i]]*amu_ry;
+    for (i = 0; i < nat; ++i) {
+        mass[i] = mass_kd[kd[i]] * amu_ry;
     }
     for (i = 0; i < nat_anharm; ++i) {
-        mass_anharm[i] = mass_kd[kd_anharm[i]]*amu_ry;
+        mass_anharm[i] = mass_kd[kd_anharm[i]] * amu_ry;
     }
     MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -213,7 +214,7 @@ void System::setup()
     if (mympi->my_rank > 0) {
         memory->allocate(magmom, natmin, 3);
     }
-    MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     setup_atomic_class(natmin, kd_prim, magmom);
@@ -234,7 +235,7 @@ void System::load_system_info_from_XML()
 
         try {
             read_xml(fcs_phonon->file_fcs, pt);
-        } 
+        }
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
             error->exit("load_system_info_from_XML", str_error.c_str());
@@ -245,8 +246,9 @@ void System::load_system_info_from_XML()
         nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
         nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfElements"));
 
-        if (nkd != nkd_tmp) error->exit("load_system_info_from_XML", 
-            "NKD in the FCSXML file is not consistent with that given in the input file.");
+        if (nkd != nkd_tmp)
+            error->exit("load_system_info_from_XML",
+                        "NKD in the FCSXML file is not consistent with that given in the input file.");
 
         ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
 
@@ -259,8 +261,8 @@ void System::load_system_info_from_XML()
         for (i = 0; i < 3; ++i) {
             ss.str("");
             ss.clear();
-            ss << get_value_from_xml(pt, 
-                "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
+            ss << get_value_from_xml(pt,
+                                     "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
             ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
         }
 
@@ -270,7 +272,7 @@ void System::load_system_info_from_XML()
         memory->allocate(kd, nat);
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
             const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
             dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
         }
@@ -278,7 +280,7 @@ void System::load_system_info_from_XML()
         unsigned int index;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
             const std::string str_index = child.get<std::string>("<xmlattr>.index");
             const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
@@ -304,7 +306,7 @@ void System::load_system_info_from_XML()
         unsigned int tran, atom_p, atom_s;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
             const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
             const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
@@ -331,7 +333,7 @@ void System::load_system_info_from_XML()
         try {
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
                 if (child_.first == "mag") {
-                    const ptree& child = child_.second;
+                    const ptree &child = child_.second;
                     const std::string str_index = child.get<std::string>("<xmlattr>.index");
 
                     ss.str("");
@@ -346,7 +348,8 @@ void System::load_system_info_from_XML()
                 }
             }
 
-        } catch(...) {
+        }
+        catch (...) {
             lspin = false;
         }
 
@@ -359,13 +362,15 @@ void System::load_system_info_from_XML()
 
             try {
                 noncollinear = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.Noncollinear"));
-            } catch(...) {
+            }
+            catch (...) {
                 noncollinear = 0;
             }
 
             try {
                 symmetry->trev_sym_mag = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.TimeReversalSymmetry"));
-            } catch(...) {
+            }
+            catch (...) {
                 symmetry->trev_sym_mag = true;
             }
         } else {
@@ -411,7 +416,7 @@ void System::load_system_info_from_XML()
 
             try {
                 read_xml(fcs_phonon->file_fc2, pt);
-            } 
+            }
             catch (std::exception &e) {
                 std::string str_error = "Cannot open file FC2XML ( " + fcs_phonon->file_fc2 + " )";
                 error->exit("load_system_info_from_XML", str_error.c_str());
@@ -422,15 +427,17 @@ void System::load_system_info_from_XML()
             nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
             nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfElements"));
 
-            if (nkd != nkd_tmp) error->exit("load_system_info_from_XML", 
-                "NKD in the FC2XML file is not consistent with that given in the input file.");
+            if (nkd != nkd_tmp)
+                error->exit("load_system_info_from_XML",
+                            "NKD in the FC2XML file is not consistent with that given in the input file.");
 
             ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
 
             natmin_tmp = nat / ntran;
 
-            if (natmin_tmp != natmin) error->exit("load_system_info_from_XML",
-                "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
+            if (natmin_tmp != natmin)
+                error->exit("load_system_info_from_XML",
+                            "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
 
             memory->deallocate(xr_s);
             memory->deallocate(kd);
@@ -445,8 +452,8 @@ void System::load_system_info_from_XML()
             for (i = 0; i < 3; ++i) {
                 ss.str("");
                 ss.clear();
-                ss << get_value_from_xml(pt, 
-                    "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
+                ss << get_value_from_xml(pt,
+                                         "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
                 ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
 
@@ -456,7 +463,7 @@ void System::load_system_info_from_XML()
             memory->allocate(kd, nat);
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
                 dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
             }
@@ -464,7 +471,7 @@ void System::load_system_info_from_XML()
             unsigned int index;
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const std::string str_index = child.get<std::string>("<xmlattr>.index");
                 const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
@@ -490,7 +497,7 @@ void System::load_system_info_from_XML()
             unsigned int tran, atom_p, atom_s;
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
                 const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
@@ -521,7 +528,7 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-    if (mympi->my_rank > 0){
+    if (mympi->my_rank > 0) {
         memory->allocate(mass_kd, nkd);
         memory->allocate(xr_s, nat, 3);
         memory->allocate(xr_s_anharm, nat_anharm, 3);
@@ -537,30 +544,29 @@ void System::load_system_info_from_XML()
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&xr_s_anharm[0][0], 3*nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s[0][0], 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s_anharm[0][0], 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd_anharm[0], nat_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s_anharm[0][0], natmin*ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p[0], nat*sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p_anharm[0], nat_anharm*sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
-    if (lspin) MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
+    MPI_Bcast(&map_p2s[0][0], natmin * ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_p2s_anharm[0][0], natmin * ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p[0], nat * sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    if (lspin) MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 
 void System::recips(double vec[3][3], double inverse[3][3])
 {
     double det;
-    det = vec[0][0] * vec[1][1] * vec[2][2] 
-    + vec[1][0] * vec[2][1] * vec[0][2] 
-    + vec[2][0] * vec[0][1] * vec[1][2]
-    - vec[0][0] * vec[2][1] * vec[1][2] 
-    - vec[2][0] * vec[1][1] * vec[0][2]
-    - vec[1][0] * vec[0][1] * vec[2][2];
+    det = vec[0][0] * vec[1][1] * vec[2][2]
+        + vec[1][0] * vec[2][1] * vec[0][2]
+        + vec[2][0] * vec[0][1] * vec[1][2]
+        - vec[0][0] * vec[2][1] * vec[1][2]
+        - vec[2][0] * vec[1][1] * vec[0][2]
+        - vec[1][0] * vec[0][1] * vec[2][2];
 
-    if(std::abs(det) < eps12) {
+    if (std::abs(det) < eps12) {
         error->exit("recips", "Lattice Vector is singular");
     }
 
@@ -583,17 +589,16 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 {
     double vol;
 
-    vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
-        + vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
-        + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
+    vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
+        + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
+        + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
 
     return vol;
 }
 
 
-void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmom_in) {
-
-
+void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmom_in)
+{
     // In the case of collinear calculation, spin moments are considered as scalar
     // variables. Therefore, the same elements with different magnetic moments are
     // considered as different types. In noncollinear calculations, 
@@ -638,3 +643,4 @@ void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmo
     }
     set_type.clear();
 }
+

@@ -15,24 +15,28 @@
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
 
-namespace PHON_NS {
-
-    class AtomType {
+namespace PHON_NS
+{
+    class AtomType
+    {
     public:
         int element;
         double magmom;
-        bool operator<(const AtomType &a) const {
+
+        bool operator<(const AtomType &a) const
+        {
             if (this->element < a.element) {
                 return true;
             } else if (this->element == a.element) {
                 return this->magmom < a.magmom;
             } else {
                 return false;
-            } 
+            }
         }
     };
 
-    class System: protected Pointers {
+    class System: protected Pointers
+    {
     public:
         System(class PHON *);
         ~System();
@@ -56,11 +60,14 @@ namespace PHON_NS {
         std::vector<unsigned int> *atomlist_class;
 
         unsigned int **map_p2s, **map_p2s_anharm;
-        class Maps {
+
+        class Maps
+        {
         public:
             unsigned int atom_num;
             unsigned int tran_num;
         };
+
         Maps *map_s2p, *map_s2p_anharm;
 
         std::string *symbol_kd;
@@ -79,3 +86,4 @@ namespace PHON_NS {
         void setup_atomic_class(unsigned int, unsigned int *, double **);
     };
 }
+

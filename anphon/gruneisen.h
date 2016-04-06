@@ -16,33 +16,36 @@
 #include <vector>
 #include "fcs_phonon.h"
 
-namespace PHON_NS {
+namespace PHON_NS
+{
+    //     class FcsClassGru {
+    //     public:
+    //         std::vector<int> elems;
+    //         double fcs_val;
+    // 
+    //         FcsClassGru();
+    //         FcsClassGru(const int n, int *arr, double fcs) {
+    //             for (int i = 0; i < n; ++i) {
+    //                 elems.push_back(arr[i]);
+    //             }
+    //             fcs_val = fcs;
+    //         }
+    //     };
+    // 
+    //     inline bool operator<(const FcsClassGru &a, const FcsClassGru &b) {
+    //         return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
+    //     }
 
-//     class FcsClassGru {
-//     public:
-//         std::vector<int> elems;
-//         double fcs_val;
-// 
-//         FcsClassGru();
-//         FcsClassGru(const int n, int *arr, double fcs) {
-//             for (int i = 0; i < n; ++i) {
-//                 elems.push_back(arr[i]);
-//             }
-//             fcs_val = fcs;
-//         }
-//     };
-// 
-//     inline bool operator<(const FcsClassGru &a, const FcsClassGru &b) {
-//         return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
-//     }
-
-    class FcsAlignedForGruneisen {
+    class FcsAlignedForGruneisen
+    {
     public:
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
 
-        FcsAlignedForGruneisen(){};
-        FcsAlignedForGruneisen(const double fcs_in, const std::vector<AtomCellSuper> pairs_in) {
+        FcsAlignedForGruneisen() {};
+
+        FcsAlignedForGruneisen(const double fcs_in, const std::vector<AtomCellSuper> pairs_in)
+        {
             fcs_val = fcs_in;
 
             for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
@@ -51,36 +54,38 @@ namespace PHON_NS {
         }
     };
 
-    inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b) {
+    inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b)
+    {
         std::vector<unsigned int> array_a, array_b;
         array_a.clear();
         array_b.clear();
         int len = a.pairs.size();
         for (int i = 0; i < len - 1; ++i) {
             array_a.push_back(a.pairs[i].index);
-//            array_a.push_back(a.pairs[i].index/3);
+            //            array_a.push_back(a.pairs[i].index/3);
             array_a.push_back(a.pairs[i].tran);
-//            array_a.push_back(a.pairs[i].cell_s);
-//            array_a.push_back(a.pairs[i].index%3);
+            //            array_a.push_back(a.pairs[i].cell_s);
+            //            array_a.push_back(a.pairs[i].index%3);
             array_b.push_back(b.pairs[i].index);
-//            array_b.push_back(b.pairs[i].index/3);
+            //            array_b.push_back(b.pairs[i].index/3);
             array_b.push_back(b.pairs[i].tran);
-//            array_b.push_back(b.pairs[i].cell_s);
-//            array_b.push_back(b.pairs[i].index%3);
+            //            array_b.push_back(b.pairs[i].cell_s);
+            //            array_b.push_back(b.pairs[i].index%3);
         }
         for (int i = 0; i < len - 1; ++i) {
             array_a.push_back(a.pairs[i].cell_s);
             array_b.push_back(b.pairs[i].cell_s);
         }
-        
-        array_a.push_back(a.pairs[len-1].index);
-        array_a.push_back(a.pairs[len-1].tran);
-        array_b.push_back(b.pairs[len-1].index);
-        array_b.push_back(b.pairs[len-1].tran);
+
+        array_a.push_back(a.pairs[len - 1].index);
+        array_a.push_back(a.pairs[len - 1].tran);
+        array_b.push_back(b.pairs[len - 1].index);
+        array_b.push_back(b.pairs[len - 1].tran);
         return std::lexicographical_compare(array_a.begin(), array_a.end(), array_b.begin(), array_b.end());
     }
 
-    class Gruneisen: protected Pointers {
+    class Gruneisen: protected Pointers
+    {
     public:
         Gruneisen(class PHON *);
         ~Gruneisen();
@@ -104,6 +109,6 @@ namespace PHON_NS {
         //  double calc_stress_energy2(const std::vector<FcsArrayWithCell>);
         void calc_stress_energy3(const std::vector<FcsArrayWithCell>, double ****);
         void print_stress_energy();
-
     };
 }
+

@@ -12,9 +12,10 @@
 
 #include "alamode.h"
 
-namespace ALM_NS {
-
-    class Pointers {
+namespace ALM_NS
+{
+    class Pointers
+    {
     public:
         Pointers(ALM *ptr) :
             alm(ptr),
@@ -22,16 +23,18 @@ namespace ALM_NS {
             input(ptr->input),
             system(ptr->system),
             interaction(ptr->interaction),
+            fcs(ptr->fcs),
             symmetry(ptr->symmetry),
             fitting(ptr->fitting),
             constraint(ptr->constraint),
             files(ptr->files),
-            error(ptr->error),
             displace(ptr->displace),
-            fcs(ptr->fcs),
             writes(ptr->writes),
+            error(ptr->error),
             timer(ptr->timer) {}
-        virtual ~Pointers(){}
+
+        virtual ~Pointers() {}
+
     protected:
         ALM *alm;
         Memory *&memory;
@@ -49,3 +52,4 @@ namespace ALM_NS {
         Timer *&timer;
     };
 }
+

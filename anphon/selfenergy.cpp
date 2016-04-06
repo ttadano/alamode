@@ -21,21 +21,23 @@
 
 using namespace PHON_NS;
 
-Selfenergy::Selfenergy(PHON *phon): Pointers(phon) {
+Selfenergy::Selfenergy(PHON *phon): Pointers(phon)
+{
     im = std::complex<double>(0.0, 1.0);
 }
-Selfenergy::~Selfenergy(){}
+
+Selfenergy::~Selfenergy() {}
 
 void Selfenergy::setup_selfenergy()
 {
-    nk = kpoint->nk;	
+    nk = kpoint->nk;
     ns = dynamical->neval;
     epsilon = integration->epsilon;
 }
 
 
-void Selfenergy::mpi_reduce_complex(unsigned int N, std::complex<double> *in_mpi, std::complex<double> *out) {
-
+void Selfenergy::mpi_reduce_complex(unsigned int N, std::complex<double> *in_mpi, std::complex<double> *out)
+{
 #ifdef MPI_COMPLEX16
     MPI_Reduce(&in_mpi[0], &out[0], N, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 #else
@@ -111,13 +113,13 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N, double *T, const doubl
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
                     n2 = thermodynamics->fB(omega2, T_tmp);
-                 //   ret[i] += v3_tmp1 * v3_tmp2 * (2.0*n2 + 1.0) / omega1; 
+                    //   ret[i] += v3_tmp1 * v3_tmp2 * (2.0*n2 + 1.0) / omega1; 
                     ret_mpi[i] += v3_tmp2 * (2.0 * n2 + 1.0);
                 }
             }
         }
         mpi_reduce_complex(N, ret_mpi, ret_tmp);
-       
+
         for (i = 0; i < N; ++i) {
             ret[i] += ret_tmp[i] * v3_tmp1 / omega1;
         }
@@ -175,9 +177,9 @@ void Selfenergy::selfenergy_a(const unsigned int N, double *T, const double omeg
         xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
         xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-        iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-        jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-        kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+        iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+        jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+        kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
         ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -201,7 +203,7 @@ void Selfenergy::selfenergy_a(const unsigned int N, double *T, const double omeg
                     n1 = thermodynamics->fB(omega1, T_tmp);
                     n2 = thermodynamics->fB(omega2, T_tmp);
 
-                    ret_mpi[i] += v3_tmp * ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1]); 
+                    ret_mpi[i] += v3_tmp * ((1.0 + n1 + n2) * omega_sum[0] + (n2 - n1) * omega_sum[1]);
                 }
             }
         }
@@ -217,7 +219,6 @@ void Selfenergy::selfenergy_a(const unsigned int N, double *T, const double omeg
 
 void Selfenergy::selfenergy_b(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
 {
-
     /*
     Diagram (b)
     Matrix elements that appear : V4
@@ -319,9 +320,9 @@ void Selfenergy::selfenergy_c(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1] - kpoint->xk[ik2][1];
             xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2] - kpoint->xk[ik2][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -359,7 +360,7 @@ void Selfenergy::selfenergy_c(const unsigned int N, double *T, const double omeg
                             n31 = n3 * n1;
 
                             ret_mpi[i] += v4_tmp * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
-                            + (n31 + n23 + n3 - n12) * omega_sum[1]	+ (n12 + n31 + n1 - n23) * omega_sum[2]	+ (n23 + n12 + n2 - n31) * omega_sum[3]);
+                                + (n31 + n23 + n3 - n12) * omega_sum[1] + (n12 + n31 + n1 - n23) * omega_sum[2] + (n23 + n12 + n2 - n31) * omega_sum[3]);
                         }
                     }
                 }
@@ -424,9 +425,9 @@ void Selfenergy::selfenergy_d(const unsigned int N, double *T, const double omeg
         xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
         xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-        iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-        jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-        kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+        iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+        jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+        kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
         ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -436,9 +437,9 @@ void Selfenergy::selfenergy_d(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik3][1];
             xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik3][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -502,7 +503,7 @@ void Selfenergy::selfenergy_d(const unsigned int N, double *T, const double omeg
     }
 
     factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
-    for (i = 0; i < N; ++i) ret_mpi[i] *=  factor;
+    for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
     mpi_reduce_complex(N, ret_mpi, ret);
 
@@ -569,9 +570,9 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
         xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
         xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-        iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-        jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-        kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+        iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+        jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+        kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
         ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -636,7 +637,7 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
                                                 //special treatment for T = 0
                                                 // This is valid since beta always appears as a product beta*n
                                                 // which is zero when T = 0.
-                                                T_inv = 0.0; 
+                                                T_inv = 0.0;
                                             } else {
                                                 T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                             }
@@ -707,10 +708,10 @@ void Selfenergy::selfenergy_e(const unsigned int N, double *T, const double omeg
                                     n3 = thermodynamics->fB(omega3, T_tmp);
                                     n4 = thermodynamics->fB(omega4, T_tmp);
 
-                                    ret_mpi[i] += v_prod * (2.0 * n3 + 1.0) 
-                                        * ((1.0 + n1) * omega_prod[0] + n1 * omega_prod[1] 
-                                    + (1.0 + n2) * omega_prod[2] + n2 * omega_prod[3] 
-                                    + (1.0 + n4) * omega_prod[4] + n4 * omega_prod[5]);
+                                    ret_mpi[i] += v_prod * (2.0 * n3 + 1.0)
+                                        * ((1.0 + n1) * omega_prod[0] + n1 * omega_prod[1]
+                                            + (1.0 + n2) * omega_prod[2] + n2 * omega_prod[3]
+                                            + (1.0 + n4) * omega_prod[4] + n4 * omega_prod[5]);
 
                                     /*
                                     ret[i] *= v3_tmp1 * v3_tmp2 * v4_tmp * (2.0 * n3 + 1.0) * (2.0 * omega2) / (omega1 * omega1 - omega2 * omega2)
@@ -790,9 +791,9 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
         xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
         xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-        iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-        jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-        kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+        iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+        jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+        kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
         ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -802,9 +803,9 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[ik1][1] - kpoint->xk[ik3][1];
             xk_tmp[2] = kpoint->xk[ik1][2] - kpoint->xk[ik3][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -885,10 +886,10 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
                                                             T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                                         }
 
-                                                        ret_mpi[i] += v3_prod * static_cast<double>(ip2*ip3*ip4)
-                                                            * (omega_sum[1] * (n2 * omega_sum[0] * ((1.0 + n3 + n4) *  omega_sum[0] + (1.0 + n2 + n4) * dp1_inv)
-                                                            + (1.0 + n3) * (1.0 + n4) * D134 * (D134 + dp1_inv)) 
-                                                            + (1.0 + n1) * (1.0 + n3 + n4) * D134 * omega_sum[0] * (omega_sum[0] + D134 + dp1_inv + n1 * T_inv));
+                                                        ret_mpi[i] += v3_prod * static_cast<double>(ip2 * ip3 * ip4)
+                                                            * (omega_sum[1] * (n2 * omega_sum[0] * ((1.0 + n3 + n4) * omega_sum[0] + (1.0 + n2 + n4) * dp1_inv)
+                                                                    + (1.0 + n3) * (1.0 + n4) * D134 * (D134 + dp1_inv))
+                                                                + (1.0 + n1) * (1.0 + n3 + n4) * D134 * omega_sum[0] * (omega_sum[0] + D134 + dp1_inv + n1 * T_inv));
                                                     }
                                                 }
                                             }
@@ -930,10 +931,10 @@ void Selfenergy::selfenergy_f(const unsigned int N, double *T, const double omeg
                                                             n4 = thermodynamics->fB(dp4, T_tmp);
                                                             n5 = thermodynamics->fB(dp5, T_tmp);
 
-                                                            ret_mpi[i] += v3_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
-                                                                * ((1.0 + n3 + n4) * (-(1.0 + n1 + n2) * D15 * D134 * omega_sum[0] 
-                                                            + (1.0 + n5 + n2) * D15 * D345 * omega_sum[1])
-                                                                + (1.0 + n2 + n3 + n4 + n2 * n3 + n3 * n4 + n4 * n2) * D15 * (D345 - D134) * omega_sum[2]);
+                                                            ret_mpi[i] += v3_prod * static_cast<double>(ip1 * ip2 * ip3 * ip4 * ip5)
+                                                                * ((1.0 + n3 + n4) * (-(1.0 + n1 + n2) * D15 * D134 * omega_sum[0]
+                                                                        + (1.0 + n5 + n2) * D15 * D345 * omega_sum[1])
+                                                                    + (1.0 + n2 + n3 + n4 + n2 * n3 + n3 * n4 + n4 * n2) * D15 * (D345 - D134) * omega_sum[2]);
                                                         }
                                                     }
                                                 }
@@ -1012,9 +1013,9 @@ void Selfenergy::selfenergy_g(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1] - kpoint->xk[ik2][1];
             xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2] - kpoint->xk[ik2][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1022,9 +1023,9 @@ void Selfenergy::selfenergy_g(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik3][1];
             xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik3][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1082,9 +1083,9 @@ void Selfenergy::selfenergy_g(const unsigned int N, double *T, const double omeg
                                                 n3 = thermodynamics->fB(dp3, T_tmp);
                                                 n4 = thermodynamics->fB(dp4, T_tmp);
 
-                                                ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) * D124 
-                                                    * ((1.0 + n1 + n2 + n3 + n4 + n1 * n3 + n1 * n4 + n2 * n3 + n2 * n4) * omega_sum[0] 
-                                                - (1.0 + n1 + n2 + n3 + n1 * n2 + n2 * n3 + n1 * n3) * omega_sum[1]);
+                                                ret_mpi[i] += v_prod * static_cast<double>(ip1 * ip2 * ip3 * ip4) * D124
+                                                    * ((1.0 + n1 + n2 + n3 + n4 + n1 * n3 + n1 * n4 + n2 * n3 + n2 * n4) * omega_sum[0]
+                                                        - (1.0 + n1 + n2 + n3 + n1 * n2 + n2 * n3 + n1 * n3) * omega_sum[1]);
 
                                             }
                                         }
@@ -1158,9 +1159,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
         xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik1][1];
         xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik1][2];
 
-        iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-        jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-        kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+        iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+        jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+        kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
         ik2 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1170,9 +1171,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[ik1][1] - kpoint->xk[ik3][1];
             xk_tmp[2] = kpoint->xk[ik1][2] - kpoint->xk[ik3][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik5 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1180,9 +1181,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[knum][1] - kpoint->xk[ik5][1];
             xk_tmp[2] = kpoint->xk[knum][2] - kpoint->xk[ik5][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik4 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1215,7 +1216,7 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
 
                             v3_tmp3 = relaxation->V3(arr_cubic3);
 
-                            for (is5 = 0; is5 < ns;++is5) {
+                            for (is5 = 0; is5 < ns; ++is5) {
                                 omega5 = dynamical->eval_phonon[ik5][is5];
 
                                 arr_cubic2[2] = ns * ik5 + is5;
@@ -1226,7 +1227,7 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
 
                                 v_prod = v3_tmp1 * v3_tmp2 * v3_tmp3 * v3_tmp4;
 
-                                for (ip1 = 1; ip1 >= -1; ip1 -= 2) { 
+                                for (ip1 = 1; ip1 >= -1; ip1 -= 2) {
                                     dp1 = static_cast<double>(ip1) * omega1;
 
                                     for (ip2 = 1; ip2 >= -1; ip2 -= 2) {
@@ -1271,9 +1272,9 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
                                                         N_prod[2] = ((1.0 + n2) * N35 - n3 * (1.0 + n5));
                                                         N_prod[3] = -((1.0 + n1) * N34 - n3 * (1.0 + n4));
 
-                                                        ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4*ip5) 
+                                                        ret_mpi[i] += v_prod * static_cast<double>(ip1 * ip2 * ip3 * ip4 * ip5)
                                                             * (D12_inv * (N_prod[0] * omega_sum[0] + N_prod[1] * omega_sum[1] + N_prod[2] * omega_sum[2] + N_prod[3] * omega_sum[3])
-                                                            + N12 * ((1.0 + n5) * D1_inv - (1.0 + n4) * D2_inv) * omega_sum[0] * omega_sum[1]);
+                                                                + N12 * ((1.0 + n5) * D1_inv - (1.0 + n4) * D2_inv) * omega_sum[0] * omega_sum[1]);
                                                     }
                                                 }
                                             }
@@ -1288,15 +1289,13 @@ void Selfenergy::selfenergy_h(const unsigned int N, double *T, const double omeg
         }
     }
 
-    factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7)); 
+    factor = 1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
     for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
     mpi_reduce_complex(N, ret_mpi, ret);
 
     memory->deallocate(ret_mpi);
 }
-
-
 
 
 void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -1353,9 +1352,9 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
             xk_tmp[1] = kpoint->xk[ik2][1] - kpoint->xk[ik1][1];
             xk_tmp[2] = kpoint->xk[ik2][2] - kpoint->xk[ik1][2];
 
-            iloc = (nint(xk_tmp[0]*static_cast<double>(nkx) + static_cast<double>(2*nkx))) % nkx;
-            jloc = (nint(xk_tmp[1]*static_cast<double>(nky) + static_cast<double>(2*nky))) % nky;
-            kloc = (nint(xk_tmp[2]*static_cast<double>(nkz) + static_cast<double>(2*nkz))) % nkz;
+            iloc = (nint(xk_tmp[0] * static_cast<double>(nkx) + static_cast<double>(2 * nkx))) % nkx;
+            jloc = (nint(xk_tmp[1] * static_cast<double>(nky) + static_cast<double>(2 * nky))) % nky;
+            kloc = (nint(xk_tmp[2] * static_cast<double>(nkz) + static_cast<double>(2 * nkz))) % nkz;
 
             ik3 = kloc + nkz * jloc + nky * nkz * iloc;
 
@@ -1421,7 +1420,7 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
                                                     T_inv = 1.0 / (thermodynamics->T_to_Ryd * T_tmp);
                                                 }
 
-                                                ret_mpi[i] += v_prod * static_cast<double>(ip1*ip3)
+                                                ret_mpi[i] += v_prod * static_cast<double>(ip1 * ip3)
                                                     * (D123 * (N_prod[0] * D123 + N_prod[1] * T_inv + N_prod[0] * dp2_inv));
                                             }
                                         }
@@ -1462,7 +1461,7 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
                                             for (ip4 = 1; ip4 >= -1; ip4 -= 2) {
                                                 dp4 = static_cast<double>(ip4) * omega4;
 
-                                                D24 = 1.0 /(dp2 - dp4);
+                                                D24 = 1.0 / (dp2 - dp4);
                                                 D134 = 1.0 / (dp1 + dp3 - dp4);
 
                                                 for (i = 0; i < N; ++i) {
@@ -1473,7 +1472,7 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
                                                     n3 = thermodynamics->fB(dp3, T_tmp);
                                                     n4 = thermodynamics->fB(dp4, T_tmp);
 
-                                                    ret_mpi[i] += v_prod * static_cast<double>(ip1*ip2*ip3*ip4) 
+                                                    ret_mpi[i] += v_prod * static_cast<double>(ip1 * ip2 * ip3 * ip4)
                                                         * ((1.0 + n1 + n3) * D24 * (n4 * D134 - n2 * D123) + D123 * D134 * n1 * n3);
                                                 }
                                             }
@@ -1495,7 +1494,6 @@ void Selfenergy::selfenergy_i(const unsigned int N, double *T, const double omeg
 
     memory->deallocate(ret_mpi);
 }
-
 
 
 void Selfenergy::selfenergy_j(const unsigned int N, double *T, const double omega, const unsigned int knum, const unsigned int snum, std::complex<double> *ret)
@@ -1624,3 +1622,4 @@ void Selfenergy::selfenergy_j(const unsigned int N, double *T, const double omeg
 
     memory->deallocate(ret_mpi);
 }
+

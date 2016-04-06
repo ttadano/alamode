@@ -14,25 +14,29 @@
 #include <string>
 #include <vector>
 
-namespace ALM_NS {
-
-    class AtomType {
+namespace ALM_NS
+{
+    class AtomType
+    {
     public:
         int element;
         double magmom;
-        bool operator<(const AtomType &a) const {
+
+        bool operator<(const AtomType &a) const
+        {
             if (this->element < a.element) {
                 return true;
             } else if (this->element == a.element) {
                 return this->magmom < a.magmom;
             } else {
                 return false;
-            } 
+            }
         }
     };
 
 
-    class System: protected Pointers {
+    class System: protected Pointers
+    {
     public:
         System(class ALM *);
         ~System();
@@ -59,10 +63,9 @@ namespace ALM_NS {
         double cell_volume;
 
 
-
     private:
-        unsigned int coordinate_index(const char);
-        double volume(double [3], double [3], double[3]);
+        double volume(double [3], double [3], double [3]);
         void setup_atomic_class(int *);
     };
 }
+

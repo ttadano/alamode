@@ -29,11 +29,12 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace ALM_NS;
 
-Interaction::Interaction(ALM *alm) : Pointers(alm) {
+Interaction::Interaction(ALM *alm) : Pointers(alm)
+{
     nsize[0] = nsize[1] = nsize[2] = 1;
 }
 
-Interaction::~Interaction() 
+Interaction::~Interaction()
 {
     memory->deallocate(x_image);
     memory->deallocate(exist_image);
@@ -61,7 +62,7 @@ void Interaction::init()
     std::cout << "  +++ Cutoff Radii Matrix in Bohr Unit (NKD x NKD matrix) +++" << std::endl;
 
     for (i = 0; i < maxorder; ++i) {
-        std::cout << "  " <<  std::setw(9) << str_order[i] << std::endl; 
+        std::cout << "  " << std::setw(9) << str_order[i] << std::endl;
         for (j = 0; j < nkd; ++j) {
             for (k = 0; k < nkd; ++k) {
                 if (rcs[i][j][k] < 0.0) {
@@ -159,26 +160,26 @@ void Interaction::generate_pairs(std::set<IntList> *pair_out, std::set<MinimumDi
             iat = symmetry->map_p2s[i][0];
 
             for (std::set<MinimumDistanceCluster>::const_iterator it = mindist_cluster[order][i].begin();
-                it != mindist_cluster[order][i].end(); ++it) {
+                 it != mindist_cluster[order][i].end(); ++it) {
 
-                    pair_tmp[0] = iat;
-                    for (j = 0; j < order + 1; ++j) {
-                        pair_tmp[j+1] = (*it).atom[j];
-                    }
+                pair_tmp[0] = iat;
+                for (j = 0; j < order + 1; ++j) {
+                    pair_tmp[j + 1] = (*it).atom[j];
+                }
 
-                    insort(order+2, pair_tmp);
+                insort(order + 2, pair_tmp);
 
-                    // Ignore many-body case 
-                    if (nbody(order + 2, pair_tmp) > nbody_include[order]) continue;
-                    pair_out[order].insert(IntList(order + 2, pair_tmp));
+                // Ignore many-body case 
+                if (nbody(order + 2, pair_tmp) > nbody_include[order]) continue;
+                pair_out[order].insert(IntList(order + 2, pair_tmp));
             }
         }
         memory->deallocate(pair_tmp);
     }
 }
 
-void Interaction::generate_coordinate_of_periodic_images(const unsigned int nat, double **xf_in, 
-                                                         const int periodic_flag[3], double ***xc_out, 
+void Interaction::generate_coordinate_of_periodic_images(const unsigned int nat, double **xf_in,
+                                                         const int periodic_flag[3], double ***xc_out,
                                                          int *is_allowed)
 {
     //
@@ -227,11 +228,11 @@ void Interaction::generate_coordinate_of_periodic_images(const unsigned int nat,
 
                 // When periodic flag is zero along an axis, 
                 // periodic images along that axis cannot be considered.
-                if (((std::abs(ia) == 1) && (periodic_flag[0] == 0)) || 
-                    ((std::abs(ja) == 1) && (periodic_flag[1] == 0)) || 
-                    ((std::abs(ka) == 1) && (periodic_flag[2] == 0)) ) {
+                if (((std::abs(ia) == 1) && (periodic_flag[0] == 0)) ||
+                    ((std::abs(ja) == 1) && (periodic_flag[1] == 0)) ||
+                    ((std::abs(ka) == 1) && (periodic_flag[2] == 0))) {
 
-                        is_allowed[icell] = 0;
+                    is_allowed[icell] = 0;
 
                 } else {
 
@@ -240,12 +241,11 @@ void Interaction::generate_coordinate_of_periodic_images(const unsigned int nat,
             }
         }
     }
-
 }
 
 double Interaction::distance(double *x1, double *x2)
 {
-    double dist;    
+    double dist;
     dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
     dist = std::sqrt(dist);
 
@@ -361,7 +361,7 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
 
                     if (nthnearest > 1) std::cout << std::setw(13) << " ";
 
-                    std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp 
+                    std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp
                         << " (" << std::setw(3) << atomlist.size() << ") -";
 
                     icount = 0;
@@ -373,8 +373,8 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
                         }
                         ++icount;
 
-                        std::cout << std::setw(4) << atomlist[k] + 1; 
-                        std::cout <<  "(" << std::setw(3) << system->kdname[system->kd[atomlist[k]] - 1] << ")";
+                        std::cout << std::setw(4) << atomlist[k] + 1;
+                        std::cout << "(" << std::setw(3) << system->kdname[system->kd[atomlist[k]] - 1] << ")";
 
                     }
                     std::cout << std::endl;
@@ -393,7 +393,7 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
 
             if (nthnearest > 1) std::cout << std::setw(13) << " ";
 
-            std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp 
+            std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp
                 << " (" << std::setw(3) << atomlist.size() << ") -";
 
             icount = 0;
@@ -405,8 +405,8 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
                 }
                 ++icount;
 
-                std::cout << std::setw(4) << atomlist[k] + 1; 
-                std::cout <<  "(" << std::setw(3) << system->kdname[system->kd[atomlist[k]] - 1] << ")";
+                std::cout << std::setw(4) << atomlist[k] + 1;
+                std::cout << "(" << std::setw(3) << system->kdname[system->kd[atomlist[k]] - 1] << ")";
 
             }
             std::cout << std::endl;
@@ -455,7 +455,7 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
                         interaction_list_out[order][i].push_back(jat);
                     }
                 }
-            }            
+            }
         }
     }
 
@@ -479,19 +479,19 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
             iat = symmetry->map_p2s[i][0];
 
             intlist.clear();
-            for (std::vector<int>::const_iterator it = interaction_list_out[order][i].begin(); 
-                it != interaction_list_out[order][i].end(); ++it) {
-                    intlist.push_back((*it));
+            for (std::vector<int>::const_iterator it = interaction_list_out[order][i].begin();
+                 it != interaction_list_out[order][i].end(); ++it) {
+                intlist.push_back((*it));
             }
             std::sort(intlist.begin(), intlist.end()); // Necessarily to sort here
 
             // write atoms inside the cutoff radius
             int id = 0;
             std::cout << "    Atom " << std::setw(5) << iat + 1
-                << "(" << std::setw(3) << system->kdname[system->kd[iat]-1] << ")" << " interacts with atoms ... " << std::endl;
+                << "(" << std::setw(3) << system->kdname[system->kd[iat] - 1] << ")" << " interacts with atoms ... " << std::endl;
 
             for (int id = 0; id < intlist.size(); ++id) {
-                if (id%6 == 0) {
+                if (id % 6 == 0) {
                     if (id == 0) {
                         std::cout << "   ";
                     } else {
@@ -499,15 +499,15 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
                         std::cout << "   ";
                     }
                 }
-                std::cout << std::setw(5) << intlist[id] + 1 << "(" 
-                    << std::setw(3) << system->kdname[system->kd[intlist[id]]-1] << ")";
+                std::cout << std::setw(5) << intlist[id] + 1 << "("
+                    << std::setw(3) << system->kdname[system->kd[intlist[id]] - 1] << ")";
             }
 
             std::cout << std::endl << std::endl;
-            std::cout << "    Number of total interaction pairs = " 
+            std::cout << "    Number of total interaction pairs = "
                 << interaction_list_out[order][i].size() << std::endl << std::endl;
 
-            int *intarr;        
+            int *intarr;
             memory->allocate(intarr, order + 2);
 
             if (intlist.size() > 0) {
@@ -525,15 +525,15 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
                         std::vector<int> data = g.now();
                         intarr[0] = iat;
                         intarr[1] = data[0];
-                        for (unsigned int isize = 1; isize < data.size() ; ++isize) {
+                        for (unsigned int isize = 1; isize < data.size(); ++isize) {
                             intarr[isize + 1] = data[isize];
                         }
-                        if (!is_incutoff(order+2, intarr, order)) continue;
+                        if (!is_incutoff(order + 2, intarr, order)) continue;
 
-                        insort(order+2, intarr);
+                        insort(order + 2, intarr);
                         interacting_atom_pairs[order].insert(IntList(order + 2, intarr));
 
-                    } while(g.next());
+                    } while (g.next());
                 }
             }
             intlist.clear();
@@ -576,7 +576,7 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out, s
     memory->deallocate(interacting_atom_pairs);
 }
 
-bool Interaction::is_incutoff(const int n, int *atomnumlist, const int order) 
+bool Interaction::is_incutoff(const int n, int *atomnumlist, const int order)
 {
     int i, j;
     int iat, jat;
@@ -599,7 +599,8 @@ bool Interaction::is_incutoff(const int n, int *atomnumlist, const int order)
             cutoff_tmp = rcs[order][ikd][jkd];
 
             if (cutoff_tmp >= 0.0 &&
-                (mindist_pairs[iat][jat][0].dist > cutoff_tmp)) return false;
+                (mindist_pairs[iat][jat][0].dist > cutoff_tmp))
+                return false;
 
         }
     }
@@ -650,11 +651,9 @@ bool Interaction::is_incutoff(const int n, int *atomnumlist, const int order)
     }
     return true;
     */
-
-
 }
 
-bool Interaction::is_incutoff2(const int n, int *atomnumlist, const int order) 
+bool Interaction::is_incutoff2(const int n, int *atomnumlist, const int order)
 {
     int i, j;
     int iat, jat, kat;
@@ -674,16 +673,18 @@ bool Interaction::is_incutoff2(const int n, int *atomnumlist, const int order)
         jat = atomnumlist[i + 1];
         jkd = system->kd[jat] - 1;
 
-        if (rcs[order][ikd][jkd] >= 0.0 && 
-            (mindist_pairs[iat][jat][0].dist > rcs[order][ikd][jkd])) return false;
+        if (rcs[order][ikd][jkd] >= 0.0 &&
+            (mindist_pairs[iat][jat][0].dist > rcs[order][ikd][jkd]))
+            return false;
 
         for (j = i + 1; j < ncheck; ++j) {
 
             kat = atomnumlist[j + 1];
             kkd = system->kd[kat] - 1;
 
-            if (rcs[order][ikd][kkd] >= 0.0 && 
-                (mindist_pairs[iat][kat][0].dist > rcs[order][ikd][kkd])) return false;
+            if (rcs[order][ikd][kkd] >= 0.0 &&
+                (mindist_pairs[iat][kat][0].dist > rcs[order][ikd][kkd]))
+                return false;
 
             cutoff_tmp = rcs[order][jkd][kkd];
 
@@ -714,8 +715,8 @@ void Interaction::set_ordername()
 
     str_order[0] = "HARMONIC";
 
-    for (int i = 1;  i < maxorder; ++i) {
-        strnum = boost::lexical_cast<std::string>(i+2);
+    for (int i = 1; i < maxorder; ++i) {
+        strnum = boost::lexical_cast<std::string>(i + 2);
         str_order[i] = "ANHARM" + strnum;
     }
 }
@@ -739,8 +740,8 @@ int Interaction::nbody(const int n, const int *arr)
 }
 
 
-void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, std::vector<DistInfo> **mindist_pair_in, 
-                                        std::vector<DistInfo> **distance_image, int *exist, 
+void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, std::vector<DistInfo> **mindist_pair_in,
+                                        std::vector<DistInfo> **distance_image, int *exist,
                                         std::set<MinimumDistanceCluster> **mindist_cluster_out)
 {
     std::vector<MinDistList> distance_list;
@@ -761,8 +762,8 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 
     std::vector<int> cell_vector;
     std::vector<double> dist_vector;
-    std::vector<std::vector<int> > pairs_icell, comb_cell, comb_cell_min;
-    std::vector<std::vector<int> > comb_cell_atom_center;
+    std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
+    std::vector<std::vector<int>> comb_cell_atom_center;
     std::vector<int> accum_tmp;
     std::vector<int> atom_tmp, cell_tmp;
     std::vector<int> intpair_uniq, cellpair;
@@ -782,14 +783,14 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 
             // List of 2-body interaction pairs
             intlist.clear();
-            for (std::vector<int>::const_iterator it  = interaction_pair_in[order][i].begin(); 
-                it != interaction_pair_in[order][i].end(); ++it) {
-                    intlist.push_back((*it));
+            for (std::vector<int>::const_iterator it = interaction_pair_in[order][i].begin();
+                 it != interaction_pair_in[order][i].end(); ++it) {
+                intlist.push_back((*it));
             }
             std::sort(intlist.begin(), intlist.end()); // Need to sort here
 
             if (intlist.size() > 0) {
-                if (order == 0){
+                if (order == 0) {
                     for (unsigned int ielem = 0; ielem < intlist.size(); ++ielem) {
 
                         comb_cell_min.clear();
@@ -819,7 +820,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                         icount = 1;
 
                         for (j = 0; j < order; ++j) {
-                            if (data[j] == data[j+1]) {
+                            if (data[j] == data[j + 1]) {
                                 ++icount;
                             } else {
                                 group_atom.push_back(icount);
@@ -841,12 +842,12 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                             // Loop over the cell images of atom 'jat' and add to the list 
                             // as a candidate for the minimum distance cluster
                             for (std::vector<DistInfo>::const_iterator it = distance_image[iat][jat].begin();
-                                it != distance_image[iat][jat].end(); ++it) {
-                                    if (exist[(*it).cell]) {
-                                        if (rc_tmp < 0.0 || (*it).dist <= rc_tmp) {
-                                            cell_vector.push_back((*it).cell);
-                                        }
+                                 it != distance_image[iat][jat].end(); ++it) {
+                                if (exist[(*it).cell]) {
+                                    if (rc_tmp < 0.0 || (*it).dist <= rc_tmp) {
+                                        cell_vector.push_back((*it).cell);
                                     }
+                                }
                             }
                             pairs_icell.push_back(cell_vector);
                         }
@@ -880,7 +881,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
                             for (k = 0; k < cellpair.size(); ++k) {
                                 for (ii = k + 1; ii < cellpair.size(); ++ii) {
                                     dist_tmp = distance(x_image[cellpair[k]][data[k]], x_image[cellpair[ii]][data[ii]]);
-                                    rc_tmp = rcs[order][system->kd[data[k]]-1][system->kd[data[ii]]-1];
+                                    rc_tmp = rcs[order][system->kd[data[k]] - 1][system->kd[data[ii]] - 1];
                                     if (rc_tmp >= 0.0 && dist_tmp > rc_tmp) {
                                         isok = false;
                                     }
@@ -926,7 +927,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 
                             std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_max_distance);
                             distmax = *std::max_element(distance_list[0].dist.begin(), distance_list[0].dist.end());
-                            mindist_cluster_out[order][i].insert(MinimumDistanceCluster(data, comb_cell_atom_center,distmax));
+                            mindist_cluster_out[order][i].insert(MinimumDistanceCluster(data, comb_cell_atom_center, distmax));
                             /*
                             std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
                             comb_cell_min.clear();
@@ -959,7 +960,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 
                         }
 
-                    } while(g.next());
+                    } while (g.next());
                 }
             }
             intlist.clear();
@@ -970,7 +971,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in, 
 }
 
 void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in, std::vector<DistInfo> **mindist_pair_in,
-                                         std::vector<DistInfo> **distance_image, int *exist, 
+                                         std::vector<DistInfo> **distance_image, int *exist,
                                          std::set<MinimumDistanceCluster> **mindist_cluster_out)
 {
     std::vector<MinDistList> distance_list;
@@ -990,7 +991,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
 
     std::vector<int> cell_vector;
     std::vector<double> dist_vector;
-    std::vector<std::vector<int> > pairs_icell, comb_cell, comb_cell_min;
+    std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
     std::vector<int> accum_tmp;
     std::vector<int> atom_tmp, cell_tmp;
     std::vector<int> intpair_uniq, cellpair;
@@ -1007,15 +1008,15 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
             ikd = system->kd[iat] - 1;
 
             intlist.clear();
-            for (std::vector<int>::const_iterator it  = interaction_pair_in[order][i].begin(); 
-                it != interaction_pair_in[order][i].end(); ++it) {
-                    intlist.push_back((*it));
+            for (std::vector<int>::const_iterator it = interaction_pair_in[order][i].begin();
+                 it != interaction_pair_in[order][i].end(); ++it) {
+                intlist.push_back((*it));
             }
             std::sort(intlist.begin(), intlist.end()); // Need to sort here
 
             if (intlist.size() > 0) {
 
-                if (order == 0){
+                if (order == 0) {
                     // For harmonic case, the minimum distance cluster is equivalen to the 
                     // minimum distance pairs.
                     for (unsigned int ielem = 0; ielem < intlist.size(); ++ielem) {
@@ -1053,7 +1054,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
                         icount = 1;
 
                         for (j = 0; j < order; ++j) {
-                            if (data[j] == data[j+1]) {
+                            if (data[j] == data[j + 1]) {
                                 ++icount;
                             } else {
                                 group_atom.push_back(icount);
@@ -1075,17 +1076,17 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
                             // Loop over the cell images of atom 'jat' and add to the list 
                             // as a candidate for the minimum distance cluster
                             for (std::vector<DistInfo>::const_iterator it = distance_image[iat][jat].begin();
-                                it != distance_image[iat][jat].end(); ++it) {
-                                    if (exist[(*it).cell]) {
-                                        if (rc_tmp < 0.0 || (*it).dist <= rc_tmp) {
-                                            cell_vector.push_back((*it).cell);
-                                            // std::cout << " iat = " << std::setw(5) << iat;
-                                            // std::cout << " jat = " << std::setw(5) << jat;
-                                            // std::cout << " cell = " << (*it).cell;
-                                            // std::cout << " dist = " << (*it).dist;
-                                            // std::cout << " rc = " << rc_tmp << std::endl;
-                                        }
+                                 it != distance_image[iat][jat].end(); ++it) {
+                                if (exist[(*it).cell]) {
+                                    if (rc_tmp < 0.0 || (*it).dist <= rc_tmp) {
+                                        cell_vector.push_back((*it).cell);
+                                        // std::cout << " iat = " << std::setw(5) << iat;
+                                        // std::cout << " jat = " << std::setw(5) << jat;
+                                        // std::cout << " cell = " << (*it).cell;
+                                        // std::cout << " dist = " << (*it).dist;
+                                        // std::cout << " rc = " << rc_tmp << std::endl;
                                     }
+                                }
                             }
                             pairs_icell.push_back(cell_vector);
                         }
@@ -1124,7 +1125,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
                             for (k = 0; k < cellpair.size(); ++k) {
                                 for (ii = k + 1; ii < cellpair.size(); ++ii) {
                                     dist_tmp = distance(x_image[cellpair[k]][data[k]], x_image[cellpair[ii]][data[ii]]);
-                                    rc_tmp = rcs[order][system->kd[data[k]]-1][system->kd[data[ii]]-1];
+                                    rc_tmp = rcs[order][system->kd[data[k]] - 1][system->kd[data[ii]] - 1];
                                     if (rc_tmp >= 0.0 && dist_tmp > rc_tmp) {
                                         isok = false;
                                         //                                            break;
@@ -1169,7 +1170,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
                             mindist_cluster_out[order][i].insert(MinimumDistanceCluster(data, comb_cell_min));
                         }
 
-                    } while(g.next());
+                    } while (g.next());
                 }
             }
             intlist.clear();
@@ -1178,17 +1179,18 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
 }
 
 
-void Interaction::cell_combination(std::vector<std::vector<int> > array, int i, 
-                                   std::vector<int> accum, std::vector<std::vector<int> > &comb)
+void Interaction::cell_combination(std::vector<std::vector<int>> array, int i,
+                                   std::vector<int> accum, std::vector<std::vector<int>> &comb)
 {
-    if (i == array.size())  {
-        comb.push_back(accum); 
-    } else  {
+    if (i == array.size()) {
+        comb.push_back(accum);
+    } else {
         std::vector<int> row = array[i];
         for (int j = 0; j < row.size(); ++j) {
             std::vector<int> tmp(accum);
             tmp.push_back(row[j]);
-            cell_combination(array,i+1,tmp, comb);
+            cell_combination(array, i + 1, tmp, comb);
         }
     }
 }
+

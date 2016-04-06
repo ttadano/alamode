@@ -31,12 +31,12 @@
 
 using namespace ALM_NS;
 
-Symmetry::Symmetry(ALM *alm) : Pointers(alm) 
+Symmetry::Symmetry(ALM *alm) : Pointers(alm)
 {
     file_sym = "SYMM_INFO";
 }
 
-Symmetry::~Symmetry() 
+Symmetry::~Symmetry()
 {
     memory->deallocate(symrel);
     memory->deallocate(symrel_int);
@@ -56,8 +56,8 @@ void Symmetry::init()
     std::cout << " SYMMETRY" << std::endl;
     std::cout << " ========" << std::endl << std::endl;
 
-    setup_symmetry_operation(nat, nsym, system->lavec, system->rlavec, 
-        system->xcoord, system->kd);
+    setup_symmetry_operation(nat, nsym, system->lavec, system->rlavec,
+                             system->xcoord, system->kd);
 
     memory->allocate(tnons, nsym, 3);
     memory->allocate(symrel_int, nsym, 3, 3);
@@ -86,9 +86,9 @@ void Symmetry::init()
     if (nsym_fc == nsym) {
         std::cout << "  All symmetry operations will be used to reduce the number of force constants." << std::endl;
     } else {
-        std::cout << "  " << nsym_fc << " symmetry operations out of " 
+        std::cout << "  " << nsym_fc << " symmetry operations out of "
             << nsym << " will be used to reduce the number of parameters." << std::endl;
-        std::cout << "  Other " << nsym - nsym_fc 
+        std::cout << "  Other " << nsym - nsym_fc
             << " symmetry operations will be imposed as constraints." << std::endl;
     }
     std::cout << std::endl;
@@ -107,9 +107,9 @@ void Symmetry::init()
 
     for (int i = 0; i < ntran; ++i) {
         std::cout << std::setw(6) << i + 1 << " | ";
-        for (int j = 0; j < natmin; ++j)  {
+        for (int j = 0; j < natmin; ++j) {
             std::cout << std::setw(5) << map_p2s[j][i] + 1;
-            if((j + 1)%5 == 0) {
+            if ((j + 1) % 5 == 0) {
                 std::cout << std::endl << "       | ";
             }
         }
@@ -122,7 +122,7 @@ void Symmetry::init()
     std::cout << std::endl;
 }
 
-void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym, 
+void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
                                         double aa[3][3], double bb[3][3], double **x, int *kd)
 {
     int i, j;
@@ -140,12 +140,12 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
         findsym(nat, aa, x, SymmList);
         // The order in SymmList changes for each run because it was generated
         // with OpenMP. Therefore, we sort the list here to have the same result. 
-        std::sort(SymmList.begin()+1,SymmList.end());
+        std::sort(SymmList.begin() + 1, SymmList.end());
         nsym = SymmList.size();
 
         if (is_printsymmetry) {
             std::ofstream ofs_sym;
-            std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file." 
+            std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file."
                 << std::endl << std::endl;
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
@@ -198,16 +198,17 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
         std::ifstream ifs_sym;
 
         ifs_sym.open(file_sym.c_str(), std::ios::in);
-        ifs_sym >> nsym2; 
+        ifs_sym >> nsym2;
 
-        if (nsym != nsym2) error->exit("setup_symmetry_operations", 
-            "nsym in the given file and the input file are not consistent.");
+        if (nsym != nsym2)
+            error->exit("setup_symmetry_operations",
+                        "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-            >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2] 
-            >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-            >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+                >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2]
+                >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+                >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
             SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
         }
@@ -219,8 +220,8 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
 #endif
 }
 
-void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop_all) {
-
+void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop_all)
+{
     std::vector<RotationMatrix> LatticeSymmList;
 
     // Generate rotational matrices that don't change the metric tensor
@@ -230,13 +231,13 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
     // Generate all the space group operations with translational vectors
     symop_all.clear();
     find_crystal_symmetry(nat, system->nclassatom, system->atomlist_class, x,
-        LatticeSymmList, symop_all);
+                          LatticeSymmList, symop_all);
 
     LatticeSymmList.clear();
 }
 
-void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix> &LatticeSymmList) {
-
+void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix> &LatticeSymmList)
+{
     /*
     Find the rotational matrices that leave the metric tensor invariant.
 
@@ -280,19 +281,20 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     // Identity matrix should be the first entry.
     LatticeSymmList.push_back(mat_tmp);
 
-    for (m11 = -1; m11 <= 1; ++m11){
+    for (m11 = -1; m11 <= 1; ++m11) {
         for (m12 = -1; m12 <= 1; ++m12) {
-            for (m13 = -1; m13 <= 1; ++m13){
-                for (m21 = -1; m21 <= 1; ++m21){
-                    for (m22 = -1; m22 <= 1; ++m22){
-                        for (m23 = -1; m23 <= 1; ++m23){
-                            for (m31 = -1; m31 <= 1; ++m31){
-                                for (m32 = -1; m32 <= 1; ++m32){
-                                    for (m33 = -1; m33 <= 1; ++m33){
+            for (m13 = -1; m13 <= 1; ++m13) {
+                for (m21 = -1; m21 <= 1; ++m21) {
+                    for (m22 = -1; m22 <= 1; ++m22) {
+                        for (m23 = -1; m23 <= 1; ++m23) {
+                            for (m31 = -1; m31 <= 1; ++m31) {
+                                for (m32 = -1; m32 <= 1; ++m32) {
+                                    for (m33 = -1; m33 <= 1; ++m33) {
 
                                         if (m11 == 1 && m12 == 0 && m13 == 0 &&
                                             m21 == 0 && m22 == 1 && m23 == 0 &&
-                                            m31 == 0 && m32 == 0 && m33 == 1) continue;
+                                            m31 == 0 && m32 == 0 && m33 == 1)
+                                            continue;
 
                                         det = m11 * (m22 * m33 - m32 * m23)
                                             - m21 * (m12 * m33 - m32 * m13)
@@ -356,8 +358,8 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x, 
-                                     std::vector<RotationMatrix> LatticeSymmList, 
+void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x,
+                                     std::vector<RotationMatrix> LatticeSymmList,
                                      std::vector<SymmetryOperation> &CrystalSymmList)
 {
     unsigned int i, j;
@@ -397,123 +399,124 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
     CrystalSymmList.push_back(SymmetryOperation(rot_int, tran));
 
 
-    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); 
-        it_latsym != LatticeSymmList.end(); ++it_latsym) {
+    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin();
+         it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
-            iat = atomclass[0][0];
+        iat = atomclass[0][0];
 
-            for (i = 0; i < 3; ++i) {
-                for (j = 0; j < 3; ++j) {
-                    rot[i][j] = static_cast<double>((*it_latsym).mat[i][j]);
-                }
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot[i][j] = static_cast<double>((*it_latsym).mat[i][j]);
             }
+        }
 
-            rotvec(x_rot, x[iat], rot);
+        rotvec(x_rot, x[iat], rot);
 
 #ifdef _OPENMP
 #pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, \
     i, j, itype, jj, kk, is_identity_matrix, mag, mag_rot, rot_tmp, rot_cart, mag_sym1, mag_sym2)
 #endif
-            for (ii = 0; ii < atomclass[0].size(); ++ii) {
-                jat = atomclass[0][ii];
+        for (ii = 0; ii < atomclass[0].size(); ++ii) {
+            jat = atomclass[0][ii];
 
-                for (i = 0; i < 3; ++i) {
-                    tran[i] = x[jat][i] - x_rot[i];
-                    tran[i] = tran[i] - nint(tran[i]);
-                }
+            for (i = 0; i < 3; ++i) {
+                tran[i] = x[jat][i] - x_rot[i];
+                tran[i] = tran[i] - nint(tran[i]);
+            }
 
-                if ((std::abs(tran[0]) > eps12 && !interaction->is_periodic[0]) ||
-                    (std::abs(tran[1]) > eps12 && !interaction->is_periodic[1]) ||
-                    (std::abs(tran[2]) > eps12 && !interaction->is_periodic[2])) continue;
+            if ((std::abs(tran[0]) > eps12 && !interaction->is_periodic[0]) ||
+                (std::abs(tran[1]) > eps12 && !interaction->is_periodic[1]) ||
+                (std::abs(tran[2]) > eps12 && !interaction->is_periodic[2]))
+                continue;
 
-                is_identity_matrix = 
-                    ( std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2) 
+            is_identity_matrix =
+                (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
                     + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
                     + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) ) < eps12;
-                if (is_identity_matrix) continue;
+                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
+            if (is_identity_matrix) continue;
 
-                isok = true;
+            isok = true;
 
-                for (itype = 0; itype < nclass; ++itype) {
+            for (itype = 0; itype < nclass; ++itype) {
 
-                    for (jj = 0; jj < atomclass[itype].size(); ++jj) {
+                for (jj = 0; jj < atomclass[itype].size(); ++jj) {
 
-                        kat = atomclass[itype][jj];
+                    kat = atomclass[itype][jj];
 
-                        rotvec(x_rot_tmp, x[kat], rot);
+                    rotvec(x_rot_tmp, x[kat], rot);
+
+                    for (i = 0; i < 3; ++i) {
+                        x_rot_tmp[i] += tran[i];
+                    }
+
+                    is_found = false;
+
+                    for (kk = 0; kk < atomclass[itype].size(); ++kk) {
+
+                        lat = atomclass[itype][kk];
 
                         for (i = 0; i < 3; ++i) {
-                            x_rot_tmp[i] += tran[i];
+                            tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
+                            tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
                         }
-
-                        is_found = false;
-
-                        for (kk = 0; kk < atomclass[itype].size(); ++kk) {
-
-                            lat = atomclass[itype][kk];
-
-                            for (i = 0; i < 3; ++i) {
-                                tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
-                                tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
-                            }
-                            diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-                            if (diff < tolerance * tolerance) {
-                                is_found = true;
-                                break;
-                            }
+                        diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                        if (diff < tolerance * tolerance) {
+                            is_found = true;
+                            break;
                         }
+                    }
 
-                        if (!is_found) isok = false;
+                    if (!is_found) isok = false;
+                }
+            }
+
+            if (isok && system->lspin && system->noncollinear) {
+                for (i = 0; i < 3; ++i) {
+                    mag[i] = system->magmom[jat][i];
+                    mag_rot[i] = system->magmom[iat][i];
+                }
+
+                matmul3(rot_tmp, rot, system->rlavec);
+                matmul3(rot_cart, system->lavec, rot_tmp);
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        rot_cart[i][j] /= (2.0 * pi);
+                    }
+                }
+                rotvec(mag_rot, mag_rot, rot_cart);
+
+                // In the case of improper rotation, the factor -1 should be multiplied
+                // because the inversion operation doesn't flip the spin.
+                if (!is_proper(rot_cart)) {
+                    for (i = 0; i < 3; ++i) {
+                        mag_rot[i] = -mag_rot[i];
                     }
                 }
 
-                if (isok && system->lspin && system->noncollinear) {
-                    for (i = 0; i < 3; ++i) {
-                        mag[i] = system->magmom[jat][i];
-                        mag_rot[i] = system->magmom[iat][i];
-                    }
+                mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
+                    + std::pow(mag[1] - mag_rot[1], 2.0)
+                    + std::pow(mag[2] - mag_rot[2], 2.0)) < eps6;
 
-                    matmul3(rot_tmp, rot, system->rlavec);
-                    matmul3(rot_cart, system->lavec, rot_tmp);
+                mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
+                    + std::pow(mag[1] + mag_rot[1], 2.0)
+                    + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
 
-                    for (i = 0; i < 3; ++i) {
-                        for (j = 0; j < 3; ++j) {
-                            rot_cart[i][j] /= (2.0 * pi);
-                        }
-                    }
-                    rotvec(mag_rot, mag_rot, rot_cart);
-
-                    // In the case of improper rotation, the factor -1 should be multiplied
-                    // because the inversion operation doesn't flip the spin.
-                    if (!is_proper(rot_cart)) {
-                        for (i = 0; i < 3; ++i) {
-                            mag_rot[i] = -mag_rot[i];
-                        }
-                    }
-
-                    mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
-                        + std::pow(mag[1] - mag_rot[1], 2.0)
-                        + std::pow(mag[2] - mag_rot[2], 2.0) ) < eps6;
-
-                    mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
-                        + std::pow(mag[1] + mag_rot[1], 2.0)
-                        + std::pow(mag[2] + mag_rot[2], 2.0) ) < eps6;
-
-                    if (!mag_sym1 && !mag_sym2) {
-                        isok = false;
-                    } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
-                        isok = false;
-                    }
+                if (!mag_sym1 && !mag_sym2) {
+                    isok = false;
+                } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
+                    isok = false;
                 }
+            }
 
-                if (isok) {
+            if (isok) {
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-                    CrystalSymmList.push_back(SymmetryOperation((*it_latsym).mat, tran));
-                }
+                CrystalSymmList.push_back(SymmetryOperation((*it_latsym).mat, tran));
             }
+        }
 
     }
 }
@@ -653,7 +656,7 @@ void Symmetry::pure_translations()
 
     if (ntran > 1) {
         std::cout << "  Given system is not primitive cell." << std::endl;
-        std::cout << "  There are " << std::setw(5) <<  ntran << " translation operations." << std::endl;
+        std::cout << "  There are " << std::setw(5) << ntran << " translation operations." << std::endl;
     } else {
         std::cout << "  Given system is a primitive cell." << std::endl;
     }
@@ -679,7 +682,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     int itype;
     int ii, jj;
     double xnew[3];
-    double tmp[3], diff; 
+    double tmp[3], diff;
     double rot_double[3][3];
 
     for (iat = 0; iat < nat; ++iat) {
@@ -688,7 +691,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
         }
     }
 
-#ifdef  _OPENMP
+#ifdef _OPENMP
 #pragma omp parallel for private(i, j, rot_double, itype, ii, iat, xnew, jj, jat, tmp, diff, isym)
 #endif
     for (isym = 0; isym < nsym; ++isym) {
@@ -749,7 +752,7 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     memory->deallocate(is_checked);
 
     for (iat = 0; iat < natmin; ++iat) {
-        for (i  = 0; i < ntran; ++i) {
+        for (i = 0; i < ntran; ++i) {
             atomnum_translated = map_p2s[iat][i];
             map_s2p[atomnum_translated].atom_num = iat;
             map_s2p[atomnum_translated].tran_num = i;
@@ -757,13 +760,13 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
     }
 }
 
-bool Symmetry::is_translation(int **rot) 
+bool Symmetry::is_translation(int **rot)
 {
     bool ret;
 
-    ret = 
+    ret =
         rot[0][0] == 1 && rot[0][1] == 0 && rot[0][2] == 0 &&
-        rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 && 
+        rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 &&
         rot[2][0] == 0 && rot[2][1] == 0 && rot[2][2] == 1;
 
     return ret;
@@ -781,7 +784,7 @@ void Symmetry::symop_availability_check(double ***rot, bool *flag, const int n, 
         nfinite = 0;
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
-                if(std::abs(rot[i][j][k]) > eps) ++nfinite;
+                if (std::abs(rot[i][j][k]) > eps) ++nfinite;
             }
         }
 
@@ -864,7 +867,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 #endif
 
         for (i = 0; i < nat; ++i) {
-            for (j = 0; j < 3; ++j) {   
+            for (j = 0; j < 3; ++j) {
 #ifdef _USE_EIGEN
                 wsi(j) = x[i][j] - tran[j];
 #else 
@@ -897,7 +900,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 #ifdef _USE_EIGEN
                 double diff = tmp.dot(tmp);
 #else
-                double diff = tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2];
+                double diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
 #endif
                 if (diff < tolerance * tolerance) {
                     l = j;
@@ -931,7 +934,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
             }
             std::cout << " ( ";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(20) << std::scientific << x_symm[i][j]-x[i][j];
+                std::cout << std::setw(20) << std::scientific << x_symm[i][j] - x[i][j];
             }
             std::cout << " )" << std::endl;
 
@@ -982,3 +985,4 @@ bool Symmetry::is_proper(double rot[3][3])
 
     return ret;
 }
+
