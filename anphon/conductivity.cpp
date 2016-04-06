@@ -353,7 +353,6 @@ void Conductivity::compute_kappa()
 
         if (isotope->include_isotope) {
             for (iks = 0; iks < kpoint->nk_reduced*ns; ++iks) {
-                knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
                 snum = iks % ns;
 				if (relaxation->is_imaginary[iks / ns][snum]) {
 					for (i = 0; i < ntemp; ++i) {
