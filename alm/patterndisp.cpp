@@ -9,6 +9,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <iostream>
+#include <iomanip>
 #include "patterndisp.h"
 #include "memory.h"
 #include "error.h"

@@ -14,13 +14,44 @@
 #include <vector>
 #include <set>
 #include <iterator>
-#include "listcomparison.h"
+#include <algorithm>
 #include "pointers.h"
 #include "constants.h"
 
 
 namespace ALM_NS
 {
+    class IntList
+    {
+    public:
+        std::vector<int> iarray;
+
+        IntList()
+        {
+            iarray.clear();
+        }
+
+        IntList(const IntList &a)
+        {
+            for (std::vector<int>::const_iterator p = a.iarray.begin(); p != a.iarray.end(); ++p) {
+                iarray.push_back(*p);
+            }
+        }
+
+        IntList(const int n, const int *arr)
+        {
+            for (int i = 0; i < n; ++i) {
+                iarray.push_back(arr[i]);
+            }
+        }
+
+        bool operator<(const IntList &a) const
+        {
+            return std::lexicographical_compare(iarray.begin(), iarray.end(),
+                                                a.iarray.begin(), a.iarray.end());
+        }
+    };
+
     class InteractionCluster
     {
     public:
@@ -34,12 +65,13 @@ namespace ALM_NS
                 x.push_back(arr[i]);
             }
         }
+
+        bool operator<(const InteractionCluster &a) const
+        {
+            return std::lexicographical_compare(x.begin(), x.end(), a.x.begin(), a.x.end());
+        }
     };
 
-    inline bool operator<(const InteractionCluster a, const InteractionCluster b)
-    {
-        return std::lexicographical_compare(a.x.begin(), a.x.end(), b.x.begin(), b.x.end());
-    }
 
     class DistInfo
     {
@@ -63,12 +95,12 @@ namespace ALM_NS
             dist = obj.dist;
             for (int i = 0; i < 3; ++i) relvec[i] = obj.relvec[i];
         }
-    };
 
-    inline bool operator<(const DistInfo a, const DistInfo b)
-    {
-        return a.dist < b.dist;
-    }
+        bool operator<(const DistInfo &a) const
+        {
+            return dist < a.dist;
+        }
+    };
 
     class DistList
     {
@@ -83,16 +115,16 @@ namespace ALM_NS
             atom = n;
             dist = dist_tmp;
         }
-    };
 
-    inline bool operator<(const DistList a, const DistList b)
-    {
-        if (std::abs(a.dist - b.dist) > eps8) {
-            return a.dist < b.dist;
-        } else {
-            return a.atom < b.atom;
+        bool operator<(const DistList &a) const
+        {
+            if (std::abs(dist - a.dist) > eps8) {
+                return dist < a.dist;
+            } else {
+                return atom < a.atom;
+            }
         }
-    }
+    };
 
     class MinDistList
     {
@@ -148,7 +180,9 @@ namespace ALM_NS
 
         MinimumDistanceCluster();
 
-        MinimumDistanceCluster(const std::vector<int> atom_in, const std::vector<std::vector<int>> cell_in, const double dist_in)
+        MinimumDistanceCluster(const std::vector<int> atom_in,
+                               const std::vector<std::vector<int>> cell_in,
+                               const double dist_in)
         {
             for (int i = 0; i < atom_in.size(); ++i) {
                 atom.push_back(atom_in[i]);
@@ -159,7 +193,8 @@ namespace ALM_NS
             distmax = dist_in;
         }
 
-        MinimumDistanceCluster(const std::vector<int> atom_in, const std::vector<std::vector<int>> cell_in)
+        MinimumDistanceCluster(const std::vector<int> atom_in,
+                               const std::vector<std::vector<int>> cell_in)
         {
             for (int i = 0; i < atom_in.size(); ++i) {
                 atom.push_back(atom_in[i]);
@@ -169,9 +204,10 @@ namespace ALM_NS
             }
         }
 
-        friend bool operator<(const MinimumDistanceCluster &a, const MinimumDistanceCluster &b)
+        bool operator<(const MinimumDistanceCluster &a) const
         {
-            return lexicographical_compare(a.atom.begin(), a.atom.end(), b.atom.begin(), b.atom.end());
+            return lexicographical_compare(atom.begin(), atom.end(),
+                                           a.atom.begin(), a.atom.end());
         }
     };
 

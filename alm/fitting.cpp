@@ -9,11 +9,11 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <cmath>
 #include <string>
 #include <vector>
-#include <set>
 #include <boost/lexical_cast.hpp>
 #include "fitting.h"
 #include "files.h"

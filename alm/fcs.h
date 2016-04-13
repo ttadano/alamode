@@ -13,7 +13,6 @@
 #include "pointers.h"
 #include <vector>
 #include <set>
-#include "listcomparison.h"
 #include <algorithm>
 
 namespace ALM_NS
@@ -31,7 +30,7 @@ namespace ALM_NS
         {
             coef = obj.coef;
             mother = obj.mother;
-            for (std::vector<int>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it) {
+            for (auto it = obj.elems.begin(); it != obj.elems.end(); ++it) {
                 elems.push_back(*it);
             }
         };
@@ -44,12 +43,13 @@ namespace ALM_NS
                 elems.push_back(arr[i]);
             }
         }
-    };
 
-    inline bool operator<(const FcProperty a, const FcProperty b)
-    {
-        return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
-    }
+        bool operator<(const FcProperty &a) const
+        {
+            return std::lexicographical_compare(elems.begin(), elems.end(),
+                                                a.elems.begin(), a.elems.end());
+        }
+    };
 
     class Fcs: protected Pointers
     {

@@ -10,6 +10,7 @@
 
 #include "input.h"
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include "memory.h"
 #include "files.h"

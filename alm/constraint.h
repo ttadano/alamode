@@ -40,12 +40,13 @@ namespace ALM_NS
                 w_const.push_back(arr[i]);
             }
         }
-    };
 
-    inline bool operator<(const ConstraintClass a, const ConstraintClass b)
-    {
-        return std::lexicographical_compare(a.w_const.begin(), a.w_const.end(), b.w_const.begin(), b.w_const.end());
-    }
+        bool operator<(const ConstraintClass &a) const
+        {
+            return std::lexicographical_compare(w_const.begin(), w_const.end(),
+                                                a.w_const.begin(), a.w_const.end());
+        }
+    };
 
     class ConstraintTypeFix
     {
@@ -67,7 +68,9 @@ namespace ALM_NS
         std::vector<double> alpha;
         std::vector<unsigned int> p_index_orig;
 
-        ConstraintTypeRelate(const unsigned int index_in, const std::vector<double> alpha_in, const std::vector<unsigned int> p_index_in)
+        ConstraintTypeRelate(const unsigned int index_in,
+                             const std::vector<double> alpha_in,
+                             const std::vector<unsigned int> p_index_in)
         {
             p_index_target = index_in;
             std::copy(alpha_in.begin(), alpha_in.end(), std::back_inserter(alpha));
@@ -124,7 +127,8 @@ namespace ALM_NS
 
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
-        void remove_redundant_rows(const int, std::set<ConstraintClass> &, const double tolerance = eps12);
+        void remove_redundant_rows(const int, std::set<ConstraintClass> &,
+                                   const double tolerance = eps12);
         void rref(int, int, double **, int &, double tolerance = eps12);
     };
 

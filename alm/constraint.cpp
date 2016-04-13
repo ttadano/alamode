@@ -8,6 +8,7 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
+#include <iomanip>
 #include "constraint.h"
 #include "interaction.h"
 #include "memory.h"

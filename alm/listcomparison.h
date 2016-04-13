@@ -17,7 +17,7 @@
 
 namespace ALM_NS
 {
-    class IntList
+/*    class IntList
     {
     public:
         std::vector<int> iarray;
@@ -40,20 +40,20 @@ namespace ALM_NS
                 iarray.push_back(arr[i]);
             }
         }
-    };
+    };*/
 
-    inline bool operator<(const IntList a, const IntList b)
+ /*   inline bool operator<(const IntList a, const IntList b)
     {
         return std::lexicographical_compare(a.iarray.begin(), a.iarray.end(), b.iarray.begin(), b.iarray.end());
-    };
+    };*/
 
-    inline std::ostream& operator<<(std::ostream &s, const IntList &o)
+   /* inline std::ostream& operator<<(std::ostream &s, const IntList &o)
     {
         for (unsigned int i = 0; i < o.iarray.size(); ++i) {
             s << std::setw(5) << o.iarray[i];
         }
         s << std::endl;
         return s;
-    }
+    }*/
 }
 

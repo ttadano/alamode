@@ -21,7 +21,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "symmetry.h"
 #include "combination.h"
 #include "constants.h"
-#include "listcomparison.h"
 #include "files.h"
 #include "timer.h"
 #include "fcs.h"
