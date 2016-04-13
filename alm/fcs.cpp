@@ -47,7 +47,8 @@ void Fcs::init()
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
-        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] << " FCs : " << ndup[i].size();
+        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] 
+                  << " FCs : " << ndup[i].size();
         std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -59,7 +60,7 @@ void Fcs::init()
             std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
             int nbegin = ndup[order][0];
             int nend;
-            for (unsigned int mm = 1; mm < ndup[order].size(); ++mm) {
+            for (auto mm = 1; mm < ndup[order].size(); ++mm) {
                 nend = nbegin + ndup[order][mm];
                 std::sort(fc_set[order].begin() + nbegin, fc_set[order].begin() + nend);
                 nbegin += ndup[order][mm];
@@ -122,7 +123,8 @@ void Fcs::generate_fclists(int maxorder)
 
         std::set<IntList> list_found;
 
-        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter) {
+        for (auto iter = interaction->pairs[order].begin();
+             iter != interaction->pairs[order].end(); ++iter) {
 
             for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
 

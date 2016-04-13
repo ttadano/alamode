@@ -63,7 +63,7 @@ void Symmetry::init()
     memory->allocate(symrel_int, nsym, 3, 3);
 
     int isym = 0;
-    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
+    for (auto iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
                 symrel_int[isym][i][j] = (*iter).rot[i][j];
@@ -150,7 +150,7 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -521,69 +521,12 @@ void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned i
     }
 }
 
-/*
-void Symmetry::find_nnp_for_translation(unsigned int &ret, std::vector<SymmetryOperationTransFloat> symminfo) 
-{
-int i;
-
-ret = 1;
-
-std::set<double> translation_set;
-double tran_tmp;
-double tran_numerator;
-bool is_integer;
-bool is_found;
-
-translation_set.clear();
-
-for (std::vector<SymmetryOperationTransFloat>::iterator it = symminfo.begin(); it != symminfo.end(); ++it) {
-
-for (i = 0; i < 3; ++i) {
-tran_tmp = std::abs((*it).tran[i]);
-
-if (translation_set.find(tran_tmp) == translation_set.end()) {
-translation_set.insert(tran_tmp);
-}
-}
-}
-
-is_found = false;
-
-while(1) {
-
-is_integer = true;
-
-for (std::set<double>::iterator it = translation_set.begin(); it != translation_set.end(); ++it) {
-
-tran_numerator = (*it) * static_cast<double>(ret);
-if (std::abs(tran_numerator - static_cast<double>(nint(tran_numerator))) > tolerance) {
-is_integer = false;
-break;
-}
-}
-
-if (is_integer) {
-is_found = true;
-break;
-}
-
-if (ret > 1000) break;
-++ret;
-}
-
-
-if (!is_found) {
-// This should not happen.
-error->exit("find_nnp_for_translation", "Cannot find nnp.");
-}
-}
-*/
 
 void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
     int i, j;
 
-#ifdef _USE_EIGEN
+#ifdef _USE_EIGEN_DISABLED
     Eigen::Matrix3d aa, bb, sym_tmp;
     Eigen::Matrix3d sym_crt;
 
@@ -656,14 +599,16 @@ void Symmetry::pure_translations()
 
     if (ntran > 1) {
         std::cout << "  Given system is not primitive cell." << std::endl;
-        std::cout << "  There are " << std::setw(5) << ntran << " translation operations." << std::endl;
+        std::cout << "  There are " << std::setw(5)
+            << ntran << " translation operations." << std::endl;
     } else {
         std::cout << "  Given system is a primitive cell." << std::endl;
     }
     std::cout << "  Primitive cell contains " << natmin << " atoms" << std::endl;
 
     if (system->nat % ntran) {
-        error->exit("pure_translations", "nat != natmin * ntran. Something is wrong in the structure.");
+        error->exit("pure_translations",
+                    "nat != natmin * ntran. Something is wrong in the structure.");
     }
 
     memory->allocate(symnum_tran, ntran);
@@ -726,7 +671,9 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
                         break;
                     }
                 }
-                if (map_sym[iat][isym] == -1) error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
+                if (map_sym[iat][isym] == -1) {
+                    error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
+                }
             }
         }
     }
@@ -823,7 +770,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         }
     }
 
-    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); it != SymmList.end(); ++it) {
+    for (auto it = SymmList.begin(); it != SymmList.end(); ++it) {
 
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;

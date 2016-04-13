@@ -219,7 +219,6 @@ namespace ALM_NS
         }
 
     private:
-        int nsize[3];
         void generate_coordinate_of_periodic_images(const unsigned int, double **,
                                                     const int [3], double ***, int *);
         void get_pairs_of_minimum_distance(int, double ***, int *, std::vector<DistInfo> **, std::vector<DistInfo> **);

@@ -42,7 +42,8 @@ double Timer::elapsed()
 #if defined(WIN32) || defined(_WIN32)
     LARGE_INTEGER time_now;
     QueryPerformanceCounter(&time_now);
-    return static_cast<double>(time_now.QuadPart - time_ref.QuadPart) / static_cast<double>(frequency.QuadPart);
+    return static_cast<double>(time_now.QuadPart - time_ref.QuadPart)
+        / static_cast<double>(frequency.QuadPart);
 #else
     timeval time_now;
     gettimeofday(&time_now, NULL);
@@ -52,7 +53,8 @@ double Timer::elapsed()
 
 void Timer::print_elapsed()
 {
-    std::cout << "  Time Elapsed: " << elapsed() << " sec." << std::endl << std::endl;
+    std::cout << "  Time Elapsed: " << elapsed() << " sec."
+        << std::endl << std::endl;
 }
 
 

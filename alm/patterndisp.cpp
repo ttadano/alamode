@@ -58,7 +58,8 @@ void Displace::gen_displacement_pattern()
                                        const_relate_tmp, index_bimap_tmp, true);
 
     for (order = 0; order < maxorder; ++order) {
-        std::cout << "  Number of free" << std::setw(9) << interaction->str_order[order] << " FCs : "
+        std::cout << "  Number of free" << std::setw(9)
+            << interaction->str_order[order] << " FCs : "
             << index_bimap_tmp[order].size() << std::endl;
     }
     std::cout << std::endl;
@@ -152,8 +153,7 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
 
         pattern[order].clear();
 
-        for (std::set<DispAtomSet>::iterator it = dispset_in[order].begin();
-             it != dispset_in[order].end(); ++it) {
+        for (auto it = dispset_in[order].begin(); it != dispset_in[order].end(); ++it) {
 
             atoms.clear();
             directions.clear();
@@ -177,22 +177,24 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
             natom_disp = atoms.size();
 
             if (trim_dispsign_for_evenfunc) {
-                find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1], nums, sign_reduced);
+                find_unique_sign_pairs(natom_disp, sign_prod[natom_disp - 1],
+                                       nums, sign_reduced);
             } else {
                 sign_reduced.clear();
-                std::copy(sign_prod[natom_disp - 1].begin(), sign_prod[natom_disp - 1].end(),
+                std::copy(sign_prod[natom_disp - 1].begin(),
+                          sign_prod[natom_disp - 1].end(),
                           std::back_inserter(sign_reduced));
             }
 
             directions_copy.clear();
             std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
 
-            for (std::vector<std::vector<int>>::const_iterator it = sign_reduced.begin();
-                 it != sign_reduced.end(); ++it) {
+            for (std::vector<std::vector<int>>::const_iterator it2 = sign_reduced.begin();
+                 it2 != sign_reduced.end(); ++it2) {
                 directions.clear();
 
-                for (i = 0; i < (*it).size(); ++i) {
-                    sign_double = static_cast<double>((*it)[i]);
+                for (i = 0; i < (*it2).size(); ++i) {
+                    sign_double = static_cast<double>((*it2)[i]);
 
                     for (j = 0; j < 3; ++j) {
                         disp_tmp[j] = directions_copy[3 * i + j] * sign_double;
@@ -271,7 +273,8 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>>
     for (i = 0; i < pair_in.size(); ++i) {
         list_disp_atom.push_back(pair_in[i] / 3);
     }
-    list_disp_atom.erase(std::unique(list_disp_atom.begin(), list_disp_atom.end()), list_disp_atom.end());
+    list_disp_atom.erase(std::unique(list_disp_atom.begin(), list_disp_atom.end()),
+                         list_disp_atom.end());
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -339,7 +342,6 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>>
         }
     }
 
-
     // Now find unique pairs of displacement directions 
 
     sign_found.clear();
@@ -374,7 +376,8 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>>
                 for (j = 0; j < 3; ++j) {
                     disp_sym[mapped_atom][j] = 0.0;
                     for (k = 0; k < 3; ++k) {
-                        disp_sym[mapped_atom][j] += symmetry->symrel[symnum_vec[isym]][j][k] * disp[list_disp_atom[i]][k];
+                        disp_sym[mapped_atom][j] += symmetry->symrel[symnum_vec[isym]][j][k]
+                            * disp[list_disp_atom[i]][k];
                     }
                     disp_tmp = disp_sym[mapped_atom][j];
 
@@ -397,7 +400,8 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>>
                 sign_tmp.push_back(index_for_sort[i].sign);
             }
 
-            if (sign_tmp.size() == N && std::find(sign_found.begin(), sign_found.end(), sign_tmp) == sign_found.end()) {
+            if ((sign_tmp.size() == N) &&
+                (std::find(sign_found.begin(), sign_found.end(), sign_tmp) == sign_found.end())) {
                 sign_found.push_back(sign_tmp);
                 std::sort(sign_found.begin(), sign_found.end());
             }

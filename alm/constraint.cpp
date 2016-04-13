@@ -238,31 +238,6 @@ void Constraint::setup()
                     << " FCs : " << index_bimap[order].size() << std::endl;
             }
             std::cout << std::endl;
-            // 
-            //             for (order = 0; order < maxorder; ++order) {
-            //                 std::cout << "Size const_fix = " << const_fix[order].size() << std::endl;
-            // 
-            //                 for (i = 0; i < const_fix[order].size(); ++i) {
-            //                     std::cout << std::setw(5) << const_fix[order][i].p_index_target 
-            //                         << std::setw(15) << const_fix[order][i].val_to_fix << std::endl;
-            //                 }
-            // 
-            //                 std::cout << "Size const_relate = " << const_relate[order].size() << std::endl;
-            // 
-            //                 for (i = 0; i < const_relate[order].size(); ++i) {
-            //                     std::cout << std::setw(5) << const_relate[order][i].p_index_target << " : ";
-            //                     for (int j = 0; j < const_relate[order][i].alpha.size(); ++j) {
-            //                         std::cout << "( " << std::setw(5) << const_relate[order][i].p_index_orig[j];
-            //                         std::cout << ", " << std::setw(15) << const_relate[order][i].alpha[j] << " )  ";
-            //                     }
-            //                     std::cout << std::endl;
-            //                 }
-            // 
-            //                 std::cout << "Number of freely optimizable parameters = " << index_bimap[order].size() << std::endl;
-            //                 for (boost::bimap<int, int>::const_iterator it = index_bimap[order].begin(); it != index_bimap[order].end(); ++it) {
-            //                     std::cout << std::setw(5) << (*it).left << std::setw(5) << (*it).right << std::endl;
-            //                 }
-            //             }
 
         } else {
 
@@ -408,8 +383,8 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         memory->deallocate(const_rhs_tmp);
     }
 
-    for (std::set<ConstraintClass>::iterator p = const_total.begin(); p != const_total.end(); ++p) {
-        ConstraintClass const_now = *p;
+    for (auto p = const_total.begin(); p != const_total.end(); ++p) {
+        auto const_now = *p;
         for (i = 0; i < N; ++i) {
             const_mat[irow][i] = const_now.w_const[i];
         }
@@ -468,9 +443,7 @@ void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass
             std::vector<double> alpha_tmp;
             std::vector<unsigned int> p_index_tmp;
 
-            for (std::set<ConstraintClass>::reverse_iterator p = const_in[order].rbegin();
-                 p != const_in[order].rend(); ++p) {
-
+            for (auto p = const_in[order].rbegin(); p != const_in[order].rend(); ++p) {
                 p_index_target = -1;
                 for (i = 0; i < nparam; ++i) {
                     if (std::abs((*p).w_const[i]) > const_tol) {
@@ -591,8 +564,8 @@ void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
 
         // Generate temporary list of parameters
         list_found.clear();
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
-            FcProperty list_tmp = *p; // Using copy constructor
+        for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
+            auto list_tmp = *p; // Using copy constructor
             for (i = 0; i < order + 2; ++i) index_tmp[i] = list_tmp.elems[i];
             list_found.insert(FcProperty(order + 2, list_tmp.coef, index_tmp, list_tmp.mother));
         }
@@ -600,9 +573,6 @@ void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
         nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
         memory->allocate(xyzcomponent, nxyz, order + 2);
         fcs->get_xyzcomponent(order + 2, xyzcomponent);
-
-
-        //      memory->allocate(arr_constraint, nparams);
 
         int nfcs = fcs->fc_set[order].size();
 
@@ -733,8 +703,8 @@ void Constraint::translational_invariance()
         // Make interaction list
 
         list_found.clear();
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
-            FcProperty list_tmp = *p; // Using copy constructor
+        for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
+            auto list_tmp = *p; // Using copy constructor
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = list_tmp.elems[i];
             }
@@ -777,8 +747,7 @@ void Constraint::translational_invariance()
 
                             //  If found a IFC
                             if (iter_found != list_found.end()) {
-                                FcProperty arrtmp = *iter_found;
-                                arr_constraint[arrtmp.mother] += arrtmp.coef;
+                                arr_constraint[(*iter_found).mother] += (*iter_found).coef;
                             }
                         }
                         if (!is_allzero(nparams, arr_constraint)) {
@@ -854,7 +823,7 @@ void Constraint::translational_invariance()
                                 for (jat = 0; jat < 3 * nat; jat += 3) {
                                     intarr_omp[order + 1] = jat / 3;
 
-                                    //                                    if (!interaction->is_incutoff(order + 2, intarr_omp, order)) continue;
+                                    //  if (!interaction->is_incutoff(order + 2, intarr_omp, order)) continue;
 
                                     for (j = 0; j < order + 1; ++j) {
                                         intarr_copy_omp[j] = 3 * intarr_omp[j] + xyzcomponent[ixyz][j];
@@ -865,8 +834,7 @@ void Constraint::translational_invariance()
 
                                     iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr_copy_omp, 1));
                                     if (iter_found != list_found.end()) {
-                                        FcProperty arrtmp = *iter_found;
-                                        arr_constraint_omp[arrtmp.mother] += arrtmp.coef;
+                                        arr_constraint_omp[(*iter_found).mother] += (*iter_found).coef;
                                     }
                                 }
 
@@ -976,17 +944,18 @@ void Constraint::rotational_invariance()
         memory->allocate(interaction_index, order + 2);
         memory->allocate(interaction_tmp, order + 2);
 
+        nxyz = static_cast<int>(pow(static_cast<double>(3), order));
+
         if (order > 0) {
             list_found_last = list_found;
-            nxyz = static_cast<int>(pow(static_cast<double>(3), order));
             memory->allocate(xyzcomponent, nxyz, order);
             fcs->get_xyzcomponent(order, xyzcomponent);
         }
 
         list_found.clear();
 
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
-            FcProperty list_tmp = *p; // Using copy constructor
+        for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
+            auto list_tmp = *p; 
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = list_tmp.elems[i];
             }
@@ -1023,7 +992,7 @@ void Constraint::rotational_invariance()
 
                             for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
-                            for (std::vector<int>::iterator iter_list = interaction_list_now.begin();
+                            for (auto iter_list = interaction_list_now.begin();
                                  iter_list != interaction_list_now.end(); ++iter_list) {
 
                                 jat = *iter_list;
@@ -1055,8 +1024,7 @@ void Constraint::rotational_invariance()
 
 
                                 if (iter_found != list_found.end()) {
-                                    FcProperty arrtmp = *iter_found;
-                                    arr_constraint[arrtmp.mother] += arrtmp.coef * vec_for_rot[nu];
+                                    arr_constraint[(*iter_found).mother] += (*iter_found).coef * vec_for_rot[nu];
                                 }
 
                                 // Exchange mu <--> nu and repeat again. 
@@ -1065,8 +1033,7 @@ void Constraint::rotational_invariance()
                                 interaction_index[1] = 3 * jat + nu;
                                 iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_index, 1));
                                 if (iter_found != list_found.end()) {
-                                    FcProperty arrtmp = *iter_found;
-                                    arr_constraint[arrtmp.mother] -= arrtmp.coef * vec_for_rot[mu];
+                                    arr_constraint[(*iter_found).mother] -= (*iter_found).coef * vec_for_rot[mu];
                                 }
                             }
 
@@ -1121,7 +1088,7 @@ void Constraint::rotational_invariance()
                         do {
                             std::vector<int> data = g.now();
 
-                            for (unsigned int idata = 0; idata < data.size(); ++idata) interaction_atom[idata + 1] = data[idata];
+                            for (auto idata = 0; idata < data.size(); ++idata) interaction_atom[idata + 1] = data[idata];
 
                             for (ixyz = 0; ixyz < nxyz; ++ixyz) {
 
@@ -1138,7 +1105,7 @@ void Constraint::rotational_invariance()
                                         for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
                                         // Loop for m_{N+1}, a_{N+1}
-                                        for (std::vector<int>::iterator iter_list = interaction_list.begin(); iter_list != interaction_list.end(); ++iter_list) {
+                                        for (auto iter_list = interaction_list.begin(); iter_list != interaction_list.end(); ++iter_list) {
                                             jat = *iter_list;
 
                                             interaction_atom[order + 1] = jat;
@@ -1192,9 +1159,7 @@ void Constraint::rotational_invariance()
 
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if (iter_found != list_found.end()) {
-                                                FcProperty arrtmp = *iter_found;
-                                                //     arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * interaction->minvec[i][jat][nu];
-                                                arr_constraint[nparams[order - 1] + arrtmp.mother] += arrtmp.coef * vec_for_rot[nu];
+                                                arr_constraint[nparams[order - 1] + (*iter_found).mother] += (*iter_found).coef * vec_for_rot[nu];
                                             }
 
                                             // Exchange mu <--> nu and repeat again.
@@ -1206,9 +1171,7 @@ void Constraint::rotational_invariance()
 
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if (iter_found != list_found.end()) {
-                                                FcProperty arrtmp = *iter_found;
-                                                //    arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * interaction->minvec[i][jat][mu];
-                                                arr_constraint[nparams[order - 1] + arrtmp.mother] -= arrtmp.coef * vec_for_rot[mu];
+                                                arr_constraint[nparams[order - 1] + (*iter_found).mother] -= (*iter_found).coef * vec_for_rot[mu];
                                             }
                                         }
 
@@ -1234,8 +1197,7 @@ void Constraint::rotational_invariance()
 
                                                 iter_found = list_found_last.find(FcProperty(order + 1, 1.0, interaction_tmp, 1));
                                                 if (iter_found != list_found_last.end()) {
-                                                    FcProperty arrtmp = *iter_found;
-                                                    arr_constraint[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);
+                                                    arr_constraint[(*iter_found).mother] += (*iter_found).coef * static_cast<double>(levi_factor);
                                                 }
                                             }
                                         }
@@ -1283,7 +1245,7 @@ void Constraint::rotational_invariance()
 
                         std::vector<int> data = g_now.now();
 
-                        for (unsigned int idata = 0; idata < data.size(); ++idata) interaction_atom[idata + 1] = data[idata];
+                        for (auto idata = 0; idata < data.size(); ++idata) interaction_atom[idata + 1] = data[idata];
 
                         for (ixyz = 0; ixyz < nxyz2; ++ixyz) {
 
@@ -1292,8 +1254,6 @@ void Constraint::rotational_invariance()
                             for (mu = 0; mu < 3; ++mu) {
 
                                 for (nu = 0; nu < 3; ++nu) {
-
-                                    //   ofs_constraint << "#$$ mu = " << mu << " nu = " << nu << std::endl;
 
                                     if (!valid_rotation_axis[mu][nu]) continue;
 
@@ -1320,8 +1280,7 @@ void Constraint::rotational_invariance()
 
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if (iter_found != list_found.end()) {
-                                                FcProperty arrtmp = *iter_found;
-                                                arr_constraint_self[arrtmp.mother] += arrtmp.coef * static_cast<double>(levi_factor);
+                                                arr_constraint_self[(*iter_found).mother] += (*iter_found).coef * static_cast<double>(levi_factor);
                                             }
                                         } // jcrd
                                     } // lambda
@@ -1369,7 +1328,7 @@ void Constraint::rotational_invariance()
 
 void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set, const double tolerance)
 {
-#ifdef _USE_EIGEN_DISABLE
+#ifdef _USE_EIGEN_DISABLED
 
     // This function doesn't make the reduced row echelon form of the constraint matrix.
     // It just returns the image of the matrix, though they are similar.
@@ -1427,10 +1386,9 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
         i = 0;
 
-        for (std::set<ConstraintClass>::iterator p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p) {
-            ConstraintClass const_now = *p;
+        for (auto p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p) {
             for (j = 0; j < nparam; ++j) {
-                mat_tmp[i][j] = const_now.w_const[j];
+                mat_tmp[i][j] = (*p).w_const[j];
             }
             ++i;
         }
@@ -1547,7 +1505,8 @@ void Constraint::setup_rotation_axis(bool flag[3][3])
     } else if (rotation_axis == "xyz") {
         // do nothing
     } else {
-        error->warn("setup_rotation_axis", "Invalid rotation_axis. Default value(xyz) will be used.");
+        error->warn("setup_rotation_axis",
+                    "Invalid rotation_axis. Default value(xyz) will be used.");
     }
 }
 

@@ -47,7 +47,7 @@ using namespace ALM_NS;
 
 Fitting::Fitting(ALM *alm): Pointers(alm)
 {
-    seed = (unsigned int) time(NULL);
+    seed = static_cast<unsigned int>(time(NULL));
 #ifdef _VSL
     brng = VSL_BRNG_MT19937;
     vslNewStream(&stream, brng, seed);
@@ -444,7 +444,7 @@ void Fitting::fit_with_constraints(int N, int M, int P,
 
     memory->allocate(fsum2, M);
 
-#ifdef _USE_EIGEN
+#ifdef _USE_EIGEN_DISABLED
 
     double **mat_tmp2;
     memory->allocate(mat_tmp2, M + P, N);
@@ -614,7 +614,8 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
         for (i = N; i < M; ++i) {
             f_residual += std::pow(fsum2[i], 2);
         }
-        std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
+        std::cout << std::endl;
+        std::cout << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
         std::cout << "  Fitting error (%) : " << sqrt(f_residual / f_square) * 100.0 << std::endl;
     }
 
@@ -625,7 +626,8 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
 
     for (i = 0; i < maxorder; ++i) {
         for (j = 0; j < constraint->const_fix[i].size(); ++j) {
-            param_out[constraint->const_fix[i][j].p_index_target + ishift] = constraint->const_fix[i][j].val_to_fix;
+            param_out[constraint->const_fix[i][j].p_index_target + ishift] 
+                = constraint->const_fix[i][j].val_to_fix;
         }
 
         for (boost::bimap<int, int>::const_iterator it = constraint->index_bimap[i].begin();
@@ -640,7 +642,8 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
             tmp = 0.0;
 
             for (k = 0; k < constraint->const_relate[i][j].alpha.size(); ++k) {
-                tmp += constraint->const_relate[i][j].alpha[k] * param_out[constraint->const_relate[i][j].p_index_orig[k] + ishift];
+                tmp += constraint->const_relate[i][j].alpha[k] 
+                    * param_out[constraint->const_relate[i][j].p_index_orig[k] + ishift];
             }
             param_out[constraint->const_relate[i][j].p_index_target + ishift] = -tmp;
         }
@@ -955,7 +958,7 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 
                 mm = 0;
 
-                for (std::vector<int>::iterator iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
+                for (auto iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
                     for (i = 0; i < *iter; ++i) {
                         ind[0] = fcs->fc_set[order][mm].elems[0];
                         k = idata + inprim_index(fcs->fc_set[order][mm].elems[0]);
@@ -1055,10 +1058,9 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
 
                 mm = 0;
 
-                for (std::vector<int>::iterator iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
+                for (auto iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
                     for (i = 0; i < *iter; ++i) {
                         ind[0] = fcs->fc_set[order][mm].elems[0];
-                        //      k = idata + inprim_index(fcs->fc_set[order][mm].elems[0]);
                         k = inprim_index(ind[0]);
 
                         amat_tmp = 1.0;
@@ -1201,7 +1203,7 @@ int Fitting::factorial(const int n)
     }
 }
 
-#ifdef _USE_EIGEN
+#ifdef _USE_EIGEN_DISABLED
 int Fitting::getRankEigen(const int m, const int n, double **mat)
 {
     using namespace Eigen;
@@ -1357,26 +1359,4 @@ int Fitting::rankSVD2(const int m_in, const int n_in, double **mat, const double
     return rank;
 }
 
-/*
-void Fitting::calc_covariance(int m, int n)
-{
-Eigen::MatrixXd Atmp(m, n), Hess(n, n);
-int i, j;
-
-for (i = 0; i < m; ++i){
-for (j = 0; j < n; ++j){
-Atmp(i,j) = amat[i][j];
-}
-}
-
-Hess = (Atmp.transpose()*Atmp).inverse();
-
-for (i = 0; i < n; ++i){
-for (j = 0; j < n; ++j){
-varcovar[i][j] = Hess(i, j);
-}
-}
-
-}
-*/
 

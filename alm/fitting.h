@@ -48,7 +48,6 @@ namespace ALM_NS
     private:
 
         int inprim_index(const int);
-        void wrtfcs(const double *);
         void fit_without_constraints(int, int, double **, double *, double *);
         void fit_algebraic_constraints(int, int, double **, double *, double *, double *, const int);
 
@@ -65,7 +64,7 @@ namespace ALM_NS
         int rankSVD(const int, const int, double *, const double);
         int rankQRD(const int, const int, double *, const double);
         int rankSVD2(const int, const int, double **, const double);
-#ifdef _USE_EIGEN
+#ifdef _USE_EIGEN_DISABLED
         int getRankEigen(const int, const int, double **);
 #endif
     };

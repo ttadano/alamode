@@ -56,7 +56,9 @@ void Writes::write_input_vars()
     std::cout << " Interaction:" << std::endl;
     std::cout << "  NORDER = " << interaction->maxorder << std::endl;
     std::cout << "  NBODY = ";
-    for (i = 0; i < interaction->maxorder; ++i) std::cout << std::setw(3) << interaction->nbody_include[i];
+    for (i = 0; i < interaction->maxorder; ++i)
+        std::cout << std::setw(3) << interaction->nbody_include[i];
+
     std::cout << std::endl << std::endl;
 
 
@@ -147,7 +149,8 @@ void Writes::write_force_constants()
                 j = symmetry->map_s2p[fcs->fc_set[order][m].elems[0] / 3].atom_num;
                 std::sort(atom_tmp.begin(), atom_tmp.end());
 
-                iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+                iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp,
+                                                                                                  cell_dummy));
 
                 if (iter_cluster != interaction->mindist_cluster[order][j].end()) {
                     multiplicity = (*iter_cluster).cell.size();
@@ -182,7 +185,7 @@ void Writes::write_force_constants()
             int nparam = fcs->ndup[order].size();
 
 
-            for (std::set<ConstraintClass>::iterator p = constraint->const_symmetry[order].begin();
+            for (auto p = constraint->const_symmetry[order].begin();
                  p != constraint->const_symmetry[order].end();
                  ++p) {
                 ofs_fcs << "   0 = " << std::scientific << std::setprecision(6);
@@ -407,11 +410,13 @@ void Writes::write_misc_xml()
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
 
-        ptree &child = pt.add("Data.ForceConstants.HarmonicUnique.FC2", double2string(fitting->params[k]));
+        ptree &child = pt.add("Data.ForceConstants.HarmonicUnique.FC2",
+                              double2string(fitting->params[k]));
         child.put("<xmlattr>.pairs",
                   boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[0])
                   + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
-        child.put("<xmlattr>.multiplicity", interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size());
+        child.put("<xmlattr>.multiplicity",
+                  interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size());
         ihead += fcs->ndup[0][ui];
         ++k;
     }
@@ -438,14 +443,16 @@ void Writes::write_misc_xml()
             }
             std::sort(atom_tmp.begin(), atom_tmp.end());
 
-            iter_cluster = interaction->mindist_cluster[1][j].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+            iter_cluster = interaction->mindist_cluster[1][j].find(MinimumDistanceCluster(atom_tmp,
+                                                                                          cell_dummy));
             if (iter_cluster == interaction->mindist_cluster[1][j].end()) {
                 error->exit("load_reference_system_xml", "Cubic force constant is not found.");
             } else {
                 multiplicity = (*iter_cluster).cell.size();
             }
 
-            ptree &child = pt.add("Data.ForceConstants.CubicUnique.FC3", double2string(fitting->params[k]));
+            ptree &child = pt.add("Data.ForceConstants.CubicUnique.FC3",
+                                  double2string(fitting->params[k]));
             child.put("<xmlattr>.pairs",
                       boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[0])
                       + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[1])
@@ -460,7 +467,7 @@ void Writes::write_misc_xml()
 
     std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
 
-    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
+    for (auto it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
         FcProperty fctmp = *it;
         ip = fctmp.mother;
 
@@ -468,17 +475,17 @@ void Writes::write_misc_xml()
             pair_tmp[k] = fctmp.elems[k] / 3;
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin();
+        for (auto it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin();
              it2 != interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].end(); ++it2) {
             ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2",
-                                  double2string(fitting->params[ip] * fctmp.coef / static_cast<double>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size())));
+                                  double2string(fitting->params[ip] * fctmp.coef
+                                      / static_cast<double>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size())));
 
             child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
                       + " " + boost::lexical_cast<std::string>(fctmp.elems[0] % 3 + 1));
             child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(pair_tmp[1] + 1)
                       + " " + boost::lexical_cast<std::string>(fctmp.elems[1] % 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it2).cell + 1));
-            //                          + " " + boost::lexical_cast<std::string>(cell_index_convert[(*it2).cell] + 1));
         }
     }
 
@@ -494,7 +501,7 @@ void Writes::write_misc_xml()
 
         std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
 
-        for (std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it) {
+        for (auto it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it) {
             FcProperty fctmp = *it;
             ip = fctmp.mother + ishift;
 
@@ -514,7 +521,8 @@ void Writes::write_misc_xml()
                 + ".FC" + boost::lexical_cast<std::string>(order + 2);
 
 
-            iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp, cell_dummy));
+            iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp,
+                                                                                              cell_dummy));
 
             if (iter_cluster != interaction->mindist_cluster[order][j].end()) {
                 multiplicity = (*iter_cluster).cell.size();
@@ -522,7 +530,8 @@ void Writes::write_misc_xml()
                 for (imult = 0; imult < multiplicity; ++imult) {
                     std::vector<int> cell_now = (*iter_cluster).cell[imult];
 
-                    ptree &child = pt.add(elementname, double2string(fitting->params[ip] * fctmp.coef / static_cast<double>(multiplicity)));
+                    ptree &child = pt.add(elementname,
+                                          double2string(fitting->params[ip] * fctmp.coef / static_cast<double>(multiplicity)));
 
                     child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
                               + " " + boost::lexical_cast<std::string>(fctmp.elems[0] % 3 + 1));
@@ -548,14 +557,14 @@ void Writes::write_misc_xml()
 
 #if BOOST_VERSION >= 105600
     write_xml(file_xml, pt, std::locale(),
-              xml_writer_make_settings<ptree::key_type>(' ', indent, widen<std::string>("utf-8")));
+              xml_writer_make_settings<ptree::key_type>(' ', indent,
+                                                        widen<std::string>("utf-8")));
 #else
     write_xml(file_xml, pt, std::locale(),
         xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
 #endif
 
     memory->deallocate(pair_tmp);
-    //    memory->deallocate(cell_index_convert);
 
     std::cout << " Information for post-process is stored to file: " << file_xml << std::endl;
 }
