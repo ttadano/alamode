@@ -712,6 +712,8 @@ void Dynamical::load_born()
         std::cout << std::endl;
     }
     std::cout << std::endl;
+
+
     std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
     for (i = 0; i < system->natmin; ++i) {
         std::cout << "  Atom" << std::setw(5) << i + 1 << "("
