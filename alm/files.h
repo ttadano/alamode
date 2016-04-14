@@ -28,7 +28,6 @@ namespace ALM_NS
         std::string file_fcs;
         std::string file_disp, file_force;
         std::string *file_disp_pattern;
-
     };
 }
 

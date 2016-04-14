@@ -526,14 +526,14 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
     int i, j;
 
-#ifdef _USE_EIGEN_DISABLED
+#ifdef _USE_EIGEN
     Eigen::Matrix3d aa, bb, sym_tmp;
     Eigen::Matrix3d sym_crt;
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            aa(i,j) = lavec[i][j];
-            bb(i,j) = rlavec[i][j];
+            aa(i, j) = lavec[i][j];
+            bb(i, j) = rlavec[i][j];
         }
     }
 
@@ -547,7 +547,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
 #ifdef _USE_EIGEN
-                sym_tmp(i,j) = static_cast<double>(symrel_int[isym][i][j]);
+                sym_tmp(i, j) = static_cast<double>(symrel_int[isym][i][j]);
 #else
                 sym_tmp[i][j] = static_cast<double>(symrel_int[isym][i][j]);
 #endif
@@ -557,7 +557,7 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
         sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                symrel[isym][i][j] = sym_crt(i,j);
+                symrel[isym][i][j] = sym_crt(i, j);
             }
         }
 #else
@@ -792,15 +792,15 @@ void Symmetry::print_symmetrized_coordinate(double **x)
             + m31 * (m12 * m23 - m22 * m13);
 
 #ifdef _USE_EIGEN
-        rot(0,0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
-        rot(0,1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
-        rot(0,2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
-        rot(1,0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
-        rot(1,1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
-        rot(1,2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
-        rot(2,0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
-        rot(2,1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
-        rot(2,2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
+        rot(0, 0) = static_cast<double>((m22 * m33 - m23 * m32) * det);
+        rot(0, 1) = static_cast<double>((m23 * m31 - m21 * m33) * det);
+        rot(0, 2) = static_cast<double>((m21 * m32 - m22 * m31) * det);
+        rot(1, 0) = static_cast<double>((m32 * m13 - m33 * m12) * det);
+        rot(1, 1) = static_cast<double>((m33 * m11 - m31 * m13) * det);
+        rot(1, 2) = static_cast<double>((m31 * m12 - m32 * m11) * det);
+        rot(2, 0) = static_cast<double>((m12 * m23 - m13 * m22) * det);
+        rot(2, 1) = static_cast<double>((m13 * m21 - m11 * m23) * det);
+        rot(2, 2) = static_cast<double>((m11 * m22 - m12 * m21) * det);
 #else
         rot[0][0] = static_cast<double>((m22 * m33 - m23 * m32) * det);
         rot[0][1] = static_cast<double>((m23 * m31 - m21 * m33) * det);
@@ -834,7 +834,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
                 for (k = 0; k < 3; ++k) {
 #ifdef _USE_EIGEN
                     vsi(k) = x[j][k];
-                    tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0); 
+                    tmp(k) = std::fmod(std::abs(usi(k) - vsi(k)), 1.0);
                     // need "std" to specify floating point operation
                     // especially for Intel compiler (there was no problem in MSVC)
                     tmp(k) = std::min<double>(tmp(k), 1.0 - tmp(k)) ;

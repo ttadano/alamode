@@ -626,7 +626,7 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
 
     for (i = 0; i < maxorder; ++i) {
         for (j = 0; j < constraint->const_fix[i].size(); ++j) {
-            param_out[constraint->const_fix[i][j].p_index_target + ishift] 
+            param_out[constraint->const_fix[i][j].p_index_target + ishift]
                 = constraint->const_fix[i][j].val_to_fix;
         }
 
@@ -642,7 +642,7 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
             tmp = 0.0;
 
             for (k = 0; k < constraint->const_relate[i][j].alpha.size(); ++k) {
-                tmp += constraint->const_relate[i][j].alpha[k] 
+                tmp += constraint->const_relate[i][j].alpha[k]
                     * param_out[constraint->const_relate[i][j].p_index_orig[k] + ishift];
             }
             param_out[constraint->const_relate[i][j].p_index_target + ishift] = -tmp;

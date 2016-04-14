@@ -40,7 +40,7 @@ void Files::init()
             if (i == 0) {
                 file_disp_pattern[i] = job_title + ".pattern_HARMONIC";
             } else {
-                file_disp_pattern[i] = job_title + ".pattern_ANHARM" 
+                file_disp_pattern[i] = job_title + ".pattern_ANHARM"
                     + boost::lexical_cast<std::string>(i + 2);
             }
         }

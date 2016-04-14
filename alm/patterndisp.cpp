@@ -39,7 +39,7 @@ void Displace::gen_displacement_pattern()
     int i, j, m, order;
     int maxorder = interaction->maxorder;
     std::vector<int> group_tmp;
-    std::set<ConstraintClass> *constsym;
+    std::vector<ConstraintClass> *constsym;
 
     std::vector<int> pairs;
     std::set<int> *include_set;

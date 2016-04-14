@@ -236,6 +236,7 @@ namespace ALM_NS
 
         void init();
         double distance(double *, double *);
+        int nbody(const int, const int *);
         bool is_incutoff(const int, int *, const int);
         bool is_incutoff2(const int, int *, const int);
 
@@ -265,7 +266,6 @@ namespace ALM_NS
                                    int *, std::set<MinimumDistanceCluster> **);
         void calc_mindist_clusters2(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
                                     int *, std::set<MinimumDistanceCluster> **);
-        int nbody(const int, const int *);
         void cell_combination(std::vector<std::vector<int>>, int, std::vector<int>, std::vector<std::vector<int>> &);
         void generate_pairs(std::set<IntList> *, std::set<MinimumDistanceCluster> **);
     };

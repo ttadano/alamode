@@ -21,6 +21,7 @@
 #include "error.h"
 #include "fitting.h"
 #include <boost/bimap.hpp>
+#include "mathfunctions.h"
 
 #ifdef _USE_EIGEN
 #include <Eigen/Dense>
@@ -172,7 +173,7 @@ void Constraint::setup()
         int nparam;
         double *arr_tmp;
 
-        std::set<ConstraintClass>::const_iterator it_const;
+        std::vector<ConstraintClass>::const_iterator it_const;
 
         // Merge translational and rotational invariance excluding order-crossing constraints
 
@@ -183,20 +184,24 @@ void Constraint::setup()
 
             for (it_const = const_translation[order].begin(); it_const != const_translation[order].end(); ++it_const) {
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
-                const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+                const_self[order].push_back(ConstraintClass(nparam, arr_tmp));
             }
 
-            for (it_const = const_rotation_self[order].begin(); it_const != const_rotation_self[order].end(); ++it_const) {
-                for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
-                const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+            if (const_rotation_self[order].size() > 0) {
+                for (it_const = const_rotation_self[order].begin(); it_const != const_rotation_self[order].end(); ++it_const) {
+                    for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
+                    const_self[order].push_back(ConstraintClass(nparam, arr_tmp));
+                }
+                remove_redundant_rows(nparam, const_self[order], eps8);
             }
 
-            for (it_const = const_symmetry[order].begin(); it_const != const_symmetry[order].end(); ++it_const) {
-                for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
-                const_self[order].insert(ConstraintClass(nparam, arr_tmp));
+            if (const_symmetry[order].size() > 0) {
+                for (it_const = const_symmetry[order].begin(); it_const != const_symmetry[order].end(); ++it_const) {
+                    for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
+                    const_self[order].push_back(ConstraintClass(nparam, arr_tmp));
+                }
+                remove_redundant_rows(nparam, const_self[order], eps8);
             }
-
-            remove_redundant_rows(nparam, const_self[order], eps8);
 
             memory->deallocate(arr_tmp);
             const_translation[order].clear();
@@ -278,52 +283,56 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
     int i, j;
     int maxorder = interaction->maxorder;
     int order;
+    int nconst1;
     int icol, irow;
     double *arr_tmp;
-    std::set<ConstraintClass> const_total;
+    std::vector<ConstraintClass> const_total;
 
     const_total.clear();
     memory->allocate(arr_tmp, N);
 
     int nshift = 0;
-    int nshift2 = 0;
 
+    // Intra-order constraints
     for (order = 0; order < maxorder; ++order) {
         int nparam = fcs->ndup[order].size();
 
         if ((order == 0 && !fix_harmonic) || (order == 1 && !fix_cubic) || order > 1) {
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
 
-            for (std::set<ConstraintClass>::iterator p = const_self[order].begin();
+            for (std::vector<ConstraintClass>::iterator p = const_self[order].begin();
                  p != const_self[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam; ++i) {
                     arr_tmp[nshift + i] = const_now.w_const[i];
                 }
-                const_total.insert(ConstraintClass(N, arr_tmp));
+                const_total.push_back(ConstraintClass(N, arr_tmp));
             }
         }
-        // order-crossing constraints
+        nshift += nparam;
+    }
+    nconst1 = const_total.size();
 
+    // order-crossing constraints
+    int nshift2 = 0;
+    for (order = 0; order < maxorder; ++order) {
         if (order > 0) {
             int nparam2 = fcs->ndup[order - 1].size() + fcs->ndup[order].size();
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
-            for (std::set<ConstraintClass>::iterator p = const_rotation_cross[order].begin();
+            for (std::vector<ConstraintClass>::iterator p = const_rotation_cross[order].begin();
                  p != const_rotation_cross[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam2; ++i) {
                     arr_tmp[nshift2 + i] = const_now.w_const[i];
                 }
-                const_total.insert(ConstraintClass(N, arr_tmp));
+                const_total.push_back(ConstraintClass(N, arr_tmp));
             }
             nshift2 += fcs->ndup[order - 1].size();
         }
-        nshift += nparam;
     }
-
     memory->deallocate(arr_tmp);
 
-    remove_redundant_rows(N, const_total, eps8);
+    if (nconst1 != const_total.size()) remove_redundant_rows(N, const_total, eps8);
 
     P = const_total.size();
 
@@ -395,7 +404,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
 }
 
 
-void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass> *const_in,
+void Constraint::get_mapping_constraint(const int nmax, std::vector<ConstraintClass> *const_in,
                                         std::vector<ConstraintTypeFix> *const_fix_out,
                                         std::vector<ConstraintTypeRelate> *const_relate_out,
                                         boost::bimap<int, int> *index_bimap_out, const bool is_suggest_mode)
@@ -512,12 +521,11 @@ void Constraint::get_mapping_constraint(const int nmax, std::set<ConstraintClass
         }
     }
 
-
     memory->deallocate(has_constraint);
 }
 
 
-void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
+void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_out)
 {
     // Create constraint matrices arising from the crystal symmetry.
 
@@ -631,7 +639,7 @@ void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
 
                     if (!is_allzero(nparams, arr_constraint)) {
 #pragma omp critical
-                        const_out[order].insert(ConstraintClass(nparams, arr_constraint));
+                        const_out[order].push_back(ConstraintClass(nparams, arr_constraint));
                     }
                 }
             }
@@ -660,12 +668,13 @@ void Constraint::constraint_from_symmetry(std::set<ConstraintClass> *const_out)
 
 void Constraint::translational_invariance()
 {
-    // Create constraint matrix arising from the translational invariance.
+    // Create constraint matrix for the translational invariance (aka acoustic sum rule).
 
     int i, j;
     int iat, jat, icrd, jcrd;
     int idata;
     int order;
+    int loc_nonzero;
     int maxorder = interaction->maxorder;
 
     int *ind;
@@ -678,13 +687,16 @@ void Constraint::translational_invariance()
     int nparams;
 
     unsigned int isize;
-
     double *arr_constraint;
 
     std::vector<int> intlist, data;
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
     std::vector<std::vector<int>> data_vec;
+    std::vector<FcProperty> list_vec;
+    std::vector<FcProperty>::iterator iter_vec;
+    std::vector<int> const_now;
+    std::vector<std::vector<int>> const_mat;
 
     std::cout << "  Generating constraints for translational invariance ..." << std::endl;
 
@@ -693,6 +705,8 @@ void Constraint::translational_invariance()
     for (order = 0; order < maxorder; ++order) {
 
         std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
+
+        const_mat.clear();
 
         nparams = fcs->ndup[order].size();
 
@@ -704,6 +718,7 @@ void Constraint::translational_invariance()
         // Make interaction list
 
         list_found.clear();
+
         for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
             auto list_tmp = *p; // Using copy constructor
             for (i = 0; i < order + 2; ++i) {
@@ -725,6 +740,8 @@ void Constraint::translational_invariance()
         memory->allocate(intarr, order + 2);
         memory->allocate(intarr_copy, order + 2);
 
+        const_now.resize(nparams);
+
         for (i = 0; i < natmin; ++i) {
 
             iat = symmetry->map_p2s[i][0];
@@ -739,7 +756,7 @@ void Constraint::translational_invariance()
                     for (jcrd = 0; jcrd < 3; ++jcrd) {
 
                         // Reset the temporary array for another constraint
-                        for (j = 0; j < nparams; ++j) arr_constraint[j] = 0.0;
+                        for (j = 0; j < nparams; ++j) const_now[j] = 0;
 
                         for (jat = 0; jat < 3 * nat; jat += 3) {
                             intarr[1] = jat + jcrd;
@@ -748,15 +765,21 @@ void Constraint::translational_invariance()
 
                             //  If found a IFC
                             if (iter_found != list_found.end()) {
-                                arr_constraint[(*iter_found).mother] += (*iter_found).coef;
+                                // Round the coefficient to integer
+                                const_now[(*iter_found).mother] += nint((*iter_found).coef);
                             }
+
                         }
-                        if (!is_allzero(nparams, arr_constraint)) {
-                            // Add to the constraint list
-                            const_translation[order].insert(ConstraintClass(nparams, arr_constraint));
+                        // Add to the constraint list
+                        if (!is_allzero(const_now, loc_nonzero)) {
+                            if (const_now[loc_nonzero] < 0) {
+                                for (j = 0; j < nparams; ++j) const_now[j] *= -1;
+                            }
+                            const_mat.push_back(const_now);
                         }
                     }
                 }
+
             } else {
 
                 // Anharmonic cases
@@ -775,34 +798,41 @@ void Constraint::translational_invariance()
                     data = g2.now();
 
                     intarr[0] = iat;
+
                     for (isize = 0; isize < data.size(); ++isize) {
                         intarr[isize + 1] = data[isize];
                     }
 
-                    // Add to list if the atoms interact with each other.
-                    if (interaction->is_incutoff(order + 1, intarr, order)) {
-                        data_vec.push_back(data);
+                    if (interaction->nbody(order + 1, intarr) <= interaction->nbody_include[order]) {
+                        if (interaction->is_incutoff(order + 1, intarr, order)) {
+                            // Add to list if the atoms interact with each other.
+                            data_vec.push_back(data);
+                        }
                     }
 
                 } while (g2.next());
 
                 int ndata = data_vec.size();
 
+                // Use openmp for acceleration if possible
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
                 {
                     int *intarr_omp, *intarr_copy_omp;
-                    double *arr_constraint_omp;
 
                     memory->allocate(intarr_omp, order + 2);
                     memory->allocate(intarr_copy_omp, order + 2);
-                    memory->allocate(arr_constraint_omp, nparams);
 
-                    int *intarr_debug;
-                    memory->allocate(intarr_debug, order + 2);
-
+                    std::vector<std::vector<int>> const_omp;
                     std::vector<int> data_omp;
+                    std::vector<int> const_now_omp;
 
-#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found), schedule(guided)
+                    const_omp.clear();
+                    const_now_omp.resize(nparams);
+#ifdef _OPENMP
+#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero), schedule(guided), nowait
+#endif
                     for (idata = 0; idata < ndata; ++idata) {
 
                         data_omp = data_vec[idata];
@@ -818,54 +848,85 @@ void Constraint::translational_invariance()
                             for (jcrd = 0; jcrd < 3; ++jcrd) {
 
                                 // Reset the temporary array for another constraint
-                                for (j = 0; j < nparams; ++j) arr_constraint_omp[j] = 0.0;
+                                for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
 
                                 // Loop for the last atom index
                                 for (jat = 0; jat < 3 * nat; jat += 3) {
                                     intarr_omp[order + 1] = jat / 3;
 
-                                    //  if (!interaction->is_incutoff(order + 2, intarr_omp, order)) continue;
+                                    if (interaction->nbody(order + 2, intarr_omp) <= interaction->nbody_include[order]) {
+                                        for (j = 0; j < order + 1; ++j) {
+                                            intarr_copy_omp[j] = 3 * intarr_omp[j] + xyzcomponent[ixyz][j];
+                                        }
+                                        intarr_copy_omp[order + 1] = jat + jcrd;
 
-                                    for (j = 0; j < order + 1; ++j) {
-                                        intarr_copy_omp[j] = 3 * intarr_omp[j] + xyzcomponent[ixyz][j];
+                                        fcs->sort_tail(order + 2, intarr_copy_omp);
+
+                                        iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr_copy_omp, 1));
+                                        if (iter_found != list_found.end()) {
+                                            const_now_omp[(*iter_found).mother] += nint((*iter_found).coef);
+                                        }
+
                                     }
-                                    intarr_copy_omp[order + 1] = jat + jcrd;
+                                } // close loop jat
 
-                                    fcs->sort_tail(order + 2, intarr_copy_omp);
-
-                                    iter_found = list_found.find(FcProperty(order + 2, 1.0, intarr_copy_omp, 1));
-                                    if (iter_found != list_found.end()) {
-                                        arr_constraint_omp[(*iter_found).mother] += (*iter_found).coef;
+                                // Add the constraint to the private array
+                                if (!is_allzero(const_now_omp, loc_nonzero)) {
+                                    if (const_now_omp[loc_nonzero] < 0) {
+                                        for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1;
                                     }
-                                }
-
-                                if (!is_allzero(nparams, arr_constraint_omp)) {
-#pragma omp critical
-                                    const_translation[order].insert(ConstraintClass(nparams, arr_constraint_omp));
+                                    const_omp.push_back(const_now_omp);
                                 }
                             }
                         }
+                        // sort-->uniq the array
+                        std::sort(const_omp.begin(), const_omp.end());
+                        const_omp.erase(std::unique(const_omp.begin(), const_omp.end()),
+                                        const_omp.end());
 
-                    }// close idata
+                        // Merge vectors
+#pragma omp critical
+                        {
+                            for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
+                                const_mat.push_back(*it);
+                            }
+                        }
+                        const_omp.clear();
 
-                    memory->deallocate(intarr_debug);
+                    }// close idata (openmp main loop)
 
                     memory->deallocate(intarr_omp);
                     memory->deallocate(intarr_copy_omp);
-                    memory->deallocate(arr_constraint_omp);
 
                 } // close openmp
 
                 intlist.clear();
-            }
-        }
+            } // close if
+
+            // sort--> uniq the array (to save memory consumption)
+            std::sort(const_mat.begin(), const_mat.end());
+            const_mat.erase(std::unique(const_mat.begin(), const_mat.end()),
+                            const_mat.end());
+            //            timer->print_elapsed();
+        } // close loop i
 
         memory->deallocate(xyzcomponent);
-        memory->deallocate(arr_constraint);
         memory->deallocate(intarr);
         memory->deallocate(intarr_copy);
+        // Copy to constraint class 
+
+        const_translation[order].clear();
+        for (auto it = const_mat.rbegin(); it != const_mat.rend(); ++it) {
+            for (i = 0; i < (*it).size(); ++i) {
+                arr_constraint[i] = static_cast<double>((*it)[i]);
+            }
+            const_translation[order].push_back(ConstraintClass(nparams, arr_constraint));
+        }
+        const_mat.clear();
+        memory->deallocate(arr_constraint);
 
         remove_redundant_rows(nparams, const_translation[order], eps8);
+
         std::cout << " done." << std::endl;
     } // close loop order
     memory->deallocate(ind);
@@ -945,10 +1006,9 @@ void Constraint::rotational_invariance()
         memory->allocate(interaction_index, order + 2);
         memory->allocate(interaction_tmp, order + 2);
 
-        nxyz = static_cast<int>(pow(static_cast<double>(3), order));
-
         if (order > 0) {
             list_found_last = list_found;
+            nxyz = static_cast<int>(pow(static_cast<double>(3), order));
             memory->allocate(xyzcomponent, nxyz, order);
             fcs->get_xyzcomponent(order, xyzcomponent);
         }
@@ -1040,7 +1100,7 @@ void Constraint::rotational_invariance()
 
                             if (!is_allzero(nparam_sub, arr_constraint)) {
                                 // Add to constraint list
-                                const_rotation_self[order].insert(ConstraintClass(nparam_sub, arr_constraint));
+                                const_rotation_self[order].push_back(ConstraintClass(nparam_sub, arr_constraint));
                             }
 
                         } // nu
@@ -1209,11 +1269,11 @@ void Constraint::rotational_invariance()
                                             // Add to the appropriate set
 
                                             if (is_allzero(nparam_sub, arr_constraint, nparams[order - 1])) {
-                                                const_rotation_self[order - 1].insert(ConstraintClass(nparams[order - 1], arr_constraint));
+                                                const_rotation_self[order - 1].push_back(ConstraintClass(nparams[order - 1], arr_constraint));
                                             } else if (is_allzero(nparams[order - 1], arr_constraint)) {
-                                                const_rotation_self[order].insert(ConstraintClass(nparam_sub, arr_constraint, nparams[order - 1]));
+                                                const_rotation_self[order].push_back(ConstraintClass(nparam_sub, arr_constraint, nparams[order - 1]));
                                             } else {
-                                                const_rotation_cross[order].insert(ConstraintClass(nparam_sub, arr_constraint));
+                                                const_rotation_cross[order].push_back(ConstraintClass(nparam_sub, arr_constraint));
                                             }
                                         }
 
@@ -1287,7 +1347,7 @@ void Constraint::rotational_invariance()
                                     } // lambda
 
                                     if (!is_allzero(nparams[order], arr_constraint_self)) {
-                                        const_rotation_self[order].insert(ConstraintClass(nparams[order], arr_constraint_self));
+                                        const_rotation_self[order].push_back(ConstraintClass(nparams[order], arr_constraint_self));
                                     }
 
                                 } // nu
@@ -1327,7 +1387,7 @@ void Constraint::rotational_invariance()
     memory->deallocate(nparams);
 }
 
-void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &Constraint_Set, const double tolerance)
+void Constraint::remove_redundant_rows(const int n, std::vector<ConstraintClass> &Constraint_vec, const double tolerance)
 {
 #ifdef _USE_EIGEN_DISABLED
 
@@ -1335,10 +1395,11 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
     // It just returns the image of the matrix, though they are similar.
 
     using namespace Eigen;
-
+    int i;
     int nrow = n;
-    int ncol = Constraint_Set.size();
+    int ncol = Constraint_vec.size();
     double *arr_tmp;
+    double **mat;
 
     if (ncol > 0) {
         memory->allocate(arr_tmp, nrow);
@@ -1346,9 +1407,9 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
         int icol = 0;
 
-        for (std::set<ConstraintClass>::iterator p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p) {
+        for (std::vector<ConstraintClass>::iterator p = Constraint_vec.begin(); p != Constraint_vec.end(); ++p) {
             ConstraintClass const_now = *p;
-            for (int i = 0; i < nrow; ++i) {
+            for (i = 0; i < nrow; ++i) {
                 mat_tmp(i, icol) = const_now.w_const[i];
             }
             ++icol;
@@ -1359,15 +1420,37 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
         int nrank = lu_decomp.rank();
         MatrixXd c_reduced = lu_decomp.image(mat_tmp);
 
-        Constraint_Set.clear();
+        memory->allocate(mat, nrank, nrow);
 
+        i = 0;
         for (icol = 0; icol < nrank; ++icol) {
             for (int irow = 0; irow < nrow; ++irow) {
-                arr_tmp[irow] = c_reduced(irow, icol);
+                mat[icol][irow] = c_reduced(irow, icol);
             }
-
-            Constraint_Set.insert(ConstraintClass(nrow, arr_tmp));
         }
+    //      std::cout << "nrank = " << nrank << std::flush << std::endl;
+        rref(nrank, nrow, mat, nrank, tolerance);
+
+        Constraint_vec.clear();
+
+        for (i = 0; i < nrank; ++i) {
+            for (int j = 0; j < i; ++j) arr_tmp[j] = 0.0;
+
+            for (int j = i; j < nrow; ++j) {
+                arr_tmp[j] = mat[i][j];
+            }
+            Constraint_vec.push_back(ConstraintClass(nrow, arr_tmp));
+        }
+
+        memory->deallocate(mat);
+
+    // for (icol = 0; icol < nrank; ++icol) {
+    //     for (int irow = 0; irow < nrow; ++irow) {
+    //         arr_tmp[irow] = c_reduced(irow, icol);
+    //     }
+
+    //     Constraint_Set.insert(ConstraintClass(nrow, arr_tmp));
+    // }
 
         memory->deallocate(arr_tmp);
     }
@@ -1375,7 +1458,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
     int i, j;
 
     int nparam = n;
-    int nconst = Constraint_Set.size();
+    int nconst = Constraint_vec.size();
     double *arr_tmp;
     double **mat_tmp;
 
@@ -1387,7 +1470,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
         i = 0;
 
-        for (auto p = Constraint_Set.begin(); p != Constraint_Set.end(); ++p) {
+        for (auto p = Constraint_vec.begin(); p != Constraint_vec.end(); ++p) {
             for (j = 0; j < nparam; ++j) {
                 mat_tmp[i][j] = (*p).w_const[j];
             }
@@ -1430,7 +1513,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
 
         memory->allocate(arr_tmp, nparam);
 
-        Constraint_Set.clear();
+        Constraint_vec.clear();
 
         for (i = 0; i < nrank; ++i) {
             for (j = 0; j < i; ++j) arr_tmp[j] = 0.0;
@@ -1438,7 +1521,7 @@ void Constraint::remove_redundant_rows(const int n, std::set<ConstraintClass> &C
             for (j = i; j < nparam; ++j) {
                 arr_tmp[j] = mat_tmp[i][j];
             }
-            Constraint_Set.insert(ConstraintClass(nparam, arr_tmp));
+            Constraint_vec.push_back(ConstraintClass(nparam, arr_tmp));
         }
 
         memory->deallocate(mat_tmp);
@@ -1458,6 +1541,19 @@ bool Constraint::is_allzero(const int n, const double *arr, const int nshift)
 {
     for (int i = nshift; i < n; ++i) {
         if (std::abs(arr[i]) > eps10) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Constraint::is_allzero(const std::vector<int> vec, int &loc)
+{
+    loc = -1;
+    for (int i = 0; i < vec.size(); ++i) {
+        //    for(std::vector<int>::const_iterator it = vec.begin(); it != vec.end(); ++it){
+        if (std::abs(vec[i]) > 0) {
+            loc = i;
             return false;
         }
     }
@@ -1547,6 +1643,7 @@ void Constraint::rref(int nrows, int ncols, double **mat, int &nrank, double tol
         if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
 
         if (pivot != irow) {
+#pragma omp parallel for private(tmp)
             for (jcol = icol; jcol < ncols; ++jcol) {
                 tmp = mat[pivot][jcol];
                 mat[pivot][jcol] = mat[irow][jcol];
@@ -1555,15 +1652,17 @@ void Constraint::rref(int nrows, int ncols, double **mat, int &nrank, double tol
         }
 
         tmp = mat[irow][icol];
+        tmp = 1.0 / tmp;
+#pragma omp parallel for
         for (jcol = icol; jcol < ncols; ++jcol) {
-            mat[irow][jcol] /= tmp;
+            mat[irow][jcol] *= tmp;
         }
 
         for (jrow = 0; jrow < nrows; ++jrow) {
             if (jrow == irow) continue;
 
             tmp = mat[jrow][icol];
-
+#pragma omp parallel for
             for (jcol = icol; jcol < ncols; ++jcol) {
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }

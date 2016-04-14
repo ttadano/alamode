@@ -23,7 +23,7 @@ namespace ALM_NS
     public:
         Input(class ALM *, int, char **);
         ~Input();
-        void parce_input(int, char **);
+        void parse_input(int, char **);
 
     private:
         std::ifstream ifs_input;

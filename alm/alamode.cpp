@@ -46,7 +46,7 @@ ALM::ALM(int narg, char **arg)
 
     input = new Input(this, narg, arg);
     create();
-    input->parce_input(narg, arg);
+    input->parse_input(narg, arg);
     writes->write_input_vars();
     initialize();
 

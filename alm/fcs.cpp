@@ -48,8 +48,8 @@ void Fcs::init()
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
-        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] 
-                  << " FCs : " << ndup[i].size();
+        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i]
+            << " FCs : " << ndup[i].size();
         std::cout << std::endl;
     }
     std::cout << std::endl;

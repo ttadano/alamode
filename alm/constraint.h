@@ -98,14 +98,14 @@ namespace ALM_NS
         bool exist_constraint;
         bool extra_constraint_from_symmetry;
         std::string rotation_axis;
-        std::set<ConstraintClass> *const_symmetry;
+        std::vector<ConstraintClass> *const_symmetry;
 
         std::vector<ConstraintTypeFix> *const_fix;
         std::vector<ConstraintTypeRelate> *const_relate;
         boost::bimap<int, int> *index_bimap;
 
-        void constraint_from_symmetry(std::set<ConstraintClass> *);
-        void get_mapping_constraint(const int, std::set<ConstraintClass> *,
+        void constraint_from_symmetry(std::vector<ConstraintClass> *);
+        void get_mapping_constraint(const int, std::vector<ConstraintClass> *,
                                     std::vector<ConstraintTypeFix> *, std::vector<ConstraintTypeRelate> *,
                                     boost::bimap<int, int> *, const bool);
 
@@ -113,11 +113,11 @@ namespace ALM_NS
 
         bool impose_inv_T, impose_inv_R, exclude_last_R;
 
-        std::set<ConstraintClass> *const_translation;
-        std::set<ConstraintClass> *const_rotation_self;
-        std::set<ConstraintClass> *const_rotation_cross;
+        std::vector<ConstraintClass> *const_translation;
+        std::vector<ConstraintClass> *const_rotation_self;
+        std::vector<ConstraintClass> *const_rotation_cross;
 
-        std::set<ConstraintClass> *const_self;
+        std::vector<ConstraintClass> *const_self;
 
         int levi_civita(const int, const int, const int);
 
@@ -127,8 +127,9 @@ namespace ALM_NS
 
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
-        void remove_redundant_rows(const int, std::set<ConstraintClass> &,
-                                   const double tolerance = eps12);
+        bool is_allzero(const std::vector<int>, int &);
+        void remove_redundant_rows(const int, std::vector<ConstraintClass> &, const double tolerance = eps12);
+        void remove_redundant_rows2(const int, std::vector<ConstraintClass> &, const double tolerance = eps12);
         void rref(int, int, double **, int &, double tolerance = eps12);
     };
 

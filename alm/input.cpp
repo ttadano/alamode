@@ -33,7 +33,7 @@ Input::Input(ALM *alm, int narg, char **arg): Pointers(alm) {}
 
 Input::~Input() {}
 
-void Input::parce_input(int narg, char **arg)
+void Input::parse_input(int narg, char **arg)
 {
     if (narg == 1) {
 
