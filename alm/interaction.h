@@ -33,7 +33,7 @@ namespace ALM_NS
 
         IntList(const IntList &a)
         {
-            for (std::vector<int>::const_iterator p = a.iarray.begin(); p != a.iarray.end(); ++p) {
+            for (auto p = a.iarray.cbegin(); p != a.iarray.cend(); ++p) {
                 iarray.push_back(*p);
             }
         }
@@ -68,7 +68,8 @@ namespace ALM_NS
 
         bool operator<(const InteractionCluster &a) const
         {
-            return std::lexicographical_compare(x.begin(), x.end(), a.x.begin(), a.x.end());
+            return std::lexicographical_compare(x.begin(), x.end(),
+                                                a.x.begin(), a.x.end());
         }
     };
 
@@ -134,12 +135,13 @@ namespace ALM_NS
 
         MinDistList();
 
-        MinDistList(const std::vector<int> cell_in, const std::vector<double> dist_in)
+        MinDistList(const std::vector<int> cell_in,
+                    const std::vector<double> dist_in)
         {
-            for (std::vector<int>::const_iterator it = cell_in.begin(); it != cell_in.end(); ++it) {
+            for (auto it = cell_in.cbegin(); it != cell_in.cend(); ++it) {
                 cell.push_back(*it);
             }
-            for (std::vector<double>::const_iterator it = dist_in.begin(); it != dist_in.end(); ++it) {
+            for (auto it = dist_in.cbegin(); it != dist_in.cend(); ++it) {
                 dist.push_back(*it);
             }
         }
@@ -258,15 +260,29 @@ namespace ALM_NS
     private:
         void generate_coordinate_of_periodic_images(const unsigned int, double **,
                                                     const int [3], double ***, int *);
-        void get_pairs_of_minimum_distance(int, double ***, int *, std::vector<DistInfo> **, std::vector<DistInfo> **);
+
+        void get_pairs_of_minimum_distance(int, double ***, int *,
+                                           std::vector<DistInfo> **,
+                                           std::vector<DistInfo> **);
+
         void print_neighborlist(std::vector<DistInfo> **);
         void search_interactions(std::vector<int> **, std::set<IntList> *);
         void set_ordername();
-        void calc_mindist_clusters(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
+
+        void calc_mindist_clusters(std::vector<int> **,
+                                   std::vector<DistInfo> **,
+                                   std::vector<DistInfo> **,
                                    int *, std::set<MinimumDistanceCluster> **);
-        void calc_mindist_clusters2(std::vector<int> **, std::vector<DistInfo> **, std::vector<DistInfo> **,
+
+        void calc_mindist_clusters2(std::vector<int> **,
+                                    std::vector<DistInfo> **,
+                                    std::vector<DistInfo> **,
                                     int *, std::set<MinimumDistanceCluster> **);
-        void cell_combination(std::vector<std::vector<int>>, int, std::vector<int>, std::vector<std::vector<int>> &);
+
+        void cell_combination(std::vector<std::vector<int>>,
+                              int, std::vector<int>,
+                              std::vector<std::vector<int>> &);
+
         void generate_pairs(std::set<IntList> *, std::set<MinimumDistanceCluster> **);
     };
 }

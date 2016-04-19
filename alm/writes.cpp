@@ -140,7 +140,8 @@ void Writes::write_force_constants()
             for (ui = 0; ui < fcs->ndup[order].size(); ++ui) {
 
                 ofs_fcs << std::setw(8) << k + 1 << std::setw(8) << ui + 1
-                    << std::setw(18) << std::setprecision(7) << std::scientific << fitting->params[k];
+                    << std::setw(18) << std::setprecision(7)
+                    << std::scientific << fitting->params[k];
 
                 atom_tmp.clear();
                 for (l = 1; l < order + 2; ++l) {
@@ -149,8 +150,8 @@ void Writes::write_force_constants()
                 j = symmetry->map_s2p[fcs->fc_set[order][m].elems[0] / 3].atom_num;
                 std::sort(atom_tmp.begin(), atom_tmp.end());
 
-                iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp,
-                                                                                                  cell_dummy));
+                iter_cluster = interaction->mindist_cluster[order][j].find(
+                    MinimumDistanceCluster(atom_tmp, cell_dummy));
 
                 if (iter_cluster != interaction->mindist_cluster[order][j].end()) {
                     multiplicity = (*iter_cluster).cell.size();
@@ -161,14 +162,17 @@ void Writes::write_force_constants()
                         std::cout << std::setw(5) << atom_tmp[l];
                     }
                     std::cout << std::endl;
-                    error->exit("write_force_constants", "This cannot happen.");
+                    error->exit("write_force_constants",
+                                "This cannot happen.");
                 }
                 ofs_fcs << std::setw(4) << multiplicity;
 
                 for (l = 0; l < order + 2; ++l) {
-                    ofs_fcs << std::setw(7) << fcs->easyvizint(fcs->fc_set[order][m].elems[l]);
+                    ofs_fcs << std::setw(7)
+                        << fcs->easyvizint(fcs->fc_set[order][m].elems[l]);
                 }
-                ofs_fcs << std::setw(12) << std::setprecision(3) << std::fixed << distmax << std::endl;
+                ofs_fcs << std::setw(12) << std::setprecision(3)
+                    << std::fixed << distmax << std::endl;
 
                 m += fcs->ndup[order][ui];
                 ++k;
@@ -194,7 +198,8 @@ void Writes::write_force_constants()
                     if (std::abs(const_pointer.w_const[j]) > eps8) {
                         str_tmp = " * (FC" + boost::lexical_cast<std::string>(order + 2)
                             + "_" + boost::lexical_cast<std::string>(j + 1) + ")";
-                        ofs_fcs << std::setw(10) << std::right << std::showpos << const_pointer.w_const[j];
+                        ofs_fcs << std::setw(10) << std::right
+                            << std::showpos << const_pointer.w_const[j];
                         ofs_fcs << std::setw(12) << std::left << str_tmp;
                     }
                 }
@@ -230,13 +235,15 @@ void Writes::write_force_constants()
                 str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
 
                 ofs_fcs << str_tmp << std::setw(5) << fcs->ndup[order][iuniq]
-                    << std::setw(16) << std::scientific << std::setprecision(7) << fitting->params[ip] << std::endl;
+                    << std::setw(16) << std::scientific
+                    << std::setprecision(7) << fitting->params[ip] << std::endl;
 
                 for (j = 0; j < fcs->ndup[order][iuniq]; ++j) {
                     ofs_fcs << std::setw(5) << j + 1 << std::setw(12)
                         << std::setprecision(5) << std::fixed << fcs->fc_set[order][id].coef;
                     for (k = 0; k < order + 2; ++k) {
-                        ofs_fcs << std::setw(6) << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
+                        ofs_fcs << std::setw(6)
+                            << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
                     }
                     ofs_fcs << std::endl;
                     ++id;
@@ -249,7 +256,8 @@ void Writes::write_force_constants()
     memory->deallocate(str_fcs);
     ofs_fcs.close();
 
-    std::cout << std::endl << " Force constants are written to file: " << files->file_fcs << std::endl;
+    std::cout << std::endl << " Force constants are written to file: "
+        << files->file_fcs << std::endl;
 }
 
 void Writes::write_displacement_pattern()
@@ -265,19 +273,22 @@ void Writes::write_displacement_pattern()
 
     for (order = 0; order < maxorder; ++order) {
         ofs_pattern.open(files->file_disp_pattern[order].c_str(), std::ios::out);
-        if (!ofs_pattern) error->exit("write_displacement_pattern", "Cannot open file_disp_pattern");
+        if (!ofs_pattern)
+            error->exit("write_displacement_pattern",
+                        "Cannot open file_disp_pattern");
 
         counter = 0;
 
         ofs_pattern << "Basis : " << displace->disp_basis[0] << std::endl;
 
-        for (std::vector<AtomWithDirection>::iterator it = displace->pattern_all[order].begin();
+        for (auto it = displace->pattern_all[order].begin();
              it != displace->pattern_all[order].end(); ++it) {
             AtomWithDirection entry = *it;
 
             ++counter;
 
-            ofs_pattern << std::setw(5) << counter << ":" << std::setw(5) << entry.atoms.size() << std::endl;
+            ofs_pattern << std::setw(5) << counter << ":"
+                << std::setw(5) << entry.atoms.size() << std::endl;
             for (i = 0; i < entry.atoms.size(); ++i) {
                 ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
                 for (j = 0; j < 3; ++j) {
@@ -289,7 +300,8 @@ void Writes::write_displacement_pattern()
 
         ofs_pattern.close();
 
-        std::cout << "  " << interaction->str_order[order] << " : " << files->file_disp_pattern[order] << std::endl;
+        std::cout << "  " << interaction->str_order[order]
+            << " : " << files->file_disp_pattern[order] << std::endl;
     }
     std::cout << std::endl;
 }
@@ -338,7 +350,8 @@ void Writes::write_misc_xml()
     pt.put("Data.Structure.NumberOfElements", system_structure.nspecies);
 
     for (i = 0; i < system_structure.nspecies; ++i) {
-        ptree &child = pt.add("Data.Structure.AtomicElements.element", system->kdname[i]);
+        ptree &child = pt.add("Data.Structure.AtomicElements.element",
+                              system->kdname[i]);
         child.put("<xmlattr>.number", i + 1);
     }
 
@@ -373,7 +386,8 @@ void Writes::write_misc_xml()
     pt.put("Data.Symmetry.NumberOfTranslations", symmetry->ntran);
     for (i = 0; i < system_structure.ntran; ++i) {
         for (j = 0; j < system_structure.natmin; ++j) {
-            ptree &child = pt.add("Data.Symmetry.Translations.map", symmetry->map_p2s[j][i] + 1);
+            ptree &child = pt.add("Data.Symmetry.Translations.map",
+                                  symmetry->map_p2s[j][i] + 1);
             child.put("<xmlattr>.tran", i + 1);
             child.put("<xmlattr>.atom", j + 1);
         }
@@ -443,10 +457,11 @@ void Writes::write_misc_xml()
             }
             std::sort(atom_tmp.begin(), atom_tmp.end());
 
-            iter_cluster = interaction->mindist_cluster[1][j].find(MinimumDistanceCluster(atom_tmp,
-                                                                                          cell_dummy));
+            iter_cluster = interaction->mindist_cluster[1][j].find(
+                MinimumDistanceCluster(atom_tmp, cell_dummy));
             if (iter_cluster == interaction->mindist_cluster[1][j].end()) {
-                error->exit("load_reference_system_xml", "Cubic force constant is not found.");
+                error->exit("load_reference_system_xml",
+                            "Cubic force constant is not found.");
             } else {
                 multiplicity = (*iter_cluster).cell.size();
             }
@@ -517,12 +532,13 @@ void Writes::write_misc_xml()
             }
             std::sort(atom_tmp.begin(), atom_tmp.end());
 
-            elementname = "Data.ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2)
+            elementname = "Data.ForceConstants.ANHARM"
+                + boost::lexical_cast<std::string>(order + 2)
                 + ".FC" + boost::lexical_cast<std::string>(order + 2);
 
 
-            iter_cluster = interaction->mindist_cluster[order][j].find(MinimumDistanceCluster(atom_tmp,
-                                                                                              cell_dummy));
+            iter_cluster = interaction->mindist_cluster[order][j].find(
+                MinimumDistanceCluster(atom_tmp, cell_dummy));
 
             if (iter_cluster != interaction->mindist_cluster[order][j].end()) {
                 multiplicity = (*iter_cluster).cell.size();
@@ -531,7 +547,8 @@ void Writes::write_misc_xml()
                     std::vector<int> cell_now = (*iter_cluster).cell[imult];
 
                     ptree &child = pt.add(elementname,
-                                          double2string(fitting->params[ip] * fctmp.coef / static_cast<double>(multiplicity)));
+                                          double2string(fitting->params[ip] * fctmp.coef
+                                              / static_cast<double>(multiplicity)));
 
                     child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
                               + " " + boost::lexical_cast<std::string>(fctmp.elems[0] % 3 + 1));

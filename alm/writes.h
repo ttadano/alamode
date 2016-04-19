@@ -1,7 +1,7 @@
 /*
  writes.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -27,9 +27,13 @@ namespace ALM_NS
         AtomProperty() {};
 
         AtomProperty(const AtomProperty &other)
-            : x(other.x), y(other.y), z(other.z), kind(other.kind), atom(other.atom), tran(other.tran) {};
+            : x(other.x), y(other.y), z(other.z),
+              kind(other.kind), atom(other.atom), tran(other.tran) {};
 
-        AtomProperty(const double *pos, const int kind_in, const int atom_in, const int tran_in)
+        AtomProperty(const double *pos,
+                     const int kind_in,
+                     const int atom_in,
+                     const int tran_in)
         {
             x = pos[0];
             y = pos[1];

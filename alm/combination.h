@@ -28,7 +28,9 @@ namespace ALM_NS
         CombinationWithRepetition() {};
 
         template <class InputIter>
-        CombinationWithRepetition(InputIter begin, InputIter end, const unsigned int n)
+        CombinationWithRepetition(InputIter begin,
+                                  InputIter end,
+                                  const unsigned int n)
         {
             ndim = n;
 
@@ -64,7 +66,8 @@ namespace ALM_NS
         }
 
     private:
-        unsigned int factorial(const unsigned int max, const unsigned int min = 1) const
+        unsigned int factorial(const unsigned int max,
+                               const unsigned int min = 1) const
         {
             unsigned int result = 1;
             for (unsigned int i = min + 1; i <= max; ++i) result *= i;

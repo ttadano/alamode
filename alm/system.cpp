@@ -53,9 +53,20 @@ void System::init()
     cout.setf(ios::scientific);
 
     cout << "  Lattice Vector" << endl;
-    cout << setw(16) << lavec[0][0] << setw(15) << lavec[1][0] << setw(15) << lavec[2][0] << " : a1" << endl;
-    cout << setw(16) << lavec[0][1] << setw(15) << lavec[1][1] << setw(15) << lavec[2][1] << " : a2" << endl;
-    cout << setw(16) << lavec[0][2] << setw(15) << lavec[1][2] << setw(15) << lavec[2][2] << " : a3" << endl;
+    cout << setw(16) << lavec[0][0];
+    cout << setw(15) << lavec[1][0];
+    cout << setw(15) << lavec[2][0];
+    cout << " : a1" << endl;
+
+    cout << setw(16) << lavec[0][1];
+    cout << setw(15) << lavec[1][1];
+    cout << setw(15) << lavec[2][1];
+    cout << " : a2" << endl;
+
+    cout << setw(16) << lavec[0][2];
+    cout << setw(15) << lavec[1][2];
+    cout << setw(15) << lavec[2][2];
+    cout << " : a3" << endl;
     cout << endl;
 
     double vec_tmp[3][3];
@@ -66,12 +77,24 @@ void System::init()
     }
 
     cell_volume = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
-    cout << "  Cell volume = " << cell_volume << " (a.u)^3" << endl << endl;
+    cout << "  Cell volume = " << cell_volume << " (a.u)^3"
+        << endl << endl;
 
     cout << "  Reciprocal Lattice Vector" << std::endl;
-    cout << setw(16) << rlavec[0][0] << setw(15) << rlavec[0][1] << setw(15) << rlavec[0][2] << " : b1" << endl;
-    cout << setw(16) << rlavec[1][0] << setw(15) << rlavec[1][1] << setw(15) << rlavec[1][2] << " : b2" << endl;
-    cout << setw(16) << rlavec[2][0] << setw(15) << rlavec[2][1] << setw(15) << rlavec[2][2] << " : b3" << endl;
+    cout << setw(16) << rlavec[0][0];
+    cout << setw(15) << rlavec[0][1];
+    cout << setw(15) << rlavec[0][2];
+    cout << " : b1" << endl;
+
+    cout << setw(16) << rlavec[1][0];
+    cout << setw(15) << rlavec[1][1];
+    cout << setw(15) << rlavec[1][2];
+    cout << " : b2" << endl;
+
+    cout << setw(16) << rlavec[2][0];
+    cout << setw(15) << rlavec[2][1];
+    cout << setw(15) << rlavec[2][2];
+    cout << " : b3" << endl;
     cout << endl;
 
     cout << "  Atomic species:" << endl;
@@ -195,7 +218,9 @@ void System::frac2cart(double **xf)
     memory->deallocate(x_tmp);
 }
 
-void System::load_reference_system_xml(std::string file_reference_fcs, const int order_fcs, double *const_out)
+void System::load_reference_system_xml(std::string file_reference_fcs,
+                                       const int order_fcs,
+                                       double *const_out)
 {
     using namespace boost::property_tree;
     ptree pt;
@@ -218,8 +243,10 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
         error->exit("load_reference_system_xml", str_error.c_str());
     }
 
-    nat_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
-    ntran_ref = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
+    nat_ref = boost::lexical_cast<int>(
+        get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
+    ntran_ref = boost::lexical_cast<int>(
+        get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
     natmin_ref = nat_ref / ntran_ref;
 
     if (natmin_ref != symmetry->natmin) {
@@ -228,8 +255,8 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
     }
 
     if (order_fcs == 0) {
-        nfcs_ref = boost::lexical_cast<int>(get_value_from_xml(pt,
-                                                               "Data.ForceConstants.HarmonicUnique.NFC2"));
+        nfcs_ref = boost::lexical_cast<int>(
+            get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
 
         if (nfcs_ref != fcs->ndup[0].size()) {
             error->exit("load_reference_system_xml",
@@ -237,8 +264,8 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
         }
 
     } else if (order_fcs == 1) {
-        nfcs_ref = boost::lexical_cast<int>(get_value_from_xml(pt,
-                                                               "Data.ForceConstants.CubicUnique.NFC3"));
+        nfcs_ref = boost::lexical_cast<int>(
+            get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.NFC3"));
 
         if (nfcs_ref != fcs->ndup[1].size()) {
             error->exit("load_reference_system_xml",
@@ -287,17 +314,18 @@ void System::load_reference_system_xml(std::string file_reference_fcs, const int
 
     list_found.clear();
 
-    for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin();
-         p != fcs->fc_set[order_fcs].end(); ++p) {
+    for (auto p = fcs->fc_set[order_fcs].begin(); p != fcs->fc_set[order_fcs].end(); ++p) {
         FcProperty list_tmp = *p; // Using copy constructor
         for (i = 0; i < nterms; ++i) {
             ind[i] = list_tmp.elems[i];
         }
-        list_found.insert(FcProperty(nterms, list_tmp.coef, ind, list_tmp.mother));
+        list_found.insert(FcProperty(nterms, list_tmp.coef,
+                                     ind, list_tmp.mother));
     }
 
     for (i = 0; i < nfcs_ref; ++i) {
-        iter_found = list_found.find(FcProperty(nterms, 1.0, intpair_ref[i], 1));
+        iter_found = list_found.find(FcProperty(nterms, 1.0,
+                                                intpair_ref[i], 1));
         if (iter_found == list_found.end()) {
             error->exit("load_reference_system",
                         "Cannot find equivalent force constant, number: ",
@@ -330,7 +358,9 @@ void System::load_reference_system()
     std::ifstream ifs_fc2;
 
     ifs_fc2.open(constraint->fc2_file.c_str(), std::ios::in);
-    if (!ifs_fc2) error->exit("load_reference_system", "cannot open file fc2_file");
+    if (!ifs_fc2)
+        error->exit("load_reference_system",
+                    "cannot open file fc2_file");
 
     bool is_found_system = false;
 

@@ -122,8 +122,12 @@ void Symmetry::init()
     std::cout << std::endl;
 }
 
-void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
-                                        double aa[3][3], double bb[3][3], double **x, int *kd)
+void Symmetry::setup_symmetry_operation(int nat,
+                                        unsigned int &nsym,
+                                        double aa[3][3],
+                                        double bb[3][3],
+                                        double **x,
+                                        int *kd)
 {
     int i, j;
 
@@ -205,7 +209,8 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
                         "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
-            ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
+            ifs_sym
+                >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
                 >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2]
                 >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
                 >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
@@ -220,7 +225,10 @@ void Symmetry::setup_symmetry_operation(int nat, unsigned int &nsym,
 #endif
 }
 
-void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop_all)
+void Symmetry::findsym(int nat,
+                       double aa[3][3],
+                       double **x,
+                       std::vector<SymmetryOperation> &symop_all)
 {
     std::vector<RotationMatrix> LatticeSymmList;
 
@@ -236,7 +244,8 @@ void Symmetry::findsym(int nat, double aa[3][3], double **x, std::vector<Symmetr
     LatticeSymmList.clear();
 }
 
-void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix> &LatticeSymmList)
+void Symmetry::find_lattice_symmetry(double aa[3][3],
+                                     std::vector<RotationMatrix> &LatticeSymmList)
 {
     /*
     Find the rotational matrices that leave the metric tensor invariant.
@@ -358,7 +367,10 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int nat, int nclass, std::vector<unsigned int> *atomclass, double **x,
+void Symmetry::find_crystal_symmetry(int nat,
+                                     int nclass,
+                                     std::vector<unsigned int> *atomclass,
+                                     double **x,
                                      std::vector<RotationMatrix> LatticeSymmList,
                                      std::vector<SymmetryOperation> &CrystalSymmList)
 {
@@ -620,7 +632,11 @@ void Symmetry::pure_translations()
     }
 }
 
-void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *map_s2p)
+void Symmetry::genmaps(int nat,
+                       double **x,
+                       int **map_sym,
+                       int **map_p2s,
+                       Maps *map_s2p)
 {
     int isym, iat, jat;
     int i, j;
@@ -672,7 +688,9 @@ void Symmetry::genmaps(int nat, double **x, int **map_sym, int **map_p2s, Maps *
                     }
                 }
                 if (map_sym[iat][isym] == -1) {
-                    error->exit("genmaps", "cannot find symmetry for operation # ", isym + 1);
+                    error->exit("genmaps",
+                                "cannot find symmetry for operation # ",
+                                isym + 1);
                 }
             }
         }
@@ -719,7 +737,10 @@ bool Symmetry::is_translation(int **rot)
     return ret;
 }
 
-void Symmetry::symop_availability_check(double ***rot, bool *flag, const int n, int &nsym_fc)
+void Symmetry::symop_availability_check(double ***rot,
+                                        bool *flag,
+                                        const int n,
+                                        int &nsym_fc)
 {
     int i, j, k;
     int nfinite;
@@ -854,7 +875,9 @@ void Symmetry::print_symmetrized_coordinate(double **x)
                     break;
                 }
             }
-            if (l == -1) error->exit("print_symmetrized_coordinate", "This cannot happen.");
+            if (l == -1)
+                error->exit("print_symmetrized_coordinate",
+                            "This cannot happen.");
 
             for (j = 0; j < 3; ++j) {
 #ifdef _USE_EIGEN
@@ -901,7 +924,8 @@ void Symmetry::print_symmetrized_coordinate(double **x)
     std::cout << "Symmetry Averaged Coordinate" << std::endl;
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            std::cout << std::setw(20) << std::scientific << std::setprecision(9) << x_avg[i][j];
+            std::cout << std::setw(20) << std::scientific
+                << std::setprecision(9) << x_avg[i][j];
         }
         std::cout << std::endl;
     }

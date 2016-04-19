@@ -64,7 +64,8 @@ namespace ALM_NS
                     v2.push_back(a.tran[i]);
                 }
             }
-            return std::lexicographical_compare(v1.begin(), v1.end(), v2.begin(), v2.end());
+            return std::lexicographical_compare(v1.begin(), v1.end(),
+                                                v2.begin(), v2.end());
         }
     };
 
@@ -119,10 +120,16 @@ namespace ALM_NS
 
     private:
 
-        void setup_symmetry_operation(int, unsigned int &, double [3][3], double [3][3],
+        void setup_symmetry_operation(int, unsigned int &,
+                                      double [3][3], double [3][3],
                                       double **, int *);
-        void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
-        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
+        void genmaps(int, double **,
+                     int **, int **,
+                     class Symmetry::Maps *);
+
+        void findsym(int, double [3][3], double **,
+                     std::vector<SymmetryOperation> &);
+
         bool is_translation(int **);
         bool is_proper(double [3][3]);
 
@@ -130,9 +137,13 @@ namespace ALM_NS
         void pure_translations();
         void print_symmetrized_coordinate(double **);
         void symop_availability_check(double ***, bool *, const int, int &);
+
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
-        void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x,
-                                   std::vector<RotationMatrix>, std::vector<SymmetryOperation> &);
+
+        void find_crystal_symmetry(int, int,
+                                   std::vector<unsigned int> *, double **x,
+                                   std::vector<RotationMatrix>,
+                                   std::vector<SymmetryOperation> &);
 
         std::string file_sym;
         int ***symrel_int;

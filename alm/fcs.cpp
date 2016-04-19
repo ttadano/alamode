@@ -48,7 +48,8 @@ void Fcs::init()
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
-        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i]
+        std::cout << "  Number of " << std::setw(9)
+            << interaction->str_order[i]
             << " FCs : " << ndup[i].size();
         std::cout << std::endl;
     }
@@ -58,12 +59,14 @@ void Fcs::init()
 
     for (int order = 0; order < maxorder; ++order) {
         if (ndup[order].size() > 0) {
-            std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
+            std::sort(fc_set[order].begin(),
+                      fc_set[order].begin() + ndup[order][0]);
             int nbegin = ndup[order][0];
             int nend;
             for (auto mm = 1; mm < ndup[order].size(); ++mm) {
                 nend = nbegin + ndup[order][mm];
-                std::sort(fc_set[order].begin() + nbegin, fc_set[order].begin() + nend);
+                std::sort(fc_set[order].begin() + nbegin,
+                          fc_set[order].begin() + nend);
                 nbegin += ndup[order][mm];
             }
         }
@@ -130,7 +133,8 @@ void Fcs::generate_fclists(int maxorder)
             for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
 
             for (i1 = 0; i1 < nxyz; ++i1) {
-                for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
+                for (i = 0; i < order + 2; ++i)
+                    ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
 
                 if (!is_ascending(order + 2, ind)) continue;
 
@@ -150,14 +154,16 @@ void Fcs::generate_fclists(int maxorder)
 
                     if (!symmetry->sym_available[isym]) continue;
 
-                    for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
+                    for (i = 0; i < order + 2; ++i)
+                        atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
 
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
 
                     for (i2 = 0; i2 < nxyz; ++i2) {
                         c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
                         if (std::abs(c_tmp) > eps12) {
-                            for (i = 0; i < order + 2; ++i) ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
+                            for (i = 0; i < order + 2; ++i)
+                                ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
 
                             i_prim = min_inprim(order + 2, ind_mapped);
                             std::swap(ind_mapped[0], ind_mapped[i_prim]);
@@ -177,7 +183,8 @@ void Fcs::generate_fclists(int maxorder)
                             if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()) {
                                 list_found.insert(IntList(order + 2, ind_mapped));
 
-                                fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped, nmother));
+                                fc_set[order].push_back(FcProperty(order + 2, c_tmp,
+                                                                   ind_mapped, nmother));
                                 ++ndeps;
 
                                 // Add equivalent interaction list (permutation) if there are two or more indices
@@ -192,7 +199,8 @@ void Fcs::generate_fclists(int maxorder)
                                         for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                         std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
                                         sort_tail(order + 2, ind_mapped_tmp);
-                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped_tmp, nmother));
+                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp,
+                                                                           ind_mapped_tmp, nmother));
 
                                         ++ndeps;
 
@@ -233,7 +241,10 @@ void Fcs::generate_fclists(int maxorder)
     std::cout << "  Finished!" << std::endl;
 }
 
-double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *arr2)
+double Fcs::coef_sym(const int n,
+                     const int symnum,
+                     const int *arr1,
+                     const int *arr2)
 {
     double tmp = 1.0;
     int i;

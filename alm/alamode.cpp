@@ -40,7 +40,8 @@ ALM::ALM(int narg, char **arg)
     timer = new Timer(this);
 
 #ifdef _OPENMP
-    std::cout << " Number of OpenMP threads = " << omp_get_max_threads() << std::endl << std::endl;
+    std::cout << " Number of OpenMP threads = " 
+        << omp_get_max_threads() << std::endl << std::endl;
 #endif
     std::cout << " Job started at " << timer->DateAndTime() << std::endl;
 
@@ -65,7 +66,8 @@ ALM::ALM(int narg, char **arg)
 
     finalize();
 
-    std::cout << std::endl << " Job finished at " << timer->DateAndTime() << std::endl;
+    std::cout << std::endl << " Job finished at " 
+        << timer->DateAndTime() << std::endl;
 }
 
 void ALM::create()

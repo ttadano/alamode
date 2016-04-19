@@ -29,7 +29,7 @@ namespace ALM_NS
 
         ConstraintClass(const ConstraintClass &a)
         {
-            for (std::vector<double>::const_iterator p = a.w_const.begin(); p != a.w_const.end(); ++p) {
+            for (auto p = a.w_const.cbegin(); p != a.w_const.cend(); ++p) {
                 w_const.push_back(*p);
             }
         }
@@ -105,8 +105,10 @@ namespace ALM_NS
         boost::bimap<int, int> *index_bimap;
 
         void constraint_from_symmetry(std::vector<ConstraintClass> *);
+
         void get_mapping_constraint(const int, std::vector<ConstraintClass> *,
-                                    std::vector<ConstraintTypeFix> *, std::vector<ConstraintTypeRelate> *,
+                                    std::vector<ConstraintTypeFix> *,
+                                    std::vector<ConstraintTypeRelate> *,
                                     boost::bimap<int, int> *, const bool);
 
     private:
@@ -128,8 +130,12 @@ namespace ALM_NS
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
         bool is_allzero(const std::vector<int>, int &);
-        void remove_redundant_rows(const int, std::vector<ConstraintClass> &, const double tolerance = eps12);
-        void remove_redundant_rows2(const int, std::vector<ConstraintClass> &, const double tolerance = eps12);
+
+        void remove_redundant_rows(const int, std::vector<ConstraintClass> &,
+                                   const double tolerance = eps12);
+
+        void remove_redundant_rows2(const int, std::vector<ConstraintClass> &,
+                                    const double tolerance = eps12);
         void rref(int, int, double **, int &, double tolerance = eps12);
     };
 

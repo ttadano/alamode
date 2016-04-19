@@ -108,7 +108,8 @@ void Displace::gen_displacement_pattern()
                 for (j = 0; j < order + 1; ++j) {
                     group_tmp.push_back(fcs->fc_set[order][m].elems[j]);
                 }
-                group_tmp.erase(std::unique(group_tmp.begin(), group_tmp.end()), group_tmp.end());
+                group_tmp.erase(std::unique(group_tmp.begin(), group_tmp.end()),
+                                group_tmp.end());
 
                 // Avoid equivalent entries using set.
                 dispset[order].insert(DispAtomSet(group_tmp));
@@ -129,7 +130,8 @@ void Displace::gen_displacement_pattern()
     std::cout << " done!" << std::endl;
 }
 
-void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> *pattern,
+void Displace::generate_pattern_all(const int N,
+                                    std::vector<AtomWithDirection> *pattern,
                                     std::set<DispAtomSet> *dispset_in)
 {
     int i, j;
@@ -188,10 +190,11 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
             }
 
             directions_copy.clear();
-            std::copy(directions.begin(), directions.end(), std::back_inserter(directions_copy));
+            std::copy(directions.begin(), directions.end(),
+                      std::back_inserter(directions_copy));
 
-            for (std::vector<std::vector<int>>::const_iterator it2 = sign_reduced.begin();
-                 it2 != sign_reduced.end(); ++it2) {
+            for (auto it2 = sign_reduced.cbegin();
+                 it2 != sign_reduced.cend(); ++it2) {
                 directions.clear();
 
                 for (i = 0; i < (*it2).size(); ++i) {
@@ -220,7 +223,9 @@ void Displace::generate_pattern_all(const int N, std::vector<AtomWithDirection> 
     memory->deallocate(sign_prod);
 }
 
-void Displace::generate_signvecs(const int N, std::vector<std::vector<int>> &sign, std::vector<int> vec)
+void Displace::generate_signvecs(const int N,
+                                 std::vector<std::vector<int>> &sign,
+                                 std::vector<int> vec)
 {
     // returns the product of signs ('+','-')
 
@@ -243,8 +248,10 @@ void Displace::generate_signvecs(const int N, std::vector<std::vector<int>> &sig
     }
 }
 
-void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>> sign_in,
-                                      std::vector<int> pair_in, std::vector<std::vector<int>> &sign_out)
+void Displace::find_unique_sign_pairs(const int N,
+                                      std::vector<std::vector<int>> sign_in,
+                                      std::vector<int> pair_in,
+                                      std::vector<std::vector<int>> &sign_out)
 {
     int isym, i, j, k;
     int mapped_atom;
@@ -325,7 +332,8 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>>
                 for (j = 0; j < 3; ++j) {
                     disp_sym[mapped_atom][j] = 0.0;
                     for (k = 0; k < 3; ++k) {
-                        disp_sym[mapped_atom][j] += symmetry->symrel[isym][j][k] * disp[list_disp_atom[i]][k];
+                        disp_sym[mapped_atom][j] 
+                            += symmetry->symrel[isym][j][k] * disp[list_disp_atom[i]][k];
                     }
 
                     disp_tmp = disp_sym[mapped_atom][j];
@@ -347,7 +355,7 @@ void Displace::find_unique_sign_pairs(const int N, std::vector<std::vector<int>>
 
     sign_found.clear();
 
-    for (std::vector<std::vector<int>>::const_iterator it = sign_in.begin(); it != sign_in.end(); ++it) {
+    for (auto it = sign_in.cbegin(); it != sign_in.cend(); ++it) {
 
         // if the sign has already been found before, cycle the loop.
         // else, add the current sign pairs to the return variable.

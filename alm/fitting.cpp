@@ -96,7 +96,8 @@ void Fitting::fitmain()
     std::cout << std::endl;
 
     std::cout << "  NSTART = " << nstart << "; NEND = " << nend << std::endl;
-    std::cout << "  " << ndata_used << " entries will be used for fitting." << std::endl << std::endl;
+    std::cout << "  " << ndata_used << " entries will be used for fitting."
+        << std::endl << std::endl;
 
     // Read displacement-force training data set from files
 
@@ -108,7 +109,8 @@ void Fitting::fitmain()
     for (i = 0; i < maxorder; ++i) {
         N += fcs->ndup[i].size();
     }
-    std::cout << "  Total Number of Parameters : " << N << std::endl << std::endl;
+    std::cout << "  Total Number of Parameters : "
+        << N << std::endl << std::endl;
 
     // Calculate matrix elements for fitting
 
@@ -120,21 +122,24 @@ void Fitting::fitmain()
         for (i = 0; i < maxorder; ++i) {
             N_new += constraint->index_bimap[i].size();
         }
-        std::cout << "  Total Number of Free Parameters : " << N_new << std::endl << std::endl;
+        std::cout << "  Total Number of Free Parameters : "
+            << N_new << std::endl << std::endl;
 
         memory->allocate(amat, M, N_new);
         memory->allocate(fsum, M);
         memory->allocate(fsum_orig, M);
 
         calc_matrix_elements_algebraic_constraint(M, N, N_new, nat, natmin, ndata_used,
-                                                  nmulti, maxorder, u, f, amat, fsum, fsum_orig);
+                                                  nmulti, maxorder, u, f, amat, fsum,
+                                                  fsum_orig);
 
     } else {
 
         memory->allocate(amat, M, N);
         memory->allocate(fsum, M);
 
-        calc_matrix_elements(M, N, nat, natmin, ndata_used, nmulti, maxorder, u, f, amat, fsum);
+        calc_matrix_elements(M, N, nat, natmin, ndata_used,
+                             nmulti, maxorder, u, f, amat, fsum);
     }
 
     memory->deallocate(u);
@@ -154,7 +159,8 @@ void Fitting::fitmain()
 
         } else if (constraint->exist_constraint) {
             fit_with_constraints(N, M, P, amat, fsum, param_tmp,
-                                 constraint->const_mat, constraint->const_rhs);
+                                 constraint->const_mat,
+                                 constraint->const_rhs);
         } else {
             fit_without_constraints(N, M, amat, fsum, param_tmp);
         }
@@ -165,7 +171,8 @@ void Fitting::fitmain()
 
         if (constraint->exist_constraint) {
             fit_consecutively(N, P, natmin, ndata_used, nmulti, nskip, amat, fsum,
-                              constraint->const_mat, constraint->const_rhs);
+                              constraint->const_mat,
+                              constraint->const_rhs);
         } else {
             error->exit("fitmain", "nskip has to be 0 when constraint_mode = 0");
         }
@@ -175,11 +182,15 @@ void Fitting::fitmain()
 
         if (constraint->exist_constraint) {
             fit_bootstrap(N, P, natmin, ndata_used, nmulti, amat, fsum,
-                          constraint->const_mat, constraint->const_rhs);
+                          constraint->const_mat,
+                          constraint->const_rhs);
+
             fit_with_constraints(N, M, P, amat, fsum, param_tmp,
-                                 constraint->const_mat, constraint->const_rhs);
+                                 constraint->const_mat,
+                                 constraint->const_rhs);
         } else {
-            error->exit("fitmain", "bootstrap analysis for LSE without constraint is not supported yet");
+            error->exit("fitmain",
+                        "bootstrap analysis for LSE without constraint is not supported yet");
         }
     }
 
@@ -210,9 +221,17 @@ void Fitting::fitmain()
     std::cout << std::endl;
 }
 
-void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, const int nend,
-                              const int ndata_used, int &nmulti, const int multiply_data, double **&u, double **&f,
-                              const std::string file_disp, const std::string file_force)
+void Fitting::data_multiplier(const int nat,
+                              const int ndata,
+                              const int nstart,
+                              const int nend,
+                              const int ndata_used,
+                              int &nmulti,
+                              const int multiply_data,
+                              double **&u,
+                              double **&f,
+                              const std::string file_disp,
+                              const std::string file_force)
 {
     int i, j, k;
     int idata, itran, isym;
@@ -245,7 +264,8 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     }
     if (nline_u < nreq)
         error->exit("data_multiplier",
-                    "The number of lines in DFILE is too small for the given NDATA = ", ndata);
+                    "The number of lines in DFILE is too small for the given NDATA = ",
+                    ndata);
 
     // Read forces from FFILE
 
@@ -256,13 +276,15 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     }
     if (nline_f < nreq)
         error->exit("data_multiplier",
-                    "The number of lines in FFILE is too small for the given NDATA = ", ndata);
+                    "The number of lines in FFILE is too small for the given NDATA = ",
+                    ndata);
 
     // Multiply data
 
     if (multiply_data == 0) {
 
-        std::cout << " MULTDAT = 0: Given displacement-force data sets will be used as is." << std::endl << std::endl;
+        std::cout << " MULTDAT = 0: Given displacement-force data sets will be used as is."
+            << std::endl << std::endl;
 
         nmulti = 1;
 
@@ -362,7 +384,11 @@ void Fitting::data_multiplier(const int nat, const int ndata, const int nstart, 
     ifs_force.close();
 }
 
-void Fitting::fit_without_constraints(int N, int M, double **amat, double *bvec, double *param_out)
+void Fitting::fit_without_constraints(int N,
+                                      int M,
+                                      double **amat,
+                                      double *bvec,
+                                      double *param_out)
 {
     int i, j;
     unsigned long k;
@@ -402,7 +428,8 @@ void Fitting::fit_without_constraints(int N, int M, double **amat, double *bvec,
     std::cout << "  SVD has started ... ";
 
     // Fitting with singular value decomposition
-    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &LMAX, S, &rcond, &nrank, WORK, &LWORK, &INFO);
+    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &LMAX,
+            S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
     std::cout << "finished !" << std::endl << std::endl;
 
@@ -416,8 +443,10 @@ void Fitting::fit_without_constraints(int N, int M, double **amat, double *bvec,
         for (i = N; i < M; ++i) {
             f_residual += std::pow(fsum2[i], 2);
         }
-        std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
-        std::cout << "  Fitting error (%) : " << sqrt(f_residual / f_square) * 100.0 << std::endl;
+        std::cout << std::endl << "  Residual sum of squares for the solution: "
+            << sqrt(f_residual) << std::endl;
+        std::cout << "  Fitting error (%) : "
+            << sqrt(f_residual / f_square) * 100.0 << std::endl;
     }
 
     for (i = 0; i < N; ++i) {
@@ -430,9 +459,14 @@ void Fitting::fit_without_constraints(int N, int M, double **amat, double *bvec,
     memory->deallocate(amat_mod);
 }
 
-void Fitting::fit_with_constraints(int N, int M, int P,
-                                   double **amat, double *bvec, double *param_out,
-                                   double **cmat, double *dvec)
+void Fitting::fit_with_constraints(int N,
+                                   int M,
+                                   int P,
+                                   double **amat,
+                                   double *bvec,
+                                   double *param_out,
+                                   double **cmat,
+                                   double *dvec)
 {
     int i, j;
     unsigned long k;
@@ -534,7 +568,8 @@ void Fitting::fit_with_constraints(int N, int M, int P,
     memory->allocate(WORK, LWORK);
     memory->allocate(x, N);
 
-    dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, dvec, x, WORK, &LWORK, &INFO);
+    dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P,
+            fsum2, dvec, x, WORK, &LWORK, &INFO);
 
     std::cout << " finished. " << std::endl;
 
@@ -542,8 +577,10 @@ void Fitting::fit_with_constraints(int N, int M, int P,
     for (i = N - P; i < M; ++i) {
         f_residual += std::pow(fsum2[i], 2);
     }
-    std::cout << std::endl << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
-    std::cout << "  Fitting error (%) : " << std::sqrt(f_residual / f_square) * 100.0 << std::endl;
+    std::cout << std::endl << "  Residual sum of squares for the solution: "
+        << sqrt(f_residual) << std::endl;
+    std::cout << "  Fitting error (%) : "
+        << std::sqrt(f_residual / f_square) * 100.0 << std::endl;
 
     // copy fcs to bvec
 
@@ -558,8 +595,12 @@ void Fitting::fit_with_constraints(int N, int M, int P,
     memory->deallocate(fsum2);
 }
 
-void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bvec,
-                                        double *param_out, double *bvec_orig,
+void Fitting::fit_algebraic_constraints(int N,
+                                        int M,
+                                        double **amat,
+                                        double *bvec,
+                                        double *param_out,
+                                        double *bvec_orig,
                                         const int maxorder)
 {
     int i, j;
@@ -600,7 +641,8 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
     std::cout << "  SVD has started ... ";
 
     // Fitting with singular value decomposition
-    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &LMAX, S, &rcond, &nrank, WORK, &LWORK, &INFO);
+    dgelss_(&M, &N, &nrhs, amat_mod, &M, fsum2, &LMAX,
+            S, &rcond, &nrank, WORK, &LWORK, &INFO);
 
     std::cout << "finished !" << std::endl << std::endl;
 
@@ -615,8 +657,10 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
             f_residual += std::pow(fsum2[i], 2);
         }
         std::cout << std::endl;
-        std::cout << "  Residual sum of squares for the solution: " << sqrt(f_residual) << std::endl;
-        std::cout << "  Fitting error (%) : " << sqrt(f_residual / f_square) * 100.0 << std::endl;
+        std::cout << "  Residual sum of squares for the solution: "
+            << sqrt(f_residual) << std::endl;
+        std::cout << "  Fitting error (%) : "
+            << sqrt(f_residual / f_square) * 100.0 << std::endl;
     }
 
     int ishift = 0;
@@ -659,8 +703,15 @@ void Fitting::fit_algebraic_constraints(int N, int M, double **amat, double *bve
 }
 
 
-void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti,
-                            double **amat, double *bvec, double **cmat, double *dvec)
+void Fitting::fit_bootstrap(int N,
+                            int P,
+                            int natmin,
+                            int ndata_used,
+                            int nmulti,
+                            double **amat,
+                            double *bvec,
+                            double **cmat,
+                            double *dvec)
 {
     int i, j;
     unsigned long k, l;
@@ -682,7 +733,9 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
 
     std::ofstream ofs_fcs_boot;
     ofs_fcs_boot.open(file_fcs_bootstrap.c_str(), std::ios::out);
-    if (!ofs_fcs_boot) error->exit("fit_bootstrap", "cannot open file_fcs_bootstrap");
+    if (!ofs_fcs_boot)
+        error->exit("fit_bootstrap",
+                    "cannot open file_fcs_bootstrap");
 
     ofs_fcs_boot.setf(std::ios::scientific);
 
@@ -703,7 +756,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
     std::cout << "  NSKIP < 0: Bootstrap analysis for error estimation." << std::endl;
     std::cout << "             The number of trials is NBOOT (=" << nboot << ")" << std::endl;
     std::cout << std::endl;
-    std::cout << "  Relative errors and FCs are stored in file: " << file_fcs_bootstrap << std::endl;
+    std::cout << "  Relative errors and FCs are stored in file: "
+        << file_fcs_bootstrap << std::endl;
 
     ofs_fcs_boot << "# Relative Error(%), FCs ..." ;
 
@@ -725,7 +779,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
         viRngUniform(VSL_METHOD_IUNIFORM_STD, stream, ndata_used, rnd_index, 0, ndata_used);
 #else
         for (i = 0; i < ndata_used; ++i) {
-            rnd_index[i] = std::rand() % ndata_used; // random number uniformly distributed in [0, ndata_used)
+            // random number uniformly distributed in [0, ndata_used)
+            rnd_index[i] = std::rand() % ndata_used;
         }
 #endif
 
@@ -759,7 +814,8 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
             const_tmp[i] = dvec[i];
         }
 
-        dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, const_tmp, x, WORK, &LWORK, &INFO);
+        dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P,
+                fsum2, const_tmp, x, WORK, &LWORK, &INFO);
 
         f_residual = 0.0;
         for (i = N - P; i < M; ++i) {
@@ -787,8 +843,17 @@ void Fitting::fit_bootstrap(int N, int P, int natmin, int ndata_used, int nmulti
     std::cout << "  Normal fitting will be performed" << std::endl;
 }
 
-void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_used, const int nmulti, const int nskip,
-                                double **amat, double *bvec, double **cmat, double *dvec)
+
+void Fitting::fit_consecutively(int N,
+                                int P,
+                                const int natmin,
+                                const int ndata_used,
+                                const int nmulti,
+                                const int nskip,
+                                double **amat,
+                                double *bvec,
+                                double **cmat,
+                                double *dvec)
 {
     int i, j;
     unsigned long k;
@@ -807,7 +872,9 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
 
     std::ofstream ofs_fcs_seq;
     ofs_fcs_seq.open(file_fcs_sequence.c_str(), std::ios::out);
-    if (!ofs_fcs_seq) error->exit("fit_consecutively", "cannot open file_fcs_sequence");
+    if (!ofs_fcs_seq)
+        error->exit("fit_consecutively",
+                    "cannot open file_fcs_sequence");
 
     ofs_fcs_seq.setf(std::ios::scientific);
 
@@ -825,7 +892,8 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     std::cout << "  NSKIP > 0: Fitting will be performed consecutively" << std::endl;
     std::cout << "             with variously changing NEND as NEND = NSTART + i*NSKIP" << std::endl;
     std::cout << std::endl;
-    std::cout << "  Relative errors and FCs will be stored in the file " << file_fcs_sequence << std::endl;
+    std::cout << "  Relative errors and FCs will be stored in the file "
+        << file_fcs_sequence << std::endl;
 
     ofs_fcs_seq << "# Relative Error(%), FCS..." ;
 
@@ -874,7 +942,8 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
         int LWORK = P + std::min<int>(M, N) + 100 * std::max<int>(M, N);
         memory->allocate(WORK, LWORK);
 
-        dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P, fsum2, const_tmp, x, WORK, &LWORK, &INFO);
+        dgglse_(&M, &N, &P, amat_mod, &M, cmat_mod, &P,
+                fsum2, const_tmp, x, WORK, &LWORK, &INFO);
 
         memory->deallocate(amat_mod);
         memory->deallocate(WORK);
@@ -906,9 +975,17 @@ void Fitting::fit_consecutively(int N, int P, const int natmin, const int ndata_
     std::cout << "  Consecutive fitting finished." << std::endl;
 }
 
-void Fitting::calc_matrix_elements(const int M, const int N, const int nat, const int natmin,
-                                   const int ndata_fit, const int nmulti, const int maxorder,
-                                   double **u, double **f, double **amat, double *bvec)
+void Fitting::calc_matrix_elements(const int M,
+                                   const int N,
+                                   const int nat,
+                                   const int natmin,
+                                   const int ndata_fit,
+                                   const int nmulti,
+                                   const int maxorder,
+                                   double **u,
+                                   double **f,
+                                   double **amat,
+                                   double *bvec)
 {
     int i, j;
     int irow;
@@ -983,10 +1060,19 @@ void Fitting::calc_matrix_elements(const int M, const int N, const int nat, cons
 }
 
 
-void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N, const int N_new, const int nat,
-                                                        const int natmin, const int ndata_fit, const int nmulti,
-                                                        const int maxorder, double **u, double **f, double **amat,
-                                                        double *bvec, double *bvec_orig)
+void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
+                                                        const int N,
+                                                        const int N_new,
+                                                        const int nat,
+                                                        const int natmin,
+                                                        const int ndata_fit,
+                                                        const int nmulti,
+                                                        const int maxorder,
+                                                        double **u,
+                                                        double **f,
+                                                        double **amat,
+                                                        double *bvec,
+                                                        double *bvec_orig)
 {
     int i, j;
     int irow;
@@ -1104,7 +1190,9 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M, const int N
 
                     for (j = 0; j < constraint->const_relate[order][i].alpha.size(); ++j) {
 
-                        inew = constraint->index_bimap[order].right.at(constraint->const_relate[order][i].p_index_orig[j]) + iparam;
+                        inew = constraint->index_bimap[order].right.at(
+                                                                 constraint->const_relate[order][i].p_index_orig[j])
+                            + iparam;
                         for (k = 0; k < 3 * natmin; ++k) {
                             amat_mod[k][inew] -= amat_orig[k][iold] * constraint->const_relate[order][i].alpha[j];
                         }
@@ -1222,7 +1310,10 @@ int Fitting::getRankEigen(const int m, const int n, double **mat)
 }
 #endif
 
-int Fitting::rankQRD(const int m, const int n, double *mat, const double tolerance)
+int Fitting::rankQRD(const int m,
+                     const int n,
+                     double *mat,
+                     const double tolerance)
 {
     // Return the rank of matrix mat revealed by the column pivoting QR decomposition
     // The matrix mat is destroyed.
@@ -1274,7 +1365,10 @@ int Fitting::rankQRD(const int m, const int n, double *mat, const double toleran
     return nrank;
 }
 
-int Fitting::rankSVD(const int m, const int n, double *mat, const double tolerance)
+int Fitting::rankSVD(const int m,
+                     const int n,
+                     double *mat,
+                     const double tolerance)
 {
     int i;
     int m_ = m;
@@ -1295,7 +1389,8 @@ int Fitting::rankSVD(const int m, const int n, double *mat, const double toleran
 
     char mode[] = "N";
 
-    dgesdd_(mode, &m_, &n_, mat, &m_, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO);
+    dgesdd_(mode, &m_, &n_, mat, &m_, s, u, &ldu, vt, &ldvt,
+            WORK, &LWORK, IWORK, &INFO);
 
     int rank = 0;
     for (i = 0; i < nmin; ++i) {
@@ -1309,7 +1404,10 @@ int Fitting::rankSVD(const int m, const int n, double *mat, const double toleran
     return rank;
 }
 
-int Fitting::rankSVD2(const int m_in, const int n_in, double **mat, const double tolerance)
+int Fitting::rankSVD2(const int m_in,
+                      const int n_in,
+                      double **mat,
+                      const double tolerance)
 {
     // Reveal the rank of matrix mat without destroying the matrix elements
 
@@ -1344,7 +1442,8 @@ int Fitting::rankSVD2(const int m_in, const int n_in, double **mat, const double
 
     char mode[] = "N";
 
-    dgesdd_(mode, &m, &n, arr, &m, s, u, &ldu, vt, &ldvt, WORK, &LWORK, IWORK, &INFO);
+    dgesdd_(mode, &m, &n, arr, &m, s, u, &ldu, vt, &ldvt,
+            WORK, &LWORK, IWORK, &INFO);
 
     int rank = 0;
     for (i = 0; i < nmin; ++i) {
@@ -1358,5 +1457,4 @@ int Fitting::rankSVD2(const int m_in, const int n_in, double **mat, const double
 
     return rank;
 }
-
 
