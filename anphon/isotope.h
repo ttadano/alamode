@@ -30,8 +30,10 @@ namespace PHON_NS
         void calc_isotope_selfenergy_all();
 
     private:
-        void calc_isotope_selfenergy(const int, const int, const double, double &);
-        void calc_isotope_selfenergy_tetra(const int, const int, const double, double &);
+        void calc_isotope_selfenergy(const int, const int,
+                                     const double, double &);
+        void calc_isotope_selfenergy_tetra(const int, const int,
+                                           const double, double &);
     };
 }
 

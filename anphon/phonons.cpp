@@ -54,7 +54,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
         std::cout << " Job started at " << timer->DateAndTime() << std::endl;
         std::cout << " The number of MPI threads: " << mympi->nprocs << std::endl;
 #ifdef _OPENMP
-        std::cout << " The number of OpenMP threads: " << omp_get_max_threads() << std::endl;
+        std::cout << " The number of OpenMP threads: " 
+            << omp_get_max_threads() << std::endl;
 #endif
         std::cout << std::endl;
 
@@ -81,7 +82,8 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << " Job finished at " << timer->DateAndTime() << std::endl;
+        std::cout << std::endl << " Job finished at "
+            << timer->DateAndTime() << std::endl;
     }
     destroy_pointers();
 }

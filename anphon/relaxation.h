@@ -28,7 +28,7 @@ namespace PHON_NS
 
         KsList(const KsList &a)
         {
-            for (std::vector<int>::const_iterator p = a.ks.begin(); p != a.ks.end(); ++p) {
+            for (auto p = a.ks.cbegin(); p != a.ks.cend(); ++p) {
                 ks.push_back(*p);
             }
             symnum = a.symnum;
@@ -45,7 +45,8 @@ namespace PHON_NS
 
     inline bool operator<(const KsList a, const KsList b)
     {
-        return std::lexicographical_compare(a.ks.begin(), a.ks.end(), b.ks.begin(), b.ks.end());
+        return std::lexicographical_compare(a.ks.begin(), a.ks.end(),
+                                            b.ks.begin(), b.ks.end());
     }
 
     class KsListGroup
@@ -57,7 +58,7 @@ namespace PHON_NS
 
         KsListGroup(const std::vector<KsList> &a)
         {
-            for (std::vector<KsList>::const_iterator it = a.begin(); it != a.end(); ++it) {
+            for (auto it = a.cbegin(); it != a.cend(); ++it) {
                 group.push_back(*it);
             }
         }
@@ -88,8 +89,11 @@ namespace PHON_NS
 
         KpointListWithCoordinate();
 
-        KpointListWithCoordinate(const std::vector<double> &a, const double x_in, const double y_in,
-                                 const int plane_in, const int selection_type_in)
+        KpointListWithCoordinate(const std::vector<double> &a,
+                                 const double x_in,
+                                 const double y_in,
+                                 const int plane_in,
+                                 const int selection_type_in)
         {
             for (int i = 0; i < 3; ++i) xk[i] = a[i];
             x = x_in;
@@ -110,9 +114,13 @@ namespace PHON_NS
         void finish_relaxation();
         void perform_mode_analysis();
 
-        void calc_damping_smearing(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-        void calc_damping_tetrahedron(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
-        //  void calc_realpart_V4(const unsigned int, double *, const double, const unsigned int, const unsigned int, double *);
+        void calc_damping_smearing(const unsigned int, double *, const double,
+                                   const unsigned int, const unsigned int,
+                                   double *);
+
+        void calc_damping_tetrahedron(const unsigned int, double *, const double,
+                                      const unsigned int, const unsigned int,
+                                      double *);
 
         int quartic_mode;
         bool ks_analyze_mode;
@@ -132,7 +140,10 @@ namespace PHON_NS
         std::complex<double> V3(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
 
-        std::complex<double> V3_mode(int, double *, double *, int, int, double **, std::complex<double> ***);
+        std::complex<double> V3_mode(int, double *, double *,
+                                     int, int, double **,
+                                     std::complex<double> ***);
+
         void calc_V3norm2(const unsigned int, const unsigned int, double **);
 
     private:
@@ -157,13 +168,23 @@ namespace PHON_NS
         void setup_mode_analysis();
         void setup_cubic();
         void setup_quartic();
-        void store_exponential_for_acceleration(const int nk[3], int &, std::complex<double> *, std::complex<double> ***);
-        void prepare_relative_vector(std::vector<FcsArrayWithCell>, const unsigned int, double ***);
-        void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>, const unsigned int, int &, std::vector<double> *&);
+        void store_exponential_for_acceleration(const int nk[3], int &,
+                                                std::complex<double> *,
+                                                std::complex<double> ***);
+
+        void prepare_relative_vector(std::vector<FcsArrayWithCell>,
+                                     const unsigned int, double ***);
+
+        void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>,
+                                              const unsigned int, int &,
+                                              std::vector<double> *&);
+
         //   void print_minimum_energy_diff();
         void generate_triplet_k(const bool, const bool);
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double,
-                                                 const unsigned int, const double *, const unsigned int, const unsigned int, double **);
+                                                 const unsigned int, const double *,
+                                                 const unsigned int, const unsigned int,
+                                                 double **);
 
         void print_momentum_resolved_final_state(const unsigned int, double *, const double);
         void print_frequency_resolved_final_state(const unsigned int, double *);

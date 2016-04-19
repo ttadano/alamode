@@ -33,7 +33,8 @@ namespace PHON_NS
         }
     };
 
-    inline bool operator<(const DistWithCell a, const DistWithCell b)
+    inline bool operator<(const DistWithCell a,
+                          const DistWithCell b)
     {
         return a.dist < b.dist;
     }
@@ -62,20 +63,29 @@ namespace PHON_NS
         void setup_dynamical(std::string);
 
         // void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
-        void eval_k(double *, double *, std::vector<FcsClassExtent>, double *, std::complex<double> **, bool);
+        void eval_k(double *, double *,
+                    std::vector<FcsClassExtent>,
+                    double *, std::complex<double> **, bool);
         void modify_eigenvectors();
 
         double fold(double);
         double freq(const double);
 
-        void calc_participation_ratio_all(std::complex<double> ***, double **, double ***);
+        void calc_participation_ratio_all(std::complex<double> ***,
+                                          double **,
+                                          double ***);
 
     private:
 
         void load_born();
-        void calc_analytic_k(double *, std::vector<FcsClassExtent>, std::complex<double> **);
-        void calc_nonanalytic_k(double *, double *, std::complex<double> **);
-        void calc_nonanalytic_k2(double *, double *, std::vector<FcsClassExtent>, std::complex<double> **);
+        void calc_analytic_k(double *,
+                             std::vector<FcsClassExtent>,
+                             std::complex<double> **);
+        void calc_nonanalytic_k(double *, double *,
+                                std::complex<double> **);
+        void calc_nonanalytic_k2(double *, double *,
+                                 std::vector<FcsClassExtent>,
+                                 std::complex<double> **);
 
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);

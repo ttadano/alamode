@@ -75,18 +75,24 @@ void Writes::write_input_vars()
 
     std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << std::endl;
     if (dynamical->nonanalytic) {
-        std::cout << "  BORNINFO = " << dynamical->file_born << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
+        std::cout << "  BORNINFO = " << dynamical->file_born
+            << "; NA_SIGMA = " << dynamical->na_sigma << std::endl;
     }
     std::cout << std::endl;
     if (writes->nbands >= 0) {
         std::cout << "  NBANDS = " << writes->nbands << std::endl;
     }
 
-    std::cout << "  TMIN = " << system->Tmin << "; TMAX = " << system->Tmax << "; DT = " << system->dT << std::endl;
-    std::cout << "  EMIN = " << dos->emin << "; EMAX = " << dos->emax << "; DELTA_E = " << dos->delta_e << std::endl;
+    std::cout << "  TMIN = " << system->Tmin
+        << "; TMAX = " << system->Tmax
+        << "; DT = " << system->dT << std::endl;
+    std::cout << "  EMIN = " << dos->emin
+        << "; EMAX = " << dos->emax
+        << "; DELTA_E = " << dos->delta_e << std::endl;
     std::cout << std::endl;
 
-    std::cout << "  ISMEAR = " << integration->ismear << "; EPSILON = " << integration->epsilon << std::endl;
+    std::cout << "  ISMEAR = " << integration->ismear
+        << "; EPSILON = " << integration->epsilon << std::endl;
     std::cout << std::endl;
 
     if (phon->mode == "RTA") {
@@ -97,7 +103,8 @@ void Writes::write_input_vars()
     std::cout << std::endl;
 
     std::cout << " Kpoint:" << std::endl;
-    std::cout << "  KPMODE (1st entry for &kpoint) = " << kpoint->kpoint_mode << std::endl;
+    std::cout << "  KPMODE (1st entry for &kpoint) = "
+        << kpoint->kpoint_mode << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
 
@@ -120,7 +127,8 @@ void Writes::write_input_vars()
         }
 
         if (kpoint->kpoint_mode == 2) {
-            std::cout << "  PDOS = " << dos->projected_dos << "; TDOS = " << dos->two_phonon_dos << std::endl;
+            std::cout << "  PDOS = " << dos->projected_dos
+                << "; TDOS = " << dos->two_phonon_dos << std::endl;
             std::cout << "  PRINTMSD = " << writes->print_msd << std::endl;
             std::cout << std::endl;
         }
@@ -137,7 +145,8 @@ void Writes::write_input_vars()
         if (isotope->include_isotope) {
             std::cout << "  ISOFACT = ";
             for (i = 0; i < system->nkd; ++i) {
-                std::cout << std::scientific << std::setw(10) << isotope->isotope_factor[i];
+                std::cout << std::scientific
+                    << std::setw(10) << isotope->isotope_factor[i];
             }
             std::cout << std::endl;
         }
@@ -173,7 +182,8 @@ void Writes::setup_result_io()
             // Restart
             fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
             if (!fs_result) {
-                error->exit("setup_result_io", "Could not open file_result");
+                error->exit("setup_result_io",
+                            "Could not open file_result");
             }
 
             // Check the consistency
@@ -194,12 +204,15 @@ void Writes::setup_result_io()
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #SYSTEM tag");
+            if (!found_tag)
+                error->exit("setup_result_io",
+                            "Could not find #SYSTEM tag");
 
             fs_result >> natmin_tmp >> nkd_tmp;
 
             if (!(natmin_tmp == system->natmin && nkd_tmp == system->nkd)) {
-                error->exit("setup_result_io", "SYSTEM information is not consistent");
+                error->exit("setup_result_io",
+                            "SYSTEM information is not consistent");
             }
 
             found_tag = false;
@@ -209,14 +222,19 @@ void Writes::setup_result_io()
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #KPOINT tag");
+            if (!found_tag)
+                error->exit("setup_result_io",
+                            "Could not find #KPOINT tag");
 
             fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
             fs_result >> nksym_tmp;
 
-            if (!(kpoint->nkx == nk_tmp[0] && kpoint->nky == nk_tmp[1] && kpoint->nkz == nk_tmp[2]
-                && kpoint->nk_reduced == nksym_tmp)) {
-                error->exit("setup_result_io", "KPOINT information is not consistent");
+            if (!(kpoint->nkx == nk_tmp[0] &&
+                kpoint->nky == nk_tmp[1] &&
+                kpoint->nkz == nk_tmp[2] &&
+                kpoint->nk_reduced == nksym_tmp)) {
+                error->exit("setup_result_io",
+                            "KPOINT information is not consistent");
             }
 
 
@@ -227,11 +245,14 @@ void Writes::setup_result_io()
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #CLASSICAL tag");
+            if (!found_tag)
+                error->exit("setup_result_io",
+                            "Could not find #CLASSICAL tag");
 
             fs_result >> is_classical;
             if (is_classical != conductivity->use_classical_Cv) {
-                error->exit("setup_result_io", "CLASSICAL val is not consistent");
+                error->exit("setup_result_io",
+                            "CLASSICAL val is not consistent");
             }
 
 
@@ -242,11 +263,14 @@ void Writes::setup_result_io()
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #FCSXML tag");
+            if (!found_tag)
+                error->exit("setup_result_io",
+                            "Could not find #FCSXML tag");
 
             fs_result >> str_tmp;
             if (str_tmp != fcs_phonon->file_fcs) {
-                error->warn("setup_result_io", "FCSXML is not consistent");
+                error->warn("setup_result_io",
+                            "FCSXML is not consistent");
             }
 
 
@@ -257,16 +281,20 @@ void Writes::setup_result_io()
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #SMEARING tag");
+            if (!found_tag)
+                error->exit("setup_result_io",
+                            "Could not find #SMEARING tag");
 
             fs_result >> ismear;
             fs_result >> epsilon_tmp;
 
             if (ismear != integration->ismear) {
-                error->exit("setup_result_io", "Smearing method is not consistent");
+                error->exit("setup_result_io",
+                            "Smearing method is not consistent");
             }
-            if (ismear != -1 && epsilon_tmp != integration->epsilon) {
-                error->exit("setup_result_io", "Smearing width is not consistent");
+            if ((ismear != -1) && (epsilon_tmp != integration->epsilon)) {
+                error->exit("setup_result_io",
+                            "Smearing width is not consistent");
             }
 
 
@@ -277,19 +305,25 @@ void Writes::setup_result_io()
                     break;
                 }
             }
-            if (!found_tag) error->exit("setup_result_io", "Could not find #TEMPERATURE tag");
+            if (!found_tag)
+                error->exit("setup_result_io",
+                            "Could not find #TEMPERATURE tag");
 
             fs_result >> T1 >> T2 >> delta_T;
 
-            if (!(T1 == system->Tmin && T2 == system->Tmax && delta_T == system->dT)) {
-                error->exit("setup_result_io", "Temperature information is not consistent");
+            if (!(T1 == system->Tmin &&
+                T2 == system->Tmax &&
+                delta_T == system->dT)) {
+                error->exit("setup_result_io",
+                            "Temperature information is not consistent");
             }
 
         } else {
             // From scratch
             fs_result.open(file_result.c_str(), std::ios::out);
             if (!fs_result) {
-                error->exit("setup_result_io", "Could not open file_result");
+                error->exit("setup_result_io",
+                            "Could not open file_result");
             }
 
             fs_result << "## General information" << std::endl;
@@ -305,9 +339,11 @@ void Writes::setup_result_io()
             for (int i = 0; i < kpoint->nk_reduced; ++i) {
                 fs_result << std::setw(6) << i + 1 << ":";
                 for (int j = 0; j < 3; ++j) {
-                    fs_result << std::setw(15) << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
+                    fs_result << std::setw(15)
+                        << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
                 }
-                fs_result << std::setw(12) << std::fixed << kpoint->weight_k[i] << std::endl;
+                fs_result << std::setw(12)
+                    << std::fixed << kpoint->weight_k[i] << std::endl;
             }
             fs_result.unsetf(std::ios::fixed);
 
@@ -356,7 +392,8 @@ void Writes::print_phonon_energy()
             std::cout << " : (";
 
             for (i = 0; i < 3; ++i) {
-                std::cout << std::fixed << std::setprecision(4) << std::setw(8) << kpoint->xk[ik][i];
+                std::cout << std::fixed << std::setprecision(4)
+                    << std::setw(8) << kpoint->xk[ik][i];
                 if (i < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -488,7 +525,9 @@ void Writes::write_phonon_bands()
     std::string file_bands = input->job_title + ".bands";
 
     ofs_bands.open(file_bands.c_str(), std::ios::out);
-    if (!ofs_bands) error->exit("write_phonon_bands", "cannot open file_bands");
+    if (!ofs_bands)
+        error->exit("write_phonon_bands",
+                    "cannot open file_bands");
 
     unsigned int i, j;
 
@@ -562,7 +601,8 @@ void Writes::write_phonon_vel()
     for (i = 0; i < nk; ++i) {
         ofs_vel << std::setw(8) << kaxis[i];
         for (j = 0; j < nbands; ++j) {
-            ofs_vel << std::setw(15) << std::abs(phonon_velocity->phvel[i][j] * Ry_to_SI_vel);
+            ofs_vel << std::setw(15)
+                << std::abs(phonon_velocity->phvel[i][j] * Ry_to_SI_vel);
         }
         ofs_vel << std::endl;
     }
@@ -602,14 +642,17 @@ void Writes::write_phonon_vel_all()
             knum = kpoint->kpoint_irred_all[i][j].knum;
 
             ofs_vel << "## xk =    ";
-            for (k = 0; k < 3; ++k) ofs_vel << std::setw(15) << std::fixed << std::setprecision(10) << kpoint->xk[knum][k];
+            for (k = 0; k < 3; ++k)
+                ofs_vel << std::setw(15) << std::fixed
+                    << std::setprecision(10) << kpoint->xk[knum][k];
             ofs_vel << std::endl;
 
             for (k = 0; k < ns; ++k) {
                 ofs_vel << std::setw(7) << i + 1;
                 ofs_vel << std::setw(8) << knum + 1;
                 ofs_vel << std::setw(5) << k + 1;
-                ofs_vel << std::setw(10) << std::fixed << std::setprecision(2) << in_kayser(eval[knum][k]);
+                ofs_vel << std::setw(10) << std::fixed
+                    << std::setprecision(2) << in_kayser(eval[knum][k]);
                 ofs_vel << std::setw(10) << std::fixed
                     << std::setprecision(2) << phonon_velocity->phvel[knum][k] * Ry_to_SI_vel;
                 for (ii = 0; ii < 3; ++ii) {
@@ -666,7 +709,8 @@ void Writes::write_phonon_dos()
     ofs_dos.setf(std::ios::scientific);
 
     for (i = 0; i < dos->n_energy; ++i) {
-        ofs_dos << std::setw(15) << dos->energy_dos[i] << std::setw(15) << dos->dos_phonon[i];
+        ofs_dos << std::setw(15) << dos->energy_dos[i]
+            << std::setw(15) << dos->dos_phonon[i];
         if (dos->projected_dos) {
             for (iat = 0; iat < system->natmin; ++iat) {
                 ofs_dos << std::setw(15) << dos->pdos_phonon[iat][i];
@@ -730,7 +774,8 @@ void Writes::write_scattering_phase_space()
     file_sps = input->job_title + ".sps";
     ofs_sps.open(file_sps.c_str(), std::ios::out);
 
-    ofs_sps << "# Total scattering phase space [cm]: " << std::scientific << dos->total_sps3 << std::endl;
+    ofs_sps << "# Total scattering phase space [cm]: "
+        << std::scientific << dos->total_sps3 << std::endl;
     ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
     ofs_sps << "# Irred. k, mode, sps [cm]" << std::endl;
 
@@ -780,7 +825,8 @@ void Writes::write_scattering_amplitude()
         ofs_w << std::endl;
     }
     ofs_w << std::endl;
-    ofs_w << "# k, mode, frequency (cm^-1), temperature, W+ (absorption) (cm), W- (emission) (cm)" << std::endl << std::endl;
+    ofs_w << "# k, mode, frequency (cm^-1), temperature, W+ (absorption) (cm), W- (emission) (cm)"
+        << std::endl << std::endl;
 
     for (i = 0; i < kpoint->kpoint_irred_all.size(); ++i) {
 
@@ -883,7 +929,9 @@ void Writes::write_normal_mode_direction()
                     ofs_anime << std::setw(15) << xmod[j][k];
                 }
                 for (k = 0; k < 3; ++k) {
-                    ofs_anime << std::setw(15) << dynamical->evec_phonon[ik][imode][3 * j + k].real() / (std::sqrt(system->mass[m]) * norm);
+                    ofs_anime << std::setw(15)
+                        << dynamical->evec_phonon[ik][imode][3 * j + k].real()
+                        / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -1191,7 +1239,7 @@ void Writes::write_kappa()
                 ofs_kl << std::endl;
             }
             ofs_kl.close();
-            
+
         }
 
         std::cout << std::endl;
@@ -1253,7 +1301,8 @@ void Writes::write_selfenergy_isotope()
     }
 }
 
-void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned int ncell[3])
+void Writes::write_normal_mode_animation(const double xk_in[3],
+                                         const unsigned int ncell[3])
 {
     unsigned int i, j, k;
     unsigned int iband, istep;
@@ -1295,13 +1344,16 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
         << std::setw(5) << xk[1] << ", "
         << std::setw(5) << xk[2] << ")." << std::endl;
     std::cout << " ANIME_CELLSIZE = ";
-    std::cout << std::setw(3) << ncell[0] << std::setw(3) << ncell[1] << std::setw(3) << ncell[2] << std::endl;
+    std::cout << std::setw(3) << ncell[0]
+        << std::setw(3) << ncell[1]
+        << std::setw(3) << ncell[2] << std::endl;
     std::cout << " ANIME_FORMAT = " << anime_format << std::endl;
 
     for (i = 0; i < 3; ++i) dmod[i] = std::fmod(xk[i] * static_cast<double>(ncell[i]), 1.0);
 
     if (std::sqrt(dmod[0] * dmod[0] + dmod[1] * dmod[1] + dmod[2] * dmod[2]) > eps12) {
-        error->warn("write_normal_mode_animation", "The supercell size is not commensurate with given k point.");
+        error->warn("write_normal_mode_animation",
+                    "The supercell size is not commensurate with given k point.");
     }
 
     rotvec(kvec, xk, system->rlavec_p, 'T');
@@ -1439,7 +1491,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
             file_anime = input->job_title + ".anime" + result + ".axsf";
 
             ofs_anime.open(file_anime.c_str(), std::ios::out);
-            if (!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
+            if (!ofs_anime)
+                error->exit("write_normal_mode_animation",
+                            "cannot open file_anime");
 
             ofs_anime.unsetf(std::ios::scientific);
 
@@ -1478,7 +1532,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
-                                << xmod[i][j][k] + disp_mag[j][k] * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                << xmod[i][j][k]
+                                + disp_mag[j][k]
+                                * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -1503,7 +1559,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
             file_anime = input->job_title + ".anime" + result + ".xyz";
 
             ofs_anime.open(file_anime.c_str(), std::ios::out);
-            if (!ofs_anime) error->exit("write_normal_mode_animation", "cannot open file_anime");
+            if (!ofs_anime)
+                error->exit("write_normal_mode_animation",
+                            "cannot open file_anime");
 
             ofs_anime.setf(std::ios::scientific);
 
@@ -1528,7 +1586,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3], const unsigned i
 
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
-                                << xmod[i][j][k] + disp_mag[j][k] * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                << xmod[i][j][k]
+                                + disp_mag[j][k]
+                                * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -1568,19 +1628,25 @@ void Writes::write_participation_ratio()
     std::string file_apr = input->job_title + ".apr";
 
     ofs_pr.open(file_pr.c_str(), std::ios::out);
-    if (!ofs_pr) error->exit("write_participation_ratio", "cannot open file_pr");
+    if (!ofs_pr)
+        error->exit("write_participation_ratio",
+                    "cannot open file_pr");
 
     ofs_pr.setf(std::ios::scientific);
 
     ofs_apr.open(file_apr.c_str(), std::ios::out);
-    if (!ofs_apr) error->exit("write_participation_ratio", "cannot open file_apr");
+    if (!ofs_apr)
+        error->exit("write_participation_ratio",
+                    "cannot open file_apr");
 
     ofs_apr.setf(std::ios::scientific);
 
     memory->allocate(participation_ratio, nk, neval);
     memory->allocate(atomic_participation_ratio, nk, neval, natmin);
 
-    dynamical->calc_participation_ratio_all(dynamical->evec_phonon, participation_ratio, atomic_participation_ratio);
+    dynamical->calc_participation_ratio_all(dynamical->evec_phonon,
+                                            participation_ratio,
+                                            atomic_participation_ratio);
 
     ofs_pr << "# Participation ratio of each phonon modes at k points" << std::endl;
 
@@ -1631,7 +1697,7 @@ void Writes::write_participation_ratio()
 
     ofs_apr << "# Atomic participation ratio of each phonon modes at k points" << std::endl;
 
-    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
+    if ((kpoint->kpoint_mode == 0) || (kpoint->kpoint_mode == 1)) {
 
         ofs_apr << "# kpoint, mode, atom, APR[kpoint][mode][atom]" << std::endl;
 

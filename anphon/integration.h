@@ -53,9 +53,15 @@ namespace PHON_NS
         void finish_integration();
         double do_tetrahedron(double *, double *, const double);
         double dos_integration(double *, const double);
-        void calc_weight_tetrahedron(const int, int *, double *, double *, const double);
-        void calc_weight_smearing(const std::vector<std::vector<KpointList>> &, double *, double *, const double, const int);
-        void calc_weight_smearing(const int, const int, int *, double *, double *, const double, const int);
+        void calc_weight_tetrahedron(const int, int *,
+                                     double *, double *,
+                                     const double);
+        void calc_weight_smearing(const std::vector<std::vector<KpointList>> &,
+                                  double *, double *,
+                                  const double, const int);
+        void calc_weight_smearing(const int, const int, int *,
+                                  double *, double *, const double,
+                                  const int);
 
     private:
         unsigned int ntetra;

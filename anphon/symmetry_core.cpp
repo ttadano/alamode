@@ -59,20 +59,26 @@ void Symmetry::setup_symmetry()
     if (mympi->my_rank == 0) {
         std::cout << " Symmetry" << std::endl;
         std::cout << " ========" << std::endl << std::endl;
-        setup_symmetry_operation(natmin, nsym, system->lavec_p, system->rlavec_p, xtmp, kdtmp);
+        setup_symmetry_operation(natmin, nsym, system->lavec_p,
+                                 system->rlavec_p, xtmp, kdtmp);
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     broadcast_symmlist(SymmList);
 
     if (mympi->my_rank == 0) {
-        std::cout << "  Number of symmetry operations : " << nsym << std::endl << std::endl;
+        std::cout << "  Number of symmetry operations : "
+            << nsym << std::endl << std::endl;
         gensym_withmap(xtmp, kdtmp);
     }
 }
 
-void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][3], double bb[3][3],
-                                        double **x, unsigned int *kd)
+void Symmetry::setup_symmetry_operation(int N,
+                                        unsigned int &nsym,
+                                        double aa[3][3],
+                                        double bb[3][3],
+                                        double **x,
+                                        unsigned int *kd)
 {
     int i, j;
     std::ofstream ofs_sym;
@@ -91,11 +97,13 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
         nsym = SymmList.size();
 
         if (printsymmetry) {
-            std::cout << "  PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO_PRIM file." << std::endl << std::endl;
+            std::cout
+                << "  PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO_PRIM file."
+                << std::endl << std::endl;
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -115,7 +123,8 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
         // Identity operation only !
 
-        std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered." << std::endl << std::endl;
+        std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered."
+            << std::endl << std::endl;
 
         int rot_tmp[3][3];
         double tran_tmp[3];
@@ -135,7 +144,9 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 
     } else {
 
-        std::cout << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO_PRIM file" << std::endl << std::endl;
+        std::cout
+            << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO_PRIM file"
+            << std::endl << std::endl;
 
         int nsym2;
         int rot_tmp[3][3];
@@ -144,10 +155,13 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
         ifs_sym.open(file_sym.c_str(), std::ios::in);
         ifs_sym >> nsym2;
 
-        if (nsym != nsym2) error->exit("setup_symmetry_operation", "nsym in the given file and the input file are not consistent.");
+        if (nsym != nsym2)
+            error->exit("setup_symmetry_operation",
+                        "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
-            ifs_sym >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
+            ifs_sym
+                >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
                 >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2]
                 >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
                 >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
@@ -159,7 +173,10 @@ void Symmetry::setup_symmetry_operation(int N, unsigned int &nsym, double aa[3][
 }
 
 
-void Symmetry::findsym(int N, double aa[3][3], double **x, std::vector<SymmetryOperation> &symop_all)
+void Symmetry::findsym(int N,
+                       double aa[3][3],
+                       double **x,
+                       std::vector<SymmetryOperation> &symop_all)
 {
     std::vector<RotationMatrix> LatticeSymmList;
 
@@ -175,7 +192,8 @@ void Symmetry::findsym(int N, double aa[3][3], double **x, std::vector<SymmetryO
     LatticeSymmList.clear();
 }
 
-void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix> &LatticeSymmList)
+void Symmetry::find_lattice_symmetry(double aa[3][3],
+                                     std::vector<RotationMatrix> &LatticeSymmList)
 {
     /*
     Find the rotational matrices that leave the metric tensor invariant.
@@ -297,8 +315,12 @@ void Symmetry::find_lattice_symmetry(double aa[3][3], std::vector<RotationMatrix
     }
 }
 
-void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int> *atomclass, double **x,
-                                     std::vector<RotationMatrix> LatticeSymmList, std::vector<SymmetryOperation> &CrystalSymmList)
+void Symmetry::find_crystal_symmetry(int N,
+                                     int nclass,
+                                     std::vector<unsigned int> *atomclass,
+                                     double **x,
+                                     std::vector<RotationMatrix> LatticeSymmList,
+                                     std::vector<SymmetryOperation> &CrystalSymmList)
 {
     unsigned int i, j;
     unsigned int iat, jat, kat, lat;
@@ -337,7 +359,7 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
     CrystalSymmList.push_back(SymmetryOperation(rot_int, tran));
 
 
-    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
+    for (auto it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
         iat = atomclass[0][0];
 
@@ -457,7 +479,8 @@ void Symmetry::find_crystal_symmetry(int N, int nclass, std::vector<unsigned int
 }
 
 
-void Symmetry::gensym_withmap(double **x, unsigned int *kd)
+void Symmetry::gensym_withmap(double **x,
+                              unsigned int *kd)
 {
     // Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
@@ -473,7 +496,7 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
     memory->allocate(map_tmp, natmin);
 
-    for (std::vector<SymmetryOperation>::iterator isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
+    for (auto isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -537,7 +560,8 @@ void Symmetry::gensym_withmap(double **x, unsigned int *kd)
 
         // Add to vector
 
-        SymmListWithMap.push_back(SymmetryOperationWithMapping(S, T, S_recip, map_tmp, natmin, shift));
+        SymmListWithMap.push_back(SymmetryOperationWithMapping(S, T, S_recip,
+                                                               map_tmp, natmin, shift));
     }
 }
 

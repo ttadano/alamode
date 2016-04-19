@@ -388,12 +388,12 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 }
 
 
-void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat, const unsigned int natmin,
-                                                  double *ret, std::vector<FcsClassExtent> &fc2,
+void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat,
+                                                  const unsigned int natmin, double *ret,
+                                                  std::vector<FcsClassExtent> &fc2,
                                                   std::vector<FcsArrayWithCell> *fcs)
 {
     int i, j, k, l, m;
-    int nsize;
 
     double dev;
     double **sum2;
@@ -409,8 +409,6 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
 
     for (i = 0; i < n; ++i) {
 
-        nsize = fcs[i].size();
-
         if (i == 0) {
             memory->allocate(sum2, 3 * natmin, 3);
 
@@ -420,7 +418,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
+            for (auto it = fc2.cbegin(); it != fc2.cend(); ++it) {
                 sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
             }
 
@@ -440,7 +438,8 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                                 if (it_target != fc2.end()) {
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
-                                    error->exit("examine_translational_invariance", "Corresponding IFC not found.");
+                                    error->exit("examine_translational_invariance",
+                                                "Corresponding IFC not found.");
                                 }
                             }
                         }
@@ -452,7 +451,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                     }
                 }
 
-                for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
+                for (auto it = fc2.cbegin(); it != fc2.cend(); ++it) {
                     sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
                 }
             }
@@ -477,7 +476,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
+            for (auto it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
                 j = (*it).pairs[0].index;
                 k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
                 l = (*it).pairs[2].index % 3;
@@ -508,12 +507,12 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
+            for (auto it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
                 j = (*it).pairs[0].index;
-                k = 3 * system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + (*it).pairs[1].index % 3;
-                l = 3 * system->map_p2s_anharm[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + (*it).pairs[2].index % 3;
-                //                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
-                //                l = 3 * (natmin * (*it).pairs[2].tran + (*it).pairs[2].index / 3) + (*it).pairs[2].index % 3;
+                k = 3 * system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran]
+                    + (*it).pairs[1].index % 3;
+                l = 3 * system->map_p2s_anharm[(*it).pairs[2].index / 3][(*it).pairs[2].tran]
+                    + (*it).pairs[2].index % 3;
                 m = (*it).pairs[3].index % 3;
 
                 sum4[j][k][l][m] += (*it).fcs_val;
@@ -589,7 +588,8 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N)
 
                     ivec_array.push_back(ivec_tmp);
                 }
-                force_constant_with_cell[i].push_back(FcsArrayWithCell(fcs_tmp[j], ivec_array));
+                force_constant_with_cell[i].push_back(FcsArrayWithCell(fcs_tmp[j],
+                                                                       ivec_array));
             }
         }
 

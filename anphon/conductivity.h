@@ -42,10 +42,16 @@ namespace PHON_NS
         std::vector<int> vks, vks_l, vks_done;
         std::set<int> vks_job;
 
-        void write_result_gamma(const unsigned int, const unsigned int,
-                                double ***, double **);
-        void average_self_energy_at_degenerate_point(const int, const int, double **);
-        void compute_frequency_resolved_kappa(const int, double ****, const int);
+        void write_result_gamma(const unsigned int,
+                                const unsigned int,
+                                double ***,
+                                double **);
+        void average_self_energy_at_degenerate_point(const int,
+                                                     const int,
+                                                     double **);
+        void compute_frequency_resolved_kappa(const int,
+                                              double ****,
+                                              const int);
     };
 }
 

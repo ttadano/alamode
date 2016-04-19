@@ -175,7 +175,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         }
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.begin(); it != delta_fc2.end(); ++it) {
+    for (auto it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
 
         atm1 = (*it).pairs[0].index / 3;
         xyz1 = (*it).pairs[0].index % 3;
@@ -200,13 +200,15 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
-            += (*it).fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+            += (*it).fcs_val * std::exp(im * phase)
+            / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
 
     }
 }
 
 
-void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, std::vector<FcsArrayWithCell> &delta_fcs)
+void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
+                                  std::vector<FcsArrayWithCell> &delta_fcs)
 {
     unsigned int i;
     int iat, jat, kat;
@@ -228,7 +230,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
     delta_fcs.clear();
     fcs_aligned.clear();
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
         fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
@@ -240,7 +242,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
     index_with_cell.clear();
     set_index_uniq.clear();
 
-    for (std::vector<FcsAlignedForGruneisen>::const_iterator it = fcs_aligned.begin(); it != fcs_aligned.end(); ++it) {
+    for (auto it = fcs_aligned.cbegin(); it != fcs_aligned.cend(); ++it) {
 
         index_now.clear();
         index_with_cell.clear();
@@ -265,8 +267,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
                 fcs_tmp /= static_cast<double>(nmulti);
 
                 if (std::abs(fcs_tmp) > eps15) {
-                    for (std::set<std::vector<int>>::const_iterator it2 = set_index_uniq.begin();
-                         it2 != set_index_uniq.end(); ++it2) {
+                    for (auto it2 = set_index_uniq.cbegin(); it2 != set_index_uniq.cend(); ++it2) {
 
                         pairs_vec.clear();
 
@@ -304,13 +305,14 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
 
         fcs_tmp += (*it).fcs_val * vec[(*it).pairs[norder - 1].index % 3];
 
+        /*
         iat = system->map_p2s_anharm[(*it).pairs[0].index / 3][0];
         icrd = (*it).pairs[0].index % 3;
         jat = system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran];
         jcrd = (*it).pairs[1].index % 3;
         kat = system->map_p2s_anharm[(*it).pairs[2].index / 3][(*it).pairs[2].tran];
         kcrd = (*it).pairs[2].index % 3;
-        /*
+       
         std::cout << std::setw(5) << iat + 1 << std::setw(5) << icrd + 1;
         std::cout << std::setw(5) << jat + 1 << std::setw(5) << jcrd + 1;
         std::cout << std::setw(5) << (*it).pairs[1].cell_s + 1;
@@ -325,8 +327,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in, st
     fcs_tmp /= static_cast<double>(nmulti);
 
     if (std::abs(fcs_tmp) > eps15) {
-        for (std::set<std::vector<int>>::const_iterator it2 = set_index_uniq.begin();
-             it2 != set_index_uniq.end(); ++it2) {
+        for (auto it2 = set_index_uniq.cbegin(); it2 != set_index_uniq.cend(); ++it2) {
 
             pairs_vec.clear();
 
@@ -376,7 +377,8 @@ void Gruneisen::write_new_fcsxml_all()
     }
 }
 
-void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double change_ratio_of_a)
+void Gruneisen::write_new_fcsxml(const std::string filename_xml,
+                                 const double change_ratio_of_a)
 {
     int i, j;
     double lattice_vector[3][3];
@@ -400,7 +402,8 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
     pt.put("Data.Structure.NumberOfElements", system->nkd);
 
     for (i = 0; i < system->nkd; ++i) {
-        ptree &child = pt.add("Data.Structure.AtomicElements.element", system->symbol_kd[i]);
+        ptree &child = pt.add("Data.Structure.AtomicElements.element",
+                              system->symbol_kd[i]);
         child.put("<xmlattr>.number", i + 1);
     }
 
@@ -429,7 +432,8 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
     pt.put("Data.Symmetry.NumberOfTranslations", system->ntran);
     for (i = 0; i < system->ntran; ++i) {
         for (j = 0; j < system->natmin; ++j) {
-            ptree &child = pt.add("Data.Symmetry.Translations.map", system->map_p2s[j][i] + 1);
+            ptree &child = pt.add("Data.Symmetry.Translations.map",
+                                  system->map_p2s[j][i] + 1);
             child.put("<xmlattr>.tran", i + 1);
             child.put("<xmlattr>.atom", j + 1);
         }
@@ -438,63 +442,76 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml, const double ch
     pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[0].begin();
-         it != fcs_phonon->force_constant_with_cell[0].end(); ++it) {
+    for (auto it = fcs_phonon->force_constant_with_cell[0].cbegin();
+         it != fcs_phonon->force_constant_with_cell[0].cend(); ++it) {
 
         ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string((*it).fcs_val));
 
-        child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
+        child.put("<xmlattr>.pair1",
+                  boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
                   + " " + boost::lexical_cast<std::string>((*it).pairs[0].index % 3 + 1));
-        child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
+        child.put("<xmlattr>.pair2",
+                  boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
                   + " " + boost::lexical_cast<std::string>((*it).pairs[1].index % 3 + 1)
                   + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.begin(); it != delta_fc2.end(); ++it) {
+    for (auto it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
 
         if (std::abs((*it).fcs_val) < eps12) continue;
 
-        ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string(change_ratio_of_a * (*it).fcs_val));
+        ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2",
+                              double2string(change_ratio_of_a * (*it).fcs_val));
 
-        child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
+        child.put("<xmlattr>.pair1",
+                  boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
                   + " " + boost::lexical_cast<std::string>((*it).pairs[0].index % 3 + 1));
-        child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
+        child.put("<xmlattr>.pair2",
+                  boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
                   + " " + boost::lexical_cast<std::string>((*it).pairs[1].index % 3 + 1)
                   + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
     }
 
     if (relaxation->quartic_mode) {
-        for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[1].begin();
-             it != fcs_phonon->force_constant_with_cell[1].end(); ++it) {
+        for (auto it = fcs_phonon->force_constant_with_cell[1].cbegin();
+             it != fcs_phonon->force_constant_with_cell[1].cend(); ++it) {
 
             if ((*it).pairs[1].index > (*it).pairs[2].index) continue;
 
-            ptree &child = pt.add("Data.ForceConstants.ANHARM3.FC3", double2string((*it).fcs_val));
+            ptree &child = pt.add("Data.ForceConstants.ANHARM3.FC3",
+                                  double2string((*it).fcs_val));
 
-            child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
+            child.put("<xmlattr>.pair1",
+                      boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[0].index % 3 + 1));
-            child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
+            child.put("<xmlattr>.pair2",
+                      boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[1].index % 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
-            child.put("<xmlattr>.pair3", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + 1)
+            child.put("<xmlattr>.pair3",
+                      boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[2].index % 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[2].cell_s + 1));
         }
 
-        for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc3.begin(); it != delta_fc3.end(); ++it) {
+        for (auto it = delta_fc3.cbegin(); it != delta_fc3.cend(); ++it) {
 
             if (std::abs((*it).fcs_val) < eps12) continue;
 
             if ((*it).pairs[1].index > (*it).pairs[2].index) continue;
 
-            ptree &child = pt.add("Data.ForceConstants.ANHARM3.FC3", double2string(change_ratio_of_a * (*it).fcs_val));
+            ptree &child = pt.add("Data.ForceConstants.ANHARM3.FC3",
+                                  double2string(change_ratio_of_a * (*it).fcs_val));
 
-            child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
+            child.put("<xmlattr>.pair1",
+                      boost::lexical_cast<std::string>((*it).pairs[0].index / 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[0].index % 3 + 1));
-            child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
+            child.put("<xmlattr>.pair2",
+                      boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[1].index / 3][(*it).pairs[1].tran] + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[1].index % 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
-            child.put("<xmlattr>.pair3", boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + 1)
+            child.put("<xmlattr>.pair3",
+                      boost::lexical_cast<std::string>(system->map_p2s[(*it).pairs[2].index / 3][(*it).pairs[2].tran] + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[2].index % 3 + 1)
                       + " " + boost::lexical_cast<std::string>((*it).pairs[2].cell_s + 1));
         }

@@ -31,7 +31,8 @@ Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
 
 Thermodynamics::~Thermodynamics() {};
 
-double Thermodynamics::Cv(const double omega, const double T)
+double Thermodynamics::Cv(const double omega,
+                          const double T)
 {
     double x;
 
@@ -43,7 +44,8 @@ double Thermodynamics::Cv(const double omega, const double T)
     }
 }
 
-double Thermodynamics::Cv_classical(const double omega, const double T)
+double Thermodynamics::Cv_classical(const double omega,
+                                    const double T)
 {
     double x;
 
@@ -55,7 +57,8 @@ double Thermodynamics::Cv_classical(const double omega, const double T)
     }
 }
 
-double Thermodynamics::fB(const double omega, const double T)
+double Thermodynamics::fB(const double omega,
+                          const double T)
 {
     double x;
 
@@ -67,7 +70,8 @@ double Thermodynamics::fB(const double omega, const double T)
     }
 }
 
-double Thermodynamics::fC(const double omega, const double T)
+double Thermodynamics::fC(const double omega,
+                          const double T)
 {
     double x;
 
@@ -98,7 +102,8 @@ double Thermodynamics::Cv_tot(const double T)
     return ret / static_cast<double>(nk);
 }
 
-double Thermodynamics::Cv_Debye(const double T, const double TD)
+double Thermodynamics::Cv_Debye(const double T,
+                                const double TD)
 {
     unsigned int natmin = system->natmin;
     unsigned int i;
@@ -129,17 +134,21 @@ double Thermodynamics::Cv_Debye(const double T, const double TD)
             theta = static_cast<double>(i) * d_theta;
             y = tan(theta);
             if (y > eps) {
-                ret += std::pow(y, 4) * std::exp(y) / std::pow((std::exp(y) - 1.0) * cos(theta), 2);
+                ret += std::pow(y, 4) * std::exp(y)
+                    / std::pow((std::exp(y) - 1.0) * cos(theta), 2);
             }
         }
         y = tan(theta_max);
-        ret += 0.5 * std::pow(y, 4) * std::exp(y) / std::pow((std::exp(y) - 1.0) * cos(theta_max), 2);
+        ret += 0.5 * std::pow(y, 4) * std::exp(y)
+            / std::pow((std::exp(y) - 1.0) * cos(theta_max), 2);
 
-        return 9.0 * static_cast<double>(natmin) * k_Boltzmann * ret * d_theta / std::pow(x, 3);
+        return 9.0 * static_cast<double>(natmin) * k_Boltzmann
+            * ret * d_theta / std::pow(x, 3);
     }
 }
 
-void Thermodynamics::Debye_T(const double T, double &TD)
+void Thermodynamics::Debye_T(const double T,
+                             double &TD)
 {
     double TD_old;
     double diff_C;
@@ -233,7 +242,9 @@ double Thermodynamics::free_energy(const double T)
     }
 }
 
-double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const unsigned int ns2)
+double Thermodynamics::disp2_avg(const double T,
+                                 const unsigned int ns1,
+                                 const unsigned int ns2)
 {
     double ret = 0.0;
     unsigned int ik, is;
@@ -250,13 +261,15 @@ double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const u
             // (neglect divergent contributions from acoustic modes at gamma point)
             if (omega < eps8) continue;
 
-            ret += real(dynamical->evec_phonon[ik][is][ns1] * std::conj(dynamical->evec_phonon[ik][is][ns2]))
+            ret += real(dynamical->evec_phonon[ik][is][ns1]
+                    * std::conj(dynamical->evec_phonon[ik][is][ns2]))
                 * (fB(omega, T) + 0.5) / omega;
         }
     }
 
     ret *= 1.0 / (static_cast<double>(nk)
-        * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]] * system->mass[system->map_p2s[ns2 / 3][0]]));
+        * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]]
+            * system->mass[system->map_p2s[ns2 / 3][0]]));
 
     // ret *= 2.0 * electron_mass / time_ry * Bohr_in_Angstrom * Bohr_in_Angstrom;
     // ret *= h_planck / (2.0 * pi); // Convert to SI unit 
@@ -265,7 +278,8 @@ double Thermodynamics::disp2_avg(const double T, const unsigned int ns1, const u
     return ret;
 }
 
-double Thermodynamics::coth_T(const double omega, const double T)
+double Thermodynamics::coth_T(const double omega,
+                              const double T)
 {
     // This function returns coth(hbar*omega/2*kB*T)
 

@@ -62,7 +62,8 @@ namespace PHON_NS
                     v2.push_back(a.tran[i]);
                 }
             }
-            return std::lexicographical_compare(v1.begin(), v1.end(), v2.begin(), v2.end());
+            return std::lexicographical_compare(v1.begin(), v1.end(),
+                                                v2.begin(), v2.end());
         }
     };
 
@@ -94,8 +95,12 @@ namespace PHON_NS
 
         SymmetryOperationWithMapping();
 
-        SymmetryOperationWithMapping(const double S[3][3], const double T[3][3], const double R[3][3],
-                                     unsigned int *mapping_info, const unsigned int n, const double shift_in[3])
+        SymmetryOperationWithMapping(const double S[3][3],
+                                     const double T[3][3],
+                                     const double R[3][3],
+                                     unsigned int *mapping_info,
+                                     const unsigned int n,
+                                     const double shift_in[3])
         {
             unsigned int i, j;
 
@@ -138,14 +143,20 @@ namespace PHON_NS
 
         void setup_symmetry_operation(int, unsigned int &, double [3][3], double [3][3],
                                       double **, unsigned int *);
-        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
+
+        void findsym(int, double [3][3], double **,
+                     std::vector<SymmetryOperation> &);
         void gensym_withmap(double **, unsigned int *);
         bool is_proper(double [3][3]);
 
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
-        void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x,
-                                   std::vector<RotationMatrix>, std::vector<SymmetryOperation> &);
+        void find_crystal_symmetry(int, int,
+                                   std::vector<unsigned int> *, double **x,
+                                   std::vector<RotationMatrix>,
+                                   std::vector<SymmetryOperation> &);
+
         void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperation>);
+
         void broadcast_symmlist(std::vector<SymmetryOperation> &);
     };
 }

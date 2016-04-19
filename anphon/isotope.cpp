@@ -64,7 +64,10 @@ void Isotope::setup_isotope_scattering()
     }
 }
 
-void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const double omega, double &ret)
+void Isotope::calc_isotope_selfenergy(const int knum,
+                                      const int snum,
+                                      const double omega,
+                                      double &ret)
 {
     // Compute phonon selfenergy of phonon (knum, snum) 
     // due to phonon-isotope scatterings.
@@ -114,7 +117,10 @@ void Isotope::calc_isotope_selfenergy(const int knum, const int snum, const doub
 }
 
 
-void Isotope::calc_isotope_selfenergy_tetra(const int knum, const int snum, const double omega, double &ret)
+void Isotope::calc_isotope_selfenergy_tetra(const int knum,
+                                            const int snum,
+                                            const double omega,
+                                            double &ret)
 {
     // Compute phonon selfenergy of phonon (knum, snum) 
     // due to phonon-isotope scatterings.
@@ -203,7 +209,8 @@ void Isotope::calc_isotope_selfenergy_all()
             gamma_loc[i] = tmp;
         }
 
-        MPI_Reduce(&gamma_loc[0], &gamma_tmp[0], nks, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&gamma_loc[0], &gamma_tmp[0], nks,
+                   MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
         for (i = 0; i < kpoint->nk_reduced; ++i) {
             for (j = 0; j < ns; ++j) {

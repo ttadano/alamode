@@ -48,7 +48,7 @@ namespace PHON_NS
         {
             fcs_val = fcs_in;
 
-            for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
+            for (auto it = pairs_in.cbegin(); it != pairs_in.cend(); ++it) {
                 pairs.push_back(*it);
             }
         }
@@ -81,7 +81,8 @@ namespace PHON_NS
         array_a.push_back(a.pairs[len - 1].tran);
         array_b.push_back(b.pairs[len - 1].index);
         array_b.push_back(b.pairs[len - 1].tran);
-        return std::lexicographical_compare(array_a.begin(), array_a.end(), array_b.begin(), array_b.end());
+        return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                            array_b.begin(), array_b.end());
     }
 
     class Gruneisen: protected Pointers
@@ -102,7 +103,8 @@ namespace PHON_NS
     private:
         double **xshift_s;
         std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
-        void prepare_delta_fcs(const std::vector<FcsArrayWithCell>, std::vector<FcsArrayWithCell> &);
+        void prepare_delta_fcs(const std::vector<FcsArrayWithCell>,
+                               std::vector<FcsArrayWithCell> &);
         void calc_dfc2_reciprocal(std::complex<double> **, double *);
         void write_new_fcsxml(const std::string, const double);
         std::string double2string(const double);

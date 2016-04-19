@@ -201,7 +201,8 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
             ret += vol * g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         } else if (e2 <= e_ref && e_ref < e3) {
-            g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1) * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+            g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+                * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
 
             I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
             I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
@@ -256,7 +257,8 @@ double Integration::dos_integration(double *energy, const double e_ref)
         if (e3 <= e_ref && e_ref < e4) {
             dos_ret += vol * (3.0 * std::pow((e4 - e_ref), 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3)));
         } else if (e2 <= e_ref && e_ref < e3) {
-            dos_ret += vol * 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1) * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+            dos_ret += vol * 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+                * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
         } else if (e1 <= e_ref && e_ref < e2) {
             dos_ret += vol * 3.0 * std::pow((e_ref - e1), 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
         }
@@ -266,8 +268,11 @@ double Integration::dos_integration(double *energy, const double e_ref)
 }
 
 
-void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_irreducible_k,
-                                          double *weight, double *energy, const double e_ref)
+void Integration::calc_weight_tetrahedron(const int nk_irreducible,
+                                          int *map_to_irreducible_k,
+                                          double *weight,
+                                          double *energy,
+                                          const double e_ref)
 {
     int i, j;
     double vol;
@@ -351,7 +356,10 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
 }
 
 void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList>> &kpinfo,
-                                                double *weight, double *energy, const double e_ref, const int smearing_method)
+                                                double *weight,
+                                                double *energy,
+                                                const double e_ref,
+                                                const int smearing_method)
 {
     unsigned int i;
     unsigned int knum;
@@ -371,8 +379,13 @@ void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<Kp
     }
 }
 
-void PHON_NS::Integration::calc_weight_smearing(const int nk, const int nk_irreducible, int *map_to_irreducible_k,
-                                                double *weight, double *energy, const double e_ref, const int smearing_method)
+void PHON_NS::Integration::calc_weight_smearing(const int nk,
+                                                const int nk_irreducible,
+                                                int *map_to_irreducible_k,
+                                                double *weight,
+                                                double *energy,
+                                                const double e_ref,
+                                                const int smearing_method)
 {
     int i;
 

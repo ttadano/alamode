@@ -113,13 +113,15 @@ void Kpoint::kpoint_setups(std::string mode)
                 std::cout << std::setw(3) << kpInp[i].kpelem[0];
                 std::cout << " (";
                 for (int k = 0; k < 3; ++k) {
-                    std::cout << std::setprecision(4) << std::setw(8) << std::atof((kpInp[i].kpelem[k + 1]).c_str());
+                    std::cout << std::setprecision(4) << std::setw(8)
+                        << std::atof((kpInp[i].kpelem[k + 1]).c_str());
                 }
                 std::cout << ")";
                 std::cout << std::setw(3) << kpInp[i].kpelem[4];
                 std::cout << " (";
                 for (int k = 0; k < 3; ++k) {
-                    std::cout << std::setprecision(4) << std::setw(8) << std::atof((kpInp[i].kpelem[k + 5]).c_str());
+                    std::cout << std::setprecision(4) << std::setw(8)
+                        << std::atof((kpInp[i].kpelem[k + 5]).c_str());
                 }
                 std::cout << ")";
                 std::cout << std::setw(4) << kpInp[i].kpelem[8] << std::endl;
@@ -137,7 +139,8 @@ void Kpoint::kpoint_setups(std::string mode)
             std::cout << "  KPMODE = 2: Uniform grid" << std::endl;
         }
 
-        setup_kpoint_mesh(kpInp, nk, nkx, nky, nkz, xk, kvec_na, symmetry->symmetry_flag, kpoint_irred_all);
+        setup_kpoint_mesh(kpInp, nk, nkx, nky, nkz, xk,
+                          kvec_na, symmetry->symmetry_flag, kpoint_irred_all);
 
         nk_reduced = kpoint_irred_all.size();
 
@@ -162,7 +165,8 @@ void Kpoint::kpoint_setups(std::string mode)
                     std::cout << std::setprecision(5) << std::setw(14)
                         << std::scientific << kpoint_irred_all[i][0].kval[j];
                 }
-                std::cout << std::setprecision(6) << std::setw(11) << std::fixed << weight_k[i] << std::endl;
+                std::cout << std::setprecision(6) << std::setw(11)
+                    << std::fixed << weight_k[i] << std::endl;
             }
             std::cout << std::endl;
         }
@@ -202,7 +206,10 @@ void Kpoint::kpoint_setups(std::string mode)
     }
 }
 
-void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo, unsigned int &n, double **&k, double **&kdirec)
+void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo,
+                                unsigned int &n,
+                                double **&k,
+                                double **&kdirec)
 {
     int i, j;
     double norm;
@@ -215,7 +222,7 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo, unsigned int &n,
 
     if (mympi->my_rank == 0) {
         j = 0;
-        for (std::vector<KpointInp>::const_iterator it = kpinfo.begin(); it != kpinfo.end(); ++it) {
+        for (auto it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
             for (i = 0; i < 3; ++i) {
 #ifdef _USE_BOOST
                 k[j][i] = boost::lexical_cast<double>((*it).kpelem[i]);
@@ -226,7 +233,9 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo, unsigned int &n,
 
             rotvec(kdirec[j], k[j], system->rlavec_p, 'T');
 
-            norm = kdirec[j][0] * kdirec[j][0] + kdirec[j][1] * kdirec[j][1] + kdirec[j][2] * kdirec[j][2];
+            norm = kdirec[j][0] * kdirec[j][0]
+                + kdirec[j][1] * kdirec[j][1]
+                + kdirec[j][2] * kdirec[j][2];
 
             if (norm > eps) {
                 for (i = 0; i < 3; ++i) kdirec[j][i] /= std::sqrt(norm);
@@ -240,8 +249,11 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo, unsigned int &n,
     MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
-void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo, unsigned int &n,
-                               double **&xk, double **&kdirec, double *&axis)
+void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo,
+                               unsigned int &n,
+                               double **&xk,
+                               double **&kdirec,
+                               double *&axis)
 {
     int i, j, k;
 
@@ -262,7 +274,7 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo, unsigned int &n,
 
         n = 0;
         i = 0;
-        for (std::vector<KpointInp>::const_iterator it = kpinfo.begin(); it != kpinfo.end(); ++it) {
+        for (auto it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
             kp_symbol[i][0] = (*it).kpelem[0];
             kp_symbol[i][1] = (*it).kpelem[4];
 #ifdef _USE_BOOST
@@ -297,7 +309,9 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo, unsigned int &n,
             }
 
             rotvec(direc_tmp, direc_tmp, system->rlavec_p, 'T');
-            norm = std::pow(direc_tmp[0], 2) + std::pow(direc_tmp[1], 2) + std::pow(direc_tmp[2], 2);
+            norm = std::pow(direc_tmp[0], 2)
+                + std::pow(direc_tmp[1], 2)
+                + std::pow(direc_tmp[2], 2);
             norm = std::sqrt(norm);
 
             if (norm > eps) {
@@ -307,7 +321,8 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo, unsigned int &n,
             for (j = 0; j < nk_path[i]; ++j) {
                 for (k = 0; k < 3; ++k) {
                     xk[ik][k] = k_start[i][k]
-                        + (k_end[i][k] - k_start[i][k]) * static_cast<double>(j) / static_cast<double>(nk_path[i] - 1);
+                        + (k_end[i][k] - k_start[i][k])
+                        * static_cast<double>(j) / static_cast<double>(nk_path[i] - 1);
 
                     kdirec[ik][k] = direc_tmp[k];
                 }
@@ -320,7 +335,10 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo, unsigned int &n,
                     } else {
                         for (k = 0; k < 3; ++k) tmp[k] = xk[ik][k] - xk[ik - 1][k];
                         rotvec(tmp, tmp, system->rlavec_p, 'T');
-                        axis[ik] = axis[ik - 1] + std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
+                        axis[ik] = axis[ik - 1]
+                            + std::sqrt(tmp[0] * tmp[0]
+                                + tmp[1] * tmp[1]
+                                + tmp[2] * tmp[2]);
                     }
                 }
                 ++ik;
@@ -343,9 +361,14 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo, unsigned int &n,
     MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
-void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo, unsigned int &nk,
-                                        unsigned int &nkx, unsigned int &nky, unsigned int &nkz,
-                                        double **&xk, double **&kdirec, const bool usesym,
+void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
+                                        unsigned int &nk,
+                                        unsigned int &nkx,
+                                        unsigned int &nky,
+                                        unsigned int &nkz,
+                                        double **&xk,
+                                        double **&kdirec,
+                                        const bool usesym,
                                         std::vector<std::vector<KpointList>> &kp_irreducible)
 {
     int i, j;
@@ -378,7 +401,9 @@ void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo, unsigned
             for (j = 0; j < 3; ++j) kdirec[i][j] = xk[i][j];
 
             rotvec(kdirec[i], kdirec[i], system->rlavec_p, 'T');
-            norm = kdirec[i][0] * kdirec[i][0] + kdirec[i][1] * kdirec[i][1] + kdirec[i][2] * kdirec[i][2];
+            norm = kdirec[i][0] * kdirec[i][0]
+                + kdirec[i][1] * kdirec[i][1]
+                + kdirec[i][2] * kdirec[i][2];
 
             if (norm > eps) {
                 for (j = 0; j < 3; ++j) kdirec[i][j] /= std::sqrt(norm);
@@ -467,7 +492,8 @@ void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<Kpoint
     memory->deallocate(kequiv_tmp);
 }
 
-void PHON_NS::Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane, std::vector<KpointPlane> *&kp_plane)
+void PHON_NS::Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane,
+                                                  std::vector<KpointPlane> *&kp_plane)
 {
     int i, j;
     int nkp;
@@ -506,7 +532,9 @@ void PHON_NS::Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane, std
 }
 
 
-void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo, unsigned int &nplane, std::vector<KpointPlane> *&kp_plane)
+void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo,
+                                unsigned int &nplane,
+                                std::vector<KpointPlane> *&kp_plane)
 {
     nplane = kpinfo.size();
     MPI_Bcast(&nplane, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -532,7 +560,9 @@ void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo, unsigned int &np
 }
 
 
-void Kpoint::gen_kmesh(const bool usesym, const unsigned int nk_in[3], double **xk_out,
+void Kpoint::gen_kmesh(const bool usesym,
+                       const unsigned int nk_in[3],
+                       double **xk_out,
                        std::vector<std::vector<KpointList>> &kplist_out)
 {
     unsigned int ix, iy, iz;
@@ -572,7 +602,9 @@ void Kpoint::gen_kmesh(const bool usesym, const unsigned int nk_in[3], double **
     memory->deallocate(xkr);
 }
 
-void Kpoint::reduce_kpoints(const unsigned int nsym, double **xkr, const unsigned int nk_in[3],
+void Kpoint::reduce_kpoints(const unsigned int nsym,
+                            double **xkr,
+                            const unsigned int nk_in[3],
                             std::vector<std::vector<KpointList>> &kplist_out)
 {
     unsigned int ik;
@@ -740,7 +772,8 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
         }
         costheta = dprod / std::sqrt(norm1 * norm2);
         if (std::abs(std::abs(costheta) - 1.0) < eps12) {
-            error->exit("gen_kpoints_plane", "Two vectors have to be linearly independent with each other.");
+            error->exit("gen_kpoints_plane",
+                        "Two vectors have to be linearly independent with each other.");
         }
 
         kp_plane_geometry.push_back(KpointPlaneGeometry(xk0, xk1, xk2, n_in));
@@ -749,7 +782,8 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
             for (ik2 = 0; ik2 < N2; ++ik2) {
 
                 for (j = 0; j < 3; ++j) {
-                    xk_tmp[j] = static_cast<double>(ik1) * frac1 * xk1[j] + static_cast<double>(ik2) * frac2 * xk2[j];
+                    xk_tmp[j] = static_cast<double>(ik1) * frac1 * xk1[j]
+                        + static_cast<double>(ik2) * frac2 * xk2[j];
                 }
                 if (in_first_BZ(xk_tmp)) {
                     n_in[0] = ik1;
@@ -766,7 +800,8 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
             for (ik2 = 0; ik2 < N2; ++ik2) {
 
                 for (j = 0; j < 3; ++j) {
-                    xk[m][j] = static_cast<double>(ik1) * frac1 * xk1[j] + static_cast<double>(ik2) * frac2 * xk2[j];
+                    xk[m][j] = static_cast<double>(ik1) * frac1 * xk1[j]
+                        + static_cast<double>(ik2) * frac2 * xk2[j];
                 }
                 ++m;
             }
@@ -819,7 +854,9 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
     }
 }
 
-void Kpoint::gen_nkminus(const unsigned int nk, unsigned int *minus_k, double **xk_in)
+void Kpoint::gen_nkminus(const unsigned int nk,
+                         unsigned int *minus_k,
+                         double **xk_in)
 {
     unsigned int ik;
     int ik_minus;
@@ -828,7 +865,9 @@ void Kpoint::gen_nkminus(const unsigned int nk, unsigned int *minus_k, double **
 
         ik_minus = get_knum(-xk[ik][0], -xk[ik][1], -xk[ik][2]);
 
-        if (ik_minus == -1) error->exit("gen_nkminus", "-xk doesn't exist on the mesh point.");
+        if (ik_minus == -1)
+            error->exit("gen_nkminus",
+                        "-xk doesn't exist on the mesh point.");
         if (ik_minus < ik) continue;
 
         minus_k[ik] = ik_minus;
@@ -836,7 +875,9 @@ void Kpoint::gen_nkminus(const unsigned int nk, unsigned int *minus_k, double **
     }
 }
 
-int Kpoint::get_knum(const double kx, const double ky, const double kz)
+int Kpoint::get_knum(const double kx,
+                     const double ky,
+                     const double kz)
 {
     double diff[3];
     double dkx = static_cast<double>(nkx);
@@ -847,7 +888,10 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
     diff[1] = static_cast<double>(nint(ky * dky)) - ky * dky;
     diff[2] = static_cast<double>(nint(kz * dkz)) - kz * dkz;
 
-    double norm = std::sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
+    double norm =
+        std::sqrt(diff[0] * diff[0]
+            + diff[1] * diff[1]
+            + diff[2] * diff[2]);
 
     if (norm >= eps12) {
 
@@ -865,7 +909,8 @@ int Kpoint::get_knum(const double kx, const double ky, const double kz)
     }
 }
 
-int Kpoint::get_knum(const double xk[3], const unsigned int nk[3])
+int Kpoint::get_knum(const double xk[3],
+                     const unsigned int nk[3])
 {
     int i;
     double diff[3];
@@ -875,7 +920,9 @@ int Kpoint::get_knum(const double xk[3], const unsigned int nk[3])
     for (i = 0; i < 3; ++i) dnk[i] = static_cast<double>(nk[i]);
     for (i = 0; i < 3; ++i) diff[i] = static_cast<double>(nint(xk[i] * dnk[i])) - xk[i] * dnk[i];
 
-    norm = std::sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
+    norm = std::sqrt(diff[0] * diff[0]
+        + diff[1] * diff[1]
+        + diff[2] * diff[2]);
 
     if (norm >= eps12) {
 
@@ -948,9 +995,15 @@ bool Kpoint::in_first_BZ(double *xk_in)
 }
 
 
-void Kpoint::generate_irreducible_kmap(int *kequiv, unsigned int &nk_irreducible, std::vector<int> &k_irreducible,
-                                       const unsigned int n1, const unsigned int n2, const unsigned int n3,
-                                       double **xk_in, const int nsymop, int ***symrot)
+void Kpoint::generate_irreducible_kmap(int *kequiv,
+                                       unsigned int &nk_irreducible,
+                                       std::vector<int> &k_irreducible,
+                                       const unsigned int n1,
+                                       const unsigned int n2,
+                                       const unsigned int n3,
+                                       double **xk_in,
+                                       const int nsymop,
+                                       int ***symrot)
 {
     int i, j, k;
     int isym;

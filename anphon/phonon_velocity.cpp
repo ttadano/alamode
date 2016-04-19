@@ -1,7 +1,7 @@
 /*
 phonon_velocity.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -108,7 +108,8 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
             }
 
         } else {
-            error->exit("calc_phonon_vel_band", "ndiff > 2 is not supported yet.");
+            error->exit("calc_phonon_vel_band",
+                        "ndiff > 2 is not supported yet.");
         }
 
         for (idiff = 0; idiff < ndiff; ++idiff) {
@@ -119,7 +120,8 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
             dynamical->eval_k(xk_shift[idiff], kpoint->kvec_na[ik],
-                              fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
+                              fcs_phonon->fc2_ext, omega_shift[idiff],
+                              evec_tmp, false);
 
         }
 
@@ -142,7 +144,8 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
     }
 }
 
-void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out, double ***phvel3_out)
+void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
+                                           double ***phvel3_out)
 {
     unsigned int i, j, k;
     unsigned int nk = kpoint->nk;
@@ -177,7 +180,8 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out, double ***phvel3_
     }
 }
 
-void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
+void Phonon_velocity::phonon_vel_k(double *xk_in,
+                                   double **vel_out)
 {
     unsigned int i, j;
     unsigned int idiff;
@@ -234,7 +238,8 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
         for (idiff = 0; idiff < ndiff; ++idiff) {
 
             dynamical->eval_k(xk_shift[idiff], kvec_na_tmp[0],
-                              fcs_phonon->fc2_ext, omega_shift[idiff], evec_tmp, false);
+                              fcs_phonon->fc2_ext, omega_shift[idiff],
+                              evec_tmp, false);
 
         }
 
@@ -253,7 +258,9 @@ void Phonon_velocity::phonon_vel_k(double *xk_in, double **vel_out)
     memory->deallocate(kvec_na_tmp);
 }
 
-double Phonon_velocity::diff(double *f, const unsigned int n, double h)
+double Phonon_velocity::diff(double *f,
+                             const unsigned int n,
+                             double h)
 {
     double df;
 

@@ -203,7 +203,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
             mindist_out[i][j].clear();
 
             dist_min = distall[i][j][0].dist;
-            for (std::vector<DistWithCell>::const_iterator it = distall[i][j].begin(); it != distall[i][j].end(); ++it) {
+            for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
                 if (std::abs((*it).dist - dist_min) < eps8) {
                     mindist_out[i][j].push_back((*it).cell);
                 }
@@ -218,11 +218,9 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 
 double Dynamical::distance(double *x1, double *x2)
 {
-    double dist;
-    dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
-    dist = std::sqrt(dist);
-
-    return dist;
+    return std::sqrt(std::pow(x1[0] - x2[0], 2)
+        + std::pow(x1[1] - x2[1], 2)
+        + std::pow(x1[2] - x2[2], 2));
 }
 
 
@@ -323,7 +321,9 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
 }
 
 
-void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_out)
+void Dynamical::calc_analytic_k(double *xk_in,
+                                std::vector<FcsClassExtent> fc2_in,
+                                std::complex<double> **dymat_out)
 {
     int i, j;
     unsigned int atm1_s, atm2_s;
@@ -345,7 +345,7 @@ void Dynamical::calc_analytic_k(double *xk_in, std::vector<FcsClassExtent> fc2_i
         }
     }
 
-    for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.begin(); it != fc2_in.end(); ++it) {
+    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
 
         atm1_p = (*it).atm1;
         atm2_s = (*it).atm2;
@@ -397,7 +397,9 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
     }
 
     rotvec(kepsilon, kvec_na_in, dielec);
-    denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
+    denom = kvec_na_in[0] * kepsilon[0]
+        + kvec_na_in[1] * kepsilon[1]
+        + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -473,7 +475,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::compl
 
 
 void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
-                                    std::vector<FcsClassExtent> fc2_in, std::complex<double> **dymat_na_out)
+                                    std::vector<FcsClassExtent> fc2_in,
+                                    std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by the mixed-space approach.
@@ -500,7 +503,9 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
     }
 
     rotvec(kepsilon, kvec_na_in, dielec);
-    denom = kvec_na_in[0] * kepsilon[0] + kvec_na_in[1] * kepsilon[1] + kvec_na_in[2] * kepsilon[2];
+    denom = kvec_na_in[0] * kepsilon[0]
+        + kvec_na_in[1] * kepsilon[1]
+        + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -558,7 +563,8 @@ void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                            = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2])) * exp_phase;
+                            = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]))
+                            * exp_phase;
                     }
                 }
             }
@@ -793,7 +799,9 @@ double Dynamical::freq(const double x)
 }
 
 
-void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec, double **ret, double ***ret_all)
+void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
+                                             double **ret,
+                                             double ***ret_all)
 {
     unsigned int ik, is;
     unsigned int iat;
@@ -843,6 +851,7 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, doub
 
     for (iat = 0; iat < natmin; ++iat) sum += ret[iat] * ret[iat];
 
-    for (iat = 0; iat < natmin; ++iat) ret[iat] /= std::sqrt(static_cast<double>(natmin) * sum);
+    for (iat = 0; iat < natmin; ++iat)
+        ret[iat] /= std::sqrt(static_cast<double>(natmin) * sum);
 }
 
