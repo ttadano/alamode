@@ -126,7 +126,8 @@ void Input::parse_general_vars()
     for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (general_var_dict.find(*it) == general_var_dict.end()) {
             error->exit("parse_general_vars",
-                        "The following variable is not found in &general input region: ", (*it).c_str());
+                        "The following variable is not found in &general input region: ",
+                        (*it).c_str());
         }
     }
 
@@ -287,7 +288,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR";
+                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR KAPPA_SPEC";
 
     bool fstate_omega, fstate_k;
     bool lclassical;
@@ -301,6 +302,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int quartic_mode;
     int include_isotope;
     int scattering_phase_space;
+    int calculate_kappa_spec;
     unsigned int cellsize[3];
 
     double delta_a;
@@ -337,6 +339,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
     fstate_omega = false;
     fstate_k = false;
 
+    calculate_kappa_spec = 0;
+
+
     // Assign values to variables
 
     if (!use_default_values) {
@@ -361,6 +366,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
+        assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -445,6 +451,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->scattering_phase_space = scattering_phase_space;
 
     conductivity->use_classical_Cv = lclassical;
+    conductivity->calc_kappa_spec = calculate_kappa_spec;
     relaxation->quartic_mode = quartic_mode;
     relaxation->atom_project_mode = atom_project_mode;
     relaxation->calc_realpart = calc_realpart;

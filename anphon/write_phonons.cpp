@@ -1139,6 +1139,8 @@ void Writes::write_kappa()
         int i, j, k;
 
         std::string file_kappa = input->job_title + ".kl";
+        std::string file_kappa2 = input->job_title + ".kl_spec";
+
         std::ofstream ofs_kl;
 
         ofs_kl.open(file_kappa.c_str(), std::ios::out);
@@ -1163,9 +1165,41 @@ void Writes::write_kappa()
         }
         ofs_kl.close();
 
+
+        if (conductivity->calc_kappa_spec) {
+
+            ofs_kl.open(file_kappa2.c_str(), std::ios::out);
+            if (!ofs_kl) error->exit("write_kappa", "Could not open file_kappa2");
+
+            ofs_kl << "# Temperature [K], Frequency [cm^-1], Thermal Conductivity Spectra (xx, yy, zz) [W/mK * cm]" << std::endl;
+
+            if (isotope->include_isotope) {
+                ofs_kl << "# Isotope effects are included." << std::endl;
+            }
+
+            for (i = 0; i < conductivity->ntemp; ++i) {
+                for (j = 0; j < dos->n_energy; ++j) {
+                    ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                        << conductivity->Temperature[i];
+                    ofs_kl << std::setw(10) << dos->energy_dos[j];
+                    for (k = 0; k < 3; ++k) {
+                        ofs_kl << std::setw(15) << std::fixed
+                            << std::setprecision(4) << conductivity->kappa_spec[j][i][k];
+                    }
+                    ofs_kl << std::endl;
+                }
+                ofs_kl << std::endl;
+            }
+            ofs_kl.close();
+            
+        }
+
         std::cout << std::endl;
         std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
-        std::cout << " Lattice thermal conductivity is store in the file " << file_kappa << std::endl;
+        std::cout << " Lattice thermal conductivity is stored in the file " << file_kappa << std::endl;
+        if (conductivity->calc_kappa_spec) {
+            std::cout << " Thermal conductivity spectra is stored in the file " << file_kappa2 << std::endl;
+        }
     }
 }
 

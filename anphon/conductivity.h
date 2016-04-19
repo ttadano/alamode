@@ -1,7 +1,7 @@
 /*
  conductivity.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -28,9 +28,11 @@ namespace PHON_NS
         void finish_kappa();
 
         int use_classical_Cv;
+        int calc_kappa_spec;
         unsigned int ntemp;
         double **damping3;
         double ***kappa;
+        double ***kappa_spec;
         double *Temperature;
 
     private:
@@ -40,8 +42,10 @@ namespace PHON_NS
         std::vector<int> vks, vks_l, vks_done;
         std::set<int> vks_job;
 
-        void write_result_gamma(const unsigned int, const unsigned int, double ***, double **);
+        void write_result_gamma(const unsigned int, const unsigned int,
+                                double ***, double **);
         void average_self_energy_at_degenerate_point(const int, const int, double **);
+        void compute_frequency_resolved_kappa(const int, double ****, const int);
     };
 }
 

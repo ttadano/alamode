@@ -29,6 +29,7 @@
 #include <vector>
 #include "mathfunctions.h"
 #include "isotope.h"
+#include "phonon_dos.h"
 
 using namespace PHON_NS;
 
@@ -195,6 +196,9 @@ void Conductivity::finish_kappa()
     if (mympi->my_rank == 0) {
         memory->deallocate(vel);
         memory->deallocate(kappa);
+        if (calc_kappa_spec) {
+            memory->deallocate(kappa_spec);
+        }
     }
     memory->deallocate(damping3);
     memory->deallocate(Temperature);
@@ -230,7 +234,8 @@ void Conductivity::calc_anharmonic_imagself()
     }
 
     unsigned int nks_tmp = vks_l.size();
-    MPI_Gather(&nks_tmp, 1, MPI_UNSIGNED, &nks_thread[mympi->my_rank], 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Gather(&nks_tmp, 1, MPI_UNSIGNED, &nks_thread[mympi->my_rank], 
+        1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -283,7 +288,9 @@ void Conductivity::calc_anharmonic_imagself()
             }
         }
 
-        MPI_Gather(&damping3_loc[0], ntemp, MPI_DOUBLE, damping3[nshift_restart + i * mympi->nprocs], ntemp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Gather(&damping3_loc[0], ntemp, MPI_DOUBLE,
+                   damping3[nshift_restart + i * mympi->nprocs], ntemp,
+                   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart, vel, damping3);
@@ -322,7 +329,8 @@ void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int 
         }
 
         for (k = 0; k < ntemp; ++k) {
-            writes->fs_result << std::setw(15) << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+            writes->fs_result << std::setw(15)
+                << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
         }
         writes->fs_result << "#END GAMMA_EACH" << std::endl;
     }
@@ -331,12 +339,15 @@ void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int 
 void Conductivity::compute_kappa()
 {
     unsigned int i, j, k;
+    unsigned int ik, is;
     unsigned int iks;
     unsigned int knum, snum;
 
     double omega;
     unsigned int nk_equiv;
     unsigned int ktmp;
+    // double factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p * static_cast<double>(nk));
+    double factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
 
     if (mympi->my_rank == 0) {
 
@@ -346,8 +357,10 @@ void Conductivity::compute_kappa()
         int ieq;
 
         double **lifetime;
+        double ****kappa_mode;
 
         memory->allocate(lifetime, kpoint->nk_reduced * ns, ntemp);
+        memory->allocate(kappa_mode, ntemp, 9, ns, kpoint->nk_reduced);
 
         average_self_energy_at_degenerate_point(kpoint->nk_reduced * ns, ntemp, damping3);
 
@@ -360,7 +373,8 @@ void Conductivity::compute_kappa()
                     }
                 } else {
                     for (i = 0; i < ntemp; ++i) {
-                        lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / (damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum]);
+                        lifetime[iks][i] = 1.0e+12 * time_ry * 0.5
+                            / (damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum]);
                     }
                 }
             }
@@ -385,37 +399,85 @@ void Conductivity::compute_kappa()
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
 
-                    kappa[i][j][k] = 0.0;
-
-                    if (Temperature[i] < eps) continue;
-
-                    for (iks = 0; iks < kpoint->nk_reduced * ns; ++iks) {
-
-                        knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
-                        snum = iks % ns;
-
-                        omega = dynamical->eval_phonon[knum][snum];
-
-                        vv_tmp = 0.0;
-                        nk_equiv = kpoint->kpoint_irred_all[iks / ns].size();
-
-                        for (ieq = 0; ieq < nk_equiv; ++ieq) {
-                            ktmp = kpoint->kpoint_irred_all[iks / ns][ieq].knum;
-                            vv_tmp += vel[ktmp][snum][j] * vel[ktmp][snum][k];
+                    if (Temperature[i] < eps) {
+                        // Set kappa as zero when T = 0.
+                        for (is = 0; is < ns; ++is) {
+                            for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+                                kappa_mode[i][3 * j + k][is][ik] = 0.0;
+                            }
                         }
+                    } else {
+                        for (is = 0; is < ns; ++is) {
+                            for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+                                knum = kpoint->kpoint_irred_all[ik][0].knum;
+                                omega = dynamical->eval_phonon[knum][is];
+                                vv_tmp = 0.0;
+                                nk_equiv = kpoint->kpoint_irred_all[ik].size();
 
-                        if (use_classical_Cv == 1) {
-                            kappa[i][j][k] += thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
-                        } else {
-                            kappa[i][j][k] += thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
+                                // Accumulate group velocity (diad product) for the reducible k points
+                                for (ieq = 0; ieq < nk_equiv; ++ieq) {
+                                    ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
+                                    vv_tmp += vel[ktmp][is][j] * vel[ktmp][is][k];
+                                }
+
+                                if (use_classical_Cv == 1) {
+                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv_classical(omega, Temperature[i])
+                                        * vv_tmp * lifetime[ns * ik + is][i];
+                                } else {
+                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv(omega, Temperature[i])
+                                        * vv_tmp * lifetime[ns * ik + is][i];
+                                }
+
+                                // Convert to SI unit
+                                kappa_mode[i][3 * j + k][is][ik] *= factor_toSI;
+
+                            }
                         }
                     }
-                    // Convert to SI unit
-                    kappa[i][j][k] *= 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p * static_cast<double>(nk));
+
+                    kappa[i][j][k] = 0.0;
+
+                    for (is = 0; is < ns; ++is) {
+                        for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+                            kappa[i][j][k] += kappa_mode[i][3 * j + k][is][ik];
+                        }
+                    }
+
+                    kappa[i][j][k] /= static_cast<double>(nk);
+
+                    /*                    for (iks = 0; iks < kpoint->nk_reduced * ns; ++iks) {
+                    
+                                            knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
+                                            snum = iks % ns;
+                    
+                                            omega = dynamical->eval_phonon[knum][snum];
+                    
+                                            vv_tmp = 0.0;
+                                            nk_equiv = kpoint->kpoint_irred_all[iks / ns].size();
+                    
+                                            for (ieq = 0; ieq < nk_equiv; ++ieq) {
+                                                ktmp = kpoint->kpoint_irred_all[iks / ns][ieq].knum;
+                                                vv_tmp += vel[ktmp][snum][j] * vel[ktmp][snum][k];
+                                            }
+                    
+                                            if (use_classical_Cv == 1) {
+                                                kappa[i][j][k] += thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
+                                            } else {
+                                                kappa[i][j][k] += thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
+                                            }
+                                        }
+                                        // Convert to SI unit
+                                        kappa[i][j][k] *= 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p * static_cast<double>(nk));
+                                        */
                 }
             }
         }
         memory->deallocate(lifetime);
+
+        if (calc_kappa_spec)
+            compute_frequency_resolved_kappa(ntemp, kappa_mode, integration->ismear);
+
+        memory->deallocate(kappa_mode);
     }
 }
 
@@ -487,5 +549,78 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n, const in
         }
     }
     memory->deallocate(damping_sum);
+}
+
+void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
+                                                    double ****kappa_mode,
+                                                    const int smearing_method)
+{
+    int i, j, itemp;
+    int *kmap_identity;
+    double **eval;
+
+    std::cout << " KAPPA_SPEC = 1 : Calculating thermal conductivity spectra ... ";
+
+    memory->allocate(kappa_spec, dos->n_energy, ntemp, 3);
+    memory->allocate(kmap_identity, nk);
+    memory->allocate(eval, ns, nk);
+
+    for (i = 0; i < nk; ++i) kmap_identity[i] = i;
+
+    for (i = 0; i < nk; ++i) {
+        for (j = 0; j < ns; ++j) {
+            eval[j][i] = writes->in_kayser(dynamical->eval_phonon[i][j]);
+        }
+    }
+
+
+#ifdef _OPENMP
+#pragma omp parallel private (j)
+#endif
+    {
+        int k;
+        int ik, is;
+        int knum;
+        double *weight;
+        memory->allocate(weight, nk);
+
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for (i = 0; i < dos->n_energy; ++i) {
+
+            for (j = 0; j < ntemp; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    kappa_spec[i][j][k] = 0.0;
+                }
+            }
+
+            for (is = 0; is < ns; ++is) {
+                if (smearing_method == -1) {
+                    integration->calc_weight_tetrahedron(nk, kmap_identity, weight,
+                                                         eval[is], dos->energy_dos[i]);
+                } else {
+                    integration->calc_weight_smearing(nk, nk, kmap_identity, weight,
+                                                      eval[is], dos->energy_dos[i],
+                                                      smearing_method);
+                }
+
+                for (j = 0; j < ntemp; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+                            knum = kpoint->kpoint_irred_all[ik][0].knum;
+                            kappa_spec[i][j][k] += kappa_mode[j][3 * k + k][is][ik] * weight[knum];
+                        }
+                    }
+                }
+            }
+        }
+        memory->deallocate(weight);
+    }
+
+    memory->deallocate(kmap_identity);
+    memory->deallocate(eval);
+
+    std::cout << " done!" << std::endl;
 }
 

@@ -128,6 +128,11 @@ Output files of anphon
  Lattice thermal conductivity tensor.
  Created when ``MODE = RTA``.
 
+ * ``PREFIX``.kl_spec
+
+ Spectra of lattice thermal conductivity. Only diagonal components will be saved.
+ Created when ``MODE = RTA`` and ``KAPPA_SPEC = 1``.
+
 * ``PREFIX``.gamma_isotope
 
  Phonon selfenergy due to isotope scatterings calculated by the Tamura's formula.
