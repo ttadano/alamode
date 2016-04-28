@@ -59,7 +59,7 @@ Links
 -----
 
 * Download page  : http://sourceforge.net/projects/alamode 
-* Documentation  : http://alamode.readthedocs.org (this page)
+* Documentation  : http://alamode.readthedocs.io (this page)
 * Git repository : http://github.com/ttadano/alamode
 
 

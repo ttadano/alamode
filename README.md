@@ -74,7 +74,7 @@ each program.
 For more details about ALAMODE including tutorial, input parameters, and 
 output files, please visit the following webpabe.
 
-http://alamode.readthedocs.org
+http://alamode.readthedocs.io
 
 
 ## License
