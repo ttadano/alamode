@@ -62,7 +62,6 @@ namespace PHON_NS
 
         void setup_dynamical(std::string);
 
-        // void eval_k(double *, double *, double ****, double *, std::complex<double> **, bool);
         void eval_k(double *, double *,
                     std::vector<FcsClassExtent>,
                     double *, std::complex<double> **, bool);
