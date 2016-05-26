@@ -1023,7 +1023,6 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
     double omega_inner[2];
 
     double ret_tmp;
-    double epsilon = integration->epsilon;
 
     int *kmap_identity;
     double **energy_tmp;
@@ -1061,7 +1060,7 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
 
             for (k1 = 0; k1 < nk; ++k1) {
 
-                // Prepare two-phonon frequency for tetrahedron method
+                // Prepare two-phonon frequency for the tetrahedron method
 
                 for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] - kpoint->xk[k1][i];
 
@@ -1077,16 +1076,8 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
                                                      weight_tetra[i], energy_tmp[i], omega);
             }
 
+            // Loop for irreducible k points
             for (ik = 0; ik < npair_uniq; ++ik) {
-
-                k1 = pair_uniq[ik_in][ik].group[0].ks[0];
-                k2 = pair_uniq[ik_in][ik].group[0].ks[1];
-
-                arr[0] = ns * knum_minus + snum;
-                arr[1] = ns * k1 + is;
-                arr[2] = ns * k2 + js;
-
-                v3_arr[ik][ib] = std::norm(V3(arr));
 
                 delta_arr[ik][ib][0] = 0.0;
                 delta_arr[ik][ib][1] = 0.0;
@@ -1095,6 +1086,20 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
                     jk = pair_uniq[ik_in][ik].group[i].ks[0];
                     delta_arr[ik][ib][0] += weight_tetra[0][jk];
                     delta_arr[ik][ib][1] += weight_tetra[1][jk] - weight_tetra[2][jk];
+                }
+                
+                // Calculate the matrix element V3 only when the weight is nonzero.
+                if (delta_arr[ik][ib][0] > eps || std::abs(delta_arr[ik][ib][1]) > eps) {
+                    k1 = pair_uniq[ik_in][ik].group[0].ks[0];
+                    k2 = pair_uniq[ik_in][ik].group[0].ks[1];
+
+                    arr[0] = ns * knum_minus + snum;
+                    arr[1] = ns * k1 + is;
+                    arr[2] = ns * k2 + js;
+
+                    v3_arr[ik][ib] = std::norm(V3(arr));
+                } else {
+                    v3_arr[ik][ib] = 0.0;
                 }
             }
         }
