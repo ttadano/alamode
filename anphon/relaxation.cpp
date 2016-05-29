@@ -66,6 +66,8 @@ void Relaxation::setup_relaxation()
     setup_mode_analysis();
     setup_cubic();
 
+    sym_permutation = true;
+
     if (ks_analyze_mode) {
 
         if (kpoint->kpoint_mode == 2 && use_triplet_symmetry) {
@@ -82,10 +84,7 @@ void Relaxation::setup_relaxation()
         MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
         MPI_Bcast(&calc_fstate_omega, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-        if (mympi->my_rank == 0) {
-            if (calc_fstate_omega) sym_permutation = false;
-        }
-        MPI_Bcast(&sym_permutation, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+        if (calc_fstate_omega) sym_permutation = false;
 
         if (quartic_mode > 0) {
 
@@ -209,7 +208,7 @@ void Relaxation::detect_imaginary_branches()
             std::cout << " Phonon-phonon scattering rate and thermal conductivity involving these" << std::endl;
             std::cout << " imaginary branches will be treated as zero in the following calculations." << std::endl;
             std::cout << " If imaginary branches are acoustic phonons at Gamma point (0, 0, 0), " << std::endl;
-            std::cout << " you can safely ignore this warning." << std::endl << std::endl << std::flush;
+            std::cout << " you can safely ignore this message." << std::endl << std::endl << std::flush;
         }
     }
 }
@@ -335,7 +334,8 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
             rotvec(vec, vec, mat_convert);
 
             for (j = 0; j < 3; ++j) {
-                vec_out[j][i][icount] = vec[j];
+             //   vec_out[j][i][icount] = vec[j];
+                vec_out[icount][i][j] = vec[j];
             }
         }
         ++icount;
@@ -351,10 +351,9 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
     // Find the number of groups which has different evecs.
 
     unsigned int i;
-    number_of_groups = 0;
-
-
     std::vector<int> arr_old, arr_tmp;
+
+    number_of_groups = 0;
 
     arr_old.clear();
     for (i = 0; i < N; ++i) {
@@ -558,6 +557,8 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
     double inv2pi = 1.0 / (2.0 * pi);
     double dnk_represent = static_cast<double>(nk_represent);
 
+    dnk_represent *= inv2pi;
+
     for (i = 0; i < 3; ++i) {
         kn[i] = ks[i] / ns;
         sn[i] = ks[i] % ns;
@@ -575,9 +576,10 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
             for (i = 0; i < ngroup; ++i) {
 
                 vec_tmp
-                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]]
-                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
-                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[i][0]]
+                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[i][1]]
+                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[i][2]]
+                    * invmass_for_v3[i];
 
                 ret_in = std::complex<double>(0.0, 0.0);
 
@@ -586,20 +588,19 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
                 for (j = 0; j < nsize_group; ++j) {
 
                     phase
-                        = vec_for_v3[0][0][ielem] * kpoint->xk[kn[1]][0]
-                        + vec_for_v3[1][0][ielem] * kpoint->xk[kn[1]][1]
-                        + vec_for_v3[2][0][ielem] * kpoint->xk[kn[1]][2]
-                        + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0]
-                        + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1]
-                        + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
+                        = vec_for_v3[ielem][0][0] * kpoint->xk[kn[1]][0]
+                        + vec_for_v3[ielem][0][1] * kpoint->xk[kn[1]][1]
+                        + vec_for_v3[ielem][0][2] * kpoint->xk[kn[1]][2]
+                        + vec_for_v3[ielem][1][0] * kpoint->xk[kn[2]][0]
+                        + vec_for_v3[ielem][1][1] * kpoint->xk[kn[2]][1]
+                        + vec_for_v3[ielem][1][2] * kpoint->xk[kn[2]][2];
 
-                    iloc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
-
-                    ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase[iloc];
+                    iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
+                    ret_in += fcs_group[i][j] * exp_phase[iloc];
 
                     ++ielem;
                 }
-                ret += ret_in * vec_tmp;
+                 ret += ret_in * vec_tmp;
             }
         } else if (tune_type == 1) {
 
@@ -607,9 +608,10 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
             for (i = 0; i < ngroup; ++i) {
 
                 vec_tmp
-                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]]
-                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
-                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[i][0]]
+                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[i][1]]
+                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[i][2]]
+                    * invmass_for_v3[i];
 
                 ret_in = std::complex<double>(0.0, 0.0);
 
@@ -619,13 +621,13 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 
                     for (ii = 0; ii < 3; ++ii) {
                         phase3[ii]
-                            = vec_for_v3[ii][0][ielem] * kpoint->xk[kn[1]][ii]
-                            + vec_for_v3[ii][1][ielem] * kpoint->xk[kn[2]][ii];
+                            = vec_for_v3[ielem][0][ii] * kpoint->xk[kn[1]][ii]
+                            + vec_for_v3[ielem][1][ii] * kpoint->xk[kn[2]][ii];
 
                         loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
 
-                    ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase3[loc[0]][loc[1]][loc[2]];
+                    ret_in += fcs_group[i][j] * exp_phase3[loc[0]][loc[1]][loc[2]];
 
                     ++ielem;
                 }
@@ -638,9 +640,10 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
         for (i = 0; i < ngroup; ++i) {
 
             vec_tmp
-                = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[ielem][0]]
-                * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[ielem][1]]
-                * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[ielem][2]];
+                = dynamical->evec_phonon[kn[0]][sn[0]][evec_index[i][0]]
+                * dynamical->evec_phonon[kn[1]][sn[1]][evec_index[i][1]]
+                * dynamical->evec_phonon[kn[2]][sn[2]][evec_index[i][2]]
+                * invmass_for_v3[i];
 
             ret_in = std::complex<double>(0.0, 0.0);
 
@@ -649,14 +652,14 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
             for (j = 0; j < nsize_group; ++j) {
 
                 phase
-                    = vec_for_v3[0][0][ielem] * kpoint->xk[kn[1]][0]
-                    + vec_for_v3[1][0][ielem] * kpoint->xk[kn[1]][1]
-                    + vec_for_v3[2][0][ielem] * kpoint->xk[kn[1]][2]
-                    + vec_for_v3[0][1][ielem] * kpoint->xk[kn[2]][0]
-                    + vec_for_v3[1][1][ielem] * kpoint->xk[kn[2]][1]
-                    + vec_for_v3[2][1][ielem] * kpoint->xk[kn[2]][2];
+                    = vec_for_v3[ielem][0][0] * kpoint->xk[kn[1]][0]
+                    + vec_for_v3[ielem][0][1] * kpoint->xk[kn[1]][1]
+                    + vec_for_v3[ielem][0][2] * kpoint->xk[kn[1]][2]
+                    + vec_for_v3[ielem][1][0] * kpoint->xk[kn[2]][0]
+                    + vec_for_v3[ielem][1][1] * kpoint->xk[kn[2]][1]
+                    + vec_for_v3[ielem][1][2] * kpoint->xk[kn[2]][2];
 
-                ret_in += fcs_group[i][j] * invmass_for_v3[ielem] * std::exp(im * phase);
+                ret_in += fcs_group[i][j] * std::exp(im * phase);
 
                 ++ielem;
             }
@@ -684,6 +687,8 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
     double inv2pi = 1.0 / (2.0 * pi);
     double dnk_represent = static_cast<double>(nk_represent);
 
+    dnk_represent *= inv2pi;
+
     for (i = 0; i < 4; ++i) {
         kn[i] = ks[i] / ns;
         sn[i] = ks[i] % ns;
@@ -697,28 +702,29 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
             for (i = 0; i < ngroup2; ++i) {
 
                 vec_tmp
-                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[ielem][0]]
-                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[ielem][1]]
-                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[ielem][2]]
-                    * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[ielem][3]];
+                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[i][0]]
+                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[i][1]]
+                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[i][2]]
+                    * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[i][3]]
+                    * invmass_for_v4[i];
 
                 ret_in = std::complex<double>(0.0, 0.0);
 
                 for (j = 0; j < fcs_group2[i].size(); ++j) {
                     phase
-                        = vec_for_v4[0][0][ielem] * kpoint->xk[kn[1]][0]
-                        + vec_for_v4[1][0][ielem] * kpoint->xk[kn[1]][1]
-                        + vec_for_v4[2][0][ielem] * kpoint->xk[kn[1]][2]
-                        + vec_for_v4[0][1][ielem] * kpoint->xk[kn[2]][0]
-                        + vec_for_v4[1][1][ielem] * kpoint->xk[kn[2]][1]
-                        + vec_for_v4[2][1][ielem] * kpoint->xk[kn[2]][2]
-                        + vec_for_v4[0][2][ielem] * kpoint->xk[kn[3]][0]
-                        + vec_for_v4[1][2][ielem] * kpoint->xk[kn[3]][1]
-                        + vec_for_v4[2][2][ielem] * kpoint->xk[kn[3]][2];
+                        = vec_for_v4[ielem][0][0] * kpoint->xk[kn[1]][0]
+                        + vec_for_v4[ielem][0][1] * kpoint->xk[kn[1]][1]
+                        + vec_for_v4[ielem][0][2] * kpoint->xk[kn[1]][2]
+                        + vec_for_v4[ielem][1][0] * kpoint->xk[kn[2]][0]
+                        + vec_for_v4[ielem][1][1] * kpoint->xk[kn[2]][1]
+                        + vec_for_v4[ielem][1][2] * kpoint->xk[kn[2]][2]
+                        + vec_for_v4[ielem][2][0] * kpoint->xk[kn[3]][0]
+                        + vec_for_v4[ielem][2][1] * kpoint->xk[kn[3]][1]
+                        + vec_for_v4[ielem][2][2] * kpoint->xk[kn[3]][2];
 
-                    iloc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
+                    iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
 
-                    ctmp = fcs_group2[i][j] * invmass_for_v4[ielem] * exp_phase[iloc];
+                    ctmp = fcs_group2[i][j] * exp_phase[iloc];
                     ret_in += ctmp;
 
                     ++ielem;
@@ -729,10 +735,11 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
             for (i = 0; i < ngroup2; ++i) {
 
                 vec_tmp
-                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[ielem][0]]
-                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[ielem][1]]
-                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[ielem][2]]
-                    * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[ielem][3]];
+                    = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[i][0]]
+                    * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[i][1]]
+                    * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[i][2]]
+                    * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[i][3]]
+                    * invmass_for_v4[i];
 
                 ret_in = std::complex<double>(0.0, 0.0);
 
@@ -740,14 +747,14 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
 
                     for (ii = 0; ii < 3; ++ii) {
                         phase3[ii]
-                            = vec_for_v4[ii][0][ielem] * kpoint->xk[kn[1]][ii]
-                            + vec_for_v4[ii][1][ielem] * kpoint->xk[kn[2]][ii]
-                            + vec_for_v4[ii][2][ielem] * kpoint->xk[kn[3]][ii];
+                            = vec_for_v4[ielem][0][ii] * kpoint->xk[kn[1]][ii]
+                            + vec_for_v4[ielem][1][ii] * kpoint->xk[kn[2]][ii]
+                            + vec_for_v4[ielem][2][ii] * kpoint->xk[kn[3]][ii];
 
                         loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
 
-                    ctmp = fcs_group2[i][j] * invmass_for_v4[ielem] * exp_phase3[loc[0]][loc[1]][loc[2]];
+                    ctmp = fcs_group2[i][j] * exp_phase3[loc[0]][loc[1]][loc[2]];
                     ret_in += ctmp;
 
                     ++ielem;
@@ -760,26 +767,27 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
         for (i = 0; i < ngroup2; ++i) {
 
             vec_tmp
-                = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[ielem][0]]
-                * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[ielem][1]]
-                * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[ielem][2]]
-                * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[ielem][3]];
+                = dynamical->evec_phonon[kn[0]][sn[0]][evec_index4[i][0]]
+                * dynamical->evec_phonon[kn[1]][sn[1]][evec_index4[i][1]]
+                * dynamical->evec_phonon[kn[2]][sn[2]][evec_index4[i][2]]
+                * dynamical->evec_phonon[kn[3]][sn[3]][evec_index4[i][3]]
+                * invmass_for_v4[i];
 
             ret_in = std::complex<double>(0.0, 0.0);
 
             for (j = 0; j < fcs_group2[i].size(); ++j) {
                 phase
-                    = vec_for_v4[0][0][ielem] * kpoint->xk[kn[1]][0]
-                    + vec_for_v4[1][0][ielem] * kpoint->xk[kn[1]][1]
-                    + vec_for_v4[2][0][ielem] * kpoint->xk[kn[1]][2]
-                    + vec_for_v4[0][1][ielem] * kpoint->xk[kn[2]][0]
-                    + vec_for_v4[1][1][ielem] * kpoint->xk[kn[2]][1]
-                    + vec_for_v4[2][1][ielem] * kpoint->xk[kn[2]][2]
-                    + vec_for_v4[0][2][ielem] * kpoint->xk[kn[3]][0]
-                    + vec_for_v4[1][2][ielem] * kpoint->xk[kn[3]][1]
-                    + vec_for_v4[2][2][ielem] * kpoint->xk[kn[3]][2];
+                    = vec_for_v4[ielem][0][0] * kpoint->xk[kn[1]][0]
+                    + vec_for_v4[ielem][0][1] * kpoint->xk[kn[1]][1]
+                    + vec_for_v4[ielem][0][2] * kpoint->xk[kn[1]][2]
+                    + vec_for_v4[ielem][1][0] * kpoint->xk[kn[2]][0]
+                    + vec_for_v4[ielem][1][1] * kpoint->xk[kn[2]][1]
+                    + vec_for_v4[ielem][1][2] * kpoint->xk[kn[2]][2]
+                    + vec_for_v4[ielem][2][0] * kpoint->xk[kn[3]][0]
+                    + vec_for_v4[ielem][2][1] * kpoint->xk[kn[3]][1]
+                    + vec_for_v4[ielem][2][2] * kpoint->xk[kn[3]][2];
 
-                ctmp = fcs_group2[i][j] * invmass_for_v4[ielem] * std::exp(im * phase);
+                ctmp = fcs_group2[i][j] * std::exp(im * phase);
                 ret_in += ctmp;
 
                 ++ielem;
@@ -801,31 +809,46 @@ std::complex<double> Relaxation::V3_mode(int mode,
                                          double **eval,
                                          std::complex<double> ***evec)
 {
+    int i, j;
     int ielem;
+    int nsize_group;
 
     double phase;
     std::complex<double> ctmp = std::complex<double>(0.0, 0.0);
+    std::complex<double> vec_tmp, ret_in;
 
     // Return zero if any of the involving phonon has imaginary frequency
     if (eval[0][mode] < 0.0 || eval[1][is] < 0.0 || eval[2][js] < 0.0) return 0.0;
 
-    for (ielem = 0; ielem < fcs_phonon->force_constant_with_cell[1].size(); ++ielem) {
+    ielem = 0;
 
-        phase
-            = vec_for_v3[0][0][ielem] * xk2[0]
-            + vec_for_v3[1][0][ielem] * xk2[1]
-            + vec_for_v3[2][0][ielem] * xk2[2]
-            + vec_for_v3[0][1][ielem] * xk3[0]
-            + vec_for_v3[1][1][ielem] * xk3[1]
-            + vec_for_v3[2][1][ielem] * xk3[2];
+    for (i = 0; i < ngroup; ++i) {
 
-        ctmp
-            += fcs_phonon->force_constant_with_cell[1][ielem].fcs_val
-            * invmass_for_v3[ielem]
-            * std::exp(im * phase)
-            * evec[0][mode][evec_index[ielem][0]]
-            * evec[1][is][evec_index[ielem][1]]
-            * evec[2][js][evec_index[ielem][2]];
+        vec_tmp
+            = evec[0][mode][evec_index[i][0]]
+            * evec[1][is][evec_index[i][1]]
+            * evec[2][js][evec_index[i][2]]
+            * invmass_for_v3[i];
+
+        ret_in = std::complex<double>(0.0, 0.0);
+
+        nsize_group = fcs_group[i].size();
+
+        for (j = 0; j < nsize_group; ++j) {
+
+            phase
+                = vec_for_v3[ielem][0][0] * xk2[0]
+                + vec_for_v3[ielem][0][1] * xk2[1]
+                + vec_for_v3[ielem][0][2] * xk2[2]
+                + vec_for_v3[ielem][1][0] * xk3[0]
+                + vec_for_v3[ielem][1][1] * xk3[1]
+                + vec_for_v3[ielem][1][2] * xk3[2];
+
+            ret_in += fcs_group[i][j] * std::exp(im * phase);
+
+            ++ielem;
+        }
+        ctmp += ret_in * vec_tmp;
     }
 
     return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
@@ -1089,7 +1112,7 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
                 }
                 
                 // Calculate the matrix element V3 only when the weight is nonzero.
-                if (delta_arr[ik][ib][0] > eps || std::abs(delta_arr[ik][ib][1]) > eps) {
+                if (delta_arr[ik][ib][0] > 0.0 || std::abs(delta_arr[ik][ib][1]) > 0.0) {
                     k1 = pair_uniq[ik_in][ik].group[0].ks[0];
                     k2 = pair_uniq[ik_in][ik].group[0].ks[1];
 
@@ -2619,7 +2642,7 @@ void Relaxation::calc_V3norm2(const unsigned int ik_in,
 
 void Relaxation::setup_cubic()
 {
-    int i, j;
+    int i, j, k;
     double *invsqrt_mass_p;
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
@@ -2629,31 +2652,29 @@ void Relaxation::setup_cubic()
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1],
                                      3, ngroup, fcs_group);
 
-    memory->allocate(vec_for_v3, 3, 2, fcs_phonon->force_constant_with_cell[1].size());
-    memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
-    memory->allocate(evec_index, fcs_phonon->force_constant_with_cell[1].size(), 3);
+    memory->allocate(vec_for_v3,fcs_phonon->force_constant_with_cell[1].size(), 2, 3);
+
+    memory->allocate(invmass_for_v3, ngroup);
+    memory->allocate(evec_index, ngroup, 3);
+
+    prepare_relative_vector(fcs_phonon->force_constant_with_cell[1], 3, vec_for_v3);
+
     memory->allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->natmin; ++i) {
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
-    j = 0;
-    for (auto it = fcs_phonon->force_constant_with_cell[1].cbegin();
-         it != fcs_phonon->force_constant_with_cell[1].cend(); ++it) {
-        invmass_for_v3[j]
-            = invsqrt_mass_p[(*it).pairs[0].index / 3]
-            * invsqrt_mass_p[(*it).pairs[1].index / 3]
-            * invsqrt_mass_p[(*it).pairs[2].index / 3];
 
-        ++j;
-    }
-
-    prepare_relative_vector(fcs_phonon->force_constant_with_cell[1], 3, vec_for_v3);
-
-    for (i = 0; i < fcs_phonon->force_constant_with_cell[1].size(); ++i) {
+    k = 0;
+    for (i = 0; i < ngroup; ++i) {
         for (j = 0; j < 3; ++j) {
-            evec_index[i][j] = fcs_phonon->force_constant_with_cell[1][i].pairs[j].index;
+            evec_index[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
+        invmass_for_v3[i]
+            = invsqrt_mass_p[evec_index[i][0] / 3]
+            * invsqrt_mass_p[evec_index[i][1] / 3]
+            * invsqrt_mass_p[evec_index[i][2] / 3];
+        k += fcs_group[i].size();
     }
 
     memory->deallocate(invsqrt_mass_p);
@@ -2661,40 +2682,38 @@ void Relaxation::setup_cubic()
 
 void Relaxation::setup_quartic()
 {
-    int i, j;
+    int i, j, k;
     double *invsqrt_mass_p;
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2],
                                      4, ngroup2, fcs_group2);
 
-    memory->allocate(vec_for_v4, 3, 3, fcs_phonon->force_constant_with_cell[2].size());
-    memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
-    memory->allocate(evec_index4, fcs_phonon->force_constant_with_cell[2].size(), 4);
+    memory->allocate(vec_for_v4, fcs_phonon->force_constant_with_cell[2].size(), 3, 3);
+
+    memory->allocate(invmass_for_v4, ngroup2);
+    memory->allocate(evec_index4, ngroup2, 4);
+
+    prepare_relative_vector(fcs_phonon->force_constant_with_cell[2], 4, vec_for_v4);
+
     memory->allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->natmin; ++i) {
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
-    j = 0;
-    for (auto it = fcs_phonon->force_constant_with_cell[2].cbegin();
-         it != fcs_phonon->force_constant_with_cell[2].cend(); ++it) {
-        invmass_for_v4[j]
-            = invsqrt_mass_p[(*it).pairs[0].index / 3]
-            * invsqrt_mass_p[(*it).pairs[1].index / 3]
-            * invsqrt_mass_p[(*it).pairs[2].index / 3]
-            * invsqrt_mass_p[(*it).pairs[3].index / 3];
 
-        ++j;
-    }
-    prepare_relative_vector(fcs_phonon->force_constant_with_cell[2], 4, vec_for_v4);
-
-    for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
+    k = 0;
+    for (i = 0; i < ngroup2; ++i) {
         for (j = 0; j < 4; ++j) {
-            evec_index4[i][j] = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
+            evec_index4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
+        invmass_for_v4[i]
+            = invsqrt_mass_p[evec_index4[i][0] / 3]
+            * invsqrt_mass_p[evec_index4[i][1] / 3]
+            * invsqrt_mass_p[evec_index4[i][2] / 3]
+            * invsqrt_mass_p[evec_index4[i][3] / 3];
+        k += fcs_group2[i].size();
     }
-
 
     memory->deallocate(invsqrt_mass_p);
 }
@@ -2790,4 +2809,3 @@ void Relaxation::store_exponential_for_acceleration(const int nk_in[3],
         }
     }
 }
-
