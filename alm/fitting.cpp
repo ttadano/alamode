@@ -1,11 +1,11 @@
 /*
-fitting.cpp
+ fitting.cpp
 
-Copyright (c) 2014,2015 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
-This file is distributed under the terms of the MIT license.
-Please see the file 'LICENCE.txt' in the root directory 
-or http://opensource.org/licenses/mit-license.php for information.
+ This file is distributed under the terms of the MIT license.
+ Please see the file 'LICENCE.txt' in the root directory 
+ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include <iostream>
@@ -759,7 +759,7 @@ void Fitting::fit_bootstrap(int N,
     std::cout << "  Relative errors and FCs are stored in file: "
         << file_fcs_bootstrap << std::endl;
 
-    ofs_fcs_boot << "# Relative Error(%), FCs ..." ;
+    ofs_fcs_boot << "# Relative Error(%), FCs ...";
 
     for (i = 0; i < interaction->maxorder; ++i) {
         ofs_fcs_boot << std::setw(10) << fcs->ndup[i].size();
@@ -895,7 +895,7 @@ void Fitting::fit_consecutively(int N,
     std::cout << "  Relative errors and FCs will be stored in the file "
         << file_fcs_sequence << std::endl;
 
-    ofs_fcs_seq << "# Relative Error(%), FCS..." ;
+    ofs_fcs_seq << "# Relative Error(%), FCS...";
 
     for (i = 0; i < interaction->maxorder; ++i) {
         ofs_fcs_seq << std::setw(10) << fcs->ndup[i].size();
