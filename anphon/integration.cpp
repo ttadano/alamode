@@ -280,18 +280,37 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
 
     double g;
     double I1, I2, I3, I4;
-    double frac3 = 1.0 / 3.0;
     int k1, k2, k3, k4;
     double e1, e2, e3, e4;
 
     vol_tot = 0.0;
-    std::vector<TetraWithKnum> tetra_data;
-    TetraWithKnum pair;
+    // std::vector<TetraWithKnum> tetra_data;
+    // TetraWithKnum pair;
+    double e_tmp[4];
+    int sort_arg[4], kindex[4];
 
     for (i = 0; i < nk_irreducible; ++i) weight[i] = 0.0;
 
     for (i = 0; i < ntetra; ++i) {
 
+        for (j = 0; j < 4; ++j) {
+            e_tmp[j] = energy[tetras[i][j]];
+            kindex[j] = map_to_irreducible_k[tetras[i][j]];
+        }
+
+        insertion_sort(e_tmp, sort_arg, 4);
+        e1 = e_tmp[0];
+        e2 = e_tmp[1];
+        e3 = e_tmp[2];
+        e4 = e_tmp[3];
+
+        k1 = kindex[sort_arg[0]];
+        k2 = kindex[sort_arg[1]];
+        k3 = kindex[sort_arg[2]];
+        k4 = kindex[sort_arg[3]];
+
+
+        /*
         tetra_data.clear();
 
         for (j = 0; j < 4; ++j) {
@@ -311,7 +330,7 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
         k2 = tetra_data[1].knum;
         k3 = tetra_data[2].knum;
         k4 = tetra_data[3].knum;
-
+        */
         vol = volume(tetras[i]);
         vol_tot += vol;
 
@@ -321,29 +340,33 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
         I4 = 0.0;
 
         if (e3 <= e_ref && e_ref < e4) {
-            g = 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
+            // g = 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
+            g = std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
 
-            I1 = g * frac3 * fij(e1, e4, e_ref);
-            I2 = g * frac3 * fij(e2, e4, e_ref);
-            I3 = g * frac3 * fij(e3, e4, e_ref);
-            I4 = g * frac3 * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
+            I1 = g * fij(e1, e4, e_ref);
+            I2 = g * fij(e2, e4, e_ref);
+            I3 = g * fij(e3, e4, e_ref);
+            I4 = g * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
 
         } else if (e2 <= e_ref && e_ref < e3) {
-            g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+            //  g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+            //      * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+            g = ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
                 * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
 
-            I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
-            I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
-            I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
-            I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
+            I1 = g * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
+            I2 = g * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
+            I3 = g * fij(e3, e2, e_ref) + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
+            I4 = g * fij(e4, e1, e_ref) + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
 
         } else if (e1 <= e_ref && e_ref < e2) {
-            g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
+            //  g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
+            g = std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
 
-            I1 = g * frac3 * (fij(e1, e2, e_ref) + fij(e1, e3, e_ref) + fij(e1, e4, e_ref));
-            I2 = g * frac3 * fij(e2, e1, e_ref);
-            I3 = g * frac3 * fij(e3, e1, e_ref);
-            I4 = g * frac3 * fij(e4, e1, e_ref);
+            I1 = g * (fij(e1, e2, e_ref) + fij(e1, e3, e_ref) + fij(e1, e4, e_ref));
+            I2 = g * fij(e2, e1, e_ref);
+            I3 = g * fij(e3, e1, e_ref);
+            I4 = g * fij(e4, e1, e_ref);
 
         }
         weight[k1] += vol * I1;
@@ -449,3 +472,23 @@ double Integration::refold(double x)
     }
 }
 
+void Integration::insertion_sort(double *a, int *ind, int n)
+{
+    int i, j;
+    double tmp;
+
+    for (i = 0; i < n; ++i) ind[i] = i;
+
+    for (i = 1; i < n; ++i) {
+        tmp = a[i];
+
+        j = i;
+        while (j > 0 && tmp < a[j - 1]) {
+            a[j] = a[j - 1];
+            ind[j] = ind[j - 1];
+            --j;
+        }
+        a[j] = tmp;
+        ind[j] = i;
+    }
+}

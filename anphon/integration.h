@@ -71,6 +71,7 @@ namespace PHON_NS
         inline double volume(int *);
         std::vector<tetra_pair> tetra_data;
         inline double refold(double);
+        void insertion_sort(double *, int *, const int);
     };
 
     inline double delta_lorentz(const double omega, const double epsilon)
