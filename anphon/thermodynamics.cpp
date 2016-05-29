@@ -62,7 +62,7 @@ double Thermodynamics::fB(const double omega,
 {
     double x;
 
-    if (std::abs(T) < eps || omega < 0.0) {
+    if (std::abs(T) < eps || omega < eps8) {
         return 0.0;
     } else {
         x = omega / (T_to_Ryd * T);
