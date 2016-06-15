@@ -1,7 +1,7 @@
 /*
 system.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -18,7 +18,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <string>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include "mathfunctions.h"
 #include "xml_parser.h"
 #include <sstream>
@@ -26,7 +25,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
@@ -262,6 +260,9 @@ void System::setup()
         }
         cout << endl << endl;
     }
+
+    // Check the consistency of FCSXML and FC2XML
+    if (fcs_phonon->update_fc2) check_consistency_primitive_lattice();
 
     // Atomic masses in Rydberg unit
 
@@ -617,6 +618,8 @@ void System::load_system_info_from_XML()
                 map_s2p[atom_s].atom_num = atom_p;
                 map_s2p[atom_s].tran_num = tran;
             }
+
+
         }
     }
 
@@ -740,7 +743,7 @@ void System::setup_atomic_class(unsigned int N,
                     atomlist_class[count].push_back(i);
                 }
             } else {
-                if ((kd[i] == (*it).element) && 
+                if ((kd[i] == (*it).element) &&
                     (std::abs(magmom[i][2] - (*it).magmom) < eps6)) {
                     atomlist_class[count].push_back(i);
                 }
@@ -751,3 +754,92 @@ void System::setup_atomic_class(unsigned int N,
     set_type.clear();
 }
 
+void System::check_consistency_primitive_lattice()
+{
+    // Check if the ordering of atoms in the primitive cells derived 
+    // from FCSXML and FC2XML are same or not. If not, the ordering for the
+    // FCSXML (anharmonic terms) will be changed so that it becomes equivalent
+    // to that of FC2XML. 
+    // This operation is necessary for obtaining correct computational results.
+
+    int i, j, k;
+    int iloc;
+    double xdiff[3], norm;
+    double **x_harm, **x_anharm;
+
+    memory->allocate(x_harm, natmin, 3);
+    memory->allocate(x_anharm, natmin, 3);
+
+    std::vector<int> map_anh2harm;
+    map_anh2harm.resize(natmin);
+
+    for (i = 0; i < natmin; ++i) {
+        rotvec(x_harm[i], xr_s[map_p2s[i][0]], lavec_s);
+        rotvec(x_harm[i], x_harm[i], rlavec_p);
+        for (j = 0; j < 3; ++j) x_harm[i][j] /= 2.0 * pi;
+    }
+
+    for (i = 0; i < natmin; ++i) {
+        rotvec(x_anharm[i], xr_s_anharm[map_p2s_anharm[i][0]], lavec_s_anharm);
+        rotvec(x_anharm[i], x_anharm[i], rlavec_p);
+        for (j = 0; j < 3; ++j) x_anharm[i][j] /= 2.0 * pi;
+    }
+
+    for (i = 0; i < natmin; ++i) {
+
+        iloc = -1;
+
+        for (j = 0; j < natmin; ++j) {
+
+            for (k = 0; k < 3; ++k) {
+                xdiff[k] = x_anharm[i][k] - x_harm[j][k];
+                xdiff[k] = xdiff[k] - static_cast<double>(nint(xdiff[k]));
+            }
+
+            norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
+            if (norm < eps4 && kd[map_p2s[j][0]] == kd_anharm[map_p2s_anharm[i][0]]) {
+                iloc = j;
+                break;
+            }
+        }
+
+        if (iloc == -1) {
+            error->exit("check_consistency_primitive",
+                        "Could not find equivalent atom. Probably, the crystal structure is different.");
+        }
+
+        map_anh2harm[i] = iloc;
+    }
+
+    memory->deallocate(x_harm);
+    memory->deallocate(x_anharm);
+
+    // Rebuild the mapping information for anharmonic terms.
+
+    unsigned int **map_p2s_tmp;
+
+    memory->allocate(map_p2s_tmp, natmin, ntran_anharm);
+
+    for (i = 0; i < ntran_anharm; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            map_p2s_tmp[j][i] = map_p2s_anharm[j][i];
+        }
+    }
+
+    for (i = 0; i < ntran_anharm; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            map_p2s_anharm[map_anh2harm[j]][i] = map_p2s_tmp[j][i];
+        }
+    }
+
+    for (i = 0; i < ntran_anharm; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            k = map_p2s_anharm[j][i];
+            map_s2p_anharm[k].atom_num = j;
+            map_s2p_anharm[k].tran_num = i;
+        }
+    }
+
+    memory->deallocate(map_p2s_tmp);
+    map_anh2harm.clear();
+}

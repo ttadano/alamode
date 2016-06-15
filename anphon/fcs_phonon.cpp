@@ -1,7 +1,7 @@
 /*
 fcs_phonon.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -42,8 +42,6 @@ Fcs_phonon::~Fcs_phonon()
 void Fcs_phonon::setup(std::string mode)
 {
     unsigned int i;
-    unsigned int nat = system->nat;
-    unsigned int natmin = system->natmin;
 
     if (mympi->my_rank == 0) {
         std::cout << " Force constant" << std::endl;
@@ -52,6 +50,7 @@ void Fcs_phonon::setup(std::string mode)
 
     MPI_Bcast(&relaxation->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&update_fc2, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mode == "PHONONS") {
         require_cubic = false;

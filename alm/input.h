@@ -44,4 +44,3 @@ namespace ALM_NS
         void assign_val(T &, const std::string, std::map<std::string, std::string>);
     };
 }
-

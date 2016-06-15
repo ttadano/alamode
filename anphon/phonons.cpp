@@ -52,7 +52,7 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         std::cout << std::endl;
         std::cout << " Job started at " << timer->DateAndTime() << std::endl;
-        std::cout << " The number of MPI threads: " << mympi->nprocs << std::endl;
+        std::cout << " The number of MPI processes: " << mympi->nprocs << std::endl;
 #ifdef _OPENMP
         std::cout << " The number of OpenMP threads: " 
             << omp_get_max_threads() << std::endl;

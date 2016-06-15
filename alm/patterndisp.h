@@ -146,4 +146,3 @@ namespace ALM_NS
                                     std::vector<std::vector<int>> &);
     };
 }
-

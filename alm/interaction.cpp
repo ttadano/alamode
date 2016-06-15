@@ -1190,4 +1190,3 @@ void Interaction::cell_combination(std::vector<std::vector<int>> array,
         }
     }
 }
-

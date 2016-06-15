@@ -989,4 +989,3 @@ T_to Input::my_cast(T_from const &x)
 
     return ret;
 }
-

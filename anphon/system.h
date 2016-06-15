@@ -1,7 +1,7 @@
 /*
  system.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -27,11 +27,11 @@ namespace PHON_NS
         {
             if (this->element < a.element) {
                 return true;
-            } else if (this->element == a.element) {
-                return this->magmom < a.magmom;
-            } else {
-                return false;
             }
+            if (this->element == a.element) {
+                return this->magmom < a.magmom;
+            }
+            return false;
         }
     };
 
@@ -84,6 +84,6 @@ namespace PHON_NS
         void load_system_info_from_XML();
         void recips(double [3][3], double [3][3]);
         void setup_atomic_class(unsigned int, unsigned int *, double **);
+        void check_consistency_primitive_lattice();
     };
 }
-
