@@ -10,6 +10,7 @@
 
 #include "mpi_common.h"
 #include <iostream>
+#include <iomanip>
 #include "phonons.h"
 #include "timer.h"
 #include "parsephon.h"
@@ -30,6 +31,7 @@
 #include "conductivity.h"
 #include "isotope.h"
 #include "selfenergy.h"
+#include "version.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -47,7 +49,9 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     if (mympi->my_rank == 0) {
         std::cout << " +------------------------------------------------------------+" << std::endl;
         std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver. 0.9.7                       +" << std::endl;
+        std::cout << " +                           Ver.";
+        std::cout << std::setw(7) << ALAMODE_VERSION;
+        std::cout << "                      +" << std::endl;
         std::cout << " +------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;

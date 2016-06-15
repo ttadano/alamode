@@ -1,7 +1,7 @@
 /*
  alamode.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -9,6 +9,7 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
@@ -22,6 +23,7 @@
 #include "timer.h"
 #include "writes.h"
 #include "patterndisp.h"
+#include "version.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -33,7 +35,9 @@ ALM::ALM(int narg, char **arg)
 {
     std::cout << " +------------------------------------------------------------+" << std::endl;
     std::cout << " +                      Program ALM                           +" << std::endl;
-    std::cout << " +                           Ver. 0.9.7                       +" << std::endl;
+    std::cout << " +                           Ver.";
+    std::cout << std::setw(7) << ALAMODE_VERSION;
+    std::cout << "                      +" << std::endl;
     std::cout << " +------------------------------------------------------------+" << std::endl;
     std::cout << std::endl;
 

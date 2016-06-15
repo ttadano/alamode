@@ -22,6 +22,7 @@
 #include "constraint.h"
 #include "timer.h"
 #include "patterndisp.h"
+#include "version.h"
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
@@ -341,7 +342,7 @@ void Writes::write_misc_xml()
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ALM_version", "0.9.7");
+    pt.put("Data.ALM_version", ALAMODE_VERSION);
     pt.put("Data.Fitting.DisplaceFile", files->file_disp);
     pt.put("Data.Fitting.ForceFile", files->file_force);
     pt.put("Data.Fitting.Constraint", constraint->constraint_mode);

@@ -24,6 +24,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "write_phonons.h"
 #include "mathfunctions.h"
 #include "relaxation.h"
+#include "version.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -394,7 +395,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
     ptree pt;
     std::string str_pos[3];
 
-    pt.put("Data.ANPHON_version", "0.9.7");
+    pt.put("Data.ANPHON_version", ALAMODE_VERSION);
     pt.put("Data.Description.OriginalXML", fcs_phonon->file_fcs);
     pt.put("Data.Description.Delta_A", double2string(change_ratio_of_a));
 
