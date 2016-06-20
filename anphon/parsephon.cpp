@@ -184,7 +184,7 @@ void Input::parse_general_vars()
 
     nonanalytic = 0;
     nsym = 0;
-    tolerance = 1.0e-8;
+    tolerance = 1.0e-6;
     printsymmetry = false;
     sym_time_reversal = false;
     use_triplet_symmetry = true;

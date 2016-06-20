@@ -108,7 +108,7 @@ List of input variables
 
 * TOLERANCE-tag : Tolerance for finding symmetry operations
   
- :Default: 1.0e-8
+ :Default: 1.0e-6
  :Type: Double
 
 ````
