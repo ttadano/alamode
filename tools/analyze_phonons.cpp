@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
             for (k = 0; k < nt; ++k) {
                 ifs >> damp_tmp;
-                if (omega[i][j] < 0.0) {
+                if (omega[i][j] < eps6) {
                     tau[k][i][j] = 0.0; // Neglect contributions from imaginary branches
                 } else {
                     tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
@@ -121,6 +121,9 @@ int main(int argc, char *argv[])
     if (average_gamma) average_gamma_at_degenerate_point(omega, tau, nt, nk, ns);
 
     if (calc == "tau") {
+
+        // Print phonon lifetimes at uniform q-grid at the given temperature
+
         beg_k = atoi(argv[4]) - 1;
         end_k = atoi(argv[5]);
 
@@ -149,15 +152,21 @@ int main(int argc, char *argv[])
         double target_temp;
 
         target_temp = atof(argv[8]);
-        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
+        if (fmod(target_temp - tmin, dt) > eps12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
 
+        isotope = atoi(argv[9]);
+        file_isotope = argv[10];
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
+
         calc_tau(itemp);
 
     } else if (calc == "tau_temp") {
+
+        // Print temperature dependence of phonon lifetime
 
         int target_k, target_s;
 
@@ -177,9 +186,15 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
+        isotope = atoi(argv[6]);
+        file_isotope = argv[7];
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
+
         calc_tau_temp(target_k, target_s);
 
     } else if (calc == "kappa") {
+
+        // Print thermal conductivity
 
         beg_s = atoi(argv[4]) - 1;
         end_s = atoi(argv[5]);
@@ -192,6 +207,10 @@ int main(int argc, char *argv[])
                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
+
+        isotope = atoi(argv[6]);
+        file_isotope = argv[7];
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
 
         calc_kappa();
 
@@ -215,12 +234,16 @@ int main(int argc, char *argv[])
                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
+        isotope = atoi(argv[6]);
+        file_isotope = argv[7];
 
-        max_len = atof(argv[6]);
-        d_len = atof(argv[7]);
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
 
-        target_temp = atof(argv[8]);
-        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
+        max_len = atof(argv[8]);
+        d_len = atof(argv[9]);
+
+        target_temp = atof(argv[10]);
+        if (fmod(target_temp - tmin, dt) > eps12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
@@ -250,18 +273,23 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        max_len = atof(argv[6]);
-        d_len = atof(argv[7]);
+        isotope = atoi(argv[6]);
+        file_isotope = argv[7];
 
-        target_temp = atof(argv[8]);
-        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
+
+        max_len = atof(argv[8]);
+        d_len = atof(argv[9]);
+
+        target_temp = atof(argv[10]);
+        if (fmod(target_temp - tmin, dt) > eps12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
 
         for (i = 0; i < 3; ++i) {
-            size_flag[i] = atoi(argv[9 + i]);
+            size_flag[i] = atoi(argv[11 + i]);
         }
 
         calc_kappa_cumulative2(max_len, d_len, itemp, size_flag);
@@ -288,18 +316,23 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        max_len = atof(argv[6]);
-        d_len = atof(argv[7]);
+        isotope = atoi(argv[6]);
+        file_isotope = argv[7];
 
-        target_temp = atof(argv[8]);
-        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
+
+        max_len = atof(argv[8]);
+        d_len = atof(argv[9]);
+
+        target_temp = atof(argv[10]);
+        if (fmod(target_temp - tmin, dt) > eps12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
 
         for (i = 0; i < 3; ++i) {
-            size_flag[i] = atoi(argv[9 + i]);
+            size_flag[i] = atoi(argv[11 + i]);
         }
 
         calc_kappa_boundary2(max_len, d_len, itemp, size_flag);
@@ -322,8 +355,12 @@ int main(int argc, char *argv[])
                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
+        isotope = atoi(argv[6]);
+        file_isotope = argv[7];
 
-        len_boundary = atof(argv[6]);
+        if (isotope) update_tau_isotope(file_isotope, omega, tau, nt, nk, ns);
+
+        len_boundary = atof(argv[8]);
 
         calc_kappa_boundary(len_boundary);
     }
@@ -344,6 +381,7 @@ void calc_tau(int itemp)
     cout << "# Phonon lifetime at temperature " << temp[itemp] << " K." << endl;
     cout << "# kpoint range " << beg_k + 1 << " " << end_k << endl;
     cout << "# mode   range " << beg_s + 1 << " " << end_s << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "#  ik,  is, Frequency [cm^{-1}], Lifetime [ps], |Velocity| [m/s], MFP [nm], ";
     cout << "Multiplicity, Thermal conductivity par mode (xx, xy, ...) [W/mK]" << endl;
 
@@ -400,6 +438,7 @@ void calc_tau_temp(int target_k, int target_s)
     cout << "# for phonon specified by kpoint " << target_k + 1 << " and mode " << target_s + 1 << endl;
     cout << "# Frequency = " << omega[target_k][target_s] << " [cm^-1]" << endl;
     cout << "# Velocity  = " << vel_norm << " [m/s]" << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "# Temperature [k], Lifetime [ps], MFP [nm]" << endl;
 
     for (i = 0; i < nt; ++i) {
@@ -421,6 +460,7 @@ void calc_kappa()
 
     cout << "# Temperature dependence of thermal conductivity will be printed." << endl;
     cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
 
     for (i = 0; i < nt; ++i) {
@@ -480,6 +520,7 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
 
     cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
     cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
     cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied." << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
@@ -547,6 +588,7 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
 
     cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
     cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
     cout << "# |v_{x,y,z}| < L is satisfied." << endl;
     cout << "# Boundary direction flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
@@ -616,6 +658,7 @@ void calc_kappa_boundary(const double len_boundary)
 
     cout << "# Temperature dependence of thermal conductivity with boundary effects." << endl;
     cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "# Size of boundary " << len_boundary << " [nm]" << endl;
     cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
 
@@ -683,6 +726,7 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
     cout << "# Size dependent thermal conductivity at temperature " << temp[itemp] << " K." << endl;
     cout << "# Relaxation time will be modified following Matthiesen's rule " << endl;
     cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
+    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
     cout << "# Size change flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
@@ -766,12 +810,76 @@ double Cv(double omega, double temp)
 {
     double x;
 
-    if (abs(temp) < 1.0e-12) {
+    if (abs(temp) < 1.0e-12 || omega < eps8) {
         return 0.0;
     } else {
         x = omega * kayser_to_Ryd / (temp * T_to_Ryd);
         return k_Boltzmann * pow(x / (2.0 * sinh(0.5 * x)), 2.0);
     }
+}
+
+void update_tau_isotope(const std::string file, double **omega, double ***tau, const int nt, const int nk, const int ns)
+{
+    int i;
+    int ik, is, jk, js;
+    double omega_tmp, tau_tmp;
+    std::ifstream ifs;
+    std::string line;
+    double **tau_isotope;
+
+    ifs.open(file.c_str(), std::ios::in);
+
+     if (!ifs) {
+        cout << "ERROR: Cannot open file " << file << endl;
+        exit(1);
+    }
+
+    allocate(tau_isotope, nk, ns);
+
+    for (i = 0; i < 3; ++i) getline(ifs, line);
+
+    for (ik = 0; ik < nk; ++ik) {
+        getline(ifs, line);
+        getline(ifs, line);
+        for (is = 0; is < ns; ++is) {
+            ifs >> jk >> js >> omega_tmp >> tau_tmp;
+            if (jk < 1 || jk > nk) {
+                cout << "ERROR: In file " << file << ", k point index is out-of-range. " << endl;
+                exit(1);
+            }
+            if (js < 1 || js > ns) {
+                cout << "ERROR: In file " << file << ", mode index is out-of-range. " << endl;
+                exit(1);
+            }
+
+            if (omega[ik][is] < eps6) {
+                    tau_isotope[ik][is] = 0.0; // Neglect contributions from imaginary branches
+                } else {
+                    tau_isotope[ik][is] = 1.0e+12 * Hz_to_kayser * 0.5 / tau_tmp;
+                }
+
+        }
+        ifs.ignore();
+        getline(ifs, line);
+    }
+    ifs.close();
+
+    average_gamma_isotope_at_degenerate_point(omega, tau_isotope, nk, ns);
+
+    // Now, update the original tau
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            if (omega[ik][is] >= eps6) {
+                for (i = 0; i < nt; ++i) {
+                    tau_tmp = 1.0 / tau[i][ik][is] + 1.0 / tau_isotope[ik][is];
+                    tau[i][ik][is] = 1.0 / tau_tmp;
+                }
+            }
+        }
+    }
+
+    deallocate(tau_isotope);
 }
 
 
@@ -830,4 +938,58 @@ void average_gamma_at_degenerate_point(double **e, double ***tau, const int nt, 
     }
 
     deallocate(damp_sum);
+}
+
+
+
+void average_gamma_isotope_at_degenerate_point(double **e, double **tau, const int nk, const int ns)
+{
+    int ideg, is;
+    double omega_prev, omega_now;
+    double tol_omega = 1.0e-3;
+
+    std::vector<int> degeneracy_at_k;
+    double damp_sum;
+
+    for (i = 0; i < nk; ++i) {
+
+        degeneracy_at_k.clear();
+        omega_prev = e[i][0];
+        ideg = 1;
+
+        for (j = 1; j < ns; ++j) {
+            omega_now = e[i][j];
+
+            if (std::abs(omega_now - omega_prev) < tol_omega) {
+                ++ideg;
+            } else {
+                degeneracy_at_k.push_back(ideg);
+                ideg = 1;
+                omega_prev = omega_now;
+            }
+        }
+        degeneracy_at_k.push_back(ideg);
+
+        is = 0;
+
+        for (j = 0; j < degeneracy_at_k.size(); ++j) {
+            ideg = degeneracy_at_k[j];
+
+            if (ideg > 1) {
+
+                damp_sum = 0.0;
+
+                for (k = is; k < is + ideg; ++k) {
+                    damp_sum += 1.0 / tau[i][k];
+                }
+
+                for (k = is; k < is + ideg; ++k) {
+                    tau[i][k] = static_cast<double>(ideg) / damp_sum;
+                }
+            }
+
+            is += ideg;
+        }
+
+    }
 }

@@ -1,7 +1,7 @@
 /*
  analyze_phonons.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -34,12 +34,12 @@ double **omega, ***tau;
 double ****vel;
 int *n_weight;
 
-std::string calc;
+std::string calc, file_isotope;
 
 int beg_k, end_k;
 int beg_s, end_s;
-
 int average_gamma;
+int isotope;
 
 void calc_tau(int);
 void calc_tau_temp(int, int);
@@ -51,6 +51,9 @@ void calc_kappa_boundary2(double, double, int, int [3]);
 double Cv(double, double);
 
 void average_gamma_at_degenerate_point(double **, double ***, const int, const int, const int);
+void average_gamma_isotope_at_degenerate_point(double **, double **, const int, const int);
+
+void update_tau_isotope(const std::string, double **, double ***, const int, const int, const int);
 
 static const double Ryd_to_kayser = Hz_to_kayser / time_ry;
 static const double kayser_to_Ryd = 1.0 / Ryd_to_kayser;

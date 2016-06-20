@@ -37,9 +37,11 @@ parser.add_option('--calc', metavar='tau|kappa|cumulative|cumulative2|kappa_boun
                         '--direction option. When --calc=kappa_boundary, '
                         'please specify the --size option.'))
 
-parser.add_option('--isotope', metavar="PREFIX.gamma_isotope",
-                  help="specify the file PREFIX.gamma_isotope to include the \
-effect of phonon-isotope scatterings. Meaningful when --calc = kappa|cumulative|cumulative2|kappa_boundary")
+parser.add_option('--isotope', metavar="PREFIX.self_isotope",
+                  help="specify the file PREFIX.self_isotope to include the \
+effect of phonon-isotope scatterings. When given, the phonon scattering rates will be \
+updated as 1/tau_{new} = 1/tau_{phonon-phonon} + 1/tau_{phonon-isotope}. \
+The PREFIX.self_isotope can be generated using 'anphon' with ISOTOPE=2 option.")
 
 parser.add_option('--noavg', action="store_false", dest="average_gamma",
                   default=True, help="do not average the damping function \
@@ -49,7 +51,7 @@ parser.add_option('--size', help="specify the grain boundary size in units of \
 nm. The default value is 1000 nm.")
 
 parser.add_option('--length', metavar="Lmax:dL",
-                 help="specify the maximum value of system size L and its \
+                  help="specify the maximum value of system size L and its \
 step dL in units of nm. \
 The default value is --length=1000:10 .")
 
@@ -88,7 +90,8 @@ or specify both --kpoint and --mode when --calc=tau")
         target_s = int(options.mode)
         calc = "tau_temp"
         command = analyze_obj + file_result + " " + calc + " " + avg \
-            + " " + str(target_k) + " " + str(target_s)
+            + " " + str(target_k) + " " + str(target_s)\
+            + " " + isotope + " " + file_isotope
 
         subprocess.call(command, shell=True)
 
@@ -123,7 +126,8 @@ def print_lifetime_at_given_temperature():
 
     command = analyze_obj + file_result + " " + calc + " " + avg + " "\
         + str(beg_k) + " " + str(end_k) + " "\
-        + str(beg_s) + " " + str(end_s) + " " + options.temp
+        + str(beg_s) + " " + str(end_s) + " " + options.temp\
+        + " " + isotope + " " + file_isotope
 
     subprocess.call(command, shell=True)
 
@@ -198,7 +202,7 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
     else:
         if len(options.mode.split(':')) == 1:
             beg_s = int(options.mode)
-            end_s = beg_sp
+            end_s = beg_s
         elif len(options.mode.split(':')) == 2:
             arr = options.mode.split(':')
             beg_s, end_s = int(arr[0]), int(arr[1])
@@ -222,7 +226,7 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
             + str(d_len) + " " + options.temp
 
     else:
-        size_flag = [0]*3
+        size_flag = [0] * 3
 
         if options.direction is None:
             for i in range(3):
@@ -233,7 +237,7 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
 
             arr = options.direction.split(':')
             for i in range(len(options.direction.split(':'))):
-                size_flag[int(arr[i])-1] = 1
+                size_flag[int(arr[i]) - 1] = 1
 
         command = analyze_obj + file_result + " " + calc + " " + avg + " "\
             + str(beg_s) + " " + str(end_s)\
@@ -256,6 +260,7 @@ if __name__ == '__main__':
 
     if options.isotope is None:
         isotope = "0"
+        file_isotope = "none"
     else:
         isotope = "1"
         file_isotope = options.isotope
