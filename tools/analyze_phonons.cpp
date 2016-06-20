@@ -12,11 +12,13 @@
 #include <fstream>
 #include <iomanip>
 #include <vector>
+#include "memory.h"
 #include "analyze_phonons.h"
 
 using namespace std;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     string str;
 
     cout << "# Result analyzer ver. 1.0.4" << endl;
@@ -49,7 +51,7 @@ int main(int argc, char *argv[]) {
     }
 
     ifs >> tmin >> tmax >> dt;
-    nt = static_cast<int>((tmax-tmin)/dt) + 1;
+    nt = static_cast<int>((tmax - tmin) / dt) + 1;
     allocate(temp, nt);
     for (i = 0; i < nt; ++i) temp[i] = tmin + dt * static_cast<double>(i);
 
@@ -90,8 +92,8 @@ int main(int argc, char *argv[]) {
 
     for (i = 0; i < nk; ++i) {
         for (j = 0; j < ns; ++j) {
-            getline(ifs,str);
-            getline(ifs,str);
+            getline(ifs, str);
+            getline(ifs, str);
 
             ifs >> n_weight[i];
 
@@ -104,13 +106,13 @@ int main(int argc, char *argv[]) {
             for (k = 0; k < nt; ++k) {
                 ifs >> damp_tmp;
                 if (omega[i][j] < 0.0) {
-                   tau[k][i][j] = 0.0; // Neglect contributions from imaginary branches
+                    tau[k][i][j] = 0.0; // Neglect contributions from imaginary branches
                 } else {
-                   tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
+                    tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
                 }
             }
             ifs.ignore();
-            getline(ifs,str);
+            getline(ifs, str);
         }
     }
 
@@ -126,8 +128,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_k < 0 || beg_k >= nk || end_k < 0 || end_k > nk) {
             cout << "ERROR: kpoint index out-of-range ["
-            << 1 << ":" << nk << "] : "
-            << setw(5) << beg_k + 1 << setw(5) << end_k << endl;
+                << 1 << ":" << nk << "] : "
+                << setw(5) << beg_k + 1 << setw(5) << end_k << endl;
             exit(1);
         }
 
@@ -138,8 +140,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns <<"] : "
-            << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]) {
         double target_temp;
 
         target_temp = atof(argv[8]);
-        if (fmod(target_temp-tmin, dt) > 1.0e-12) {
+        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
@@ -164,14 +166,14 @@ int main(int argc, char *argv[]) {
 
         if (target_k < 0 || target_k >= nk) {
             cout << "ERROR: kpoint index out-of-range ["
-            << 1 << ":" << nk << "] : "
-            << setw(5) << target_k + 1 << endl;
+                << 1 << ":" << nk << "] : "
+                << setw(5) << target_k + 1 << endl;
             exit(1);
         }
         if (target_s < 0 || target_s >= ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns << "] : "
-            << setw(5) << target_s + 1 << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << target_s + 1 << endl;
             exit(1);
         }
 
@@ -186,8 +188,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns <<"] : "
-            << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -209,8 +211,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns <<"] : "
-            << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -218,7 +220,7 @@ int main(int argc, char *argv[]) {
         d_len = atof(argv[7]);
 
         target_temp = atof(argv[8]);
-        if (fmod(target_temp-tmin, dt) > 1.0e-12) {
+        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
@@ -243,8 +245,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns <<"] : "
-            << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -252,19 +254,19 @@ int main(int argc, char *argv[]) {
         d_len = atof(argv[7]);
 
         target_temp = atof(argv[8]);
-        if (fmod(target_temp-tmin, dt) > 1.0e-12) {
+        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
 
         for (i = 0; i < 3; ++i) {
-            size_flag[i] = atoi(argv[9+i]);
+            size_flag[i] = atoi(argv[9 + i]);
         }
 
         calc_kappa_cumulative2(max_len, d_len, itemp, size_flag);
 
-    } else if (calc == "kappa_matthiessen" ) {
+    } else if (calc == "kappa_matthiessen") {
 
         // Print the thermal conductivity with boundary effects
         // considered by the Matthiessen's rule.
@@ -281,8 +283,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns <<"] : "
-            << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -290,14 +292,14 @@ int main(int argc, char *argv[]) {
         d_len = atof(argv[7]);
 
         target_temp = atof(argv[8]);
-        if (fmod(target_temp-tmin, dt) > 1.0e-12) {
+        if (fmod(target_temp - tmin, dt) > 1.0e-12) {
             cout << "ERROR: No information is found at the given temperature." << endl;
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
 
         for (i = 0; i < 3; ++i) {
-            size_flag[i] = atoi(argv[9+i]);
+            size_flag[i] = atoi(argv[9 + i]);
         }
 
         calc_kappa_boundary2(max_len, d_len, itemp, size_flag);
@@ -316,8 +318,8 @@ int main(int argc, char *argv[]) {
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-            << 1 << ":" << ns <<"] : "
-            << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                << 1 << ":" << ns << "] : "
+                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -335,11 +337,11 @@ void calc_tau(int itemp)
 
     double vel_norm;
 
-    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
     double kappa[3][3];
     double tau_tmp, c_tmp;
 
-    cout << "# Phonon lifetime at temperature " <<  temp[itemp] << " K." << endl;
+    cout << "# Phonon lifetime at temperature " << temp[itemp] << " K." << endl;
     cout << "# kpoint range " << beg_k + 1 << " " << end_k << endl;
     cout << "# mode   range " << beg_s + 1 << " " << end_s << endl;
     cout << "#  ik,  is, Frequency [cm^{-1}], Lifetime [ps], |Velocity| [m/s], MFP [nm], ";
@@ -361,24 +363,24 @@ void calc_tau(int itemp)
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         kappa[i][j] += c_tmp
-                                     * vel[ik][is][k][i]
-                                     * vel[ik][is][k][j]
-                                     * tau_tmp;
+                            * vel[ik][is][k][i]
+                            * vel[ik][is][k][j]
+                            * tau_tmp;
                     }
                 }
             }
 
-            vel_norm = sqrt(vel[ik][is][0][0]*vel[ik][is][0][0]
-                          + vel[ik][is][0][1]*vel[ik][is][0][1]
-                          + vel[ik][is][0][2]*vel[ik][is][0][2]);
+            vel_norm = sqrt(vel[ik][is][0][0] * vel[ik][is][0][0]
+                + vel[ik][is][0][1] * vel[ik][is][0][1]
+                + vel[ik][is][0][2] * vel[ik][is][0][2]);
             cout << setw(5) << ik + 1 << setw(5) << is + 1;
             cout << setw(15) << omega[ik][is] << setw(15) << tau_tmp;
-            cout << setw(15) << vel_norm << setw(15) << tau_tmp*vel_norm*0.001;
+            cout << setw(15) << vel_norm << setw(15) << tau_tmp * vel_norm * 0.001;
             cout << setw(5) << n_weight[ik];
 
-            for (i = 0; i < 3; ++i){
+            for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
-                    cout << setw(15) << kappa[i][j]*factor / static_cast<double>(n_weight[ik]);
+                    cout << setw(15) << kappa[i][j] * factor / static_cast<double>(n_weight[ik]);
                 }
             }
             cout << endl;
@@ -390,12 +392,12 @@ void calc_tau_temp(int target_k, int target_s)
 {
     double vel_norm;
 
-    vel_norm = sqrt(vel[target_k][target_s][0][0]*vel[target_k][target_s][0][0]
-                  + vel[target_k][target_s][0][1]*vel[target_k][target_s][0][1]
-                  + vel[target_k][target_s][0][2]*vel[target_k][target_s][0][2]);
+    vel_norm = sqrt(vel[target_k][target_s][0][0] * vel[target_k][target_s][0][0]
+        + vel[target_k][target_s][0][1] * vel[target_k][target_s][0][1]
+        + vel[target_k][target_s][0][2] * vel[target_k][target_s][0][2]);
 
     cout << "# Temperature dependence of the damping function will be printed" << endl;
-    cout << "# for phonon specified by kpoint " << target_k  + 1 << " and mode " << target_s  + 1<< endl;
+    cout << "# for phonon specified by kpoint " << target_k + 1 << " and mode " << target_s + 1 << endl;
     cout << "# Frequency = " << omega[target_k][target_s] << " [cm^-1]" << endl;
     cout << "# Velocity  = " << vel_norm << " [m/s]" << endl;
     cout << "# Temperature [k], Lifetime [ps], MFP [nm]" << endl;
@@ -403,9 +405,8 @@ void calc_tau_temp(int target_k, int target_s)
     for (i = 0; i < nt; ++i) {
         cout << setw(9) << temp[i];
         cout << setw(15) << tau[i][target_k][target_s];
-        cout << setw(15) << tau[i][target_k][target_s]*vel_norm*0.001 << endl;
+        cout << setw(15) << tau[i][target_k][target_s] * vel_norm * 0.001 << endl;
     }
-
 }
 
 void calc_kappa()
@@ -414,12 +415,12 @@ void calc_kappa()
     double ***kappa;
     double c_tmp, tau_tmp;
 
-    allocate(kappa,nt,3,3);
+    allocate(kappa, nt, 3, 3);
 
-    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
     cout << "# Temperature dependence of thermal conductivity will be printed." << endl;
-    cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
     cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
 
     for (i = 0; i < nt; ++i) {
@@ -441,9 +442,9 @@ void calc_kappa()
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             kappa[it][j][k] += c_tmp
-                                             * vel[ik][is][i][j]
-                                             * vel[ik][is][i][k]
-                                             * tau_tmp;
+                                * vel[ik][is][i][j]
+                                * vel[ik][is][i][k]
+                                * tau_tmp;
                         }
                     }
                 }
@@ -454,7 +455,7 @@ void calc_kappa()
         cout << setw(10) << temp[it];
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                cout << setw(15) << kappa[it][i][j]*factor;
+                cout << setw(15) << kappa[it][i][j] * factor;
             }
         }
         cout << endl;
@@ -465,21 +466,20 @@ void calc_kappa()
 }
 
 
-
 void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
 {
-    int nlength = static_cast<int>(max_length/delta_length);
+    int nlength = static_cast<int>(max_length / delta_length);
     double length;
     double kappa[3][3];
     int il, ik, is;
     int nsame;
     double tau_tmp, c_tmp, vel_tmp, mfp_tmp;
 
-    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
 
     cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
-    cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
     cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
     cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied." << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
@@ -502,8 +502,8 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
                 c_tmp = Cv(omega[ik][is], temp[itemp]);
 
                 vel_tmp = pow(vel[ik][is][0][0], 2)
-                        + pow(vel[ik][is][0][1], 2)
-                        + pow(vel[ik][is][0][2], 2);
+                    + pow(vel[ik][is][0][1], 2)
+                    + pow(vel[ik][is][0][2], 2);
                 mfp_tmp = tau_tmp * sqrt(vel_tmp) * 0.001;
 
                 if (mfp_tmp < length) {
@@ -511,9 +511,9 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
                         for (j = 0; j < 3; ++j) {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
-                                             * vel[ik][is][i][j]
-                                             * vel[ik][is][i][k]
-                                             * tau_tmp;
+                                    * vel[ik][is][i][j]
+                                    * vel[ik][is][i][k]
+                                    * tau_tmp;
                             }
                         }
                     }
@@ -524,17 +524,16 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
         cout << setw(15) << length;
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                cout << setw(15) << kappa[i][j]*factor;
+                cout << setw(15) << kappa[i][j] * factor;
             }
         }
         cout << endl;
     }
-
 }
 
 void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, int flag[3])
 {
-    int nlength = static_cast<int>(max_length/delta_length);
+    int nlength = static_cast<int>(max_length / delta_length);
     double length;
     double kappa[3][3];
     int il, ik, is;
@@ -543,11 +542,11 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
     double mfp_tmp[3];
     bool is_longer_than_L[3];
 
-    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
 
     cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
-    cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
     cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
     cout << "# |v_{x,y,z}| < L is satisfied." << endl;
     cout << "# Boundary direction flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
@@ -577,16 +576,17 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
                         is_longer_than_L[j] = mfp_tmp[j] > length;
                     }
 
-                    if ((flag[0] & is_longer_than_L[0]) |
-                        (flag[1] & is_longer_than_L[1]) |
-                        (flag[2] & is_longer_than_L[2])) continue;
+                    if ((flag[0] && is_longer_than_L[0]) |
+                        (flag[1] && is_longer_than_L[1]) |
+                        (flag[2] && is_longer_than_L[2]))
+                        continue;
 
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             kappa[j][k] += c_tmp
-                                         * vel[ik][is][i][j]
-                                         * vel[ik][is][i][k]
-                                         * tau_tmp;
+                                * vel[ik][is][i][j]
+                                * vel[ik][is][i][k]
+                                * tau_tmp;
                         }
                     }
                 }
@@ -596,12 +596,11 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
         cout << setw(15) << length;
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                cout << setw(15) << kappa[i][j]*factor;
+                cout << setw(15) << kappa[i][j] * factor;
             }
         }
         cout << endl;
     }
-
 }
 
 void calc_kappa_boundary(const double len_boundary)
@@ -611,12 +610,12 @@ void calc_kappa_boundary(const double len_boundary)
     double c_tmp, tau_tmp;
     double mfp_tmp, vel_norm;
 
-    allocate(kappa,nt,3,3);
+    allocate(kappa, nt, 3, 3);
 
-    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
     cout << "# Temperature dependence of thermal conductivity with boundary effects." << endl;
-    cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
     cout << "# Size of boundary " << len_boundary << " [nm]" << endl;
     cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
 
@@ -636,18 +635,18 @@ void calc_kappa_boundary(const double len_boundary)
                 c_tmp = Cv(omega[ik][is], temp[it]);
 
                 vel_norm = vel[ik][is][0][0] * vel[ik][is][0][0]
-                         + vel[ik][is][0][1] * vel[ik][is][0][1]
-                         + vel[ik][is][0][2] * vel[ik][is][0][2];
+                    + vel[ik][is][0][1] * vel[ik][is][0][1]
+                    + vel[ik][is][0][2] * vel[ik][is][0][2];
                 mfp_tmp = std::sqrt(vel_norm) * tau_tmp * 0.001;
 
                 for (i = 0; i < n_weight[ik]; ++i) {
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             kappa[it][j][k] += c_tmp
-                                             * vel[ik][is][i][j]
-                                             * vel[ik][is][i][k]
-                                             * tau_tmp
-                                             * len_boundary / (len_boundary + 2.0 * mfp_tmp);
+                                * vel[ik][is][i][j]
+                                * vel[ik][is][i][k]
+                                * tau_tmp
+                                * len_boundary / (len_boundary + 2.0 * mfp_tmp);
                         }
                     }
                 }
@@ -658,7 +657,7 @@ void calc_kappa_boundary(const double len_boundary)
         cout << setw(10) << temp[it];
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                cout << setw(15) << kappa[it][i][j]*factor;
+                cout << setw(15) << kappa[it][i][j] * factor;
             }
         }
         cout << endl;
@@ -670,7 +669,7 @@ void calc_kappa_boundary(const double len_boundary)
 
 void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int flag[3])
 {
-    int nlength = static_cast<int>(max_length/delta_length);
+    int nlength = static_cast<int>(max_length / delta_length);
     double length;
     double kappa[3][3];
     int il, ik, is;
@@ -678,12 +677,12 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
     double tau_tmp, c_tmp;
     double mfp_tmp[3];
 
-    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx*nky*nkz) * volume);
+    double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
 
     cout << "# Size dependent thermal conductivity at temperature " << temp[itemp] << " K." << endl;
     cout << "# Relaxation time will be modified following Matthiesen's rule " << endl;
-    cout << "# mode range " <<  beg_s + 1 << " " << end_s << endl;
+    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
     cout << "# Size change flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
@@ -712,17 +711,17 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
                         if (flag[j]) {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
-                                             * vel[ik][is][i][j]
-                                             * vel[ik][is][i][k]
-                                             * tau_tmp
-                                             * length / (length + 2.0 * mfp_tmp[j]);
+                                    * vel[ik][is][i][j]
+                                    * vel[ik][is][i][k]
+                                    * tau_tmp
+                                    * length / (length + 2.0 * mfp_tmp[j]);
                             }
                         } else {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
-                                             * vel[ik][is][i][j]
-                                             * vel[ik][is][i][k]
-                                             * tau_tmp;
+                                    * vel[ik][is][i][j]
+                                    * vel[ik][is][i][k]
+                                    * tau_tmp;
                             }
                         }
                     }
@@ -734,12 +733,11 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
         cout << setw(15) << length;
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                cout << setw(15) << kappa[i][j]*factor;
+                cout << setw(15) << kappa[i][j] * factor;
             }
         }
         cout << endl;
     }
-
 }
 
 
@@ -756,7 +754,7 @@ int locate_tag(string key)
         line2 = line;
         line = trim(line2);
 
-        if (line == key){
+        if (line == key) {
             ret = 1;
             break;
         }
@@ -771,8 +769,8 @@ double Cv(double omega, double temp)
     if (abs(temp) < 1.0e-12) {
         return 0.0;
     } else {
-        x = omega*kayser_to_Ryd / (temp*T_to_Ryd);
-        return k_Boltzmann * pow(x/(2.0 * sinh(0.5*x)), 2.0);
+        x = omega * kayser_to_Ryd / (temp * T_to_Ryd);
+        return k_Boltzmann * pow(x / (2.0 * sinh(0.5 * x)), 2.0);
     }
 }
 
