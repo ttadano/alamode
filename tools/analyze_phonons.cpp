@@ -810,26 +810,26 @@ double Cv(double omega, double temp)
 {
     double x;
 
-    if (abs(temp) < 1.0e-12 || omega < eps8) {
-        return 0.0;
-    } else {
-        x = omega * kayser_to_Ryd / (temp * T_to_Ryd);
-        return k_Boltzmann * pow(x / (2.0 * sinh(0.5 * x)), 2.0);
-    }
+    if (abs(temp) < 1.0e-12 || omega < eps8) return 0.0;
+
+    x = omega * kayser_to_Ryd / (temp * T_to_Ryd);
+    return k_Boltzmann * pow(x / (2.0 * sinh(0.5 * x)), 2.0);
 }
 
-void update_tau_isotope(const std::string file, double **omega, double ***tau, const int nt, const int nk, const int ns)
+void update_tau_isotope(const std::string file,
+                        double **omega, double ***tau,
+                        const int nt, const int nk, const int ns)
 {
     int i;
     int ik, is, jk, js;
     double omega_tmp, tau_tmp;
-    std::ifstream ifs;
-    std::string line;
+    ifstream ifs;
+    string line;
     double **tau_isotope;
 
-    ifs.open(file.c_str(), std::ios::in);
+    ifs.open(file.c_str(), ios::in);
 
-     if (!ifs) {
+    if (!ifs) {
         cout << "ERROR: Cannot open file " << file << endl;
         exit(1);
     }
@@ -853,10 +853,10 @@ void update_tau_isotope(const std::string file, double **omega, double ***tau, c
             }
 
             if (omega[ik][is] < eps6) {
-                    tau_isotope[ik][is] = 0.0; // Neglect contributions from imaginary branches
-                } else {
-                    tau_isotope[ik][is] = 1.0e+12 * Hz_to_kayser * 0.5 / tau_tmp;
-                }
+                tau_isotope[ik][is] = 0.0; // Neglect contributions from imaginary branches
+            } else {
+                tau_isotope[ik][is] = 1.0e+12 * Hz_to_kayser * 0.5 / tau_tmp;
+            }
 
         }
         ifs.ignore();
@@ -883,13 +883,14 @@ void update_tau_isotope(const std::string file, double **omega, double ***tau, c
 }
 
 
-void average_gamma_at_degenerate_point(double **e, double ***tau, const int nt, const int nk, const int ns)
+void average_gamma_at_degenerate_point(double **e, double ***tau,
+                                       const int nt, const int nk, const int ns)
 {
     int ideg, is;
     double omega_prev, omega_now;
     double tol_omega = 1.0e-3;
 
-    std::vector<int> degeneracy_at_k;
+    vector<int> degeneracy_at_k;
     double *damp_sum;
 
     allocate(damp_sum, nt);
@@ -903,7 +904,7 @@ void average_gamma_at_degenerate_point(double **e, double ***tau, const int nt, 
         for (j = 1; j < ns; ++j) {
             omega_now = e[i][j];
 
-            if (std::abs(omega_now - omega_prev) < tol_omega) {
+            if (abs(omega_now - omega_prev) < tol_omega) {
                 ++ideg;
             } else {
                 degeneracy_at_k.push_back(ideg);
@@ -941,14 +942,14 @@ void average_gamma_at_degenerate_point(double **e, double ***tau, const int nt, 
 }
 
 
-
-void average_gamma_isotope_at_degenerate_point(double **e, double **tau, const int nk, const int ns)
+void average_gamma_isotope_at_degenerate_point(double **e, double **tau,
+                                               const int nk, const int ns)
 {
     int ideg, is;
     double omega_prev, omega_now;
     double tol_omega = 1.0e-3;
 
-    std::vector<int> degeneracy_at_k;
+    vector<int> degeneracy_at_k;
     double damp_sum;
 
     for (i = 0; i < nk; ++i) {
@@ -960,7 +961,7 @@ void average_gamma_isotope_at_degenerate_point(double **e, double **tau, const i
         for (j = 1; j < ns; ++j) {
             omega_now = e[i][j];
 
-            if (std::abs(omega_now - omega_prev) < tol_omega) {
+            if (abs(omega_now - omega_prev) < tol_omega) {
                 ++ideg;
             } else {
                 degeneracy_at_k.push_back(ideg);
