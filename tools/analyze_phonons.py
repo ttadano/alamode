@@ -4,17 +4,17 @@
 #
 # Simple interface to the command line script "analyze_phonons.cpp".
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 """
-This python script is a simple user interface to
+This python script is a simple interface to
 the C++ analyzer program "analyze_phonons.cpp".
 To execute this script, the above c++ program has to be
-compiled and made executable.
+compiled and made executable beforehand.
 """
 import sys
 import os
@@ -36,6 +36,10 @@ parser.add_option('--calc', metavar='tau|kappa|cumulative|cumulative2|kappa_boun
                         'When --calc=cumulative2, please specify the '
                         '--direction option. When --calc=kappa_boundary, '
                         'please specify the --size option.'))
+
+parser.add_option('--isotope', metavar="PREFIX.gamma_isotope",
+                  help="specify the file PREFIX.gamma_isotope to include the \
+effect of phonon-isotope scatterings. Meaningful when --calc = kappa|cumulative|cumulative2|kappa_boundary")
 
 parser.add_option('--noavg', action="store_false", dest="average_gamma",
                   default=True, help="do not average the damping function \
@@ -143,7 +147,8 @@ def print_thermal_conductivity():
             sys.exit("Invalid usage of --mode for --calc=kappa")
 
     command = analyze_obj + file_result + " " + calc + " " + avg\
-        + " " + str(beg_s) + " " + str(end_s)
+        + " " + str(beg_s) + " " + str(end_s)\
+        + " " + isotope + " " + file_isotope
 
     subprocess.call(command, shell=True)
 
@@ -172,7 +177,9 @@ def print_thermal_conductivity_with_boundary():
         boundary_size = float(options.size)
 
     command = analyze_obj + file_result + " " + calc + " " + avg\
-        + " " + str(beg_s) + " " + str(end_s) + " " + str(boundary_size)
+        + " " + str(beg_s) + " " + str(end_s)\
+        + " " + isotope + " " + file_isotope\
+        + " " + str(boundary_size)
 
     subprocess.call(command, shell=True)
 
@@ -191,7 +198,7 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
     else:
         if len(options.mode.split(':')) == 1:
             beg_s = int(options.mode)
-            end_s = beg_s
+            end_s = beg_sp
         elif len(options.mode.split(':')) == 2:
             arr = options.mode.split(':')
             beg_s, end_s = int(arr[0]), int(arr[1])
@@ -209,7 +216,9 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
 
     if cumulative_mode == "cumulative":
         command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
+            + str(beg_s) + " " + str(end_s)\
+            + " " + isotope + " " + file_isotope\
+            + " " + str(max_len) + " "\
             + str(d_len) + " " + options.temp
 
     else:
@@ -227,8 +236,10 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
                 size_flag[int(arr[i])-1] = 1
 
         command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
-            + str(d_len) + " " + options.temp + " " + str(size_flag[0]) \
+            + str(beg_s) + " " + str(end_s)\
+            + " " + isotope + " " + file_isotope\
+            + " " + str(max_len) + " " + str(d_len)\
+            + " " + options.temp + " " + str(size_flag[0]) \
             + " " + str(size_flag[1]) + " " + str(size_flag[2])
 
     subprocess.call(command, shell=True)
@@ -242,6 +253,12 @@ if __name__ == '__main__':
         avg = "1"
     else:
         avg = "0"
+
+    if options.isotope is None:
+        isotope = "0"
+    else:
+        isotope = "1"
+        file_isotope = options.isotope
 
     # Compute phonon lifetimes, mean-free-path,
     # and mode-decomposed thermal conductivity

@@ -19,7 +19,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
     string str;
 
-    cout << "# Result analyzer ver. 1.0.3" << endl;
+    cout << "# Result analyzer ver. 1.0.4" << endl;
     cout << "# Input file : " << argv[1] << endl;
     calc = argv[2];
     average_gamma = atoi(argv[3]);
