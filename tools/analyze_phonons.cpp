@@ -8,6 +8,7 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
