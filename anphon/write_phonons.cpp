@@ -146,7 +146,7 @@ void Writes::write_input_vars()
             std::cout << "  ISOFACT = ";
             for (i = 0; i < system->nkd; ++i) {
                 std::cout << std::scientific
-                    << std::setw(10) << isotope->isotope_factor[i];
+                    << std::setw(12) << isotope->isotope_factor[i];
             }
             std::cout << std::endl;
         }
