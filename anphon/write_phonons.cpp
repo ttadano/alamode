@@ -55,6 +55,9 @@ void Writes::write_input_vars()
     std::cout << "  PREFIX = " << input->job_title << std::endl;
     std::cout << "  MODE = " << phon->mode << std::endl;
     std::cout << "  FCSXML = " << fcs_phonon->file_fcs << std::endl;
+    if (fcs_phonon->update_fc2) {
+        std::cout << "  FC2XML = " << fcs_phonon->file_fc2 << std::endl;
+    }
     std::cout << std::endl;
 
     std::cout << "  NKD = " << system->nkd << "; KD = ";
@@ -130,6 +133,7 @@ void Writes::write_input_vars()
             std::cout << "  PDOS = " << dos->projected_dos
                 << "; TDOS = " << dos->two_phonon_dos << std::endl;
             std::cout << "  PRINTMSD = " << writes->print_msd << std::endl;
+            std::cout << "  SPS = " << dos->scattering_phase_space << std::endl;
             std::cout << std::endl;
         }
         std::cout << "  GRUNEISEN = " << gruneisen->print_gruneisen << std::endl;
@@ -151,8 +155,8 @@ void Writes::write_input_vars()
             std::cout << std::endl;
         }
 
-        //        std::cout << "  LCLASSICAL = " << conductivity->use_classical_Cv << std::endl;
-        //        std::cout << std::endl;
+        std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
+
         //        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
         //        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
         // std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
