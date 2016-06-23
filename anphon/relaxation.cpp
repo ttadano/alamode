@@ -30,16 +30,13 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "parsephon.h"
 #include "phonon_dos.h"
 #include "thermodynamics.h"
-#include "phonon_velocity.h"
 #include "relaxation.h"
 #include "selfenergy.h"
 #include "symmetry_core.h"
 #include "system.h"
 #include "write_phonons.h"
-#include "timer.h"
 #include "constants.h"
 #include "mathfunctions.h"
-#include "integration.h"
 
 using namespace PHON_NS;
 

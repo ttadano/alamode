@@ -1,7 +1,7 @@
 /*
  phonon_thermodynamics.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -9,15 +9,10 @@
 */
 
 #include "mpi_common.h"
-#include <iostream>
-#include <iomanip>
 #include "dynamical.h"
-#include "fcs_phonon.h"
 #include "error.h"
 #include "kpoint.h"
-#include "memory.h"
 #include "thermodynamics.h"
-#include "phonon_velocity.h"
 #include "pointers.h"
 #include "system.h"
 #include "constants.h"
@@ -34,53 +29,36 @@ Thermodynamics::~Thermodynamics() {};
 double Thermodynamics::Cv(const double omega,
                           const double T)
 {
-    double x;
+    if (std::abs(T) < eps) return 0.0;
 
-    if (std::abs(T) < eps) {
-        return 0.0;
-    } else {
-        x = omega / (T_to_Ryd * T);
-        return k_Boltzmann * std::pow(x / (2.0 * sinh(0.5 * x)), 2);
-    }
+    double x = omega / (T_to_Ryd * T);
+    return k_Boltzmann * std::pow(x / (2.0 * sinh(0.5 * x)), 2);
 }
 
 double Thermodynamics::Cv_classical(const double omega,
                                     const double T)
 {
-    double x;
+    if (std::abs(T) < eps) return 0.0;
 
-    if (std::abs(T) < eps) {
-        return 0.0;
-    } else {
-        x = omega / (T_to_Ryd * T);
-        return k_Boltzmann * std::pow(x, 2) * std::exp(-x);
-    }
+    return k_Boltzmann;
 }
 
 double Thermodynamics::fB(const double omega,
                           const double T)
 {
-    double x;
+    if (std::abs(T) < eps || omega < eps8) return 0.0;
 
-    if (std::abs(T) < eps || omega < eps8) {
-        return 0.0;
-    } else {
-        x = omega / (T_to_Ryd * T);
-        return 1.0 / (std::exp(x) - 1.0);
-    }
+    double x = omega / (T_to_Ryd * T);
+    return 1.0 / (std::exp(x) - 1.0);
 }
 
 double Thermodynamics::fC(const double omega,
                           const double T)
 {
-    double x;
+    if (std::abs(T) < eps || omega < eps8) return 0.0;
 
-    if (std::abs(T) < eps || omega < 0.0) {
-        return 0.0;
-    } else {
-        x = omega / (T_to_Ryd * T);
-        return std::exp(-x);
-    }
+    double x = omega / (T_to_Ryd * T);
+    return 1.0 / x;
 }
 
 double Thermodynamics::Cv_tot(const double T)
@@ -96,6 +74,7 @@ double Thermodynamics::Cv_tot(const double T)
         for (is = 0; is < ns; ++is) {
             omega = dynamical->eval_phonon[ik][is];
             if (omega < 0.0) continue;
+
             ret += Cv(omega, T);
         }
     }
@@ -200,11 +179,9 @@ double Thermodynamics::vibrational_entropy(const double T)
         for (is = 0; is < ns; ++is) {
             omega = dynamical->eval_phonon[ik][is];
 
-            if (omega < eps8) continue;
-            if (std::abs(T) < eps) continue;
+            if (omega < eps8 || std::abs(T) < eps) continue;
 
             x = omega / (T * T_to_Ryd);
-
             ret += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
         }
     }
@@ -235,11 +212,9 @@ double Thermodynamics::free_energy(const double T)
         }
     }
 
-    if (std::abs(T) < eps) {
-        return ret / static_cast<double>(nk);
-    } else {
-        return T * T_to_Ryd * ret / static_cast<double>(nk);
-    }
+    if (std::abs(T) < eps) return ret / static_cast<double>(nk);
+
+    return T * T_to_Ryd * ret / static_cast<double>(nk);
 }
 
 double Thermodynamics::disp2_avg(const double T,
@@ -283,12 +258,9 @@ double Thermodynamics::coth_T(const double omega,
 {
     // This function returns coth(hbar*omega/2*kB*T)
 
-    if (T < eps) {
-        // if T = 0.0 and omega > 0, coth(hbar*omega/(2*kB*T)) = 1.0
-        return 1.0;
-    } else {
-        double x = omega / (T_to_Ryd * T * 2.0);
-        return 1.0 + 2.0 / (std::exp(2.0 * x) - 1.0);
-    }
-}
+    // if T = 0.0 and omega > 0, coth(hbar*omega/(2*kB*T)) = 1.0
+    if (T < eps) return 1.0;
 
+    double x = omega / (T_to_Ryd * T * 2.0);
+    return 1.0 + 2.0 / (std::exp(2.0 * x) - 1.0);
+}

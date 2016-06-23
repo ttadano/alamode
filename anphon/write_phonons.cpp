@@ -237,25 +237,6 @@ void Writes::setup_result_io()
                             "KPOINT information is not consistent");
             }
 
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#CLASSICAL") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag)
-                error->exit("setup_result_io",
-                            "Could not find #CLASSICAL tag");
-
-            fs_result >> is_classical;
-            if (is_classical != conductivity->use_classical_Cv) {
-                error->exit("setup_result_io",
-                            "CLASSICAL val is not consistent");
-            }
-
-
             found_tag = false;
             while (fs_result >> line_tmp) {
                 if (line_tmp == "#FCSXML") {
@@ -350,10 +331,6 @@ void Writes::setup_result_io()
             fs_result.unsetf(std::ios::fixed);
 
             fs_result << "#END KPOINT" << std::endl;
-
-            fs_result << "#CLASSICAL" << std::endl;
-            fs_result << conductivity->use_classical_Cv << std::endl;
-            fs_result << "#END CLASSICAL" << std::endl;
 
             fs_result << "#FCSXML" << std::endl;
             fs_result << fcs_phonon->file_fcs << std::endl;
@@ -1055,8 +1032,8 @@ void Writes::write_thermodynamics()
     for (i = 0; i < NT; ++i) {
         T = Tmin + dT * static_cast<double>(i);
 
-        ofs_thermo << std::setw(16) << T;
-        ofs_thermo << std::setw(18) << thermodynamics->Cv_tot(T) / k_Boltzmann;
+        ofs_thermo << std::setw(16) << std::fixed << T;
+        ofs_thermo << std::setw(18) << std::scientific << thermodynamics->Cv_tot(T) / k_Boltzmann;
         ofs_thermo << std::setw(18) << thermodynamics->vibrational_entropy(T) / k_Boltzmann;
         ofs_thermo << std::setw(18) << thermodynamics->internal_energy(T);
         ofs_thermo << std::setw(18) << thermodynamics->free_energy(T) << std::endl;

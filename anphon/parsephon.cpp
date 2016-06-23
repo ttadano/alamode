@@ -295,12 +295,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
+    std::string str_allowed_list = "PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
                                    ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR KAPPA_SPEC";
 
     bool fstate_omega, fstate_k;
-    bool lclassical;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
@@ -339,7 +338,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     delta_a = 0.001;
 
-    lclassical = false;
     quartic_mode = 0;
     ks_analyze_mode = false;
     atom_project_mode = false;
@@ -367,7 +365,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_newfcs, "NEWFCS", analysis_var_dict);
         assign_val(delta_a, "DELTA_A", analysis_var_dict);
 
-        assign_val(lclassical, "LCLASSICAL", analysis_var_dict);
         assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
         assign_val(atom_project_mode, "ATOMPROJ", analysis_var_dict);
         assign_val(calc_realpart, "REALPART", analysis_var_dict);
@@ -465,7 +462,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
 
-    conductivity->use_classical_Cv = lclassical;
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     relaxation->quartic_mode = quartic_mode;
     relaxation->atom_project_mode = atom_project_mode;

@@ -75,13 +75,7 @@ void Conductivity::setup_kappa()
                 for (k = 0; k < 3; ++k) vel[i][j][k] *= Bohr_in_Angstrom * 1.0e-10 / time_ry;
             }
         }
-
-        if (use_classical_Cv == 1) {
-            std::cout << " CLASSICAL = 1 : Heat capacity will be replaced by kB (classical limit)" << std::endl;
-        }
     }
-
-    MPI_Bcast(&use_classical_Cv, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     vks_job.clear();
 
@@ -234,8 +228,8 @@ void Conductivity::calc_anharmonic_imagself()
     }
 
     unsigned int nks_tmp = vks_l.size();
-    MPI_Gather(&nks_tmp, 1, MPI_UNSIGNED, &nks_thread[mympi->my_rank], 
-        1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Gather(&nks_tmp, 1, MPI_UNSIGNED, &nks_thread[mympi->my_rank],
+               1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -346,7 +340,6 @@ void Conductivity::compute_kappa()
     double omega;
     unsigned int nk_equiv;
     unsigned int ktmp;
-    // double factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p * static_cast<double>(nk));
     double factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
 
     if (mympi->my_rank == 0) {
@@ -420,13 +413,8 @@ void Conductivity::compute_kappa()
                                     vv_tmp += vel[ktmp][is][j] * vel[ktmp][is][k];
                                 }
 
-                                if (use_classical_Cv == 1) {
-                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv_classical(omega, Temperature[i])
-                                        * vv_tmp * lifetime[ns * ik + is][i];
-                                } else {
-                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv(omega, Temperature[i])
-                                        * vv_tmp * lifetime[ns * ik + is][i];
-                                }
+                                kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv(omega, Temperature[i])
+                                    * vv_tmp * lifetime[ns * ik + is][i];
 
                                 // Convert to SI unit
                                 kappa_mode[i][3 * j + k][is][ik] *= factor_toSI;
@@ -444,31 +432,6 @@ void Conductivity::compute_kappa()
                     }
 
                     kappa[i][j][k] /= static_cast<double>(nk);
-
-                    /*                    for (iks = 0; iks < kpoint->nk_reduced * ns; ++iks) {
-                    
-                                            knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
-                                            snum = iks % ns;
-                    
-                                            omega = dynamical->eval_phonon[knum][snum];
-                    
-                                            vv_tmp = 0.0;
-                                            nk_equiv = kpoint->kpoint_irred_all[iks / ns].size();
-                    
-                                            for (ieq = 0; ieq < nk_equiv; ++ieq) {
-                                                ktmp = kpoint->kpoint_irred_all[iks / ns][ieq].knum;
-                                                vv_tmp += vel[ktmp][snum][j] * vel[ktmp][snum][k];
-                                            }
-                    
-                                            if (use_classical_Cv == 1) {
-                                                kappa[i][j][k] += thermodynamics->Cv_classical(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
-                                            } else {
-                                                kappa[i][j][k] += thermodynamics->Cv(omega, Temperature[i]) * vv_tmp * lifetime[iks][i];
-                                            }
-                                        }
-                                        // Convert to SI unit
-                                        kappa[i][j][k] *= 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p * static_cast<double>(nk));
-                                        */
                 }
             }
         }
@@ -623,4 +586,3 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
 
     std::cout << " done!" << std::endl;
 }
-
