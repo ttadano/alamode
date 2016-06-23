@@ -25,6 +25,8 @@ namespace ALM_NS
         ~Input();
         void parse_input(int, char **);
 
+        std::string str_magmom;
+
     private:
         std::ifstream ifs_input;
         bool from_stdin;

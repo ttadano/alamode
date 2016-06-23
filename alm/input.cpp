@@ -310,7 +310,7 @@ void Input::parse_general_vars()
     symmetry->nsym = nsym;
     symmetry->is_printsymmetry = is_printsymmetry;
     symmetry->tolerance = tolerance;
-
+    this->str_magmom = general_var_dict["MAGMOM"];
     memory->allocate(system->kdname, nkd);
     memory->allocate(system->magmom, nat, 3);
 

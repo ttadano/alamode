@@ -20,6 +20,7 @@
 #include "fcs.h"
 #include "fitting.h"
 #include "constraint.h"
+#include "input.h"
 #include "timer.h"
 #include "patterndisp.h"
 #include "version.h"
@@ -51,7 +52,9 @@ void Writes::write_input_vars()
     std::cout << std::endl;
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl;
+    std::cout << "  MAGMOM = " << input->str_magmom << std::endl;
+    std::cout << std::endl;
 
 
     std::cout << " Interaction:" << std::endl;
