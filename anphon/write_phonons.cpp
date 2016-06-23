@@ -1,7 +1,7 @@
 /*
 write_phonons.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -273,7 +273,6 @@ void Writes::setup_result_io()
                             "FCSXML is not consistent");
             }
 
-
             found_tag = false;
             while (fs_result >> line_tmp) {
                 if (line_tmp == "#SMEARING") {
@@ -292,11 +291,14 @@ void Writes::setup_result_io()
                 error->exit("setup_result_io",
                             "Smearing method is not consistent");
             }
-            if ((ismear != -1) && (epsilon_tmp != integration->epsilon)) {
+            if ((ismear != -1) && (std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4)) {
+                std::cout << "epsilon from file : " << std::setw(15)
+                    << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << std::endl;
+                std::cout << "epsilon from input: " << std::setw(15)
+                    << std::setprecision(10) << integration->epsilon * Ry_to_kayser << std::endl;
                 error->exit("setup_result_io",
                             "Smearing width is not consistent");
             }
-
 
             found_tag = false;
             while (fs_result >> line_tmp) {
@@ -359,7 +361,7 @@ void Writes::setup_result_io()
 
             fs_result << "#SMEARING" << std::endl;
             fs_result << integration->ismear << std::endl;
-            fs_result << integration->epsilon << std::endl;
+            fs_result << integration->epsilon * Ry_to_kayser << std::endl;
             fs_result << "#END SMEARING" << std::endl;
 
             fs_result << "#TEMPERATURE" << std::endl;
@@ -1755,4 +1757,3 @@ void Writes::write_participation_ratio()
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_apr;
     std::cout << " : Atomic participation ratio for all k points" << std::endl;
 }
-
