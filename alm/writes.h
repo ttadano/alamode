@@ -61,13 +61,16 @@ namespace ALM_NS
         Writes(class ALM *);
         ~Writes();
 
+	bool print_hessian;
+	
         void writeall();
         void write_input_vars();
         void write_displacement_pattern();
-
+	
     private:
         void write_force_constants();
         void write_misc_xml();
+	void write_hessian();
 
         std::ofstream ofs_info;
         std::string double2string(const double, const int nprec = 15);

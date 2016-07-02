@@ -31,6 +31,7 @@ void Files::init()
     int i;
 
     file_fcs = job_title + ".fcs";
+    file_hes = job_title + ".hessian";
 
     if (alm->mode == "suggest") {
 

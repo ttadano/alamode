@@ -25,7 +25,7 @@ namespace ALM_NS
         void init();
 
         std::string job_title;
-        std::string file_fcs;
+        std::string file_fcs, file_hes;
         std::string file_disp, file_force;
         std::string *file_disp_pattern;
     };
