@@ -120,7 +120,9 @@ void Relaxation::setup_relaxation()
     if (kpoint->kpoint_mode == 2) {
         generate_triplet_k(use_triplet_symmetry, sym_permutation);
     }
-    detect_imaginary_branches();
+    if (phon->mode == "RTA") {
+        detect_imaginary_branches(dynamical->eval_phonon);
+    }
 }
 
 void Relaxation::finish_relaxation()
@@ -147,7 +149,7 @@ void Relaxation::finish_relaxation()
     }
 }
 
-void Relaxation::detect_imaginary_branches()
+void Relaxation::detect_imaginary_branches(double **eval)
 {
     int ik, is, i, j;
     nk = kpoint->nk;
@@ -164,7 +166,7 @@ void Relaxation::detect_imaginary_branches()
     for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
         for (is = 0; is < ns; ++is) {
             knum = kpoint->kpoint_irred_all[ik][0].knum;
-            omega = dynamical->eval_phonon[knum][is];
+            omega = eval[knum][is];
 
             if (omega < 0.0) {
                 is_imaginary[ik][is] = true;
@@ -187,7 +189,7 @@ void Relaxation::detect_imaginary_branches()
                         count += ndup;
                         for (i = 0; i < ndup; ++i) {
                             knum = kpoint->kpoint_irred_all[ik][i].knum;
-                            omega = dynamical->eval_phonon[knum][is];
+                            omega = eval[knum][is];
                             for (j = 0; j < 3; ++j) {
                                 std::cout << std::setw(15) << kpoint->xk[knum][j];
                             }

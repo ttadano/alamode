@@ -46,6 +46,9 @@ System::~System()
     memory->deallocate(map_s2p_anharm);
     memory->deallocate(mass_kd);
     memory->deallocate(magmom);
+    if (fcs_phonon->update_fc2) {
+        memory->deallocate(map_p2s_anharm_orig);
+    }
 }
 
 void System::setup()
@@ -262,8 +265,11 @@ void System::setup()
     }
 
     // Check the consistency of FCSXML and FC2XML
-    if (fcs_phonon->update_fc2) check_consistency_primitive_lattice();
-
+    MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    if (fcs_phonon->update_fc2) {
+        memory->allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
+        check_consistency_primitive_lattice();
+    }
     // Atomic masses in Rydberg unit
 
     memory->allocate(mass, nat);
@@ -819,6 +825,12 @@ void System::check_consistency_primitive_lattice()
     unsigned int **map_p2s_tmp;
 
     memory->allocate(map_p2s_tmp, natmin, ntran_anharm);
+
+    for (i = 0; i < natmin; ++i) {
+        for (j = 0; j < ntran_anharm; ++j) {
+            map_p2s_anharm_orig[i][j] = map_p2s_anharm[i][j];
+        }
+    }
 
     for (i = 0; i < ntran_anharm; ++i) {
         for (j = 0; j < natmin; ++j) {
