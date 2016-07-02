@@ -30,4 +30,3 @@ namespace ALM_NS
         std::string *file_disp_pattern;
     };
 }
-

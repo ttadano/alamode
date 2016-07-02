@@ -20,7 +20,7 @@
 #include "error.h"
 #include "fitting.h"
 #include "constraint.h"
-#include "fcs.h"
+#include "writes.h"
 #include "patterndisp.h"
 #include <algorithm>
 #include <map>
@@ -98,6 +98,7 @@ void Input::parse_general_vars()
     int icount, ncount;
     bool trim_dispsign_for_evenfunc;
     bool lspin;
+    bool print_hessian;
     int noncollinear, trevsym;
     std::string *kdname;
     double **magmom, magmag;
@@ -105,7 +106,7 @@ void Input::parse_general_vars()
 
     std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
     std::string str_allowed_list = "PREFIX MODE NAT NKD NSYM KD PERIODIC PRINTSYM TOLERANCE DBASIS TRIMEVEN\
-                                   MAGMOM NONCOLLINEAR TREVSYM";
+                                   MAGMOM NONCOLLINEAR TREVSYM HESSIAN";
     std::string str_no_defaults = "PREFIX MODE NAT NKD KD";
     std::vector<std::string> no_defaults;
     std::map<std::string, std::string> general_var_dict;
@@ -210,6 +211,11 @@ void Input::parse_general_vars()
         trevsym = 1;
     } else {
         assign_val(trevsym, "TREVSYM", general_var_dict);
+    }
+    if (general_var_dict["HESSIAN"].empty()) {
+        print_hessian = false;
+    } else {
+        assign_val(print_hessian, "HESSIAN", general_var_dict);
     }
 
     if (!general_var_dict["MAGMOM"].empty()) {
@@ -328,6 +334,7 @@ void Input::parse_general_vars()
     system->lspin = lspin;
     system->noncollinear = noncollinear;
     symmetry->trev_sym_mag = trevsym;
+    writes->print_hessian = print_hessian;
 
     if (mode == "suggest") {
         displace->disp_basis = str_disp_basis;
@@ -1165,4 +1172,3 @@ void Input::assign_val(T &val,
         }
     }
 }
-

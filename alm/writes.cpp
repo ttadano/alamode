@@ -92,7 +92,6 @@ void Writes::writeall()
 {
     write_force_constants();
     write_misc_xml();
-    print_hessian = true;
     if (print_hessian) write_hessian();
 }
 
@@ -594,50 +593,55 @@ void Writes::write_misc_xml()
 
 void Writes::write_hessian()
 {
-  int i, j, itran, ip;
+    int i, j, itran, ip;
     int pair_tmp[2];
     int pair_tran[2];
     std::ofstream ofs_hes;
-  double **hessian;
-  int nat3 = 3 * system->nat;
-   
-  memory->allocate(hessian, nat3, nat3);
-  
-  for (i = 0; i < nat3; ++i) {
-    for (j = 0; j < nat3; ++j) {
-       hessian[i][j] = 0.0;
-    } 
-  }
+    double **hessian;
+    int nat3 = 3 * system->nat;
 
-  for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
-    FcProperty fctmp = *it;
-    ip = fctmp.mother;
+    memory->allocate(hessian, nat3, nat3);
 
-    for (i = 0; i < 2; ++i)  pair_tmp[i] = fctmp.elems[i] / 3;
+    for (i = 0; i < nat3; ++i) {
+        for (j = 0; j < nat3; ++j) {
+            hessian[i][j] = 0.0;
+        }
+    }
+
+    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin();
+         it != fcs->fc_set[0].end(); ++it) {
+        FcProperty fctmp = *it;
+        ip = fctmp.mother;
+
+        for (i = 0; i < 2; ++i) pair_tmp[i] = fctmp.elems[i] / 3;
         for (itran = 0; itran < symmetry->ntran; ++itran) {
             for (i = 0; i < 2; ++i) {
                 pair_tran[i] = symmetry->map_sym[pair_tmp[i]][symmetry->symnum_tran[itran]];
             }
-	    hessian[3 * pair_tran[0] + fctmp.elems[0]%3][3 * pair_tran[1] + fctmp.elems[1]%3]
-	      = fitting->params[ip]*fctmp.coef;
+            hessian[3 * pair_tran[0] + fctmp.elems[0] % 3][3 * pair_tran[1] + fctmp.elems[1] % 3]
+                = fitting->params[ip] * fctmp.coef;
         }
     }
 
-  ofs_hes.open(files->file_hes.c_str(), std::ios::out);
-  if (!ofs_hes) error->exit("write_hessian", "cannot create hessian file");
+    ofs_hes.open(files->file_hes.c_str(), std::ios::out);
+    if (!ofs_hes) error->exit("write_hessian", "cannot create hessian file");
 
-  for (i = 0; i < nat3; ++i) {
-    for (j = 0; j < nat3; ++j) {
-      ofs_hes << std::setw(5) << i / 3 + 1;
-      ofs_hes << std::setw(3) << i%3 + 1;
-      ofs_hes << std::setw(5) << j / 3 + 1;
-      ofs_hes << std::setw(3) << j%3 + 1;
-      ofs_hes << std::setw(15) << std::scientific << hessian[i][j];
-      ofs_hes << std::endl;
-    } 
-  }
+    ofs_hes << "# iat, icrd, jat, jcrd, FC2 (Ryd/Bohr^2)" << std::endl;
+    for (i = 0; i < nat3; ++i) {
+        for (j = 0; j < nat3; ++j) {
+            ofs_hes << std::setw(5) << i / 3 + 1;
+            ofs_hes << std::setw(5) << i % 3 + 1;
+            ofs_hes << std::setw(6) << j / 3 + 1;
+            ofs_hes << std::setw(5) << j % 3 + 1;
+            ofs_hes << std::setw(25) << std::setprecision(15)
+                << std::scientific << hessian[i][j];
+            ofs_hes << std::endl;
+        }
+    }
     ofs_hes.close();
     memory->deallocate(hessian);
+
+    std::cout << " Hessian is written to file: " << files->file_hes << std::endl;
 }
 
 std::string Writes::double2string(const double d, const int nprec)
@@ -649,4 +653,3 @@ std::string Writes::double2string(const double d, const int nprec)
     ss >> rt;
     return rt;
 }
-
