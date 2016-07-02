@@ -141,6 +141,18 @@ List of input variables
 
 ````
 
+* HESSIAN-tag = 0 | 1
+
+ ===== =====================================================================
+   0    Do not save the Hessian matrix
+   1    Save the entire Hessian matrix of the supercell as PREFIX.hessian.
+ ===== =====================================================================
+
+ :Default: 0
+ :type: Integer
+
+````
+
 "&interaction"-field
 ++++++++++++++++++++
 
