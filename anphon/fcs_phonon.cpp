@@ -50,7 +50,6 @@ void Fcs_phonon::setup(std::string mode)
 
     MPI_Bcast(&relaxation->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&update_fc2, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mode == "PHONONS") {
         require_cubic = false;
@@ -133,7 +132,7 @@ void Fcs_phonon::load_fc2_xml()
             read_xml(file_fc2, pt);
         }
         catch (std::exception &e) {
-            std::string str_error = "Cannot open file FC2XML ( " + file_fcs + " )";
+            std::string str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
             error->exit("load_fc2_xml", str_error.c_str());
         }
     } else {
@@ -186,7 +185,6 @@ void Fcs_phonon::load_fcs_xml()
 
     double fcs_val;
 
-    std::vector<unsigned int> ivec;
     std::vector<Triplet> tri_vec;
 
     std::stringstream ss;
@@ -226,7 +224,6 @@ void Fcs_phonon::load_fcs_xml()
             const ptree &child = child_.second;
 
             fcs_val = boost::lexical_cast<double>(child.data());
-            ivec.clear();
 
             ivec_with_cell.clear();
 
@@ -241,12 +238,14 @@ void Fcs_phonon::load_fcs_xml()
                 if (i == 0) {
 
                     ss >> atmn >> xyz;
-                    ivec_tmp.index = 3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1;
+                    if (update_fc2) {
+                       ivec_tmp.index = 3 * system->map_p2s_anharm_orig[atmn - 1][0] + xyz - 1;
+                    } else {
+                        ivec_tmp.index = 3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1;
+                    }
                     ivec_tmp.cell_s = 0;
                     ivec_tmp.tran = 0; // dummy
                     ivec_with_cell.push_back(ivec_tmp);
-                    ivec.push_back(3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1);
-
                 } else {
 
                     ss >> atmn >> xyz >> cell_s;
@@ -255,7 +254,6 @@ void Fcs_phonon::load_fcs_xml()
                     ivec_tmp.cell_s = cell_s - 1;
                     ivec_tmp.tran = 0; // dummy
                     ivec_with_cell.push_back(ivec_tmp);
-                    ivec.push_back(3 * (atmn - 1) + xyz - 1);
                 }
 
             }
@@ -416,7 +414,6 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                     sum2[j][k] = 0.0;
                 }
             }
-
             for (auto it = fc2.cbegin(); it != fc2.cend(); ++it) {
                 sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
             }

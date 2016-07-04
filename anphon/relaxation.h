@@ -188,7 +188,7 @@ namespace PHON_NS
 
         void print_momentum_resolved_final_state(const unsigned int, double *, const double);
         void print_frequency_resolved_final_state(const unsigned int, double *);
-        void detect_imaginary_branches();
+        void detect_imaginary_branches(double **);
 
         int ngroup;
         int ngroup2;

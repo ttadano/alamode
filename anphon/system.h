@@ -60,6 +60,7 @@ namespace PHON_NS
         std::vector<unsigned int> *atomlist_class;
 
         unsigned int **map_p2s, **map_p2s_anharm;
+        unsigned int **map_p2s_anharm_orig;
 
         class Maps
         {
