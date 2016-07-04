@@ -54,6 +54,7 @@ void Writes::write_input_vars()
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << interaction->is_periodic[i];
     std::cout << std::endl;
     std::cout << "  MAGMOM = " << input->str_magmom << std::endl;
+    std::cout << "  HESSIAN = " << writes->print_hessian << std::endl;
     std::cout << std::endl;
 
 
