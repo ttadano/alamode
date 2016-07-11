@@ -236,7 +236,6 @@ void Fitting::data_multiplier(const int nat,
     int i, j, k;
     int idata, itran, isym;
     int n_mapped;
-    double u_rot[3], f_rot[3];
     double u_in, f_in;
     double *u_tmp, *f_tmp;
     std::vector<int> vec_data;
@@ -336,6 +335,8 @@ void Fitting::data_multiplier(const int nat,
         }
 
     } else if (multiply_data == 2) {
+
+        double u_rot[3], f_rot[3];
 
         std::cout << "  MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl;
         std::cout << "               (including rotational part) " << std::endl << std::endl;
@@ -1457,4 +1458,3 @@ int Fitting::rankSVD2(const int m_in,
 
     return rank;
 }
-

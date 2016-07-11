@@ -19,7 +19,6 @@
 #include "combination.h"
 #include "constants.h"
 #include "error.h"
-#include "fitting.h"
 #include <boost/bimap.hpp>
 #include "mathfunctions.h"
 
@@ -555,7 +554,6 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
     int nparams;
 
     bool has_constraint_from_symm = false;
-
 
     std::set<FcProperty> list_found;
 

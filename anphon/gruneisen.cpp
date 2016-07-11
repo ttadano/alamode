@@ -212,8 +212,6 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
                                   std::vector<FcsArrayWithCell> &delta_fcs)
 {
     unsigned int i;
-    int iat, jat, kat;
-    int icrd, jcrd, kcrd;
     double vec[3];
     double fcs_tmp = 0.0;
 
@@ -305,23 +303,6 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
         rotvec(vec, vec, system->lavec_s_anharm);
 
         fcs_tmp += (*it).fcs_val * vec[(*it).pairs[norder - 1].index % 3];
-
-        /*
-        iat = system->map_p2s_anharm[(*it).pairs[0].index / 3][0];
-        icrd = (*it).pairs[0].index % 3;
-        jat = system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran];
-        jcrd = (*it).pairs[1].index % 3;
-        kat = system->map_p2s_anharm[(*it).pairs[2].index / 3][(*it).pairs[2].tran];
-        kcrd = (*it).pairs[2].index % 3;
-       
-        std::cout << std::setw(5) << iat + 1 << std::setw(5) << icrd + 1;
-        std::cout << std::setw(5) << jat + 1 << std::setw(5) << jcrd + 1;
-        std::cout << std::setw(5) << (*it).pairs[1].cell_s + 1;
-        std::cout << std::setprecision(10) << std::setw(25)<< (*it).fcs_val << std::setw(25) << vec[(*it).pairs[2].index % 3];
-        std::cout << std::setw(5) << kat + 1 << std::setw(5) << kcrd + 1;
-        std::cout << std::setw(5) << (*it).pairs[2].cell_s + 1 << std::endl;
-        */
-
     }
 
     nmulti = set_index_uniq.size();

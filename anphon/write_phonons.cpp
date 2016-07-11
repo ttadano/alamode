@@ -195,7 +195,7 @@ void Writes::setup_result_io()
             std::string line_tmp, str_tmp;
             int natmin_tmp, nkd_tmp;
             int nk_tmp[3], nksym_tmp;
-            int is_classical, ismear;
+            int ismear;
             double epsilon_tmp, T1, T2, delta_T;
 
 

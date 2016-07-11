@@ -518,7 +518,7 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
                                                     double ****kappa_mode,
                                                     const int smearing_method)
 {
-    int i, j, itemp;
+    int i, j;
     int *kmap_identity;
     double **eval;
 
