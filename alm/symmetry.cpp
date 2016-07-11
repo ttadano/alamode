@@ -20,9 +20,7 @@
 #include "error.h"
 #include "interaction.h"
 #include "files.h"
-#include <cmath>
 #include <vector>
-#include <set>
 #include <algorithm>
 
 #ifdef _USE_EIGEN

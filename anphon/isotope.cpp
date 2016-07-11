@@ -16,10 +16,8 @@
 #include <iomanip>
 #include "kpoint.h"
 #include <complex>
-#include "relaxation.h"
 #include "constants.h"
 #include "integration.h"
-#include "error.h"
 
 using namespace PHON_NS;
 
@@ -55,7 +53,7 @@ void Isotope::setup_isotope_scattering()
 
             for (i = 0; i < nkd; ++i) {
                 std::cout << std::setw(5) << system->symbol_kd[i] << ":";
-                std::cout << std::scientific << std::setw(15) << isotope_factor[i] << std::endl;
+                std::cout << std::scientific << std::setw(17) << isotope_factor[i] << std::endl;
             }
             std::cout << std::endl;
         }
@@ -98,14 +96,13 @@ void Isotope::calc_isotope_selfenergy(const int knum,
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
                         * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
+                prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
 
             omega1 = dynamical->eval_phonon[ik][is];
 
             if (integration->ismear == 0) {
                 ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
-                //            ret += delta_lorentz(omega - omega1, epsilon) * prod;
             } else {
                 ret += omega1 * delta_gauss(omega - omega1, epsilon) * prod;
             }
@@ -113,7 +110,6 @@ void Isotope::calc_isotope_selfenergy(const int knum,
     }
 
     ret *= pi * omega * 0.25 / static_cast<double>(nk);
-    // ret *= pi * omega * omega * 0.25 / static_cast<double>(nk);
 }
 
 
@@ -160,9 +156,8 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
                         * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->kd[iat]] * std::norm(dprod);
+                prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
-            //			weight[is][ik] = prod;
             weight[is][ik] = prod * eval[is][ik];
         }
     }
@@ -171,7 +166,6 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
         ret += integration->do_tetrahedron(eval[is], weight[is], omega);
     }
 
-    //	ret *= pi * omega * omega * 0.25;
     ret *= pi * omega * 0.25;
 }
 
@@ -224,34 +218,5 @@ void Isotope::calc_isotope_selfenergy_all()
         if (mympi->my_rank == 0) {
             std::cout << "done!" << std::endl;
         }
-
-        /*
-        double tmp2;
-
-        for (i = 0; i < kpoint->nk_reduced; ++i) {
-        for (j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
-        knum = kpoint->kpoint_irred_all[i][0].knum;
-
-        for (int k = 0; k < ns; ++k) {
-
-        omega = dynamical->eval_phonon[knum][k];
-
-        calc_isotope_selfenergy(knum, snum, omega, tmp);
-        calc_isotope_selfenergy_tetra(knum, snum, omega, tmp2);
-
-        std::cout << " ik = " << std::setw(5) << i + 1;
-        std::cout << " j = " << std::setw(5) << j + 1;
-        std::cout << " snum = " << std::setw(5) << k + 1;
-        std::cout << " omega = " << std::setw(15) << omega;
-        std::cout << " ret1 = " << std::setw(15) << tmp;
-        std::cout << " ret2 = " << std::setw(15) << tmp2 << std::endl;
-        }
-        }
-        }
-
-        error->exit("hoge", "hoge");
-
-        */
     }
 }
-
