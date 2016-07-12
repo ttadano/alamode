@@ -378,7 +378,7 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
     for (i = 0; i < nk_irreducible; ++i) weight[i] /= vol_tot;
 }
 
-void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList>> &kpinfo,
+void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList> > &kpinfo,
                                                 double *weight,
                                                 double *energy,
                                                 const double e_ref,

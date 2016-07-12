@@ -414,7 +414,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                     sum2[j][k] = 0.0;
                 }
             }
-            for (std::vector<FcsClassExtent>::const_iterator it = fc2.cbegin(); it != fc2.cend(); ++it) {
+            for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
                 sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
             }
 
@@ -447,7 +447,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                     }
                 }
 
-                for (std::vector<FcsClassExtent>::const_iterator it = fc2.cbegin(); it != fc2.cend(); ++it) {
+                for (std::vector<FcsClassExtent>::const_iterator it = fc2.begin(); it != fc2.end(); ++it) {
                     sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
                 }
             }
@@ -472,7 +472,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
+            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
                 j = (*it).pairs[0].index;
                 k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
                 l = (*it).pairs[2].index % 3;
@@ -503,7 +503,7 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
+            for (std::vector<FcsArrayWithCell>::const_iterator it = fcs[i].begin(); it != fcs[i].end(); ++it) {
                 j = (*it).pairs[0].index;
                 k = 3 * system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran]
                     + (*it).pairs[1].index % 3;

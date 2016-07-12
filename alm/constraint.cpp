@@ -711,11 +711,11 @@ void Constraint::translational_invariance()
     std::vector<int> intlist, data;
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
-    std::vector<std::vector<int>> data_vec;
+    std::vector<std::vector<int> > data_vec;
     std::vector<FcProperty> list_vec;
     std::vector<FcProperty>::iterator iter_vec;
     std::vector<int> const_now;
-    std::vector<std::vector<int>> const_mat;
+    std::vector<std::vector<int> > const_mat;
 
     std::cout << "  Generating constraints for translational invariance ..." << std::endl;
 
@@ -847,7 +847,7 @@ void Constraint::translational_invariance()
                     memory->allocate(intarr_omp, order + 2);
                     memory->allocate(intarr_copy_omp, order + 2);
 
-                    std::vector<std::vector<int>> const_omp;
+                    std::vector<std::vector<int> > const_omp;
                     std::vector<int> data_omp;
                     std::vector<int> const_now_omp;
 
@@ -912,7 +912,7 @@ void Constraint::translational_invariance()
                         // Merge vectors
 #pragma omp critical
                         {
-                            for (std::vector<std::vector<int>>::iterator it = const_omp.begin();
+                            for (std::vector<std::vector<int> >::iterator it = const_omp.begin();
                                  it != const_omp.end(); ++it) {
                                 const_mat.push_back(*it);
                             }
@@ -942,7 +942,7 @@ void Constraint::translational_invariance()
         // Copy to constraint class 
 
         const_translation[order].clear();
-        for (std::vector<std::vector<int>>::reverse_iterator it = const_mat.rbegin();
+        for (std::vector<std::vector<int> >::reverse_iterator it = const_mat.rbegin();
              it != const_mat.rend(); ++it) {
             for (i = 0; i < (*it).size(); ++i) {
                 arr_constraint[i] = static_cast<double>((*it)[i]);
@@ -1006,7 +1006,7 @@ void Constraint::rotational_invariance()
     CombinationWithRepetition<int> g;
 
     std::vector<int> atom_tmp;
-    std::vector<std::vector<int>> cell_dummy;
+    std::vector<std::vector<int> > cell_dummy;
     std::set<MinimumDistanceCluster>::iterator iter_cluster;
 
     setup_rotation_axis(valid_rotation_axis);

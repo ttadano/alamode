@@ -225,8 +225,8 @@ void Input::parse_general_vars()
         if (noncollinear) {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (std::vector<std::string>::const_iterator it = magmom_v.cbegin();
-                 it != magmom_v.cend(); ++it) {
+            for (std::vector<std::string>::const_iterator it = magmom_v.begin();
+                 it != magmom_v.end(); ++it) {
                 if ((*it).find("*") != std::string::npos) {
                     error->exit("parse_general_vars",
                                 "Wild card '*' is not supported when NONCOLLINEAR = 1.");
@@ -247,8 +247,8 @@ void Input::parse_general_vars()
         } else {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (std::vector<std::string>::const_iterator it = magmom_v.cbegin();
-                 it != magmom_v.cend(); ++it) {
+            for (std::vector<std::string>::const_iterator it = magmom_v.begin();
+                 it != magmom_v.end(); ++it) {
 
                 if ((*it).find("*") != std::string::npos) {
                     if ((*it) == "*") {
@@ -614,8 +614,8 @@ void Input::parse_cutoff_radii()
     element_allowed.insert("*");
     kd_map.insert(std::map<std::string, int>::value_type("*", -1));
 
-    for (std::vector<std::string>::const_iterator it = str_cutoff.cbegin();
-         it != str_cutoff.cend(); ++it) {
+    for (std::vector<std::string>::const_iterator it = str_cutoff.begin();
+         it != str_cutoff.end(); ++it) {
 
         split_str_by_space(*it, cutoff_line);
 
