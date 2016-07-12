@@ -230,11 +230,6 @@ void System::setup()
         }
         cout << endl;
 
-        for (i = 0; i < nat; ++i) {
-            std::cout << std::setw(4) << i + 1;
-            std::cout << std::setw(4) << kd[i] << std::endl;
-        }
-
         memory->deallocate(xtmp);
 
         if (lspin) {
