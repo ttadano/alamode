@@ -6,7 +6,7 @@
 #-----------------------------------------------
 
 MPICXX = mpic++
-CXXFLAGS = -O2 -std=c++03
+CXXFLAGS = -O2 
 INCLUDE = -I../include 
 
 LINKER = ${MPICXX}
