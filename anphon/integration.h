@@ -56,7 +56,7 @@ namespace PHON_NS
         void calc_weight_tetrahedron(const int, int *,
                                      double *, double *,
                                      const double);
-        void calc_weight_smearing(const std::vector<std::vector<KpointList>> &,
+        void calc_weight_smearing(const std::vector<std::vector<KpointList> > &,
                                   double *, double *,
                                   const double, const int);
         void calc_weight_smearing(const int, const int, int *,

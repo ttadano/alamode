@@ -222,7 +222,7 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo,
 
     if (mympi->my_rank == 0) {
         j = 0;
-        for (std::vector<KpointInp>::const_iterator it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
+        for (std::vector<KpointInp>::const_iterator it = kpinfo.begin(); it != kpinfo.end(); ++it) {
             for (i = 0; i < 3; ++i) {
 #ifdef _USE_BOOST
                 k[j][i] = boost::lexical_cast<double>((*it).kpelem[i]);
@@ -274,7 +274,7 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo,
 
         n = 0;
         i = 0;
-        for (std::vector<KpointInp>::const_iterator it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
+        for (std::vector<KpointInp>::const_iterator it = kpinfo.begin(); it != kpinfo.end(); ++it) {
             kp_symbol[i][0] = (*it).kpelem[0];
             kp_symbol[i][1] = (*it).kpelem[4];
 #ifdef _USE_BOOST
@@ -369,7 +369,7 @@ void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
                                         double **&xk,
                                         double **&kdirec,
                                         const bool usesym,
-                                        std::vector<std::vector<KpointList>> &kp_irreducible)
+                                        std::vector<std::vector<KpointList> > &kp_irreducible)
 {
     int i, j;
     unsigned int nk_tmp[3];
@@ -427,7 +427,7 @@ void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
     mpi_broadcast_kpoint_vector(kp_irreducible);
 }
 
-void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &kp_irreducible)
+void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &kp_irreducible)
 {
     int i, j, k, ik;
     double **xk_tmp;
@@ -563,7 +563,7 @@ void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo,
 void Kpoint::gen_kmesh(const bool usesym,
                        const unsigned int nk_in[3],
                        double **xk_out,
-                       std::vector<std::vector<KpointList>> &kplist_out)
+                       std::vector<std::vector<KpointList> > &kplist_out)
 {
     unsigned int ix, iy, iz;
     unsigned int i, ik;
@@ -605,7 +605,7 @@ void Kpoint::gen_kmesh(const bool usesym,
 void Kpoint::reduce_kpoints(const unsigned int nsym,
                             double **xkr,
                             const unsigned int nk_in[3],
-                            std::vector<std::vector<KpointList>> &kplist_out)
+                            std::vector<std::vector<KpointList> > &kplist_out)
 {
     unsigned int ik;
     unsigned int i, j;

@@ -137,12 +137,12 @@ namespace ALM_NS
                                   std::set<DispAtomSet> *);
 
         void generate_signvecs(const int,
-                               std::vector<std::vector<int>> &,
+                               std::vector<std::vector<int> > &,
                                std::vector<int>);
 
         void find_unique_sign_pairs(const int,
-                                    std::vector<std::vector<int>>,
+                                    std::vector<std::vector<int> >,
                                     std::vector<int>,
-                                    std::vector<std::vector<int>> &);
+                                    std::vector<std::vector<int> > &);
     };
 }

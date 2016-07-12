@@ -305,7 +305,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
     unsigned int tran_tmp;
     unsigned int icount = 0;
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
 
         atm_super.clear();
         atm_prim.clear();
@@ -359,7 +359,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
 
         arr_tmp.clear();
 
@@ -384,7 +384,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
 
         arr_tmp.clear();
 
@@ -1754,7 +1754,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     double omega_sum[3];
     double frac;
     int knum_triangle[3];
-    std::vector<std::vector<double>> ***kplist_conserved;
+    std::vector<std::vector<double> > ***kplist_conserved;
     std::vector<KpointListWithCoordinate> ***kplist_for_target_mode;
     std::vector<double> xk_vec;
     double xk_norm[3], xk_tmp[3];
@@ -1893,8 +1893,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 
             // Find a list of k points which satisfy the energy conservation
 
-            for (std::vector<KpointPlaneTriangle>::const_iterator it = kpoint->kp_planes_tri[i].cbegin();
-                 it != kpoint->kp_planes_tri[i].cend(); ++it) {
+            for (std::vector<KpointPlaneTriangle>::const_iterator it = kpoint->kp_planes_tri[i].begin();
+                 it != kpoint->kp_planes_tri[i].end(); ++it) {
 
                 // K point indexes for each triangle
                 for (k = 0; k < 3; ++k) knum_triangle[k] = (*it).knum[k];
@@ -2002,8 +2002,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
 
-                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][0].cbegin();
-                         it2 != kplist_conserved[is][js][0].cend(); ++it2) {
+                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][0].begin();
+                         it2 != kplist_conserved[is][js][0].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
@@ -2025,8 +2025,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                                                      i, 0));
                     }
 
-                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][1].cbegin();
-                         it2 != kplist_conserved[is][js][1].cend(); ++it2) {
+                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][1].begin();
+                         it2 != kplist_conserved[is][js][1].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
@@ -2081,7 +2081,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     memory->deallocate(kplist_conserved);
 
 
-    std::vector<std::vector<double>> **final_state_xy;
+    std::vector<std::vector<double> > **final_state_xy;
     std::vector<double> triplet_xyG;
     std::vector<int> small_group_k;
     double pos_x, pos_y;
