@@ -30,7 +30,8 @@ namespace ALM_NS
         {
             coef = obj.coef;
             mother = obj.mother;
-            for (auto it = obj.elems.begin(); it != obj.elems.end(); ++it) {
+            for (std::vector<int>::const_iterator it = obj.elems.begin(); 
+                it != obj.elems.end(); ++it) {
                 elems.push_back(*it);
             }
         };

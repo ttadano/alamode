@@ -195,7 +195,7 @@ void Writes::write_force_constants()
             int nparam = fcs->ndup[order].size();
 
 
-            for (auto p = constraint->const_symmetry[order].begin();
+            for (std::vector<ConstraintClass>::iterator p = constraint->const_symmetry[order].begin();
                  p != constraint->const_symmetry[order].end();
                  ++p) {
                 ofs_fcs << "   0 = " << std::scientific << std::setprecision(6);
@@ -287,7 +287,7 @@ void Writes::write_displacement_pattern()
 
         ofs_pattern << "Basis : " << displace->disp_basis[0] << std::endl;
 
-        for (auto it = displace->pattern_all[order].begin();
+        for (std::vector<AtomWithDirection>::iterator it = displace->pattern_all[order].begin();
              it != displace->pattern_all[order].end(); ++it) {
             AtomWithDirection entry = *it;
 
@@ -488,7 +488,8 @@ void Writes::write_misc_xml()
 
     std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
 
-    for (auto it = fcs->fc_set[0].begin(); it != fcs->fc_set[0].end(); ++it) {
+    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); 
+        it != fcs->fc_set[0].end(); ++it) {
         FcProperty fctmp = *it;
         ip = fctmp.mother;
 
@@ -496,7 +497,7 @@ void Writes::write_misc_xml()
             pair_tmp[k] = fctmp.elems[k] / 3;
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
-        for (auto it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin();
+        for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin();
              it2 != interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].end(); ++it2) {
             ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2",
                                   double2string(fitting->params[ip] * fctmp.coef
@@ -522,7 +523,8 @@ void Writes::write_misc_xml()
 
         std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
 
-        for (auto it = fcs->fc_set[order].begin(); it != fcs->fc_set[order].end(); ++it) {
+        for (std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); 
+            it != fcs->fc_set[order].end(); ++it) {
             FcProperty fctmp = *it;
             ip = fctmp.mother + ishift;
 

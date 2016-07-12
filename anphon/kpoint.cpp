@@ -222,7 +222,7 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo,
 
     if (mympi->my_rank == 0) {
         j = 0;
-        for (auto it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
+        for (std::vector<KpointInp>::const_iterator it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
             for (i = 0; i < 3; ++i) {
 #ifdef _USE_BOOST
                 k[j][i] = boost::lexical_cast<double>((*it).kpelem[i]);
@@ -274,7 +274,7 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo,
 
         n = 0;
         i = 0;
-        for (auto it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
+        for (std::vector<KpointInp>::const_iterator it = kpinfo.cbegin(); it != kpinfo.cend(); ++it) {
             kp_symbol[i][0] = (*it).kpelem[0];
             kp_symbol[i][1] = (*it).kpelem[4];
 #ifdef _USE_BOOST

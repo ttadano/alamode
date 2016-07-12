@@ -314,7 +314,8 @@ void System::load_reference_system_xml(std::string file_reference_fcs,
 
     list_found.clear();
 
-    for (auto p = fcs->fc_set[order_fcs].begin(); p != fcs->fc_set[order_fcs].end(); ++p) {
+    for (std::vector<FcProperty>::iterator p = fcs->fc_set[order_fcs].begin();
+         p != fcs->fc_set[order_fcs].end(); ++p) {
         FcProperty list_tmp = *p; // Using copy constructor
         for (i = 0; i < nterms; ++i) {
             ind[i] = list_tmp.elems[i];
@@ -503,7 +504,8 @@ void System::load_reference_system()
             memory->allocate(ind, 2);
 
             list_found.clear();
-            for (auto p = fcs->fc_set[0].begin(); p != fcs->fc_set[0].end(); ++p) {
+            for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin();
+                 p != fcs->fc_set[0].end(); ++p) {
                 for (i = 0; i < 2; ++i) ind[i] = (*p).elems[i];
                 list_found.insert(FcProperty(2, (*p).coef, ind, (*p).mother));
             }
@@ -579,7 +581,8 @@ void System::setup_atomic_class(int *kd)
 
     for (i = 0; i < nat; ++i) {
         int count = 0;
-        for (auto it = set_type.begin(); it != set_type.end(); ++it) {
+        for (std::set<AtomType>::iterator it = set_type.begin();
+             it != set_type.end(); ++it) {
             if (noncollinear) {
                 if (kd[i] == (*it).element) {
                     atomlist_class[count].push_back(i);
@@ -595,4 +598,3 @@ void System::setup_atomic_class(int *kd)
     }
     set_type.clear();
 }
-

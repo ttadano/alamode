@@ -29,7 +29,8 @@ namespace ALM_NS
 
         ConstraintClass(const ConstraintClass &a)
         {
-            for (auto p = a.w_const.cbegin(); p != a.w_const.cend(); ++p) {
+            for (std::vector<double>::const_iterator p = a.w_const.cbegin(); 
+                p != a.w_const.cend(); ++p) {
                 w_const.push_back(*p);
             }
         }

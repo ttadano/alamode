@@ -305,7 +305,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
     unsigned int tran_tmp;
     unsigned int icount = 0;
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
 
         atm_super.clear();
         atm_prim.clear();
@@ -359,7 +359,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
 
         arr_tmp.clear();
 
@@ -384,7 +384,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
 
         arr_tmp.clear();
 
@@ -1893,7 +1893,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 
             // Find a list of k points which satisfy the energy conservation
 
-            for (auto it = kpoint->kp_planes_tri[i].cbegin();
+            for (std::vector<KpointPlaneTriangle>::const_iterator it = kpoint->kp_planes_tri[i].cbegin();
                  it != kpoint->kp_planes_tri[i].cend(); ++it) {
 
                 // K point indexes for each triangle
@@ -2002,7 +2002,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
 
-                    for (auto it2 = kplist_conserved[is][js][0].cbegin();
+                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][0].cbegin();
                          it2 != kplist_conserved[is][js][0].cend(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
@@ -2025,7 +2025,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                                                      i, 0));
                     }
 
-                    for (auto it2 = kplist_conserved[is][js][1].cbegin();
+                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][1].cbegin();
                          it2 != kplist_conserved[is][js][1].cend(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {

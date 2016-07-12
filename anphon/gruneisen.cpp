@@ -176,7 +176,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         }
     }
 
-    for (auto it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.cbegin(); 
+        it != delta_fc2.cend(); ++it) {
 
         atm1 = (*it).pairs[0].index / 3;
         xyz1 = (*it).pairs[0].index % 3;
@@ -229,7 +230,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     delta_fcs.clear();
     fcs_aligned.clear();
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.cbegin(); 
+        it != fcs_in.cend(); ++it) {
         fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
@@ -241,7 +243,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     index_with_cell.clear();
     set_index_uniq.clear();
 
-    for (auto it = fcs_aligned.cbegin(); it != fcs_aligned.cend(); ++it) {
+    for (std::vector<FcsAlignedForGruneisen>::const_iterator it = fcs_aligned.cbegin(); 
+        it != fcs_aligned.cend(); ++it) {
 
         index_now.clear();
         index_with_cell.clear();
@@ -266,7 +269,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
                 fcs_tmp /= static_cast<double>(nmulti);
 
                 if (std::abs(fcs_tmp) > eps15) {
-                    for (auto it2 = set_index_uniq.cbegin(); it2 != set_index_uniq.cend(); ++it2) {
+                    for (std::set<std::vector<int>>::const_iterator it2 = set_index_uniq.cbegin(); 
+                        it2 != set_index_uniq.cend(); ++it2) {
 
                         pairs_vec.clear();
 
@@ -309,7 +313,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     fcs_tmp /= static_cast<double>(nmulti);
 
     if (std::abs(fcs_tmp) > eps15) {
-        for (auto it2 = set_index_uniq.cbegin(); it2 != set_index_uniq.cend(); ++it2) {
+        for (std::set<std::vector<int>>::const_iterator it2 = set_index_uniq.cbegin(); 
+            it2 != set_index_uniq.cend(); ++it2) {
 
             pairs_vec.clear();
 
@@ -424,7 +429,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
     pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    for (auto it = fcs_phonon->force_constant_with_cell[0].cbegin();
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[0].cbegin();
          it != fcs_phonon->force_constant_with_cell[0].cend(); ++it) {
 
         ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string((*it).fcs_val));
@@ -438,7 +443,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
                   + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
     }
 
-    for (auto it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
 
         if (std::abs((*it).fcs_val) < eps12) continue;
 
@@ -455,7 +460,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
     }
 
     if (relaxation->quartic_mode) {
-        for (auto it = fcs_phonon->force_constant_with_cell[1].cbegin();
+        for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[1].cbegin();
              it != fcs_phonon->force_constant_with_cell[1].cend(); ++it) {
 
             if ((*it).pairs[1].index > (*it).pairs[2].index) continue;
@@ -476,7 +481,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
                       + " " + boost::lexical_cast<std::string>((*it).pairs[2].cell_s + 1));
         }
 
-        for (auto it = delta_fc3.cbegin(); it != delta_fc3.cend(); ++it) {
+        for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc3.cbegin(); it != delta_fc3.cend(); ++it) {
 
             if (std::abs((*it).fcs_val) < eps12) continue;
 

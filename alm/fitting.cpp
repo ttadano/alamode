@@ -1036,7 +1036,8 @@ void Fitting::calc_matrix_elements(const int M,
 
                 mm = 0;
 
-                for (auto iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
+                for (std::vector<int>::iterator iter = fcs->ndup[order].begin();
+                     iter != fcs->ndup[order].end(); ++iter) {
                     for (i = 0; i < *iter; ++i) {
                         ind[0] = fcs->fc_set[order][mm].elems[0];
                         k = idata + inprim_index(fcs->fc_set[order][mm].elems[0]);
@@ -1145,7 +1146,8 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
 
                 mm = 0;
 
-                for (auto iter = fcs->ndup[order].begin(); iter != fcs->ndup[order].end(); ++iter) {
+                for (std::vector<int>::iterator iter = fcs->ndup[order].begin();
+                     iter != fcs->ndup[order].end(); ++iter) {
                     for (i = 0; i < *iter; ++i) {
                         ind[0] = fcs->fc_set[order][mm].elems[0];
                         k = inprim_index(ind[0]);

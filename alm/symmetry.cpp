@@ -61,7 +61,8 @@ void Symmetry::init()
     memory->allocate(symrel_int, nsym, 3, 3);
 
     int isym = 0;
-    for (auto iter = SymmList.begin(); iter != SymmList.end(); ++iter) {
+    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); 
+        iter != SymmList.end(); ++iter) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
                 symrel_int[isym][i][j] = (*iter).rot[i][j];
@@ -152,7 +153,8 @@ void Symmetry::setup_symmetry_operation(int nat,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); 
+                p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -789,7 +791,8 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         }
     }
 
-    for (auto it = SymmList.begin(); it != SymmList.end(); ++it) {
+    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); 
+        it != SymmList.end(); ++it) {
 
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;

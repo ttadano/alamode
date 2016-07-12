@@ -203,7 +203,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
             mindist_out[i][j].clear();
 
             dist_min = distall[i][j][0].dist;
-            for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
+            for (std::vector<DistWithCell>::const_iterator it = distall[i][j].cbegin();
+                 it != distall[i][j].cend(); ++it) {
                 if (std::abs((*it).dist - dist_min) < eps8) {
                     mindist_out[i][j].push_back((*it).cell);
                 }
@@ -345,7 +346,8 @@ void Dynamical::calc_analytic_k(double *xk_in,
         }
     }
 
-    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
+    for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.cbegin();
+         it != fc2_in.cend(); ++it) {
 
         atm1_p = (*it).atm1;
         atm2_s = (*it).atm2;
@@ -358,7 +360,7 @@ void Dynamical::calc_analytic_k(double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                - system->xr_s[system->map_p2s[atm2_p][0]][i] ;
+                - system->xr_s[system->map_p2s[atm2_p][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -854,4 +856,3 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, doub
     for (iat = 0; iat < natmin; ++iat)
         ret[iat] /= std::sqrt(static_cast<double>(natmin) * sum);
 }
-

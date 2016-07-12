@@ -216,7 +216,7 @@ void Conductivity::calc_anharmonic_imagself()
 
     unsigned int icount = 0;
 
-    for (auto it = vks_job.begin(); it != vks_job.end(); ++it) {
+    for (std::set<int>::iterator it = vks_job.begin(); it != vks_job.end(); ++it) {
         if (icount % mympi->nprocs == mympi->my_rank) {
             vks_l.push_back(*it);
         }

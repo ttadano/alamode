@@ -48,7 +48,7 @@ namespace PHON_NS
         {
             fcs_val = fcs_in;
 
-            for (auto it = pairs_in.cbegin(); it != pairs_in.cend(); ++it) {
+            for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.cbegin(); it != pairs_in.cend(); ++it) {
                 pairs.push_back(*it);
             }
         }

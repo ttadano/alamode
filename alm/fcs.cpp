@@ -63,7 +63,7 @@ void Fcs::init()
                       fc_set[order].begin() + ndup[order][0]);
             int nbegin = ndup[order][0];
             int nend;
-            for (auto mm = 1; mm < ndup[order].size(); ++mm) {
+            for (int mm = 1; mm < ndup[order].size(); ++mm) {
                 nend = nbegin + ndup[order][mm];
                 std::sort(fc_set[order].begin() + nbegin,
                           fc_set[order].begin() + nend);
@@ -127,7 +127,7 @@ void Fcs::generate_fclists(int maxorder)
 
         std::set<IntList> list_found;
 
-        for (auto iter = interaction->pairs[order].begin();
+        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin();
              iter != interaction->pairs[order].end(); ++iter) {
 
             for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
@@ -387,4 +387,3 @@ std::string Fcs::easyvizint(const int n)
 
     return str_tmp;
 }
-

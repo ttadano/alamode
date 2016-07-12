@@ -121,7 +121,8 @@ void Input::parse_general_vars()
 
     boost::split(no_defaults, str_no_defaults, boost::is_space());
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
+    for (std::vector<std::string>::iterator it = no_defaults.begin();
+         it != no_defaults.end(); ++it) {
         if (general_var_dict.find(*it) == general_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
@@ -224,7 +225,8 @@ void Input::parse_general_vars()
         if (noncollinear) {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (auto it = magmom_v.cbegin(); it != magmom_v.cend(); ++it) {
+            for (std::vector<std::string>::const_iterator it = magmom_v.cbegin();
+                 it != magmom_v.cend(); ++it) {
                 if ((*it).find("*") != std::string::npos) {
                     error->exit("parse_general_vars",
                                 "Wild card '*' is not supported when NONCOLLINEAR = 1.");
@@ -245,7 +247,8 @@ void Input::parse_general_vars()
         } else {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (auto it = magmom_v.cbegin(); it != magmom_v.cend(); ++it) {
+            for (std::vector<std::string>::const_iterator it = magmom_v.cbegin();
+                 it != magmom_v.cend(); ++it) {
 
                 if ((*it).find("*") != std::string::npos) {
                     if ((*it) == "*") {
@@ -467,7 +470,8 @@ void Input::parse_interaction_vars()
 
     boost::split(no_defaults, str_no_defaults, boost::is_space());
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
+    for (std::vector<std::string>::iterator it = no_defaults.begin();
+         it != no_defaults.end(); ++it) {
         if (interaction_var_dict.find(*it) == interaction_var_dict.end()) {
             error->exit("parse_interaction_vars",
                         "The following variable is not found in &interaction input region: ",
@@ -610,7 +614,8 @@ void Input::parse_cutoff_radii()
     element_allowed.insert("*");
     kd_map.insert(std::map<std::string, int>::value_type("*", -1));
 
-    for (auto it = str_cutoff.cbegin(); it != str_cutoff.cend(); ++it) {
+    for (std::vector<std::string>::const_iterator it = str_cutoff.cbegin();
+         it != str_cutoff.cend(); ++it) {
 
         split_str_by_space(*it, cutoff_line);
 
@@ -732,7 +737,8 @@ void Input::parse_fitting_vars()
 
     boost::split(no_defaults, str_no_defaults, boost::is_space());
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
+    for (std::vector<std::string>::iterator it = no_defaults.begin();
+         it != no_defaults.end(); ++it) {
         if (fitting_var_dict.find(*it) == fitting_var_dict.end()) {
             error->exit("parse_fitting_vars",
                         "The following variable is not found in &fitting input region: ",
@@ -991,7 +997,8 @@ void Input::get_var_dict(const std::string keywords,
 
             boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 
-            for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (std::vector<std::string>::iterator it = str_entry.begin();
+                 it != str_entry.end(); ++it) {
 
                 // Split the input entry by '='
 
@@ -1047,7 +1054,8 @@ void Input::get_var_dict(const std::string keywords,
 
             boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 
-            for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (std::vector<std::string>::iterator it = str_entry.begin();
+                 it != str_entry.end(); ++it) {
 
                 // Split the input entry by '='
 

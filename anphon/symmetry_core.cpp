@@ -103,7 +103,7 @@ void Symmetry::setup_symmetry_operation(int N,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -359,7 +359,7 @@ void Symmetry::find_crystal_symmetry(int N,
     CrystalSymmList.push_back(SymmetryOperation(rot_int, tran));
 
 
-    for (auto it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
+    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
         iat = atomclass[0][0];
 
@@ -496,7 +496,7 @@ void Symmetry::gensym_withmap(double **x,
 
     memory->allocate(map_tmp, natmin);
 
-    for (auto isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
+    for (std::vector<SymmetryOperation>::iterator isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -628,4 +628,3 @@ bool Symmetry::is_proper(double rot[3][3])
 
     return ret;
 }
-

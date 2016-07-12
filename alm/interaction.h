@@ -33,7 +33,7 @@ namespace ALM_NS
 
         IntList(const IntList &a)
         {
-            for (auto p = a.iarray.cbegin(); p != a.iarray.cend(); ++p) {
+            for (std::vector<int>::const_iterator p = a.iarray.cbegin(); p != a.iarray.cend(); ++p) {
                 iarray.push_back(*p);
             }
         }
@@ -138,10 +138,10 @@ namespace ALM_NS
         MinDistList(const std::vector<int> cell_in,
                     const std::vector<double> dist_in)
         {
-            for (auto it = cell_in.cbegin(); it != cell_in.cend(); ++it) {
+            for (std::vector<int>::const_iterator it = cell_in.cbegin(); it != cell_in.cend(); ++it) {
                 cell.push_back(*it);
             }
-            for (auto it = dist_in.cbegin(); it != dist_in.cend(); ++it) {
+            for (std::vector<double>::const_iterator it = dist_in.cbegin(); it != dist_in.cend(); ++it) {
                 dist.push_back(*it);
             }
         }

@@ -31,7 +31,7 @@ namespace PHON_NS
         KpointList(const KpointList &obj)
         {
             knum = obj.knum;
-            for (auto it = obj.kval.cbegin(); it != obj.kval.cend(); ++it) {
+            for (std::vector<double>::const_iterator it = obj.kval.cbegin(); it != obj.kval.cend(); ++it) {
                 kval.push_back(*it);
             }
         }
@@ -39,7 +39,7 @@ namespace PHON_NS
         KpointList(const unsigned int knum_in, const std::vector<double> vec)
         {
             knum = knum_in;
-            for (auto it = vec.cbegin(); it != vec.cend(); ++it) {
+            for (std::vector<double>::const_iterator it = vec.cbegin(); it != vec.cend(); ++it) {
                 kval.push_back(*it);
             }
         }
@@ -54,7 +54,7 @@ namespace PHON_NS
 
         KpointInp(const std::vector<std::string> &obj)
         {
-            for (auto it = obj.cbegin(); it != obj.cend(); ++it) {
+            for (std::vector<std::string>::const_iterator it = obj.cbegin(); it != obj.cend(); ++it) {
                 kpelem.push_back(*it);
             }
         }

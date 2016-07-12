@@ -129,7 +129,7 @@ void Input::parse_general_vars()
     no_defaults = my_split(str_no_defaults, ' ');
 #endif
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
+    for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (general_var_dict.find(*it) == general_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
@@ -757,7 +757,7 @@ void Input::get_var_dict(const std::string keywords,
 #else
     std::vector<std::string> strvec_tmp;
     strvec_tmp = my_split(keywords, ' ');
-    for (auto it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
+    for (std::vector<std::string>::iterator it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
         keyword_set.insert(*it);
     }
     strvec_tmp.clear();
@@ -794,7 +794,7 @@ void Input::get_var_dict(const std::string keywords,
 #endif
 
 
-            for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
                 // Split the input entry by '='
 #ifdef _USE_BOOST
@@ -867,7 +867,7 @@ void Input::get_var_dict(const std::string keywords,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-            for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (std::vector<std::string>::iterator it = str_entry.begin(); it != str_entry.end(); ++it) {
 
                 // Split the input entry by '='
 
