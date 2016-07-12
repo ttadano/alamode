@@ -42,13 +42,31 @@ How to install
 
 .. highlight:: bash
 
-1. Download the package from the download page or from the git repository.
+0. Install the LAPACK, MPI, and Boost C++ libraries.
 
-2. Change directory to the location of the downloaded file and untar the file as follows::
+   To install the Boost C++ library, please download a source file from the `webpage <http://www.boost.org>`_ and
+   unpack the file. Then, copy the 'boost' subdirectory to the include folder in the home directory (or anywhere you like).
+   This can be done as follows::
+    
+    $ cd
+    $ mkdir etc; cd etc
+    (Download a source file and mv it to ~/etc)
+    $ tar xvf boost_x_yy_z.tar.bz2
+    $ cd ../
+    $ mkdir include; cd include
+    $ ln -s ../etc/boost_x_yy_z/boost .
+
+  In this example, we made a symbolic link to the 'boost' subdirectory in ``$HOME/include``.
+
+  Instead of install from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
+
+1. Download the package of ALAMODE from the download page or clone from the git repository.
+
+2. Change directory to the location of the file and untar the file as follows::
 
 	$ tar -xvzf alamode-x.y.z.tar.gz 
 
-  This will create a directory alamode-x.y.z containing the following sub-directories:
+  This will create a directory alamode-x.y.z containing the following subdirectories:
   
   * alm/      : Source files for alm (force constant calculation)
   * anphon/   : Source files for anphon (phonon calculation)
@@ -60,11 +78,28 @@ How to install
 
 3. Edit the Makefiles
 
-  In directories alm/ and anphon/, we provide sample Makefiles for gcc and Intel compiler. 
-  Please copy one of them as ``Makefile`` and modify it appropriately.
+  In directories alm/ and anphon/, we provide sample Makefiles for Linux (with Intel compiler) and Mac OSX (with gcc). 
+  Please copy one of them as ``Makefile`` and modify it appropriately for your environment.
+
+  Here's a typical setting for Linux with Intel compiler::
+
+    CXX = icpc 
+    CXXFLAGS = -O2 -xHOST -openmp 
+    INCLUDE = -I../include -I$(HOME)/include
+
+    CXXL = ${CXX}
+    LDFLAGS = -mkl
+
+    LAPACK = 
+    LIBS = ${LAPACK}
+
   To enable OpenMP parallelization, please add the ``-openmp`` (Intel) or ``-fopenmp`` (gcc) option in ``CXXFLAGS``.
   In addition, the directory containing the boost/ subdirectory must be given in ``INCLUDE``. 
 
+4. Make executables by ``make`` command.
 
-4. Make executables by make command.
+   If the compilation is successful, the binary file named **alm** (**anphon**) is created in the alm/ (anphon/) directory.
+   To use some auxiliary scripts for post-processing and data conversion, please compile the programs in the tools directory as well.
+   See README.md in the tools directory for details about the auxiliary programs.
+
 

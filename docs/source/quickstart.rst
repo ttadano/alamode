@@ -12,10 +12,9 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
 
 1. Perform usual SCF calculations for a *primitive celll*
 
-  Before performing phonon calculations, one needs to perform usual self-consistent calculations and check the convergence with respect to the cutoff energy and the :math:`k` point density.
+  Before performing phonon calculations, one needs to perform usual self-consistent field calculations and check the convergence with respect to the cutoff energy and the :math:`k` point density.
   After that, please optimize the internal coordinate so that the atomic forces are negligibly small.
   Optimization of cell parameters may also be necessary, but please note that phonon properties are relatively sensitive to the cell parameters in polar materials such as perovskites.
-
 
 2. Decide the size of supercell
 
