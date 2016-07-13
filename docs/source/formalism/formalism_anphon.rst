@@ -379,7 +379,7 @@ since it may depend on the phonon structure and the density of :math:`\boldsymbo
 To avoid such issues, the program *anphon* employs the tetrahedron method [5]_ by default (``ISMEAR = -1``)
 for numerical evaluations of Brillouin zone integration containing :math:`\delta(\omega)`.
 When the tetrahedron method is used, the ``EPSILON``-tag is neglected.
-We recommend using the tetrahedron method whenever possible, even though it may slightly increase the computational cost.
+We recommend using the tetrahedron method whenever possible.
 
 ````
 

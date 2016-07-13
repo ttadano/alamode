@@ -32,6 +32,7 @@ In the following, (anharmonic) phonon properties of bulk silicon (Si) are calcul
 #. :ref:`Calculate phonon dispersion and phonon DOS <tutorial_Si_step4>`
 #. :ref:`Estimate anharmonic IFCs for thermal conductivity <tutorial_Si_step5>`
 #. :ref:`Calculate thermal conductivity <tutorial_Si_step6>`
+#. :ref:`Analyze results <tutorial_Si_step7>`
 
 
 .. _tutorial_Si_step1:
@@ -371,38 +372,148 @@ Then, execute **anphon** as a background job
     $ anphon si_RTA.in > si_RTA.log &
 
 Please be patient. This can take a while. 
-When the job finishes, you can find a file :red:`si222.kl` in which the lattice thermal conductivity is printed.
+When the job finishes, you can find a file :red:`si222.kl` in which the lattice thermal conductivity is saved.
+You can plot this file using gnuplot (or any other plotting softwares) as follows::
+
+    $ gnuplot
+    gnuplot> set logscale xy
+    gnuplot> set xlabel "Temperature (K)"
+    gnuplot> set ylabel "Lattice thermal conductivity (W/mK)"
+    gnuplot> plot "si222.kl" usi 1:2 w lp
+
+.. figure:: ../img/si_kappa.png
+   :scale: 40%
+   :align: center
+
+   Calculated lattice thermal conductivity of Si (click to enlarge)
+
+As you can see, the thermal conductivity diverges in :math:`T\rightarrow 0` limit. 
+This occurs because we only considered intrinsic phonon-phonon scatterings in the present calculation and
+neglected phonon-boundary scatterings which are dominant in the low temperature range.
+The effect of the boundary scattering can be included using the python script ``analyze_phonons.py`` in the tools directory::
+
+    $ analyze_phonons.py --calc kappa_boundary --size 1.0e+6 si222.result > si222_boundary_1mm.kl
+
+In this script, the phonon lifetimes are altered using the Matthiessen's rule
+
+.. math::
+
+  \frac{1}{\tau_{q}^{total}} = \frac{1}{\tau_{q}^{p-p}} + \frac{2|\boldsymbol{v}_{q}|}{L}.
+
+Here, the first term on the right-hand side of the equation is the scattering rate due to 
+the phonon-phonon scattering and the second term is the scattering rate due to a grain boundary of size :math:`L`.
+The size :math:`L` must be specified using the ``--size`` option in units of nm. The result is also shown in the
+above figure and the divergence is cured with the boundary effect.
+
+.. Note::
+    When a calculation is performed with a smearing method (``ISMEAR=0 or 1``) instead of the
+    tetrahedron method (``ISMEAR=-1``), the thermal conductivity may have a peak structure in the very low temperature region even without the boundary effect. This peak occurs because of the finite smearing width :math:`\epsilon` used in the smearing methods. As we descrease the :math:`\epsilon` value, the peak value of :math:`\kappa` should disapper. In addition, a very dense :math:`q` grid is necessary for describing phonon excitations and thermal transport in the low temperature region (regardless of the ``ISMEAR`` value).
+
+
+.. _tutorial_Si_step7:
+
+7. Analyze results
+~~~~~~~~~~~~~~~~~~
+
+There are many ways to analyze the result for better understandings of nanoscale thermal transport.
+Some selected features are introduced below:
+
+Phonon lifetime
+^^^^^^^^^^^^^^^
 
 The file :red:`si222.result` contains phonon linewidths at irreducible :math:`k` points. 
-You can extract phonon lifetime from this file as::
+You can extract phonon lifetime from this file as follows::
 
     $ analyze_phonons.py --calc tau --temp 300 si222.result > tau300K.dat
     $ gnuplot
     gnuplot> set xrange [1:]
     gnuplot> set logscale y
+    gnuplot> set xlabel "Phonon frequency (cm^{-1})"
+    gnuplot> set ylabel "Phonon lifetime (ps)"
     gnuplot> plot "tau300K.dat" using 3:4 w p
 
 .. figure:: ../img/si_tau.png
    :scale: 40%
    :align: center
 
-   Phonon lifetime of Si at 300 K
+   Phonon lifetime of Si at 300 K (click to enlarge)
 
-You can also estimate the cumulative thermal conductivity by
-::
+In the above figure, phonon lifetimes calculated with :math:`20\times 20\times 20\ q` points are also shown by open circles. 
 
-    $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 > cumulative_300K.dat
+
+Cumulative thermal conductivity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Following the procedure below, you can obtain the cumulative thermal conductivity::
+
+    $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 si222.result > cumulative_300K.dat
     $ gnuplot
     gnuplot> set logscale x
+    gnuplot> set xlabel "L (nm)"
+    gnuplot> set ylabel "Cumulative kappa (W/mK)"
     gnuplot> plot "cumulative_300K.dat" using 1:2 w lp
 
 .. figure:: ../img/si_cumulative.png
    :scale: 40%
    :align: center
 
-   Cumulative thermal conductivity of Si at 300 K
+   Cumulative thermal conductivity of Si at 300 K (click to enlarge)
 
-The script :red:`analyze_phonons.py` can be found in the tools/ directory.
-To use the script, compile the C++ code :red:`analyze_phonons.cpp` in the same directory and rename *a.out* to *analyze_phonons* (or edit the Makefile and type make).
+To draw a smooth line, you will have to use a denser :math:`q` grid as shown in the figure by the orange line,
+which are obtained with :math:`20\times 20\times 20\ q` points.
 
+Thermal conductivity spectrum
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To calculate the spectrum of thermal conductivity, modify the :red:`si_RTA.in` as follows::
+
+    &general
+      PREFIX = si222
+      MODE = RTA
+      FCSXML = si222_cubic.xml
+
+      NKD = 1; KD = Si
+      MASS = 28.0855
+  
+      EMIN = 0; EMAX = 550; DELTA_E = 1.0 # <-- frequency range
+    /
+
+    &cell
+    10.203
+     0.0 0.5 0.5
+     0.5 0.0 0.5
+     0.5 0.5 0.0
+    /
+
+    &kpoint
+     2
+     10 10 10
+    /
+
+    &analysis
+     KAPPA_SPEC = 1 # compute spectrum of kappa
+    /
+
+The frequency range is specified with the ``EMIN``, ``EMAX``, and ``DELTA_E`` tags, and the ``KAPPA_SPEC = 1`` is set in the ``&analysis`` field. Then, execute anphon again
+::
+
+    $ anphon si_RTA.in > si_RTA2.log 
+
+After the calculation finishes, you can find the file :red:`si222.kl_spec` which contains the spectra of thermal conductivity at various temperatures. You can plot the data at room temperature as follows::
+    
+    $ awk '{if ($1 == 300.0) print $0}' si222.kl_spec > si222_300K.kl_spec
+    $ gnuplot
+    gnuplot> set xlabel "Frequency (cm^{-1})"
+    gnuplot> set ylabel "Spectrum of kappa (W/mK/cm^{-1})"
+    gnuplot> plot "si222_300K.kl_spec" using 2:3 w l lt 2 lw 2
+
+.. figure:: ../img/si_kappa_spec.png
+   :scale: 40%
+   :align: center
+
+   Spectrum of thermal conductivity of Si at 300 K (click to enlarge)
+
+
+In the above figure, a computational result with :math:`20\times 20\times 20\ q` points is also shown by dashed line. 
+From the figure, we can see that low energy phonons below 200 cm\ :math:`^{-1}` account for more than 80% of the total thermal conductivity at 300 K.
 
