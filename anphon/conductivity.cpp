@@ -522,6 +522,7 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
     int *kmap_identity;
     double **eval;
 
+    std::cout << std::endl;
     std::cout << " KAPPA_SPEC = 1 : Calculating thermal conductivity spectra ... ";
 
     memory->allocate(kappa_spec, dos->n_energy, ntemp, 3);

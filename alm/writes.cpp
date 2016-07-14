@@ -629,7 +629,7 @@ void Writes::write_hessian()
     ofs_hes.open(files->file_hes.c_str(), std::ios::out);
     if (!ofs_hes) error->exit("write_hessian", "cannot create hessian file");
 
-    ofs_hes << "# iat, icrd, jat, jcrd, FC2 (Ryd/Bohr^2)" << std::endl;
+    ofs_hes << "# atom1, xyz1, atom2, xyz2, FC2 (Ryd/Bohr^2)" << std::endl;
     for (i = 0; i < nat3; ++i) {
         for (j = 0; j < nat3; ++j) {
             ofs_hes << std::setw(5) << i / 3 + 1;
