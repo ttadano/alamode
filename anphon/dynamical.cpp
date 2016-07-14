@@ -115,7 +115,8 @@ void Dynamical::setup_dynamical(std::string mode)
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+        std::cout << " -----------------------------------------------------------------" 
+            << std::endl << std::endl;
     }
 }
 
@@ -788,16 +789,12 @@ double Dynamical::fold(double x)
 
 double Dynamical::freq(const double x)
 {
-    if (std::abs(x) < eps) {
-        // Special treatment to avoid the divergence of computation.
-        return eps15;
-    } else {
-        if (x > 0.0) {
-            return std::sqrt(x);
-        } else {
-            return -std::sqrt(-x);
-        }
-    }
+    // Special treatment to avoid the divergence of computation.
+    if (std::abs(x) < eps)  return eps15;
+   
+    if (x > 0.0) return std::sqrt(x);
+        
+    return -std::sqrt(-x);
 }
 
 

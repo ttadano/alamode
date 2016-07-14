@@ -49,8 +49,8 @@ void Writes::write_input_vars()
     unsigned int i;
 
     std::cout << std::endl;
-    std::cout << " Input variables :" << std::endl;
-    std::cout << " ------------------------------------------------------------" << std::endl;
+    std::cout << " Input variables:" << std::endl;
+    std::cout << " -----------------------------------------------------------------" << std::endl;
     std::cout << " General:" << std::endl;
     std::cout << "  PREFIX = " << input->job_title << std::endl;
     std::cout << "  MODE = " << phon->mode << std::endl;
@@ -150,7 +150,7 @@ void Writes::write_input_vars()
             std::cout << "  ISOFACT = ";
             for (i = 0; i < system->nkd; ++i) {
                 std::cout << std::scientific
-                    << std::setw(12) << isotope->isotope_factor[i];
+                    << std::setw(13) << isotope->isotope_factor[i];
             }
             std::cout << std::endl;
         }
@@ -169,7 +169,7 @@ void Writes::write_input_vars()
     }
 
     std::cout << std::endl << std::endl;
-    std::cout << " ------------------------------------------------------------" << std::endl;
+    std::cout << " -----------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 
@@ -365,7 +365,7 @@ void Writes::print_phonon_energy()
     double kayser_to_THz = 0.0299792458;
 
     std::cout << std::endl;
-    std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+    std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
     std::cout << " Phonon frequencies below:" << std::endl << std::endl;
 
     if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
@@ -440,7 +440,7 @@ void Writes::write_phonon_info()
     }
 
     std::cout << std::endl;
-    std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+    std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
     std::cout << " The following files are created: " << std::endl;
 
 
@@ -1226,7 +1226,7 @@ void Writes::write_kappa()
         }
 
         std::cout << std::endl;
-        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+        std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
         std::cout << " Lattice thermal conductivity is stored in the file " << file_kappa << std::endl;
         if (conductivity->calc_kappa_spec) {
             std::cout << " Thermal conductivity spectra is stored in the file " << file_kappa2 << std::endl;
@@ -1320,7 +1320,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     for (i = 0; i < 3; ++i) {
         xk[i] = xk_in[i];
     }
-    std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+    std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
     std::cout << " ANIME-tag is given: Making animation files for the given" << std::endl;
     std::cout << "                     k point ( ";
     std::cout << std::setw(5) << xk[0] << ", "

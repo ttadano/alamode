@@ -39,8 +39,8 @@ void Writes::write_input_vars()
     unsigned int i;
 
     std::cout << std::endl;
-    std::cout << " Input variables below:" << std::endl;
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " Input variables:" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << " General:" << std::endl;
     std::cout << "  PREFIX = " << files->job_title << std::endl;
     std::cout << "  MODE = " << alm->mode << std::endl;
@@ -85,15 +85,17 @@ void Writes::write_input_vars()
         std::cout << "  FC3XML = " << constraint->fc3_file << std::endl;
         std::cout << std::endl;
     }
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 
 void Writes::writeall()
 {
+    std::cout << " The following files are created:" << std::endl << std::endl;
     write_force_constants();
     write_misc_xml();
     if (print_hessian) write_hessian();
+    std::cout << std::endl;
 }
 
 void Writes::write_force_constants()
@@ -262,7 +264,7 @@ void Writes::write_force_constants()
     memory->deallocate(str_fcs);
     ofs_fcs.close();
 
-    std::cout << std::endl << " Force constants are written to file: "
+    std::cout << " Force constants in a human-readable format : "
         << files->file_fcs << std::endl;
 }
 
@@ -591,7 +593,7 @@ void Writes::write_misc_xml()
 
     memory->deallocate(pair_tmp);
 
-    std::cout << " Information for post-process is stored to file: " << file_xml << std::endl;
+    std::cout << " Input data for the phonon code ANPHON      : " << file_xml << std::endl;
 }
 
 void Writes::write_hessian()
@@ -629,7 +631,7 @@ void Writes::write_hessian()
     ofs_hes.open(files->file_hes.c_str(), std::ios::out);
     if (!ofs_hes) error->exit("write_hessian", "cannot create hessian file");
 
-    ofs_hes << "# iat, icrd, jat, jcrd, FC2 (Ryd/Bohr^2)" << std::endl;
+    ofs_hes << "# atom1, xyz1, atom2, xyz2, FC2 (Ryd/Bohr^2)" << std::endl;
     for (i = 0; i < nat3; ++i) {
         for (j = 0; j < nat3; ++j) {
             ofs_hes << std::setw(5) << i / 3 + 1;
@@ -644,7 +646,7 @@ void Writes::write_hessian()
     ofs_hes.close();
     memory->deallocate(hessian);
 
-    std::cout << " Hessian is written to file: " << files->file_hes << std::endl;
+    std::cout << " Complete Hessian matrix                    : " << files->file_hes << std::endl;
 }
 
 std::string Writes::double2string(const double d, const int nprec)

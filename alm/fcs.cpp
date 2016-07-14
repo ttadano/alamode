@@ -75,7 +75,7 @@ void Fcs::init()
     memory->deallocate(nints);
     memory->deallocate(nzero);
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 

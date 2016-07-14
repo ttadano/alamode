@@ -47,12 +47,12 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     create_pointers();
 
     if (mympi->my_rank == 0) {
-        std::cout << " +------------------------------------------------------------+" << std::endl;
-        std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver.";
+        std::cout << " +-----------------------------------------------------------------+" << std::endl;
+        std::cout << " +                         Program ANPHON                          +" << std::endl;
+        std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
-        std::cout << "                      +" << std::endl;
-        std::cout << " +------------------------------------------------------------+" << std::endl;
+        std::cout << "                         +" << std::endl;
+        std::cout << " +-----------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
         std::cout << " Job started at " << timer->DateAndTime() << std::endl;

@@ -33,12 +33,12 @@ using namespace ALM_NS;
 
 ALM::ALM(int narg, char **arg)
 {
-    std::cout << " +------------------------------------------------------------+" << std::endl;
-    std::cout << " +                      Program ALM                           +" << std::endl;
-    std::cout << " +                           Ver.";
+    std::cout << " +-----------------------------------------------------------------+" << std::endl;
+    std::cout << " +                         Program ALM                             +" << std::endl;
+    std::cout << " +                             Ver.";
     std::cout << std::setw(7) << ALAMODE_VERSION;
-    std::cout << "                      +" << std::endl;
-    std::cout << " +------------------------------------------------------------+" << std::endl;
+    std::cout << "                         +" << std::endl;
+    std::cout << " +-----------------------------------------------------------------+" << std::endl;
     std::cout << std::endl;
 
     timer = new Timer(this);

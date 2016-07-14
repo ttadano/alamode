@@ -83,7 +83,8 @@ void Symmetry::init()
     symop_availability_check(symrel, sym_available, nsym, nsym_fc);
 
     if (nsym_fc == nsym) {
-        std::cout << "  All symmetry operations will be used to reduce the number of force constants." << std::endl;
+        std::cout << "  All symmetry operations will be used to" << std::endl;
+        std::cout << "  reduce the number of force constants." << std::endl;
     } else {
         std::cout << "  " << nsym_fc << " symmetry operations out of "
             << nsym << " will be used to reduce the number of parameters." << std::endl;
@@ -117,7 +118,7 @@ void Symmetry::init()
     std::cout << std::endl;
 
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 

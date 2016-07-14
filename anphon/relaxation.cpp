@@ -56,7 +56,7 @@ void Relaxation::setup_relaxation()
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " ------------------------------------------------------------" << std::endl << std::endl;
+        std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
         std::cout << " Now, move on to phonon lifetime calculations." << std::endl;
     }
 
