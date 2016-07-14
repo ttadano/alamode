@@ -41,7 +41,8 @@ using namespace PHON_NS;
 
 Input::Input(PHON *phon): Pointers(phon) {}
 
-Input::~Input() {
+Input::~Input()
+{
     if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
 }
 
@@ -62,10 +63,14 @@ void Input::parce_input(int narg, char **arg)
         }
     }
 
-    if (!locate_tag("&general")) error->exit("parse_input", "&general entry not found in the input file");
+    if (!locate_tag("&general"))
+        error->exit("parse_input",
+                    "&general entry not found in the input file");
     parse_general_vars();
 
-    if (!locate_tag("&cell")) error->exit("parse_input", "&cell entry not found in the input file");
+    if (!locate_tag("&cell"))
+        error->exit("parse_input",
+                    "&cell entry not found in the input file");
     parse_cell_parameter();
 
     bool use_defaults_for_analysis;
@@ -76,9 +81,10 @@ void Input::parce_input(int narg, char **arg)
     }
     parse_analysis_vars(use_defaults_for_analysis);
 
-    if (!locate_tag("&kpoint")) error->exit("parse_input", "&kpoint entry not found in the input file");
+    if (!locate_tag("&kpoint"))
+        error->exit("parse_input",
+                    "&kpoint entry not found in the input file");
     parse_kpoints();
-
 }
 
 void Input::parse_general_vars()
@@ -123,10 +129,11 @@ void Input::parse_general_vars()
     no_defaults = my_split(str_no_defaults, ' ');
 #endif
 
-    for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it){
+    for (std::vector<std::string>::iterator it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (general_var_dict.find(*it) == general_var_dict.end()) {
-            error->exit("parse_general_vars", 
-                "The following variable is not found in &general input region: ", (*it).c_str());
+            error->exit("parse_general_vars",
+                        "The following variable is not found in &general input region: ",
+                        (*it).c_str());
         }
     }
 
@@ -135,7 +142,7 @@ void Input::parse_general_vars()
 
     file_result = prefix + ".result";
 
-    std::transform (mode.begin(), mode.end(), mode.begin(), toupper);
+    std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
     assign_val(nsym, "NSYM", general_var_dict);
 
     fcsinfo = general_var_dict["FCSXML"];
@@ -144,10 +151,11 @@ void Input::parse_general_vars()
     split_str_by_space(general_var_dict["KD"], kdname_v);
 
     if (kdname_v.size() != nkd) {
-        error->exit("parse_general_vars", "The number of entries for KD is inconsistent with NKD");
+        error->exit("parse_general_vars",
+                    "The number of entries for KD is inconsistent with NKD");
     } else {
         memory->allocate(kdname, nkd);
-        for (i = 0; i < nkd; ++i){
+        for (i = 0; i < nkd; ++i) {
             kdname[i] = kdname_v[i];
         }
     }
@@ -155,7 +163,8 @@ void Input::parse_general_vars()
     split_str_by_space(general_var_dict["MASS"], masskd_v);
 
     if (masskd_v.size() != nkd) {
-        error->exit("parse_general_vars", "The number of entries for MASS is inconsistent with NKD");
+        error->exit("parse_general_vars",
+                    "The number of entries for MASS is inconsistent with NKD");
     } else {
         memory->allocate(masskd, nkd);
         for (i = 0; i < nkd; ++i) {
@@ -175,7 +184,7 @@ void Input::parse_general_vars()
 
     nonanalytic = 0;
     nsym = 0;
-    tolerance = 1.0e-8;
+    tolerance = 1.0e-6;
     printsymmetry = false;
     sym_time_reversal = false;
     use_triplet_symmetry = true;
@@ -228,7 +237,8 @@ void Input::parse_general_vars()
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
     if (nonanalytic > 2) {
-        error->exit("parse_general_vars", "NONANALYTIC should be 0, 1, or 2.");
+        error->exit("parse_general_vars",
+                    "NONANALYTIC should be 0, 1, or 2.");
     }
 
     // Copy the values to appropriate classes.
@@ -285,12 +295,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    std::string str_allowed_list = "LCLASSICAL PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
+    std::string str_allowed_list = "PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR";
+                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR KAPPA_SPEC";
 
     bool fstate_omega, fstate_k;
-    bool lclassical;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
     bool print_vel, print_evec, print_msd;
     bool projected_dos, print_gruneisen, print_newfcs;
@@ -301,6 +310,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int quartic_mode;
     int include_isotope;
     int scattering_phase_space;
+    int calculate_kappa_spec;
     unsigned int cellsize[3];
 
     double delta_a;
@@ -328,7 +338,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     delta_a = 0.001;
 
-    lclassical = false;
     quartic_mode = 0;
     ks_analyze_mode = false;
     atom_project_mode = false;
@@ -336,6 +345,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
     include_isotope = 0;
     fstate_omega = false;
     fstate_k = false;
+
+    calculate_kappa_spec = 0;
+
 
     // Assign values to variables
 
@@ -353,7 +365,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_newfcs, "NEWFCS", analysis_var_dict);
         assign_val(delta_a, "DELTA_A", analysis_var_dict);
 
-        assign_val(lclassical, "LCLASSICAL", analysis_var_dict);
         assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
         assign_val(atom_project_mode, "ATOMPROJ", analysis_var_dict);
         assign_val(calc_realpart, "REALPART", analysis_var_dict);
@@ -361,6 +372,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
+        assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -377,10 +389,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
         split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
 
         if (isofact_v.size() != system->nkd) {
-            error->exit("parse_analysis_vars", "The number of entries for ISOFACT is inconsistent with NKD");
+            error->exit("parse_analysis_vars",
+                        "The number of entries for ISOFACT is inconsistent with NKD");
         } else {
             memory->allocate(isotope_factor, system->nkd);
-            for (i = 0; i < system->nkd; ++i){
+            for (i = 0; i < system->nkd; ++i) {
                 isotope_factor[i] = my_cast<double>(isofact_v[i]);
             }
         }
@@ -390,29 +403,35 @@ void Input::parse_analysis_vars(const bool use_default_values)
         split_str_by_space(analysis_var_dict["ANIME"], anime_kpoint);
 
         if (anime_kpoint.size() != 3) {
-            error->exit("parse_analysis_vars", "The number of entries for ANIME should be 3.");
+            error->exit("parse_analysis_vars",
+                        "The number of entries for ANIME should be 3.");
         }
 
         split_str_by_space(analysis_var_dict["ANIME_CELLSIZE"], anime_cellsize);
 
         if (anime_cellsize.size() != 3) {
-            error->exit("parse_analysis_vars", "The number of entries for ANIME_CELLSIZE should be 3.");
+            error->exit("parse_analysis_vars",
+                        "The number of entries for ANIME_CELLSIZE should be 3.");
         }
 
         for (i = 0; i < 3; ++i) {
             try {
                 cellsize[i] = boost::lexical_cast<unsigned int>(anime_cellsize[i]);
-            } catch (std::exception &e) {
+            }
+            catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
-                error->exit("parse_analysis_vars", "ANIME_CELLSIZE must be a set of positive integers.");
+                error->exit("parse_analysis_vars",
+                            "ANIME_CELLSIZE must be a set of positive integers.");
             }
             if (cellsize[i] < 1) {
-                error->exit("parse_analysis_vars", "Please give positive integers in ANIME_CELLSIZE.");
+                error->exit("parse_analysis_vars",
+                            "Please give positive integers in ANIME_CELLSIZE.");
             }
         }
 
         assign_val(anime_format, "ANIME_FORMAT", analysis_var_dict);
-        std::transform(anime_format.begin(), anime_format.end(), anime_format.begin(), toupper);
+        std::transform(anime_format.begin(), anime_format.end(),
+                       anime_format.begin(), toupper);
 
         if (anime_format.empty()) anime_format = "XYZ";
 
@@ -443,7 +462,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
 
-    conductivity->use_classical_Cv = lclassical;
+    conductivity->calc_kappa_spec = calculate_kappa_spec;
     relaxation->quartic_mode = quartic_mode;
     relaxation->atom_project_mode = atom_project_mode;
     relaxation->calc_realpart = calc_realpart;
@@ -532,24 +551,27 @@ void Input::parse_cell_parameter()
     for (i = 0; i < 4; ++i) {
 
         line = line_vec[i];
-        boost::split(line_split, line, boost::is_any_of("\t "), boost::token_compress_on);
+        boost::split(line_split, line,
+                     boost::is_any_of("\t "), boost::token_compress_on);
 
         if (i == 0) {
             // Lattice factor a
             if (line_split.size() == 1) {
                 a = boost::lexical_cast<double>(line_split[0]);
             } else {
-                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+                error->exit("parse_cell_parameter",
+                            "Unacceptable format for &cell field.");
             }
 
         } else {
             // Lattice vectors a1, a2, a3
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
-                    lavec_tmp[j][i-1] = boost::lexical_cast<double>(line_split[j]);
+                    lavec_tmp[j][i - 1] = boost::lexical_cast<double>(line_split[j]);
                 }
             } else {
-                error->exit("parse_cell_parameter", "Unacceptable format for &cell field.");
+                error->exit("parse_cell_parameter",
+                            "Unacceptable format for &cell field.");
             }
         }
     }
@@ -562,7 +584,7 @@ void Input::parse_cell_parameter()
 }
 
 
-void Input::parse_kpoints() 
+void Input::parse_kpoints()
 {
     // Read the settings in the &kpoint field.
 
@@ -624,33 +646,41 @@ void Input::parse_kpoints()
             if (kpelem.size() == 1) {
                 try {
                     kpmode = boost::lexical_cast<int>(kpelem[0]);
-                } catch (std::exception &e) {
+                }
+                catch (std::exception &e) {
                     std::cout << e.what() << std::endl;
-                    error->exit("parse_kpoints", "KPMODE must be an integer. [0, 1, or 2]");
+                    error->exit("parse_kpoints",
+                                "KPMODE must be an integer. [0, 1, or 2]");
                 }
 
                 if (!(kpmode >= 0 && kpmode <= 3)) {
-                    error->exit("parse_kpoints", "KPMODE must be 0, 1, or 2.");
+                    error->exit("parse_kpoints",
+                                "KPMODE must be 0, 1, or 2.");
                 }
 
             } else {
-                error->exit("parse_kpoints", "Unacceptable format for the &kpoint field.");
+                error->exit("parse_kpoints",
+                            "Unacceptable format for the &kpoint field.");
             }
 
         } else {
             // Read each entry of kpoint
 
             if (kpmode == 0 && kpelem.size() != 3) {
-                error->exit("parse_kpoints", "The number of columns must be 3 when KPMODE = 0");
+                error->exit("parse_kpoints",
+                            "The number of columns must be 3 when KPMODE = 0");
             }
             if (kpmode == 1 && kpelem.size() != 9) {
-                error->exit("parse_kpoints", "The number of columns must be 9 when KPMODE = 1");
+                error->exit("parse_kpoints",
+                            "The number of columns must be 9 when KPMODE = 1");
             }
             if (kpmode == 2 && kpelem.size() != 3) {
-                error->exit("parse_kpoints", "The number of columns must be 3 when KPMODE = 2");
+                error->exit("parse_kpoints",
+                            "The number of columns must be 3 when KPMODE = 2");
             }
             if (kpmode == 3 && kpelem.size() != 8) {
-                error->exit("parse_kpoints", "The number of columns must be 8 when KPMODE = 3");
+                error->exit("parse_kpoints",
+                            "The number of columns must be 8 when KPMODE = 3");
             }
 
             kpoint->kpInp.push_back(kpelem);
@@ -661,9 +691,8 @@ void Input::parse_kpoints()
 }
 
 
-int Input::locate_tag(std::string key)  
+int Input::locate_tag(std::string key)
 {
-
     int ret = 0;
     std::string line, line2;
 
@@ -683,12 +712,12 @@ int Input::locate_tag(std::string key)
             line2 = line;
             line = trim(line2);
 #endif
-            if (line == key){
+            if (line == key) {
                 ret = 1;
                 break;
             }
         }
-        return ret; 
+        return ret;
 
     } else {
 
@@ -704,19 +733,18 @@ int Input::locate_tag(std::string key)
             line2 = line;
             line = trim(line2);
 #endif
-            if (line == key){
+            if (line == key) {
                 ret = 1;
                 break;
             }
         }
-        return ret; 
+        return ret;
     }
-
 }
 
-void Input::get_var_dict(const std::string keywords, std::map<std::string, std::string> &var_dict)
+void Input::get_var_dict(const std::string keywords,
+                         std::map<std::string, std::string> &var_dict)
 {
-
     std::string line, key, val;
     std::string line_wo_comment, line_tmp;
     std::string::size_type pos_first_comment_tag;
@@ -781,7 +809,8 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
                     str_varval = my_split(str_tmp, '=');
 #endif
                     if (str_varval.size() != 2) {
-                        error->exit("get_var_dict", "Unacceptable format");
+                        error->exit("get_var_dict",
+                                    "Unacceptable format");
                     }
 #ifdef _USE_BOOST
                     key = boost::to_upper_copy(boost::trim_copy(str_varval[0]));
@@ -793,12 +822,15 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 #endif
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable " << key << std::endl;
-                        error->exit("get_var_dict", "Invalid variable found");
+                        error->exit("get_var_dict",
+                                    "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
-                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
-                        error->exit("get_var_dict", "Redundant input parameter");
+                        std::cout << "Variable " << key
+                            << " appears twice in the input file." << std::endl;
+                        error->exit("get_var_dict",
+                                    "Redundant input parameter");
                     }
 
                     // If everything is OK, add the variable and the corresponding value
@@ -852,7 +884,8 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 #endif
 
                     if (str_varval.size() != 2) {
-                        error->exit("get_var_dict", "Unacceptable format");
+                        error->exit("get_var_dict",
+                                    "Unacceptable format");
                     }
 
 #ifdef _USE_BOOST
@@ -865,13 +898,17 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 #endif
 
                     if (keyword_set.find(key) == keyword_set.end()) {
-                        std::cout << "Could not recognize the variable " << key << std::endl;
-                        error->exit("get_var_dict", "Invalid variable found");
+                        std::cout << "Could not recognize the variable "
+                            << key << std::endl;
+                        error->exit("get_var_dict",
+                                    "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
-                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
-                        error->exit("get_var_dict", "Redundant input parameter");
+                        std::cout << "Variable " << key
+                            << " appears twice in the input file." << std::endl;
+                        error->exit("get_var_dict",
+                                    "Redundant input parameter");
                     }
 
                     // If everything is OK, add the variable and the corresponding value
@@ -889,7 +926,6 @@ void Input::get_var_dict(const std::string keywords, std::map<std::string, std::
 
 bool Input::is_endof_entry(const std::string str)
 {
-
     if (str[0] == '/') {
         return true;
     } else {
@@ -897,15 +933,15 @@ bool Input::is_endof_entry(const std::string str)
     }
 }
 
-void Input::split_str_by_space(const std::string str, std::vector<std::string> &str_vec)
+void Input::split_str_by_space(const std::string str,
+                               std::vector<std::string> &str_vec)
 {
-
     std::string str_tmp;
     std::istringstream is(str);
 
     str_vec.clear();
 
-    while(1) {
+    while (1) {
         str_tmp.clear();
         is >> str_tmp;
         if (str_tmp.empty()) {
@@ -916,14 +952,18 @@ void Input::split_str_by_space(const std::string str, std::vector<std::string> &
     str_tmp.clear();
 }
 
-template<typename T> void Input::assign_val(T &val, const std::string key, std::map<std::string, std::string> dict)
+template <typename T>
+void Input::assign_val(T &val,
+                       const std::string key,
+                       std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.
 
     if (!dict[key].empty()) {
         try {
             val = boost::lexical_cast<T>(dict[key]);
-        } catch (std::exception &e) {
+        }
+        catch (std::exception &e) {
             std::string str_tmp;
             std::cout << e.what() << std::endl;
             str_tmp = "Invalid entry for the " + key + " tag.\n";
@@ -934,7 +974,8 @@ template<typename T> void Input::assign_val(T &val, const std::string key, std::
 }
 
 
-template<typename T_to, typename T_from> T_to Input::my_cast(T_from const &x)
+template <typename T_to, typename T_from>
+T_to Input::my_cast(T_from const &x)
 {
     std::stringstream ss;
     T_to ret;

@@ -1,7 +1,7 @@
 /*
  fcs.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -13,22 +13,25 @@
 #include "pointers.h"
 #include <vector>
 #include <set>
-#include "listcomparison.h"
 #include <algorithm>
 
-namespace ALM_NS {
-
-    class FcProperty {
+namespace ALM_NS
+{
+    class FcProperty
+    {
     public:
         std::vector<int> elems;
         double coef;
         int mother;
 
         FcProperty();
-        FcProperty(const FcProperty &obj){
+
+        FcProperty(const FcProperty &obj)
+        {
             coef = obj.coef;
             mother = obj.mother;
-            for (std::vector<int>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it){
+            for (std::vector<int>::const_iterator it = obj.elems.begin(); 
+                it != obj.elems.end(); ++it) {
                 elems.push_back(*it);
             }
         };
@@ -37,17 +40,20 @@ namespace ALM_NS {
         {
             coef = c;
             mother = m;
-            for (int i = 0; i < n; ++i){
+            for (int i = 0; i < n; ++i) {
                 elems.push_back(arr[i]);
             }
-        }    
+        }
+
+        bool operator<(const FcProperty &a) const
+        {
+            return std::lexicographical_compare(elems.begin(), elems.end(),
+                                                a.elems.begin(), a.elems.end());
+        }
     };
 
-    inline bool operator<(const FcProperty a, const FcProperty b){
-        return std::lexicographical_compare(a.elems.begin(), a.elems.end(), b.elems.begin(), b.elems.end());
-    }
-
-    class Fcs: protected Pointers{
+    class Fcs: protected Pointers
+    {
     public:
         Fcs(class ALM *);
         ~Fcs();
@@ -61,7 +67,7 @@ namespace ALM_NS {
 
         std::string easyvizint(const int);
         void get_xyzcomponent(int, int **);
-        void sort_tail(const int, int *); 
+        void sort_tail(const int, int *);
 
         bool is_inprim(const int, const int *);
         bool is_inprim(const int);
@@ -72,7 +78,6 @@ namespace ALM_NS {
         int *nints;
         void generate_fclists(int);
         bool is_ascending(const int, const int *);
-
     };
-
 }
+

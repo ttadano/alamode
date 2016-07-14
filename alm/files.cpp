@@ -18,20 +18,20 @@
 using namespace ALM_NS;
 
 Files::Files(ALM *alm): Pointers(alm) {}
-Files::~Files() {
-    if (alm->mode == "fitting" || alm->mode == "lasso") {
-//        closefiles();
-    } else if (alm->mode == "suggest") {
+
+Files::~Files()
+{
+    if (alm->mode == "suggest") {
         memory->deallocate(file_disp_pattern);
     }
 }
 
-void Files::setfilenames()
+void Files::init()
 {
     int i;
 
     file_fcs = job_title + ".fcs";
-    file_info = job_title + ".info";
+    file_hes = job_title + ".hessian";
 
     if (alm->mode == "suggest") {
 
@@ -41,27 +41,9 @@ void Files::setfilenames()
             if (i == 0) {
                 file_disp_pattern[i] = job_title + ".pattern_HARMONIC";
             } else {
-                file_disp_pattern[i] = job_title + ".pattern_ANHARM" + boost::lexical_cast<std::string>(i+2);
+                file_disp_pattern[i] = job_title + ".pattern_ANHARM"
+                    + boost::lexical_cast<std::string>(i + 2);
             }
         }
     }
-}
-
-void Files::openfiles()
-{
-    ifs_disp.open(file_disp.c_str(), std::ios::in);
-    if (!ifs_disp) error->exit("openfiles", "cannot open disp file");
-    ifs_force.open(file_force.c_str(), std::ios::in);
-    if (!ifs_force) error->exit("openfiles", "cannot open force file");
-}
-
-void Files::closefiles()
-{
-    ifs_disp.close();
-    ifs_force.close();
-}
-
-void Files::init()
-{
-    setfilenames();
 }

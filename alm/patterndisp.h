@@ -15,39 +15,46 @@
 #include <vector>
 #include <set>
 
-namespace ALM_NS {
-
-
-    class DispAtomSet {
+namespace ALM_NS
+{
+    class DispAtomSet
+    {
     public:
         std::vector<int> atomset;
 
         DispAtomSet();
 
-        DispAtomSet(std::vector<int> vec) {
+        DispAtomSet(std::vector<int> vec)
+        {
             for (std::vector<int>::iterator it = vec.begin(); it != vec.end(); ++it) {
                 atomset.push_back((*it));
             }
         }
     };
 
-    class DirectionVec {
+    class DirectionVec
+    {
     public:
         double direction[3];
 
         DirectionVec();
-        DirectionVec(double vec_in[3]) {
+
+        DirectionVec(double vec_in[3])
+        {
             for (int i = 0; i < 3; ++i) direction[i] = vec_in[i];
         }
     };
 
-    class DispDirectionHarmonic {
+    class DispDirectionHarmonic
+    {
     public:
         int atom;
         std::vector<DirectionVec> directionlist;
 
         DispDirectionHarmonic();
-        DispDirectionHarmonic(int n, std::vector<DirectionVec> list_in) {
+
+        DispDirectionHarmonic(int n, std::vector<DirectionVec> list_in)
+        {
             atom = n;
             for (std::vector<DirectionVec>::iterator it = list_in.begin(); it != list_in.end(); ++it) {
                 directionlist.push_back(*it);
@@ -55,14 +62,16 @@ namespace ALM_NS {
         }
     };
 
-    class AtomWithDirection {
+    class AtomWithDirection
+    {
     public:
         std::vector<int> atoms;
         std::vector<double> directions;
 
         AtomWithDirection();
-        AtomWithDirection(std::vector<int> a, std::vector<double> b) {
 
+        AtomWithDirection(std::vector<int> a, std::vector<double> b)
+        {
             for (unsigned int i = 0; i < a.size(); ++i) {
                 atoms.push_back(a[i]);
             }
@@ -70,7 +79,9 @@ namespace ALM_NS {
                 directions.push_back(b[i]);
             }
         }
-        AtomWithDirection(int n, int *a, double **b) {
+
+        AtomWithDirection(int n, int *a, double **b)
+        {
             for (int i = 0; i < n; ++i) {
                 atoms.push_back(a[i]);
                 for (int j = 0; j < 3; ++j) {
@@ -81,29 +92,36 @@ namespace ALM_NS {
     };
 
 
-    inline bool operator<(const DispAtomSet &a, const DispAtomSet &b) {
-        return std::lexicographical_compare(a.atomset.begin(), a.atomset.end(), b.atomset.begin(), b.atomset.end());
+    inline bool operator<(const DispAtomSet &a, const DispAtomSet &b)
+    {
+        return std::lexicographical_compare(a.atomset.begin(), a.atomset.end(),
+                                            b.atomset.begin(), b.atomset.end());
     }
 
 
-    class IndexWithSign {
+    class IndexWithSign
+    {
     public:
         int ind, sign;
 
         IndexWithSign();
-        IndexWithSign(const int ind_in, const int sign_in) {
+
+        IndexWithSign(const int ind_in, const int sign_in)
+        {
             ind = ind_in;
             sign = sign_in;
         }
     };
 
-    inline bool operator<(const IndexWithSign &a, const IndexWithSign &b) {
+    inline bool operator<(const IndexWithSign &a, const IndexWithSign &b)
+    {
         return a.ind < b.ind;
     }
 
-    class Displace: protected Pointers {
+    class Displace: protected Pointers
+    {
     public:
-        Displace (class ALM *);
+        Displace(class ALM *);
         ~Displace();
 
         bool trim_dispsign_for_evenfunc;
@@ -114,10 +132,17 @@ namespace ALM_NS {
 
     private:
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
-        void generate_pattern_all(const int, std::vector<AtomWithDirection> *, std::set<DispAtomSet> *);
+        void generate_pattern_all(const int,
+                                  std::vector<AtomWithDirection> *,
+                                  std::set<DispAtomSet> *);
 
-        void generate_signvecs(const int, std::vector<std::vector <int> > &, std::vector<int>);
-        void find_unique_sign_pairs(const int, std::vector<std::vector<int> >, 
-            std::vector<int>, std::vector<std::vector<int> > &);
+        void generate_signvecs(const int,
+                               std::vector<std::vector<int> > &,
+                               std::vector<int>);
+
+        void find_unique_sign_pairs(const int,
+                                    std::vector<std::vector<int> >,
+                                    std::vector<int>,
+                                    std::vector<std::vector<int> > &);
     };
 }

@@ -19,9 +19,10 @@
 #include <Eigen/Core>
 #endif
 
-namespace ALM_NS {
-
-    class SymmetryOperation {
+namespace ALM_NS
+{
+    class SymmetryOperation
+    {
     public:
         int rot[3][3];
         double tran[3];
@@ -32,17 +33,18 @@ namespace ALM_NS {
 
         SymmetryOperation(const int rot_in[3][3], const double tran_in[3])
         {
-            for (int i = 0; i < 3; ++i){
-                for (int j = 0; j < 3; ++j){
+            for (int i = 0; i < 3; ++i) {
+                for (int j = 0; j < 3; ++j) {
                     rot[i][j] = rot_in[i][j];
                 }
             }
-            for (int i = 0; i < 3; ++i){
+            for (int i = 0; i < 3; ++i) {
                 tran[i] = tran_in[i];
             }
         }
 
-        bool operator<(const SymmetryOperation &a) const {
+        bool operator<(const SymmetryOperation &a) const
+        {
             std::vector<double> v1, v2;
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
@@ -52,26 +54,30 @@ namespace ALM_NS {
             }
             for (int i = 0; i < 3; ++i) {
                 if (tran[i] < 0.0) {
-                    v1.push_back(1.0+tran[i]);
+                    v1.push_back(1.0 + tran[i]);
                 } else {
                     v1.push_back(tran[i]);
                 }
                 if (a.tran[i] < 0.0) {
-                    v2.push_back(1.0+a.tran[i]);
+                    v2.push_back(1.0 + a.tran[i]);
                 } else {
                     v2.push_back(a.tran[i]);
                 }
             }
-            return std::lexicographical_compare(v1.begin(),v1.end(),v2.begin(),v2.end());
+            return std::lexicographical_compare(v1.begin(), v1.end(),
+                                                v2.begin(), v2.end());
         }
     };
 
-    class RotationMatrix {
+    class RotationMatrix
+    {
     public:
         int mat[3][3];
 
         RotationMatrix();
-        RotationMatrix(const int rot[3][3]) {
+
+        RotationMatrix(const int rot[3][3])
+        {
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
                     mat[i][j] = rot[i][j];
@@ -80,7 +86,8 @@ namespace ALM_NS {
         }
     };
 
-    class Symmetry: protected Pointers {
+    class Symmetry: protected Pointers
+    {
     public:
         Symmetry(class ALM *);
         ~Symmetry();
@@ -99,11 +106,13 @@ namespace ALM_NS {
         int **map_sym;
         int **map_p2s;
 
-        class Maps {
+        class Maps
+        {
         public:
             int atom_num;
             int tran_num;
         };
+
         Maps *map_s2p;
 
         int trev_sym_mag;
@@ -111,20 +120,30 @@ namespace ALM_NS {
 
     private:
 
-        void setup_symmetry_operation(int, unsigned int&, double[3][3], double[3][3], 
-            double **, int *);
-        void genmaps(int, double **, int **, int **, class Symmetry::Maps *);
-        void findsym(int, double [3][3], double **, std::vector<SymmetryOperation> &);
+        void setup_symmetry_operation(int, unsigned int &,
+                                      double [3][3], double [3][3],
+                                      double **, int *);
+        void genmaps(int, double **,
+                     int **, int **,
+                     class Symmetry::Maps *);
+
+        void findsym(int, double [3][3], double **,
+                     std::vector<SymmetryOperation> &);
+
         bool is_translation(int **);
         bool is_proper(double [3][3]);
 
-        void symop_in_cart(double [3][3], double[3][3]);
+        void symop_in_cart(double [3][3], double [3][3]);
         void pure_translations();
         void print_symmetrized_coordinate(double **);
         void symop_availability_check(double ***, bool *, const int, int &);
+
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
-        void find_crystal_symmetry(int, int, std::vector<unsigned int> *, double **x,
-            std::vector<RotationMatrix>, std::vector<SymmetryOperation> &);
+
+        void find_crystal_symmetry(int, int,
+                                   std::vector<unsigned int> *, double **x,
+                                   std::vector<RotationMatrix>,
+                                   std::vector<SymmetryOperation> &);
 
         std::string file_sym;
         int ***symrel_int;

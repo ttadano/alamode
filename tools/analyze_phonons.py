@@ -4,17 +4,17 @@
 #
 # Simple interface to the command line script "analyze_phonons.cpp".
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 """
-This python script is a simple user interface to
+This python script is a simple interface to
 the C++ analyzer program "analyze_phonons.cpp".
 To execute this script, the above c++ program has to be
-compiled and made executable.
+compiled and made executable beforehand.
 """
 import sys
 import os
@@ -37,6 +37,12 @@ parser.add_option('--calc', metavar='tau|kappa|cumulative|cumulative2|kappa_boun
                         '--direction option. When --calc=kappa_boundary, '
                         'please specify the --size option.'))
 
+parser.add_option('--isotope', metavar="PREFIX.self_isotope",
+                  help="specify the file PREFIX.self_isotope to include the \
+effect of phonon-isotope scatterings. When given, the phonon scattering rates will be \
+updated as 1/tau_{new} = 1/tau_{phonon-phonon} + 1/tau_{phonon-isotope}. \
+The PREFIX.self_isotope can be generated using 'anphon' with ISOTOPE=2 option.")
+
 parser.add_option('--noavg', action="store_false", dest="average_gamma",
                   default=True, help="do not average the damping function \
 at degenerate points")
@@ -45,7 +51,7 @@ parser.add_option('--size', help="specify the grain boundary size in units of \
 nm. The default value is 1000 nm.")
 
 parser.add_option('--length', metavar="Lmax:dL",
-                 help="specify the maximum value of system size L and its \
+                  help="specify the maximum value of system size L and its \
 step dL in units of nm. \
 The default value is --length=1000:10 .")
 
@@ -84,7 +90,8 @@ or specify both --kpoint and --mode when --calc=tau")
         target_s = int(options.mode)
         calc = "tau_temp"
         command = analyze_obj + file_result + " " + calc + " " + avg \
-            + " " + str(target_k) + " " + str(target_s)
+            + " " + str(target_k) + " " + str(target_s)\
+            + " " + isotope + " " + file_isotope
 
         subprocess.call(command, shell=True)
 
@@ -119,7 +126,8 @@ def print_lifetime_at_given_temperature():
 
     command = analyze_obj + file_result + " " + calc + " " + avg + " "\
         + str(beg_k) + " " + str(end_k) + " "\
-        + str(beg_s) + " " + str(end_s) + " " + options.temp
+        + str(beg_s) + " " + str(end_s) + " " + options.temp\
+        + " " + isotope + " " + file_isotope
 
     subprocess.call(command, shell=True)
 
@@ -143,7 +151,8 @@ def print_thermal_conductivity():
             sys.exit("Invalid usage of --mode for --calc=kappa")
 
     command = analyze_obj + file_result + " " + calc + " " + avg\
-        + " " + str(beg_s) + " " + str(end_s)
+        + " " + str(beg_s) + " " + str(end_s)\
+        + " " + isotope + " " + file_isotope
 
     subprocess.call(command, shell=True)
 
@@ -172,7 +181,9 @@ def print_thermal_conductivity_with_boundary():
         boundary_size = float(options.size)
 
     command = analyze_obj + file_result + " " + calc + " " + avg\
-        + " " + str(beg_s) + " " + str(end_s) + " " + str(boundary_size)
+        + " " + str(beg_s) + " " + str(end_s)\
+        + " " + isotope + " " + file_isotope\
+        + " " + str(boundary_size)
 
     subprocess.call(command, shell=True)
 
@@ -209,11 +220,13 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
 
     if cumulative_mode == "cumulative":
         command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
+            + str(beg_s) + " " + str(end_s)\
+            + " " + isotope + " " + file_isotope\
+            + " " + str(max_len) + " "\
             + str(d_len) + " " + options.temp
 
     else:
-        size_flag = [0]*3
+        size_flag = [0] * 3
 
         if options.direction is None:
             for i in range(3):
@@ -224,11 +237,13 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
 
             arr = options.direction.split(':')
             for i in range(len(options.direction.split(':'))):
-                size_flag[int(arr[i])-1] = 1
+                size_flag[int(arr[i]) - 1] = 1
 
         command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_s) + " " + str(end_s) + " " + str(max_len) + " "\
-            + str(d_len) + " " + options.temp + " " + str(size_flag[0]) \
+            + str(beg_s) + " " + str(end_s)\
+            + " " + isotope + " " + file_isotope\
+            + " " + str(max_len) + " " + str(d_len)\
+            + " " + options.temp + " " + str(size_flag[0]) \
             + " " + str(size_flag[1]) + " " + str(size_flag[2])
 
     subprocess.call(command, shell=True)
@@ -242,6 +257,13 @@ if __name__ == '__main__':
         avg = "1"
     else:
         avg = "0"
+
+    if options.isotope is None:
+        isotope = "0"
+        file_isotope = "none"
+    else:
+        isotope = "1"
+        file_isotope = options.isotope
 
     # Compute phonon lifetimes, mean-free-path,
     # and mode-decomposed thermal conductivity

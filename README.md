@@ -1,5 +1,5 @@
 # ALAMODE 
-### Version 0.9.7 (Beta)
+### Version 0.9.8 (Beta)
 ![alt ALAMODE](./docs/img/alamode.png)
 
 - - -
@@ -74,7 +74,7 @@ each program.
 For more details about ALAMODE including tutorial, input parameters, and 
 output files, please visit the following webpabe.
 
-http://alamode.readthedocs.org
+http://alamode.readthedocs.io
 
 
 ## License

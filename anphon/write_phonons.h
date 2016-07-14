@@ -17,14 +17,14 @@
 
 namespace PHON_NS
 {
-    class Writes: protected Pointers {
+    class Writes: protected Pointers
+    {
     public:
 
         Writes(class PHON *);
         ~Writes();
         void write_phonon_info();
         void print_phonon_energy();
-        void write_selfenergy();
         void write_gruneisen();
         void setup_result_io();
         void write_input_vars();
@@ -61,6 +61,7 @@ namespace PHON_NS
         void write_msd();
         void write_participation_ratio();
 
-        double Ry_to_kayser;   
+        double Ry_to_kayser;
     };
 }
+

@@ -40,111 +40,161 @@ except ImportError:
 usage = "usage: %prog [options] vasprun*.xml (or *.pw.out or *.str)"
 parser = optparse.OptionParser(usage=usage)
 
+parser.add_option('--VASP',
+                  metavar='orig.POSCAR',
+                  help="VASP POSCAR file with equilibrium atomic \
+                        positions (default: None)")
+
+parser.add_option('--QE',
+                  metavar='orig.pw.in',
+                  help="Quantum-ESPRESSO input file with equilibrium\
+                  atomic positions (default: None)")
+
+parser.add_option('--xTAPP',
+                  metavar='orig.cg',
+                  help="xTAPP CG file with equilibrium atomic \
+                        positions (default: None)")
+
+parser.add_option('--get',
+                  help="specify which quantity to extract. \
+                        Available options are 'disp', 'force' and 'energy'.")
+
 parser.add_option('--unit',
                   action="store",
                   type="string",
                   dest="unitname",
                   default="Rydberg",
                   help="print atomic displacements and forces in units of UNIT. \
-                        Available options are eV, Rydberg (default), and Hartree.")
+                        Available options are 'eV', 'Rydberg' (default), and 'Hartree'.")
 
-parser.add_option('--get',
-                  help="specify which quantity to extract. \
-                        Available options are disp, force and energy.")
+parser.add_option('--offset',
+                  help="Specify an output file (either *.xml, *.pw.out, or *.str) of an\
+ equilibrium structure to subtract residual forces, displacements, or energies.")
 
-parser.add_option('--QE',
-                  metavar='orig.pw.in',
-                  help="Quantum-ESPRESSO input file with equilibrium\
- atomic positions (default: None)")
-parser.add_option('--VASP',
-                  metavar='orig.POSCAR',
-                  help="VASP POSCAR file with equilibrium atomic \
-                        positions (default: None)")
-parser.add_option('--xTAPP',
-                  metavar='orig.cg',
-                  help="xTAPP CG file with equilibrium atomic \
-                        positions (default: None)")
+# Functions for VASP (https://www.vasp.at)
 
-# Functions for VASP
 
-def print_displacements_VASP(xml_files, lavec, nat, x0, 
-                             require_conversion, conversion_factor):
+def get_coordinate_VASP(xml_file, nat):
 
-    x0 = np.round(x0, 8)
-    x = np.zeros((nat, 3))
+    x = []
 
-    lavec_transpose = lavec.transpose()
-
-    for search_target in xml_files:
-
-        xml = etree.parse(search_target)
+    try:
+        xml = etree.parse(xml_file)
         root = xml.getroot()
 
         for elems in root.findall('calculation/structure/varray'):
-            str_coord = []
-            for elems2 in elems.findall('v'):
-                str_coord.append(elems2.text)
-
+            str_coord = [elems2.text for elems2 in elems.findall('v')]
             n = len(str_coord)
 
             for i in range(n):
-                x[i, :] = [float(t) for t in str_coord[i].split()]
+                x.extend([t for t in str_coord[i].split()])
 
-            x = np.matrix(x)
-            disp = x - x0
+        return np.array(x, dtype=np.float)
 
-            for i in range(n):
-                disp[i, :] = [refold(disp[i, j]) for j in range(3)]
+    except:
+        print "Error in reading atomic positions from the XML file: %s" % xml_file
 
-            disp = disp * lavec_transpose
+
+def print_displacements_VASP(xml_files,
+                             lavec, nat, x0,
+                             require_conversion,
+                             conversion_factor,
+                             file_offset):
+
+    x0 = np.round(x0, 8)
+    lavec_transpose = lavec.transpose()
+    vec_refold = np.vectorize(refold)
+
+    if file_offset is None:
+        disp_offset = np.zeros((nat, 3))
+    else:
+        x0_offset = get_coordinate_VASP(file_offset, nat)
+        try:
+            x0_offset = np.reshape(x0_offset, (nat, 3))
+        except:
+            print "File %s contains too many position entries" % file_offset
+        disp_offset = x0_offset - x0
+
+    for search_target in xml_files:
+
+        x = get_coordinate_VASP(search_target, nat)
+        ndata = len(x) / (3 * nat)
+        x = np.reshape(x, (ndata, nat, 3))
+
+        for idata in range(ndata):
+            disp = x[idata, :, :] - x0 - disp_offset
+            disp = np.dot(vec_refold(disp), lavec_transpose)
 
             if require_conversion:
-                for i in range(n):
-                    disp[i, :] *= conversion_factor
+                disp *= conversion_factor
 
-            for i in range(n):
+            for i in range(nat):
                 print "%15.7F %15.7F %15.7F" % (disp[i, 0],
                                                 disp[i, 1],
                                                 disp[i, 2])
 
 
-def print_atomicforces_VASP(xml_files, nat, 
-                            require_conversion, conversion_factor):
+def get_atomicforces_VASP(xml_file):
 
-    f = np.zeros((nat, 3))
+    f = []
 
-    for search_target in xml_files:
-
-        xml = etree.parse(search_target)
+    try:
+        xml = etree.parse(xml_file)
         root = xml.getroot()
 
         for elems in root.findall('calculation/varray'):
-            str_force = []
             if elems.get('name') == "forces":
-                for elems2 in elems.findall('v'):
-                    str_force.append(elems2.text)
+                str_force = [elems2.text for elems2 in elems.findall('v')]
 
-            n = len(str_force)
+                for i in range(len(str_force)):
+                    f.extend([t for t in str_force[i].split()])
+                
+        return np.array(f, dtype=np.float)
 
-            for i in range(n):
-                f[i][:] = [float(t) for t in str_force[i].split()]
+    except:
+        print "Error in reading atomic forces from the XML file: %s" % xml_file
+
+
+def print_atomicforces_VASP(xml_files,
+                            nat,
+                            require_conversion,
+                            conversion_factor,
+                            file_offset):
+
+    if file_offset is None:
+        force_offset = np.zeros((nat, 3))
+    else:
+        data0 = get_atomicforces_VASP(file_offset)
+        try:
+            force_offset = np.reshape(data0, (nat, 3))
+        except:
+            print "File %s contains too many force entries" % file_offset
+
+    for search_target in xml_files:
+
+        data = get_atomicforces_VASP(search_target)
+        ndata = len(data) / (3 * nat)
+        data = np.reshape(data, (ndata, nat, 3))
+
+        for idata in range(ndata):
+            f = data[idata, :, :] - force_offset
 
             if require_conversion:
                 f *= conversion_factor
 
-            for i in range(n):
+            for i in range(nat):
                 print "%15.8E %15.8E %15.8E" % (f[i][0],
                                                 f[i][1],
                                                 f[i][2])
 
 
-def print_energies_VASP(xml_files, require_conversion, conversion_factor):
+def get_energies_VASP(xml_file):
 
-    print "# Etot, Ekin"
+    etot_array = []
+    ekin_array = []
 
-    for search_target in xml_files:
-
-        xml = etree.parse(search_target)
+    try:
+        xml = etree.parse(xml_file)
         root = xml.getroot()
 
         for elems in root.findall('calculation/energy'):
@@ -157,27 +207,65 @@ def print_energies_VASP(xml_files, require_conversion, conversion_factor):
                 if elems2.get('name') == "kinetic":
                     ekin = elems2.text
 
-            if not require_conversion:
-                print "%s %s" % (etot, ekin)
-            else:
-                if etot != 'N/A':
-                    val_etot = float(etot) * conversion_factor
+            etot_array.append(etot)
+            ekin_array.append(ekin)
+
+        return etot_array, ekin_array
+    except:
+        print "Error in reading energies from the XML file: %s" % xml_file
+
+
+def print_energies_VASP(xml_files,
+                        require_conversion,
+                        conversion_factor,
+                        file_offset):
+
+    print "# Etot, Ekin"
+
+    etot_offset = 0.0
+    ekin_offset = 0.0
+
+    if file_offset:
+        etot, ekin = get_energies_VASP(file_offset)
+        if len(etot) > 1 or len(ekin) > 1:
+            print "File %s contains too many energy entries" % file_offset
+            exit(1)
+        if etot[0] != 'N/A':
+            etot_offset = float(etot[0])
+        if ekin[0] != 'N/A':
+            ekin_offset = float(ekin[0])
+
+    for search_target in xml_files:
+
+        etot, ekin = get_energies_VASP(search_target)
+
+        for i in range(len(etot)):
+            if etot[i] != 'N/A':
+                val_etot = float(etot[i]) - etot_offset
+                if require_conversion:
+                    print "%15.8E" % (val_etot * conversion_factor),
+                else:
                     print "%15.8E" % val_etot,
-                else:
-                    print "%s" % etot,
+            else:
+                print "%s" % etot[i],
 
-                if ekin != 'N/A':
-                    val_ekin = float(ekin) * conversion_factor
+            if ekin[i] != 'N/A':
+                val_ekin = float(ekin[i]) - ekin_offset
+                if require_conversion:
+                    print "%15.8E" % (val_ekin * conversion_factor)
+                else:
                     print "%15.8E" % val_ekin
-                else:
-                    print "%s" % ekin
+            else:
+                print "%s" % ekin[i]
 
+# end functions for VASP
 
-# Functions for Quantum-ESPRESSO
+# Functions for Quantum-ESPRESSO (http://www.quantum-espresso.org)
+
 
 def read_original_QE_mod(file_in):
 
-        # Parse general options
+    # Parse general options
     tags = ["ATOMIC_SPECIES", "ATOMIC_POSITIONS", "K_POINTS",
             "CELL_PARAMETERS", "OCCUPATIONS", "CONSTRAINTS", "ATOMIC_FORCES"]
 
@@ -195,93 +283,109 @@ def read_original_QE_mod(file_in):
     return celldm[0], lavec, nat, x0
 
 
-def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
-                           require_conversion, conversion_factor):
+def get_coordinates_QE(pwout_file, nat):
+
+    search_flag = "site n.     atom                  positions (alat units)"
+    search_flag2 = "ATOMIC_POSITIONS (crystal)"
+
+    x = np.zeros((nat, 3))
+
+    num_data_disp = 0
+    basis = ""
+    found_tag = False
+
+    f = open(pwout_file, 'r')
+    line = f.readline()
+
+    while line:
+
+        if search_flag in line:
+            found_tag = True
+
+            for i in range(nat):
+                line = f.readline()
+                x[i][:] = [float(t) for t in line.rstrip().split()[6:9]]
+
+            break
+
+        line = f.readline()
+
+    if not found_tag:
+        print "%s tag not found in %s" % (search_flag, pwout_file)
+        exit(1)
+
+    x_additional = []
+
+    # Search other entries containing atomic position
+    while line:
+
+        if search_flag2 in line:
+
+            if not basis:
+                basis = line.rstrip().split()[1]
+
+            num_data_disp += 1
+
+            for i in range(nat):
+                line = f.readline()
+                x_additional.extend([t for t in line.rstrip().split()[1:4]])
+
+        line = f.readline()
+
+    f.close()
+
+    return x, np.array(x_additional, dtype=np.float), num_data_disp, basis
+
+
+def print_displacements_QE(pwout_files,
+                           alat, lavec, nat, x0,
+                           require_conversion,
+                           conversion_factor,
+                           file_offset):
 
     import math
-
     Bohr_to_angstrom = 0.5291772108
+    vec_refold = np.vectorize(refold)
 
     x0 = np.round(x0, 8)
-    x = np.zeros((nat, 3))
-    disp = np.zeros((nat, 3))
 
     lavec /= Bohr_to_angstrom
     lavec_transpose = lavec.transpose()
-
-    basis = ""
+    lavec_transpose_inv = np.linalg.inv(lavec_transpose)
 
     if not alat:
         # if celldm[0] is empty, calculate it from lattice vector
         alat = math.sqrt(np.dot(lavec_transpose[0][:], lavec_transpose[0][:]))
 
-    lavec_transpose_inv = np.linalg.inv(lavec_transpose)
-
-    search_flag = "site n.     atom                  positions (alat units)"
-    search_flag2 = "ATOMIC_POSITIONS (crystal)"
+    if file_offset is None:
+        disp_offset = np.zeros((nat, 3))
+    else:
+        x_offset, x_tmp, ndata_offset, basis_tmp = get_coordinates_QE(
+            file_offset, nat)
+        if ndata_offset > 1:
+            print "File %s contains too many position entries" % file_offset
+            exit(1)
+        else:
+            x_offset = alat * np.dot(x_offset, lavec_transpose_inv)
+            disp_offset = x_offset - x0
 
     for search_target in pwout_files:
 
-        found_tag = False
-        x_list = []
-        num_data_disp = 0
-
-        f = open(search_target, 'r')
-
-        line = f.readline()
-
-        while line:
-
-            if search_flag in line:
-                found_tag = True
-
-                for i in range(nat):
-                    line = f.readline()
-                    x[i][:] = [float(t) for t in line.rstrip().split()[6:9]]
-
-                break
-
-            line = f.readline()
-
-        if not found_tag:
-            print "%s tag not found in %s" % (search_flag, search_target)
-            exit(1)
-
+        x, x_additional, num_data_disp, basis = get_coordinates_QE(
+            search_target, nat)
         x = alat * np.dot(x, lavec_transpose_inv)
 
-        disp = x - x0
-        for i in range(nat):
-            disp[i][:] = [refold(disp[i][j]) for j in range(3)]
-
-        disp = np.dot(disp, lavec_transpose)
+        disp = x - x0 - disp_offset
+        disp = np.dot(vec_refold(disp), lavec_transpose)
 
         if require_conversion:
             disp *= conversion_factor
 
         for i in range(nat):
-            print "%15.7F %15.7F %15.7F" % (disp[i][0], 
-                                            disp[i][1], 
+            print "%15.7F %15.7F %15.7F" % (disp[i][0],
+                                            disp[i][1],
                                             disp[i][2])
 
-        # Search other entries containing atomic position
-
-        while line:
-
-            if search_flag2 in line:
-
-                if not basis:
-                    basis = line.rstrip().split()[1]
-
-                num_data_disp += 1
-
-                for i in range(nat):
-                    line = f.readline()
-                    x[i][:] = [float(t) for t in line.rstrip().split()[1:4]]
-                    for j in range(3):
-                        x_list.append(x[i][j])
-
-            line = f.readline()
-            
         if num_data_disp > 1:
 
             if "alat" in basis:
@@ -296,100 +400,141 @@ def print_displacements_QE(pwout_files, alat, lavec, nat, x0,
                 print "This cannot happen."
                 exit(1)
 
-            icount = 0
-            for step in range(num_data_disp-1):
-                for i in range(nat):
-                    for j in range(3):
-                        x[i][j] = x_list[icount]
-                        icount += 1
+            x_additional = np.reshape(x_additional, (num_data_disp, nat, 3))
 
+            for step in range(num_data_disp - 1):
+                x = x_additional[step, :, :]
                 x = np.dot(x, conversion_mat)
-                disp = x - x0
-                for i in range(nat):
-                    disp[i][:] = [refold(disp[i][j]) for j in range(3)]
-
-                disp = np.dot(disp, lavec_transpose)
+                disp = x - x0 - disp_offset
+                disp = np.dot(vec_refold(disp), lavec_transpose)
 
                 if require_conversion:
                     disp *= conversion_factor
 
                 for i in range(nat):
-                    print "%15.7F %15.7F %15.7F" % (disp[i][0], 
-                                                    disp[i][1], 
+                    print "%15.7F %15.7F %15.7F" % (disp[i][0],
+                                                    disp[i][1],
                                                     disp[i][2])
 
 
-
-def print_atomicforces_QE(str_files, nat, 
-                          require_conversion, conversion_factor):
-
-    force = np.zeros((nat, 3))
+def get_atomicforces_QE(pwout_file):
 
     search_tag = "Forces acting on atoms (Ry/au):"
 
-    for search_target in str_files:
+    found_tag = False
 
-        found_tag = False
+    f = open(pwout_file, 'r')
+    line = f.readline()
 
-        f = open(search_target, 'r')
+    force = []
+
+    while line:
+
+        if search_tag in line:
+            found_tag = True
+
+            f.readline()
+
+            for i in range(nat):
+                line = f.readline()
+                force.extend([t for t in line.rstrip().split()[6:9]])
 
         line = f.readline()
 
-        while line:
+    f.close()
 
-            if search_tag in line:
-                found_tag = True
+    if not found_tag:
+        print "%s tag not found in %s" % (search_tag, pwout_file)
+        exit(1)
 
-                f.readline()
-
-                for i in range(nat):
-                    line = f.readline()
-                    force[i][:] = [float(t) for t in line.rstrip().split()[6:9]]
-
-                if require_conversion:
-                    force *= conversion_factor
-
-                for i in range(nat):
-                    print "%19.11E %19.11E %19.11E" % (force[i][0],
-                                                       force[i][1],
-                                                       force[i][2])
+    return np.array(force, dtype=np.float)
 
 
-            line = f.readline()
+def print_atomicforces_QE(str_files,
+                          nat,
+                          require_conversion,
+                          conversion_factor,
+                          file_offset):
 
-        if not found_tag:
-            print "%s tag not found in %s" % (search_tag, search_target)
-            exit(1)
-
-
-
-
-def print_energies_QE(str_files, require_conversion, conversion_factor):
-
-    search_tag = "!    total energy"
+    if file_offset is None:
+        force_offset = np.zeros((nat, 3))
+    else:
+        data0 = get_atomicforces_QE(file_offset)
+        try:
+            force_offset = np.reshape(data0, (nat, 3))
+        except:
+            print "File %s contains too many force entries" % file_offset
 
     for search_target in str_files:
 
-        found_tag = False
+        force = get_atomicforces_QE(search_target)
+        ndata = len(force) / (3 * nat)
+        force = np.reshape(force, (ndata, nat, 3))
 
-        with open(search_target) as openfileobject:
-            for line in openfileobject:
-                if search_tag in line:
-                    etot = float(line.rstrip().split()[4])
+        for idata in range(ndata):
+            f = force[idata, :, :] - force_offset
 
-                    if require_conversion:
-                        etot *= conversion_factor
+            if require_conversion:
+                f *= conversion_factor
 
-                    print "%19.11E" % etot
+            for i in range(nat):
+                print "%19.11E %19.11E %19.11E" % (f[i][0],
+                                                   f[i][1],
+                                                   f[i][2])
 
-                    found_tag = True
 
-        if not found_tag:
-            print "%s tag not found in %s" % (search_tag, search_target)
+def get_energies_QE(pwout_file):
+
+    search_tag = "!    total energy"
+
+    found_tag = False
+
+    etot = []
+
+    with open(pwout_file) as openfileobject:
+        for line in openfileobject:
+            if search_tag in line:
+                etot.extend([line.rstrip().split()[4]])
+                found_tag = True
+
+    if not found_tag:
+        print "%s tag not found in %s" % (search_tag, search_target)
+        exit(1)
+
+    return np.array(etot, dtype=np.float)
+
+
+def print_energies_QE(str_files,
+                      require_conversion,
+                      conversion_factor,
+                      file_offset):
+
+    if file_offset is None:
+        etot_offset = 0.0
+    else:
+        data = get_energies_QE(file_offset)
+        if len(data) > 1:
+            print "File %s contains too many energy entries" % file_offset
             exit(1)
+        etot_offset = data[0]
 
+    print "# Etot"
+    for search_target in str_files:
 
-# Functions for xTAPP
+        etot = get_energies_QE(search_target)
+
+        for idata in range(len(etot)):
+            val = etot[idata] - etot_offset
+
+            if require_conversion:
+                val *= conversion_factor
+
+            print "%19.11E" % val
+
+# end functions for QE
+
+# Functions for xTAPP (http://xtapp.cp.is.s.u-tokyo.ac.jp)
+
 
 def read_CG_mod(file_in):
 
@@ -399,118 +544,194 @@ def read_CG_mod(file_in):
     return lavec, nat, x0
 
 
-def print_displacements_xTAPP(str_files, lavec, nat, x0, 
-                              require_conversion, conversion_factor):
+def get_coordinates_xTAPP(str_file, nat):
+
+    found_tag = False
+    f = open(str_file, 'r')
+    line = f.readline()
+
+    x = []
+
+    while line:
+
+        if "atom_position" in line:
+            found_tag = True
+
+            for i in range(nat):
+                line = f.readline()
+                x.extend([t for t in line.rstrip().split()[1:]])
+
+            break
+
+        line = f.readline()
+
+    if not found_tag:
+        print "atom_position tag not found in %s" % str_file
+        exit(1)
+
+    f.close()
+
+    return np.array(x, dtype=np.float)
+
+
+def print_displacements_xTAPP(str_files,
+                              lavec, nat, x0,
+                              require_conversion,
+                              conversion_factor,
+                              file_offset):
 
     Bohr_to_angstrom = 0.5291772108
-
-    x0 = np.round(x0, 8)
-    x = np.zeros((nat, 3))
+    vec_refold = np.vectorize(refold)
 
     lavec /= Bohr_to_angstrom
     lavec_transpose = lavec.transpose()
 
+    x0 = np.round(x0, 8)
+
+    if file_offset is None:
+        disp_offset = np.zeros((nat, 3))
+    else:
+        x0_offset = get_coordinates_xTAPP(file_offset, nat)
+        try:
+            x0_offset = np.reshape(x0_offset, (nat, 3))
+        except:
+            print "File %s contains too many position entries" % file_offset
+        disp_offset = x0_offset - x0
+
     for search_target in str_files:
 
-        found_tag = False
+        x = get_coordinates_xTAPP(search_target, nat)
+        ndata = len(x) / (3 * nat)
+        x = np.reshape(x, (ndata, nat, 3))
 
-        f = open(search_target, 'r')
+        for idata in range(ndata):
+            disp = x[idata, :, :] - x0 - disp_offset
+            disp = np.dot(vec_refold(disp), lavec_transpose)
+
+            if require_conversion:
+                disp *= conversion_factor
+
+            for i in range(nat):
+                print "%15.7F %15.7F %15.7F" % (disp[i][0],
+                                                disp[i][1],
+                                                disp[i][2])
+
+
+def get_atomicforces_xTAPP(str_file):
+
+    found_tag = False
+
+    f = open(str_file, 'r')
+    line = f.readline()
+
+    force = []
+
+    while line:
+
+        if "force" in line:
+            found_tag = True
+
+            for i in range(nat):
+                line = f.readline()
+                force.extend([t for t in line.rstrip().split()])
+
+            break
 
         line = f.readline()
 
-        while line:
+    if not found_tag:
+        print "force tag not found in %s" % str_file
+        exit(1)
 
-            if "atom_position" in line:
-                found_tag = True
+    f.close()
 
-                for i in range(nat):
-                    line = f.readline()
-                    x[i, :] = [float(t) for t in line.rstrip().split()[1:]]
-
-                break
-
-            line = f.readline()
-
-        if not found_tag:
-            print "atom_position tag not found in %s" % seach_target
-            exit(1)
-
-        disp = x - x0
-        for i in range(nat):
-            disp[i][:] = [refold(disp[i][j]) for j in range(3)]
-
-        disp = np.dot(disp, lavec_transpose)
-
-        if require_conversion:
-            disp *= conversion_factor
-
-        for i in range(nat):
-            print "%15.7F %15.7F %15.7F" % (disp[i][0], disp[i][1], disp[i][2])
+    return np.array(force, dtype=np.float)
 
 
-def print_atomicforces_xTAPP(str_files, nat, 
-                             require_conversion, conversion_factor):
+def print_atomicforces_xTAPP(str_files,
+                             nat,
+                             require_conversion,
+                             conversion_factor,
+                             file_offset):
 
-    force = np.zeros((nat, 3))
+    if file_offset is None:
+        force_offset = np.zeros((nat, 3))
+    else:
+        data = get_atomicforces_xTAPP(file_offset)
+        try:
+            force_offset = np.reshape(data, (nat, 3))
+        except:
+            print "File %s contains too many position entries" % file_offset
 
     for search_target in str_files:
 
-        found_tag = False
+        force = get_atomicforces_xTAPP(search_target)
+        ndata = len(force) / (3 * nat)
+        force = np.reshape(force, (ndata, nat, 3))
 
-        f = open(search_target, 'r')
+        for idata in range(ndata):
+            f = force[idata, :, :] - force_offset
 
-        line = f.readline()
-
-        while line:
-
-            if "force" in line:
-                found_tag = True
+            if require_conversion:
+                f *= conversion_factor
 
                 for i in range(nat):
-                    line = f.readline()
-                    force[i, :] = [float(t) for t in line.rstrip().split()]
+                    print "%19.11E %19.11E %19.11E" % (f[i][0],
+                                                       f[i][1],
+                                                       f[i][2])
 
-                break
 
-            line = f.readline()
+def get_energies_xTAPP(str_file):
 
-        if not found_tag:
-            print "force tag not found in %s" % seach_target
+    search_tag = "total_energy"
+
+    found_tag = False
+
+    etot = []
+
+    with open(str_file) as openfileobject:
+        for line in openfileobject:
+            if search_tag in line:
+                energy_str = line.rstrip().split()[2]
+                etot.extend([energy_str[:-1]])
+                found_tag = True
+
+    if not found_tag:
+        print "%s tag not found in %s" % (search_tag, str_file)
+        exit(1)
+
+    return np.array(etot, dtype=np.float)
+
+
+def print_energies_xTAPP(str_files,
+                         require_conversion,
+                         conversion_factor,
+                         file_offset):
+
+    if file_offset is None:
+        etot_offset = 0.0
+    else:
+        data = get_energies_xTAPP(file_offset)
+        if len(data) > 1:
+            print "File %s contains too many energy entries" % file_offset
             exit(1)
+        etot_offset = data[0]
 
-        if require_conversion:
-            force *= conversion_factor
-
-        for i in range(nat):
-            print "%19.11E %19.11E %19.11E" % (force[i][0],
-                                               force[i][1],
-                                               force[i][2])
-
-
-def print_energies_xTAPP(str_files, require_conversion, conversion_factor):
-
+    print "# Etot"
     for search_target in str_files:
 
-        found_tag = False
+        etot = get_energies_xTAPP(search_target)
 
-        with open(search_target) as openfileobject:
-            for line in openfileobject:
-                if "total_energy" in line:
-                    energy_str = line.rstrip().split()[2]
-                    etot = float(energy_str[:-1])
+        for idata in range(len(etot)):
+            val = etot[idata] - etot_offset
 
-                    if require_conversion:
-                        etot *= conversion_factor
+            if require_conversion:
+                val *= conversion_factor
 
-                    print "%19.11E" % etot
+            print "%19.11E" % val
 
-                    found_tag = True
-                    break
 
-        if not found_tag:
-            print "total_energy tag not found in %s" % seach_target
-            exit(1)
-
+# end functions for xTAPP
 
 # Other functions
 
@@ -591,7 +812,7 @@ cannot be given simultaneously."
         elif options.unitname == "Hartree":
             convert_unit = True
             disp_conv_factor = 1.0
-            energy_conv_factor = 2.0
+            energy_conv_factor = 0.5
 
         else:
             print "Error : Invalid option for --unit"
@@ -652,36 +873,38 @@ cannot be given simultaneously."
     if print_disp:
         if code == "VASP":
             print_displacements_VASP(file_results, aa, np.sum(nats), x_frac0,
-                                     convert_unit, disp_conv_factor)
+                                     convert_unit, disp_conv_factor, options.offset)
 
         elif code == "QE":
             print_displacements_QE(file_results, alat, aa, nat, x_frac0,
-                                   convert_unit, disp_conv_factor)
+                                   convert_unit, disp_conv_factor, options.offset)
 
         elif code == "xTAPP":
             print_displacements_xTAPP(file_results, aa, nat, x_frac0,
-                                      convert_unit, disp_conv_factor)
+                                      convert_unit, disp_conv_factor, options.offset)
 
     elif print_force:
         if code == "VASP":
             print_atomicforces_VASP(file_results, np.sum(nats),
-                                    convert_unit, force_conv_factor)
+                                    convert_unit, force_conv_factor, options.offset)
 
         elif code == "QE":
             print_atomicforces_QE(file_results, nat,
-                                  convert_unit, force_conv_factor)
+                                  convert_unit, force_conv_factor, options.offset)
 
         elif code == "xTAPP":
             print_atomicforces_xTAPP(file_results, nat,
-                                     convert_unit, force_conv_factor)
+                                     convert_unit, force_conv_factor, options.offset)
 
     elif print_energy:
         if code == "VASP":
-            print_energies_VASP(file_results, convert_unit, energy_conv_factor)
+            print_energies_VASP(file_results, convert_unit,
+                                energy_conv_factor, options.offset)
 
         elif code == "QE":
-            print_energies_QE(file_results, convert_unit, energy_conv_factor)
+            print_energies_QE(file_results, convert_unit,
+                              energy_conv_factor, options.offset)
 
         elif code == "xTAPP":
             print_energies_xTAPP(file_results, convert_unit,
-                                 energy_conv_factor)
+                                 energy_conv_factor, options.offset)

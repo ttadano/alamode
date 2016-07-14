@@ -43,6 +43,7 @@ parser.add_option('--xTAPP',
 
 # Functions for VASP
 
+
 def read_POSCAR(file_in):
 
     file_pos = open(file_in, 'r')
@@ -91,7 +92,7 @@ def read_POSCAR(file_in):
     return lavec, invlavec, elements, nat_elem, xf
 
 
-def write_POSCAR(prefix, counter, header, nzerofills, 
+def write_POSCAR(prefix, counter, header, nzerofills,
                  lavec, elems, nat, disp, coord):
 
     filename = prefix + str(counter).zfill(nzerofills) + ".POSCAR"
@@ -100,7 +101,7 @@ def write_POSCAR(prefix, counter, header, nzerofills,
     f.write("%s\n" % "1.0")
 
     for i in range(3):
-        f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
+        f.write("%20.14f %20.14f %20.14f\n" % (lavec[0][i],
                                                lavec[1][i],
                                                lavec[2][i]))
 
@@ -117,7 +118,7 @@ def write_POSCAR(prefix, counter, header, nzerofills,
 
     for i in range(len(disp)):
         for j in range(3):
-            f.write("%20.15f" % (coord[i][j] + disp[i][j]))
+            f.write("%20.16f" % (coord[i][j] + disp[i][j]))
         f.write("\n")
     f.close()
 
@@ -248,7 +249,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             a = celldm[0]
             c = celldm[0] * celldm[2]
             lavec = np.array([[a, 0.0, 0.0],
-                              [-0.5*a, math.sqrt(3.)/2.0 * a, 0.0],
+                              [-0.5 * a, math.sqrt(3.) / 2.0 * a, 0.0],
                               [0.0, 0.0, c]])
 
     elif ibrav == 5 or ibrav == -5:
@@ -266,8 +267,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
             if ibrav == 5:
                 lavec = np.array([[tx, -ty, tz],
-                                 [0.0, 2.0 * ty, tz],
-                                 [-tx, -ty, tz]])
+                                  [0.0, 2.0 * ty, tz],
+                                  [-tx, -ty, tz]])
 
             else:
                 a_prime = a / math.sqrt(3.0)
@@ -278,8 +279,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
                 v *= a_prime
 
                 lavec = np.array([[u, v, v],
-                                 [v, u, v],
-                                 [v, v, u]])
+                                  [v, u, v],
+                                  [v, v, u]])
 
     elif ibrav == 6:
 
@@ -291,8 +292,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             a = celldm[0]
             c = celldm[0] * celldm[2]
             lavec = np.array([[a, 0.0, 0.0],
-                             [0.0, a, 0.0],
-                             [0.0, 0.0, c]])
+                              [0.0, a, 0.0],
+                              [0.0, 0.0, c]])
 
     elif ibrav == 7:
 
@@ -304,8 +305,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             a = celldm[0]
             c = celldm[0] * celldm[2]
             lavec = np.array([[a / 2.0, -a / 2.0, c / 2.0],
-                             [a / 2.0,  a / 2.0, c / 2.0],
-                             [-a / 2.0, -a / 2.0, c / 2.0]])
+                              [a / 2.0,  a / 2.0, c / 2.0],
+                              [-a / 2.0, -a / 2.0, c / 2.0]])
 
     elif ibrav == 8:
 
@@ -320,8 +321,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             c = celldm[0] * celldm[2]
 
             lavec = np.array([[a, 0.0, 0.0],
-                             [0.0, b, 0.0],
-                             [0.0, 0.0, c]])
+                              [0.0, b, 0.0],
+                              [0.0, 0.0, c]])
 
     elif ibrav == 9 or ibrav == -9:
 
@@ -337,12 +338,12 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
             if ibrav == 9:
                 lavec = np.array([[a / 2., b / 2., 0.0],
-                                 [-a / 2., b / 2., 0.0],
-                                 [0.0, 0.0, c]])
+                                  [-a / 2., b / 2., 0.0],
+                                  [0.0, 0.0, c]])
             else:
                 lavec = np.array([[a / 2., -b / 2., 0.0],
-                                 [a / 2., b / 2., 0.0],
-                                 [0.0, 0.0, c]])
+                                  [a / 2., b / 2., 0.0],
+                                  [0.0, 0.0, c]])
 
     elif ibrav == 10:
 
@@ -356,8 +357,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             b = celldm[0] * celldm[1] / 2.0
             c = celldm[0] * celldm[2] / 2.0
             lavec = np.array([[a, 0.0, c],
-                             [a, b, 0.0],
-                             [0.0, b, c]])
+                              [a, b, 0.0],
+                              [0.0, b, c]])
 
     elif ibrav == 11:
 
@@ -371,8 +372,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             b = celldm[0] * celldm[1] / 2.0
             c = celldm[0] * celldm[2] / 2.0
             lavec = np.array([[a, b, c],
-                             [-a, b, c],
-                             [-a, -b, c]])
+                              [-a, b, c],
+                              [-a, -b, c]])
 
     elif ibrav == 12:
 
@@ -388,8 +389,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             c = celldm[0] * celldm[2]
             gamma = math.acos(celldm[3])
             lavec = np.array([[a, 0.0, 0.0],
-                             [b * math.cos(gamma), b * math.sin(gamma), 0.0],
-                             [0.0, 0.0, c]])
+                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
+                              [0.0, 0.0, c]])
 
     elif ibrav == -12:
 
@@ -405,8 +406,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             c = celldm[0] * celldm[2]
             beta = math.acos(celldm[4])
             lavec = np.array([[a, 0.0, 0.0],
-                             [0.0, b, 0.0],
-                             [c * math.cos(beta), 0.0, c * math.sin(beta)]])
+                              [0.0, b, 0.0],
+                              [c * math.cos(beta), 0.0, c * math.sin(beta)]])
 
     elif ibrav == 13:
 
@@ -422,8 +423,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             c = celldm[0] * celldm[2]
             gamma = math.acos(celldm[3])
             lavec = np.array([[a / 2.0, 0.0, -c / 2.0],
-                             [b * math.cos(gamma), b * math.sin(gamma), 0.0],
-                             [a / 2.0, 0.0, c / 2.0]])
+                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
+                              [a / 2.0, 0.0, c / 2.0]])
 
     elif ibrav == 14:
 
@@ -441,11 +442,12 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             gamma = math.acos(celldm[5])
 
             lavec = np.array([[a, 0.0, 0.0],
-                             [b * math.cos(gamma), b * math.sin(gamma), 0.0],
-                             [c * math.cos(beta), 
-                              c * (math.cos(alpha) - math.cos(beta) * math.cos(gamma)) / math.sin(gamma),
-                              c * math.sqrt(1.0 + 2.0 * math.cos(alpha) * math.cos(beta) * math.cos(gamma) 
-                              - math.cos(alpha)**2 - math.cos(beta)**2 - math.cos(gamma)**2) / math.sin(gamma)]])
+                              [b * math.cos(gamma), b * math.sin(gamma), 0.0],
+                              [c * math.cos(beta),
+                               c * (math.cos(alpha) - math.cos(beta) *
+                                    math.cos(gamma)) / math.sin(gamma),
+                               c * math.sqrt(1.0 + 2.0 * math.cos(alpha) * math.cos(beta) * math.cos(gamma)
+                                             - math.cos(alpha) ** 2 - math.cos(beta) ** 2 - math.cos(gamma) ** 2) / math.sin(gamma)]])
 
     else:
 
@@ -473,7 +475,7 @@ def get_system_info(list_in):
             if subobj:
                 index = subobj.find('=')
                 if index > 0:
-                    subobj = subobj[:index] + " = " + subobj[index+1:]
+                    subobj = subobj[:index] + " = " + subobj[index + 1:]
                 list_mod.append(subobj)
 
     str_input = ""
@@ -488,31 +490,31 @@ def get_system_info(list_in):
     for i in range(len(entrylist)):
 
         if "ibrav" in entrylist[i]:
-            ibrav = int(entrylist[i+2])
+            ibrav = int(entrylist[i + 2])
 
         if "nat" in entrylist[i]:
-            nat = int(entrylist[i+2])
+            nat = int(entrylist[i + 2])
 
         if "ntyp" in entrylist[i]:
-            ntyp = int(entrylist[i+2])
+            ntyp = int(entrylist[i + 2])
 
         if "celldm(1)" in entrylist[i]:
-            celldm[0] = float(entrylist[i+2])
+            celldm[0] = float(entrylist[i + 2])
 
         if "celldm(2)" in entrylist[i]:
-            celldm[1] = float(entrylist[i+2])
+            celldm[1] = float(entrylist[i + 2])
 
         if "celldm(3)" in entrylist[i]:
-            celldm[2] = float(entrylist[i+2])
+            celldm[2] = float(entrylist[i + 2])
 
         if "celldm(4)" in entrylist[i]:
-            celldm[3] = float(entrylist[i+2])
+            celldm[3] = float(entrylist[i + 2])
 
         if "celldm(5)" in entrylist[i]:
-            celldm[4] = float(entrylist[i+2])
+            celldm[4] = float(entrylist[i + 2])
 
         if "celldm(6)" in entrylist[i]:
-            celldm[5] = float(entrylist[i+2])
+            celldm[5] = float(entrylist[i + 2])
 
     return ibrav, celldm, nat, ntyp
 
@@ -646,7 +648,7 @@ def generate_QE_input(prefix, suffix, counter, nzerofills, list_namelist,
 
     f.write("ATOMIC_POSITIONS crystal\n")
     for i in range(nat):
-        f.write("%s %20.15f %20.15f %20.15f\n" % (kd_symbol[i],
+        f.write("%s %20.16f %20.16f %20.16f\n" % (kd_symbol[i],
                                                   x[i][0] + u[i, 0],
                                                   x[i][1] + u[i, 1],
                                                   x[i][2] + u[i, 2]))
@@ -706,17 +708,17 @@ def read_tappinput(file_in):
     # get lattice_factor
     for i in range(len(entrylist)):
         if "lattice_factor" in entrylist[i]:
-            a = float(entrylist[i+2])
+            a = float(entrylist[i + 2])
 
         if "lattice_list" in entrylist[i]:
             for j in range(9):
-                lavec_list.append(entrylist[i+j+2])
+                lavec_list.append(entrylist[i + j + 2])
 
         if "number_element" in entrylist[i]:
-            nkd = int(entrylist[i+2])
+            nkd = int(entrylist[i + 2])
 
         if "number_atom" in entrylist[i]:
-            nat = int(entrylist[i+2])
+            nat = int(entrylist[i + 2])
 
     if a == 0.0:
         print "Couldn't read lattice_factor"
@@ -830,7 +832,7 @@ def read_atomdata(file_in, nat_in, nkd_in):
         list_tmp = list_atom[i + nkd_in + 1].rstrip().split()
         kd_out[i] = int(list_tmp[0])
         for j in range(3):
-            x_out[i][j] = float(list_tmp[j+1])
+            x_out[i][j] = float(list_tmp[j + 1])
 
     return x_out, kd_out, list_atom
 
@@ -852,7 +854,7 @@ def read_CG(file_in):
         str_header += entry
     for entry in str_opt_constr:
         str_header += entry
-    for i in range(nkd+1):
+    for i in range(nkd + 1):
         str_header += str_atom[i]
 
     lavec = np.matrix(lavec)
@@ -860,7 +862,8 @@ def read_CG(file_in):
 
     return str_header, nat, nkd, lavec, lavec_inv, x, kd
 
-def gen_CG(prefix, suffix, counter, nzerofills, str_header, 
+
+def gen_CG(prefix, suffix, counter, nzerofills, str_header,
            nat, kd, x, u, nsym, symop, denom_tran, has_inv):
 
     filename = prefix + str(counter).zfill(nzerofills) + "." + suffix
@@ -868,9 +871,9 @@ def gen_CG(prefix, suffix, counter, nzerofills, str_header,
     f.write("%s" % str_header)
 
     for i in range(nat):
-        f.write("%i %20.15f %20.15f %20.15f\n" % (kd[i], x[i][0] + u[i, 0],
-                                                         x[i][1] + u[i, 1],
-                                                         x[i][2] + u[i, 2]))
+        f.write("%i %20.16f %20.16f %20.16f\n" % (kd[i], x[i][0] + u[i, 0],
+                                                  x[i][1] + u[i, 1],
+                                                  x[i][2] + u[i, 2]))
 
     f.write("# symmetry data\n")
     f.write("&symmetry\n")
@@ -894,7 +897,7 @@ def gen_CG(prefix, suffix, counter, nzerofills, str_header,
 
         f.write("   ")
         for i in range(3):
-            f.write("%4i" % elems[9+i])
+            f.write("%4i" % elems[9 + i])
 
         f.write("\n")
 
@@ -1037,7 +1040,7 @@ if __name__ == '__main__':
         exit(1)
 
     elif options.VASP and options.QE or options.VASP and options.xTAPP or \
-         options.QE and options.xTAPP:
+            options.QE and options.xTAPP:
         print "Error : --VASP, --QE, and --xTAPP cannot be given simultaneously."
         exit(1)
 
@@ -1096,8 +1099,9 @@ if __name__ == '__main__':
 
     elif code == "QE":
         list_namelist, list_ATOMIC_SPECIES, \
-        list_K_POINTS, list_CELL_PARAMETERS, list_OCCUPATIONS, \
-        nat, lavec, kd_symbol, x_frac, aa_inv = read_original_QE(file_original)
+            list_K_POINTS, list_CELL_PARAMETERS, list_OCCUPATIONS, \
+            nat, lavec, kd_symbol, x_frac, aa_inv = read_original_QE(
+                file_original)
 
     elif code == "xTAPP":
         str_header, nat, nkd, aa, aa_inv, x_frac, kd = read_CG(file_original)
@@ -1119,7 +1123,7 @@ if __name__ == '__main__':
                                         nat, aa_inv)
 
         if code == "VASP":
-            write_POSCAR(prefix, counter, header, nzerofills, 
+            write_POSCAR(prefix, counter, header, nzerofills,
                          aa, elems, nats, disp, x_frac)
 
         elif code == "QE":

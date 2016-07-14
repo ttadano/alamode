@@ -16,19 +16,23 @@
 #include <map>
 #include <vector>
 
-namespace ALM_NS {
-    class Input: protected Pointers {
+namespace ALM_NS
+{
+    class Input: protected Pointers
+    {
     public:
         Input(class ALM *, int, char **);
         ~Input();
-        void parce_input(int, char **);
+        void parse_input(int, char **);
+
+        std::string str_magmom;
 
     private:
         std::ifstream ifs_input;
         bool from_stdin;
 
         int locate_tag(std::string);
-        void split_str_by_space(const std::string, std::vector<std::string>&);
+        void split_str_by_space(const std::string, std::vector<std::string> &);
         void parse_general_vars();
         void parse_cell_parameter();
         void parse_interaction_vars();
@@ -36,8 +40,9 @@ namespace ALM_NS {
         void parse_fitting_vars();
         void parse_atomic_positions();
         bool is_endof_entry(std::string);
-        void get_var_dict(const std::string, std::map<std::string, std::string>&);
+        void get_var_dict(const std::string, std::map<std::string, std::string> &);
 
-        template<typename T> void assign_val(T&, const std::string, std::map<std::string, std::string>);
+        template <typename T>
+        void assign_val(T &, const std::string, std::map<std::string, std::string>);
     };
 }

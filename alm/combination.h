@@ -16,19 +16,22 @@
 
 namespace ALM_NS
 {
-    template<class TYPE>
-    class CombinationWithRepetition{
+    template <class TYPE>
+    class CombinationWithRepetition
+    {
     private:
         std::vector<TYPE> vec;
         unsigned int ndim;
 
 
     public:
-        CombinationWithRepetition(){};
+        CombinationWithRepetition() {};
 
-        template<class InputIter>
-        CombinationWithRepetition(InputIter begin, InputIter end, const unsigned int n){
-
+        template <class InputIter>
+        CombinationWithRepetition(InputIter begin,
+                                  InputIter end,
+                                  const unsigned int n)
+        {
             ndim = n;
 
             // remove redundunt elements
@@ -38,33 +41,38 @@ namespace ALM_NS
             vec.clear();
 
             typename std::set<TYPE>::iterator iter;
-            for(iter = set_tmp.begin(); iter != set_tmp.end(); ++iter){
+            for (iter = set_tmp.begin(); iter != set_tmp.end(); ++iter) {
                 for (unsigned int i = 0; i < ndim; i++) {
                     vec.push_back(*iter);
                 }
             }
         }
 
-        bool next(){
+        bool next()
+        {
             return boost::next_combination(vec.begin(), vec.begin() + ndim, vec.end());
         }
 
-        std::vector<TYPE> now() const{
+        std::vector<TYPE> now() const
+        {
             return std::vector<TYPE>(vec.begin(), vec.begin() + ndim);
         }
 
-        unsigned int size() const{
+        unsigned int size() const
+        {
             unsigned int n = vec.size() / ndim;
             unsigned int r = ndim;
             return factorial(n + r - 1, n - 1) / factorial(r);
         }
 
     private:
-        unsigned int factorial(const unsigned int max, const unsigned int min = 1) const{
+        unsigned int factorial(const unsigned int max,
+                               const unsigned int min = 1) const
+        {
             unsigned int result = 1;
-            for(unsigned int i = min + 1; i <= max; ++i) result *= i;
+            for (unsigned int i = min + 1; i <= max; ++i) result *= i;
             return result;
         }
     };
-
 }
+

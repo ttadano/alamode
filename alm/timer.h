@@ -20,8 +20,10 @@
 #include <sys/time.h>
 #endif
 
-namespace ALM_NS {
-    class Timer : protected Pointers {
+namespace ALM_NS
+{
+    class Timer : protected Pointers
+    {
     public:
         Timer(class ALM *);
         ~Timer();
@@ -40,3 +42,4 @@ namespace ALM_NS {
 #endif
     };
 }
+

@@ -89,9 +89,6 @@
     <ClInclude Include="interaction.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="listcomparison.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="memory.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

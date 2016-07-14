@@ -15,8 +15,8 @@
 
 using namespace PHON_NS;
 
-MyMPI::MyMPI(PHON *phon, MPI_Comm comm): Pointers(phon) {
-
+MyMPI::MyMPI(PHON *phon, MPI_Comm comm): Pointers(phon)
+{
     MPI_Comm_rank(comm, &my_rank);
     MPI_Comm_size(comm, &nprocs);
 }
@@ -35,3 +35,4 @@ void MyMPI::MPI_Bcast_string(std::string &str, int root, MPI_Comm comm)
     MPI_Bcast(&ctmp, len + 1, MPI_CHAR, 0, comm);
     str = std::string(ctmp);
 }
+

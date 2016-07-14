@@ -1,7 +1,7 @@
 /*
 system.cpp
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -18,7 +18,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <string>
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include "mathfunctions.h"
 #include "xml_parser.h"
 #include <sstream>
@@ -26,14 +25,14 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
 System::System(PHON *phon): Pointers(phon) {}
 
-System::~System() {
+System::~System()
+{
     memory->deallocate(xr_p);
     memory->deallocate(xr_s);
     memory->deallocate(xr_s_anharm);
@@ -47,6 +46,9 @@ System::~System() {
     memory->deallocate(map_s2p_anharm);
     memory->deallocate(mass_kd);
     memory->deallocate(magmom);
+    if (fcs_phonon->update_fc2) {
+        memory->deallocate(map_p2s_anharm_orig);
+    }
 }
 
 void System::setup()
@@ -67,16 +69,16 @@ void System::setup()
     memory->allocate(xr_p, nat, 3);
     memory->allocate(xc, nat, 3);
 
-    for (i = 0; i < nat; ++i){
+    for (i = 0; i < nat; ++i) {
         rotvec(xc[i], xr_s[i], lavec_s);
         rotvec(xr_p[i], xc[i], rlavec_p);
-        for(j = 0; j < 3; ++j){
-            xr_p[i][j] /=  2.0 * pi;
+        for (j = 0; j < 3; ++j) {
+            xr_p[i][j] /= 2.0 * pi;
         }
     }
 
     if (mympi->my_rank == 0) {
-        cout << " ------------------------------------------------------------" << endl;
+        cout << " -----------------------------------------------------------------" << endl;
         cout << endl;
         cout << " Crystal structure" << endl;
         cout << " =================" << endl << endl;
@@ -84,53 +86,126 @@ void System::setup()
         cout.setf(ios::scientific);
 
         cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << endl << endl;
-        cout << setw(16) << lavec_s_anharm[0][0] << setw(15) << lavec_s_anharm[1][0] << setw(15) << lavec_s_anharm[2][0] << " : a1" << endl;
-        cout << setw(16) << lavec_s_anharm[0][1] << setw(15) << lavec_s_anharm[1][1] << setw(15) << lavec_s_anharm[2][1] << " : a2" << endl;
-        cout << setw(16) << lavec_s_anharm[0][2] << setw(15) << lavec_s_anharm[1][2] << setw(15) << lavec_s_anharm[2][2] << " : a3" << endl;
+
+        cout << setw(16) << lavec_s_anharm[0][0];
+        cout << setw(15) << lavec_s_anharm[1][0];
+        cout << setw(15) << lavec_s_anharm[2][0];
+        cout << " : a1" << endl;
+
+        cout << setw(16) << lavec_s_anharm[0][1];
+        cout << setw(15) << lavec_s_anharm[1][1];
+        cout << setw(15) << lavec_s_anharm[2][1];
+        cout << " : a2" << endl;
+
+        cout << setw(16) << lavec_s_anharm[0][2];
+        cout << setw(15) << lavec_s_anharm[1][2];
+        cout << setw(15) << lavec_s_anharm[2][2];
+        cout << " : a3" << endl;
         cout << endl;
 
-        cout << setw(16) << rlavec_s_anharm[0][0] << setw(15) << rlavec_s_anharm[0][1] << setw(15) << rlavec_s_anharm[0][2] << " : b1" << endl;
-        cout << setw(16) << rlavec_s_anharm[1][0] << setw(15) << rlavec_s_anharm[1][1] << setw(15) << rlavec_s_anharm[1][2] << " : b2" << endl;
-        cout << setw(16) << rlavec_s_anharm[2][0] << setw(15) << rlavec_s_anharm[2][1] << setw(15) << rlavec_s_anharm[2][2] << " : b3" << endl;
+        cout << setw(16) << rlavec_s_anharm[0][0];
+        cout << setw(15) << rlavec_s_anharm[0][1];
+        cout << setw(15) << rlavec_s_anharm[0][2];
+        cout << " : b1" << endl;
+
+        cout << setw(16) << rlavec_s_anharm[1][0];
+        cout << setw(15) << rlavec_s_anharm[1][1];
+        cout << setw(15) << rlavec_s_anharm[1][2];
+        cout << " : b2" << endl;
+
+        cout << setw(16) << rlavec_s_anharm[2][0];
+        cout << setw(15) << rlavec_s_anharm[2][1];
+        cout << setw(15) << rlavec_s_anharm[2][2];
+        cout << " : b3" << endl;
         cout << endl;
 
         cout << " * Primitive cell " << endl << endl;
-        cout << setw(16) << lavec_p[0][0] << setw(15) << lavec_p[1][0] << setw(15) << lavec_p[2][0] << " : a1" << endl;
-        cout << setw(16) << lavec_p[0][1] << setw(15) << lavec_p[1][1] << setw(15) << lavec_p[2][1] << " : a2" << endl;
-        cout << setw(16) << lavec_p[0][2] << setw(15) << lavec_p[1][2] << setw(15) << lavec_p[2][2] << " : a3" << endl;
+        cout << setw(16) << lavec_p[0][0];
+        cout << setw(15) << lavec_p[1][0];
+        cout << setw(15) << lavec_p[2][0];
+        cout << " : a1" << endl;
+
+        cout << setw(16) << lavec_p[0][1];
+        cout << setw(15) << lavec_p[1][1];
+        cout << setw(15) << lavec_p[2][1];
+        cout << " : a2" << endl;
+
+        cout << setw(16) << lavec_p[0][2];
+        cout << setw(15) << lavec_p[1][2];
+        cout << setw(15) << lavec_p[2][2];
+        cout << " : a3" << endl;
         cout << endl;
 
-        cout << setw(16) << rlavec_p[0][0] << setw(15) << rlavec_p[0][1] << setw(15) << rlavec_p[0][2] << " : b1" << endl;
-        cout << setw(16) << rlavec_p[1][0] << setw(15) << rlavec_p[1][1] << setw(15) << rlavec_p[1][2] << " : b2" << endl;
-        cout << setw(16) << rlavec_p[2][0] << setw(15) << rlavec_p[2][1] << setw(15) << rlavec_p[2][2] << " : b3" << endl;
+        cout << setw(16) << rlavec_p[0][0];
+        cout << setw(15) << rlavec_p[0][1];
+        cout << setw(15) << rlavec_p[0][2];
+        cout << " : b1" << endl;
+
+        cout << setw(16) << rlavec_p[1][0];
+        cout << setw(15) << rlavec_p[1][1];
+        cout << setw(15) << rlavec_p[1][2];
+        cout << " : b2" << endl;
+
+        cout << setw(16) << rlavec_p[2][0];
+        cout << setw(15) << rlavec_p[2][1];
+        cout << setw(15) << rlavec_p[2][2];
+        cout << " : b3" << endl;
         cout << endl << endl;
 
 
-        for (i = 0; i < 3; ++i){
-            for (j = 0; j < 3; ++j){
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
                 vec_tmp[i][j] = lavec_p[j][i];
             }
         }
         volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
-        cout << "  Volume of the primitive cell : " << volume_p << " (a.u.)^3" << endl << endl;
-        cout << "  Number of atoms in the supercell     : " << nat_anharm << endl;
-        cout << "  Number of atoms in the primitive cell: " << natmin << endl << endl;
+        cout << "  Volume of the primitive cell : "
+            << volume_p << " (a.u.)^3" << endl << endl;
+        cout << "  Number of atoms in the supercell     : "
+            << nat_anharm << endl;
+        cout << "  Number of atoms in the primitive cell: "
+            << natmin << endl << endl;
 
         if (fcs_phonon->update_fc2) {
             cout << endl;
-            cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in " << fcs_phonon->file_fc2 << endl;
+            cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in "
+                << fcs_phonon->file_fc2 << endl;
             cout << endl;
 
-            cout << " * Supercell for HARMONIC (from " << fcs_phonon->file_fc2 << " )" << endl << endl;
-            cout << setw(16) << lavec_s[0][0] << setw(15) << lavec_s[1][0] << setw(15) << lavec_s[2][0] << " : a1" << endl;
-            cout << setw(16) << lavec_s[0][1] << setw(15) << lavec_s[1][1] << setw(15) << lavec_s[2][1] << " : a2" << endl;
-            cout << setw(16) << lavec_s[0][2] << setw(15) << lavec_s[1][2] << setw(15) << lavec_s[2][2] << " : a3" << endl;
+            cout << " * Supercell for HARMONIC (from "
+                << fcs_phonon->file_fc2 << " )" << endl << endl;
+
+            cout << setw(16) << lavec_s[0][0];
+            cout << setw(15) << lavec_s[1][0];
+            cout << setw(15) << lavec_s[2][0];
+            cout << " : a1" << endl;
+
+            cout << setw(16) << lavec_s[0][1];
+            cout << setw(15) << lavec_s[1][1];
+            cout << setw(15) << lavec_s[2][1];
+            cout << " : a2" << endl;
+
+            cout << setw(16) << lavec_s[0][2];
+            cout << setw(15) << lavec_s[1][2];
+            cout << setw(15) << lavec_s[2][2];
+            cout << " : a3" << endl;
             cout << endl;
 
-            cout << setw(16) << rlavec_s[0][0] << setw(15) << rlavec_s[0][1] << setw(15) << rlavec_s[0][2] << " : b1" << endl;
-            cout << setw(16) << rlavec_s[1][0] << setw(15) << rlavec_s[1][1] << setw(15) << rlavec_s[1][2] << " : b2" << endl;
-            cout << setw(16) << rlavec_s[2][0] << setw(15) << rlavec_s[2][1] << setw(15) << rlavec_s[2][2] << " : b3" << endl;
+            cout << setw(16) << rlavec_s[0][0];
+            cout << setw(15) << rlavec_s[0][1];
+            cout << setw(15) << rlavec_s[0][2];
+            cout << " : b1" << endl;
+
+            cout << setw(16) << rlavec_s[1][0];
+            cout << setw(15) << rlavec_s[1][1];
+            cout << setw(15) << rlavec_s[1][2];
+            cout << " : b2" << endl;
+
+            cout << setw(16) << rlavec_s[2][0];
+            cout << setw(15) << rlavec_s[2][1];
+            cout << setw(15) << rlavec_s[2][2];
+            cout << " : b3" << endl;
             cout << endl;
 
             cout << "  Number of atoms in the supercell (HARMONIC)   : " << nat << endl;
@@ -146,7 +221,7 @@ void System::setup()
         }
 
         cout << "  Atomic positions in the primitive cell (fractional):" << endl;
-        for (i = 0; i < natmin; ++i){
+        for (i = 0; i < natmin; ++i) {
             cout << setw(4) << i + 1 << ":";
             for (j = 0; j < 3; ++j) {
                 cout << setw(15) << xtmp[i][j];
@@ -189,15 +264,21 @@ void System::setup()
         cout << endl << endl;
     }
 
+    // Check the consistency of FCSXML and FC2XML
+    MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    if (fcs_phonon->update_fc2) {
+        memory->allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
+        check_consistency_primitive_lattice();
+    }
     // Atomic masses in Rydberg unit
 
     memory->allocate(mass, nat);
     memory->allocate(mass_anharm, nat_anharm);
-    for (i = 0; i < nat; ++i){
-        mass[i] = mass_kd[kd[i]]*amu_ry;
+    for (i = 0; i < nat; ++i) {
+        mass[i] = mass_kd[kd[i]] * amu_ry;
     }
     for (i = 0; i < nat_anharm; ++i) {
-        mass_anharm[i] = mass_kd[kd_anharm[i]]*amu_ry;
+        mass_anharm[i] = mass_kd[kd_anharm[i]] * amu_ry;
     }
     MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -213,7 +294,7 @@ void System::setup()
     if (mympi->my_rank > 0) {
         memory->allocate(magmom, natmin, 3);
     }
-    MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     setup_atomic_class(natmin, kd_prim, magmom);
@@ -234,21 +315,30 @@ void System::load_system_info_from_XML()
 
         try {
             read_xml(fcs_phonon->file_fcs, pt);
-        } 
+        }
         catch (std::exception &e) {
-            std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
-            error->exit("load_system_info_from_XML", str_error.c_str());
+            std::string str_error = "Cannot open file FCSXML ( "
+                + fcs_phonon->file_fcs + " )";
+            error->exit("load_system_info_from_XML",
+                        str_error.c_str());
         }
 
         // Parse nat and ntran
 
-        nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
-        nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfElements"));
+        nat = boost::lexical_cast<unsigned int>(
+            get_value_from_xml(pt,
+                               "Data.Structure.NumberOfAtoms"));
+        nkd_tmp = boost::lexical_cast<unsigned int>(
+            get_value_from_xml(pt,
+                               "Data.Structure.NumberOfElements"));
 
-        if (nkd != nkd_tmp) error->exit("load_system_info_from_XML", 
-            "NKD in the FCSXML file is not consistent with that given in the input file.");
+        if (nkd != nkd_tmp)
+            error->exit("load_system_info_from_XML",
+                        "NKD in the FCSXML file is not consistent with that given in the input file.");
 
-        ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
+        ntran = boost::lexical_cast<unsigned int>(
+            get_value_from_xml(pt,
+                               "Data.Symmetry.NumberOfTranslations"));
 
         natmin = nat / ntran;
 
@@ -259,8 +349,9 @@ void System::load_system_info_from_XML()
         for (i = 0; i < 3; ++i) {
             ss.str("");
             ss.clear();
-            ss << get_value_from_xml(pt, 
-                "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
+            ss << get_value_from_xml(pt,
+                                     "Data.Structure.LatticeVector.a"
+                                     + boost::lexical_cast<std::string>(i + 1));
             ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
         }
 
@@ -270,7 +361,7 @@ void System::load_system_info_from_XML()
         memory->allocate(kd, nat);
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
             const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
             dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
         }
@@ -278,7 +369,7 @@ void System::load_system_info_from_XML()
         unsigned int index;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
             const std::string str_index = child.get<std::string>("<xmlattr>.index");
             const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
@@ -288,7 +379,9 @@ void System::load_system_info_from_XML()
 
             index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-            if (index >= nat) error->exit("load_system_info_xml", "index is out of range");
+            if (index >= nat)
+                error->exit("load_system_info_xml",
+                            "index is out of range");
 
             kd[index] = dict_atomic_kind[str_element];
             ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
@@ -304,7 +397,7 @@ void System::load_system_info_from_XML()
         unsigned int tran, atom_p, atom_s;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-            const ptree& child = child_.second;
+            const ptree &child = child_.second;
             const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
             const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
@@ -313,7 +406,8 @@ void System::load_system_info_from_XML()
             atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
             if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                error->exit("load_system_info_xml", "index is out of range");
+                error->exit("load_system_info_xml",
+                            "index is out of range");
             }
 
             map_p2s[atom_p][tran] = atom_s;
@@ -331,7 +425,7 @@ void System::load_system_info_from_XML()
         try {
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
                 if (child_.first == "mag") {
-                    const ptree& child = child_.second;
+                    const ptree &child = child_.second;
                     const std::string str_index = child.get<std::string>("<xmlattr>.index");
 
                     ss.str("");
@@ -340,13 +434,18 @@ void System::load_system_info_from_XML()
 
                     index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                    if (index >= nat) error->exit("load_system_info_xml", "index is out of range");
+                    if (index >= nat)
+                        error->exit("load_system_info_xml",
+                                    "index is out of range");
 
-                    ss >> magmom_tmp[index][0] >> magmom_tmp[index][1] >> magmom_tmp[index][2];
+                    ss >> magmom_tmp[index][0]
+                        >> magmom_tmp[index][1]
+                        >> magmom_tmp[index][2];
                 }
             }
 
-        } catch(...) {
+        }
+        catch (...) {
             lspin = false;
         }
 
@@ -358,14 +457,20 @@ void System::load_system_info_from_XML()
             }
 
             try {
-                noncollinear = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.Noncollinear"));
-            } catch(...) {
+                noncollinear = boost::lexical_cast<int>(
+                    get_value_from_xml(pt,
+                                       "Data.MagneticMoments.Noncollinear"));
+            }
+            catch (...) {
                 noncollinear = 0;
             }
 
             try {
-                symmetry->trev_sym_mag = boost::lexical_cast<int>(get_value_from_xml(pt, "Data.MagneticMoments.TimeReversalSymmetry"));
-            } catch(...) {
+                symmetry->trev_sym_mag = boost::lexical_cast<int>(
+                    get_value_from_xml(pt,
+                                       "Data.MagneticMoments.TimeReversalSymmetry"));
+            }
+            catch (...) {
                 symmetry->trev_sym_mag = true;
             }
         } else {
@@ -411,26 +516,36 @@ void System::load_system_info_from_XML()
 
             try {
                 read_xml(fcs_phonon->file_fc2, pt);
-            } 
+            }
             catch (std::exception &e) {
-                std::string str_error = "Cannot open file FC2XML ( " + fcs_phonon->file_fc2 + " )";
-                error->exit("load_system_info_from_XML", str_error.c_str());
+                std::string str_error = "Cannot open file FC2XML ( "
+                    + fcs_phonon->file_fc2 + " )";
+                error->exit("load_system_info_from_XML",
+                            str_error.c_str());
             }
 
             // Parse nat and ntran
 
-            nat = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
-            nkd_tmp = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Structure.NumberOfElements"));
+            nat = boost::lexical_cast<unsigned int>(
+                get_value_from_xml(pt,
+                                   "Data.Structure.NumberOfAtoms"));
+            nkd_tmp = boost::lexical_cast<unsigned int>(
+                get_value_from_xml(pt,
+                                   "Data.Structure.NumberOfElements"));
 
-            if (nkd != nkd_tmp) error->exit("load_system_info_from_XML", 
-                "NKD in the FC2XML file is not consistent with that given in the input file.");
+            if (nkd != nkd_tmp)
+                error->exit("load_system_info_from_XML",
+                            "NKD in the FC2XML file is not consistent with that given in the input file.");
 
-            ntran = boost::lexical_cast<unsigned int>(get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
+            ntran = boost::lexical_cast<unsigned int>(
+                get_value_from_xml(pt,
+                                   "Data.Symmetry.NumberOfTranslations"));
 
             natmin_tmp = nat / ntran;
 
-            if (natmin_tmp != natmin) error->exit("load_system_info_from_XML",
-                "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
+            if (natmin_tmp != natmin)
+                error->exit("load_system_info_from_XML",
+                            "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
 
             memory->deallocate(xr_s);
             memory->deallocate(kd);
@@ -445,8 +560,9 @@ void System::load_system_info_from_XML()
             for (i = 0; i < 3; ++i) {
                 ss.str("");
                 ss.clear();
-                ss << get_value_from_xml(pt, 
-                    "Data.Structure.LatticeVector.a" + boost::lexical_cast<std::string>(i + 1));
+                ss << get_value_from_xml(pt,
+                                         "Data.Structure.LatticeVector.a"
+                                         + boost::lexical_cast<std::string>(i + 1));
                 ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
 
@@ -456,7 +572,7 @@ void System::load_system_info_from_XML()
             memory->allocate(kd, nat);
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
                 dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
             }
@@ -464,7 +580,7 @@ void System::load_system_info_from_XML()
             unsigned int index;
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const std::string str_index = child.get<std::string>("<xmlattr>.index");
                 const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
@@ -474,7 +590,9 @@ void System::load_system_info_from_XML()
 
                 index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                if (index >= nat) error->exit("load_system_info_xml", "index is out of range");
+                if (index >= nat)
+                    error->exit("load_system_info_xml",
+                                "index is out of range");
 
                 kd[index] = dict_atomic_kind[str_element];
                 ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
@@ -490,7 +608,7 @@ void System::load_system_info_from_XML()
             unsigned int tran, atom_p, atom_s;
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-                const ptree& child = child_.second;
+                const ptree &child = child_.second;
                 const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
                 const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
@@ -506,6 +624,8 @@ void System::load_system_info_from_XML()
                 map_s2p[atom_s].atom_num = atom_p;
                 map_s2p[atom_s].tran_num = tran;
             }
+
+
         }
     }
 
@@ -521,7 +641,7 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-    if (mympi->my_rank > 0){
+    if (mympi->my_rank > 0) {
         memory->allocate(mass_kd, nkd);
         memory->allocate(xr_s, nat, 3);
         memory->allocate(xr_s_anharm, nat_anharm, 3);
@@ -537,30 +657,29 @@ void System::load_system_info_from_XML()
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&xr_s[0][0], 3*nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&xr_s_anharm[0][0], 3*nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s[0][0], 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s_anharm[0][0], 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd_anharm[0], nat_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s[0][0], natmin*ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s_anharm[0][0], natmin*ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p[0], nat*sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p_anharm[0], nat_anharm*sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
-    if (lspin) MPI_Bcast(&magmom[0][0], 3*natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
+    MPI_Bcast(&map_p2s[0][0], natmin * ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_p2s_anharm[0][0], natmin * ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p[0], nat * sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    if (lspin) MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 
 void System::recips(double vec[3][3], double inverse[3][3])
 {
     double det;
-    det = vec[0][0] * vec[1][1] * vec[2][2] 
-    + vec[1][0] * vec[2][1] * vec[0][2] 
-    + vec[2][0] * vec[0][1] * vec[1][2]
-    - vec[0][0] * vec[2][1] * vec[1][2] 
-    - vec[2][0] * vec[1][1] * vec[0][2]
-    - vec[1][0] * vec[0][1] * vec[2][2];
+    det = vec[0][0] * vec[1][1] * vec[2][2]
+        + vec[1][0] * vec[2][1] * vec[0][2]
+        + vec[2][0] * vec[0][1] * vec[1][2]
+        - vec[0][0] * vec[2][1] * vec[1][2]
+        - vec[2][0] * vec[1][1] * vec[0][2]
+        - vec[1][0] * vec[0][1] * vec[2][2];
 
-    if(std::abs(det) < eps12) {
+    if (std::abs(det) < eps12) {
         error->exit("recips", "Lattice Vector is singular");
     }
 
@@ -583,17 +702,18 @@ double System::volume(double vec1[3], double vec2[3], double vec3[3])
 {
     double vol;
 
-    vol = std::abs(vec1[0]*(vec2[1]*vec3[2] - vec2[2]*vec3[1]) 
-        + vec1[1]*(vec2[2]*vec3[0] - vec2[0]*vec3[2]) 
-        + vec1[2]*(vec2[0]*vec3[1] - vec2[1]*vec3[0]));
+    vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
+        + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
+        + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
 
     return vol;
 }
 
 
-void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmom_in) {
-
-
+void System::setup_atomic_class(unsigned int N,
+                                unsigned int *kd,
+                                double **magmom_in)
+{
     // In the case of collinear calculation, spin moments are considered as scalar
     // variables. Therefore, the same elements with different magnetic moments are
     // considered as different types. In noncollinear calculations, 
@@ -629,7 +749,8 @@ void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmo
                     atomlist_class[count].push_back(i);
                 }
             } else {
-                if (kd[i] == (*it).element && std::abs(magmom[i][2] - (*it).magmom) < eps6) {
+                if ((kd[i] == (*it).element) &&
+                    (std::abs(magmom[i][2] - (*it).magmom) < eps6)) {
                     atomlist_class[count].push_back(i);
                 }
             }
@@ -637,4 +758,100 @@ void System::setup_atomic_class(unsigned int N, unsigned int *kd, double **magmo
         }
     }
     set_type.clear();
+}
+
+void System::check_consistency_primitive_lattice()
+{
+    // Check if the ordering of atoms in the primitive cells derived 
+    // from FCSXML and FC2XML are same or not. If not, the ordering for the
+    // FCSXML (anharmonic terms) will be changed so that it becomes equivalent
+    // to that of FC2XML. 
+    // This operation is necessary for obtaining correct computational results.
+
+    int i, j, k;
+    int iloc;
+    double xdiff[3], norm;
+    double **x_harm, **x_anharm;
+
+    memory->allocate(x_harm, natmin, 3);
+    memory->allocate(x_anharm, natmin, 3);
+
+    std::vector<int> map_anh2harm;
+    map_anh2harm.resize(natmin);
+
+    for (i = 0; i < natmin; ++i) {
+        rotvec(x_harm[i], xr_s[map_p2s[i][0]], lavec_s);
+        rotvec(x_harm[i], x_harm[i], rlavec_p);
+        for (j = 0; j < 3; ++j) x_harm[i][j] /= 2.0 * pi;
+    }
+
+    for (i = 0; i < natmin; ++i) {
+        rotvec(x_anharm[i], xr_s_anharm[map_p2s_anharm[i][0]], lavec_s_anharm);
+        rotvec(x_anharm[i], x_anharm[i], rlavec_p);
+        for (j = 0; j < 3; ++j) x_anharm[i][j] /= 2.0 * pi;
+    }
+
+    for (i = 0; i < natmin; ++i) {
+
+        iloc = -1;
+
+        for (j = 0; j < natmin; ++j) {
+
+            for (k = 0; k < 3; ++k) {
+                xdiff[k] = x_anharm[i][k] - x_harm[j][k];
+                xdiff[k] = xdiff[k] - static_cast<double>(nint(xdiff[k]));
+            }
+
+            norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
+            if (norm < eps4 && kd[map_p2s[j][0]] == kd_anharm[map_p2s_anharm[i][0]]) {
+                iloc = j;
+                break;
+            }
+        }
+
+        if (iloc == -1) {
+            error->exit("check_consistency_primitive",
+                        "Could not find equivalent atom. Probably, the crystal structure is different.");
+        }
+
+        map_anh2harm[i] = iloc;
+    }
+
+    memory->deallocate(x_harm);
+    memory->deallocate(x_anharm);
+
+    // Rebuild the mapping information for anharmonic terms.
+
+    unsigned int **map_p2s_tmp;
+
+    memory->allocate(map_p2s_tmp, natmin, ntran_anharm);
+
+    for (i = 0; i < natmin; ++i) {
+        for (j = 0; j < ntran_anharm; ++j) {
+            map_p2s_anharm_orig[i][j] = map_p2s_anharm[i][j];
+        }
+    }
+
+    for (i = 0; i < ntran_anharm; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            map_p2s_tmp[j][i] = map_p2s_anharm[j][i];
+        }
+    }
+
+    for (i = 0; i < ntran_anharm; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            map_p2s_anharm[map_anh2harm[j]][i] = map_p2s_tmp[j][i];
+        }
+    }
+
+    for (i = 0; i < ntran_anharm; ++i) {
+        for (j = 0; j < natmin; ++j) {
+            k = map_p2s_anharm[j][i];
+            map_s2p_anharm[k].atom_num = j;
+            map_s2p_anharm[k].tran_num = i;
+        }
+    }
+
+    memory->deallocate(map_p2s_tmp);
+    map_anh2harm.clear();
 }

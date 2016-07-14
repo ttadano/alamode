@@ -1,7 +1,7 @@
 /*
  alamode.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -9,6 +9,7 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include "interaction.h"
 #include "symmetry.h"
 #include "input.h"
@@ -22,6 +23,7 @@
 #include "timer.h"
 #include "writes.h"
 #include "patterndisp.h"
+#include "version.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -31,22 +33,25 @@ using namespace ALM_NS;
 
 ALM::ALM(int narg, char **arg)
 {
-    std::cout << " +------------------------------------------------------------+" << std::endl;
-    std::cout << " +                      Program ALM                           +" << std::endl;
-    std::cout << " +                           Ver. 0.9.7                       +" << std::endl;
-    std::cout << " +------------------------------------------------------------+" << std::endl;
+    std::cout << " +-----------------------------------------------------------------+" << std::endl;
+    std::cout << " +                         Program ALM                             +" << std::endl;
+    std::cout << " +                             Ver.";
+    std::cout << std::setw(7) << ALAMODE_VERSION;
+    std::cout << "                         +" << std::endl;
+    std::cout << " +-----------------------------------------------------------------+" << std::endl;
     std::cout << std::endl;
 
     timer = new Timer(this);
 
 #ifdef _OPENMP
-    std::cout << " Number of OpenMP threads = " << omp_get_max_threads() << std::endl << std::endl;
+    std::cout << " Number of OpenMP threads = " 
+        << omp_get_max_threads() << std::endl << std::endl;
 #endif
     std::cout << " Job started at " << timer->DateAndTime() << std::endl;
 
     input = new Input(this, narg, arg);
     create();
-    input->parce_input(narg, arg);
+    input->parse_input(narg, arg);
     writes->write_input_vars();
     initialize();
 
@@ -65,7 +70,8 @@ ALM::ALM(int narg, char **arg)
 
     finalize();
 
-    std::cout << std::endl << " Job finished at " << timer->DateAndTime() << std::endl;
+    std::cout << std::endl << " Job finished at " 
+        << timer->DateAndTime() << std::endl;
 }
 
 void ALM::create()
@@ -110,3 +116,4 @@ void ALM::finalize()
     delete writes;
     delete memory;
 }
+

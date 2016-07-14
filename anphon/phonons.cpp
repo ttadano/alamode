@@ -10,6 +10,7 @@
 
 #include "mpi_common.h"
 #include <iostream>
+#include <iomanip>
 #include "phonons.h"
 #include "timer.h"
 #include "parsephon.h"
@@ -30,6 +31,7 @@
 #include "conductivity.h"
 #include "isotope.h"
 #include "selfenergy.h"
+#include "version.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -45,21 +47,24 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     create_pointers();
 
     if (mympi->my_rank == 0) {
-        std::cout << " +------------------------------------------------------------+" << std::endl;
-        std::cout << " +                      Program ANPHON                        +" << std::endl;
-        std::cout << " +                           Ver. 0.9.7                       +" << std::endl;
-        std::cout << " +------------------------------------------------------------+" << std::endl;
+        std::cout << " +-----------------------------------------------------------------+" << std::endl;
+        std::cout << " +                         Program ANPHON                          +" << std::endl;
+        std::cout << " +                             Ver.";
+        std::cout << std::setw(7) << ALAMODE_VERSION;
+        std::cout << "                         +" << std::endl;
+        std::cout << " +-----------------------------------------------------------------+" << std::endl;
 
         std::cout << std::endl;
-        std::cout << " Job started at " << timer->DateAndTime() <<  std::endl;
-        std::cout << " The number of MPI threads: " << mympi->nprocs << std::endl;
+        std::cout << " Job started at " << timer->DateAndTime() << std::endl;
+        std::cout << " The number of MPI processes: " << mympi->nprocs << std::endl;
 #ifdef _OPENMP
-        std::cout << " The number of OpenMP threads: " << omp_get_max_threads() << std::endl;
+        std::cout << " The number of OpenMP threads: " 
+            << omp_get_max_threads() << std::endl;
 #endif
         std::cout << std::endl;
 
         input->parce_input(narg, arg);
-        writes->write_input_vars();    
+        writes->write_input_vars();
     }
 
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -81,12 +86,14 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << " Job finished at " << timer->DateAndTime() << std::endl;
+        std::cout << std::endl << " Job finished at "
+            << timer->DateAndTime() << std::endl;
     }
     destroy_pointers();
 }
 
-PHON::~PHON(){
+PHON::~PHON()
+{
     delete input;
     delete mympi;
 }
@@ -227,7 +234,7 @@ void PHON::execute_RTA()
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
- //   relaxation->setup_mode_analysis();
+    //   relaxation->setup_mode_analysis();
     relaxation->setup_relaxation();
     selfenergy->setup_selfenergy();
 

@@ -108,7 +108,7 @@ List of input variables
 
 * TOLERANCE-tag : Tolerance for finding symmetry operations
   
- :Default: 1.0e-8
+ :Default: 1.0e-6
  :Type: Double
 
 ````
@@ -138,6 +138,18 @@ List of input variables
  :Default: 1 1 1
  :type: Array of integers
  :Description: This tag is useful for generating interacting atoms in low dimensional systems. When ``PERIODIC[i]`` is zero, periodic boundary condition is turned off along the direction of the lattice vector :math:`\boldsymbol{a}_{i}`.
+
+````
+
+* HESSIAN-tag = 0 | 1
+
+ ===== =====================================================================
+   0    Do not save the Hessian matrix
+   1    Save the entire Hessian matrix of the supercell as PREFIX.hessian.
+ ===== =====================================================================
+
+ :Default: 0
+ :type: Integer
 
 ````
 

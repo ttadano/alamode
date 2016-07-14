@@ -9,6 +9,7 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <cmath>
 #include "../external/combination.hpp"
@@ -25,11 +26,12 @@
 
 using namespace ALM_NS;
 
-Fcs::Fcs(ALM *alm) : Pointers(alm){};
+Fcs::Fcs(ALM *alm) : Pointers(alm) {};
+
 Fcs::~Fcs() {};
 
-void Fcs::init(){
-
+void Fcs::init()
+{
     int i;
     int maxorder = interaction->maxorder;
 
@@ -46,8 +48,10 @@ void Fcs::init(){
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
-        std::cout << "  Number of " << std::setw(9) << interaction->str_order[i] << " FCs : " << ndup[i].size();
-	std::cout << std::endl;
+        std::cout << "  Number of " << std::setw(9)
+            << interaction->str_order[i]
+            << " FCs : " << ndup[i].size();
+        std::cout << std::endl;
     }
     std::cout << std::endl;
 
@@ -55,12 +59,14 @@ void Fcs::init(){
 
     for (int order = 0; order < maxorder; ++order) {
         if (ndup[order].size() > 0) {
-            std::sort(fc_set[order].begin(), fc_set[order].begin() + ndup[order][0]);
+            std::sort(fc_set[order].begin(),
+                      fc_set[order].begin() + ndup[order][0]);
             int nbegin = ndup[order][0];
             int nend;
-            for (unsigned int mm = 1; mm < ndup[order].size(); ++mm) {
-                nend  = nbegin + ndup[order][mm];
-                std::sort(fc_set[order].begin() + nbegin, fc_set[order].begin() + nend);
+            for (int mm = 1; mm < ndup[order].size(); ++mm) {
+                nend = nbegin + ndup[order][mm];
+                std::sort(fc_set[order].begin() + nbegin,
+                          fc_set[order].begin() + nend);
                 nbegin += ndup[order][mm];
             }
         }
@@ -69,7 +75,7 @@ void Fcs::init(){
     memory->deallocate(nints);
     memory->deallocate(nzero);
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 
@@ -121,12 +127,14 @@ void Fcs::generate_fclists(int maxorder)
 
         std::set<IntList> list_found;
 
-        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter) {
+        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin();
+             iter != interaction->pairs[order].end(); ++iter) {
 
             for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
 
             for (i1 = 0; i1 < nxyz; ++i1) {
-                for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
+                for (i = 0; i < order + 2; ++i)
+                    ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
 
                 if (!is_ascending(order + 2, ind)) continue;
 
@@ -146,14 +154,16 @@ void Fcs::generate_fclists(int maxorder)
 
                     if (!symmetry->sym_available[isym]) continue;
 
-                    for (i = 0; i < order + 2; ++i) atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
+                    for (i = 0; i < order + 2; ++i)
+                        atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
 
                     if (!is_inprim(order + 2, atmn_mapped)) continue;
 
                     for (i2 = 0; i2 < nxyz; ++i2) {
                         c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
                         if (std::abs(c_tmp) > eps12) {
-                            for (i = 0; i < order + 2; ++i) ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
+                            for (i = 0; i < order + 2; ++i)
+                                ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
 
                             i_prim = min_inprim(order + 2, ind_mapped);
                             std::swap(ind_mapped[0], ind_mapped[i_prim]);
@@ -173,7 +183,8 @@ void Fcs::generate_fclists(int maxorder)
                             if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()) {
                                 list_found.insert(IntList(order + 2, ind_mapped));
 
-                                fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped, nmother));
+                                fc_set[order].push_back(FcProperty(order + 2, c_tmp,
+                                                                   ind_mapped, nmother));
                                 ++ndeps;
 
                                 // Add equivalent interaction list (permutation) if there are two or more indices
@@ -188,7 +199,8 @@ void Fcs::generate_fclists(int maxorder)
                                         for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                         std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
                                         sort_tail(order + 2, ind_mapped_tmp);
-                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp, ind_mapped_tmp, nmother));
+                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp,
+                                                                           ind_mapped_tmp, nmother));
 
                                         ++ndeps;
 
@@ -229,7 +241,10 @@ void Fcs::generate_fclists(int maxorder)
     std::cout << "  Finished!" << std::endl;
 }
 
-double Fcs::coef_sym(const int n, const int symnum, const int *arr1, const int *arr2)
+double Fcs::coef_sym(const int n,
+                     const int symnum,
+                     const int *arr1,
+                     const int *arr2)
 {
     double tmp = 1.0;
     int i;
@@ -244,7 +259,7 @@ bool Fcs::is_ascending(const int n, const int *arr)
 {
     int i;
     for (i = 0; i < n - 1; ++i) {
-        if (arr[i] > arr[i+1]) return false;
+        if (arr[i] > arr[i + 1]) return false;
     }
     return true;
 }
@@ -333,7 +348,7 @@ void Fcs::get_xyzcomponent(int n, int **xyz)
         xyz[m][0] = v[0];
         for (i = 1; i < n; ++i) xyz[m][i] = v[i];
         ++m;
-    } while(boost::next_partial_permutation(v.begin(), v.begin() + n, v.end()));
+    } while (boost::next_partial_permutation(v.begin(), v.begin() + n, v.end()));
 }
 
 void Fcs::sort_tail(const int n, int *arr)
@@ -370,5 +385,5 @@ std::string Fcs::easyvizint(const int n)
     str_tmp = boost::lexical_cast<std::string>(atmn);
     str_tmp += str_crd[crdn];
 
-    return  str_tmp;
+    return str_tmp;
 }

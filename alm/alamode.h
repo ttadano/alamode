@@ -13,9 +13,10 @@
 #pragma once
 #include <string>
 
-namespace ALM_NS {
-
-    class ALM {
+namespace ALM_NS
+{
+    class ALM
+    {
     public:
         class Memory *memory;
         class Input *input;
@@ -39,3 +40,4 @@ namespace ALM_NS {
         std::string mode;
     };
 }
+

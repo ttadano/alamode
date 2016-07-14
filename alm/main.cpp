@@ -16,11 +16,10 @@ using namespace ALM_NS;
 
 int main(int argc, char **argv)
 {
-
     ALM *alm = new ALM(argc, argv);
 
     delete alm;
 
     return EXIT_SUCCESS;
 }
-    
+

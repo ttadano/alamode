@@ -20,9 +20,10 @@
 
 namespace PHON_NS
 {
-    class PHON {
+    class PHON
+    {
     public:
-        PHON(int, char**, MPI_Comm);
+        PHON(int, char **, MPI_Comm);
         virtual ~PHON();
 
         class Memory *memory;
@@ -57,3 +58,4 @@ namespace PHON_NS
         void setup_base();
     };
 }
+

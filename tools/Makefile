@@ -12,7 +12,9 @@
 CXX = c++
 
 CXXFLAGS = -O2 
-INCLUDE = -I../include 
+
+# Add the directory containing boost header files here
+INCLUDE = -I../include -I$(HOME)/include
 
 #----------------------------------------------
 # General rules

@@ -12,13 +12,15 @@
 
 #include "pointers.h"
 
-namespace PHON_NS {
-    class Thermodynamics: protected Pointers {
+namespace PHON_NS
+{
+    class Thermodynamics: protected Pointers
+    {
     public:
         Thermodynamics(class PHON *);
         ~Thermodynamics();
 
-        double T_to_Ryd;     
+        double T_to_Ryd;
 
         double Cv(const double, const double);
         double fB(const double, const double);
@@ -35,6 +37,6 @@ namespace PHON_NS {
 
     public:
         double coth_T(const double, const double);
-
     };
 }
+

@@ -1,7 +1,7 @@
 /*
  writes.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -15,18 +15,26 @@
 #include <fstream>
 #include <vector>
 
-namespace ALM_NS{
-
-    class AtomProperty {
+namespace ALM_NS
+{
+    class AtomProperty
+    {
     public:
         double x, y, z;
         int kind;
         int atom, tran;
 
-        AtomProperty(){};
+        AtomProperty() {};
+
         AtomProperty(const AtomProperty &other)
-            : x(other.x), y(other.y), z(other.z), kind(other.kind), atom(other.atom), tran(other.tran) {};
-        AtomProperty(const double *pos, const int kind_in, const int atom_in, const int tran_in) {
+            : x(other.x), y(other.y), z(other.z),
+              kind(other.kind), atom(other.atom), tran(other.tran) {};
+
+        AtomProperty(const double *pos,
+                     const int kind_in,
+                     const int atom_in,
+                     const int tran_in)
+        {
             x = pos[0];
             y = pos[1];
             z = pos[2];
@@ -34,23 +42,26 @@ namespace ALM_NS{
             atom = atom_in;
             tran = tran_in;
         }
-
     };
 
-    class SystemInfo {
+    class SystemInfo
+    {
     public:
         double lattice_vector[3][3];
         std::vector<AtomProperty> atoms;
         int nat, natmin, ntran;
         int nspecies;
 
-        SystemInfo(){};
+        SystemInfo() {};
     };
 
-    class Writes: protected Pointers{
+    class Writes: protected Pointers
+    {
     public:
         Writes(class ALM *);
         ~Writes();
+
+        bool print_hessian;
 
         void writeall();
         void write_input_vars();
@@ -59,9 +70,9 @@ namespace ALM_NS{
     private:
         void write_force_constants();
         void write_misc_xml();
+        void write_hessian();
 
         std::ofstream ofs_info;
         std::string double2string(const double, const int nprec = 15);
-
     };
 }

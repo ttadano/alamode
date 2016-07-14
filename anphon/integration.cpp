@@ -24,7 +24,7 @@ using namespace PHON_NS;
 
 Integration::Integration(PHON *phon): Pointers(phon) {}
 
-Integration::~Integration(){};
+Integration::~Integration() {};
 
 void Integration::setup_integration()
 {
@@ -40,7 +40,7 @@ void Integration::setup_integration()
         if (ismear == -1) {
             std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
         } else if (ismear == 0) {
-            std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = " 
+            std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
                 << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else if (ismear == 1) {
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
@@ -76,24 +76,24 @@ void Integration::prepare_tetrahedron(const int nk1, const int nk2, const int nk
 
     int nk23 = nk2 * nk3;
 
-    for (i = 0; i < nk1; ++i){
-        for (j = 0; j < nk2; ++j){
-            for (k = 0; k < nk3; ++k){
+    for (i = 0; i < nk1; ++i) {
+        for (j = 0; j < nk2; ++j) {
+            for (k = 0; k < nk3; ++k) {
 
                 ii = (i + 1) % nk1;
                 jj = (j + 1) % nk2;
                 kk = (k + 1) % nk3;
 
-                n1 =  k +  j*nk3 +  i*nk23;
-                n2 =  k +  j*nk3 + ii*nk23;
-                n3 =  k + jj*nk3 +  i*nk23;
-                n4 =  k + jj*nk3 + ii*nk23;
-                n5 = kk +  j*nk3 +  i*nk23;
-                n6 = kk +  j*nk3 + ii*nk23;
-                n7 = kk + jj*nk3 +  i*nk23;
-                n8 = kk + jj*nk3 + ii*nk23;
+                n1 = k + j * nk3 + i * nk23;
+                n2 = k + j * nk3 + ii * nk23;
+                n3 = k + jj * nk3 + i * nk23;
+                n4 = k + jj * nk3 + ii * nk23;
+                n5 = kk + j * nk3 + i * nk23;
+                n6 = kk + j * nk3 + ii * nk23;
+                n7 = kk + jj * nk3 + i * nk23;
+                n8 = kk + jj * nk3 + ii * nk23;
 
-                m = 6 * (k + j*nk3 + i*nk23);
+                m = 6 * (k + j * nk3 + i * nk23);
 
                 tetras[m][0] = n1;
                 tetras[m][1] = n2;
@@ -157,18 +157,18 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
     double I1, I2, I3, I4;
     double f1, f2, f3, f4;
 
-    double frac3 = 1.0/3.0;
+    double frac3 = 1.0 / 3.0;
     double g, vol, vol_tot;
 
     tetra_pair pair;
 
     vol_tot = 0.0;
 
-    for (i = 0; i < ntetra; ++i){
+    for (i = 0; i < ntetra; ++i) {
 
         tetra_data.clear();
 
-        for (j = 0; j < 4; ++j){
+        for (j = 0; j < 4; ++j) {
             knum = tetras[i][j];
             pair.e = energy[knum];
             pair.f = f[knum];
@@ -190,25 +190,26 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
         vol = volume(tetras[i]);
         vol_tot += vol;
 
-        if (e3 <= e_ref && e_ref < e4){
-            g = 3.0 * std::pow(e4 - e_ref, 2)/ ((e4 - e1)*(e4 - e2)*(e4 - e3));
+        if (e3 <= e_ref && e_ref < e4) {
+            g = 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
 
             I1 = frac3 * fij(e1, e4, e_ref);
             I2 = frac3 * fij(e2, e4, e_ref);
             I3 = frac3 * fij(e3, e4, e_ref);
             I4 = frac3 * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
 
-            ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+            ret += vol * g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         } else if (e2 <= e_ref && e_ref < e3) {
-            g =  3.0 * ((e2 - e1) + 2.0*(e_ref - e2) - (e4 + e3 - e2 - e1)*std::pow((e_ref - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
+            g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+                * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
 
             I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
             I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
             I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
             I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
 
-            ret += vol * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+            ret += vol * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         } else if (e1 <= e_ref && e_ref < e2) {
             g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
@@ -218,13 +219,13 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
             I3 = frac3 * fij(e3, e1, e_ref);
             I4 = frac3 * fij(e4, e1, e_ref);
 
-            ret += vol * g * (I1*f1 + I2*f2 + I3*f3 + I4*f4);
+            ret += vol * g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         }
 
     }
 
-    return ret/vol_tot;
+    return ret / vol_tot;
 }
 
 double Integration::dos_integration(double *energy, const double e_ref)
@@ -238,9 +239,9 @@ double Integration::dos_integration(double *energy, const double e_ref)
 
     vol_tot = 0.0;
 
-    for (i = 0; i < ntetra; ++i){
+    for (i = 0; i < ntetra; ++i) {
         e_tetra.clear();
-        for (j = 0; j < 4; ++j){
+        for (j = 0; j < 4; ++j) {
             e_tetra.push_back(energy[tetras[i][j]]);
         }
         std::sort(e_tetra.begin(), e_tetra.end());
@@ -253,21 +254,25 @@ double Integration::dos_integration(double *energy, const double e_ref)
         vol = volume(tetras[i]);
         vol_tot += vol;
 
-        if (e3 <= e_ref && e_ref < e4){
-            dos_ret += vol*(3.0*std::pow((e4 - e_ref), 2) / ((e4 - e1)*(e4 - e2)*(e4 - e3)));
+        if (e3 <= e_ref && e_ref < e4) {
+            dos_ret += vol * (3.0 * std::pow((e4 - e_ref), 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3)));
         } else if (e2 <= e_ref && e_ref < e3) {
-            dos_ret += vol*3.0*((e2 - e1) + 2.0*(e_ref - e2) - (e4 + e3 - e2 - e1)*std::pow((e_ref - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
+            dos_ret += vol * 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+                * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
         } else if (e1 <= e_ref && e_ref < e2) {
-            dos_ret += vol*3.0*std::pow((e_ref - e1), 2) / ((e2 - e1)*(e3 - e1)*(e4 - e1));
+            dos_ret += vol * 3.0 * std::pow((e_ref - e1), 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
         }
     }
 
-    return dos_ret/vol_tot;   
+    return dos_ret / vol_tot;
 }
 
 
-void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_irreducible_k, 
-                                          double *weight, double *energy, const double e_ref)
+void Integration::calc_weight_tetrahedron(const int nk_irreducible,
+                                          int *map_to_irreducible_k,
+                                          double *weight,
+                                          double *energy,
+                                          const double e_ref)
 {
     int i, j;
     double vol;
@@ -275,23 +280,42 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
 
     double g;
     double I1, I2, I3, I4;
-    double frac3 = 1.0/3.0;
     int k1, k2, k3, k4;
     double e1, e2, e3, e4;
 
     vol_tot = 0.0;
-    std::vector<TetraWithKnum> tetra_data;
-    TetraWithKnum pair;
+    // std::vector<TetraWithKnum> tetra_data;
+    // TetraWithKnum pair;
+    double e_tmp[4];
+    int sort_arg[4], kindex[4];
 
     for (i = 0; i < nk_irreducible; ++i) weight[i] = 0.0;
 
-    for (i = 0; i < ntetra; ++i){
+    for (i = 0; i < ntetra; ++i) {
 
+        for (j = 0; j < 4; ++j) {
+            e_tmp[j] = energy[tetras[i][j]];
+            kindex[j] = map_to_irreducible_k[tetras[i][j]];
+        }
+
+        insertion_sort(e_tmp, sort_arg, 4);
+        e1 = e_tmp[0];
+        e2 = e_tmp[1];
+        e3 = e_tmp[2];
+        e4 = e_tmp[3];
+
+        k1 = kindex[sort_arg[0]];
+        k2 = kindex[sort_arg[1]];
+        k3 = kindex[sort_arg[2]];
+        k4 = kindex[sort_arg[3]];
+
+
+        /*
         tetra_data.clear();
 
-        for (j = 0; j < 4; ++j){
+        for (j = 0; j < 4; ++j) {
             pair.e = energy[tetras[i][j]];
-            pair.knum = map_to_irreducible_k[tetras[i][j]]; 
+            pair.knum = map_to_irreducible_k[tetras[i][j]];
             tetra_data.push_back(pair);
         }
 
@@ -306,7 +330,7 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
         k2 = tetra_data[1].knum;
         k3 = tetra_data[2].knum;
         k4 = tetra_data[3].knum;
-
+        */
         vol = volume(tetras[i]);
         vol_tot += vol;
 
@@ -315,30 +339,34 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
         I3 = 0.0;
         I4 = 0.0;
 
-        if (e3 <= e_ref && e_ref < e4){
-            g = 3.0 * std::pow(e4 - e_ref, 2)/ ((e4 - e1)*(e4 - e2)*(e4 - e3));
+        if (e3 <= e_ref && e_ref < e4) {
+            // g = 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
+            g = std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
 
-            I1 = g * frac3 * fij(e1, e4, e_ref);
-            I2 = g * frac3 * fij(e2, e4, e_ref);
-            I3 = g * frac3 * fij(e3, e4, e_ref);
-            I4 = g * frac3 * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
+            I1 = g * fij(e1, e4, e_ref);
+            I2 = g * fij(e2, e4, e_ref);
+            I3 = g * fij(e3, e4, e_ref);
+            I4 = g * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
 
         } else if (e2 <= e_ref && e_ref < e3) {
-            g =  3.0 * ((e2 - e1) + 2.0*(e_ref - e2) - (e4 + e3 - e2 - e1) 
-                * std::pow((e_ref - e2), 2) / ((e3 - e2)*(e4 - e2))) / ((e3 - e1)*(e4 - e1));
+            //  g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+            //      * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+            g = ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+                * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
 
-            I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
-            I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
-            I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
-            I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
+            I1 = g * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
+            I2 = g * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
+            I3 = g * fij(e3, e2, e_ref) + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
+            I4 = g * fij(e4, e1, e_ref) + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
 
         } else if (e1 <= e_ref && e_ref < e2) {
-            g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
+            //  g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
+            g = std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
 
-            I1 = g * frac3 * (fij(e1, e2, e_ref) + fij(e1, e3, e_ref) + fij(e1, e4, e_ref));
-            I2 = g * frac3 * fij(e2, e1, e_ref);
-            I3 = g * frac3 * fij(e3, e1, e_ref);
-            I4 = g * frac3 * fij(e4, e1, e_ref);
+            I1 = g * (fij(e1, e2, e_ref) + fij(e1, e3, e_ref) + fij(e1, e4, e_ref));
+            I2 = g * fij(e2, e1, e_ref);
+            I3 = g * fij(e3, e1, e_ref);
+            I4 = g * fij(e4, e1, e_ref);
 
         }
         weight[k1] += vol * I1;
@@ -351,7 +379,10 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible, int *map_to_
 }
 
 void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList> > &kpinfo,
-                                                double *weight, double *energy, const double e_ref, const int smearing_method)
+                                                double *weight,
+                                                double *energy,
+                                                const double e_ref,
+                                                const int smearing_method)
 {
     unsigned int i;
     unsigned int knum;
@@ -371,8 +402,13 @@ void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<Kp
     }
 }
 
-void PHON_NS::Integration::calc_weight_smearing(const int nk, const int nk_irreducible, int *map_to_irreducible_k,
-                                                double *weight, double *energy, const double e_ref, const int smearing_method)
+void PHON_NS::Integration::calc_weight_smearing(const int nk,
+                                                const int nk_irreducible,
+                                                int *map_to_irreducible_k,
+                                                double *weight,
+                                                double *energy,
+                                                const double e_ref,
+                                                const int smearing_method)
 {
     int i;
 
@@ -401,7 +437,7 @@ double Integration::volume(int *klist)
     double k1[3], k2[3], k3[3];
     double vol;
 
-    for (i = 0; i < 3; ++i){
+    for (i = 0; i < 3; ++i) {
         k1[i] = refold(kpoint->xk[klist[1]][i] - kpoint->xk[klist[0]][i]);
         k2[i] = refold(kpoint->xk[klist[2]][i] - kpoint->xk[klist[0]][i]);
         k3[i] = refold(kpoint->xk[klist[3]][i] - kpoint->xk[klist[0]][i]);
@@ -411,9 +447,9 @@ double Integration::volume(int *klist)
     rotvec(k2, k2, system->rlavec_p, 'T');
     rotvec(k3, k3, system->rlavec_p, 'T');
 
-    vol = std::abs(k1[0]*(k2[1]*k3[2] - k2[2]*k3[1]) 
-        + k1[1]*(k2[2]*k3[0] - k2[0]*k3[2]) 
-        + k1[2]*(k2[0]*k3[1] - k2[1]*k3[0]));
+    vol = std::abs(k1[0] * (k2[1] * k3[2] - k2[2] * k3[1])
+        + k1[1] * (k2[2] * k3[0] - k2[0] * k3[2])
+        + k1[2] * (k2[0] * k3[1] - k2[1] * k3[0]));
 
     return vol;
 }
@@ -425,7 +461,7 @@ double Integration::fij(const double ei, const double ej, const double e)
 
 double Integration::refold(double x)
 {
-    if (std::abs(x) > 0.5){
+    if (std::abs(x) > 0.5) {
         if (x < 0.0) {
             return x + 1.0;
         } else {
@@ -436,3 +472,23 @@ double Integration::refold(double x)
     }
 }
 
+void Integration::insertion_sort(double *a, int *ind, int n)
+{
+    int i, j;
+    double tmp;
+
+    for (i = 0; i < n; ++i) ind[i] = i;
+
+    for (i = 1; i < n; ++i) {
+        tmp = a[i];
+
+        j = i;
+        while (j > 0 && tmp < a[j - 1]) {
+            a[j] = a[j - 1];
+            ind[j] = ind[j - 1];
+            --j;
+        }
+        a[j] = tmp;
+        ind[j] = i;
+    }
+}

@@ -102,7 +102,7 @@ List of input variables
 
 * TOLERANCE-tag : Tolerance for finding symmetry operations
   
- :Default: 1.0e-8
+ :Default: 1.0e-6
  :Type: Double
 
 ````
@@ -421,6 +421,21 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  :Default: 0
  :Type: Integer
  :Description: This flag is available when ``MODE = phonons``.
+
+
+````
+
+* KAPPA_SPEC-tag = 0 | 1
+
+ === ====================================================================================
+  0   Do not compute the thermal conductivity spectra
+  1   Compute the thermal conductivity spectra, which will be 
+      stored in  ``PREFIX``.kappa_spec .
+ === ====================================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: This flag is available when ``MODE = RTA``.
 
 
 ````

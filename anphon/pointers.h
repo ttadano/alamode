@@ -12,9 +12,10 @@
 
 #include "phonons.h"
 
-namespace PHON_NS {
-
-    class Pointers {
+namespace PHON_NS
+{
+    class Pointers
+    {
     public:
         Pointers(PHON *ptr) :
             phon(ptr),
@@ -38,7 +39,9 @@ namespace PHON_NS {
             mympi(ptr->mympi),
             isotope(ptr->isotope),
             timer(ptr->timer) {}
-        virtual ~Pointers(){}
+
+        virtual ~Pointers() {}
+
     protected:
         PHON *phon;
         Memory *&memory;
@@ -63,3 +66,4 @@ namespace PHON_NS {
         Timer *&timer;
     };
 }
+

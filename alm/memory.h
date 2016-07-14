@@ -15,8 +15,10 @@
 #include <cstdlib>
 #include "pointers.h"
 
-namespace ALM_NS {
-    class Memory: protected Pointers {
+namespace ALM_NS
+{
+    class Memory: protected Pointers
+    {
     public:
         Memory(class ALM *);
         ~Memory();
@@ -24,12 +26,12 @@ namespace ALM_NS {
         // allocator
 
         template <typename T>
-        T *allocate(T *&arr, const unsigned int n1){
-            try{
+        T* allocate(T *&arr, const unsigned int n1)
+        {
+            try {
                 arr = new T [n1];
             }
-            catch (std::bad_alloc &ba)
-            {
+            catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 1-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1) << std::endl;
@@ -39,16 +41,16 @@ namespace ALM_NS {
         }
 
         template <typename T>
-        T **allocate(T **&arr, const unsigned int n1, const unsigned int n2){
-            try{
+        T** allocate(T **&arr, const unsigned int n1, const unsigned int n2)
+        {
+            try {
                 arr = new T *[n1];
                 arr[0] = new T [n1 * n2];
-                for (unsigned int i = 1; i < n1; ++i){
+                for (unsigned int i = 1; i < n1; ++i) {
                     arr[i] = arr[0] + i * n2;
                 }
             }
-            catch (std::bad_alloc &ba)
-            {
+            catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 2-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2) << std::endl;
@@ -58,20 +60,20 @@ namespace ALM_NS {
         }
 
         template <typename T>
-        T ***allocate(T ***&arr, const unsigned int n1, const unsigned int n2, const unsigned int n3){
-            try{
+        T*** allocate(T ***&arr, const unsigned int n1, const unsigned int n2, const unsigned int n3)
+        {
+            try {
                 arr = new T **[n1];
                 arr[0] = new T *[n1 * n2];
                 arr[0][0] = new T [n1 * n2 * n3];
-                for (unsigned int i = 0; i < n1; ++i){
+                for (unsigned int i = 0; i < n1; ++i) {
                     arr[i] = arr[0] + i * n2;
-                    for (unsigned int j = 0; j < n2; ++j){
+                    for (unsigned int j = 0; j < n2; ++j) {
                         arr[i][j] = arr[0][0] + i * n2 * n3 + j * n3;
                     }
                 }
             }
-            catch(std::bad_alloc &ba)
-            {
+            catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 3-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3) << std::endl;
@@ -81,25 +83,25 @@ namespace ALM_NS {
         }
 
         template <typename T>
-        T ****allocate(T ****&arr, const unsigned int n1, const unsigned int n2, const unsigned int n3, const unsigned int n4){
-            try{
+        T**** allocate(T ****&arr, const unsigned int n1, const unsigned int n2, const unsigned int n3, const unsigned int n4)
+        {
+            try {
                 arr = new T ***[n1];
                 arr[0] = new T **[n1 * n2];
                 arr[0][0] = new T *[n1 * n2 * n3];
                 arr[0][0][0] = new T [n1 * n2 * n3 * n4];
 
-                for (unsigned int i = 0; i < n1; ++i){
+                for (unsigned int i = 0; i < n1; ++i) {
                     arr[i] = arr[0] + i * n2;
-                    for (unsigned int j = 0; j < n2; ++j){
+                    for (unsigned int j = 0; j < n2; ++j) {
                         arr[i][j] = arr[0][0] + i * n2 * n3 + j * n3;
-                        for (unsigned int k = 0; k < n3; ++k){
+                        for (unsigned int k = 0; k < n3; ++k) {
                             arr[i][j][k] = arr[0][0][0] + i * n2 * n3 * n4 + j * n3 * n4 + k * n4;
                         }
                     }
                 }
             }
-            catch(std::bad_alloc &ba)
-            {
+            catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 4-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << "x" << n4 << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3, n4) << std::endl;
@@ -111,25 +113,29 @@ namespace ALM_NS {
         // deallocator
 
         template <typename T>
-        void deallocate(T *&arr){
+        void deallocate(T *&arr)
+        {
             delete [] arr;
         }
 
         template <typename T>
-        void deallocate(T **&arr){
+        void deallocate(T **&arr)
+        {
             delete [] arr[0];
             delete [] arr;
         }
 
         template <typename T>
-        void deallocate(T ***&arr){
+        void deallocate(T ***&arr)
+        {
             delete [] arr[0][0];
             delete [] arr[0];
             delete [] arr;
         }
 
         template <typename T>
-        void deallocate(T ****&arr){
+        void deallocate(T ****&arr)
+        {
             delete [] arr[0][0][0];
             delete [] arr[0][0];
             delete [] arr[0];
@@ -138,21 +144,29 @@ namespace ALM_NS {
 
         // memsize calculator
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1){
+        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1)
+        {
             unsigned long n = n1 * size_of_one;
             return n / 1000000;
         }
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2){
+
+        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2)
+        {
             unsigned long n = n1 * n2 * size_of_one;
             return n / 1000000;
         }
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2, const unsigned int n3){
+
+        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2, const unsigned int n3)
+        {
             unsigned long n = n1 * n2 * n3 * size_of_one;
             return n / 1000000;
         }
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2, const unsigned int n3, const unsigned int n4){
+
+        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2, const unsigned int n3, const unsigned int n4)
+        {
             unsigned long n = n1 * n2 * n3 * n4 * size_of_one;
             return n / 1000000;
         }
     };
 }
+
