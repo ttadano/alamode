@@ -65,22 +65,23 @@ void Constraint::setup()
     case 1:
         impose_inv_T = true;
         impose_inv_R = false;
-        std::cout << "  ICONST = 1: Constraints for translational invariance will be considered." << std::endl;
+        std::cout << "  ICONST = 1: Constraints for translational invariance" << std::endl;
+        std::cout << "              will be considered." << std::endl;
         break;
     case 2:
         impose_inv_T = true;
         impose_inv_R = true;
         exclude_last_R = true;
-        std::cout << "  ICONST = 2: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "  ICONST = 2: Constraints for translational and rotational invariance" << std::endl;
+        std::cout << "              will be considered. Axis of rotation is " << rotation_axis << std::endl;
         std::cout << "              Rotational invariance of the maximum order will be neglected" << std::endl;
         break;
     case 3:
         impose_inv_T = true;
         impose_inv_R = true;
         exclude_last_R = false;
-        std::cout << "  ICONST = 3: Constraints for translational and rotational invariance will be considered." << std::endl;
-        std::cout << "              Axis of rotation is " << rotation_axis << std::endl;
+        std::cout << "  ICONST = 3: Constraints for translational and rotational invariance" << std::endl;
+        std::cout << "              will be considered. Axis of rotation is " << rotation_axis << std::endl;
         break;
     default:
         error->exit("Constraint::setup", "invalid constraint_mode", constraint_mode);
@@ -277,7 +278,7 @@ void Constraint::setup()
         memory->deallocate(const_self);
 
         timer->print_elapsed();
-        std::cout << " --------------------------------------------------------------" << std::endl;
+        std::cout << " -------------------------------------------------------------------" << std::endl;
         std::cout << std::endl;
     }
 }

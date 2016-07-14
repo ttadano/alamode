@@ -93,7 +93,7 @@ void Interaction::init()
     generate_pairs(pairs, mindist_cluster);
 
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 

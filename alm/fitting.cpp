@@ -217,7 +217,7 @@ void Fitting::fitmain()
 
     std::cout << std::endl;
     timer->print_elapsed();
-    std::cout << " --------------------------------------------------------------" << std::endl;
+    std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 }
 
@@ -307,8 +307,8 @@ void Fitting::data_multiplier(const int nat,
 
     } else if (multiply_data == 1) {
 
-        std::cout << "  MULTDAT = 1: Generate symmetrically equivalent displacement-force data sets " << std::endl;
-        std::cout << "               by using pure translational operations only." << std::endl << std::endl;
+        std::cout << "  MULTDAT = 1: Generate symmetrically equivalent displacement-force " << std::endl;
+        std::cout << "               data sets by using pure translational operations only." << std::endl << std::endl;
 
         nmulti = symmetry->ntran;
 
@@ -338,8 +338,8 @@ void Fitting::data_multiplier(const int nat,
 
         double u_rot[3], f_rot[3];
 
-        std::cout << "  MULTDAT = 2: Generate symmetrically equivalent displacement-force data sets." << std::endl;
-        std::cout << "               (including rotational part) " << std::endl << std::endl;
+        std::cout << "  MULTDAT = 2: Generate symmetrically equivalent displacement-force" << std::endl;
+        std::cout << "                data sets. (including rotational part) " << std::endl << std::endl;
 
         nmulti = symmetry->nsym;
 
