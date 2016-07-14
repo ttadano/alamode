@@ -1,5 +1,5 @@
 # ALAMODE 
-### Version 0.9.7 (Beta)
+### Version 0.9.8 (Beta)
 ![alt ALAMODE](./docs/img/alamode.png)
 
 - - -

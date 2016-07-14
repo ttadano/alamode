@@ -1,9 +1,35 @@
+# Ver. 0.9.8 (2016-7-14)
+
+## New
+
+- New tag ``HESSIAN`` in program **alm** for printing entire Hessian matrix
+- New tag ``KAPPA_SPEC`` in **anphon** for calculating spectra of thermal conductivity
+- New option ``--offset`` in **extract.py** for subtracting residual forces (displacements) in an equilibrium structure from training data sets. We recommended to use this option if internal coordinates of atoms (Wyckoff potisions) have free parameters.
+- New option ``--isotope`` in **analyze_phonons.py**
+
+## Changes
+
+- Improve the performance of thermal conductivity calculations with the tetrahedron method (``ISMEAR=-1``). The new version is <Font color='red'>more than 3 times faster</font> than the previous version.
+- Improve the efficiency of the algorithm for generating constraings for the translational invariance
+- Avoid 'NaN' in thermal conductivity calculations with imaginary branches
+- Loosen the default value of ``TOLERANCE`` for detecting crystal symmetry
+- Stop printing the CLASSICAL entry in PREFIX.result files
+- Change the unit of the smearing width written in PREFIX.result files (a.u. --> cm^-1)
+
+## Fix
+
+- Fixed an issue regarding the phonon-isotope scattering rate
+- Fixed a bug in relaxation.cpp regarding the permutation symmetry of q mesh
+- Fixed an invalid memory reference in **analyze_phonons.cpp**
+- Added a routine to check the consistency of the crystal structure when the ``FC2XML`` tag is used in **anphon**
+
+
 # Ver. 0.9.7 (2016-3-10)
 
 ## New
 
-- New option SPS = 2 for anphon
-- New tag MAGMOM for considering collinear spin (alm). The format is same as VASP.
+- New option ``SPS = 2`` in anphon
+- New tag ``MAGMOM`` for considering collinear spin (alm). The format is same as VASP.
 - ALAMODE logo 
 
 ## Changes
@@ -25,24 +51,24 @@
 - anphon code incorrectly printed RMSD instead of MSD in previous versions. Fixed.
 - qe2alm.cpp now works with ibrav=0.
 - Fixed several issues in displace.py and extract.py for processing QE files.
-- PRINTPR now works properly when KPMODE = 0.
+- ``PRINTPR`` now works properly when KPMODE = 0.
 
 
 # Ver. 0.9.6 (2015-09-14)
 
 ## New
 
-- New option ICONST=11 for ALM which considers translational invariance algebraically
+- New option ``ICONST=11`` in **alm** which considers translational invariance algebraically
 
-- FC2XML-tag for ANPHON. Using this tag, it is now possible to employ different size of 
+- ``FC2XML``-tag in **anphon**. Using this tag, it is now possible to employ different size of 
    supercells for harmonic and anharmonic terms.
 
 - qe2alm.cpp in the tools/ directory which converts Quantum-ESPRESSO fc files to ALAMODE xml files.
 
 ## Changes
 
-- Changed the meaning of --calc=cumulative in analyze_phonons.py. 
-   The --calc=cumulative in the previous version is now equivalent to --calc=cumulative2.
+- Changed the meaning of ``--calc=cumulative`` in analyze_phonons.py. 
+   The ``--calc=cumulative`` in the previous version is now equivalent to ``--calc=cumulative2``.
 
 - Updated tutorial
 
@@ -79,7 +105,7 @@
 
 - New tag PRINTPR (anphon) for calculating (atomic) participation ratio
 
-- Implement ISOTOPE = 2 to print the selfenergy due to phonon-isotope scatterings (anphon)
+- Implement ``ISOTOPE = 2`` to print the selfenergy due to phonon-isotope scatterings (anphon)
 
 ## Changes
 
@@ -96,11 +122,11 @@
 
 ## New
 
-- New tag FC3XML (alm)
+- New tag ``FC3XML`` (alm)
 
-- New tag SPS (anphon) for calculating the scattering phase space  
+- New tag ``SPS`` (anphon) for calculating the scattering phase space  
 
-- New mode calc=kappa_boundary in analyze_phonons.py
+- New mode ``--calc=kappa_boundary`` in analyze_phonons.py
 
 ## Changes
 
@@ -130,7 +156,7 @@
 
 - Different algorithm for anharmonic scattering rates (a little performance improvement is expected)
 
-- PRINTVEL = 1 now print the xyz component
+- ``PRINTVEL = 1`` now print the xyz component
 
 - Renamed phonon_thermodynamics.{cpp,h} as thermodynamics.{cpp,h}
 
@@ -150,7 +176,7 @@
 
 - Python auxiliary tool for xTAPP
 
-- alm now checks if DFILE and FFILE have enough lines
+- alm now checks if ``DFILE`` and ``FFILE`` have enough lines
 
 ## Changes
 
