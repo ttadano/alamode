@@ -663,9 +663,9 @@ void recips(double aa[3][3], double bb[3][3])
     BB = 2 Pi AA^{-1},
     = t(b1, b2, b3)
 
-    (b11 b12 b13)
-    = (b21 b22 b23)
-    (b31 b32 b33),
+    = (b11 b12 b13)
+      (b21 b22 b23)
+      (b31 b32 b33),
 
     b1 = t(b11, b12, b13) etc.
     */

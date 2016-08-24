@@ -750,6 +750,7 @@ void Writes::write_two_phonon_dos()
 void Writes::write_scattering_phase_space()
 {
     int ik, is;
+    unsigned int knum;
 
     std::string file_sps;
     std::ofstream ofs_sps;
@@ -757,16 +758,20 @@ void Writes::write_scattering_phase_space()
     file_sps = input->job_title + ".sps";
     ofs_sps.open(file_sps.c_str(), std::ios::out);
 
-    ofs_sps << "# Total scattering phase space [cm]: "
+    ofs_sps << "# Total scattering phase space (cm): "
         << std::scientific << dos->total_sps3 << std::endl;
     ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
-    ofs_sps << "# Irred. k, mode, sps [cm]" << std::endl;
+    ofs_sps << "# Irred. k, mode, omega (cm^-1), P+ (absorption) (cm), P- (emission) (cm)" << std::endl;
 
     for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+        knum = kpoint->kpoint_irred_all[ik][0].knum;
+        
         for (is = 0; is < dynamical->neval; ++is) {
             ofs_sps << std::setw(5) << ik + 1;
             ofs_sps << std::setw(5) << is + 1;
-            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is];
+            ofs_sps << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][is]);
+            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is][1];
+            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is][0];
             ofs_sps << std::endl;
         }
         ofs_sps << std::endl;

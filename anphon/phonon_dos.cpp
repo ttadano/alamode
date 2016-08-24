@@ -91,7 +91,7 @@ void Dos::setup()
         }
 
         if (scattering_phase_space == 1) {
-            memory->allocate(sps3_mode, kpoint->nk_reduced, dynamical->neval);
+            memory->allocate(sps3_mode, kpoint->nk_reduced, dynamical->neval, 2);
         } else if (scattering_phase_space == 2) {
             double Tmin = system->Tmin;
             double Tmax = system->Tmax;
@@ -408,7 +408,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
 void Dos::calc_total_scattering_phase_space(double **omega,
                                             const int smearing_method,
                                             std::vector<std::vector<KpointList> > kpinfo,
-                                            double **ret_mode,
+                                            double ***ret_mode,
                                             double &ret)
 {
     int i, j;
@@ -510,8 +510,8 @@ void Dos::calc_total_scattering_phase_space(double **omega,
             sps_sum1 += multi * sps_tmp1;
             sps_sum2 += multi * sps_tmp2;
 
-            ret_mode[ik][is] = (sps_tmp1 + 2.0 * sps_tmp2)
-                / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
+            ret_mode[ik][is][0] = sps_tmp2;
+            ret_mode[ik][is][1] = sps_tmp1;
         }
     }
 

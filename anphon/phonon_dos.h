@@ -36,7 +36,7 @@ namespace PHON_NS
         double *dos_phonon;
         double **pdos_phonon;
         double ***dos2_phonon;
-        double total_sps3, **sps3_mode;
+        double total_sps3, ***sps3_mode;
         double ****sps3_with_bose;
 
 
@@ -60,7 +60,7 @@ namespace PHON_NS
 
         void calc_total_scattering_phase_space(double **, const int,
                                                std::vector<std::vector<KpointList> >,
-                                               double **, double &);
+                                               double ***, double &);
 
         void calc_scattering_phase_space_with_Bose(double **, const int,
                                                    std::vector<std::vector<KpointList> >,
