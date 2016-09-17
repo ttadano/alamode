@@ -10,7 +10,7 @@ Program alm
 Program *alm* estimates harmonic and anharmonic interatomic force constants (IFCs) based on the *supercell approach*. 
 
 
-1. Perform usual SCF calculations for a *primitive celll*
+1. Perform usual SCF calculations for a *primitive cell*
 
   Before performing phonon calculations, one needs to perform usual self-consistent field calculations and check the convergence with respect to the cutoff energy and the :math:`k` point density.
   After that, please optimize the internal coordinate so that the atomic forces are negligibly small.
@@ -47,7 +47,7 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
   Then, please prepare necessary input files for a DFT engine (or a classical force field engine) 
   and calculate atomic forces for each displaced configuration.
   Once the atomic forces are calculated for all configurations, please collect the atomic displacements and atomic forces to separate files, say `disp_all.dat` and `force_all.dat`, in Rydberg atomic units. 
-  The detail of the file format is described in :ref:`this page <label_format_DFILE>`.
+  The detail of the file format is described on :ref:`this page <label_format_DFILE>`.
 
   .. Note::
     We provide some auxiliary Python scripts to expedite the above procedure for VASP, Quantum ESPRESSO, and xTAPP users.

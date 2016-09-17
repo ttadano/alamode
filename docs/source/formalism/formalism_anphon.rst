@@ -306,6 +306,8 @@ and :math:`M_{\kappa}=\sum_{i}f_{i}m_{i}(\kappa)` is the average mass, respectiv
 The :math:`g_{2}` values should be provided by the ``ISOFACT``-tag.
 The average mass :math:`M_{\kappa}` is substituted by the value specified in the ``MASS``-tag.
 
+.. _kappa:
+
 Lattice thermal conductivity
 ----------------------------
 
@@ -330,6 +332,8 @@ The spectra of the lattice thermal conductivity :math:`\kappa_{\mathrm{ph}}^{\mu
     \kappa_{\mathrm{ph}}^{\mu\mu}(\omega) = \frac{1}{\Omega N_{q}}\sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\tau_{\boldsymbol{q}j} \delta(\omega-\omega_{\boldsymbol{q}j}).
 
 If we integrate this quantity over :math:`\omega`, we then obtain the bulk thermal conductivity, namely :math:`\kappa_{\mathrm{ph}}^{\mu\mu} = \int_{0}^{\infty} \kappa_{\mathrm{ph}}^{\mu\mu}(\omega) \; \mathrm{d}\omega`.
+
+.. _cumulative_kappa:
 
 Cumulative thermal conductivity
 -------------------------------

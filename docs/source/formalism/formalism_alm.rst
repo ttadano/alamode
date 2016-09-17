@@ -62,6 +62,8 @@ The are several relationships between IFCs which may be used to reduce the numbe
    where :math:`s=\pm1`. The code employs equation :eq:`ifcsym2` instead of equation :eq:`ifcsym1` to reduce the number of IFCs. If IFCs of the left-hand side and the right-hand side of equation :eq:`ifcsym2` are equivalent and the coupling coefficient is :math:`s=-1`, the IFC is removed since it becomes zero. For **hexagonal** (trigonal) systems, there can be symmetry operations where multiple terms in the left-hand side of equation :eq:`ifcsym1` become non-zero. For such cases, equation :eq:`ifcsym1` is not used to reduce the number of IFCs. Alternatively, the corresponding symmetry relationships are imposed as constraints between IFCs in solving fitting problems.
 
 
+.. _constraint_IFC:
+
 Constraints between IFCs
 ------------------------
 

@@ -32,7 +32,7 @@ Optional requirements
 We provide some small scripts written in Python (Python 2) for visualizing phonon dispersion relations, phonon DOSs, etc.
 To use these scripts, one need to install the above Python packages.
 Additionally, XcrySDen is necessary to visualize the normal mode directions and animate the normal mode.
-VMD may be more useful to make an animation, but it may be replaced by any other visualization software which support the XYZ format.
+VMD may be more useful to make an animation, but it may be replaced by any other visualization software which supports the XYZ format.
 
 .. _XcrySDen : http://www.xcrysden.org
 .. _VMD : http://www.ks.uiuc.edu/Research/vmd/
@@ -58,7 +58,7 @@ How to install
 
   In this example, we made a symbolic link to the 'boost' subdirectory in ``$HOME/include``.
 
-  Instead of install from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
+  Instead of installing from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
 
 1. Download the package of ALAMODE from the download page or clone from the git repository.
 

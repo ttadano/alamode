@@ -322,6 +322,7 @@ This field is necessary when ``MODE = fitting``.
 
  :Default: 1
  :Type: Integer
+ :Description: See :ref:`this page<constraint_IFC>` for the numerical formulae.
 
 ````
 

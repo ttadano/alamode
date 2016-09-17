@@ -65,7 +65,7 @@ As you can see in the file, there is only one displacement pattern for harmonic 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Next, calculate atomic forces for all the displaced configurations defined in :red:`si222.pattern_HARMONIC`.
-To do so, you first need to decide the magnitude of displacements :math:`\Delta u`, which should be small so that anharmonic contributions are negligible. In ordinary case, :math:`\Delta u \sim 0.01` |Angstrom| is a reasonable choice. 
+To do so, you first need to decide the magnitude of displacements :math:`\Delta u`, which should be small so that anharmonic contributions are negligible. In most cases, :math:`\Delta u \sim 0.01` |Angstrom| is a reasonable choice. 
 
 Then, prepare input files necessary to run an external DFT code for each configuration.
 Since this procedure is a little tiresome, we provide a subsidiary Python script for VASP, Quantum-ESPRESSO (QE), and xTAPP.
@@ -174,7 +174,7 @@ You can find symmetrically irreducible sets of IFCs in the first part as:
 .. literalinclude:: ../../example/Si/reference/si222.fcs
    :lines: 1-40
 
-Harmonic IFCs :math:`\Phi_{\mu\nu}(i,j)` in the supercell are given in the third column, 
+Harmonic IFCs :math:`\Phi_{\mu\nu}(i,j)` in the supercell are given in the third column
 and the multiplicity :math:`P` is the number of times each interaction :math:`(i, j)` occurs within the given cutoff radius.
 For example, :math:`P = 2` for the pair :math:`(1x, 2x)` because the distance :math:`r_{1,2}` is exactly the same as the distance :math:`r_{1,2'}` where the atom 2' is a neighboring image of atom 2 under the periodic boundary condition.
 If you compare the magnitude of IFCs, the values in the third column should be divided by :math:`P`.
@@ -246,7 +246,7 @@ Then, execute **anphon**
     
     $ anphon si_phdos.in > si_phdos.log
 
-This time **anphon** creates files :red:`si222.dos` and :red:`si222.thermo` in the working directory, 
+This time, **anphon** creates files :red:`si222.dos` and :red:`si222.thermo` in the working directory, 
 which contain phonon DOS and thermodynamic functions, respectively.
 For visualizing phonon DOS and projected DOSs, we provide a Python script :red:`plotdos.py` in the tools/ directory (Matplotlib is required.).
 The command 
@@ -389,7 +389,7 @@ You can plot this file using gnuplot (or any other plotting softwares) as follow
 
 As you can see, the thermal conductivity diverges in :math:`T\rightarrow 0` limit. 
 This occurs because we only considered intrinsic phonon-phonon scatterings in the present calculation and
-neglected phonon-boundary scatterings which are dominant in the low temperature range.
+neglected phonon-boundary scatterings which are dominant in the low-temperature range.
 The effect of the boundary scattering can be included using the python script ``analyze_phonons.py`` in the tools directory::
 
     $ analyze_phonons.py --calc kappa_boundary --size 1.0e+6 si222.result > si222_boundary_1mm.kl
@@ -407,7 +407,7 @@ above figure and the divergence is cured with the boundary effect.
 
 .. Note::
     When a calculation is performed with a smearing method (``ISMEAR=0 or 1``) instead of the
-    tetrahedron method (``ISMEAR=-1``), the thermal conductivity may have a peak structure in the very low temperature region even without the boundary effect. This peak occurs because of the finite smearing width :math:`\epsilon` used in the smearing methods. As we descrease the :math:`\epsilon` value, the peak value of :math:`\kappa` should disapper. In addition, a very dense :math:`q` grid is necessary for describing phonon excitations and thermal transport in the low temperature region (regardless of the ``ISMEAR`` value).
+    tetrahedron method (``ISMEAR=-1``), the thermal conductivity may have a peak structure in the very low-temperature region even without the boundary effect. This peak occurs because of the finite smearing width :math:`\epsilon` used in the smearing methods. As we decrease the :math:`\epsilon` value, the peak value of :math:`\kappa` should disappear. In addition, a very dense :math:`q` grid is necessary for describing phonon excitations and thermal transport in the low-temperature region (regardless of the ``ISMEAR`` value).
 
 
 .. _tutorial_Si_step7:
@@ -444,7 +444,7 @@ In the above figure, phonon lifetimes calculated with :math:`20\times 20\times 2
 Cumulative thermal conductivity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Following the procedure below, you can obtain the cumulative thermal conductivity::
+Following the procedure below, you can obtain the :ref:`cumulative thermal conductivity <cumulative_kappa>`::
 
     $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 si222.result > cumulative_300K.dat
     $ gnuplot
@@ -465,7 +465,7 @@ which are obtained with :math:`20\times 20\times 20\ q` points.
 Thermal conductivity spectrum
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To calculate the spectrum of thermal conductivity, modify the :red:`si_RTA.in` as follows::
+To calculate the :ref:`spectrum of thermal conductivity <kappa>`, modify the :red:`si_RTA.in` as follows::
 
     &general
       PREFIX = si222
@@ -515,5 +515,5 @@ After the calculation finishes, you can find the file :red:`si222.kl_spec` which
 
 
 In the above figure, a computational result with :math:`20\times 20\times 20\ q` points is also shown by dashed line. 
-From the figure, we can see that low energy phonons below 200 cm\ :math:`^{-1}` account for more than 80% of the total thermal conductivity at 300 K.
+From the figure, we can see that low-energy phonons below 200 cm\ :math:`^{-1}` account for more than 80% of the total thermal conductivity at 300 K.
 
