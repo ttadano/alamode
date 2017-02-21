@@ -46,7 +46,7 @@ linewidth, and other anharmonic phonon properties from first principles.
 
 ## Prerequisite
 * C++ compiler
-* LAPACK libarary
+* LAPACK library
 * MPI library
 * Boost C++ library
 

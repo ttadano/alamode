@@ -197,7 +197,7 @@ where :math:`m` is the number of phonon branches and
 
 .. math::
 
-    P_{3} = \frac{1}{N_{q}}\sum_{\boldsymbol{q}} P_{3}(\boldsymbol{q}j).
+    P_{3} = \frac{1}{N_{q}}\sum_{\boldsymbol{q}j} P_{3}(\boldsymbol{q}j).
 
 When ``SPS = 2``, the three-phonon scattering phase space with the occupation factor :math:`W_{3}^{(\pm)}` will be calculated and saved to the file ``PREFIX``.sps_Bose. :math:`W_{3}^{(\pm)}` is defined as
 
