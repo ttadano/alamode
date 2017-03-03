@@ -28,12 +28,22 @@ namespace PHON_NS
         double ***phvel_xyz;
 
     private:
+
+        double **xshift_s;
         double diff(double *, const unsigned int, double);
 
         void calc_phonon_vel_band(double **);
         void calc_phonon_vel_mesh(double **, double ***);
-
+        void phonon_vel_k2(double *,
+                           double *,
+                           std::complex<double> **,
+                           double **);
+        void calc_derivative_dynmat_k(double *,
+                                      std::vector<FcsClassExtent>,
+                                      std::complex<double> ***);
+        void diagonalize_hermite_mat(const int,
+                                     std::complex<double> **,
+                                     double *);
         bool print_velocity_xyz;
     };
 }
-
