@@ -30,9 +30,13 @@
 
 using namespace PHON_NS;
 
-Dynamical::Dynamical(PHON *phon): Pointers(phon) {}
+Dynamical::Dynamical(PHON *phon): Pointers(phon)
+{
+}
 
-Dynamical::~Dynamical() {}
+Dynamical::~Dynamical()
+{
+}
 
 void Dynamical::setup_dynamical(std::string mode)
 {
@@ -84,8 +88,9 @@ void Dynamical::setup_dynamical(std::string mode)
     }
 
     if (mympi->my_rank == 0) {
-        eigenvectors = false;
+        eigenvectors = true;
 
+        /*
         if (phon->mode == "RTA") {
             eigenvectors = true;
         } else {
@@ -94,6 +99,7 @@ void Dynamical::setup_dynamical(std::string mode)
                 eigenvectors = true;
             }
         }
+        */
     }
 
 
@@ -115,7 +121,7 @@ void Dynamical::setup_dynamical(std::string mode)
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " -----------------------------------------------------------------" 
+        std::cout << " -----------------------------------------------------------------"
             << std::endl << std::endl;
     }
 }
@@ -375,7 +381,9 @@ void Dynamical::calc_analytic_k(double *xk_in,
 }
 
 
-void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::complex<double> **dymat_na_out)
+void Dynamical::calc_nonanalytic_k(double *xk_in,
+                                   double *kvec_na_in,
+                                   std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by Parlinski's method.
@@ -790,10 +798,10 @@ double Dynamical::fold(double x)
 double Dynamical::freq(const double x)
 {
     // Special treatment to avoid the divergence of computation.
-    if (std::abs(x) < eps)  return eps15;
-   
+    if (std::abs(x) < eps) return eps15;
+
     if (x > 0.0) return std::sqrt(x);
-        
+
     return -std::sqrt(-x);
 }
 

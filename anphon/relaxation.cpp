@@ -212,48 +212,6 @@ void Relaxation::detect_imaginary_branches(double **eval)
     }
 }
 
-// void Relaxation::print_minimum_energy_diff()
-// {
-//     int i, j;
-//     unsigned int nk_near = 0;
-//     double domega_min;
-//     double dist_k_min, dist_k;
-//     double xk_tmp[3], xk_tmp2[3];
-//     int ik;
-// 
-//     domega_min = 0.0;
-// 
-//     if (nk > 1) {
-// 
-//         for (i = 0; i < 3; ++i) {
-//             xk_tmp[i] = 0.5;
-//         }
-//         rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
-//         dist_k_min = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
-// 
-//         for (ik = 1; ik < nk; ++ik) {
-//             for (j = 0; j < 3; ++j) {
-//                 xk_tmp[j] = kpoint->xk[ik][j];
-//             }
-//             rotvec(xk_tmp2, xk_tmp, system->rlavec_p, 'T');
-// 
-//             dist_k = std::sqrt(xk_tmp2[0]*xk_tmp2[0] + xk_tmp2[1]*xk_tmp2[1] + xk_tmp2[2]*xk_tmp2[2]);
-// 
-//             if (dist_k <= dist_k_min) {
-//                 dist_k_min = dist_k;
-//                 nk_near = ik;
-//             }
-//         }
-//         domega_min =  writes->in_kayser(dynamical->eval_phonon[nk_near][0]);	
-//     } else {
-//         std::cout << "There is only 1 reciprocal point." << std::endl;
-//     }
-// 
-//     std::cout << std::endl;
-//     std::cout << " Estimated minimum energy difference (cm^-1) = " << domega_min << std::endl;
-//     std::cout << std::endl;
-// }
-
 void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
                                          const unsigned int N,
                                          double ***vec_out)
@@ -853,41 +811,6 @@ std::complex<double> Relaxation::V3_mode(int mode,
     return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
 }
 
-// 
-// void Relaxation::calc_realpart_V4(const unsigned int N, double *T, const double omega, 
-//                                   const unsigned int knum, const unsigned int snum, double *ret)
-// {
-//     unsigned int i, ik, is;
-//     unsigned int arr[4];
-//     double n1, omega1;
-//     double v4_tmp, T_tmp;
-// 
-//     for (i = 0; i < N; ++i) ret[i] = 0.0;
-// 
-//     arr[0] = ns * kpoint->knum_minus[knum] + snum;
-//     arr[1] = ns * knum + snum;
-// 
-//     for (ik = 0; ik < nk; ++ik) {
-//         for (is = 0; is < ns; ++is) {
-// 
-//             arr[2] = ns * ik + is;
-//             arr[3] = ns * kpoint->knum_minus[ik] + is;
-// 
-//             v4_tmp = V4(arr).real();
-// 
-//             omega1 = dynamical->eval_phonon[ik][is];
-// 
-//             for (i = 0; i < N; ++i) {
-//                 T_tmp = T[i];
-//                 n1 = phonon_thermodynamics->fB(omega1, T_tmp);
-// 
-//                 ret[i] += v4_tmp * (2.0 * n1 + 1.0);
-//             }
-//         }
-//     }
-// 
-//     for (i = 0; i < N; ++i) ret[i] *= - 1.0 / (8.0 * static_cast<double>(nk));
-// }
 
 
 void Relaxation::calc_damping_smearing(const unsigned int N,
