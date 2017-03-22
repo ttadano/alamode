@@ -159,6 +159,8 @@ namespace PHON_NS
                        double **,
                        std::vector<std::vector<KpointList> > &);
 
+        void get_small_group_k(double *, std::vector<int> &, double[3][3]);
+
 
     private:
         void setup_kpoint_given(std::vector<KpointInp> &,

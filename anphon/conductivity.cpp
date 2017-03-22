@@ -33,9 +33,13 @@
 
 using namespace PHON_NS;
 
-Conductivity::Conductivity(PHON *phon): Pointers(phon) {}
+Conductivity::Conductivity(PHON *phon): Pointers(phon)
+{
+}
 
-Conductivity::~Conductivity() {};
+Conductivity::~Conductivity()
+{
+};
 
 void Conductivity::setup_kappa()
 {
@@ -445,7 +449,9 @@ void Conductivity::compute_kappa()
 }
 
 
-void Conductivity::average_self_energy_at_degenerate_point(const int n, const int m, double **damping)
+void Conductivity::average_self_energy_at_degenerate_point(const int n,
+                                                           const int m,
+                                                           double **damping)
 {
     int i, j, k, l;
     int nkr = kpoint->nk_reduced;
@@ -453,7 +459,7 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n, const in
 
     double *eval_tmp;
     double omega_now, omega_prev;
-    double tol_omega = 1.0e-5;
+    double tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
 
     std::vector<int> degeneracy_at_k;
 

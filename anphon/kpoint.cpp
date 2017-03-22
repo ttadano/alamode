@@ -1062,3 +1062,56 @@ void Kpoint::generate_irreducible_kmap(int *kequiv,
     map_to_irreducible_index.clear();
 }
 
+void Kpoint::get_small_group_k(double *xk_in,
+    std::vector<int> &sym_list,
+    double S_avg[3][3])
+{
+    int i, j, isym;
+    double srot[3][3];
+    double srot_inv[3][3], srot_inv_t[3][3];
+    double xk_orig[3], xk_sym[3];
+
+    sym_list.clear();
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j <3;  ++j) {
+            S_avg[i][j] = 0.0;
+        }
+    }
+
+    for (isym = 0; isym < symmetry->nsym; ++isym) {
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                srot[i][j] = static_cast<double>(symmetry->SymmList[isym].rot[i][j]);
+            }
+        }
+
+        invmat3(srot_inv, srot);
+        transpose3(srot_inv_t, srot_inv);
+
+        for (i = 0; i < 3; ++i) xk_orig[i] = xk_in[i];
+
+        rotvec(xk_sym, xk_orig, srot_inv_t);
+        for (i = 0; i < 3; ++i) xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+      
+
+        if (std::sqrt(std::pow(xk_sym[0] - xk_orig[0], 2)
+            + std::pow(xk_sym[1] - xk_orig[1], 2)
+            + std::pow(xk_sym[2] - xk_orig[2], 2)) < 1.0e-10) {
+            sym_list.push_back(isym);
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        S_avg[i][j] += srot_inv_t[i][j];
+                    }
+                }
+        }
+    }
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            S_avg[i][j] /= static_cast<double>(sym_list.size());
+        }
+    }
+}
