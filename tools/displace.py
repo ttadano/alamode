@@ -488,7 +488,6 @@ def get_system_info(list_in):
     celldm = [[] for i in range(6)]
 
     for i in range(len(entrylist)):
-        print entrylist[i]
 
         if "ibrav" in entrylist[i]:
             ibrav = int(entrylist[i + 2])
