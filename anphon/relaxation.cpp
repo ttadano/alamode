@@ -1815,7 +1815,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     double omega_sum[3];
     double frac;
     int knum_triangle[3];
-    std::vector<std::vector<double>> ***kplist_conserved;
+    std::vector<std::vector<double> > ***kplist_conserved;
     std::vector<KpointListWithCoordinate> ***kplist_for_target_mode;
     std::vector<double> xk_vec;
     double xk_norm[3], xk_tmp[3];
@@ -2063,7 +2063,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
 
-                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][0].begin();
+                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][0].begin();
                          it2 != kplist_conserved[is][js][0].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
@@ -2086,7 +2086,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                                                      i, 0));
                     }
 
-                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][1].begin();
+                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][1].begin();
                          it2 != kplist_conserved[is][js][1].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
@@ -2142,7 +2142,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     memory->deallocate(kplist_conserved);
 
 
-    std::vector<std::vector<double>> **final_state_xy;
+    std::vector<std::vector<double> > **final_state_xy;
     std::vector<double> triplet_xyG;
     std::vector<int> small_group_k;
     double pos_x, pos_y;

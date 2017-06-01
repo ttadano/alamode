@@ -147,7 +147,7 @@ namespace PHON_NS
 
         std::vector<KpointInp> kpInp;
         std::vector<double> weight_k;
-        std::vector<std::vector<KpointList>> kpoint_irred_all;
+        std::vector<std::vector<KpointList> > kpoint_irred_all;
 
         unsigned int nplanes;
         std::vector<KpointPlane> *kp_planes;

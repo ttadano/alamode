@@ -377,7 +377,7 @@ void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
                                         double **&xk,
                                         double **&kdirec,
                                         const bool usesym,
-                                        std::vector<std::vector<KpointList>> &kp_irreducible)
+                                        std::vector<std::vector<KpointList> > &kp_irreducible)
 {
     int i, j;
     unsigned int nk_tmp[3];
@@ -435,7 +435,7 @@ void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
     mpi_broadcast_kpoint_vector(kp_irreducible);
 }
 
-void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &kp_irreducible)
+void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &kp_irreducible)
 {
     int i, j, k, ik;
     double **xk_tmp;
@@ -571,7 +571,7 @@ void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo,
 void Kpoint::gen_kmesh(const bool usesym,
                        const unsigned int nk_in[3],
                        double **xk_out,
-                       std::vector<std::vector<KpointList>> &kplist_out)
+                       std::vector<std::vector<KpointList> > &kplist_out)
 {
     unsigned int ix, iy, iz;
     unsigned int i, ik;
@@ -613,7 +613,7 @@ void Kpoint::gen_kmesh(const bool usesym,
 void Kpoint::reduce_kpoints(const unsigned int nsym,
                             double **xkr,
                             const unsigned int nk_in[3],
-                            std::vector<std::vector<KpointList>> &kplist_out)
+                            std::vector<std::vector<KpointList> > &kplist_out)
 {
     unsigned int ik;
     unsigned int i, j;
