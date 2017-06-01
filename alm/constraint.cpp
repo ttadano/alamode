@@ -574,6 +574,8 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
     memory->allocate(index_tmp, maxorder + 1);
 
+    const_mat.clear();
+
     for (order = 0; order < maxorder; ++order) {
 
         nparams = fcs->ndup[order].size();
@@ -585,8 +587,6 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                 continue;
             }
         }
-
-        const_mat.clear();
 
         // Generate temporary list of parameters
         list_found.clear();
@@ -664,14 +664,14 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                             const_now_omp[(*iter_found).mother] += (*iter_found).coef * c_tmp;
                         }
                     }
-                    
+
                     if (!is_allzero(const_now_omp, loc_nonzero)) {
                         if (const_now_omp[loc_nonzero] < 0.0) {
                             for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
                         }
                         const_omp.push_back(const_now_omp);
-                    } 
-                
+                    }
+
                 } // close isym loop
 
 
@@ -684,7 +684,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 #pragma omp critical
                 {
                     for (std::vector<std::vector<double> >::iterator it = const_omp.begin();
-                        it != const_omp.end(); ++it) {
+                         it != const_omp.end(); ++it) {
                         const_mat.push_back(*it);
                     }
                 }
@@ -701,12 +701,12 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         memory->allocate(arr_constraint, nparams);
         for (std::vector<std::vector<double> >::reverse_iterator it = const_mat.rbegin();
-            it != const_mat.rend(); ++it) {
+             it != const_mat.rend(); ++it) {
             for (i = 0; i < (*it).size(); ++i) {
                 arr_constraint[i] = (*it)[i];
             }
             const_out[order].push_back(ConstraintClass(nparams,
-                arr_constraint));
+                                                       arr_constraint));
         }
         const_mat.clear();
 
