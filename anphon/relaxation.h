@@ -46,7 +46,7 @@ namespace PHON_NS
     inline bool operator<(const KsList a, const KsList b)
     {
         return std::lexicographical_compare(a.ks.begin(), a.ks.end(),
-            b.ks.begin(), b.ks.end());
+                                            b.ks.begin(), b.ks.end());
     }
 
     class KsListGroup
@@ -90,10 +90,10 @@ namespace PHON_NS
         KpointListWithCoordinate();
 
         KpointListWithCoordinate(const std::vector<double> &a,
-            const double x_in,
-            const double y_in,
-            const int plane_in,
-            const int selection_type_in)
+                                 const double x_in,
+                                 const double y_in,
+                                 const int plane_in,
+                                 const int selection_type_in)
         {
             for (int i = 0; i < 3; ++i) xk[i] = a[i];
             x = x_in;
@@ -116,12 +116,12 @@ namespace PHON_NS
         void setup_mode_analysis();
 
         void calc_damping_smearing(const unsigned int, double *, const double,
-            const unsigned int, const unsigned int,
-            double *);
+                                   const unsigned int, const unsigned int,
+                                   double *);
 
         void calc_damping_tetrahedron(const unsigned int, double *, const double,
-            const unsigned int, const unsigned int,
-            double *);
+                                      const unsigned int, const unsigned int,
+                                      double *);
 
         int quartic_mode;
         bool ks_analyze_mode;
@@ -140,22 +140,22 @@ namespace PHON_NS
         std::vector<unsigned int> kslist;
 
 
-        std::complex<double> V3(const unsigned int[3]);
-        std::complex<double> V4(const unsigned int[4]);
+        std::complex<double> V3(const unsigned int [3]);
+        std::complex<double> V4(const unsigned int [4]);
 
 
         std::complex<double> V3_mode(int, double *, double *,
-            int, int, double **,
-            std::complex<double> ***);
+                                     int, int, double **,
+                                     std::complex<double> ***);
 
         void calc_V3norm2(const unsigned int, const unsigned int, double **);
 
         void prepare_relative_vector(std::vector<FcsArrayWithCell>,
-            const unsigned int, double ***);
+                                     const unsigned int, double ***);
 
         void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>,
-            const unsigned int, int &,
-            std::vector<double> *&);
+                                              const unsigned int, int &,
+                                              std::vector<double> *&);
 
         void detect_imaginary_branches(double **);
 
@@ -179,28 +179,27 @@ namespace PHON_NS
         void setup_cubic();
         void setup_quartic();
         void store_exponential_for_acceleration(const int nk[3], int &,
-            std::complex<double> *,
-            std::complex<double> ***);
+                                                std::complex<double> *,
+                                                std::complex<double> ***);
 
-        //   void print_minimum_energy_diff();
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double,
-            const unsigned int, const double *,
-            const unsigned int, const unsigned int,
-            double **);
+                                                 const unsigned int, const double *,
+                                                 const unsigned int, const unsigned int,
+                                                 double **);
 
         void print_momentum_resolved_final_state(const unsigned int, double *, const double);
         void print_frequency_resolved_final_state(const unsigned int, double *);
 
         void calc_self3omega_tetrahedron(const double, double **,
-            std::complex<double> ***,
-            const unsigned int, const unsigned int,
-            const unsigned int, double *, double *);
+                                         std::complex<double> ***,
+                                         const unsigned int, const unsigned int,
+                                         const unsigned int, double *, double *);
 
 
         void get_unique_triplet_k(const int,
-            const bool,
-            const bool,
-            std::vector<KsListGroup> &);
+                                  const bool,
+                                  const bool,
+                                  std::vector<KsListGroup> &);
 
         int ngroup;
         int ngroup2;

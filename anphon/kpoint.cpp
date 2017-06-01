@@ -38,7 +38,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Kpoint::Kpoint(PHON *phon) : Pointers(phon) {}
+Kpoint::Kpoint(PHON *phon) : Pointers(phon)
+{
+}
 
 Kpoint::~Kpoint()
 {
@@ -143,7 +145,7 @@ void Kpoint::kpoint_setups(std::string mode)
         }
 
         setup_kpoint_mesh(kpInp, nk, nkx, nky, nkz, xk,
-            kvec_na, symmetry->symmetry_flag, kpoint_irred_all);
+                          kvec_na, symmetry->symmetry_flag, kpoint_irred_all);
 
         nk_reduced = kpoint_irred_all.size();
 
@@ -213,9 +215,9 @@ void Kpoint::kpoint_setups(std::string mode)
 }
 
 void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo,
-    unsigned int &n,
-    double **&k,
-    double **&kdirec)
+                                unsigned int &n,
+                                double **&k,
+                                double **&kdirec)
 {
     int i, j;
     double norm;
@@ -256,10 +258,10 @@ void Kpoint::setup_kpoint_given(std::vector<KpointInp> &kpinfo,
 }
 
 void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo,
-    unsigned int &n,
-    double **&xk,
-    double **&kdirec,
-    double *&axis)
+                               unsigned int &n,
+                               double **&xk,
+                               double **&kdirec,
+                               double *&axis)
 {
     int i, j, k;
 
@@ -368,14 +370,14 @@ void Kpoint::setup_kpoint_band(std::vector<KpointInp> &kpinfo,
 }
 
 void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
-    unsigned int &nk,
-    unsigned int &nkx,
-    unsigned int &nky,
-    unsigned int &nkz,
-    double **&xk,
-    double **&kdirec,
-    const bool usesym,
-    std::vector<std::vector<KpointList> > &kp_irreducible)
+                                        unsigned int &nk,
+                                        unsigned int &nkx,
+                                        unsigned int &nky,
+                                        unsigned int &nkz,
+                                        double **&xk,
+                                        double **&kdirec,
+                                        const bool usesym,
+                                        std::vector<std::vector<KpointList>> &kp_irreducible)
 {
     int i, j;
     unsigned int nk_tmp[3];
@@ -433,7 +435,7 @@ void PHON_NS::Kpoint::setup_kpoint_mesh(std::vector<KpointInp> &kpinfo,
     mpi_broadcast_kpoint_vector(kp_irreducible);
 }
 
-void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &kp_irreducible)
+void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &kp_irreducible)
 {
     int i, j, k, ik;
     double **xk_tmp;
@@ -499,7 +501,7 @@ void PHON_NS::Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<Kpoint
 }
 
 void PHON_NS::Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane,
-    std::vector<KpointPlane> *&kp_plane)
+                                                  std::vector<KpointPlane> *&kp_plane)
 {
     int i, j;
     int nkp;
@@ -539,8 +541,8 @@ void PHON_NS::Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane,
 
 
 void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo,
-    unsigned int &nplane,
-    std::vector<KpointPlane> *&kp_plane)
+                                unsigned int &nplane,
+                                std::vector<KpointPlane> *&kp_plane)
 {
     nplane = kpinfo.size();
     MPI_Bcast(&nplane, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -567,9 +569,9 @@ void Kpoint::setup_kpoint_plane(std::vector<KpointInp> &kpinfo,
 
 
 void Kpoint::gen_kmesh(const bool usesym,
-    const unsigned int nk_in[3],
-    double **xk_out,
-    std::vector<std::vector<KpointList> > &kplist_out)
+                       const unsigned int nk_in[3],
+                       double **xk_out,
+                       std::vector<std::vector<KpointList>> &kplist_out)
 {
     unsigned int ix, iy, iz;
     unsigned int i, ik;
@@ -609,9 +611,9 @@ void Kpoint::gen_kmesh(const bool usesym,
 }
 
 void Kpoint::reduce_kpoints(const unsigned int nsym,
-    double **xkr,
-    const unsigned int nk_in[3],
-    std::vector<std::vector<KpointList> > &kplist_out)
+                            double **xkr,
+                            const unsigned int nk_in[3],
+                            std::vector<std::vector<KpointList>> &kplist_out)
 {
     unsigned int ik;
     unsigned int i, j;
@@ -728,8 +730,8 @@ void Kpoint::reduce_kpoints(const unsigned int nsym,
 }
 
 void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
-    std::vector<KpointPlane> *kpout,
-    std::vector<KpointPlaneTriangle> *kpout_tri)
+                               std::vector<KpointPlane> *kpout,
+                               std::vector<KpointPlaneTriangle> *kpout_tri)
 {
     int i, j;
     int nplane = kplist.size();
@@ -779,7 +781,7 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
         costheta = dprod / std::sqrt(norm1 * norm2);
         if (std::abs(std::abs(costheta) - 1.0) < eps12) {
             error->exit("gen_kpoints_plane",
-                "Two vectors have to be linearly independent with each other.");
+                        "Two vectors have to be linearly independent with each other.");
         }
 
         kp_plane_geometry.push_back(KpointPlaneGeometry(xk0, xk1, xk2, n_in));
@@ -861,8 +863,8 @@ void Kpoint::gen_kpoints_plane(std::vector<KpointInp> kplist,
 }
 
 void Kpoint::gen_nkminus(const unsigned int nk,
-    unsigned int *minus_k,
-    double **xk_in)
+                         unsigned int *minus_k,
+                         double **xk_in)
 {
     unsigned int ik;
     int ik_minus;
@@ -873,7 +875,7 @@ void Kpoint::gen_nkminus(const unsigned int nk,
 
         if (ik_minus == -1)
             error->exit("gen_nkminus",
-                "-xk doesn't exist on the mesh point.");
+                        "-xk doesn't exist on the mesh point.");
         if (ik_minus < ik) continue;
 
         minus_k[ik] = ik_minus;
@@ -882,8 +884,8 @@ void Kpoint::gen_nkminus(const unsigned int nk,
 }
 
 int Kpoint::get_knum(const double kx,
-    const double ky,
-    const double kz)
+                     const double ky,
+                     const double kz)
 {
     double diff[3];
     double dkx = static_cast<double>(nkx);
@@ -916,7 +918,7 @@ int Kpoint::get_knum(const double kx,
 }
 
 int Kpoint::get_knum(const double xk[3],
-    const unsigned int nk[3])
+                     const unsigned int nk[3])
 {
     int i;
     double diff[3];
@@ -1002,14 +1004,14 @@ bool Kpoint::in_first_BZ(double *xk_in)
 
 
 void Kpoint::generate_irreducible_kmap(int *kequiv,
-    unsigned int &nk_irreducible,
-    std::vector<int> &k_irreducible,
-    const unsigned int n1,
-    const unsigned int n2,
-    const unsigned int n3,
-    double **xk_in,
-    const int nsymop,
-    int ***symrot)
+                                       unsigned int &nk_irreducible,
+                                       std::vector<int> &k_irreducible,
+                                       const unsigned int n1,
+                                       const unsigned int n2,
+                                       const unsigned int n3,
+                                       double **xk_in,
+                                       const int nsymop,
+                                       int ***symrot)
 {
     int i, j, k;
     int isym;
@@ -1091,8 +1093,8 @@ std::vector<int> Kpoint::get_small_group_of_k(const int ik)
 }
 
 void Kpoint::get_small_group_k(double *xk_in,
-    std::vector<int> &sym_list,
-    double S_avg[3][3])
+                               std::vector<int> &sym_list,
+                               double S_avg[3][3])
 {
     int i, j, isym;
     double srot[3][3];
@@ -1102,7 +1104,7 @@ void Kpoint::get_small_group_k(double *xk_in,
     sym_list.clear();
 
     for (i = 0; i < 3; ++i) {
-        for (j = 0; j <3; ++j) {
+        for (j = 0; j < 3; ++j) {
             S_avg[i][j] = 0.0;
         }
     }
@@ -1145,7 +1147,7 @@ void Kpoint::get_small_group_k(double *xk_in,
 }
 
 int Kpoint::knum_sym(const int ik_in,
-    const int symop_num)
+                     const int symop_num)
 {
     // Returns kpoint index of S(symop_num)*xk[ik_in]
     // Works only for gamma-centered mesh calculations
