@@ -1252,6 +1252,7 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
     double n1, n2;
     double f1, f2;
     double xk_tmp[3];
+    double v3_tmp;
 
     int ns2 = ns * ns;
 
@@ -1260,6 +1261,7 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
     double **weight_tetra;
     double **v3_arr;
     double ***delta_arr;
+    double prod_tmp[2];
 
     double epsilon = integration->epsilon;
 
@@ -1356,42 +1358,50 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
         memory->deallocate(weight_tetra);
     }
 
-    for (i = 0; i < N; ++i) {
 
-        T_tmp = T[i];
+    for (ik = 0; ik < npair_uniq; ++ik) {
 
-        for (ik = 0; ik < npair_uniq; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
 
-            k1 = triplet[ik].group[0].ks[0];
-            k2 = triplet[ik].group[0].ks[1];
+                v3_tmp = v3_arr[ik][ns*is + js];
 
-            for (is = 0; is < ns; ++is) {
+                if (v3_tmp > eps) {
 
-                omega_inner[0] = dynamical->eval_phonon[k1][is];
-                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
-
-                for (js = 0; js < ns; ++js) {
-
+                    k1 = triplet[ik].group[0].ks[0];
+                    k2 = triplet[ik].group[0].ks[1];
+                    omega_inner[0] = dynamical->eval_phonon[k1][is];
                     omega_inner[1] = dynamical->eval_phonon[k2][js];
-                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
 
-                    n1 = f1 + f2 + 1.0;
-                    n2 = f1 - f2;
 #ifdef _OPENMP
-#pragma omp parallel for
+#pragma omp parallel for private(f1, f2, n1, n2, prod_tmp, j)
 #endif
-                    for (j = 0; j < M; ++j) {
-                        ret[i][j] += v3_arr[ik][ns * is + js]
+                    for (i = 0; i < N; ++i) {
+
+                        f1 = thermodynamics->fB(omega_inner[0], T[i]);
+                        f2 = thermodynamics->fB(omega_inner[1], T[i]);
+
+                        n1 = f1 + f2 + 1.0;
+                        n2 = f1 - f2;
+
+                        prod_tmp[0] = v3_tmp
                             * (n1 * delta_arr[ik][ns * is + js][0]
-                                - n2 * delta_arr[ik][ns * is + js][1])
-                            * delta_gauss(omega[j] - omega_inner[0], epsilon);
+                                - n2 * delta_arr[ik][ns * is + js][1]);
+
+                        for (j = 0; j < M; ++j) {
+                            ret[i][j] += prod_tmp[0] * delta_gauss(omega[j] - omega_inner[0], epsilon);
+                        }
                     }
+
                 }
             }
         }
     }
 
     for (i = 0; i < N; ++i) {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
         for (j = 0; j < M; ++j) {
             ret[i][j] *= pi * std::pow(0.5, 4);
         }
