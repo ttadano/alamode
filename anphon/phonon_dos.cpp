@@ -510,8 +510,8 @@ void Dos::calc_total_scattering_phase_space(double **omega,
             sps_sum1 += multi * sps_tmp1;
             sps_sum2 += multi * sps_tmp2;
 
-            ret_mode[ik][is][0] = sps_tmp2;
-            ret_mode[ik][is][1] = sps_tmp1;
+            ret_mode[ik][is][0] = sps_tmp1;
+            ret_mode[ik][is][1] = sps_tmp2;
         }
     }
 

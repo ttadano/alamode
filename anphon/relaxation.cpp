@@ -1432,7 +1432,7 @@ void Relaxation::perform_mode_analysis()
         std::string file_V3;
         std::ofstream ofs_V3;
 
-        int ik_irred;
+        int ik_irred, multi;
         unsigned int nk_size;
         unsigned int ib, is, js, k1, k2;
         std::vector<KsListGroup> triplet;
@@ -1487,10 +1487,10 @@ void Relaxation::perform_mode_analysis()
                 ofs_V3 << "# Frequency = " << writes->in_kayser(omega) << std::endl;
                 ofs_V3 << "## Matrix elements |V3|^2 for given mode" << std::endl;
                 ofs_V3 << "## q', j', omega(q'j') (cm^-1), q'', j'', ";
-                ofs_V3 << "omega(q''j'') (cm^-1), |V3(-qj,q'j',q''j'')| (cm^-2)" << std::endl;
+                ofs_V3 << "omega(q''j'') (cm^-1), |V3(-qj,q'j',q''j'')|^2 (cm^-2), multiplicity" << std::endl;
 
                 for (j = 0; j < nk_size; ++j) {
-
+                    multi = static_cast<double>(triplet[j].group.size());
                     k1 = triplet[j].group[0].ks[0];
                     k2 = triplet[j].group[0].ks[1];
 
@@ -1505,6 +1505,7 @@ void Relaxation::perform_mode_analysis()
                             ofs_V3 << std::setw(15)
                                 << writes->in_kayser(dynamical->eval_phonon[k2][js]);
                             ofs_V3 << std::setw(15) << v3norm[j][ib];
+                            ofs_V3 << std::setw(5) << multi;
                             ofs_V3 << std::endl;
 
                             ++ib;
