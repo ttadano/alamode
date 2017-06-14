@@ -1119,7 +1119,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                                                      const double *omega,
                                                      const unsigned int ik_in,
                                                      const unsigned int snum,
-                                                     double **ret)
+                                                     double ***ret)
 {
     int i, j, ik;
 
@@ -1134,7 +1134,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
     double n1, n2;
     double f1, f2;
     double prod_tmp[2];
-    double **ret_mpi;
+    double ***ret_mpi;
 
     double epsilon = integration->epsilon;
 
@@ -1146,11 +1146,12 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                          triplet);
 
 
-    memory->allocate(ret_mpi, N, M);
+    memory->allocate(ret_mpi, N, M, 2);
 
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
-            ret_mpi[i][j] = 0.0;
+            ret_mpi[i][j][0] = 0.0;
+            ret_mpi[i][j][1] = 0.0;
         }
     }
 
@@ -1191,9 +1192,12 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                                 - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                         for (j = 0; j < M; ++j) {
-                            ret_mpi[i][j] += v3_tmp * multi
+                            ret_mpi[i][j][0] += v3_tmp * multi
                                 * delta_lorentz(omega[j] - omega_inner[0], epsilon)
-                                * (prod_tmp[0] + prod_tmp[1]);
+                                * prod_tmp[0];
+                            ret_mpi[i][j][1] += v3_tmp * multi
+                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
+                                * prod_tmp[1];
                         }
                     } else if (integration->ismear == 1) {
                         prod_tmp[0] = n1
@@ -1204,9 +1208,12 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                                 - delta_gauss(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                         for (j = 0; j < M; ++j) {
-                            ret_mpi[i][j] += v3_tmp * multi
+                            ret_mpi[i][j][0] += v3_tmp * multi
                                 * delta_gauss(omega[j] - omega_inner[0], epsilon)
-                                * (prod_tmp[0] + prod_tmp[1]);
+                                * prod_tmp[0];
+                            ret_mpi[i][j][1] += v3_tmp * multi
+                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
+                                * prod_tmp[1];
                         }
                     }
 
@@ -1216,11 +1223,12 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
     }
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
-            ret_mpi[i][j] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
+            ret_mpi[i][j][0] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
+            ret_mpi[i][j][1] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
         }
     }
 
-    MPI_Reduce(&ret_mpi[0][0], &ret[0][0], N * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ret_mpi[0][0][0], &ret[0][0][0], 2 * N * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     memory->deallocate(ret_mpi);
     triplet.clear();
@@ -1234,7 +1242,7 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
                                                                  const double *omega,
                                                                  const unsigned int ik_in,
                                                                  const unsigned int snum,
-                                                                 double **ret)
+                                                                 double ***ret)
 {
     int i, j;
     int ik, ib;
@@ -1274,7 +1282,8 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
 
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
-            ret[i][j] = 0.0;
+            ret[i][j][0] = 0.0;
+            ret[i][j][1] = 0.0;
         }
     }
 
@@ -1384,12 +1393,12 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
                         n1 = f1 + f2 + 1.0;
                         n2 = f1 - f2;
 
-                        prod_tmp[0] = v3_tmp
-                            * (n1 * delta_arr[ik][ns * is + js][0]
-                                - n2 * delta_arr[ik][ns * is + js][1]);
+                        prod_tmp[0] =  v3_tmp * n1 * delta_arr[ik][ns * is + js][0];
+                        prod_tmp[1] = -v3_tmp * n2 * delta_arr[ik][ns * is + js][1];
 
                         for (j = 0; j < M; ++j) {
-                            ret[i][j] += prod_tmp[0] * delta_gauss(omega[j] - omega_inner[0], epsilon);
+                            ret[i][j][0] += prod_tmp[0] * delta_gauss(omega[j] - omega_inner[0], epsilon);
+                            ret[i][j][1] += prod_tmp[1] * delta_gauss(omega[j] - omega_inner[0], epsilon);
                         }
                     }
 
@@ -1403,7 +1412,8 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
 #pragma omp parallel for
 #endif
         for (j = 0; j < M; ++j) {
-            ret[i][j] *= pi * std::pow(0.5, 4);
+            ret[i][j][0] *= pi * std::pow(0.5, 4);
+            ret[i][j][1] *= pi * std::pow(0.5, 4);
         }
     }
 
@@ -1855,13 +1865,13 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
     int i, j;
     unsigned int knum, snum;
     double omega, omega0;
-    double **gamma_final;
+    double ***gamma_final;
     double *freq_array;
     int ienergy;
     std::ofstream ofs_omega;
     std::string file_omega;
 
-    memory->allocate(gamma_final, NT, dos->n_energy);
+    memory->allocate(gamma_final, NT, dos->n_energy, 2);
     memory->allocate(freq_array, dos->n_energy);
 
     for (i = 0; i < dos->n_energy; ++i) {
@@ -1873,11 +1883,6 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
         std::cout << std::endl;
         std::cout << " FSTATE_W = 1 : Calculate the frequency-resolved final state amplitude" << std::endl;
         std::cout << "                due to 3-phonon interactions." << std::endl;
-
-        //        if (integration->ismear == -1) {
-        //            error->exit("print_frequency_resolved_final_state",
-        //                        "Sorry, ISMEAR=-1 cannot be used with FSTATE_W = 1");
-        //        }
     }
 
     for (i = 0; i < kslist.size(); ++i) {
@@ -1939,7 +1944,7 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
             ofs_omega << "# Frequency = " << writes->in_kayser(omega0) << std::endl;
 
             ofs_omega << "## Frequency-resolved final state amplitude for given modes" << std::endl;
-            ofs_omega << "## Gamma[omega][temperature] in cm^-1";
+            ofs_omega << "## Gamma[omega][temperature] (absorption, emission)";
             ofs_omega << std::endl;
 
             ofs_omega << "## ";
@@ -1951,9 +1956,10 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
                 omega = dos->energy_dos[ienergy];
 
                 ofs_omega << std::setw(10) << omega;
-                for (j = 0; j < NT; ++j)
-                    ofs_omega << std::setw(15)
-                        << writes->in_kayser(gamma_final[j][ienergy]);
+                for (j = 0; j < NT; ++j) {
+                    ofs_omega << std::setw(15) << gamma_final[j][ienergy][1];
+                    ofs_omega << std::setw(15) << gamma_final[j][ienergy][0];
+                }
 
                 ofs_omega << std::endl;
             }

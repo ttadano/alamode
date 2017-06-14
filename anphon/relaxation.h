@@ -185,12 +185,12 @@ namespace PHON_NS
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double,
                                                  const unsigned int, const double *,
                                                  const unsigned int, const unsigned int,
-                                                 double **);
+                                                 double ***);
         void calc_frequency_resolved_final_state_tetrahedron(const unsigned int,
                                                              double *, const double,
                                                              const unsigned int, const double *,
                                                              const unsigned int, const unsigned int,
-                                                             double **);
+                                                             double ***);
 
         void print_momentum_resolved_final_state(const unsigned int, double *, const double);
         void print_frequency_resolved_final_state(const unsigned int, double *);
