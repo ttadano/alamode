@@ -62,7 +62,7 @@ Kpoint::~Kpoint()
 
 void Kpoint::kpoint_setups(std::string mode)
 {
-    small_group_of_k = nullptr;
+    small_group_of_k = NULL;
     symmetry->symmetry_flag = true;
 
     unsigned int i, j;
