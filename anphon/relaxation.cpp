@@ -1227,6 +1227,183 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
 }
 
 
+void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned int N,
+                                                                 double *T,
+                                                                 const double omega0,
+                                                                 const unsigned int M,
+                                                                 const double *omega,
+                                                                 const unsigned int ik_in,
+                                                                 const unsigned int snum,
+                                                                 double **ret)
+{
+    int i, j;
+    int ik, ib;
+    unsigned int jk;
+
+    double multi;
+    int knum, knum_minus;
+    unsigned int is, js;
+    unsigned int k1, k2;
+    unsigned int arr[3];
+    unsigned int npair_uniq;
+
+    double omega_inner[2];
+    double T_tmp;
+    double n1, n2;
+    double f1, f2;
+    double xk_tmp[3];
+
+    int ns2 = ns * ns;
+
+    int *kmap_identity;
+    double **energy_tmp;
+    double **weight_tetra;
+    double **v3_arr;
+    double ***delta_arr;
+
+    double epsilon = integration->epsilon;
+
+    std::vector<KsListGroup> triplet;
+
+    get_unique_triplet_k(ik_in,
+                         use_triplet_symmetry,
+                         sym_permutation,
+                         triplet);
+
+    for (i = 0; i < N; ++i) {
+        for (j = 0; j < M; ++j) {
+            ret[i][j] = 0.0;
+        }
+    }
+
+    npair_uniq = triplet.size();
+
+    memory->allocate(v3_arr, npair_uniq, ns2);
+    memory->allocate(delta_arr, npair_uniq, ns2, 2);
+
+    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    knum_minus = kpoint->knum_minus[knum];
+
+    memory->allocate(kmap_identity, nk);
+
+    for (i = 0; i < nk; ++i) kmap_identity[i] = i;
+
+
+#ifdef _OPENMP
+#pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, arr)
+#endif
+    {
+        memory->allocate(energy_tmp, 3, nk);
+        memory->allocate(weight_tetra, 3, nk);
+
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for (ib = 0; ib < ns2; ++ib) {
+            is = ib / ns;
+            js = ib % ns;
+
+            for (k1 = 0; k1 < nk; ++k1) {
+
+                // Prepare two-phonon frequency for the tetrahedron method
+
+                for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] - kpoint->xk[k1][i];
+
+                k2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+
+                energy_tmp[0][k1] = dynamical->eval_phonon[k1][is] + dynamical->eval_phonon[k2][js];
+                energy_tmp[1][k1] = dynamical->eval_phonon[k1][is] - dynamical->eval_phonon[k2][js];
+                energy_tmp[2][k1] = -energy_tmp[1][k1];
+            }
+
+            for (i = 0; i < 3; ++i) {
+                integration->calc_weight_tetrahedron(nk,
+                                                     kmap_identity,
+                                                     weight_tetra[i],
+                                                     energy_tmp[i],
+                                                     omega0);
+            }
+
+            // Loop for irreducible k points
+            for (ik = 0; ik < npair_uniq; ++ik) {
+
+                delta_arr[ik][ib][0] = 0.0;
+                delta_arr[ik][ib][1] = 0.0;
+
+                for (i = 0; i < triplet[ik].group.size(); ++i) {
+                    jk = triplet[ik].group[i].ks[0];
+                    delta_arr[ik][ib][0] += weight_tetra[0][jk];
+                    delta_arr[ik][ib][1] += weight_tetra[1][jk] - weight_tetra[2][jk];
+                }
+
+                // Calculate the matrix element V3 only when the weight is nonzero.
+                if (delta_arr[ik][ib][0] > 0.0 || std::abs(delta_arr[ik][ib][1]) > 0.0) {
+                    k1 = triplet[ik].group[0].ks[0];
+                    k2 = triplet[ik].group[0].ks[1];
+
+                    arr[0] = ns * knum_minus + snum;
+                    arr[1] = ns * k1 + is;
+                    arr[2] = ns * k2 + js;
+
+                    v3_arr[ik][ib] = std::norm(V3(arr));
+                } else {
+                    v3_arr[ik][ib] = 0.0;
+                }
+            }
+        }
+
+        memory->deallocate(energy_tmp);
+        memory->deallocate(weight_tetra);
+    }
+
+    for (i = 0; i < N; ++i) {
+
+        T_tmp = T[i];
+
+        for (ik = 0; ik < npair_uniq; ++ik) {
+
+            k1 = triplet[ik].group[0].ks[0];
+            k2 = triplet[ik].group[0].ks[1];
+
+            for (is = 0; is < ns; ++is) {
+
+                omega_inner[0] = dynamical->eval_phonon[k1][is];
+                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+
+                for (js = 0; js < ns; ++js) {
+
+                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+
+                    n1 = f1 + f2 + 1.0;
+                    n2 = f1 - f2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+                    for (j = 0; j < M; ++j) {
+                        ret[i][j] += v3_arr[ik][ns * is + js]
+                            * (n1 * delta_arr[ik][ns * is + js][0]
+                                - n2 * delta_arr[ik][ns * is + js][1])
+                            * delta_gauss(omega[j] - omega_inner[0], epsilon);
+                    }
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < N; ++i) {
+        for (j = 0; j < M; ++j) {
+            ret[i][j] *= pi * std::pow(0.5, 4);
+        }
+    }
+
+    memory->deallocate(v3_arr);
+    memory->deallocate(delta_arr);
+    memory->deallocate(kmap_identity);
+
+    triplet.clear();
+}
+
 void Relaxation::perform_mode_analysis()
 {
     unsigned int i, j;
@@ -1686,10 +1863,10 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
         std::cout << " FSTATE_W = 1 : Calculate the frequency-resolved final state amplitude" << std::endl;
         std::cout << "                due to 3-phonon interactions." << std::endl;
 
-        if (integration->ismear == -1) {
-            error->exit("print_frequency_resolved_final_state",
-                        "Sorry, ISMEAR=-1 cannot be used with FSTATE_W = 1");
-        }
+        //        if (integration->ismear == -1) {
+        //            error->exit("print_frequency_resolved_final_state",
+        //                        "Sorry, ISMEAR=-1 cannot be used with FSTATE_W = 1");
+        //        }
     }
 
     for (i = 0; i < kslist.size(); ++i) {
@@ -1712,9 +1889,26 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
                 << writes->in_kayser(omega0) << std::endl;
         }
 
-        calc_frequency_resolved_final_state(NT, T_arr, omega0, dos->n_energy,
-                                            freq_array, kpoint->kmap_to_irreducible[knum],
-                                            snum, gamma_final);
+        if (integration->ismear == -1) {
+            calc_frequency_resolved_final_state_tetrahedron(NT,
+                                                            T_arr,
+                                                            omega0,
+                                                            dos->n_energy,
+                                                            freq_array,
+                                                            kpoint->kmap_to_irreducible[knum],
+                                                            snum,
+                                                            gamma_final);
+        } else {
+            calc_frequency_resolved_final_state(NT,
+                                                T_arr,
+                                                omega0,
+                                                dos->n_energy,
+                                                freq_array,
+                                                kpoint->kmap_to_irreducible[knum],
+                                                snum,
+                                                gamma_final);
+        }
+
 
         if (mympi->my_rank == 0) {
 
@@ -1815,7 +2009,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     double omega_sum[3];
     double frac;
     int knum_triangle[3];
-    std::vector<std::vector<double> > ***kplist_conserved;
+    std::vector<std::vector<double>> ***kplist_conserved;
     std::vector<KpointListWithCoordinate> ***kplist_for_target_mode;
     std::vector<double> xk_vec;
     double xk_norm[3], xk_tmp[3];
@@ -2063,7 +2257,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
 
-                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][0].begin();
+                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][0].begin();
                          it2 != kplist_conserved[is][js][0].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
@@ -2086,7 +2280,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                                                      i, 0));
                     }
 
-                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][1].begin();
+                    for (std::vector<std::vector<double>>::const_iterator it2 = kplist_conserved[is][js][1].begin();
                          it2 != kplist_conserved[is][js][1].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
@@ -2142,7 +2336,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     memory->deallocate(kplist_conserved);
 
 
-    std::vector<std::vector<double> > **final_state_xy;
+    std::vector<std::vector<double>> **final_state_xy;
     std::vector<double> triplet_xyG;
     std::vector<int> small_group_k;
     double pos_x, pos_y;
