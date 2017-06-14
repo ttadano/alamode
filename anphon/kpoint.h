@@ -1,11 +1,11 @@
 /*
- kpoint.h
+kpoint.h
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #pragma once
@@ -26,7 +26,9 @@ namespace PHON_NS
         std::vector<double> kval;
         unsigned int knum;
 
-        KpointList() {};
+        KpointList()
+        {
+        };
 
         KpointList(const KpointList &obj)
         {
@@ -50,7 +52,9 @@ namespace PHON_NS
     public:
         std::vector<std::string> kpelem;
 
-        KpointInp() {};
+        KpointInp()
+        {
+        };
 
         KpointInp(const std::vector<std::string> &obj)
         {
@@ -67,7 +71,9 @@ namespace PHON_NS
         double xk_edges[2][3];
         int npoints[2];
 
-        KpointPlaneGeometry() {};
+        KpointPlaneGeometry()
+        {
+        };
 
         KpointPlaneGeometry(double *xk_origin_in,
                             double *xk_edge1_in,
@@ -91,7 +97,9 @@ namespace PHON_NS
         double k[3];
         int n[2];
 
-        KpointPlane() {};
+        KpointPlane()
+        {
+        };
 
         KpointPlane(double *xk_in, int *n_in)
         {
@@ -106,7 +114,9 @@ namespace PHON_NS
         int index;
         int knum[3];
 
-        KpointPlaneTriangle() {};
+        KpointPlaneTriangle()
+        {
+        };
 
         KpointPlaneTriangle(int index_in, int *nk_in)
         {
@@ -118,7 +128,7 @@ namespace PHON_NS
         }
     };
 
-    class Kpoint: protected Pointers
+    class Kpoint : protected Pointers
     {
     public:
         Kpoint(class PHON *);
@@ -145,6 +155,7 @@ namespace PHON_NS
         std::vector<KpointPlaneTriangle> *kp_planes_tri;
         unsigned int nk_reduced;
         std::map<int, int> kmap_to_irreducible;
+        std::vector<int> *small_group_of_k;
 
 
         int get_knum(const double, const double, const double);
@@ -159,7 +170,8 @@ namespace PHON_NS
                        double **,
                        std::vector<std::vector<KpointList> > &);
 
-        void get_small_group_k(double *, std::vector<int> &, double[3][3]);
+        void get_small_group_k(double *, std::vector<int> &, double [3][3]);
+        int knum_sym(const int, const int);
 
 
     private:
@@ -195,6 +207,7 @@ namespace PHON_NS
 
         void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &);
         void mpi_broadcast_kplane_vector(const unsigned int, std::vector<KpointPlane> *&);
+        void calc_small_groups_k_irred(std::vector<int> *);
+        std::vector<int> get_small_group_of_k(const int);
     };
 }
-

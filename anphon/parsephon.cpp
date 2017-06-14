@@ -297,7 +297,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     std::string str_allowed_list = "PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR KAPPA_SPEC";
+                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR KAPPA_SPEC \
+                                   SELF_W";
 
     bool fstate_omega, fstate_k;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
@@ -306,6 +307,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool two_phonon_dos;
     bool print_xsf, print_anime;
     bool print_V3, participation_ratio;
+    bool bubble_omega;
 
     int quartic_mode;
     int include_isotope;
@@ -345,6 +347,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     include_isotope = 0;
     fstate_omega = false;
     fstate_k = false;
+    bubble_omega = false;
 
     calculate_kappa_spec = 0;
 
@@ -373,6 +376,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
         assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
+        assign_val(bubble_omega, "SELF_W", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -469,6 +473,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     relaxation->calc_fstate_omega = fstate_omega;
     relaxation->calc_fstate_k = fstate_k;
     relaxation->print_V3 = print_V3;
+    relaxation->spectral_func = bubble_omega;
     isotope->include_isotope = include_isotope;
     relaxation->ks_input = ks_input;
 

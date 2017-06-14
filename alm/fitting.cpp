@@ -87,11 +87,11 @@ void Fitting::fitmain()
     double *fsum_orig;
     double *param_tmp;
 
-    amat = nullptr;
-    amat_1D = nullptr;
-    fsum = nullptr;
-    fsum_orig = nullptr;
-    param_tmp = nullptr;
+    amat = NULL;
+    amat_1D = NULL;
+    fsum = NULL;
+    fsum_orig = NULL;
+    param_tmp = NULL;
 
     std::cout << " FITTING" << std::endl;
     std::cout << " =======" << std::endl << std::endl;

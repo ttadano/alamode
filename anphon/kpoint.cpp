@@ -1,11 +1,11 @@
 /*
- kpoint.cpp
+kpoint.cpp
 
- Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h" 
@@ -38,7 +38,9 @@
 
 using namespace PHON_NS;
 
-Kpoint::Kpoint(PHON *phon): Pointers(phon) {}
+Kpoint::Kpoint(PHON *phon) : Pointers(phon)
+{
+}
 
 Kpoint::~Kpoint()
 {
@@ -54,10 +56,13 @@ Kpoint::~Kpoint()
             if (mympi->my_rank == 0) memory->deallocate(kaxis);
         }
     }
+    if (small_group_of_k)
+        memory->deallocate(small_group_of_k);
 }
 
 void Kpoint::kpoint_setups(std::string mode)
 {
+    small_group_of_k = NULL;
     symmetry->symmetry_flag = true;
 
     unsigned int i, j;
@@ -179,6 +184,9 @@ void Kpoint::kpoint_setups(std::string mode)
                 kmap_to_irreducible.insert(std::map<int, int>::value_type(kpoint_irred_all[i][j].knum, i));
             }
         }
+        // Compute small group of every irreducible k points for later use
+        memory->allocate(small_group_of_k, nk_reduced);
+        calc_small_groups_k_irred(small_group_of_k);
 
         break;
 
@@ -193,7 +201,7 @@ void Kpoint::kpoint_setups(std::string mode)
         if (mympi->my_rank == 0) {
             std::cout << "  Number of planes : " << nplanes << std::endl;
             for (i = 0; i < nplanes; ++i) {
-                std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :" ;
+                std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :";
                 std::cout << std::setw(8) << kp_planes[i].size() << std::endl;
             }
             std::cout << std::endl;
@@ -1062,9 +1070,31 @@ void Kpoint::generate_irreducible_kmap(int *kequiv,
     map_to_irreducible_index.clear();
 }
 
+void Kpoint::calc_small_groups_k_irred(std::vector<int> *small_group)
+{
+    for (int ik = 0; ik < nk_reduced; ++ik) {
+        small_group[ik] = get_small_group_of_k(kpoint_irred_all[ik][0].knum);
+    }
+}
+
+std::vector<int> Kpoint::get_small_group_of_k(const int ik)
+{
+    int isym, ksym;
+    std::vector<int> small_group;
+    int i = 0;
+    small_group.clear();
+    for (isym = 0; isym < symmetry->nsym; ++isym) {
+        ksym = knum_sym(ik, isym);
+        if (ksym == ik) {
+            small_group.push_back(isym);
+        }
+    }
+    return small_group;
+}
+
 void Kpoint::get_small_group_k(double *xk_in,
-    std::vector<int> &sym_list,
-    double S_avg[3][3])
+                               std::vector<int> &sym_list,
+                               double S_avg[3][3])
 {
     int i, j, isym;
     double srot[3][3];
@@ -1074,7 +1104,7 @@ void Kpoint::get_small_group_k(double *xk_in,
     sym_list.clear();
 
     for (i = 0; i < 3; ++i) {
-        for (j = 0; j <3;  ++j) {
+        for (j = 0; j < 3; ++j) {
             S_avg[i][j] = 0.0;
         }
     }
@@ -1094,18 +1124,18 @@ void Kpoint::get_small_group_k(double *xk_in,
 
         rotvec(xk_sym, xk_orig, srot_inv_t);
         for (i = 0; i < 3; ++i) xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
-      
+
 
         if (std::sqrt(std::pow(xk_sym[0] - xk_orig[0], 2)
             + std::pow(xk_sym[1] - xk_orig[1], 2)
             + std::pow(xk_sym[2] - xk_orig[2], 2)) < 1.0e-10) {
             sym_list.push_back(isym);
 
-                for (i = 0; i < 3; ++i) {
-                    for (j = 0; j < 3; ++j) {
-                        S_avg[i][j] += srot_inv_t[i][j];
-                    }
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    S_avg[i][j] += srot_inv_t[i][j];
                 }
+            }
         }
     }
 
@@ -1114,4 +1144,40 @@ void Kpoint::get_small_group_k(double *xk_in,
             S_avg[i][j] /= static_cast<double>(sym_list.size());
         }
     }
+}
+
+int Kpoint::knum_sym(const int ik_in,
+                     const int symop_num)
+{
+    // Returns kpoint index of S(symop_num)*xk[ik_in]
+    // Works only for gamma-centered mesh calculations
+    int i, j;
+
+    double srot[3][3];
+    double srot_inv[3][3], srot_inv_t[3][3];
+    double xk_orig[3], xk_sym[3];
+
+    if (symop_num < 0 || symop_num >= symmetry->nsym) {
+        error->exit("knum_sym", "Invalid symop_num");
+    }
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            srot[i][j] = static_cast<double>(symmetry->SymmList[symop_num].rot[i][j]);
+        }
+    }
+
+    invmat3(srot_inv, srot);
+    transpose3(srot_inv_t, srot_inv);
+
+    for (i = 0; i < 3; ++i) xk_orig[i] = xk[ik_in][i];
+
+    rotvec(xk_sym, xk_orig, srot_inv_t);
+    for (i = 0; i < 3; ++i) {
+        xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+    }
+
+    int ret = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
+
+    return ret;
 }

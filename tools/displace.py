@@ -499,7 +499,15 @@ def get_system_info(list_in):
             ntyp = int(entrylist[i + 2])
 
         if "celldm(1)" in entrylist[i]:
-            celldm[0] = float(entrylist[i + 2])
+            # Do not assign the value if the comment character '!' 
+            # appears in front of the celldm(1) keyword
+            has_comment = False
+            for elem in list_in:
+                if "celldm(1)" in elem:
+                    has_comment = ('!' == elem.strip().split()[0][0])
+
+            if not has_comment:
+                celldm[0] = float(entrylist[i + 2])
 
         if "celldm(2)" in entrylist[i]:
             celldm[1] = float(entrylist[i + 2])

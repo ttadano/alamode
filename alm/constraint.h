@@ -131,6 +131,7 @@ namespace ALM_NS
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
         bool is_allzero(const std::vector<int>, int &);
+        bool is_allzero(const std::vector<double>, int &);
 
         void remove_redundant_rows(const int, std::vector<ConstraintClass> &,
                                    const double tolerance = eps12);
