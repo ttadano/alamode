@@ -420,6 +420,7 @@ def print_displacements_QE(pwout_files,
 def get_atomicforces_QE(pwout_file):
 
     search_tag = "Forces acting on atoms (Ry/au):"
+    search_tag_QE6 = "Forces acting on atoms (cartesian axes, Ry/au):"
 
     found_tag = False
 
@@ -430,7 +431,7 @@ def get_atomicforces_QE(pwout_file):
 
     while line:
 
-        if search_tag in line:
+        if search_tag in line or search_tag_QE6 in line:
             found_tag = True
 
             f.readline()
@@ -444,7 +445,9 @@ def get_atomicforces_QE(pwout_file):
     f.close()
 
     if not found_tag:
-        print "%s tag not found in %s" % (search_tag, pwout_file)
+        print "following search tags not found in %s" %  pwout_file
+        print search_tag
+        print search_tag_QE6
         exit(1)
 
     return np.array(force, dtype=np.float)
