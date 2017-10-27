@@ -55,9 +55,14 @@ parser.add_option('--xTAPP',
                   help="xTAPP CG file with equilibrium atomic \
                         positions (default: None)")
 
+parser.add_option('--LAMMPS',
+                  metavar='orig.lammps',
+                  help="LAMMPS structure file with equilibrium atomic positions (default: None)")
+
 parser.add_option('--get',
                   help="specify which quantity to extract. \
                         Available options are 'disp', 'force' and 'energy'.")
+
 
 parser.add_option('--unit',
                   action="store",
@@ -736,6 +741,162 @@ def print_energies_xTAPP(str_files,
 
 # end functions for xTAPP
 
+
+# Functions for LAMMPS
+
+
+def get_coordinate_LAMMPS(lammps_dump_file):
+    
+    add_flag = False
+
+    coord = []
+
+    with open(lammps_dump_file) as f:
+        for line in f:
+            if "ITEM:" in line and "ITEM: ATOMS x y z " not in line:
+                add_flag = False
+                continue
+            elif "ITEM: ATOMS x y z " in line:
+                add_flag = True
+                continue
+
+            if add_flag:
+                if line.strip():
+                    coord.extend([float(t) for t in line.strip().split()])
+
+    return np.array(coord)
+
+
+def get_atomicforces_LAMMPS(lammps_dump_file):
+    
+    add_flag = False
+
+    force = []
+
+    with open(lammps_dump_file) as f:
+        for line in f:
+            if "ITEM:" in line and "ITEM: ATOMS fx fy fz " not in line:
+                add_flag = False
+                continue
+            elif "ITEM: ATOMS fx fy fz " in line:
+                add_flag = True
+                continue
+
+            if add_flag:
+                if line.strip():
+                    force.extend([float(t) for t in line.strip().split()])
+
+    return np.array(force)
+
+
+def print_displacements_LAMMPS(lammps_files,
+                               nat, x_cart0,
+                               require_conversion,
+                               conversion_factor,
+                               file_offset):
+
+    if file_offset is None:
+        disp_offset = np.zeros((nat, 3))
+    else:
+        dummy, nat_tmp, x0_offset, kd_offset = read_lammps_structure(file_offset)
+        if nat_tmp != nat:
+            print "File %s contains too many/few position entries" % file_offset
+
+        disp_offset = x0_offset - x_cart0
+
+    # Automatic detection of the input format 
+
+    is_dumped_file = False
+    f = open(lammps_files[0], 'r')
+    for line in f:
+        if "ITEM: TIMESTEP" in line:
+            is_dumped_file = True
+            break
+    f.close()
+
+    if is_dumped_file:
+        
+        ## This version supports reading the data from MD trajectory
+        
+         for search_target in lammps_files:
+        
+            x = get_coordinate_LAMMPS(search_target)
+            ndata = len(x) / (3 * nat)
+            x = np.reshape(x, (ndata, nat, 3))
+
+            for idata in range(ndata):
+                disp = x[idata, :, :] - x_cart0 - disp_offset
+
+                if require_conversion:
+                    disp *= conversion_factor
+
+                for i in range(nat):
+                    print "%20.14f %20.14f %20.14f" % (disp[i, 0],
+                                                       disp[i, 1],
+                                                       disp[i, 2])
+        
+    else:
+
+        for search_target in lammps_files:
+
+            dummy, nat_tmp, x_cart, kd_tmp = read_lammps_structure(search_target)
+            if nat_tmp != nat:
+                print "File %s contains too many/few position entries" % search_target
+
+            disp = x_cart - x_cart0 - disp_offset
+
+            if require_conversion:
+                disp *= conversion_factor
+
+            for i in range(nat):
+                print "%20.14f %20.14f %20.14f" % (disp[i, 0],
+                                                   disp[i, 1],
+                                                   disp[i, 2])
+
+
+def print_atomicforces_LAMMPS(lammps_files, nat, 
+                              require_conversion,
+                              conversion_factor,
+                              file_offset):
+
+    if file_offset is None:
+        force_offset = np.zeros((nat, 3))
+    else:
+        data = get_atomicforces_LAMMPS(file_offset)
+        try:
+            force_offset = np.reshape(data, (nat, 3))
+        except:
+            print "File %s contains too many position entries" % file_offset
+
+
+    # Automatic detection of the input format 
+
+    is_dumped_file = False
+    f = open(lammps_files[0], 'r')
+    for line in f:
+        if "ITEM: TIMESTEP" in line:
+            is_dumped_file = True
+            break
+    f.close()
+
+    for search_target in lammps_files:
+    
+        force = get_atomicforces_LAMMPS(search_target)
+        ndata = len(force) / (3 * nat)
+        force = np.reshape(force, (ndata, nat, 3))
+
+        for idata in range(ndata):
+            f = force[idata, :, :] - force_offset
+
+            if require_conversion:
+                f *= conversion_factor
+
+            for i in range(nat):
+                print "%19.11E %19.11E %19.11E" % (f[i][0],
+                                                    f[i][1],
+                                                    f[i][2])
+
+
 # Other functions
 
 def refold(x):
@@ -762,17 +923,20 @@ if __name__ == "__main__":
 $ python displace.py -h"
         exit(1)
 
-    Bohr_radius = 0.52917721092
+    Bohr_radius = 0.52917721067
     Rydberg_to_eV = 13.60569253
 
-    if options.VASP is None and options.QE is None and options.xTAPP is None:
-        print "Error : Either --VASP, --QE, or --xTAPP option must be given."
+    conditions = [options.VASP is None,
+                  options.QE is None,
+                  options.xTAPP is None,
+                  options.LAMMPS is None]
+
+    if conditions.count(True) == len(conditions):
+        print "Error : Either --VASP, --QE, --xTAPP, --LAMMPS option must be given."
         exit(1)
 
-    elif options.VASP and options.QE or options.VASP and options.xTAPP or\
-            options.QE and options.xTAPP:
-        print "Error : --VASP, --QE, and --xTAPP \
-cannot be given simultaneously."
+    elif len(conditions) - conditions.count(True) > 1:
+        print "Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously."
         exit(1)
 
     elif options.VASP:
@@ -844,6 +1008,24 @@ cannot be given simultaneously."
             print "Error : Invalid option for --unit"
             exit(1)
 
+    elif options.LAMMPS:
+        code = "LAMMPS"
+        file_original = options.LAMMPS
+
+        if options.get == "energy":
+            print("--get energy is not supported for LAMMPS")
+            exit(1)
+
+        if options.unitname == "eV":
+            convert_unit = False
+            disp_conv_factor = 1.0
+            energy_conv_factor = 1.0
+
+        else:
+            convert_unit = True
+            disp_conv_factor = 1.0 / Bohr_radius
+            energy_conv_factor = 1.0 / Rydberg_to_eV
+
     force_conv_factor = energy_conv_factor / disp_conv_factor
 
     print_disp = False
@@ -870,6 +1052,9 @@ cannot be given simultaneously."
 
     elif code == "xTAPP":
         aa, nat, x_frac0 = read_CG_mod(file_original)
+    
+    elif code == "LAMMPS":
+        common_settings, nat, x_cart0, kd = read_lammps_structure(file_original)
 
     # Print data
 
@@ -886,6 +1071,10 @@ cannot be given simultaneously."
             print_displacements_xTAPP(file_results, aa, nat, x_frac0,
                                       convert_unit, disp_conv_factor, options.offset)
 
+        elif code == "LAMMPS":
+            print_displacements_LAMMPS(file_results, nat, x_cart0,
+                                       convert_unit, disp_conv_factor, options.offset)
+
     elif print_force:
         if code == "VASP":
             print_atomicforces_VASP(file_results, np.sum(nats),
@@ -898,6 +1087,10 @@ cannot be given simultaneously."
         elif code == "xTAPP":
             print_atomicforces_xTAPP(file_results, nat,
                                      convert_unit, force_conv_factor, options.offset)
+
+        elif code == "LAMMPS":
+            print_atomicforces_LAMMPS(file_results, nat, 
+                                      convert_unit, force_conv_factor, options.offset)
 
     elif print_energy:
         if code == "VASP":

@@ -40,6 +40,9 @@ parser.add_option('--xTAPP',
                   metavar='orig.cg',
                   help="xTAPP CG file with equilibrium atomic \
                         positions (default: None)")
+parser.add_option('--LAMMPS',
+                  metavar='orig.lammps',
+                  help="LAMMPS structure file with equilibrium atomic positions (default: None)")
 
 # Functions for VASP
 
@@ -101,7 +104,7 @@ def write_POSCAR(prefix, counter, header, nzerofills,
     f.write("%s\n" % "1.0")
 
     for i in range(3):
-        f.write("%20.14f %20.14f %20.14f\n" % (lavec[0][i],
+        f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
                                                lavec[1][i],
                                                lavec[2][i]))
 
@@ -118,7 +121,7 @@ def write_POSCAR(prefix, counter, header, nzerofills,
 
     for i in range(len(disp)):
         for j in range(3):
-            f.write("%20.16f" % (coord[i][j] + disp[i][j]))
+            f.write("%20.15f" % (coord[i][j] + disp[i][j]))
         f.write("\n")
     f.close()
 
@@ -656,7 +659,7 @@ def generate_QE_input(prefix, suffix, counter, nzerofills, list_namelist,
 
     f.write("ATOMIC_POSITIONS crystal\n")
     for i in range(nat):
-        f.write("%s %20.16f %20.16f %20.16f\n" % (kd_symbol[i],
+        f.write("%s %20.15f %20.15f %20.15f\n" % (kd_symbol[i],
                                                   x[i][0] + u[i, 0],
                                                   x[i][1] + u[i, 1],
                                                   x[i][2] + u[i, 2]))
@@ -879,7 +882,8 @@ def gen_CG(prefix, suffix, counter, nzerofills, str_header,
     f.write("%s" % str_header)
 
     for i in range(nat):
-        f.write("%i %20.16f %20.16f %20.16f\n" % (kd[i], x[i][0] + u[i, 0],
+        f.write("%i %20.15f %20.15f %20.15f\n" % (kd[i], 
+                                                  x[i][0] + u[i, 0],
                                                   x[i][1] + u[i, 1],
                                                   x[i][2] + u[i, 2]))
 
@@ -912,6 +916,53 @@ def gen_CG(prefix, suffix, counter, nzerofills, str_header,
     f.write("\n")
     f.close()
 
+
+# Functions for LAMMPS
+
+def read_lammps_structure(file_in):
+    
+    f = open(file_in, 'r')
+    header_comment = f.readline()
+    
+    common_settings = []
+
+    for line in f:
+        if "Atoms" in line:
+            break
+        common_settings.append(line.rstrip())
+    
+    atoms = []
+    for line in f:
+        if line.strip():
+            atoms.append(line.rstrip().split())
+
+    atoms = np.array(atoms)
+    nat = len(atoms)
+    kd = np.array(atoms[:,1], dtype=np.int)
+    x = np.array(atoms[:,2:5], dtype=np.float64)
+    
+    return common_settings, nat, x, kd
+
+
+def write_lammps_structure(prefix, counter, header, 
+                           common_settings, nat, kd, x_cart, disp):
+
+    filename = prefix + str(counter).zfill(nzerofills) + ".lammps"
+    f = open(filename, 'w')
+    f.write("%s\n" % header)
+
+    for line in common_settings:
+        f.write("%s\n" % line)
+
+    f.write("%s\n\n" % "Atoms")
+    for i in range(nat):
+        f.write("%5d %3d" % (i + 1, kd[i]))
+        for j in range(3):
+            f.write("%20.15f" % (x_cart[i][j] + disp[i][j]))
+        f.write("\n")
+    f.write("\n")
+    f.close()
+  
 
 # Other functions
 
@@ -1003,8 +1054,9 @@ def gen_displacement(counter_in, pattern, disp_mag, nat, invlavec):
 
     poscar_header += ")"
 
-    for i in range(nat):
-        disp[i] = np.dot(disp[i], invlavec.T)
+    if invlavec is not None:
+        for i in range(nat):
+            disp[i] = np.dot(disp[i], invlavec.T)
 
     return poscar_header, disp
 
@@ -1043,13 +1095,17 @@ if __name__ == '__main__':
  please type\n$ python displace.py -h"
         exit(1)
 
-    if options.VASP is None and options.QE is None and options.xTAPP is None:
-        print "Error : Either --VASP, --QE, or --xTAPP option must be given."
+    conditions = [options.VASP is None, 
+                  options.QE is None,
+                  options.xTAPP is None,
+                  options.LAMMPS is None]
+    
+    if conditions.count(True) == len(conditions):
+        print "Error : Either --VASP, --QE, --xTAPP, --LAMMPS option must be given."
         exit(1)
 
-    elif options.VASP and options.QE or options.VASP and options.xTAPP or \
-            options.QE and options.xTAPP:
-        print "Error : --VASP, --QE, and --xTAPP cannot be given simultaneously."
+    elif len(conditions) - conditions.count(True) > 1:
+        print "Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously."
         exit(1)
 
     elif options.VASP:
@@ -1065,6 +1121,11 @@ if __name__ == '__main__':
     elif options.xTAPP:
         code = "xTAPP"
         print "--xTAPP option is given: Generate input files for xTAPP."
+        print
+
+    elif options.LAMMPS:
+        code = "LAMMPS"
+        print "--LAMMPS option is given: Generate input files for LAMMPS."
         print
 
     # Assign the magnitude of displacements
@@ -1099,6 +1160,10 @@ if __name__ == '__main__':
     elif code == "xTAPP":
         str_outfiles = "%s{counter}.cg" % prefix
         file_original = options.xTAPP
+    
+    elif code == "LAMMPS":
+        str_outfiles = "%s{counter}.lammps" % prefix
+        file_original = options.LAMMPS
 
     # Read the original file
     if code == "VASP":
@@ -1114,6 +1179,10 @@ if __name__ == '__main__':
     elif code == "xTAPP":
         str_header, nat, nkd, aa, aa_inv, x_frac, kd = read_CG(file_original)
         suffix = "cg"
+
+    elif code == "LAMMPS":
+        common_settings, nat, x_cart, kd = read_lammps_structure(file_original)
+        aa_inv = None
 
     print "Original file                  : %s" % file_original
     print "Output file format             : %s" % str_outfiles
@@ -1139,6 +1208,7 @@ if __name__ == '__main__':
                               list_ATOMIC_SPECIES, list_K_POINTS,
                               list_CELL_PARAMETERS, list_OCCUPATIONS,
                               nat, kd_symbol, x_frac, disp)
+        
         elif code == "xTAPP":
             nsym = 1
             symop = []
@@ -1148,6 +1218,10 @@ if __name__ == '__main__':
 
             gen_CG(prefix, suffix, counter, nzerofills, str_header, nat, kd,
                    x_frac, disp, nsym, symop, denom_tran, has_inv)
+
+        elif code == "LAMMPS":
+            write_lammps_structure(prefix, counter, header, 
+                                   common_settings, nat, kd, x_cart, disp)    
 
     print
     print "All input files are created."
