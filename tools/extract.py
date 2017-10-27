@@ -753,10 +753,10 @@ def get_coordinate_LAMMPS(lammps_dump_file):
 
     with open(lammps_dump_file) as f:
         for line in f:
-            if "ITEM:" in line and "ITEM: ATOMS x y z " not in line:
+            if "ITEM:" in line and "ITEM: ATOMS xu yu zu" not in line:
                 add_flag = False
                 continue
-            elif "ITEM: ATOMS x y z " in line:
+            elif "ITEM: ATOMS xu yu zu" in line:
                 add_flag = True
                 continue
 
