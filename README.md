@@ -20,7 +20,7 @@ linewidth, and other anharmonic phonon properties from first principles.
 * Extraction of harmonic and anharmonic force constants based on the supercell approach
 * Applicable to any crystal structures and low-dimensional systems
 * Accurate treatment of translational and rotational invariance
-* Interface to VASP, Quantum-ESPRESSO, and xTAPP codes
+* Interface to VASP, Quantum-ESPRESSO, xTAPP, and LAMMPS codes
 * Parallelization with MPI+OpenMP
 
 ### Harmonic properties
@@ -83,4 +83,4 @@ This software is released under the MIT license.
 For license rights and limitations, see LICENSE.txt file.
 
 ## Author
-Terumasa Tadano (The University of Tokyo, Japan)
+Terumasa Tadano (National Institute for Materials Science, Japan)
