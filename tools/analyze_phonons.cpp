@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
     }
 
     ifs >> tmin >> tmax >> dt;
+    if (abs(dt) < eps && (tmin == tmax)) dt = 1.0;
     nt = static_cast<int>((tmax - tmin) / dt) + 1;
     allocate(temp, nt);
     for (i = 0; i < nt; ++i) temp[i] = tmin + dt * static_cast<double>(i);
