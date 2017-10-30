@@ -106,8 +106,8 @@ ${ALAMODE_ROOT}/alm/alm si_alm0.in > alm.log
 # Generate structure files of LAMMPS
 mkdir displace; cd displace/
 
-python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix harm --mag 0.01 ../Si222_2.pattern_HARMONIC >> run.log
-python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix cubic --mag 0.04 ../Si222_2.pattern_ANHARM3 >> run.log
+python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix harm --mag 0.01 ../si222.pattern_HARMONIC >> run.log
+python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix cubic --mag 0.04 ../si222.pattern_ANHARM3 >> run.log
 
 cp ../Si.sw .
 cp ../in.sw .
@@ -388,7 +388,7 @@ cat << EOF > RTA.in
   0.5 0.5 0.0
 /
 
-&kpoint2
+&kpoint
   2
   10 10 10
 /
