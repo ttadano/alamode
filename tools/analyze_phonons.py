@@ -135,7 +135,7 @@ def print_lifetime_at_given_temperature():
 def print_thermal_conductivity():
 
     if not (options.kpoint is None):
-        print "# Warning: --kpoint option is discarded"
+        print("# Warning: --kpoint option is discarded")
 
     if options.mode is None:
         beg_s = 1
@@ -160,7 +160,7 @@ def print_thermal_conductivity():
 def print_thermal_conductivity_with_boundary():
 
     if not (options.kpoint is None):
-        print "# Warning: --kpoint option is discarded"
+        print("# Warning: --kpoint option is discarded")
 
     if options.mode is None:
         beg_s = 1
@@ -194,7 +194,7 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
         sys.exit("--temp is necessary when --calc=%s" % cumulative_mode)
 
     if not (options.kpoint is None):
-        print "# Warning: --kpoint option is discarded"
+        print("# Warning: --kpoint option is discarded")
 
     if options.mode is None:
         beg_s = 1

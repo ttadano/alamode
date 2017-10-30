@@ -5,7 +5,7 @@
 # Simple script to generate input files of given displacement patterns.
 # Currently, VASP, Quantum-ESPRESSO, and xTAPP are supported.
 #
-# Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+# Copyright (c) 2014 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -58,7 +58,7 @@ def read_POSCAR(file_in):
     for i in range(3):
         arr = file_pos.readline().rstrip().split()
         if len(arr) != 3:
-            print "Could not read POSCAR properly"
+            print("Could not read POSCAR properly")
             exit(1)
 
         for j in range(3):
@@ -145,7 +145,7 @@ def get_namelist(file_in, namelist_tag):
                 list_out.append(line)
 
     if len(list_out) == 0:
-        print "%s field not found" % namelist_tag
+        print("%s field not found" % namelist_tag)
         exit(1)
 
     list_out.append("/\n")
@@ -167,7 +167,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     if ibrav == 0:
 
         if list_CELL_PARAMETERS is None:
-            print "CELL_PARAMETERS must be given when ibrav = 0."
+            print("CELL_PARAMETERS must be given when ibrav = 0.")
             exit(1)
 
         else:
@@ -180,7 +180,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             mode = list_CELL_PARAMETERS[0].rstrip().split()
 
             if len(mode) == 1:
-                print "Error : Please specify either alat, bohr, or angstrom for CELL_PARAMETERS"
+                print("Error : Please specify either alat, bohr, or angstrom for CELL_PARAMETERS")
                 exit(1)
             else:
                 mode_str = mode[1].lower()
@@ -188,7 +188,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             if "alat" in mode_str:
 
                 if not celldm[0]:
-                    print "celldm(1) must be given when 'alat' is used for CELL_PARAMETERS"
+                    print("celldm(1) must be given when 'alat' is used for CELL_PARAMETERS")
                     exit(1)
 
                 for i in range(3):
@@ -203,13 +203,13 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
             elif "bohr" not in mode_str:
 
-                print "Error : Invalid option for CELL_PARAMETERS: %s" % mode[1]
+                print("Error : Invalid option for CELL_PARAMETERS: %s" % mode[1])
                 exit(1)
 
     elif ibrav == 1:
 
         if not celldm[0]:
-            print "celldm(1) must be given when ibrav = 1."
+            print("celldm(1) must be given when ibrav = 1.")
             exit(1)
 
         else:
@@ -221,7 +221,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 2:
 
         if not celldm[0]:
-            print "celldm(1) must be given when ibrav = 2."
+            print("celldm(1) must be given when ibrav = 2.")
             exit(1)
 
         else:
@@ -233,7 +233,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 3:
 
         if not celldm[0]:
-            print "celldm(1) must be given when ibrav = 3."
+            print("celldm(1) must be given when ibrav = 3.")
             exit(1)
 
         else:
@@ -245,7 +245,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 4:
 
         if not celldm[0] or not celldm[2]:
-            print "celldm(1) and celldm(3) must be given when ibrav = 4."
+            print("celldm(1) and celldm(3) must be given when ibrav = 4.")
             exit(1)
 
         else:
@@ -258,7 +258,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 5 or ibrav == -5:
 
         if not celldm[0] or not celldm[3]:
-            print "celldm(1) and celldm(4) must be given when ibrav = 5, -5."
+            print("celldm(1) and celldm(4) must be given when ibrav = 5, -5.")
             exit(1)
 
         else:
@@ -288,7 +288,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 6:
 
         if not celldm[0] or not celldm[2]:
-            print "celldm(1) and celldm(3) must be given when ibrav = 6."
+            print("celldm(1) and celldm(3) must be given when ibrav = 6.")
             exit(1)
 
         else:
@@ -301,7 +301,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 7:
 
         if not celldm[0] or not celldm[2]:
-            print "celldm(1) and celldm(3) must be given when ibrav = 7."
+            print("celldm(1) and celldm(3) must be given when ibrav = 7.")
             exit(1)
 
         else:
@@ -314,8 +314,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 8:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) must be given\
-             when ibrav = 8."
+            print("celldm(1), celldm(2), and celldm(3) must be given\
+             when ibrav = 8.")
             exit(1)
 
         else:
@@ -330,8 +330,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 9 or ibrav == -9:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) must be given\
-             when ibrav = 9 or -9."
+            print("celldm(1), celldm(2), and celldm(3) must be given\
+             when ibrav = 9 or -9.")
             exit(1)
 
         else:
@@ -351,8 +351,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 10:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) must be given\
-             when ibrav = 10."
+            print("celldm(1), celldm(2), and celldm(3) must be given\
+             when ibrav = 10.")
             exit(1)
 
         else:
@@ -366,8 +366,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
     elif ibrav == 11:
 
         if not celldm[0] or not celldm[1] or not celldm[2]:
-            print "celldm(1), celldm(2), and celldm(3) must be given\
-             when ibrav = 11."
+            print("celldm(1), celldm(2), and celldm(3) must be given\
+             when ibrav = 11.")
             exit(1)
 
         else:
@@ -382,8 +382,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
         if not celldm[0] or not celldm[1] or not celldm[2] or \
            not celldm[3]:
-            print "celldm(1), celldm(2), celldm(3), and celldm(4)\
-             must be given when ibrav = 12."
+            print("celldm(1), celldm(2), celldm(3), and celldm(4)\
+             must be given when ibrav = 12.")
             exit(1)
 
         else:
@@ -399,8 +399,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
         if not celldm[0] or not celldm[1] or not celldm[2] or \
            not celldm[4]:
-            print "celldm(1), celldm(2), celldm(3), and celldm(5)\
-             must be given when ibrav = -12."
+            print("celldm(1), celldm(2), celldm(3), and celldm(5)\
+             must be given when ibrav = -12.")
             exit(1)
 
         else:
@@ -416,8 +416,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
         if not celldm[0] or not celldm[1] or not celldm[2] or\
            not celldm[3]:
-            print "celldm(1), celldm(2), celldm(3), and celldm(4)\
-             must be given when ibrav = 13."
+            print("celldm(1), celldm(2), celldm(3), and celldm(4)\
+             must be given when ibrav = 13.")
             exit(1)
 
         else:
@@ -433,7 +433,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
         if not celldm[0] or not celldm[1] or not celldm[2] or \
            not celldm[3] or not celldm[4] or not celldm[5]:
-            print "All celldm must be given when ibrav = 14."
+            print("All celldm must be given when ibrav = 14.")
             exit(1)
 
         else:
@@ -454,7 +454,7 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
     else:
 
-        print "Invalid ibrav = %s" % ibrav
+        print("Invalid ibrav = %s" % ibrav)
         exit(1)
 
     # Transpose for later use
@@ -556,13 +556,13 @@ def get_fractional_coordinate(aa, N, list_in, a_Bohr):
     list_tmp = list_in[0].rstrip().split()
 
     if len(list_tmp) == 1:
-        print "Error : Please specify either alat, bohr, angstrom, or crystal for ATOMIC_POSITIONS"
+        print("Error : Please specify either alat, bohr, angstrom, or crystal for ATOMIC_POSITIONS")
         exit(1)
     else:
         mode_str = list_tmp[1].lower()
 
     if "crystal_sg" in mode_str:
-        print "Error : Sorry. 'crystal_sg' is not supported in this script. Please use another option."
+        print("Error : Sorry. 'crystal_sg' is not supported in this script. Please use another option.")
         exit(1)
 
     xtmp = np.zeros((N, 3))
@@ -600,7 +600,7 @@ def get_fractional_coordinate(aa, N, list_in, a_Bohr):
             xtmp[i][:] = np.dot(xtmp[i][:], aa_inv.transpose())
 
     elif "crystal" not in mode_str:
-        print "Error : Invalid option for ATOMIC_POSITIONS: %s" % mode_str
+        print("Error : Invalid option for ATOMIC_POSITIONS: %s" % mode_str)
         exit(1)
 
     return kd, xtmp
@@ -693,7 +693,7 @@ def read_tappinput(file_in):
                 list_tappinput.append(line)
 
     if len(list_tappinput) == 0:
-        print "main data entry not found"
+        print("main data entry not found")
         exit(1)
 
     list_tappinput_new = []
@@ -732,16 +732,16 @@ def read_tappinput(file_in):
             nat = int(entrylist[i + 2])
 
     if a == 0.0:
-        print "Couldn't read lattice_factor"
+        print("Couldn't read lattice_factor")
         exit(1)
     if nkd == 0:
-        print "Couldn't read number_element"
+        print("Couldn't read number_element")
         exit(1)
     if nat == 0:
-        print "Couldn't read number_atom"
+        print("Couldn't read number_atom")
         exit(1)
     if len(lavec_list) != 9:
-        print "Couldn't read lattice_list"
+        print("Couldn't read lattice_list")
         exit(1)
 
     lavec = np.zeros((3, 3))
@@ -772,7 +772,7 @@ def read_kpdata(file_in):
                 list_kpoint.append(line)
 
     if len(list_kpoint) == 0:
-        print "k-points data entry not found"
+        print("k-points data entry not found")
         exit(1)
 
     return list_kpoint
@@ -794,7 +794,7 @@ def read_structure_optimize(file_in):
                 list_opt.append(line)
 
     if len(list_opt) == 0:
-        print "struct_opt entry not found"
+        print("struct_opt entry not found")
         exit(1)
 
     list_opt2 = []
@@ -811,7 +811,7 @@ def read_structure_optimize(file_in):
                 list_opt2.append(line)
 
     if len(list_opt2) == 0:
-        print "str_opt_constr entry not found"
+        print("str_opt_constr entry not found")
         exit(1)
 
     return list_opt, list_opt2
@@ -833,7 +833,7 @@ def read_atomdata(file_in, nat_in, nkd_in):
                 list_atom.append(line)
 
     if len(list_atom) == 0:
-        print "atom data entry not found"
+        print("atom data entry not found")
         exit(1)
 
     x_out = np.zeros((nat_in, 3), dtype=float)
@@ -976,7 +976,7 @@ def parse_displacement_patterns(files_in):
         f = open(file, 'r')
         tmp, basis = f.readline().rstrip().split(':')
         if basis == 'F':
-            print "Warning: DBASIS must be 'C'"
+            print("Warning: DBASIS must be 'C'")
             exit(1)
 
         while True:
@@ -1002,8 +1002,8 @@ def parse_displacement_patterns(files_in):
                     pattern_set.append(disp)
                 pattern_tmp.append(pattern_set)
 
-        print "File %s containts %i displacement patterns" \
-              % (file, len(pattern_tmp))
+        print("File %s containts %i displacement patterns" \
+              % (file, len(pattern_tmp)))
 
         for entry in pattern_tmp:
             if entry not in pattern:
@@ -1011,8 +1011,8 @@ def parse_displacement_patterns(files_in):
 
         f.close()
 
-        print
-    print "Number of unique displacement patterns = ", len(pattern)
+        print("")
+    print("Number of unique displacement patterns = %d" % len(pattern))
 
     return pattern
 
@@ -1066,7 +1066,7 @@ def get_number_of_zerofill(npattern):
     nzero = 1
 
     while True:
-        npattern /= 10
+        npattern //= 10
 
         if npattern == 0:
             break
@@ -1081,18 +1081,18 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
     file_pattern = args[0:]
 
-    print "*****************************************************************"
-    print "             displace.py -- Input file generator                 "
-    print "*****************************************************************"
-    print
+    print("*****************************************************************")
+    print("             displace.py -- Input file generator                 ")
+    print("*****************************************************************")
+    print("")
 
     if len(file_pattern) == 0:
-        print "Usage: displace.py [options] file1.pattern_HARMONIC\
- file2.pattern_ANHARM3 ..."
-        print "file.pattern_* can be generated by 'alm' with MODE = suggest."
-        print
-        print "For details of available options, \
- please type\n$ python displace.py -h"
+        print("Usage: displace.py [options] file1.pattern_HARMONIC\
+ file2.pattern_ANHARM3 ...")
+        print("file.pattern_* can be generated by 'alm' with MODE = suggest.")
+        print("")
+        print("For details of available options, \
+ please type\n$ python displace.py -h")
         exit(1)
 
     conditions = [options.VASP is None, 
@@ -1101,52 +1101,52 @@ if __name__ == '__main__':
                   options.LAMMPS is None]
     
     if conditions.count(True) == len(conditions):
-        print "Error : Either --VASP, --QE, --xTAPP, --LAMMPS option must be given."
+        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS option must be given.")
         exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
-        print "Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously."
+        print("Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously.")
         exit(1)
 
     elif options.VASP:
         code = "VASP"
-        print "--VASP option is given: Generate POSCAR files for VASP"
-        print
+        print("--VASP option is given: Generate POSCAR files for VASP")
+        print("")
 
     elif options.QE:
         code = "QE"
-        print "--QE option is given: Generate input files for Quantum-ESPRESSO."
-        print
+        print("--QE option is given: Generate input files for Quantum-ESPRESSO.")
+        print("")
 
     elif options.xTAPP:
         code = "xTAPP"
-        print "--xTAPP option is given: Generate input files for xTAPP."
-        print
+        print("--xTAPP option is given: Generate input files for xTAPP.")
+        print("")
 
     elif options.LAMMPS:
         code = "LAMMPS"
-        print "--LAMMPS option is given: Generate input files for LAMMPS."
-        print
+        print("--LAMMPS option is given: Generate input files for LAMMPS.")
+        print("")
 
     # Assign the magnitude of displacements
     if options.mag is None:
         options.mag = "0.02"
         disp_length = 0.02
-        print "--mag option not given. Substituted by the default (0.02 Angstrom)"
-        print
+        print("--mag option not given. Substituted by the default (0.02 Angstrom)")
+        print("")
 
     else:
         disp_length = float(options.mag)
 
     if options.prefix is None:
         prefix = "disp"
-        print "--prefix option not given. Substituted by the default (\"disp\"). "
-        print
+        print("--prefix option not given. Substituted by the default (\"disp\"). ")
+        print("")
     else:
         prefix = options.prefix
 
-    print "-----------------------------------------------------------------"
-    print
+    print("-----------------------------------------------------------------")
+    print("")
 
     if code == "VASP":
         str_outfiles = "%s{counter}.POSCAR" % prefix
@@ -1184,11 +1184,11 @@ if __name__ == '__main__':
         common_settings, nat, x_cart, kd = read_lammps_structure(file_original)
         aa_inv = None
 
-    print "Original file                  : %s" % file_original
-    print "Output file format             : %s" % str_outfiles
-    print "Magnitude of displacements     : %s Angstrom" % disp_length
-    print "Number of atoms                : %i" % nat
-    print
+    print("Original file                  : %s" % file_original)
+    print("Output file format             : %s" % str_outfiles)
+    print("Magnitude of displacements     : %s Angstrom" % disp_length)
+    print("Number of atoms                : %i" % nat)
+    print("")
 
     disp_pattern = parse_displacement_patterns(args[:])
     nzerofills = get_number_of_zerofill(len(disp_pattern))
@@ -1223,5 +1223,5 @@ if __name__ == '__main__':
             write_lammps_structure(prefix, counter, header, 
                                    common_settings, nat, kd, x_cart, disp)    
 
-    print
-    print "All input files are created."
+    print("")
+    print("All input files are created.")

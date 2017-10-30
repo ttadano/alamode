@@ -66,11 +66,11 @@ def change_scale(array, str_scale):
     str_tmp = str_scale.lower()
 
     if str_tmp == 'kayser':
-        print "Band structure will be shown in units of cm^{-1}"
+        print("Band structure will be shown in units of cm^{-1}")
         return array
 
     elif str_tmp == 'mev':
-        print "Band structure will be shown in units of meV"
+        print("Band structure will be shown in units of meV")
         kayser_to_mev = 0.0299792458 * 1.0e+12 * \
             6.62606896e-34 / 1.602176565e-19 * 1000
 
@@ -82,7 +82,7 @@ def change_scale(array, str_scale):
         return array
 
     elif str_tmp == 'thz':
-        print "Band structure will be shown in units of THz"
+        print("Band structure will be shown in units of THz")
         kayser_to_thz = 0.0299792458
 
         for i in range(len(array)):
@@ -93,8 +93,8 @@ def change_scale(array, str_scale):
         return array
 
     else:
-        print "Unrecognizable option for --unit %s" % str_scale
-        print "Band structure will be shown in units of cm^{-1}"
+        print("Unrecognizable option for --unit %s" % str_scale)
+        print("Band structure will be shown in units of cm^{-1}")
         return array
 
 
@@ -150,11 +150,11 @@ if __name__ == '__main__':
     nfiles = len(files)
 
     if nfiles == 0:
-        print "Usage: plotband.py [options] file1.bands file2.bands ..."
-        print "For details of available options, please type\n$ python plotband.py -h"
+        print("Usage: plotband.py [options] file1.bands file2.bands ...")
+        print("For details of available options, please type\n$ python plotband.py -h")
         exit(1)
     else:
-        print "Number of files = %d" % nfiles
+        print("Number of files = %d" % nfiles)
 
     xtickslabels, xticksvars = get_kpath_and_kval(files[0])
     data_merged = []
@@ -196,7 +196,7 @@ if __name__ == '__main__':
             ymax = options.emax
 
         if ymin > ymax:
-            print "Warning: emin > emax"
+            print("Warning: emin > emax")
 
     plt.axis([xmin, xmax, ymin, ymax])
 

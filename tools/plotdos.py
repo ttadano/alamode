@@ -85,11 +85,11 @@ def change_xscale(array, str_scale):
     str_tmp = str_scale.lower()
 
     if str_tmp == 'kayser':
-        print "Phonon DOS will be shown in units of cm^{-1}"
+        print("Phonon DOS will be shown in units of cm^{-1}")
         return array
 
     elif str_tmp == 'mev':
-        print "Phonon DOS will be shown in units of meV"
+        print("Phonon DOS will be shown in units of meV")
         kayser_to_mev = 0.0299792458 * 1.0e+12 * \
             6.62606896e-34 / 1.602176565e-19 * 1000
 
@@ -99,7 +99,7 @@ def change_xscale(array, str_scale):
         return array
 
     elif str_tmp == 'thz':
-        print "Phonon DOS will be shown in units of THz"
+        print("Phonon DOS will be shown in units of THz")
         kayser_to_thz = 0.0299792458
 
         for i in range(len(array)):
@@ -108,8 +108,8 @@ def change_xscale(array, str_scale):
         return array
 
     else:
-        print "Unrecognizable option for --unit %s" % str_scale
-        print "Phonon DOS will be shown in units of cm^{-1}"
+        print("Unrecognizable option for --unit %s" % str_scale)
+        print("Phonon DOS will be shown in units of cm^{-1}")
         return array
 
 
@@ -140,11 +140,11 @@ if __name__ == '__main__':
     nfiles = len(files)
 
     if nfiles == 0:
-        print "Usage: plotdos.py [options] file1.dos file2.dos ..."
-        print "For details of available options, please type\n$ python plotdos.py -h"
+        print("Usage: plotdos.py [options] file1.dos file2.dos ...")
+        print("For details of available options, please type\n$ python plotdos.py -h")
         exit(1)
     else:
-        print "Number of files = %d" % nfiles
+        print("Number of files = %d" % nfiles)
 
     energy_axis = []
     dos_merged = []
@@ -172,7 +172,7 @@ if __name__ == '__main__':
             symbols, natoms = get_natoms_and_symbols(files[i])
 
             if len(dos_merged[i][0, 1:]) != np.sum(natoms):
-                print "Error: Projected DOS is not contained in the %d-th file" % (i + 1)
+                print("Error: Projected DOS is not contained in the %d-th file" % (i + 1))
                 exit(1)
             else:
                 pdos = sum_atom_projected_dos(dos_merged[i][:, 1:], natoms)
@@ -204,7 +204,7 @@ if __name__ == '__main__':
             xmax = options.emax
 
         if xmin > xmax:
-            print "Warning: emin > emax"
+            print("Warning: emin > emax")
 
     ymax *= 1.05
     plt.axis([xmin, xmax, ymin, ymax])
