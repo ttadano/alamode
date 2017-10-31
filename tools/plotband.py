@@ -34,6 +34,7 @@ parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", de
 
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
+mpl.rc('text', usetex=True)
 
 # line colors and styles
 color = ['b', 'g', 'r', 'm', 'k', 'c', 'y', 'r']
@@ -207,7 +208,7 @@ if __name__ == '__main__':
     ax.xaxis.grid(True, linestyle='-')
 
     if options.print_key:
-        plt.legend(loc='lower right', prop={'size': 10})
+        plt.legend(loc='best', prop={'size': 10})
 
 #	plt.savefig('band_tmp.png', dpi=300, transparent=True)
     plt.show()
