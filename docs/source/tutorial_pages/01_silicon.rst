@@ -215,10 +215,10 @@ For visualizing phonon dispersion relations, we provide a Python script :red:`pl
     
     $ python plotband.py si222.bands
 
-Then, the phonon dispersion is shown by a pop-up window as follows:
+Then, the phonon dispersion is displayed as follows:
 
 .. image:: ../img/Si_phband_DFT.png
-   :scale: 40
+   :scale: 30
    :align: center
 
 You can save the figure as png, eps, or other formats from this window.
@@ -251,7 +251,7 @@ The command
 will show the phonon DOS of Si by a pop-up window:
 
 .. image:: ../img/Si_phdos_DFT.png
-   :scale: 40
+   :scale: 30
    :align: center
 
 To improve the resolution of DOS, try again with a denser :math:`k` grid and a smaller ``DELTA_E`` value.
