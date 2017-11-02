@@ -91,7 +91,7 @@ void Dynamical::setup_dynamical(std::string mode)
         eigenvectors = true;
 
         /*
-        if (phon->mode == "RTA") {
+        if (phon->mode == "RTA" || phon->mode == "SCPH") {
             eigenvectors = true;
         } else {
             if (print_eigenvectors || writes->print_msd || writes->print_xsf || writes->print_anime

@@ -80,6 +80,11 @@ void Fcs_phonon::setup(std::string mode)
             maxorder = 2;
             require_quartic = false;
         }
+    } else if (mode == "SCPH") {
+        require_cubic = true;
+        require_quartic = true;
+        maxorder = 3;
+        relaxation->quartic_mode = 1;
     }
 
     memory->allocate(force_constant_with_cell, maxorder);

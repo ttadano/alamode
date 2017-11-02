@@ -38,6 +38,7 @@ namespace PHON_NS
             gruneisen(ptr->gruneisen),
             mympi(ptr->mympi),
             isotope(ptr->isotope),
+            scph(ptr->scph),
             timer(ptr->timer) {}
 
         virtual ~Pointers() {}
@@ -63,6 +64,7 @@ namespace PHON_NS
         Gruneisen *&gruneisen;
         MyMPI *&mympi;
         Isotope *&isotope;
+        Scph *&scph;
         Timer *&timer;
     };
 }

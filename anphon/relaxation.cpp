@@ -37,6 +37,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "write_phonons.h"
 #include "constants.h"
 #include "mathfunctions.h"
+#include "timer.h"
 
 using namespace PHON_NS;
 

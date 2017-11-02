@@ -67,6 +67,8 @@ namespace PHON_NS
                     double *, std::complex<double> **, bool);
         void modify_eigenvectors();
 
+       
+
         double fold(double);
         double freq(const double);
 
@@ -74,18 +76,21 @@ namespace PHON_NS
                                           double **,
                                           double ***);
 
+        void calc_analytic_k(double *,
+            std::vector<FcsClassExtent>,
+            std::complex<double> **);
+        void calc_nonanalytic_k(double *, double *,
+                std::complex<double> **);
+        void calc_nonanalytic_k2(double *, double *,
+                 std::vector<FcsClassExtent>,
+                 std::complex<double> **);
+
+
     private:
 
         void load_born();
-        void calc_analytic_k(double *,
-                             std::vector<FcsClassExtent>,
-                             std::complex<double> **);
-        void calc_nonanalytic_k(double *, double *,
-                                std::complex<double> **);
-        void calc_nonanalytic_k2(double *, double *,
-                                 std::vector<FcsClassExtent>,
-                                 std::complex<double> **);
-
+        
+        
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);
         double distance(double *, double *);

@@ -32,6 +32,7 @@
 #include "isotope.h"
 #include "selfenergy.h"
 #include "version.h"
+#include "scph.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -79,10 +80,12 @@ PHON::PHON(int narg, char **arg, MPI_Comm comm)
 
         execute_RTA();
 
+    } else if (mode == "SCPH") {
+
+        execute_self_consistent_phonon();
+
     } else {
-
-        error->exit("phonons", "invalid mode");
-
+        error->exit("phonons", "invalid mode: ", mode.c_str());
     }
 
     if (mympi->my_rank == 0) {
@@ -118,6 +121,7 @@ void PHON::create_pointers()
     dos = new Dos(this);
     gruneisen = new Gruneisen(this);
     isotope = new Isotope(this);
+    scph = new Scph(this);
 }
 
 void PHON::destroy_pointers()
@@ -140,6 +144,7 @@ void PHON::destroy_pointers()
     delete dos;
     delete gruneisen;
     delete isotope;
+    delete scph;
 }
 
 void PHON::setup_base()
@@ -260,5 +265,37 @@ void PHON::execute_RTA()
     if (!relaxation->ks_analyze_mode) {
         conductivity->finish_kappa();
     }
+}
+
+void PHON::execute_self_consistent_phonon()
+{
+    if (mympi->my_rank == 0) {
+        std::cout << "                        MODE = SCPH                           " << std::endl;
+        std::cout << "                                                             " << std::endl;
+        std::cout << "      Self-consistent phonon calculation to estimate         " << std::endl;
+        std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
+        std::cout << "      Harmonic and quartic force constants will be used.  " << std::endl;
+        std::cout << std::endl;
+    }
+
+    setup_base();
+    dos->setup();
+
+    dynamical->diagonalize_dynamical_all();
+
+    if (kpoint->kpoint_mode == 2) {
+        integration->setup_integration();
+    }
+
+    scph->setup_scph();
+    scph->exec_scph();
+
+    if (kpoint->kpoint_mode == 2) {
+        integration->finish_integration();
+    }
+
+    dynamical->finish_dynamical();
+
+    scph->finish_scph();
 }
 
