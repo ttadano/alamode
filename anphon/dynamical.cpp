@@ -27,6 +27,7 @@
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "gruneisen.h"
+#include "ewald.h"
 
 using namespace PHON_NS;
 
@@ -65,6 +66,13 @@ void Dynamical::setup_dynamical(std::string mode)
             std::cout << std::endl;
             std::cout << "  NONANALYTIC = 2 : Non-analytic part of the dynamical matrix will be included " << std::endl;
             std::cout << "                    by the mixed-space approach." << std::endl;
+            std::cout << std::endl;
+            //}
+            // Inserted
+        } else if (nonanalytic == 3) {
+            std::cout << std::endl;
+            std::cout << "  NONANALYTIC = 3 : Non-analytic part of the dynamical matrix will be included " << std::endl;
+            std::cout << "                    by the Ewald method." << std::endl;
             std::cout << std::endl;
         }
     }
@@ -295,6 +303,110 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
     unsigned int k = 0;
     int n = dynamical->neval;
 
+    for (j = 0; j < neval; ++j) {
+        for (i = 0; i < neval; ++i) {
+            amat[k++] = dymat_k[i][j];
+        }
+    }
+
+    memory->deallocate(dymat_k);
+
+    if (require_evec) {
+        JOBZ = 'V';
+    } else {
+        JOBZ = 'N';
+    }
+
+    // Perform diagonalization
+    zheev_(&JOBZ, &UPLO, &n, amat, &n, eval_out, WORK, &LWORK, RWORK, &INFO);
+
+    if (eigenvectors && require_evec) {
+        k = 0;
+        // Here we transpose the matrix evec_out so that 
+        // evec_out[i] becomes phonon eigenvector of i-th mode.
+        for (j = 0; j < neval; ++j) {
+            for (i = 0; i < neval; ++i) {
+                evec_out[j][i] = amat[k++];
+            }
+        }
+    }
+
+    memory->deallocate(RWORK);
+    memory->deallocate(WORK);
+    memory->deallocate(amat);
+}
+
+
+void Dynamical::eval_k_ewald(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_in,
+                             double *eval_out, std::complex<double> **evec_out, const bool require_evec, const int ik)
+{
+    //
+    // Calculate phonon energy for the specific k-point given in fractional basis
+    // Contributions from dipole-dipole interactions should be extracted from 'fc2_in'.
+    //
+    unsigned int i, j;
+    int icrd, jcrd;
+    double time[3];
+    std::complex<double> **dymat_k, **mat_longrange;
+
+    memory->allocate(dymat_k, neval, neval);
+    memory->allocate(mat_longrange, neval, neval);
+
+    calc_analytic_k(xk_in, fc2_in, dymat_k);
+
+    // Calculate Coulombic contributions including long-range interactions 
+    ewald->add_longrange_matrix(xk_in, mat_longrange, ik);
+
+    // Add calculated dynamical matrix of Coulomb parts
+    for (i = 0; i < system->natmin; ++i) {
+        for (icrd = 0; icrd < 3; ++icrd) {
+            for (j = 0; j < system->natmin; ++j) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    dymat_k[3 * i + icrd][3 * j + jcrd] += mat_longrange[3 * i + icrd][3 * j + jcrd];
+                }
+            }
+        }
+    }
+
+    // Check acoustic sum rule
+    if (xk_in[0] == 0.0 && xk_in[1] == 0.0 && xk_in[2] == 0.0) {
+        int count;
+        double mass;
+        std::complex<double> check;
+        for (i = 0; i < system->natmin; ++i) {
+            for (icrd = 0; icrd < 3; ++icrd) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    check = std::complex<double>(0.0, 0.0);
+                    count = 0;
+                    for (j = 0; j < system->natmin; ++j) {
+                        mass = system->mass[system->map_p2s[i][0]] * system->mass[system->map_p2s[j][0]];
+                        check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
+                        count += 1;
+                    }
+
+                    if (std::abs(check) > eps12) {
+                        std::cout << "(" << 3 * i + icrd << "," << jcrd << "): " << check << std::endl;
+                        error->warn("ewald->eval_k_ewald", "Acoustic sum rule is broken.");
+                    }
+                }
+            }
+        }
+    }
+
+    char JOBZ;
+    int INFO, LWORK;
+    double *RWORK;
+    std::complex<double> *WORK;
+
+    LWORK = (2 * neval - 1) * 10;
+    memory->allocate(RWORK, 3 * neval - 2);
+    memory->allocate(WORK, LWORK);
+
+    std::complex<double> *amat;
+    memory->allocate(amat, neval * neval);
+
+    unsigned int k = 0;
+    int n = dynamical->neval;
     for (j = 0; j < neval; ++j) {
         for (i = 0; i < neval; ++i) {
             amat[k++] = dymat_k[i][j];
@@ -621,6 +733,13 @@ void Dynamical::diagonalize_dynamical_all()
         eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
                eval_phonon[ik], evec_phonon[ik], require_evec);
 
+        if (nonanalytic == 3) {
+            eval_k_ewald(kpoint->xk[ik], kpoint->kvec_na[ik], ewald->fc2_without_dipole,
+                         eval_phonon[ik], evec_phonon[ik], require_evec, ik);
+        } else {
+            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
+                   eval_phonon[ik], evec_phonon[ik], require_evec);
+        }
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is) {
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);

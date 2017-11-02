@@ -35,6 +35,7 @@
 #include "phonon_velocity.h"
 #include "integration.h"
 #include "scph.h"
+#include "ewald.h"
 #include <boost/lexical_cast.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -104,6 +105,7 @@ void Input::parse_general_vars()
     double emin, emax, delta_e;
     double tolerance, tolerance_scph;
     double mixalpha;
+    double prec_ewald;
     bool printsymmetry;
     bool restart, restart_scph;
     bool sym_time_reversal, use_triplet_symmetry;
@@ -203,6 +205,8 @@ void Input::parse_general_vars()
     sym_time_reversal = false;
     use_triplet_symmetry = true;
 
+    prec_ewald = 1.0e-12;
+
     // if file_result exists in the current directory, 
     // restart mode will be automatically turned on.
 
@@ -274,6 +278,22 @@ void Input::parse_general_vars()
     assign_val(lower_temp, "LOWER_TEMP", general_var_dict);
     assign_val(warm_start, "WARMSTART", general_var_dict);
 
+    // Inserted part
+    if (nonanalytic == 3) {
+        assign_val(prec_ewald, "PREC_EWALD", general_var_dict);
+        if (prec_ewald <= 0.0 || prec_ewald >= 1.0) {
+            error->exit("parse_general_vars",
+                        "PREC_EWALD should be a small positive value.");
+        }
+        ewald->is_longrange = 1;
+        ewald->file_longrange = boost::lexical_cast<std::string>(general_var_dict["BORNINFO"]);
+        ewald->prec_ewald = prec_ewald;
+        ewald->rate_ab = 6.0 / pi;
+
+    } else {
+        ewald->is_longrange = 0;
+    }
+    // Inserted part end
 
     str_tmp = general_var_dict["KMESH_SCPH"];
     
@@ -322,9 +342,8 @@ void Input::parse_general_vars()
             }
         }
 
-    if (nonanalytic > 2) {
-        error->exit("parse_general_vars",
-                    "NONANALYTIC should be 0, 1, or 2.");
+    if (nonanalytic > 3) {
+        error->exit("parse_general_vars", "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
 
     // Copy the values to appropriate classes.
@@ -400,7 +419,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     std::string str_allowed_list = "PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
                                    ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR KAPPA_SPEC \
+                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR FC2_EWALD KAPPA_SPEC \
                                    SELF_W";
 
     bool fstate_omega, fstate_k;
@@ -410,6 +429,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool two_phonon_dos;
     bool print_xsf, print_anime;
     bool print_V3, participation_ratio;
+    bool print_fc2_ewald;
     bool print_self_consistent_fc2;
     bool bubble_omega;
 
@@ -455,6 +475,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     calculate_kappa_spec = 0;
 
+    print_fc2_ewald = false;
     print_self_consistent_fc2 = false;
 
 
@@ -487,6 +508,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
+        assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;
@@ -586,6 +608,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     gruneisen->print_gruneisen = print_gruneisen;
     gruneisen->print_newfcs = print_newfcs;
     gruneisen->delta_a = delta_a;
+
+    ewald->print_fc2_ewald = print_fc2_ewald;
 
     if (include_isotope) {
         memory->allocate(isotope->isotope_factor, system->nkd);

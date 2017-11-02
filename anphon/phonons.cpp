@@ -33,6 +33,7 @@
 #include "selfenergy.h"
 #include "version.h"
 #include "scph.h"
+#include "ewald.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -122,6 +123,7 @@ void PHON::create_pointers()
     gruneisen = new Gruneisen(this);
     isotope = new Isotope(this);
     scph = new Scph(this);
+    ewald = new Ewald(this);
 }
 
 void PHON::destroy_pointers()
@@ -145,6 +147,7 @@ void PHON::destroy_pointers()
     delete gruneisen;
     delete isotope;
     delete scph;
+    delete ewald;
 }
 
 void PHON::setup_base()
@@ -155,6 +158,7 @@ void PHON::setup_base()
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical(mode);
     dos->setup();
+    ewald->init();
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;
     }
@@ -298,4 +302,5 @@ void PHON::execute_self_consistent_phonon()
 
     scph->finish_scph();
 }
+
 

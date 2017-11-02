@@ -47,6 +47,7 @@ namespace PHON_NS
         class MyMPI *mympi;
         class Isotope *isotope;
         class Scph *scph;
+        class Ewald *ewald;
 
         void create_pointers();
         void destroy_pointers();

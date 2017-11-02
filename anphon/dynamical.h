@@ -59,6 +59,8 @@ namespace PHON_NS
 
         double **eval_phonon;
         std::complex<double> ***evec_phonon;
+        double dielec[3][3];
+        double ***borncharge;
 
         void setup_dynamical(std::string);
 
@@ -66,7 +68,10 @@ namespace PHON_NS
                     std::vector<FcsClassExtent>,
                     double *, std::complex<double> **, bool);
         void modify_eigenvectors();
-
+        void eval_k_ewald(double *, double *, 
+			  std::vector<FcsClassExtent>, 
+			  double *, std::complex<double> **, bool, 
+			  const int);
        
 
         double fold(double);
@@ -85,11 +90,13 @@ namespace PHON_NS
                  std::vector<FcsClassExtent>,
                  std::complex<double> **);
 
+        void calc_analytic_k_ewald(double *, 
+				   std::vector<FcsClassExtent>, 
+				   std::complex<double> **);
 
     private:
 
         void load_born();
-        
         
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);
@@ -101,9 +108,6 @@ namespace PHON_NS
         double **xshift_s;
         char UPLO;
         std::complex<double> ***dymat;
-        double dielec[3][3];
-        double ***borncharge;
-
         std::vector<int> **mindist_list;
     };
 
