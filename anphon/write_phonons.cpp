@@ -31,6 +31,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "isotope.h"
 #include "integration.h"
+#include "scph.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/lexical_cast.hpp>
@@ -42,7 +43,9 @@ Writes::Writes(PHON *phon): Pointers(phon)
     Ry_to_kayser = Hz_to_kayser / time_ry;
 };
 
-Writes::~Writes() {};
+Writes::~Writes()
+{
+};
 
 void Writes::write_input_vars()
 {
@@ -102,6 +105,15 @@ void Writes::write_input_vars()
         std::cout << "  RESTART = " << phon->restart_flag << std::endl;
         std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
         std::cout << std::endl;
+    } else if (phon->mode == "SCPH") {
+        std::cout << "  SELF_OFFDIAG = " << scph->selfenergy_offdiagonal << std::endl;
+        std::cout << "  IALGO = " << scph->ialgo << std::endl << std::endl;
+        std::cout << "  RESTART_SCPH = " << scph->restart_scph << std::endl;
+        std::cout << "  LOWER_TEMP = " << scph->lower_temp << std::endl;
+        std::cout << "  WARMSTART = " << scph->warmstart_scph << std::endl << std::endl;
+        std::cout << "  TOL_SCPH = " << scph->tolerance_scph << std::endl;
+        std::cout << "  MAXITER = " << scph->maxiter << std::endl;
+        std::cout << "  MIXALPHA = " << scph->mixalpha << std::endl;
     }
     std::cout << std::endl;
 
@@ -163,6 +175,9 @@ void Writes::write_input_vars()
         // std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
         // std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
         //  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+
+    } else if (phon->mode == "SCPH") {
+
 
     } else {
         error->exit("write_input_vars", "This cannot happen");
@@ -765,7 +780,7 @@ void Writes::write_scattering_phase_space()
 
     for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
         knum = kpoint->kpoint_irred_all[ik][0].knum;
-        
+
         for (is = 0; is < dynamical->neval; ++is) {
             ofs_sps << std::setw(5) << ik + 1;
             ofs_sps << std::setw(5) << is + 1;
@@ -1220,7 +1235,7 @@ void Writes::write_kappa()
                     ofs_kl << std::setw(10) << dos->energy_dos[j];
                     for (k = 0; k < 3; ++k) {
                         ofs_kl << std::setw(15) << std::fixed
-                            << std::setprecision(4) << conductivity->kappa_spec[j][i][k];
+                            << std::setprecision(6) << conductivity->kappa_spec[j][i][k];
                     }
                     ofs_kl << std::endl;
                 }

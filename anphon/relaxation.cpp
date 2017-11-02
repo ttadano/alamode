@@ -37,6 +37,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "write_phonons.h"
 #include "constants.h"
 #include "mathfunctions.h"
+#include "timer.h"
 
 using namespace PHON_NS;
 
@@ -262,7 +263,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
     unsigned int tran_tmp;
     unsigned int icount = 0;
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
 
         atm_super.clear();
         atm_prim.clear();
@@ -316,7 +317,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
 
         arr_tmp.clear();
 
@@ -341,7 +342,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
+    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
 
         arr_tmp.clear();
 
@@ -1373,7 +1374,7 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
 
-                v3_tmp = v3_arr[ik][ns*is + js];
+                v3_tmp = v3_arr[ik][ns * is + js];
 
                 if (v3_tmp > eps) {
 
@@ -1393,7 +1394,7 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
                         n1 = f1 + f2 + 1.0;
                         n2 = f1 - f2;
 
-                        prod_tmp[0] =  v3_tmp * n1 * delta_arr[ik][ns * is + js][0];
+                        prod_tmp[0] = v3_tmp * n1 * delta_arr[ik][ns * is + js][0];
                         prod_tmp[1] = -v3_tmp * n2 * delta_arr[ik][ns * is + js][1];
 
                         for (j = 0; j < M; ++j) {
@@ -2026,7 +2027,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     double omega_sum[3];
     double frac;
     int knum_triangle[3];
-    std::vector<std::vector<double> > ***kplist_conserved;
+    std::vector<std::vector<double>> ***kplist_conserved;
     std::vector<KpointListWithCoordinate> ***kplist_for_target_mode;
     std::vector<double> xk_vec;
     double xk_norm[3], xk_tmp[3];
@@ -2165,8 +2166,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 
             // Find a list of k points which satisfy the energy conservation
 
-            for (std::vector<KpointPlaneTriangle>::const_iterator it = kpoint->kp_planes_tri[i].begin();
-                 it != kpoint->kp_planes_tri[i].end(); ++it) {
+            for (auto it = kpoint->kp_planes_tri[i].cbegin();
+                 it != kpoint->kp_planes_tri[i].cend(); ++it) {
 
                 // K point indexes for each triangle
                 for (k = 0; k < 3; ++k) knum_triangle[k] = (*it).knum[k];
@@ -2274,8 +2275,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
 
-                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][0].begin();
-                         it2 != kplist_conserved[is][js][0].end(); ++it2) {
+                    for (auto it2 = kplist_conserved[is][js][0].cbegin();
+                         it2 != kplist_conserved[is][js][0].cend(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
@@ -2297,8 +2298,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                                                      i, 0));
                     }
 
-                    for (std::vector<std::vector<double> >::const_iterator it2 = kplist_conserved[is][js][1].begin();
-                         it2 != kplist_conserved[is][js][1].end(); ++it2) {
+                    for (auto it2 = kplist_conserved[is][js][1].cbegin();
+                         it2 != kplist_conserved[is][js][1].cend(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
@@ -2353,7 +2354,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
     memory->deallocate(kplist_conserved);
 
 
-    std::vector<std::vector<double> > **final_state_xy;
+    std::vector<std::vector<double>> **final_state_xy;
     std::vector<double> triplet_xyG;
     std::vector<int> small_group_k;
     double pos_x, pos_y;

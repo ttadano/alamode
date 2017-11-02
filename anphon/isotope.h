@@ -36,4 +36,3 @@ namespace PHON_NS
                                            const double, double &);
     };
 }
-

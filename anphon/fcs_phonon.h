@@ -28,12 +28,14 @@ namespace PHON_NS
         std::vector<Triplet> elems;
         double fcs_val;
 
-        FcsClass() {};
+        FcsClass()
+        {
+        };
 
         FcsClass(const FcsClass &obj)
         {
             fcs_val = obj.fcs_val;
-            for (std::vector<Triplet>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it) {
+            for (auto it = obj.elems.cbegin(); it != obj.elems.cend(); ++it) {
                 elems.push_back(*it);
             }
         }
@@ -49,7 +51,7 @@ namespace PHON_NS
         FcsClass(const double val, const std::vector<Triplet> vec)
         {
             fcs_val = val;
-            for (std::vector<Triplet>::const_iterator it = vec.begin(); it != vec.end(); ++it) {
+            for (auto it = vec.cbegin(); it != vec.cend(); ++it) {
                 elems.push_back(*it);
             }
         }
@@ -75,7 +77,9 @@ namespace PHON_NS
         unsigned int cell_s;
         double fcs_val;
 
-        FcsClassExtent() {};
+        FcsClassExtent()
+        {
+        };
 
         FcsClassExtent(const FcsClassExtent &obj)
         {
@@ -113,13 +117,15 @@ namespace PHON_NS
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
 
-        FcsArrayWithCell() {};
+        FcsArrayWithCell()
+        {
+        };
 
         FcsArrayWithCell(const double fcs_in, const std::vector<AtomCellSuper> pairs_in)
         {
             fcs_val = fcs_in;
 
-            for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
+            for (auto it = pairs_in.cbegin(); it != pairs_in.cend(); ++it) {
                 pairs.push_back(*it);
             }
         }
@@ -133,6 +139,12 @@ namespace PHON_NS
         for (int i = 0; i < a.pairs.size(); ++i) {
             index_a.push_back(a.pairs[i].index);
             index_b.push_back(b.pairs[i].index);
+        }
+        for (int i = 0; i < a.pairs.size(); ++i) {
+            index_a.push_back(a.pairs[i].tran);
+            index_a.push_back(a.pairs[i].cell_s);
+            index_b.push_back(b.pairs[i].tran);
+            index_b.push_back(b.pairs[i].cell_s);
         }
         return lexicographical_compare(index_a.begin(), index_a.end(), index_b.begin(), index_b.end());
     }
@@ -172,4 +184,3 @@ namespace PHON_NS
         void MPI_Bcast_fc2_ext();
     };
 }
-

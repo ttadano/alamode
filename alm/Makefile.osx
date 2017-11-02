@@ -7,7 +7,7 @@
 
 # Use gcc >= 4.8 to use OpenMP 
 # OpenMP-enabled gcc can be installed via homebrew
-CXX = g++-6
+CXX = g++-7
 CXXFLAGS = -O2 -fopenmp 
 INCLUDE = -I../include
 

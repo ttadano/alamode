@@ -32,9 +32,13 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Gruneisen::Gruneisen(PHON *phon): Pointers(phon) {};
+Gruneisen::Gruneisen(PHON *phon): Pointers(phon)
+{
+};
 
-Gruneisen::~Gruneisen() {};
+Gruneisen::~Gruneisen()
+{
+};
 
 void Gruneisen::setup()
 {
@@ -176,8 +180,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         }
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.begin(); 
-        it != delta_fc2.end(); ++it) {
+    for (auto it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
 
         atm1 = (*it).pairs[0].index / 3;
         xyz1 = (*it).pairs[0].index % 3;
@@ -220,7 +223,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     std::vector<AtomCellSuper> pairs_vec;
     std::vector<int> index_old, index_now;
     std::vector<int> index_with_cell;
-    std::set<std::vector<int> > set_index_uniq;
+    std::set<std::vector<int>> set_index_uniq;
     AtomCellSuper pairs_tmp;
 
     unsigned int norder = fcs_in[0].pairs.size();
@@ -230,8 +233,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     delta_fcs.clear();
     fcs_aligned.clear();
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); 
-        it != fcs_in.end(); ++it) {
+    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
         fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
@@ -243,8 +245,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     index_with_cell.clear();
     set_index_uniq.clear();
 
-    for (std::vector<FcsAlignedForGruneisen>::const_iterator it = fcs_aligned.begin(); 
-        it != fcs_aligned.end(); ++it) {
+    for (auto it = fcs_aligned.cbegin(); it != fcs_aligned.cend(); ++it) {
 
         index_now.clear();
         index_with_cell.clear();
@@ -269,8 +270,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
                 fcs_tmp /= static_cast<double>(nmulti);
 
                 if (std::abs(fcs_tmp) > eps15) {
-                    for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin(); 
-                        it2 != set_index_uniq.end(); ++it2) {
+                    for (auto it2 = set_index_uniq.cbegin(); it2 != set_index_uniq.cend(); ++it2) {
 
                         pairs_vec.clear();
 
@@ -313,8 +313,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     fcs_tmp /= static_cast<double>(nmulti);
 
     if (std::abs(fcs_tmp) > eps15) {
-        for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin(); 
-            it2 != set_index_uniq.end(); ++it2) {
+        for (auto it2 = set_index_uniq.cbegin(); it2 != set_index_uniq.cend(); ++it2) {
 
             pairs_vec.clear();
 
@@ -429,8 +428,8 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
     pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[0].begin();
-         it != fcs_phonon->force_constant_with_cell[0].end(); ++it) {
+    for (auto it = fcs_phonon->force_constant_with_cell[0].cbegin();
+         it != fcs_phonon->force_constant_with_cell[0].cend(); ++it) {
 
         ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string((*it).fcs_val));
 
@@ -443,7 +442,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
                   + " " + boost::lexical_cast<std::string>((*it).pairs[1].cell_s + 1));
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.begin(); it != delta_fc2.end(); ++it) {
+    for (auto it = delta_fc2.cbegin(); it != delta_fc2.cend(); ++it) {
 
         if (std::abs((*it).fcs_val) < eps12) continue;
 
@@ -460,8 +459,8 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
     }
 
     if (relaxation->quartic_mode) {
-        for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_phonon->force_constant_with_cell[1].begin();
-             it != fcs_phonon->force_constant_with_cell[1].end(); ++it) {
+        for (auto it = fcs_phonon->force_constant_with_cell[1].cbegin();
+             it != fcs_phonon->force_constant_with_cell[1].cend(); ++it) {
 
             if ((*it).pairs[1].index > (*it).pairs[2].index) continue;
 
@@ -481,7 +480,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
                       + " " + boost::lexical_cast<std::string>((*it).pairs[2].cell_s + 1));
         }
 
-        for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc3.begin(); it != delta_fc3.end(); ++it) {
+        for (auto it = delta_fc3.cbegin(); it != delta_fc3.cend(); ++it) {
 
             if (std::abs((*it).fcs_val) < eps12) continue;
 
@@ -691,5 +690,3 @@ std::string Gruneisen::double2string(const double d)
 //     memory->deallocate(A);
 //     memory->deallocate(C);
 // }
-
-

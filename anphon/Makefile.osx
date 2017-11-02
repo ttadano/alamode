@@ -6,8 +6,8 @@
 #-----------------------------------------------
 
 MPICXX = mpic++
-CXXFLAGS = -O2 
-INCLUDE = -I../include 
+CXXFLAGS = -O3 -std=c++11
+INCLUDE = -I../include  -I$(HOME)/include
 
 LINKER = ${MPICXX}
 
@@ -17,7 +17,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack
-LIBS = ${LAPACK} 
+LIBS = ${LAPACK}  -lfftw3
 
 #----------------------------------------------
 # General rules
@@ -32,7 +32,8 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
 	phonon_dos.cpp phonon_velocity.cpp integration.cpp relaxation.cpp \
 	thermodynamics.cpp conductivity.cpp symmetry_core.cpp \
-        mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp
+        mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp \
+	scph.cpp ewald.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

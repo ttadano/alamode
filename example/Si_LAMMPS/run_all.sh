@@ -27,7 +27,7 @@ cat << EOF > si_alm0.in
 /
 
 &cutoff 
-  Si-Si 7.4 7.4
+  Si-Si 7.3 7.3
 /
 
 
@@ -165,7 +165,7 @@ cat << EOF > si_alm1.in
 /
 
 &cutoff 
-  Si-Si 7.4 7.4
+  Si-Si 7.3 7.3
 /
 
 
@@ -267,7 +267,7 @@ cat << EOF > si_alm2.in
 /
 
 &cutoff 
-  Si-Si 7.4 7.4
+  Si-Si 7.3 7.3
 /
 
 

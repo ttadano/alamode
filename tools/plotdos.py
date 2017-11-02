@@ -185,11 +185,11 @@ if __name__ == '__main__':
                     counter_line += 1
 
     if options.unitname.lower() == "mev":
-        plt.xlabel("Frequency (meV)", fontsize=16, labelpad=20)
+        plt.xlabel("Frequency (meV)", fontsize=16)
     elif options.unitname.lower() == "thz":
-        plt.xlabel("Frequency (THz)", fontsize=16, labelpad=20)
+        plt.xlabel("Frequency (THz)", fontsize=16)
     else:
-        plt.xlabel("Frequency (cm${}^{-1}$)", fontsize=16, labelpad=10)
+        plt.xlabel("Frequency (cm${}^{-1}$)", fontsize=16)
 
     plt.ylabel("Phonon DOS", fontsize=16, labelpad=20)
 
@@ -214,5 +214,6 @@ if __name__ == '__main__':
 
     if options.print_key:
         plt.legend(loc='upper right', prop={'size': 12})
-
+    
+    plt.tight_layout()
     plt.show()

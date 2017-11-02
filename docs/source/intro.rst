@@ -27,7 +27,7 @@ General
 * Extraction of harmonic and anharmonic force constants based on the supercell approach
 * Applicable to any crystal structures and low-dimensional systems
 * Accurate treatment of translational and rotational invariance
-* Interface to VASP, Quantum-ESPRESSO, and xTAPP codes
+* Interface to VASP, Quantum-ESPRESSO, xTAPP, and LAMMPS codes
 * Mainly written in C++, parallelized with MPI+OpenMP
 
 Harmonic properties
@@ -53,6 +53,7 @@ Anharmonic properties
 * Phonon linewidth due to 3-phonon interactions
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
+* Self-consisitent phonon (SCPH) calculation
 
 
 Links
@@ -87,9 +88,10 @@ Please cite the following article when you use ALAMODE:
 Acknowledgement
 ---------------
 
-This project was supported by a Grant-in-Aid for Scientific Research on Innovative Areas 
-'Materials Design through Computics: Complex Correlation and Non-Equilibrium Dynamics'.
-(http://computics-material.jp)
+This project is/was partially supported by the following projects:
+
+* Grant-in-Aid for Young Scientists (B) (16K17724) 
+* Grant-in-Aid for Scientific Research on Innovative Areas 'Materials Design through Computics: Complex Correlation and Non-Equilibrium Dynamics'. (http://computics-material.jp)
 
 
 Author & Contact
@@ -99,8 +101,8 @@ Author & Contact
 
     <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
-Department of Applied Physics, 
-The University of Tokyo, Japan
+International Center for Young Scientists (ICYS),
+National Institute for Material Science (NIMS), Japan
 
 If you have any questions, suggestions, and problems regarding ALAMODE, please feel free to contact the author.
 

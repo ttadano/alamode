@@ -26,7 +26,9 @@ Selfenergy::Selfenergy(PHON *phon): Pointers(phon)
     im = std::complex<double>(0.0, 1.0);
 }
 
-Selfenergy::~Selfenergy() {}
+Selfenergy::~Selfenergy()
+{
+}
 
 void Selfenergy::setup_selfenergy()
 {
@@ -1723,4 +1725,3 @@ void Selfenergy::selfenergy_j(const unsigned int N,
 
     memory->deallocate(ret_mpi);
 }
-

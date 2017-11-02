@@ -81,12 +81,6 @@ Using the script :red:`displace.py` in the tools/ directory, you can generate th
 
         $ python displace.py --xTAPP=si222.cg --mag=0.02 si222.pattern_HARMONIC
 
-    **LAMMPS**
-    ::
-
-        $ python displace.py --LAMMPS=si222.lammps --mag=0.02 si222.pattern_HARMONIC
-
-
 The ``--mag`` option specifies the displacement length in units of Angstrom. 
 You need to specify an input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, ``--xTAPP``, or ``--LAMMPS``.
 
@@ -109,7 +103,6 @@ as follows::
 
 .. important::
    In QE, you need to set tprnfor=.true. to print out atomic forces. 
-   In LAMMPS, you need to save atomic forces by adding the dump option of LAMMPS.
 
 The next step is to collect the displacement data and force data by the Python script :red:`extract.py` (also in the tools/ directory). This script can extract atomic displacements, atomic forces, and total energies from multiple output files as follows:
 
@@ -130,12 +123,6 @@ The next step is to collect the displacement data and force data by the Python s
 
     $ python extract.py --xTAPP=si222.cg --get=disp *.str > disp.dat
     $ python extract.py --xTAPP=si222.cg --get=force *.str > force.dat
-
-    **LAMMPS**
-    ::
-
-    $ python extract.py --LAMMPS=si222.lammps --get=disp disp*.lammps > disp.dat
-    $ python extract.py --LAMMPS=si222.lammps --get=force FORCE.* > force.dat
 
 In the above examples, atomic displacements of all the configurations are merged as *disp.dat*, and the corresponding atomic forces are saved in the file *force.dat*. These files will be used in the following fitting procedure as ``DFILE`` and ``FFILE``. (See :ref:`Format of DFILE and FFILE<label_format_DFILE>`).
 
@@ -228,10 +215,10 @@ For visualizing phonon dispersion relations, we provide a Python script :red:`pl
     
     $ python plotband.py si222.bands
 
-Then, the phonon dispersion is shown by a pop-up window as follows:
+Then, the phonon dispersion is displayed as follows:
 
-.. image:: ../img/si_phband.png
-   :scale: 60
+.. image:: ../img/Si_phband_DFT.png
+   :scale: 30
    :align: center
 
 You can save the figure as png, eps, or other formats from this window.
@@ -263,8 +250,8 @@ The command
 
 will show the phonon DOS of Si by a pop-up window:
 
-.. image:: ../img/si_phdos.png
-   :scale: 60
+.. image:: ../img/Si_phdos_DFT.png
+   :scale: 30
    :align: center
 
 To improve the resolution of DOS, try again with a denser :math:`k` grid and a smaller ``DELTA_E`` value.

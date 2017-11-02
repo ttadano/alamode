@@ -160,4 +160,3 @@ namespace PHON_NS
         void broadcast_symmlist(std::vector<SymmetryOperation> &);
     };
 }
-

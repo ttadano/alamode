@@ -46,6 +46,8 @@ namespace PHON_NS
         class Gruneisen *gruneisen;
         class MyMPI *mympi;
         class Isotope *isotope;
+        class Scph *scph;
+        class Ewald *ewald;
 
         void create_pointers();
         void destroy_pointers();
@@ -55,7 +57,7 @@ namespace PHON_NS
 
         void execute_phonons();
         void execute_RTA();
+        void execute_self_consistent_phonon();
         void setup_base();
     };
 }
-

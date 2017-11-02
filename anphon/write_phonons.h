@@ -64,4 +64,3 @@ namespace PHON_NS
         double Ry_to_kayser;
     };
 }
-

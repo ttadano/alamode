@@ -33,12 +33,15 @@ List of input variables
 * **MODE**-tag = phonons | RTA
 
  ========= ==============================================================
-  phonons  | Calculate phonon dispersion relations, phonon DOS, 
+  phonons  | Calculate phonon dispersion relation, phonon DOS, 
            | Gr\ |umulaut_u|\ neisen parameters etc.
 
     RTA    | Calculate phonon lifetimes and lattice thermal conductivity 
            | based on the Boltzmann transport equation (BTE) 
            | with the relaxation time approximation (RTA).
+
+   SCPH    | Calculate temperature dependent phonon dispersion curves
+           | by the self-consistent phonon method.
  ========= ==============================================================
 
  :Default: None
@@ -120,7 +123,7 @@ List of input variables
 
 ````
 
-* NONALAYTIC-tag = 0 | 1 | 2
+* NONALAYTIC-tag = 0 | 1 | 2 | 3
 
  === ===================================================================================
   0  | Non-analytic correction is not considered.
@@ -128,6 +131,8 @@ List of input variables
   1  | Include the non-analytic correction by the damping method proposed by Parlinski.
 
   2  | Include the non-analytic correction by the mixed-space approach 
+
+  3  | Include the non-analytic correction by the Ewald method
  === ===================================================================================
 
  :Default: 0
@@ -219,6 +224,112 @@ List of input variables
 
 ````
 
+"&scph"-field (Read only when ``MODE = SCPH``)
+++++++++++++++++++++++++++++++++++++++++++++++
+
+* KMESH_INTERPOLATE = k1, k2, k3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: In the iteration process of the SCPH equation, the interpolation is done using the 
+               :math:`k` mesh defined by ``KMESH_INTERPOLATE``. 
+
+````
+
+* KMESH_SCPH = k1, k2, k3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: This :math:`k` mesh is used for the inner loop of the SCPH equation. 
+               Each value of ``KMESH_SCPH`` must be equal to or a multiple of the number of ``KMESH_INTERPOLATE`` in the same direction.
+
+````
+
+* SELF_OFFDIAG = 0 | 1
+
+ === ================================================================================
+  0   Neglect the off-diagonal elements of the loop diagram in the SCPH calculation
+  1   Consider the off-diagonal elements of the loop diagram in the SCPH calculation
+ === ================================================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: ``SELF_OFFDIAG = 1`` is more accurate, but expensive.
+
+````
+
+* TOL_SCPH-tag: Stopping criterion of the SCPH iteration
+
+ :Default: 1.0e-10
+ :Type: Double
+ :Description: The SCPH iteration stops when both :math:`[\frac{1}{N_{q}}\sum_{q} (\Omega_{q}^{(i)}-\Omega_{q}^{(i-1)})^{2}]^{1/2}` < ``TOL_SCPH`` and :math:`(\Omega_{q}^{(i)})^{2} \geq 0 \; (\forall q)` are satisfied. Here, :math:`\Omega_{q}^{(i)}` is the anharmonic phonon frequency in the :math:`i`\ th iteration and :math:`q` is the phonon modes at the irreducible momentum grid of ``KMESH_INTERPOLATE``.
+
+````
+
+* MIXALPHA-tag: Mixing parameter used in the SCPH iteration
+
+ :Default: 0.1
+ :Type: Double
+
+````
+
+* MAXITER-tag: Maximum number of the SCPH iteration
+
+ :Default: 1000
+ :Type: Integer
+
+````
+
+* LOWER_TEMP = 0 | 1
+
+ === ===============================================================================
+  0   The SCPH iteration start from ``TMIN`` to ``TMAX``. (Raise the temperature)
+  1   The SCPH iteration start from ``TMAX`` to ``TMIN``. (Lower the temperature)
+ === ===============================================================================
+
+ :Default: 1
+ :Type: Integer
+
+````
+
+* WARMSTART = 0 | 1
+
+ === ===============================================================================
+  0   SCPH iteration is initialized by harmonic frequencies and eigenvectors
+  1   SCPH iteration is initialized by the solution of the previous temperature
+ === ===============================================================================
+
+ :Default: 1
+ :Type: Integer
+ :Description: ``WARMSTART = 1`` usually improves the convergence.
+
+````
+
+* IALGO = 0 | 1
+
+ === ===============================================================================
+  0   MPI parallelization for the :math:`k` point
+  1   MPI parallelization for the phonon branch
+ === ===============================================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: Use ``IALGO = 1`` when the primitive cell contains many atoms and the number of :math:`k` points is small.
+
+````
+
+* RESTART_SCPH = 0 | 1
+
+ === ==============================================================
+  0   Perform a SCPH calculation from scratch
+  1   Skip a SCPH iteration by loading a precalculated result
+ === ==============================================================
+
+ :Default: 1 if the file ``PREFIX.scph_dymat`` exists in the working directory; 0 otherwise
+ :Type: Integer
+
+
+````
 
 "&cell"-field
 +++++++++++++

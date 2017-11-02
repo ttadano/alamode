@@ -81,6 +81,7 @@
     <ClCompile Include="conductivity.cpp" />
     <ClCompile Include="dynamical.cpp" />
     <ClCompile Include="error.cpp" />
+    <ClCompile Include="ewald.cpp" />
     <ClCompile Include="fcs_phonon.cpp" />
     <ClCompile Include="gruneisen.cpp" />
     <ClCompile Include="integration.cpp" />
@@ -94,6 +95,7 @@
     <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="phonon_velocity.cpp" />
     <ClCompile Include="relaxation.cpp" />
+    <ClCompile Include="scph.cpp" />
     <ClCompile Include="selfenergy.cpp" />
     <ClCompile Include="symmetry_core.cpp" />
     <ClCompile Include="system.cpp" />
@@ -105,6 +107,7 @@
     <ClInclude Include="conductivity.h" />
     <ClInclude Include="dynamical.h" />
     <ClInclude Include="error.h" />
+    <ClInclude Include="ewald.h" />
     <ClInclude Include="fcs_phonon.h" />
     <ClInclude Include="gruneisen.h" />
     <ClInclude Include="integration.h" />
@@ -118,6 +121,7 @@
     <ClInclude Include="phonon_velocity.h" />
     <ClInclude Include="pointers.h" />
     <ClInclude Include="relaxation.h" />
+    <ClInclude Include="scph.h" />
     <ClInclude Include="selfenergy.h" />
     <ClInclude Include="symmetry_core.h" />
     <ClInclude Include="system.h" />

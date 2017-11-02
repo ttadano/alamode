@@ -77,4 +77,3 @@ namespace PHON_NS
                                 std::complex<double> *);
     };
 }
-

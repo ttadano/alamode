@@ -40,6 +40,8 @@ namespace PHON_NS
         double ****sps3_with_bose;
 
 
+        void calc_dos_scph(double ***, double **);
+
     private:
         unsigned int nk_irreducible;
         int *kmap_irreducible;
@@ -48,7 +50,7 @@ namespace PHON_NS
         void calc_dos(const unsigned int, int *,
                       double **, const unsigned int, double *,
                       double *, const unsigned int, const int,
-                      std::vector<std::vector<KpointList> > &);
+                      std::vector<std::vector<KpointList>> &);
 
         void calc_atom_projected_dos(const unsigned int, double **,
                                      const unsigned int, double *, double **,
@@ -56,14 +58,14 @@ namespace PHON_NS
                                      std::complex<double> ***);
 
         void calc_two_phonon_dos(const unsigned int, double *, double ***, const int,
-                                 std::vector<std::vector<KpointList> >);
+                                 std::vector<std::vector<KpointList>>);
 
         void calc_total_scattering_phase_space(double **, const int,
-                                               std::vector<std::vector<KpointList> >,
+                                               std::vector<std::vector<KpointList>>,
                                                double ***, double &);
 
         void calc_scattering_phase_space_with_Bose(double **, const int,
-                                                   std::vector<std::vector<KpointList> >,
+                                                   std::vector<std::vector<KpointList>>,
                                                    double ****);
 
         void calc_scattering_phase_space_with_Bose_mode(const unsigned int,
@@ -73,4 +75,3 @@ namespace PHON_NS
                                                         unsigned int *, const int, double **);
     };
 }
-

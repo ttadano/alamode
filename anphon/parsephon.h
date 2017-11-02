@@ -87,4 +87,3 @@ namespace PHON_NS
         return ltrim(rtrim(s));
     }
 }
-
