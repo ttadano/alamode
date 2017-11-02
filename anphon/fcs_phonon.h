@@ -28,7 +28,9 @@ namespace PHON_NS
         std::vector<Triplet> elems;
         double fcs_val;
 
-        FcsClass() {};
+        FcsClass()
+        {
+        };
 
         FcsClass(const FcsClass &obj)
         {
@@ -75,7 +77,9 @@ namespace PHON_NS
         unsigned int cell_s;
         double fcs_val;
 
-        FcsClassExtent() {};
+        FcsClassExtent()
+        {
+        };
 
         FcsClassExtent(const FcsClassExtent &obj)
         {
@@ -113,7 +117,9 @@ namespace PHON_NS
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
 
-        FcsArrayWithCell() {};
+        FcsArrayWithCell()
+        {
+        };
 
         FcsArrayWithCell(const double fcs_in, const std::vector<AtomCellSuper> pairs_in)
         {
@@ -178,4 +184,3 @@ namespace PHON_NS
         void MPI_Bcast_fc2_ext();
     };
 }
-

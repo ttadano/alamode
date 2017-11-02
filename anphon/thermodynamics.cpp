@@ -24,7 +24,9 @@ Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
     T_to_Ryd = k_Boltzmann / Ryd;
 }
 
-Thermodynamics::~Thermodynamics() {};
+Thermodynamics::~Thermodynamics()
+{
+};
 
 double Thermodynamics::Cv(const double omega,
                           const double T)

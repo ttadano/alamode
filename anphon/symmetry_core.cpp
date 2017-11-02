@@ -32,7 +32,9 @@ Symmetry::Symmetry(PHON *phon): Pointers(phon)
     time_reversal_sym = false;
 }
 
-Symmetry::~Symmetry() {}
+Symmetry::~Symmetry()
+{
+}
 
 void Symmetry::setup_symmetry()
 {
@@ -386,10 +388,10 @@ void Symmetry::find_crystal_symmetry(int N,
             isok = true;
 
             is_identity_matrix =
-                (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
-                    + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                    + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
+            (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
+                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
 
             if (is_identity_matrix) continue;
 

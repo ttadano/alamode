@@ -32,9 +32,13 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Gruneisen::Gruneisen(PHON *phon): Pointers(phon) {};
+Gruneisen::Gruneisen(PHON *phon): Pointers(phon)
+{
+};
 
-Gruneisen::~Gruneisen() {};
+Gruneisen::~Gruneisen()
+{
+};
 
 void Gruneisen::setup()
 {
@@ -176,8 +180,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2, double *xk_in
         }
     }
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.begin(); 
-        it != delta_fc2.end(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = delta_fc2.begin();
+         it != delta_fc2.end(); ++it) {
 
         atm1 = (*it).pairs[0].index / 3;
         xyz1 = (*it).pairs[0].index % 3;
@@ -220,7 +224,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     std::vector<AtomCellSuper> pairs_vec;
     std::vector<int> index_old, index_now;
     std::vector<int> index_with_cell;
-    std::set<std::vector<int> > set_index_uniq;
+    std::set<std::vector<int>> set_index_uniq;
     AtomCellSuper pairs_tmp;
 
     unsigned int norder = fcs_in[0].pairs.size();
@@ -230,8 +234,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     delta_fcs.clear();
     fcs_aligned.clear();
 
-    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); 
-        it != fcs_in.end(); ++it) {
+    for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin();
+         it != fcs_in.end(); ++it) {
         fcs_aligned.push_back(FcsAlignedForGruneisen((*it).fcs_val, (*it).pairs));
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
@@ -243,8 +247,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     index_with_cell.clear();
     set_index_uniq.clear();
 
-    for (std::vector<FcsAlignedForGruneisen>::const_iterator it = fcs_aligned.begin(); 
-        it != fcs_aligned.end(); ++it) {
+    for (std::vector<FcsAlignedForGruneisen>::const_iterator it = fcs_aligned.begin();
+         it != fcs_aligned.end(); ++it) {
 
         index_now.clear();
         index_with_cell.clear();
@@ -269,8 +273,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
                 fcs_tmp /= static_cast<double>(nmulti);
 
                 if (std::abs(fcs_tmp) > eps15) {
-                    for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin(); 
-                        it2 != set_index_uniq.end(); ++it2) {
+                    for (std::set<std::vector<int>>::const_iterator it2 = set_index_uniq.begin();
+                         it2 != set_index_uniq.end(); ++it2) {
 
                         pairs_vec.clear();
 
@@ -313,8 +317,8 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> fcs_in,
     fcs_tmp /= static_cast<double>(nmulti);
 
     if (std::abs(fcs_tmp) > eps15) {
-        for (std::set<std::vector<int> >::const_iterator it2 = set_index_uniq.begin(); 
-            it2 != set_index_uniq.end(); ++it2) {
+        for (std::set<std::vector<int>>::const_iterator it2 = set_index_uniq.begin();
+             it2 != set_index_uniq.end(); ++it2) {
 
             pairs_vec.clear();
 
@@ -691,5 +695,3 @@ std::string Gruneisen::double2string(const double d)
 //     memory->deallocate(A);
 //     memory->deallocate(C);
 // }
-
-

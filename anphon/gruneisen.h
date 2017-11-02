@@ -42,7 +42,9 @@ namespace PHON_NS
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
 
-        FcsAlignedForGruneisen() {};
+        FcsAlignedForGruneisen()
+        {
+        };
 
         FcsAlignedForGruneisen(const double fcs_in, const std::vector<AtomCellSuper> pairs_in)
         {
@@ -113,4 +115,3 @@ namespace PHON_NS
         void print_stress_energy();
     };
 }
-

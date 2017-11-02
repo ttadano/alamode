@@ -36,7 +36,9 @@ Scph::Scph(PHON *phon): Pointers(phon)
     im = std::complex<double>(0.0, 1.0);
 }
 
-Scph::~Scph() {};
+Scph::~Scph()
+{
+};
 
 
 void Scph::setup_scph()
@@ -329,7 +331,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
         for (i = 0; i < vec_temp.size(); ++i) {
             temp = vec_temp[i];
 
-        iT = static_cast<unsigned int>((temp - Tmin) / dT);
+            iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
             // Initialize phonon eigenvectors with harmonic values
 
@@ -341,20 +343,20 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                 }
             }
             if (converged_prev) {
-          if (lower_temp) {
-                for (ik = 0; ik < nk; ++ik) {
-                    for (is = 0; is < ns; ++is) {
-                        omega2_anharm[iT][ik][is] = omega2_anharm[iT + 1][ik][is];
+                if (lower_temp) {
+                    for (ik = 0; ik < nk; ++ik) {
+                        for (is = 0; is < ns; ++is) {
+                            omega2_anharm[iT][ik][is] = omega2_anharm[iT + 1][ik][is];
+                        }
+                    }
+                } else {
+                    for (ik = 0; ik < nk; ++ik) {
+                        for (is = 0; is < ns; ++is) {
+                            omega2_anharm[iT][ik][is] = omega2_anharm[iT - 1][ik][is];
+                        }
                     }
                 }
-          } else {
-        for (ik = 0; ik < nk; ++ik) {
-                    for (is = 0; is < ns; ++is) {
-                        omega2_anharm[iT][ik][is] = omega2_anharm[iT - 1][ik][is];
-                    }
-                }
-          }
-        }
+            }
 
             compute_anharmonic_frequency(v4_array_all, omega2_anharm[iT],
                                          evec_anharm_tmp, temp, degeneracy_at_k,
@@ -3089,35 +3091,35 @@ void Scph::write_scph_thermodynamics(double ***eval)
         tmp4 = 0.0;
 
 #pragma omp parallel for private(ik, is, omega, x), reduction(+:tmp1,tmp2,tmp3,tmp4)
-    for (i = 0; i < N; ++i) {
-      ik = i / ns;
-      is = i % ns;
-      omega = eval[iT][ik][is];
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = eval[iT][ik][is];
 
-      if (omega <= eps8) continue;
-        
-      tmp1 += thermodynamics->Cv(omega, temp);
-      tmp3 += omega * thermodynamics->coth_T(omega, temp);
+            if (omega <= eps8) continue;
 
-      if (std::abs(temp) < eps) {
-        tmp4 += 0.5 * omega;
-      } else {
-        x = omega / (temp * T_to_Ryd);
-        tmp2 += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
-        tmp4 += 0.5 * x + std::log(1.0 - std::exp(-x));
-      }
-    }
+            tmp1 += thermodynamics->Cv(omega, temp);
+            tmp3 += omega * thermodynamics->coth_T(omega, temp);
+
+            if (std::abs(temp) < eps) {
+                tmp4 += 0.5 * omega;
+            } else {
+                x = omega / (temp * T_to_Ryd);
+                tmp2 += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
+                tmp4 += 0.5 * x + std::log(1.0 - std::exp(-x));
+            }
+        }
 
         tmp1 /= static_cast<double>(nk);
-    tmp2 *= 0.5 / static_cast<double>(nk);
-    tmp3 *= -k_Boltzmann / static_cast<double>(nk);
-    if (std::abs(temp) < eps) {
-      tmp4 /= static_cast<double>(nk);
-    } else {
-      tmp4 *= temp * T_to_Ryd / static_cast<double>(nk);
-    }
+        tmp2 *= 0.5 / static_cast<double>(nk);
+        tmp3 *= -k_Boltzmann / static_cast<double>(nk);
+        if (std::abs(temp) < eps) {
+            tmp4 /= static_cast<double>(nk);
+        } else {
+            tmp4 *= temp * T_to_Ryd / static_cast<double>(nk);
+        }
 
-    ofs_thermo << std::setw(16) << std::fixed << temp;
+        ofs_thermo << std::setw(16) << std::fixed << temp;
         ofs_thermo << std::setw(18) << std::scientific << tmp1 / k_Boltzmann;
         ofs_thermo << std::setw(18) << tmp2 / k_Boltzmann;
         ofs_thermo << std::setw(18) << tmp3;

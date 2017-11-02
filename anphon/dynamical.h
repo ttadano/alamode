@@ -68,11 +68,11 @@ namespace PHON_NS
                     std::vector<FcsClassExtent>,
                     double *, std::complex<double> **, bool);
         void modify_eigenvectors();
-        void eval_k_ewald(double *, double *, 
-			  std::vector<FcsClassExtent>, 
-			  double *, std::complex<double> **, bool, 
-			  const int);
-       
+        void eval_k_ewald(double *, double *,
+                          std::vector<FcsClassExtent>,
+                          double *, std::complex<double> **, bool,
+                          const int);
+
 
         double fold(double);
         double freq(const double);
@@ -82,22 +82,22 @@ namespace PHON_NS
                                           double ***);
 
         void calc_analytic_k(double *,
-            std::vector<FcsClassExtent>,
-            std::complex<double> **);
+                             std::vector<FcsClassExtent>,
+                             std::complex<double> **);
         void calc_nonanalytic_k(double *, double *,
-                std::complex<double> **);
+                                std::complex<double> **);
         void calc_nonanalytic_k2(double *, double *,
-                 std::vector<FcsClassExtent>,
-                 std::complex<double> **);
+                                 std::vector<FcsClassExtent>,
+                                 std::complex<double> **);
 
-        void calc_analytic_k_ewald(double *, 
-				   std::vector<FcsClassExtent>, 
-				   std::complex<double> **);
+        void calc_analytic_k_ewald(double *,
+                                   std::vector<FcsClassExtent>,
+                                   std::complex<double> **);
 
     private:
 
         void load_born();
-        
+
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);
         double distance(double *, double *);
@@ -120,4 +120,3 @@ namespace PHON_NS
                     std::complex<double> *beta, std::complex<double> *c, int *ldc);
     }
 }
-

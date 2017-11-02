@@ -147,7 +147,7 @@ namespace PHON_NS
 
         std::vector<KpointInp> kpInp;
         std::vector<double> weight_k;
-        std::vector<std::vector<KpointList> > kpoint_irred_all;
+        std::vector<std::vector<KpointList>> kpoint_irred_all;
 
         unsigned int nplanes;
         std::vector<KpointPlane> *kp_planes;
@@ -168,7 +168,7 @@ namespace PHON_NS
 
         void gen_kmesh(const bool, const unsigned int [3],
                        double **,
-                       std::vector<std::vector<KpointList> > &);
+                       std::vector<std::vector<KpointList>> &);
 
         void get_small_group_k(double *, std::vector<int> &, double [3][3]);
         int knum_sym(const int, const int);
@@ -187,7 +187,7 @@ namespace PHON_NS
                                unsigned int &, unsigned int &, unsigned int &, unsigned int &,
                                double **&, double **&,
                                const bool,
-                               std::vector<std::vector<KpointList> > &);
+                               std::vector<std::vector<KpointList>> &);
 
         void setup_kpoint_plane(std::vector<KpointInp> &,
                                 unsigned int &,
@@ -195,7 +195,7 @@ namespace PHON_NS
 
         void reduce_kpoints(const unsigned int, double **,
                             const unsigned int [3],
-                            std::vector<std::vector<KpointList> > &);
+                            std::vector<std::vector<KpointList>> &);
 
         void gen_nkminus(const unsigned int, unsigned int *, double **);
 
@@ -205,7 +205,7 @@ namespace PHON_NS
 
         bool in_first_BZ(double *);
 
-        void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList> > &);
+        void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &);
         void mpi_broadcast_kplane_vector(const unsigned int, std::vector<KpointPlane> *&);
         void calc_small_groups_k_irred(std::vector<int> *);
         std::vector<int> get_small_group_of_k(const int);

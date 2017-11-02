@@ -43,7 +43,9 @@ Writes::Writes(PHON *phon): Pointers(phon)
     Ry_to_kayser = Hz_to_kayser / time_ry;
 };
 
-Writes::~Writes() {};
+Writes::~Writes()
+{
+};
 
 void Writes::write_input_vars()
 {
@@ -778,7 +780,7 @@ void Writes::write_scattering_phase_space()
 
     for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
         knum = kpoint->kpoint_irred_all[ik][0].knum;
-        
+
         for (is = 0; is < dynamical->neval; ++is) {
             ofs_sps << std::setw(5) << ik + 1;
             ofs_sps << std::setw(5) << is + 1;

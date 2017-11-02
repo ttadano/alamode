@@ -21,7 +21,9 @@
 
 using namespace PHON_NS;
 
-Isotope::Isotope(PHON *phon): Pointers(phon) {};
+Isotope::Isotope(PHON *phon): Pointers(phon)
+{
+};
 
 Isotope::~Isotope()
 {

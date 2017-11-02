@@ -114,4 +114,3 @@ namespace PHON_NS
         void calc_anisotropic_hmat(double, double *, double **);
     };
 }
-

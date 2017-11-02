@@ -43,7 +43,9 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon): Pointers(phon) {}
+Input::Input(PHON *phon): Pointers(phon)
+{
+}
 
 Input::~Input()
 {
@@ -296,51 +298,51 @@ void Input::parse_general_vars()
     // Inserted part end
 
     str_tmp = general_var_dict["KMESH_SCPH"];
-    
-        if (!str_tmp.empty()) {
-    
-            std::istringstream is(str_tmp);
-    
-            while (1) {
-                str_tmp.clear();
-                is >> str_tmp;
-                if (str_tmp.empty()) {
-                    break;
-                }
-                kmesh_v.push_back(my_cast<unsigned int>(str_tmp));
+
+    if (!str_tmp.empty()) {
+
+        std::istringstream is(str_tmp);
+
+        while (1) {
+            str_tmp.clear();
+            is >> str_tmp;
+            if (str_tmp.empty()) {
+                break;
             }
-    
-            if (kmesh_v.size() != 3) {
-                error->exit("parse_general_vars", "The number of entries for KMESH_SCPH has to be 3.");
-            }
-        } else {
-            if (mode == "SCPH") {
-                error->exit("parse_general_vars", "Please specify KMESH_SCPH for mode = SCPH");
-            }
+            kmesh_v.push_back(my_cast<unsigned int>(str_tmp));
         }
-    
-        str_tmp = general_var_dict["KMESH_INTERPOLATE"];
-        if (!str_tmp.empty()) {
-    
-            std::istringstream is(str_tmp);
-    
-            while (1) {
-                str_tmp.clear();
-                is >> str_tmp;
-                if (str_tmp.empty()) {
-                    break;
-                }
-                kmesh_interpolate_v.push_back(my_cast<unsigned int>(str_tmp));
-            }
-    
-            if (kmesh_interpolate_v.size() != 3) {
-                error->exit("parse_general_vars", "The number of entries for KMESH_INTERPOLATE has to be 3.");
-            }
-        } else {
-            if (mode == "SCPH") {
-                error->exit("parse_general_vars", "Please specify KMESH_INTERPOLATE for mode = SCPH");
-            }
+
+        if (kmesh_v.size() != 3) {
+            error->exit("parse_general_vars", "The number of entries for KMESH_SCPH has to be 3.");
         }
+    } else {
+        if (mode == "SCPH") {
+            error->exit("parse_general_vars", "Please specify KMESH_SCPH for mode = SCPH");
+        }
+    }
+
+    str_tmp = general_var_dict["KMESH_INTERPOLATE"];
+    if (!str_tmp.empty()) {
+
+        std::istringstream is(str_tmp);
+
+        while (1) {
+            str_tmp.clear();
+            is >> str_tmp;
+            if (str_tmp.empty()) {
+                break;
+            }
+            kmesh_interpolate_v.push_back(my_cast<unsigned int>(str_tmp));
+        }
+
+        if (kmesh_interpolate_v.size() != 3) {
+            error->exit("parse_general_vars", "The number of entries for KMESH_INTERPOLATE has to be 3.");
+        }
+    } else {
+        if (mode == "SCPH") {
+            error->exit("parse_general_vars", "Please specify KMESH_INTERPOLATE for mode = SCPH");
+        }
+    }
 
     if (nonanalytic > 3) {
         error->exit("parse_general_vars", "NONANALYTIC-tag can take 0, 1, 2, or 3.");

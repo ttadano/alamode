@@ -39,4 +39,3 @@ namespace PHON_NS
         double coth_T(const double, const double);
     };
 }
-

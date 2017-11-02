@@ -180,10 +180,10 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
 
     for (i = 0; i < nk; ++i) {
         phonon_vel_k(kpoint->xk[i], vel);
-//        phonon_vel_k2(kpoint->xk[i],
-//                      dynamical->eval_phonon[i],
-//                      dynamical->evec_phonon[i],
-//                      vel);
+        //        phonon_vel_k2(kpoint->xk[i],
+        //                      dynamical->eval_phonon[i],
+        //                      dynamical->evec_phonon[i],
+        //                      vel);
 
         for (j = 0; j < ns; ++j) {
             rotvec(vel[j], vel[j], system->lavec_p);
@@ -421,7 +421,7 @@ void Phonon_velocity::phonon_vel_k2(double *xk_in,
     } else {
 
         for (icrd = 0; icrd < 3; ++icrd) {
-            
+
             for (j = 0; j < nmode; ++j) {
                 vel_tmp[icrd][j] = czero;
 
@@ -438,7 +438,7 @@ void Phonon_velocity::phonon_vel_k2(double *xk_in,
             }
         }
     }
-    
+
 
     for (icrd = 0; icrd < 3; ++icrd) {
         for (i = 0; i < nmode; ++i) {
@@ -541,7 +541,7 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
     char UPLO = 'U';
     int n_ = n;
 
-    memory->allocate(mat_1D, n*n);
+    memory->allocate(mat_1D, n * n);
     memory->allocate(RWORK, 3 * n - 2);
     memory->allocate(WORK, LWORK);
 
@@ -553,7 +553,7 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
     }
 
     zheev_(&JOBZ, &UPLO, &n_, mat_1D, &n_, eval_out, WORK, &LWORK, RWORK, &INFO);
-    
+
     memory->deallocate(RWORK);
     memory->deallocate(WORK);
     memory->deallocate(mat_1D);

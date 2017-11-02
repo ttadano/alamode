@@ -302,5 +302,3 @@ void PHON::execute_self_consistent_phonon()
 
     scph->finish_scph();
 }
-
-

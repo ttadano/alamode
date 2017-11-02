@@ -30,7 +30,9 @@
 
 using namespace PHON_NS;
 
-Ewald::Ewald(PHON *phon): Pointers(phon) {}
+Ewald::Ewald(PHON *phon): Pointers(phon)
+{
+}
 
 Ewald::~Ewald()
 {
@@ -1181,4 +1183,3 @@ void Ewald::calc_anisotropic_hmat(double lambda_in, double *x, double **hmat_out
         }
     }
 }
-
