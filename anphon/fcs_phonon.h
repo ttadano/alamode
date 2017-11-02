@@ -134,6 +134,12 @@ namespace PHON_NS
             index_a.push_back(a.pairs[i].index);
             index_b.push_back(b.pairs[i].index);
         }
+        for (int i = 0; i < a.pairs.size(); ++i) {
+            index_a.push_back(a.pairs[i].tran);
+            index_a.push_back(a.pairs[i].cell_s);
+            index_b.push_back(b.pairs[i].tran);
+            index_b.push_back(b.pairs[i].cell_s);
+        }
         return lexicographical_compare(index_a.begin(), index_a.end(), index_b.begin(), index_b.end());
     }
 

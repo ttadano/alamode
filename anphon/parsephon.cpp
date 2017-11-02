@@ -34,6 +34,9 @@
 #include "isotope.h"
 #include "phonon_velocity.h"
 #include "integration.h"
+#include "scph.h"
+#include <boost/lexical_cast.hpp>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -93,27 +96,36 @@ void Input::parse_general_vars()
 
     int i;
     int nsym, nbands, ismear, nkd;
+    unsigned int maxiter;
     unsigned int nonanalytic;
+    unsigned int ialgo_scph;
     double *masskd;
     double Tmin, Tmax, dT, na_sigma, epsilon;
     double emin, emax, delta_e;
-    double tolerance;
+    double tolerance, tolerance_scph;
+    double mixalpha;
     bool printsymmetry;
-    bool restart;
+    bool restart, restart_scph;
     bool sym_time_reversal, use_triplet_symmetry;
+    bool selenergy_offdiagonal;
     bool update_fc2;
+    bool lower_temp, warm_start;
 
     struct stat st;
     std::string prefix, mode, fcsinfo, fc2info;
     std::string borninfo, file_result;
+    std::string file_dymat;
     std::string *kdname;
     std::string str_tmp;
     std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML FC2XML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   RESTART TREVSYM NKD KD MASS TRISYM";
+                                   RESTART TREVSYM NKD KD MASS TRISYM KMESH_SCPH KMESH_INTERPOLATE \
+                                   MIXALPHA MAXITER RESTART_SCPH IALGO SELF_OFFDIAG PREC_EWALD TOL_SCPH \
+                                   LOWER_TEMP WARMSTART";
     std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
     std::vector<std::string> no_defaults, celldim_v;
     std::vector<std::string> kdname_v, masskd_v;
+    std::vector<int> kmesh_v, kmesh_interpolate_v;
     std::map<std::string, std::string> general_var_dict;
 
     if (from_stdin) {
@@ -141,6 +153,7 @@ void Input::parse_general_vars()
     mode = general_var_dict["MODE"];
 
     file_result = prefix + ".result";
+    file_dymat = prefix + ".scph_dymat";
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
     assign_val(nsym, "NSYM", general_var_dict);
@@ -185,6 +198,7 @@ void Input::parse_general_vars()
     nonanalytic = 0;
     nsym = 0;
     tolerance = 1.0e-6;
+    tolerance_scph = 1.0e-10;
     printsymmetry = false;
     sym_time_reversal = false;
     use_triplet_symmetry = true;
@@ -198,6 +212,15 @@ void Input::parse_general_vars()
         restart = false;
     }
 
+    // if file_dymat exists in the current directory, 
+    // restart mode will be automatically turned on for SCPH calculations.
+
+    if (stat(file_dymat.c_str(), &st) == 0) {
+        restart_scph = true;
+    } else {
+        restart_scph = false;
+    }
+
     nbands = -1;
     borninfo = "";
     fc2info = "";
@@ -206,6 +229,12 @@ void Input::parse_general_vars()
     epsilon = 10.0;
     na_sigma = 0.1;
 
+    maxiter = 1000;
+    mixalpha = 0.1;
+    selenergy_offdiagonal = true;
+    ialgo_scph = 0;
+    lower_temp = true;
+    warm_start = true;
 
     // Assign given values
 
@@ -224,6 +253,7 @@ void Input::parse_general_vars()
 
     assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
     assign_val(restart, "RESTART", general_var_dict);
+    assign_val(restart_scph, "RESTART_SCPH", general_var_dict);
 
     assign_val(nbands, "NBANDS", general_var_dict);
     assign_val(borninfo, "BORNINFO", general_var_dict);
@@ -235,6 +265,62 @@ void Input::parse_general_vars()
 
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
+
+    assign_val(maxiter, "MAXITER", general_var_dict);
+    assign_val(mixalpha, "MIXALPHA", general_var_dict);
+    assign_val(selenergy_offdiagonal, "SELF_OFFDIAG", general_var_dict);
+    assign_val(ialgo_scph, "IALGO", general_var_dict);
+    assign_val(tolerance_scph, "TOL_SCPH", general_var_dict);
+    assign_val(lower_temp, "LOWER_TEMP", general_var_dict);
+    assign_val(warm_start, "WARMSTART", general_var_dict);
+
+
+    str_tmp = general_var_dict["KMESH_SCPH"];
+    
+        if (!str_tmp.empty()) {
+    
+            std::istringstream is(str_tmp);
+    
+            while (1) {
+                str_tmp.clear();
+                is >> str_tmp;
+                if (str_tmp.empty()) {
+                    break;
+                }
+                kmesh_v.push_back(my_cast<unsigned int>(str_tmp));
+            }
+    
+            if (kmesh_v.size() != 3) {
+                error->exit("parse_general_vars", "The number of entries for KMESH_SCPH has to be 3.");
+            }
+        } else {
+            if (mode == "SCPH") {
+                error->exit("parse_general_vars", "Please specify KMESH_SCPH for mode = SCPH");
+            }
+        }
+    
+        str_tmp = general_var_dict["KMESH_INTERPOLATE"];
+        if (!str_tmp.empty()) {
+    
+            std::istringstream is(str_tmp);
+    
+            while (1) {
+                str_tmp.clear();
+                is >> str_tmp;
+                if (str_tmp.empty()) {
+                    break;
+                }
+                kmesh_interpolate_v.push_back(my_cast<unsigned int>(str_tmp));
+            }
+    
+            if (kmesh_interpolate_v.size() != 3) {
+                error->exit("parse_general_vars", "The number of entries for KMESH_INTERPOLATE has to be 3.");
+            }
+        } else {
+            if (mode == "SCPH") {
+                error->exit("parse_general_vars", "Please specify KMESH_INTERPOLATE for mode = SCPH");
+            }
+        }
 
     if (nonanalytic > 2) {
         error->exit("parse_general_vars",
@@ -287,6 +373,23 @@ void Input::parse_general_vars()
     integration->ismear = ismear;
     relaxation->use_triplet_symmetry = use_triplet_symmetry;
 
+    if (mode == "SCPH") {
+        for (i = 0; i < 3; ++i) {
+            scph->kmesh_scph[i] = kmesh_v[i];
+            scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
+        }
+        scph->mixalpha = mixalpha;
+        scph->maxiter = maxiter;
+        scph->restart_scph = restart_scph;
+        scph->selfenergy_offdiagonal = selenergy_offdiagonal;
+        scph->ialgo = ialgo_scph;
+        scph->tolerance_scph = tolerance_scph;
+        scph->lower_temp = lower_temp;
+        scph->warmstart_scph = warm_start;
+    }
+    kmesh_v.clear();
+    kmesh_interpolate_v.clear();
+
     general_var_dict.clear();
 }
 
@@ -307,6 +410,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool two_phonon_dos;
     bool print_xsf, print_anime;
     bool print_V3, participation_ratio;
+    bool print_self_consistent_fc2;
     bool bubble_omega;
 
     int quartic_mode;
@@ -350,6 +454,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bubble_omega = false;
 
     calculate_kappa_spec = 0;
+
+    print_self_consistent_fc2 = false;
 
 
     // Assign values to variables
@@ -487,6 +593,10 @@ void Input::parse_analysis_vars(const bool use_default_values)
             isotope->isotope_factor[i] = isotope_factor[i];
         }
         memory->deallocate(isotope_factor);
+    }
+
+    if (phon->mode == "SCPH") {
+        scph->print_self_consistent_fc2 = print_self_consistent_fc2;
     }
 
     analysis_var_dict.clear();

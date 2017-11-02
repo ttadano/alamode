@@ -525,6 +525,35 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     }
 }
 
+void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
+{
+    int i;
+    unsigned int j, k;
+    unsigned int iT;
+    unsigned int nk = kpoint->nk;
+    unsigned int neval = dynamical->neval;
+    double **eval;
+
+    double Tmin = system->Tmin;
+    double Tmax = system->Tmax;
+    double dT = system->dT;
+    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    memory->allocate(eval, neval, nk);
+
+    for (iT = 0; iT < NT; ++iT) {
+
+        for (j = 0; j < nk; ++j) {
+            for (k = 0; k < neval; ++k) {
+                eval[k][j] = writes->in_kayser(eval_anharm[iT][j][k]);
+                //                std::cout << eval[k][j] << std::endl;
+            }
+        }
+
+        calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
+                 dos_scph[iT], neval, integration->ismear, kpoint->kpoint_irred_all);
+    }
+}
 
 void Dos::calc_scattering_phase_space_with_Bose(double **eval,
                                                 const int smearing_method,

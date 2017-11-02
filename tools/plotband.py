@@ -34,7 +34,7 @@ parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", de
 
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
-mpl.rc('text', usetex=True)
+#mpl.rc('text', usetex=True)
 
 # line colors and styles
 color = ['b', 'g', 'r', 'm', 'k', 'c', 'y', 'r']

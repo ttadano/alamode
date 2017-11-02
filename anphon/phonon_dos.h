@@ -40,6 +40,8 @@ namespace PHON_NS
         double ****sps3_with_bose;
 
 
+        void calc_dos_scph(double ***, double **);
+
     private:
         unsigned int nk_irreducible;
         int *kmap_irreducible;
