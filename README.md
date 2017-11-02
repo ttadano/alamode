@@ -1,5 +1,5 @@
 # ALAMODE 
-### Version 0.9.8 (Beta)
+### Version 1.0.0
 ![alt ALAMODE](./docs/img/alamode.png)
 
 - - -
@@ -43,12 +43,15 @@ linewidth, and other anharmonic phonon properties from first principles.
 * Phonon linewidth due to 3-phonon interactions
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
+* Self-consistent phonon calculation
 
 ## Prerequisite
 * C++ compiler
 * LAPACK library
 * MPI library
 * Boost C++ library
+* FFT library
+* Eigen3 library
 
 ## Download
 
