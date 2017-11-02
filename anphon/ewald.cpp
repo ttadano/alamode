@@ -323,7 +323,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat, const int nsize[3], dou
         for (jat = 0; jat < nat; ++jat) {
             multiplicity[iat][jat] = 0;
 
-            for (std::vector<DistInfo>::iterator it = distall_ewald[iat][jat].begin();
+            for (auto it = distall_ewald[iat][jat].begin();
                  it != distall_ewald[iat][jat].end(); ++ it) {
                 if (it == distall_ewald[iat][jat].begin()) dist_hold = (*it).dist;
                 dist_tmp = (*it).dist;
@@ -384,8 +384,8 @@ void Ewald::compute_ewald_fcs()
         }
     }
 
-    for (std::vector<FcsClassExtent>::const_iterator it = fcs_phonon->fc2_ext.begin();
-         it != fcs_phonon->fc2_ext.end(); ++it) {
+    for (auto it = fcs_phonon->fc2_ext.cbegin();
+         it != fcs_phonon->fc2_ext.cend(); ++it) {
         fcs_total[3 * (*it).atm1 + (*it).xyz1][3 * (*it).atm2 + (*it).xyz2] += (*it).fcs_val;
     }
 
@@ -671,7 +671,7 @@ void Ewald::calc_long_term_ewald_fcs(int iat, int jat, double **fc_g_out)
 
     if (iat == jat) {
 
-        for (std::vector<Gvecs>::iterator it = G_vector_sub.begin(); it != G_vector_sub.end(); ++it) {
+        for (auto it = G_vector_sub.begin(); it != G_vector_sub.end(); ++it) {
             for (i = 0; i < 3; ++i) g_tmp[i] = (*it).vec[i];
             rotvec(epsilon_gvector, g_tmp, epsilon);
             gnorm2 = g_tmp[0] * epsilon_gvector[0]
@@ -704,7 +704,7 @@ void Ewald::calc_long_term_ewald_fcs(int iat, int jat, double **fc_g_out)
         }
     }
 
-    for (std::vector<Gvecs>::iterator it = G_vector_sub.begin(); it != G_vector_sub.end(); ++it) {
+    for (auto it = G_vector_sub.begin(); it != G_vector_sub.end(); ++it) {
         for (i = 0; i < 3; ++i) g_tmp[i] = (*it).vec[i];
         rotvec(epsilon_gvector, g_tmp, epsilon);
         gnorm2 = g_tmp[0] * epsilon_gvector[0]
@@ -1073,7 +1073,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat, const int jat, double
     double common;
     std::complex<double> g_test;
 
-    for (std::vector<Gvecs>::iterator it = G_vector.begin(); it != G_vector.end(); ++it) {
+    for (auto it = G_vector.begin(); it != G_vector.end(); ++it) {
         for (l = 0; l < 3; ++l) {
             g[l] = (*it).vec[l];
             gk[l] = g[l] + xk_in[l];

@@ -745,7 +745,7 @@ void System::setup_atomic_class(unsigned int N,
 
     for (i = 0; i < N; ++i) {
         int count = 0;
-        for (std::set<AtomType>::iterator it = set_type.begin(); it != set_type.end(); ++it) {
+        for (auto it = set_type.begin(); it != set_type.end(); ++it) {
             if (noncollinear) {
                 if (kd[i] == (*it).element) {
                     atomlist_class[count].push_back(i);

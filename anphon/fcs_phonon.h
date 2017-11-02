@@ -35,7 +35,7 @@ namespace PHON_NS
         FcsClass(const FcsClass &obj)
         {
             fcs_val = obj.fcs_val;
-            for (std::vector<Triplet>::const_iterator it = obj.elems.begin(); it != obj.elems.end(); ++it) {
+            for (auto it = obj.elems.cbegin(); it != obj.elems.cend(); ++it) {
                 elems.push_back(*it);
             }
         }
@@ -51,7 +51,7 @@ namespace PHON_NS
         FcsClass(const double val, const std::vector<Triplet> vec)
         {
             fcs_val = val;
-            for (std::vector<Triplet>::const_iterator it = vec.begin(); it != vec.end(); ++it) {
+            for (auto it = vec.cbegin(); it != vec.cend(); ++it) {
                 elems.push_back(*it);
             }
         }
@@ -125,7 +125,7 @@ namespace PHON_NS
         {
             fcs_val = fcs_in;
 
-            for (std::vector<AtomCellSuper>::const_iterator it = pairs_in.begin(); it != pairs_in.end(); ++it) {
+            for (auto it = pairs_in.cbegin(); it != pairs_in.cend(); ++it) {
                 pairs.push_back(*it);
             }
         }

@@ -218,8 +218,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
             mindist_out[i][j].clear();
 
             dist_min = distall[i][j][0].dist;
-            for (std::vector<DistWithCell>::const_iterator it = distall[i][j].begin();
-                 it != distall[i][j].end(); ++it) {
+            for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
                 if (std::abs((*it).dist - dist_min) < eps8) {
                     mindist_out[i][j].push_back((*it).cell);
                 }
@@ -465,8 +464,7 @@ void Dynamical::calc_analytic_k(double *xk_in,
         }
     }
 
-    for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.begin();
-         it != fc2_in.end(); ++it) {
+    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
 
         atm1_p = (*it).atm1;
         atm2_s = (*it).atm2;

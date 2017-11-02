@@ -488,8 +488,7 @@ void Phonon_velocity::calc_derivative_dynmat_k(double *xk_in,
         }
     }
 
-    for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.begin();
-         it != fc2_in.end(); ++it) {
+    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
 
         atm1_p = (*it).atm1;
         atm2_s = (*it).atm2;

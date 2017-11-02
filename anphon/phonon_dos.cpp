@@ -637,7 +637,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     ks_l.clear();
     unsigned int count = 0;
-    for (std::vector<int>::const_iterator it = ks_g.begin(); it != ks_g.end(); ++it) {
+    for (auto it = ks_g.cbegin(); it != ks_g.cend(); ++it) {
         if (count % mympi->nprocs == mympi->my_rank) {
             ks_l.push_back(*it);
         }

@@ -28,7 +28,7 @@ namespace PHON_NS
 
         KsList(const KsList &a)
         {
-            for (std::vector<int>::const_iterator p = a.ks.begin(); p != a.ks.end(); ++p) {
+            for (auto p = a.ks.cbegin(); p != a.ks.cend(); ++p) {
                 ks.push_back(*p);
             }
             symnum = a.symnum;
@@ -58,7 +58,7 @@ namespace PHON_NS
 
         KsListGroup(const std::vector<KsList> &a)
         {
-            for (std::vector<KsList>::const_iterator it = a.begin(); it != a.end(); ++it) {
+            for (auto it = a.cbegin(); it != a.cend(); ++it) {
                 group.push_back(*it);
             }
         }
