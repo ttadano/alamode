@@ -106,6 +106,13 @@ void Writes::write_input_vars()
         std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
         std::cout << std::endl;
     } else if (phon->mode == "SCPH") {
+        std::cout << " Scph:" << std::endl;
+        std::cout << "  KMESH_INTERPOLATE = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_interpolate[i];
+        std::cout  << std::endl;
+        std::cout << "  KMESH_SCPH        = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_scph[i];
+        std::cout  << std::endl;
         std::cout << "  SELF_OFFDIAG = " << scph->selfenergy_offdiagonal << std::endl;
         std::cout << "  IALGO = " << scph->ialgo << std::endl << std::endl;
         std::cout << "  RESTART_SCPH = " << scph->restart_scph << std::endl;
