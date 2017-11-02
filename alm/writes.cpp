@@ -4,7 +4,7 @@
  Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
+ Please see the file 'LICENCE.txt' in the root directory
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
@@ -490,7 +490,7 @@ void Writes::write_misc_xml()
 
     std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
 
-    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin(); 
+    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin();
         it != fcs->fc_set[0].end(); ++it) {
         FcProperty fctmp = *it;
         ip = fctmp.mother;
@@ -525,7 +525,7 @@ void Writes::write_misc_xml()
 
         std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
 
-        for (std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin(); 
+        for (std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin();
             it != fcs->fc_set[order].end(); ++it) {
             FcProperty fctmp = *it;
             ip = fctmp.mother + ishift;
@@ -647,6 +647,46 @@ void Writes::write_hessian()
     memory->deallocate(hessian);
 
     std::cout << " Complete Hessian matrix                    : " << files->file_hes << std::endl;
+
+  /*
+    std::string file_fc2 = files->job_title + ".fc2";
+    std::ofstream ofs_fc2;
+    ofs_fc2.open(file_fc2.c_str(), std::ios::out);
+    ofs_fc2 << " # iat, icrd, jat, icrd, icell, relvec, fc2" << std::endl;
+    double vec[3];
+    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin();
+         it != fcs->fc_set[0].end(); ++it) {
+        FcProperty fctmp = *it;
+        ip = fctmp.mother;
+
+        for (i = 0; i < 2; ++i) pair_tmp[i] = fctmp.elems[i] / 3;
+        for (itran = 0; itran < symmetry->ntran; ++itran) {
+            for (i = 0; i < 2; ++i) {
+                pair_tran[i] = symmetry->map_sym[pair_tmp[i]][symmetry->symnum_tran[itran]];
+            }
+            for (std::vector<DistInfo>::iterator
+                 it2  = interaction->mindist_pairs[pair_tran[0]][pair_tran[1]].begin();
+                 it2 != interaction->mindist_pairs[pair_tran[0]][pair_tran[1]].end(); ++it2) {
+                  int multiplicity = interaction->mindist_pairs[pair_tran[0]][pair_tran[1]].size();
+                  for (i = 0; i < 3; ++i) {
+                    vec[i] = interaction->x_image[(*it2).cell][pair_tran[1]][i]
+                           - interaction->x_image[0][pair_tran[0]][i];
+                  }
+                  ofs_fc2 << std::setw(5) << pair_tran[0] + 1 << std::setw(5) << fctmp.elems[0] % 3 + 1;
+                  ofs_fc2 << std::setw(5) << pair_tran[1] + 1 << std::setw(5) << fctmp.elems[1] % 3 + 1;
+                  ofs_fc2 << std::setw(5) << (*it2).cell + 1;
+                  ofs_fc2 << std::setw(15) << vec[0];
+                  ofs_fc2 << std::setw(15) << vec[1];
+                  ofs_fc2 << std::setw(15) << vec[2];
+
+                  ofs_fc2 << std::setw(15)
+                  << fitting->params[ip] * fctmp.coef / static_cast<double>(multiplicity);
+                  ofs_fc2 << std::endl;
+            }
+        }
+    }
+    ofs_fc2.close();
+   */
 }
 
 std::string Writes::double2string(const double d, const int nprec)
