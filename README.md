@@ -87,3 +87,9 @@ For license rights and limitations, see LICENSE.txt file.
 
 ## Author
 Terumasa Tadano (National Institute for Materials Science, Japan)
+
+## Contributors
+
+* Tatsuro Nishimoto (Univ. Tokyo)
+* Yusuke Oba (Univ. Tokyo)
+
