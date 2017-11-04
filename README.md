@@ -1,3 +1,4 @@
+[![GitHub version](https://badge.fury.io/gh/ttadano%2Falamode.svg)](https://badge.fury.io/gh/ttadano%2Falamode)
 # ALAMODE 
 ### Version 1.0.0
 ![alt ALAMODE](./docs/img/alamode.png)
