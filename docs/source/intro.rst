@@ -80,9 +80,13 @@ How to Cite ALAMODE
 
 Please cite the following article when you use ALAMODE:
 
-  T\. Tadano, Y. Gohda, and S. Tsuneyuki, J. Phys.: Condens. Matter **26**\ , 225402 (2014) [Link_].
+  T\. Tadano, Y. Gohda, and S. Tsuneyuki, J. Phys.: Condens. Matter **26**\ , 225402 (2014) 
+  [`Link <http://iopscience.iop.org/0953-8984/26/22/225402/>`__].
 
-.. _Link : http://iopscience.iop.org/0953-8984/26/22/225402/
+If you use the self-consistent phonon (SCPH) method, please cite the following paper as well:
+
+  T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**\ , 054301 (2015). 
+  [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.92.054301>`__]
 
 
 Acknowledgement
@@ -101,8 +105,9 @@ Author & Contact
 
     <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
-International Center for Young Scientists (ICYS),
-National Institute for Material Science (NIMS), Japan
+| International Center for Young Scientists (ICYS),
+| National Institute for Material Science (NIMS), 
+| Japan
 
 If you have any questions, suggestions, and problems regarding ALAMODE, please feel free to contact the author.
 
