@@ -1,9 +1,11 @@
-# ALAMODE 
+# ALAMODE
+ 
+[![License][license-image]][license-url]
+[![Doc status][docs-image]][docs-url]
+
 ### Version 1.0.0
 ![alt ALAMODE](./docs/img/alamode.png)
 
-
-|license| |docs|
 
 - - -
 
@@ -97,12 +99,10 @@ Terumasa Tadano (National Institute for Materials Science, Japan)
 * Yusuke Oba (Univ. Tokyo)
 
 
-.. |license| image:: https://img.shields.io/github/license/ttadano/alamode.svg
-     :alt: License
-     :scale: 100%
-     :target: https://github.com/ttadano/alamode/blob/develop/LICENSE.txt
 
-.. |docs| image:: https://readthedocs.org/projects/alamode/badge/?version=latest
-    :alt: Documentation Status
-    :scale: 100%
-    :target: https://alamode.readthedocs.io/en/latest/?badge=latest
+[license-image]: https://img.shields.io/github/license/ttadano/alamode.svg
+[license-url]:  https://github.com/ttadano/alamode/blob/develop/LICENSE.txt
+
+[docs-image]:  https://readthedocs.org/projects/alamode/badge/?version=latest
+[docs-url]: https://alamode.readthedocs.io/en/latest/?badge=latest
+
