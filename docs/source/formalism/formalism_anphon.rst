@@ -385,6 +385,52 @@ for numerical evaluations of Brillouin zone integration containing :math:`\delta
 When the tetrahedron method is used, the ``EPSILON``-tag is neglected.
 We recommend using the tetrahedron method whenever possible.
 
+
+Self-consistent phonon (SCPH) calculation
+-----------------------------------------
+
+The self-consistent phonon mode (``MODE = SCPH``) computes temperature-dependent phonon frequencies by solving the following equation self-consistently [6]_:
+
+.. math::
+    :label: scph_v_iter
+
+    V_{\boldsymbol{q}ij}^{[n]} = \omega_{\boldsymbol{q}i}^{2}\delta_{ij}+\frac{1}{2}\sum_{\boldsymbol{q}_{1},k,\ell}F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell}\mathcal{K}_{\boldsymbol{q}_{1},k\ell}^{[n-1]}.
+
+Here, :math:`\omega_{\boldsymbol{q}j}` is the harmonic phonon frequency and :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell} = \Phi(\boldsymbol{q}i;-\boldsymbol{q}j;\boldsymbol{q}_{1}k;-\boldsymbol{q}_{1}\ell)` is the reciprocal representation of fourth-order force constants. The updated phonon frequency in the :math:`n`\ th iteration is obtained by diagonalizing the matrix :math:`V_{\boldsymbol{q}ij}^{[n]}` as 
+
+.. math::
+
+    \Lambda^{[n]}_{\boldsymbol{q}} = C^{[n]\dagger}_{\boldsymbol{q}}V^{[n]}_{\boldsymbol{q}}C^{[n]}_{\boldsymbol{q}},
+
+where :math:`\omega_{\boldsymbol{q}j}^{[n]} = (\Lambda^{[n]}_{\boldsymbol{q}jj})^{\frac{1}{2}}` and :math:`C^{[n]}_{\boldsymbol{q}}` is the unitary matrix that transforms the harmonic phonon eigenvectors into anharmonic ones as :math:`W^{[n]}_{\boldsymbol{q}} = W_{\boldsymbol{q}}C^{[n]}_{\boldsymbol{q}}`. The matrix :math:`\mathcal{K}` in Eq. :eq:`scph_v_iter` is defined as
+
+.. math::
+
+    \mathcal{K}_{\boldsymbol{q},ij}^{[n]} &= \alpha K_{\boldsymbol{q},ij}^{[n]} + (1-\alpha) K_{\boldsymbol{q},ij}^{[n-1]},  \\
+    K_{\boldsymbol{q},ij}^{[n]} 
+    &= \sum_{k} C_{\boldsymbol{q},ki}^{[n]} C_{\boldsymbol{q},kj}^{[n]*} \frac{\hbar\big[1+2n(\omega_{\boldsymbol{q}_{1}k}^{[n]})\big]}{2\omega_{\boldsymbol{q}_{1}k}^{[n]}}.
+
+:math:`\alpha` is the mixing parameter, which can be changed via the ``MIXALPHA`` tag.
+
+The SCPH equation is solved on the irreducible :math:`\boldsymbol{q}` grid defined by the ``KMESH_INTERPOLATE`` tag.
+The :math:`\boldsymbol{q}_{1}` grid in Eq. :eq:`scph_v_iter`, given  by the ``KMESH_SCPH`` tag,  
+can be finer than the :math:`\boldsymbol{q}` grid. After the SCPH iteration converges, the code computes the anharmonic correction to the harmonic force constant :math:`\Delta D(\boldsymbol{r}(\ell))` as follows:
+
+.. math::
+    
+    &\Delta D(\boldsymbol{r}(\ell)) = \frac{1}{N_{q}}\sum_{\boldsymbol{q}} \Delta D(\boldsymbol{q}) e^{-i\boldsymbol{q}\cdot\boldsymbol{r}(\ell)}, \\
+    &\Delta D(\boldsymbol{q}) = D_{\mathrm{SCPH}}(\boldsymbol{q}) - D_{\mathrm{Harmonic}}(\boldsymbol{q}), \\
+    &D_{\mathrm{SCPH}}(\boldsymbol{q}) = W_{\boldsymbol{q}}C_{\boldsymbol{q}}^{[n]}\Lambda_{\boldsymbol{q}}^{[n]}C_{\boldsymbol{q}}^{[n]\dagger}W_{\boldsymbol{q}}^{\dagger}.
+
+:math:`\Delta D(\boldsymbol{r}(\ell))` is saved in ``PREFIX.scph_fc2_correction``.
+
+The most computationally expensive part is the calculation of matrix elements of :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell}`.
+When ``SELF_OFFDIAG = 0`` (default), the code only computes the elements of :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},iikk}`. 
+Therefore, the computational complexity is :math:`\mathcal{O}(N_{q}^{\mathrm{irred.}}N_{q_{1}}m^{2})`.
+When ``SELF_OFFDIAG = 1``, the off-diagonal elements are also calculated, and the computational complexity is :math:`\mathcal{O}(N_{q}^{\mathrm{irred.}}N_{q_{1}}m^{4})`. 
+
+
+
 ````
 
 .. [1] K\. Parlinski, Z. Q. Li, and Y. Kawazoe, Phys. Rev. Lett. **81**, 3298 (1998).
@@ -396,3 +442,5 @@ We recommend using the tetrahedron method whenever possible.
 .. [4] S\. -I. Tamura, Phys. Rev. B **27**, 858 (1983).
 
 .. [5] P\. E. Bl\ |umulaut_o|\ chl, O. Jepsen, and O. K. Andersen, Phys. Rev. B **49**, 1450555 (1994).
+
+.. [6] T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**, 054301 (2015).
