@@ -953,7 +953,7 @@ void Dynamical::load_born()
         }
     }
 
-    if (diff_sym > 0.1) {
+    if (diff_sym > 0.5) {
         std::cout << std::endl;
         std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
     }
