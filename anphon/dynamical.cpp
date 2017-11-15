@@ -727,10 +727,6 @@ void Dynamical::diagonalize_dynamical_all()
 #pragma omp parallel for private (is)
 #endif
     for (ik = 0; ik < nk; ++ik) {
-
-        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
-               eval_phonon[ik], evec_phonon[ik], require_evec);
-
         if (nonanalytic == 3) {
             eval_k_ewald(kpoint->xk[ik], kpoint->kvec_na[ik], ewald->fc2_without_dipole,
                          eval_phonon[ik], evec_phonon[ik], require_evec, ik);
