@@ -265,7 +265,10 @@ void Interaction::get_pairs_of_minimum_distance(int nat,
             dist_min = distall[i][j][0].dist;
             for (std::vector<DistInfo>::const_iterator it = distall[i][j].begin();
                  it != distall[i][j].end(); ++it) {
-                if (std::abs((*it).dist - dist_min) < eps8) {
+                // The tolerance below (1.e-3) should be chosen so that 
+                // the mirror images with equal distances are found correctly.
+                // If this fails, the phonon dispersion would be incorrect.
+                if (std::abs((*it).dist - dist_min) < 1.0e-3) {
                     mindist_pairs[i][j].push_back(DistInfo(*it));
                 }
             }
