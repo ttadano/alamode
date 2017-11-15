@@ -13,8 +13,12 @@
 
 import numpy as np
 import optparse
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+try:
+    mpl.use("Qt5agg")
+except:
+    pass
+import matplotlib.pyplot as plt
 
 # parser options
 usage = "usage: %prog [options] file1.bands file2.bands ... "
@@ -32,10 +36,14 @@ parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", de
                   help="normalize the x axis to unity.")
 
 
-# font styles
+# font styles 
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
+mpl.rc('xtick', labelsize = 16)
+mpl.rc('ytick', labelsize = 16)
+mpl.rc('axes' , labelsize = 16)
+mpl.rc('lines', linewidth = 1.5)
+mpl.rc('legend', fontsize='small')
 #mpl.rc('text', usetex=True)
-
 # line colors and styles
 color = ['b', 'g', 'r', 'm', 'k', 'c', 'y', 'r']
 lsty = ['-', '-', '-', '-', '--', '--', '--', '--']
@@ -56,7 +64,6 @@ def get_kpath_and_kval(file_in):
                 kpath_mod.append('$\Gamma$')
             else:
                 kpath_mod.append('$\mathrm{' + kpath[i + 1] + '}$')
-
         return kpath_mod, kval_float
     else:
         return [], []
@@ -170,21 +177,22 @@ if __name__ == '__main__':
         data_merged, xticksvars = normalize_to_unity(data_merged, xticksvars)
 
     xmin, xmax, ymin, ymax = get_xy_minmax(data_merged)
-
+    fig, ax = plt.subplots()
+    
     for i in range(len(data_merged)):
-        plt.plot(data_merged[i][0:, 0], data_merged[i][0:, 1],
+        ax.plot(data_merged[i][0:, 0], data_merged[i][0:, 1],
                  linestyle=lsty[i], color=color[i], label=files[i])
 
         for j in range(2, len(data_merged[i][0][0:])):
-            plt.plot(data_merged[i][0:, 0], data_merged[i][0:, j],
+            ax.plot(data_merged[i][0:, 0], data_merged[i][0:, j],
                      linestyle=lsty[i], color=color[i])
 
     if options.unitname.lower() == "mev":
-        plt.ylabel("Frequency (meV)", fontsize=16, labelpad=20)
+        ax.set_ylabel("Frequency (meV)", labelpad=20)
     elif options.unitname.lower() == "thz":
-        plt.ylabel("Frequency (THz)", fontsize=16, labelpad=20)
+        ax.set_ylabel("Frequency (THz)", labelpad=20)
     else:
-        plt.ylabel("Frequency (cm${}^{-1}$)", fontsize=16, labelpad=10)
+        ax.set_ylabel("Frequency (cm${}^{-1}$)", labelpad=10)
 
     if options.emin == None and options.emax == None:
         factor = 1.05
@@ -201,10 +209,8 @@ if __name__ == '__main__':
 
     plt.axis([xmin, xmax, ymin, ymax])
 
-    plt.xticks(xticksvars[0:], xtickslabels[0:], fontsize=16)
-    plt.yticks(fontsize=16)
-
-    ax = plt.subplot(111)
+    ax.set_xticks(xticksvars[0:])
+    ax.set_xticklabels(xtickslabels[0:])
     ax.xaxis.grid(True, linestyle='-')
 
     if options.print_key:
