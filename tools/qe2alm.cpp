@@ -790,7 +790,7 @@ void get_pairs_of_minimum_distance(const int natmin, const int nat, int **map_p2
 
             dist_min = distall[i][j][0].dist;
             for (std::vector<DistInfo>::const_iterator it = distall[i][j].begin(); it != distall[i][j].end(); ++it) {
-                if (std::abs((*it).dist - dist_min) < eps6) {
+                if (std::abs((*it).dist - dist_min) < 1.e-3) {
                     mindist_pairs[i][j].push_back(DistInfo(*it));
                 }
             }
