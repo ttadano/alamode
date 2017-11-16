@@ -753,7 +753,7 @@ void Symmetry::symop_availability_check(double ***rot,
         nfinite = 0;
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
-                if (std::abs(rot[i][j][k]) > eps) ++nfinite;
+                if (std::abs(rot[i][j][k]) > 1.0e-5) ++nfinite;
             }
         }
 
