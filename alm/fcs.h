@@ -30,8 +30,7 @@ namespace ALM_NS
         {
             coef = obj.coef;
             mother = obj.mother;
-            for (std::vector<int>::const_iterator it = obj.elems.begin(); 
-                it != obj.elems.end(); ++it) {
+            for (auto it = obj.elems.begin(); it != obj.elems.end(); ++it) {
                 elems.push_back(*it);
             }
         };
@@ -60,8 +59,6 @@ namespace ALM_NS
 
         void init();
 
-        int *nzero;
-
         std::vector<int> *ndup;
         std::vector<FcProperty> *fc_set;
 
@@ -75,9 +72,7 @@ namespace ALM_NS
         double coef_sym(const int, const int, const int *, const int *);
 
     private:
-        int *nints;
         void generate_fclists(int);
         bool is_ascending(const int, const int *);
     };
 }
-

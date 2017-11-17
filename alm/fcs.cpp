@@ -42,12 +42,9 @@ void Fcs::init()
     std::cout << " FORCE CONSTANT" << std::endl;
     std::cout << " ==============" << std::endl << std::endl;
 
-    memory->allocate(nints, maxorder);
-    memory->allocate(nzero, maxorder);
     memory->allocate(fc_set, maxorder);
     memory->allocate(ndup, maxorder);
 
-    for (i = 0; i < maxorder; ++i) nzero[i] = 0;
     generate_fclists(maxorder);
 
     std::cout << std::endl;
@@ -76,8 +73,6 @@ void Fcs::init()
         }
     }
 
-    memory->deallocate(nints);
-    memory->deallocate(nzero);
     timer->print_elapsed();
     std::cout << " -------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
@@ -219,7 +214,6 @@ void Fcs::generate_fclists(int maxorder)
 
                 if (is_zero) {
                     for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
-                    ++nzero[order];
                 } else {
                     ndup[order].push_back(ndeps);
                     ++nmother;
