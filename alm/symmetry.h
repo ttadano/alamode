@@ -1,7 +1,7 @@
 /*
  symmetry.h
 
- Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+ Copyright (c) 2014--2017 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -54,6 +54,7 @@ namespace ALM_NS
             is_translation = is_trans_in;
         }
 
+        // Operator definition to sort
         bool operator<(const SymmetryOperation &a) const
         {
             std::vector<double> v1, v2;
@@ -126,7 +127,7 @@ namespace ALM_NS
 
         int trev_sym_mag;
 
-        std::vector<SymmetryOperation> SymmList;
+        std::vector<SymmetryOperation> SymmData;
 
     private:
 

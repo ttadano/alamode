@@ -155,7 +155,7 @@ void Fcs::generate_fclists(int maxorder)
 
                 for (isym = 0; isym < symmetry->nsym; ++isym) {
 
-                    if (!symmetry->SymmList[isym].compatible_with_cartesian) continue;
+                    if (!symmetry->SymmData[isym].compatible_with_cartesian) continue;
 
                     for (i = 0; i < order + 2; ++i)
                         atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
@@ -253,7 +253,7 @@ double Fcs::coef_sym(const int n,
     int i;
 
     for (i = 0; i < n; ++i) {
-        tmp *= symmetry->SymmList[symnum].rotation_cart[arr2[i]][arr1[i]];
+        tmp *= symmetry->SymmData[symnum].rotation_cart[arr2[i]][arr1[i]];
     }
     return tmp;
 }

@@ -39,7 +39,7 @@ Symmetry::~Symmetry()
     memory->deallocate(map_p2s);
     memory->deallocate(map_s2p);
     memory->deallocate(symnum_tran);
-    SymmList.clear();
+    SymmData.clear();
 }
 
 void Symmetry::init()
@@ -54,7 +54,7 @@ void Symmetry::init()
                              system->lavec, system->rlavec,
                              system->xcoord, system->kd);
 
-    std::cout << "  Number of symmetry operations = " << SymmList.size() << std::endl;
+    std::cout << "  Number of symmetry operations = " << SymmData.size() << std::endl;
 
     // int nsym_fc;
 
@@ -107,7 +107,7 @@ void Symmetry::setup_symmetry_operation(int nat,
 {
     int i, j;
 
-    SymmList.clear();
+    SymmData.clear();
 
     if (nsym == 0) {
 
@@ -117,11 +117,11 @@ void Symmetry::setup_symmetry_operation(int nat,
         std::cout << "             Please be patient. " << std::endl;
         std::cout << "             This can take a while for a large supercell." << std::endl << std::endl;
 
-        findsym(nat, aa, x, SymmList);
-        // The order in SymmList changes for each run because it was generated
+        findsym(nat, aa, x, SymmData);
+        // The order in SymmData changes for each run because it was generated
         // with OpenMP. Therefore, we sort the list here to have the same result. 
-        std::sort(SymmList.begin() + 1, SymmList.end());
-        nsym = SymmList.size();
+        std::sort(SymmData.begin() + 1, SymmData.end());
+        nsym = SymmData.size();
 
         if (is_printsymmetry) {
             std::ofstream ofs_sym;
@@ -130,7 +130,7 @@ void Symmetry::setup_symmetry_operation(int nat,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (auto p = SymmData.begin(); p != SymmData.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rotation[i][j];
@@ -170,7 +170,7 @@ void Symmetry::setup_symmetry_operation(int nat,
             tran_tmp[i] = 0.0;
         }
 
-        SymmList.push_back(SymmetryOperation(rot_tmp,
+        SymmData.push_back(SymmetryOperation(rot_tmp,
                                              tran_tmp,
                                              rot_cart_tmp,
                                              true,
@@ -203,7 +203,7 @@ void Symmetry::setup_symmetry_operation(int nat,
                 >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
             symop_in_cart(rot_cart_tmp, rot_tmp, system->lavec, system->rlavec);
-            SymmList.push_back(SymmetryOperation(rot_tmp,
+            SymmData.push_back(SymmetryOperation(rot_tmp,
                                                  tran_tmp,
                                                  rot_cart_tmp,
                                                  is_compatible(rot_tmp),
@@ -575,7 +575,7 @@ void Symmetry::pure_translations()
 
     ntran = 0;
     for (i = 0; i < nsym; ++i) {
-        if (SymmList[i].is_translation) ++ntran;
+        if (SymmData[i].is_translation) ++ntran;
     }
 
     nat_prim = system->nat / ntran;
@@ -599,7 +599,7 @@ void Symmetry::pure_translations()
     int isym = 0;
 
     for (i = 0; i < nsym; ++i) {
-        if (SymmList[i].is_translation) symnum_tran[isym++] = i;
+        if (SymmData[i].is_translation) symnum_tran[isym++] = i;
     }
 }
 
@@ -630,7 +630,7 @@ void Symmetry::genmaps(int nat,
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                rot_double[i][j] = static_cast<double>(SymmList[isym].rotation[i][j]);
+                rot_double[i][j] = static_cast<double>(SymmData[isym].rotation[i][j]);
             }
         }
 
@@ -642,7 +642,7 @@ void Symmetry::genmaps(int nat,
 
                 rotvec(xnew, x[iat], rot_double);
 
-                for (i = 0; i < 3; ++i) xnew[i] += SymmList[isym].tran[i];
+                for (i = 0; i < 3; ++i) xnew[i] += SymmData[isym].tran[i];
 
                 for (jj = 0; jj < system->atomlist_class[itype].size(); ++jj) {
 
@@ -756,8 +756,8 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         }
     }
 
-    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin();
-         it != SymmList.end(); ++it) {
+    for (std::vector<SymmetryOperation>::iterator it = SymmData.begin();
+         it != SymmData.end(); ++it) {
 
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
@@ -883,7 +883,7 @@ void Symmetry::print_symmetrized_coordinate(double **x)
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            x_avg[i][j] /= static_cast<double>(SymmList.size());
+            x_avg[i][j] /= static_cast<double>(SymmData.size());
         }
     }
 

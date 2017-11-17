@@ -26,7 +26,7 @@ namespace ALM_NS
 
         DispAtomSet(std::vector<int> vec)
         {
-            for (std::vector<int>::iterator it = vec.begin(); it != vec.end(); ++it) {
+            for (auto it = vec.begin(); it != vec.end(); ++it) {
                 atomset.push_back((*it));
             }
         }
@@ -56,7 +56,7 @@ namespace ALM_NS
         DispDirectionHarmonic(int n, std::vector<DirectionVec> list_in)
         {
             atom = n;
-            for (std::vector<DirectionVec>::iterator it = list_in.begin(); it != list_in.end(); ++it) {
+            for (auto it = list_in.begin(); it != list_in.end(); ++it) {
                 directionlist.push_back(*it);
             }
         }

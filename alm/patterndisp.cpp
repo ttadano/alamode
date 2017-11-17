@@ -336,7 +336,7 @@ void Displace::find_unique_sign_pairs(const int N,
                     disp_sym[mapped_atom][j] = 0.0;
                     for (k = 0; k < 3; ++k) {
                         disp_sym[mapped_atom][j]
-                            += symmetry->SymmList[isym].rotation_cart[j][k] * disp[list_disp_atom[i]][k];
+                            += symmetry->SymmData[isym].rotation_cart[j][k] * disp[list_disp_atom[i]][k];
                     }
 
                     disp_tmp = disp_sym[mapped_atom][j];
@@ -389,7 +389,7 @@ void Displace::find_unique_sign_pairs(const int N,
                 for (j = 0; j < 3; ++j) {
                     disp_sym[mapped_atom][j] = 0.0;
                     for (k = 0; k < 3; ++k) {
-                        disp_sym[mapped_atom][j] += symmetry->SymmList[symnum_vec[isym]].rotation_cart[j][k]
+                        disp_sym[mapped_atom][j] += symmetry->SymmData[symnum_vec[isym]].rotation_cart[j][k]
                             * disp[list_disp_atom[i]][k];
                     }
                     disp_tmp = disp_sym[mapped_atom][j];

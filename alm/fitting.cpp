@@ -379,8 +379,8 @@ void Fitting::data_multiplier(const int nat,
                         f_rot[k] = f_tmp[3 * nat * i + 3 * j + k];
                     }
 
-                    rotvec(u_rot, u_rot, symmetry->SymmList[isym].rotation_cart);
-                    rotvec(f_rot, f_rot, symmetry->SymmList[isym].rotation_cart);
+                    rotvec(u_rot, u_rot, symmetry->SymmData[isym].rotation_cart);
+                    rotvec(f_rot, f_rot, symmetry->SymmData[isym].rotation_cart);
 
                     for (k = 0; k < 3; ++k) {
                         u[nmulti * idata + isym][3 * n_mapped + k] = u_rot[k];

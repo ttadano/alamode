@@ -562,7 +562,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
     std::vector<std::vector<double> > const_mat;
 
     for (isym = 0; isym < symmetry->nsym; ++isym) {
-        if (symmetry->SymmList[isym].compatible_with_cartesian) continue;
+        if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
         has_constraint_from_symm = true;
     }
 
@@ -639,7 +639,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
                 for (isym = 0; isym < symmetry->nsym; ++isym) {
 
-                    if (symmetry->SymmList[isym].compatible_with_cartesian) continue;
+                    if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
 
                     for (i = 0; i < order + 2; ++i)
                         atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
