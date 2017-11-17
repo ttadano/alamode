@@ -29,6 +29,7 @@
 #include "gruneisen.h"
 #include "ewald.h"
 
+
 using namespace PHON_NS;
 
 Dynamical::Dynamical(PHON *phon): Pointers(phon)
@@ -944,7 +945,7 @@ void Dynamical::load_born()
     for (iat = 0; iat < system->natmin; ++iat) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                diff_sym = std::max(res, std::abs(borncharge[iat][i][j]-born_sym[iat][i][j]));
+                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j]-born_sym[iat][i][j]));
             }
         }
     }

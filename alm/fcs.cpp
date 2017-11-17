@@ -26,9 +26,13 @@
 
 using namespace ALM_NS;
 
-Fcs::Fcs(ALM *alm) : Pointers(alm) {};
+Fcs::Fcs(ALM *alm) : Pointers(alm)
+{
+};
 
-Fcs::~Fcs() {};
+Fcs::~Fcs()
+{
+};
 
 void Fcs::init()
 {
@@ -127,8 +131,7 @@ void Fcs::generate_fclists(int maxorder)
 
         std::set<IntList> list_found;
 
-        for (std::set<IntList>::iterator iter = interaction->pairs[order].begin();
-             iter != interaction->pairs[order].end(); ++iter) {
+        for (auto iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter) {
 
             for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
 
@@ -152,7 +155,7 @@ void Fcs::generate_fclists(int maxorder)
 
                 for (isym = 0; isym < symmetry->nsym; ++isym) {
 
-                    if (!symmetry->sym_available[isym]) continue;
+                    if (!symmetry->SymmList[isym].compatible_with_cartesian) continue;
 
                     for (i = 0; i < order + 2; ++i)
                         atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
@@ -250,7 +253,7 @@ double Fcs::coef_sym(const int n,
     int i;
 
     for (i = 0; i < n; ++i) {
-        tmp *= symmetry->symrel[symnum][arr2[i]][arr1[i]];
+        tmp *= symmetry->SymmList[symnum].rotation_cart[arr2[i]][arr1[i]];
     }
     return tmp;
 }
@@ -267,7 +270,7 @@ bool Fcs::is_ascending(const int n, const int *arr)
 int Fcs::min_inprim(const int n, const int *arr)
 {
     int i, j, atmnum;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int minloc;
     int *ind;
 
@@ -303,7 +306,7 @@ int Fcs::min_inprim(const int n, const int *arr)
 bool Fcs::is_inprim(const int n, const int *arr)
 {
     int i, j;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
 
     for (i = 0; i < n; ++i) {
         for (j = 0; j < natmin; ++j) {
@@ -316,7 +319,7 @@ bool Fcs::is_inprim(const int n, const int *arr)
 bool Fcs::is_inprim(const int n)
 {
     int i, atmn;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
 
     atmn = n / 3;
 

@@ -327,7 +327,7 @@ void Writes::write_misc_xml()
     }
 
     system_structure.nat = system->nat;
-    system_structure.natmin = symmetry->natmin;
+    system_structure.natmin = symmetry->nat_prim;
     system_structure.ntran = symmetry->ntran;
     system_structure.nspecies = system->nkd;
 

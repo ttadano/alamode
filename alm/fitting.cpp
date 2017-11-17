@@ -67,7 +67,7 @@ void Fitting::fitmain()
 {
     int i;
     int nat = system->nat;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int ntran = symmetry->ntran;
 
     int ndata = system->ndata;
@@ -379,8 +379,8 @@ void Fitting::data_multiplier(const int nat,
                         f_rot[k] = f_tmp[3 * nat * i + 3 * j + k];
                     }
 
-                    rotvec(u_rot, u_rot, symmetry->symrel[isym]);
-                    rotvec(f_rot, f_rot, symmetry->symrel[isym]);
+                    rotvec(u_rot, u_rot, symmetry->SymmList[isym].rotation_cart);
+                    rotvec(f_rot, f_rot, symmetry->SymmList[isym].rotation_cart);
 
                     for (k = 0; k < 3; ++k) {
                         u[nmulti * idata + isym][3 * n_mapped + k] = u_rot[k];
@@ -1249,7 +1249,7 @@ int Fitting::inprim_index(const int n)
     int atmn = n / 3;
     int crdn = n % 3;
 
-    for (int i = 0; i < symmetry->natmin; ++i) {
+    for (int i = 0; i < symmetry->nat_prim; ++i) {
         if (symmetry->map_p2s[i][0] == atmn) {
             in = 3 * i + crdn;
             break;

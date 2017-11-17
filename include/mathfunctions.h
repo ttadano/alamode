@@ -14,7 +14,7 @@
 #include <cstdlib>
 
 template <typename T>
-inline void matmul3(T ret[3][3], T amat[3][3], T bmat[3][3]) {
+inline void matmul3(T ret[3][3], const T amat[3][3], const T bmat[3][3]) {
 	int i, j, k;
 
 	T ret_tmp[3][3];

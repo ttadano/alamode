@@ -562,7 +562,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
     std::vector<std::vector<double> > const_mat;
 
     for (isym = 0; isym < symmetry->nsym; ++isym) {
-        if (symmetry->sym_available[isym]) continue;
+        if (symmetry->SymmList[isym].compatible_with_cartesian) continue;
         has_constraint_from_symm = true;
     }
 
@@ -639,7 +639,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
                 for (isym = 0; isym < symmetry->nsym; ++isym) {
 
-                    if (symmetry->sym_available[isym]) continue;
+                    if (symmetry->SymmList[isym].compatible_with_cartesian) continue;
 
                     for (i = 0; i < order + 2; ++i)
                         atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
@@ -742,7 +742,7 @@ void Constraint::translational_invariance()
     int **xyzcomponent;
 
     int ixyz, nxyz;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int nat = system->nat;
     int nparams;
 
@@ -1019,7 +1019,7 @@ void Constraint::rotational_invariance()
     int icrd, jcrd;
     int order;
     int maxorder = interaction->maxorder;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int mu, nu;
     int ixyz, nxyz, nxyz2;
     int mu_lambda, lambda;

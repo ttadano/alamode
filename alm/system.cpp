@@ -249,7 +249,7 @@ void System::load_reference_system_xml(std::string file_reference_fcs,
         get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
     natmin_ref = nat_ref / ntran_ref;
 
-    if (natmin_ref != symmetry->natmin) {
+    if (natmin_ref != symmetry->nat_prim) {
         error->exit("load_reference_system_xml",
                     "The number of atoms in the primitive cell is not consistent.");
     }
@@ -389,7 +389,7 @@ void System::load_reference_system()
 
             ifs_fc2 >> nat_s >> natmin_ref >> ntran_ref;
 
-            if (natmin_ref != symmetry->natmin) {
+            if (natmin_ref != symmetry->nat_prim) {
                 error->exit("load_reference_system",
                             "The number of atoms in the primitive cell is not consistent");
             }
