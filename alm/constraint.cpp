@@ -590,8 +590,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         // Generate temporary list of parameters
         list_found.clear();
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin();
-             p != fcs->fc_set[order].end(); ++p) {
+        for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
             list_found.insert(FcProperty(order + 2, (*p).coef,
                                          index_tmp, (*p).mother));

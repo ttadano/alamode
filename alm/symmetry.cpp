@@ -538,42 +538,17 @@ void Symmetry::find_crystal_symmetry(int nat,
 void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
     int i, j;
-
-#ifdef _USE_EIGEN
-    Eigen::Matrix3d aa, bb, sym_tmp;
-    Eigen::Matrix3d sym_crt;
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            aa(i, j) = lavec[i][j];
-            bb(i, j) = rlavec[i][j];
-        }
-    }
-
-#else 
     double sym_tmp[3][3], sym_crt[3][3];
     double tmp[3][3];
-#endif
 
     for (int isym = 0; isym < nsym; ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-#ifdef _USE_EIGEN
-                sym_tmp(i, j) = static_cast<double>(symrel_int[isym][i][j]);
-#else
                 sym_tmp[i][j] = static_cast<double>(symrel_int[isym][i][j]);
-#endif
             }
         }
-#ifdef _USE_EIGEN
-        sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                symrel[isym][i][j] = sym_crt(i, j);
-            }
-        }
-#else
+
         matmul3(tmp, sym_tmp, rlavec);
         matmul3(sym_crt, lavec, tmp);
 
@@ -582,7 +557,6 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
                 symrel[isym][i][j] = sym_crt[i][j] / (2.0 * pi);
             }
         }
-#endif
     }
 
 #ifdef _DEBUG
@@ -750,6 +724,14 @@ void Symmetry::symop_availability_check(double ***rot,
 
     for (i = 0; i < nsym; ++i) {
 
+        std::cout << "Sym. No. : " << std::setw(3) << i + 1 << std::endl;
+        for (j = 0; j < 3; ++j) {
+            for (k = 0; k < 3; ++k) {
+                std::cout << std::setw(15) << rot[i][j][k];
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
         nfinite = 0;
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
