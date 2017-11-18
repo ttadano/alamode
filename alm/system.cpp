@@ -320,7 +320,7 @@ void System::load_reference_system_xml(std::string file_reference_fcs,
         for (i = 0; i < nterms; ++i) {
             ind[i] = list_tmp.elems[i];
         }
-        list_found.insert(FcProperty(nterms, list_tmp.coef,
+        list_found.insert(FcProperty(nterms, list_tmp.sign,
                                      ind, list_tmp.mother));
     }
 
@@ -507,7 +507,7 @@ void System::load_reference_system()
             for (std::vector<FcProperty>::iterator p = fcs->fc_set[0].begin();
                  p != fcs->fc_set[0].end(); ++p) {
                 for (i = 0; i < 2; ++i) ind[i] = (*p).elems[i];
-                list_found.insert(FcProperty(2, (*p).coef, ind, (*p).mother));
+                list_found.insert(FcProperty(2, (*p).sign, ind, (*p).mother));
             }
 
             for (i = 0; i < nparam_harmonic; ++i) {

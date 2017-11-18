@@ -26,13 +26,9 @@
 
 using namespace ALM_NS;
 
-Fcs::Fcs(ALM *alm) : Pointers(alm)
-{
-};
+Fcs::Fcs(ALM *alm) : Pointers(alm) {};
 
-Fcs::~Fcs()
-{
-};
+Fcs::~Fcs() {};
 
 void Fcs::init()
 {
@@ -55,6 +51,10 @@ void Fcs::init()
         std::cout << std::endl;
     }
     std::cout << std::endl;
+
+    for (auto it = ndup[0].begin(); it != ndup[0].end(); ++it) {
+        std::cout << (*it) << std::endl;
+    }
 
     // sort fc_set
 

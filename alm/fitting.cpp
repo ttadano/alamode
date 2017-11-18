@@ -1063,7 +1063,7 @@ void Fitting::calc_matrix_elements(const int M,
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
                         }
-                        amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+                        amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].sign * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
@@ -1175,7 +1175,7 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
                             ind[j] = fcs->fc_set[order][mm].elems[j];
                             amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
                         }
-                        amat_orig[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].coef * amat_tmp;
+                        amat_orig[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].sign * amat_tmp;
                         ++mm;
                     }
                     ++iparam;

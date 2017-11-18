@@ -20,15 +20,15 @@ namespace ALM_NS
     class FcProperty
     {
     public:
-        std::vector<int> elems;
-        double coef;
-        int mother;
+        std::vector<int> elems; // flattened index of (iatom, icoordinate) in the supercell
+        double sign; // factor (+1 or -1) to convert the mother FC to the child
+        int mother; 
 
         FcProperty();
 
         FcProperty(const FcProperty &obj)
         {
-            coef = obj.coef;
+            sign = obj.sign;
             mother = obj.mother;
             for (auto it = obj.elems.begin(); it != obj.elems.end(); ++it) {
                 elems.push_back(*it);
@@ -37,7 +37,7 @@ namespace ALM_NS
 
         FcProperty(const int n, const double c, const int *arr, const int m)
         {
-            coef = c;
+            sign = c;
             mother = m;
             for (int i = 0; i < n; ++i) {
                 elems.push_back(arr[i]);
@@ -49,6 +49,16 @@ namespace ALM_NS
             return std::lexicographical_compare(elems.begin(), elems.end(),
                                                 a.elems.begin(), a.elems.end());
         }
+    };
+
+    class ForceConstantTable
+    {
+    public:
+        double fc_value;
+        int multiplicity;
+        std::vector<FcProperty> fclist;
+        ForceConstantTable();
+
     };
 
     class Fcs: protected Pointers

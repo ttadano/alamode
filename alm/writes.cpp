@@ -248,7 +248,7 @@ void Writes::write_force_constants()
 
                 for (j = 0; j < fcs->ndup[order][iuniq]; ++j) {
                     ofs_fcs << std::setw(5) << j + 1 << std::setw(12)
-                        << std::setprecision(5) << std::fixed << fcs->fc_set[order][id].coef;
+                        << std::setprecision(5) << std::fixed << fcs->fc_set[order][id].sign;
                     for (k = 0; k < order + 2; ++k) {
                         ofs_fcs << std::setw(6)
                             << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
@@ -502,7 +502,7 @@ void Writes::write_misc_xml()
         for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin();
              it2 != interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].end(); ++it2) {
             ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2",
-                                  double2string(fitting->params[ip] * fctmp.coef
+                                  double2string(fitting->params[ip] * fctmp.sign
                                       / static_cast<double>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size())));
 
             child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
@@ -557,7 +557,7 @@ void Writes::write_misc_xml()
                     std::vector<int> cell_now = (*iter_cluster).cell[imult];
 
                     ptree &child = pt.add(elementname,
-                                          double2string(fitting->params[ip] * fctmp.coef
+                                          double2string(fitting->params[ip] * fctmp.sign
                                               / static_cast<double>(multiplicity)));
 
                     child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
@@ -624,7 +624,7 @@ void Writes::write_hessian()
                 pair_tran[i] = symmetry->map_sym[pair_tmp[i]][symmetry->symnum_tran[itran]];
             }
             hessian[3 * pair_tran[0] + fctmp.elems[0] % 3][3 * pair_tran[1] + fctmp.elems[1] % 3]
-                = fitting->params[ip] * fctmp.coef;
+                = fitting->params[ip] * fctmp.sign;
         }
     }
 
@@ -680,7 +680,7 @@ void Writes::write_hessian()
                   ofs_fc2 << std::setw(15) << vec[2];
 
                   ofs_fc2 << std::setw(15)
-                  << fitting->params[ip] * fctmp.coef / static_cast<double>(multiplicity);
+                  << fitting->params[ip] * fctmp.sign / static_cast<double>(multiplicity);
                   ofs_fc2 << std::endl;
             }
         }

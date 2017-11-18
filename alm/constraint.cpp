@@ -594,7 +594,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
         list_found.clear();
         for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
-            list_found.insert(FcProperty(order + 2, (*p).coef,
+            list_found.insert(FcProperty(order + 2, (*p).sign,
                                          index_tmp, (*p).mother));
         }
 
@@ -649,7 +649,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
                     for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
 
-                    const_now_omp[list_tmp.mother] = -list_tmp.coef;
+                    const_now_omp[list_tmp.mother] = -list_tmp.sign;
 
                     for (ixyz = 0; ixyz < nxyz; ++ixyz) {
                         for (i = 0; i < order + 2; ++i)
@@ -662,7 +662,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                         iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
                         if (iter_found != list_found.end()) {
                             c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-                            const_now_omp[(*iter_found).mother] += (*iter_found).coef * c_tmp;
+                            const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
                         }
                     }
 
@@ -786,11 +786,11 @@ void Constraint::translational_invariance()
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }
-            if (list_found.find(FcProperty(order + 2, (*p).coef,
+            if (list_found.find(FcProperty(order + 2, (*p).sign,
                                            ind, (*p).mother)) != list_found.end()) {
                 error->exit("translational invariance", "Duplicate interaction list found");
             }
-            list_found.insert(FcProperty(order + 2, (*p).coef,
+            list_found.insert(FcProperty(order + 2, (*p).sign,
                                          ind, (*p).mother));
         }
 
@@ -831,7 +831,7 @@ void Constraint::translational_invariance()
                             //  If found a IFC
                             if (iter_found != list_found.end()) {
                                 // Round the coefficient to integer
-                                const_now[(*iter_found).mother] += nint((*iter_found).coef);
+                                const_now[(*iter_found).mother] += nint((*iter_found).sign);
                             }
 
                         }
@@ -932,7 +932,7 @@ void Constraint::translational_invariance()
                                         iter_found = list_found.find(FcProperty(order + 2, 1.0,
                                                                                 intarr_copy_omp, 1));
                                         if (iter_found != list_found.end()) {
-                                            const_now_omp[(*iter_found).mother] += nint((*iter_found).coef);
+                                            const_now_omp[(*iter_found).mother] += nint((*iter_found).sign);
                                         }
 
                                     }
@@ -1093,7 +1093,7 @@ void Constraint::rotational_invariance()
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }
-            list_found.insert(FcProperty(order + 2, (*p).coef,
+            list_found.insert(FcProperty(order + 2, (*p).sign,
                                          ind, (*p).mother));
         }
 
@@ -1164,7 +1164,7 @@ void Constraint::rotational_invariance()
 
                                 if (iter_found != list_found.end()) {
                                     arr_constraint[(*iter_found).mother]
-                                        += (*iter_found).coef * vec_for_rot[nu];
+                                        += (*iter_found).sign * vec_for_rot[nu];
                                 }
 
                                 // Exchange mu <--> nu and repeat again. 
@@ -1175,7 +1175,7 @@ void Constraint::rotational_invariance()
                                                                         interaction_index, 1));
                                 if (iter_found != list_found.end()) {
                                     arr_constraint[(*iter_found).mother]
-                                        -= (*iter_found).coef * vec_for_rot[mu];
+                                        -= (*iter_found).sign * vec_for_rot[mu];
                                 }
                             }
 
@@ -1309,7 +1309,7 @@ void Constraint::rotational_invariance()
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if (iter_found != list_found.end()) {
                                                 arr_constraint[nparams[order - 1] + (*iter_found).mother]
-                                                    += (*iter_found).coef * vec_for_rot[nu];
+                                                    += (*iter_found).sign * vec_for_rot[nu];
                                             }
 
                                             // Exchange mu <--> nu and repeat again.
@@ -1322,7 +1322,7 @@ void Constraint::rotational_invariance()
                                             iter_found = list_found.find(FcProperty(order + 2, 1.0, interaction_tmp, 1));
                                             if (iter_found != list_found.end()) {
                                                 arr_constraint[nparams[order - 1] + (*iter_found).mother]
-                                                    -= (*iter_found).coef * vec_for_rot[mu];
+                                                    -= (*iter_found).sign * vec_for_rot[mu];
                                             }
                                         }
 
@@ -1350,7 +1350,7 @@ void Constraint::rotational_invariance()
                                                                                              interaction_tmp, 1));
                                                 if (iter_found != list_found_last.end()) {
                                                     arr_constraint[(*iter_found).mother]
-                                                        += (*iter_found).coef * static_cast<double>(levi_factor);
+                                                        += (*iter_found).sign * static_cast<double>(levi_factor);
                                                 }
                                             }
                                         }
@@ -1442,7 +1442,7 @@ void Constraint::rotational_invariance()
                                                                                     interaction_tmp, 1));
                                             if (iter_found != list_found.end()) {
                                                 arr_constraint_self[(*iter_found).mother]
-                                                    += (*iter_found).coef * static_cast<double>(levi_factor);
+                                                    += (*iter_found).sign * static_cast<double>(levi_factor);
                                             }
                                         } // jcrd
                                     } // lambda
