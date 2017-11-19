@@ -219,7 +219,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 
             dist_min = distall[i][j][0].dist;
             for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
-                if (std::abs((*it).dist - dist_min) < eps8) {
+                if (std::abs((*it).dist - dist_min) < 1.0e-3) {
                     mindist_out[i][j].push_back((*it).cell);
                 }
             }

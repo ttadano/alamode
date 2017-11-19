@@ -327,7 +327,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat, const int nsize[3], dou
                  it != distall_ewald[iat][jat].end(); ++ it) {
                 if (it == distall_ewald[iat][jat].begin()) dist_hold = (*it).dist;
                 dist_tmp = (*it).dist;
-                if (std::abs(dist_tmp - dist_hold) < eps8) multiplicity[iat][jat] += 1;
+                if (std::abs(dist_tmp - dist_hold) < 1.0e-3) multiplicity[iat][jat] += 1;
             }
 
         }
