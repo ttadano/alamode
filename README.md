@@ -86,7 +86,7 @@ http://alamode.readthedocs.io
 
 
 ## License
-Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+Copyright (c) 2014--2017 Terumasa Tadano
 This software is released under the MIT license. 
 For license rights and limitations, see LICENSE.txt file.
 
