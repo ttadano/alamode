@@ -385,6 +385,7 @@ for numerical evaluations of Brillouin zone integration containing :math:`\delta
 When the tetrahedron method is used, the ``EPSILON``-tag is neglected.
 We recommend using the tetrahedron method whenever possible.
 
+.. _formalism_SCPH:
 
 Self-consistent phonon (SCPH) calculation
 -----------------------------------------

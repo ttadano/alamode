@@ -128,7 +128,7 @@ Output files of anphon
  Lattice thermal conductivity tensor.
  Created when ``MODE = RTA``.
 
- * ``PREFIX``.kl_spec
+* ``PREFIX``.kl_spec
 
  Spectra of lattice thermal conductivity. Only diagonal components will be saved.
  Created when ``MODE = RTA`` and ``KAPPA_SPEC = 1``.
@@ -138,3 +138,18 @@ Output files of anphon
  Phonon selfenergy due to isotope scatterings calculated by the Tamura's formula.
  Created when ``MODE = RTA`` and ``ISOTOPE = 2``.
 
+````
+
+* ``PREFIX``.scph_dymat
+
+ Anharmonic dynamical matrix calculated on the :math:`k` grid defined by the ``KMESH_INTERPOLATE`` tag.
+ This file is used to restart the SCPH calculation.
+
+* ``PREFIX``.scph_bands
+
+ Anharmonic phonon dispersion curves. The format is same as the ``PREFIX``.bands.
+
+* ``PREFIX``.scph_fc2_correction
+
+ This file contains :math:`\Delta D(\boldsymbol{q}) = D_{\mathrm{SCPH}}(\boldsymbol{q}) - D_{\mathrm{Harmonic}}(\boldsymbol{q})`.
+ For the definition, see the :ref:`formalism of the SCPH calculation <formalism_SCPH>`.
