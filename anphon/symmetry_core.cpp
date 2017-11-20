@@ -32,7 +32,9 @@ Symmetry::Symmetry(PHON *phon): Pointers(phon)
     time_reversal_sym = false;
 }
 
-Symmetry::~Symmetry() {}
+Symmetry::~Symmetry()
+{
+}
 
 void Symmetry::setup_symmetry()
 {
@@ -103,7 +105,7 @@ void Symmetry::setup_symmetry_operation(int N,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -359,7 +361,7 @@ void Symmetry::find_crystal_symmetry(int N,
     CrystalSymmList.push_back(SymmetryOperation(rot_int, tran));
 
 
-    for (std::vector<RotationMatrix>::iterator it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
+    for (auto it_latsym = LatticeSymmList.begin(); it_latsym != LatticeSymmList.end(); ++it_latsym) {
 
         iat = atomclass[0][0];
 
@@ -386,10 +388,10 @@ void Symmetry::find_crystal_symmetry(int N,
             isok = true;
 
             is_identity_matrix =
-                (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
-                    + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                    + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
+            (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
+                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
 
             if (is_identity_matrix) continue;
 
@@ -496,7 +498,7 @@ void Symmetry::gensym_withmap(double **x,
 
     memory->allocate(map_tmp, natmin);
 
-    for (std::vector<SymmetryOperation>::iterator isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
+    for (auto isym = SymmList.begin(); isym != SymmList.end(); ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {

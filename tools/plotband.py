@@ -13,8 +13,12 @@
 
 import numpy as np
 import optparse
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+try:
+    mpl.use("Qt5agg")
+except:
+    pass
+import matplotlib.pyplot as plt
 
 # parser options
 usage = "usage: %prog [options] file1.bands file2.bands ... "
@@ -32,9 +36,14 @@ parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", de
                   help="normalize the x axis to unity.")
 
 
-# font styles
+# font styles 
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
-
+mpl.rc('xtick', labelsize = 16)
+mpl.rc('ytick', labelsize = 16)
+mpl.rc('axes' , labelsize = 16)
+mpl.rc('lines', linewidth = 1.5)
+mpl.rc('legend', fontsize='small')
+#mpl.rc('text', usetex=True)
 # line colors and styles
 color = ['b', 'g', 'r', 'm', 'k', 'c', 'y', 'r']
 lsty = ['-', '-', '-', '-', '--', '--', '--', '--']
@@ -55,7 +64,6 @@ def get_kpath_and_kval(file_in):
                 kpath_mod.append('$\Gamma$')
             else:
                 kpath_mod.append('$\mathrm{' + kpath[i + 1] + '}$')
-
         return kpath_mod, kval_float
     else:
         return [], []
@@ -66,11 +74,11 @@ def change_scale(array, str_scale):
     str_tmp = str_scale.lower()
 
     if str_tmp == 'kayser':
-        print "Band structure will be shown in units of cm^{-1}"
+        print("Band structure will be shown in units of cm^{-1}")
         return array
 
     elif str_tmp == 'mev':
-        print "Band structure will be shown in units of meV"
+        print("Band structure will be shown in units of meV")
         kayser_to_mev = 0.0299792458 * 1.0e+12 * \
             6.62606896e-34 / 1.602176565e-19 * 1000
 
@@ -82,7 +90,7 @@ def change_scale(array, str_scale):
         return array
 
     elif str_tmp == 'thz':
-        print "Band structure will be shown in units of THz"
+        print("Band structure will be shown in units of THz")
         kayser_to_thz = 0.0299792458
 
         for i in range(len(array)):
@@ -93,8 +101,8 @@ def change_scale(array, str_scale):
         return array
 
     else:
-        print "Unrecognizable option for --unit %s" % str_scale
-        print "Band structure will be shown in units of cm^{-1}"
+        print("Unrecognizable option for --unit %s" % str_scale)
+        print("Band structure will be shown in units of cm^{-1}")
         return array
 
 
@@ -150,11 +158,11 @@ if __name__ == '__main__':
     nfiles = len(files)
 
     if nfiles == 0:
-        print "Usage: plotband.py [options] file1.bands file2.bands ..."
-        print "For details of available options, please type\n$ python plotband.py -h"
+        print("Usage: plotband.py [options] file1.bands file2.bands ...")
+        print("For details of available options, please type\n$ python plotband.py -h")
         exit(1)
     else:
-        print "Number of files = %d" % nfiles
+        print("Number of files = %d" % nfiles)
 
     xtickslabels, xticksvars = get_kpath_and_kval(files[0])
     data_merged = []
@@ -169,21 +177,22 @@ if __name__ == '__main__':
         data_merged, xticksvars = normalize_to_unity(data_merged, xticksvars)
 
     xmin, xmax, ymin, ymax = get_xy_minmax(data_merged)
-
+    fig, ax = plt.subplots()
+    
     for i in range(len(data_merged)):
-        plt.plot(data_merged[i][0:, 0], data_merged[i][0:, 1],
+        ax.plot(data_merged[i][0:, 0], data_merged[i][0:, 1],
                  linestyle=lsty[i], color=color[i], label=files[i])
 
         for j in range(2, len(data_merged[i][0][0:])):
-            plt.plot(data_merged[i][0:, 0], data_merged[i][0:, j],
+            ax.plot(data_merged[i][0:, 0], data_merged[i][0:, j],
                      linestyle=lsty[i], color=color[i])
 
     if options.unitname.lower() == "mev":
-        plt.ylabel("Frequency (meV)", fontsize=16, labelpad=20)
+        ax.set_ylabel("Frequency (meV)", labelpad=20)
     elif options.unitname.lower() == "thz":
-        plt.ylabel("Frequency (THz)", fontsize=16, labelpad=20)
+        ax.set_ylabel("Frequency (THz)", labelpad=20)
     else:
-        plt.ylabel("Frequency (cm${}^{-1}$)", fontsize=16, labelpad=10)
+        ax.set_ylabel("Frequency (cm${}^{-1}$)", labelpad=10)
 
     if options.emin == None and options.emax == None:
         factor = 1.05
@@ -196,18 +205,16 @@ if __name__ == '__main__':
             ymax = options.emax
 
         if ymin > ymax:
-            print "Warning: emin > emax"
+            print("Warning: emin > emax")
 
     plt.axis([xmin, xmax, ymin, ymax])
 
-    plt.xticks(xticksvars[0:], xtickslabels[0:], fontsize=16)
-    plt.yticks(fontsize=16)
-
-    ax = plt.subplot(111)
+    ax.set_xticks(xticksvars[0:])
+    ax.set_xticklabels(xtickslabels[0:])
     ax.xaxis.grid(True, linestyle='-')
 
     if options.print_key:
-        plt.legend(loc='lower right', prop={'size': 10})
+        plt.legend(loc='best', prop={'size': 10})
 
 #	plt.savefig('band_tmp.png', dpi=300, transparent=True)
     plt.show()

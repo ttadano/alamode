@@ -28,7 +28,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace ALM_NS;
 
-Interaction::Interaction(ALM *alm) : Pointers(alm) {}
+Interaction::Interaction(ALM *alm) : Pointers(alm)
+{
+}
 
 Interaction::~Interaction()
 {
@@ -265,7 +267,10 @@ void Interaction::get_pairs_of_minimum_distance(int nat,
             dist_min = distall[i][j][0].dist;
             for (std::vector<DistInfo>::const_iterator it = distall[i][j].begin();
                  it != distall[i][j].end(); ++it) {
-                if (std::abs((*it).dist - dist_min) < eps8) {
+                // The tolerance below (1.e-3) should be chosen so that 
+                // the mirror images with equal distances are found correctly.
+                // If this fails, the phonon dispersion would be incorrect.
+                if (std::abs((*it).dist - dist_min) < 1.0e-3) {
                     mindist_pairs[i][j].push_back(DistInfo(*it));
                 }
             }
@@ -721,15 +726,15 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in,
     std::vector<int> intlist;
     std::vector<int> cell_vector;
     std::vector<double> dist_vector;
-    std::vector<std::vector<int> > pairs_icell, comb_cell, comb_cell_min;
-    std::vector<std::vector<int> > comb_cell_atom_center;
+    std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
+    std::vector<std::vector<int>> comb_cell_atom_center;
     std::vector<int> accum_tmp;
     std::vector<int> atom_tmp, cell_tmp;
     std::vector<int> intpair_uniq, cellpair;
     std::vector<int> group_atom;
     std::vector<int> data_now;
     std::vector<MinDistList> distance_list;
-    std::vector<std::vector<int> > data_vec;
+    std::vector<std::vector<int>> data_vec;
 
     for (order = 0; order < maxorder; ++order) {
         for (i = 0; i < symmetry->natmin; ++i) {
@@ -983,7 +988,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
 
     std::vector<int> cell_vector;
     std::vector<double> dist_vector;
-    std::vector<std::vector<int> > pairs_icell, comb_cell, comb_cell_min;
+    std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
     std::vector<int> accum_tmp;
     std::vector<int> atom_tmp, cell_tmp;
     std::vector<int> intpair_uniq, cellpair;
@@ -1175,10 +1180,10 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
 }
 
 
-void Interaction::cell_combination(std::vector<std::vector<int> > array,
+void Interaction::cell_combination(std::vector<std::vector<int>> array,
                                    int i,
                                    std::vector<int> accum,
-                                   std::vector<std::vector<int> > &comb)
+                                   std::vector<std::vector<int>> &comb)
 {
     if (i == array.size()) {
         comb.push_back(accum);

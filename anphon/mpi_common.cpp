@@ -21,7 +21,9 @@ MyMPI::MyMPI(PHON *phon, MPI_Comm comm): Pointers(phon)
     MPI_Comm_size(comm, &nprocs);
 }
 
-MyMPI::~MyMPI() {}
+MyMPI::~MyMPI()
+{
+}
 
 void MyMPI::MPI_Bcast_string(std::string &str, int root, MPI_Comm comm)
 {
@@ -35,4 +37,3 @@ void MyMPI::MPI_Bcast_string(std::string &str, int root, MPI_Comm comm)
     MPI_Bcast(&ctmp, len + 1, MPI_CHAR, 0, comm);
     str = std::string(ctmp);
 }
-

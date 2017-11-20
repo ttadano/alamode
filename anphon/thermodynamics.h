@@ -21,6 +21,8 @@ namespace PHON_NS
         ~Thermodynamics();
 
         double T_to_Ryd;
+        bool classical;
+        void setup();
 
         double Cv(const double, const double);
         double fB(const double, const double);
@@ -39,4 +41,3 @@ namespace PHON_NS
         double coth_T(const double, const double);
     };
 }
-

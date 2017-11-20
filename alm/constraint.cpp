@@ -28,7 +28,9 @@
 
 using namespace ALM_NS;
 
-Constraint::Constraint(ALM *alm) : Pointers(alm) {}
+Constraint::Constraint(ALM *alm) : Pointers(alm)
+{
+}
 
 Constraint::~Constraint()
 {
@@ -556,24 +558,25 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
     int **xyzcomponent;
     int nparams;
 
+    double *arr_constraint;
     bool has_constraint_from_symm = false;
-
     std::set<FcProperty> list_found;
+    std::vector<std::vector<double>> const_mat;
 
     for (isym = 0; isym < symmetry->nsym; ++isym) {
         if (symmetry->sym_available[isym]) continue;
         has_constraint_from_symm = true;
     }
 
-    for (order = 0; order < maxorder; ++order) {
-        const_out[order].clear();
-    }
+    for (order = 0; order < maxorder; ++order) const_out[order].clear();
 
     if (has_constraint_from_symm) {
         std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
     }
 
     memory->allocate(index_tmp, maxorder + 1);
+
+    const_mat.clear();
 
     for (order = 0; order < maxorder; ++order) {
 
@@ -589,8 +592,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         // Generate temporary list of parameters
         list_found.clear();
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin();
-             p != fcs->fc_set[order].end(); ++p) {
+        for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
             list_found.insert(FcProperty(order + 2, (*p).coef,
                                          index_tmp, (*p).mother));
@@ -602,25 +604,33 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         int nfcs = fcs->fc_set[order].size();
 
-#pragma omp parallel 
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
         {
+            int j;
             int i_prim;
-
+            int loc_nonzero;
             int *ind;
             int *atm_index, *atm_index_symm;
             int *xyz_index;
             double c_tmp;
-            double *arr_constraint;
 
             std::set<FcProperty>::iterator iter_found;
+            std::vector<double> const_now_omp;
+            std::vector<std::vector<double>> const_omp;
 
-            memory->allocate(arr_constraint, nparams);
             memory->allocate(ind, order + 2);
             memory->allocate(atm_index, order + 2);
             memory->allocate(atm_index_symm, order + 2);
             memory->allocate(xyz_index, order + 2);
 
-#pragma omp for private(i, isym, ixyz) 
+            const_omp.clear();
+            const_now_omp.resize(nparams);
+
+#ifdef _OPENMP
+#pragma omp for private(i, isym, ixyz)
+#endif
             for (int ii = 0; ii < nfcs; ++ii) {
                 FcProperty list_tmp = fcs->fc_set[order][ii];
 
@@ -637,9 +647,9 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                         atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
                     if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
 
-                    for (i = 0; i < nparams; ++i) arr_constraint[i] = 0.0;
+                    for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
 
-                    arr_constraint[list_tmp.mother] = -list_tmp.coef;
+                    const_now_omp[list_tmp.mother] = -list_tmp.coef;
 
                     for (ixyz = 0; ixyz < nxyz; ++ixyz) {
                         for (i = 0; i < order + 2; ++i)
@@ -652,32 +662,64 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                         iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
                         if (iter_found != list_found.end()) {
                             c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-                            arr_constraint[(*iter_found).mother] += (*iter_found).coef * c_tmp;
+                            const_now_omp[(*iter_found).mother] += (*iter_found).coef * c_tmp;
                         }
                     }
 
-                    if (!is_allzero(nparams, arr_constraint)) {
+                    if (!is_allzero(const_now_omp, loc_nonzero)) {
+                        if (const_now_omp[loc_nonzero] < 0.0) {
+                            for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
+                        }
+                        const_omp.push_back(const_now_omp);
+                    }
+
+                } // close isym loop
+
+
+                // sort-->uniq the array
+                std::sort(const_omp.begin(), const_omp.end());
+                const_omp.erase(std::unique(const_omp.begin(), const_omp.end()),
+                                const_omp.end());
+
+                // Merge vectors
 #pragma omp critical
-                        const_out[order].push_back(ConstraintClass(nparams,
-                                                                   arr_constraint));
+                {
+                    for (std::vector<std::vector<double>>::iterator it = const_omp.begin();
+                         it != const_omp.end(); ++it) {
+                        const_mat.push_back(*it);
                     }
                 }
-            }
+                const_omp.clear();
 
-            memory->deallocate(arr_constraint);
+            } // close ii loop
+
             memory->deallocate(ind);
             memory->deallocate(atm_index);
             memory->deallocate(atm_index_symm);
             memory->deallocate(xyz_index);
+
+        } // close openmp region
+
+        memory->allocate(arr_constraint, nparams);
+        for (std::vector<std::vector<double>>::reverse_iterator it = const_mat.rbegin();
+             it != const_mat.rend(); ++it) {
+            for (i = 0; i < (*it).size(); ++i) {
+                arr_constraint[i] = (*it)[i];
+            }
+            const_out[order].push_back(ConstraintClass(nparams,
+                                                       arr_constraint));
         }
+        const_mat.clear();
 
         memory->deallocate(xyzcomponent);
+        memory->deallocate(arr_constraint);
+
         remove_redundant_rows(nparams, const_out[order], eps8);
 
         if (has_constraint_from_symm) {
             std::cout << " done." << std::endl;
         }
-    }
+    } // close loop order
 
     memory->deallocate(index_tmp);
 
@@ -712,11 +754,11 @@ void Constraint::translational_invariance()
     std::vector<int> intlist, data;
     std::set<FcProperty> list_found;
     std::set<FcProperty>::iterator iter_found;
-    std::vector<std::vector<int> > data_vec;
+    std::vector<std::vector<int>> data_vec;
     std::vector<FcProperty> list_vec;
     std::vector<FcProperty>::iterator iter_vec;
     std::vector<int> const_now;
-    std::vector<std::vector<int> > const_mat;
+    std::vector<std::vector<int>> const_mat;
 
     std::cout << "  Generating constraints for translational invariance ..." << std::endl;
 
@@ -848,7 +890,7 @@ void Constraint::translational_invariance()
                     memory->allocate(intarr_omp, order + 2);
                     memory->allocate(intarr_copy_omp, order + 2);
 
-                    std::vector<std::vector<int> > const_omp;
+                    std::vector<std::vector<int>> const_omp;
                     std::vector<int> data_omp;
                     std::vector<int> const_now_omp;
 
@@ -913,7 +955,7 @@ void Constraint::translational_invariance()
                         // Merge vectors
 #pragma omp critical
                         {
-                            for (std::vector<std::vector<int> >::iterator it = const_omp.begin();
+                            for (std::vector<std::vector<int>>::iterator it = const_omp.begin();
                                  it != const_omp.end(); ++it) {
                                 const_mat.push_back(*it);
                             }
@@ -943,7 +985,7 @@ void Constraint::translational_invariance()
         // Copy to constraint class 
 
         const_translation[order].clear();
-        for (std::vector<std::vector<int> >::reverse_iterator it = const_mat.rbegin();
+        for (std::vector<std::vector<int>>::reverse_iterator it = const_mat.rbegin();
              it != const_mat.rend(); ++it) {
             for (i = 0; i < (*it).size(); ++i) {
                 arr_constraint[i] = static_cast<double>((*it)[i]);
@@ -1007,7 +1049,7 @@ void Constraint::rotational_invariance()
     CombinationWithRepetition<int> g;
 
     std::vector<int> atom_tmp;
-    std::vector<std::vector<int> > cell_dummy;
+    std::vector<std::vector<int>> cell_dummy;
     std::set<MinimumDistanceCluster>::iterator iter_cluster;
 
     setup_rotation_axis(valid_rotation_axis);
@@ -1614,8 +1656,19 @@ bool Constraint::is_allzero(const std::vector<int> vec, int &loc)
 {
     loc = -1;
     for (int i = 0; i < vec.size(); ++i) {
-        //    for(std::vector<int>::const_iterator it = vec.begin(); it != vec.end(); ++it){
         if (std::abs(vec[i]) > 0) {
+            loc = i;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Constraint::is_allzero(const std::vector<double> vec, int &loc)
+{
+    loc = -1;
+    for (int i = 0; i < vec.size(); ++i) {
+        if (std::abs(vec[i]) > eps) {
             loc = i;
             return false;
         }

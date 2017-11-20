@@ -31,6 +31,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "isotope.h"
 #include "integration.h"
+#include "scph.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/lexical_cast.hpp>
@@ -42,7 +43,9 @@ Writes::Writes(PHON *phon): Pointers(phon)
     Ry_to_kayser = Hz_to_kayser / time_ry;
 };
 
-Writes::~Writes() {};
+Writes::~Writes()
+{
+};
 
 void Writes::write_input_vars()
 {
@@ -97,11 +100,29 @@ void Writes::write_input_vars()
     std::cout << "  ISMEAR = " << integration->ismear
         << "; EPSILON = " << integration->epsilon << std::endl;
     std::cout << std::endl;
+    std::cout << "  CLASSICAL = " << thermodynamics->classical << std::endl;
+    std::cout << std::endl;
 
     if (phon->mode == "RTA") {
         std::cout << "  RESTART = " << phon->restart_flag << std::endl;
         std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
         std::cout << std::endl;
+    } else if (phon->mode == "SCPH") {
+        std::cout << " Scph:" << std::endl;
+        std::cout << "  KMESH_INTERPOLATE = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_interpolate[i];
+        std::cout << std::endl;
+        std::cout << "  KMESH_SCPH        = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_scph[i];
+        std::cout << std::endl;
+        std::cout << "  SELF_OFFDIAG = " << scph->selfenergy_offdiagonal << std::endl;
+        std::cout << "  IALGO = " << scph->ialgo << std::endl << std::endl;
+        std::cout << "  RESTART_SCPH = " << scph->restart_scph << std::endl;
+        std::cout << "  LOWER_TEMP = " << scph->lower_temp << std::endl;
+        std::cout << "  WARMSTART = " << scph->warmstart_scph << std::endl << std::endl;
+        std::cout << "  TOL_SCPH = " << scph->tolerance_scph << std::endl;
+        std::cout << "  MAXITER = " << scph->maxiter << std::endl;
+        std::cout << "  MIXALPHA = " << scph->mixalpha << std::endl;
     }
     std::cout << std::endl;
 
@@ -164,6 +185,9 @@ void Writes::write_input_vars()
         // std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
         //  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
 
+    } else if (phon->mode == "SCPH") {
+
+
     } else {
         error->exit("write_input_vars", "This cannot happen");
     }
@@ -195,7 +219,7 @@ void Writes::setup_result_io()
             std::string line_tmp, str_tmp;
             int natmin_tmp, nkd_tmp;
             int nk_tmp[3], nksym_tmp;
-            int ismear;
+            int ismear, is_classical;
             double epsilon_tmp, T1, T2, delta_T;
 
 
@@ -239,6 +263,25 @@ void Writes::setup_result_io()
                 kpoint->nk_reduced == nksym_tmp)) {
                 error->exit("setup_result_io",
                             "KPOINT information is not consistent");
+            }
+
+            found_tag = false;
+            while (fs_result >> line_tmp) {
+                if (line_tmp == "#CLASSICAL") {
+                    found_tag = true;
+                    break;
+                }
+            }
+            if (!found_tag) {
+                std::cout << " Could not find the #CLASSICAL tag in the restart file." << std::endl;
+                std::cout << " CLASSIACAL = 0 is assumed." << std::endl;
+                is_classical = 0;
+            } else {
+                fs_result >> is_classical;
+            }
+            if (static_cast<bool>(is_classical) != thermodynamics->classical) {
+                error->warn("setup_result_io",
+                    "CLASSICAL val is not consistent");
             }
 
             found_tag = false;
@@ -335,6 +378,10 @@ void Writes::setup_result_io()
             fs_result.unsetf(std::ios::fixed);
 
             fs_result << "#END KPOINT" << std::endl;
+
+            fs_result << "#CLASSICAL" << std::endl;
+            fs_result << thermodynamics->classical << std::endl;
+            fs_result << "#END CLASSICAL" << std::endl;
 
             fs_result << "#FCSXML" << std::endl;
             fs_result << fcs_phonon->file_fcs << std::endl;
@@ -750,6 +797,7 @@ void Writes::write_two_phonon_dos()
 void Writes::write_scattering_phase_space()
 {
     int ik, is;
+    unsigned int knum;
 
     std::string file_sps;
     std::ofstream ofs_sps;
@@ -757,16 +805,20 @@ void Writes::write_scattering_phase_space()
     file_sps = input->job_title + ".sps";
     ofs_sps.open(file_sps.c_str(), std::ios::out);
 
-    ofs_sps << "# Total scattering phase space [cm]: "
+    ofs_sps << "# Total scattering phase space (cm): "
         << std::scientific << dos->total_sps3 << std::endl;
     ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
-    ofs_sps << "# Irred. k, mode, sps [cm]" << std::endl;
+    ofs_sps << "# Irred. k, mode, omega (cm^-1), P+ (absorption) (cm), P- (emission) (cm)" << std::endl;
 
     for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+        knum = kpoint->kpoint_irred_all[ik][0].knum;
+
         for (is = 0; is < dynamical->neval; ++is) {
             ofs_sps << std::setw(5) << ik + 1;
             ofs_sps << std::setw(5) << is + 1;
-            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is];
+            ofs_sps << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][is]);
+            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is][1];
+            ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is][0];
             ofs_sps << std::endl;
         }
         ofs_sps << std::endl;
@@ -1215,7 +1267,7 @@ void Writes::write_kappa()
                     ofs_kl << std::setw(10) << dos->energy_dos[j];
                     for (k = 0; k < 3; ++k) {
                         ofs_kl << std::setw(15) << std::fixed
-                            << std::setprecision(4) << conductivity->kappa_spec[j][i][k];
+                            << std::setprecision(6) << conductivity->kappa_spec[j][i][k];
                     }
                     ofs_kl << std::endl;
                 }

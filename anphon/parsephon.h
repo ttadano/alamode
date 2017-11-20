@@ -42,6 +42,7 @@ namespace PHON_NS
         int locate_tag(std::string);
         void parse_general_vars();
         void parse_analysis_vars(const bool);
+        void parse_scph_vars();
         void parse_cell_parameter();
         void parse_kpoints();
         void get_var_dict(std::string, std::map<std::string, std::string> &);
@@ -87,4 +88,3 @@ namespace PHON_NS
         return ltrim(rtrim(s));
     }
 }
-

@@ -27,12 +27,17 @@
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "gruneisen.h"
+#include "ewald.h"
 
 using namespace PHON_NS;
 
-Dynamical::Dynamical(PHON *phon): Pointers(phon) {}
+Dynamical::Dynamical(PHON *phon): Pointers(phon)
+{
+}
 
-Dynamical::~Dynamical() {}
+Dynamical::~Dynamical()
+{
+}
 
 void Dynamical::setup_dynamical(std::string mode)
 {
@@ -62,6 +67,13 @@ void Dynamical::setup_dynamical(std::string mode)
             std::cout << "  NONANALYTIC = 2 : Non-analytic part of the dynamical matrix will be included " << std::endl;
             std::cout << "                    by the mixed-space approach." << std::endl;
             std::cout << std::endl;
+            //}
+            // Inserted
+        } else if (nonanalytic == 3) {
+            std::cout << std::endl;
+            std::cout << "  NONANALYTIC = 3 : Non-analytic part of the dynamical matrix will be included " << std::endl;
+            std::cout << "                    by the Ewald method." << std::endl;
+            std::cout << std::endl;
         }
     }
 
@@ -84,9 +96,10 @@ void Dynamical::setup_dynamical(std::string mode)
     }
 
     if (mympi->my_rank == 0) {
-        eigenvectors = false;
+        eigenvectors = true;
 
-        if (phon->mode == "RTA") {
+        /*
+        if (phon->mode == "RTA" || phon->mode == "SCPH") {
             eigenvectors = true;
         } else {
             if (print_eigenvectors || writes->print_msd || writes->print_xsf || writes->print_anime
@@ -94,6 +107,7 @@ void Dynamical::setup_dynamical(std::string mode)
                 eigenvectors = true;
             }
         }
+        */
     }
 
 
@@ -115,7 +129,7 @@ void Dynamical::setup_dynamical(std::string mode)
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " -----------------------------------------------------------------" 
+        std::cout << " -----------------------------------------------------------------"
             << std::endl << std::endl;
     }
 }
@@ -204,9 +218,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
             mindist_out[i][j].clear();
 
             dist_min = distall[i][j][0].dist;
-            for (std::vector<DistWithCell>::const_iterator it = distall[i][j].begin();
-                 it != distall[i][j].end(); ++it) {
-                if (std::abs((*it).dist - dist_min) < eps8) {
+            for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
+                if (std::abs((*it).dist - dist_min) < 1.0e-3) {
                     mindist_out[i][j].push_back((*it).cell);
                 }
             }
@@ -323,6 +336,110 @@ void Dynamical::eval_k(double *xk_in, double *kvec_in, std::vector<FcsClassExten
 }
 
 
+void Dynamical::eval_k_ewald(double *xk_in, double *kvec_in, std::vector<FcsClassExtent> fc2_in,
+                             double *eval_out, std::complex<double> **evec_out, const bool require_evec, const int ik)
+{
+    //
+    // Calculate phonon energy for the specific k-point given in fractional basis
+    // Contributions from dipole-dipole interactions should be extracted from 'fc2_in'.
+    //
+    unsigned int i, j;
+    int icrd, jcrd;
+    double time[3];
+    std::complex<double> **dymat_k, **mat_longrange;
+
+    memory->allocate(dymat_k, neval, neval);
+    memory->allocate(mat_longrange, neval, neval);
+
+    calc_analytic_k(xk_in, fc2_in, dymat_k);
+
+    // Calculate Coulombic contributions including long-range interactions 
+    ewald->add_longrange_matrix(xk_in, mat_longrange, ik);
+
+    // Add calculated dynamical matrix of Coulomb parts
+    for (i = 0; i < system->natmin; ++i) {
+        for (icrd = 0; icrd < 3; ++icrd) {
+            for (j = 0; j < system->natmin; ++j) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    dymat_k[3 * i + icrd][3 * j + jcrd] += mat_longrange[3 * i + icrd][3 * j + jcrd];
+                }
+            }
+        }
+    }
+
+    // Check acoustic sum rule
+    if (xk_in[0] == 0.0 && xk_in[1] == 0.0 && xk_in[2] == 0.0) {
+        int count;
+        double mass;
+        std::complex<double> check;
+        for (i = 0; i < system->natmin; ++i) {
+            for (icrd = 0; icrd < 3; ++icrd) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    check = std::complex<double>(0.0, 0.0);
+                    count = 0;
+                    for (j = 0; j < system->natmin; ++j) {
+                        mass = system->mass[system->map_p2s[i][0]] * system->mass[system->map_p2s[j][0]];
+                        check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
+                        count += 1;
+                    }
+
+                    if (std::abs(check) > eps12) {
+                        std::cout << "(" << 3 * i + icrd << "," << jcrd << "): " << check << std::endl;
+                        error->warn("ewald->eval_k_ewald", "Acoustic sum rule is broken.");
+                    }
+                }
+            }
+        }
+    }
+
+    char JOBZ;
+    int INFO, LWORK;
+    double *RWORK;
+    std::complex<double> *WORK;
+
+    LWORK = (2 * neval - 1) * 10;
+    memory->allocate(RWORK, 3 * neval - 2);
+    memory->allocate(WORK, LWORK);
+
+    std::complex<double> *amat;
+    memory->allocate(amat, neval * neval);
+
+    unsigned int k = 0;
+    int n = dynamical->neval;
+    for (j = 0; j < neval; ++j) {
+        for (i = 0; i < neval; ++i) {
+            amat[k++] = dymat_k[i][j];
+        }
+    }
+
+    memory->deallocate(dymat_k);
+
+    if (require_evec) {
+        JOBZ = 'V';
+    } else {
+        JOBZ = 'N';
+    }
+
+    // Perform diagonalization
+    zheev_(&JOBZ, &UPLO, &n, amat, &n, eval_out, WORK, &LWORK, RWORK, &INFO);
+
+    if (eigenvectors && require_evec) {
+        k = 0;
+        // Here we transpose the matrix evec_out so that 
+        // evec_out[i] becomes phonon eigenvector of i-th mode.
+        for (j = 0; j < neval; ++j) {
+            for (i = 0; i < neval; ++i) {
+                evec_out[j][i] = amat[k++];
+            }
+        }
+    }
+
+    memory->deallocate(RWORK);
+    memory->deallocate(WORK);
+    memory->deallocate(amat);
+}
+
+
 void Dynamical::calc_analytic_k(double *xk_in,
                                 std::vector<FcsClassExtent> fc2_in,
                                 std::complex<double> **dymat_out)
@@ -347,8 +464,7 @@ void Dynamical::calc_analytic_k(double *xk_in,
         }
     }
 
-    for (std::vector<FcsClassExtent>::const_iterator it = fc2_in.begin();
-         it != fc2_in.end(); ++it) {
+    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
 
         atm1_p = (*it).atm1;
         atm2_s = (*it).atm2;
@@ -375,7 +491,9 @@ void Dynamical::calc_analytic_k(double *xk_in,
 }
 
 
-void Dynamical::calc_nonanalytic_k(double *xk_in, double *kvec_na_in, std::complex<double> **dymat_na_out)
+void Dynamical::calc_nonanalytic_k(double *xk_in,
+                                   double *kvec_na_in,
+                                   std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by Parlinski's method.
@@ -609,10 +727,13 @@ void Dynamical::diagonalize_dynamical_all()
 #pragma omp parallel for private (is)
 #endif
     for (ik = 0; ik < nk; ++ik) {
-
-        eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
-               eval_phonon[ik], evec_phonon[ik], require_evec);
-
+        if (nonanalytic == 3) {
+            eval_k_ewald(kpoint->xk[ik], kpoint->kvec_na[ik], ewald->fc2_without_dipole,
+                         eval_phonon[ik], evec_phonon[ik], require_evec, ik);
+        } else {
+            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
+                   eval_phonon[ik], evec_phonon[ik], require_evec);
+        }
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is) {
             eval_phonon[ik][is] = freq(eval_phonon[ik][is]);
@@ -730,11 +851,14 @@ void Dynamical::load_born()
 
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
-                std::cout << std::setw(15) << borncharge[i][j][k];
+                std::cout << std::setw(15) << std::fixed
+                    << std::setprecision(6) << borncharge[i][j][k];
             }
             std::cout << std::endl;
         }
     }
+
+    // Check if the ASR is satisfied. If not, enforce it.
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -755,7 +879,7 @@ void Dynamical::load_born()
     if (res > eps10) {
         std::cout << std::endl;
         std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
-        std::cout << "           The born effective charges will be modified as follows." << std::endl;
+        std::cout << "           The born effective charges are modified to follow the ASR." << std::endl;
 
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -764,8 +888,84 @@ void Dynamical::load_born()
                 }
             }
         }
+    }
+
+    // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
+    // particularly for NONANALYTIC=3 (Ewald summation).
+
+    int isym, iat, iat_sym;
+    int m;
+    double ***born_sym;
+    double rot[3][3];
+
+    memory->allocate(born_sym, system->natmin, 3, 3);
+
+    for (iat = 0; iat < system->natmin; ++iat) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                born_sym[iat][i][j] = 0.0;
+            }
+        }
+    }
+
+    for (isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
+            }
+        }
+
+        for (iat = 0; iat < system->natmin; ++iat) {
+            iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
+
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        for (m = 0; m < 3; ++m) {
+                            born_sym[iat][i][j] += rot[i][k] * rot[j][m] * borncharge[iat_sym][k][m];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (iat = 0; iat < system->natmin; ++iat) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
+            }
+        }
+    }
+
+    // Check if the Born effective charges given by the users satisfy the symmetry.
+
+    double diff_sym = 0.0;
+    for (iat = 0; iat < system->natmin; ++iat) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
+            }
+        }
+    }
+
+    if (diff_sym > 0.5) {
         std::cout << std::endl;
-        std::cout << "  New Born effective charge tensor in Cartesian coordinate." << std::endl;
+        std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
+    }
+
+    for (iat = 0; iat < system->natmin; ++iat) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                borncharge[iat][i][j] = born_sym[iat][i][j];
+            }
+        }
+    }
+    memory->deallocate(born_sym);
+
+    if (diff_sym > eps8 || res > eps10) {
+        std::cout << std::endl;
+        std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
         for (i = 0; i < system->natmin; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                 << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
@@ -778,6 +978,7 @@ void Dynamical::load_born()
             }
         }
     }
+    std::cout << std::scientific;
 }
 
 
@@ -790,10 +991,10 @@ double Dynamical::fold(double x)
 double Dynamical::freq(const double x)
 {
     // Special treatment to avoid the divergence of computation.
-    if (std::abs(x) < eps)  return eps15;
-   
+    if (std::abs(x) < eps) return eps15;
+
     if (x > 0.0) return std::sqrt(x);
-        
+
     return -std::sqrt(-x);
 }
 

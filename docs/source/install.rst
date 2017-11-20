@@ -11,6 +11,8 @@ Mandatory requirements
 * LAPACK library
 * MPI library (Either OpenMPI, MPICH2, or IntelMPI)
 * `Boost C++ library <http://www.boost.org>`_
+* FFTW library
+* `Eigen3 library <http://eigen.tuxfamily.org/>`_
 
 In addition to the above requirements, users have to get and install a first-principles package 
 (such as VASP_, Wien2k_, QUANTUM-ESPRESSO_, or xTAPP_) or another force field package (such as
@@ -32,7 +34,7 @@ Optional requirements
 We provide some small scripts written in Python (Python 2) for visualizing phonon dispersion relations, phonon DOSs, etc.
 To use these scripts, one need to install the above Python packages.
 Additionally, XcrySDen is necessary to visualize the normal mode directions and animate the normal mode.
-VMD may be more useful to make an animation, but it may be replaced by any other visualization software which support the XYZ format.
+VMD may be more useful to make an animation, but it may be replaced by any other visualization software which supports the XYZ format.
 
 .. _XcrySDen : http://www.xcrysden.org
 .. _VMD : http://www.ks.uiuc.edu/Research/vmd/
@@ -42,7 +44,7 @@ How to install
 
 .. highlight:: bash
 
-0. Install the LAPACK, MPI, and Boost C++ libraries.
+0. Install the LAPACK, MPI, FFTW, Boost C++, and Eigen3 libraries.
 
    To install the Boost C++ library, please download a source file from the `webpage <http://www.boost.org>`_ and
    unpack the file. Then, copy the 'boost' subdirectory to the include folder in the home directory (or anywhere you like).
@@ -57,8 +59,17 @@ How to install
     $ ln -s ../etc/boost_x_yy_z/boost .
 
   In this example, we made a symbolic link to the 'boost' subdirectory in ``$HOME/include``.
+  Instead of installing from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
 
-  Instead of install from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
+  In the same way, please install the Eigen3 include files as follows::
+
+    $ cd
+    $ mkdir etc; cd etc
+    (Download a source file and mv it to ~/etc)
+    $ tar xvf eigen-eigen-*.tar.bz2 (* is an array of letters and digits)
+    $ cd ../
+    $ cd include
+    $ ln -s ../etc/eigen-eigen-*/Eigen .  
 
 1. Download the package of ALAMODE from the download page or clone from the git repository.
 
@@ -76,6 +87,10 @@ How to install
   * docs/     : Source files for making documents
   * example/  : Example files
 
+
+.. highlight:: makefile
+
+
 3. Edit the Makefiles
 
   In directories alm/ and anphon/, we provide sample Makefiles for Linux (with Intel compiler) and Mac OSX (with gcc). 
@@ -84,7 +99,7 @@ How to install
   Here's a typical setting for Linux with Intel compiler::
 
     CXX = icpc 
-    CXXFLAGS = -O2 -xHOST -openmp 
+    CXXFLAGS = -O2 -xHOST -openmp -std=c++11
     INCLUDE = -I../include -I$(HOME)/include
 
     CXXL = ${CXX}
@@ -94,7 +109,7 @@ How to install
     LIBS = ${LAPACK}
 
   To enable OpenMP parallelization, please add the ``-openmp`` (Intel) or ``-fopenmp`` (gcc) option in ``CXXFLAGS``.
-  In addition, the directory containing the boost/ subdirectory must be given in ``INCLUDE``. 
+  In addition, the directory containing the boost/ and Eigen/ subdirectories must be given in ``INCLUDE``. 
 
 4. Make executables by ``make`` command.
 

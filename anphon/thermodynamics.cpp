@@ -24,7 +24,14 @@ Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
     T_to_Ryd = k_Boltzmann / Ryd;
 }
 
-Thermodynamics::~Thermodynamics() {};
+Thermodynamics::~Thermodynamics()
+{
+};
+
+void Thermodynamics::setup()
+{
+    MPI_Bcast(&classical, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+}
 
 double Thermodynamics::Cv(const double omega,
                           const double T)
@@ -71,15 +78,28 @@ double Thermodynamics::Cv_tot(const double T)
     double ret = 0.0;
     int N = nk * ns;
 
+    if (classical) {
 #pragma omp parallel for private(ik, is, omega), reduction(+:ret)
-    for (i = 0; i < N; ++i) {
-        ik = i / ns;
-        is = i % ns;
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
 
-        omega = dynamical->eval_phonon[ik][is];
-        if (omega < 0.0) continue;
+            omega = dynamical->eval_phonon[ik][is];
+            if (omega < 0.0) continue;
 
-        ret += Cv(omega, T);
+            ret += Cv_classical(omega, T);
+        }
+    } else {
+#pragma omp parallel for private(ik, is, omega), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+
+            omega = dynamical->eval_phonon[ik][is];
+            if (omega < 0.0) continue;
+
+            ret += Cv(omega, T);
+        }
     }
 
     return ret / static_cast<double>(nk);
@@ -161,15 +181,29 @@ double Thermodynamics::internal_energy(const double T)
 
     int N = nk * ns;
 
+    if (classical) {
 #pragma omp parallel for private(ik, is, omega), reduction(+:ret)
-    for (i = 0; i < N; ++i) {
-        ik = i / ns;
-        is = i % ns;
-        omega = dynamical->eval_phonon[ik][is];
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
 
-        if (omega < eps8) continue;
+            if (omega < eps8) continue;
 
-        ret += omega * coth_T(omega, T);
+            ret += T_to_Ryd * T;
+        }
+        ret *= 2.0;
+    } else {
+#pragma omp parallel for private(ik, is, omega), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
+
+            if (omega < eps8) continue;
+
+            ret += omega * coth_T(omega, T);
+        }
     }
 
     return ret * 0.5 / static_cast<double>(nk);
@@ -186,17 +220,32 @@ double Thermodynamics::vibrational_entropy(const double T)
 
     int N = nk * ns;
 
+    if (classical) {
 #pragma omp parallel for private(ik, is, omega, x), reduction(+:ret)
-    for (i = 0; i < N; ++i) {
-        ik = i / ns;
-        is = i % ns;
-        omega = dynamical->eval_phonon[ik][is];
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
 
-        if (omega < eps8 || std::abs(T) < eps) continue;
+            if (omega < eps8 || std::abs(T) < eps) continue;
 
-        x = omega / (T * T_to_Ryd);
-        ret += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
+            x = omega / (T * T_to_Ryd);
+            ret += std::log(x) - 1.0;
+        }
+    } else {
+#pragma omp parallel for private(ik, is, omega, x), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
+
+            if (omega < eps8 || std::abs(T) < eps) continue;
+
+            x = omega / (T * T_to_Ryd);
+            ret += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
+        }
     }
+
 
     return -k_Boltzmann * ret / static_cast<double>(nk);
 }
@@ -212,25 +261,43 @@ double Thermodynamics::free_energy(const double T)
 
     int N = nk * ns;
 
+    if (classical) {
 #pragma omp parallel for private(ik, is, omega, x), reduction(+:ret)
-    for (i = 0; i < N; ++i) {
-        ik = i / ns;
-        is = i % ns;
-        omega = dynamical->eval_phonon[ik][is];
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
 
-        if (omega < eps8) continue;
+            if (omega < eps8) continue;
 
-        if (std::abs(T) < eps) {
-            ret += 0.5 * omega;
-        } else {
             x = omega / (T * T_to_Ryd);
-            ret += 0.5 * x + std::log(1.0 - std::exp(-x));
+            ret += std::log(x);
         }
+        
+        return T * T_to_Ryd * ret / static_cast<double>(nk);
+
+    } else {
+#pragma omp parallel for private(ik, is, omega, x), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
+
+            if (omega < eps8) continue;
+
+            if (std::abs(T) < eps) {
+                ret += 0.5 * omega;
+            } else {
+                x = omega / (T * T_to_Ryd);
+                ret += 0.5 * x + std::log(1.0 - std::exp(-x));
+            }
+        }
+
+        if (std::abs(T) < eps) return ret / static_cast<double>(nk);
+
+        return T * T_to_Ryd * ret / static_cast<double>(nk);
     }
 
-    if (std::abs(T) < eps) return ret / static_cast<double>(nk);
-
-    return T * T_to_Ryd * ret / static_cast<double>(nk);
 }
 
 double Thermodynamics::disp2_avg(const double T,
@@ -246,20 +313,38 @@ double Thermodynamics::disp2_avg(const double T,
 
     int N = nk * ns;
 
+    if (classical) {
 #pragma omp parallel for private(ik, is, omega), reduction(+:ret)
-    for (i = 0; i < N; ++i) {
-        ik = i / ns;
-        is = i % ns;
-        omega = dynamical->eval_phonon[ik][is];
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
 
-        // Skip when omega is almost zero. 
-        // (neglect divergent contributions from acoustic modes at gamma point)
-        if (omega < eps8) continue;
+            // Skip when omega is almost zero. 
+            // (neglect divergent contributions from acoustic modes at gamma point)
+            if (omega < eps8) continue;
 
-        ret += real(dynamical->evec_phonon[ik][is][ns1]
+            ret += real(dynamical->evec_phonon[ik][is][ns1]
                 * std::conj(dynamical->evec_phonon[ik][is][ns2]))
-            * (fB(omega, T) + 0.5) / omega;
+                * T * T_to_Ryd / (omega * omega);
+        }
+    } else {
+#pragma omp parallel for private(ik, is, omega), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik = i / ns;
+            is = i % ns;
+            omega = dynamical->eval_phonon[ik][is];
+
+            // Skip when omega is almost zero. 
+            // (neglect divergent contributions from acoustic modes at gamma point)
+            if (omega < eps8) continue;
+
+            ret += real(dynamical->evec_phonon[ik][is][ns1]
+                * std::conj(dynamical->evec_phonon[ik][is][ns2]))
+                * (fB(omega, T) + 0.5) / omega;
+        }
     }
+
 
     ret *= 1.0 / (static_cast<double>(nk)
         * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]]

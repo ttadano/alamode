@@ -40,6 +40,7 @@ int beg_k, end_k;
 int beg_s, end_s;
 int average_gamma;
 int isotope;
+bool classical;
 
 void calc_tau(int);
 void calc_tau_temp(int, int);

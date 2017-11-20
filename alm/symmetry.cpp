@@ -61,8 +61,8 @@ void Symmetry::init()
     memory->allocate(symrel_int, nsym, 3, 3);
 
     int isym = 0;
-    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin(); 
-        iter != SymmList.end(); ++iter) {
+    for (std::vector<SymmetryOperation>::iterator iter = SymmList.begin();
+         iter != SymmList.end(); ++iter) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
                 symrel_int[isym][i][j] = (*iter).rot[i][j];
@@ -154,8 +154,8 @@ void Symmetry::setup_symmetry_operation(int nat,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin(); 
-                p != SymmList.end(); ++p) {
+            for (std::vector<SymmetryOperation>::iterator p = SymmList.begin();
+                 p != SymmList.end(); ++p) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << (*p).rot[i][j];
@@ -443,10 +443,10 @@ void Symmetry::find_crystal_symmetry(int nat,
                 continue;
 
             is_identity_matrix =
-                (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
-                    + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                    + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
+            (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
+                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
             if (is_identity_matrix) continue;
 
             isok = true;
@@ -538,42 +538,17 @@ void Symmetry::find_crystal_symmetry(int nat,
 void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
 {
     int i, j;
-
-#ifdef _USE_EIGEN
-    Eigen::Matrix3d aa, bb, sym_tmp;
-    Eigen::Matrix3d sym_crt;
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            aa(i, j) = lavec[i][j];
-            bb(i, j) = rlavec[i][j];
-        }
-    }
-
-#else 
     double sym_tmp[3][3], sym_crt[3][3];
     double tmp[3][3];
-#endif
 
     for (int isym = 0; isym < nsym; ++isym) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-#ifdef _USE_EIGEN
-                sym_tmp(i, j) = static_cast<double>(symrel_int[isym][i][j]);
-#else
                 sym_tmp[i][j] = static_cast<double>(symrel_int[isym][i][j]);
-#endif
             }
         }
-#ifdef _USE_EIGEN
-        sym_crt = (aa * (sym_tmp * bb)) / (2.0 * pi);
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                symrel[isym][i][j] = sym_crt(i, j);
-            }
-        }
-#else
+
         matmul3(tmp, sym_tmp, rlavec);
         matmul3(sym_crt, lavec, tmp);
 
@@ -582,7 +557,6 @@ void Symmetry::symop_in_cart(double lavec[3][3], double rlavec[3][3])
                 symrel[isym][i][j] = sym_crt[i][j] / (2.0 * pi);
             }
         }
-#endif
     }
 
 #ifdef _DEBUG
@@ -750,10 +724,18 @@ void Symmetry::symop_availability_check(double ***rot,
 
     for (i = 0; i < nsym; ++i) {
 
+        std::cout << "Sym. No. : " << std::setw(3) << i + 1 << std::endl;
+        for (j = 0; j < 3; ++j) {
+            for (k = 0; k < 3; ++k) {
+                std::cout << std::setw(15) << rot[i][j][k];
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
         nfinite = 0;
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
-                if (std::abs(rot[i][j][k]) > eps) ++nfinite;
+                if (std::abs(rot[i][j][k]) > 1.0e-5) ++nfinite;
             }
         }
 
@@ -792,8 +774,8 @@ void Symmetry::print_symmetrized_coordinate(double **x)
         }
     }
 
-    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin(); 
-        it != SymmList.end(); ++it) {
+    for (std::vector<SymmetryOperation>::iterator it = SymmList.begin();
+         it != SymmList.end(); ++it) {
 
         ++isym;
         std::cout << "Symmetry No. : " << std::setw(5) << isym << std::endl;
@@ -958,4 +940,3 @@ bool Symmetry::is_proper(double rot[3][3])
 
     return ret;
 }
-

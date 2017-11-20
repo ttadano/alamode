@@ -29,7 +29,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-System::System(PHON *phon): Pointers(phon) {}
+System::System(PHON *phon): Pointers(phon)
+{
+}
 
 System::~System()
 {
@@ -361,31 +363,31 @@ void System::load_system_info_from_XML()
         memory->allocate(kd, nat);
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-            const ptree &child = child_.second;
-            const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
-            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-        }
+                const ptree &child = child_.second;
+                const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+                dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+            }
 
         unsigned int index;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-            const ptree &child = child_.second;
-            const std::string str_index = child.get<std::string>("<xmlattr>.index");
-            const std::string str_element = child.get<std::string>("<xmlattr>.element");
+                const ptree &child = child_.second;
+                const std::string str_index = child.get<std::string>("<xmlattr>.index");
+                const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
-            ss.str("");
-            ss.clear();
-            ss << child.data();
+                ss.str("");
+                ss.clear();
+                ss << child.data();
 
-            index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-            if (index >= nat)
-                error->exit("load_system_info_xml",
-                            "index is out of range");
+                if (index >= nat)
+                    error->exit("load_system_info_xml",
+                                "index is out of range");
 
-            kd[index] = dict_atomic_kind[str_element];
-            ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
-        }
+                kd[index] = dict_atomic_kind[str_element];
+                ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
+            }
 
         dict_atomic_kind.clear();
 
@@ -397,23 +399,23 @@ void System::load_system_info_from_XML()
         unsigned int tran, atom_p, atom_s;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-            const ptree &child = child_.second;
-            const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
-            const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
+                const ptree &child = child_.second;
+                const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
+                const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
-            tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-            atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-            atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+                tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+                atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+                atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
-            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                error->exit("load_system_info_xml",
-                            "index is out of range");
+                if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                    error->exit("load_system_info_xml",
+                                "index is out of range");
+                }
+
+                map_p2s[atom_p][tran] = atom_s;
+                map_s2p[atom_s].atom_num = atom_p;
+                map_s2p[atom_s].tran_num = tran;
             }
-
-            map_p2s[atom_p][tran] = atom_s;
-            map_s2p[atom_s].atom_num = atom_p;
-            map_s2p[atom_s].tran_num = tran;
-        }
 
         // Parse magnetic moments
 
@@ -424,25 +426,25 @@ void System::load_system_info_from_XML()
         lspin = true;
         try {
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
-                if (child_.first == "mag") {
-                    const ptree &child = child_.second;
-                    const std::string str_index = child.get<std::string>("<xmlattr>.index");
+                    if (child_.first == "mag") {
+                        const ptree &child = child_.second;
+                        const std::string str_index = child.get<std::string>("<xmlattr>.index");
 
-                    ss.str("");
-                    ss.clear();
-                    ss << child.data();
+                        ss.str("");
+                        ss.clear();
+                        ss << child.data();
 
-                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                        index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                    if (index >= nat)
-                        error->exit("load_system_info_xml",
-                                    "index is out of range");
+                        if (index >= nat)
+                            error->exit("load_system_info_xml",
+                                        "index is out of range");
 
-                    ss >> magmom_tmp[index][0]
-                        >> magmom_tmp[index][1]
-                        >> magmom_tmp[index][2];
+                        ss >> magmom_tmp[index][0]
+                            >> magmom_tmp[index][1]
+                            >> magmom_tmp[index][2];
+                    }
                 }
-            }
 
         }
         catch (...) {
@@ -572,31 +574,31 @@ void System::load_system_info_from_XML()
             memory->allocate(kd, nat);
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-                const ptree &child = child_.second;
-                const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
-                dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-            }
+                    const ptree &child = child_.second;
+                    const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+                    dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+                }
 
             unsigned int index;
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-                const ptree &child = child_.second;
-                const std::string str_index = child.get<std::string>("<xmlattr>.index");
-                const std::string str_element = child.get<std::string>("<xmlattr>.element");
+                    const ptree &child = child_.second;
+                    const std::string str_index = child.get<std::string>("<xmlattr>.index");
+                    const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
-                ss.str("");
-                ss.clear();
-                ss << child.data();
+                    ss.str("");
+                    ss.clear();
+                    ss << child.data();
 
-                index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                if (index >= nat)
-                    error->exit("load_system_info_xml",
-                                "index is out of range");
+                    if (index >= nat)
+                        error->exit("load_system_info_xml",
+                                    "index is out of range");
 
-                kd[index] = dict_atomic_kind[str_element];
-                ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
-            }
+                    kd[index] = dict_atomic_kind[str_element];
+                    ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
+                }
 
             dict_atomic_kind.clear();
 
@@ -608,22 +610,22 @@ void System::load_system_info_from_XML()
             unsigned int tran, atom_p, atom_s;
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-                const ptree &child = child_.second;
-                const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
-                const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
+                    const ptree &child = child_.second;
+                    const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
+                    const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
-                tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-                atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-                atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+                    tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+                    atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+                    atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
-                if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                    error->exit("load_system_info_xml", "index is out of range");
+                    if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                        error->exit("load_system_info_xml", "index is out of range");
+                    }
+
+                    map_p2s[atom_p][tran] = atom_s;
+                    map_s2p[atom_s].atom_num = atom_p;
+                    map_s2p[atom_s].tran_num = tran;
                 }
-
-                map_p2s[atom_p][tran] = atom_s;
-                map_s2p[atom_s].atom_num = atom_p;
-                map_s2p[atom_s].tran_num = tran;
-            }
 
 
         }
@@ -743,7 +745,7 @@ void System::setup_atomic_class(unsigned int N,
 
     for (i = 0; i < N; ++i) {
         int count = 0;
-        for (std::set<AtomType>::iterator it = set_type.begin(); it != set_type.end(); ++it) {
+        for (auto it = set_type.begin(); it != set_type.end(); ++it) {
             if (noncollinear) {
                 if (kd[i] == (*it).element) {
                     atomlist_class[count].push_back(i);

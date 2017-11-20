@@ -1,11 +1,11 @@
 /*
- relaxation.h
+relaxation.h
 
- Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014 Terumasa Tadano
 
- This file is distributed under the terms of the MIT license.
- Please see the file 'LICENCE.txt' in the root directory 
- or http://opensource.org/licenses/mit-license.php for information.
+This file is distributed under the terms of the MIT license.
+Please see the file 'LICENCE.txt' in the root directory
+or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #pragma once
@@ -28,7 +28,7 @@ namespace PHON_NS
 
         KsList(const KsList &a)
         {
-            for (std::vector<int>::const_iterator p = a.ks.begin(); p != a.ks.end(); ++p) {
+            for (auto p = a.ks.cbegin(); p != a.ks.cend(); ++p) {
                 ks.push_back(*p);
             }
             symnum = a.symnum;
@@ -58,7 +58,7 @@ namespace PHON_NS
 
         KsListGroup(const std::vector<KsList> &a)
         {
-            for (std::vector<KsList>::const_iterator it = a.begin(); it != a.end(); ++it) {
+            for (auto it = a.cbegin(); it != a.cend(); ++it) {
                 group.push_back(*it);
             }
         }
@@ -104,7 +104,7 @@ namespace PHON_NS
     };
 
 
-    class Relaxation: protected Pointers
+    class Relaxation : protected Pointers
     {
     public:
         Relaxation(class PHON *);
@@ -113,6 +113,7 @@ namespace PHON_NS
         void setup_relaxation();
         void finish_relaxation();
         void perform_mode_analysis();
+        void setup_mode_analysis();
 
         void calc_damping_smearing(const unsigned int, double *, const double,
                                    const unsigned int, const unsigned int,
@@ -130,15 +131,18 @@ namespace PHON_NS
         bool calc_fstate_k;
         bool print_V3;
         bool use_tuned_ver;
-
+        bool spectral_func;
 
         bool use_triplet_symmetry;
         bool **is_imaginary;
 
         std::string ks_input;
+        std::vector<unsigned int> kslist;
+
 
         std::complex<double> V3(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
+
 
         std::complex<double> V3_mode(int, double *, double *,
                                      int, int, double **,
@@ -146,9 +150,17 @@ namespace PHON_NS
 
         void calc_V3norm2(const unsigned int, const unsigned int, double **);
 
+        void prepare_relative_vector(std::vector<FcsArrayWithCell>,
+                                     const unsigned int, double ***);
+
+        void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>,
+                                              const unsigned int, int &,
+                                              std::vector<double> *&);
+
+        void detect_imaginary_branches(double **);
+
     private:
         unsigned int nk, ns, nks;
-        std::vector<unsigned int> kslist;
         std::vector<KsListMode> kslist_fstate_k;
         std::complex<double> im;
 
@@ -161,34 +173,38 @@ namespace PHON_NS
 
         std::vector<KsListGroup> *pair_uniq;
 
-        int knum_sym(const int, const int);
         bool is_proper(const int);
         bool is_symmorphic(const int);
 
-        void setup_mode_analysis();
         void setup_cubic();
         void setup_quartic();
         void store_exponential_for_acceleration(const int nk[3], int &,
                                                 std::complex<double> *,
                                                 std::complex<double> ***);
 
-        void prepare_relative_vector(std::vector<FcsArrayWithCell>,
-                                     const unsigned int, double ***);
-
-        void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>,
-                                              const unsigned int, int &,
-                                              std::vector<double> *&);
-
-        //   void print_minimum_energy_diff();
-        void generate_triplet_k(const bool, const bool);
         void calc_frequency_resolved_final_state(const unsigned int, double *, const double,
                                                  const unsigned int, const double *,
                                                  const unsigned int, const unsigned int,
-                                                 double **);
+                                                 double ***);
+        void calc_frequency_resolved_final_state_tetrahedron(const unsigned int,
+                                                             double *, const double,
+                                                             const unsigned int, const double *,
+                                                             const unsigned int, const unsigned int,
+                                                             double ***);
 
         void print_momentum_resolved_final_state(const unsigned int, double *, const double);
         void print_frequency_resolved_final_state(const unsigned int, double *);
-        void detect_imaginary_branches(double **);
+
+        void calc_self3omega_tetrahedron(const double, double **,
+                                         std::complex<double> ***,
+                                         const unsigned int, const unsigned int,
+                                         const unsigned int, double *, double *);
+
+
+        void get_unique_triplet_k(const int,
+                                  const bool,
+                                  const bool,
+                                  std::vector<KsListGroup> &);
 
         int ngroup;
         int ngroup2;
@@ -202,4 +218,3 @@ namespace PHON_NS
         double dnk[3];
     };
 }
-

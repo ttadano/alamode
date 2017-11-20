@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 {
     string str;
 
-    cout << "# Result analyzer ver. 1.0.4" << endl;
+    cout << "# Result analyzer ver. 1.0.5" << endl;
     cout << "# Input file : " << argv[1] << endl;
     calc = argv[2];
     average_gamma = atoi(argv[3]);
@@ -52,9 +52,16 @@ int main(int argc, char *argv[])
     }
 
     ifs >> tmin >> tmax >> dt;
+    if (abs(dt) < eps && (tmin == tmax)) dt = 1.0;
     nt = static_cast<int>((tmax - tmin) / dt) + 1;
     allocate(temp, nt);
     for (i = 0; i < nt; ++i) temp[i] = tmin + dt * static_cast<double>(i);
+
+    if (!locate_tag("#CLASSICAL")) {
+        classical = false;
+    } else {
+        ifs >> classical;
+    }
 
     if (!locate_tag("#KPOINT")) {
         cout << "ERROR: Cannot find #KPOINT tag" << endl;
@@ -390,7 +397,11 @@ void calc_tau(int itemp)
         for (is = beg_s; is < end_s; ++is) {
 
             tau_tmp = tau[itemp][ik][is];
-            c_tmp = Cv(omega[ik][is], temp[itemp]);
+            if (classical) {
+                c_tmp = k_Boltzmann;
+            } else {
+                c_tmp = Cv(omega[ik][is], temp[itemp]);
+            }
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -477,7 +488,12 @@ void calc_kappa()
             for (is = beg_s; is < end_s; ++is) {
 
                 tau_tmp = tau[it][ik][is];
-                c_tmp = Cv(omega[ik][is], temp[it]);
+
+                if (classical) {
+                    c_tmp = k_Boltzmann;
+                } else {
+                    c_tmp = Cv(omega[ik][is], temp[it]);
+                }
 
                 for (i = 0; i < n_weight[ik]; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -541,8 +557,13 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
 
             for (is = beg_s; is < end_s; ++is) {
                 tau_tmp = tau[itemp][ik][is];
-                c_tmp = Cv(omega[ik][is], temp[itemp]);
 
+                if (classical) {
+                    c_tmp = k_Boltzmann;
+                } else {
+                    c_tmp = Cv(omega[ik][is], temp[itemp]);
+                }
+                
                 vel_tmp = pow(vel[ik][is][0][0], 2)
                     + pow(vel[ik][is][0][1], 2)
                     + pow(vel[ik][is][0][2], 2);
@@ -610,7 +631,12 @@ void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, i
 
             for (is = beg_s; is < end_s; ++is) {
                 tau_tmp = tau[itemp][ik][is];
-                c_tmp = Cv(omega[ik][is], temp[itemp]);
+
+                if (classical) {
+                    c_tmp = k_Boltzmann;
+                } else {
+                    c_tmp = Cv(omega[ik][is], temp[itemp]);
+                }
 
                 for (i = 0; i < nsame; ++i) {
 
@@ -676,7 +702,12 @@ void calc_kappa_boundary(const double len_boundary)
             for (is = beg_s; is < end_s; ++is) {
 
                 tau_tmp = tau[it][ik][is];
-                c_tmp = Cv(omega[ik][is], temp[it]);
+
+                if (classical) {
+                    c_tmp = k_Boltzmann;
+                } else {
+                    c_tmp = Cv(omega[ik][is], temp[it]);
+                }
 
                 vel_norm = vel[ik][is][0][0] * vel[ik][is][0][0]
                     + vel[ik][is][0][1] * vel[ik][is][0][1]
@@ -746,7 +777,12 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
 
             for (is = beg_s; is < end_s; ++is) {
                 tau_tmp = tau[itemp][ik][is];
-                c_tmp = Cv(omega[ik][is], temp[itemp]);
+
+                if (classical) {
+                    c_tmp = k_Boltzmann;
+                } else {
+                    c_tmp = Cv(omega[ik][is], temp[itemp]);
+                }          
 
                 for (i = 0; i < nsame; ++i) {
 

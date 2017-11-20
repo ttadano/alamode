@@ -1,6 +1,11 @@
-# ALAMODE 
-### Version 0.9.8 (Beta)
+# ALAMODE
+ 
+[![License][license-image]][license-url]
+[![Doc status][docs-image]][docs-url]
+
+### Version 1.0.0
 ![alt ALAMODE](./docs/img/alamode.png)
+
 
 - - -
 
@@ -20,7 +25,7 @@ linewidth, and other anharmonic phonon properties from first principles.
 * Extraction of harmonic and anharmonic force constants based on the supercell approach
 * Applicable to any crystal structures and low-dimensional systems
 * Accurate treatment of translational and rotational invariance
-* Interface to VASP, Quantum-ESPRESSO, and xTAPP codes
+* Interface to VASP, Quantum-ESPRESSO, xTAPP, and LAMMPS codes
 * Parallelization with MPI+OpenMP
 
 ### Harmonic properties
@@ -43,12 +48,15 @@ linewidth, and other anharmonic phonon properties from first principles.
 * Phonon linewidth due to 3-phonon interactions
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
+* Self-consistent phonon calculation
 
 ## Prerequisite
 * C++ compiler
-* LAPACK libarary
+* LAPACK library
 * MPI library
 * Boost C++ library
+* FFT library
+* Eigen3 library
 
 ## Download
 
@@ -78,9 +86,23 @@ http://alamode.readthedocs.io
 
 
 ## License
-Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+Copyright (c) 2014--2017 Terumasa Tadano
 This software is released under the MIT license. 
 For license rights and limitations, see LICENSE.txt file.
 
 ## Author
-Terumasa Tadano (The University of Tokyo, Japan)
+Terumasa Tadano (National Institute for Materials Science, Japan)
+
+## Contributors
+
+* Tatsuro Nishimoto (Univ. Tokyo)
+* Yusuke Oba (Univ. Tokyo)
+
+
+
+[license-image]: https://img.shields.io/github/license/ttadano/alamode.svg
+[license-url]:  https://github.com/ttadano/alamode/blob/develop/LICENSE.txt
+
+[docs-image]:  https://readthedocs.org/projects/alamode/badge/?version=latest
+[docs-url]: https://alamode.readthedocs.io/en/latest/?badge=latest
+
