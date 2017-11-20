@@ -1105,7 +1105,7 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
                         f2 = thermodynamics->fC(omega_inner[1], T_tmp);
 
                         n1 = f1 + f2;
-                        n2 = f1 - f1;
+                        n2 = f1 - f2;
                     } else {
                         f1 = thermodynamics->fB(omega_inner[0], T_tmp);
                         f2 = thermodynamics->fB(omega_inner[1], T_tmp);
