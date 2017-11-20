@@ -26,7 +26,9 @@ Timer::Timer(ALM *alm): Pointers(alm)
 #endif
 }
 
-Timer::~Timer() {}
+Timer::~Timer()
+{
+}
 
 void Timer::reset()
 {
@@ -79,4 +81,3 @@ std::string Timer::DateAndTime()
     return asctime(local);
 #endif
 }
-

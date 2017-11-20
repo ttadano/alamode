@@ -641,7 +641,7 @@ void Fitting::fit_algebraic_constraints(int N,
     memory->allocate(S, LMIN);
 
     // transpose matrix A
-  //  memory->allocate(amat_mod, M * N);
+    //  memory->allocate(amat_mod, M * N);
     memory->allocate(fsum2, LMAX);
 
     //k = 0;
@@ -717,7 +717,7 @@ void Fitting::fit_algebraic_constraints(int N,
     memory->deallocate(WORK);
     memory->deallocate(S);
     memory->deallocate(fsum2);
- //   memory->deallocate(amat_mod);
+    //   memory->deallocate(amat_mod);
 }
 
 

@@ -29,9 +29,13 @@
 
 using namespace ALM_NS;
 
-Input::Input(ALM *alm, int narg, char **arg): Pointers(alm) {}
+Input::Input(ALM *alm, int narg, char **arg): Pointers(alm)
+{
+}
 
-Input::~Input() {}
+Input::~Input()
+{
+}
 
 void Input::parse_input(int narg, char **arg)
 {
@@ -879,7 +883,7 @@ void Input::parse_atomic_positions()
             }
 
             boost::trim_if(line_wo_comment, boost::is_any_of("\t\n\r "));
-//            boost::trim_left(line_wo_comment);
+            //            boost::trim_left(line_wo_comment);
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
 
@@ -899,7 +903,7 @@ void Input::parse_atomic_positions()
             }
 
             boost::trim_if(line_wo_comment, boost::is_any_of("\t\n\r "));
-//            boost::trim_left(line_wo_comment);
+            //            boost::trim_left(line_wo_comment);
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
 

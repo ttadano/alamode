@@ -545,10 +545,11 @@ void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
 
     for (iT = 0; iT < NT; ++iT) {
 
+        std::cout << " T = " << std::setw(5) << Tmin + static_cast<double>(iT) * dT << std::endl;
+
         for (j = 0; j < nk; ++j) {
             for (k = 0; k < neval; ++k) {
                 eval[k][j] = writes->in_kayser(eval_anharm[iT][j][k]);
-                //                std::cout << eval[k][j] << std::endl;
             }
         }
 
@@ -813,10 +814,18 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
 
                 if (omega1 < eps12 || omega2 < eps12) continue;
 
-                f1 = thermodynamics->fB(omega1, temp);
-                f2 = thermodynamics->fB(omega2, temp);
-                n1 = f1 + f2 + 1.0;
-                n2 = f1 - f2;
+                if (thermodynamics->classical) {
+                    f1 = thermodynamics->fC(omega1, temp);
+                    f2 = thermodynamics->fC(omega2, temp);
+                    n1 = f1 + f2;
+                    n2 = f1 - f2;
+                } else {
+                    f1 = thermodynamics->fB(omega1, temp);
+                    f2 = thermodynamics->fB(omega2, temp);
+                    n1 = f1 + f2 + 1.0;
+                    n2 = f1 - f2;
+                }
+
 
                 ret1 += delta_arr[k1][ib][0] * n1;
                 ret2 += -delta_arr[k1][ib][1] * n2;

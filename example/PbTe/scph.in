@@ -1,0 +1,38 @@
+&general
+ PREFIX = PbTe_scph4-4
+ MODE = SCPH
+ NKD = 2; KD = Pb Te
+ MASS = 207.2 127.6
+
+ FCSXML = PbTe_anharm444.xml
+
+ #NONANALYTIC = 0; BORNINFO = PbTe.born
+
+ TMIN = 0; TMAX = 1000; DT = 100
+/
+
+&scph
+ KMESH_SCPH        = 4 4 4
+ KMESH_INTERPOLATE = 4 4 4
+
+ SELF_OFFDIAG = 0
+ RESTART_SCPH = 0
+ 
+ MIXALPHA = 0.1
+ MAXITER = 500
+ TOL_SCPH = 1.0e-8
+/
+
+&cell
+12.18875
+ 0.0 0.5 0.5
+ 0.5 0.0 0.5
+ 0.5 0.5 0.0
+/
+
+&kpoint
+ 1
+ G  0.0  0.0  0.0  X  0.5  0.5  0.0 21
+ X  0.5  0.5  1.0  G  0.0  0.0  0.0 21
+ G  0.0  0.0  0.0  L  0.5  0.5  0.5 21
+/

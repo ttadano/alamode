@@ -921,15 +921,24 @@ void Relaxation::calc_damping_smearing(const unsigned int N,
             for (is = 0; is < ns; ++is) {
 
                 omega_inner[0] = dynamical->eval_phonon[k1][is];
-                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
 
                 for (js = 0; js < ns; ++js) {
 
                     omega_inner[1] = dynamical->eval_phonon[k2][js];
-                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
 
-                    n1 = f1 + f2 + 1.0;
-                    n2 = f1 - f2;
+                    if (thermodynamics->classical) {
+                        f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                        f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+
+                        n1 = f1 + f2;
+                        n2 = f1 - f2;
+                    } else {
+                        f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                        f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+
+                        n1 = f1 + f2 + 1.0;
+                        n2 = f1 - f2;
+                    }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
                         * (n1 * delta_arr[ik][ns * is + js][0]
@@ -1086,15 +1095,24 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
             for (is = 0; is < ns; ++is) {
 
                 omega_inner[0] = dynamical->eval_phonon[k1][is];
-                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
 
                 for (js = 0; js < ns; ++js) {
 
                     omega_inner[1] = dynamical->eval_phonon[k2][js];
-                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
 
-                    n1 = f1 + f2 + 1.0;
-                    n2 = f1 - f2;
+                    if (thermodynamics->classical) {
+                        f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                        f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+
+                        n1 = f1 + f2;
+                        n2 = f1 - f2;
+                    } else {
+                        f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                        f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+
+                        n1 = f1 + f2 + 1.0;
+                        n2 = f1 - f2;
+                    }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
                         * (n1 * delta_arr[ik][ns * is + js][0]
@@ -1179,11 +1197,18 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                 for (i = 0; i < N; ++i) {
                     T_tmp = T[i];
 
-                    f1 = thermodynamics->fB(omega_inner[0], T_tmp);
-                    f2 = thermodynamics->fB(omega_inner[1], T_tmp);
-                    n1 = f1 + f2 + 1.0;
-                    n2 = f1 - f2;
-
+                    if (thermodynamics->classical) {
+                        f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                        f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+                        n1 = f1 + f2;
+                        n2 = f1 - f2;
+                    } else {
+                        f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                        f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+                        n1 = f1 + f2 + 1.0;
+                        n2 = f1 - f2;
+                    }
+   
                     if (integration->ismear == 0) {
                         prod_tmp[0] = n1
                             * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon)
@@ -1388,11 +1413,19 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
 #endif
                     for (i = 0; i < N; ++i) {
 
-                        f1 = thermodynamics->fB(omega_inner[0], T[i]);
-                        f2 = thermodynamics->fB(omega_inner[1], T[i]);
+                        if (thermodynamics->classical) {
+                            f1 = thermodynamics->fC(omega_inner[0], T[i]);
+                            f2 = thermodynamics->fC(omega_inner[1], T[i]);
 
-                        n1 = f1 + f2 + 1.0;
-                        n2 = f1 - f2;
+                            n1 = f1 + f2;
+                            n2 = f1 - f2;
+                        } else {
+                            f1 = thermodynamics->fB(omega_inner[0], T[i]);
+                            f2 = thermodynamics->fB(omega_inner[1], T[i]);
+
+                            n1 = f1 + f2 + 1.0;
+                            n2 = f1 - f2;
+                        }
 
                         prod_tmp[0] = v3_tmp * n1 * delta_arr[ik][ns * is + js][0];
                         prod_tmp[1] = -v3_tmp * n2 * delta_arr[ik][ns * is + js][1];
@@ -2498,10 +2531,18 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                         for (iT = 0; iT < NT; ++iT) {
                             T_tmp = T_arr[iT];
 
-                            f1 = thermodynamics->fB(eval[1][is], T_tmp);
-                            f2 = thermodynamics->fB(eval[2][js], T_tmp);
-                            n1 = f1 + f2 + 1.0;
-                            n2 = f1 - f2;
+                            if (thermodynamics->classical) {
+                                f1 = thermodynamics->fC(eval[1][is], T_tmp);
+                                f2 = thermodynamics->fC(eval[2][js], T_tmp);
+                                n1 = f1 + f2;
+                                n2 = f1 - f2;
+                            } else {
+                                f1 = thermodynamics->fB(eval[1][is], T_tmp);
+                                f2 = thermodynamics->fB(eval[2][js], T_tmp);
+                                n1 = f1 + f2 + 1.0;
+                                n2 = f1 - f2;
+                            }
+ 
 
                             if (selection_type == 0) {
                                 gamma_k[k][iT] += V3norm * n1;
@@ -3068,10 +3109,18 @@ void Relaxation::calc_self3omega_tetrahedron(const double Temp,
 
                         omega_inner[0] = eval[k1][is];
                         omega_inner[1] = eval[k2][js];
-                        f1 = thermodynamics->fB(omega_inner[0], Temp);
-                        f2 = thermodynamics->fB(omega_inner[1], Temp);
-                        n1 = f1 + f2 + 1.0;
-                        n2 = f1 - f2;
+                        if (thermodynamics->classical) {
+                            f1 = thermodynamics->fC(omega_inner[0], Temp);
+                            f2 = thermodynamics->fC(omega_inner[1], Temp);
+                            n1 = f1 + f2;
+                            n2 = f1 - f2;
+                        } else {
+                            f1 = thermodynamics->fB(omega_inner[0], Temp);
+                            f2 = thermodynamics->fB(omega_inner[1], Temp);
+                            n1 = f1 + f2 + 1.0;
+                            n2 = f1 - f2;
+                        }
+  
                         //#pragma omp critical
                         ret_private[nomega * ithread + iomega]
                             += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);

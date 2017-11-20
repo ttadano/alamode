@@ -30,9 +30,13 @@
 
 using namespace ALM_NS;
 
-Writes::Writes(ALM *alm): Pointers(alm) {}
+Writes::Writes(ALM *alm): Pointers(alm)
+{
+}
 
-Writes::~Writes() {}
+Writes::~Writes()
+{
+}
 
 void Writes::write_input_vars()
 {
@@ -109,7 +113,7 @@ void Writes::write_force_constants()
     std::string str_tmp;
     std::ofstream ofs_fcs;
     std::vector<int> atom_tmp;
-    std::vector<std::vector<int> > cell_dummy;
+    std::vector<std::vector<int>> cell_dummy;
     std::set<MinimumDistanceCluster>::iterator iter_cluster;
 
     ofs_fcs.open(files->file_fcs.c_str(), std::ios::out);
@@ -445,7 +449,7 @@ void Writes::write_misc_xml()
     ihead = 0;
 
     std::vector<int> atom_tmp;
-    std::vector<std::vector<int> > cell_dummy;
+    std::vector<std::vector<int>> cell_dummy;
     std::set<MinimumDistanceCluster>::iterator iter_cluster;
     int multiplicity;
 

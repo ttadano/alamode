@@ -220,7 +220,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 
             dist_min = distall[i][j][0].dist;
             for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
-                if (std::abs((*it).dist - dist_min) < eps8) {
+                if (std::abs((*it).dist - dist_min) < 1.0e-3) {
                     mindist_out[i][j].push_back((*it).cell);
                 }
             }
@@ -945,7 +945,7 @@ void Dynamical::load_born()
     for (iat = 0; iat < system->natmin; ++iat) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j]-born_sym[iat][i][j]));
+                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
             }
         }
     }
