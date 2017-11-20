@@ -1,7 +1,7 @@
 /*
  fcs.h
 
- Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+ Copyright (c) 2014--2017 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -14,6 +14,8 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include "symmetry.h"
+#include "interaction.h"
 
 namespace ALM_NS
 {
@@ -22,7 +24,7 @@ namespace ALM_NS
     public:
         std::vector<int> elems; // flattened index of (iatom, icoordinate) in the supercell
         double sign; // factor (+1 or -1) to convert the mother FC to the child
-        int mother; 
+        int mother;
 
         FcProperty();
 
@@ -58,7 +60,6 @@ namespace ALM_NS
         int multiplicity;
         std::vector<FcProperty> fclist;
         ForceConstantTable();
-
     };
 
     class Fcs: protected Pointers
@@ -83,6 +84,12 @@ namespace ALM_NS
 
     private:
         void generate_fclists(int);
+        void generate_force_constant_table(const int,
+                                           std::set<IntList> *,
+                                           std::vector<SymmetryOperation> *,
+                                           std::string basis = "Cartesian");
+
         bool is_ascending(const int, const int *);
+        double coef_sym(const int, double **, const int *, const int *);
     };
 }
