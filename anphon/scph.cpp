@@ -115,7 +115,7 @@ void Scph::exec_scph()
             write_scph_bands(eval_anharm);
         } else if (kpoint->kpoint_mode == 2) {
             write_scph_dos(eval_anharm);
-            write_scph_thermodynamics(eval_anharm);
+ //           write_scph_thermodynamics(eval_anharm);
             if (writes->print_msd) {
                 write_scph_msd(eval_anharm, evec_anharm);
             }
@@ -2529,8 +2529,14 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 if (std::abs(omega1) < eps8) {
                     Qmat(is, is) = complex_zero;
                 } else {
-                    n1 = thermodynamics->fB(omega1, T_in);
-                    Qmat(is, is) = std::complex<double>((2.0 * n1 + 1.0) / omega1, 0.0);
+                    // Note that the missing factor 2 in the denominator of Qmat is 
+                    // already considered in the v4_array_all.
+                    if (thermodynamics->classical) {
+                        Qmat(is, is) = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1 * omega1), 0.0);
+                    } else {
+                        n1 = thermodynamics->fB(omega1, T_in);
+                        Qmat(is, is) = std::complex<double>((2.0 * n1 + 1.0) / omega1, 0.0);
+                    }
                 }
             }
 
@@ -3067,6 +3073,7 @@ void Scph::write_scph_dos(double ***eval)
 
 void Scph::write_scph_thermodynamics(double ***eval)
 {
+    // This function is incorrect. Don't use it.
     int i;
     unsigned int iT;
     unsigned int ik, is;
@@ -3171,9 +3178,13 @@ void Scph::write_scph_msd(double ***eval,
                     omega = eval[iT][ik][is];
 
                     if (omega < eps8) continue;
-
-                    tmp += std::norm(evec[iT][ik][is][i])
-                        * (thermodynamics->fB(omega, temp) + 0.5) / omega;
+                    if (thermodynamics->classical) {
+                        tmp += std::norm(evec[iT][ik][is][i])
+                            * thermodynamics->fC(omega, temp) / omega;
+                    } else {
+                        tmp += std::norm(evec[iT][ik][is][i])
+                            * (thermodynamics->fB(omega, temp) + 0.5) / omega;
+                    }
                 }
             }
             msd[iT][i] = tmp * std::pow(Bohr_in_Angstrom, 2.0)

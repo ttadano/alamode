@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 {
     string str;
 
-    cout << "# Result analyzer ver. 1.0.4" << endl;
+    cout << "# Result analyzer ver. 1.0.5" << endl;
     cout << "# Input file : " << argv[1] << endl;
     calc = argv[2];
     average_gamma = atoi(argv[3]);
@@ -56,6 +56,12 @@ int main(int argc, char *argv[])
     nt = static_cast<int>((tmax - tmin) / dt) + 1;
     allocate(temp, nt);
     for (i = 0; i < nt; ++i) temp[i] = tmin + dt * static_cast<double>(i);
+
+    if (!locate_tag("#CLASSICAL")) {
+        classical = false;
+    } else {
+        ifs >> classical;
+    }
 
     if (!locate_tag("#KPOINT")) {
         cout << "ERROR: Cannot find #KPOINT tag" << endl;

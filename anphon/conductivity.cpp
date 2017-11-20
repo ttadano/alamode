@@ -351,6 +351,7 @@ void Conductivity::compute_kappa()
         std::string file_kl;
         std::ofstream ofs_kl;
         double vv_tmp;
+        double damp_tmp;
         int ieq;
 
         double **lifetime;
@@ -370,8 +371,12 @@ void Conductivity::compute_kappa()
                     }
                 } else {
                     for (i = 0; i < ntemp; ++i) {
-                        lifetime[iks][i] = 1.0e+12 * time_ry * 0.5
-                            / (damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum]);
+                        damp_tmp = damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum];
+                        if (damp_tmp > 1.0e-100) {
+                            lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
+                        } else {
+                            lifetime[iks][i] = 0.0;
+                        }
                     }
                 }
             }
@@ -384,7 +389,12 @@ void Conductivity::compute_kappa()
                     }
                 } else {
                     for (i = 0; i < ntemp; ++i) {
-                        lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damping3[iks][i];
+                        damp_tmp = damping3[iks][i];
+                        if (damp_tmp > 1.0e-100) {
+                            lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
+                        } else {
+                            lifetime[iks][i] = 0.0;
+                        }
                     }
                 }
             }
@@ -417,8 +427,14 @@ void Conductivity::compute_kappa()
                                     vv_tmp += vel[ktmp][is][j] * vel[ktmp][is][k];
                                 }
 
-                                kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv(omega, Temperature[i])
-                                    * vv_tmp * lifetime[ns * ik + is][i];
+                                if (thermodynamics->classical) {
+                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv_classical(omega, Temperature[i])
+                                        * vv_tmp * lifetime[ns * ik + is][i];
+                                } else {
+                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv(omega, Temperature[i])
+                                        * vv_tmp * lifetime[ns * ik + is][i];
+                                }
+
 
                                 // Convert to SI unit
                                 kappa_mode[i][3 * j + k][is][ik] *= factor_toSI;

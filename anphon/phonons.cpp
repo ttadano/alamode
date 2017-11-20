@@ -158,9 +158,14 @@ void PHON::setup_base()
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical(mode);
     dos->setup();
+    thermodynamics->setup();
     ewald->init();
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;
+        if (thermodynamics->classical) {
+            std::cout << std::endl;
+            std::cout << " CLASSICAL = 1: Classical approximations will be used for all thermodynamical quantities." << std::endl;
+        }
     }
 }
 

@@ -36,6 +36,7 @@
 #include "integration.h"
 #include "scph.h"
 #include "ewald.h"
+#include "thermodynamics.h"
 #include <boost/lexical_cast.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -118,6 +119,7 @@ void Input::parse_general_vars()
     bool sym_time_reversal, use_triplet_symmetry;
     bool selenergy_offdiagonal;
     bool update_fc2;
+    bool classical;
 
     struct stat st;
     std::string prefix, mode, fcsinfo, fc2info;
@@ -126,7 +128,7 @@ void Input::parse_general_vars()
     std::string str_tmp;
     std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML FC2XML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   RESTART TREVSYM NKD KD MASS TRISYM PREC_EWALD";
+                                   RESTART TREVSYM NKD KD MASS TRISYM PREC_EWALD CLASSICAL";
     std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
     std::vector<std::string> no_defaults;
     std::vector<std::string> kdname_v, masskd_v;
@@ -204,6 +206,7 @@ void Input::parse_general_vars()
     printsymmetry = false;
     sym_time_reversal = false;
     use_triplet_symmetry = true;
+    classical = false;
 
     prec_ewald = 1.0e-12;
 
@@ -249,6 +252,7 @@ void Input::parse_general_vars()
     assign_val(ismear, "ISMEAR", general_var_dict);
     assign_val(epsilon, "EPSILON", general_var_dict);
     assign_val(na_sigma, "NA_SIGMA", general_var_dict);
+    assign_val(classical, "CLASSICAL", general_var_dict);
 
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
 
@@ -319,7 +323,7 @@ void Input::parse_general_vars()
     }
     fcs_phonon->file_fc2 = fc2info;
     fcs_phonon->update_fc2 = update_fc2;
-
+    thermodynamics->classical = classical;
     integration->ismear = ismear;
     relaxation->use_triplet_symmetry = use_triplet_symmetry;
 

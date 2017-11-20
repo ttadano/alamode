@@ -217,7 +217,7 @@ void Writes::setup_result_io()
             std::string line_tmp, str_tmp;
             int natmin_tmp, nkd_tmp;
             int nk_tmp[3], nksym_tmp;
-            int ismear;
+            int ismear, is_classical;
             double epsilon_tmp, T1, T2, delta_T;
 
 
@@ -261,6 +261,25 @@ void Writes::setup_result_io()
                 kpoint->nk_reduced == nksym_tmp)) {
                 error->exit("setup_result_io",
                             "KPOINT information is not consistent");
+            }
+
+            found_tag = false;
+            while (fs_result >> line_tmp) {
+                if (line_tmp == "#CLASSICAL") {
+                    found_tag = true;
+                    break;
+                }
+            }
+            if (!found_tag) {
+                std::cout << " Could not find the #CLASSICAL tag in the restart file." << std::endl;
+                std::cout << " CLASSIACAL = 0 is assumed." << std::endl;
+                is_classical = 0;
+            } else {
+                fs_result >> is_classical;
+            }
+            if (static_cast<bool>(is_classical) != thermodynamics->classical) {
+                error->warn("setup_result_io",
+                    "CLASSICAL val is not consistent");
             }
 
             found_tag = false;
@@ -357,6 +376,10 @@ void Writes::setup_result_io()
             fs_result.unsetf(std::ios::fixed);
 
             fs_result << "#END KPOINT" << std::endl;
+
+            fs_result << "#CLASSICAL" << std::endl;
+            fs_result << thermodynamics->classical << std::endl;
+            fs_result << "#END CLASSICAL" << std::endl;
 
             fs_result << "#FCSXML" << std::endl;
             fs_result << fcs_phonon->file_fcs << std::endl;

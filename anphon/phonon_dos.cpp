@@ -813,10 +813,18 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
 
                 if (omega1 < eps12 || omega2 < eps12) continue;
 
-                f1 = thermodynamics->fB(omega1, temp);
-                f2 = thermodynamics->fB(omega2, temp);
-                n1 = f1 + f2 + 1.0;
-                n2 = f1 - f2;
+                if (thermodynamics->classical) {
+                    f1 = thermodynamics->fC(omega1, temp);
+                    f2 = thermodynamics->fC(omega2, temp);
+                    n1 = f1 + f2;
+                    n2 = f1 - f2;
+                } else {
+                    f1 = thermodynamics->fB(omega1, temp);
+                    f2 = thermodynamics->fB(omega2, temp);
+                    n1 = f1 + f2 + 1.0;
+                    n2 = f1 - f2;
+                }
+
 
                 ret1 += delta_arr[k1][ib][0] * n1;
                 ret2 += -delta_arr[k1][ib][1] * n2;
