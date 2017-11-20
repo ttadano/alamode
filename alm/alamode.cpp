@@ -70,7 +70,7 @@ ALM::ALM(int narg, char **arg)
 
     finalize();
 
-    std::cout << std::endl << " Job finished at " 
+    std::cout << std::endl << " Job finished at "
         << timer->DateAndTime() << std::endl;
 }
 
@@ -116,4 +116,3 @@ void ALM::finalize()
     delete writes;
     delete memory;
 }
-

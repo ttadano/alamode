@@ -30,7 +30,9 @@
 
 using namespace ALM_NS;
 
-System::System(ALM *alm): Pointers(alm) {}
+System::System(ALM *alm): Pointers(alm)
+{
+}
 
 System::~System()
 {
@@ -279,30 +281,30 @@ void System::load_reference_system_xml(std::string file_reference_fcs,
 
     if (order_fcs == 0) {
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
-            if (child_.first == "FC2") {
-                const ptree &child = child_.second;
-                const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
-                const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
+                if (child_.first == "FC2") {
+                    const ptree &child = child_.second;
+                    const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
+                    const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
 
-                std::istringstream is(str_intpair);
-                is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
-                fcs_ref[counter] = boost::lexical_cast<double>(child.data());
-                ++counter;
+                    std::istringstream is(str_intpair);
+                    is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
+                    fcs_ref[counter] = boost::lexical_cast<double>(child.data());
+                    ++counter;
+                }
             }
-        }
     } else if (order_fcs == 1) {
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.CubicUnique")) {
-            if (child_.first == "FC3") {
-                const ptree &child = child_.second;
-                const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
-                const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
+                if (child_.first == "FC3") {
+                    const ptree &child = child_.second;
+                    const std::string str_intpair = child.get<std::string>("<xmlattr>.pairs");
+                    const std::string str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
 
-                std::istringstream is(str_intpair);
-                is >> intpair_ref[counter][0] >> intpair_ref[counter][1] >> intpair_ref[counter][2];
-                fcs_ref[counter] = boost::lexical_cast<double>(child.data());
-                ++counter;
+                    std::istringstream is(str_intpair);
+                    is >> intpair_ref[counter][0] >> intpair_ref[counter][1] >> intpair_ref[counter][2];
+                    fcs_ref[counter] = boost::lexical_cast<double>(child.data());
+                    ++counter;
+                }
             }
-        }
     }
 
     int i;

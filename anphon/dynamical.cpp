@@ -851,8 +851,8 @@ void Dynamical::load_born()
 
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
-                std::cout << std::setw(15) << std::fixed 
-                << std::setprecision(6) << borncharge[i][j][k];
+                std::cout << std::setw(15) << std::fixed
+                    << std::setprecision(6) << borncharge[i][j][k];
             }
             std::cout << std::endl;
         }
@@ -929,7 +929,7 @@ void Dynamical::load_born()
             }
         }
     }
-    
+
     for (iat = 0; iat < system->natmin; ++iat) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -944,7 +944,7 @@ void Dynamical::load_born()
     for (iat = 0; iat < system->natmin; ++iat) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                diff_sym = std::max(res, std::abs(borncharge[iat][i][j]-born_sym[iat][i][j]));
+                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
             }
         }
     }
@@ -962,14 +962,14 @@ void Dynamical::load_born()
         }
     }
     memory->deallocate(born_sym);
-    
+
     if (diff_sym > eps8 || res > eps10) {
         std::cout << std::endl;
         std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
         for (i = 0; i < system->natmin; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                 << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
-    
+
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
                     std::cout << std::setw(15) << borncharge[i][j][k];

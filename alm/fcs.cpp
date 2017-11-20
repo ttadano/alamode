@@ -26,9 +26,13 @@
 
 using namespace ALM_NS;
 
-Fcs::Fcs(ALM *alm) : Pointers(alm) {};
+Fcs::Fcs(ALM *alm) : Pointers(alm)
+{
+};
 
-Fcs::~Fcs() {};
+Fcs::~Fcs()
+{
+};
 
 void Fcs::init()
 {

@@ -271,8 +271,8 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars", "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
     if (nonanalytic == 3) {
-        if (mode == "SCPH") { 
-            error->exit("parse_general_vars", 
+        if (mode == "SCPH") {
+            error->exit("parse_general_vars",
                         "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
         }
     }
@@ -418,11 +418,11 @@ void Input::parse_scph_vars()
         }
 
         if (kmesh_v.size() != 3) {
-            error->exit("parse_general_vars", 
+            error->exit("parse_general_vars",
                         "The number of entries for KMESH_SCPH has to be 3.");
         }
     } else {
-        error->exit("parse_general_vars", 
+        error->exit("parse_general_vars",
                     "Please specify KMESH_SCPH for mode = SCPH");
     }
 
@@ -441,11 +441,11 @@ void Input::parse_scph_vars()
         }
 
         if (kmesh_interpolate_v.size() != 3) {
-            error->exit("parse_general_vars", 
+            error->exit("parse_general_vars",
                         "The number of entries for KMESH_INTERPOLATE has to be 3.");
         }
     } else {
-        error->exit("parse_general_vars", 
+        error->exit("parse_general_vars",
                     "Please specify KMESH_INTERPOLATE for mode = SCPH");
     }
 
@@ -463,7 +463,7 @@ void Input::parse_scph_vars()
     scph->tolerance_scph = tolerance_scph;
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
-   
+
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
 
