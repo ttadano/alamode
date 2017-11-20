@@ -270,6 +270,12 @@ void Input::parse_general_vars()
     if (nonanalytic > 3) {
         error->exit("parse_general_vars", "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
+    if (nonanalytic == 3) {
+        if (mode == "SCPH") { 
+            error->exit("parse_general_vars", 
+                        "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
+        }
+    }
 
     // Copy the values to appropriate classes.
 
@@ -706,7 +712,7 @@ void Input::parse_cell_parameter()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -726,7 +732,7 @@ void Input::parse_cell_parameter()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -800,7 +806,7 @@ void Input::parse_kpoints()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -820,7 +826,7 @@ void Input::parse_kpoints()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t "));
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
