@@ -100,6 +100,8 @@ void Writes::write_input_vars()
     std::cout << "  ISMEAR = " << integration->ismear
         << "; EPSILON = " << integration->epsilon << std::endl;
     std::cout << std::endl;
+    std::cout << "  CLASSICAL = " << thermodynamics->classical << std::endl;
+    std::cout << std::endl;
 
     if (phon->mode == "RTA") {
         std::cout << "  RESTART = " << phon->restart_flag << std::endl;

@@ -193,6 +193,19 @@ List of input variables
 
 ````
 
+* CLASSICAL-tag = 0 | 1
+
+ === =======================================================
+  0   Use quantum statistics (default)
+  1   Use classical statistics
+ === =======================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: When ``CLASSICAL = 1``, all thermodynamic functions including the occupation function, heat capacity, and mean square displacements are calculated using the classical formlae. This option may be useful when comparing the lattice dynamics and molecular dynamics results.
+
+````
+
 * TRISYM-tag : Flag to use symmetry operations to reduce the number of triples of :math:`k` points for self-energy calculations
 
  === =======================================================

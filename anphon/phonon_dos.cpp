@@ -545,10 +545,11 @@ void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
 
     for (iT = 0; iT < NT; ++iT) {
 
+        std::cout << " T = " << std::setw(5) << Tmin + static_cast<double>(iT) * dT << std::endl;
+
         for (j = 0; j < nk; ++j) {
             for (k = 0; k < neval; ++k) {
                 eval[k][j] = writes->in_kayser(eval_anharm[iT][j][k]);
-                //                std::cout << eval[k][j] << std::endl;
             }
         }
 
