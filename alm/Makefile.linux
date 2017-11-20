@@ -6,7 +6,7 @@
 #-----------------------------------------------
 
 CXX = icpc 
-CXXFLAGS = -O2 -xHOST -openmp 
+CXXFLAGS = -O2 -xHOST -openmp -std=c++11
 INCLUDE = -I../include
 
 CXXL = ${CXX}
