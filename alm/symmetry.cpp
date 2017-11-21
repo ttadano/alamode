@@ -233,7 +233,7 @@ void Symmetry::setup_symmetry_operation(int nat,
     }
 
 #ifdef _DEBUG
-    print_symmetrized_coordinate(x);
+  //  print_symmetrized_coordinate(x);
 #endif
 }
 

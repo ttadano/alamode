@@ -95,6 +95,7 @@ namespace ALM_NS
 
         double **const_mat;
         double *const_rhs;
+        double tolerance_constraint;
 
         bool exist_constraint;
         bool extra_constraint_from_symmetry;
@@ -131,7 +132,7 @@ namespace ALM_NS
         void setup_rotation_axis(bool [3][3]);
         bool is_allzero(const int, const double *, const int nshift = 0);
         bool is_allzero(const std::vector<int>, int &);
-        bool is_allzero(const std::vector<double>, int &);
+        bool is_allzero(const std::vector<double>, const double, int &);
 
         void remove_redundant_rows(const int, std::vector<ConstraintClass> &,
                                    const double tolerance = eps12);
