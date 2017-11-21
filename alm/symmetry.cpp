@@ -69,6 +69,25 @@ void Symmetry::init()
     //    }
     //    std::cout << std::endl;
 
+    int counter = 0;
+    for (auto it = SymmData.begin(); it != SymmData.end(); ++it) {
+        std::cout << "Symm. No. : " << std::setw(4) << counter + 1;
+        std::cout << "( " << (*it).compatible_with_lattice << " " << (*it).compatible_with_cartesian << ")" << std::endl;
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                std::cout << std::setw(15) << (*it).rotation[i][j];
+            }
+            std::cout << "           ";
+            for (j = 0; j < 3; ++j) {
+                std::cout << std::setw(15) << (*it).rotation_cart[i][j];
+            }
+
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        ++counter;
+    }
+
     pure_translations();
 
     memory->allocate(map_sym, nat, nsym);
