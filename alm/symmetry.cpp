@@ -724,14 +724,6 @@ void Symmetry::symop_availability_check(double ***rot,
 
     for (i = 0; i < nsym; ++i) {
 
-        std::cout << "Sym. No. : " << std::setw(3) << i + 1 << std::endl;
-        for (j = 0; j < 3; ++j) {
-            for (k = 0; k < 3; ++k) {
-                std::cout << std::setw(15) << rot[i][j][k];
-            }
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
         nfinite = 0;
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
