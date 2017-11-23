@@ -30,7 +30,7 @@ using namespace ALM_NS;
 
 Constraint::Constraint(ALM *alm) : Pointers(alm)
 {
-    tolerance_constraint = eps12;
+    tolerance_constraint = eps6;
 }
 
 Constraint::~Constraint()
@@ -470,9 +470,7 @@ void Constraint::get_mapping_constraint(const int nmax,
                  p != const_in[order].rend(); ++p) {
                 p_index_target = -1;
                 for (i = 0; i < nparam; ++i) {
-                    std::cout << "scan :" << std::setw(5) << i + 1
-                    << " " << std::scientific << std::setw(15) << (*p).w_const[i] << std::endl;
-                    if (std::abs((*p).w_const[i]) > eps) {
+                    if (std::abs((*p).w_const[i]) > tolerance_constraint) {
                         p_index_target = i;
                         break;
                     }
@@ -670,14 +668,14 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                         iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
                         if (iter_found != list_found.end()) {
                             c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-                            if (std::abs(c_tmp) < eps8) c_tmp = 0.0;
+                   //         if (std::abs(c_tmp) < eps6) c_tmp = 0.0;
                             const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
 //                            std::cout << " isym = " << std::setw(4) << isym + 1;
 //                            std::cout << " iloc = " << std::setw(4) << (*iter_found).mother;
 //                            std::cout << " coef = " << std::setw(15) << (*iter_found).sign * c_tmp << std::endl;
                         }
                     }
-                    if (!is_allzero(const_now_omp, tolerance_constraint, loc_nonzero)) {
+                    if (!is_allzero(const_now_omp, eps8, loc_nonzero)) {
                         if (const_now_omp[loc_nonzero] < 0.0) {
                             for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
                         }
@@ -722,11 +720,10 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         memory->deallocate(xyzcomponent);
         memory->deallocate(arr_constraint);
-        std::cout << "OK " << std::endl;
 
-        std::cout << "Size of constraint matrix:" << std::endl;
-        std::cout << const_out[order].size() << std::endl;
-        std::cout << "tolerance_constraint = " << tolerance_constraint << std::endl;
+//        std::cout << "Size of constraint matrix:" << std::endl;
+//        std::cout << const_out[order].size() << std::endl;
+//        std::cout << "tolerance_constraint = " << tolerance_constraint << std::endl;
 
         remove_redundant_rows(nparams, const_out[order], tolerance_constraint);
 
@@ -1586,7 +1583,6 @@ void Constraint::remove_redundant_rows(const int n,
 
         memory->allocate(mat_tmp, nconst, nparam);
 
-        std::cout << "OK2" << std::endl;
         i = 0;
 
         for (auto p = Constraint_vec.begin(); p != Constraint_vec.end(); ++p) {
@@ -1596,12 +1592,7 @@ void Constraint::remove_redundant_rows(const int n,
             ++i;
         }
 
-        std::cout << "OK3" << std::endl;
-
-        std::cout << "tolerance = " << tolerance << std::endl;
-        rref(nconst, nparam, mat_tmp, nrank, eps8);
-
-        std::cout << "OK4" << std::endl;
+        rref(nconst, nparam, mat_tmp, nrank, tolerance);
 
         /*
         // 		// Transpose matrix A 
@@ -1638,29 +1629,19 @@ void Constraint::remove_redundant_rows(const int n,
         memory->allocate(arr_tmp, nparam);
 
         Constraint_vec.clear();
-        std::cout << "RANK = " << nrank << std::endl;
-
-//        for (i = 0; i < nrank; ++i) {
-//            for (j = 0; j < nparam; ++j) {
-//                std::cout << std::setw(15) << mat_tmp[i][j];
-//            }
-//            std::cout << std::endl;
-//        }
-//        std::cout << std::endl;
-//
-//        std::cout << "OK4.5" << std::endl;
 
         for (i = 0; i < nrank; ++i) {
             for (j = 0; j < i; ++j) arr_tmp[j] = 0.0;
 
             for (j = i; j < nparam; ++j) {
-                arr_tmp[j] = mat_tmp[i][j];
+                if (std::abs(mat_tmp[i][j]) < tolerance) {
+                    arr_tmp[j] = 0.0;
+                } else {
+                    arr_tmp[j] = mat_tmp[i][j];
+                }
             }
             Constraint_vec.push_back(ConstraintClass(nparam, arr_tmp));
         }
-
-        std::cout << "matrix size after reduction: " << Constraint_vec.size() << std::endl;
-        std::cout << "OK5" << std::endl;
 
         memory->deallocate(mat_tmp);
         memory->deallocate(arr_tmp);
@@ -1792,11 +1773,10 @@ void Constraint::rref(int nrows,
 
         if (icol == ncols) break;
 
-        std::cout << mat[pivot][icol] << std::endl;
-//        if (std::abs(mat[pivot][icol]) >= tolerance) ++nrank;
+        if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
 
         if (pivot != irow) {
-#pragma omp parallel for private(tmp)
+//#pragma omp parallel for private(tmp)
             for (jcol = icol; jcol < ncols; ++jcol) {
                 tmp = mat[pivot][jcol];
                 mat[pivot][jcol] = mat[irow][jcol];
@@ -1806,7 +1786,7 @@ void Constraint::rref(int nrows,
 
         tmp = mat[irow][icol];
         tmp = 1.0 / tmp;
-#pragma omp parallel for
+//#pragma omp parallel for
         for (jcol = icol; jcol < ncols; ++jcol) {
             mat[irow][jcol] *= tmp;
         }
@@ -1815,15 +1795,10 @@ void Constraint::rref(int nrows,
             if (jrow == irow) continue;
 
             tmp = mat[jrow][icol];
-#pragma omp parallel for
+//#pragma omp parallel for
             for (jcol = icol; jcol < ncols; ++jcol) {
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }
         }
-    }
-
-    int nmin = std::min<int>(nrows, ncols);
-    for (int i = 0; i < nmin; ++i) {
-        if (std::abs(mat[i][i]) > tolerance) ++nrank;
     }
 }

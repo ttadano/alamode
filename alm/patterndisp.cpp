@@ -58,15 +58,15 @@ void Displace::gen_displacement_pattern()
 
     constraint->constraint_from_symmetry(constsym);
     int counter  =0;
-    for (auto it = constsym[0].begin(); it != constsym[0].end(); ++it) {
-        std::cout << "Const : " << std::setw(5) << counter + 1;
-        for (auto it1 = (*it).w_const.begin(); it1 != (*it).w_const.end(); ++it1) {
-            std::cout << std::setw(15) << (*it1);
-        }
-        std::cout << std::endl;
-        ++counter;
-    }
-    std::cout << std::endl;
+//    for (auto it = constsym[0].begin(); it != constsym[0].end(); ++it) {
+//        std::cout << "Const : " << std::setw(5) << counter + 1;
+//        for (auto it1 = (*it).w_const.begin(); it1 != (*it).w_const.end(); ++it1) {
+//            std::cout << std::setw(15) << (*it1);
+//        }
+//        std::cout << std::endl;
+//        ++counter;
+//    }
+//    std::cout << std::endl;
     constraint->get_mapping_constraint(maxorder, constsym, const_fix_tmp,
                                        const_relate_tmp, index_bimap_tmp, true);
 
