@@ -423,7 +423,7 @@ void Constraint::get_mapping_constraint(const int nmax,
 {
     int order;
     unsigned int i;
-    double const_tol = eps8;
+    //double const_tol = eps8;
 
     bool *fix_forceconstant;
     std::string *file_forceconstant;
@@ -470,7 +470,9 @@ void Constraint::get_mapping_constraint(const int nmax,
                  p != const_in[order].rend(); ++p) {
                 p_index_target = -1;
                 for (i = 0; i < nparam; ++i) {
-                    if (std::abs((*p).w_const[i]) > const_tol) {
+                    std::cout << "scan :" << std::setw(5) << i + 1
+                    << " " << std::scientific << std::setw(15) << (*p).w_const[i] << std::endl;
+                    if (std::abs((*p).w_const[i]) > eps) {
                         p_index_target = i;
                         break;
                     }
@@ -485,7 +487,7 @@ void Constraint::get_mapping_constraint(const int nmax,
                 p_index_tmp.clear();
 
                 for (i = p_index_target + 1; i < nparam; ++i) {
-                    if (std::abs((*p).w_const[i]) > const_tol) {
+                    if (std::abs((*p).w_const[i]) > tolerance_constraint) {
                         alpha_tmp.push_back((*p).w_const[i]);
                         p_index_tmp.push_back(i);
                     }
@@ -1597,7 +1599,7 @@ void Constraint::remove_redundant_rows(const int n,
         std::cout << "OK3" << std::endl;
 
         std::cout << "tolerance = " << tolerance << std::endl;
-        rref(nconst, nparam, mat_tmp, nrank, eps10);
+        rref(nconst, nparam, mat_tmp, nrank, eps8);
 
         std::cout << "OK4" << std::endl;
 
@@ -1655,9 +1657,7 @@ void Constraint::remove_redundant_rows(const int n,
                 arr_tmp[j] = mat_tmp[i][j];
             }
             Constraint_vec.push_back(ConstraintClass(nparam, arr_tmp));
-            std::cout << "add " << std::setw(4) << i << std::endl;
         }
-
 
         std::cout << "matrix size after reduction: " << Constraint_vec.size() << std::endl;
         std::cout << "OK5" << std::endl;
@@ -1793,7 +1793,7 @@ void Constraint::rref(int nrows,
         if (icol == ncols) break;
 
         std::cout << mat[pivot][icol] << std::endl;
-        if (std::abs(mat[pivot][icol]) >= tolerance) ++nrank;
+//        if (std::abs(mat[pivot][icol]) >= tolerance) ++nrank;
 
         if (pivot != irow) {
 #pragma omp parallel for private(tmp)
@@ -1820,5 +1820,10 @@ void Constraint::rref(int nrows,
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }
         }
+    }
+
+    int nmin = std::min<int>(nrows, ncols);
+    for (int i = 0; i < nmin; ++i) {
+        if (std::abs(mat[i][i]) > tolerance) ++nrank;
     }
 }
