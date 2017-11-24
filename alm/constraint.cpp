@@ -126,7 +126,7 @@ void Constraint::setup()
         int N = 0;
 
         for (i = 0; i < maxorder; ++i) {
-            N += fcs->ndup[i].size();
+            N += fcs->nequiv[i].size();
         }
 
         memory->allocate(const_translation, maxorder);
@@ -181,7 +181,7 @@ void Constraint::setup()
 
         for (order = 0; order < maxorder; ++order) {
 
-            nparam = fcs->ndup[order].size();
+            nparam = fcs->nequiv[order].size();
             memory->allocate(arr_tmp, nparam);
 
             for (it_const = const_translation[order].begin();
@@ -260,11 +260,11 @@ void Constraint::setup()
             }
             if (fix_harmonic) {
                 Pmax -= const_self[0].size();
-                Pmax += fcs->ndup[0].size();
+                Pmax += fcs->nequiv[0].size();
             }
             if (fix_cubic) {
                 Pmax -= const_self[1].size();
-                Pmax += fcs->ndup[1].size();
+                Pmax += fcs->nequiv[1].size();
             }
             memory->allocate(const_mat, Pmax, N);
             memory->allocate(const_rhs, Pmax);
@@ -302,7 +302,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
 
     // Intra-order constraints
     for (order = 0; order < maxorder; ++order) {
-        int nparam = fcs->ndup[order].size();
+        int nparam = fcs->nequiv[order].size();
 
         if ((order == 0 && !fix_harmonic) || (order == 1 && !fix_cubic) || order > 1) {
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
@@ -324,7 +324,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
     int nshift2 = 0;
     for (order = 0; order < maxorder; ++order) {
         if (order > 0) {
-            int nparam2 = fcs->ndup[order - 1].size() + fcs->ndup[order].size();
+            int nparam2 = fcs->nequiv[order - 1].size() + fcs->nequiv[order].size();
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
             for (auto p = const_rotation_cross[order].begin();
                  p != const_rotation_cross[order].end(); ++p) {
@@ -334,7 +334,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
                 }
                 const_total.push_back(ConstraintClass(N, arr_tmp));
             }
-            nshift2 += fcs->ndup[order - 1].size();
+            nshift2 += fcs->nequiv[order - 1].size();
         }
     }
     memory->deallocate(arr_tmp);
@@ -349,7 +349,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         std::cout << "  of the reference " << fc2_file << std::endl;
         std::cout << "  Constraint for HARMONIC IFCs will be updated accordingly."
             << std::endl << std::endl;
-        P += fcs->ndup[0].size();
+        P += fcs->nequiv[0].size();
     }
 
     if (fix_cubic) {
@@ -357,7 +357,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         std::cout << "  of the reference " << fc3_file << std::endl;
         std::cout << "  Constraint for ANHARM3 IFCs will be updated accordingly."
             << std::endl << std::endl;
-        P += fcs->ndup[1].size();
+        P += fcs->nequiv[1].size();
     }
 
     for (i = 0; i < P; ++i) {
@@ -372,7 +372,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
 
     if (fix_harmonic) {
         double *const_rhs_tmp;
-        int nfcs_tmp = fcs->ndup[0].size();
+        int nfcs_tmp = fcs->nequiv[0].size();
         memory->allocate(const_rhs_tmp, nfcs_tmp);
         system->load_reference_system_xml(fc2_file, 0, const_rhs_tmp);
 
@@ -387,9 +387,9 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
     }
 
     if (fix_cubic) {
-        int ishift = fcs->ndup[0].size();
+        int ishift = fcs->nequiv[0].size();
         double *const_rhs_tmp;
-        int nfcs_tmp = fcs->ndup[1].size();
+        int nfcs_tmp = fcs->nequiv[1].size();
         memory->allocate(const_rhs_tmp, nfcs_tmp);
         system->load_reference_system_xml(fc3_file, 1, const_rhs_tmp);
 
@@ -445,7 +445,7 @@ void Constraint::get_mapping_constraint(const int nmax,
     int nparam;
     for (order = 0; order < nmax; ++order) {
 
-        nparam = fcs->ndup[order].size();
+        nparam = fcs->nequiv[order].size();
 
         if (fix_forceconstant[order]) {
 
@@ -508,7 +508,7 @@ void Constraint::get_mapping_constraint(const int nmax,
 
     for (order = 0; order < nmax; ++order) {
 
-        nparam = fcs->ndup[order].size();
+        nparam = fcs->nequiv[order].size();
 
         for (i = 0; i < nparam; ++i) {
             has_constraint[order].push_back(0);
@@ -526,7 +526,7 @@ void Constraint::get_mapping_constraint(const int nmax,
     int icount;
 
     for (order = 0; order < nmax; ++order) {
-        nparam = fcs->ndup[order].size();
+        nparam = fcs->nequiv[order].size();
 
         icount = 0;
         for (i = 0; i < nparam; ++i) {
@@ -578,7 +578,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
     for (order = 0; order < maxorder; ++order) {
 
-        nparams = fcs->ndup[order].size();
+        nparams = fcs->nequiv[order].size();
 
         if (has_constraint_from_symm) {
             std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
@@ -590,7 +590,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         // Generate temporary list of parameters
         list_found.clear();
-        for (auto p = fcs->fc_set[order].begin(); p != fcs->fc_set[order].end(); ++p) {
+        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
             list_found.insert(FcProperty(order + 2, (*p).sign,
                                          index_tmp, (*p).mother));
@@ -600,7 +600,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
         memory->allocate(xyzcomponent, nxyz, order + 2);
         fcs->get_xyzcomponent(order + 2, xyzcomponent);
 
-        int nfcs = fcs->fc_set[order].size();
+        int nfcs = fcs->fc_table[order].size();
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -630,7 +630,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 #pragma omp for private(i, isym, ixyz), schedule(static)
 #endif
             for (int ii = 0; ii < nfcs; ++ii) {
-                FcProperty list_tmp = fcs->fc_set[order][ii];
+                FcProperty list_tmp = fcs->fc_table[order][ii];
 
                 for (i = 0; i < order + 2; ++i) {
                     atm_index[i] = list_tmp.elems[i] / 3;
@@ -758,7 +758,7 @@ void Constraint::translational_invariance()
 
         const_mat.clear();
 
-        nparams = fcs->ndup[order].size();
+        nparams = fcs->nequiv[order].size();
 
         if (nparams == 0) {
             std::cout << "  No parameters! Skipped." << std::endl;
@@ -769,8 +769,8 @@ void Constraint::translational_invariance()
 
         list_found.clear();
 
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin();
-             p != fcs->fc_set[order].end(); ++p) {
+        for (std::vector<FcProperty>::iterator p = fcs->fc_table[order].begin();
+             p != fcs->fc_table[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }
@@ -1047,7 +1047,7 @@ void Constraint::rotational_invariance()
 
     for (order = 0; order < maxorder; ++order) {
 
-        nparams[order] = fcs->ndup[order].size();
+        nparams[order] = fcs->nequiv[order].size();
 
         if (order == 0) {
             std::cout << "   Constraints between " << std::setw(8)
@@ -1076,8 +1076,8 @@ void Constraint::rotational_invariance()
 
         list_found.clear();
 
-        for (std::vector<FcProperty>::iterator p = fcs->fc_set[order].begin();
-             p != fcs->fc_set[order].end(); ++p) {
+        for (std::vector<FcProperty>::iterator p = fcs->fc_table[order].begin();
+             p != fcs->fc_table[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }

@@ -32,6 +32,9 @@ Fcs::Fcs(ALM *alm) : Pointers(alm)
 
 Fcs::~Fcs()
 {
+    memory->deallocate(fc_table);
+    memory->deallocate(nequiv);
+    memory->deallocate(fc_zeros);
 };
 
 void Fcs::init()
@@ -42,40 +45,44 @@ void Fcs::init()
     std::cout << " FORCE CONSTANT" << std::endl;
     std::cout << " ==============" << std::endl << std::endl;
 
-    memory->allocate(fc_set, maxorder);
-    memory->allocate(ndup, maxorder);
+    memory->allocate(fc_table, maxorder);
+    memory->allocate(nequiv, maxorder);
+    memory->allocate(fc_zeros, maxorder);
 
-    generate_fclists(maxorder);
+    for (i = 0; i < maxorder; ++i) {
+        generate_force_constant_table(i, interaction->pairs[i],
+                                      symmetry->SymmData, "Cartesian",
+                                      fc_table[i], nequiv[i], fc_zeros[i], true);
+    }
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
+
         std::cout << "  Number of " << std::setw(9)
             << interaction->str_order[i]
-            << " FCs : " << ndup[i].size();
+            << " FCs : " << nequiv[i].size();
         std::cout << std::endl;
     }
     std::cout << std::endl;
 
-    for (auto it = ndup[0].begin(); it != ndup[0].end(); ++it) {
-        std::cout << (*it) << std::endl;
-    }
 
-    // sort fc_set
+    //
+    //    std::vector<FcProperty> fc_test, fc_zeros_tmp;
+    //    std::vector<int> nmulti;
+    //    generate_force_constant_table(1, interaction->pairs[1],
+    //                                  symmetry->SymmData, "Lattice",
+    //                                  fc_test, nmulti, fc_zeros_tmp, true);
+    //    std::cout << "Nonzero independent IFCs:" << std::setw(5) << nmulti.size() << std::endl;
+//    std::cout << "Zero IFCs:" << std::endl;
+//    for (auto it = fc_zeros_tmp.begin(); it != fc_zeros_tmp.end(); ++it) {
+//        for (i = 0; i < (*it).elems.size(); ++i) {
+//            std::cout << std::setw(4) << (*it).elems[i];
+//        }
+//        std::cout << std::setw(5) << (*it).mother;
+//        std::cout << std::endl;
+//    }
+//    std::cout << std::endl;
 
-    for (int order = 0; order < maxorder; ++order) {
-        if (ndup[order].size() > 0) {
-            std::sort(fc_set[order].begin(),
-                      fc_set[order].begin() + ndup[order][0]);
-            int nbegin = ndup[order][0];
-            int nend;
-            for (int mm = 1; mm < ndup[order].size(); ++mm) {
-                nend = nbegin + ndup[order][mm];
-                std::sort(fc_set[order].begin() + nbegin,
-                          fc_set[order].begin() + nend);
-                nbegin += ndup[order][mm];
-            }
-        }
-    }
 
     timer->print_elapsed();
     std::cout << " -------------------------------------------------------------------" << std::endl;
@@ -83,9 +90,13 @@ void Fcs::init()
 }
 
 void Fcs::generate_force_constant_table(const int order,
-                                        std::set<IntList> *pairs,
-                                        std::vector<SymmetryOperation> *symmop,
-                                        std::string basis)
+                                        const std::set<IntList> pairs,
+                                        const std::vector<SymmetryOperation> symmop,
+                                        std::string basis,
+                                        std::vector<FcProperty> &fc_vec,
+                                        std::vector<int> &ndup,
+                                        std::vector<FcProperty> &fc_zeros,
+                                        const bool store_zeros)
 {
     int i, j;
     int i1, i2;
@@ -102,7 +113,7 @@ void Fcs::generate_force_constant_table(const int order,
 
     int nmother;
     int nat = system->nat;
-    int nsym = symmop->size();
+    int nsym = symmop.size();
     int nsym_in_use;
 
     bool is_zero;
@@ -119,7 +130,7 @@ void Fcs::generate_force_constant_table(const int order,
     counter = 0;
     if (basis == "Cartesian") {
 
-        for (auto it = symmop->begin(); it != symmop->end(); ++it) {
+        for (auto it = symmop.begin(); it != symmop.end(); ++it) {
             if ((*it).compatible_with_cartesian) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -136,7 +147,7 @@ void Fcs::generate_force_constant_table(const int order,
 
     } else if (basis == "Lattice") {
 
-        for (auto it = symmop->begin(); it != symmop->end(); ++it) {
+        for (auto it = symmop.begin(); it != symmop.end(); ++it) {
             if ((*it).compatible_with_lattice) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -167,9 +178,9 @@ void Fcs::generate_force_constant_table(const int order,
     memory->allocate(ind_mapped_tmp, order + 2);
     memory->allocate(is_searched, 3 * nat);
 
-
-    fc_set[order].clear();
-    ndup[order].clear();
+    fc_vec.clear();
+    ndup.clear();
+    fc_zeros.clear();
     nmother = 0;
 
     nxyz = static_cast<int>(std::pow(3.0, order + 2));
@@ -179,7 +190,7 @@ void Fcs::generate_force_constant_table(const int order,
 
     std::set<IntList> list_found;
 
-    for (auto iter = pairs->begin(); iter != pairs->end(); ++iter) {
+    for (auto iter = pairs.begin(); iter != pairs.end(); ++iter) {
 
         for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
 
@@ -208,7 +219,6 @@ void Fcs::generate_force_constant_table(const int order,
                 if (!is_inprim(order + 2, atmn_mapped)) continue;
 
                 for (i2 = 0; i2 < nxyz; ++i2) {
-                    //  c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
                     c_tmp = coef_sym(order + 2, rotation[isym], xyzcomponent[i1], xyzcomponent[i2]);
                     if (std::abs(c_tmp) > eps12) {
                         for (i = 0; i < order + 2; ++i)
@@ -232,8 +242,8 @@ void Fcs::generate_force_constant_table(const int order,
                         if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()) {
                             list_found.insert(IntList(order + 2, ind_mapped));
 
-                            fc_set[order].push_back(FcProperty(order + 2, c_tmp,
-                                                               ind_mapped, nmother));
+                            fc_vec.push_back(FcProperty(order + 2, c_tmp,
+                                                        ind_mapped, nmother));
                             ++ndeps;
 
                             // Add equivalent interaction list (permutation) if there are two or more indices
@@ -248,8 +258,8 @@ void Fcs::generate_force_constant_table(const int order,
                                     for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                     std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
                                     sort_tail(order + 2, ind_mapped_tmp);
-                                    fc_set[order].push_back(FcProperty(order + 2, c_tmp,
-                                                                       ind_mapped_tmp, nmother));
+                                    fc_vec.push_back(FcProperty(order + 2, c_tmp,
+                                                                ind_mapped_tmp, nmother));
 
                                     ++ndeps;
 
@@ -264,9 +274,15 @@ void Fcs::generate_force_constant_table(const int order,
             } // close symmetry loop
 
             if (is_zero) {
-                for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
+                if (store_zeros) {
+                    for (auto it = fc_vec.rbegin(); it != fc_vec.rbegin() + ndeps; ++it) {
+                        (*it).mother = -1;
+                        fc_zeros.push_back(*it);
+                    }
+                }
+                for (i = 0; i < ndeps; ++i) fc_vec.pop_back();
             } else {
-                ndup[order].push_back(ndeps);
+                ndup.push_back(ndeps);
                 ++nmother;
             }
 
@@ -284,167 +300,21 @@ void Fcs::generate_force_constant_table(const int order,
     memory->deallocate(is_searched);
     memory->deallocate(rotation);
     memory->deallocate(map_sym);
+
+    // sort fc_vec
+
+    if (ndup.size() > 0) {
+        std::sort(fc_vec.begin(), fc_vec.begin() + ndup[0]);
+        int nbegin = ndup[0];
+        int nend;
+        for (int mm = 1; mm < ndup.size(); ++mm) {
+            nend = nbegin + ndup[mm];
+            std::sort(fc_vec.begin() + nbegin, fc_vec.begin() + nend);
+            nbegin += ndup[mm];
+        }
+    }
 }
 
-
-void Fcs::generate_fclists(int maxorder)
-{
-    int i, j;
-    int i1, i2;
-    int order;
-    int i_prim;
-    int *atmn, *atmn_mapped;
-    int *ind, *ind_mapped;
-    int *ind_tmp, *ind_mapped_tmp;
-    int nxyz;
-    unsigned int isym;
-
-    double c_tmp;
-
-    int **xyzcomponent;
-
-    int nmother;
-    int nat = system->nat;
-
-    bool is_zero;
-    bool *is_searched;
-
-    std::cout << "  Finding symmetrically-independent force constants ..." << std::endl;
-
-    memory->allocate(atmn, maxorder + 1);
-    memory->allocate(atmn_mapped, maxorder + 1);
-    memory->allocate(ind, maxorder + 1);
-    memory->allocate(ind_mapped, maxorder + 1);
-    memory->allocate(ind_tmp, maxorder - 1);
-    memory->allocate(ind_mapped_tmp, maxorder + 1);
-    memory->allocate(is_searched, 3 * nat);
-
-    for (order = 0; order < maxorder; ++order) {
-
-        std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
-
-        fc_set[order].clear();
-        ndup[order].clear();
-        nmother = 0;
-
-        nxyz = static_cast<int>(std::pow(3.0, order + 2));
-
-        memory->allocate(xyzcomponent, nxyz, order + 2);
-        get_xyzcomponent(order + 2, xyzcomponent);
-
-        std::set<IntList> list_found;
-
-        for (auto iter = interaction->pairs[order].begin(); iter != interaction->pairs[order].end(); ++iter) {
-
-            for (i = 0; i < order + 2; ++i) atmn[i] = (*iter).iarray[i];
-
-            for (i1 = 0; i1 < nxyz; ++i1) {
-                for (i = 0; i < order + 2; ++i)
-                    ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
-
-                if (!is_ascending(order + 2, ind)) continue;
-
-                i_prim = min_inprim(order + 2, ind);
-                std::swap(ind[0], ind[i_prim]);
-                sort_tail(order + 2, ind);
-
-                is_zero = false;
-
-                if (list_found.find(IntList(order + 2, ind)) != list_found.end()) continue; // Already exits!
-
-                // Search symmetrically-dependent parameter set
-
-                int ndeps = 0;
-
-                for (isym = 0; isym < symmetry->nsym; ++isym) {
-
-                    if (!symmetry->SymmData[isym].compatible_with_cartesian) continue;
-
-                    for (i = 0; i < order + 2; ++i)
-                        atmn_mapped[i] = symmetry->map_sym[atmn[i]][isym];
-
-                    if (!is_inprim(order + 2, atmn_mapped)) continue;
-
-                    for (i2 = 0; i2 < nxyz; ++i2) {
-                        c_tmp = coef_sym(order + 2, isym, xyzcomponent[i1], xyzcomponent[i2]);
-                        if (std::abs(c_tmp) > eps12) {
-                            for (i = 0; i < order + 2; ++i)
-                                ind_mapped[i] = 3 * atmn_mapped[i] + xyzcomponent[i2][i];
-
-                            i_prim = min_inprim(order + 2, ind_mapped);
-                            std::swap(ind_mapped[0], ind_mapped[i_prim]);
-                            sort_tail(order + 2, ind_mapped);
-
-                            if (!is_zero) {
-                                bool zeroflag = true;
-                                for (i = 0; i < order + 2; ++i) {
-                                    zeroflag = zeroflag & (ind[i] == ind_mapped[i]);
-                                }
-                                zeroflag = zeroflag & (std::abs(c_tmp + 1.0) < eps8);
-                                is_zero = zeroflag;
-                            }
-
-                            // Add to found list (set) and fcset (vector) if the created is new one.
-
-                            if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()) {
-                                list_found.insert(IntList(order + 2, ind_mapped));
-
-                                fc_set[order].push_back(FcProperty(order + 2, c_tmp,
-                                                                   ind_mapped, nmother));
-                                ++ndeps;
-
-                                // Add equivalent interaction list (permutation) if there are two or more indices
-                                // which belong to the primitive cell.
-                                // This procedure is necessary for fitting.
-
-                                for (i = 0; i < 3 * nat; ++i) is_searched[i] = false;
-                                is_searched[ind_mapped[0]] = true;
-                                for (i = 1; i < order + 2; ++i) {
-                                    if ((!is_searched[ind_mapped[i]]) && is_inprim(ind_mapped[i])) {
-
-                                        for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
-                                        std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
-                                        sort_tail(order + 2, ind_mapped_tmp);
-                                        fc_set[order].push_back(FcProperty(order + 2, c_tmp,
-                                                                           ind_mapped_tmp, nmother));
-
-                                        ++ndeps;
-
-                                        is_searched[ind_mapped[i]] = true;
-                                    }
-                                }
-
-
-                            }
-                        }
-                    }
-                } // close symmetry loop
-
-                if (is_zero) {
-                    for (i = 0; i < ndeps; ++i) fc_set[order].pop_back();
-                } else {
-                    ndup[order].push_back(ndeps);
-                    ++nmother;
-                }
-
-            } // close xyz component loop
-        } // close atom number loop (iterator)
-
-        memory->deallocate(xyzcomponent);
-        list_found.clear();
-        std::cout << " done. " << std::endl;
-    } //close order loop
-
-    memory->deallocate(atmn);
-    memory->deallocate(atmn_mapped);
-    memory->deallocate(ind);
-    memory->deallocate(ind_mapped);
-    memory->deallocate(ind_tmp);
-    memory->deallocate(ind_mapped_tmp);
-    memory->deallocate(is_searched);
-
-    std::cout << "  Finished!" << std::endl;
-}
 
 double Fcs::coef_sym(const int n,
                      const int symnum,

@@ -113,7 +113,7 @@ void Fitting::fitmain()
 
     N = 0;
     for (i = 0; i < maxorder; ++i) {
-        N += fcs->ndup[i].size();
+        N += fcs->nequiv[i].size();
     }
     std::cout << "  Total Number of Parameters : "
         << N << std::endl << std::endl;
@@ -710,7 +710,7 @@ void Fitting::fit_algebraic_constraints(int N,
             param_out[constraint->const_relate[i][j].p_index_target + ishift] = -tmp;
         }
 
-        ishift += fcs->ndup[i].size();
+        ishift += fcs->nequiv[i].size();
         iparam += constraint->index_bimap[i].size();
     }
 
@@ -780,7 +780,7 @@ void Fitting::fit_bootstrap(int N,
     ofs_fcs_boot << "# Relative Error(%), FCs ...";
 
     for (i = 0; i < interaction->maxorder; ++i) {
-        ofs_fcs_boot << std::setw(10) << fcs->ndup[i].size();
+        ofs_fcs_boot << std::setw(10) << fcs->nequiv[i].size();
     }
     ofs_fcs_boot << std::endl;
 
@@ -916,7 +916,7 @@ void Fitting::fit_consecutively(int N,
     ofs_fcs_seq << "# Relative Error(%), FCS...";
 
     for (i = 0; i < interaction->maxorder; ++i) {
-        ofs_fcs_seq << std::setw(10) << fcs->ndup[i].size();
+        ofs_fcs_seq << std::setw(10) << fcs->nequiv[i].size();
     }
     ofs_fcs_seq << std::endl;
 
@@ -1053,17 +1053,17 @@ void Fitting::calc_matrix_elements(const int M,
 
                 mm = 0;
 
-                for (std::vector<int>::iterator iter = fcs->ndup[order].begin();
-                     iter != fcs->ndup[order].end(); ++iter) {
+                for (std::vector<int>::iterator iter = fcs->nequiv[order].begin();
+                     iter != fcs->nequiv[order].end(); ++iter) {
                     for (i = 0; i < *iter; ++i) {
-                        ind[0] = fcs->fc_set[order][mm].elems[0];
-                        k = idata + inprim_index(fcs->fc_set[order][mm].elems[0]);
+                        ind[0] = fcs->fc_table[order][mm].elems[0];
+                        k = idata + inprim_index(fcs->fc_table[order][mm].elems[0]);
                         amat_tmp = 1.0;
                         for (j = 1; j < order + 2; ++j) {
-                            ind[j] = fcs->fc_set[order][mm].elems[j];
-                            amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
+                            ind[j] = fcs->fc_table[order][mm].elems[j];
+                            amat_tmp *= u[irow][fcs->fc_table[order][mm].elems[j]];
                         }
-                        amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].sign * amat_tmp;
+                        amat[k][iparam] -= gamma(order + 2, ind) * fcs->fc_table[order][mm].sign * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
@@ -1164,18 +1164,18 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
 
                 mm = 0;
 
-                for (std::vector<int>::iterator iter = fcs->ndup[order].begin();
-                     iter != fcs->ndup[order].end(); ++iter) {
+                for (std::vector<int>::iterator iter = fcs->nequiv[order].begin();
+                     iter != fcs->nequiv[order].end(); ++iter) {
                     for (i = 0; i < *iter; ++i) {
-                        ind[0] = fcs->fc_set[order][mm].elems[0];
+                        ind[0] = fcs->fc_table[order][mm].elems[0];
                         k = inprim_index(ind[0]);
 
                         amat_tmp = 1.0;
                         for (j = 1; j < order + 2; ++j) {
-                            ind[j] = fcs->fc_set[order][mm].elems[j];
-                            amat_tmp *= u[irow][fcs->fc_set[order][mm].elems[j]];
+                            ind[j] = fcs->fc_table[order][mm].elems[j];
+                            amat_tmp *= u[irow][fcs->fc_table[order][mm].elems[j]];
                         }
-                        amat_orig[k][iparam] -= gamma(order + 2, ind) * fcs->fc_set[order][mm].sign * amat_tmp;
+                        amat_orig[k][iparam] -= gamma(order + 2, ind) * fcs->fc_table[order][mm].sign * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
@@ -1220,7 +1220,7 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
                     }
                 }
 
-                ishift += fcs->ndup[order].size();
+                ishift += fcs->nequiv[order].size();
                 iparam += constraint->index_bimap[order].size();
             }
 

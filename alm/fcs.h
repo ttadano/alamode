@@ -70,8 +70,9 @@ namespace ALM_NS
 
         void init();
 
-        std::vector<int> *ndup;
-        std::vector<FcProperty> *fc_set;
+        std::vector<int> *nequiv;
+        std::vector<FcProperty> *fc_table;
+        std::vector<FcProperty> *fc_zeros;
 
         std::string easyvizint(const int);
         void get_xyzcomponent(int, int **);
@@ -83,11 +84,14 @@ namespace ALM_NS
         double coef_sym(const int, const int, const int *, const int *);
 
     private:
-        void generate_fclists(int);
         void generate_force_constant_table(const int,
-                                           std::set<IntList> *,
-                                           std::vector<SymmetryOperation> *,
-                                           std::string basis = "Cartesian");
+                                           const std::set<IntList>,
+                                           const std::vector<SymmetryOperation>,
+                                           std::string,
+                                           std::vector<FcProperty> &,
+                                           std::vector<int> &,
+                                           std::vector<FcProperty> &,
+                                           const bool);
 
         bool is_ascending(const int, const int *);
         double coef_sym(const int, double **, const int *, const int *);
