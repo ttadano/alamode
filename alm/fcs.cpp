@@ -32,9 +32,11 @@ Fcs::Fcs(ALM *alm) : Pointers(alm)
 
 Fcs::~Fcs()
 {
-    memory->deallocate(fc_table);
-    memory->deallocate(nequiv);
-    memory->deallocate(fc_zeros);
+    if (alm->mode == "fitting") {
+        memory->deallocate(fc_table);
+        memory->deallocate(nequiv);
+        memory->deallocate(fc_zeros);
+    }
 };
 
 void Fcs::init()
@@ -57,7 +59,6 @@ void Fcs::init()
 
     std::cout << std::endl;
     for (i = 0; i < maxorder; ++i) {
-
         std::cout << "  Number of " << std::setw(9)
             << interaction->str_order[i]
             << " FCs : " << nequiv[i].size();
@@ -73,15 +74,15 @@ void Fcs::init()
     //                                  symmetry->SymmData, "Lattice",
     //                                  fc_test, nmulti, fc_zeros_tmp, true);
     //    std::cout << "Nonzero independent IFCs:" << std::setw(5) << nmulti.size() << std::endl;
-//    std::cout << "Zero IFCs:" << std::endl;
-//    for (auto it = fc_zeros_tmp.begin(); it != fc_zeros_tmp.end(); ++it) {
-//        for (i = 0; i < (*it).elems.size(); ++i) {
-//            std::cout << std::setw(4) << (*it).elems[i];
-//        }
-//        std::cout << std::setw(5) << (*it).mother;
-//        std::cout << std::endl;
-//    }
-//    std::cout << std::endl;
+    //    std::cout << "Zero IFCs:" << std::endl;
+    //    for (auto it = fc_zeros_tmp.begin(); it != fc_zeros_tmp.end(); ++it) {
+    //        for (i = 0; i < (*it).elems.size(); ++i) {
+    //            std::cout << std::setw(4) << (*it).elems[i];
+    //        }
+    //        std::cout << std::setw(5) << (*it).mother;
+    //        std::cout << std::endl;
+    //    }
+    //    std::cout << std::endl;
 
 
     timer->print_elapsed();

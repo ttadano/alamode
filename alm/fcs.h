@@ -82,8 +82,8 @@ namespace ALM_NS
         bool is_inprim(const int);
         int min_inprim(const int, const int *);
         double coef_sym(const int, const int, const int *, const int *);
+        double coef_sym(const int, double **, const int *, const int *);
 
-    private:
         void generate_force_constant_table(const int,
                                            const std::set<IntList>,
                                            const std::vector<SymmetryOperation>,
@@ -93,7 +93,8 @@ namespace ALM_NS
                                            std::vector<FcProperty> &,
                                            const bool);
 
+    private:
+
         bool is_ascending(const int, const int *);
-        double coef_sym(const int, double **, const int *, const int *);
     };
 }

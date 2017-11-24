@@ -107,7 +107,7 @@ void Constraint::setup()
 
     extra_constraint_from_symmetry = false;
     memory->allocate(const_symmetry, interaction->maxorder);
-    constraint_from_symmetry(const_symmetry);
+    generate_symmetry_constraint_in_cartesian(const_symmetry);
     for (int order = 0; order < interaction->maxorder; ++order) {
         if (const_symmetry[order].size() > 0) extra_constraint_from_symmetry = true;
     }
@@ -243,7 +243,7 @@ void Constraint::setup()
             memory->allocate(const_relate, maxorder);
             memory->allocate(index_bimap, maxorder);
 
-            get_mapping_constraint(maxorder, const_self, const_fix,
+            get_mapping_constraint(maxorder, fcs->nequiv, const_self, const_fix,
                                    const_relate, index_bimap, false);
 
             for (order = 0; order < maxorder; ++order) {
@@ -414,6 +414,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
 
 
 void Constraint::get_mapping_constraint(const int nmax,
+                                        std::vector<int> *nequiv,
                                         std::vector<ConstraintClass> *const_in,
                                         std::vector<ConstraintTypeFix> *const_fix_out,
                                         std::vector<ConstraintTypeRelate> *const_relate_out,
@@ -445,7 +446,7 @@ void Constraint::get_mapping_constraint(const int nmax,
     int nparam;
     for (order = 0; order < nmax; ++order) {
 
-        nparam = fcs->nequiv[order].size();
+        nparam = nequiv[order].size();
 
         if (fix_forceconstant[order]) {
 
@@ -465,8 +466,7 @@ void Constraint::get_mapping_constraint(const int nmax,
             std::vector<double> alpha_tmp;
             std::vector<unsigned int> p_index_tmp;
 
-            for (std::vector<ConstraintClass>::reverse_iterator p = const_in[order].rbegin();
-                 p != const_in[order].rend(); ++p) {
+            for (auto p = const_in[order].rbegin(); p != const_in[order].rend(); ++p) {
                 p_index_target = -1;
                 for (i = 0; i < nparam; ++i) {
                     if (std::abs((*p).w_const[i]) > tolerance_constraint) {
@@ -508,7 +508,7 @@ void Constraint::get_mapping_constraint(const int nmax,
 
     for (order = 0; order < nmax; ++order) {
 
-        nparam = fcs->nequiv[order].size();
+        nparam = nequiv[order].size();
 
         for (i = 0; i < nparam; ++i) {
             has_constraint[order].push_back(0);
@@ -526,7 +526,7 @@ void Constraint::get_mapping_constraint(const int nmax,
     int icount;
 
     for (order = 0; order < nmax; ++order) {
-        nparam = fcs->nequiv[order].size();
+        nparam = nequiv[order].size();
 
         icount = 0;
         for (i = 0; i < nparam; ++i) {
@@ -542,179 +542,416 @@ void Constraint::get_mapping_constraint(const int nmax,
     memory->deallocate(has_constraint);
 }
 
-
-void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_out)
+void Constraint::generate_symmetry_constraint_in_cartesian(std::vector<ConstraintClass> *const_out)
 {
     // Create constraint matrices arising from the crystal symmetry.
 
-    int i;
     unsigned int isym;
-    int ixyz, nxyz;
     int order;
     int maxorder = interaction->maxorder;
-
-    int *index_tmp;
-    int **xyzcomponent;
-    int nparams;
-    double *arr_constraint;
     bool has_constraint_from_symm = false;
-    std::set<FcProperty> list_found;
-    std::vector<std::vector<double>> const_mat;
 
     for (isym = 0; isym < symmetry->nsym; ++isym) {
         if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
         has_constraint_from_symm = true;
     }
 
-    for (order = 0; order < maxorder; ++order) const_out[order].clear();
-
     if (has_constraint_from_symm) {
         std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
     }
 
-    memory->allocate(index_tmp, maxorder + 1);
-
-    const_mat.clear();
-
     for (order = 0; order < maxorder; ++order) {
-
-        nparams = fcs->nequiv[order].size();
-
         if (has_constraint_from_symm) {
             std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
-            if (nparams == 0) {
-                std::cout << "  No parameters! Skipped." << std::endl;
-                continue;
-            }
         }
-
-        // Generate temporary list of parameters
-        list_found.clear();
-        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
-            for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
-            list_found.insert(FcProperty(order + 2, (*p).sign,
-                                         index_tmp, (*p).mother));
-        }
-
-        nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
-        memory->allocate(xyzcomponent, nxyz, order + 2);
-        fcs->get_xyzcomponent(order + 2, xyzcomponent);
-
-        int nfcs = fcs->fc_table[order].size();
-
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-        {
-            int j;
-            int i_prim;
-            int loc_nonzero;
-            int *ind;
-            int *atm_index, *atm_index_symm;
-            int *xyz_index;
-            double c_tmp;
-
-            std::set<FcProperty>::iterator iter_found;
-            std::vector<double> const_now_omp;
-            std::vector<std::vector<double>> const_omp;
-
-            memory->allocate(ind, order + 2);
-            memory->allocate(atm_index, order + 2);
-            memory->allocate(atm_index_symm, order + 2);
-            memory->allocate(xyz_index, order + 2);
-
-            const_omp.clear();
-            const_now_omp.resize(nparams);
-
-#ifdef _OPENMP
-#pragma omp for private(i, isym, ixyz), schedule(static)
-#endif
-            for (int ii = 0; ii < nfcs; ++ii) {
-                FcProperty list_tmp = fcs->fc_table[order][ii];
-
-                for (i = 0; i < order + 2; ++i) {
-                    atm_index[i] = list_tmp.elems[i] / 3;
-                    xyz_index[i] = list_tmp.elems[i] % 3;
-                }
-
-                for (isym = 0; isym < symmetry->nsym; ++isym) {
-
-                    if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
-
-                    for (i = 0; i < order + 2; ++i)
-                        atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
-                    if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
-
-                    for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
-
-                    const_now_omp[list_tmp.mother] = -list_tmp.sign;
-
-                    for (ixyz = 0; ixyz < nxyz; ++ixyz) {
-                        for (i = 0; i < order + 2; ++i)
-                            ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
-
-                        i_prim = fcs->min_inprim(order + 2, ind);
-                        std::swap(ind[0], ind[i_prim]);
-                        fcs->sort_tail(order + 2, ind);
-
-                        iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
-                        if (iter_found != list_found.end()) {
-                            c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-                            const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
-                        }
-                    }
-                    if (!is_allzero(const_now_omp, eps8, loc_nonzero)) {
-                        if (const_now_omp[loc_nonzero] < 0.0) {
-                            for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
-                        }
-                        const_omp.push_back(const_now_omp);
-                    }
-
-                } // close isym loop
-
-                if (const_omp.size() > nparams) rref(const_omp, tolerance_constraint);
-
-            } // close ii loop
-
-            memory->deallocate(ind);
-            memory->deallocate(atm_index);
-            memory->deallocate(atm_index_symm);
-            memory->deallocate(xyz_index);
-
-#pragma omp critical
-            {
-                for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
-                    const_mat.push_back(*it);
-                }
-            }
-            const_omp.clear();
-        } // close openmp region
-
-        memory->allocate(arr_constraint, nparams);
-        for (auto it = const_mat.crbegin(); it != const_mat.crend(); ++it) {
-            for (i = 0; i < nparams; ++i) {
-                arr_constraint[i] = (*it)[i];
-            }
-            const_out[order].push_back(ConstraintClass(nparams,
-                                                       arr_constraint));
-        }
-        const_mat.clear();
-
-        memory->deallocate(xyzcomponent);
-        memory->deallocate(arr_constraint);
-        remove_redundant_rows(nparams, const_out[order], tolerance_constraint);
-
+        get_symmetry_constraint(order, interaction->pairs[order],
+                                symmetry->SymmData, "Cartesian",
+                                fcs->fc_table[order], fcs->nequiv[order],
+                                const_out[order]);
         if (has_constraint_from_symm) {
             std::cout << " done." << std::endl;
         }
-    } // close loop order
-
-    memory->deallocate(index_tmp);
-
+    }
     if (has_constraint_from_symm) {
         std::cout << "  Finished !" << std::endl << std::endl;
     }
 }
+
+
+//void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_out)
+//{
+//    // Create constraint matrices arising from the crystal symmetry.
+//
+//    int i;
+//    unsigned int isym;
+//    int ixyz, nxyz;
+//    int order;
+//    int maxorder = interaction->maxorder;
+//
+//    int *index_tmp;
+//    int **xyzcomponent;
+//    int nparams;
+//    double *arr_constraint;
+//    bool has_constraint_from_symm = false;
+//    std::set<FcProperty> list_found;
+//    std::vector<std::vector<double>> const_mat;
+//
+//    for (isym = 0; isym < symmetry->nsym; ++isym) {
+//        if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
+//        has_constraint_from_symm = true;
+//    }
+//
+//    for (order = 0; order < maxorder; ++order) const_out[order].clear();
+//
+//    if (has_constraint_from_symm) {
+//        std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
+//    }
+//
+//    memory->allocate(index_tmp, maxorder + 1);
+//
+//    const_mat.clear();
+//
+//    for (order = 0; order < maxorder; ++order) {
+//
+//        nparams = fcs->nequiv[order].size();
+//
+//        if (has_constraint_from_symm) {
+//            std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
+//            if (nparams == 0) {
+//                std::cout << "  No parameters! Skipped." << std::endl;
+//                continue;
+//            }
+//        }
+//
+//        // Generate temporary list of parameters
+//        list_found.clear();
+//        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
+//            for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
+//            list_found.insert(FcProperty(order + 2, (*p).sign,
+//                                         index_tmp, (*p).mother));
+//        }
+//
+//        nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
+//        memory->allocate(xyzcomponent, nxyz, order + 2);
+//        fcs->get_xyzcomponent(order + 2, xyzcomponent);
+//
+//        int nfcs = fcs->fc_table[order].size();
+//
+//#ifdef _OPENMP
+//#pragma omp parallel
+//#endif
+//        {
+//            int j;
+//            int i_prim;
+//            int loc_nonzero;
+//            int *ind;
+//            int *atm_index, *atm_index_symm;
+//            int *xyz_index;
+//            double c_tmp;
+//
+//            std::set<FcProperty>::iterator iter_found;
+//            std::vector<double> const_now_omp;
+//            std::vector<std::vector<double>> const_omp;
+//
+//            memory->allocate(ind, order + 2);
+//            memory->allocate(atm_index, order + 2);
+//            memory->allocate(atm_index_symm, order + 2);
+//            memory->allocate(xyz_index, order + 2);
+//
+//            const_omp.clear();
+//            const_now_omp.resize(nparams);
+//
+//#ifdef _OPENMP
+//#pragma omp for private(i, isym, ixyz), schedule(static)
+//#endif
+//            for (int ii = 0; ii < nfcs; ++ii) {
+//                FcProperty list_tmp = fcs->fc_table[order][ii];
+//
+//                for (i = 0; i < order + 2; ++i) {
+//                    atm_index[i] = list_tmp.elems[i] / 3;
+//                    xyz_index[i] = list_tmp.elems[i] % 3;
+//                }
+//
+//                for (isym = 0; isym < symmetry->nsym; ++isym) {
+//
+//                    if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
+//
+//                    for (i = 0; i < order + 2; ++i)
+//                        atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
+//                    if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
+//
+//                    for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
+//
+//                    const_now_omp[list_tmp.mother] = -list_tmp.sign;
+//
+//                    for (ixyz = 0; ixyz < nxyz; ++ixyz) {
+//                        for (i = 0; i < order + 2; ++i)
+//                            ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
+//
+//                        i_prim = fcs->min_inprim(order + 2, ind);
+//                        std::swap(ind[0], ind[i_prim]);
+//                        fcs->sort_tail(order + 2, ind);
+//
+//                        iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
+//                        if (iter_found != list_found.end()) {
+//                            c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
+//                            const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
+//                        }
+//                    }
+//                    if (!is_allzero(const_now_omp, eps8, loc_nonzero)) {
+//                        if (const_now_omp[loc_nonzero] < 0.0) {
+//                            for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
+//                        }
+//                        const_omp.push_back(const_now_omp);
+//                    }
+//
+//                } // close isym loop
+//
+//                if (const_omp.size() > nparams) rref(const_omp, tolerance_constraint);
+//
+//            } // close ii loop
+//
+//            memory->deallocate(ind);
+//            memory->deallocate(atm_index);
+//            memory->deallocate(atm_index_symm);
+//            memory->deallocate(xyz_index);
+//
+//#pragma omp critical
+//            {
+//                for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
+//                    const_mat.push_back(*it);
+//                }
+//            }
+//            const_omp.clear();
+//        } // close openmp region
+//
+//        memory->allocate(arr_constraint, nparams);
+//        for (auto it = const_mat.crbegin(); it != const_mat.crend(); ++it) {
+//            for (i = 0; i < nparams; ++i) {
+//                arr_constraint[i] = (*it)[i];
+//            }
+//            const_out[order].push_back(ConstraintClass(nparams,
+//                                                       arr_constraint));
+//        }
+//        const_mat.clear();
+//
+//        memory->deallocate(xyzcomponent);
+//        memory->deallocate(arr_constraint);
+//        remove_redundant_rows(nparams, const_out[order], tolerance_constraint);
+//
+//        if (has_constraint_from_symm) {
+//            std::cout << " done." << std::endl;
+//        }
+//    } // close loop order
+//
+//    memory->deallocate(index_tmp);
+//
+//    if (has_constraint_from_symm) {
+//        std::cout << "  Finished !" << std::endl << std::endl;
+//    }
+//}
+
+void Constraint::get_symmetry_constraint(const int order, const std::set<IntList> pairs,
+                                         const std::vector<SymmetryOperation> symmop,
+                                         const std::string basis,
+                                         const std::vector<FcProperty> fc_table,
+                                         const std::vector<int> nequiv,
+                                         std::vector<ConstraintClass> &const_out)
+{
+    // Create constraint matrices arising from the crystal symmetry.
+
+    int i, j;
+    unsigned int isym;
+    int ixyz, nxyz;
+    int *index_tmp;
+    int **xyzcomponent;
+    int nparams;
+    int counter;
+    int nsym_in_use;
+    double *arr_constraint;
+    bool has_constraint_from_symm = false;
+    std::set<FcProperty> list_found;
+    std::vector<std::vector<double>> const_mat;
+    int **map_sym;
+    double ***rotation;
+
+    if (order < 0) return;
+
+    int nsym = symmop.size();
+    int nat = system->nat;
+    nparams = nequiv.size();
+
+    if (nparams == 0) return;
+
+    memory->allocate(rotation, nsym, 3, 3);
+    memory->allocate(map_sym, nat, nsym);
+    memory->allocate(index_tmp, order + 2);
+    nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
+    memory->allocate(xyzcomponent, nxyz, order + 2);
+    fcs->get_xyzcomponent(order + 2, xyzcomponent);
+    nsym_in_use = 0;
+    counter = 0;
+    const_mat.clear();
+    int nfcs = fc_table.size();
+
+    if (basis == "Cartesian") {
+
+        for (auto it = symmop.begin(); it != symmop.end(); ++it) {
+
+            if (!(*it).compatible_with_cartesian) {
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        rotation[nsym_in_use][i][j] = (*it).rotation_cart[i][j];
+                    }
+                }
+                for (i = 0; i < nat; ++i) {
+                    map_sym[i][nsym_in_use] = symmetry->map_sym[i][counter];
+                }
+                ++nsym_in_use;
+            }
+            ++counter;
+        }
+
+    } else if (basis == "Lattice") {
+
+        for (auto it = symmop.begin(); it != symmop.end(); ++it) {
+            if (!(*it).compatible_with_lattice) {
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        rotation[nsym_in_use][i][j]
+                            = static_cast<double>((*it).rotation[i][j]);
+                    }
+                }
+                for (i = 0; i < nat; ++i) {
+                    map_sym[i][nsym_in_use] = symmetry->map_sym[i][counter];
+                }
+                ++nsym_in_use;
+            }
+            ++counter;
+        }
+
+
+    } else {
+        memory->deallocate(rotation);
+        memory->deallocate(map_sym);
+        error->exit("get_symmetry_constraint", "Invalid basis input");
+    }
+
+    // Generate temporary list of parameters
+    list_found.clear();
+    for (auto p = fc_table.begin(); p != fc_table.end(); ++p) {
+        for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
+        list_found.insert(FcProperty(order + 2, (*p).sign,
+                                     index_tmp, (*p).mother));
+    }
+
+
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+    {
+        int j;
+        int i_prim;
+        int loc_nonzero;
+        int *ind;
+        int *atm_index, *atm_index_symm;
+        int *xyz_index;
+        double c_tmp;
+
+        std::set<FcProperty>::iterator iter_found;
+        std::vector<double> const_now_omp;
+        std::vector<std::vector<double>> const_omp;
+
+        memory->allocate(ind, order + 2);
+        memory->allocate(atm_index, order + 2);
+        memory->allocate(atm_index_symm, order + 2);
+        memory->allocate(xyz_index, order + 2);
+
+        const_omp.clear();
+        const_now_omp.resize(nparams);
+
+#ifdef _OPENMP
+#pragma omp for private(i, isym, ixyz), schedule(static)
+#endif
+        for (int ii = 0; ii < nfcs; ++ii) {
+            FcProperty list_tmp = fc_table[ii];
+
+            for (i = 0; i < order + 2; ++i) {
+                atm_index[i] = list_tmp.elems[i] / 3;
+                xyz_index[i] = list_tmp.elems[i] % 3;
+            }
+
+            for (isym = 0; isym < nsym_in_use; ++isym) {
+
+                for (i = 0; i < order + 2; ++i)
+                    atm_index_symm[i] = map_sym[atm_index[i]][isym];
+                if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
+
+                for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
+
+                const_now_omp[list_tmp.mother] = -list_tmp.sign;
+
+                for (ixyz = 0; ixyz < nxyz; ++ixyz) {
+                    for (i = 0; i < order + 2; ++i)
+                        ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
+
+                    i_prim = fcs->min_inprim(order + 2, ind);
+                    std::swap(ind[0], ind[i_prim]);
+                    fcs->sort_tail(order + 2, ind);
+
+                    iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
+                    if (iter_found != list_found.end()) {
+                        c_tmp = fcs->coef_sym(order + 2, rotation[isym], xyz_index, xyzcomponent[ixyz]);
+                        const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
+                    }
+                }
+                if (!is_allzero(const_now_omp, eps8, loc_nonzero)) {
+                    if (const_now_omp[loc_nonzero] < 0.0) {
+                        for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
+                    }
+                    const_omp.push_back(const_now_omp);
+                }
+
+            } // close isym loop
+
+            if (const_omp.size() > nparams) rref(const_omp, tolerance_constraint);
+
+        } // close ii loop
+
+        memory->deallocate(ind);
+        memory->deallocate(atm_index);
+        memory->deallocate(atm_index_symm);
+        memory->deallocate(xyz_index);
+
+#pragma omp critical
+        {
+            for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
+                const_mat.push_back(*it);
+            }
+        }
+        const_omp.clear();
+    } // close openmp region
+
+    memory->allocate(arr_constraint, nparams);
+    for (auto it = const_mat.crbegin(); it != const_mat.crend(); ++it) {
+        for (i = 0; i < nparams; ++i) {
+            arr_constraint[i] = (*it)[i];
+        }
+        const_out.push_back(ConstraintClass(nparams,
+                                            arr_constraint));
+    }
+    const_mat.clear();
+
+    memory->deallocate(xyzcomponent);
+    memory->deallocate(arr_constraint);
+    memory->deallocate(index_tmp);
+    memory->deallocate(rotation);
+    memory->deallocate(map_sym);
+
+    remove_redundant_rows(nparams, const_out, tolerance_constraint);
+}
+
 
 void Constraint::translational_invariance()
 {
@@ -1481,72 +1718,6 @@ void Constraint::remove_redundant_rows(const int n,
                                        std::vector<ConstraintClass> &Constraint_vec,
                                        const double tolerance)
 {
-#ifdef _USE_EIGEN_DISABLED
-
-    // This function doesn't make the reduced row echelon form of the constraint matrix.
-    // It just returns the image of the matrix, though they are similar.
-
-    using namespace Eigen;
-    int i;
-    int nrow = n;
-    int ncol = Constraint_vec.size();
-    double *arr_tmp;
-    double **mat;
-
-    if (ncol > 0) {
-        memory->allocate(arr_tmp, nrow);
-        MatrixXd mat_tmp(nrow, ncol);
-
-        int icol = 0;
-
-        for (std::vector<ConstraintClass>::iterator p = Constraint_vec.begin(); p != Constraint_vec.end(); ++p) {
-            ConstraintClass const_now = *p;
-            for (i = 0; i < nrow; ++i) {
-                mat_tmp(i, icol) = const_now.w_const[i];
-            }
-            ++icol;
-        }
-
-        FullPivLU<MatrixXd> lu_decomp(mat_tmp);
-        lu_decomp.setThreshold(tolerance);
-        int nrank = lu_decomp.rank();
-        MatrixXd c_reduced = lu_decomp.image(mat_tmp);
-
-        memory->allocate(mat, nrank, nrow);
-
-        i = 0;
-        for (icol = 0; icol < nrank; ++icol) {
-            for (int irow = 0; irow < nrow; ++irow) {
-                mat[icol][irow] = c_reduced(irow, icol);
-            }
-        }
-    //      std::cout << "nrank = " << nrank << std::flush << std::endl;
-        rref(nrank, nrow, mat, nrank, tolerance);
-
-        Constraint_vec.clear();
-
-        for (i = 0; i < nrank; ++i) {
-            for (int j = 0; j < i; ++j) arr_tmp[j] = 0.0;
-
-            for (int j = i; j < nrow; ++j) {
-                arr_tmp[j] = mat[i][j];
-            }
-            Constraint_vec.push_back(ConstraintClass(nrow, arr_tmp));
-        }
-
-        memory->deallocate(mat);
-
-    // for (icol = 0; icol < nrank; ++icol) {
-    //     for (int irow = 0; irow < nrow; ++irow) {
-    //         arr_tmp[irow] = c_reduced(irow, icol);
-    //     }
-
-    //     Constraint_Set.insert(ConstraintClass(nrow, arr_tmp));
-    // }
-
-        memory->deallocate(arr_tmp);
-    }
-#else 
     int i, j;
 
     int nparam = n;
@@ -1624,8 +1795,6 @@ void Constraint::remove_redundant_rows(const int n,
         memory->deallocate(arr_tmp);
 
     }
-
-#endif
 }
 
 int Constraint::levi_civita(const int i, const int j, const int k)

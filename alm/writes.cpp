@@ -280,8 +280,8 @@ void Writes::write_displacement_pattern()
     int counter;
 
     std::ofstream ofs_pattern;
-
-    std::cout << " Suggested displacement patterns are printed in the following files: " << std::endl;
+    std::cout << std::endl;
+    std::cout << " Displacement patterns are saved in the following files: " << std::endl;
 
     for (order = 0; order < maxorder; ++order) {
         ofs_pattern.open(files->file_disp_pattern[order].c_str(), std::ios::out);
@@ -293,7 +293,7 @@ void Writes::write_displacement_pattern()
 
         ofs_pattern << "Basis : " << displace->disp_basis[0] << std::endl;
 
-        for (std::vector<AtomWithDirection>::iterator it = displace->pattern_all[order].begin();
+        for (auto it = displace->pattern_all[order].begin();
              it != displace->pattern_all[order].end(); ++it) {
             AtomWithDirection entry = *it;
 

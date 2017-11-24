@@ -134,15 +134,17 @@ namespace ALM_NS
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
         void generate_pattern_all(const int,
                                   std::vector<AtomWithDirection> *,
-                                  std::set<DispAtomSet> *);
+                                  std::set<DispAtomSet> *,
+                                  const std::string);
 
         void generate_signvecs(const int,
-                               std::vector<std::vector<int> > &,
+                               std::vector<std::vector<int>> &,
                                std::vector<int>);
 
         void find_unique_sign_pairs(const int,
-                                    std::vector<std::vector<int> >,
+                                    std::vector<std::vector<int>>,
                                     std::vector<int>,
-                                    std::vector<std::vector<int> > &);
+                                    std::vector<std::vector<int>> &,
+                                    const std::string);
     };
 }
