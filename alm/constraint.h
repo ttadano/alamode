@@ -78,6 +78,17 @@ namespace ALM_NS
             std::copy(p_index_in.begin(), p_index_in.end(), std::back_inserter(p_index_orig));
         }
     };
+    bool equal_within_eps12(const std::vector<double> &a, const std::vector<double> &b)  {
+        int n = a.size();
+        int m = b.size();
+        if (n != m) return false;
+        double res = 0.0;
+        for (int i = 0; i < n; ++i) {
+            if (std::abs(a[i] - b[i])> eps12) return false;
+        }
+//        if (std::sqrt(res)>eps12) return false;
+        return true;
+    }
 
     class Constraint: protected Pointers
     {

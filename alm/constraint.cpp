@@ -557,7 +557,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
     int *index_tmp;
     int **xyzcomponent;
     int nparams;
-
+    int nfreq_update = 1;
     double *arr_constraint;
     bool has_constraint_from_symm = false;
     std::set<FcProperty> list_found;
@@ -615,6 +615,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
             int *atm_index, *atm_index_symm;
             int *xyz_index;
             double c_tmp;
+            int counter = 0;
 
             std::set<FcProperty>::iterator iter_found;
             std::vector<double> const_now_omp;
@@ -668,11 +669,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                         iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
                         if (iter_found != list_found.end()) {
                             c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-                   //         if (std::abs(c_tmp) < eps6) c_tmp = 0.0;
                             const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
-//                            std::cout << " isym = " << std::setw(4) << isym + 1;
-//                            std::cout << " iloc = " << std::setw(4) << (*iter_found).mother;
-//                            std::cout << " coef = " << std::setw(15) << (*iter_found).sign * c_tmp << std::endl;
                         }
                     }
                     if (!is_allzero(const_now_omp, eps8, loc_nonzero)) {
@@ -683,21 +680,26 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                     }
 
                 } // close isym loop
-
-
-                // sort-->uniq the array
+ //               ++counter;
+ //               if (counter % nfreq_update == 0) {
+                      // sort-->uniq the array
                 std::sort(const_omp.begin(), const_omp.end());
-                const_omp.erase(std::unique(const_omp.begin(), const_omp.end()),
+                const_omp.erase(std::unique(const_omp.begin(), const_omp.end(), equal_within_eps12),
                                 const_omp.end());
+               // const_omp.erase(std::unique(const_omp.begin(), const_omp.end()),
+               //                 const_omp.end());
 
                 // Merge vectors
 #pragma omp critical
                 {
+                    std::cout << "size = " << const_omp.size() << std::endl;
                     for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
                         const_mat.push_back(*it);
                     }
                 }
-                const_omp.clear();
+                const_omp.clear();              
+ //               }
+
 
             } // close ii loop
 
@@ -706,6 +708,17 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
             memory->deallocate(atm_index_symm);
             memory->deallocate(xyz_index);
 
+   //         std::sort(const_omp.begin(), const_omp.end());
+   //         const_omp.erase(std::unique(const_omp.begin(), const_omp.end(), equal_within_eps12),
+   //                         const_omp.end());
+            // Merge vectors
+//#pragma omp critical
+//            {
+//                for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
+//                    const_mat.push_back(*it);
+//                }
+//            }
+//            const_omp.clear();              
         } // close openmp region
 
         memory->allocate(arr_constraint, nparams);
@@ -720,6 +733,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         memory->deallocate(xyzcomponent);
         memory->deallocate(arr_constraint);
+        std::cout << "Before rref" << std::endl;
 
 //        std::cout << "Size of constraint matrix:" << std::endl;
 //        std::cout << const_out[order].size() << std::endl;
