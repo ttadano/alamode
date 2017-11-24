@@ -69,24 +69,24 @@ void Symmetry::init()
     //    }
     //    std::cout << std::endl;
 
-//    int counter = 0;
-//    for (auto it = SymmData.begin(); it != SymmData.end(); ++it) {
-//        std::cout << "Symm. No. : " << std::setw(4) << counter + 1;
-//        std::cout << "( " << (*it).compatible_with_lattice << " " << (*it).compatible_with_cartesian << ")" << std::endl;
-//        for (i = 0; i < 3; ++i) {
-//            for (j = 0; j < 3; ++j) {
-//                std::cout << std::setw(15) << (*it).rotation[i][j];
-//            }
-//            std::cout << "           ";
-//            for (j = 0; j < 3; ++j) {
-//                std::cout << std::setw(15) << (*it).rotation_cart[i][j];
-//            }
-//
-//            std::cout << std::endl;
-//        }
-//        std::cout << std::endl;
-//        ++counter;
-//    }
+    //    int counter = 0;
+    //    for (auto it = SymmData.begin(); it != SymmData.end(); ++it) {
+    //        std::cout << "Symm. No. : " << std::setw(4) << counter + 1;
+    //        std::cout << "( " << (*it).compatible_with_lattice << " " << (*it).compatible_with_cartesian << ")" << std::endl;
+    //        for (i = 0; i < 3; ++i) {
+    //            for (j = 0; j < 3; ++j) {
+    //                std::cout << std::setw(15) << (*it).rotation[i][j];
+    //            }
+    //            std::cout << "           ";
+    //            for (j = 0; j < 3; ++j) {
+    //                std::cout << std::setw(15) << (*it).rotation_cart[i][j];
+    //            }
+    //
+    //            std::cout << std::endl;
+    //        }
+    //        std::cout << std::endl;
+    //        ++counter;
+    //    }
 
     pure_translations();
 
@@ -233,7 +233,7 @@ void Symmetry::setup_symmetry_operation(int nat,
     }
 
 #ifdef _DEBUG
-  //  print_symmetrized_coordinate(x);
+    //  print_symmetrized_coordinate(x);
 #endif
 }
 
@@ -509,37 +509,37 @@ void Symmetry::find_crystal_symmetry(int nat,
                     for (j = 0; j < 3; ++j) {
                         rot_cart[i][j] /= (2.0 * pi);
                     }
-                    }
+                }
 
                 if (system->lspin && system->noncollinear) {
                     for (i = 0; i < 3; ++i) {
                         mag[i] = system->magmom[jat][i];
                         mag_rot[i] = system->magmom[iat][i];
-                }
-
-
-                rotvec(mag_rot, mag_rot, rot_cart);
-
-                // In the case of improper rotation, the factor -1 should be multiplied
-                // because the inversion operation doesn't flip the spin.
-                if (!is_proper(rot_cart)) {
-                    for (i = 0; i < 3; ++i) {
-                        mag_rot[i] = -mag_rot[i];
                     }
-                }
 
-                mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
-                    + std::pow(mag[1] - mag_rot[1], 2.0)
-                    + std::pow(mag[2] - mag_rot[2], 2.0)) < eps6;
 
-                mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
-                    + std::pow(mag[1] + mag_rot[1], 2.0)
-                    + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
+                    rotvec(mag_rot, mag_rot, rot_cart);
 
-                if (!mag_sym1 && !mag_sym2) {
-                    isok = false;
-                } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
-                    isok = false;
+                    // In the case of improper rotation, the factor -1 should be multiplied
+                    // because the inversion operation doesn't flip the spin.
+                    if (!is_proper(rot_cart)) {
+                        for (i = 0; i < 3; ++i) {
+                            mag_rot[i] = -mag_rot[i];
+                        }
+                    }
+
+                    mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
+                        + std::pow(mag[1] - mag_rot[1], 2.0)
+                        + std::pow(mag[2] - mag_rot[2], 2.0)) < eps6;
+
+                    mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
+                        + std::pow(mag[1] + mag_rot[1], 2.0)
+                        + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
+
+                    if (!mag_sym1 && !mag_sym2) {
+                        isok = false;
+                    } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
+                        isok = false;
                     }
                 }
             }
@@ -571,21 +571,21 @@ void Symmetry::symop_in_cart(double rot_cart[3][3],
     double sym_tmp[3][3];
     double tmp[3][3];
 
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
             sym_tmp[i][j] = static_cast<double>(rot_lattice[i][j]);
-            }
-        }
-
-        matmul3(tmp, sym_tmp, rlavec);
-    matmul3(rot_cart, lavec, tmp);
-
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-            rot_cart[i][j] = rot_cart[i][j] / (2.0 * pi);
-            }
         }
     }
+
+    matmul3(tmp, sym_tmp, rlavec);
+    matmul3(rot_cart, lavec, tmp);
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            rot_cart[i][j] = rot_cart[i][j] / (2.0 * pi);
+        }
+    }
+}
 
 
 void Symmetry::pure_translations()
@@ -736,13 +736,13 @@ bool Symmetry::is_compatible(const T rot[3][3],
     int nfinite;
     double rot_double[3][3];
 
-        nfinite = 0;
+    nfinite = 0;
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             rot_double[i][j] = static_cast<double>(rot[i][j]);
             if (std::abs(rot_double[i][j]) > tolerance_zero) ++nfinite;
-            }
         }
+    }
 
     if (nfinite == 3) return true;
 
