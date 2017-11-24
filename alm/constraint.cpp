@@ -30,7 +30,6 @@ using namespace ALM_NS;
 
 Constraint::Constraint(ALM *alm) : Pointers(alm)
 {
-    tolerance_constraint = eps6;
 }
 
 Constraint::~Constraint()
@@ -327,7 +326,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         if (order > 0) {
             int nparam2 = fcs->ndup[order - 1].size() + fcs->ndup[order].size();
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
-            for (std::vector<ConstraintClass>::iterator p = const_rotation_cross[order].begin();
+            for (auto p = const_rotation_cross[order].begin();
                  p != const_rotation_cross[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam2; ++i) {
@@ -557,7 +556,6 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
     int *index_tmp;
     int **xyzcomponent;
     int nparams;
-    int nfreq_update = 1;
     double *arr_constraint;
     bool has_constraint_from_symm = false;
     std::set<FcProperty> list_found;
@@ -615,7 +613,6 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
             int *atm_index, *atm_index_symm;
             int *xyz_index;
             double c_tmp;
-            int counter = 0;
 
             std::set<FcProperty>::iterator iter_found;
             std::vector<double> const_now_omp;
@@ -630,7 +627,7 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
             const_now_omp.resize(nparams);
 
 #ifdef _OPENMP
-#pragma omp for private(i, isym, ixyz)
+#pragma omp for private(i, isym, ixyz), schedule(static)
 #endif
             for (int ii = 0; ii < nfcs; ++ii) {
                 FcProperty list_tmp = fcs->fc_set[order][ii];
@@ -639,12 +636,6 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                     atm_index[i] = list_tmp.elems[i] / 3;
                     xyz_index[i] = list_tmp.elems[i] % 3;
                 }
-//                std::cout << std::endl;
-//                std::cout << "IFC : " << std::setw(4) << ii + 1;
-//                for (i = 0; i < order + 2; ++i) {
-//                    std::cout << std::setw(4) << list_tmp.elems[i];
-//                }
-//                std::cout << std::endl;
 
                 for (isym = 0; isym < symmetry->nsym; ++isym) {
 
@@ -680,26 +671,8 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
                     }
 
                 } // close isym loop
- //               ++counter;
- //               if (counter % nfreq_update == 0) {
-                      // sort-->uniq the array
-                std::sort(const_omp.begin(), const_omp.end());
-                const_omp.erase(std::unique(const_omp.begin(), const_omp.end(), equal_within_eps12),
-                                const_omp.end());
-               // const_omp.erase(std::unique(const_omp.begin(), const_omp.end()),
-               //                 const_omp.end());
 
-                // Merge vectors
-#pragma omp critical
-                {
-                    std::cout << "size = " << const_omp.size() << std::endl;
-                    for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
-                        const_mat.push_back(*it);
-                    }
-                }
-                const_omp.clear();              
- //               }
-
+                if (const_omp.size() > nparams) rref(const_omp, tolerance_constraint);
 
             } // close ii loop
 
@@ -708,22 +681,18 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
             memory->deallocate(atm_index_symm);
             memory->deallocate(xyz_index);
 
-   //         std::sort(const_omp.begin(), const_omp.end());
-   //         const_omp.erase(std::unique(const_omp.begin(), const_omp.end(), equal_within_eps12),
-   //                         const_omp.end());
-            // Merge vectors
-//#pragma omp critical
-//            {
-//                for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
-//                    const_mat.push_back(*it);
-//                }
-//            }
-//            const_omp.clear();              
+#pragma omp critical
+            {
+                for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
+                    const_mat.push_back(*it);
+                }
+            }
+            const_omp.clear();
         } // close openmp region
 
         memory->allocate(arr_constraint, nparams);
-        for (auto it = const_mat.rbegin(); it != const_mat.rend(); ++it) {
-            for (i = 0; i < (*it).size(); ++i) {
+        for (auto it = const_mat.crbegin(); it != const_mat.crend(); ++it) {
+            for (i = 0; i < nparams; ++i) {
                 arr_constraint[i] = (*it)[i];
             }
             const_out[order].push_back(ConstraintClass(nparams,
@@ -733,12 +702,6 @@ void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_ou
 
         memory->deallocate(xyzcomponent);
         memory->deallocate(arr_constraint);
-        std::cout << "Before rref" << std::endl;
-
-//        std::cout << "Size of constraint matrix:" << std::endl;
-//        std::cout << const_out[order].size() << std::endl;
-//        std::cout << "tolerance_constraint = " << tolerance_constraint << std::endl;
-
         remove_redundant_rows(nparams, const_out[order], tolerance_constraint);
 
         if (has_constraint_from_symm) {
@@ -1790,7 +1753,7 @@ void Constraint::rref(int nrows,
         if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
 
         if (pivot != irow) {
-//#pragma omp parallel for private(tmp)
+            //#pragma omp parallel for private(tmp)
             for (jcol = icol; jcol < ncols; ++jcol) {
                 tmp = mat[pivot][jcol];
                 mat[pivot][jcol] = mat[irow][jcol];
@@ -1800,7 +1763,7 @@ void Constraint::rref(int nrows,
 
         tmp = mat[irow][icol];
         tmp = 1.0 / tmp;
-//#pragma omp parallel for
+        //#pragma omp parallel for
         for (jcol = icol; jcol < ncols; ++jcol) {
             mat[irow][jcol] *= tmp;
         }
@@ -1809,10 +1772,74 @@ void Constraint::rref(int nrows,
             if (jrow == irow) continue;
 
             tmp = mat[jrow][icol];
-//#pragma omp parallel for
+            //#pragma omp parallel for
             for (jcol = icol; jcol < ncols; ++jcol) {
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }
         }
     }
+}
+
+
+void Constraint::rref(std::vector<std::vector<double>> &mat, const double tolerance)
+{
+    // Return the reduced row echelon form (rref) of matrix mat.
+    // In addition, rank of the matrix is estimated.
+
+    int irow, icol, jrow, jcol;
+    int pivot;
+    double tmp;
+
+    int nrank = 0;
+
+    icol = 0;
+
+    int nrows = mat.size();
+    int ncols = mat[0].size();
+
+    for (irow = 0; irow < nrows; ++irow) {
+
+        pivot = irow;
+
+        while (std::abs(mat[pivot][icol]) < tolerance) {
+            ++pivot;
+
+            if (pivot == nrows) {
+                pivot = irow;
+                ++icol;
+
+                if (icol == ncols) break;
+            }
+        }
+
+        if (icol == ncols) break;
+
+        if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
+
+        if (pivot != irow) {
+            for (jcol = icol; jcol < ncols; ++jcol) {
+                tmp = mat[pivot][jcol];
+                mat[pivot][jcol] = mat[irow][jcol];
+                mat[irow][jcol] = tmp;
+            }
+        }
+
+        tmp = mat[irow][icol];
+        tmp = 1.0 / tmp;
+        for (jcol = icol; jcol < ncols; ++jcol) {
+            mat[irow][jcol] *= tmp;
+        }
+
+        for (jrow = 0; jrow < nrows; ++jrow) {
+            if (jrow == irow) continue;
+
+            tmp = mat[jrow][icol];
+            for (jcol = icol; jcol < ncols; ++jcol) {
+                mat[jrow][jcol] -= tmp * mat[irow][jcol];
+            }
+        }
+    }
+
+    mat.erase(mat.begin() + nrank, mat.end());
+    mat.shrink_to_fit();
 }

@@ -78,7 +78,7 @@ namespace ALM_NS
             std::copy(p_index_in.begin(), p_index_in.end(), std::back_inserter(p_index_orig));
         }
     };
-    bool equal_within_eps12(const std::vector<double> &a, const std::vector<double> &b)  {
+    inline bool equal_within_eps12(const std::vector<double> &a, const std::vector<double> &b)  {
         int n = a.size();
         int m = b.size();
         if (n != m) return false;
@@ -148,9 +148,8 @@ namespace ALM_NS
         void remove_redundant_rows(const int, std::vector<ConstraintClass> &,
                                    const double tolerance = eps12);
 
-        void remove_redundant_rows2(const int, std::vector<ConstraintClass> &,
-                                    const double tolerance = eps12);
         void rref(int, int, double **, int &, double tolerance = eps12);
+        void rref(std::vector<std::vector<double>> &, const double tolerance = eps12);
     };
 
     extern "C"
