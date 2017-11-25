@@ -30,22 +30,33 @@ using namespace ALM_NS;
 
 Constraint::Constraint(ALM *alm) : Pointers(alm)
 {
+    const_symmetry = nullptr;
+    const_fix = nullptr;
+    const_relate = nullptr;
+    index_bimap = nullptr;
+    const_mat = nullptr;
+    const_rhs = nullptr;
 }
 
 Constraint::~Constraint()
 {
-    if (exist_constraint && alm->mode == "fitting") {
-
+    if (const_symmetry) {
         memory->deallocate(const_symmetry);
-
-        if (constraint_algebraic) {
-            memory->deallocate(const_fix);
-            memory->deallocate(const_relate);
-            memory->deallocate(index_bimap);
-        } else {
-            memory->deallocate(const_mat);
-            memory->deallocate(const_rhs);
-        }
+    }
+    if (const_fix) {
+        memory->deallocate(const_fix);
+    }
+    if (const_relate) {
+        memory->deallocate(const_relate);
+    }
+    if (index_bimap) {
+        memory->deallocate(index_bimap);
+    }
+    if (const_mat) {
+        memory->deallocate(const_mat);
+    }
+    if (const_rhs) {
+        memory->deallocate(const_rhs);
     }
 }
 
@@ -540,6 +551,8 @@ void Constraint::get_mapping_constraint(const int nmax,
     }
 
     memory->deallocate(has_constraint);
+    memory->deallocate(fix_forceconstant);
+    memory->deallocate(file_forceconstant);
 }
 
 void Constraint::generate_symmetry_constraint_in_cartesian(std::vector<ConstraintClass> *const_out)

@@ -32,13 +32,34 @@ using namespace ALM_NS;
 
 System::System(ALM *alm): Pointers(alm)
 {
+    kdname = nullptr;
+    kd = nullptr;
+    xcoord = nullptr;
+    magmom = nullptr;
+    x_cartesian = nullptr;
+    atomlist_class = nullptr;
 }
 
 System::~System()
 {
-    memory->deallocate(x_cartesian);
-    memory->deallocate(atomlist_class);
-    memory->deallocate(magmom);
+    if (kdname) {
+        memory->deallocate(kdname);
+    }
+    if (kd) {
+        memory->deallocate(kd);
+    }
+    if (xcoord) {
+        memory->deallocate(xcoord);
+    }
+    if (magmom) {
+        memory->deallocate(magmom);
+    }
+    if (x_cartesian) {
+        memory->deallocate(x_cartesian);
+    }
+    if (atomlist_class) {
+        memory->deallocate(atomlist_class);
+    }
 }
 
 void System::init()

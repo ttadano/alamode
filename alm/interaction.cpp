@@ -30,6 +30,7 @@ using namespace ALM_NS;
 
 Interaction::Interaction(ALM *alm) : Pointers(alm)
 {
+    rcs = nullptr;
 }
 
 Interaction::~Interaction()
@@ -43,6 +44,9 @@ Interaction::~Interaction()
     memory->deallocate(interaction_pair);
     memory->deallocate(mindist_cluster);
     memory->deallocate(distall);
+    if (rcs) {
+        memory->deallocate(rcs);
+    }
 }
 
 void Interaction::init()
@@ -192,6 +196,8 @@ void Interaction::generate_coordinate_of_periodic_images(const unsigned int nat,
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
             for (ka = -1; ka <= 1; ++ka) {
+
+                if (ia == 0 && ja == 0 && ka == 0) continue;
 
                 ++icell;
 
