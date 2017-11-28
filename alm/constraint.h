@@ -164,7 +164,6 @@ namespace ALM_NS
         void rref(std::vector<std::vector<double>> &, const double tolerance = eps12);
 
         void generate_symmetry_constraint_in_cartesian(std::vector<ConstraintClass> *);
-
     };
 
     extern "C"

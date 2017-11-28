@@ -40,4 +40,3 @@ namespace ALM_NS
         std::string mode;
     };
 }
-

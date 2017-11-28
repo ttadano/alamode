@@ -40,9 +40,13 @@ namespace PHON_NS
             isotope(ptr->isotope),
             scph(ptr->scph),
             ewald(ptr->ewald),
-            timer(ptr->timer) {}
+            timer(ptr->timer)
+        {
+        }
 
-        virtual ~Pointers() {}
+        virtual ~Pointers()
+        {
+        }
 
     protected:
         PHON *phon;
@@ -70,4 +74,3 @@ namespace PHON_NS
         Timer *&timer;
     };
 }
-

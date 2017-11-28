@@ -282,7 +282,7 @@ void Writes::setup_result_io()
             }
             if (static_cast<bool>(is_classical) != thermodynamics->classical) {
                 error->warn("setup_result_io",
-                    "CLASSICAL val is not consistent");
+                            "CLASSICAL val is not consistent");
             }
 
             found_tag = false;
@@ -610,8 +610,8 @@ void Writes::write_phonon_bands()
         for (i = 0; i < nk; ++i) {
             ofs_bands << std::setw(8) << std::fixed << kaxis[i];
             for (j = 0; j < nbands; ++j) {
-                ofs_bands << std::setw(15) << std::scientific 
-                << in_kayser(eval[i][dynamical->index_bconnect[i][j]]);
+                ofs_bands << std::setw(15) << std::scientific
+                    << in_kayser(eval[i][dynamical->index_bconnect[i][j]]);
             }
             ofs_bands << std::endl;
         }
@@ -629,7 +629,7 @@ void Writes::write_phonon_bands()
         ofs_connect.open(file_connect.c_str(), std::ios::out);
         if (!ofs_connect)
             error->exit("write_phonon_bands",
-                "cannot open file_connect");
+                        "cannot open file_connect");
 
         ofs_connect << "# " << str_kpath << std::endl;
         ofs_connect << "#" << str_kval << std::endl;

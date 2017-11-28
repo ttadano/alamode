@@ -31,9 +31,13 @@ namespace ALM_NS
             displace(ptr->displace),
             writes(ptr->writes),
             error(ptr->error),
-            timer(ptr->timer) {}
+            timer(ptr->timer)
+        {
+        }
 
-        virtual ~Pointers() {}
+        virtual ~Pointers()
+        {
+        }
 
     protected:
         ALM *alm;
@@ -52,4 +56,3 @@ namespace ALM_NS
         Timer *&timer;
     };
 }
-
