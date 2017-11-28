@@ -1112,9 +1112,9 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
                 }
             }
         } else {
-//#ifdef _OPENMP
-//#pragma omp parallel for private(js, ks, dprod)
-//#endif
+#ifdef _OPENMP
+#pragma omp parallel for private(js, ks, dprod)
+#endif
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     dprod = std::complex<double>(0.0, 0.0);
@@ -1130,10 +1130,6 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
 
         for (is = 0; is < ns; ++is) {
 
-            for (auto it = abs_similarity[is].begin(); it != abs_similarity[is].end(); ++it) {
-                std::cout << (*it) << std::endl;
-            }
-            std::cout << std::endl;
             // Argsort abs_similarity[is] (use C++11 lambda)
             iota(index.begin(), index.end(), 0);
             std::sort(index.begin(), index.end(),
