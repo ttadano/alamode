@@ -124,7 +124,6 @@ void Fitting::fitmain()
 
     if (constraint->constraint_algebraic) {
 
-
         N_new = 0;
         for (i = 0; i < maxorder; ++i) {
             N_new += constraint->index_bimap[i].size();

@@ -155,7 +155,7 @@ namespace ALM_NS
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
 
         void find_crystal_symmetry(int, int,
-                                   std::vector<unsigned int> *, double **x,
+                                   std::vector<unsigned int> *, double **,
                                    std::vector<RotationMatrix>,
                                    std::vector<SymmetryOperation> &);
 
