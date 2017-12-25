@@ -159,9 +159,15 @@ namespace ALM_NS
 
         void remove_redundant_rows(const int, std::vector<ConstraintClass> &,
                                    const double tolerance = eps12);
+    //    void remove_redundant_rows_integer(const int, std::vector<std::vector<int>> &);
 
         void rref(int, int, double **, int &, double tolerance = eps12);
         void rref(std::vector<std::vector<double>> &, const double tolerance = eps12);
+        void rref_nofraction(std::vector<std::vector<int>> &);
+        void rref_nofraction2(std::vector<std::vector<int>> &);
+#ifdef _USE_EIGEN
+       void rref_nofraction3(std::vector<std::vector<int>> &);
+#endif
 
         void generate_symmetry_constraint_in_cartesian(std::vector<ConstraintClass> *);
     };
@@ -169,5 +175,7 @@ namespace ALM_NS
     extern "C"
     {
         void dgetrf_(int *m, int *n, double *a, int *lda, int *ipiv, int *info);
+        void sgetrf_(int *m, int *n, float *a, int *lda, int *ipiv, int *info);
+
     }
 }

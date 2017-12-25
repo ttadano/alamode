@@ -1066,7 +1066,7 @@ void Constraint::translational_invariance()
                             iter_found = list_found.find(
                                 FcProperty(order + 2, 1.0, intarr, 1));
 
-                            //  If found a IFC
+                            //  If found an IFC
                             if (iter_found != list_found.end()) {
                                 // Round the coefficient to integer
                                 const_now[(*iter_found).mother] += nint((*iter_found).sign);
@@ -1193,8 +1193,7 @@ void Constraint::translational_invariance()
                         // Merge vectors
 #pragma omp critical
                         {
-                            for (std::vector<std::vector<int>>::iterator it = const_omp.begin();
-                                 it != const_omp.end(); ++it) {
+                            for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
                                 const_mat.push_back(*it);
                             }
                         }
@@ -1214,17 +1213,20 @@ void Constraint::translational_invariance()
             std::sort(const_mat.begin(), const_mat.end());
             const_mat.erase(std::unique(const_mat.begin(), const_mat.end()),
                             const_mat.end());
-            //            timer->print_elapsed();
+
+            // rref_nofraction3(const_mat);
+                
         } // close loop i
 
         memory->deallocate(xyzcomponent);
         memory->deallocate(intarr);
         memory->deallocate(intarr_copy);
         // Copy to constraint class 
-
+#ifdef _USE_EIGEN
+        rref_nofraction3(const_mat);
+#endif
         const_translation[order].clear();
-        for (std::vector<std::vector<int>>::reverse_iterator it = const_mat.rbegin();
-             it != const_mat.rend(); ++it) {
+        for (auto it = const_mat.rbegin(); it != const_mat.rend(); ++it) {
             for (i = 0; i < (*it).size(); ++i) {
                 arr_constraint[i] = static_cast<double>((*it)[i]);
             }
@@ -1233,7 +1235,7 @@ void Constraint::translational_invariance()
         }
         const_mat.clear();
         memory->deallocate(arr_constraint);
-
+//        std::cout << "HERE " << std::endl;
         remove_redundant_rows(nparams, const_translation[order], eps8);
 
         std::cout << " done." << std::endl;
@@ -1365,7 +1367,7 @@ void Constraint::rotational_invariance()
 
                             for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
-                            for (std::vector<int>::iterator iter_list = interaction_list_now.begin();
+                            for (auto iter_list = interaction_list_now.begin();
                                  iter_list != interaction_list_now.end(); ++iter_list) {
 
                                 jat = *iter_list;
@@ -1490,7 +1492,7 @@ void Constraint::rotational_invariance()
                                         for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
                                         // Loop for m_{N+1}, a_{N+1}
-                                        for (std::vector<int>::iterator iter_list = interaction_list.begin();
+                                        for (auto iter_list = interaction_list.begin();
                                              iter_list != interaction_list.end(); ++iter_list) {
                                             jat = *iter_list;
 
@@ -1810,6 +1812,7 @@ void Constraint::remove_redundant_rows(const int n,
     }
 }
 
+
 int Constraint::levi_civita(const int i, const int j, const int k)
 {
     int epsilon = (j - i) * (k - i) * (k - j) / 2;
@@ -1935,7 +1938,7 @@ void Constraint::rref(int nrows,
         if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
 
         if (pivot != irow) {
-            //#pragma omp parallel for private(tmp)
+#pragma omp parallel for private(tmp)
             for (jcol = icol; jcol < ncols; ++jcol) {
                 tmp = mat[pivot][jcol];
                 mat[pivot][jcol] = mat[irow][jcol];
@@ -1945,7 +1948,7 @@ void Constraint::rref(int nrows,
 
         tmp = mat[irow][icol];
         tmp = 1.0 / tmp;
-        //#pragma omp parallel for
+#pragma omp parallel for
         for (jcol = icol; jcol < ncols; ++jcol) {
             mat[irow][jcol] *= tmp;
         }
@@ -1954,7 +1957,7 @@ void Constraint::rref(int nrows,
             if (jrow == irow) continue;
 
             tmp = mat[jrow][icol];
-            //#pragma omp parallel for
+#pragma omp parallel for
             for (jcol = icol; jcol < ncols; ++jcol) {
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }
@@ -2025,3 +2028,228 @@ void Constraint::rref(std::vector<std::vector<double>> &mat, const double tolera
     mat.erase(mat.begin() + nrank, mat.end());
     mat.shrink_to_fit();
 }
+
+
+void Constraint::rref_nofraction(std::vector<std::vector<int>> &mat)
+{
+    // Return the reduced row echelon form (rref) of matrix mat.
+    // In addition, rank of the matrix is estimated.
+
+    int irow, icol, jrow, jcol;
+    int pivot;
+    int tmp, tmp2;
+
+    int nrank = 0;
+
+    icol = 0;
+
+    int nrows = mat.size();
+    int ncols = mat[0].size();
+
+    for (irow = 0; irow < nrows; ++irow) {
+
+        pivot = irow;
+
+        while (mat[pivot][icol] == 0) {
+            ++pivot;
+
+            if (pivot == nrows) {
+                pivot = irow;
+                ++icol;
+
+                if (icol == ncols) break;
+            }
+        }
+
+        if (icol == ncols) break;
+
+        if (std::abs(mat[pivot][icol]) > 0) ++nrank;
+
+        // swap rows
+        if (pivot != irow) {
+#pragma omp parallel for private(tmp)
+            for (jcol = icol; jcol < ncols; ++jcol) {
+                tmp = mat[pivot][jcol];
+                mat[pivot][jcol] = mat[irow][jcol];
+                mat[irow][jcol] = tmp;
+            }
+        }
+
+        tmp = mat[irow][icol];
+
+        for (jrow = 0; jrow < nrows; ++jrow) {
+            if (jrow == irow) continue;
+
+            tmp2 = mat[jrow][icol];
+#pragma omp parallel for
+            for (jcol = icol; jcol < ncols; ++jcol) {
+                mat[jrow][jcol] = mat[jrow][jcol] * tmp - tmp2 * mat[irow][jcol];
+            }
+        }
+    }
+
+    mat.erase(mat.begin() + nrank, mat.end());
+    mat.shrink_to_fit();
+}
+
+
+void Constraint::rref_nofraction2(std::vector<std::vector<int>> &mat)
+{
+    // Return the reduced row echelon form (rref) of matrix mat.
+    // In addition, rank of the matrix is estimated.
+
+    int irow, icol, jrow, jcol;
+    int pivot;
+    int tmp, tmp2;
+
+    int nrank = 0;
+
+    icol = 0;
+
+    float *mat_flatten;
+    float **Umat;
+    int *ipiv;
+    int info;
+
+    int nrows = mat.size();
+    int ncols = mat[0].size();
+
+
+    int k = 0;
+    memory->allocate(mat_flatten, nrows*ncols);
+    memory->allocate(ipiv, std::min(nrows,ncols));
+    memory->allocate(Umat, nrows, ncols);
+    for (icol = 0; icol < ncols; ++icol) {
+        for (irow = 0; irow < nrows; ++irow) {
+            mat_flatten[k++] = static_cast<float>(mat[irow][icol]);
+        }
+    }
+    std::cout << "Size of matrix: " << nrows << "x" << ncols << std::endl;
+    std::cout << "Start LU decomposition" << std::endl;
+    sgetrf_(&nrows, &ncols, mat_flatten, &nrows, ipiv, &info);
+    std::cout << "Finish LU decomposition" << std::endl;
+    std::cout << "INFO = " << info << std::endl;
+    std::cout << "Matrix U:" << std::endl;
+
+    k = 0;
+    for (icol = 0; icol < ncols; ++icol) {
+        for (irow = 0; irow < nrows; ++irow) {
+            if (irow > icol) {
+                Umat[irow][icol] = 0.0;
+            } else {
+                Umat[irow][icol] = mat_flatten[k];
+            }
+        ++k;
+        }
+    }
+    int nzeros = 0;
+    float max = 0.0;
+    for (irow = 0; irow < nrows; ++irow) {
+        max = 0.0;
+        for (icol = 0; icol < ncols; ++icol) {
+            std::cout << std::setw(5) << Umat[irow][icol];
+            max = std::max(max, std::abs(Umat[irow][icol]));
+        }
+        std::cout << std::endl;
+        std::cout << "max = " << max << std::endl;
+    }
+    std::cout << std::endl;
+    memory->deallocate(mat_flatten);
+    memory->deallocate(ipiv);
+    memory->deallocate(Umat);
+
+    for (irow = 0; irow < nrows; ++irow) {
+
+        pivot = irow;
+
+        while (mat[pivot][icol] == 0) {
+            ++pivot;
+
+            if (pivot == nrows) {
+                pivot = irow;
+                ++icol;
+
+                if (icol == ncols) break;
+            }
+        }
+
+        if (icol == ncols) break;
+
+        if (std::abs(mat[pivot][icol]) > 0) ++nrank;
+
+        // swap rows
+        if (pivot != irow) {
+#pragma omp parallel for private(tmp)
+            for (jcol = icol; jcol < ncols; ++jcol) {
+                tmp = mat[pivot][jcol];
+                mat[pivot][jcol] = mat[irow][jcol];
+                mat[irow][jcol] = tmp;
+            }
+        }
+
+        tmp = mat[irow][icol];
+
+        for (jrow = 0; jrow < nrows; ++jrow) {
+            if (jrow == irow) continue;
+
+            tmp2 = mat[jrow][icol];
+#pragma omp parallel for
+            for (jcol = icol; jcol < ncols; ++jcol) {
+                mat[jrow][jcol] = mat[jrow][jcol] * tmp - tmp2 * mat[irow][jcol];
+            }
+        }
+    }
+
+    mat.erase(mat.begin() + nrank, mat.end());
+    mat.shrink_to_fit();
+}
+
+
+#ifdef _USE_EIGEN
+void Constraint::rref_nofraction3(std::vector<std::vector<int>> &mat)
+{
+    // Return the reduced row echelon form (rref) of matrix mat.
+    // In addition, rank of the matrix is estimated.
+
+    using namespace Eigen;
+    
+    int irow, icol, jrow, jcol;
+    int pivot;
+    int tmp, tmp2;
+
+    int nrank = 0;
+
+    icol = 0;
+
+    int nrows = mat.size();
+    int ncols = mat[0].size();
+
+    MatrixXf A(ncols, nrows);
+
+    for (irow = 0; irow < nrows; ++irow) {
+        for (icol = 0; icol < ncols; ++icol) {
+            A(icol, irow) = static_cast<float>(mat[irow][icol]);
+        }
+    }
+//    std::cout << "Start LU decomposition" << std::endl; 
+    FullPivLU<MatrixXf> lu_decomp(A);
+//    std::cout << "Finish LU decomposition" << std::endl;
+    nrank = lu_decomp.rank();
+    MatrixXf B = lu_decomp.image(A).transpose();
+
+ //   std::cout << "rank = " << lu_decomp.rank() << std::endl;
+ //   std::cout << "image of matrix A:" << std::endl;
+ //   std::cout << lu_decomp.image(A) << std::endl;
+    
+    for (irow = 0; irow < nrank; ++irow) {
+        for (icol = 0; icol < ncols; ++icol) {
+//            std::cout << std::setw(3) << B(irow, icol);
+            mat[irow][icol] = static_cast<int>(B(irow, icol) + 0.5);
+        }
+//        std::cout << std::endl;
+    }
+
+    mat.erase(mat.begin() + nrank, mat.end());
+    mat.shrink_to_fit();
+}
+#endif
