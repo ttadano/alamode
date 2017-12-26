@@ -318,8 +318,7 @@ void Constraint::calc_constraint_matrix(const int N, int &P)
         if ((order == 0 && !fix_harmonic) || (order == 1 && !fix_cubic) || order > 1) {
             for (i = 0; i < N; ++i) arr_tmp[i] = 0.0;
 
-            for (std::vector<ConstraintClass>::iterator p = const_self[order].begin();
-                 p != const_self[order].end(); ++p) {
+            for (auto p = const_self[order].begin(); p != const_self[order].end(); ++p) {
                 ConstraintClass const_now = *p;
                 for (i = 0; i < nparam; ++i) {
                     arr_tmp[nshift + i] = const_now.w_const[i];
@@ -591,179 +590,6 @@ void Constraint::generate_symmetry_constraint_in_cartesian(std::vector<Constrain
 }
 
 
-//void Constraint::constraint_from_symmetry(std::vector<ConstraintClass> *const_out)
-//{
-//    // Create constraint matrices arising from the crystal symmetry.
-//
-//    int i;
-//    unsigned int isym;
-//    int ixyz, nxyz;
-//    int order;
-//    int maxorder = interaction->maxorder;
-//
-//    int *index_tmp;
-//    int **xyzcomponent;
-//    int nparams;
-//    double *arr_constraint;
-//    bool has_constraint_from_symm = false;
-//    std::set<FcProperty> list_found;
-//    std::vector<std::vector<double>> const_mat;
-//
-//    for (isym = 0; isym < symmetry->nsym; ++isym) {
-//        if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
-//        has_constraint_from_symm = true;
-//    }
-//
-//    for (order = 0; order < maxorder; ++order) const_out[order].clear();
-//
-//    if (has_constraint_from_symm) {
-//        std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
-//    }
-//
-//    memory->allocate(index_tmp, maxorder + 1);
-//
-//    const_mat.clear();
-//
-//    for (order = 0; order < maxorder; ++order) {
-//
-//        nparams = fcs->nequiv[order].size();
-//
-//        if (has_constraint_from_symm) {
-//            std::cout << "   " << std::setw(8) << interaction->str_order[order] << " ...";
-//            if (nparams == 0) {
-//                std::cout << "  No parameters! Skipped." << std::endl;
-//                continue;
-//            }
-//        }
-//
-//        // Generate temporary list of parameters
-//        list_found.clear();
-//        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
-//            for (i = 0; i < order + 2; ++i) index_tmp[i] = (*p).elems[i];
-//            list_found.insert(FcProperty(order + 2, (*p).sign,
-//                                         index_tmp, (*p).mother));
-//        }
-//
-//        nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
-//        memory->allocate(xyzcomponent, nxyz, order + 2);
-//        fcs->get_xyzcomponent(order + 2, xyzcomponent);
-//
-//        int nfcs = fcs->fc_table[order].size();
-//
-//#ifdef _OPENMP
-//#pragma omp parallel
-//#endif
-//        {
-//            int j;
-//            int i_prim;
-//            int loc_nonzero;
-//            int *ind;
-//            int *atm_index, *atm_index_symm;
-//            int *xyz_index;
-//            double c_tmp;
-//
-//            std::set<FcProperty>::iterator iter_found;
-//            std::vector<double> const_now_omp;
-//            std::vector<std::vector<double>> const_omp;
-//
-//            memory->allocate(ind, order + 2);
-//            memory->allocate(atm_index, order + 2);
-//            memory->allocate(atm_index_symm, order + 2);
-//            memory->allocate(xyz_index, order + 2);
-//
-//            const_omp.clear();
-//            const_now_omp.resize(nparams);
-//
-//#ifdef _OPENMP
-//#pragma omp for private(i, isym, ixyz), schedule(static)
-//#endif
-//            for (int ii = 0; ii < nfcs; ++ii) {
-//                FcProperty list_tmp = fcs->fc_table[order][ii];
-//
-//                for (i = 0; i < order + 2; ++i) {
-//                    atm_index[i] = list_tmp.elems[i] / 3;
-//                    xyz_index[i] = list_tmp.elems[i] % 3;
-//                }
-//
-//                for (isym = 0; isym < symmetry->nsym; ++isym) {
-//
-//                    if (symmetry->SymmData[isym].compatible_with_cartesian) continue;
-//
-//                    for (i = 0; i < order + 2; ++i)
-//                        atm_index_symm[i] = symmetry->map_sym[atm_index[i]][isym];
-//                    if (!fcs->is_inprim(order + 2, atm_index_symm)) continue;
-//
-//                    for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
-//
-//                    const_now_omp[list_tmp.mother] = -list_tmp.sign;
-//
-//                    for (ixyz = 0; ixyz < nxyz; ++ixyz) {
-//                        for (i = 0; i < order + 2; ++i)
-//                            ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
-//
-//                        i_prim = fcs->min_inprim(order + 2, ind);
-//                        std::swap(ind[0], ind[i_prim]);
-//                        fcs->sort_tail(order + 2, ind);
-//
-//                        iter_found = list_found.find(FcProperty(order + 2, 1.0, ind, 1));
-//                        if (iter_found != list_found.end()) {
-//                            c_tmp = fcs->coef_sym(order + 2, isym, xyz_index, xyzcomponent[ixyz]);
-//                            const_now_omp[(*iter_found).mother] += (*iter_found).sign * c_tmp;
-//                        }
-//                    }
-//                    if (!is_allzero(const_now_omp, eps8, loc_nonzero)) {
-//                        if (const_now_omp[loc_nonzero] < 0.0) {
-//                            for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
-//                        }
-//                        const_omp.push_back(const_now_omp);
-//                    }
-//
-//                } // close isym loop
-//
-//                if (const_omp.size() > nparams) rref(const_omp, tolerance_constraint);
-//
-//            } // close ii loop
-//
-//            memory->deallocate(ind);
-//            memory->deallocate(atm_index);
-//            memory->deallocate(atm_index_symm);
-//            memory->deallocate(xyz_index);
-//
-//#pragma omp critical
-//            {
-//                for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
-//                    const_mat.push_back(*it);
-//                }
-//            }
-//            const_omp.clear();
-//        } // close openmp region
-//
-//        memory->allocate(arr_constraint, nparams);
-//        for (auto it = const_mat.crbegin(); it != const_mat.crend(); ++it) {
-//            for (i = 0; i < nparams; ++i) {
-//                arr_constraint[i] = (*it)[i];
-//            }
-//            const_out[order].push_back(ConstraintClass(nparams,
-//                                                       arr_constraint));
-//        }
-//        const_mat.clear();
-//
-//        memory->deallocate(xyzcomponent);
-//        memory->deallocate(arr_constraint);
-//        remove_redundant_rows(nparams, const_out[order], tolerance_constraint);
-//
-//        if (has_constraint_from_symm) {
-//            std::cout << " done." << std::endl;
-//        }
-//    } // close loop order
-//
-//    memory->deallocate(index_tmp);
-//
-//    if (has_constraint_from_symm) {
-//        std::cout << "  Finished !" << std::endl << std::endl;
-//    }
-//}
-
 void Constraint::get_symmetry_constraint(const int order, const std::set<IntList> pairs,
                                          const std::vector<SymmetryOperation> symmop,
                                          const std::string basis,
@@ -1019,8 +845,7 @@ void Constraint::translational_invariance()
 
         list_found.clear();
 
-        for (std::vector<FcProperty>::iterator p = fcs->fc_table[order].begin();
-             p != fcs->fc_table[order].end(); ++p) {
+        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }
@@ -1191,13 +1016,13 @@ void Constraint::translational_invariance()
                                         const_omp.end());
 
                         // Merge vectors
-#pragma omp critical
+                    #pragma omp critical
                         {
                             for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
                                 const_mat.push_back(*it);
                             }
                         }
-                        const_omp.clear();
+                    const_omp.clear();
 
                     }// close idata (openmp main loop)
 
@@ -1213,29 +1038,26 @@ void Constraint::translational_invariance()
             std::sort(const_mat.begin(), const_mat.end());
             const_mat.erase(std::unique(const_mat.begin(), const_mat.end()),
                             const_mat.end());
-
-            // rref_nofraction3(const_mat);
-                
+            //            timer->print_elapsed();
         } // close loop i
 
         memory->deallocate(xyzcomponent);
         memory->deallocate(intarr);
         memory->deallocate(intarr_copy);
+
         // Copy to constraint class 
-#ifdef _USE_EIGEN
-        rref_nofraction3(const_mat);
-#endif
         const_translation[order].clear();
-        for (auto it = const_mat.rbegin(); it != const_mat.rend(); ++it) {
+        for (std::vector<std::vector<int>>::reverse_iterator it = const_mat.rbegin();
+             it != const_mat.rend(); ++it) {
             for (i = 0; i < (*it).size(); ++i) {
                 arr_constraint[i] = static_cast<double>((*it)[i]);
-            }
+        }
             const_translation[order].push_back(ConstraintClass(nparams,
                                                                arr_constraint));
         }
         const_mat.clear();
         memory->deallocate(arr_constraint);
-//        std::cout << "HERE " << std::endl;
+
         remove_redundant_rows(nparams, const_translation[order], eps8);
 
         std::cout << " done." << std::endl;
@@ -1757,38 +1579,6 @@ void Constraint::remove_redundant_rows(const int n,
 
         rref(nconst, nparam, mat_tmp, nrank, tolerance);
 
-        /*
-        // 		// Transpose matrix A 
-
-        memory->allocate(arr_tmp, nconst * nparam);
-
-        k = 0;
-
-        for (j = 0; j < nparam; ++j) {
-        for (i = 0; i < nconst; ++i) {
-        arr_tmp[k++] = mat_tmp[i][j];
-        }
-        }
-
-        // Perform LU decomposition
-
-        int nmin = std::min<int>(nconst, nparam);
-        memory->allocate(ipiv, nmin);
-
-        dgetrf_(&nconst, &nparam, arr_tmp, &nconst, ipiv, &INFO);
-
-        k = 0;
-
-        for (j = 0; j < nparam; ++j) {
-        for (i = 0; i < nconst; ++i) {
-        mat_tmp[i][j] = arr_tmp[k++];
-        }
-        }
-
-        memory->deallocate(arr_tmp);
-        memory->deallocate(ipiv);
-        */
-
         memory->allocate(arr_tmp, nparam);
 
         Constraint_vec.clear();
@@ -1938,7 +1728,7 @@ void Constraint::rref(int nrows,
         if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
 
         if (pivot != irow) {
-#pragma omp parallel for private(tmp)
+//#pragma omp parallel for private(tmp)
             for (jcol = icol; jcol < ncols; ++jcol) {
                 tmp = mat[pivot][jcol];
                 mat[pivot][jcol] = mat[irow][jcol];
@@ -1948,7 +1738,7 @@ void Constraint::rref(int nrows,
 
         tmp = mat[irow][icol];
         tmp = 1.0 / tmp;
-#pragma omp parallel for
+//#pragma omp parallel for
         for (jcol = icol; jcol < ncols; ++jcol) {
             mat[irow][jcol] *= tmp;
         }
@@ -1957,7 +1747,7 @@ void Constraint::rref(int nrows,
             if (jrow == irow) continue;
 
             tmp = mat[jrow][icol];
-#pragma omp parallel for
+//#pragma omp parallel for
             for (jcol = icol; jcol < ncols; ++jcol) {
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }
@@ -1980,6 +1770,9 @@ void Constraint::rref(std::vector<std::vector<double>> &mat, const double tolera
     icol = 0;
 
     int nrows = mat.size();
+
+    if (nrows == 0) return;
+
     int ncols = mat[0].size();
 
     for (irow = 0; irow < nrows; ++irow) {
@@ -2030,6 +1823,7 @@ void Constraint::rref(std::vector<std::vector<double>> &mat, const double tolera
 }
 
 
+/*
 void Constraint::rref_nofraction(std::vector<std::vector<int>> &mat)
 {
     // Return the reduced row echelon form (rref) of matrix mat.
@@ -2091,125 +1885,13 @@ void Constraint::rref_nofraction(std::vector<std::vector<int>> &mat)
     mat.erase(mat.begin() + nrank, mat.end());
     mat.shrink_to_fit();
 }
-
-
-void Constraint::rref_nofraction2(std::vector<std::vector<int>> &mat)
-{
-    // Return the reduced row echelon form (rref) of matrix mat.
-    // In addition, rank of the matrix is estimated.
-
-    int irow, icol, jrow, jcol;
-    int pivot;
-    int tmp, tmp2;
-
-    int nrank = 0;
-
-    icol = 0;
-
-    float *mat_flatten;
-    float **Umat;
-    int *ipiv;
-    int info;
-
-    int nrows = mat.size();
-    int ncols = mat[0].size();
-
-
-    int k = 0;
-    memory->allocate(mat_flatten, nrows*ncols);
-    memory->allocate(ipiv, std::min(nrows,ncols));
-    memory->allocate(Umat, nrows, ncols);
-    for (icol = 0; icol < ncols; ++icol) {
-        for (irow = 0; irow < nrows; ++irow) {
-            mat_flatten[k++] = static_cast<float>(mat[irow][icol]);
-        }
-    }
-    std::cout << "Size of matrix: " << nrows << "x" << ncols << std::endl;
-    std::cout << "Start LU decomposition" << std::endl;
-    sgetrf_(&nrows, &ncols, mat_flatten, &nrows, ipiv, &info);
-    std::cout << "Finish LU decomposition" << std::endl;
-    std::cout << "INFO = " << info << std::endl;
-    std::cout << "Matrix U:" << std::endl;
-
-    k = 0;
-    for (icol = 0; icol < ncols; ++icol) {
-        for (irow = 0; irow < nrows; ++irow) {
-            if (irow > icol) {
-                Umat[irow][icol] = 0.0;
-            } else {
-                Umat[irow][icol] = mat_flatten[k];
-            }
-        ++k;
-        }
-    }
-    int nzeros = 0;
-    float max = 0.0;
-    for (irow = 0; irow < nrows; ++irow) {
-        max = 0.0;
-        for (icol = 0; icol < ncols; ++icol) {
-            std::cout << std::setw(5) << Umat[irow][icol];
-            max = std::max(max, std::abs(Umat[irow][icol]));
-        }
-        std::cout << std::endl;
-        std::cout << "max = " << max << std::endl;
-    }
-    std::cout << std::endl;
-    memory->deallocate(mat_flatten);
-    memory->deallocate(ipiv);
-    memory->deallocate(Umat);
-
-    for (irow = 0; irow < nrows; ++irow) {
-
-        pivot = irow;
-
-        while (mat[pivot][icol] == 0) {
-            ++pivot;
-
-            if (pivot == nrows) {
-                pivot = irow;
-                ++icol;
-
-                if (icol == ncols) break;
-            }
-        }
-
-        if (icol == ncols) break;
-
-        if (std::abs(mat[pivot][icol]) > 0) ++nrank;
-
-        // swap rows
-        if (pivot != irow) {
-#pragma omp parallel for private(tmp)
-            for (jcol = icol; jcol < ncols; ++jcol) {
-                tmp = mat[pivot][jcol];
-                mat[pivot][jcol] = mat[irow][jcol];
-                mat[irow][jcol] = tmp;
-            }
-        }
-
-        tmp = mat[irow][icol];
-
-        for (jrow = 0; jrow < nrows; ++jrow) {
-            if (jrow == irow) continue;
-
-            tmp2 = mat[jrow][icol];
-#pragma omp parallel for
-            for (jcol = icol; jcol < ncols; ++jcol) {
-                mat[jrow][jcol] = mat[jrow][jcol] * tmp - tmp2 * mat[irow][jcol];
-            }
-        }
-    }
-
-    mat.erase(mat.begin() + nrank, mat.end());
-    mat.shrink_to_fit();
-}
+*/
 
 
 #ifdef _USE_EIGEN
-void Constraint::rref_nofraction3(std::vector<std::vector<int>> &mat)
+void Constraint::get_column_space(std::vector<std::vector<int>> &mat)
 {
-    // Return the reduced row echelon form (rref) of matrix mat.
-    // In addition, rank of the matrix is estimated.
+    // Return the column space of matrix mat.
 
     using namespace Eigen;
     
@@ -2231,22 +1913,14 @@ void Constraint::rref_nofraction3(std::vector<std::vector<int>> &mat)
             A(icol, irow) = static_cast<float>(mat[irow][icol]);
         }
     }
-//    std::cout << "Start LU decomposition" << std::endl; 
     FullPivLU<MatrixXf> lu_decomp(A);
-//    std::cout << "Finish LU decomposition" << std::endl;
     nrank = lu_decomp.rank();
     MatrixXf B = lu_decomp.image(A).transpose();
-
- //   std::cout << "rank = " << lu_decomp.rank() << std::endl;
- //   std::cout << "image of matrix A:" << std::endl;
- //   std::cout << lu_decomp.image(A) << std::endl;
     
     for (irow = 0; irow < nrank; ++irow) {
         for (icol = 0; icol < ncols; ++icol) {
-//            std::cout << std::setw(3) << B(irow, icol);
             mat[irow][icol] = static_cast<int>(B(irow, icol) + 0.5);
         }
-//        std::cout << std::endl;
     }
 
     mat.erase(mat.begin() + nrank, mat.end());
