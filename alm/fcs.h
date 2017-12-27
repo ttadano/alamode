@@ -110,7 +110,8 @@ namespace ALM_NS
     };
 }
 
-
+// Define a hash function for FcProperty class
+// Use boost::hash_combine 
 namespace std
 {
     template <>
