@@ -21,6 +21,7 @@
 #include "error.h"
 #include <boost/bimap.hpp>
 #include "mathfunctions.h"
+#include <unordered_set>
 
 #ifdef _USE_EIGEN
 #include <Eigen/Dense>
@@ -609,7 +610,7 @@ void Constraint::get_symmetry_constraint(const int order, const std::set<IntList
     int nsym_in_use;
     double *arr_constraint;
     bool has_constraint_from_symm = false;
-    std::set<FcProperty> list_found;
+    std::unordered_set<FcProperty> list_found;
     std::vector<std::vector<double>> const_mat;
     int **map_sym;
     double ***rotation;
@@ -698,7 +699,7 @@ void Constraint::get_symmetry_constraint(const int order, const std::set<IntList
         int *xyz_index;
         double c_tmp;
 
-        std::set<FcProperty>::iterator iter_found;
+        std::unordered_set<FcProperty>::iterator iter_found;
         std::vector<double> const_now_omp;
         std::vector<std::vector<double>> const_omp;
 
@@ -816,8 +817,8 @@ void Constraint::translational_invariance()
     double *arr_constraint;
 
     std::vector<int> intlist, data;
-    std::set<FcProperty> list_found;
-    std::set<FcProperty>::iterator iter_found;
+    std::unordered_set<FcProperty> list_found;
+    std::unordered_set<FcProperty>::iterator iter_found;
     std::vector<std::vector<int>> data_vec;
     std::vector<FcProperty> list_vec;
     std::vector<FcProperty>::iterator iter_vec;
@@ -1016,13 +1017,13 @@ void Constraint::translational_invariance()
                                         const_omp.end());
 
                         // Merge vectors
-                    #pragma omp critical
+#pragma omp critical
                         {
                             for (auto it = const_omp.begin(); it != const_omp.end(); ++it) {
                                 const_mat.push_back(*it);
                             }
                         }
-                    const_omp.clear();
+                        const_omp.clear();
 
                     }// close idata (openmp main loop)
 
@@ -1047,11 +1048,10 @@ void Constraint::translational_invariance()
 
         // Copy to constraint class 
         const_translation[order].clear();
-        for (std::vector<std::vector<int>>::reverse_iterator it = const_mat.rbegin();
-             it != const_mat.rend(); ++it) {
+        for (auto it = const_mat.rbegin(); it != const_mat.rend(); ++it) {
             for (i = 0; i < (*it).size(); ++i) {
                 arr_constraint[i] = static_cast<double>((*it)[i]);
-        }
+            }
             const_translation[order].push_back(ConstraintClass(nparams,
                                                                arr_constraint));
         }
@@ -1104,9 +1104,9 @@ void Constraint::rotational_invariance()
 
     std::vector<int> interaction_list, interaction_list_old, interaction_list_now;
 
-    std::set<FcProperty> list_found;
-    std::set<FcProperty> list_found_last;
-    std::set<FcProperty>::iterator iter_found;
+    std::unordered_set<FcProperty> list_found;
+    std::unordered_set<FcProperty> list_found_last;
+    std::unordered_set<FcProperty>::iterator iter_found;
 
     CombinationWithRepetition<int> g;
 
@@ -1142,7 +1142,7 @@ void Constraint::rotational_invariance()
         memory->allocate(interaction_tmp, order + 2);
 
         if (order > 0) {
-            list_found_last = list_found;
+           list_found_last = list_found;
             nxyz = static_cast<int>(pow(static_cast<double>(3), order));
             memory->allocate(xyzcomponent, nxyz, order);
             fcs->get_xyzcomponent(order, xyzcomponent);
@@ -1150,8 +1150,7 @@ void Constraint::rotational_invariance()
 
         list_found.clear();
 
-        for (std::vector<FcProperty>::iterator p = fcs->fc_table[order].begin();
-             p != fcs->fc_table[order].end(); ++p) {
+        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }
@@ -1225,8 +1224,7 @@ void Constraint::rotational_invariance()
 
 
                                 if (iter_found != list_found.end()) {
-                                    arr_constraint[(*iter_found).mother]
-                                        += (*iter_found).sign * vec_for_rot[nu];
+                                    arr_constraint[(*iter_found).mother] += (*iter_found).sign * vec_for_rot[nu];
                                 }
 
                                 // Exchange mu <--> nu and repeat again. 
@@ -1728,7 +1726,7 @@ void Constraint::rref(int nrows,
         if (std::abs(mat[pivot][icol]) > tolerance) ++nrank;
 
         if (pivot != irow) {
-//#pragma omp parallel for private(tmp)
+            //#pragma omp parallel for private(tmp)
             for (jcol = icol; jcol < ncols; ++jcol) {
                 tmp = mat[pivot][jcol];
                 mat[pivot][jcol] = mat[irow][jcol];
@@ -1738,7 +1736,7 @@ void Constraint::rref(int nrows,
 
         tmp = mat[irow][icol];
         tmp = 1.0 / tmp;
-//#pragma omp parallel for
+        //#pragma omp parallel for
         for (jcol = icol; jcol < ncols; ++jcol) {
             mat[irow][jcol] *= tmp;
         }
@@ -1747,7 +1745,7 @@ void Constraint::rref(int nrows,
             if (jrow == irow) continue;
 
             tmp = mat[jrow][icol];
-//#pragma omp parallel for
+            //#pragma omp parallel for
             for (jcol = icol; jcol < ncols; ++jcol) {
                 mat[jrow][jcol] -= tmp * mat[irow][jcol];
             }
@@ -1891,7 +1889,7 @@ void Constraint::rref_nofraction(std::vector<std::vector<int>> &mat)
 #ifdef _USE_EIGEN
 void Constraint::get_column_space(std::vector<std::vector<int>> &mat)
 {
-    // Return the column space of matrix mat.
+// Return the column space of matrix mat.
 
     using namespace Eigen;
     
