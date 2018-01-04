@@ -938,7 +938,6 @@ $ python displace.py -h")
 
     elif len(conditions) - conditions.count(True) > 1:
         print("Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously.")
-cannot be given simultaneously.")
         exit(1)
 
     elif options.VASP:

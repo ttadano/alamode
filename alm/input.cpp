@@ -457,6 +457,8 @@ void Input::parse_cell_parameter()
             system->lavec[i][j] = a * lavec_tmp[i][j];
         }
     }
+    line_vec.clear();
+    line_split.clear();
 }
 
 void Input::parse_interaction_vars()
