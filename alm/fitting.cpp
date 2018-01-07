@@ -132,10 +132,10 @@ void Fitting::fitmain()
             << N_new << std::endl << std::endl;
 
         //   memory->allocate(amat, M, N_new);
-        memory->allocate(amat_1D, N_new * M);
+        unsigned long NM = static_cast<long>(N_new) * static_cast<long>(M);
+        memory->allocate(amat_1D, NM);
         memory->allocate(fsum, M);
         memory->allocate(fsum_orig, M);
-
         calc_matrix_elements_algebraic_constraint(M, N, N_new, nat, natmin, ndata_used,
                                                   nmulti, maxorder, u, f, amat_1D, fsum,
                                                   fsum_orig);
@@ -1068,6 +1068,7 @@ void Fitting::calc_matrix_elements(const int M,
                     ++iparam;
                 }
             }
+
         }
 
         memory->deallocate(ind);
@@ -1092,16 +1093,15 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
                                                         double *bvec,
                                                         double *bvec_orig)
 {
-    int i, j;
-    int irow;
-    int ncycle;
+    long i, j;
+    long irow;
+    long ncycle;
 
     std::cout << "  Calculation of matrix elements for direct fitting started ... ";
-
+    
     ncycle = ndata_fit * nmulti;
-    int natmin3 = 3 * natmin;
-
-
+    long natmin3 = 3 * static_cast<long>(natmin);
+    
 #ifdef _OPENMP
 #pragma omp parallel for private(j)
 #endif
@@ -1118,10 +1118,10 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
 #endif
     {
         int *ind;
-        int mm, order, iat, k;
-        int im, idata, iparam;
-        int ishift;
-        int iold, inew;
+        long mm, order, iat, k;
+        long im, idata, iparam;
+        long ishift;
+        long iold, inew;
         double amat_tmp;
         double **amat_orig;
         double **amat_mod;
@@ -1230,7 +1230,6 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
                     amat[natmin3 * ncycle * j + i + idata] = amat_mod[i][j];
                 }
             }
-
         }
 
         memory->deallocate(ind);
@@ -1238,7 +1237,6 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
         memory->deallocate(amat_mod);
     }
 
-    std::cout << "done!" << std::endl << std::endl;
 }
 
 
