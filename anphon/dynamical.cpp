@@ -935,7 +935,7 @@ void Dynamical::load_born()
                 for (j = 0; j < 3; ++j) {
                     for (k = 0; k < 3; ++k) {
                         for (m = 0; m < 3; ++m) {
-                            born_sym[iat][i][j] += rot[i][k] * rot[j][m] * borncharge[iat_sym][k][m];
+                            born_sym[iat_sym][i][j] += rot[i][k] * rot[j][m] * borncharge[iat][k][m];
                         }
                     }
                 }
@@ -957,7 +957,7 @@ void Dynamical::load_born()
     for (iat = 0; iat < system->natmin; ++iat) {
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
+                diff_sym = std::max<double>(diff_sym, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
             }
         }
     }
