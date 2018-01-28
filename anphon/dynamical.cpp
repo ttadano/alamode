@@ -36,6 +36,7 @@ using namespace PHON_NS;
 Dynamical::Dynamical(PHON *phon): Pointers(phon)
 {
     index_bconnect = nullptr;
+    symmetrize_borncharge = 0;
 }
 
 Dynamical::~Dynamical()
@@ -121,7 +122,7 @@ void Dynamical::setup_dynamical(std::string mode)
     if (nonanalytic) {
         memory->allocate(borncharge, system->natmin, 3, 3);
 
-        if (mympi->my_rank == 0) load_born();
+        if (mympi->my_rank == 0) load_born(symmetrize_borncharge);
 
         MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -817,7 +818,7 @@ void Dynamical::modify_eigenvectors()
 }
 
 
-void Dynamical::load_born()
+void Dynamical::load_born(const unsigned int flag_symmborn)
 {
     // Read the dielectric tensor and born effective charges from file_born
 
@@ -892,7 +893,7 @@ void Dynamical::load_born()
     if (res > eps10) {
         std::cout << std::endl;
         std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
-        std::cout << "           The born effective charges are modified to follow the ASR." << std::endl;
+        std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
 
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -902,6 +903,8 @@ void Dynamical::load_born()
             }
         }
     }
+
+    if (flag_symmborn) {
 
     // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
     // particularly for NONANALYTIC=3 (Ewald summation).
@@ -990,6 +993,7 @@ void Dynamical::load_born()
                 std::cout << std::endl;
             }
         }
+    }
     }
     std::cout << std::scientific;
 }

@@ -51,6 +51,7 @@ namespace PHON_NS
         unsigned int neval;
         bool eigenvectors;
         bool print_eigenvectors;
+        unsigned int symmetrize_borncharge;
         unsigned int nonanalytic;
         bool participation_ratio;
         unsigned int band_connection;
@@ -98,7 +99,7 @@ namespace PHON_NS
 
     private:
 
-        void load_born();
+        void load_born(const unsigned int);
 
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);

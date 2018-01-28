@@ -120,6 +120,7 @@ void Input::parse_general_vars()
     bool selenergy_offdiagonal;
     bool update_fc2;
     bool classical;
+    unsigned int bornsym;
     unsigned int band_connection;
 
     struct stat st;
@@ -129,7 +130,7 @@ void Input::parse_general_vars()
     std::string str_tmp;
     std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML FC2XML TMIN TMAX DT \
                                    NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   RESTART TREVSYM NKD KD MASS TRISYM PREC_EWALD CLASSICAL BCONNECT";
+                                   RESTART TREVSYM NKD KD MASS TRISYM PREC_EWALD CLASSICAL BCONNECT BORNSYM";
     std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
     std::vector<std::string> no_defaults;
     std::vector<std::string> kdname_v, masskd_v;
@@ -209,6 +210,7 @@ void Input::parse_general_vars()
     use_triplet_symmetry = true;
     classical = false;
     band_connection = 0;
+    bornsym = 0;
 
     prec_ewald = 1.0e-12;
 
@@ -257,8 +259,9 @@ void Input::parse_general_vars()
     assign_val(classical, "CLASSICAL", general_var_dict);
     assign_val(band_connection, "BCONNECT", general_var_dict);
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
+    assign_val(bornsym, "BORNSYM", general_var_dict);
 
-    if (band_connection < 0 || band_connection > 2) {
+    if (band_connection > 2) {
         error->exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
     }
 
@@ -318,6 +321,7 @@ void Input::parse_general_vars()
 
     dynamical->nonanalytic = nonanalytic;
     dynamical->na_sigma = na_sigma;
+    dynamical->symmetrize_borncharge = bornsym;
     writes->nbands = nbands;
     dynamical->file_born = borninfo;
     dynamical->band_connection = band_connection;
