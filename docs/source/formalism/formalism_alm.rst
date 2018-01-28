@@ -45,14 +45,14 @@ The are several relationships between IFCs which may be used to reduce the numbe
  .. math::
      :label: ifcsym1
 
-     \sum_{\nu_{1},\dots,\nu_{n}}\Phi_{\nu_{1}\dots\nu_{n}}(L_{1}K_{1};\dots;L_{n}K_{n}) O_{\mu_{1}\nu_{1}}\cdots O_{\mu_{n}\nu_{n}} = \Phi_{\mu_{1}\dots\mu_{n}}(\ell_{1}\kappa_{1};\dots;\ell_{n}\kappa_{n}),
+     \sum_{\nu_{1},\dots,\nu_{n}}\Phi_{\nu_{1}\dots\nu_{n}}(L_{1}K_{1};\dots;L_{n}K_{n}) O_{\nu_{1}\mu_{1}}\cdots O_{\nu_{n}\mu_{n}} = \Phi_{\mu_{1}\dots\mu_{n}}(\ell_{1}\kappa_{1};\dots;\ell_{n}\kappa_{n}),
 
  where :math:`O` is the rotational matrix of the symmetry operation. 
  Let :math:`N_{s}` be the number of symmetry operations, there are :math:`N_{s}` relationships between IFCs which may be used to find independent IFCs.
 
  .. Note::
 
-   In the current implementation of *alm*, independent IFCs are searched in Cartesian coordinate where the matrix element :math:`O_{\mu\nu}` is 0 or :math:`\pm1` in all symmetry operations except for those of **hexagonal** (trigonal) lattice. Also, except for hexagonal (trigonal) systems, the product :math:`O_{\mu_{1}\nu_{1}}\cdots O_{\mu_{n}\nu_{n}}` in the left hand side of equation :eq:`ifcsym1` becomes non-zero only for a specific pair of :math:`\{\nu\}` (and becomes 0 for all other :math:`\{\nu\}`\ s). Therefore, let :math:`\{\nu^{\prime}\}` be such a pair of :math:`\{\nu\}`, the equation :eq:`ifcsym1` can be reduced to
+   In the current implementation of *alm*, independent IFCs are searched in Cartesian coordinate where the matrix element :math:`O_{\mu\nu}` is 0 or :math:`\pm1` in all symmetry operations except for those of **hexagonal** (trigonal) lattice. Also, except for hexagonal (trigonal) systems, the product :math:`O_{\nu_{1}\mu_{1}}\cdots O_{\nu_{n}\mu_{n}}` in the left hand side of equation :eq:`ifcsym1` becomes non-zero only for a specific pair of :math:`\{\nu\}` (and becomes 0 for all other :math:`\{\nu\}`\ s). Therefore, let :math:`\{\nu^{\prime}\}` be such a pair of :math:`\{\nu\}`, the equation :eq:`ifcsym1` can be reduced to
 
    .. math::
        :label: ifcsym2
