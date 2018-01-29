@@ -144,7 +144,7 @@ namespace ALM_NS
 
         // memsize calculator
 
-        
+
         template <typename A>
         unsigned long memsize_in_MB(const int size_of_one, const A n1)
         {

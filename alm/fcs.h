@@ -52,7 +52,7 @@ namespace ALM_NS
                                                 a.elems.begin(), a.elems.end());
         }
 
-        bool operator==(const FcProperty &a) const 
+        bool operator==(const FcProperty &a) const
         {
             int n = elems.size();
             int n_ = a.elems.size();
@@ -117,7 +117,7 @@ namespace std
     template <>
     struct hash<ALM_NS::FcProperty>
     {
-        std::size_t operator () (ALM_NS::FcProperty const &obj) const
+        std::size_t operator ()(ALM_NS::FcProperty const &obj) const
         {
             hash<int> hasher;
             size_t seed = 0;
