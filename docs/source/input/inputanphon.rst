@@ -114,7 +114,6 @@ List of input variables
 
  === =======================================================
   0   Symmetry operations won’t be saved in “SYMM_INFO_PRIM”
-
   1   Symmetry operations will be saved in “SYMM_INFO_PRIM”
  === =======================================================
 
@@ -157,6 +156,18 @@ List of input variables
 
 ````
 
+* BORNSYM-tag = 0 | 1
+ 
+ === =================================================================
+  0   Do not symmetrize Born effective charges
+  1   Symmetrize Born effective charges by using point group symmetry
+ === =================================================================
+
+ :Default: 0
+ :Type: Integer
+
+````
+
 * TMIN, TMAX, DT-tags : Temperature range and its stride in units of Kelvin
 
  :Default: ``TMIN = 0``, ``TMAX = 1000``, ``DT = 10``
@@ -190,6 +201,25 @@ List of input variables
  :Default: 10.0
  :Type: Double
  :Description: This variable is neglected when ``ISMEAR = -1``
+
+````
+
+* BCONNECT-tag = 0 | 1 | 2 
+
+ === ===================================================================================
+  0   | Phonon band is saved without change (sorted in order of energy)
+
+  1   | Phonon band is connected by using the similarity of eigenvectors.
+
+  2   | Same as ``BCONNECT=1``. In addition, information of the connectivity is 
+      | saved as ``PREFIX.connection``.
+ === ===================================================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: The algorithm for connecting a band structure is described here_.
+
+ .. _here : https://www.slideshare.net/TakeshiNishimatsu/two-efficient-algorithms-for-drawing-accurate-and-beautiful-phonon-dispersion
 
 ````
 
