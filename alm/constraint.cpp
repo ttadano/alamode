@@ -846,7 +846,7 @@ void Constraint::translational_invariance()
 
         list_found.clear();
 
-        for (auto p = fcs->fc_table[order].begin(); p != fcs->fc_table[order].end(); ++p) {
+        for (auto p = fcs->fc_table[order].cbegin(); p != fcs->fc_table[order].cend(); ++p) {
             for (i = 0; i < order + 2; ++i) {
                 ind[i] = (*p).elems[i];
             }
