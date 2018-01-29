@@ -906,94 +906,94 @@ void Dynamical::load_born(const unsigned int flag_symmborn)
 
     if (flag_symmborn) {
 
-    // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
-    // particularly for NONANALYTIC=3 (Ewald summation).
+        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
+        // particularly for NONANALYTIC=3 (Ewald summation).
 
-    int isym, iat, iat_sym;
-    int m;
-    double ***born_sym;
-    double rot[3][3];
+        int isym, iat, iat_sym;
+        int m;
+        double ***born_sym;
+        double rot[3][3];
 
-    memory->allocate(born_sym, system->natmin, 3, 3);
-
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                born_sym[iat][i][j] = 0.0;
-            }
-        }
-    }
-
-    for (isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
-            }
-        }
+        memory->allocate(born_sym, system->natmin, 3, 3);
 
         for (iat = 0; iat < system->natmin; ++iat) {
-            iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
-
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
-                    for (k = 0; k < 3; ++k) {
-                        for (m = 0; m < 3; ++m) {
-                            born_sym[iat_sym][i][j] += rot[i][k] * rot[j][m] * borncharge[iat][k][m];
+                    born_sym[iat][i][j] = 0.0;
+                }
+            }
+        }
+
+        for (isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
+                }
+            }
+
+            for (iat = 0; iat < system->natmin; ++iat) {
+                iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        for (k = 0; k < 3; ++k) {
+                            for (m = 0; m < 3; ++m) {
+                                born_sym[iat_sym][i][j] += rot[i][k] * rot[j][m] * borncharge[iat][k][m];
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
-            }
-        }
-    }
-
-    // Check if the Born effective charges given by the users satisfy the symmetry.
-
-    double diff_sym = 0.0;
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                diff_sym = std::max<double>(diff_sym, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
-            }
-        }
-    }
-
-    if (diff_sym > 0.5) {
-        std::cout << std::endl;
-        std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
-    }
-
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                borncharge[iat][i][j] = born_sym[iat][i][j];
-            }
-        }
-    }
-    memory->deallocate(born_sym);
-
-    if (diff_sym > eps8 || res > eps10) {
-        std::cout << std::endl;
-        std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
-        for (i = 0; i < system->natmin; ++i) {
-            std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
-
-            for (j = 0; j < 3; ++j) {
-                for (k = 0; k < 3; ++k) {
-                    std::cout << std::setw(15) << borncharge[i][j][k];
+        for (iat = 0; iat < system->natmin; ++iat) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
                 }
-                std::cout << std::endl;
             }
         }
-    }
+
+        // Check if the Born effective charges given by the users satisfy the symmetry.
+
+        double diff_sym = 0.0;
+        for (iat = 0; iat < system->natmin; ++iat) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    diff_sym = std::max<double>(diff_sym, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
+                }
+            }
+        }
+
+        if (diff_sym > 0.5) {
+            std::cout << std::endl;
+            std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
+        }
+
+        for (iat = 0; iat < system->natmin; ++iat) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    borncharge[iat][i][j] = born_sym[iat][i][j];
+                }
+            }
+        }
+        memory->deallocate(born_sym);
+
+        if (diff_sym > eps8 || res > eps10) {
+            std::cout << std::endl;
+            std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
+            for (i = 0; i < system->natmin; ++i) {
+                std::cout << "  Atom" << std::setw(5) << i + 1 << "("
+                    << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        std::cout << std::setw(15) << borncharge[i][j][k];
+                    }
+                    std::cout << std::endl;
+                }
+            }
+        }
     }
     std::cout << std::scientific;
 }

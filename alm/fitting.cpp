@@ -1098,10 +1098,10 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
     long ncycle;
 
     std::cout << "  Calculation of matrix elements for direct fitting started ... ";
-    
+
     ncycle = ndata_fit * nmulti;
     long natmin3 = 3 * static_cast<long>(natmin);
-    
+
 #ifdef _OPENMP
 #pragma omp parallel for private(j)
 #endif
@@ -1236,7 +1236,6 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
         memory->deallocate(amat_orig);
         memory->deallocate(amat_mod);
     }
-
 }
 
 

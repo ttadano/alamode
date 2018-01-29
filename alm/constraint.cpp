@@ -1142,7 +1142,7 @@ void Constraint::rotational_invariance()
         memory->allocate(interaction_tmp, order + 2);
 
         if (order > 0) {
-           list_found_last = list_found;
+            list_found_last = list_found;
             nxyz = static_cast<int>(pow(static_cast<double>(3), order));
             memory->allocate(xyzcomponent, nxyz, order);
             fcs->get_xyzcomponent(order, xyzcomponent);
