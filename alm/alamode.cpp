@@ -57,6 +57,7 @@ ALM::ALM(int narg, char **arg)
 
     if (mode == "fitting") {
 
+        fcs->init();
         constraint->setup();
         fitting->fitmain();
         writes->writeall();
@@ -94,7 +95,6 @@ void ALM::initialize()
     files->init();
     symmetry->init();
     interaction->init();
-    fcs->init();
 }
 
 ALM::~ALM()

@@ -42,4 +42,3 @@ namespace ALM_NS
 #endif
     };
 }
-

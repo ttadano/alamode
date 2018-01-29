@@ -115,7 +115,7 @@ void Scph::exec_scph()
             write_scph_bands(eval_anharm);
         } else if (kpoint->kpoint_mode == 2) {
             write_scph_dos(eval_anharm);
- //           write_scph_thermodynamics(eval_anharm);
+            //           write_scph_thermodynamics(eval_anharm);
             if (writes->print_msd) {
                 write_scph_msd(eval_anharm, evec_anharm);
             }

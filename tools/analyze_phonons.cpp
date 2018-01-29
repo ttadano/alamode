@@ -563,7 +563,7 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
                 } else {
                     c_tmp = Cv(omega[ik][is], temp[itemp]);
                 }
-                
+
                 vel_tmp = pow(vel[ik][is][0][0], 2)
                     + pow(vel[ik][is][0][1], 2)
                     + pow(vel[ik][is][0][2], 2);
@@ -782,7 +782,7 @@ void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int
                     c_tmp = k_Boltzmann;
                 } else {
                     c_tmp = Cv(omega[ik][is], temp[itemp]);
-                }          
+                }
 
                 for (i = 0; i < nsame; ++i) {
 

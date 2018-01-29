@@ -124,7 +124,7 @@ def print_displacements_VASP(xml_files,
     for search_target in xml_files:
 
         x = get_coordinate_VASP(search_target, nat)
-        ndata = len(x) / (3 * nat)
+        ndata = len(x) // (3 * nat)
         x = np.reshape(x, (ndata, nat, 3))
 
         for idata in range(ndata):
@@ -179,7 +179,7 @@ def print_atomicforces_VASP(xml_files,
     for search_target in xml_files:
 
         data = get_atomicforces_VASP(search_target)
-        ndata = len(data) / (3 * nat)
+        ndata = len(data) // (3 * nat)
         data = np.reshape(data, (ndata, nat, 3))
 
         for idata in range(ndata):

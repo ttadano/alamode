@@ -51,13 +51,16 @@ namespace PHON_NS
         unsigned int neval;
         bool eigenvectors;
         bool print_eigenvectors;
+        unsigned int symmetrize_borncharge;
         unsigned int nonanalytic;
         bool participation_ratio;
+        unsigned int band_connection;
 
         std::string file_born;
         double na_sigma;
 
         double **eval_phonon;
+        int **index_bconnect;
         std::complex<double> ***evec_phonon;
         double dielec[3][3];
         double ***borncharge;
@@ -96,11 +99,12 @@ namespace PHON_NS
 
     private:
 
-        void load_born();
+        void load_born(const unsigned int);
 
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);
         double distance(double *, double *);
+        void connect_band_by_eigen_similarity(std::complex<double> ***, int **);
 
         // void calc_analytic_k(double *, double ****, std::complex<double> **);
         // void modify_eigenvectors_sym();

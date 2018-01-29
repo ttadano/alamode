@@ -101,6 +101,7 @@ void Writes::write_input_vars()
         << "; EPSILON = " << integration->epsilon << std::endl;
     std::cout << std::endl;
     std::cout << "  CLASSICAL = " << thermodynamics->classical << std::endl;
+    std::cout << "  BCONNECT = " << dynamical->band_connection << std::endl;
     std::cout << std::endl;
 
     if (phon->mode == "RTA") {
@@ -281,7 +282,7 @@ void Writes::setup_result_io()
             }
             if (static_cast<bool>(is_classical) != thermodynamics->classical) {
                 error->warn("setup_result_io",
-                    "CLASSICAL val is not consistent");
+                            "CLASSICAL val is not consistent");
             }
 
             found_tag = false;
@@ -597,18 +598,54 @@ void Writes::write_phonon_bands()
     ofs_bands << "#" << str_kval << std::endl;
     ofs_bands << "# k-axis, Eigenvalues [cm^-1]" << std::endl;
 
-    for (i = 0; i < nk; ++i) {
-        ofs_bands << std::setw(8) << std::fixed << kaxis[i];
-        for (j = 0; j < nbands; ++j) {
-            ofs_bands << std::setw(15) << std::scientific << in_kayser(eval[i][j]);
+    if (dynamical->band_connection == 0) {
+        for (i = 0; i < nk; ++i) {
+            ofs_bands << std::setw(8) << std::fixed << kaxis[i];
+            for (j = 0; j < nbands; ++j) {
+                ofs_bands << std::setw(15) << std::scientific << in_kayser(eval[i][j]);
+            }
+            ofs_bands << std::endl;
         }
-        ofs_bands << std::endl;
+    } else {
+        for (i = 0; i < nk; ++i) {
+            ofs_bands << std::setw(8) << std::fixed << kaxis[i];
+            for (j = 0; j < nbands; ++j) {
+                ofs_bands << std::setw(15) << std::scientific
+                    << in_kayser(eval[i][dynamical->index_bconnect[i][j]]);
+            }
+            ofs_bands << std::endl;
+        }
     }
 
     ofs_bands.close();
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_bands;
     std::cout << " : Phonon band structure" << std::endl;
+
+    if (dynamical->band_connection == 2) {
+        std::ofstream ofs_connect;
+        std::string file_connect = input->job_title + ".connection";
+
+        ofs_connect.open(file_connect.c_str(), std::ios::out);
+        if (!ofs_connect)
+            error->exit("write_phonon_bands",
+                        "cannot open file_connect");
+
+        ofs_connect << "# " << str_kpath << std::endl;
+        ofs_connect << "#" << str_kval << std::endl;
+        ofs_connect << "# k-axis, mapping" << std::endl;
+
+        for (i = 0; i < nk; ++i) {
+            ofs_connect << std::setw(8) << std::fixed << kaxis[i];
+            for (j = 0; j < nbands; ++j) {
+                ofs_connect << std::setw(5) << dynamical->index_bconnect[i][j] + 1;
+            }
+            ofs_connect << std::endl;
+        }
+        ofs_connect.close();
+        std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_connect;
+        std::cout << " : Connectivity map information of band dispersion" << std::endl;
+    }
 }
 
 void Writes::write_phonon_vel()

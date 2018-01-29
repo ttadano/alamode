@@ -127,7 +127,7 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N,
                     } else {
                         n2 = thermodynamics->fB(omega2, T_tmp);
                         ret_mpi[i] += v3_tmp2 * (2.0 * n2 + 1.0);
-                    } 
+                    }
                 }
             }
         }

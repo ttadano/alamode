@@ -25,8 +25,8 @@ namespace ALM_NS
 
         // allocator
 
-        template <typename T>
-        T* allocate(T *&arr, const unsigned int n1)
+        template <typename T, typename A>
+        T* allocate(T *&arr, const A n1)
         {
             try {
                 arr = new T [n1];
@@ -144,9 +144,11 @@ namespace ALM_NS
 
         // memsize calculator
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1)
+
+        template <typename A>
+        unsigned long memsize_in_MB(const int size_of_one, const A n1)
         {
-            unsigned long n = n1 * size_of_one;
+            unsigned long n = static_cast<unsigned long>(n1) * size_of_one;
             return n / 1000000;
         }
 
@@ -169,4 +171,3 @@ namespace ALM_NS
         }
     };
 }
-

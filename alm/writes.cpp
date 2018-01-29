@@ -145,11 +145,11 @@ void Writes::write_force_constants()
 
         m = 0;
 
-        if (fcs->ndup[order].size() > 0) {
+        if (fcs->nequiv[order].size() > 0) {
 
             ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
 
-            for (ui = 0; ui < fcs->ndup[order].size(); ++ui) {
+            for (ui = 0; ui < fcs->nequiv[order].size(); ++ui) {
 
                 ofs_fcs << std::setw(8) << k + 1 << std::setw(8) << ui + 1
                     << std::setw(18) << std::setprecision(7)
@@ -157,9 +157,9 @@ void Writes::write_force_constants()
 
                 atom_tmp.clear();
                 for (l = 1; l < order + 2; ++l) {
-                    atom_tmp.push_back(fcs->fc_set[order][m].elems[l] / 3);
+                    atom_tmp.push_back(fcs->fc_table[order][m].elems[l] / 3);
                 }
-                j = symmetry->map_s2p[fcs->fc_set[order][m].elems[0] / 3].atom_num;
+                j = symmetry->map_s2p[fcs->fc_table[order][m].elems[0] / 3].atom_num;
                 std::sort(atom_tmp.begin(), atom_tmp.end());
 
                 iter_cluster = interaction->mindist_cluster[order][j].find(
@@ -181,12 +181,12 @@ void Writes::write_force_constants()
 
                 for (l = 0; l < order + 2; ++l) {
                     ofs_fcs << std::setw(7)
-                        << fcs->easyvizint(fcs->fc_set[order][m].elems[l]);
+                        << fcs->easyvizint(fcs->fc_table[order][m].elems[l]);
                 }
                 ofs_fcs << std::setw(12) << std::setprecision(3)
                     << std::fixed << distmax << std::endl;
 
-                m += fcs->ndup[order][ui];
+                m += fcs->nequiv[order][ui];
                 ++k;
             }
         }
@@ -198,7 +198,7 @@ void Writes::write_force_constants()
 
         ofs_fcs << " -------------- Constraints from crystal symmetry --------------" << std::endl << std::endl;;
         for (order = 0; order < maxorder; ++order) {
-            int nparam = fcs->ndup[order].size();
+            int nparam = fcs->nequiv[order].size();
 
 
             for (std::vector<ConstraintClass>::iterator p = constraint->const_symmetry[order].begin();
@@ -238,24 +238,24 @@ void Writes::write_force_constants()
 
         id = 0;
 
-        if (fcs->ndup[order].size() > 0) {
+        if (fcs->nequiv[order].size() > 0) {
             ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
 
-            for (unsigned int iuniq = 0; iuniq < fcs->ndup[order].size(); ++iuniq) {
+            for (unsigned int iuniq = 0; iuniq < fcs->nequiv[order].size(); ++iuniq) {
 
                 str_tmp = "  # FC" + boost::lexical_cast<std::string>(order + 2) + "_";
                 str_tmp += boost::lexical_cast<std::string>(iuniq + 1);
 
-                ofs_fcs << str_tmp << std::setw(5) << fcs->ndup[order][iuniq]
+                ofs_fcs << str_tmp << std::setw(5) << fcs->nequiv[order][iuniq]
                     << std::setw(16) << std::scientific
                     << std::setprecision(7) << fitting->params[ip] << std::endl;
 
-                for (j = 0; j < fcs->ndup[order][iuniq]; ++j) {
+                for (j = 0; j < fcs->nequiv[order][iuniq]; ++j) {
                     ofs_fcs << std::setw(5) << j + 1 << std::setw(12)
-                        << std::setprecision(5) << std::fixed << fcs->fc_set[order][id].coef;
+                        << std::setprecision(5) << std::fixed << fcs->fc_table[order][id].sign;
                     for (k = 0; k < order + 2; ++k) {
                         ofs_fcs << std::setw(6)
-                            << fcs->easyvizint(fcs->fc_set[order][id].elems[k]);
+                            << fcs->easyvizint(fcs->fc_table[order][id].elems[k]);
                     }
                     ofs_fcs << std::endl;
                     ++id;
@@ -280,8 +280,8 @@ void Writes::write_displacement_pattern()
     int counter;
 
     std::ofstream ofs_pattern;
-
-    std::cout << " Suggested displacement patterns are printed in the following files: " << std::endl;
+    std::cout << std::endl;
+    std::cout << " Displacement patterns are saved in the following files: " << std::endl;
 
     for (order = 0; order < maxorder; ++order) {
         ofs_pattern.open(files->file_disp_pattern[order].c_str(), std::ios::out);
@@ -293,7 +293,7 @@ void Writes::write_displacement_pattern()
 
         ofs_pattern << "Basis : " << displace->disp_basis[0] << std::endl;
 
-        for (std::vector<AtomWithDirection>::iterator it = displace->pattern_all[order].begin();
+        for (auto it = displace->pattern_all[order].begin();
              it != displace->pattern_all[order].end(); ++it) {
             AtomWithDirection entry = *it;
 
@@ -331,7 +331,7 @@ void Writes::write_misc_xml()
     }
 
     system_structure.nat = system->nat;
-    system_structure.natmin = symmetry->natmin;
+    system_structure.natmin = symmetry->nat_prim;
     system_structure.ntran = symmetry->ntran;
     system_structure.nspecies = system->nkd;
 
@@ -420,7 +420,7 @@ void Writes::write_misc_xml()
     pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    pt.put("Data.ForceConstants.HarmonicUnique.NFC2", fcs->ndup[0].size());
+    pt.put("Data.ForceConstants.HarmonicUnique.NFC2", fcs->nequiv[0].size());
 
     int ihead = 0;
     int k = 0;
@@ -429,21 +429,21 @@ void Writes::write_misc_xml()
 
     memory->allocate(pair_tmp, nelem);
 
-    for (unsigned int ui = 0; ui < fcs->ndup[0].size(); ++ui) {
+    for (unsigned int ui = 0; ui < fcs->nequiv[0].size(); ++ui) {
 
         for (i = 0; i < 2; ++i) {
-            pair_tmp[i] = fcs->fc_set[0][ihead].elems[i] / 3;
+            pair_tmp[i] = fcs->fc_table[0][ihead].elems[i] / 3;
         }
         j = symmetry->map_s2p[pair_tmp[0]].atom_num;
 
         ptree &child = pt.add("Data.ForceConstants.HarmonicUnique.FC2",
                               double2string(fitting->params[k]));
         child.put("<xmlattr>.pairs",
-                  boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[0])
-                  + " " + boost::lexical_cast<std::string>(fcs->fc_set[0][ihead].elems[1]));
+                  boost::lexical_cast<std::string>(fcs->fc_table[0][ihead].elems[0])
+                  + " " + boost::lexical_cast<std::string>(fcs->fc_table[0][ihead].elems[1]));
         child.put("<xmlattr>.multiplicity",
                   interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size());
-        ihead += fcs->ndup[0][ui];
+        ihead += fcs->nequiv[0][ui];
         ++k;
     }
     ihead = 0;
@@ -455,11 +455,11 @@ void Writes::write_misc_xml()
 
     if (interaction->maxorder > 1) {
 
-        pt.put("Data.ForceConstants.CubicUnique.NFC3", fcs->ndup[1].size());
+        pt.put("Data.ForceConstants.CubicUnique.NFC3", fcs->nequiv[1].size());
 
-        for (unsigned int ui = 0; ui < fcs->ndup[1].size(); ++ui) {
+        for (unsigned int ui = 0; ui < fcs->nequiv[1].size(); ++ui) {
             for (i = 0; i < 3; ++i) {
-                pair_tmp[i] = fcs->fc_set[1][ihead].elems[i] / 3;
+                pair_tmp[i] = fcs->fc_table[1][ihead].elems[i] / 3;
             }
             j = symmetry->map_s2p[pair_tmp[0]].atom_num;
 
@@ -481,21 +481,21 @@ void Writes::write_misc_xml()
             ptree &child = pt.add("Data.ForceConstants.CubicUnique.FC3",
                                   double2string(fitting->params[k]));
             child.put("<xmlattr>.pairs",
-                      boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[0])
-                      + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[1])
-                      + " " + boost::lexical_cast<std::string>(fcs->fc_set[1][ihead].elems[2]));
+                      boost::lexical_cast<std::string>(fcs->fc_table[1][ihead].elems[0])
+                      + " " + boost::lexical_cast<std::string>(fcs->fc_table[1][ihead].elems[1])
+                      + " " + boost::lexical_cast<std::string>(fcs->fc_table[1][ihead].elems[2]));
             child.put("<xmlattr>.multiplicity", multiplicity);
-            ihead += fcs->ndup[1][ui];
+            ihead += fcs->nequiv[1][ui];
             ++k;
         }
     }
 
     int ip, ishift;
 
-    std::sort(fcs->fc_set[0].begin(), fcs->fc_set[0].end());
+    std::sort(fcs->fc_table[0].begin(), fcs->fc_table[0].end());
 
-    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin();
-         it != fcs->fc_set[0].end(); ++it) {
+    for (std::vector<FcProperty>::iterator it = fcs->fc_table[0].begin();
+         it != fcs->fc_table[0].end(); ++it) {
         FcProperty fctmp = *it;
         ip = fctmp.mother;
 
@@ -506,7 +506,7 @@ void Writes::write_misc_xml()
         for (std::vector<DistInfo>::iterator it2 = interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].begin();
              it2 != interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].end(); ++it2) {
             ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2",
-                                  double2string(fitting->params[ip] * fctmp.coef
+                                  double2string(fitting->params[ip] * fctmp.sign
                                       / static_cast<double>(interaction->mindist_pairs[pair_tmp[0]][pair_tmp[1]].size())));
 
             child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
@@ -517,7 +517,7 @@ void Writes::write_misc_xml()
         }
     }
 
-    ishift = fcs->ndup[0].size();
+    ishift = fcs->nequiv[0].size();
 
     // Print anharmonic force constants to the xml file.
 
@@ -527,10 +527,10 @@ void Writes::write_misc_xml()
     std::string elementname;
     for (order = 1; order < interaction->maxorder; ++order) {
 
-        std::sort(fcs->fc_set[order].begin(), fcs->fc_set[order].end());
+        std::sort(fcs->fc_table[order].begin(), fcs->fc_table[order].end());
 
-        for (std::vector<FcProperty>::iterator it = fcs->fc_set[order].begin();
-             it != fcs->fc_set[order].end(); ++it) {
+        for (std::vector<FcProperty>::iterator it = fcs->fc_table[order].begin();
+             it != fcs->fc_table[order].end(); ++it) {
             FcProperty fctmp = *it;
             ip = fctmp.mother + ishift;
 
@@ -561,7 +561,7 @@ void Writes::write_misc_xml()
                     std::vector<int> cell_now = (*iter_cluster).cell[imult];
 
                     ptree &child = pt.add(elementname,
-                                          double2string(fitting->params[ip] * fctmp.coef
+                                          double2string(fitting->params[ip] * fctmp.sign
                                               / static_cast<double>(multiplicity)));
 
                     child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>(j + 1)
@@ -578,7 +578,7 @@ void Writes::write_misc_xml()
                 error->exit("write_misc_xml", "This cannot happen.");
             }
         }
-        ishift += fcs->ndup[order].size();
+        ishift += fcs->nequiv[order].size();
     }
 
     using namespace boost::property_tree::xml_parser;
@@ -617,8 +617,8 @@ void Writes::write_hessian()
         }
     }
 
-    for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin();
-         it != fcs->fc_set[0].end(); ++it) {
+    for (std::vector<FcProperty>::iterator it = fcs->fc_table[0].begin();
+         it != fcs->fc_table[0].end(); ++it) {
         FcProperty fctmp = *it;
         ip = fctmp.mother;
 
@@ -628,7 +628,7 @@ void Writes::write_hessian()
                 pair_tran[i] = symmetry->map_sym[pair_tmp[i]][symmetry->symnum_tran[itran]];
             }
             hessian[3 * pair_tran[0] + fctmp.elems[0] % 3][3 * pair_tran[1] + fctmp.elems[1] % 3]
-                = fitting->params[ip] * fctmp.coef;
+                = fitting->params[ip] * fctmp.sign;
         }
     }
 
@@ -658,8 +658,8 @@ void Writes::write_hessian()
       ofs_fc2.open(file_fc2.c_str(), std::ios::out);
       ofs_fc2 << " # iat, icrd, jat, icrd, icell, relvec, fc2" << std::endl;
       double vec[3];
-      for (std::vector<FcProperty>::iterator it = fcs->fc_set[0].begin();
-           it != fcs->fc_set[0].end(); ++it) {
+      for (std::vector<FcProperty>::iterator it = fcs->fc_table[0].begin();
+           it != fcs->fc_table[0].end(); ++it) {
           FcProperty fctmp = *it;
           ip = fctmp.mother;
   
@@ -684,7 +684,7 @@ void Writes::write_hessian()
                     ofs_fc2 << std::setw(15) << vec[2];
   
                     ofs_fc2 << std::setw(15)
-                    << fitting->params[ip] * fctmp.coef / static_cast<double>(multiplicity);
+                    << fitting->params[ip] * fctmp.sign / static_cast<double>(multiplicity);
                     ofs_fc2 << std::endl;
               }
           }

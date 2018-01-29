@@ -273,7 +273,7 @@ double Thermodynamics::free_energy(const double T)
             x = omega / (T * T_to_Ryd);
             ret += std::log(x);
         }
-        
+
         return T * T_to_Ryd * ret / static_cast<double>(nk);
 
     } else {
@@ -297,7 +297,6 @@ double Thermodynamics::free_energy(const double T)
 
         return T * T_to_Ryd * ret / static_cast<double>(nk);
     }
-
 }
 
 double Thermodynamics::disp2_avg(const double T,
@@ -325,7 +324,7 @@ double Thermodynamics::disp2_avg(const double T,
             if (omega < eps8) continue;
 
             ret += real(dynamical->evec_phonon[ik][is][ns1]
-                * std::conj(dynamical->evec_phonon[ik][is][ns2]))
+                    * std::conj(dynamical->evec_phonon[ik][is][ns2]))
                 * T * T_to_Ryd / (omega * omega);
         }
     } else {
@@ -340,7 +339,7 @@ double Thermodynamics::disp2_avg(const double T,
             if (omega < eps8) continue;
 
             ret += real(dynamical->evec_phonon[ik][is][ns1]
-                * std::conj(dynamical->evec_phonon[ik][is][ns2]))
+                    * std::conj(dynamical->evec_phonon[ik][is][ns2]))
                 * (fB(omega, T) + 0.5) / omega;
         }
     }

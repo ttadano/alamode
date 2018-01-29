@@ -28,11 +28,15 @@
 #include "phonon_dos.h"
 #include "gruneisen.h"
 #include "ewald.h"
+#include <numeric>
+
 
 using namespace PHON_NS;
 
 Dynamical::Dynamical(PHON *phon): Pointers(phon)
 {
+    index_bconnect = nullptr;
+    symmetrize_borncharge = 0;
 }
 
 Dynamical::~Dynamical()
@@ -113,11 +117,12 @@ void Dynamical::setup_dynamical(std::string mode)
 
     MPI_Bcast(&eigenvectors, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&nonanalytic, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&band_connection, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (nonanalytic) {
         memory->allocate(borncharge, system->natmin, 3, 3);
 
-        if (mympi->my_rank == 0) load_born();
+        if (mympi->my_rank == 0) load_born(symmetrize_borncharge);
 
         MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -146,6 +151,10 @@ void PHON_NS::Dynamical::finish_dynamical()
 
     if (nonanalytic) {
         memory->deallocate(borncharge);
+    }
+
+    if (index_bconnect) {
+        memory->deallocate(index_bconnect);
     }
 }
 
@@ -740,6 +749,11 @@ void Dynamical::diagonalize_dynamical_all()
         }
     }
 
+    if (band_connection > 0 && kpoint->kpoint_mode == 1) {
+        memory->allocate(index_bconnect, nk, neval);
+        connect_band_by_eigen_similarity(evec_phonon, index_bconnect);
+    }
+
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
     }
@@ -804,7 +818,7 @@ void Dynamical::modify_eigenvectors()
 }
 
 
-void Dynamical::load_born()
+void Dynamical::load_born(const unsigned int flag_symmborn)
 {
     // Read the dielectric tensor and born effective charges from file_born
 
@@ -879,7 +893,7 @@ void Dynamical::load_born()
     if (res > eps10) {
         std::cout << std::endl;
         std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
-        std::cout << "           The born effective charges are modified to follow the ASR." << std::endl;
+        std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
 
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -890,91 +904,94 @@ void Dynamical::load_born()
         }
     }
 
-    // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
-    // particularly for NONANALYTIC=3 (Ewald summation).
+    if (flag_symmborn) {
 
-    int isym, iat, iat_sym;
-    int m;
-    double ***born_sym;
-    double rot[3][3];
+        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
+        // particularly for NONANALYTIC=3 (Ewald summation).
 
-    memory->allocate(born_sym, system->natmin, 3, 3);
+        int isym, iat, iat_sym;
+        int m;
+        double ***born_sym;
+        double rot[3][3];
 
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                born_sym[iat][i][j] = 0.0;
-            }
-        }
-    }
-
-    for (isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
-            }
-        }
+        memory->allocate(born_sym, system->natmin, 3, 3);
 
         for (iat = 0; iat < system->natmin; ++iat) {
-            iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
-
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
-                    for (k = 0; k < 3; ++k) {
-                        for (m = 0; m < 3; ++m) {
-                            born_sym[iat][i][j] += rot[i][k] * rot[j][m] * borncharge[iat_sym][k][m];
+                    born_sym[iat][i][j] = 0.0;
+                }
+            }
+        }
+
+        for (isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
+                }
+            }
+
+            for (iat = 0; iat < system->natmin; ++iat) {
+                iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
+
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        for (k = 0; k < 3; ++k) {
+                            for (m = 0; m < 3; ++m) {
+                                born_sym[iat_sym][i][j] += rot[i][k] * rot[j][m] * borncharge[iat][k][m];
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
-            }
-        }
-    }
-
-    // Check if the Born effective charges given by the users satisfy the symmetry.
-
-    double diff_sym = 0.0;
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                diff_sym = std::max<double>(res, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
-            }
-        }
-    }
-
-    if (diff_sym > 0.5) {
-        std::cout << std::endl;
-        std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
-    }
-
-    for (iat = 0; iat < system->natmin; ++iat) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                borncharge[iat][i][j] = born_sym[iat][i][j];
-            }
-        }
-    }
-    memory->deallocate(born_sym);
-
-    if (diff_sym > eps8 || res > eps10) {
-        std::cout << std::endl;
-        std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
-        for (i = 0; i < system->natmin; ++i) {
-            std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
-
-            for (j = 0; j < 3; ++j) {
-                for (k = 0; k < 3; ++k) {
-                    std::cout << std::setw(15) << borncharge[i][j][k];
+        for (iat = 0; iat < system->natmin; ++iat) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
                 }
-                std::cout << std::endl;
+            }
+        }
+
+        // Check if the Born effective charges given by the users satisfy the symmetry.
+
+        double diff_sym = 0.0;
+        for (iat = 0; iat < system->natmin; ++iat) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    diff_sym = std::max<double>(diff_sym, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
+                }
+            }
+        }
+
+        if (diff_sym > 0.5) {
+            std::cout << std::endl;
+            std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
+        }
+
+        for (iat = 0; iat < system->natmin; ++iat) {
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    borncharge[iat][i][j] = born_sym[iat][i][j];
+                }
+            }
+        }
+        memory->deallocate(born_sym);
+
+        if (diff_sym > eps8 || res > eps10) {
+            std::cout << std::endl;
+            std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
+            for (i = 0; i < system->natmin; ++i) {
+                std::cout << "  Atom" << std::setw(5) << i + 1 << "("
+                    << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        std::cout << std::setw(15) << borncharge[i][j][k];
+                    }
+                    std::cout << std::endl;
+                }
             }
         }
     }
@@ -1053,4 +1070,91 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, doub
 
     for (iat = 0; iat < natmin; ++iat)
         ret[iat] /= std::sqrt(static_cast<double>(natmin) * sum);
+}
+
+
+void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
+                                                 int **index_sorted)
+{
+    int ik, is, js, ks;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = neval;
+    int loc;
+    std::vector<int> index;
+    std::complex<double> **evec_tmp;
+    std::vector<std::vector<double>> abs_similarity;
+    std::complex<double> dprod;
+    std::vector<int> found;
+
+    memory->allocate(evec_tmp, ns, ns);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            index_sorted[ik][is] = 0;
+        }
+    }
+
+    index.resize(ns);
+    found.resize(ns);
+    abs_similarity.resize(ns);
+    for (is = 0; is < ns; ++is) {
+        abs_similarity[is].resize(ns);
+    }
+
+    for (int i = 0; i < ns; ++i) index[i] = i;
+
+    for (ik = 0; ik < nk; ++ik) {
+
+        if (ik == 0) {
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    if (is == js) {
+                        abs_similarity[is][js] = 1.0;
+                    } else {
+                        abs_similarity[is][js] = 0.0;
+                    }
+                }
+            }
+        } else {
+#ifdef _OPENMP
+#pragma omp parallel for private(js, ks, dprod)
+#endif
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    dprod = std::complex<double>(0.0, 0.0);
+                    for (ks = 0; ks < ns; ++ks) {
+                        dprod += std::conj(evec[ik][is][ks]) * evec_tmp[js][ks];
+                    }
+                    abs_similarity[is][js] = std::abs(dprod);
+                }
+            }
+        }
+
+        for (auto &v : found) v = 0;
+
+        for (is = 0; is < ns; ++is) {
+
+            // Argsort abs_similarity[is] (use C++11 lambda)
+            iota(index.begin(), index.end(), 0);
+            std::sort(index.begin(), index.end(),
+                      [&abs_similarity, is](int i1, int i2) {
+                          return abs_similarity[is][i1] > abs_similarity[is][i2];
+                      });
+
+            loc = index[0];
+            index_sorted[ik][loc] = is;
+            found[loc] = 1;
+            for (js = 0; js < ns; ++js) abs_similarity[js][loc] = -1.0;
+            for (js = 0; js < ns; ++js) {
+                evec_tmp[loc][js] = evec[ik][is][js];
+            }
+        }
+
+        if (std::any_of(found.begin(), found.end(), [](int i1) { return i1 == 0; })) {
+            error->exit("connect_band_by_eigen_similarity",
+                        "Could not identify the connection.");
+        }
+
+    }
+    memory->deallocate(evec_tmp);
 }

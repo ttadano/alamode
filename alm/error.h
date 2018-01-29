@@ -27,4 +27,3 @@ namespace ALM_NS
         void exit(const char *, const char *, const char *);
     };
 }
-

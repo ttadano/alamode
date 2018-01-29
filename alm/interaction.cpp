@@ -30,6 +30,7 @@ using namespace ALM_NS;
 
 Interaction::Interaction(ALM *alm) : Pointers(alm)
 {
+    rcs = nullptr;
 }
 
 Interaction::~Interaction()
@@ -43,6 +44,9 @@ Interaction::~Interaction()
     memory->deallocate(interaction_pair);
     memory->deallocate(mindist_cluster);
     memory->deallocate(distall);
+    if (rcs) {
+        memory->deallocate(rcs);
+    }
 }
 
 void Interaction::init()
@@ -79,8 +83,8 @@ void Interaction::init()
     memory->allocate(exist_image, nneib);
     memory->allocate(distall, nat, nat);
     memory->allocate(mindist_pairs, nat, nat);
-    memory->allocate(interaction_pair, maxorder, symmetry->natmin);
-    memory->allocate(mindist_cluster, maxorder, symmetry->natmin);
+    memory->allocate(interaction_pair, maxorder, symmetry->nat_prim);
+    memory->allocate(mindist_cluster, maxorder, symmetry->nat_prim);
     memory->allocate(pairs, maxorder);
 
     generate_coordinate_of_periodic_images(nat, system->xcoord,
@@ -105,7 +109,7 @@ void Interaction::generate_pairs(std::set<IntList> *pair_out,
     int i, j;
     int iat;
     int order;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int nat = system->nat;
 
     int *pair_tmp;
@@ -192,6 +196,8 @@ void Interaction::generate_coordinate_of_periodic_images(const unsigned int nat,
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
             for (ka = -1; ka <= 1; ++ka) {
+
+                if (ia == 0 && ja == 0 && ka == 0) continue;
 
                 ++icell;
 
@@ -291,9 +297,9 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
     double dist_tmp;
     std::vector<DistList> *neighborlist;
 
-    memory->allocate(neighborlist, symmetry->natmin);
+    memory->allocate(neighborlist, symmetry->nat_prim);
 
-    for (i = 0; i < symmetry->natmin; ++i) {
+    for (i = 0; i < symmetry->nat_prim; ++i) {
         neighborlist[i].clear();
 
         iat = symmetry->map_p2s[i][0];
@@ -312,7 +318,7 @@ void Interaction::print_neighborlist(std::vector<DistInfo> **mindist)
     int nthnearest;
     std::vector<int> atomlist;
 
-    for (i = 0; i < symmetry->natmin; ++i) {
+    for (i = 0; i < symmetry->nat_prim; ++i) {
 
         nthnearest = 0;
         atomlist.clear();
@@ -400,7 +406,7 @@ void Interaction::search_interactions(std::vector<int> **interaction_list_out,
     // 
     int i;
     int order;
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int iat, jat;
     int nat = system->nat;
     int ikd, jkd;
@@ -706,7 +712,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in,
     // Calculate the complete set of interaction clusters for each order.
     //
 
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int i, j, k;
     int iat, jat;
     int order;
@@ -737,7 +743,7 @@ void Interaction::calc_mindist_clusters(std::vector<int> **interaction_pair_in,
     std::vector<std::vector<int>> data_vec;
 
     for (order = 0; order < maxorder; ++order) {
-        for (i = 0; i < symmetry->natmin; ++i) {
+        for (i = 0; i < symmetry->nat_prim; ++i) {
 
             mindist_cluster_out[order][i].clear();
 
@@ -973,7 +979,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
 {
     std::vector<MinDistList> distance_list;
 
-    int natmin = symmetry->natmin;
+    int natmin = symmetry->nat_prim;
     int i, j, k;
     int iat, jat;
     int ikd, jkd;
@@ -998,7 +1004,7 @@ void Interaction::calc_mindist_clusters2(std::vector<int> **interaction_pair_in,
     bool isok;
 
     for (order = 0; order < maxorder; ++order) {
-        for (i = 0; i < symmetry->natmin; ++i) {
+        for (i = 0; i < symmetry->nat_prim; ++i) {
 
             mindist_cluster_out[order][i].clear();
             iat = symmetry->map_p2s[i][0];

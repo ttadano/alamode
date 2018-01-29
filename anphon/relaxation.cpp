@@ -1208,7 +1208,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                         n1 = f1 + f2 + 1.0;
                         n2 = f1 - f2;
                     }
-   
+
                     if (integration->ismear == 0) {
                         prod_tmp[0] = n1
                             * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon)
@@ -2542,7 +2542,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                                 n1 = f1 + f2 + 1.0;
                                 n2 = f1 - f2;
                             }
- 
+
 
                             if (selection_type == 0) {
                                 gamma_k[k][iT] += V3norm * n1;
@@ -3120,7 +3120,7 @@ void Relaxation::calc_self3omega_tetrahedron(const double Temp,
                             n1 = f1 + f2 + 1.0;
                             n2 = f1 - f2;
                         }
-  
+
                         //#pragma omp critical
                         ret_private[nomega * ithread + iomega]
                             += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);

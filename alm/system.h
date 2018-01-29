@@ -68,4 +68,3 @@ namespace ALM_NS
         void setup_atomic_class(int *);
     };
 }
-
