@@ -1539,6 +1539,7 @@ void Constraint::rotational_invariance()
     } // order
 
     for (order = 0; order < maxorder; ++order) {
+        nparam_sub = nparams[order] + nparams[order - 1];
         remove_redundant_rows(nparam_sub, const_rotation_cross[order], eps6);
         remove_redundant_rows(nparams[order], const_rotation_self[order], eps6);
     }
