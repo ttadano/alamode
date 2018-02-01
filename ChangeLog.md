@@ -1,3 +1,26 @@
+# Ver. 1.0.2 (2018-1-29)
+
+## New
+
+- Phonon band connection by eigenvector similarity (``BCONNECT`` tag) 
+- New option to turn on/off the symmetrization of Born effective charge (``BORNSYM`` tag).
+
+## Changes
+
+- Improve the performance of the "suggest" mode for hexagonal systems
+- Use \<unorderd_set\> instead of \<set\> for better performance
+
+## Fix
+
+- Fix a bug in the symmetrization of the Born effective charge
+
+
+# Ver. 1.0.1 (2017-11-21)
+
+## Fix
+- Fixed a minor issue in the previous version
+
+
 # Ver. 1.0.0 (2017-11-21)
 
 ## New
