@@ -907,30 +907,35 @@ def print_atomicforces_LAMMPS(lammps_files, nat,
 
 """OpenMX"""
 # Function for OpenMX 
-#displacements
-
-def get_coordinates_OpenMX(md_file, nat, lavec, conv):
+def read_outfile(out_file, nat, column):
     
     x = np.zeros([nat, 3], dtype = np.float64)
 
-    f = open(md_file, 'r') 
+    f = open(out_file, 'r') 
 
-    line_atom = f.readline()
-    atom_c = int(line_atom.strip().split()[0])
-    if atom_c != nat:
-        print("The number of atom does not match.")
-
-    line = f.readline()
-
+    flag = 0
     atom_count = 0
+    nat_out = 0
     for line in f:
         ss = line.strip().split()
-        for i in range(3):
-            x[atom_count][i] = float(ss[i+1])
-            
-        # convert unit ang to frac
-        x[atom_count] = np.dot(conv, x[atom_count]) 
-        atom_count += 1
+        if len(ss) > 0:
+
+            if ss[0] == "<coordinates.forces":
+                flag = 1
+                continue
+
+            if flag == 0:
+                continue
+        
+            elif flag == 1 and nat_out == 0:
+                nat_out = int(ss[0])
+                continue
+
+            elif flag == 1 and nat_out > 0:
+                for i in range(3):
+                    x[atom_count][i] = float(ss[i+column])
+                
+                atom_count += 1
 
         if atom_count == nat:
             break
@@ -940,7 +945,16 @@ def get_coordinates_OpenMX(md_file, nat, lavec, conv):
     return x
 
 
-def print_displacements_OpenMX(md_files,
+#displacements
+def get_coordinates_OpenMX(out_file, nat, lavec, conv):
+    x = read_outfile(out_file, nat, 2)
+    for i in range(nat):
+        # convert unit ang to frac
+        x[i] = np.dot(conv, x[i]) 
+
+    return x
+
+def print_displacements_OpenMX(out_files,
                         lavec, lavec_inv, nat, x0,
                         require_conversion,
                         conversion_factor,
@@ -962,7 +976,7 @@ def print_displacements_OpenMX(md_files,
             print("File %s contains too many position entries" % file_offset)
         disp_offset = x0_offset - x0
 
-    for search_target in md_files:
+    for search_target in out_files:
 
         x = get_coordinates_OpenMX(search_target, nat, lavec, conv)
         #ndata = len(x) / (3 * nat)
@@ -972,7 +986,7 @@ def print_displacements_OpenMX(md_files,
         for idata in range(ndata):
             #disp = x[idata, :, :] - x0 - disp_offset
             disp = x - x0 - disp_offset
-            disp[disp > 0.97] -= 1.0
+            disp[disp > 0.96] -= 1.0
             #disp = np.dot(vec_refold(disp), conv_inv)
             for i in range(nat):
                 disp[i] = np.dot(conv_inv, disp[i])
@@ -988,35 +1002,12 @@ def print_displacements_OpenMX(md_files,
 
 
 #atomic forces
-def get_atomicforces_OpenMX(md_file, nat):
-
-    force = np.zeros([nat, 3], dtype = np.float64)
-
-    f = open(md_file, 'r')
-    
-    line_atom = f.readline()
-    atom_c = int(line_atom.strip().split()[0])
-    if atom_c != nat:
-        print("The number of atom does not match.")
-
-    line = f.readline()
-
-    atom_count = 0
-    for line in f:
-        ss = line.strip().split()
-        for i in range(3):
-            force[atom_count][i] = float(ss[i+4])
-        atom_count += 1
-
-        if atom_count == nat:
-            break
-
-    f.close()
+def get_atomicforces_OpenMX(out_file, nat):
+    force = read_outfile(out_file, nat, 5)
 
     return force
 
-
-def print_atomicforces_OpenMX(md_files,
+def print_atomicforces_OpenMX(out_files,
                             nat,
                             require_conversion,
                             conversion_factor,
@@ -1031,7 +1022,7 @@ def print_atomicforces_OpenMX(md_files,
         except:
             print("File %s contains too many force entries" % file_offset)
 
-    for search_target in md_files:
+    for search_target in out_files:
         data = get_atomicforces_OpenMX(search_target, nat)
         #ndata = len(data) / (3 * nat)
         ndata = 1
@@ -1049,18 +1040,17 @@ def print_atomicforces_OpenMX(md_files,
                                                 f[i][1],
                                                 f[i][2]))
 
-
 #total enegy
-def get_energies_OpenMX(md_file, nat):
+def get_energies_OpenMX(out_file):
 
-    target = "time="
+    target = "Utot."
     etot = []
 
-    f = open(md_file, 'r')
+    f = open(out_file, 'r')
     for line in f:
         ss = line.strip().split()
         if len(ss) > 0 and ss[0] == target:
-            etot.extend([ss[4]])
+            etot.extend([float(ss[1])])
             break
         else:
             continue
@@ -1071,6 +1061,33 @@ def get_energies_OpenMX(md_file, nat):
 
     return np.array(etot, dtype=np.float)
 
+
+def print_energies_OpenMX(out_files,
+                            require_conversion,
+                            conversion_factor,
+                            file_offset):
+  
+    if file_offset is None:
+        etot_offset = 0.0
+    else:
+        data = get_energies_OpenMX(file_offset)
+        if len(data) > 1:
+            print("File %s contains too many energy entries" % file_offset)
+            exit(1)
+        etot_offset = data[0]
+
+    print("# Etot")
+    for search_target in out_files:
+
+        etot = get_energies_OpenMX(search_target)
+
+        for idata in range(len(etot)):
+            val = etot[idata] - etot_offset
+
+            if require_conversion:
+                val *= conversion_factor
+
+            print("%19.11E" % val)
 
 # Other functions
 
@@ -1258,7 +1275,7 @@ $ python displace.py -h")
         common_settings, nat, x_cart0, kd = read_lammps_structure(file_original)
     
     elif code == "OpenMX":
-        aa, aa_inv, nat, x_frac0 = read_OpenMX_input(file_original):
+        aa, aa_inv, nat, x_frac0 = read_OpenMX_input(file_original)
 
 
     # Print data
