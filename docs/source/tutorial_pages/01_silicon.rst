@@ -81,7 +81,7 @@ Using the script :red:`displace.py` in the tools/ directory, you can generate th
 
         $ python displace.py --xTAPP=si222.cg --mag=0.01 si222.pattern_HARMONIC
 
-     **OpenMX**
+    **OpenMX**
     ::
 
         $ python displace.py --OpenMX=si222.dat --mag=0.01 si222.pattern_HARMONIC
