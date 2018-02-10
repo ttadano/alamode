@@ -1031,7 +1031,7 @@ def read_OpenMX_input(file_original):
 
     #errors
     if nat == 0:
-        print "Could not read dat file properly."
+        print("Could not read dat file properly.")
         exit(1)
 
       
@@ -1063,7 +1063,7 @@ def write_OpenMX_input(prefix, counter, nzerofills, disp, lavec, file_in):
     conv_inv = np.linalg.inv(conv)
     
     for i in range(nat):
-        print np.dot(conv_inv, disp[i]) 
+        print(np.dot(conv_inv, disp[i]))
     
     disp[disp < 0] += 1
 

@@ -512,7 +512,7 @@ def get_energies_QE(pwout_file):
                 found_tag = True
 
     if not found_tag:
-        print("%s tag not found in %s" % (search_tag, search_target))
+        print("%s tag not found in %s" % (search_tag, pwout_file))
         exit(1)
 
     return np.array(etot, dtype=np.float)
@@ -904,7 +904,6 @@ def print_atomicforces_LAMMPS(lammps_files, nat,
 
 
 
-
 """OpenMX"""
 # Function for OpenMX 
 def read_outfile(out_file, nat, column):
@@ -1214,10 +1213,19 @@ $ python displace.py -h")
             disp_conv_factor = 1.0
             energy_conv_factor = 1.0
 
-        else:
+        elif options.unitname == "Rydberg":
             convert_unit = True
             disp_conv_factor = 1.0 / Bohr_radius
             energy_conv_factor = 1.0 / Rydberg_to_eV
+
+        elif options.unitname == "Hartree":
+            convert_unit = True
+            disp_conv_factor = 1.0 / Bohr_radius
+            energy_conv_factor = 0.5 / Rydberg_to_eV
+        
+        else:
+            print("Error : Invalid option for --unit")
+            exit(1)
 
     
     elif options.OpenMX:
@@ -1241,7 +1249,10 @@ $ python displace.py -h")
             disp_conv_factor = 1.0 / Bohr_radius
             energy_conv_factor = 1.0
             force_conv_factor = 1.0
-
+            
+        else:
+            print("Error : Invalid option for --unit")
+            exit(1)
 
     if options.OpenMX is None:
         force_conv_factor = energy_conv_factor / disp_conv_factor
