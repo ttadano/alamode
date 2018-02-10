@@ -1,14 +1,14 @@
 &general
   PREFIX = si222
-  MODE = phonons
-  FCSXML =si222.xml
+  MODE   = phonons
+  FCSXML = si222.xml
 
   NKD = 1; KD = Si
   MASS = 28.0855
 /
 
 &cell
-  10.203
+ 10.21661532467520234378
   0.0 0.5 0.5
   0.5 0.0 0.5
   0.5 0.5 0.0

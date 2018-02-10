@@ -4,7 +4,7 @@
 
 System.CurrrentDirectory         ./    # default=./
 System.Name                      si222
-DATA.PATH                       /home/k0062/k006209/openmx3.8/DFT_DATA13
+DATA.PATH                       /home/tadano/src/openmx3.8/DFT_DATA13
 level.of.stdout                   1    # default=1 (1-3)
 level.of.fileout                  0    # default=1 (0-2)
 
@@ -91,9 +91,9 @@ Atoms.SpeciesAndCoordinates.Unit frac
 Atoms.SpeciesAndCoordinates>
 Atoms.Unitvectors.Unit Ang
 <Atoms.UnitVectors
-10.860  0.000  0.000
- 0.000 10.860  0.000
- 0.000  0.000 10.860
+10.8128 0.0 0.0
+ 0.0 10.8128 0.0
+ 0.0 0.0 10.8128
 Atoms.UnitVectors>
 
 #
@@ -114,18 +114,18 @@ scf.Max.Mixing.Weight      0.700        # default=0.40
 scf.Mixing.History          10         # default=5
 scf.Mixing.StartPulay        5         # default=6
 scf.Mixing.EveryPulay        1         # default=6
-scf.criterion             1.0e-9      # default=1.0e-6 (Hartree)
+scf.criterion             1.0e-10     # default=1.0e-6 (Hartree)
 
 
 #
 # MD or Geometry Optimization
 #
 
-MD.Type                    opt     #
+MD.Type                     NoMD     #
 MD.TimeStep                1.0
 MD.Opt.DIIS.History          3         # default=3
 MD.Opt.StartDIIS             5         # default=5
 MD.Opt.EveryDIIS            200        # default=200
 MD.maxIter                  1          # default=1
-MD.Opt.criterion          1.0e-4       # default=0.0003 (Hartree/Bohr
+#MD.Opt.criterion          1.0e-4       # default=0.0003 (Hartree/Bohr
 
