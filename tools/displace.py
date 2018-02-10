@@ -1107,7 +1107,7 @@ def write_OpenMX_input(prefix, counter, nzerofills, disp, lavec, file_in):
             if coord_row == nat:
                 coord_flag = 0
 
-        elif len(ss) > 0 and ss[0].lower == search_target[3]:
+        elif len(ss) > 0 and ss[0].lower() == search_target[3]:
             ss[1] = prefix + str(counter).zfill(nzerofills)
             fout.write("                      ".join(map(str, ss)))
             fout.write("\n")
