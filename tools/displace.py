@@ -44,6 +44,11 @@ parser.add_option('--LAMMPS',
                   metavar='orig.lammps',
                   help="LAMMPS structure file with equilibrium atomic positions (default: None)")
 
+parser.add_option('--OpenMX',
+                  metavar='orig.dat',
+                  help="dat file with equilibrium atomic \
+                        positions (default: None)")
+
 # Functions for VASP
 
 
@@ -964,6 +969,161 @@ def write_lammps_structure(prefix, counter, header,
     f.close()
   
 
+
+"""OpenMX"""
+# Function for OpenMX
+
+def read_OpenMX_input(file_original):
+    
+    search_target = ["atoms.number", "atoms.speciesandcoordinates.unit", "<atoms.speciesandcoordinates", "<atoms.unitvectors"]
+
+    #open original file
+    f = open(file_original, 'r')
+
+    #set initial patameters
+    nat = 0
+    lavec_flag = 0
+    lavec_row = 0
+    lavec = np.zeros([3, 3])
+
+    coord_flag = 0
+    coord_row = 0
+
+    #read oroginal file and pull out some infomations
+    for line in f:
+        ss = line.strip().split()
+        #number of atoms
+        if len(ss) > 0 and ss[0].lower() == search_target[0]:
+            nat = int(ss[1])
+    
+        #atomic coordinates
+        if coord_flag == 1:
+            for j in range(3):
+                x_frac0[coord_row][j] = float(ss[j+2])
+
+            coord_row += 1              
+            if coord_row == nat:
+                coord_flag = 0
+
+        #latice vector
+        if lavec_flag == 1:
+            for i in range(3):
+                lavec[lavec_row][i] = float(ss[i])
+            lavec_row += 1
+            if lavec_row == 3:
+                lavec_flag = 0
+
+        # unit of atomic coordinates
+        if len(ss) > 0 and ss[0].lower() == search_target[1]:
+            coord_unit = ss[1].lower()
+        
+        if len(ss) > 0 and ss[0].lower() == search_target[2]:
+            coord_flag = 1
+            # initialize x_frac0 array
+            x_frac0 = np.zeros([nat, 3])
+ 
+        if len(ss) > 0 and ss[0].lower() == search_target[3]:
+            lavec_flag = 1
+
+        if np.linalg.norm(lavec) > 0 and lavec_flag == 0:
+            break
+
+
+    #errors
+    if nat == 0:
+        print "Could not read dat file properly."
+        exit(1)
+
+      
+    lavec_inv = (np.linalg.inv(lavec)).T
+    #convert to frac
+    if coord_unit == "ang":
+        for i in range(nat):
+            x_frac0[i] = np.dot(lavec_inv , x_frac0[i])
+            
+    f.close()
+
+    return lavec, lavec_inv, nat, x_frac0
+
+
+
+def write_OpenMX_input(prefix, counter, nzerofills, disp, lavec, file_in):
+  
+    search_target = ["atoms.number", "<atoms.speciesandcoordinates", "atoms.speciesandcoordinates.unit", "system.name"]
+
+    filename = prefix + str(counter).zfill(nzerofills) + ".dat"
+    fout = open(filename, 'w')
+    fin = open(file_in, 'r')
+
+    nat = 0
+    coord_flag = 0
+    coord_row = 0
+
+    conv = (np.linalg.inv(lavec)).T
+    conv_inv = np.linalg.inv(conv)
+    
+    for i in range(nat):
+        print np.dot(conv_inv, disp[i]) 
+    
+    disp[disp < 0] += 1
+
+    for line in fin:
+        ss = line.strip().split()
+        #number of atoms
+        if len(ss) > 0 and ss[0].lower() == search_target[0]:
+            nat = int(ss[1])
+            x_frac = np.zeros((nat, 3))
+            #coord = OrderedDict()
+            coord = {}
+            for i in range(nat):
+                coord[i+1] = []
+ 
+        #coordinates_unit
+        if len(ss) > 0 and ss[0].lower() == search_target[2]:
+            coord_unit = ss[1].lower()
+        
+        #coordinates
+        if coord_flag == 1:
+            coord_column = len(ss)
+            for i in range(1, coord_column):
+                if i > 1:
+                    coord[int(ss[0])].append(float(ss[i]))
+                else:
+                    coord[int(ss[0])].append(ss[i])
+       
+            #convert to frac
+            if coord_unit == "ang":
+                coord[coord_row+1] = np.dot(conv, coord[coord_row+1])
+
+            # add displacement
+            for j in range(1, 4):
+                coord[coord_row+1][j] += disp[coord_row][j-1]
+                coord[coord_row+1][j] = format(coord[coord_row+1][j],'20.16f')
+
+            fout.write(str(coord_row+1) + " ")
+            fout.write("  ".join(map(str, coord[coord_row+1])))
+            fout.write("\n")
+            coord_row += 1
+            if coord_row == nat:
+                coord_flag = 0
+
+        elif len(ss) > 0 and ss[0].lower() == search_target[3]:
+            ss[1] = prefix + str(counter).zfill(nzerofills)
+            fout.write("                      ".join(map(str, ss)))
+            fout.write("\n")
+
+        else:
+            fout.write(line)
+
+
+        if len(ss) > 0 and ss[0].lower() == search_target[1]:
+            coord_flag = 1
+
+
+    fin.close()
+    fout.close()
+
+
 # Other functions
 
 def parse_displacement_patterns(files_in):
@@ -1098,14 +1258,15 @@ if __name__ == '__main__':
     conditions = [options.VASP is None, 
                   options.QE is None,
                   options.xTAPP is None,
-                  options.LAMMPS is None]
+                  options.LAMMPS is None,
+                  options.OpenMX is None]
     
     if conditions.count(True) == len(conditions):
-        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS option must be given.")
+        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
         exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
-        print("Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously.")
+        print("Error : --VASP, --QE, --xTAPP, --LAMMPS, and --OpenMX cannot be given simultaneously.")
         exit(1)
 
     elif options.VASP:
@@ -1127,6 +1288,12 @@ if __name__ == '__main__':
         code = "LAMMPS"
         print("--LAMMPS option is given: Generate input files for LAMMPS.")
         print("")
+
+    elif options.OpenMX:
+        code = "OpenMX"
+        print("--OpenMX option is given: Generate dat files for OpenMX")
+        print("")
+
 
     # Assign the magnitude of displacements
     if options.mag is None:
@@ -1165,6 +1332,11 @@ if __name__ == '__main__':
         str_outfiles = "%s{counter}.lammps" % prefix
         file_original = options.LAMMPS
 
+    elif code == "OpenMX":
+        str_outfiles = "%s{counter}.dat" % prefix
+        file_original = options.OpenMX
+
+
     # Read the original file
     if code == "VASP":
         aa, aa_inv, elems, nats, x_frac = read_POSCAR(file_original)
@@ -1183,6 +1355,9 @@ if __name__ == '__main__':
     elif code == "LAMMPS":
         common_settings, nat, x_cart, kd = read_lammps_structure(file_original)
         aa_inv = None
+    
+    elif code == "OpenMX":
+        aa, aa_inv, nat, x_frac = read_OpenMX_input(file_original)
 
     print("Original file                  : %s" % file_original)
     print("Output file format             : %s" % str_outfiles)
@@ -1222,6 +1397,9 @@ if __name__ == '__main__':
         elif code == "LAMMPS":
             write_lammps_structure(prefix, counter, header, 
                                    common_settings, nat, kd, x_cart, disp)    
+
+        elif code == "OpenMX":
+            write_OpenMX_input(prefix, counter,  nzerofills, disp, aa, file_original)
 
     print("")
     print("All input files are created.")

@@ -38,7 +38,7 @@ except ImportError:
         import elementtree.ElementTree as etree
 
 
-usage = "usage: %prog [options] vasprun*.xml (or *.pw.out or *.str)"
+usage = "usage: %prog [options] vasprun*.xml (or *.pw.out or *.str or *.md)"
 parser = optparse.OptionParser(usage=usage)
 
 parser.add_option('--VASP',
@@ -59,6 +59,11 @@ parser.add_option('--xTAPP',
 parser.add_option('--LAMMPS',
                   metavar='orig.lammps',
                   help="LAMMPS structure file with equilibrium atomic positions (default: None)")
+
+parser.add_option('--OpenMX',
+                  metavar='orig.dat',
+                  help="OpenMX dat file with equilibrium atomic \
+                        positions (default: None)")
 
 parser.add_option('--get',
                   help="specify which quantity to extract. \
@@ -898,6 +903,192 @@ def print_atomicforces_LAMMPS(lammps_files, nat,
                                                     f[i][2]))
 
 
+
+
+"""OpenMX"""
+# Function for OpenMX 
+def read_outfile(out_file, nat, column):
+    
+    x = np.zeros([nat, 3], dtype = np.float64)
+
+    f = open(out_file, 'r') 
+
+    flag = 0
+    atom_count = 0
+    nat_out = 0
+    for line in f:
+        ss = line.strip().split()
+        if len(ss) > 0:
+
+            if ss[0] == "<coordinates.forces":
+                flag = 1
+                continue
+
+            if flag == 0:
+                continue
+        
+            elif flag == 1 and nat_out == 0:
+                nat_out = int(ss[0])
+                continue
+
+            elif flag == 1 and nat_out > 0:
+                for i in range(3):
+                    x[atom_count][i] = float(ss[i+column])
+                
+                atom_count += 1
+
+        if atom_count == nat:
+            break
+
+    f.close()
+   
+    return x
+
+
+#displacements
+def get_coordinates_OpenMX(out_file, nat, lavec, conv):
+    x = read_outfile(out_file, nat, 2)
+    for i in range(nat):
+        # convert unit ang to frac
+        x[i] = np.dot(conv, x[i]) 
+
+    return x
+
+def print_displacements_OpenMX(out_files,
+                        lavec, lavec_inv, nat, x0,
+                        require_conversion,
+                        conversion_factor,
+                        file_offset):
+    vec_refold = np.vectorize(refold)
+    lavec_transpose = lavec.transpose()
+    conv = lavec_inv
+    conv_inv = np.linalg.inv(conv)
+
+    x0 = np.round(x0, 8)
+
+    if file_offset is None:
+        disp_offset = np.zeros([nat, 3])
+    else:
+        x0_offset = get_coordinates_OpenMX(file_offset, nat)
+        try:
+            x0_offset = np.reshape(x0_offset, (nat, 3))
+        except:
+            print("File %s contains too many position entries" % file_offset)
+        disp_offset = x0_offset - x0
+
+    for search_target in out_files:
+
+        x = get_coordinates_OpenMX(search_target, nat, lavec, conv)
+        #ndata = len(x) / (3 * nat)
+        ndata = 1
+        #x = np.reshape(x, (1, nat, 3))
+       
+        for idata in range(ndata):
+            #disp = x[idata, :, :] - x0 - disp_offset
+            disp = x - x0 - disp_offset
+            disp[disp > 0.96] -= 1.0
+            #disp = np.dot(vec_refold(disp), conv_inv)
+            for i in range(nat):
+                disp[i] = np.dot(conv_inv, disp[i])
+
+            disp[np.absolute(disp) < 1e-5] = 0.0
+            if require_conversion:
+                disp *= conversion_factor
+
+            for i in range(nat):
+                print("%15.7F %15.7F %15.7F" % (disp[i][0],
+                                                disp[i][1],
+                                                disp[i][2]))
+
+
+#atomic forces
+def get_atomicforces_OpenMX(out_file, nat):
+    force = read_outfile(out_file, nat, 5)
+
+    return force
+
+def print_atomicforces_OpenMX(out_files,
+                            nat,
+                            require_conversion,
+                            conversion_factor,
+                            file_offset):
+  
+    if file_offset is None:
+        force_offset = np.zeros((nat, 3))
+    else:
+        data0 = get_atomicforces_OpenMX(file_offset, nat)
+        try:
+            force_offset = np.reshape(data0, (nat, 3))
+        except:
+            print("File %s contains too many force entries" % file_offset)
+
+    for search_target in out_files:
+        data = get_atomicforces_OpenMX(search_target, nat)
+        #ndata = len(data) / (3 * nat)
+        ndata = 1
+        #data = np.reshape(data, (ndata, nat, 3))
+
+        for idata in range(ndata):
+            #f = data[idata, :, :] - force_offset
+            f = data - force_offset
+
+            if require_conversion:
+                f *= conversion_factor
+
+            for i in range(nat):
+                print("%15.8E %15.8E %15.8E" % (f[i][0],
+                                                f[i][1],
+                                                f[i][2]))
+
+#total enegy
+def get_energies_OpenMX(out_file):
+
+    target = "Utot."
+    etot = []
+
+    f = open(out_file, 'r')
+    for line in f:
+        ss = line.strip().split()
+        if len(ss) > 0 and ss[0] == target:
+            etot.extend([float(ss[1])])
+            break
+        else:
+            continue
+
+    if len(etot) == 0:
+        print("Total energy not found.")
+        exit(1)
+
+    return np.array(etot, dtype=np.float)
+
+
+def print_energies_OpenMX(out_files,
+                            require_conversion,
+                            conversion_factor,
+                            file_offset):
+  
+    if file_offset is None:
+        etot_offset = 0.0
+    else:
+        data = get_energies_OpenMX(file_offset)
+        if len(data) > 1:
+            print("File %s contains too many energy entries" % file_offset)
+            exit(1)
+        etot_offset = data[0]
+
+    print("# Etot")
+    for search_target in out_files:
+
+        etot = get_energies_OpenMX(search_target)
+
+        for idata in range(len(etot)):
+            val = etot[idata] - etot_offset
+
+            if require_conversion:
+                val *= conversion_factor
+
+            print("%19.11E" % val)
+
 # Other functions
 
 def refold(x):
@@ -930,14 +1121,15 @@ $ python displace.py -h")
     conditions = [options.VASP is None,
                   options.QE is None,
                   options.xTAPP is None,
-                  options.LAMMPS is None]
+                  options.LAMMPS is None,
+                  options.OpenMX is None]
 
     if conditions.count(True) == len(conditions):
-        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS option must be given.")
+        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
         exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
-        print("Error : --VASP, --QE, --xTAPP, and --LAMMPS cannot be given simultaneously.")
+        print("Error : --VASP, --QE, --xTAPP, --LAMMPS, and --OpenMX cannot be given simultaneously.")
         exit(1)
 
     elif options.VASP:
@@ -1027,7 +1219,32 @@ $ python displace.py -h")
             disp_conv_factor = 1.0 / Bohr_radius
             energy_conv_factor = 1.0 / Rydberg_to_eV
 
-    force_conv_factor = energy_conv_factor / disp_conv_factor
+    
+    elif options.OpenMX:
+        code = "OpenMX"
+        file_original = options.OpenMX
+
+        if options.unitname == "eV":
+            convert_unit = True
+            disp_conv_factor = 1.0
+            energy_conv_factor = 2.0 * Rydberg_to_eV
+            force_conv_factor = energy_conv_factor 
+
+        elif options.unitname == "Rydberg":
+            convert_unit = True
+            disp_conv_factor = 1.0 / Bohr_radius
+            energy_conv_factor = 2.0
+            force_conv_factor = 2.0
+
+        elif options.unitname == "Hartree":
+            convert_unit = True
+            disp_conv_factor = 1.0 / Bohr_radius
+            energy_conv_factor = 1.0
+            force_conv_factor = 1.0
+
+
+    if options.OpenMX is None:
+        force_conv_factor = energy_conv_factor / disp_conv_factor
 
     print_disp = False
     print_force = False
@@ -1056,6 +1273,10 @@ $ python displace.py -h")
     
     elif code == "LAMMPS":
         common_settings, nat, x_cart0, kd = read_lammps_structure(file_original)
+    
+    elif code == "OpenMX":
+        aa, aa_inv, nat, x_frac0 = read_OpenMX_input(file_original)
+
 
     # Print data
 
@@ -1075,6 +1296,10 @@ $ python displace.py -h")
         elif code == "LAMMPS":
             print_displacements_LAMMPS(file_results, nat, x_cart0,
                                        convert_unit, disp_conv_factor, options.offset)
+    
+        elif code == "OpenMX":
+            print_displacements_OpenMX(file_results, aa, aa_inv, nat, x_frac0,
+                                      convert_unit, disp_conv_factor, options.offset)
 
     elif print_force:
         if code == "VASP":
@@ -1093,6 +1318,10 @@ $ python displace.py -h")
             print_atomicforces_LAMMPS(file_results, nat, 
                                       convert_unit, force_conv_factor, options.offset)
 
+        elif code == "OpenMX":
+            print_atomicforces_OpenMX(file_results, nat,
+                                     convert_unit, force_conv_factor, options.offset)
+
     elif print_energy:
         if code == "VASP":
             print_energies_VASP(file_results, convert_unit,
@@ -1104,4 +1333,8 @@ $ python displace.py -h")
 
         elif code == "xTAPP":
             print_energies_xTAPP(file_results, convert_unit,
+                                 energy_conv_factor, options.offset)
+
+        elif code == "OpenMX":
+            print_energies_OpenMX(file_results, convert_unit,
                                  energy_conv_factor, options.offset)
