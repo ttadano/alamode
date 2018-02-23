@@ -9,46 +9,107 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
-#include <fstream>
-#include <iomanip>
-#include <algorithm>
-#include <vector>
-#include <set>
-#include <boost/lexical_cast.hpp>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#include "conductivity.h"
+#include "relaxation.h"
+#include "constants.h"
 #include "dynamical.h"
 #include "error.h"
 #include "fcs_phonon.h"
 #include "integration.h"
 #include "kpoint.h"
+#include "mathfunctions.h"
 #include "memory.h"
 #include "parsephon.h"
 #include "phonon_dos.h"
-#include "thermodynamics.h"
-#include "relaxation.h"
 #include "selfenergy.h"
 #include "symmetry_core.h"
 #include "system.h"
+#include "thermodynamics.h"
 #include "write_phonons.h"
-#include "constants.h"
-#include "mathfunctions.h"
-#include "timer.h"
+#include <boost/lexical_cast.hpp>
+#include <fstream>
+#include <iomanip>
+#include <algorithm>
+#include <vector>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 using namespace PHON_NS;
 
 Relaxation::Relaxation(PHON *phon) : Pointers(phon)
 {
-    im = std::complex<double>(0.0, 1.0);
+    set_default_variables();
 }
 
 Relaxation::~Relaxation()
 {
+    deallocate_variables();
 };
+
+void Relaxation::set_default_variables()
+{
+    im = std::complex<double>(0.0, 1.0);
+    quartic_mode = 0;
+    ks_analyze_mode = false;
+    atom_project_mode = false;
+    calc_realpart = false;
+    calc_fstate_omega = false;
+    calc_fstate_k = false;
+    print_V3 = false;
+    use_tuned_ver = true;
+    spectral_func = false;
+    use_triplet_symmetry = true;
+    is_imaginary = nullptr;
+    vec_for_v3 = nullptr;
+    vec_for_v4 = nullptr;
+    invmass_for_v3 = nullptr;
+    invmass_for_v4 = nullptr;
+    evec_index = nullptr;
+    evec_index4 = nullptr;
+    fcs_group = nullptr;
+    fcs_group2 = nullptr;
+    exp_phase = nullptr;
+    exp_phase3 = nullptr;
+}
+
+void Relaxation::deallocate_variables()
+{
+    if (is_imaginary) {
+        memory->deallocate(is_imaginary);
+    }
+    if (vec_for_v3) {
+        memory->deallocate(vec_for_v3);
+    }
+    if (vec_for_v4) {
+        memory->deallocate(vec_for_v4);
+    }
+    if (invmass_for_v3) {
+        memory->deallocate(invmass_for_v3);
+    }
+    if (invmass_for_v4) {
+        memory->deallocate(invmass_for_v4);
+    }
+    if (evec_index) {
+        memory->deallocate(evec_index);
+    }
+    if (evec_index4) {
+        memory->deallocate(evec_index4);
+    }
+    if (fcs_group) {
+        memory->deallocate(fcs_group);
+    }
+    if (fcs_group2) {
+        memory->deallocate(fcs_group2);
+    }
+    if (exp_phase) {
+        memory->deallocate(exp_phase);
+    }
+    if (exp_phase3) {
+        memory->deallocate(exp_phase3);
+    }
+}
+
 
 void Relaxation::setup_relaxation()
 {
@@ -124,44 +185,20 @@ void Relaxation::setup_relaxation()
     }
 }
 
-void Relaxation::finish_relaxation()
-{
-    memory->deallocate(vec_for_v3);
-    memory->deallocate(invmass_for_v3);
-    memory->deallocate(evec_index);
-    memory->deallocate(fcs_group);
-    memory->deallocate(is_imaginary);
-
-    if (use_tuned_ver) {
-        if (tune_type == 0) {
-            memory->deallocate(exp_phase);
-        } else if (tune_type == 1) {
-            memory->deallocate(exp_phase3);
-        }
-    }
-
-    if (ks_analyze_mode && (quartic_mode > 0)) {
-        memory->deallocate(vec_for_v4);
-        memory->deallocate(invmass_for_v4);
-        memory->deallocate(evec_index4);
-        memory->deallocate(fcs_group2);
-    }
-}
 
 void Relaxation::detect_imaginary_branches(double **eval)
 {
-    int ik, is, i, j;
-    nk = kpoint->nk;
-    ns = dynamical->neval;
-    nks = ns * nk;
+    int ik, is;
+    auto nk = kpoint->nk;
+    auto ns = dynamical->neval;
+    auto nks = ns * nk;
     int knum;
     double omega;
-    bool is_anyof_imaginary;
     int ndup;
 
     memory->allocate(is_imaginary, kpoint->nk_irred, ns);
 
-    is_anyof_imaginary = false;
+    bool is_anyof_imaginary = false;
 
     for (ik = 0; ik < kpoint->nk_irred; ++ik) {
         for (is = 0; is < ns; ++is) {
@@ -187,10 +224,10 @@ void Relaxation::detect_imaginary_branches(double **eval)
                     if (is_imaginary[ik][is]) {
                         ndup = kpoint->kpoint_irred_all[ik].size();
                         count += ndup;
-                        for (i = 0; i < ndup; ++i) {
+                        for (int i = 0; i < ndup; ++i) {
                             knum = kpoint->kpoint_irred_all[ik][i].knum;
                             omega = eval[knum][is];
-                            for (j = 0; j < 3; ++j) {
+                            for (int j = 0; j < 3; ++j) {
                                 std::cout << std::setw(15) << kpoint->xk[knum][j];
                             }
                             std::cout << std::setw(4) << is + 1 << " :"
@@ -212,7 +249,7 @@ void Relaxation::detect_imaginary_branches(double **eval)
     }
 }
 
-void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
+void Relaxation::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
                                          const unsigned int N,
                                          double ***vec_out)
 {
@@ -221,8 +258,6 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
 
     double vec[3];
     double **xshift_s;
-
-    unsigned int icell;
 
     std::vector<unsigned int> atm_super, atm_prim;
     std::vector<unsigned int> xyz;
@@ -243,7 +278,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
 
     for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
 
-    icell = 0;
+    unsigned int icell = 0;
 
     for (ix = -1; ix <= 1; ++ix) {
         for (iy = -1; iy <= 1; ++iy) {
@@ -263,21 +298,21 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
     unsigned int tran_tmp;
     unsigned int icount = 0;
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (const auto &it : fcs_in) {
 
         atm_super.clear();
         atm_prim.clear();
         xyz.clear();
         cells.clear();
 
-        for (i = 0; i < (*it).pairs.size(); ++i) {
-            atm_p = (*it).pairs[i].index / 3;
-            tran_tmp = (*it).pairs[i].tran;
+        for (i = 0; i < it.pairs.size(); ++i) {
+            atm_p = it.pairs[i].index / 3;
+            tran_tmp = it.pairs[i].tran;
             atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
 
             atm_prim.push_back(atm_p);
             atm_super.push_back(atm_s);
-            cells.push_back((*it).pairs[i].cell_s);
+            cells.push_back(it.pairs[i].cell_s);
         }
 
 
@@ -300,7 +335,7 @@ void Relaxation::prepare_relative_vector(std::vector<FcsArrayWithCell> fcs_in,
     memory->deallocate(xshift_s);
 }
 
-void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> fcs_in,
+void Relaxation::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
                                                   const unsigned int N,
                                                   int &number_of_groups,
                                                   std::vector<double> *&fcs_group_out)
@@ -317,12 +352,12 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (const auto &it : fcs_in) {
 
         arr_tmp.clear();
 
-        for (i = 0; i < (*it).pairs.size(); ++i) {
-            arr_tmp.push_back((*it).pairs[i].index);
+        for (i = 0; i < it.pairs.size(); ++i) {
+            arr_tmp.push_back(it.pairs[i].index);
         }
 
         if (arr_tmp != arr_old) {
@@ -342,12 +377,12 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
         arr_old.push_back(-1);
     }
 
-    for (auto it = fcs_in.cbegin(); it != fcs_in.cend(); ++it) {
+    for (const auto &it : fcs_in) {
 
         arr_tmp.clear();
 
-        for (i = 0; i < (*it).pairs.size(); ++i) {
-            arr_tmp.push_back((*it).pairs[i].index);
+        for (i = 0; i < it.pairs.size(); ++i) {
+            arr_tmp.push_back(it.pairs[i].index);
         }
 
         if (arr_tmp != arr_old) {
@@ -357,7 +392,7 @@ void Relaxation::prepare_group_of_force_constants(std::vector<FcsArrayWithCell> 
             std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
         }
 
-        fcs_group_out[igroup].push_back((*it).fcs_val);
+        fcs_group_out[igroup].push_back(it.fcs_val);
     }
 }
 
@@ -403,7 +438,7 @@ void Relaxation::setup_mode_analysis()
                                     "Mode index out of range.");
                     }
 
-                    kslist_fstate_k.push_back(KsListMode(ktmp, snum_tmp - 1));
+                    kslist_fstate_k.emplace_back(ktmp, snum_tmp - 1);
                 }
                 std::cout << " The number of entries = "
                     << kslist_fstate_k.size() << std::endl;
@@ -473,7 +508,7 @@ void Relaxation::setup_mode_analysis()
             kslist_fstate_k.clear();
 
             for (i = 0; i < nlist; ++i) {
-                kslist_fstate_k.push_back(KsListMode(vec_tmp[i], mode_tmp[i]));
+                kslist_fstate_k.emplace_back(vec_tmp[i], mode_tmp[i]);
             }
         }
 
@@ -503,7 +538,7 @@ void Relaxation::setup_mode_analysis()
 
 std::complex<double> Relaxation::V3(const unsigned int ks[3])
 {
-    unsigned int i, j, ielem;
+    unsigned int i, j;
     unsigned int kn[3], sn[3];
     unsigned int nsize_group;
 
@@ -515,7 +550,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 
     int iloc, loc[3];
     int ii;
-    double inv2pi = 1.0 / (2.0 * pi);
+    const auto inv2pi = 1.0 / (2.0 * pi);
     double dnk_represent = static_cast<double>(nk_represent);
 
     dnk_represent *= inv2pi;
@@ -528,7 +563,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
     // Return zero if any of the involving phonon has imaginary frequency
     if (omega[0] < 0.0 || omega[1] < 0.0 || omega[2] < 0.0) return 0.0;
 
-    ielem = 0;
+    unsigned int ielem = 0;
 
     if (use_tuned_ver) {
         if (tune_type == 0) {
@@ -635,7 +670,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 std::complex<double> Relaxation::V4(const unsigned int ks[4])
 {
     int ii;
-    unsigned int i, j, ielem;
+    unsigned int i, j;
     unsigned int kn[4], sn[4];
 
     double phase, phase3[3];
@@ -645,7 +680,7 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
     std::complex<double> ret = std::complex<double>(0.0, 0.0);
 
     int iloc, loc[3];
-    double inv2pi = 1.0 / (2.0 * pi);
+    const auto inv2pi = 1.0 / (2.0 * pi);
     double dnk_represent = static_cast<double>(nk_represent);
 
     dnk_represent *= inv2pi;
@@ -656,7 +691,7 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
     }
 
-    ielem = 0;
+    unsigned int ielem = 0;
 
     if (use_tuned_ver) {
         if (tune_type == 0) {
@@ -771,7 +806,6 @@ std::complex<double> Relaxation::V3_mode(int mode,
                                          std::complex<double> ***evec)
 {
     int i, j;
-    int ielem;
     int nsize_group;
 
     double phase;
@@ -781,7 +815,7 @@ std::complex<double> Relaxation::V3_mode(int mode,
     // Return zero if any of the involving phonon has imaginary frequency
     if (eval[0][mode] < 0.0 || eval[1][is] < 0.0 || eval[2][js] < 0.0) return 0.0;
 
-    ielem = 0;
+    unsigned int ielem = 0;
 
     for (i = 0; i < ngroup; ++i) {
 
@@ -834,7 +868,6 @@ void Relaxation::calc_damping_smearing(const unsigned int N,
     unsigned int arr[3];
 
     int k1, k2;
-    int npair_uniq;
 
     double T_tmp;
     double n1, n2;
@@ -860,7 +893,7 @@ void Relaxation::calc_damping_smearing(const unsigned int N,
                          sym_permutation,
                          triplet);
 
-    npair_uniq = triplet.size();
+    int npair_uniq = triplet.size();
 
     memory->allocate(v3_arr, npair_uniq, ns * ns);
     memory->allocate(delta_arr, npair_uniq, ns * ns, 2);
@@ -976,9 +1009,6 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
     unsigned int is, js;
     unsigned int k1, k2;
     unsigned int arr[3];
-    unsigned int npair_uniq;
-
-    int knum, knum_minus;
 
     double T_tmp;
     double n1, n2;
@@ -1004,13 +1034,13 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
                          sym_permutation,
                          triplet);
 
-    npair_uniq = triplet.size();
+    unsigned int npair_uniq = triplet.size();
 
     memory->allocate(v3_arr, npair_uniq, ns2);
     memory->allocate(delta_arr, npair_uniq, ns2, 2);
 
-    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    knum_minus = kpoint->knum_minus[knum];
+    int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    int knum_minus = kpoint->knum_minus[knum];
 
     memory->allocate(kmap_identity, nk);
 
@@ -1140,7 +1170,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
                                                      const unsigned int snum,
                                                      double ***ret)
 {
-    int i, j, ik;
+    int i, j;
 
     double multi;
     int knum, knum_minus;
@@ -1174,7 +1204,7 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
         }
     }
 
-    for (ik = mympi->my_rank; ik < triplet.size(); ik += mympi->nprocs) {
+    for (int ik = mympi->my_rank; ik < triplet.size(); ik += mympi->nprocs) {
 
         multi = static_cast<double>(triplet[ik].group.size());
         knum = kpoint->kpoint_irred_all[ik_in][0].knum;
@@ -1274,15 +1304,11 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
     int ik, ib;
     unsigned int jk;
 
-    double multi;
-    int knum, knum_minus;
     unsigned int is, js;
     unsigned int k1, k2;
     unsigned int arr[3];
-    unsigned int npair_uniq;
 
     double omega_inner[2];
-    double T_tmp;
     double n1, n2;
     double f1, f2;
     double xk_tmp[3];
@@ -1313,13 +1339,13 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
         }
     }
 
-    npair_uniq = triplet.size();
+    unsigned int npair_uniq = triplet.size();
 
     memory->allocate(v3_arr, npair_uniq, ns2);
     memory->allocate(delta_arr, npair_uniq, ns2, 2);
 
-    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    knum_minus = kpoint->knum_minus[knum];
+    int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    int knum_minus = kpoint->knum_minus[knum];
 
     memory->allocate(kmap_identity, nk);
 
@@ -1525,7 +1551,7 @@ void Relaxation::perform_mode_analysis()
 
             if (mympi->my_rank == 0) {
 
-                file_V3 = input->job_title + ".V3." + boost::lexical_cast<std::string>(i + 1);
+                file_V3 = input->job_title + ".V3." + std::to_string(i + 1);
                 ofs_V3.open(file_V3.c_str(), std::ios::out);
                 if (!ofs_V3)
                     error->exit("perform_mode_analysis",
@@ -1625,7 +1651,7 @@ void Relaxation::perform_mode_analysis()
                 std::cout << ")" << std::endl;
                 std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
 
-                file_self = input->job_title + ".Self." + boost::lexical_cast<std::string>(i + 1);
+                file_self = input->job_title + ".Self." + std::to_string(i + 1);
                 ofs_self.open(file_self.c_str(), std::ios::out);
                 if (!ofs_self) error->exit("perform_mode_analysis", "Cannot open file file_shift");
 
@@ -1780,7 +1806,7 @@ void Relaxation::perform_mode_analysis()
             }
 
             if (mympi->my_rank == 0) {
-                file_linewidth = input->job_title + ".Gamma." + boost::lexical_cast<std::string>(i + 1);
+                file_linewidth = input->job_title + ".Gamma." + std::to_string(i + 1);
                 ofs_linewidth.open(file_linewidth.c_str(), std::ios::out);
                 if (!ofs_linewidth)
                     error->exit("perform_mode_analysis",
@@ -1833,7 +1859,7 @@ void Relaxation::perform_mode_analysis()
 
                 if (mympi->my_rank == 0) {
 
-                    file_shift = input->job_title + ".Shift." + boost::lexical_cast<std::string>(i + 1);
+                    file_shift = input->job_title + ".Shift." + std::to_string(i + 1);
                     ofs_shift.open(file_shift.c_str(), std::ios::out);
                     if (!ofs_shift)
                         error->exit("perform_mode_analysis",
@@ -1964,7 +1990,7 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
 
         if (mympi->my_rank == 0) {
 
-            file_omega = input->job_title + ".fw." + boost::lexical_cast<std::string>(i + 1);
+            file_omega = input->job_title + ".fw." + std::to_string(i + 1);
             ofs_omega.open(file_omega.c_str(), std::ios::out);
             if (!ofs_omega)
                 error->exit("print_frequency_resolved_final_state",
@@ -2201,11 +2227,10 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 
             // Find a list of k points which satisfy the energy conservation
 
-            for (auto it = kpoint->kp_planes_tri[i].cbegin();
-                 it != kpoint->kp_planes_tri[i].cend(); ++it) {
+            for (const auto &it : kpoint->kp_planes_tri[i]) {
 
                 // K point indexes for each triangle
-                for (k = 0; k < 3; ++k) knum_triangle[k] = (*it).knum[k];
+                for (k = 0; k < 3; ++k) knum_triangle[k] = it.knum[k];
 
                 for (is = 0; is < ns; ++is) {
                     for (js = 0; js < ns; ++js) {
@@ -2310,8 +2335,8 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
 
-                    for (auto it2 = kplist_conserved[is][js][0].cbegin();
-                         it2 != kplist_conserved[is][js][0].cend(); ++it2) {
+                    for (auto it2 = kplist_conserved[is][js][0].begin();
+                         it2 != kplist_conserved[is][js][0].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
@@ -2326,15 +2351,14 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                         }
                         theta = std::acos(dprod / (norm_ref * std::sqrt(norm1)));
 
-                        kplist_for_target_mode[is][js][j].push_back(
-                            KpointListWithCoordinate(*it2,
+                        kplist_for_target_mode[is][js][j].emplace_back(*it2,
                                                      std::cos(theta + theta_ref) * std::sqrt(norm1),
                                                      std::sin(theta + theta_ref) * std::sqrt(norm1),
-                                                     i, 0));
+                                                     i, 0);
                     }
 
-                    for (auto it2 = kplist_conserved[is][js][1].cbegin();
-                         it2 != kplist_conserved[is][js][1].cend(); ++it2) {
+                    for (auto it2 = kplist_conserved[is][js][1].begin();
+                         it2 != kplist_conserved[is][js][1].end(); ++it2) {
 
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
@@ -2349,11 +2373,10 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                         }
                         theta = std::acos(dprod / (norm_ref * std::sqrt(norm1)));
 
-                        kplist_for_target_mode[is][js][j].push_back(
-                            KpointListWithCoordinate(*it2,
-                                                     std::cos(theta + theta_ref) * std::sqrt(norm1),
-                                                     std::sin(theta + theta_ref) * std::sqrt(norm1),
-                                                     i, 1));
+                        kplist_for_target_mode[is][js][j].emplace_back(*it2,
+                                                                       std::cos(theta + theta_ref) * std::sqrt(norm1),
+                                                                       std::sin(theta + theta_ref) * std::sqrt(norm1),
+                                                                       i, 1);
                     }
 
                     kplist_conserved[is][js][0].clear();
@@ -2576,7 +2599,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 
         if (mympi->my_rank == 0) {
 
-            file_mode_tau = input->job_title + ".fk." + boost::lexical_cast<std::string>(i + 1);
+            file_mode_tau = input->job_title + ".fk." + std::to_string(i + 1);
             ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
             if (!ofs_mode_tau)
                 error->exit("compute_mode_tau",
@@ -2613,18 +2636,16 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 
 bool Relaxation::is_proper(const int isym)
 {
-    int i, j;
-    double det;
     double S[3][3];
     bool ret;
 
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
             S[i][j] = static_cast<double>(symmetry->SymmList[isym].rot[i][j]);
         }
     }
 
-    det = S[0][0] * (S[1][1] * S[2][2] - S[2][1] * S[1][2])
+    double det = S[0][0] * (S[1][1] * S[2][2] - S[2][1] * S[1][2])
         - S[1][0] * (S[0][1] * S[2][2] - S[2][1] * S[0][2])
         + S[2][0] * (S[0][1] * S[1][2] - S[1][1] * S[0][2]);
 
@@ -2641,19 +2662,11 @@ bool Relaxation::is_proper(const int isym)
 
 bool Relaxation::is_symmorphic(const int isym)
 {
-    int i;
     double tran[3];
-    bool ret;
 
-    for (i = 0; i < 3; ++i) tran[i] = symmetry->SymmList[isym].tran[i];
+    for (int i = 0; i < 3; ++i) tran[i] = symmetry->SymmList[isym].tran[i];
 
-    if ((std::abs(tran[0]) < eps) &&
-        (std::abs(tran[1]) < eps) &&
-        (std::abs(tran[2]) < eps)) {
-        ret = true;
-    } else {
-        ret = false;
-    }
+    bool ret = (std::abs(tran[0]) < eps) && (std::abs(tran[1]) < eps) && (std::abs(tran[2]) < eps);
     return ret;
 }
 
@@ -2701,7 +2714,7 @@ void Relaxation::get_unique_triplet_k(const int ik,
             ks_in[1] = kpoint->knum_sym(ik2, kpoint->small_group_of_k[ik][isym]);
 
             if (!flag_found[ks_in[0]]) {
-                kslist.push_back(KsList(2, ks_in, kpoint->small_group_of_k[ik][isym]));
+                kslist.emplace_back(2, ks_in, kpoint->small_group_of_k[ik][isym]);
                 flag_found[ks_in[0]] = true;
             }
 
@@ -2710,12 +2723,12 @@ void Relaxation::get_unique_triplet_k(const int ik,
                 ks_in[0] = ks_in[1];
                 ks_in[1] = tmp;
 
-                kslist.push_back(KsList(2, ks_in, kpoint->small_group_of_k[ik][isym]));
+                kslist.emplace_back(2, ks_in, kpoint->small_group_of_k[ik][isym]);
                 flag_found[ks_in[0]] = true;
             }
         }
-        if (kslist.size() > 0) {
-            triplet.push_back(kslist);
+        if (!kslist.empty()) {
+            triplet.emplace_back(kslist);
         }
     }
 

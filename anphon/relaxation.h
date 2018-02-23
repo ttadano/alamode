@@ -26,13 +26,7 @@ namespace PHON_NS
 
         KsList();
 
-        KsList(const KsList &a)
-        {
-            for (auto p = a.ks.cbegin(); p != a.ks.cend(); ++p) {
-                ks.push_back(*p);
-            }
-            symnum = a.symnum;
-        }
+        KsList(const KsList &a) : ks(a.ks), symnum(a.symnum) {};
 
         KsList(const int n, int *ks_in, const int sym)
         {
@@ -41,13 +35,13 @@ namespace PHON_NS
             }
             symnum = sym;
         }
-    };
 
-    inline bool operator<(const KsList a, const KsList b)
-    {
-        return std::lexicographical_compare(a.ks.begin(), a.ks.end(),
-                                            b.ks.begin(), b.ks.end());
-    }
+        bool operator<(const KsList &obj) const
+        {
+            return std::lexicographical_compare(ks.begin(), ks.end(),
+                                                obj.ks.begin(), obj.ks.end());
+        }
+    };
 
     class KsListGroup
     {
@@ -56,12 +50,7 @@ namespace PHON_NS
 
         KsListGroup();
 
-        KsListGroup(const std::vector<KsList> &a)
-        {
-            for (auto it = a.cbegin(); it != a.cend(); ++it) {
-                group.push_back(*it);
-            }
-        }
+        KsListGroup(const std::vector<KsList> &a) : group(a) {};
     };
 
     class KsListMode
@@ -111,7 +100,6 @@ namespace PHON_NS
         ~Relaxation();
 
         void setup_relaxation();
-        void finish_relaxation();
         void perform_mode_analysis();
         void setup_mode_analysis();
 
@@ -148,18 +136,23 @@ namespace PHON_NS
                                      int, int, double **,
                                      std::complex<double> ***);
 
-        void calc_V3norm2(const unsigned int, const unsigned int, double **);
+        void calc_V3norm2(const unsigned int,
+                          const unsigned int,
+                          double **);
 
-        void prepare_relative_vector(std::vector<FcsArrayWithCell>,
+        void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      const unsigned int, double ***);
 
-        void prepare_group_of_force_constants(std::vector<FcsArrayWithCell>,
+        void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
                                               const unsigned int, int &,
                                               std::vector<double> *&);
 
         void detect_imaginary_branches(double **);
 
     private:
+        void set_default_variables();
+        void deallocate_variables();
+
         unsigned int nk, ns, nks;
         std::vector<KsListMode> kslist_fstate_k;
         std::complex<double> im;
@@ -170,9 +163,6 @@ namespace PHON_NS
         int **evec_index4;
 
         bool sym_permutation;
-
-        std::vector<KsListGroup> *pair_uniq;
-
         bool is_proper(const int);
         bool is_symmorphic(const int);
 

@@ -9,7 +9,6 @@
 */
 
 #include "mpi_common.h"
-#include <iostream>
 #include <string>
 #include <cstring>
 
@@ -21,9 +20,7 @@ MyMPI::MyMPI(PHON *phon, MPI_Comm comm): Pointers(phon)
     MPI_Comm_size(comm, &nprocs);
 }
 
-MyMPI::~MyMPI()
-{
-}
+MyMPI::~MyMPI() {}
 
 void MyMPI::MPI_Bcast_string(std::string &str, int root, MPI_Comm comm)
 {

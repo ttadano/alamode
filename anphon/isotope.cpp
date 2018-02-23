@@ -62,7 +62,9 @@ void Isotope::setup_isotope_scattering()
         if (mympi->my_rank == 0) {
             if (!isotope_factor) {
                 memory->allocate(isotope_factor, nkd);
-                set_isotope_factor_from_database(nkd, system->symbol_kd, isotope_factor);
+                set_isotope_factor_from_database(nkd,
+                                                 system->symbol_kd,
+                                                 isotope_factor);
             }
         }
 

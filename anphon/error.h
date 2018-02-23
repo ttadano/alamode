@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <string>
 #include "pointers.h"
 
 namespace PHON_NS

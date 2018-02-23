@@ -9,42 +9,74 @@
 */
 
 #include "mpi_common.h"
-#include <iostream>
-#include <fstream>
-#include <iomanip>
 #include "conductivity.h"
+#include "constants.h"
 #include "dynamical.h"
 #include "error.h"
 #include "integration.h"
+#include "isotope.h"
 #include "kpoint.h"
+#include "mathfunctions.h"
 #include "memory.h"
 #include "parsephon.h"
+#include "phonon_dos.h"
 #include "thermodynamics.h"
 #include "phonon_velocity.h"
 #include "relaxation.h"
 #include "system.h"
 #include "write_phonons.h"
-#include "constants.h"
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 #include <set>
 #include <vector>
-#include "mathfunctions.h"
-#include "isotope.h"
-#include "phonon_dos.h"
 
 using namespace PHON_NS;
 
 Conductivity::Conductivity(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 }
 
 Conductivity::~Conductivity()
 {
+    deallocate_variables();
 };
+
+void Conductivity::set_default_variables()
+{
+    calc_kappa_spec = 0;
+    ntemp = 0;
+    damping3 = nullptr;
+    kappa = nullptr;
+    kappa_spec = nullptr;
+    Temperature = nullptr;
+    vel = nullptr;
+}
+
+void Conductivity::deallocate_variables()
+{
+    if (damping3) {
+        memory->deallocate(damping3);
+    }
+    if (kappa) {
+        memory->deallocate(kappa);
+    }
+    if (kappa_spec) {
+        memory->deallocate(kappa_spec);
+    }
+    if (Temperature) {
+        memory->deallocate(Temperature);
+    }
+    if (vel) {
+        memory->deallocate(vel);
+    }
+}
+
 
 void Conductivity::setup_kappa()
 {
     unsigned int i, j, k;
-    unsigned int nks_total, nks_each_thread, nrem;
 
     nk = kpoint->nk;
     ns = dynamical->neval;
@@ -56,9 +88,9 @@ void Conductivity::setup_kappa()
         Temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
     }
 
-    nks_total = kpoint->nk_irred * ns;
-    nks_each_thread = nks_total / mympi->nprocs;
-    nrem = nks_total - nks_each_thread * mympi->nprocs;
+    unsigned int nks_total = kpoint->nk_irred * ns;
+    unsigned int nks_each_thread = nks_total / mympi->nprocs;
+    unsigned int nrem = nks_total - nks_each_thread * mympi->nprocs;
 
     if (nrem > 0) {
         memory->allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, ntemp);
@@ -190,22 +222,9 @@ void Conductivity::prepare_restart()
     vks_done.clear();
 }
 
-void Conductivity::finish_kappa()
-{
-    if (mympi->my_rank == 0) {
-        memory->deallocate(vel);
-        memory->deallocate(kappa);
-        if (calc_kappa_spec) {
-            memory->deallocate(kappa_spec);
-        }
-    }
-    memory->deallocate(damping3);
-    memory->deallocate(Temperature);
-}
 
 void Conductivity::calc_anharmonic_imagself()
 {
-    unsigned int nks_g;
     unsigned int i, j;
     unsigned int knum, snum;
     unsigned int *nks_thread;
@@ -216,7 +235,7 @@ void Conductivity::calc_anharmonic_imagself()
 
     // Distribute (k,s) to individual MPI threads
 
-    nks_g = vks_job.size();
+    unsigned int nks_g = vks_job.size();
     vks_l.clear();
 
     unsigned int icount = 0;
@@ -304,11 +323,11 @@ void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int 
                                       double ***vel_in, double **damp_in)
 {
     unsigned int np = mympi->nprocs;
-    unsigned int j, k, iks_g;
+    unsigned int k, iks_g;
     unsigned int nk_equiv;
     unsigned int ktmp;
 
-    for (j = 0; j < np; ++j) {
+    for (unsigned int j = 0; j < np; ++j) {
 
         iks_g = ik * np + j + nshift;
 
@@ -368,7 +387,7 @@ void Conductivity::compute_kappa()
                 snum = iks % ns;
                 if (relaxation->is_imaginary[iks / ns][snum]) {
                     for (i = 0; i < ntemp; ++i) {
-                        lifetime[iks][i] = 0.0;;
+                        lifetime[iks][i] = 0.0;
                     }
                 } else {
                     for (i = 0; i < ntemp; ++i) {

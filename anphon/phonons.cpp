@@ -258,12 +258,6 @@ void PHON::execute_RTA()
         writes->write_kappa();
         writes->write_selfenergy_isotope();
     }
-
-    relaxation->finish_relaxation();
-
-    if (!relaxation->ks_analyze_mode) {
-        conductivity->finish_kappa();
-    }
 }
 
 void PHON::execute_self_consistent_phonon()
