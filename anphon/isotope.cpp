@@ -12,6 +12,7 @@
 #include "isotope.h"
 #include "constants.h"
 #include "dynamical.h"
+#include "error.h"
 #include "integration.h"
 #include "kpoint.h"
 #include "memory.h"
@@ -29,7 +30,6 @@ Isotope::Isotope(PHON *phon): Pointers(phon)
 Isotope::~Isotope()
 {
     deallocate_variables();
-
 };
 
 void Isotope::set_default_variables()
@@ -58,6 +58,13 @@ void Isotope::setup_isotope_scattering()
     MPI_Bcast(&include_isotope, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (include_isotope) {
+
+        if (mympi->my_rank == 0) {
+            if (!isotope_factor) {
+                memory->allocate(isotope_factor, nkd);
+                set_isotope_factor_from_database(nkd, system->symbol_kd, isotope_factor);
+            }
+        }
 
         if (mympi->my_rank > 0) {
             memory->allocate(isotope_factor, nkd);
@@ -236,5 +243,27 @@ void Isotope::calc_isotope_selfenergy_all()
         if (mympi->my_rank == 0) {
             std::cout << "done!" << std::endl;
         }
+    }
+}
+
+void Isotope::set_isotope_factor_from_database(const int nkd,
+                                               const std::string *symbol_in,
+                                               double *isofact_out)
+{
+    double isofact_tmp;
+    int atom_number;
+
+    for (int i = 0; i < nkd; ++i) {
+        atom_number = system->get_atomic_number_by_name(symbol_in[i]);
+        if (atom_number >= isotope_factors.size() || (atom_number == -1)) {
+            error->exit("set_isotope_factor_from_database",
+                        "The isotope factor for the given element doesn't exist in the database.\nTherefore, please input ISOFACT manually.");
+        }
+        isofact_tmp = isotope_factors[atom_number];
+        if (isofact_tmp < -0.5) {
+            error->exit("set_isotope_factor_from_database",
+                        "One of the elements in the KD-tag is unstable. \nTherefore, please input ISOFACT manually.");
+        }
+        isofact_out[i] = isofact_tmp;
     }
 }

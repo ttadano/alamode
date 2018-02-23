@@ -43,9 +43,7 @@ Writes::Writes(PHON *phon): Pointers(phon)
     Ry_to_kayser = Hz_to_kayser / time_ry;
 };
 
-Writes::~Writes()
-{
-};
+Writes::~Writes() {};
 
 void Writes::write_input_vars()
 {
@@ -69,8 +67,10 @@ void Writes::write_input_vars()
     }
     std::cout << std::endl;
     std::cout << "  MASS = ";
-    for (i = 0; i < system->nkd; ++i) {
-        std::cout << std::setw(10) << system->mass_kd[i];
+    if (system->mass_kd) {
+        for (i = 0; i < system->nkd; ++i) {
+            std::cout << std::setw(10) << system->mass_kd[i];
+        }
     }
     std::cout << std::endl;
     std::cout << "  NSYM = " << symmetry->nsym << "; TOLERANCE = " << symmetry->tolerance;
@@ -170,9 +170,11 @@ void Writes::write_input_vars()
         std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
         if (isotope->include_isotope) {
             std::cout << "  ISOFACT = ";
-            for (i = 0; i < system->nkd; ++i) {
-                std::cout << std::scientific
-                    << std::setw(13) << isotope->isotope_factor[i];
+            if (isotope->isotope_factor) {
+                for (i = 0; i < system->nkd; ++i) {
+                    std::cout << std::scientific
+                        << std::setw(13) << isotope->isotope_factor[i];
+                }
             }
             std::cout << std::endl;
         }
@@ -187,8 +189,7 @@ void Writes::write_input_vars()
         //  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
 
     } else if (phon->mode == "SCPH") {
-
-
+        // Do nothing
     } else {
         error->exit("write_input_vars", "This cannot happen");
     }

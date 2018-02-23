@@ -327,19 +327,12 @@ void Input::parse_scph_vars()
     // Read input parameters in the &scph-field.
 
     int i;
-    unsigned int maxiter;
-    unsigned int ialgo_scph;
-    double tolerance_scph;
-    double mixalpha;
-    bool restart_scph;
-    bool selenergy_offdiagonal;
-    bool lower_temp, warm_start;
 
     struct stat st;
-    std::string file_dymat;
     std::string str_tmp;
     std::vector<std::string> input_list{
-        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER", "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+        "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
         "LOWER_TEMP", "WARMSTART"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
@@ -353,40 +346,31 @@ void Input::parse_scph_vars()
     }
 
     get_var_dict(input_list, scph_var_dict);
-    //#if _USE_BOOST
-    //    boost::split(no_defaults, str_no_defaults, boost::is_space());
-    //#else
-    //    no_defaults = my_split(str_no_defaults, ' ');
-    //#endif
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
-        if (scph_var_dict.find(*it) == scph_var_dict.end()) {
+    for (auto &no_default : no_defaults) {
+        if (scph_var_dict.find(no_default) == scph_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &scph input region: ",
-                        (*it).c_str());
+                        no_default.c_str());
         }
     }
 
-    file_dymat = this->job_title + ".scph_dymat";
+    std::string file_dymat = this->job_title + ".scph_dymat";
 
     // Default values
 
-    tolerance_scph = 1.0e-10;
-    maxiter = 1000;
-    mixalpha = 0.1;
-    selenergy_offdiagonal = true;
-    ialgo_scph = 0;
-    lower_temp = true;
-    warm_start = true;
+    double tolerance_scph = 1.0e-10;
+    unsigned int maxiter = 1000;
+    double mixalpha = 0.1;
+    bool selenergy_offdiagonal = true;
+    unsigned int ialgo_scph = 0;
+    bool lower_temp = true;
+    bool warm_start = true;
 
     // if file_dymat exists in the current directory, 
     // restart mode will be automatically turned on for SCPH calculations.
 
-    if (stat(file_dymat.c_str(), &st) == 0) {
-        restart_scph = true;
-    } else {
-        restart_scph = false;
-    }
+    bool restart_scph = stat(file_dymat.c_str(), &st) == 0;
 
     // Assign given values
 
@@ -474,66 +458,53 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::vector<std::string> input_list{
-        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT", "ATOMPROJ", "REALPART", "ISOTOPE", "ISOFACT",
-        "FSTATE_W", "FSTATE_K", "PRIMTMSD", "PDOS", "TDOS", "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD", "KAPPA_SPEC", "SELF_W"
+        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+        "ATOMPROJ", "REALPART", "ISOTOPE", "ISOFACT",
+        "FSTATE_W", "FSTATE_K", "PRIMTMSD", "PDOS", "TDOS",
+        "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
+        "KAPPA_SPEC", "SELF_W"
     };
 
-    bool fstate_omega, fstate_k;
-    bool ks_analyze_mode, atom_project_mode, calc_realpart;
-    bool print_vel, print_evec, print_msd;
-    bool projected_dos, print_gruneisen, print_newfcs;
-    bool two_phonon_dos;
-    bool print_xsf, print_anime;
-    bool print_V3, participation_ratio;
-    bool print_fc2_ewald;
-    bool print_self_consistent_fc2;
-    bool bubble_omega;
-
-    int quartic_mode;
-    int include_isotope;
-    int scattering_phase_space;
-    int calculate_kappa_spec;
     unsigned int cellsize[3];
 
-    double delta_a;
-    double *isotope_factor;
+    double *isotope_factor = nullptr;
     std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
 
     // Default values
 
-    print_xsf = false;
-    print_anime = false;
+    bool print_xsf = false;
+    bool print_anime = false;
 
-    print_vel = false;
-    print_evec = false;
-    print_msd = false;
+    bool print_vel = false;
+    bool print_evec = false;
+    bool print_msd = false;
 
-    projected_dos = false;
-    two_phonon_dos = false;
-    scattering_phase_space = 0;
-    print_gruneisen = false;
-    print_newfcs = false;
-    print_V3 = false;
-    participation_ratio = false;
+    bool projected_dos = false;
+    bool two_phonon_dos = false;
+    int scattering_phase_space = 0;
+    bool print_gruneisen = false;
+    bool print_newfcs = false;
+    bool print_V3 = false;
+    bool participation_ratio = false;
 
-    delta_a = 0.001;
+    double delta_a = 0.001;
 
-    quartic_mode = 0;
-    ks_analyze_mode = false;
-    atom_project_mode = false;
-    calc_realpart = false;
-    include_isotope = 0;
-    fstate_omega = false;
-    fstate_k = false;
-    bubble_omega = false;
+    int quartic_mode = 0;
+    bool ks_analyze_mode = false;
+    bool atom_project_mode = false;
+    bool calc_realpart = false;
+    int include_isotope = 0;
+    bool fstate_omega = false;
+    bool fstate_k = false;
+    bool bubble_omega = false;
 
-    calculate_kappa_spec = 0;
+    int calculate_kappa_spec = 0;
 
-    print_fc2_ewald = false;
-    print_self_consistent_fc2 = false;
+    bool print_fc2_ewald = false;
+    bool print_self_consistent_fc2 = false;
 
 
     // Assign values to variables
@@ -575,17 +546,22 @@ void Input::parse_analysis_vars(const bool use_default_values)
     }
 
     if (include_isotope) {
-        split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
 
-        if (isofact_v.size() != system->nkd) {
-            error->exit("parse_analysis_vars",
-                        "The number of entries for ISOFACT is inconsistent with NKD");
-        } else {
-            memory->allocate(isotope_factor, system->nkd);
-            for (i = 0; i < system->nkd; ++i) {
-                isotope_factor[i] = my_cast<double>(isofact_v[i]);
+        if (!analysis_var_dict["ISOFACT"].empty()) {
+            split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
+
+            if (isofact_v.size() != system->nkd) {
+                error->exit("parse_analysis_vars",
+                    "The number of entries for ISOFACT is inconsistent with NKD");
+            }
+            else {
+                memory->allocate(isotope_factor, system->nkd);
+                for (i = 0; i < system->nkd; ++i) {
+                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
+                }
             }
         }
+        
     }
 
     if (print_anime) {
@@ -669,10 +645,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
     ewald->print_fc2_ewald = print_fc2_ewald;
 
     if (include_isotope) {
-        memory->allocate(isotope->isotope_factor, system->nkd);
-        for (i = 0; i < system->nkd; ++i) {
-            isotope->isotope_factor[i] = isotope_factor[i];
+        if (!analysis_var_dict["ISOFACT"].empty()) {
+            memory->allocate(isotope->isotope_factor, system->nkd);
+            for (i = 0; i < system->nkd; ++i) {
+                isotope->isotope_factor[i] = isotope_factor[i];
+            }
         }
+    }
+    if (isotope_factor) {
         memory->deallocate(isotope_factor);
     }
 
