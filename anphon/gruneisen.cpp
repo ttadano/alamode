@@ -9,19 +9,18 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
+#include "gruneisen.h"
+#include "constants.h"
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include "dynamical.h"
 #include "error.h"
 #include "fcs_phonon.h"
-#include "gruneisen.h"
 #include "pointers.h"
 #include "kpoint.h"
 #include "memory.h"
 #include "system.h"
 #include "parsephon.h"
-#include "write_phonons.h"
 #include "mathfunctions.h"
 #include "relaxation.h"
 #include "version.h"

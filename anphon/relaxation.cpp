@@ -159,11 +159,11 @@ void Relaxation::detect_imaginary_branches(double **eval)
     bool is_anyof_imaginary;
     int ndup;
 
-    memory->allocate(is_imaginary, kpoint->nk_reduced, ns);
+    memory->allocate(is_imaginary, kpoint->nk_irred, ns);
 
     is_anyof_imaginary = false;
 
-    for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
         for (is = 0; is < ns; ++is) {
             knum = kpoint->kpoint_irred_all[ik][0].knum;
             omega = eval[knum][is];
@@ -182,7 +182,7 @@ void Relaxation::detect_imaginary_branches(double **eval)
             int count = 0;
             std::cout << std::endl;
             std::cout << " WARNING: Imaginary frequency detected at the following branches:" << std::endl;
-            for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+            for (ik = 0; ik < kpoint->nk_irred; ++ik) {
                 for (is = 0; is < ns; ++is) {
                     if (is_imaginary[ik][is]) {
                         ndup = kpoint->kpoint_irred_all[ik].size();

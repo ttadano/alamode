@@ -89,18 +89,18 @@ void Dos::setup()
         }
 
         if (two_phonon_dos) {
-            memory->allocate(dos2_phonon, kpoint->nk_reduced, n_energy, 4);
+            memory->allocate(dos2_phonon, kpoint->nk_irred, n_energy, 4);
         }
 
         if (scattering_phase_space == 1) {
-            memory->allocate(sps3_mode, kpoint->nk_reduced, dynamical->neval, 2);
+            memory->allocate(sps3_mode, kpoint->nk_irred, dynamical->neval, 2);
         } else if (scattering_phase_space == 2) {
             double Tmin = system->Tmin;
             double Tmax = system->Tmax;
             double dT = system->dT;
             unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-            memory->allocate(sps3_with_bose, kpoint->nk_reduced,
+            memory->allocate(sps3_with_bose, kpoint->nk_irred,
                              dynamical->neval, NT, 2);
         }
 
@@ -302,7 +302,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
 
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
-    unsigned int nk_reduced = kpoint->nk_reduced;
+    unsigned int nk_reduced = kpoint->nk_irred;
 
     int ns2 = ns * ns;
 
@@ -574,7 +574,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     double *temperature;
     int N;
     int ik, iT;
-    unsigned int nk_irred = kpoint->nk_reduced;
+    unsigned int nk_irred = kpoint->nk_irred;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
     unsigned int k1, k2;

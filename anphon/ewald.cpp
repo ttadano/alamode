@@ -17,7 +17,6 @@
 #include "constants.h"
 #include <iostream>
 #include <fstream>
-#include <cmath>
 #include <boost/math/special_functions/erf.hpp>
 #include <vector>
 #include <iomanip>
@@ -49,7 +48,6 @@ void Ewald::init()
     MPI_Bcast(&rate_ab, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (is_longrange) {
-        int i, j, k;
         int nsize[3] = {1, 1, 1};
 
         memory->allocate(multiplicity, system->nat, system->nat);
@@ -58,9 +56,9 @@ void Ewald::init()
 
         get_pairs_of_minimum_distance(system->nat, nsize, system->xr_s);
 
-        for (i = 0; i < system->natmin; ++i) {
-            for (j = 0; j < 3; ++j) {
-                for (k = 0; k < 3; ++k) {
+        for (int i = 0; i < system->natmin; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                for (int k = 0; k < 3; ++k) {
                     Born_charge[i][j][k] = dynamical->borncharge[i][j][k];
                 }
             }
@@ -488,6 +486,11 @@ void Ewald::compute_ewald_fcs2()
     if (mympi->my_rank == 0) {
         std::cout << " Calculating long-range (dipole-dipole) FCs in the supercell ...";
     }
+
+    std::vector<std::vector<double>> k_commensurate;
+    kpoint->get_commensurate_kpoints(system->lavec_s,
+                                     system->lavec_p,
+                                     k_commensurate);
 
     memory->allocate(fcs_ewald, 3 * natmin, 3 * nat);
     memory->allocate(fc_ewald_short, 3, 3);

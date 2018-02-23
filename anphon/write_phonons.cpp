@@ -261,7 +261,7 @@ void Writes::setup_result_io()
             if (!(kpoint->nkx == nk_tmp[0] &&
                 kpoint->nky == nk_tmp[1] &&
                 kpoint->nkz == nk_tmp[2] &&
-                kpoint->nk_reduced == nksym_tmp)) {
+                kpoint->nk_irred == nksym_tmp)) {
                 error->exit("setup_result_io",
                             "KPOINT information is not consistent");
             }
@@ -365,9 +365,9 @@ void Writes::setup_result_io()
 
             fs_result << "#KPOINT" << std::endl;
             fs_result << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
-            fs_result << kpoint->nk_reduced << std::endl;
+            fs_result << kpoint->nk_irred << std::endl;
 
-            for (int i = 0; i < kpoint->nk_reduced; ++i) {
+            for (int i = 0; i < kpoint->nk_irred; ++i) {
                 fs_result << std::setw(6) << i + 1 << ":";
                 for (int j = 0; j < 3; ++j) {
                     fs_result << std::setw(15)
@@ -701,7 +701,7 @@ void Writes::write_phonon_vel_all()
         "|velocity| [m/sec], velocity_(x,y,z) [m/sec]" << std::endl << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
-    for (i = 0; i < kpoint->nk_reduced; ++i) {
+    for (i = 0; i < kpoint->nk_irred; ++i) {
         ofs_vel << "# Irreducible k point  : " << std::setw(8) << i + 1;
         ofs_vel << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
 
@@ -813,7 +813,7 @@ void Writes::write_two_phonon_dos()
 
     int n = dos->n_energy;
 
-    for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
 
         ofs_tdos << "# Irred. kpoint : " << std::setw(5) << ik + 1 << std::endl;
         for (i = 0; i < n; ++i) {
@@ -847,7 +847,7 @@ void Writes::write_scattering_phase_space()
     ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
     ofs_sps << "# Irred. k, mode, omega (cm^-1), P+ (absorption) (cm), P- (emission) (cm)" << std::endl;
 
-    for (ik = 0; ik < kpoint->nk_reduced; ++ik) {
+    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
         knum = kpoint->kpoint_irred_all[ik][0].knum;
 
         for (is = 0; is < dynamical->neval; ++is) {
@@ -1347,7 +1347,7 @@ void Writes::write_selfenergy_isotope()
                 endl;
             ofs_iso << "# Irred. knum, mode num, frequency [cm^-1], Gamma_iso [cm^-1]" << std::endl << std::endl;
 
-            for (i = 0; i < kpoint->nk_reduced; ++i) {
+            for (i = 0; i < kpoint->nk_irred; ++i) {
                 ofs_iso << "# Irreducible k point  : " << std::setw(8) << i + 1;
                 ofs_iso << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
 
@@ -1750,7 +1750,7 @@ void Writes::write_participation_ratio()
 
         ofs_pr << "# irred. kpoint, mode, frequency[kpoint][mode] (cm^-1), PR[kpoint][mode]" << std::endl;
 
-        for (i = 0; i < kpoint->nk_reduced; ++i) {
+        for (i = 0; i < kpoint->nk_irred; ++i) {
             knum = kpoint->kpoint_irred_all[i][0].knum;
             ofs_pr << "#" << std::setw(8) << i + 1;
             ofs_pr << " xk = ";
@@ -1799,7 +1799,7 @@ void Writes::write_participation_ratio()
 
         ofs_apr << "# irred. kpoint, mode, atom, frequency[kpoint][mode] (cm^-1), APR[kpoint][mode][atom]" << std::endl;
 
-        for (i = 0; i < kpoint->nk_reduced; ++i) {
+        for (i = 0; i < kpoint->nk_irred; ++i) {
             knum = kpoint->kpoint_irred_all[i][0].knum;
 
             ofs_apr << "#" << std::setw(8) << i + 1;

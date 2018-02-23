@@ -60,7 +60,7 @@ void Isotope::setup_isotope_scattering()
             std::cout << std::endl;
         }
 
-        memory->allocate(gamma_isotope, kpoint->nk_reduced, dynamical->neval);
+        memory->allocate(gamma_isotope, kpoint->nk_irred, dynamical->neval);
     }
 }
 
@@ -177,7 +177,7 @@ void Isotope::calc_isotope_selfenergy_all()
     int i, j;
     int nk = kpoint->nk;
     int ns = dynamical->neval;
-    int nks = kpoint->nk_reduced * ns;
+    int nks = kpoint->nk_irred * ns;
     int knum, snum;
     double tmp, omega;
     double *gamma_tmp, *gamma_loc;
@@ -208,7 +208,7 @@ void Isotope::calc_isotope_selfenergy_all()
         MPI_Reduce(&gamma_loc[0], &gamma_tmp[0], nks,
                    MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-        for (i = 0; i < kpoint->nk_reduced; ++i) {
+        for (i = 0; i < kpoint->nk_irred; ++i) {
             for (j = 0; j < ns; ++j) {
                 gamma_isotope[i][j] = gamma_tmp[ns * i + j];
             }
