@@ -31,27 +31,90 @@ using namespace PHON_NS;
 
 System::System(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 }
 
 System::~System()
 {
-    memory->deallocate(xr_p);
-    memory->deallocate(xr_s);
-    memory->deallocate(xr_s_anharm);
-    memory->deallocate(kd);
-    memory->deallocate(kd_anharm);
-    memory->deallocate(xc);
-    memory->deallocate(mass);
-    memory->deallocate(map_p2s);
-    memory->deallocate(map_p2s_anharm);
-    memory->deallocate(map_s2p);
-    memory->deallocate(map_s2p_anharm);
-    memory->deallocate(mass_kd);
-    memory->deallocate(magmom);
-    if (fcs_phonon->update_fc2) {
+    deallocate_variables();
+}
+
+void System::set_default_variables()
+{
+    xr_p = nullptr;
+    xr_s = nullptr;
+    xc = nullptr;
+    xr_s_anharm = nullptr;
+    kd = nullptr;
+    kd_anharm = nullptr;
+    mass_kd = nullptr;
+    mass = nullptr;
+    mass_anharm = nullptr;
+    symbol_kd = nullptr;
+    map_p2s = nullptr;
+    map_p2s_anharm = nullptr;
+    map_p2s_anharm_orig = nullptr;
+    map_s2p = nullptr;
+    map_s2p_anharm = nullptr;
+    magmom = nullptr;
+    atomlist_class = nullptr;
+}
+
+void System::deallocate_variables()
+{
+    if (xr_p) {
+        memory->deallocate(xr_p);
+    }
+    if (xr_s) {
+        memory->deallocate(xr_s);
+    }
+    if (xc) {
+        memory->deallocate(xc);
+    }
+    if (xr_s_anharm) {
+        memory->deallocate(xr_s_anharm);
+    }
+    if (kd) {
+        memory->deallocate(kd);
+    }
+    if (kd_anharm) {
+        memory->deallocate(kd_anharm);
+    }
+    if (mass_kd) {
+        memory->deallocate(mass_kd);
+    }
+    if (mass) {
+        memory->deallocate(mass);
+    }
+    if (mass_anharm) {
+        memory->deallocate(mass_anharm);
+    }
+    if (symbol_kd) {
+        memory->deallocate(symbol_kd);
+    }
+    if (map_p2s) {
+        memory->deallocate(map_p2s);
+    }
+    if (map_p2s_anharm) {
+        memory->deallocate(map_p2s_anharm);
+    }
+    if (map_s2p) {
+        memory->deallocate(map_s2p);
+    }
+    if (map_s2p_anharm) {
+        memory->deallocate(map_s2p_anharm);
+    }
+    if (magmom) {
+        memory->deallocate(magmom);
+    }
+    if (map_p2s_anharm_orig) {
         memory->deallocate(map_p2s_anharm_orig);
     }
+    if (atomlist_class) {
+        memory->deallocate(atomlist_class);
+    }
 }
+
 
 void System::setup()
 {
@@ -62,6 +125,13 @@ void System::setup()
     unsigned int *kd_prim;
     double **xtmp;
 
+    if (mympi->my_rank == 0) {
+
+        if (!mass_kd) {
+            memory->allocate(mass_kd, nkd);
+        }
+        set_mass_elem_from_database(nkd, symbol_kd, mass_kd);
+    }
     load_system_info_from_XML();
 
     recips(lavec_s, rlavec_s);
@@ -354,7 +424,7 @@ void System::load_system_info_from_XML()
             ss.clear();
             ss << get_value_from_xml(pt,
                                      "Data.Structure.LatticeVector.a"
-                                     + boost::lexical_cast<std::string>(i + 1));
+                                     + std::to_string(i + 1));
             ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
         }
 
@@ -565,7 +635,7 @@ void System::load_system_info_from_XML()
                 ss.clear();
                 ss << get_value_from_xml(pt,
                                          "Data.Structure.LatticeVector.a"
-                                         + boost::lexical_cast<std::string>(i + 1));
+                                         + std::to_string(i + 1));
                 ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
 
@@ -857,4 +927,42 @@ void System::check_consistency_primitive_lattice()
 
     memory->deallocate(map_p2s_tmp);
     map_anh2harm.clear();
+}
+
+int System::get_atomic_number_by_name(const std::string kdname_in)
+{
+    std::string kdname_copy = kdname_in;
+    kdname_copy[0] = toupper(kdname_copy[0]);
+
+    int ret = -1;
+
+    for (int i = 0; i < element_names.size(); ++i) {
+        if (kdname_copy == element_names[i]) {
+            ret = i;
+            break;
+        }
+    }
+    return ret;
+}
+
+void System::set_mass_elem_from_database(const int nkd,
+                                         const std::string *symbol_in,
+                                         double *mass_kd_out)
+{
+    double mass_tmp;
+    int atom_number;
+
+    for (int i = 0; i < nkd; ++i) {
+        atom_number = get_atomic_number_by_name(symbol_in[i]);
+        if (atom_number >= element_names.size() || (atom_number == -1)) {
+            error->exit("set_mass_elem_from_database",
+                        "Atomic mass for the given element doesn't exist in the database.\nTherefore, please input MASS manually.");
+        }
+        mass_tmp = atomic_masses[atom_number];
+        if (mass_tmp < 0.0) {
+            error->exit("set_mass_elem_from_database",
+                        "One of the elements in the KD-tag is unstable. \nTherefore, please input MASS manually.");
+        }
+        mass_kd_out[i] = mass_tmp;
+    }
 }
