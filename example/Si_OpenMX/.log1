@@ -1,0 +1,341 @@
+ +-----------------------------------------------------------------+
+ +                         Program ALM                             +
+ +                             Ver.  0.9.8                         +
+ +-----------------------------------------------------------------+
+
+ Number of OpenMP threads = 24
+
+ Job started at Sun Jan 28 15:05:03 2018
+
+
+ Input variables:
+ -------------------------------------------------------------------
+ General:
+  PREFIX = si222
+  MODE = fitting
+  NAT = 64; NKD = 1
+  NSYM = 0; PRINTSYM = 0; TOLERANCE = 1e-06
+  KD =   Si
+  PERIODIC =   1  1  1
+  MAGMOM = 
+  HESSIAN = 0
+
+ Interaction:
+  NORDER = 1
+  NBODY =   2
+
+ Fitting:
+  DFILE = disp.dat
+  FFILE = force.dat
+  NDATA = 1; NSTART = 1; NEND = 1; NSKIP = 0
+  NBOOT = 0
+  MULTDAT = 1
+  ICONST = 1
+  ROTAXIS = 
+  FC2XML = 
+  FC3XML = 
+
+ -------------------------------------------------------------------
+
+ SYSTEM
+ ======
+
+  Lattice Vector
+    2.040600e+01   0.000000e+00   0.000000e+00 : a1
+    0.000000e+00   2.040600e+01   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   2.040600e+01 : a3
+
+  Cell volume = 8.497157e+03 (a.u)^3
+
+  Reciprocal Lattice Vector
+    3.079087e-01   0.000000e+00   0.000000e+00 : b1
+    0.000000e+00   3.079087e-01   0.000000e+00 : b2
+    0.000000e+00   0.000000e+00   3.079087e-01 : b3
+
+  Atomic species:
+     1   Si
+
+  Atomic positions in fractional basis and atomic species
+     1   0.000000e+00   0.000000e+00   0.000000e+00    1
+     2   0.000000e+00   0.000000e+00   5.000000e-01    1
+     3   0.000000e+00   2.500000e-01   2.500000e-01    1
+     4   0.000000e+00   2.500000e-01   7.500000e-01    1
+     5   0.000000e+00   5.000000e-01   0.000000e+00    1
+     6   0.000000e+00   5.000000e-01   5.000000e-01    1
+     7   0.000000e+00   7.500000e-01   2.500000e-01    1
+     8   0.000000e+00   7.500000e-01   7.500000e-01    1
+     9   1.250000e-01   1.250000e-01   1.250000e-01    1
+    10   1.250000e-01   1.250000e-01   6.250000e-01    1
+    11   1.250000e-01   3.750000e-01   3.750000e-01    1
+    12   1.250000e-01   3.750000e-01   8.750000e-01    1
+    13   1.250000e-01   6.250000e-01   1.250000e-01    1
+    14   1.250000e-01   6.250000e-01   6.250000e-01    1
+    15   1.250000e-01   8.750000e-01   3.750000e-01    1
+    16   1.250000e-01   8.750000e-01   8.750000e-01    1
+    17   2.500000e-01   0.000000e+00   2.500000e-01    1
+    18   2.500000e-01   0.000000e+00   7.500000e-01    1
+    19   2.500000e-01   2.500000e-01   0.000000e+00    1
+    20   2.500000e-01   2.500000e-01   5.000000e-01    1
+    21   2.500000e-01   5.000000e-01   2.500000e-01    1
+    22   2.500000e-01   5.000000e-01   7.500000e-01    1
+    23   2.500000e-01   7.500000e-01   0.000000e+00    1
+    24   2.500000e-01   7.500000e-01   5.000000e-01    1
+    25   3.750000e-01   1.250000e-01   3.750000e-01    1
+    26   3.750000e-01   1.250000e-01   8.750000e-01    1
+    27   3.750000e-01   3.750000e-01   1.250000e-01    1
+    28   3.750000e-01   3.750000e-01   6.250000e-01    1
+    29   3.750000e-01   6.250000e-01   3.750000e-01    1
+    30   3.750000e-01   6.250000e-01   8.750000e-01    1
+    31   3.750000e-01   8.750000e-01   1.250000e-01    1
+    32   3.750000e-01   8.750000e-01   6.250000e-01    1
+    33   5.000000e-01   0.000000e+00   0.000000e+00    1
+    34   5.000000e-01   0.000000e+00   5.000000e-01    1
+    35   5.000000e-01   2.500000e-01   2.500000e-01    1
+    36   5.000000e-01   2.500000e-01   7.500000e-01    1
+    37   5.000000e-01   5.000000e-01   0.000000e+00    1
+    38   5.000000e-01   5.000000e-01   5.000000e-01    1
+    39   5.000000e-01   7.500000e-01   2.500000e-01    1
+    40   5.000000e-01   7.500000e-01   7.500000e-01    1
+    41   6.250000e-01   1.250000e-01   1.250000e-01    1
+    42   6.250000e-01   1.250000e-01   6.250000e-01    1
+    43   6.250000e-01   3.750000e-01   3.750000e-01    1
+    44   6.250000e-01   3.750000e-01   8.750000e-01    1
+    45   6.250000e-01   6.250000e-01   1.250000e-01    1
+    46   6.250000e-01   6.250000e-01   6.250000e-01    1
+    47   6.250000e-01   8.750000e-01   3.750000e-01    1
+    48   6.250000e-01   8.750000e-01   8.750000e-01    1
+    49   7.500000e-01   0.000000e+00   2.500000e-01    1
+    50   7.500000e-01   0.000000e+00   7.500000e-01    1
+    51   7.500000e-01   2.500000e-01   0.000000e+00    1
+    52   7.500000e-01   2.500000e-01   5.000000e-01    1
+    53   7.500000e-01   5.000000e-01   2.500000e-01    1
+    54   7.500000e-01   5.000000e-01   7.500000e-01    1
+    55   7.500000e-01   7.500000e-01   0.000000e+00    1
+    56   7.500000e-01   7.500000e-01   5.000000e-01    1
+    57   8.750000e-01   1.250000e-01   3.750000e-01    1
+    58   8.750000e-01   1.250000e-01   8.750000e-01    1
+    59   8.750000e-01   3.750000e-01   1.250000e-01    1
+    60   8.750000e-01   3.750000e-01   6.250000e-01    1
+    61   8.750000e-01   6.250000e-01   3.750000e-01    1
+    62   8.750000e-01   6.250000e-01   8.750000e-01    1
+    63   8.750000e-01   8.750000e-01   1.250000e-01    1
+    64   8.750000e-01   8.750000e-01   6.250000e-01    1
+
+
+  Time Elapsed: 0.002763 sec.
+
+ -------------------------------------------------------------------
+
+ SYMMETRY
+ ========
+
+  NSYM = 0 : Trying to find symmetry operations.
+             Please be patient. 
+             This can take a while for a large supercell.
+
+  Number of symmetry operations = 1536
+  All symmetry operations will be used to
+  reduce the number of force constants.
+
+  Given system is not primitive cell.
+  There are    32 translation operations.
+  Primitive cell contains 2 atoms
+
+  **Cell-Atom Correspondens Below**
+  CELL |  ATOM
+     1 |     1    9
+     2 |     2   10
+     3 |     3   11
+     4 |     4   12
+     5 |     5   13
+     6 |     6   14
+     7 |     7   15
+     8 |     8   16
+     9 |    17   25
+    10 |    18   26
+    11 |    19   27
+    12 |    20   28
+    13 |    21   29
+    14 |    22   30
+    15 |    23   31
+    16 |    24   32
+    17 |    33   41
+    18 |    34   42
+    19 |    35   43
+    20 |    36   44
+    21 |    37   45
+    22 |    38   46
+    23 |    39   47
+    24 |    40   48
+    25 |    49   57
+    26 |    50   58
+    27 |    51   59
+    28 |    52   60
+    29 |    53   61
+    30 |    54   62
+    31 |    55   63
+    32 |    56   64
+
+  Time Elapsed: 0.241446 sec.
+
+ -------------------------------------------------------------------
+
+ INTERACTION
+ ===========
+
+  +++ Cutoff Radii Matrix in Bohr Unit (NKD x NKD matrix) +++
+   HARMONIC
+     None
+
+
+  List of neighboring atoms below.
+  Format [N th-nearest shell, distance in Bohr (Number of atoms on the shell)]
+
+    1 ( Si):   1   4.41803 (  4) -   9( Si)  16( Si)  58( Si)  63( Si)
+               2   7.21461 ( 12) -   3( Si)   4( Si)   7( Si)   8( Si)
+                                    17( Si)  18( Si)  19( Si)  23( Si)
+                                    49( Si)  50( Si)  51( Si)  55( Si)
+               3   8.45988 ( 12) -  10( Si)  12( Si)  13( Si)  15( Si)
+                                    26( Si)  31( Si)  41( Si)  48( Si)
+                                    57( Si)  59( Si)  62( Si)  64( Si)
+               4    10.203 (  3) -   2( Si)   5( Si)  33( Si)
+               5   11.1185 ( 12) -  11( Si)  14( Si)  25( Si)  27( Si)
+                                    30( Si)  32( Si)  42( Si)  44( Si)
+                                    45( Si)  47( Si)  60( Si)  61( Si)
+               6   12.4961 ( 12) -  20( Si)  21( Si)  22( Si)  24( Si)
+                                    35( Si)  36( Si)  39( Si)  40( Si)
+                                    52( Si)  53( Si)  54( Si)  56( Si)
+               7   13.2541 (  4) -  28( Si)  29( Si)  43( Si)  46( Si)
+               8   14.4292 (  3) -   6( Si)  34( Si)  37( Si)
+               9   17.6721 (  1) -  38( Si)
+
+    9 ( Si):   1   4.41803 (  4) -   1( Si)   3( Si)  17( Si)  19( Si)
+               2   7.21461 ( 12) -  11( Si)  12( Si)  15( Si)  16( Si)
+                                    25( Si)  26( Si)  27( Si)  31( Si)
+                                    57( Si)  58( Si)  59( Si)  63( Si)
+               3   8.45988 ( 12) -   2( Si)   4( Si)   5( Si)   7( Si)
+                                    18( Si)  20( Si)  21( Si)  23( Si)
+                                    33( Si)  35( Si)  49( Si)  51( Si)
+               4    10.203 (  3) -  10( Si)  13( Si)  41( Si)
+               5   11.1185 ( 12) -   6( Si)   8( Si)  22( Si)  24( Si)
+                                    34( Si)  36( Si)  37( Si)  39( Si)
+                                    50( Si)  52( Si)  53( Si)  55( Si)
+               6   12.4961 ( 12) -  28( Si)  29( Si)  30( Si)  32( Si)
+                                    43( Si)  44( Si)  47( Si)  48( Si)
+                                    60( Si)  61( Si)  62( Si)  64( Si)
+               7   13.2541 (  4) -  38( Si)  40( Si)  54( Si)  56( Si)
+               8   14.4292 (  3) -  14( Si)  42( Si)  45( Si)
+               9   17.6721 (  1) -  46( Si)
+
+
+  List of interacting atom pairs considered for each order:
+
+   ***HARMONIC***
+    Atom     1( Si) interacts with atoms ... 
+       1( Si)    2( Si)    3( Si)    4( Si)    5( Si)    6( Si)
+       7( Si)    8( Si)    9( Si)   10( Si)   11( Si)   12( Si)
+      13( Si)   14( Si)   15( Si)   16( Si)   17( Si)   18( Si)
+      19( Si)   20( Si)   21( Si)   22( Si)   23( Si)   24( Si)
+      25( Si)   26( Si)   27( Si)   28( Si)   29( Si)   30( Si)
+      31( Si)   32( Si)   33( Si)   34( Si)   35( Si)   36( Si)
+      37( Si)   38( Si)   39( Si)   40( Si)   41( Si)   42( Si)
+      43( Si)   44( Si)   45( Si)   46( Si)   47( Si)   48( Si)
+      49( Si)   50( Si)   51( Si)   52( Si)   53( Si)   54( Si)
+      55( Si)   56( Si)   57( Si)   58( Si)   59( Si)   60( Si)
+      61( Si)   62( Si)   63( Si)   64( Si)
+
+    Number of total interaction pairs = 64
+
+    Atom     9( Si) interacts with atoms ... 
+       1( Si)    2( Si)    3( Si)    4( Si)    5( Si)    6( Si)
+       7( Si)    8( Si)    9( Si)   10( Si)   11( Si)   12( Si)
+      13( Si)   14( Si)   15( Si)   16( Si)   17( Si)   18( Si)
+      19( Si)   20( Si)   21( Si)   22( Si)   23( Si)   24( Si)
+      25( Si)   26( Si)   27( Si)   28( Si)   29( Si)   30( Si)
+      31( Si)   32( Si)   33( Si)   34( Si)   35( Si)   36( Si)
+      37( Si)   38( Si)   39( Si)   40( Si)   41( Si)   42( Si)
+      43( Si)   44( Si)   45( Si)   46( Si)   47( Si)   48( Si)
+      49( Si)   50( Si)   51( Si)   52( Si)   53( Si)   54( Si)
+      55( Si)   56( Si)   57( Si)   58( Si)   59( Si)   60( Si)
+      61( Si)   62( Si)   63( Si)   64( Si)
+
+    Number of total interaction pairs = 64
+
+
+  Time Elapsed: 0.262379 sec.
+
+ -------------------------------------------------------------------
+
+ FORCE CONSTANT
+ ==============
+
+  Finding symmetrically-independent force constants ...
+   HARMONIC ... done. 
+  Finished!
+
+  Number of  HARMONIC FCs : 26
+
+  Time Elapsed: 0.266459 sec.
+
+ -------------------------------------------------------------------
+
+ CONSTRAINT
+ ==========
+
+  ICONST = 1: Constraints for translational invariance
+              will be considered.
+
+  Generating constraints for translational invariance ...
+   HARMONIC ... done.
+  Finished !
+
+  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:
+   HARMONIC    1    0    0
+
+  Constraints of T-inv and R-inv (self) are merged.
+  If there are redundant constraints, they are removed in this process.
+
+  Number of inequivalent constraints (self, cross) : 
+   HARMONIC    1    0
+
+  Total number of constraints = 1
+
+  Time Elapsed: 0.268462 sec.
+
+ -------------------------------------------------------------------
+
+ FITTING
+ =======
+
+  Reference files
+   Displacement: disp.dat
+   Force       : force.dat
+
+  NSTART = 1; NEND = 1
+  1 entries will be used for fitting.
+
+  MULTDAT = 1: Generate symmetrically equivalent displacement-force 
+               data sets by using pure translational operations only.
+
+  Total Number of Parameters : 26
+
+  Calculation of matrix elements for direct fitting started ... done!
+
+  Entering fitting routine: QRD with constraints
+  QR-Decomposition has started ... finished. 
+
+  Residual sum of squares for the solution: 0.000120649
+  Fitting error (%) : 0.958618
+
+  Time Elapsed: 0.421723 sec.
+
+ -------------------------------------------------------------------
+
+ The following files are created:
+
+ Force constants in a human-readable format : si222.fcs
+ Input data for the phonon code ANPHON      : si222.xml
+
+
+ Job finished at Sun Jan 28 15:05:03 2018
+

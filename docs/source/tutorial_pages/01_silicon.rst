@@ -69,20 +69,25 @@ Using the script :red:`displace.py` in the tools/ directory, you can generate th
     **QE**
     ::
 
-        $ python displace.py --QE=si222.pw.in --mag=0.02 si222.pattern_HARMONIC
+        $ python displace.py --QE=si222.pw.in --mag=0.01 si222.pattern_HARMONIC
 
     **VASP**
     ::
 
-        $ python displace.py --VASP=POSCAR.orig --mag=0.02 si222.pattern_HARMONIC
+        $ python displace.py --VASP=POSCAR.orig --mag=0.01 si222.pattern_HARMONIC
 
     **xTAPP**
     ::
 
-        $ python displace.py --xTAPP=si222.cg --mag=0.02 si222.pattern_HARMONIC
+        $ python displace.py --xTAPP=si222.cg --mag=0.01 si222.pattern_HARMONIC
+
+    **OpenMX**
+    ::
+
+        $ python displace.py --OpenMX=si222.dat --mag=0.01 si222.pattern_HARMONIC
 
 The ``--mag`` option specifies the displacement length in units of Angstrom. 
-You need to specify an input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, ``--xTAPP``, or ``--LAMMPS``.
+You need to specify an input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, ``--xTAPP``, ``--OpenMX`` or ``--LAMMPS``.
 
 Then, calculate atomic forces for all the configurations. This can be done with a simple shell script 
 as follows::
@@ -123,6 +128,12 @@ The next step is to collect the displacement data and force data by the Python s
 
     $ python extract.py --xTAPP=si222.cg --get=disp *.str > disp.dat
     $ python extract.py --xTAPP=si222.cg --get=force *.str > force.dat
+
+    **OpenMX**
+    ::
+
+    $ python extract.py --OpenMX=si222.dat --get=disp *.out > disp.dat
+    $ python extract.py --OpenMX=si222.dat --get=force *.out > force.dat
 
 In the above examples, atomic displacements of all the configurations are merged as *disp.dat*, and the corresponding atomic forces are saved in the file *force.dat*. These files will be used in the following fitting procedure as ``DFILE`` and ``FFILE``. (See :ref:`Format of DFILE and FFILE<label_format_DFILE>`).
 
@@ -178,7 +189,7 @@ Try
 ::
 
   $ grep "Fitting error" si_alm2.log
-  Fitting error (%) : 1.47766
+  Fitting error (%) : 0.567187
 
 The other file :red:`si222.xml` contains crystal structure, symmetry, IFCs, and all other information necessary for subsequent phonon calculations.
 
@@ -418,13 +429,13 @@ Phonon lifetime
 The file :red:`si222.result` contains phonon linewidths at irreducible :math:`k` points. 
 You can extract phonon lifetime from this file as follows::
 
-    $ analyze_phonons.py --calc tau --temp 300 si222.result > tau300K.dat
+    $ analyze_phonons.py --calc tau --temp 300 si222.result > tau300K_10.dat
     $ gnuplot
     gnuplot> set xrange [1:]
     gnuplot> set logscale y
     gnuplot> set xlabel "Phonon frequency (cm^{-1})"
     gnuplot> set ylabel "Phonon lifetime (ps)"
-    gnuplot> plot "tau300K.dat" using 3:4 w p
+    gnuplot> plot "tau300K_10.dat" using 3:4 w p
 
 .. figure:: ../img/si_tau.png
    :scale: 40%
@@ -440,12 +451,12 @@ Cumulative thermal conductivity
 
 Following the procedure below, you can obtain the :ref:`cumulative thermal conductivity <cumulative_kappa>`::
 
-    $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 si222.result > cumulative_300K.dat
+    $ analyze_phonons.py --calc cumulative --temp 300 --length 10000:5 si222.result > cumulative_300K_10.dat
     $ gnuplot
     gnuplot> set logscale x
     gnuplot> set xlabel "L (nm)"
     gnuplot> set ylabel "Cumulative kappa (W/mK)"
-    gnuplot> plot "cumulative_300K.dat" using 1:2 w lp
+    gnuplot> plot "cumulative_300K_10.dat" using 1:2 w lp
 
 .. figure:: ../img/si_cumulative.png
    :scale: 40%
@@ -495,11 +506,11 @@ The frequency range is specified with the ``EMIN``, ``EMAX``, and ``DELTA_E`` ta
 
 After the calculation finishes, you can find the file :red:`si222.kl_spec` which contains the spectra of thermal conductivity at various temperatures. You can plot the data at room temperature as follows::
     
-    $ awk '{if ($1 == 300.0) print $0}' si222.kl_spec > si222_300K.kl_spec
+    $ awk '{if ($1 == 300.0) print $0}' si222.kl_spec > si222_300K_10.kl_spec
     $ gnuplot
     gnuplot> set xlabel "Frequency (cm^{-1})"
     gnuplot> set ylabel "Spectrum of kappa (W/mK/cm^{-1})"
-    gnuplot> plot "si222_300K.kl_spec" using 2:3 w l lt 2 lw 2
+    gnuplot> plot "si222_300K_10.kl_spec" using 2:3 w l lt 2 lw 2
 
 .. figure:: ../img/si_kappa_spec.png
    :scale: 40%

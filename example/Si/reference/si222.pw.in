@@ -1,10 +1,11 @@
- &CONTROL
+&CONTROL
                  calculation = 'scf',
                 restart_mode = 'from_scratch' ,
                       outdir = './',
                      pseudo_dir = '/home/tadano/etc/pseudo/',
                       prefix = 'si' ,
                      tprnfor = .true. ,
+                     tstress = .true.
  /
 
  &SYSTEM
@@ -12,10 +13,11 @@
                   celldm(1)  = 20.406,
                          nat = 64,
                         ntyp = 1,
-                     ecutwfc = 33 ,
+                     ecutwfc = 40 ,
+                     ecutrho = 320 ,
                      occupations = 'smearing',
-                    smearing = 'methfessel-paxton',
-                     degauss = 0.01,
+                    smearing = 'gauss',
+                     degauss = 0.001,
  /
 
  &ELECTRONS
@@ -26,6 +28,10 @@
 
 ATOMIC_SPECIES
    Si   28.0855  Si.pz-n-kjpaw_psl.0.1.UPF
+
+K_POINTS automatic
+ 4 4 4 1 1 1
+
 ATOMIC_POSITIONS  crystal
 Si 0.000000000000000 0.000000000000000 0.000000000000000
 Si 0.000000000000000 0.000000000000000 0.500000000000000
@@ -91,6 +97,3 @@ Si 0.875000000000000 0.625000000000000 0.375000000000000
 Si 0.875000000000000 0.625000000000000 0.875000000000000
 Si 0.875000000000000 0.875000000000000 0.125000000000000
 Si 0.875000000000000 0.875000000000000 0.625000000000000
-
-K_POINTS automatic
-4 4 4 1 1 1
