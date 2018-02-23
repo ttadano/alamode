@@ -30,9 +30,6 @@ namespace PHON_NS
         Input(class PHON *);
         ~Input();
         void parce_input(int, char **);
-        template <typename T_to, typename T_from>
-        T_to my_cast(T_from const &);
-
         std::string job_title;
 
     private:
@@ -45,10 +42,15 @@ namespace PHON_NS
         void parse_scph_vars();
         void parse_cell_parameter();
         void parse_kpoints();
-        void get_var_dict(std::string, std::map<std::string, std::string> &);
+        void get_var_dict(const std::vector<std::string> &,
+                          std::map<std::string, std::string> &);
         void split_str_by_space(const std::string, std::vector<std::string> &);
 
         bool is_endof_entry(const std::string);
+
+        template <typename T_to, typename T_from>
+        T_to my_cast(T_from const &);
+
         template <typename T>
         void assign_val(T &, const std::string,
                         std::map<std::string, std::string>);

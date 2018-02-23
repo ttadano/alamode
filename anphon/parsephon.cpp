@@ -38,7 +38,6 @@
 #include "ewald.h"
 #include "thermodynamics.h"
 #include <boost/lexical_cast.hpp>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -46,11 +45,13 @@ using namespace PHON_NS;
 
 Input::Input(PHON *phon): Pointers(phon)
 {
+    from_stdin = false;
+    job_title = "";
 }
 
 Input::~Input()
 {
-    if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
+    if (ifs_input.is_open()) ifs_input.close();
 }
 
 void Input::parce_input(int narg, char **arg)
@@ -80,12 +81,7 @@ void Input::parce_input(int narg, char **arg)
                     "&cell entry not found in the input file");
     parse_cell_parameter();
 
-    bool use_defaults_for_analysis;
-    if (!locate_tag("&analysis")) {
-        use_defaults_for_analysis = true;
-    } else {
-        use_defaults_for_analysis = false;
-    }
+    bool use_defaults_for_analysis = !locate_tag("&analysis");
     parse_analysis_vars(use_defaults_for_analysis);
 
     if (!locate_tag("&kpoint"))
@@ -107,35 +103,22 @@ void Input::parse_general_vars()
     // Read input parameters in the &general-field.
 
     int i;
-    int nsym, nbands, ismear, nkd;
-    unsigned int nonanalytic;
-    double *masskd;
-    double Tmin, Tmax, dT, na_sigma, epsilon;
-    double emin, emax, delta_e;
-    double tolerance;
-    double prec_ewald;
-    bool printsymmetry;
-    bool restart;
-    bool sym_time_reversal, use_triplet_symmetry;
-    bool selenergy_offdiagonal;
-    bool update_fc2;
-    bool classical;
-    unsigned int bornsym;
-    unsigned int band_connection;
-
+    int nkd;
     struct stat st;
-    std::string prefix, mode, fcsinfo, fc2info;
-    std::string borninfo, file_result;
-    std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list =
-        "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML FC2XML TMIN TMAX DT \
-                                   NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   RESTART TREVSYM NKD KD MASS TRISYM PREC_EWALD CLASSICAL BCONNECT BORNSYM";
-    std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
-    std::vector<std::string> no_defaults;
+    std::vector<std::string> input_list{
+        "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+        "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+        "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM"
+    };
+
+    std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
     std::vector<std::string> kdname_v, masskd_v;
     std::map<std::string, std::string> general_var_dict;
+
+    double *masskd = nullptr;
+    std::string *kdname = nullptr;
 
     if (from_stdin) {
         std::cin.ignore();
@@ -143,30 +126,23 @@ void Input::parse_general_vars()
         ifs_input.ignore();
     }
 
-    get_var_dict(str_allowed_list, general_var_dict);
-#if _USE_BOOST
-    boost::split(no_defaults, str_no_defaults, boost::is_space());
-#else
-    no_defaults = my_split(str_no_defaults, ' ');
-#endif
+    get_var_dict(input_list, general_var_dict);
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
-        if (general_var_dict.find(*it) == general_var_dict.end()) {
+    for (auto &no_default : no_defaults) {
+        if (general_var_dict.find(no_default) == general_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
-                        (*it).c_str());
+                        no_default.c_str());
         }
     }
 
-    prefix = general_var_dict["PREFIX"];
-    mode = general_var_dict["MODE"];
-
-    file_result = prefix + ".result";
+    std::string prefix = general_var_dict["PREFIX"];
+    std::string mode = general_var_dict["MODE"];
+    std::string file_result = prefix + ".result";
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
-    assign_val(nsym, "NSYM", general_var_dict);
 
-    fcsinfo = general_var_dict["FCSXML"];
+    std::string fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -181,56 +157,54 @@ void Input::parse_general_vars()
         }
     }
 
-    split_str_by_space(general_var_dict["MASS"], masskd_v);
+    if (!general_var_dict["MASS"].empty()) {
+        split_str_by_space(general_var_dict["MASS"], masskd_v);
 
-    if (masskd_v.size() != nkd) {
-        error->exit("parse_general_vars",
-                    "The number of entries for MASS is inconsistent with NKD");
-    } else {
-        memory->allocate(masskd, nkd);
-        for (i = 0; i < nkd; ++i) {
-            masskd[i] = my_cast<double>(masskd_v[i]);
+        if (masskd_v.size() != nkd) {
+            error->exit("parse_general_vars",
+                        "The number of entries for MASS is inconsistent with NKD");
+        } else {
+            memory->allocate(masskd, nkd);
+            for (i = 0; i < nkd; ++i) {
+                masskd[i] = my_cast<double>(masskd_v[i]);
+            }
         }
     }
 
+
     // Default values
 
-    Tmin = 0.0;
-    Tmax = 1000.0;
-    dT = 10.0;
+    double Tmin = 0.0;
+    double Tmax = 1000.0;
+    double dT = 10.0;
 
-    emin = 0.0;
-    emax = 1000.0;
-    delta_e = 10.0;
+    double emin = 0.0;
+    double emax = 1000.0;
+    double delta_e = 10.0;
 
-    nonanalytic = 0;
-    nsym = 0;
-    tolerance = 1.0e-6;
-    printsymmetry = false;
-    sym_time_reversal = false;
-    use_triplet_symmetry = true;
-    classical = false;
-    band_connection = 0;
-    bornsym = 0;
+    unsigned int nonanalytic = 0;
+    int nsym = 0;
+    double tolerance = 1.0e-6;
+    bool printsymmetry = false;
+    bool sym_time_reversal = false;
+    bool use_triplet_symmetry = true;
+    bool classical = false;
+    unsigned int band_connection = 0;
+    unsigned int bornsym = 0;
 
-    prec_ewald = 1.0e-12;
+    double prec_ewald = 1.0e-12;
 
     // if file_result exists in the current directory, 
     // restart mode will be automatically turned on.
+    bool restart = stat(file_result.c_str(), &st) == 0;
 
-    if (stat(file_result.c_str(), &st) == 0) {
-        restart = true;
-    } else {
-        restart = false;
-    }
+    int nbands = -1;
+    std::string borninfo = "";
+    std::string fc2info = "";
 
-    nbands = -1;
-    borninfo = "";
-    fc2info = "";
-
-    ismear = -1;
-    epsilon = 10.0;
-    na_sigma = 0.1;
+    int ismear = -1;
+    double epsilon = 10.0;
+    double na_sigma = 0.1;
 
     // Assign given values
 
@@ -272,17 +246,18 @@ void Input::parse_general_vars()
             error->exit("parse_general_vars",
                         "PREC_EWALD should be a small positive value.");
         }
-        ewald->is_longrange = 1;
+        ewald->is_longrange = true;
         ewald->file_longrange = boost::lexical_cast<std::string>(general_var_dict["BORNINFO"]);
         ewald->prec_ewald = prec_ewald;
         ewald->rate_ab = 6.0 / pi;
 
     } else {
-        ewald->is_longrange = 0;
+        ewald->is_longrange = false;
     }
 
     if (nonanalytic > 3) {
-        error->exit("parse_general_vars", "NONANALYTIC-tag can take 0, 1, 2, or 3.");
+        error->exit("parse_general_vars",
+                    "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
     if (nonanalytic == 3) {
         if (mode == "SCPH") {
@@ -307,14 +282,24 @@ void Input::parse_general_vars()
     system->dT = dT;
     system->nkd = nkd;
 
-    memory->allocate(system->mass_kd, nkd);
     memory->allocate(system->symbol_kd, nkd);
     for (i = 0; i < nkd; ++i) {
-        system->mass_kd[i] = masskd[i];
         system->symbol_kd[i] = kdname[i];
     }
-    memory->deallocate(masskd);
-    memory->deallocate(kdname);
+    if (kdname) {
+        memory->deallocate(kdname);
+    }
+
+    if (!general_var_dict["MASS"].empty()) {
+        memory->allocate(system->mass_kd, nkd);
+        for (i = 0; i < nkd; ++i) {
+            system->mass_kd[i] = masskd[i];
+        }
+    }
+    if (masskd) {
+        memory->deallocate(masskd);
+    }
+
 
     dos->emax = emax;
     dos->emin = emin;
@@ -328,13 +313,8 @@ void Input::parse_general_vars()
     dynamical->band_connection = band_connection;
     integration->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsinfo;
-    if (!fc2info.empty()) {
-        update_fc2 = true;
-    } else {
-        update_fc2 = false;
-    }
     fcs_phonon->file_fc2 = fc2info;
-    fcs_phonon->update_fc2 = update_fc2;
+    fcs_phonon->update_fc2 = !fc2info.empty();
     thermodynamics->classical = classical;
     integration->ismear = ismear;
     relaxation->use_triplet_symmetry = use_triplet_symmetry;
@@ -358,11 +338,11 @@ void Input::parse_scph_vars()
     struct stat st;
     std::string file_dymat;
     std::string str_tmp;
-    std::string str_allowed_list =
-        "KMESH_SCPH KMESH_INTERPOLATE MIXALPHA MAXITER RESTART_SCPH IALGO \
-                                    SELF_OFFDIAG TOL_SCPH LOWER_TEMP WARMSTART";
-    std::string str_no_defaults = "KMESH_SCPH KMESH_INTERPOLATE";
-    std::vector<std::string> no_defaults;
+    std::vector<std::string> input_list{
+        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER", "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+        "LOWER_TEMP", "WARMSTART"
+    };
+    std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
     std::map<std::string, std::string> scph_var_dict;
 
@@ -372,12 +352,12 @@ void Input::parse_scph_vars()
         ifs_input.ignore();
     }
 
-    get_var_dict(str_allowed_list, scph_var_dict);
-#if _USE_BOOST
-    boost::split(no_defaults, str_no_defaults, boost::is_space());
-#else
-    no_defaults = my_split(str_no_defaults, ' ');
-#endif
+    get_var_dict(input_list, scph_var_dict);
+    //#if _USE_BOOST
+    //    boost::split(no_defaults, str_no_defaults, boost::is_space());
+    //#else
+    //    no_defaults = my_split(str_no_defaults, ' ');
+    //#endif
 
     for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
         if (scph_var_dict.find(*it) == scph_var_dict.end()) {
@@ -493,11 +473,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    std::string str_allowed_list =
-        "PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
-                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR FC2_EWALD KAPPA_SPEC \
-                                   SELF_W";
+    std::vector<std::string> input_list{
+        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT", "ATOMPROJ", "REALPART", "ISOTOPE", "ISOFACT",
+        "FSTATE_W", "FSTATE_K", "PRIMTMSD", "PDOS", "TDOS", "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD", "KAPPA_SPEC", "SELF_W"
+    };
 
     bool fstate_omega, fstate_k;
     bool ks_analyze_mode, atom_project_mode, calc_realpart;
@@ -559,7 +539,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Assign values to variables
 
     if (!use_default_values) {
-        get_var_dict(str_allowed_list, analysis_var_dict);
+        get_var_dict(input_list, analysis_var_dict);
 
         assign_val(print_vel, "PRINTVEL", analysis_var_dict);
         assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
@@ -959,26 +939,18 @@ int Input::locate_tag(std::string key)
     }
 }
 
-void Input::get_var_dict(const std::string keywords,
+void Input::get_var_dict(const std::vector<std::string> &input_list,
                          std::map<std::string, std::string> &var_dict)
 {
     std::string line, key, val;
     std::string line_wo_comment, line_tmp;
     std::string::size_type pos_first_comment_tag;
     std::vector<std::string> str_entry, str_varval;
-
-
     std::set<std::string> keyword_set;
-#ifdef _USE_BOOST
-    boost::split(keyword_set, keywords, boost::is_space());
-#else
-    std::vector<std::string> strvec_tmp;
-    strvec_tmp = my_split(keywords, ' ');
-    for (auto it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
-        keyword_set.insert(*it);
+
+    for (const auto &it : input_list) {
+        keyword_set.insert(it);
     }
-    strvec_tmp.clear();
-#endif
 
     var_dict.clear();
 
@@ -1084,14 +1056,14 @@ void Input::get_var_dict(const std::string keywords,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-            for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (auto &it : str_entry) {
 
                 // Split the input entry by '='
 
 #ifdef _USE_BOOST
                 std::string str_tmp = boost::trim_copy(*it);
 #else
-                std::string str_tmp = trim((*it));
+                std::string str_tmp = trim(it);
 #endif
                 if (!str_tmp.empty()) {
 #ifdef _USE_BOOST
@@ -1143,11 +1115,7 @@ void Input::get_var_dict(const std::string keywords,
 
 bool Input::is_endof_entry(const std::string str)
 {
-    if (str[0] == '/') {
-        return true;
-    } else {
-        return false;
-    }
+    return str[0] == '/';
 }
 
 void Input::split_str_by_space(const std::string str,
