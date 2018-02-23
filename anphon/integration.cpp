@@ -10,34 +10,53 @@
 
 #include "mpi_common.h"
 #include "integration.h"
+#include "error.h"
 #include "kpoint.h"
+#include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
-#include "error.h"
 #include <iomanip>
 #include <vector>
 #include <algorithm>
 #include <cmath>
-#include "mathfunctions.h"
 
 using namespace PHON_NS;
 
 Integration::Integration(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 }
 
 Integration::~Integration()
 {
+    deallocate_variables();
 };
+
+void Integration::set_default_variables()
+{
+    use_tetrahedron = true;
+    ismear = -1;
+    epsilon = 0.0;
+    ntetra = 0;
+    tetras = nullptr;
+}
+
+void Integration::deallocate_variables()
+{
+    if (tetras) {
+        memory->deallocate(tetras);
+    }
+}
+
 
 void Integration::setup_integration()
 {
     MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    unsigned int nk = kpoint->nk;
-    unsigned int nkx = kpoint->nkx;
-    unsigned int nky = kpoint->nky;
-    unsigned int nkz = kpoint->nkz;
+    auto nk = kpoint->nk;
+    auto nkx = kpoint->nkx;
+    auto nky = kpoint->nky;
+    auto nkz = kpoint->nkz;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -65,12 +84,6 @@ void Integration::setup_integration()
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
-void Integration::finish_integration()
-{
-    if (ismear == -1) {
-        memory->deallocate(tetras);
-    }
-}
 
 void Integration::prepare_tetrahedron(const int nk1, const int nk2, const int nk3)
 {
@@ -143,7 +156,9 @@ void Integration::prepare_tetrahedron(const int nk1, const int nk2, const int nk
     }
 }
 
-double Integration::do_tetrahedron(double *energy, double *f, const double e_ref)
+double Integration::do_tetrahedron(double *energy,
+                                   double *f,
+                                   const double e_ref)
 {
     /*
     This function returns the summation of the given function f_{k}
@@ -237,17 +252,15 @@ double Integration::do_tetrahedron(double *energy, double *f, const double e_ref
 double Integration::dos_integration(double *energy, const double e_ref)
 {
     double dos_ret = 0.0;
-
-    unsigned int i, j;
     std::vector<double> e_tetra;
     double e1, e2, e3, e4;
-    double vol, vol_tot;
+    double vol;
 
-    vol_tot = 0.0;
+    double vol_tot = 0.0;
 
-    for (i = 0; i < ntetra; ++i) {
+    for (auto i = 0; i < ntetra; ++i) {
         e_tetra.clear();
-        for (j = 0; j < 4; ++j) {
+        for (auto j = 0; j < 4; ++j) {
             e_tetra.push_back(energy[tetras[i][j]]);
         }
         std::sort(e_tetra.begin(), e_tetra.end());
@@ -275,9 +288,9 @@ double Integration::dos_integration(double *energy, const double e_ref)
 
 
 void Integration::calc_weight_tetrahedron(const int nk_irreducible,
-                                          int *map_to_irreducible_k,
+                                          const int *map_to_irreducible_k,
                                           double *weight,
-                                          double *energy,
+                                          const double *energy,
                                           const double e_ref)
 {
     int i, j;
@@ -315,28 +328,6 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
         k3 = kindex[sort_arg[2]];
         k4 = kindex[sort_arg[3]];
 
-
-        /*
-        tetra_data.clear();
-
-        for (j = 0; j < 4; ++j) {
-            pair.e = energy[tetras[i][j]];
-            pair.knum = map_to_irreducible_k[tetras[i][j]];
-            tetra_data.push_back(pair);
-        }
-
-        std::sort(tetra_data.begin(), tetra_data.end());
-
-        e1 = tetra_data[0].e;
-        e2 = tetra_data[1].e;
-        e3 = tetra_data[2].e;
-        e4 = tetra_data[3].e;
-
-        k1 = tetra_data[0].knum;
-        k2 = tetra_data[1].knum;
-        k3 = tetra_data[2].knum;
-        k4 = tetra_data[3].knum;
-        */
         vol = volume(tetras[i]);
         vol_tot += vol;
 
@@ -384,11 +375,11 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
     for (i = 0; i < nk_irreducible; ++i) weight[i] /= vol_tot;
 }
 
-void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<KpointList>> &kpinfo,
-                                                double *weight,
-                                                double *energy,
-                                                const double e_ref,
-                                                const int smearing_method)
+void Integration::calc_weight_smearing(const std::vector<std::vector<KpointList>> &kpinfo,
+                                       double *weight,
+                                       double *energy,
+                                       const double e_ref,
+                                       const int smearing_method)
 {
     unsigned int i;
     unsigned int knum;
@@ -408,13 +399,13 @@ void PHON_NS::Integration::calc_weight_smearing(const std::vector<std::vector<Kp
     }
 }
 
-void PHON_NS::Integration::calc_weight_smearing(const int nk,
-                                                const int nk_irreducible,
-                                                int *map_to_irreducible_k,
-                                                double *weight,
-                                                double *energy,
-                                                const double e_ref,
-                                                const int smearing_method)
+void Integration::calc_weight_smearing(const int nk,
+                                       const int nk_irreducible,
+                                       const int *map_to_irreducible_k,
+                                       double *weight,
+                                       double *energy,
+                                       const double e_ref,
+                                       const int smearing_method)
 {
     int i;
 
@@ -437,13 +428,12 @@ void PHON_NS::Integration::calc_weight_smearing(const int nk,
 }
 
 
-double Integration::volume(int *klist)
+double Integration::volume(const int *klist)
 {
-    int i;
     double k1[3], k2[3], k3[3];
     double vol;
 
-    for (i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i) {
         k1[i] = refold(kpoint->xk[klist[1]][i] - kpoint->xk[klist[0]][i]);
         k2[i] = refold(kpoint->xk[klist[2]][i] - kpoint->xk[klist[0]][i]);
         k3[i] = refold(kpoint->xk[klist[3]][i] - kpoint->xk[klist[0]][i]);
@@ -470,12 +460,10 @@ double Integration::refold(double x)
     if (std::abs(x) > 0.5) {
         if (x < 0.0) {
             return x + 1.0;
-        } else {
-            return x - 1.0;
         }
-    } else {
-        return x;
+        return x - 1.0;
     }
+    return x;
 }
 
 void Integration::insertion_sort(double *a, int *ind, int n)

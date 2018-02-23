@@ -10,28 +10,44 @@
 
 #include "mpi_common.h"
 #include "isotope.h"
+#include "constants.h"
+#include "dynamical.h"
+#include "integration.h"
+#include "kpoint.h"
 #include "memory.h"
 #include "system.h"
-#include "dynamical.h"
 #include <iomanip>
-#include "kpoint.h"
 #include <complex>
-#include "constants.h"
-#include "integration.h"
 
 using namespace PHON_NS;
 
 Isotope::Isotope(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 };
 
 Isotope::~Isotope()
 {
-    if (phon->mode == "RTA" && include_isotope) {
+    deallocate_variables();
+
+};
+
+void Isotope::set_default_variables()
+{
+    include_isotope = false;
+    isotope_factor = nullptr;
+    gamma_isotope = nullptr;
+}
+
+void Isotope::deallocate_variables()
+{
+    if (isotope_factor) {
         memory->deallocate(isotope_factor);
+    }
+    if (gamma_isotope) {
         memory->deallocate(gamma_isotope);
     }
-};
+}
 
 
 void Isotope::setup_isotope_scattering()

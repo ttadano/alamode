@@ -8,7 +8,6 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include "mpi_common.h"
 #include "pointers.h"
 
 
@@ -23,16 +22,22 @@ namespace PHON_NS
 
         int include_isotope;
         double *isotope_factor;
-
         double **gamma_isotope;
 
         void setup_isotope_scattering();
         void calc_isotope_selfenergy_all();
 
     private:
-        void calc_isotope_selfenergy(const int, const int,
-                                     const double, double &);
-        void calc_isotope_selfenergy_tetra(const int, const int,
-                                           const double, double &);
+        void set_default_variables();
+        void deallocate_variables();
+
+        void calc_isotope_selfenergy(int,
+                                     int,
+                                     double,
+                                     double &);
+        void calc_isotope_selfenergy_tetra(int,
+                                           int,
+                                           double,
+                                           double &);
     };
 }
