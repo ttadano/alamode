@@ -100,7 +100,7 @@ inline void rotvec(double vec_out[3], double vec_in[3], double **mat, char mode 
 	}
 }
 
-inline void invmat3(double invmat[3][3], double mat[3][3])
+inline void invmat3(double invmat[3][3], const double mat[3][3])
 {
 	unsigned int i, j;
 	double det;

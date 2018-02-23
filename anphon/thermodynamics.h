@@ -14,30 +14,30 @@
 
 namespace PHON_NS
 {
-    class Thermodynamics: protected Pointers
-    {
-    public:
-        Thermodynamics(class PHON *);
-        ~Thermodynamics();
+	class Thermodynamics : protected Pointers
+	{
+	public:
+		Thermodynamics(class PHON *);
+		~Thermodynamics();
 
-        double T_to_Ryd;
-        bool classical;
-        void setup();
+		double T_to_Ryd;
+		bool classical;
+		void setup();
 
-        double Cv(const double, const double);
-        double fB(const double, const double);
-        double fC(const double, const double);
+		double Cv(const double, const double);
+		double fB(const double, const double);
+		double fC(const double, const double);
 
-        double Cv_tot(const double);
-        double internal_energy(const double);
-        double vibrational_entropy(const double);
-        double free_energy(const double);
-        double Cv_Debye(const double, const double);
-        double Cv_classical(const double, const double);
-        void Debye_T(const double, double &);
-        double disp2_avg(const double, const unsigned int, const unsigned int);
+		double Cv_tot(const double);
+		double internal_energy(const double);
+		double vibrational_entropy(const double);
+		double free_energy(const double);
+		double Cv_Debye(const double, const double);
+		double Cv_classical(const double, const double);
+		void Debye_T(const double, double &);
+		double disp2_avg(const double, const unsigned int, const unsigned int);
 
-    public:
-        double coth_T(const double, const double);
-    };
+	public:
+		double coth_T(const double, const double);
+	};
 }

@@ -20,44 +20,44 @@
 
 namespace PHON_NS
 {
-    class PHON
-    {
-    public:
-        PHON(int, char **, MPI_Comm);
-        virtual ~PHON();
+	class PHON
+	{
+	public:
+		PHON(int, char **, MPI_Comm);
+		virtual ~PHON();
 
-        class Memory *memory;
-        class Error *error;
-        class Timer *timer;
-        class Input *input;
-        class System *system;
-        class Symmetry *symmetry;
-        class Kpoint *kpoint;
-        class Integration *integration;
-        class Fcs_phonon *fcs_phonon;
-        class Dynamical *dynamical;
-        class Phonon_velocity *phonon_velocity;
-        class Thermodynamics *thermodynamics;
-        class Relaxation *relaxation;
-        class Selfenergy *selfenergy;
-        class Conductivity *conductivity;
-        class Writes *writes;
-        class Dos *dos;
-        class Gruneisen *gruneisen;
-        class MyMPI *mympi;
-        class Isotope *isotope;
-        class Scph *scph;
-        class Ewald *ewald;
+		class Memory *memory;
+		class Error *error;
+		class Timer *timer;
+		class Input *input;
+		class System *system;
+		class Symmetry *symmetry;
+		class Kpoint *kpoint;
+		class Integration *integration;
+		class Fcs_phonon *fcs_phonon;
+		class Dynamical *dynamical;
+		class Phonon_velocity *phonon_velocity;
+		class Thermodynamics *thermodynamics;
+		class Relaxation *relaxation;
+		class Selfenergy *selfenergy;
+		class Conductivity *conductivity;
+		class Writes *writes;
+		class Dos *dos;
+		class Gruneisen *gruneisen;
+		class MyMPI *mympi;
+		class Isotope *isotope;
+		class Scph *scph;
+		class Ewald *ewald;
 
-        void create_pointers();
-        void destroy_pointers();
+		void create_pointers();
+		void destroy_pointers();
 
-        std::string mode;
-        bool restart_flag;
+		std::string mode;
+		bool restart_flag;
 
-        void execute_phonons();
-        void execute_RTA();
-        void execute_self_consistent_phonon();
-        void setup_base();
-    };
+		void execute_phonons();
+		void execute_RTA();
+		void execute_self_consistent_phonon();
+		void setup_base();
+	};
 }

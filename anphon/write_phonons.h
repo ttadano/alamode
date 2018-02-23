@@ -17,50 +17,50 @@
 
 namespace PHON_NS
 {
-    class Writes: protected Pointers
-    {
-    public:
+	class Writes : protected Pointers
+	{
+	public:
 
-        Writes(class PHON *);
-        ~Writes();
-        void write_phonon_info();
-        void print_phonon_energy();
-        void write_gruneisen();
-        void setup_result_io();
-        void write_input_vars();
-        void write_kappa();
-        void write_selfenergy_isotope();
+		Writes(class PHON *);
+		~Writes();
+		void write_phonon_info();
+		void print_phonon_energy();
+		void write_gruneisen();
+		void setup_result_io();
+		void write_input_vars();
+		void write_kappa();
+		void write_selfenergy_isotope();
 
-        bool print_xsf;
-        bool print_msd;
-        bool print_anime;
+		bool print_xsf;
+		bool print_msd;
+		bool print_anime;
 
-        unsigned int anime_cellsize[3];
-        double anime_kpoint[3];
+		unsigned int anime_cellsize[3];
+		double anime_kpoint[3];
 
-        double in_kayser(const double);
-        int nbands;
+		double in_kayser(const double);
+		int nbands;
 
-        std::string file_result;
-        std::string anime_format;
-        std::fstream fs_result;
+		std::string file_result;
+		std::string anime_format;
+		std::fstream fs_result;
 
-    private:
+	private:
 
-        void write_phonon_bands();
-        void write_phonon_vel();
-        void write_phonon_vel_all();
-        void write_phonon_dos();
-        void write_two_phonon_dos();
-        void write_scattering_phase_space();
-        void write_scattering_amplitude();
-        void write_normal_mode_direction();
-        void write_normal_mode_animation(const double [3], const unsigned int [3]);
-        void write_eigenvectors();
-        void write_thermodynamics();
-        void write_msd();
-        void write_participation_ratio();
+		void write_phonon_bands();
+		void write_phonon_vel();
+		void write_phonon_vel_all();
+		void write_phonon_dos();
+		void write_two_phonon_dos();
+		void write_scattering_phase_space();
+		void write_scattering_amplitude();
+		void write_normal_mode_direction();
+		void write_normal_mode_animation(const double [3], const unsigned int [3]);
+		void write_eigenvectors();
+		void write_thermodynamics();
+		void write_msd();
+		void write_participation_ratio();
 
-        double Ry_to_kayser;
-    };
+		double Ry_to_kayser;
+	};
 }

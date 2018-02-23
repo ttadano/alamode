@@ -16,40 +16,40 @@
 
 namespace PHON_NS
 {
-    class Conductivity: protected Pointers
-    {
-    public:
-        Conductivity(class PHON *);
-        ~Conductivity();
-        void setup_kappa();
-        void prepare_restart();
-        void calc_anharmonic_imagself();
-        void compute_kappa();
-        void finish_kappa();
+	class Conductivity : protected Pointers
+	{
+	public:
+		Conductivity(class PHON *);
+		~Conductivity();
+		void setup_kappa();
+		void prepare_restart();
+		void calc_anharmonic_imagself();
+		void compute_kappa();
+		void finish_kappa();
 
-        int calc_kappa_spec;
-        unsigned int ntemp;
-        double **damping3;
-        double ***kappa;
-        double ***kappa_spec;
-        double *Temperature;
+		int calc_kappa_spec;
+		unsigned int ntemp;
+		double **damping3;
+		double ***kappa;
+		double ***kappa_spec;
+		double *Temperature;
 
-    private:
-        double ***vel;
-        unsigned int nk, ns;
-        int nshift_restart;
-        std::vector<int> vks, vks_l, vks_done;
-        std::set<int> vks_job;
+	private:
+		double ***vel;
+		unsigned int nk, ns;
+		int nshift_restart;
+		std::vector<int> vks, vks_l, vks_done;
+		std::set<int> vks_job;
 
-        void write_result_gamma(const unsigned int,
-                                const unsigned int,
-                                double ***,
-                                double **);
-        void average_self_energy_at_degenerate_point(const int,
-                                                     const int,
-                                                     double **);
-        void compute_frequency_resolved_kappa(const int,
-                                              double ****,
-                                              const int);
-    };
+		void write_result_gamma(const unsigned int,
+		                        const unsigned int,
+		                        double ***,
+		                        double **);
+		void average_self_energy_at_degenerate_point(const int,
+		                                             const int,
+		                                             double **);
+		void compute_frequency_resolved_kappa(const int,
+		                                      double ****,
+		                                      const int);
+	};
 }
