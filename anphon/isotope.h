@@ -14,25 +14,25 @@
 
 namespace PHON_NS
 {
-	class Isotope : protected Pointers
-	{
-	public:
+    class Isotope : protected Pointers
+    {
+    public:
 
-		Isotope(class PHON *);
-		~Isotope();
+        Isotope(class PHON *);
+        ~Isotope();
 
-		int include_isotope;
-		double *isotope_factor;
+        int include_isotope;
+        double *isotope_factor;
 
-		double **gamma_isotope;
+        double **gamma_isotope;
 
-		void setup_isotope_scattering();
-		void calc_isotope_selfenergy_all();
+        void setup_isotope_scattering();
+        void calc_isotope_selfenergy_all();
 
-	private:
-		void calc_isotope_selfenergy(const int, const int,
-		                             const double, double &);
-		void calc_isotope_selfenergy_tetra(const int, const int,
-		                                   const double, double &);
-	};
+    private:
+        void calc_isotope_selfenergy(const int, const int,
+                                     const double, double &);
+        void calc_isotope_selfenergy_tetra(const int, const int,
+                                           const double, double &);
+    };
 }
