@@ -26,11 +26,7 @@ namespace PHON_NS
 
         DistWithCell();
 
-        DistWithCell(const int n, const double d)
-        {
-            cell = n;
-            dist = d;
-        }
+        DistWithCell(const int n, const double d) : cell(n), dist(d) {};
     };
 
     inline bool operator<(const DistWithCell a,
@@ -44,9 +40,6 @@ namespace PHON_NS
     public:
         Dynamical(class PHON *);
         ~Dynamical();
-
-        void diagonalize_dynamical_all();
-        void finish_dynamical();
 
         unsigned int neval;
         bool eigenvectors;
@@ -65,6 +58,8 @@ namespace PHON_NS
         double dielec[3][3];
         double ***borncharge;
 
+        void diagonalize_dynamical_all();
+
         void setup_dynamical(std::string);
 
         void eval_k(double *, double *,
@@ -77,7 +72,7 @@ namespace PHON_NS
                           const int);
 
 
-        double fold(double);
+        double fold(const double);
         double freq(const double);
 
         void calc_participation_ratio_all(std::complex<double> ***,
@@ -85,12 +80,11 @@ namespace PHON_NS
                                           double ***);
 
         void calc_analytic_k(double *,
-                             std::vector<FcsClassExtent>,
+                             const std::vector<FcsClassExtent> &,
                              std::complex<double> **);
         void calc_nonanalytic_k(double *, double *,
                                 std::complex<double> **);
         void calc_nonanalytic_k2(double *, double *,
-                                 std::vector<FcsClassExtent>,
                                  std::complex<double> **);
 
         void calc_analytic_k_ewald(double *,
@@ -98,16 +92,14 @@ namespace PHON_NS
                                    std::complex<double> **);
 
     private:
-
+        void set_default_variables();
+        void deallocate_variables();
         void load_born(const unsigned int);
 
         void prepare_mindist_list(std::vector<int> **);
         void calc_atomic_participation_ratio(std::complex<double> *, double *);
         double distance(double *, double *);
         void connect_band_by_eigen_similarity(std::complex<double> ***, int **);
-
-        // void calc_analytic_k(double *, double ****, std::complex<double> **);
-        // void modify_eigenvectors_sym();
 
         double **xshift_s;
         char UPLO;

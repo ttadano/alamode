@@ -48,9 +48,7 @@ Scph::Scph(PHON *phon): Pointers(phon)
     im = std::complex<double>(0.0, 1.0);
 }
 
-Scph::~Scph()
-{
-};
+Scph::~Scph() {};
 
 
 void Scph::setup_scph()
@@ -1929,11 +1927,13 @@ void Scph::exec_interpolation(std::complex<double> ***dymat_r,
         if (dynamical->nonanalytic) {
 
             if (dynamical->nonanalytic == 1) {
-                dynamical->calc_nonanalytic_k(kpoint->xk[ik], kpoint->kvec_na[ik],
+                dynamical->calc_nonanalytic_k(kpoint->xk[ik],
+                                              kpoint->kvec_na[ik],
                                               mat_harmonic_na);
             } else if (dynamical->nonanalytic == 2) {
-                dynamical->calc_nonanalytic_k2(kpoint->xk[ik], kpoint->kvec_na[ik],
-                                               fcs_phonon->fc2_ext, mat_harmonic_na);
+                dynamical->calc_nonanalytic_k2(kpoint->xk[ik],
+                                               kpoint->kvec_na[ik],
+                                               mat_harmonic_na);
             }
 
             for (i = 0; i < ns; ++i) {
@@ -2009,11 +2009,13 @@ void Scph::exec_interpolation2(std::complex<double> ***dymat_r,
         if (dynamical->nonanalytic) {
 
             if (dynamical->nonanalytic == 1) {
-                dynamical->calc_nonanalytic_k(scph->xk_scph[ik], scph->kvec_na_scph[ik],
+                dynamical->calc_nonanalytic_k(scph->xk_scph[ik],
+                                              scph->kvec_na_scph[ik],
                                               mat_harmonic_na);
             } else if (dynamical->nonanalytic == 2) {
-                dynamical->calc_nonanalytic_k2(scph->xk_scph[ik], scph->kvec_na_scph[ik],
-                                               fcs_phonon->fc2_ext, mat_harmonic_na);
+                dynamical->calc_nonanalytic_k2(scph->xk_scph[ik],
+                                               scph->kvec_na_scph[ik],
+                                               mat_harmonic_na);
             }
 
             for (i = 0; i < ns; ++i) {

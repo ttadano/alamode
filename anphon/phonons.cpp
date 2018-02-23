@@ -210,7 +210,6 @@ void PHON::execute_phonons()
         }
     }
 
-    dynamical->finish_dynamical();
     gruneisen->finish_gruneisen();
 
     if (dos->flag_dos) {
@@ -270,7 +269,6 @@ void PHON::execute_RTA()
         integration->finish_integration();
     }
 
-    dynamical->finish_dynamical();
     relaxation->finish_relaxation();
 
     if (!relaxation->ks_analyze_mode) {
@@ -304,8 +302,6 @@ void PHON::execute_self_consistent_phonon()
     if (kpoint->kpoint_mode == 2) {
         integration->finish_integration();
     }
-
-    dynamical->finish_dynamical();
 
     scph->finish_scph();
 }

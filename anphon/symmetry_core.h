@@ -13,11 +13,6 @@
 #include "pointers.h"
 #include <string>
 #include <vector>
-#include <fstream>
-
-#ifdef _USE_EIGEN
-#include <Eigen/Core>
-#endif
 
 namespace PHON_NS
 {
@@ -140,22 +135,25 @@ namespace PHON_NS
     private:
 
         std::string file_sym;
+        void set_default_variables();
 
-        void setup_symmetry_operation(int, unsigned int &, double [3][3], double [3][3],
-                                      double **, unsigned int *);
+        void setup_symmetry_operation(int,
+                                      unsigned int &,
+                                      double [3][3],
+                                      double [3][3],
+                                      double **,
+                                      unsigned int *);
 
         void findsym(int, double [3][3], double **,
                      std::vector<SymmetryOperation> &);
-        void gensym_withmap(double **, unsigned int *);
+        void gensym_withmap(double **, const unsigned int *);
         bool is_proper(double [3][3]);
 
         void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
         void find_crystal_symmetry(int, int,
                                    std::vector<unsigned int> *, double **x,
-                                   std::vector<RotationMatrix>,
+                                   const std::vector<RotationMatrix> &,
                                    std::vector<SymmetryOperation> &);
-
-        void find_nnp_for_translation(unsigned int &, std::vector<SymmetryOperation>);
 
         void broadcast_symmlist(std::vector<SymmetryOperation> &);
     };

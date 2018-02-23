@@ -22,7 +22,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <set>
 #include <map>
 #include "parsephon.h"
-#include "relaxation.h"
 #include "mathfunctions.h"
 
 
@@ -1163,7 +1162,7 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
         - convmat[1][0] * (convmat[0][1] * convmat[2][2] - convmat[2][1] * convmat[0][2])
         + convmat[2][0] * (convmat[0][1] * convmat[1][2] - convmat[1][1] * convmat[0][2]);
 
-    int nkmax = std::ceil(1.0 / det);
+    int nkmax = static_cast<int>(std::ceil(1.0 / det));
 
 
     // Convert the conversion_matrix so that each element becomes a fraction

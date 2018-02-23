@@ -9,37 +9,56 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
-#include "dynamical.h"
-#include "kpoint.h"
 #include "fcs_phonon.h"
-#include "system.h"
-#include "memory.h"
+#include "constants.h"
+#include "dynamical.h"
 #include "error.h"
+#include "gruneisen.h"
+#include "memory.h"
 #include "phonons.h"
 #include "relaxation.h"
-#include "constants.h"
-#include "gruneisen.h"
+#include "system.h"
 #include "xml_parser.h"
 #include <string>
 #include <iomanip>
-#include <fstream>
 #include <algorithm>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
 Fcs_phonon::Fcs_phonon(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 }
 
 Fcs_phonon::~Fcs_phonon()
 {
-    memory->deallocate(force_constant_with_cell);
+    deallocate_variables();
 }
+
+void Fcs_phonon::set_default_variables()
+{
+    maxorder = 0;
+    file_fcs = "";
+    file_fc2 = "";
+    update_fc2 = false;
+    force_constant = nullptr;
+    force_constant_with_cell = nullptr;
+}
+
+void Fcs_phonon::deallocate_variables()
+{
+    if (force_constant) {
+        memory->deallocate(force_constant);
+    }
+    if (force_constant_with_cell) {
+        memory->deallocate(force_constant_with_cell);
+    }
+}
+
 
 void Fcs_phonon::setup(std::string mode)
 {
@@ -108,8 +127,12 @@ void Fcs_phonon::setup(std::string mode)
         std::cout << std::endl;
 
         memory->allocate(maxdev, maxorder);
-        examine_translational_invariance(maxorder, system->nat_anharm, system->natmin,
-                                         maxdev, fc2_ext, force_constant_with_cell);
+        examine_translational_invariance(maxorder,
+                                         system->nat_anharm,
+                                         system->natmin,
+                                         maxdev,
+                                         fc2_ext,
+                                         force_constant_with_cell);
 
         std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
         for (i = 0; i < maxorder; ++i) {
@@ -217,7 +240,7 @@ void Fcs_phonon::load_fcs_xml()
         if (order == 0) {
             str_tag = "Data.ForceConstants.HARMONIC";
         } else {
-            str_tag = "Data.ForceConstants.ANHARM" + boost::lexical_cast<std::string>(order + 2);
+            str_tag = "Data.ForceConstants.ANHARM" + std::to_string(order + 2);
         }
 
         boost::optional<ptree&> child_ = pt.get_child_optional(str_tag);
@@ -235,7 +258,7 @@ void Fcs_phonon::load_fcs_xml()
             ivec_with_cell.clear();
 
             for (i = 0; i < order + 2; ++i) {
-                str_attr = "<xmlattr>.pair" + boost::lexical_cast<std::string>(i + 1);
+                str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
                 str_pairs = child.get<std::string>(str_attr);
 
                 ss.str("");
@@ -280,7 +303,7 @@ void Fcs_phonon::load_fcs_xml()
                         ivec_copy.push_back(ivec_tmp);
                     }
 
-                    force_constant_with_cell[order].push_back(FcsArrayWithCell(fcs_val, ivec_copy));
+                    force_constant_with_cell[order].emplace_back(fcs_val, ivec_copy);
 
                 } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
             }
@@ -340,7 +363,7 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
 
                     tri_vec.push_back(tri_tmp);
                 }
-                force_constant[i].push_back(FcsClass(fcs_tmp[j], tri_vec));
+                force_constant[i].emplace_back(fcs_tmp[j], tri_vec);
             }
         }
 
@@ -392,8 +415,10 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
 }
 
 
-void Fcs_phonon::examine_translational_invariance(const int n, const unsigned int nat,
-                                                  const unsigned int natmin, double *ret,
+void Fcs_phonon::examine_translational_invariance(const int n,
+                                                  const unsigned int nat,
+                                                  const unsigned int natmin,
+                                                  double *ret,
                                                   std::vector<FcsClassExtent> &fc2,
                                                   std::vector<FcsArrayWithCell> *fcs)
 {
@@ -421,8 +446,8 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                     sum2[j][k] = 0.0;
                 }
             }
-            for (auto it = fc2.cbegin(); it != fc2.cend(); ++it) {
-                sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+            for (const auto &it : fc2) {
+                sum2[3 * it.atm1 + it.xyz1][it.xyz2] += it.fcs_val;
             }
 
             if (force_asr) {
@@ -455,8 +480,8 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                     }
                 }
 
-                for (auto it = fc2.cbegin(); it != fc2.cend(); ++it) {
-                    sum2[3 * (*it).atm1 + (*it).xyz1][(*it).xyz2] += (*it).fcs_val;
+                for (const auto &it : fc2) {
+                    sum2[3 * it.atm1 + it.xyz1][it.xyz2] += it.fcs_val;
                 }
             }
 
@@ -511,15 +536,15 @@ void Fcs_phonon::examine_translational_invariance(const int n, const unsigned in
                 }
             }
 
-            for (auto it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
-                j = (*it).pairs[0].index;
-                k = 3 * system->map_p2s_anharm[(*it).pairs[1].index / 3][(*it).pairs[1].tran]
-                    + (*it).pairs[1].index % 3;
-                l = 3 * system->map_p2s_anharm[(*it).pairs[2].index / 3][(*it).pairs[2].tran]
-                    + (*it).pairs[2].index % 3;
-                m = (*it).pairs[3].index % 3;
+            for (const auto &it : fcs[i]) {
+                j = it.pairs[0].index;
+                k = 3 * system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]
+                    + it.pairs[1].index % 3;
+                l = 3 * system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]
+                    + it.pairs[2].index % 3;
+                m = it.pairs[3].index % 3;
 
-                sum4[j][k][l][m] += (*it).fcs_val;
+                sum4[j][k][l][m] += it.fcs_val;
             }
 
             for (j = 0; j < 3 * natmin; ++j) {
@@ -592,8 +617,8 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N)
 
                     ivec_array.push_back(ivec_tmp);
                 }
-                force_constant_with_cell[i].push_back(FcsArrayWithCell(fcs_tmp[j],
-                                                                       ivec_array));
+                force_constant_with_cell[i].emplace_back(fcs_tmp[j],
+                                                         ivec_array);
             }
         }
 
