@@ -370,7 +370,6 @@ void Dynamical::eval_k_ewald(double *xk_in,
     //
     unsigned int i, j;
     int icrd, jcrd;
-    double time[3];
     std::complex<double> **dymat_k, **mat_longrange;
 
     memory->allocate(dymat_k, neval, neval);

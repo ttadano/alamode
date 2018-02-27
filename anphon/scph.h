@@ -25,17 +25,13 @@ namespace PHON_NS
 
         DistList();
 
-        DistList(const unsigned int cell_s_, const double dist_)
+        DistList(const unsigned int cell_s_, const double dist_) : cell_s(cell_s_), dist(dist_) {};
+
+        bool operator<(const DistList &obj) const
         {
-            cell_s = cell_s_;
-            dist = dist_;
+            return dist < obj.dist;
         }
     };
-
-    inline bool operator<(const DistList a, const DistList b)
-    {
-        return a.dist < b.dist;
-    }
 
     struct ShiftCell
     {
@@ -102,15 +98,12 @@ namespace PHON_NS
 
         double **eval_harmonic;
         std::complex<double> ***evec_harmonic;
-        std::complex<double> ****delta_dymat_scph;
 
         std::complex<double> im;
-        std::complex<double> ***V4_inner;
         int ngroup, ngroup2;
         std::vector<double> *fcs_group;
         std::vector<double> *fcs_group2;
         unsigned int *knum_minus_scph;
-        double ***eval_anharmonic;
         double **omega2_harmonic;
         std::complex<double> ****mat_transform_sym;
         std::vector<int> *small_group_at_k;
@@ -123,6 +116,9 @@ namespace PHON_NS
         unsigned int tune_type;
         double dnk[3];
         MinimumDistList ***mindist_list_scph;
+
+        void set_default_variables();
+        void deallocate_variables();
 
         void setup_kmesh();
         void setup_eigvecs();
@@ -140,45 +136,45 @@ namespace PHON_NS
 
         void exec_scph_main(std::complex<double> ****);
         void compute_V4_array_all(std::complex<double> ***,
-                                  std::complex<double> ***, const bool, const bool);
+                                  std::complex<double> ***, bool, bool);
 
         void compute_V4_array_all2(std::complex<double> ***,
-                                   std::complex<double> ***, const bool);
+                                   std::complex<double> ***, bool);
 
         void compute_V3_array_all(std::complex<double> ***,
-                                  std::complex<double> ***, const bool);
+                                  std::complex<double> ***, bool);
 
         void calc_new_dymat_with_evec(std::complex<double> ***,
                                       double **, std::complex<double> ***);
 
         void compute_anharmonic_frequency(std::complex<double> ***, double **,
-                                          std::complex<double> ***, const double,
+                                          std::complex<double> ***, double,
                                           std::vector<int> *, bool &, std::complex<double> ***,
-                                          const bool);
+                                          bool);
 
         void exec_interpolation(std::complex<double> ***,
                                 double **, std::complex<double> ***);
         void exec_interpolation2(std::complex<double> ***,
                                  double **, std::complex<double> ***);
 
-        void r2q(double *, const unsigned int, const unsigned int,
-                 const unsigned int, const unsigned int, const unsigned int,
+        void r2q(const double *,  unsigned int,
+                 unsigned int, unsigned int, unsigned int,
                  std::complex<double> ***, std::complex<double> **);
 
         void diagonalize_interpolated_matrix(std::complex<double> **, double *,
-                                             std::complex<double> **, const bool);
+                                             std::complex<double> **, bool);
 
-        void find_degeneracy(std::vector<int> *, const unsigned int,
-                             std::vector<std::vector<KpointList>>, double **);
+        void find_degeneracy(std::vector<int> *, unsigned int,
+                             const std::vector<std::vector<KpointList>> &, double **);
 
         double distance(double *, double *);
-        void symmetrize_dynamical_matrix(const unsigned int, Eigen::MatrixXcd &);
+        void symmetrize_dynamical_matrix(unsigned int, Eigen::MatrixXcd &);
         void replicate_dymat_for_all_kpoints(std::complex<double> ***);
         void duplicate_xk_boundary(double *, std::vector<std::vector<double>> &);
 
-        void write_anharmonic_correction_fc2(std::complex<double> ****, const unsigned int);
+        void write_anharmonic_correction_fc2(std::complex<double> ****, unsigned int);
         void mpi_bcast_complex(std::complex<double> ****,
-                               const int, const int, const int);
+                               int, int, int);
     };
 
     extern "C" {

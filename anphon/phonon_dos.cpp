@@ -30,28 +30,54 @@ using namespace PHON_NS;
 
 Dos::Dos(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 }
 
 Dos::~Dos()
 {
-    if (flag_dos) {
-        memory->deallocate(energy_dos);
-        memory->deallocate(dos_phonon);
-        if (projected_dos) {
-            memory->deallocate(pdos_phonon);
-        }
-        if (two_phonon_dos) {
-            memory->deallocate(dos2_phonon);
-        }
-        if (scattering_phase_space == 1) {
-            memory->deallocate(sps3_mode);
-        } else if (scattering_phase_space == 2) {
-            memory->deallocate(sps3_with_bose);
-        }
+    deallocate_variables();
+}
 
+void Dos::set_default_variables()
+{
+    flag_dos = false;
+    projected_dos = false;
+    two_phonon_dos = false;
+    scattering_phase_space = 0;
+    energy_dos = nullptr;
+    dos_phonon = nullptr;
+    pdos_phonon = nullptr;
+    dos2_phonon = nullptr;
+    sps3_mode = nullptr;
+    sps3_with_bose = nullptr;
+    kmap_irreducible = nullptr;
+}
+
+void Dos::deallocate_variables()
+{
+    if (energy_dos) {
+        memory->deallocate(energy_dos);
+    }
+    if (dos_phonon) {
+        memory->deallocate(dos_phonon);
+    }
+    if (pdos_phonon) {
+        memory->deallocate(pdos_phonon);
+    }
+    if (dos2_phonon) {
+        memory->deallocate(dos2_phonon);
+    }
+    if (sps3_mode) {
+        memory->deallocate(sps3_mode);
+    }
+    if (sps3_with_bose) {
+        memory->deallocate(sps3_mode);
+    }
+    if (kmap_irreducible) {
         memory->deallocate(kmap_irreducible);
     }
 }
+
 
 void Dos::setup()
 {
@@ -131,8 +157,6 @@ void Dos::calc_dos_all()
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;
-
-    bool print_w = true;
 
     memory->allocate(eval, neval, nk);
 
@@ -225,7 +249,6 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
 
     int i;
     unsigned int j, k;
-    unsigned int imode, iat, icrd;
     int *kmap_identity;
     double *weight;
     double **proj;
@@ -239,14 +262,14 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
-    for (iat = 0; iat < natmin; ++iat) {
+    for (unsigned int iat = 0; iat < natmin; ++iat) {
 
-        for (imode = 0; imode < neval; ++imode) {
+        for (unsigned int imode = 0; imode < neval; ++imode) {
             for (i = 0; i < nk; ++i) {
 
                 proj[imode][i] = 0.0;
 
-                for (icrd = 0; icrd < 3; ++icrd) {
+                for (unsigned int icrd = 0; icrd < 3; ++icrd) {
                     proj[imode][i] += std::norm(evec[i][imode][3 * iat + icrd]);
                 }
             }
@@ -292,7 +315,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
                               double *energy,
                               double ***ret,
                               const int smearing_method,
-                              std::vector<std::vector<KpointList>> kpinfo)
+                              const std::vector<std::vector<KpointList>> &kpinfo)
 {
     int i, j;
     int is, js, ik, jk;
@@ -409,12 +432,12 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
 
 void Dos::calc_total_scattering_phase_space(double **omega,
                                             const int smearing_method,
-                                            std::vector<std::vector<KpointList>> kpinfo,
+                                            const std::vector<std::vector<KpointList>> &kpinfo,
                                             double ***ret_mode,
                                             double &ret)
 {
     int i, j;
-    int is, ik;
+    int is;
     int knum;
 
     unsigned int nk = kpoint->nk;
@@ -427,7 +450,6 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     double multi;
     double omega0;
     double sps_tmp1, sps_tmp2;
-    double sps_sum1, sps_sum2;
 
     if (mympi->my_rank == 0) {
         std::cout << " SPS = 1 : Calculating three-phonon scattering phase space ... ";
@@ -438,10 +460,10 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
     ret = 0.0;
-    sps_sum1 = 0.0;
-    sps_sum2 = 0.0;
+    double sps_sum1 = 0.0;
+    double sps_sum2 = 0.0;
 
-    for (ik = 0; ik < kpinfo.size(); ++ik) {
+    for (int ik = 0; ik < kpinfo.size(); ++ik) {
 
         knum = kpinfo[ik][0].knum;
         multi = static_cast<double>(kpinfo[ik].size()) / static_cast<double>(nk);
@@ -529,9 +551,7 @@ void Dos::calc_total_scattering_phase_space(double **omega,
 
 void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
 {
-    int i;
     unsigned int j, k;
-    unsigned int iT;
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;
@@ -543,7 +563,7 @@ void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
 
     memory->allocate(eval, neval, nk);
 
-    for (iT = 0; iT < NT; ++iT) {
+    for (unsigned int iT = 0; iT < NT; ++iT) {
 
         std::cout << " T = " << std::setw(5) << Tmin + static_cast<double>(iT) * dT << std::endl;
 
@@ -560,7 +580,7 @@ void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
 
 void Dos::calc_scattering_phase_space_with_Bose(double **eval,
                                                 const int smearing_method,
-                                                std::vector<std::vector<KpointList>> kp_info,
+                                                const std::vector<std::vector<KpointList>> &kp_info,
                                                 double ****ret)
 {
     unsigned int i, j, k;
@@ -585,8 +605,6 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     double omega_max = emax;
     double omega_min = emin;
 
-    unsigned int nks_total, nks_each_thread;
-    unsigned int nrem;
     std::vector<int> ks_g, ks_l;
     int iks;
 
@@ -612,9 +630,9 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     memory->allocate(ret_mode, N, 2);
 
-    nks_total = nk_irred * ns;
-    nks_each_thread = nks_total / mympi->nprocs;
-    nrem = nks_total - nks_each_thread * mympi->nprocs;
+    unsigned int nks_total = nk_irred * ns;
+    unsigned int nks_each_thread = nks_total / mympi->nprocs;
+    unsigned int nrem = nks_total - nks_each_thread * mympi->nprocs;
 
     if (nrem > 0) {
         memory->allocate(recv_buf, (nks_each_thread + 1) * mympi->nprocs, 2 * N);
@@ -638,7 +656,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     ks_l.clear();
     unsigned int count = 0;
-    for (auto it = ks_g.cbegin(); it != ks_g.cend(); ++it) {
+    for (auto it = ks_g.begin(); it != ks_g.end(); ++it) {
         if (count % mympi->nprocs == mympi->my_rank) {
             ks_l.push_back(*it);
         }
@@ -726,7 +744,7 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
     unsigned int i, is, js, k1, k2;
     unsigned int iT;
     unsigned int ns2 = ns * ns;
-    double omega0, omega1, omega2;
+    double omega1, omega2;
     double temp;
     double ret1, ret2;
     double n1, n2, f1, f2;
@@ -742,8 +760,8 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
     memory->allocate(kmap_identity, nk);
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
+    double omega0 = writes->in_kayser(omega);
 
-    omega0 = writes->in_kayser(omega);
 #ifdef _OPENMP
 #pragma omp parallel private(i, is, js, k1, k2, omega1, omega2, energy_tmp, weight)
 #endif

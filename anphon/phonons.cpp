@@ -282,6 +282,4 @@ void PHON::execute_self_consistent_phonon()
 
     scph->setup_scph();
     scph->exec_scph();
-
-    scph->finish_scph();
 }

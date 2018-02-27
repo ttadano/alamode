@@ -24,20 +24,18 @@ namespace PHON_NS
         bool classical;
         void setup();
 
-        double Cv(const double, const double);
-        double fB(const double, const double);
-        double fC(const double, const double);
+        double Cv(double, double);
+        double fB(double, double);
+        double fC(double, double);
 
-        double Cv_tot(const double);
-        double internal_energy(const double);
-        double vibrational_entropy(const double);
-        double free_energy(const double);
-        double Cv_Debye(const double, const double);
-        double Cv_classical(const double, const double);
-        void Debye_T(const double, double &);
-        double disp2_avg(const double, const unsigned int, const unsigned int);
-
-    public:
-        double coth_T(const double, const double);
+        double Cv_tot(double);
+        double internal_energy(double);
+        double vibrational_entropy(double);
+        double free_energy(double);
+        double Cv_Debye(double, double);
+        double Cv_classical(double, double);
+        void Debye_T(double, double &);
+        double disp2_avg(double, unsigned int, unsigned int);
+        double coth_T(double, double);
     };
 }

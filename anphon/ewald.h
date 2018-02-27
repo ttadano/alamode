@@ -43,23 +43,15 @@ namespace PHON_NS
 
         DistInfo();
 
-        DistInfo(const int n, const double d)
-        {
-            cell = n;
-            dist = d;
-        }
+        DistInfo(const int n, const double d) : cell(n), dist(d) {};
 
-        DistInfo(const DistInfo &obj)
+        DistInfo(const DistInfo &obj) : cell(obj.cell), dist(obj.dist) {};
+
+        bool operator<(const DistInfo &obj) const
         {
-            cell = obj.cell;
-            dist = obj.dist;
+            return dist < obj.dist;
         }
     };
-
-    inline bool operator<(const DistInfo a, const DistInfo b)
-    {
-        return a.dist < b.dist;
-    }
 
 
     class Ewald : protected Pointers
@@ -81,7 +73,9 @@ namespace PHON_NS
         std::vector<FcsClassExtent> fc2_without_dipole;
 
         void init();
-        void add_longrange_matrix(double *, std::complex<double> **, int);
+        void add_longrange_matrix(double *,
+                                  std::complex<double> **,
+                                  int);
 
     private:
 
@@ -97,21 +91,25 @@ namespace PHON_NS
 
         std::vector<DistInfo> **distall_ewald;
 
+        void set_default_variables();
+        void deallocate_variables();
+
         void prepare_Ewald(const double [3][3]);
         void prepare_G();
         void compute_ewald_fcs();
         void compute_ewald_fcs2();
-        void get_pairs_of_minimum_distance(const int, const int [3], double **);
+        void get_pairs_of_minimum_distance(int, const int [3], double **);
 
         void calc_longrange_fcs(int, int, int, int, int, double *);
-        void calc_short_term_ewald_fcs(const int, const int, double **);
+        void calc_short_term_ewald_fcs(int, int, double **);
         void calc_long_term_ewald_fcs(int, int, double **);
 
-        void calc_short_term_dynamical_matrix(const int, const int,
+        void calc_short_term_dynamical_matrix(int, int,
                                               double *, std::complex<double> **);
-        void calc_long_term_dynamical_matrix(const int, const int,
-                                             double *, std::complex<double> **, const int);
+        void calc_long_term_dynamical_matrix(int, int,
+                                             double *, std::complex<double> **,
+                                             int);
 
-        void calc_anisotropic_hmat(double, double *, double **);
+        void calc_anisotropic_hmat(double, const double *, double **);
     };
 }
