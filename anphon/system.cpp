@@ -129,8 +129,8 @@ void System::setup()
 
         if (!mass_kd) {
             memory->allocate(mass_kd, nkd);
+            set_mass_elem_from_database(nkd, symbol_kd, mass_kd);
         }
-        set_mass_elem_from_database(nkd, symbol_kd, mass_kd);
     }
     load_system_info_from_XML();
 
