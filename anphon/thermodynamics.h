@@ -22,7 +22,6 @@ namespace PHON_NS
 
         double T_to_Ryd;
         bool classical;
-        bool sum_over_irreducible_points;
         void setup();
 
         double Cv(double, double);
