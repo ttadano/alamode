@@ -41,6 +41,7 @@ Dos::~Dos()
 void Dos::set_default_variables()
 {
     flag_dos = false;
+    compute_dos = true;
     projected_dos = false;
     two_phonon_dos = false;
     scattering_phase_space = 0;
@@ -88,6 +89,7 @@ void Dos::setup()
     MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&compute_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&projected_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&two_phonon_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&scattering_phase_space, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -99,15 +101,18 @@ void Dos::setup()
     }
 
     if (flag_dos && delta_e < eps12)
-        error->exit("dos_setup()", "Too small delta_e");
+        error->exit("Dos::setup()", "Too small delta_e");
 
     if (flag_dos) {
         n_energy = static_cast<int>((emax - emin) / delta_e);
         memory->allocate(energy_dos, n_energy);
-        memory->allocate(dos_phonon, n_energy);
 
         for (i = 0; i < n_energy; ++i) {
             energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        }
+
+        if (compute_dos) {
+            memory->allocate(dos_phonon, n_energy);
         }
 
         if (projected_dos) {
@@ -165,8 +170,11 @@ void Dos::calc_dos_all()
             eval[k][j] = writes->in_kayser(dynamical->eval_phonon[j][k]);
         }
     }
-    calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
-             dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
+
+    if (compute_dos) {
+        calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
+            dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
+    }
 
     if (projected_dos) {
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,

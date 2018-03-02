@@ -459,7 +459,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     std::vector<std::string> input_list{
         "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
         "ATOMPROJ", "REALPART", "ISOTOPE", "ISOFACT",
-        "FSTATE_W", "FSTATE_K", "PRIMTMSD", "PDOS", "TDOS",
+        "FSTATE_W", "FSTATE_K", "PRIMTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
         "KAPPA_SPEC", "SELF_W"
@@ -481,6 +481,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool print_evec = false;
     bool print_msd = false;
 
+    bool compute_dos = true;
     bool projected_dos = false;
     bool two_phonon_dos = false;
     int scattering_phase_space = 0;
@@ -515,6 +516,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
         assign_val(print_msd, "PRINTMSD", analysis_var_dict);
 
+        assign_val(compute_dos, "DOS", analysis_var_dict);
         assign_val(projected_dos, "PDOS", analysis_var_dict);
         assign_val(two_phonon_dos, "TDOS", analysis_var_dict);
         assign_val(scattering_phase_space, "SPS", analysis_var_dict);
@@ -622,6 +624,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     writes->print_msd = print_msd;
 
+    dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;

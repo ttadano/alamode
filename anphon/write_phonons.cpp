@@ -506,7 +506,10 @@ void Writes::write_phonon_info()
     }
 
     if (dos->flag_dos) {
-        write_phonon_dos();
+
+        if (dos->compute_dos || dos->projected_dos) {
+            write_phonon_dos();
+        }
 
         if (dos->two_phonon_dos) {
             write_two_phonon_dos();
@@ -769,7 +772,11 @@ void Writes::write_phonon_dos()
     ofs_dos << std::endl;
     memory->deallocate(nat_each_kd);
 
-    ofs_dos << "# Energy [cm^-1], TOTAL-DOS";
+    if (dos->compute_dos) {
+        ofs_dos << "# Energy [cm^-1], TOTAL-DOS";
+    } else {
+        ofs_dos << "# Energy [cm^-1]";
+    }
     if (dos->projected_dos) {
         ofs_dos << ", Atom Projected-DOS";
     }
@@ -777,8 +784,10 @@ void Writes::write_phonon_dos()
     ofs_dos.setf(std::ios::scientific);
 
     for (i = 0; i < dos->n_energy; ++i) {
-        ofs_dos << std::setw(15) << dos->energy_dos[i]
-            << std::setw(15) << dos->dos_phonon[i];
+        ofs_dos << std::setw(15) << dos->energy_dos[i];
+        if (dos->compute_dos) {
+            ofs_dos << std::setw(15) << dos->dos_phonon[i];
+        }
         if (dos->projected_dos) {
             for (iat = 0; iat < system->natmin; ++iat) {
                 ofs_dos << std::setw(15) << dos->pdos_phonon[iat][i];
@@ -791,8 +800,10 @@ void Writes::write_phonon_dos()
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
 
-    if (dos->projected_dos) {
+    if (dos->projected_dos & dos->compute_dos) {
         std::cout << " : Phonon DOS and atom projected DOS" << std::endl;
+    } else if (dos->projected_dos) {
+        std::cout << " : Atom projected phonon DOS" << std::endl;
     } else {
         std::cout << " : Phonon DOS" << std::endl;
     }
@@ -1096,33 +1107,21 @@ double Writes::in_kayser(const double x)
 
 void Writes::write_thermodynamics()
 {
-    unsigned int i, NT;
+    unsigned int i;
     double Tmin = system->Tmin;
     double Tmax = system->Tmax;
     double dT = system->dT;
 
     double T;
-    std::string file_thermo;
 
-    NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_thermo;
-    file_thermo = input->job_title + ".thermo";
+    std::string file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if (!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
     ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::
         endl;
-
-
-    //     for (i = 0; i <= NT; ++i) {
-    //    
-    //         T = Tmin + dT * static_cast<double>(i);
-    //         std::cout << " T = " << std::setw(15) << T;
-    //         TD = 1000.0;
-    //         phonon_thermodynamics->Debye_T(T, TD);
-    //         std::cout << "TD = " << TD << std::endl;
-    //     }
-
 
     for (i = 0; i < NT; ++i) {
         T = Tmin + dT * static_cast<double>(i);

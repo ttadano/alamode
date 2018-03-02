@@ -27,6 +27,7 @@ namespace PHON_NS
         void calc_dos_all();
 
         bool flag_dos;
+        bool compute_dos;
         bool projected_dos, two_phonon_dos;
         int scattering_phase_space;
 
