@@ -12,7 +12,7 @@
 #include "scph.h"
 #include "dynamical.h"
 #include "kpoint.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "memory.h"
 #include "thermodynamics.h"
 #include "write_phonons.h"

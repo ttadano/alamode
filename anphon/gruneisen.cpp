@@ -20,7 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "parsephon.h"
 #include "pointers.h"
 #include "system.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "version.h"
 #include <iostream>
 #include <iomanip>

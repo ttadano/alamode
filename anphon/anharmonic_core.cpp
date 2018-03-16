@@ -1,5 +1,5 @@
 /*
-relaxation.cpp
+anharmonic_core.cpp
 
 Copyright (c) 2014, 2015, 2016 Terumasa Tadano
 
@@ -9,7 +9,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
 #include "error.h"
@@ -37,17 +37,17 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Relaxation::Relaxation(PHON *phon) : Pointers(phon)
+AnharmonicCore::AnharmonicCore(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
 
-Relaxation::~Relaxation()
+AnharmonicCore::~AnharmonicCore()
 {
     deallocate_variables();
 };
 
-void Relaxation::set_default_variables()
+void AnharmonicCore::set_default_variables()
 {
     im = std::complex<double>(0.0, 1.0);
     quartic_mode = 0;
@@ -73,7 +73,7 @@ void Relaxation::set_default_variables()
     exp_phase3 = nullptr;
 }
 
-void Relaxation::deallocate_variables()
+void AnharmonicCore::deallocate_variables()
 {
     if (is_imaginary) {
         memory->deallocate(is_imaginary);
@@ -111,7 +111,7 @@ void Relaxation::deallocate_variables()
 }
 
 
-void Relaxation::setup_relaxation()
+void AnharmonicCore::setup_relaxation()
 {
     nk = kpoint->nk;
     ns = dynamical->neval;
@@ -186,7 +186,7 @@ void Relaxation::setup_relaxation()
 }
 
 
-void Relaxation::detect_imaginary_branches(double **eval)
+void AnharmonicCore::detect_imaginary_branches(double **eval)
 {
     int ik, is;
     auto nk = kpoint->nk;
@@ -249,9 +249,9 @@ void Relaxation::detect_imaginary_branches(double **eval)
     }
 }
 
-void Relaxation::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
-                                         const unsigned int N,
-                                         double ***vec_out)
+void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
+                                             const unsigned int N,
+                                             double ***vec_out)
 {
     int i, j, k;
     int ix, iy, iz;
@@ -335,10 +335,10 @@ void Relaxation::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fc
     memory->deallocate(xshift_s);
 }
 
-void Relaxation::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
-                                                  const unsigned int N,
-                                                  int &number_of_groups,
-                                                  std::vector<double> *&fcs_group_out)
+void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
+                                                      const unsigned int N,
+                                                      int &number_of_groups,
+                                                      std::vector<double> *&fcs_group_out)
 {
     // Find the number of groups which has different evecs.
 
@@ -396,7 +396,7 @@ void Relaxation::prepare_group_of_force_constants(const std::vector<FcsArrayWith
     }
 }
 
-void Relaxation::setup_mode_analysis()
+void AnharmonicCore::setup_mode_analysis()
 {
     // Judge if ks_analyze_mode should be turned on or not.
 
@@ -536,7 +536,7 @@ void Relaxation::setup_mode_analysis()
     }
 }
 
-std::complex<double> Relaxation::V3(const unsigned int ks[3])
+std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
 {
     unsigned int i, j;
     unsigned int kn[3], sn[3];
@@ -667,7 +667,7 @@ std::complex<double> Relaxation::V3(const unsigned int ks[3])
 }
 
 
-std::complex<double> Relaxation::V4(const unsigned int ks[4])
+std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
 {
     int ii;
     unsigned int i, j;
@@ -797,13 +797,13 @@ std::complex<double> Relaxation::V4(const unsigned int ks[4])
 }
 
 
-std::complex<double> Relaxation::V3_mode(int mode,
-                                         double *xk2,
-                                         double *xk3,
-                                         int is,
-                                         int js,
-                                         double **eval,
-                                         std::complex<double> ***evec)
+std::complex<double> AnharmonicCore::V3_mode(int mode,
+                                             double *xk2,
+                                             double *xk3,
+                                             int is,
+                                             int js,
+                                             double **eval,
+                                             std::complex<double> ***evec)
 {
     int i, j;
     int nsize_group;
@@ -850,12 +850,12 @@ std::complex<double> Relaxation::V3_mode(int mode,
 }
 
 
-void Relaxation::calc_damping_smearing(const unsigned int N,
-                                       double *T,
-                                       const double omega,
-                                       const unsigned int ik_in,
-                                       const unsigned int snum,
-                                       double *ret)
+void AnharmonicCore::calc_damping_smearing(const unsigned int N,
+                                           double *T,
+                                           const double omega,
+                                           const unsigned int ik_in,
+                                           const unsigned int snum,
+                                           double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
     // for the given frequency omega.
@@ -989,12 +989,12 @@ void Relaxation::calc_damping_smearing(const unsigned int N,
     for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
 }
 
-void Relaxation::calc_damping_tetrahedron(const unsigned int N,
-                                          double *T,
-                                          const double omega,
-                                          const unsigned int ik_in,
-                                          const unsigned int snum,
-                                          double *ret)
+void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
+                                              double *T,
+                                              const double omega,
+                                              const unsigned int ik_in,
+                                              const unsigned int snum,
+                                              double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
     // for the given frequency omega.
@@ -1161,14 +1161,14 @@ void Relaxation::calc_damping_tetrahedron(const unsigned int N,
 }
 
 
-void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
-                                                     double *T,
-                                                     const double omega0,
-                                                     const unsigned int M,
-                                                     const double *omega,
-                                                     const unsigned int ik_in,
-                                                     const unsigned int snum,
-                                                     double ***ret)
+void AnharmonicCore::calc_frequency_resolved_final_state(const unsigned int N,
+                                                         double *T,
+                                                         const double omega0,
+                                                         const unsigned int M,
+                                                         const double *omega,
+                                                         const unsigned int ik_in,
+                                                         const unsigned int snum,
+                                                         double ***ret)
 {
     int i, j;
 
@@ -1291,14 +1291,14 @@ void Relaxation::calc_frequency_resolved_final_state(const unsigned int N,
 }
 
 
-void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned int N,
-                                                                 double *T,
-                                                                 const double omega0,
-                                                                 const unsigned int M,
-                                                                 const double *omega,
-                                                                 const unsigned int ik_in,
-                                                                 const unsigned int snum,
-                                                                 double ***ret)
+void AnharmonicCore::calc_frequency_resolved_final_state_tetrahedron(const unsigned int N,
+                                                                     double *T,
+                                                                     const double omega0,
+                                                                     const unsigned int M,
+                                                                     const double *omega,
+                                                                     const unsigned int ik_in,
+                                                                     const unsigned int snum,
+                                                                     double ***ret)
 {
     int i, j;
     int ik, ib;
@@ -1484,7 +1484,7 @@ void Relaxation::calc_frequency_resolved_final_state_tetrahedron(const unsigned 
     triplet.clear();
 }
 
-void Relaxation::perform_mode_analysis()
+void AnharmonicCore::perform_mode_analysis()
 {
     unsigned int i, j;
     unsigned int NT;
@@ -1921,8 +1921,8 @@ void Relaxation::perform_mode_analysis()
     memory->deallocate(T_arr);
 }
 
-void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
-                                                      double *T_arr)
+void AnharmonicCore::print_frequency_resolved_final_state(const unsigned int NT,
+                                                          double *T_arr)
 {
     int i, j;
     unsigned int knum, snum;
@@ -2034,9 +2034,9 @@ void Relaxation::print_frequency_resolved_final_state(const unsigned int NT,
     memory->deallocate(gamma_final);
 }
 
-void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
-                                                     double *T_arr,
-                                                     double epsilon)
+void AnharmonicCore::print_momentum_resolved_final_state(const unsigned int NT,
+                                                         double *T_arr,
+                                                         double epsilon)
 {
     int i, j, k, l, m;
     int iT;
@@ -2352,9 +2352,9 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
                         theta = std::acos(dprod / (norm_ref * std::sqrt(norm1)));
 
                         kplist_for_target_mode[is][js][j].emplace_back(*it2,
-                                                     std::cos(theta + theta_ref) * std::sqrt(norm1),
-                                                     std::sin(theta + theta_ref) * std::sqrt(norm1),
-                                                     i, 0);
+                                                                       std::cos(theta + theta_ref) * std::sqrt(norm1),
+                                                                       std::sin(theta + theta_ref) * std::sqrt(norm1),
+                                                                       i, 0);
                     }
 
                     for (auto it2 = kplist_conserved[is][js][1].begin();
@@ -2634,7 +2634,7 @@ void Relaxation::print_momentum_resolved_final_state(const unsigned int NT,
 }
 
 
-bool Relaxation::is_proper(const int isym)
+bool AnharmonicCore::is_proper(const int isym)
 {
     double S[3][3];
     bool ret;
@@ -2660,7 +2660,7 @@ bool Relaxation::is_proper(const int isym)
     return ret;
 }
 
-bool Relaxation::is_symmorphic(const int isym)
+bool AnharmonicCore::is_symmorphic(const int isym)
 {
     double tran[3];
 
@@ -2670,10 +2670,10 @@ bool Relaxation::is_symmorphic(const int isym)
     return ret;
 }
 
-void Relaxation::get_unique_triplet_k(const int ik,
-                                      const bool use_triplet_symmetry,
-                                      const bool use_permutation_symmetry,
-                                      std::vector<KsListGroup> &triplet)
+void AnharmonicCore::get_unique_triplet_k(const int ik,
+                                          const bool use_triplet_symmetry,
+                                          const bool use_permutation_symmetry,
+                                          std::vector<KsListGroup> &triplet)
 {
     int i, ik1, ik2, isym;
     int num_group_k, tmp;
@@ -2736,9 +2736,9 @@ void Relaxation::get_unique_triplet_k(const int ik,
 }
 
 
-void Relaxation::calc_V3norm2(const unsigned int ik_in,
-                              const unsigned int snum,
-                              double **ret)
+void AnharmonicCore::calc_V3norm2(const unsigned int ik_in,
+                                  const unsigned int snum,
+                                  double **ret)
 {
     int ib;
     unsigned int ik;
@@ -2780,7 +2780,7 @@ void Relaxation::calc_V3norm2(const unsigned int ik_in,
     }
 }
 
-void Relaxation::setup_cubic()
+void AnharmonicCore::setup_cubic()
 {
     int i, j, k;
     double *invsqrt_mass_p;
@@ -2820,7 +2820,7 @@ void Relaxation::setup_cubic()
     memory->deallocate(invsqrt_mass_p);
 }
 
-void Relaxation::setup_quartic()
+void AnharmonicCore::setup_quartic()
 {
     int i, j, k;
     double *invsqrt_mass_p;
@@ -2858,10 +2858,10 @@ void Relaxation::setup_quartic()
     memory->deallocate(invsqrt_mass_p);
 }
 
-void Relaxation::store_exponential_for_acceleration(const int nk_in[3],
-                                                    int &nkrep_out,
-                                                    std::complex<double> *exp_out,
-                                                    std::complex<double> ***exp3_out)
+void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
+                                                        int &nkrep_out,
+                                                        std::complex<double> *exp_out,
+                                                        std::complex<double> ***exp3_out)
 {
     // For accelerating function V3 and V4 by avoiding continual call of std::exp.
 
@@ -2951,14 +2951,14 @@ void Relaxation::store_exponential_for_acceleration(const int nk_in[3],
 }
 
 
-void Relaxation::calc_self3omega_tetrahedron(const double Temp,
-                                             double **eval,
-                                             std::complex<double> ***evec,
-                                             const unsigned int ik_in,
-                                             const unsigned int snum,
-                                             const unsigned int nomega,
-                                             double *omega,
-                                             double *ret)
+void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
+                                                 double **eval,
+                                                 std::complex<double> ***evec,
+                                                 const unsigned int ik_in,
+                                                 const unsigned int snum,
+                                                 const unsigned int nomega,
+                                                 double *omega,
+                                                 double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
     // for the given frequency range of omega, phonon frequency (eval) and phonon eigenvectors (evec).

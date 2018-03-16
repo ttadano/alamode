@@ -1,5 +1,5 @@
 /*
-relaxation.h
+anharmonic_core.h
 
 Copyright (c) 2014 Terumasa Tadano
 
@@ -93,11 +93,11 @@ namespace PHON_NS
     };
 
 
-    class Relaxation : protected Pointers
+    class AnharmonicCore : protected Pointers
     {
     public:
-        Relaxation(class PHON *);
-        ~Relaxation();
+        AnharmonicCore(class PHON *);
+        ~AnharmonicCore();
 
         void setup_relaxation();
         void perform_mode_analysis();

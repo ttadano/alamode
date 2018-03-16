@@ -11,7 +11,7 @@
 #include "mpi_common.h"
 #include "selfenergy.h"
 #include "constants.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "dynamical.h"
 #include "kpoint.h"
 #include "memory.h"

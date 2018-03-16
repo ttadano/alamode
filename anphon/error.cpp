@@ -16,13 +16,9 @@
 
 using namespace PHON_NS;
 
-Error::Error(PHON *phon): Pointers(phon)
-{
-}
+Error::Error(PHON *phon): Pointers(phon) {}
 
-Error::~Error()
-{
-}
+Error::~Error() {}
 
 void Error::warn(const char *file, const char *message)
 {

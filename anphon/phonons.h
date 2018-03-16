@@ -38,7 +38,7 @@ namespace PHON_NS
         class Dynamical *dynamical;
         class Phonon_velocity *phonon_velocity;
         class Thermodynamics *thermodynamics;
-        class Relaxation *relaxation;
+        class AnharmonicCore *anharmonic_core;
         class Selfenergy *selfenergy;
         class Conductivity *conductivity;
         class Writes *writes;

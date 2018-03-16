@@ -24,7 +24,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "phonon_dos.h"
 #include "thermodynamics.h"
 #include "phonon_velocity.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "symmetry_core.h"
 #include "system.h"
 #include "write_phonons.h"
@@ -181,12 +181,12 @@ void Writes::write_input_vars()
 
         std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
 
-        //        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
-        //        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
-        // std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
-        // std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
-        // std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
-        //  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+        //        std::cout << "  KS_INPUT = " << anharmonic_core->ks_input << std::endl;
+        //        std::cout << "  QUARTIC = " << anharmonic_core->quartic_mode << std::endl;
+        // std::cout << "  REALPART = " << anharmonic_core->calc_realpart << std::endl;
+        // std::cout << "  ATOMPROJ = " << anharmonic_core->atom_project_mode << std::endl;
+        // std::cout << "  FSTATE_W = " << anharmonic_core->calc_fstate_omega << std::endl;
+        //  std::cout << "  FSTATE_K = " << anharmonic_core->calc_fstate_k << std::endl;
 
     } else if (phon->mode == "SCPH") {
         // Do nothing

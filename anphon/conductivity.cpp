@@ -22,7 +22,7 @@
 #include "phonon_dos.h"
 #include "thermodynamics.h"
 #include "phonon_velocity.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "system.h"
 #include "write_phonons.h"
 #include <iostream>

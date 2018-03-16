@@ -16,7 +16,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "gruneisen.h"
 #include "memory.h"
 #include "phonons.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "system.h"
 #include "xml_parser.h"
 #include <string>

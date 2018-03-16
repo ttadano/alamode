@@ -95,7 +95,7 @@
     <ClCompile Include="phonons.cpp" />
     <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="phonon_velocity.cpp" />
-    <ClCompile Include="relaxation.cpp" />
+    <ClCompile Include="anharmonic_core.cpp" />
     <ClCompile Include="scph.cpp" />
     <ClCompile Include="selfenergy.cpp" />
     <ClCompile Include="symmetry_core.cpp" />
@@ -121,7 +121,7 @@
     <ClInclude Include="phonon_dos.h" />
     <ClInclude Include="phonon_velocity.h" />
     <ClInclude Include="pointers.h" />
-    <ClInclude Include="relaxation.h" />
+    <ClInclude Include="anharmonic_core.h" />
     <ClInclude Include="scph.h" />
     <ClInclude Include="selfenergy.h" />
     <ClInclude Include="symmetry_core.h" />

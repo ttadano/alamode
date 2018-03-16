@@ -30,7 +30,7 @@ namespace PHON_NS
             dynamical(ptr->dynamical),
             phonon_velocity(ptr->phonon_velocity),
             thermodynamics(ptr->thermodynamics),
-            relaxation(ptr->relaxation),
+            relaxation(ptr->anharmonic_core),
             selfenergy(ptr->selfenergy),
             conductivity(ptr->conductivity),
             writes(ptr->writes),
@@ -61,7 +61,7 @@ namespace PHON_NS
         Dynamical *&dynamical;
         Phonon_velocity *&phonon_velocity;
         Thermodynamics *&thermodynamics;
-        Relaxation *&relaxation;
+        AnharmonicCore *&relaxation;
         Selfenergy *&selfenergy;
         Conductivity *&conductivity;
         Writes *&writes;

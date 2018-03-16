@@ -22,7 +22,7 @@
 #include "memory.h"
 #include "phonon_dos.h"
 #include "phonon_velocity.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "scph.h"
 #include "symmetry_core.h"
 #include "system.h"
