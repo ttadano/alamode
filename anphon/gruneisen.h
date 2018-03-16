@@ -51,7 +51,7 @@ namespace PHON_NS
             array_b.push_back(obj.pairs[len - 1].index);
             array_b.push_back(obj.pairs[len - 1].tran);
             return std::lexicographical_compare(array_a.begin(), array_a.end(),
-                array_b.begin(), array_b.end());
+                                                array_b.begin(), array_b.end());
         }
     };
 

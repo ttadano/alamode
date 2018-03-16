@@ -157,7 +157,7 @@ namespace PHON_NS
         void exec_interpolation2(std::complex<double> ***,
                                  double **, std::complex<double> ***);
 
-        void r2q(const double *,  unsigned int,
+        void r2q(const double *, unsigned int,
                  unsigned int, unsigned int, unsigned int,
                  std::complex<double> ***, std::complex<double> **);
 

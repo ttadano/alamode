@@ -28,6 +28,7 @@
 #include "phonon_dos.h"
 #include "integration.h"
 #include "anharmonic_core.h"
+#include "mode_analysis.h"
 #include "conductivity.h"
 #include "isotope.h"
 #include "selfenergy.h"
@@ -116,6 +117,7 @@ void PHON::create_pointers()
     phonon_velocity = new Phonon_velocity(this);
     thermodynamics = new Thermodynamics(this);
     anharmonic_core = new AnharmonicCore(this);
+    mode_analysis = new ModeAnalysis(this);
     selfenergy = new Selfenergy(this);
     conductivity = new Conductivity(this);
     writes = new Writes(this);
@@ -140,6 +142,7 @@ void PHON::destroy_pointers()
     delete phonon_velocity;
     delete thermodynamics;
     delete anharmonic_core;
+    delete mode_analysis;
     delete selfenergy;
     delete conductivity;
     delete writes;
@@ -243,12 +246,12 @@ void PHON::execute_RTA()
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
-    //   anharmonic_core->setup_mode_analysis();
-    anharmonic_core->setup_relaxation();
+    mode_analysis->setup_mode_analysis();
+    anharmonic_core->setup();
     selfenergy->setup_selfenergy();
 
-    if (anharmonic_core->ks_analyze_mode) {
-        anharmonic_core->perform_mode_analysis();
+    if (mode_analysis->ks_analyze_mode) {
+        mode_analysis->perform_mode_analysis();
     } else {
         writes->setup_result_io();
         conductivity->setup_kappa();

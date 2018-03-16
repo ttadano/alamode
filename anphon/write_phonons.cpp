@@ -106,7 +106,7 @@ void Writes::write_input_vars()
 
     if (phon->mode == "RTA") {
         std::cout << "  RESTART = " << phon->restart_flag << std::endl;
-        std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
+        std::cout << "  TRISYM = " << anharmonic_core->use_triplet_symmetry << std::endl;
         std::cout << std::endl;
     } else if (phon->mode == "SCPH") {
         std::cout << " Scph:" << std::endl;
@@ -162,7 +162,7 @@ void Writes::write_input_vars()
         std::cout << "  NEWFCS = " << gruneisen->print_newfcs;
         if (gruneisen->print_newfcs) {
             std::cout << "; DELTA_A = " << gruneisen->delta_a << std::endl;
-            std::cout << "  QUARTIC = " << relaxation->quartic_mode;
+            std::cout << "  QUARTIC = " << anharmonic_core->quartic_mode;
         }
         std::cout << std::endl;
 

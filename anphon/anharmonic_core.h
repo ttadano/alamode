@@ -13,7 +13,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "pointers.h"
 #include <complex>
 #include <vector>
-#include <string>
 #include "fcs_phonon.h"
 
 namespace PHON_NS
@@ -99,10 +98,7 @@ namespace PHON_NS
         AnharmonicCore(class PHON *);
         ~AnharmonicCore();
 
-        void setup_relaxation();
-        void perform_mode_analysis();
-        void setup_mode_analysis();
-
+        void setup();
         void calc_damping_smearing(const unsigned int, double *, const double,
                                    const unsigned int, const unsigned int,
                                    double *);
@@ -112,21 +108,9 @@ namespace PHON_NS
                                       double *);
 
         int quartic_mode;
-        bool ks_analyze_mode;
-        bool atom_project_mode;
-        bool calc_realpart;
-        bool calc_fstate_omega;
-        bool calc_fstate_k;
-        bool print_V3;
         bool use_tuned_ver;
-        bool spectral_func;
-
         bool use_triplet_symmetry;
         bool **is_imaginary;
-
-        std::string ks_input;
-        std::vector<unsigned int> kslist;
-
 
         std::complex<double> V3(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
@@ -135,10 +119,6 @@ namespace PHON_NS
         std::complex<double> V3_mode(int, double *, double *,
                                      int, int, double **,
                                      std::complex<double> ***);
-
-        void calc_V3norm2(const unsigned int,
-                          const unsigned int,
-                          double **);
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      const unsigned int, double ***);
@@ -149,12 +129,21 @@ namespace PHON_NS
 
         void detect_imaginary_branches(double **);
 
+
+        void get_unique_triplet_k(const int,
+                                  const bool,
+                                  const bool,
+                                  std::vector<KsListGroup> &);
+
+        void calc_self3omega_tetrahedron(const double, double **,
+                                         std::complex<double> ***,
+                                         const unsigned int, const unsigned int,
+                                         const unsigned int, double *, double *);
+
+
     private:
         void set_default_variables();
         void deallocate_variables();
-
-        unsigned int nk, ns, nks;
-        std::vector<KsListMode> kslist_fstate_k;
         std::complex<double> im;
 
         double ***vec_for_v3, *invmass_for_v3;
@@ -163,39 +152,12 @@ namespace PHON_NS
         int **evec_index4;
 
         bool sym_permutation;
-        bool is_proper(const int);
-        bool is_symmorphic(const int);
 
         void setup_cubic();
         void setup_quartic();
-        void store_exponential_for_acceleration(const int nk[3], int &,
+        void store_exponential_for_acceleration(const int nk_in[3], int &,
                                                 std::complex<double> *,
                                                 std::complex<double> ***);
-
-        void calc_frequency_resolved_final_state(const unsigned int, double *, const double,
-                                                 const unsigned int, const double *,
-                                                 const unsigned int, const unsigned int,
-                                                 double ***);
-        void calc_frequency_resolved_final_state_tetrahedron(const unsigned int,
-                                                             double *, const double,
-                                                             const unsigned int, const double *,
-                                                             const unsigned int, const unsigned int,
-                                                             double ***);
-
-        void print_momentum_resolved_final_state(const unsigned int, double *, const double);
-        void print_frequency_resolved_final_state(const unsigned int, double *);
-
-        void calc_self3omega_tetrahedron(const double, double **,
-                                         std::complex<double> ***,
-                                         const unsigned int, const unsigned int,
-                                         const unsigned int, double *, double *);
-
-
-        void get_unique_triplet_k(const int,
-                                  const bool,
-                                  const bool,
-                                  std::vector<KsListGroup> &);
-
         int ngroup;
         int ngroup2;
         std::vector<double> *fcs_group;
