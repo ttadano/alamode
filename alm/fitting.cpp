@@ -1097,7 +1097,7 @@ void Fitting::calc_matrix_elements_algebraic_constraint(const int M,
     long irow;
     long ncycle;
 
-    std::cout << "  Calculation of matrix elements for direct fitting started ... ";
+    std::cout << "  Calculation of matrix elements for direct fitting started ... " << std::endl;
 
     ncycle = ndata_fit * nmulti;
     long natmin3 = 3 * static_cast<long>(natmin);
