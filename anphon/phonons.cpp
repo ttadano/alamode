@@ -251,7 +251,7 @@ void PHON::execute_RTA()
     selfenergy->setup_selfenergy();
 
     if (mode_analysis->ks_analyze_mode) {
-        mode_analysis->perform_mode_analysis();
+        mode_analysis->run_mode_analysis();
     } else {
         writes->setup_result_io();
         conductivity->setup_kappa();

@@ -24,10 +24,11 @@ namespace PHON_NS
         ModeAnalysis(class PHON *);
         ~ModeAnalysis();
 
-        void perform_mode_analysis();
+        void run_mode_analysis();
         void setup_mode_analysis();
 
         bool ks_analyze_mode;
+        bool calc_imagpart;
         bool calc_realpart;
         bool calc_fstate_omega;
         bool calc_fstate_k;
@@ -37,27 +38,44 @@ namespace PHON_NS
         std::string ks_input;
         std::vector<unsigned int> kslist;
 
-
-        void calc_V3norm2(const unsigned int,
-                          const unsigned int,
-                          double **);
-
     private:
         void set_default_variables();
         void deallocate_variables();
 
         std::vector<KsListMode> kslist_fstate_k;
-        void calc_frequency_resolved_final_state(const unsigned int, double *, const double,
-                                                 const unsigned int, const double *,
-                                                 const unsigned int, const unsigned int,
+
+        void calc_frequency_resolved_final_state(const unsigned int,
+                                                 double *,
+                                                 const double,
+                                                 const unsigned int,
+                                                 const double *,
+                                                 const unsigned int,
+                                                 const unsigned int,
                                                  double ***);
+
         void calc_frequency_resolved_final_state_tetrahedron(const unsigned int,
-                                                             double *, const double,
-                                                             const unsigned int, const double *,
-                                                             const unsigned int, const unsigned int,
+                                                             double *,
+                                                             const double,
+                                                             const unsigned int,
+                                                             const double *,
+                                                             const unsigned int,
+                                                             const unsigned int,
                                                              double ***);
 
-        void print_momentum_resolved_final_state(const unsigned int, double *, const double);
-        void print_frequency_resolved_final_state(const unsigned int, double *);
+        void print_momentum_resolved_final_state(const unsigned int,
+                                                 double *,
+                                                 const double);
+
+        void print_frequency_resolved_final_state(const unsigned int,
+                                                  double *);
+        void print_V3_elements();
+
+        void calc_V3norm2(const unsigned int,
+                          const unsigned int,
+                          double **);
+
+        void print_selfenergy(const int, double *);
+
+        void print_spectral_function(const int, double *);
     };
 }

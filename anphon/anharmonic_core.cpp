@@ -368,7 +368,7 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
     }
     // Return zero if any of the involving phonon has imaginary frequency
-    if (omega[0] < 0.0 || omega[1] < 0.0 || omega[2] < 0.0) return 0.0;
+    if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8) return 0.0;
 
     unsigned int ielem = 0;
 
@@ -498,6 +498,8 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
         sn[i] = ks[i] % ns;
         omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
     }
+    // Return zero if any of the involving phonon has imaginary frequency
+    if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8 || omega[3] < eps8) return 0.0;
 
     unsigned int ielem = 0;
 
@@ -621,7 +623,7 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     std::complex<double> vec_tmp, ret_in;
 
     // Return zero if any of the involving phonon has imaginary frequency
-    if (eval[0][mode] < 0.0 || eval[1][is] < 0.0 || eval[2][js] < 0.0) return 0.0;
+    if (eval[0][mode] < eps8 || eval[1][is] < eps8 || eval[2][js] < eps8) return 0.0;
 
     unsigned int ielem = 0;
 
