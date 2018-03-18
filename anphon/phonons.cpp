@@ -277,7 +277,6 @@ void PHON::execute_self_consistent_phonon()
     }
 
     setup_base();
-    dos->setup();
 
     dynamical->diagonalize_dynamical_all();
 

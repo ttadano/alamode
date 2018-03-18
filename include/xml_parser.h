@@ -15,7 +15,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/optional.hpp>
 
-inline std::string get_value_from_xml(boost::property_tree::ptree pt_in, std::string str) 
+inline std::string get_value_from_xml(const boost::property_tree::ptree &pt_in, std::string str) 
 {
     if (boost::optional<std::string> str_entry = pt_in.get_optional<std::string>(str)) {
         return str_entry.get();
