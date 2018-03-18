@@ -17,43 +17,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 namespace PHON_NS
 {
-    class KsList
-    {
-    public:
-        std::vector<int> ks;
-        int symnum;
-
-        KsList();
-
-        KsList(const KsList &a) : ks(a.ks), symnum(a.symnum) {};
-
-        KsList(const int n,
-               int *ks_in,
-               const int sym)
-        {
-            for (int i = 0; i < n; ++i) {
-                ks.push_back(ks_in[i]);
-            }
-            symnum = sym;
-        }
-
-        bool operator<(const KsList &obj) const
-        {
-            return std::lexicographical_compare(ks.begin(), ks.end(),
-                                                obj.ks.begin(), obj.ks.end());
-        }
-    };
-
-    class KsListGroup
-    {
-    public:
-        std::vector<KsList> group;
-
-        KsListGroup();
-
-        KsListGroup(const std::vector<KsList> &a) : group(a) {};
-    };
-
     class KsListMode
     {
     public:
@@ -146,12 +109,6 @@ namespace PHON_NS
                                               std::vector<double> *&);
 
         void detect_imaginary_branches(double **);
-
-
-        void get_unique_triplet_k(const int,
-                                  const bool,
-                                  const bool,
-                                  std::vector<KsListGroup> &);
 
         void calc_self3omega_tetrahedron(const double,
                                          double **,

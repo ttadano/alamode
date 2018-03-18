@@ -660,10 +660,10 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
 
     std::vector<KsListGroup> triplet;
 
-    anharmonic_core->get_unique_triplet_k(ik_in,
-                                          anharmonic_core->use_triplet_symmetry,
-                                          false,
-                                          triplet);
+    kpoint->get_unique_triplet_k(ik_in,
+                                 anharmonic_core->use_triplet_symmetry,
+                                 false,
+                                 triplet);
     memory->allocate(ret_mpi, N, M, 2);
 
     for (i = 0; i < N; ++i) {
@@ -795,10 +795,10 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
 
     std::vector<KsListGroup> triplet;
 
-    anharmonic_core->get_unique_triplet_k(ik_in,
-                                          anharmonic_core->use_triplet_symmetry,
-                                          false,
-                                          triplet);
+    kpoint->get_unique_triplet_k(ik_in,
+                                 anharmonic_core->use_triplet_symmetry,
+                                 false,
+                                 triplet);
 
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
@@ -1601,10 +1601,10 @@ void ModeAnalysis::print_V3_elements()
 
         ik_irred = kpoint->kmap_to_irreducible[knum];
 
-        anharmonic_core->get_unique_triplet_k(ik_irred,
-                                              anharmonic_core->use_triplet_symmetry,
-                                              true,
-                                              triplet);
+        kpoint->get_unique_triplet_k(ik_irred,
+                                     anharmonic_core->use_triplet_symmetry,
+                                     true,
+                                     triplet);
         nk_size = triplet.size();
 
         memory->allocate(v3norm, nk_size, ns * ns);
@@ -1682,10 +1682,10 @@ void ModeAnalysis::calc_V3norm2(const unsigned int ik_in,
     knum = kpoint->kpoint_irred_all[ik_in][0].knum;
     knum_minus = kpoint->knum_minus[knum];
 
-    anharmonic_core->get_unique_triplet_k(ik_in,
-                                          anharmonic_core->use_triplet_symmetry,
-                                          true,
-                                          triplet);
+    kpoint->get_unique_triplet_k(ik_in,
+                                 anharmonic_core->use_triplet_symmetry,
+                                 true,
+                                 triplet);
 #ifdef _OPENMP
 #pragma omp parallel for private(is, js, ik, k1, k2, arr)
 #endif

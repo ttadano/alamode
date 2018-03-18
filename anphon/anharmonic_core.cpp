@@ -700,10 +700,10 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
 
     std::vector<KsListGroup> triplet;
 
-    get_unique_triplet_k(ik_in,
-                         use_triplet_symmetry,
-                         sym_permutation,
-                         triplet);
+    kpoint->get_unique_triplet_k(ik_in,
+                                 use_triplet_symmetry,
+                                 sym_permutation,
+                                 triplet);
 
     int npair_uniq = triplet.size();
 
@@ -844,10 +844,10 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
     for (i = 0; i < N; ++i) ret[i] = 0.0;
 
-    get_unique_triplet_k(ik_in,
-                         use_triplet_symmetry,
-                         sym_permutation,
-                         triplet);
+    kpoint->get_unique_triplet_k(ik_in,
+                                 use_triplet_symmetry,
+                                 sym_permutation,
+                                 triplet);
 
     unsigned int npair_uniq = triplet.size();
 
@@ -973,74 +973,6 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
     memory->deallocate(kmap_identity);
 
     for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4);
-}
-
-
-void AnharmonicCore::get_unique_triplet_k(const int ik,
-                                          const bool use_triplet_symmetry,
-                                          const bool use_permutation_symmetry,
-                                          std::vector<KsListGroup> &triplet)
-{
-    int nk = kpoint->nk;
-
-    int i, ik1, ik2, isym;
-    int num_group_k, tmp;
-    int ks_in[2];
-    int knum = kpoint->kpoint_irred_all[ik][0].knum;
-    bool *flag_found;
-    std::vector<KsList> kslist;
-    double xk[3], xk1[3], xk2[3];
-
-    memory->allocate(flag_found, kpoint->nk);
-
-    if (use_triplet_symmetry) {
-        num_group_k = kpoint->small_group_of_k[ik].size();
-    } else {
-        num_group_k = 1;
-    }
-
-    for (i = 0; i < 3; ++i) xk[i] = kpoint->xk[knum][i];
-    for (i = 0; i < kpoint->nk; ++i) flag_found[i] = false;
-
-    triplet.clear();
-
-    for (ik1 = 0; ik1 < nk; ++ik1) {
-
-        for (i = 0; i < 3; ++i) xk1[i] = kpoint->xk[ik1][i];
-        for (i = 0; i < 3; ++i) xk2[i] = xk[i] - xk1[i];
-
-        ik2 = kpoint->get_knum(xk2[0], xk2[1], xk2[2]);
-
-        kslist.clear();
-
-        if (ik1 > ik2 && use_permutation_symmetry) continue;
-
-        // Add symmety-connected triplets to kslist
-        for (isym = 0; isym < num_group_k; ++isym) {
-
-            ks_in[0] = kpoint->knum_sym(ik1, kpoint->small_group_of_k[ik][isym]);
-            ks_in[1] = kpoint->knum_sym(ik2, kpoint->small_group_of_k[ik][isym]);
-
-            if (!flag_found[ks_in[0]]) {
-                kslist.emplace_back(2, ks_in, kpoint->small_group_of_k[ik][isym]);
-                flag_found[ks_in[0]] = true;
-            }
-
-            if (ks_in[0] != ks_in[1] && use_permutation_symmetry && (!flag_found[ks_in[1]])) {
-                tmp = ks_in[0];
-                ks_in[0] = ks_in[1];
-                ks_in[1] = tmp;
-
-                kslist.emplace_back(2, ks_in, kpoint->small_group_of_k[ik][isym]);
-                flag_found[ks_in[0]] = true;
-            }
-        }
-        if (!kslist.empty()) {
-            triplet.emplace_back(kslist);
-        }
-    }
-
-    memory->deallocate(flag_found);
 }
 
 
@@ -1262,10 +1194,10 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     int knum_minus = kpoint->knum_minus[knum];
     double omega0 = eval[knum_minus][snum];
 
-    get_unique_triplet_k(ik_in,
-                         false,
-                         false,
-                         triplet);
+    kpoint->get_unique_triplet_k(ik_in,
+                                 false,
+                                 false,
+                                 triplet);
 
     npair_uniq = triplet.size();
 
