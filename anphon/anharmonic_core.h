@@ -27,7 +27,9 @@ namespace PHON_NS
 
         KsList(const KsList &a) : ks(a.ks), symnum(a.symnum) {};
 
-        KsList(const int n, int *ks_in, const int sym)
+        KsList(const int n,
+               int *ks_in,
+               const int sym)
         {
             for (int i = 0; i < n; ++i) {
                 ks.push_back(ks_in[i]);
@@ -60,7 +62,8 @@ namespace PHON_NS
 
         KsListMode();
 
-        KsListMode(double xk_in[3], const int n)
+        KsListMode(double xk_in[3],
+                   const int n)
         {
             for (int i = 0; i < 3; ++i) xk[i] = xk_in[i];
             nmode = n;
@@ -96,15 +99,23 @@ namespace PHON_NS
     {
     public:
         AnharmonicCore(class PHON *);
+
         ~AnharmonicCore();
 
         void setup();
-        void calc_damping_smearing(const unsigned int, double *, const double,
-                                   const unsigned int, const unsigned int,
+
+        void calc_damping_smearing(const unsigned int,
+                                   double *,
+                                   const double,
+                                   const unsigned int,
+                                   const unsigned int,
                                    double *);
 
-        void calc_damping_tetrahedron(const unsigned int, double *, const double,
-                                      const unsigned int, const unsigned int,
+        void calc_damping_tetrahedron(const unsigned int,
+                                      double *,
+                                      const double,
+                                      const unsigned int,
+                                      const unsigned int,
                                       double *);
 
         int quartic_mode;
@@ -113,18 +124,25 @@ namespace PHON_NS
         bool **is_imaginary;
 
         std::complex<double> V3(const unsigned int [3]);
+
         std::complex<double> V4(const unsigned int [4]);
 
 
-        std::complex<double> V3_mode(int, double *, double *,
-                                     int, int, double **,
+        std::complex<double> V3_mode(int,
+                                     double *,
+                                     double *,
+                                     int,
+                                     int,
+                                     double **,
                                      std::complex<double> ***);
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                     const unsigned int, double ***);
+                                     const unsigned int,
+                                     double ***);
 
         void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
-                                              const unsigned int, int &,
+                                              const unsigned int,
+                                              int &,
                                               std::vector<double> *&);
 
         void detect_imaginary_branches(double **);
@@ -135,15 +153,20 @@ namespace PHON_NS
                                   const bool,
                                   std::vector<KsListGroup> &);
 
-        void calc_self3omega_tetrahedron(const double, double **,
+        void calc_self3omega_tetrahedron(const double,
+                                         double **,
                                          std::complex<double> ***,
-                                         const unsigned int, const unsigned int,
-                                         const unsigned int, double *, double *);
+                                         const unsigned int,
+                                         const unsigned int,
+                                         const unsigned int,
+                                         double *,
+                                         double *);
 
 
     private:
         void set_default_variables();
         void deallocate_variables();
+
         std::complex<double> im;
 
         double ***vec_for_v3, *invmass_for_v3;
@@ -155,9 +178,12 @@ namespace PHON_NS
 
         void setup_cubic();
         void setup_quartic();
-        void store_exponential_for_acceleration(const int nk_in[3], int &,
+
+        void store_exponential_for_acceleration(const int nk_in[3],
+                                                int &,
                                                 std::complex<double> *,
                                                 std::complex<double> ***);
+
         int ngroup;
         int ngroup2;
         std::vector<double> *fcs_group;

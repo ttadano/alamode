@@ -54,7 +54,8 @@ Input::~Input()
     if (ifs_input.is_open()) ifs_input.close();
 }
 
-void Input::parce_input(int narg, char **arg)
+void Input::parce_input(int narg,
+                        char **arg)
 {
     if (narg == 1) {
 

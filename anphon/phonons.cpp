@@ -42,7 +42,9 @@
 
 using namespace PHON_NS;
 
-PHON::PHON(int narg, char **arg, MPI_Comm comm)
+PHON::PHON(int narg,
+           char **arg,
+           MPI_Comm comm)
 {
     mympi = new MyMPI(this, comm);
     input = new Input(this);

@@ -291,7 +291,9 @@ void Ewald::prepare_G()
 }
 
 
-void Ewald::get_pairs_of_minimum_distance(const int nat, const int nsize[3], double **xf)
+void Ewald::get_pairs_of_minimum_distance(const int nat,
+                                          const int nsize[3],
+                                          double **xf)
 {
     // Get pairs and multiplicities
 
@@ -632,7 +634,9 @@ void Ewald::compute_ewald_fcs2()
 }
 
 
-void Ewald::calc_short_term_ewald_fcs(const int iat, const int jat, double **fc_l_out)
+void Ewald::calc_short_term_ewald_fcs(const int iat,
+                                      const int jat,
+                                      double **fc_l_out)
 {
     // Real lattice sum part for FCs
 
@@ -805,7 +809,9 @@ void Ewald::calc_short_term_ewald_fcs(const int iat, const int jat, double **fc_
 }
 
 
-void Ewald::calc_long_term_ewald_fcs(const int iat, const int jat, double **fc_g_out)
+void Ewald::calc_long_term_ewald_fcs(const int iat,
+                                     const int jat,
+                                     double **fc_g_out)
 {
     // Reciprocal lattice sum part for FCs
 

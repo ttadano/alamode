@@ -557,7 +557,8 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     }
 }
 
-void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
+void Dos::calc_dos_scph(double ***eval_anharm,
+                        double **dos_scph)
 {
     unsigned int j, k;
     unsigned int nk = kpoint->nk;

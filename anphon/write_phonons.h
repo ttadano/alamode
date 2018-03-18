@@ -22,7 +22,9 @@ namespace PHON_NS
     public:
 
         Writes(class PHON *);
+
         ~Writes();
+
         void write_phonon_info();
         void print_phonon_energy();
         void write_gruneisen();
@@ -39,6 +41,7 @@ namespace PHON_NS
         double anime_kpoint[3];
 
         double in_kayser(const double);
+
         int nbands;
 
         std::string file_result;
@@ -55,7 +58,10 @@ namespace PHON_NS
         void write_scattering_phase_space();
         void write_scattering_amplitude();
         void write_normal_mode_direction();
-        void write_normal_mode_animation(const double [3], const unsigned int [3]);
+
+        void write_normal_mode_animation(const double [3],
+                                         const unsigned int [3]);
+
         void write_eigenvectors();
         void write_thermodynamics();
         void write_msd();

@@ -18,24 +18,45 @@ namespace PHON_NS
     {
     public:
         Thermodynamics(class PHON *);
+
         ~Thermodynamics();
 
         double T_to_Ryd;
         bool classical;
+
         void setup();
 
-        double Cv(double, double);
-        double fB(double, double);
-        double fC(double, double);
+        double Cv(double,
+                  double);
+
+        double fB(double,
+                  double);
+
+        double fC(double,
+                  double);
 
         double Cv_tot(double);
+
         double internal_energy(double);
+
         double vibrational_entropy(double);
+
         double free_energy(double);
-        double Cv_Debye(double, double);
-        double Cv_classical(double, double);
-        void Debye_T(double, double &);
-        double disp2_avg(double, unsigned int, unsigned int);
-        double coth_T(double, double);
+
+        double Cv_Debye(double,
+                        double);
+
+        double Cv_classical(double,
+                            double);
+
+        void Debye_T(double,
+                     double &);
+
+        double disp2_avg(double,
+                         unsigned int,
+                         unsigned int);
+
+        double coth_T(double,
+                      double);
     };
 }

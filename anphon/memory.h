@@ -21,12 +21,14 @@ namespace PHON_NS
     {
     public:
         Memory(class PHON *);
+
         ~Memory();
 
         // allocator 
 
         template <typename T>
-        T* allocate(T *&arr, const unsigned int n1)
+        T* allocate(T *&arr,
+                    const unsigned int n1)
         {
 #ifdef _SX
             arr = new T [n1];
@@ -45,7 +47,9 @@ namespace PHON_NS
         }
 
         template <typename T>
-        T** allocate(T **&arr, const unsigned int n1, const unsigned int n2)
+        T** allocate(T **&arr,
+                     const unsigned int n1,
+                     const unsigned int n2)
         {
 #ifdef _SX
             arr = new T *[n1];
@@ -73,7 +77,10 @@ namespace PHON_NS
         }
 
         template <typename T>
-        T*** allocate(T ***&arr, const unsigned int n1, const unsigned int n2, const unsigned int n3)
+        T*** allocate(T ***&arr,
+                      const unsigned int n1,
+                      const unsigned int n2,
+                      const unsigned int n3)
         {
 #ifdef _SX
             arr = new T **[n1];
@@ -109,7 +116,10 @@ namespace PHON_NS
         }
 
         template <typename T>
-        T**** allocate(T ****&arr, const unsigned int n1, const unsigned int n2, const unsigned int n3,
+        T**** allocate(T ****&arr,
+                       const unsigned int n1,
+                       const unsigned int n2,
+                       const unsigned int n3,
                        const unsigned int n4)
         {
 #ifdef _SX
@@ -190,27 +200,35 @@ namespace PHON_NS
 
         // memsize calculator
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1)
+        unsigned long memsize_in_MB(const int size_of_one,
+                                    const unsigned int n1)
         {
             unsigned long n = n1 * size_of_one;
             return n / 1000000;
         }
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2)
+        unsigned long memsize_in_MB(const int size_of_one,
+                                    const unsigned int n1,
+                                    const unsigned int n2)
         {
             unsigned long n = n1 * n2 * size_of_one;
             return n / 1000000;
         }
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2,
+        unsigned long memsize_in_MB(const int size_of_one,
+                                    const unsigned int n1,
+                                    const unsigned int n2,
                                     const unsigned int n3)
         {
             unsigned long n = n1 * n2 * n3 * size_of_one;
             return n / 1000000;
         }
 
-        unsigned long memsize_in_MB(const int size_of_one, const unsigned int n1, const unsigned int n2,
-                                    const unsigned int n3, const unsigned int n4)
+        unsigned long memsize_in_MB(const int size_of_one,
+                                    const unsigned int n1,
+                                    const unsigned int n2,
+                                    const unsigned int n3,
+                                    const unsigned int n4)
         {
             unsigned long n = n1 * n2 * n3 * n4 * size_of_one;
             return n / 1000000;

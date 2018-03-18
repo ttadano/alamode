@@ -247,7 +247,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 }
 
 
-double Dynamical::distance(double *x1, double *x2)
+double Dynamical::distance(double *x1,
+                           double *x2)
 {
     return std::sqrt(std::pow(x1[0] - x2[0], 2)
         + std::pow(x1[1] - x2[1], 2)
@@ -619,7 +620,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 }
 
 
-void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
+void Dynamical::calc_nonanalytic_k2(double *xk_in,
+                                    double *kvec_na_in,
                                     std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
@@ -1061,7 +1063,8 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
 }
 
 
-void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, double *ret)
+void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
+                                                double *ret)
 {
     unsigned int iat;
     auto natmin = system->natmin;
@@ -1147,7 +1150,8 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
             // Argsort abs_similarity[is] (use C++11 lambda)
             iota(index.begin(), index.end(), 0);
             std::sort(index.begin(), index.end(),
-                      [&abs_similarity, is](int i1, int i2)
+                      [&abs_similarity, is](int i1,
+                                            int i2)
                       {
                           return abs_similarity[is][i1] > abs_similarity[is][i2];
                       });

@@ -23,7 +23,10 @@ namespace PHON_NS
     class PHON
     {
     public:
-        PHON(int, char **, MPI_Comm);
+        PHON(int,
+             char **,
+             MPI_Comm);
+
         virtual ~PHON();
 
         class Memory *memory;

@@ -742,7 +742,8 @@ void System::load_system_info_from_XML()
 }
 
 
-void System::recips(double vec[3][3], double inverse[3][3])
+void System::recips(double vec[3][3],
+                    double inverse[3][3])
 {
     double det;
     det = vec[0][0] * vec[1][1] * vec[2][2]
@@ -771,7 +772,9 @@ void System::recips(double vec[3][3], double inverse[3][3])
     inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
 }
 
-double System::volume(double vec1[3], double vec2[3], double vec3[3])
+double System::volume(double vec1[3],
+                      double vec2[3],
+                      double vec3[3])
 {
     double vol;
 

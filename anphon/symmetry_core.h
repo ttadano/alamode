@@ -24,7 +24,8 @@ namespace PHON_NS
 
         SymmetryOperation();
 
-        SymmetryOperation(const int rot_in[3][3], const double tran_in[3])
+        SymmetryOperation(const int rot_in[3][3],
+                          const double tran_in[3])
         {
             for (int i = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j) {
@@ -82,8 +83,8 @@ namespace PHON_NS
     class SymmetryOperationWithMapping
     {
     public:
-        std::vector<double> rot; // Rotation matrix in Cartesian basis
-        std::vector<double> rot_real; // Rotation matrix in fractional basis
+        std::vector<double> rot;            // Rotation matrix in Cartesian basis
+        std::vector<double> rot_real;       // Rotation matrix in fractional basis
         std::vector<double> rot_reciprocal; // Rotation matrix in reciprocal (fractional) basis
         std::vector<unsigned int> mapping;
         double shift[3]; // Translation vector in fractional basis
@@ -120,6 +121,7 @@ namespace PHON_NS
     {
     public:
         Symmetry(class PHON *);
+
         ~Symmetry();
 
         unsigned int nsym;
@@ -135,8 +137,8 @@ namespace PHON_NS
     private:
 
         std::string file_sym;
-        void set_default_variables();
 
+        void set_default_variables();
         void setup_symmetry_operation(int,
                                       unsigned int &,
                                       double [3][3],
@@ -144,14 +146,23 @@ namespace PHON_NS
                                       double **,
                                       unsigned int *);
 
-        void findsym(int, double [3][3], double **,
+        void findsym(int,
+                     double [3][3],
+                     double **,
                      std::vector<SymmetryOperation> &);
-        void gensym_withmap(double **, const unsigned int *);
+
+        void gensym_withmap(double **,
+                            const unsigned int *);
+
         bool is_proper(double [3][3]);
 
-        void find_lattice_symmetry(double [3][3], std::vector<RotationMatrix> &);
-        void find_crystal_symmetry(int, int,
-                                   std::vector<unsigned int> *, double **x,
+        void find_lattice_symmetry(double [3][3],
+                                   std::vector<RotationMatrix> &);
+
+        void find_crystal_symmetry(int,
+                                   int,
+                                   std::vector<unsigned int> *,
+                                   double **x,
                                    const std::vector<RotationMatrix> &,
                                    std::vector<SymmetryOperation> &);
 

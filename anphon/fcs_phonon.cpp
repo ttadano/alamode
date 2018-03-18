@@ -11,7 +11,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mpi_common.h"
 #include "fcs_phonon.h"
 #include "constants.h"
-#include "dynamical.h"
 #include "error.h"
 #include "gruneisen.h"
 #include "memory.h"
@@ -20,6 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "system.h"
 #include "xml_parser.h"
 #include <string>
+#include <iostream>
 #include <iomanip>
 #include <algorithm>
 #include <boost/property_tree/ptree.hpp>

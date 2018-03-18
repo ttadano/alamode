@@ -32,7 +32,9 @@ namespace PHON_NS
 
         FcsClass(const FcsClass &obj) : elems(obj.elems), fcs_val(obj.fcs_val) {};
 
-        FcsClass(const unsigned int n, const double val, const Triplet *arr)
+        FcsClass(const unsigned int n,
+                 const double val,
+                 const Triplet *arr)
         {
             fcs_val = val;
             for (unsigned int i = 0; i < n; ++i) {
@@ -40,7 +42,8 @@ namespace PHON_NS
             }
         }
 
-        FcsClass(const double val, const std::vector<Triplet> &vec)
+        FcsClass(const double val,
+                 const std::vector<Triplet> &vec)
             : elems(vec), fcs_val(val) {};
 
         bool operator<(const FcsClass &obj) const
@@ -91,7 +94,8 @@ namespace PHON_NS
         unsigned int cell_s;
     };
 
-    inline bool operator<(const AtomCellSuper &a, const AtomCellSuper &b)
+    inline bool operator<(const AtomCellSuper &a,
+                          const AtomCellSuper &b)
     {
         return a.index < b.index;
     }
@@ -104,7 +108,8 @@ namespace PHON_NS
 
         FcsArrayWithCell() {};
 
-        FcsArrayWithCell(const double fcs_in, const std::vector<AtomCellSuper> &pairs_in)
+        FcsArrayWithCell(const double fcs_in,
+                         const std::vector<AtomCellSuper> &pairs_in)
             : pairs(pairs_in), fcs_val(fcs_in) {};
 
         bool operator<(const FcsArrayWithCell &obj) const
@@ -130,9 +135,11 @@ namespace PHON_NS
     {
     public:
         Fcs_phonon(class PHON *);
+
         ~Fcs_phonon();
 
         void setup(std::string);
+
         unsigned int maxorder;
         std::string file_fcs, file_fc2;
 
@@ -148,7 +155,6 @@ namespace PHON_NS
 
         void set_default_variables();
         void deallocate_variables();
-
         void load_fc2_xml();
         void load_fcs_xml();
 
@@ -158,7 +164,6 @@ namespace PHON_NS
                                               double *,
                                               std::vector<FcsClassExtent> &,
                                               std::vector<FcsArrayWithCell> *);
-
 
         void MPI_Bcast_fc_class(unsigned int);
         void MPI_Bcast_fcs_array(unsigned int);

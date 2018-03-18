@@ -22,9 +22,11 @@ namespace PHON_NS
     {
     public:
         ModeAnalysis(class PHON *);
+
         ~ModeAnalysis();
 
         void run_mode_analysis();
+
         void setup_mode_analysis();
 
         bool ks_analyze_mode;
@@ -68,14 +70,17 @@ namespace PHON_NS
 
         void print_frequency_resolved_final_state(const unsigned int,
                                                   double *);
+
         void print_V3_elements();
 
         void calc_V3norm2(const unsigned int,
                           const unsigned int,
                           double **);
 
-        void print_selfenergy(const int, double *);
+        void print_selfenergy(const int,
+                              double *);
 
-        void print_spectral_function(const int, double *);
+        void print_spectral_function(const int,
+                                     double *);
     };
 }

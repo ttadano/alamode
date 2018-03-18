@@ -18,7 +18,6 @@
 #include "kpoint.h"
 #include "mathfunctions.h"
 #include "memory.h"
-#include "parsephon.h"
 #include "phonon_dos.h"
 #include "thermodynamics.h"
 #include "phonon_velocity.h"
@@ -319,8 +318,10 @@ void Conductivity::calc_anharmonic_imagself()
     memory->deallocate(damping3_loc);
 }
 
-void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int nshift,
-                                      double ***vel_in, double **damp_in)
+void Conductivity::write_result_gamma(const unsigned int ik,
+                                      const unsigned int nshift,
+                                      double ***vel_in,
+                                      double **damp_in)
 {
     unsigned int np = mympi->nprocs;
     unsigned int k, iks_g;

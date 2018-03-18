@@ -23,7 +23,8 @@ namespace PHON_NS
         double f;
     };
 
-    inline bool operator<(const tetra_pair &a, const tetra_pair &b)
+    inline bool operator<(const tetra_pair &a,
+                          const tetra_pair &b)
     {
         return a.e < b.e;
     }
@@ -34,7 +35,8 @@ namespace PHON_NS
         int knum;
     };
 
-    inline bool operator<(const TetraWithKnum &a, const TetraWithKnum &b)
+    inline bool operator<(const TetraWithKnum &a,
+                          const TetraWithKnum &b)
     {
         return a.e < b.e;
     }
@@ -50,16 +52,32 @@ namespace PHON_NS
         double epsilon;
 
         void setup_integration();
-        double do_tetrahedron(double *, double *, double);
-        double dos_integration(double *, double);
-        void calc_weight_tetrahedron(int, const int *,
-                                     double *, const double *,
+
+        double do_tetrahedron(double *,
+                              double *,
+                              double);
+
+        double dos_integration(double *,
+                               double);
+
+        void calc_weight_tetrahedron(int,
+                                     const int *,
+                                     double *,
+                                     const double *,
                                      double);
+
         void calc_weight_smearing(const std::vector<std::vector<KpointList>> &,
-                                  double *, double *,
-                                  double, int);
-        void calc_weight_smearing(int, int, const int *,
-                                  double *, double *, double,
+                                  double *,
+                                  double *,
+                                  double,
+                                  int);
+
+        void calc_weight_smearing(int,
+                                  int,
+                                  const int *,
+                                  double *,
+                                  double *,
+                                  double,
                                   int);
 
     private:
@@ -68,20 +86,34 @@ namespace PHON_NS
 
         unsigned int ntetra;
         int **tetras;
-        void prepare_tetrahedron(int, int, int);
-        inline double fij(double, double, double);
+
+        void prepare_tetrahedron(int,
+                                 int,
+                                 int);
+
+        inline double fij(double,
+                          double,
+                          double);
+
         inline double volume(const int *);
+
         std::vector<tetra_pair> tetra_data;
+
         inline double refold(double);
-        void insertion_sort(double *, int *, int);
+
+        void insertion_sort(double *,
+                            int *,
+                            int);
     };
 
-    inline double delta_lorentz(const double omega, const double epsilon)
+    inline double delta_lorentz(const double omega,
+                                const double epsilon)
     {
         return inverse_pi * epsilon / (omega * omega + epsilon * epsilon);
     }
 
-    inline double delta_gauss(const double omega, const double epsilon)
+    inline double delta_gauss(const double omega,
+                              const double epsilon)
     {
         return std::exp(- omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
     }

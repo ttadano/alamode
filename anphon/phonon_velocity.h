@@ -21,10 +21,13 @@ namespace PHON_NS
     {
     public:
         Phonon_velocity(class PHON *);
+
         ~Phonon_velocity();
 
         void calc_group_velocity(int);
-        void phonon_vel_k(const double *, double **);
+
+        void phonon_vel_k(const double *,
+                          double **);
 
         bool print_velocity;
         double **phvel;
@@ -33,23 +36,32 @@ namespace PHON_NS
     private:
 
         double **xshift_s;
-        double diff(double *, unsigned int, double);
+
+        double diff(double *,
+                    unsigned int,
+                    double);
 
         void set_default_variables();
         void deallocate_variables();
 
         void calc_phonon_vel_band(double **);
-        void calc_phonon_vel_mesh(double **, double ***);
+
+        void calc_phonon_vel_mesh(double **,
+                                  double ***);
+
         void phonon_vel_k2(const double *,
                            const double *,
                            std::complex<double> **,
                            double **);
+
         void calc_derivative_dynmat_k(const double *,
                                       const std::vector<FcsClassExtent> &,
                                       std::complex<double> ***);
+
         void diagonalize_hermite_mat(int,
                                      std::complex<double> **,
                                      double *);
+
         bool print_velocity_xyz;
     };
 }

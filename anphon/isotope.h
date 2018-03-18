@@ -18,6 +18,7 @@ namespace PHON_NS
     public:
 
         Isotope(class PHON *);
+
         ~Isotope();
 
         int include_isotope;
@@ -35,10 +36,12 @@ namespace PHON_NS
                                      int,
                                      double,
                                      double &);
+
         void calc_isotope_selfenergy_tetra(int,
                                            int,
                                            double,
                                            double &);
+
         void set_isotope_factor_from_database(const int,
                                               const std::string *,
                                               double *);
