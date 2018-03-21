@@ -1264,8 +1264,14 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
 void Kpoint::get_unique_triplet_k(const int ik,
                                   const bool use_triplet_symmetry,
                                   const bool use_permutation_symmetry,
-                                  std::vector<KsListGroup> &triplet)
+                                  std::vector<KsListGroup> &triplet,
+                                  const int sign)
 {
+    // This function returns the irreducible set of (k2, k3) satisfying the momentum conservation.
+    // When sign = -1 (default), pairs satisfying - k1 + k2 + k3 = G are returned.
+    // When sign =  1, pairs satisfying k1 + k2 + k3 = G are returned.
+    //
+
     int i, ik1, ik2, isym;
     int num_group_k, tmp;
     int ks_in[2];
@@ -1290,7 +1296,14 @@ void Kpoint::get_unique_triplet_k(const int ik,
     for (ik1 = 0; ik1 < nk; ++ik1) {
 
         for (i = 0; i < 3; ++i) xk1[i] = this->xk[ik1][i];
-        for (i = 0; i < 3; ++i) xk2[i] = xk[i] - xk1[i];
+
+        if (sign == -1) {
+            for (i = 0; i < 3; ++i) xk2[i] = xk[i] - xk1[i];
+        } else if (sign == 1) {
+            for (i = 0; i < 3; ++i) xk2[i] = -xk[i] - xk1[i];
+        } else {
+            error->exit("get_unituq_triplet_k", "Invalid sign");
+        }
 
         ik2 = get_knum(xk2[0], xk2[1], xk2[2]);
 
