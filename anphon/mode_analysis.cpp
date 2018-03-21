@@ -261,7 +261,8 @@ void ModeAnalysis::run_mode_analysis()
 
         print_selfenergy(NT, T_arr);
 
-        if (print_V3) print_V3_elements();
+//        if (print_V3) print_V3_elements();
+        if (print_V3) print_Phi3_elements();
 
         if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);
 
@@ -1705,6 +1706,150 @@ void ModeAnalysis::calc_V3norm2(const unsigned int ik_in,
         }
     }
 }
+
+
+void ModeAnalysis::print_Phi3_elements()
+{
+    int i, j;
+    int knum;
+    int snum;
+    int ns = dynamical->neval;
+    double omega;
+    std::complex<double> **phi3;
+    std::string file_V3;
+    std::ofstream ofs_V3;
+
+    int ik_irred, multi;
+    unsigned int nk_size;
+    unsigned int ib, is, js, k1, k2;
+    std::vector<KsListGroup> triplet;
+
+    for (i = 0; i < kslist.size(); ++i) {
+        knum = kslist[i] / ns;
+        snum = kslist[i] % ns;
+
+        omega = dynamical->eval_phonon[knum][snum];
+
+        if (mympi->my_rank == 0) {
+            std::cout << std::endl;
+            std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
+            std::cout << "  Phonon at k = (";
+            for (j = 0; j < 3; ++j) {
+                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                if (j < 2) std::cout << ",";
+            }
+            std::cout << ")" << std::endl;
+            std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
+            std::cout << "  Frequency (cm^-1) : "
+                << std::setw(15) << writes->in_kayser(omega) << std::endl;
+        }
+
+        ik_irred = kpoint->kmap_to_irreducible[knum];
+
+        kpoint->get_unique_triplet_k(ik_irred,
+                                     anharmonic_core->use_triplet_symmetry,
+                                     true,
+                                     triplet, 1);
+        nk_size = triplet.size();
+
+        memory->allocate(phi3, nk_size, ns * ns);
+
+        calc_Phi3(knum, snum, triplet, phi3);
+
+        if (mympi->my_rank == 0) {
+            file_V3 = input->job_title + ".Phi3." + std::to_string(i + 1);
+            ofs_V3.open(file_V3.c_str(), std::ios::out);
+            if (!ofs_V3)
+                error->exit("print_phi3_element",
+                            "Cannot open file file_V3");
+
+            ofs_V3 << "# xk = ";
+
+            for (j = 0; j < 3; ++j) {
+                ofs_V3 << std::setw(15) << kpoint->xk[knum][j];
+            }
+            ofs_V3 << std::endl;
+            ofs_V3 << "# mode = " << snum + 1 << std::endl;
+            ofs_V3 << "# Frequency = " << writes->in_kayser(omega) << std::endl;
+            ofs_V3 << "## Matrix elements Phi3 for given mode" << std::endl;
+            ofs_V3 << "## q', j', omega(q'j') (cm^-1), q'', j'', omega(q''j'') (cm^-1), ";
+            ofs_V3 << "Phi3(qj,q'j',q''j'') (Ry/(u^{1/2}Bohr)^{3}), multiplicity" << std::endl;
+
+            for (j = 0; j < nk_size; ++j) {
+                multi = static_cast<double>(triplet[j].group.size());
+                k1 = triplet[j].group[0].ks[0];
+                k2 = triplet[j].group[0].ks[1];
+
+                ib = 0;
+
+                for (is = 0; is < ns; ++is) {
+                    for (js = 0; js < ns; ++js) {
+                        ofs_V3 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
+                        ofs_V3 << std::setw(15)
+                            << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                        ofs_V3 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
+                        ofs_V3 << std::setw(15)
+                            << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                        ofs_V3 << std::setw(15) << phi3[j][ib].real();
+                        ofs_V3 << std::setw(15) << phi3[j][ib].imag();
+                        ofs_V3 << std::setw(5) << multi;
+                        ofs_V3 << std::endl;
+
+                        ++ib;
+                    }
+                    ofs_V3 << std::endl;
+                }
+            }
+
+            ofs_V3.close();
+        }
+        memory->deallocate(phi3);
+    }
+}
+
+
+void ModeAnalysis::calc_Phi3(const unsigned int knum,
+                             const unsigned int snum,
+                             const std::vector<KsListGroup> &triplet,
+                             std::complex<double> **ret)
+{
+    int ib;
+    unsigned int ik;
+    unsigned int is, js;
+    unsigned int k1, k2;
+    unsigned int arr[3];
+    int ns = dynamical->neval;
+    int ns2 = ns * ns;
+    double omega[3];
+
+    double factor = std::pow(amu_ry, 1.5);
+
+#ifdef _OPENMP
+#pragma omp parallel for private(is, js, ik, k1, k2, arr, omega)
+#endif
+    for (ib = 0; ib < ns2; ++ib) {
+        is = ib / ns;
+        js = ib % ns;
+
+        for (ik = 0; ik < triplet.size(); ++ik) {
+            k1 = triplet[ik].group[0].ks[0];
+            k2 = triplet[ik].group[0].ks[1];
+
+            arr[0] = ns * knum + snum;
+            arr[1] = ns * k1 + is;
+            arr[2] = ns * k2 + js;
+
+            omega[0] = dynamical->eval_phonon[knum][snum];
+            omega[1] = dynamical->eval_phonon[k1][is];
+            omega[2] = dynamical->eval_phonon[k2][js];
+
+            ret[ik][ib] = anharmonic_core->V3(arr) * factor
+            * std::sqrt(omega[0] * omega[1] * omega[2]);
+        }
+    }
+}
+
+
 
 void ModeAnalysis::print_spectral_function(const int NT,
                                            double *T_arr)
