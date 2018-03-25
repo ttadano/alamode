@@ -5,15 +5,19 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-MPICXX = mpicxx 
-CXXFLAGS = -O3 -xHOST -openmp -std=c++11
-INCLUDE = -I../include 
+MPICXX = g++-7
+CXXFLAGS = -O3 -std=c++11 -fopenmp
+INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/opt/openmpi/include
 
 LINKER = ${MPICXX}
-LDFLAGS = -mkl 
 
-LAPACK = 
-LIBS = ${LAPACK}
+## Mavericks
+#LDFLAGS = -framework vecLib
+## Yosemite
+LDFLAGS = -framework Accelerate
+
+LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi_cxx -lmpi -lgomp
+LIBS = ${LAPACK}  -lfftw3
 
 #----------------------------------------------
 # General rules
