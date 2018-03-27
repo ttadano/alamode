@@ -299,10 +299,19 @@ void Conductivity::calc_anharmonic_imagself()
             omega = dynamical->eval_phonon[knum][snum];
 
             if (integration->ismear == 0 || integration->ismear == 1) {
-                anharmonic_core->calc_damping_smearing(ntemp, Temperature, omega, iks / ns, snum, damping3_loc);
+                anharmonic_core->calc_damping_smearing(ntemp,
+                                                       Temperature,
+                                                       omega,
+                                                       iks / ns,
+                                                       snum,
+                                                       damping3_loc);
             } else if (integration->ismear == -1) {
-              //  anharmonic_core->calc_damping_tetrahedron(ntemp, Temperature, omega, iks / ns, snum, damping3_loc);
-                anharmonic_core->calc_damping_tetrahedron2(ntemp, Temperature, omega, iks / ns, snum, damping3_loc);
+                anharmonic_core->calc_damping_tetrahedron(ntemp,
+                                                          Temperature,
+                                                          omega,
+                                                          iks / ns,
+                                                          snum,
+                                                          damping3_loc);
             }
         }
 

@@ -57,6 +57,37 @@ namespace PHON_NS
         }
     };
 
+    class RelativeVector
+    {
+    public:
+        double vecs[3][3];
+
+        RelativeVector();
+
+        // Constructor for cubic term
+        RelativeVector(const double vec1[3],
+                       const double vec2[3])
+        {
+            for (int i = 0; i < 3; ++i) {
+                vecs[0][i] = vec1[i];
+                vecs[1][i] = vec2[i];
+                vecs[2][i] = 0.0;
+            }
+        }
+
+        // Constructor for quartic term
+        RelativeVector(const double vec1[3],
+                       const double vec2[3],
+                       const double vec3[3])
+        {
+            for (int i = 0; i < 3; ++i) {
+                vecs[0][i] = vec1[i];
+                vecs[1][i] = vec2[i];
+                vecs[2][i] = vec3[i];
+            }
+        }
+    };
+
 
     class AnharmonicCore : protected Pointers
     {
@@ -81,25 +112,12 @@ namespace PHON_NS
                                       const unsigned int,
                                       double *);
 
-        void calc_damping_tetrahedron2(const unsigned int,
-                                       double *,
-                                       const double,
-                                       const unsigned int,
-                                       const unsigned int,
-                                       double *);
-
         int quartic_mode;
         bool use_tuned_ver;
         bool use_triplet_symmetry;
 
         std::complex<double> V3(const unsigned int [3]);
-
-        std::complex<double> V3(const unsigned int [3],
-                                std::complex<double> *);
-
-
         std::complex<double> V4(const unsigned int [4]);
-
 
         std::complex<double> V3_mode(int,
                                      double *,
@@ -112,6 +130,12 @@ namespace PHON_NS
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      const unsigned int,
                                      double ***);
+
+        void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
+                                     const unsigned int,
+                                     const int,
+                                     std::vector<double> *,
+                                     std::vector<RelativeVector> *&);
 
         void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
                                               const unsigned int,
@@ -135,12 +159,27 @@ namespace PHON_NS
 
         std::complex<double> im;
 
-        double ***relvec_v3, *invmass_v3;
-        double ***relvec_v4, *invmass_v4;
+        double *invmass_v3;
+        double *invmass_v4;
         int **evec_index_v3;
         int **evec_index_v4;
+        int ngroup_v3;
+        int ngroup_v4;
+        std::vector<double> *fcs_group_v3;
+        std::vector<double> *fcs_group_v4;
+        std::complex<double> *exp_phase, ***exp_phase3;
+        std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
+        std::vector<RelativeVector> *relvec_v3, *relvec_v4;
+
+        int nk_grid[3];
+        int nk_represent;
+        unsigned int tune_type;
+        double dnk[3];
 
         bool sym_permutation;
+
+        int kindex_phi3_stored[2] = {-1, -1};
+        int kindex_phi4_stored[3] = {-1, -1, -1};
 
         void setup_cubic();
         void setup_quartic();
@@ -150,19 +189,13 @@ namespace PHON_NS
                                                 std::complex<double> *,
                                                 std::complex<double> ***);
 
-        void phase_V3(const unsigned int,
-                      const unsigned int,
-                      std::complex<double> *);
+        void calc_phi3_reciprocal(const unsigned int,
+                                  const unsigned int,
+                                  std::complex<double> *);
 
-        int ngroup_v3;
-        int ngroup_v4;
-        std::vector<double> *fcs_group_v3;
-        std::vector<double> *fcs_group_v4;
-        std::complex<double> *exp_phase, ***exp_phase3;
-
-        int nk_grid[3];
-        int nk_represent;
-        unsigned int tune_type;
-        double dnk[3];
+        void calc_phi4_reciprocal(const unsigned int,
+                                  const unsigned int,
+                                  const unsigned int,
+                                  std::complex<double> *);
     };
 }
