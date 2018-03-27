@@ -23,6 +23,7 @@ namespace PHON_NS
 
         double T_to_Ryd;
         bool classical;
+        bool calc_FE_bubble;
 
         void setup();
 

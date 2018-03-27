@@ -132,6 +132,10 @@ void ModeAnalysis::setup_mode_analysis()
     unsigned int nlist;
 
     if (kpoint->kpoint_mode == 3) {
+
+        if (!ks_analyze_mode) {
+            error->exit("setup_mode_analysis", "KPMODE = 3 must be used with FSTATE_K = 1");
+        }
         int j;
         double **vec_tmp;
         unsigned int *mode_tmp;
@@ -167,7 +171,9 @@ void ModeAnalysis::setup_mode_analysis()
 
         memory->deallocate(vec_tmp);
         memory->deallocate(mode_tmp);
+
     } else {
+
         unsigned int *kslist_arr;
         nlist = kslist.size();
 
@@ -261,8 +267,8 @@ void ModeAnalysis::run_mode_analysis()
 
         print_selfenergy(NT, T_arr);
 
-//        if (print_V3) print_V3_elements();
-        if (print_V3) print_Phi3_elements();
+        if (print_V3) print_V3_elements();
+//        if (print_V3) print_Phi3_elements();
 
         if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);
 

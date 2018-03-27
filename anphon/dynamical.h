@@ -60,6 +60,8 @@ namespace PHON_NS
         double dielec[3][3];
         double ***borncharge;
 
+        bool **is_imaginary;
+
         void diagonalize_dynamical_all();
         void setup_dynamical(std::string);
 
@@ -118,6 +120,9 @@ namespace PHON_NS
 
         void connect_band_by_eigen_similarity(std::complex<double> ***,
                                               int **);
+
+        void detect_imaginary_branches(double **);
+
 
         double **xshift_s;
         char UPLO;

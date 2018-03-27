@@ -81,12 +81,22 @@ namespace PHON_NS
                                       const unsigned int,
                                       double *);
 
+        void calc_damping_tetrahedron2(const unsigned int,
+                                       double *,
+                                       const double,
+                                       const unsigned int,
+                                       const unsigned int,
+                                       double *);
+
         int quartic_mode;
         bool use_tuned_ver;
         bool use_triplet_symmetry;
-        bool **is_imaginary;
 
         std::complex<double> V3(const unsigned int [3]);
+
+        std::complex<double> V3(const unsigned int [3],
+                                std::complex<double> *);
+
 
         std::complex<double> V4(const unsigned int [4]);
 
@@ -108,7 +118,6 @@ namespace PHON_NS
                                               int &,
                                               std::vector<double> *&);
 
-        void detect_imaginary_branches(double **);
 
         void calc_self3omega_tetrahedron(const double,
                                          double **,
@@ -126,10 +135,10 @@ namespace PHON_NS
 
         std::complex<double> im;
 
-        double ***vec_for_v3, *invmass_for_v3;
-        double ***vec_for_v4, *invmass_for_v4;
-        int **evec_index;
-        int **evec_index4;
+        double ***relvec_v3, *invmass_v3;
+        double ***relvec_v4, *invmass_v4;
+        int **evec_index_v3;
+        int **evec_index_v4;
 
         bool sym_permutation;
 
@@ -141,10 +150,14 @@ namespace PHON_NS
                                                 std::complex<double> *,
                                                 std::complex<double> ***);
 
-        int ngroup;
-        int ngroup2;
-        std::vector<double> *fcs_group;
-        std::vector<double> *fcs_group2;
+        void phase_V3(const unsigned int,
+                      const unsigned int,
+                      std::complex<double> *);
+
+        int ngroup_v3;
+        int ngroup_v4;
+        std::vector<double> *fcs_group_v3;
+        std::vector<double> *fcs_group_v4;
         std::complex<double> *exp_phase, ***exp_phase3;
 
         int nk_grid[3];

@@ -464,7 +464,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "FSTATE_W", "FSTATE_K", "PRIMTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W"
+        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE"
     };
 
     unsigned int cellsize[3];
@@ -505,6 +505,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     bool print_fc2_ewald = false;
     bool print_self_consistent_fc2 = false;
+    bool calc_FE_bubble = false;
 
 
     // Assign values to variables
@@ -537,6 +538,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+        assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;
@@ -641,6 +643,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     gruneisen->print_gruneisen = print_gruneisen;
     gruneisen->print_newfcs = print_newfcs;
     gruneisen->delta_a = delta_a;
+    thermodynamics->calc_FE_bubble = calc_FE_bubble;
 
     ewald->print_fc2_ewald = print_fc2_ewald;
 

@@ -165,6 +165,8 @@ void PHON::setup_base()
     dos->setup();
     thermodynamics->setup();
     ewald->init();
+    anharmonic_core->setup();
+
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;
         if (thermodynamics->classical) {
@@ -249,7 +251,6 @@ void PHON::execute_RTA()
     isotope->calc_isotope_selfenergy_all();
 
     mode_analysis->setup_mode_analysis();
-    anharmonic_core->setup();
     selfenergy->setup_selfenergy();
 
     if (mode_analysis->ks_analyze_mode) {

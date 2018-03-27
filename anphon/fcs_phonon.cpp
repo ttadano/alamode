@@ -17,6 +17,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "phonons.h"
 #include "anharmonic_core.h"
 #include "system.h"
+#include "thermodynamics.h"
 #include "xml_parser.h"
 #include <string>
 #include <iostream>
@@ -77,7 +78,7 @@ void Fcs_phonon::setup(std::string mode)
         require_quartic = false;
         maxorder = 1;
 
-        if (gruneisen->print_gruneisen) {
+        if (gruneisen->print_gruneisen || thermodynamics->calc_FE_bubble) {
             require_cubic = true;
             maxorder = 2;
         }

@@ -14,7 +14,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <iostream>
 #include <fstream>
 #include <cctype>
 #include <locale>
