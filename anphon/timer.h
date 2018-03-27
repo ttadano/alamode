@@ -31,6 +31,7 @@ namespace PHON_NS
         void reset();
         double elapsed();
         void print_elapsed();
+
         std::string DateAndTime();
 
     private:

@@ -5,9 +5,9 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-MPICXX = mpic++
+MPICXX = g++-7
 CXXFLAGS = -O3 -std=c++11 -fopenmp
-INCLUDE = -I../include  -I$(HOME)/include
+INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/opt/openmpi/include
 
 LINKER = ${MPICXX}
 
@@ -16,7 +16,7 @@ LINKER = ${MPICXX}
 ## Yosemite
 LDFLAGS = -framework Accelerate
 
-LAPACK = -llapack
+LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi_cxx -lmpi -lgomp
 LIBS = ${LAPACK}  -lfftw3
 
 #----------------------------------------------

@@ -20,7 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "parsephon.h"
 #include "pointers.h"
 #include "system.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "version.h"
 #include <iostream>
 #include <iomanip>
@@ -93,7 +93,7 @@ void Gruneisen::setup()
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[1], delta_fc2);
     }
 
-    if (print_newfcs && relaxation->quartic_mode > 0) {
+    if (print_newfcs && anharmonic_core->quartic_mode > 0) {
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3);
     }
     if (print_gruneisen) {
@@ -103,7 +103,7 @@ void Gruneisen::setup()
     if (mympi->my_rank == 0) {
         if (print_newfcs) {
             std::cout << std::endl;
-            if (relaxation->quartic_mode > 0) {
+            if (anharmonic_core->quartic_mode > 0) {
                 std::cout << " NEWFCS = 1 : Harmonic and cubic force constants of " << std::endl;
             } else {
                 std::cout << " NEWFCS = 1 : Harmonic force constants of " << std::endl;
@@ -465,7 +465,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
                   + " " + std::to_string(it.pairs[1].cell_s + 1));
     }
 
-    if (relaxation->quartic_mode) {
+    if (anharmonic_core->quartic_mode) {
         for (const auto &it : fcs_phonon->force_constant_with_cell[1]) {
 
             if (it.pairs[1].index > it.pairs[2].index) continue;
