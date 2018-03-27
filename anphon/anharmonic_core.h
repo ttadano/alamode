@@ -98,18 +98,18 @@ namespace PHON_NS
 
         void setup();
 
-        void calc_damping_smearing(const unsigned int,
+        void calc_damping_smearing(unsigned int,
                                    double *,
-                                   const double,
-                                   const unsigned int,
-                                   const unsigned int,
+                                   double,
+                                   unsigned int,
+                                   unsigned int,
                                    double *);
 
-        void calc_damping_tetrahedron(const unsigned int,
+        void calc_damping_tetrahedron(unsigned int,
                                       double *,
-                                      const double,
-                                      const unsigned int,
-                                      const unsigned int,
+                                      double,
+                                      unsigned int,
+                                      unsigned int,
                                       double *);
 
         int quartic_mode;
@@ -128,27 +128,27 @@ namespace PHON_NS
                                      std::complex<double> ***);
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                     const unsigned int,
+                                     unsigned int,
                                      double ***);
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                     const unsigned int,
-                                     const int,
+                                     unsigned int,
+                                     int,
                                      std::vector<double> *,
                                      std::vector<RelativeVector> *&);
 
         void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
-                                              const unsigned int,
+                                              unsigned int,
                                               int &,
                                               std::vector<double> *&);
 
 
-        void calc_self3omega_tetrahedron(const double,
+        void calc_self3omega_tetrahedron(double,
                                          double **,
                                          std::complex<double> ***,
-                                         const unsigned int,
-                                         const unsigned int,
-                                         const unsigned int,
+                                         unsigned int,
+                                         unsigned int,
+                                         unsigned int,
                                          double *,
                                          double *);
 
@@ -189,13 +189,13 @@ namespace PHON_NS
                                                 std::complex<double> *,
                                                 std::complex<double> ***);
 
-        void calc_phi3_reciprocal(const unsigned int,
-                                  const unsigned int,
+        void calc_phi3_reciprocal(unsigned int,
+                                  unsigned int,
                                   std::complex<double> *);
 
-        void calc_phi4_reciprocal(const unsigned int,
-                                  const unsigned int,
-                                  const unsigned int,
+        void calc_phi4_reciprocal(unsigned int,
+                                  unsigned int,
+                                  unsigned int,
                                   std::complex<double> *);
     };
 }
