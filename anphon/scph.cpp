@@ -12,7 +12,7 @@
 #include "scph.h"
 #include "dynamical.h"
 #include "kpoint.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "memory.h"
 #include "thermodynamics.h"
 #include "write_phonons.h"
@@ -66,7 +66,7 @@ void Scph::set_default_variables()
     print_self_consistent_fc2 = false;
     selfenergy_offdiagonal = true;
     relax_coordinate = false;
-    
+
     xk_scph = nullptr;
     kvec_na_scph = nullptr;
     xk_interpolate = nullptr;
@@ -1669,7 +1669,7 @@ void Scph::setup_pp_interaction()
         }
     }
 
-    if (relaxation->quartic_mode != 1) {
+    if (anharmonic_core->quartic_mode != 1) {
         error->exit("setup_pp_interaction",
                     "quartic_mode should be 1 for SCPH");
     }
@@ -1686,8 +1686,8 @@ void Scph::setup_pp_interaction()
         std::sort(fcs_phonon->force_constant_with_cell[1].begin(),
                   fcs_phonon->force_constant_with_cell[1].end());
 
-        relaxation->prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3,
-                                                     ngroup, fcs_group);
+        anharmonic_core->prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3,
+                                                          ngroup, fcs_group);
 
         memory->allocate(vec_for_v3, fcs_phonon->force_constant_with_cell[1].size(), 2, 3);
         memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
@@ -1703,8 +1703,8 @@ void Scph::setup_pp_interaction()
 
             ++j;
         }
-        relaxation->prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
-                                            3, vec_for_v3);
+        anharmonic_core->prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
+                                                 3, vec_for_v3);
 
         for (i = 0; i < fcs_phonon->force_constant_with_cell[1].size(); ++i) {
             for (j = 0; j < 3; ++j) {
@@ -1718,8 +1718,8 @@ void Scph::setup_pp_interaction()
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
 
-    relaxation->prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4,
-                                                 ngroup2, fcs_group2);
+    anharmonic_core->prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4,
+                                                      ngroup2, fcs_group2);
 
     memory->allocate(vec_for_v4, fcs_phonon->force_constant_with_cell[2].size(), 3, 3);
     memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
@@ -1736,8 +1736,8 @@ void Scph::setup_pp_interaction()
 
         ++j;
     }
-    relaxation->prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
-                                        4, vec_for_v4);
+    anharmonic_core->prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
+                                             4, vec_for_v4);
 
     for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
         for (j = 0; j < 4; ++j) {
@@ -3269,7 +3269,8 @@ void Scph::write_scph_msd(double ***eval,
     memory->deallocate(msd);
 }
 
-double Scph::distance(double *x1, double *x2)
+double Scph::distance(double *x1,
+                      double *x2)
 {
     double dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
     dist = std::sqrt(dist);

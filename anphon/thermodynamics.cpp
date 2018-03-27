@@ -21,6 +21,7 @@ using namespace PHON_NS;
 Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
 {
     T_to_Ryd = k_Boltzmann / Ryd;
+    calc_FE_bubble = false;
 }
 
 Thermodynamics::~Thermodynamics() {};

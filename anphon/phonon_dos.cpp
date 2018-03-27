@@ -173,7 +173,7 @@ void Dos::calc_dos_all()
 
     if (compute_dos) {
         calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
-            dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
+                 dos_phonon, neval, integration->ismear, kpoint->kpoint_irred_all);
     }
 
     if (projected_dos) {
@@ -557,7 +557,8 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     }
 }
 
-void Dos::calc_dos_scph(double ***eval_anharm, double **dos_scph)
+void Dos::calc_dos_scph(double ***eval_anharm,
+                        double **dos_scph)
 {
     unsigned int j, k;
     unsigned int nk = kpoint->nk;

@@ -40,7 +40,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(UniversalCRT_IncludePath);$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(UniversalCRT_IncludePath);C:\boost\include\boost-1_67;$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(UniversalCRT_LibraryPath_x86);$(MSMPI_LIB32);C:\fftw3\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -90,12 +90,13 @@
     <ClCompile Include="kpoint.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
+    <ClCompile Include="mode_analysis.cpp" />
     <ClCompile Include="mpi_common.cpp" />
     <ClCompile Include="parsephon.cpp" />
     <ClCompile Include="phonons.cpp" />
     <ClCompile Include="phonon_dos.cpp" />
     <ClCompile Include="phonon_velocity.cpp" />
-    <ClCompile Include="relaxation.cpp" />
+    <ClCompile Include="anharmonic_core.cpp" />
     <ClCompile Include="scph.cpp" />
     <ClCompile Include="selfenergy.cpp" />
     <ClCompile Include="symmetry_core.cpp" />
@@ -115,13 +116,14 @@
     <ClInclude Include="isotope.h" />
     <ClInclude Include="kpoint.h" />
     <ClInclude Include="memory.h" />
+    <ClInclude Include="mode_analysis.h" />
     <ClInclude Include="mpi_common.h" />
     <ClInclude Include="parsephon.h" />
     <ClInclude Include="phonons.h" />
     <ClInclude Include="phonon_dos.h" />
     <ClInclude Include="phonon_velocity.h" />
     <ClInclude Include="pointers.h" />
-    <ClInclude Include="relaxation.h" />
+    <ClInclude Include="anharmonic_core.h" />
     <ClInclude Include="scph.h" />
     <ClInclude Include="selfenergy.h" />
     <ClInclude Include="symmetry_core.h" />

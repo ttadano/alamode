@@ -26,7 +26,8 @@ namespace PHON_NS
 
         DistWithCell();
 
-        DistWithCell(const int n, const double d) : cell(n), dist(d) {};
+        DistWithCell(const int n,
+                     const double d) : cell(n), dist(d) {};
     };
 
     inline bool operator<(const DistWithCell a,
@@ -39,6 +40,7 @@ namespace PHON_NS
     {
     public:
         Dynamical(class PHON *);
+
         ~Dynamical();
 
         unsigned int neval;
@@ -58,17 +60,26 @@ namespace PHON_NS
         double dielec[3][3];
         double ***borncharge;
 
-        void diagonalize_dynamical_all();
+        bool **is_imaginary;
 
+        void diagonalize_dynamical_all();
         void setup_dynamical(std::string);
 
-        void eval_k(double *, double *,
+        void eval_k(double *,
+                    double *,
                     std::vector<FcsClassExtent>,
-                    double *, std::complex<double> **, bool);
+                    double *,
+                    std::complex<double> **,
+                    bool);
+
         void modify_eigenvectors();
-        void eval_k_ewald(double *, double *,
+
+        void eval_k_ewald(double *,
+                          double *,
                           std::vector<FcsClassExtent>,
-                          double *, std::complex<double> **, bool,
+                          double *,
+                          std::complex<double> **,
+                          bool,
                           const int);
 
 
@@ -82,9 +93,13 @@ namespace PHON_NS
         void calc_analytic_k(double *,
                              const std::vector<FcsClassExtent> &,
                              std::complex<double> **);
-        void calc_nonanalytic_k(double *, double *,
+
+        void calc_nonanalytic_k(double *,
+                                double *,
                                 std::complex<double> **);
-        void calc_nonanalytic_k2(double *, double *,
+
+        void calc_nonanalytic_k2(double *,
+                                 double *,
                                  std::complex<double> **);
 
         void calc_analytic_k_ewald(double *,
@@ -95,11 +110,19 @@ namespace PHON_NS
         void set_default_variables();
         void deallocate_variables();
         void load_born(const unsigned int);
-
         void prepare_mindist_list(std::vector<int> **);
-        void calc_atomic_participation_ratio(std::complex<double> *, double *);
-        double distance(double *, double *);
-        void connect_band_by_eigen_similarity(std::complex<double> ***, int **);
+
+        void calc_atomic_participation_ratio(std::complex<double> *,
+                                             double *);
+
+        double distance(double *,
+                        double *);
+
+        void connect_band_by_eigen_similarity(std::complex<double> ***,
+                                              int **);
+
+        void detect_imaginary_branches(double **);
+
 
         double **xshift_s;
         char UPLO;
@@ -108,10 +131,29 @@ namespace PHON_NS
     };
 
     extern "C" {
-    void zheev_(const char *jobz, const char *uplo, int *n, std::complex<double> *a, int *lda,
-                double *w, std::complex<double> *work, int *lwork, double *rwork, int *info);
-    void zgemm_(const char *transa, const char *transb, int *m, int *n, int *k,
-                std::complex<double> *alpha, std::complex<double> *a, int *lda, std::complex<double> *b, int *ldb,
-                std::complex<double> *beta, std::complex<double> *c, int *ldc);
+    void zheev_(const char *jobz,
+                const char *uplo,
+                int *n,
+                std::complex<double> *a,
+                int *lda,
+                double *w,
+                std::complex<double> *work,
+                int *lwork,
+                double *rwork,
+                int *info);
+
+    void zgemm_(const char *transa,
+                const char *transb,
+                int *m,
+                int *n,
+                int *k,
+                std::complex<double> *alpha,
+                std::complex<double> *a,
+                int *lda,
+                std::complex<double> *b,
+                int *ldb,
+                std::complex<double> *beta,
+                std::complex<double> *c,
+                int *ldc);
     }
 }

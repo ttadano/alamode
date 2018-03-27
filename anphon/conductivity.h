@@ -20,7 +20,9 @@ namespace PHON_NS
     {
     public:
         Conductivity(class PHON *);
+
         ~Conductivity();
+
         void setup_kappa();
         void prepare_restart();
         void calc_anharmonic_imagself();
@@ -47,9 +49,11 @@ namespace PHON_NS
                                 unsigned int,
                                 double ***,
                                 double **);
+
         void average_self_energy_at_degenerate_point(int,
                                                      int,
                                                      double **);
+
         void compute_frequency_resolved_kappa(int,
                                               double ****,
                                               int);
