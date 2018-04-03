@@ -268,7 +268,7 @@ void ModeAnalysis::run_mode_analysis()
         print_selfenergy(NT, T_arr);
 
         if (print_V3) print_V3_elements();
-//        if (print_V3) print_Phi3_elements();
+        //        if (print_V3) print_Phi3_elements();
 
         if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);
 
@@ -1850,11 +1850,10 @@ void ModeAnalysis::calc_Phi3(const unsigned int knum,
             omega[2] = dynamical->eval_phonon[k2][js];
 
             ret[ik][ib] = anharmonic_core->V3(arr) * factor
-            * std::sqrt(omega[0] * omega[1] * omega[2]);
+                * std::sqrt(omega[0] * omega[1] * omega[2]);
         }
     }
 }
-
 
 
 void ModeAnalysis::print_spectral_function(const int NT,

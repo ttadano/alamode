@@ -1119,9 +1119,17 @@ void Writes::write_thermodynamics()
     std::ofstream ofs_thermo;
     std::string file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
-    if (!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
-    ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::
-        endl;
+    if (!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_thermo");
+    if (thermodynamics->calc_FE_bubble) {
+        ofs_thermo << "# The bubble free-energy is also shown." << std::endl;
+        ofs_thermo <<
+            "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy (QHA) [Ry], Free energy (Bubble) [Ry]"
+            << std::endl;
+    } else {
+        ofs_thermo <<
+            "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy (QHA) [Ry]"
+            << std::endl;
+    }
 
     for (i = 0; i < NT; ++i) {
         T = Tmin + dT * static_cast<double>(i);
@@ -1130,7 +1138,12 @@ void Writes::write_thermodynamics()
         ofs_thermo << std::setw(18) << std::scientific << thermodynamics->Cv_tot(T) / k_Boltzmann;
         ofs_thermo << std::setw(18) << thermodynamics->vibrational_entropy(T) / k_Boltzmann;
         ofs_thermo << std::setw(18) << thermodynamics->internal_energy(T);
-        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T) << std::endl;
+        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T);
+
+        if (thermodynamics->calc_FE_bubble) {
+            ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[i];
+        }
+        ofs_thermo << std::endl;
     }
 
     ofs_thermo.close();

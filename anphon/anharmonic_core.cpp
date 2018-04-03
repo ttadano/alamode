@@ -358,8 +358,24 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
     }
 }
 
-
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
+{
+    return V3(ks,
+              dynamical->eval_phonon,
+              dynamical->evec_phonon);
+}
+
+std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
+{
+    return V4(ks,
+              dynamical->eval_phonon,
+              dynamical->evec_phonon);
+}
+
+
+std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
+                                        double **eval_phonon,
+                                        std::complex<double> ***evec_phonon)
 {
     int i;
     unsigned int kn[3], sn[3];
@@ -373,7 +389,7 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
     for (i = 0; i < 3; ++i) {
         kn[i] = ks[i] / ns;
         sn[i] = ks[i] % ns;
-        omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
+        omega[i] = eval_phonon[kn[i]][sn[i]];
     }
 
     // Return zero if any of the involving phonon has imaginary frequency
@@ -388,9 +404,9 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
 #pragma omp parallel for private(ret), reduction(+: ret_re, ret_im)
 #endif
     for (i = 0; i < ngroup_v3; ++i) {
-        ret = dynamical->evec_phonon[kn[0]][sn[0]][evec_index_v3[i][0]]
-            * dynamical->evec_phonon[kn[1]][sn[1]][evec_index_v3[i][1]]
-            * dynamical->evec_phonon[kn[2]][sn[2]][evec_index_v3[i][2]]
+        ret = evec_phonon[kn[0]][sn[0]][evec_index_v3[i][0]]
+            * evec_phonon[kn[1]][sn[1]][evec_index_v3[i][1]]
+            * evec_phonon[kn[2]][sn[2]][evec_index_v3[i][2]]
             * invmass_v3[i] * phi3_reciprocal[i];
         ret_re += ret.real();
         ret_im += ret.imag();
@@ -495,7 +511,9 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
 }
 
 
-std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
+std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
+                                        double **eval_phonon,
+                                        std::complex<double> ***evec_phonon)
 {
     int i;
     int ns = dynamical->neval;
@@ -508,7 +526,7 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
     for (i = 0; i < 4; ++i) {
         kn[i] = ks[i] / ns;
         sn[i] = ks[i] % ns;
-        omega[i] = dynamical->eval_phonon[kn[i]][sn[i]];
+        omega[i] = eval_phonon[kn[i]][sn[i]];
     }
     // Return zero if any of the involving phonon has imaginary frequency
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8 || omega[3] < eps8) return 0.0;
@@ -531,10 +549,10 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
 #pragma omp parallel for private(ret), reduction(+: ret_re, ret_im)
 #endif
     for (i = 0; i < ngroup_v4; ++i) {
-        ret = dynamical->evec_phonon[kn[0]][sn[0]][evec_index_v4[i][0]]
-            * dynamical->evec_phonon[kn[1]][sn[1]][evec_index_v4[i][1]]
-            * dynamical->evec_phonon[kn[2]][sn[2]][evec_index_v4[i][2]]
-            * dynamical->evec_phonon[kn[3]][sn[3]][evec_index_v4[i][3]]
+        ret = evec_phonon[kn[0]][sn[0]][evec_index_v4[i][0]]
+            * evec_phonon[kn[1]][sn[1]][evec_index_v4[i][1]]
+            * evec_phonon[kn[2]][sn[2]][evec_index_v4[i][2]]
+            * evec_phonon[kn[3]][sn[3]][evec_index_v4[i][3]]
             * invmass_v4[i] * phi4_reciprocal[i];
         ret_re += ret.real();
         ret_im += ret.imag();
@@ -806,7 +824,9 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
             arr[1] = ns * k1 + is;
             arr[2] = ns * k2 + js;
 
-            v3_arr[ik][ib] = std::norm(V3(arr)) * multi;
+            v3_arr[ik][ib] = std::norm(V3(arr,
+                                          dynamical->eval_phonon,
+                                          dynamical->evec_phonon)) * multi;
         }
     }
 
@@ -1003,7 +1023,9 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
                 arr[1] = ns * k1 + is;
                 arr[2] = ns * k2 + js;
 
-                v3_arr[ik][ib] = std::norm(V3(arr));
+                v3_arr[ik][ib] = std::norm(V3(arr,
+                                              dynamical->eval_phonon,
+                                              dynamical->evec_phonon));
 
             } else {
                 v3_arr[ik][ib] = 0.0;
@@ -1352,7 +1374,9 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                 arr[1] = ns * kpairs[ik_now][0] + is;
                 arr[2] = ns * kpairs[ik_now][1] + js;
 
-                v3_arr_loc[ib] = std::norm(V3(arr));
+                v3_arr_loc[ib] = std::norm(V3(arr,
+                                              dynamical->eval_phonon,
+                                              dynamical->evec_phonon));
             }
         }
         MPI_Gather(&v3_arr_loc[0], ns2, MPI_DOUBLE,

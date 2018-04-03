@@ -779,7 +779,7 @@ void Dynamical::diagonalize_dynamical_all()
         std::cout << "done!" << std::endl;
     }
 
-    if (kpoint->kpoint_mode == 2) {
+    if (kpoint->kpoint_mode == 2 && phon->mode == "RTA") {
         detect_imaginary_branches(dynamical->eval_phonon);
     }
 }

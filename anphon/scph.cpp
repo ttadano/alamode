@@ -34,6 +34,7 @@
 #include "timer.h"
 #include <cmath>
 #include <cstdlib>
+#include <vector>
 
 #if defined(WIN32) || defined(_WIN32)
 #pragma comment(lib, "libfftw3-3.lib")
@@ -218,16 +219,29 @@ void Scph::exec_scph()
     }
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
-        exec_interpolation(delta_dymat_scph[iT], eval_anharm[iT], evec_anharm[iT]);
+        exec_interpolation(delta_dymat_scph[iT],
+                           eval_anharm[iT],
+                           evec_anharm[iT]);
     }
+
+    if (kpoint->kpoint_mode == 2) {
+        if (thermodynamics->calc_FE_bubble) {
+            thermodynamics->compute_free_energy_bubble_SCPH(eval_anharm,
+                                                            evec_anharm);
+        }
+
+    }
+
     if (mympi->my_rank == 0) {
         if (kpoint->kpoint_mode == 0) {
             write_scph_energy(eval_anharm);
         } else if (kpoint->kpoint_mode == 1) {
             write_scph_bands(eval_anharm);
         } else if (kpoint->kpoint_mode == 2) {
-            write_scph_dos(eval_anharm);
-            //           write_scph_thermodynamics(eval_anharm);
+            if (dos->compute_dos) {
+                write_scph_dos(eval_anharm);
+            }
+            write_scph_thermodynamics(eval_anharm, evec_anharm);
             if (writes->print_msd) {
                 write_scph_msd(eval_anharm, evec_anharm);
             }
@@ -248,6 +262,11 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
     double Tmax = system->Tmax;
     double dT = system->dT;
     NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    std::vector<double> Temp_array(NT);
+
+    for (int i = 0; i < NT; ++i) {
+        Temp_array[i] = Tmin + dT * static_cast<double>(i);
+    }
 
     if (mympi->my_rank == 0) {
 
@@ -294,34 +313,54 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
             error->exit("load_scph_dymat_from_file",
                         "The number of KMESH_SCPH is not consistent");
         }
-        if (std::abs(Tmin_tmp - Tmin) > eps12 ||
-            std::abs(Tmax_tmp - Tmax) > eps12 ||
-            std::abs(dT_tmp - dT) > eps12) {
-            error->exit("load_scph_dymat_from_file",
-                        "The temperature information is not consistent");
-        }
         if (nonanalytic_tmp != dynamical->nonanalytic) {
             error->exit("load_scph_dymat_from_file",
-                        "The nonanalytic mode is not consistent");
+                        "The NONANALYTIC tag is not consistent");
         }
         if (consider_offdiag_tmp != consider_offdiagonal) {
             error->exit("load_scph_dymat_from_file",
-                        "The off-diagonal mode is not consistent");
+                        "The SELF_OFFDIAG tag is not consistent");
         }
-        for (iT = 0; iT < NT; ++iT) {
+
+        // Check if the precalculated data for the given temperature range exists
+        int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
+        std::vector<double> Temp_array_ref(NT_ref);
+        for (int i = 0; i < NT_ref; ++i) {
+            Temp_array_ref[i] = Tmin_tmp + dT_tmp * static_cast<double>(i);
+        }
+        std::vector<int> flag_load(NT_ref);
+        for (int i = 0; i < NT_ref; ++i) {
+            flag_load[i] = 0;
+            for (int j = 0; j < NT; ++j) {
+                if (std::abs(Temp_array_ref[i] - Temp_array[j]) < eps6) {
+                    flag_load[i] = 1;
+                    break;
+                }
+            }
+        }
+        int icount = 0;
+        for (iT = 0; iT < NT_ref; ++iT) {
             ifs_dymat >> str_dummy >> temp;
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     for (ik = 0; ik < nk_interpolate; ++ik) {
                         ifs_dymat >> dymat_real >> dymat_imag;
-                        dymat_out[iT][is][js][ik]
-                            = std::complex<double>(dymat_real, dymat_imag);
+                        if (flag_load[iT]) {
+                            dymat_out[icount][is][js][ik]
+                                = std::complex<double>(dymat_real, dymat_imag);
+                        }
                     }
                 }
             }
+            if (flag_load[iT]) icount += 1;
         }
 
         ifs_dymat.close();
+
+        if (icount != NT) {
+            error->exit("load_scph_dymat_from_file",
+                        "The temperature information is not consistent");
+        }
         std::cout << " done." << std::endl;
     }
     // Broadcast to all MPI threads
@@ -2909,9 +2948,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 if (!has_negative) {
                     std::cout << "  DIFF < SCPH_TOL : break SCPH loop" << std::endl;
                     break;
-                } else {
-                    std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected." << std::endl;
                 }
+                std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected." << std::endl;
             }
         }
 
@@ -3125,9 +3163,9 @@ void Scph::write_scph_dos(double ***eval)
     memory->deallocate(dos_scph);
 }
 
-void Scph::write_scph_thermodynamics(double ***eval)
+void Scph::write_scph_thermodynamics(double ***eval,
+                                     std::complex<double> ****evec)
 {
-    // This function is incorrect. Don't use it.
     int i;
     unsigned int ik, is;
     unsigned int nk = kpoint->nk;
@@ -3137,7 +3175,7 @@ void Scph::write_scph_thermodynamics(double ***eval)
     double dT = system->dT;
     unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     double temp;
-    double tmp1, tmp2, tmp3, tmp4;
+    double tmp1, tmp2, tmp3;
     double omega, x;
     double T_to_Ryd = thermodynamics->T_to_Ryd;
 
@@ -3149,8 +3187,16 @@ void Scph::write_scph_thermodynamics(double ***eval)
     if (!ofs_thermo)
         error->exit("write_scph_thermodynamics",
                     "cannot open file_thermo");
-    ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::
-        endl;
+
+    if (thermodynamics->calc_FE_bubble) {
+        ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
+        ofs_thermo <<
+            "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH) [Ry], F_{vib} (Bubble) [Ry]"
+            << std::endl;
+    } else {
+        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH) [Ry]"
+            << std::endl;
+    }
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
 
@@ -3158,10 +3204,8 @@ void Scph::write_scph_thermodynamics(double ***eval)
 
         tmp1 = 0.0;
         tmp2 = 0.0;
-        tmp3 = 0.0;
-        tmp4 = 0.0;
 
-#pragma omp parallel for private(ik, is, omega, x), reduction(+:tmp1,tmp2,tmp3,tmp4)
+#pragma omp parallel for private(ik, is, omega, x), reduction(+:tmp1,tmp2)
         for (i = 0; i < N; ++i) {
             ik = i / ns;
             is = i % ns;
@@ -3170,35 +3214,86 @@ void Scph::write_scph_thermodynamics(double ***eval)
             if (omega <= eps8) continue;
 
             tmp1 += thermodynamics->Cv(omega, temp);
-            tmp3 += omega * thermodynamics->coth_T(omega, temp);
 
             if (std::abs(temp) < eps) {
-                tmp4 += 0.5 * omega;
+                tmp2 += 0.5 * omega;
             } else {
                 x = omega / (temp * T_to_Ryd);
-                tmp2 += std::log(1.0 - std::exp(-x)) - x / (std::exp(x) - 1.0);
-                tmp4 += 0.5 * x + std::log(1.0 - std::exp(-x));
+                tmp2 += 0.5 * x + std::log(1.0 - std::exp(-x));
             }
         }
 
         tmp1 /= static_cast<double>(nk);
-        tmp2 *= 0.5 / static_cast<double>(nk);
-        tmp3 *= -k_Boltzmann / static_cast<double>(nk);
         if (std::abs(temp) < eps) {
-            tmp4 /= static_cast<double>(nk);
+            tmp2 /= static_cast<double>(nk);
         } else {
-            tmp4 *= temp * T_to_Ryd / static_cast<double>(nk);
+            tmp2 *= temp * T_to_Ryd / static_cast<double>(nk);
         }
+        tmp3 = tmp2 + FE_scph(iT, eval[iT], evec[iT]);
 
         ofs_thermo << std::setw(16) << std::fixed << temp;
         ofs_thermo << std::setw(18) << std::scientific << tmp1 / k_Boltzmann;
-        ofs_thermo << std::setw(18) << tmp2 / k_Boltzmann;
+        ofs_thermo << std::setw(18) << tmp2;
         ofs_thermo << std::setw(18) << tmp3;
-        ofs_thermo << std::setw(18) << tmp4 << std::endl;
+
+        if (thermodynamics->calc_FE_bubble) {
+            ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[iT];
+        }
+        ofs_thermo << std::endl;
     }
 
     ofs_thermo.close();
 }
+
+double Scph::FE_scph(unsigned int iT,
+                     double **eval,
+                     std::complex<double> ***evec)
+{
+    // This function calculates the additional free energy by the SCPH approximation
+    int ik, is, js, ks, ls;
+    int i;
+    unsigned int nk = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+    double ret;
+    double omega, omega2_harm;
+    std::complex<double> tmp_c;
+    double temp = system->Tmin + static_cast<double>(iT) * system->dT;
+    int N = nk * ns;
+
+    ret = 0.0;
+
+#pragma omp parallel for private(ik, is, js, ks, ls, omega, tmp_c), reduction(+ : ret)
+    for (i = 0; i < N; ++i) {
+        ik = i / ns;
+        is = i % ns;
+        omega = eval[ik][is];
+        if (std::abs(omega) < eps6) continue;
+
+        tmp_c = std::complex<double>(0.0, 0.0);
+
+        for (js = 0; js < ns; ++js) {
+            omega2_harm = dynamical->eval_phonon[ik][js];
+            if (omega2_harm >= 0.0) {
+                omega2_harm = std::pow(omega2_harm, 2);
+            } else {
+                omega2_harm = -std::pow(omega2_harm, 2);
+            }
+
+            for (ks = 0; ks < ns; ++ks) {
+                for (ls = 0; ls < ns; ++ls) {
+                    tmp_c += omega2_harm
+                        * dynamical->evec_phonon[ik][js][ks] * std::conj(dynamical->evec_phonon[ik][js][ls])
+                        * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
+                }
+            }
+        }
+
+        ret += (tmp_c.real() - omega * omega) * (1.0 + 2.0 * thermodynamics->fB(omega, temp)) / (8.0 * omega);
+    }
+
+    return ret / static_cast<double>(nk);
+}
+
 
 void Scph::write_scph_msd(double ***eval,
                           std::complex<double> ****evec)

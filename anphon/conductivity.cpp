@@ -186,38 +186,40 @@ void Conductivity::prepare_restart()
         writes->fs_result.open(writes->file_result.c_str(), std::ios::app | std::ios::out);
     }
 
-
     // Add vks_done list here
 
     if (mympi->my_rank == 0) {
         nks_done = vks_done.size();
     }
     MPI_Bcast(&nks_done, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    memory->allocate(arr_done, nks_done);
-
-    if (mympi->my_rank == 0) {
-        for (i = 0; i < nks_done; ++i) {
-            arr_done[i] = vks_done[i];
-        }
-    }
-    MPI_Bcast(arr_done, nks_done, MPI_INT, 0, MPI_COMM_WORLD);
-
     nshift_restart = nks_done;
 
-    // Remove vks_done elements from vks_job
+    if (nks_done > 0) {
+        memory->allocate(arr_done, nks_done);
 
-    for (i = 0; i < nks_done; ++i) {
-
-        it_set = vks_job.find(arr_done[i]);
-
-        if (it_set == vks_job.end()) {
-            error->exit("prepare_restart", "This cannot happen");
-        } else {
-            vks_job.erase(it_set);
+        if (mympi->my_rank == 0) {
+            for (i = 0; i < nks_done; ++i) {
+                arr_done[i] = vks_done[i];
+            }
         }
-    }
+        MPI_Bcast(&arr_done[0], nks_done, MPI_INT, 0, MPI_COMM_WORLD);
 
-    memory->deallocate(arr_done);
+        // Remove vks_done elements from vks_job
+
+        for (i = 0; i < nks_done; ++i) {
+
+            it_set = vks_job.find(arr_done[i]);
+
+            if (it_set == vks_job.end()) {
+                std::cout << " rank = " << mympi->my_rank
+                    << " arr_done = " << arr_done[i] << std::endl;
+                error->exit("prepare_restart", "This cannot happen");
+            } else {
+                vks_job.erase(it_set);
+            }
+        }
+        memory->deallocate(arr_done);
+    }
     vks_done.clear();
 }
 

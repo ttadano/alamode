@@ -208,6 +208,10 @@ void PHON::execute_phonons()
         gruneisen->calc_gruneisen();
     }
 
+    if (thermodynamics->calc_FE_bubble) {
+        thermodynamics->compute_free_energy_bubble();
+    }
+
     if (mympi->my_rank == 0) {
         writes->print_phonon_energy();
         writes->write_phonon_info();

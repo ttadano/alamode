@@ -206,7 +206,7 @@ namespace PHON_NS
         void get_unique_triplet_k(const int,
                                   const bool,
                                   const bool,
-                                  std::vector<KsListGroup> &, 
+                                  std::vector<KsListGroup> &,
                                   const int sign = -1);
 
     private:

@@ -132,7 +132,8 @@ namespace PHON_NS
         void write_scph_energy(double ***);
         void write_scph_bands(double ***);
         void write_scph_dos(double ***);
-        void write_scph_thermodynamics(double ***);
+        void write_scph_thermodynamics(double ***,
+                                       std::complex<double> ****);
         void write_scph_msd(double ***,
                             std::complex<double> ****);
 
@@ -211,6 +212,10 @@ namespace PHON_NS
                                int,
                                int,
                                int);
+
+        double FE_scph(unsigned int,
+                       double **,
+                       std::complex<double> ***);
     };
 
     extern "C" {

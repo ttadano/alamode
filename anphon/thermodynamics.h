@@ -11,6 +11,7 @@
 #pragma once
 
 #include "pointers.h"
+#include <complex>
 
 namespace PHON_NS
 {
@@ -24,6 +25,7 @@ namespace PHON_NS
         double T_to_Ryd;
         bool classical;
         bool calc_FE_bubble;
+        double *FE_bubble;
 
         void setup();
 
@@ -59,5 +61,18 @@ namespace PHON_NS
 
         double coth_T(double,
                       double);
+
+        void compute_free_energy_bubble();
+        void compute_free_energy_bubble_SCPH(double ***,
+                                             std::complex<double> ****);
+
+
+        void Calc_FE_bubble(double **,
+                            std::complex<double> ***,
+                            double *);
+
+        void Calc_FE_bubble_SCPH(double ***,
+                                 std::complex<double> ****,
+                                 double *);
     };
 }

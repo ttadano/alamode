@@ -697,9 +697,8 @@ void System::load_system_info_from_XML()
                 map_s2p[atom_s].atom_num = atom_p;
                 map_s2p[atom_s].tran_num = tran;
             }
-
-
         }
+
     }
 
     MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
