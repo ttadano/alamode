@@ -646,8 +646,8 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval,
                             omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
                             omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
-                            v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval[iT], evec[iT])) * static_cast<double>
-                                (multi);
+                            v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval[iT], evec[iT]))
+                                * static_cast<double>(multi);
 
                             temp = system->Tmin + static_cast<double>(iT) * system->dT;
                             n0 = thermodynamics->fB(omega0, temp);
