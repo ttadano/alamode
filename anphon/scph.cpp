@@ -3550,8 +3550,10 @@ void Scph::mpi_bcast_complex(std::complex<double> ****data,
                              const int nk,
                              const int ns)
 {
-#ifdef MPI_COMPLEX16_M
+#ifdef MPI_COMPLEX16
     MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
+#elif defined MPI_DOUBLE_COMPLEX
+    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #else
     unsigned int iT, ik, is, js;
     double ***data_real, ***data_imag;
