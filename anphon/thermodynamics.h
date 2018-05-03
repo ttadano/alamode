@@ -66,13 +66,12 @@ namespace PHON_NS
         void compute_free_energy_bubble_SCPH(double ***,
                                              std::complex<double> ****);
 
+        void compute_FE_bubble(double **,
+                               std::complex<double> ***,
+                               double *);
 
-        void Calc_FE_bubble(double **,
-                            std::complex<double> ***,
-                            double *);
-
-        void Calc_FE_bubble_SCPH(double ***,
-                                 std::complex<double> ****,
-                                 double *);
+        void compute_FE_bubble_SCPH(double ***,
+                                    std::complex<double> ****,
+                                    double *);
     };
 }

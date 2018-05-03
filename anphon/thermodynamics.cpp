@@ -399,9 +399,9 @@ void Thermodynamics::compute_free_energy_bubble()
 
     memory->allocate(FE_bubble, NT);
 
-    Calc_FE_bubble(dynamical->eval_phonon,
-                   dynamical->evec_phonon,
-                   FE_bubble);
+    compute_FE_bubble(dynamical->eval_phonon,
+                      dynamical->evec_phonon,
+                      FE_bubble);
 
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl << std::endl;
@@ -424,7 +424,7 @@ void Thermodynamics::compute_free_energy_bubble_SCPH(double ***eval_scph,
 
     memory->allocate(FE_bubble, NT);
 
-    Calc_FE_bubble_SCPH(eval_scph, evec_scph, FE_bubble);
+    compute_FE_bubble_SCPH(eval_scph, evec_scph, FE_bubble);
 
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl << std::endl;
@@ -432,9 +432,9 @@ void Thermodynamics::compute_free_energy_bubble_SCPH(double ***eval_scph,
 }
 
 
-void Thermodynamics::Calc_FE_bubble(double **eval,
-                                    std::complex<double> ***evec,
-                                    double *FE_bubble)
+void Thermodynamics::compute_FE_bubble(double **eval,
+                                       std::complex<double> ***evec,
+                                       double *FE_bubble)
 {
     // This function calculates the free energy of the bubble diagram
     int i;
@@ -554,9 +554,9 @@ void Thermodynamics::Calc_FE_bubble(double **eval,
 }
 
 
-void Thermodynamics::Calc_FE_bubble_SCPH(double ***eval,
-                                         std::complex<double> ****evec,
-                                         double *FE_bubble)
+void Thermodynamics::compute_FE_bubble_SCPH(double ***eval,
+                                            std::complex<double> ****evec,
+                                            double *FE_bubble)
 {
     // This function calculates the free energy of the bubble diagram
     int i;
@@ -646,8 +646,8 @@ void Thermodynamics::Calc_FE_bubble_SCPH(double ***eval,
                             omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
                             omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
-                            v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval[iT], evec[iT])) * static_cast<double>
-                                (multi);
+                            v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval[iT], evec[iT]))
+                                * static_cast<double>(multi);
 
                             temp = system->Tmin + static_cast<double>(iT) * system->dT;
                             n0 = thermodynamics->fB(omega0, temp);

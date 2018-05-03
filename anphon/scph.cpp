@@ -187,20 +187,19 @@ void Scph::exec_scph()
     double Tmax = system->Tmax;
     double dT = system->dT;
 
-    double ***eval_anharm;
-    std::complex<double> ****evec_anharm;
-    std::complex<double> ****delta_dymat_scph;
+    double ***eval_anharm = nullptr;
+    std::complex<double> ****evec_anharm = nullptr;
+    std::complex<double> ****delta_dymat_scph = nullptr;
 
-
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     MPI_Bcast(&restart_scph, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&selfenergy_offdiagonal, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ialgo, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
+    //   if (mympi->my_rank == 0) {
     memory->allocate(delta_dymat_scph, NT, ns, ns, nk_interpolate);
-    memory->allocate(eval_anharm, NT, nk_ref, ns);
-    memory->allocate(evec_anharm, NT, nk_ref, ns, ns);
+    //   }
 
     if (restart_scph) {
 
@@ -218,18 +217,35 @@ void Scph::exec_scph()
         }
     }
 
-    for (unsigned int iT = 0; iT < NT; ++iT) {
+    //   if (mympi->my_rank == 0) {
+    memory->allocate(eval_anharm, NT, nk_ref, ns);
+    memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // This requires lots of RAM
+
+    for (auto iT = 0; iT < NT; ++iT) {
         exec_interpolation(delta_dymat_scph[iT],
                            eval_anharm[iT],
                            evec_anharm[iT]);
     }
+    //    }
+    //   if (delta_dymat_scph) {
+    memory->deallocate(delta_dymat_scph);
+    //   }
 
     if (kpoint->kpoint_mode == 2) {
         if (thermodynamics->calc_FE_bubble) {
+
+            /*
+            if (mympi->my_rank > 0) {
+                memory->allocate(eval_anharm, NT, nk_ref, ns);
+                memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // Memory intensive
+            }
+
+            MPI_Bcast(&eval_anharm[0][0][0], NT * nk_ref * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            mpi_bcast_complex(evec_anharm, NT, nk_ref, ns);
+            */
             thermodynamics->compute_free_energy_bubble_SCPH(eval_anharm,
                                                             evec_anharm);
         }
-
     }
 
     if (mympi->my_rank == 0) {
@@ -248,9 +264,12 @@ void Scph::exec_scph()
         }
     }
 
-    memory->deallocate(eval_anharm);
-    memory->deallocate(evec_anharm);
-    memory->deallocate(delta_dymat_scph);
+    if (eval_anharm) {
+        memory->deallocate(eval_anharm);
+    }
+    if (evec_anharm) {
+        memory->deallocate(evec_anharm);
+    }
 }
 
 
@@ -3533,43 +3552,45 @@ void Scph::mpi_bcast_complex(std::complex<double> ****data,
 {
 #ifdef MPI_COMPLEX16
     MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
+#elif defined MPI_DOUBLE_COMPLEX
+    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #else
-    unsigned int i, iT, ik, is, js;
-    double ****data_real, ****data_imag;
+    unsigned int iT, ik, is, js;
+    double ***data_real, ***data_imag;
 
-    memory->allocate(data_real, NT, ns, ns, nk);
-    memory->allocate(data_imag, NT, ns, ns, nk);
+    memory->allocate(data_real, ns, ns, nk);
+    memory->allocate(data_imag, ns, ns, nk);
 
-    if (mympi->my_rank == 0) {
-        for (iT = 0; iT < NT; ++iT) {
+    for (iT = 0; iT < NT; ++iT) {
+
+        if (mympi->my_rank == 0) {
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     for (ik = 0; ik < nk; ++ik) {
 
-                        data_real[iT][is][js][ik] = data[iT][is][js][ik].real();
-                        data_imag[iT][is][js][ik] = data[iT][is][js][ik].imag();
-                    }
-                }
-            }
-        }
-    }
-
-    MPI_Bcast(&data_real[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&data_imag[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    if (mympi->my_rank > 0) {
-        for (iT = 0; iT < NT; ++iT) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    for (ik = 0; ik < nk; ++ik) {
-                        data[iT][is][js][ik]
-                            = std::complex<double>(data_real[iT][is][js][ik],
-                                                   data_imag[iT][is][js][ik]);
+                        data_real[is][js][ik] = data[iT][is][js][ik].real();
+                        data_imag[is][js][ik] = data[iT][is][js][ik].imag();
                     }
                 }
             }
         }
 
+        MPI_Bcast(&data_real[0][0][0], nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&data_imag[0][0][0], nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        if (mympi->my_rank > 0) {
+            for (iT = 0; iT < NT; ++iT) {
+                for (is = 0; is < ns; ++is) {
+                    for (js = 0; js < ns; ++js) {
+                        for (ik = 0; ik < nk; ++ik) {
+                            data[iT][is][js][ik]
+                                = std::complex<double>(data_real[is][js][ik],
+                                                       data_imag[is][js][ik]);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     memory->deallocate(data_real);
