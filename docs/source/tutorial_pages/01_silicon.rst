@@ -92,7 +92,7 @@ You need to specify an input file with equilibrium atomic positions either by th
 Then, calculate atomic forces for all the configurations. This can be done with a simple shell script 
 as follows::
 
-    !#/bin/bash
+    #!/bin/bash
 
     # Assume we have 20 displaced configurations for QE [disp01.pw.in,..., disp20.pw.in].
 

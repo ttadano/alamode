@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Binaries
-
-LAMMPS=${HOME}/src/lammps/src/lmp_serial
+# Binaries 
+#LAMMPS=${HOME}/src/lammps/src/lmp_serial
+LAMMPS=/usr/local/bin/lmp
 ALAMODE_ROOT=${HOME}/Work/alamode/
 
 # Generate displacement patterns
@@ -395,4 +395,4 @@ cat << EOF > RTA.in
 
 EOF
 
-mpirun -np 4 ${ALAMODE_ROOT}/anphon/anphon RTA.in > RTA.log
+mpirun -np 1 ${ALAMODE_ROOT}/anphon/anphon RTA.in > RTA.log
