@@ -120,7 +120,7 @@ void Dos::setup()
         }
 
         if (two_phonon_dos) {
-            memory->allocate(dos2_phonon, kpoint->nk_irred, n_energy, 4);
+            memory->allocate(dos2_phonon, kpoint->nk_irred, n_energy, 2);
         }
 
         if (scattering_phase_space == 1) {
@@ -358,22 +358,26 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
     memory->allocate(weight, n, nk);
     memory->allocate(k_pair, nk);
 
+    double ****dos2_decompose;
+    memory->allocate(dos2_decompose, n, ns2, nk, 2);
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
     for (ik = 0; ik < nk_reduced; ++ik) {
+
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 2; ++j) {
+                ret[ik][i][j] = 0.0;
+            }
+        }
+
+        if (ik > 0) continue;
 
         knum = kpinfo[ik][0].knum;
 
         for (jk = 0; jk < nk; ++jk) {
             for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] + kpoint->xk[jk][i];
             k_pair[jk] = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
-        }
-
-        for (i = 0; i < n; ++i) {
-            for (j = 0; j < 2; ++j) {
-                ret[ik][i][j] = 0.0;
-            }
         }
 
         for (ib = 0; ib < ns2; ++ib) {
@@ -405,6 +409,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
                                                              weight[i], e_tmp[j], energy[i]);
                         for (k = 0; k < nk; ++k) {
                             ret[ik][i][j] += weight[i][k];
+                            dos2_decompose[i][ib][k][j] = weight[i][k];
                         }
                     }
                 }
@@ -421,6 +426,7 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
                                                           smearing_method);
                         for (k = 0; k < nk; ++k) {
                             ret[ik][i][j] += weight[i][k];
+                            dos2_decompose[i][ib][k][j] = weight[i][k];
                         }
                     }
                 }
@@ -436,6 +442,42 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
     }
+
+    if (mympi->my_rank == 0) {
+        std::string file_tdos;
+        std::ofstream ofs_tdos;
+
+        file_tdos = input->job_title + ".tdos2";
+        ofs_tdos.open(file_tdos.c_str(), std::ios::out);
+
+        ofs_tdos << "# Two-phonon DOS (TDOS) at q = 0. " << std::endl;
+        ofs_tdos << "# Energy 'w'[cm^-1], momentum k, band index 'i', band index 'j', emission delta(w-w_{ki}-w_{kj}), absorption delta (w-w_{ki}+w_{kj})" << std::endl;
+
+        for (k = 0; k < nk; ++k) {
+            for (j = 0; j < 3; ++j) xk_tmp[j] = kpoint->xk[k][j];
+            for (ib = 0; ib < ns2; ++ib) {
+                is = ib / ns;
+                js = ib % ns;
+
+                for (i = 0; i < n; ++i) {
+                    ofs_tdos << std::setw(15) << energy[i];
+                    ofs_tdos << std::setw(10) << xk_tmp[0];
+                    ofs_tdos << std::setw(10) << xk_tmp[1];
+                    ofs_tdos << std::setw(10) << xk_tmp[2];
+                    ofs_tdos << std::setw(4) << is + 1;
+                    ofs_tdos << std::setw(4) << js + 1;
+                    ofs_tdos << std::setw(15) << dos2_decompose[i][ib][k][0];
+                    ofs_tdos << std::setw(15) << dos2_decompose[i][ib][k][1];
+                    ofs_tdos << std::endl;
+                }
+                ofs_tdos << std::endl;
+            }
+            ofs_tdos << std::endl;
+        }
+        ofs_tdos.close();
+    }
+
+    memory->deallocate(dos2_decompose);
 }
 
 void Dos::calc_total_scattering_phase_space(double **omega,
