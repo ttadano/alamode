@@ -196,11 +196,22 @@ void Constraint::setup()
             nparam = fcs->nequiv[order].size();
             memory->allocate(arr_tmp, nparam);
 
+            if (const_symmetry[order].size() > 0) {
+                for (it_const = const_symmetry[order].begin();
+                     it_const != const_symmetry[order].end(); ++it_const) {
+                    for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
+                    const_self[order].push_back(ConstraintClass(nparam, arr_tmp));
+                }
+         //       remove_redundant_rows(nparam, const_self[order], eps8);
+            }
+
+
             for (it_const = const_translation[order].begin();
                  it_const != const_translation[order].end(); ++it_const) {
                 for (i = 0; i < nparam; ++i) arr_tmp[i] = (*it_const).w_const[i];
                 const_self[order].push_back(ConstraintClass(nparam, arr_tmp));
             }
+            remove_redundant_rows(nparam, const_self[order], eps8);
 
             if (const_rotation_self[order].size() > 0) {
                 for (it_const = const_rotation_self[order].begin();
@@ -211,6 +222,7 @@ void Constraint::setup()
                 remove_redundant_rows(nparam, const_self[order], eps8);
             }
 
+/*
             if (const_symmetry[order].size() > 0) {
                 for (it_const = const_symmetry[order].begin();
                      it_const != const_symmetry[order].end(); ++it_const) {
@@ -219,6 +231,7 @@ void Constraint::setup()
                 }
                 remove_redundant_rows(nparam, const_self[order], eps8);
             }
+*/
 
             memory->deallocate(arr_tmp);
             const_translation[order].clear();
