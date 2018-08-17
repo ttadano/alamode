@@ -907,6 +907,7 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
     double T_tmp;
     double n1, n2;
     double f1, f2;
+    double multi;
 
     double xk_tmp[3];
     double omega_inner[2];
@@ -976,31 +977,10 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
                                                      omega);
             }
 
-            // Loop for irreducible k points
             for (ik = 0; ik < npair_uniq; ++ik) {
-
-                delta_arr[ik][ib][0] = 0.0;
-                delta_arr[ik][ib][1] = 0.0;
-
-                for (i = 0; i < triplet[ik].group.size(); ++i) {
-                    jk = triplet[ik].group[i].ks[0];
-                    delta_arr[ik][ib][0] += weight_tetra[0][jk];
-                    delta_arr[ik][ib][1] += weight_tetra[1][jk] - weight_tetra[2][jk];
-                }
-
-                // Calculate the matrix element V3 only when the weight is nonzero.
-                //if (delta_arr[ik][ib][0] > 0.0 || std::abs(delta_arr[ik][ib][1]) > 0.0) {
-                //    k1 = triplet[ik].group[0].ks[0];
-                //    k2 = triplet[ik].group[0].ks[1];
-
-                //    arr[0] = ns * knum_minus + snum;
-                //    arr[1] = ns * k1 + is;
-                //    arr[2] = ns * k2 + js;
-
-                //    v3_arr[ik][ib] = std::norm(V3(arr));
-                //} else {
-                //    v3_arr[ik][ib] = 0.0;
-                //}
+                jk = triplet[ik].group[0].ks[0];
+                delta_arr[ik][ib][0] = weight_tetra[0][jk];
+                delta_arr[ik][ib][1] = weight_tetra[1][jk] - weight_tetra[2][jk];
             }
         }
 
@@ -1012,6 +992,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
         k1 = triplet[ik].group[0].ks[0];
         k2 = triplet[ik].group[0].ks[1];
+
+        multi = static_cast<double>(triplet[ik].group.size());
 
         for (ib = 0; ib < ns2; ++ib) {
             is = ib / ns;
@@ -1025,7 +1007,7 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
                 v3_arr[ik][ib] = std::norm(V3(arr,
                                               dynamical->eval_phonon,
-                                              dynamical->evec_phonon));
+                                              dynamical->evec_phonon)) * multi;
 
             } else {
                 v3_arr[ik][ib] = 0.0;
