@@ -5,7 +5,7 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-MPICXX = g++-7
+MPICXX = g++-8
 CXXFLAGS = -O3 -std=c++11 -fopenmp
 INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/opt/openmpi/include
 
