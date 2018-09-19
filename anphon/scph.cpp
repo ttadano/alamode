@@ -52,7 +52,7 @@ Scph::Scph(PHON *phon): Pointers(phon)
 Scph::~Scph()
 {
     deallocate_variables();
-};
+}
 
 
 void Scph::set_default_variables()
@@ -197,9 +197,7 @@ void Scph::exec_scph()
     MPI_Bcast(&selfenergy_offdiagonal, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ialgo, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    //   if (mympi->my_rank == 0) {
     memory->allocate(delta_dymat_scph, NT, ns, ns, nk_interpolate);
-    //   }
 
     if (restart_scph) {
 
@@ -217,7 +215,6 @@ void Scph::exec_scph()
         }
     }
 
-    //   if (mympi->my_rank == 0) {
     memory->allocate(eval_anharm, NT, nk_ref, ns);
     memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // This requires lots of RAM
 
@@ -226,23 +223,11 @@ void Scph::exec_scph()
                            eval_anharm[iT],
                            evec_anharm[iT]);
     }
-    //    }
-    //   if (delta_dymat_scph) {
+
     memory->deallocate(delta_dymat_scph);
-    //   }
 
     if (kpoint->kpoint_mode == 2) {
         if (thermodynamics->calc_FE_bubble) {
-
-            /*
-            if (mympi->my_rank > 0) {
-                memory->allocate(eval_anharm, NT, nk_ref, ns);
-                memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // Memory intensive
-            }
-
-            MPI_Bcast(&eval_anharm[0][0][0], NT * nk_ref * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-            mpi_bcast_complex(evec_anharm, NT, nk_ref, ns);
-            */
             thermodynamics->compute_free_energy_bubble_SCPH(eval_anharm,
                                                             evec_anharm);
         }
