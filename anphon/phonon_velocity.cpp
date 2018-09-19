@@ -71,7 +71,6 @@ void Phonon_velocity::deallocate_variables()
 }
 
 
-
 void Phonon_velocity::calc_group_velocity(const int kpmode)
 {
     MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);

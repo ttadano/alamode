@@ -18,11 +18,10 @@
 #include "kpoint.h"
 #include "mathfunctions.h"
 #include "memory.h"
-#include "parsephon.h"
 #include "phonon_dos.h"
 #include "thermodynamics.h"
 #include "phonon_velocity.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "system.h"
 #include "write_phonons.h"
 #include <iostream>
@@ -187,38 +186,40 @@ void Conductivity::prepare_restart()
         writes->fs_result.open(writes->file_result.c_str(), std::ios::app | std::ios::out);
     }
 
-
     // Add vks_done list here
 
     if (mympi->my_rank == 0) {
         nks_done = vks_done.size();
     }
     MPI_Bcast(&nks_done, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    memory->allocate(arr_done, nks_done);
-
-    if (mympi->my_rank == 0) {
-        for (i = 0; i < nks_done; ++i) {
-            arr_done[i] = vks_done[i];
-        }
-    }
-    MPI_Bcast(arr_done, nks_done, MPI_INT, 0, MPI_COMM_WORLD);
-
     nshift_restart = nks_done;
 
-    // Remove vks_done elements from vks_job
+    if (nks_done > 0) {
+        memory->allocate(arr_done, nks_done);
 
-    for (i = 0; i < nks_done; ++i) {
-
-        it_set = vks_job.find(arr_done[i]);
-
-        if (it_set == vks_job.end()) {
-            error->exit("prepare_restart", "This cannot happen");
-        } else {
-            vks_job.erase(it_set);
+        if (mympi->my_rank == 0) {
+            for (i = 0; i < nks_done; ++i) {
+                arr_done[i] = vks_done[i];
+            }
         }
-    }
+        MPI_Bcast(&arr_done[0], nks_done, MPI_INT, 0, MPI_COMM_WORLD);
 
-    memory->deallocate(arr_done);
+        // Remove vks_done elements from vks_job
+
+        for (i = 0; i < nks_done; ++i) {
+
+            it_set = vks_job.find(arr_done[i]);
+
+            if (it_set == vks_job.end()) {
+                std::cout << " rank = " << mympi->my_rank
+                    << " arr_done = " << arr_done[i] << std::endl;
+                error->exit("prepare_restart", "This cannot happen");
+            } else {
+                vks_job.erase(it_set);
+            }
+        }
+        memory->deallocate(arr_done);
+    }
     vks_done.clear();
 }
 
@@ -300,9 +301,19 @@ void Conductivity::calc_anharmonic_imagself()
             omega = dynamical->eval_phonon[knum][snum];
 
             if (integration->ismear == 0 || integration->ismear == 1) {
-                relaxation->calc_damping_smearing(ntemp, Temperature, omega, iks / ns, snum, damping3_loc);
+                anharmonic_core->calc_damping_smearing(ntemp,
+                                                       Temperature,
+                                                       omega,
+                                                       iks / ns,
+                                                       snum,
+                                                       damping3_loc);
             } else if (integration->ismear == -1) {
-                relaxation->calc_damping_tetrahedron(ntemp, Temperature, omega, iks / ns, snum, damping3_loc);
+                anharmonic_core->calc_damping_tetrahedron(ntemp,
+                                                          Temperature,
+                                                          omega,
+                                                          iks / ns,
+                                                          snum,
+                                                          damping3_loc);
             }
         }
 
@@ -319,8 +330,10 @@ void Conductivity::calc_anharmonic_imagself()
     memory->deallocate(damping3_loc);
 }
 
-void Conductivity::write_result_gamma(const unsigned int ik, const unsigned int nshift,
-                                      double ***vel_in, double **damp_in)
+void Conductivity::write_result_gamma(const unsigned int ik,
+                                      const unsigned int nshift,
+                                      double ***vel_in,
+                                      double **damp_in)
 {
     unsigned int np = mympi->nprocs;
     unsigned int k, iks_g;
@@ -385,7 +398,7 @@ void Conductivity::compute_kappa()
         if (isotope->include_isotope) {
             for (iks = 0; iks < kpoint->nk_irred * ns; ++iks) {
                 snum = iks % ns;
-                if (relaxation->is_imaginary[iks / ns][snum]) {
+                if (dynamical->is_imaginary[iks / ns][snum]) {
                     for (i = 0; i < ntemp; ++i) {
                         lifetime[iks][i] = 0.0;
                     }
@@ -403,7 +416,7 @@ void Conductivity::compute_kappa()
         } else {
             for (iks = 0; iks < kpoint->nk_irred * ns; ++iks) {
 
-                if (relaxation->is_imaginary[iks / ns][iks % ns]) {
+                if (dynamical->is_imaginary[iks / ns][iks % ns]) {
                     for (i = 0; i < ntemp; ++i) {
                         lifetime[iks][i] = 0.0;
                     }

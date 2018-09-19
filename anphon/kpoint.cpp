@@ -1259,3 +1259,82 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
         if (klist.size() == nkmax) break;
     }
 }
+
+
+void Kpoint::get_unique_triplet_k(const int ik,
+                                  const bool use_triplet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &triplet,
+                                  const int sign)
+{
+    // This function returns the irreducible set of (k2, k3) satisfying the momentum conservation.
+    // When sign = -1 (default), pairs satisfying - k1 + k2 + k3 = G are returned.
+    // When sign =  1, pairs satisfying k1 + k2 + k3 = G are returned.
+    //
+
+    int i, ik1, ik2, isym;
+    int num_group_k, tmp;
+    int ks_in[2];
+    int knum = kpoint_irred_all[ik][0].knum;
+    bool *flag_found;
+    std::vector<KsList> kslist;
+    double xk[3], xk1[3], xk2[3];
+
+    memory->allocate(flag_found, nk);
+
+    if (use_triplet_symmetry) {
+        num_group_k = small_group_of_k[ik].size();
+    } else {
+        num_group_k = 1;
+    }
+
+    for (i = 0; i < 3; ++i) xk[i] = this->xk[knum][i];
+    for (i = 0; i < nk; ++i) flag_found[i] = false;
+
+    triplet.clear();
+
+    for (ik1 = 0; ik1 < nk; ++ik1) {
+
+        for (i = 0; i < 3; ++i) xk1[i] = this->xk[ik1][i];
+
+        if (sign == -1) {
+            for (i = 0; i < 3; ++i) xk2[i] = xk[i] - xk1[i];
+        } else if (sign == 1) {
+            for (i = 0; i < 3; ++i) xk2[i] = -xk[i] - xk1[i];
+        } else {
+            error->exit("get_unituq_triplet_k", "Invalid sign");
+        }
+
+        ik2 = get_knum(xk2[0], xk2[1], xk2[2]);
+
+        kslist.clear();
+
+        if (ik1 > ik2 && use_permutation_symmetry) continue;
+
+        // Add symmety-connected triplets to kslist
+        for (isym = 0; isym < num_group_k; ++isym) {
+
+            ks_in[0] = knum_sym(ik1, small_group_of_k[ik][isym]);
+            ks_in[1] = knum_sym(ik2, small_group_of_k[ik][isym]);
+
+            if (!flag_found[ks_in[0]]) {
+                kslist.emplace_back(2, ks_in, small_group_of_k[ik][isym]);
+                flag_found[ks_in[0]] = true;
+            }
+
+            if (ks_in[0] != ks_in[1] && use_permutation_symmetry && (!flag_found[ks_in[1]])) {
+                tmp = ks_in[0];
+                ks_in[0] = ks_in[1];
+                ks_in[1] = tmp;
+
+                kslist.emplace_back(2, ks_in, small_group_of_k[ik][isym]);
+                flag_found[ks_in[0]] = true;
+            }
+        }
+        if (!kslist.empty()) {
+            triplet.emplace_back(kslist);
+        }
+    }
+
+    memory->deallocate(flag_found);
+}

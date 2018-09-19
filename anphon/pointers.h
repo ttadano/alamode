@@ -30,7 +30,8 @@ namespace PHON_NS
             dynamical(ptr->dynamical),
             phonon_velocity(ptr->phonon_velocity),
             thermodynamics(ptr->thermodynamics),
-            relaxation(ptr->relaxation),
+            anharmonic_core(ptr->anharmonic_core),
+            mode_analysis(ptr->mode_analysis),
             selfenergy(ptr->selfenergy),
             conductivity(ptr->conductivity),
             writes(ptr->writes),
@@ -40,13 +41,9 @@ namespace PHON_NS
             isotope(ptr->isotope),
             scph(ptr->scph),
             ewald(ptr->ewald),
-            timer(ptr->timer)
-        {
-        }
+            timer(ptr->timer) { }
 
-        virtual ~Pointers()
-        {
-        }
+        virtual ~Pointers() { }
 
     protected:
         PHON *phon;
@@ -61,7 +58,8 @@ namespace PHON_NS
         Dynamical *&dynamical;
         Phonon_velocity *&phonon_velocity;
         Thermodynamics *&thermodynamics;
-        Relaxation *&relaxation;
+        AnharmonicCore *&anharmonic_core;
+        ModeAnalysis *&mode_analysis;
         Selfenergy *&selfenergy;
         Conductivity *&conductivity;
         Writes *&writes;

@@ -697,9 +697,8 @@ void System::load_system_info_from_XML()
                 map_s2p[atom_s].atom_num = atom_p;
                 map_s2p[atom_s].tran_num = tran;
             }
-
-
         }
+
     }
 
     MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -742,7 +741,8 @@ void System::load_system_info_from_XML()
 }
 
 
-void System::recips(double vec[3][3], double inverse[3][3])
+void System::recips(double vec[3][3],
+                    double inverse[3][3])
 {
     double det;
     det = vec[0][0] * vec[1][1] * vec[2][2]
@@ -771,7 +771,9 @@ void System::recips(double vec[3][3], double inverse[3][3])
     inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
 }
 
-double System::volume(double vec1[3], double vec2[3], double vec3[3])
+double System::volume(double vec1[3],
+                      double vec2[3],
+                      double vec3[3])
 {
     double vol;
 

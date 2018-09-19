@@ -11,7 +11,7 @@
 #include "mpi_common.h"
 #include "selfenergy.h"
 #include "constants.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "dynamical.h"
 #include "kpoint.h"
 #include "memory.h"
@@ -26,9 +26,7 @@ Selfenergy::Selfenergy(PHON *phon): Pointers(phon)
     im = std::complex<double>(0.0, 1.0);
 }
 
-Selfenergy::~Selfenergy()
-{
-}
+Selfenergy::~Selfenergy() {}
 
 void Selfenergy::setup_selfenergy()
 {
@@ -105,7 +103,7 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N,
 
         if (omega1 < eps8) continue;
 
-        v3_tmp1 = relaxation->V3(arr_cubic1);
+        v3_tmp1 = anharmonic_core->V3(arr_cubic1);
 
         for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
@@ -114,7 +112,7 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N,
                 arr_cubic2[1] = ns * ik2 + is2;
                 arr_cubic2[2] = ns * kpoint->knum_minus[ik2] + is2;
 
-                v3_tmp2 = relaxation->V3(arr_cubic2);
+                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
                 omega2 = dynamical->eval_phonon[ik2][is2];
 
                 if (omega2 < eps8) continue;
@@ -212,7 +210,7 @@ void Selfenergy::selfenergy_a(const unsigned int N,
                 arr_cubic[2] = ns * ik2 + is2;
                 omega2 = dynamical->eval_phonon[ik2][is2];
 
-                v3_tmp = std::norm(relaxation->V3(arr_cubic));
+                v3_tmp = std::norm(anharmonic_core->V3(arr_cubic));
 
                 omega_sum[0] = 1.0 / (omega_shift + omega1 + omega2) - 1.0 / (omega_shift - omega1 - omega2);
                 omega_sum[1] = 1.0 / (omega_shift + omega1 - omega2) - 1.0 / (omega_shift - omega1 + omega2);
@@ -287,7 +285,7 @@ void Selfenergy::selfenergy_b(const unsigned int N,
             omega1 = dynamical->eval_phonon[ik1][is1];
             if (omega1 < eps8) continue;
 
-            v4_tmp = relaxation->V4(arr_quartic);
+            v4_tmp = anharmonic_core->V4(arr_quartic);
 
             if (thermodynamics->classical) {
                 for (i = 0; i < N; ++i) {
@@ -386,7 +384,7 @@ void Selfenergy::selfenergy_c(const unsigned int N,
                         arr_quartic[3] = ns * ik3 + is3;
                         omega3 = dynamical->eval_phonon[ik3][is3];
 
-                        v4_tmp = std::norm(relaxation->V4(arr_quartic));
+                        v4_tmp = std::norm(anharmonic_core->V4(arr_quartic));
 
                         omega_sum[0]
                             = 1.0 / (omega_shift - omega1 - omega2 - omega3)
@@ -518,7 +516,7 @@ void Selfenergy::selfenergy_d(const unsigned int N,
                     arr_cubic2[1] = ns * kpoint->knum_minus[ik2] + is2;
                     arr_quartic[1] = ns * ik2 + is2;
 
-                    v3_tmp2 = relaxation->V3(arr_cubic2);
+                    v3_tmp2 = anharmonic_core->V3(arr_cubic2);
 
                     for (is3 = 0; is3 < ns; ++is3) {
 
@@ -534,8 +532,8 @@ void Selfenergy::selfenergy_d(const unsigned int N,
                             arr_cubic1[2] = ns * ik4 + is4;
                             arr_quartic[3] = ns * kpoint->knum_minus[ik4] + is4;
 
-                            v3_tmp1 = relaxation->V3(arr_cubic1);
-                            v4_tmp = relaxation->V4(arr_quartic);
+                            v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+                            v4_tmp = anharmonic_core->V4(arr_quartic);
 
                             v_prod = v3_tmp1 * v3_tmp2 * v4_tmp;
 
@@ -675,7 +673,7 @@ void Selfenergy::selfenergy_e(const unsigned int N,
                             arr_quartic[1] = ns * ik3 + is3;
                             arr_quartic[2] = ns * kpoint->knum_minus[ik3] + is3;
 
-                            v4_tmp = relaxation->V4(arr_quartic);
+                            v4_tmp = anharmonic_core->V4(arr_quartic);
 
                             for (is4 = 0; is4 < ns; ++is4) {
 
@@ -684,8 +682,8 @@ void Selfenergy::selfenergy_e(const unsigned int N,
                                 arr_cubic1[2] = ns * ik4 + is4;
                                 arr_cubic2[1] = ns * kpoint->knum_minus[ik4] + is4;
 
-                                v3_tmp1 = relaxation->V3(arr_cubic1);
-                                v3_tmp2 = relaxation->V3(arr_cubic2);
+                                v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+                                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
 
                                 v_prod = v3_tmp1 * v3_tmp2 * v4_tmp;
 
@@ -744,7 +742,7 @@ void Selfenergy::selfenergy_e(const unsigned int N,
                             arr_quartic[1] = ns * ik3 + is3;
                             arr_quartic[2] = ns * kpoint->knum_minus[ik3] + is3;
 
-                            v4_tmp = relaxation->V4(arr_quartic);
+                            v4_tmp = anharmonic_core->V4(arr_quartic);
 
                             for (is4 = 0; is4 < ns; ++is4) {
 
@@ -753,8 +751,8 @@ void Selfenergy::selfenergy_e(const unsigned int N,
                                 arr_cubic1[2] = ns * ik4 + is4;
                                 arr_cubic2[1] = ns * kpoint->knum_minus[ik4] + is4;
 
-                                v3_tmp1 = relaxation->V3(arr_cubic1);
-                                v3_tmp2 = relaxation->V3(arr_cubic2);
+                                v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+                                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
 
                                 v_prod = v3_tmp1 * v3_tmp2 * v4_tmp;
 
@@ -905,7 +903,7 @@ void Selfenergy::selfenergy_f(const unsigned int N,
                     arr_cubic1[2] = ns * ik2 + is2;
                     arr_cubic4[1] = ns * kpoint->knum_minus[ik2] + is2;
 
-                    v3_tmp1 = relaxation->V3(arr_cubic1);
+                    v3_tmp1 = anharmonic_core->V3(arr_cubic1);
 
                     for (is5 = 0; is5 < ns; ++is5) {
 
@@ -914,7 +912,7 @@ void Selfenergy::selfenergy_f(const unsigned int N,
                         arr_cubic3[2] = ns * ik5 + is5;
                         arr_cubic4[0] = ns * kpoint->knum_minus[ik5] + is5;
 
-                        v3_tmp4 = relaxation->V3(arr_cubic4);
+                        v3_tmp4 = anharmonic_core->V3(arr_cubic4);
 
                         for (is3 = 0; is3 < ns; ++is3) {
 
@@ -930,8 +928,8 @@ void Selfenergy::selfenergy_f(const unsigned int N,
                                 arr_cubic2[2] = ns * ik4 + is4;
                                 arr_cubic3[1] = ns * kpoint->knum_minus[ik4] + is4;
 
-                                v3_tmp2 = relaxation->V3(arr_cubic2);
-                                v3_tmp3 = relaxation->V3(arr_cubic3);
+                                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
+                                v3_tmp3 = anharmonic_core->V3(arr_cubic3);
 
                                 v3_prod = v3_tmp1 * v3_tmp2 * v3_tmp3 * v3_tmp4;
 
@@ -1144,7 +1142,7 @@ void Selfenergy::selfenergy_g(const unsigned int N,
                         arr_quartic[3] = ns * ik3 + is3;
                         arr_cubic2[0] = ns * kpoint->knum_minus[ik3] + is3;
 
-                        v4_tmp = relaxation->V4(arr_quartic);
+                        v4_tmp = anharmonic_core->V4(arr_quartic);
 
                         for (is4 = 0; is4 < ns; ++is4) {
                             omega4 = dynamical->eval_phonon[ik4][is4];
@@ -1152,8 +1150,8 @@ void Selfenergy::selfenergy_g(const unsigned int N,
                             arr_cubic1[2] = ns * ik4 + is4;
                             arr_cubic2[1] = ns * kpoint->knum_minus[ik4] + is4;
 
-                            v3_tmp1 = relaxation->V3(arr_cubic1);
-                            v3_tmp2 = relaxation->V3(arr_cubic2);
+                            v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+                            v3_tmp2 = anharmonic_core->V3(arr_cubic2);
 
                             v_prod = v4_tmp * v3_tmp1 * v3_tmp2;
 
@@ -1305,7 +1303,7 @@ void Selfenergy::selfenergy_h(const unsigned int N,
                     arr_cubic1[2] = ns * ik2 + is2;
                     arr_cubic3[0] = ns * kpoint->knum_minus[ik2] + is2;
 
-                    v3_tmp1 = relaxation->V3(arr_cubic1);
+                    v3_tmp1 = anharmonic_core->V3(arr_cubic1);
 
                     for (is3 = 0; is3 < ns; ++ is3) {
                         omega3 = dynamical->eval_phonon[ik3][is3];
@@ -1319,7 +1317,7 @@ void Selfenergy::selfenergy_h(const unsigned int N,
                             arr_cubic3[2] = ns * ik4 + is4;
                             arr_cubic4[0] = ns * kpoint->knum_minus[ik4] + is4;
 
-                            v3_tmp3 = relaxation->V3(arr_cubic3);
+                            v3_tmp3 = anharmonic_core->V3(arr_cubic3);
 
                             for (is5 = 0; is5 < ns; ++is5) {
                                 omega5 = dynamical->eval_phonon[ik5][is5];
@@ -1327,8 +1325,8 @@ void Selfenergy::selfenergy_h(const unsigned int N,
                                 arr_cubic2[2] = ns * ik5 + is5;
                                 arr_cubic4[1] = ns * kpoint->knum_minus[ik5] + is5;
 
-                                v3_tmp2 = relaxation->V3(arr_cubic2);
-                                v3_tmp4 = relaxation->V3(arr_cubic4);
+                                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
+                                v3_tmp4 = anharmonic_core->V3(arr_cubic4);
 
                                 v_prod = v3_tmp1 * v3_tmp2 * v3_tmp3 * v3_tmp4;
 
@@ -1487,7 +1485,7 @@ void Selfenergy::selfenergy_i(const unsigned int N,
                     arr_quartic[2] = ns * kpoint->knum_minus[ik4] + is4;
                     arr_cubic1[2] = ns * ik4 + is4;
 
-                    v4_tmp = relaxation->V4(arr_quartic);
+                    v4_tmp = anharmonic_core->V4(arr_quartic);
 
                     if (std::abs(omega2 - omega4) < eps) {
 
@@ -1503,8 +1501,8 @@ void Selfenergy::selfenergy_i(const unsigned int N,
                                 arr_cubic1[0] = ns * kpoint->knum_minus[ik1] + is1;
                                 arr_cubic2[1] = ns * ik1 + is1;
 
-                                v3_tmp1 = relaxation->V3(arr_cubic1);
-                                v3_tmp2 = relaxation->V3(arr_cubic2);
+                                v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+                                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
 
                                 v_prod = v4_tmp * v3_tmp1 * v3_tmp2;
 
@@ -1561,8 +1559,8 @@ void Selfenergy::selfenergy_i(const unsigned int N,
                                 arr_cubic1[0] = ns * kpoint->knum_minus[ik1] + is1;
                                 arr_cubic2[1] = ns * ik1 + is1;
 
-                                v3_tmp1 = relaxation->V3(arr_cubic1);
-                                v3_tmp2 = relaxation->V3(arr_cubic2);
+                                v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+                                v3_tmp2 = anharmonic_core->V3(arr_cubic2);
 
                                 v_prod = v4_tmp * v3_tmp1 * v3_tmp2;
 
@@ -1679,7 +1677,7 @@ void Selfenergy::selfenergy_j(const unsigned int N,
                     arr_quartic1[2] = ns * kpoint->knum_minus[ik3] + is3;
                     arr_quartic2[3] = ns * ik3 + is3;
 
-                    v4_tmp1 = relaxation->V4(arr_quartic1);
+                    v4_tmp1 = anharmonic_core->V4(arr_quartic1);
 
                     if (std::abs(omega1 - omega3) < eps) {
                         omega1_inv = 1.0 / omega1;
@@ -1690,7 +1688,7 @@ void Selfenergy::selfenergy_j(const unsigned int N,
                             arr_quartic2[1] = ns * ik2 + is2;
                             arr_quartic2[2] = ns * kpoint->knum_minus[ik2] + is2;
 
-                            v4_tmp2 = relaxation->V4(arr_quartic2);
+                            v4_tmp2 = anharmonic_core->V4(arr_quartic2);
 
                             v_prod = v4_tmp1 * v4_tmp2;
 
@@ -1723,7 +1721,7 @@ void Selfenergy::selfenergy_j(const unsigned int N,
                             arr_quartic2[1] = ns * ik2 + is2;
                             arr_quartic2[2] = ns * kpoint->knum_minus[ik2] + is2;
 
-                            v4_tmp2 = relaxation->V4(arr_quartic2);
+                            v4_tmp2 = anharmonic_core->V4(arr_quartic2);
 
                             v_prod = v4_tmp1 * v4_tmp2;
 

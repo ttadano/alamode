@@ -24,7 +24,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "phonon_dos.h"
 #include "thermodynamics.h"
 #include "phonon_velocity.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "symmetry_core.h"
 #include "system.h"
 #include "write_phonons.h"
@@ -106,7 +106,7 @@ void Writes::write_input_vars()
 
     if (phon->mode == "RTA") {
         std::cout << "  RESTART = " << phon->restart_flag << std::endl;
-        std::cout << "  TRISYM = " << relaxation->use_triplet_symmetry << std::endl;
+        std::cout << "  TRISYM = " << anharmonic_core->use_triplet_symmetry << std::endl;
         std::cout << std::endl;
     } else if (phon->mode == "SCPH") {
         std::cout << " Scph:" << std::endl;
@@ -162,7 +162,7 @@ void Writes::write_input_vars()
         std::cout << "  NEWFCS = " << gruneisen->print_newfcs;
         if (gruneisen->print_newfcs) {
             std::cout << "; DELTA_A = " << gruneisen->delta_a << std::endl;
-            std::cout << "  QUARTIC = " << relaxation->quartic_mode;
+            std::cout << "  QUARTIC = " << anharmonic_core->quartic_mode;
         }
         std::cout << std::endl;
 
@@ -181,12 +181,12 @@ void Writes::write_input_vars()
 
         std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
 
-        //        std::cout << "  KS_INPUT = " << relaxation->ks_input << std::endl;
-        //        std::cout << "  QUARTIC = " << relaxation->quartic_mode << std::endl;
-        // std::cout << "  REALPART = " << relaxation->calc_realpart << std::endl;
-        // std::cout << "  ATOMPROJ = " << relaxation->atom_project_mode << std::endl;
-        // std::cout << "  FSTATE_W = " << relaxation->calc_fstate_omega << std::endl;
-        //  std::cout << "  FSTATE_K = " << relaxation->calc_fstate_k << std::endl;
+        //        std::cout << "  KS_INPUT = " << anharmonic_core->ks_input << std::endl;
+        //        std::cout << "  QUARTIC = " << anharmonic_core->quartic_mode << std::endl;
+        // std::cout << "  REALPART = " << anharmonic_core->calc_realpart << std::endl;
+        // std::cout << "  ATOMPROJ = " << anharmonic_core->atom_project_mode << std::endl;
+        // std::cout << "  FSTATE_W = " << anharmonic_core->calc_fstate_omega << std::endl;
+        //  std::cout << "  FSTATE_K = " << anharmonic_core->calc_fstate_k << std::endl;
 
     } else if (phon->mode == "SCPH") {
         // Do nothing
@@ -1119,9 +1119,17 @@ void Writes::write_thermodynamics()
     std::ofstream ofs_thermo;
     std::string file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
-    if (!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_cv");
-    ofs_thermo << "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy [Ry]" << std::
-        endl;
+    if (!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_thermo");
+    if (thermodynamics->calc_FE_bubble) {
+        ofs_thermo << "# The bubble free-energy is also shown." << std::endl;
+        ofs_thermo <<
+            "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy (QHA) [Ry], Free energy (Bubble) [Ry]"
+            << std::endl;
+    } else {
+        ofs_thermo <<
+            "# Temperature [K], Heat capacity / kB, Entropy / kB, Internal energy [Ry], Free energy (QHA) [Ry]"
+            << std::endl;
+    }
 
     for (i = 0; i < NT; ++i) {
         T = Tmin + dT * static_cast<double>(i);
@@ -1130,7 +1138,12 @@ void Writes::write_thermodynamics()
         ofs_thermo << std::setw(18) << std::scientific << thermodynamics->Cv_tot(T) / k_Boltzmann;
         ofs_thermo << std::setw(18) << thermodynamics->vibrational_entropy(T) / k_Boltzmann;
         ofs_thermo << std::setw(18) << thermodynamics->internal_energy(T);
-        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T) << std::endl;
+        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T);
+
+        if (thermodynamics->calc_FE_bubble) {
+            ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[i];
+        }
+        ofs_thermo << std::endl;
     }
 
     ofs_thermo.close();

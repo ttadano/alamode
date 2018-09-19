@@ -85,7 +85,9 @@ void Integration::setup_integration()
 }
 
 
-void Integration::prepare_tetrahedron(const int nk1, const int nk2, const int nk3)
+void Integration::prepare_tetrahedron(const int nk1,
+                                      const int nk2,
+                                      const int nk3)
 {
     int i, j, k, ii, jj, kk;
     int n1, n2, n3, n4, n5, n6, n7, n8;
@@ -249,7 +251,8 @@ double Integration::do_tetrahedron(double *energy,
     return ret / vol_tot;
 }
 
-double Integration::dos_integration(double *energy, const double e_ref)
+double Integration::dos_integration(double *energy,
+                                    const double e_ref)
 {
     double dos_ret = 0.0;
     std::vector<double> e_tetra;
@@ -450,7 +453,9 @@ double Integration::volume(const int *klist)
     return vol;
 }
 
-double Integration::fij(const double ei, const double ej, const double e)
+double Integration::fij(const double ei,
+                        const double ej,
+                        const double e)
 {
     return (e - ej) / (ei - ej);
 }
@@ -466,7 +471,9 @@ double Integration::refold(double x)
     return x;
 }
 
-void Integration::insertion_sort(double *a, int *ind, int n)
+void Integration::insertion_sort(double *a,
+                                 int *ind,
+                                 int n)
 {
     int i, j;
     double tmp;

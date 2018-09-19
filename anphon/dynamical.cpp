@@ -20,6 +20,7 @@
 #include "symmetry_core.h"
 #include "mathfunctions.h"
 #include "fcs_phonon.h"
+#include "write_phonons.h"
 #include <complex>
 #include <vector>
 #include <iostream>
@@ -60,6 +61,8 @@ void Dynamical::set_default_variables()
     index_bconnect = nullptr;
     borncharge = nullptr;
 
+    is_imaginary = nullptr;
+
     xshift_s = nullptr;
     dymat = nullptr;
     mindist_list = nullptr;
@@ -78,6 +81,9 @@ void Dynamical::deallocate_variables()
     }
     if (borncharge) {
         memory->deallocate(borncharge);
+    }
+    if (is_imaginary) {
+        memory->deallocate(is_imaginary);
     }
     if (xshift_s) {
         memory->deallocate(xshift_s);
@@ -247,7 +253,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out)
 }
 
 
-double Dynamical::distance(double *x1, double *x2)
+double Dynamical::distance(double *x1,
+                           double *x2)
 {
     return std::sqrt(std::pow(x1[0] - x2[0], 2)
         + std::pow(x1[1] - x2[1], 2)
@@ -619,7 +626,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 }
 
 
-void Dynamical::calc_nonanalytic_k2(double *xk_in, double *kvec_na_in,
+void Dynamical::calc_nonanalytic_k2(double *xk_in,
+                                    double *kvec_na_in,
                                     std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
@@ -770,6 +778,10 @@ void Dynamical::diagonalize_dynamical_all()
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
     }
+
+    if (kpoint->kpoint_mode == 2 && phon->mode == "RTA") {
+        detect_imaginary_branches(dynamical->eval_phonon);
+    }
 }
 
 
@@ -784,12 +796,12 @@ void Dynamical::modify_eigenvectors()
     auto nk = kpoint->nk;
     auto ns = neval;
 
-    if (mympi->my_rank == 0) {
-        std::cout << " **********      NOTICE      ********** " << std::endl;
-        std::cout << " For the brevity of the calculation, " << std::endl;
-        std::cout << " phonon eigenvectors will be modified" << std::endl;
-        std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
-    }
+    /*   if (mympi->my_rank == 0) {
+           std::cout << " **********      NOTICE      ********** " << std::endl;
+           std::cout << " For the brevity of the calculation, " << std::endl;
+           std::cout << " phonon eigenvectors will be modified" << std::endl;
+           std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
+       }*/
 
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
@@ -805,13 +817,10 @@ void Dynamical::modify_eigenvectors()
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     evec_tmp[js] = evec_phonon[ik][is][js];
-                    //	evec_tmp[js] = 0.5 * (std::conj(evec_phonon[ik][is][js]) + evec_phonon[nk_inv][is][js]);
                 }
 
                 for (js = 0; js < ns; ++js) {
                     evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
-                    //		evec_phonon[ik][is][js] = evec_tmp[js];
-                    //		evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
                 }
             }
 
@@ -824,10 +833,10 @@ void Dynamical::modify_eigenvectors()
     memory->deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (mympi->my_rank == 0) {
-        std::cout << " done !" << std::endl;
-        std::cout << " **************************************" << std::endl;
-    }
+    //if (mympi->my_rank == 0) {
+    //    std::cout << " done !" << std::endl;
+    //    std::cout << " **************************************" << std::endl;
+    //}
 }
 
 
@@ -1061,7 +1070,8 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
 }
 
 
-void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec, double *ret)
+void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
+                                                double *ret)
 {
     unsigned int iat;
     auto natmin = system->natmin;
@@ -1147,7 +1157,8 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
             // Argsort abs_similarity[is] (use C++11 lambda)
             iota(index.begin(), index.end(), 0);
             std::sort(index.begin(), index.end(),
-                      [&abs_similarity, is](int i1, int i2)
+                      [&abs_similarity, is](int i1,
+                                            int i2)
                       {
                           return abs_similarity[is][i1] > abs_similarity[is][i2];
                       });
@@ -1168,4 +1179,68 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
 
     }
     memory->deallocate(evec_tmp);
+}
+
+
+void Dynamical::detect_imaginary_branches(double **eval)
+{
+    int ik, is;
+    auto nk = kpoint->nk;
+    auto ns = dynamical->neval;
+    auto nks = ns * nk;
+    int knum;
+    double omega;
+    int ndup;
+
+    bool is_anyof_imaginary = false;
+    if (mympi->my_rank == 0) {
+
+        memory->allocate(is_imaginary, kpoint->nk_irred, ns);
+
+        for (ik = 0; ik < kpoint->nk_irred; ++ik) {
+            for (is = 0; is < ns; ++is) {
+                knum = kpoint->kpoint_irred_all[ik][0].knum;
+                omega = eval[knum][is];
+
+                if (omega < 0.0) {
+                    is_imaginary[ik][is] = true;
+                    is_anyof_imaginary = true;
+                } else {
+                    is_imaginary[ik][is] = false;
+                }
+            }
+        }
+
+        if (is_anyof_imaginary) {
+            int count = 0;
+            std::cout << std::endl;
+            std::cout << " WARNING: Imaginary frequency detected at the following branches:" << std::endl;
+            for (ik = 0; ik < kpoint->nk_irred; ++ik) {
+                for (is = 0; is < ns; ++is) {
+                    if (is_imaginary[ik][is]) {
+                        ndup = kpoint->kpoint_irred_all[ik].size();
+                        count += ndup;
+                        for (int i = 0; i < ndup; ++i) {
+                            knum = kpoint->kpoint_irred_all[ik][i].knum;
+                            omega = eval[knum][is];
+                            for (int j = 0; j < 3; ++j) {
+                                std::cout << std::setw(15) << kpoint->xk[knum][j];
+                            }
+                            std::cout << std::setw(4) << is + 1 << " :"
+                                << std::setw(10) << std::fixed
+                                << writes->in_kayser(omega) << " (cm^-1)" << std::endl;
+                            std::cout << std::scientific;
+                        }
+                    }
+                }
+            }
+            std::cout << std::setw(5) << count << " imaginary branches out of "
+                << std::setw(5) << nks << " total branches." << std::endl;
+            std::cout << std::endl;
+            std::cout << " Phonon-phonon scattering rate and thermal conductivity involving these" << std::endl;
+            std::cout << " imaginary branches will be treated as zero in the following calculations." << std::endl;
+            std::cout << " If imaginary branches are acoustic phonons at Gamma point (0, 0, 0), " << std::endl;
+            std::cout << " you can safely ignore this message." << std::endl << std::endl << std::flush;
+        }
+    }
 }

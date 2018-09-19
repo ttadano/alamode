@@ -27,7 +27,8 @@
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "integration.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
+#include "mode_analysis.h"
 #include "conductivity.h"
 #include "isotope.h"
 #include "selfenergy.h"
@@ -41,7 +42,9 @@
 
 using namespace PHON_NS;
 
-PHON::PHON(int narg, char **arg, MPI_Comm comm)
+PHON::PHON(int narg,
+           char **arg,
+           MPI_Comm comm)
 {
     mympi = new MyMPI(this, comm);
     input = new Input(this);
@@ -115,7 +118,8 @@ void PHON::create_pointers()
     integration = new Integration(this);
     phonon_velocity = new Phonon_velocity(this);
     thermodynamics = new Thermodynamics(this);
-    relaxation = new Relaxation(this);
+    anharmonic_core = new AnharmonicCore(this);
+    mode_analysis = new ModeAnalysis(this);
     selfenergy = new Selfenergy(this);
     conductivity = new Conductivity(this);
     writes = new Writes(this);
@@ -139,7 +143,8 @@ void PHON::destroy_pointers()
     delete integration;
     delete phonon_velocity;
     delete thermodynamics;
-    delete relaxation;
+    delete anharmonic_core;
+    delete mode_analysis;
     delete selfenergy;
     delete conductivity;
     delete writes;
@@ -160,6 +165,8 @@ void PHON::setup_base()
     dos->setup();
     thermodynamics->setup();
     ewald->init();
+    anharmonic_core->setup();
+
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;
         if (thermodynamics->classical) {
@@ -199,6 +206,10 @@ void PHON::execute_phonons()
     gruneisen->setup();
     if (gruneisen->print_gruneisen) {
         gruneisen->calc_gruneisen();
+    }
+
+    if (thermodynamics->calc_FE_bubble) {
+        thermodynamics->compute_free_energy_bubble();
     }
 
     if (mympi->my_rank == 0) {
@@ -243,12 +254,11 @@ void PHON::execute_RTA()
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
-    //   relaxation->setup_mode_analysis();
-    relaxation->setup_relaxation();
+    mode_analysis->setup_mode_analysis();
     selfenergy->setup_selfenergy();
 
-    if (relaxation->ks_analyze_mode) {
-        relaxation->perform_mode_analysis();
+    if (mode_analysis->ks_analyze_mode) {
+        mode_analysis->run_mode_analysis();
     } else {
         writes->setup_result_io();
         conductivity->setup_kappa();
@@ -272,7 +282,6 @@ void PHON::execute_self_consistent_phonon()
     }
 
     setup_base();
-    dos->setup();
 
     dynamical->diagonalize_dynamical_all();
 

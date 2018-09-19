@@ -22,7 +22,8 @@
 #include "memory.h"
 #include "phonon_dos.h"
 #include "phonon_velocity.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
+#include "mode_analysis.h"
 #include "scph.h"
 #include "symmetry_core.h"
 #include "system.h"
@@ -53,7 +54,8 @@ Input::~Input()
     if (ifs_input.is_open()) ifs_input.close();
 }
 
-void Input::parce_input(int narg, char **arg)
+void Input::parce_input(int narg,
+                        char **arg)
 {
     if (narg == 1) {
 
@@ -316,7 +318,7 @@ void Input::parse_general_vars()
     fcs_phonon->update_fc2 = !fc2info.empty();
     thermodynamics->classical = classical;
     integration->ismear = ismear;
-    relaxation->use_triplet_symmetry = use_triplet_symmetry;
+    anharmonic_core->use_triplet_symmetry = use_triplet_symmetry;
 
     general_var_dict.clear();
 }
@@ -458,11 +460,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     std::vector<std::string> input_list{
         "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-        "ATOMPROJ", "REALPART", "ISOTOPE", "ISOFACT",
+        "REALPART", "ISOTOPE", "ISOFACT",
         "FSTATE_W", "FSTATE_K", "PRIMTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W"
+        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE"
     };
 
     unsigned int cellsize[3];
@@ -493,8 +495,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     double delta_a = 0.001;
 
     int quartic_mode = 0;
-    bool ks_analyze_mode = false;
-    bool atom_project_mode = false;
     bool calc_realpart = false;
     int include_isotope = 0;
     bool fstate_omega = false;
@@ -505,6 +505,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     bool print_fc2_ewald = false;
     bool print_self_consistent_fc2 = false;
+    bool calc_FE_bubble = false;
 
 
     // Assign values to variables
@@ -525,7 +526,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(delta_a, "DELTA_A", analysis_var_dict);
 
         assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
-        assign_val(atom_project_mode, "ATOMPROJ", analysis_var_dict);
         assign_val(calc_realpart, "REALPART", analysis_var_dict);
         assign_val(include_isotope, "ISOTOPE", analysis_var_dict);
         assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
@@ -538,6 +538,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+        assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;
@@ -553,16 +554,15 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
             if (isofact_v.size() != system->nkd) {
                 error->exit("parse_analysis_vars",
-                    "The number of entries for ISOFACT is inconsistent with NKD");
-            }
-            else {
+                            "The number of entries for ISOFACT is inconsistent with NKD");
+            } else {
                 memory->allocate(isotope_factor, system->nkd);
                 for (i = 0; i < system->nkd; ++i) {
                     isotope_factor[i] = my_cast<double>(isofact_v[i]);
                 }
             }
         }
-        
+
     }
 
     if (print_anime) {
@@ -630,19 +630,20 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->scattering_phase_space = scattering_phase_space;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
-    relaxation->quartic_mode = quartic_mode;
-    relaxation->atom_project_mode = atom_project_mode;
-    relaxation->calc_realpart = calc_realpart;
-    relaxation->calc_fstate_omega = fstate_omega;
-    relaxation->calc_fstate_k = fstate_k;
-    relaxation->print_V3 = print_V3;
-    relaxation->spectral_func = bubble_omega;
+    anharmonic_core->quartic_mode = quartic_mode;
+
+    mode_analysis->ks_input = ks_input;
+    mode_analysis->calc_realpart = calc_realpart;
+    mode_analysis->calc_fstate_omega = fstate_omega;
+    mode_analysis->calc_fstate_k = fstate_k;
+    mode_analysis->print_V3 = print_V3;
+    mode_analysis->spectral_func = bubble_omega;
     isotope->include_isotope = include_isotope;
-    relaxation->ks_input = ks_input;
 
     gruneisen->print_gruneisen = print_gruneisen;
     gruneisen->print_newfcs = print_newfcs;
     gruneisen->delta_a = delta_a;
+    thermodynamics->calc_FE_bubble = calc_FE_bubble;
 
     ewald->print_fc2_ewald = print_fc2_ewald;
 

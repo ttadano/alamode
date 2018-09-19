@@ -66,16 +66,25 @@ def get_coordinate_LAMMPS(lammps_dump_file):
 
     with open(lammps_dump_file) as f:
         for line in f:
-            if "ITEM:" in line and "ITEM: ATOMS xu yu zu" not in line:
+            if "ITEM:" in line and "ITEM: ATOMS id xu yu zu" not in line:
                 add_flag = False
                 continue
-            elif "ITEM: ATOMS xu yu zu" in line:
+            elif "ITEM: ATOMS id xu yu zu" in line:
                 add_flag = True
                 continue
 
             if add_flag:
                 if line.strip():
-                    coord.extend([float(t) for t in line.strip().split()])
+                    entries = line.strip().split()
+                    coord_atom = [int(entries[0]), [float(t) for t in entries[1:]]]
+                    coord.append(coord_atom)
+    
+    # This sort is necessary since the order atoms of LAMMPS dump files 
+    # may change from the input structure file.
+    coord_sorted = sorted(coord)
+    coord = []
+    for coord_atom in coord_sorted:
+        coord.extend(coord_atom[1])
 
     return np.array(coord)
 
@@ -88,16 +97,23 @@ def get_atomicforces_LAMMPS(lammps_dump_file):
 
     with open(lammps_dump_file) as f:
         for line in f:
-            if "ITEM:" in line and "ITEM: ATOMS fx fy fz " not in line:
+            if "ITEM:" in line and "ITEM: ATOMS id fx fy fz " not in line:
                 add_flag = False
                 continue
-            elif "ITEM: ATOMS fx fy fz " in line:
+            elif "ITEM: ATOMS id fx fy fz " in line:
                 add_flag = True
                 continue
 
             if add_flag:
                 if line.strip():
-                    force.extend([float(t) for t in line.strip().split()])
+                    entries = line.strip().split()
+                    force_atom = [int(entries[0]),  [float(t) for t in entries[1:]]]
+                    force.append(force_atom)
+    
+    force_sorted = sorted(force)
+    force = []
+    for force_atom in force_sorted:
+        force.extend(force_atom[1])
 
     return np.array(force)
 

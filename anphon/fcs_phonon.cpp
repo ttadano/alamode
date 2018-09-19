@@ -11,15 +11,16 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mpi_common.h"
 #include "fcs_phonon.h"
 #include "constants.h"
-#include "dynamical.h"
 #include "error.h"
 #include "gruneisen.h"
 #include "memory.h"
 #include "phonons.h"
-#include "relaxation.h"
+#include "anharmonic_core.h"
 #include "system.h"
+#include "thermodynamics.h"
 #include "xml_parser.h"
 #include <string>
+#include <iostream>
 #include <iomanip>
 #include <algorithm>
 #include <boost/property_tree/ptree.hpp>
@@ -69,15 +70,16 @@ void Fcs_phonon::setup(std::string mode)
         std::cout << " ==============" << std::endl << std::endl;
     }
 
-    MPI_Bcast(&relaxation->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&anharmonic_core->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&thermodynamics->calc_FE_bubble, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mode == "PHONONS") {
         require_cubic = false;
         require_quartic = false;
         maxorder = 1;
 
-        if (gruneisen->print_gruneisen) {
+        if (gruneisen->print_gruneisen || thermodynamics->calc_FE_bubble) {
             require_cubic = true;
             maxorder = 2;
         }
@@ -85,7 +87,7 @@ void Fcs_phonon::setup(std::string mode)
             require_cubic = true;
             maxorder = 2;
 
-            if (relaxation->quartic_mode > 0) {
+            if (anharmonic_core->quartic_mode > 0) {
                 require_quartic = true;
                 maxorder = 3;
             }
@@ -94,7 +96,7 @@ void Fcs_phonon::setup(std::string mode)
     } else if (mode == "RTA") {
         require_cubic = true;
 
-        if (relaxation->quartic_mode > 0) {
+        if (anharmonic_core->quartic_mode > 0) {
             maxorder = 3;
             require_quartic = true;
         } else {
@@ -105,7 +107,7 @@ void Fcs_phonon::setup(std::string mode)
         require_cubic = true;
         require_quartic = true;
         maxorder = 3;
-        relaxation->quartic_mode = 1;
+        anharmonic_core->quartic_mode = 1;
     }
 
     memory->allocate(force_constant_with_cell, maxorder);

@@ -27,9 +27,7 @@ Timer::Timer(PHON *phon): Pointers(phon)
 #endif
 }
 
-Timer::~Timer()
-{
-}
+Timer::~Timer() {}
 
 void Timer::reset()
 {

@@ -8,22 +8,35 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
+#include "mpi_common.h"
 #include "thermodynamics.h"
+#include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
 #include "error.h"
 #include "kpoint.h"
+#include "mathfunctions.h"
+#include "memory.h"
 #include "pointers.h"
 #include "system.h"
+#include <iostream>
+#include <complex>
 
 using namespace PHON_NS;
 
 Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
 {
     T_to_Ryd = k_Boltzmann / Ryd;
+    calc_FE_bubble = false;
+    FE_bubble = nullptr;
 }
 
-Thermodynamics::~Thermodynamics() {};
+Thermodynamics::~Thermodynamics()
+{
+    if (FE_bubble) {
+        memory->deallocate(FE_bubble);
+    }
+};
 
 void Thermodynamics::setup()
 {
@@ -370,4 +383,296 @@ double Thermodynamics::coth_T(const double omega,
 
     double x = omega / (T_to_Ryd * T * 2.0);
     return 1.0 + 2.0 / (std::exp(2.0 * x) - 1.0);
+}
+
+
+void Thermodynamics::compute_free_energy_bubble()
+{
+    unsigned int NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl;
+        std::cout << " -----------------------------------------------------------------"
+            << std::endl;
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+    }
+
+    memory->allocate(FE_bubble, NT);
+
+    compute_FE_bubble(dynamical->eval_phonon,
+                      dynamical->evec_phonon,
+                      FE_bubble);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done!" << std::endl << std::endl;
+    }
+}
+
+
+void Thermodynamics::compute_free_energy_bubble_SCPH(double ***eval_scph,
+                                                     std::complex<double> ****evec_scph)
+{
+    unsigned int NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl;
+        std::cout << " -----------------------------------------------------------------"
+            << std::endl;
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+        std::cout << " on top of the SCPH calculation." << std::endl;
+    }
+
+    memory->allocate(FE_bubble, NT);
+
+    compute_FE_bubble_SCPH(eval_scph, evec_scph, FE_bubble);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done!" << std::endl << std::endl;
+    }
+}
+
+
+void Thermodynamics::compute_FE_bubble(double **eval,
+                                       std::complex<double> ***evec,
+                                       double *FE_bubble)
+{
+    // This function calculates the free energy of the bubble diagram
+    int i;
+    int ik;
+    int multi;
+    double omega0, omega1, omega2, omega_sum[2];
+    double n0, n1, n2, nsum[2];
+    unsigned int nk = kpoint->nk;
+    unsigned int nk_reduced = kpoint->kpoint_irred_all.size();
+    unsigned int ns = dynamical->neval;
+    double v3_tmp;
+    unsigned int ik0, ik1, ik2, is0, is1, is2, i0, iT;
+    unsigned int arr_cubic[3];
+    int nks0 = nk_reduced * ns;
+    unsigned int NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    double temp;
+    double factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
+
+    double *FE_local;
+    double *FE_tmp;
+
+    memory->allocate(FE_local, NT);
+    memory->allocate(FE_tmp, NT);
+    std::vector<KsListGroup> triplet;
+
+    std::vector<int> vks_l;
+    vks_l.clear();
+
+    for (i0 = 0; i0 < nks0; ++i0) {
+        if (i0 % mympi->nprocs == mympi->my_rank) {
+            vks_l.push_back(i0);
+        }
+    }
+
+    unsigned int nk_tmp;
+
+    if (nks0 % mympi->nprocs != 0) {
+        nk_tmp = nks0 / mympi->nprocs + 1;
+    } else {
+        nk_tmp = nks0 / mympi->nprocs;
+    }
+    if (vks_l.size() < nk_tmp) {
+        vks_l.push_back(-1);
+    }
+
+    for (iT = 0; iT < NT; ++iT) FE_local[iT] = 0.0;
+
+    for (i0 = 0; i0 < nk_tmp; ++i0) {
+
+        if (vks_l[i0] != -1) {
+
+            ik0 = kpoint->kpoint_irred_all[vks_l[i0] / ns][0].knum;
+            is0 = vks_l[i0] % ns;
+
+            kpoint->get_unique_triplet_k(vks_l[i0] / ns,
+                                         anharmonic_core->use_triplet_symmetry,
+                                         true,
+                                         triplet, 1);
+
+            int npair_uniq = triplet.size();
+
+            arr_cubic[0] = ns * ik0 + is0;
+
+            for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
+
+            for (ik = 0; ik < npair_uniq; ++ik) {
+                multi = static_cast<double>(triplet[ik].group.size());
+
+                arr_cubic[0] = ns * ik0 + is0;
+
+                ik1 = triplet[ik].group[0].ks[0];
+                ik2 = triplet[ik].group[0].ks[1];
+
+                for (is1 = 0; is1 < ns; ++is1) {
+                    arr_cubic[1] = ns * ik1 + is1;
+
+                    for (is2 = 0; is2 < ns; ++is2) {
+                        arr_cubic[2] = ns * ik2 + is2;
+
+                        omega0 = eval[ik0][is0];
+                        omega1 = eval[ik1][is1];
+                        omega2 = eval[ik2][is2];
+
+                        omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
+                        omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
+
+                        v3_tmp = std::norm(anharmonic_core->V3(arr_cubic)) * static_cast<double>(multi);
+
+
+                        for (iT = 0; iT < NT; ++iT) {
+                            temp = system->Tmin + static_cast<double>(iT) * system->dT;
+                            n0 = thermodynamics->fB(omega0, temp);
+                            n1 = thermodynamics->fB(omega1, temp);
+                            n2 = thermodynamics->fB(omega2, temp);
+
+                            nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
+                            nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
+
+                            FE_tmp[iT] += v3_tmp * (nsum[0] * omega_sum[0] + 3.0 * nsum[1] * omega_sum[1]);
+                        }
+                    }
+                }
+            }
+            double weight = static_cast<double>(kpoint->kpoint_irred_all[vks_l[i0] / ns].size());
+            for (iT = 0; iT < NT; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
+        }
+    }
+
+    MPI_Allreduce(&FE_local[0], &FE_bubble[0], NT, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    for (iT = 0; iT < NT; ++iT) {
+        FE_bubble[iT] *= factor;
+    }
+
+    memory->deallocate(FE_local);
+    memory->deallocate(FE_tmp);
+}
+
+
+void Thermodynamics::compute_FE_bubble_SCPH(double ***eval,
+                                            std::complex<double> ****evec,
+                                            double *FE_bubble)
+{
+    // This function calculates the free energy of the bubble diagram
+    int i;
+    int ik;
+    int multi;
+    double omega0, omega1, omega2, omega_sum[2];
+    double n0, n1, n2, nsum[2];
+    unsigned int nk = kpoint->nk;
+    unsigned int nk_reduced = kpoint->kpoint_irred_all.size();
+    unsigned int ns = dynamical->neval;
+    double v3_tmp;
+    unsigned int ik0, ik1, ik2, is0, is1, is2, i0, iT;
+    unsigned int arr_cubic[3];
+    int nks0 = nk_reduced * ns;
+    unsigned int NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    double temp;
+    double factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
+
+    double *FE_local;
+    double *FE_tmp;
+
+    memory->allocate(FE_local, NT);
+    memory->allocate(FE_tmp, NT);
+    std::vector<KsListGroup> triplet;
+
+    std::vector<int> vks_l;
+    vks_l.clear();
+
+    for (i0 = 0; i0 < nks0; ++i0) {
+        if (i0 % mympi->nprocs == mympi->my_rank) {
+            vks_l.push_back(i0);
+        }
+    }
+
+    unsigned int nk_tmp;
+
+    if (nks0 % mympi->nprocs != 0) {
+        nk_tmp = nks0 / mympi->nprocs + 1;
+    } else {
+        nk_tmp = nks0 / mympi->nprocs;
+    }
+    if (vks_l.size() < nk_tmp) {
+        vks_l.push_back(-1);
+    }
+
+    for (iT = 0; iT < NT; ++iT) FE_local[iT] = 0.0;
+
+    for (i0 = 0; i0 < nk_tmp; ++i0) {
+
+        if (vks_l[i0] != -1) {
+
+            ik0 = kpoint->kpoint_irred_all[vks_l[i0] / ns][0].knum;
+            is0 = vks_l[i0] % ns;
+
+            kpoint->get_unique_triplet_k(vks_l[i0] / ns,
+                                         anharmonic_core->use_triplet_symmetry,
+                                         true,
+                                         triplet, 1);
+
+            int npair_uniq = triplet.size();
+
+            arr_cubic[0] = ns * ik0 + is0;
+
+            for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
+
+            for (ik = 0; ik < npair_uniq; ++ik) {
+                multi = static_cast<double>(triplet[ik].group.size());
+
+                arr_cubic[0] = ns * ik0 + is0;
+
+                ik1 = triplet[ik].group[0].ks[0];
+                ik2 = triplet[ik].group[0].ks[1];
+
+
+                for (is1 = 0; is1 < ns; ++is1) {
+                    arr_cubic[1] = ns * ik1 + is1;
+
+                    for (is2 = 0; is2 < ns; ++is2) {
+                        arr_cubic[2] = ns * ik2 + is2;
+
+                        for (iT = 0; iT < NT; ++iT) {
+
+                            omega0 = eval[iT][ik0][is0];
+                            omega1 = eval[iT][ik1][is1];
+                            omega2 = eval[iT][ik2][is2];
+
+                            omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
+                            omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
+
+                            v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval[iT], evec[iT]))
+                                * static_cast<double>(multi);
+
+                            temp = system->Tmin + static_cast<double>(iT) * system->dT;
+                            n0 = thermodynamics->fB(omega0, temp);
+                            n1 = thermodynamics->fB(omega1, temp);
+                            n2 = thermodynamics->fB(omega2, temp);
+
+                            nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
+                            nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
+
+                            FE_tmp[iT] += v3_tmp * (nsum[0] * omega_sum[0] + 3.0 * nsum[1] * omega_sum[1]);
+                        }
+                    }
+                }
+            }
+            double weight = static_cast<double>(kpoint->kpoint_irred_all[vks_l[i0] / ns].size());
+            for (iT = 0; iT < NT; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
+        }
+    }
+
+    MPI_Allreduce(&FE_local[0], &FE_bubble[0], NT, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    for (iT = 0; iT < NT; ++iT) {
+        FE_bubble[iT] *= factor;
+    }
+
+    memory->deallocate(FE_local);
+    memory->deallocate(FE_tmp);
 }
