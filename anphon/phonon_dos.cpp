@@ -72,7 +72,7 @@ void Dos::deallocate_variables()
         memory->deallocate(sps3_mode);
     }
     if (sps3_with_bose) {
-        memory->deallocate(sps3_mode);
+        memory->deallocate(sps3_with_bose);
     }
     if (kmap_irreducible) {
         memory->deallocate(kmap_irreducible);
