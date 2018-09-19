@@ -46,14 +46,8 @@ namespace PHON_NS
 
         double free_energy(double);
 
-        double Cv_Debye(double,
-                        double);
-
         double Cv_classical(double,
                             double);
-
-        void Debye_T(double,
-                     double &);
 
         double disp2_avg(double,
                          unsigned int,
@@ -63,15 +57,14 @@ namespace PHON_NS
                       double);
 
         void compute_free_energy_bubble();
-        void compute_free_energy_bubble_SCPH(double ***,
-                                             std::complex<double> ****);
+
 
         void compute_FE_bubble(double **,
                                std::complex<double> ***,
                                double *);
 
-        void compute_FE_bubble_SCPH(double ***,
-                                    std::complex<double> ****,
-                                    double *);
+        double compute_FE_bubble_SCPH(double,
+                                      double **,
+                                      std::complex<double> ***);
     };
 }

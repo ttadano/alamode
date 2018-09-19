@@ -215,25 +215,24 @@ void Scph::exec_scph()
         }
     }
 
-    memory->allocate(eval_anharm, NT, nk_ref, ns);
-    memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // This requires lots of RAM
-
-    for (auto iT = 0; iT < NT; ++iT) {
-        exec_interpolation(delta_dymat_scph[iT],
-                           eval_anharm[iT],
-                           evec_anharm[iT]);
-    }
-
-    memory->deallocate(delta_dymat_scph);
 
     if (kpoint->kpoint_mode == 2) {
         if (thermodynamics->calc_FE_bubble) {
-            thermodynamics->compute_free_energy_bubble_SCPH(eval_anharm,
-                                                            evec_anharm);
+            compute_free_energy_bubble_SCPH(delta_dymat_scph);
         }
     }
 
     if (mympi->my_rank == 0) {
+
+        memory->allocate(eval_anharm, NT, nk_ref, ns);
+        memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // This requires lots of RAM
+
+        for (auto iT = 0; iT < NT; ++iT) {
+            exec_interpolation(delta_dymat_scph[iT],
+                               eval_anharm[iT],
+                               evec_anharm[iT]);
+        }
+
         if (kpoint->kpoint_mode == 0) {
             write_scph_energy(eval_anharm);
         } else if (kpoint->kpoint_mode == 1) {
@@ -247,14 +246,11 @@ void Scph::exec_scph()
                 write_scph_msd(eval_anharm, evec_anharm);
             }
         }
-    }
-
-    if (eval_anharm) {
         memory->deallocate(eval_anharm);
-    }
-    if (evec_anharm) {
         memory->deallocate(evec_anharm);
     }
+
+    memory->deallocate(delta_dymat_scph);
 }
 
 
@@ -3298,6 +3294,46 @@ double Scph::FE_scph(unsigned int iT,
     return ret / static_cast<double>(nk);
 }
 
+void Scph::compute_free_energy_bubble_SCPH(std::complex<double> ****delta_dymat_scph)
+{
+    unsigned int NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    double temp;
+    unsigned int nk_ref = kpoint->nk;
+    unsigned int ns = dynamical->neval;
+    double **eval;
+    std::complex<double> ***evec;
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl;
+        std::cout << " -----------------------------------------------------------------"
+            << std::endl;
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+        std::cout << " on top of the SCPH calculation." << std::endl;
+    }
+
+    memory->allocate(thermodynamics->FE_bubble, NT);
+
+    memory->allocate(eval, nk_ref, ns);
+    memory->allocate(evec, nk_ref, ns, ns); // This requires lots of RAM
+
+    for (auto iT = 0; iT < NT; ++iT) {
+        temp = system->Tmin + system->dT * float(iT);
+
+        exec_interpolation(delta_dymat_scph[iT],
+                           eval,
+                           evec);
+
+        thermodynamics->FE_bubble[iT]
+            = thermodynamics->compute_FE_bubble_SCPH(temp, eval, evec);
+    }
+
+    memory->deallocate(eval);
+    memory->deallocate(evec);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done!" << std::endl << std::endl;
+    }
+}
 
 void Scph::write_scph_msd(double ***eval,
                           std::complex<double> ****evec)

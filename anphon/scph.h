@@ -216,6 +216,8 @@ namespace PHON_NS
         double FE_scph(unsigned int,
                        double **,
                        std::complex<double> ***);
+
+        void compute_free_energy_bubble_SCPH(std::complex<double> ****);
     };
 
     extern "C" {
