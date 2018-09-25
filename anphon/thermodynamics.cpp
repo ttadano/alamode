@@ -587,7 +587,7 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
         }
     }
 
-    MPI_Allreduce(&FE_local, &FE_return, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Reduce(&FE_local, &FE_return, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     FE_return *= factor;
 

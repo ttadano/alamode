@@ -204,6 +204,7 @@ void Fcs_phonon::load_fc2_xml()
 
         fc2_ext.push_back(fcext_tmp);
     }
+    pt.clear();
 }
 
 void Fcs_phonon::load_fcs_xml()

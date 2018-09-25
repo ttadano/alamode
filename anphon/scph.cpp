@@ -215,7 +215,6 @@ void Scph::exec_scph()
         }
     }
 
-
     if (kpoint->kpoint_mode == 2) {
         if (thermodynamics->calc_FE_bubble) {
             compute_free_energy_bubble_SCPH(delta_dymat_scph);
@@ -1301,20 +1300,32 @@ void Scph::setup_kmesh()
 {
     unsigned int ik;
     unsigned int i;
-    unsigned int ns = dynamical->neval;
     int ik_minus, loc;
     double xtmp[3];
     double norm;
 
-    // Set up k points for SCPH equation
+    // Setup k points for SCPH equation
     MPI_Bcast(&kmesh_scph[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kmesh_interpolate[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
+    // Set up k points for Fourier interpolation
     nk_scph = kmesh_scph[0] * kmesh_scph[1] * kmesh_scph[2];
+    nk_interpolate = kmesh_interpolate[0] * kmesh_interpolate[1] * kmesh_interpolate[2];
+
     memory->allocate(xk_scph, nk_scph, 3);
+    memory->allocate(xk_interpolate, nk_interpolate, 3);
     memory->allocate(kvec_na_scph, nk_scph, 3);
 
-    kpoint->gen_kmesh(true, kmesh_scph, xk_scph, kp_irred_scph);
+    kpoint->gen_kmesh(true,
+                      kmesh_scph,
+                      xk_scph,
+                      kp_irred_scph);
+
+    kpoint->gen_kmesh(true,
+                      kmesh_interpolate,
+                      xk_interpolate,
+                      kp_irred_interpolate);
+
 
     for (ik = 0; ik < nk_scph; ++ik) {
         for (i = 0; i < 3; ++i) {
@@ -1347,12 +1358,6 @@ void Scph::setup_kmesh()
         knum_minus_scph[ik_minus] = ik;
     }
 
-    // Set up k points for Fourier interpolation
-
-    nk_interpolate = kmesh_interpolate[0] * kmesh_interpolate[1] * kmesh_interpolate[2];
-    memory->allocate(xk_interpolate, nk_interpolate, 3);
-    kpoint->gen_kmesh(true, kmesh_interpolate,
-                      xk_interpolate, kp_irred_interpolate);
 
     if (mympi->my_rank == 0) {
         std::cout << " Setting up the SCPH calculations ..." << std::endl << std::endl;
@@ -1659,7 +1664,6 @@ void Scph::setup_eigvecs()
 {
     int ik;
     unsigned int is;
-    unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
 
     if (mympi->my_rank == 0) {
