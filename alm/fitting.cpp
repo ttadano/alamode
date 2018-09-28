@@ -427,7 +427,9 @@ void Fitting::fit_without_constraints(int N,
     memory->allocate(S, LMIN);
 
     // transpose matrix A
-    memory->allocate(amat_mod, M * N);
+    auto _M = static_cast<unsigned long>(M);
+    auto _N = static_cast<unsigned long>(N);
+    memory->allocate(amat_mod, _M * _N);
     memory->allocate(fsum2, LMAX);
 
     k = 0;
@@ -493,6 +495,10 @@ void Fitting::fit_with_constraints(int N,
 
     std::cout << "  Entering fitting routine: QRD with constraints" << std::endl;
 
+    auto _M = static_cast<unsigned long>(M);
+    auto _N = static_cast<unsigned long>(N);
+    auto _P = static_cast<unsigned long>(P);
+
     memory->allocate(fsum2, M);
 
 #ifdef _USE_EIGEN_DISABLED
@@ -517,7 +523,7 @@ void Fitting::fit_with_constraints(int N,
 
     double *mat_tmp;
 
-    memory->allocate(mat_tmp, (M + P) * N);
+    memory->allocate(mat_tmp, (_M + _P) * _N);
 
     k = 0;
 
@@ -560,8 +566,8 @@ void Fitting::fit_with_constraints(int N,
     std::cout << "  QR-Decomposition has started ...";
 
     double *amat_mod, *cmat_mod;
-    memory->allocate(amat_mod, M * N);
-    memory->allocate(cmat_mod, P * N);
+    memory->allocate(amat_mod, _M * _N);
+    memory->allocate(cmat_mod, _P * _N);
 
     // transpose matrix A and C
     k = 0;
