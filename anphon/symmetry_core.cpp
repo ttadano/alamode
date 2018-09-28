@@ -176,7 +176,7 @@ void Symmetry::setup_symmetry_operation(int N,
                 >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
                 >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
-            SymmList.push_back(SymmetryOperation(rot_tmp, tran_tmp));
+            SymmList.emplace_back(rot_tmp, tran_tmp);
         }
         ifs_sym.close();
     }
