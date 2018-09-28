@@ -78,10 +78,7 @@ namespace PHON_NS
         std::vector<std::vector<KpointList>> kp_irred_interpolate;
 
         void exec_scph();
-
         void setup_scph();
-
-        void finish_scph();
 
         double mixalpha;
         unsigned int maxiter;
@@ -91,35 +88,37 @@ namespace PHON_NS
 
     private:
 
+        // Information of kmesh for SCPH calculation
         unsigned int nk_scph;
         unsigned int nk_interpolate;
+        int *kmap_interpolate_to_scph;
 
+        // Information for calculating the ph-ph interaction coefficients
         double ***vec_for_v3, *invmass_for_v3;
         double ***vec_for_v4, *invmass_for_v4;
         int **evec_index3;
         int **evec_index4;
-        int *kmap_interpolate_to_scph;
-
-        double **eval_harmonic;
-        std::complex<double> ***evec_harmonic;
-
-        std::complex<double> im;
         int ngroup, ngroup2;
         std::vector<double> *fcs_group;
         std::vector<double> *fcs_group2;
-        unsigned int *knum_minus_scph;
-        double **omega2_harmonic;
-        std::complex<double> ****mat_transform_sym;
-        std::vector<int> *small_group_at_k;
-        std::vector<int> *symop_minus_at_k;
-        KpointSymmetry *kpoint_map_symmetry;
-
         std::complex<double> *exp_phase, ***exp_phase3;
         int nk_grid[3];
         int nk_represent;
         unsigned int tune_type;
         double dnk[3];
+
+        // Information of harmonic dynamical matrix
+        std::complex<double> im;
+        double **omega2_harmonic;
+        std::complex<double> ***evec_harmonic;
         MinimumDistList ***mindist_list_scph;
+
+        // Local variables for handling symmetry of dynamical matrix
+        std::complex<double> ****mat_transform_sym;
+        std::vector<int> *small_group_at_k;
+        std::vector<int> *symop_minus_at_k;
+        KpointSymmetry *kpoint_map_symmetry;
+
 
         void set_default_variables();
         void deallocate_variables();
@@ -142,18 +141,22 @@ namespace PHON_NS
 
         void exec_scph_main(std::complex<double> ****);
 
-        void compute_V4_array_all(std::complex<double> ***,
-                                  std::complex<double> ***,
-                                  bool,
-                                  bool);
+        void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
+                                                 std::complex<double> ***,
+                                                 bool,
+                                                 bool);
 
-        void compute_V4_array_all2(std::complex<double> ***,
-                                   std::complex<double> ***,
-                                   bool);
+        void compute_V4_elements_mpi_over_band(std::complex<double> ***,
+                                               std::complex<double> ***,
+                                               bool);
 
-        void compute_V3_array_all(std::complex<double> ***,
-                                  std::complex<double> ***,
-                                  bool);
+        void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***,
+                                                 std::complex<double> ***,
+                                                 bool);
+
+        void zerofill_elements_acoustic_at_gamma(double **,
+                                                 std::complex<double> ***,
+                                                 const int);
 
         void calc_new_dymat_with_evec(std::complex<double> ***,
                                       double **,
@@ -168,13 +171,13 @@ namespace PHON_NS
                                           std::complex<double> ***,
                                           bool);
 
-        void exec_interpolation(std::complex<double> ***,
+        void exec_interpolation(const unsigned int [3],
+                                std::complex<double> ***,
+                                unsigned int,
+                                double **,
+                                double **,
                                 double **,
                                 std::complex<double> ***);
-
-        void exec_interpolation2(std::complex<double> ***,
-                                 double **,
-                                 std::complex<double> ***);
 
         void r2q(const double *,
                  unsigned int,
@@ -217,7 +220,8 @@ namespace PHON_NS
                        double **,
                        std::complex<double> ***);
 
-        void compute_free_energy_bubble_SCPH(std::complex<double> ****);
+        void compute_free_energy_bubble_SCPH(const unsigned int [3],
+                                             std::complex<double> ****);
     };
 
     extern "C" {
@@ -234,20 +238,5 @@ namespace PHON_NS
                 std::complex<double> *beta,
                 std::complex<double> *c,
                 int *ldc);
-
-    void zgeev_(const char *jobvl,
-                const char *jobvr,
-                int *n,
-                std::complex<double> *a,
-                int *lda,
-                std::complex<double> *w,
-                std::complex<double> *vl,
-                int *ldvl,
-                std::complex<double> *vr,
-                int *ldvr,
-                std::complex<double> *work,
-                int *lwork,
-                double *rwork,
-                int *info);
     }
 }
