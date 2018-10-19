@@ -55,8 +55,9 @@ parser.add_option('--OpenMX',
                         positions (default: None)")
 
 parser.add_option('--get',
+                  default="disp-force",
                   help="specify which quantity to extract. \
-                        Available options are 'disp', 'force' and 'energy'.")
+                        Available options are 'disp-force', 'disp', 'force' and 'energy'.")
 
 
 parser.add_option('--unit',
@@ -88,8 +89,7 @@ if __name__ == "__main__":
 $ python displace.py -h")
         exit(1)
 
-    Bohr_radius = 0.52917721067
-    Rydberg_to_eV = 13.60569253
+    # Check the calculator option
 
     conditions = [options.VASP is None,
                   options.QE is None,
@@ -109,217 +109,75 @@ $ python displace.py -h")
         code = "VASP"
         file_original = options.VASP
 
-        if options.unitname == "eV":
-            convert_unit = False
-            disp_conv_factor = 1.0
-            energy_conv_factor = 1.0
-
-        elif options.unitname == "Rydberg":
-            convert_unit = True
-            disp_conv_factor = 1.0 / Bohr_radius
-            energy_conv_factor = 1.0 / Rydberg_to_eV
-
-        elif options.unitname == "Hartree":
-            convert_unit = True
-            disp_conv_factor = 1.0 / Bohr_radius
-            energy_conv_factor = 0.5 / Rydberg_to_eV
-
-        else:
-            print("Invalid options for --unit")
-            exit(1)
-
     elif options.QE:
         code = "QE"
         file_original = options.QE
-
-        if options.unitname == "eV":
-            convert_unit = True
-            disp_conv_factor = Bohr_radius
-            energy_conv_factor = Rydberg_to_eV
-
-        elif options.unitname == "Rydberg":
-            convert_unit = False
-            disp_conv_factor = 1.0
-            energy_conv_factor = 1.0
-
-        elif options.unitname == "Hartree":
-            convert_unit = True
-            disp_conv_factor = 1.0
-            energy_conv_factor = 0.5
-
-        else:
-            print("Error : Invalid option for --unit")
-            exit(1)
 
     elif options.xTAPP:
         code = "xTAPP"
         file_original = options.xTAPP
 
-        if options.unitname == "eV":
-            convert_unit = True
-            disp_conv_factor = Bohr_radius
-            energy_conv_factor = 2.0 * Rydberg_to_eV
-
-        elif options.unitname == "Rydberg":
-            convert_unit = True
-            disp_conv_factor = 1.0
-            energy_conv_factor = 2.0
-
-        elif options.unitname == "Hartree":
-            convert_unit = False
-            disp_conv_factor = 1.0
-            energy_conv_factor = 1.0
-
-        else:
-            print("Error : Invalid option for --unit")
-            exit(1)
-
     elif options.LAMMPS:
         code = "LAMMPS"
         file_original = options.LAMMPS
 
-        if options.get == "energy":
-            print("--get energy is not supported for LAMMPS")
-            exit(1)
-
-        if options.unitname == "eV":
-            convert_unit = False
-            disp_conv_factor = 1.0
-            energy_conv_factor = 1.0
-
-        elif options.unitname == "Rydberg":
-            convert_unit = True
-            disp_conv_factor = 1.0 / Bohr_radius
-            energy_conv_factor = 1.0 / Rydberg_to_eV
-
-        elif options.unitname == "Hartree":
-            convert_unit = True
-            disp_conv_factor = 1.0 / Bohr_radius
-            energy_conv_factor = 0.5 / Rydberg_to_eV
-        
-        else:
-            print("Error : Invalid option for --unit")
-            exit(1)
-
-    
     elif options.OpenMX:
         code = "OpenMX"
         file_original = options.OpenMX
 
-        if options.unitname == "eV":
-            convert_unit = True
-            disp_conv_factor = 1.0
-            energy_conv_factor = 2.0 * Rydberg_to_eV
-            force_conv_factor = energy_conv_factor 
-
-        elif options.unitname == "Rydberg":
-            convert_unit = True
-            disp_conv_factor = 1.0 / Bohr_radius
-            energy_conv_factor = 2.0
-            force_conv_factor = 2.0
-
-        elif options.unitname == "Hartree":
-            convert_unit = True
-            disp_conv_factor = 1.0 / Bohr_radius
-            energy_conv_factor = 1.0
-            force_conv_factor = 1.0
-
-        else:
-            print("Error : Invalid option for --unit")
-            exit(1)
-
-    if options.OpenMX is None:
-        force_conv_factor = energy_conv_factor / disp_conv_factor
+    # Check output option
+    str_get = options.get.lower()
+    if str_get not in ["disp-force", "disp", "force", "energy"]:
+        print("Error: Please specify which quantity to extract by the --get option.")
+        exit(1)
 
     print_disp = False
     print_force = False
     print_energy = False
 
-    if options.get == "disp":
+    if str_get == "disp-force":
         print_disp = True
-    elif options.get == "force":
         print_force = True
-    elif options.get == "energy":
+    elif str_get == "disp":
+        print_disp = True
+    elif str_get == "force":
+        print_force = True
+    elif str_get == "energy":
         print_energy = True
+
+    # Check unit option
+    str_unit = options.unitname.lower()
+    if str_unit in ["ev", "electron_volt"]:
+        str_unit = "ev"
+    elif str_unit in ["ry", "ryd", "rydberg"]:
+        str_unit = "rydberg"
+    elif str_unit in ["ha", "hartree"]:
+        str_unit = "hartree"
     else:
-        print("Please specify which quantity to extract by the --get option.")
-        exit(1)
-
-    # Get nat, aa, x_frac0
-
-    if code == "VASP":
-        aa, aa_inv, elems, nats, x_frac0 = vasp.read_POSCAR(file_original)
-
-    elif code == "QE":
-        alat, aa, nat, x_frac0 = qe.read_original_QE_mod(file_original)
-
-    elif code == "xTAPP":
-        aa, nat, x_frac0 = xtapp.read_CG_mod(file_original)
-    
-    elif code == "LAMMPS":
-        common_settings, nat, x_cart0, kd = lammps.read_lammps_structure(file_original)
-    
-    elif code == "OpenMX":
-        aa, aa_inv, nat, x_frac0 = openmx.read_OpenMX_input(file_original)
-
+        print("Error: Invalid unit name : %s" % options.unitname)
 
     # Print data
+    if code == "VASP":
+        vasp.parse(file_original, file_results, 
+                   options.offset, str_unit,
+                   print_disp, print_force, print_energy)
 
-    if print_disp:
-        if code == "VASP":
-            vasp.print_displacements_VASP(file_results, aa, np.sum(nats), x_frac0,
-                                     convert_unit, disp_conv_factor, options.offset)
+    elif code == "QE":
+        qe.parse(file_original, file_results, 
+                 options.offset, str_unit,
+                 print_disp, print_force, print_energy)
 
-        elif code == "QE":
-            qe.print_displacements_QE(file_results, alat, aa, nat, x_frac0,
-                                   convert_unit, disp_conv_factor, options.offset)
+    elif code == "xTAPP":
+        xtapp.parse(file_original, file_results,
+                    options.offset, str_unit,
+                    print_disp, print_force, print_energy)
 
-        elif code == "xTAPP":
-            xtapp.print_displacements_xTAPP(file_results, aa, nat, x_frac0,
-                                      convert_unit, disp_conv_factor, options.offset)
-
-        elif code == "LAMMPS":
-            lammps.print_displacements_LAMMPS(file_results, nat, x_cart0,
-                                       convert_unit, disp_conv_factor, options.offset)
+    elif code == "OpenMX":
+        openmx.parse(file_original, file_results,
+                     options.offset, str_unit,
+                     print_disp, print_force, print_energy)
     
-        elif code == "OpenMX":
-            openmx.print_displacements_OpenMX(file_results, aa, aa_inv, nat, x_frac0,
-                                      convert_unit, disp_conv_factor, options.offset)
-
-    elif print_force:
-        if code == "VASP":
-            vasp.print_atomicforces_VASP(file_results, np.sum(nats),
-                                    convert_unit, force_conv_factor, options.offset)
-
-        elif code == "QE":
-            qe.print_atomicforces_QE(file_results, nat,
-                                  convert_unit, force_conv_factor, options.offset)
-
-        elif code == "xTAPP":
-            xtapp.print_atomicforces_xTAPP(file_results, nat,
-                                     convert_unit, force_conv_factor, options.offset)
-
-        elif code == "LAMMPS":
-            lammps.print_atomicforces_LAMMPS(file_results, nat, 
-                                      convert_unit, force_conv_factor, options.offset)
-
-        elif code == "OpenMX":
-            openmx.print_atomicforces_OpenMX(file_results, nat,
-                                     convert_unit, force_conv_factor, options.offset)
-
-    elif print_energy:
-        if code == "VASP":
-            vasp.print_energies_VASP(file_results, convert_unit,
-                                energy_conv_factor, options.offset)
-
-        elif code == "QE":
-            qe.print_energies_QE(file_results, convert_unit,
-                              energy_conv_factor, options.offset)
-
-        elif code == "xTAPP":
-            xtapp.print_energies_xTAPP(file_results, convert_unit,
-                                 energy_conv_factor, options.offset)
-
-        elif code == "OpenMX":
-            openmx.print_energies_OpenMX(file_results, convert_unit,
-                                 energy_conv_factor, options.offset)
+    elif code == "LAMMPS":
+        lammps.parse(file_original, file_results,
+                     options.offset, str_unit,
+                     print_disp, print_force, print_energy)

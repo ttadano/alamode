@@ -118,7 +118,7 @@ def get_atomicforces_LAMMPS(lammps_dump_file):
     return np.array(force)
 
 
-def print_displacements_LAMMPS(lammps_files, nat, x_cart0, require_conversion,
+def print_displacements_LAMMPS(lammps_files, nat, x_cart0, 
                                conversion_factor, file_offset):
 
     if file_offset is None:
@@ -155,8 +155,7 @@ def print_displacements_LAMMPS(lammps_files, nat, x_cart0, require_conversion,
             for idata in range(ndata):
                 disp = x[idata, :, :] - x_cart0 - disp_offset
 
-                if require_conversion:
-                    disp *= conversion_factor
+                disp *= conversion_factor
 
                 for i in range(nat):
                     print("%20.14f %20.14f %20.14f" % (disp[i, 0], 
@@ -175,8 +174,7 @@ def print_displacements_LAMMPS(lammps_files, nat, x_cart0, require_conversion,
 
             disp = x_cart - x_cart0 - disp_offset
 
-            if require_conversion:
-                disp *= conversion_factor
+            disp *= conversion_factor
 
             for i in range(nat):
                 print("%20.14f %20.14f %20.14f" % (disp[i, 0], 
@@ -184,7 +182,7 @@ def print_displacements_LAMMPS(lammps_files, nat, x_cart0, require_conversion,
                                                    disp[i, 2]))
 
 
-def print_atomicforces_LAMMPS(lammps_files, nat, require_conversion,
+def print_atomicforces_LAMMPS(lammps_files, nat, 
                               conversion_factor, file_offset):
 
     if file_offset is None:
@@ -215,8 +213,65 @@ def print_atomicforces_LAMMPS(lammps_files, nat, require_conversion,
         for idata in range(ndata):
             f = force[idata, :, :] - force_offset
 
-            if require_conversion:
-                f *= conversion_factor
+            f *= conversion_factor
 
             for i in range(nat):
                 print("%19.11E %19.11E %19.11E" % (f[i][0], f[i][1], f[i][2]))
+
+
+def get_unit_conversion_factor(str_unit):
+    
+    Bohr_radius = 0.52917721067
+    Rydberg_to_eV = 13.60569253
+
+    disp_conv_factor = 1.0
+    energy_conv_factor = 1.0
+    force_conv_factor = 1.0
+
+    if str_unit== "ev":
+        disp_conv_factor = 1.0
+        energy_conv_factor = 1.0
+
+    elif str_unit == "rydberg":
+        disp_conv_factor = 1.0 / Bohr_radius
+        energy_conv_factor = 1.0 / Rydberg_to_eV
+
+    elif str_unit == "hartree":
+        disp_conv_factor = 1.0 / Bohr_radius
+        energy_conv_factor = 0.5 / Rydberg_to_eV
+    
+    else:
+        print("This cannot happen")
+        exit(1)
+    
+    force_conv_factor = energy_conv_factor / disp_conv_factor
+
+    return disp_conv_factor, force_conv_factor, energy_conv_factor
+
+
+def parse(lammps_init, dump_files, dump_file_offset, str_unit,
+          print_disp, print_force, print_energy):
+
+    common_settings, nat, x_cart0, kd = read_lammps_structure(lammps_init)
+    scale_disp, scale_force, scale_energy = get_unit_conversion_factor(str_unit)
+
+    if print_disp == True and print_force == True:
+        print("Error: Sorry this is not implemented yet.")
+        print("Please specify --get disp or --get force")
+        exit(1)
+
+    elif print_disp == True:
+        print_displacements_LAMMPS(dump_files, nat, x_cart0,
+                                   scale_disp, 
+                                   dump_file_offset)
+
+    elif print_force == True:
+        print_atomicforces_LAMMPS(dump_files, nat, 
+                                  scale_force, 
+                                  dump_file_offset)
+
+    elif print_energy == True:
+        print("Error: --get energy is not supported for LAMMPS")
+        exit(1)
+
+

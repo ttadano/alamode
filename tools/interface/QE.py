@@ -584,14 +584,13 @@ def read_original_QE_mod(file_in):
     return celldm[0], lavec, nat, x0
 
 
-def get_coordinates_QE(pwout_file, nat):
+def get_coordinates_QE(pwout_file, nat, alat, lavec_transpose_inv):
 
     search_flag = "site n.     atom                  positions (alat units)"
-    search_flag2 = "ATOMIC_POSITIONS (crystal)"
 
     x = np.zeros((nat, 3))
 
-    num_data_disp = 0
+    num_data_disp_extra = 0
     basis = ""
     found_tag = False
 
@@ -615,9 +614,14 @@ def get_coordinates_QE(pwout_file, nat):
         print("%s tag not found in %s" % (search_flag, pwout_file))
         exit(1)
 
+    x = alat * np.dot(x, lavec_transpose_inv)
+
+    # Search additional entries containing atomic position
+    # (for parsing MD trajectory)
+    search_flag2 = "ATOMIC_POSITIONS (crystal)"
+
     x_additional = []
 
-    # Search other entries containing atomic position
     while line:
 
         if search_flag2 in line:
@@ -625,7 +629,7 @@ def get_coordinates_QE(pwout_file, nat):
             if not basis:
                 basis = line.rstrip().split()[1]
 
-            num_data_disp += 1
+            num_data_disp_extra += 1
 
             for i in range(nat):
                 line = f.readline()
@@ -635,21 +639,42 @@ def get_coordinates_QE(pwout_file, nat):
 
     f.close()
 
-    return x, np.array(x_additional, dtype=np.float), num_data_disp, basis
+    Bohr_to_angstrom = 0.5291772108
+    x_additional = np.array(x_additional, dtype=np.float)
+    # The basis of the coordinate in x_additional can be different
+    # from that of x. Therefore, perform basis conversion here.
+    if num_data_disp_extra > 0:
+    
+        if "alat" in basis:
+            conversion_mat = alat * lavec_transpose_inv
+        elif "bohr" in basis:
+            conversion_mat = lavec_transpose_inv
+        elif "angstrom" in basis:
+            conversion_mat = lavec_transpose_inv / Bohr_to_angstrom
+        elif "crystal" in basis:
+            conversion_mat = np.identity(3)
+        else:
+            print("This cannot happen.")
+            exit(1)
+
+        x_additional = np.reshape(x_additional, (num_data_disp_extra, nat, 3))
+        for i in range(num_data_disp_extra):
+            x_additional[i, :, :] = np.dot(x_additional[i, :, :], conversion_mat)
+
+    return x, x_additional, num_data_disp_extra
 
 
 def print_displacements_QE(pwout_files,
                            alat, lavec, nat, x0,
-                           require_conversion,
                            conversion_factor,
                            file_offset):
 
     import math
-    Bohr_to_angstrom = 0.5291772108
     vec_refold = np.vectorize(refold)
 
     x0 = np.round(x0, 8)
 
+    Bohr_to_angstrom = 0.5291772108
     lavec /= Bohr_to_angstrom
     lavec_transpose = lavec.transpose()
     lavec_transpose_inv = np.linalg.inv(lavec_transpose)
@@ -658,29 +683,26 @@ def print_displacements_QE(pwout_files,
         # if celldm[0] is empty, calculate it from lattice vector
         alat = math.sqrt(np.dot(lavec_transpose[0][:], lavec_transpose[0][:]))
 
+    # Parse offset component
     if file_offset is None:
         disp_offset = np.zeros((nat, 3))
     else:
-        x_offset, x_tmp, ndata_offset, basis_tmp = get_coordinates_QE(
-            file_offset, nat)
+        x_offset, _, ndata_offset \
+            = get_coordinates_QE(file_offset, nat, alat, lavec_transpose_inv)
+
         if ndata_offset > 1:
             print("File %s contains too many position entries" % file_offset)
             exit(1)
         else:
-            x_offset = alat * np.dot(x_offset, lavec_transpose_inv)
             disp_offset = x_offset - x0
 
     for search_target in pwout_files:
 
-        x, x_additional, num_data_disp, basis = get_coordinates_QE(
-            search_target, nat)
-        x = alat * np.dot(x, lavec_transpose_inv)
-
+        x, x_additional, num_data_disp \
+            = get_coordinates_QE(search_target, nat, alat, lavec_transpose_inv)
         disp = x - x0 - disp_offset
         disp = np.dot(vec_refold(disp), lavec_transpose)
-
-        if require_conversion:
-            disp *= conversion_factor
+        disp *= conversion_factor
 
         for i in range(nat):
             print("%15.7F %15.7F %15.7F" % (disp[i][0],
@@ -688,29 +710,13 @@ def print_displacements_QE(pwout_files,
                                             disp[i][2]))
 
         if num_data_disp > 1:
-
-            if "alat" in basis:
-                conversion_mat = alat * lavec_transpose_inv
-            elif "bohr" in basis:
-                conversion_mat = lavec_transpose_inv
-            elif "angstrom" in basis:
-                conversion_mat = lavec_transpose_inv / Bohr_to_angstrom
-            elif "crystal" in basis:
-                conversion_mat = np.identity(3)
-            else:
-                print("This cannot happen.")
-                exit(1)
-
-            x_additional = np.reshape(x_additional, (num_data_disp, nat, 3))
-
+            # The last coordinate is not printed out because there is no 
+            # atomic force information of that structure.
             for step in range(num_data_disp - 1):
                 x = x_additional[step, :, :]
-                x = np.dot(x, conversion_mat)
                 disp = x - x0 - disp_offset
                 disp = np.dot(vec_refold(disp), lavec_transpose)
-
-                if require_conversion:
-                    disp *= conversion_factor
+                disp *= conversion_factor
 
                 for i in range(nat):
                     print("%15.7F %15.7F %15.7F" % (disp[i][0],
@@ -756,7 +762,6 @@ def get_atomicforces_QE(pwout_file, nat):
 
 def print_atomicforces_QE(str_files,
                           nat,
-                          require_conversion,
                           conversion_factor,
                           file_offset):
 
@@ -777,14 +782,105 @@ def print_atomicforces_QE(str_files,
 
         for idata in range(ndata):
             f = force[idata, :, :] - force_offset
-
-            if require_conversion:
-                f *= conversion_factor
+            f *= conversion_factor
 
             for i in range(nat):
-                print("%19.11E %19.11E %19.11E" % (f[i][0],
-                                                   f[i][1],
-                                                   f[i][2]))
+                print("%19.8E %15.8E %15.8E" % (f[i][0],
+                                                f[i][1],
+                                                f[i][2]))
+
+
+def print_displacements_and_forces_QE(pwout_files,
+                                      alat, lavec, nat, x0,
+                                      conversion_factor_disp,
+                                      conversion_factor_force,
+                                      file_offset):
+    
+    import math
+    vec_refold = np.vectorize(refold)
+
+    x0 = np.round(x0, 8)
+
+    Bohr_to_angstrom = 0.5291772108
+    lavec /= Bohr_to_angstrom
+    lavec_transpose = lavec.transpose()
+    lavec_transpose_inv = np.linalg.inv(lavec_transpose)
+
+    if not alat:
+        # if celldm[0] is empty, calculate it from lattice vector
+        alat = math.sqrt(np.dot(lavec_transpose[0][:], lavec_transpose[0][:]))
+
+    # Parse offset component
+    if file_offset is None:
+        disp_offset = np.zeros((nat, 3))
+        force_offset = np.zeros((nat, 3))
+    else:
+        x_offset, _, ndata_offset \
+            = get_coordinates_QE(file_offset, nat, alat, lavec_transpose_inv)
+
+        if ndata_offset > 1:
+            print("File %s contains too many position entries" % file_offset)
+            exit(1)
+        else:
+            disp_offset = x_offset - x0
+
+        force_offset = get_atomicforces_QE(file_offset, nat)
+        try:
+            force_offset = np.reshape(force_offset, (nat, 3))
+        except:
+            print("File %s contains too many force entries" % file_offset)
+
+    for search_target in pwout_files:
+
+        x, x_additional, num_data_disp_extra \
+            = get_coordinates_QE(search_target, nat, alat, lavec_transpose_inv)
+ 
+        force = get_atomicforces_QE(search_target, nat)
+        num_data_force = len(force) // (3 * nat)
+        force = np.reshape(force, (num_data_force, nat, 3))
+        
+        if num_data_disp_extra <= 1:
+            num_data_disp = 1
+        else:
+            num_data_disp = num_data_disp_extra
+    
+        if num_data_disp != num_data_force:
+            print("Error: The number of entries of displacement and force is inconsistent.")
+            print("Ndata disp : %d, Ndata force : %d" % (num_data_disp, num_data_force))
+            exit(1)
+
+        disp = x - x0 - disp_offset
+        disp = np.dot(vec_refold(disp), lavec_transpose)
+        disp *= conversion_factor_disp
+        f = force[0, :, :] - force_offset
+        f *= conversion_factor_force
+
+        for i in range(nat):
+            print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],
+                                                                 disp[i][1],
+                                                                 disp[i][2],
+                                                                 f[i][0],
+                                                                 f[i][1],
+                                                                 f[i][2]))
+
+        if num_data_disp > 1:
+            # The last coordinate is not printed out because there is no 
+            # atomic force information of that structure.
+            for step in range(num_data_disp - 1):
+                x = x_additional[step, :, :]
+                disp = x - x0 - disp_offset
+                disp = np.dot(vec_refold(disp), lavec_transpose)
+                disp *= conversion_factor_disp
+                f = force[step + 1, :, :] - force_offset
+                f *= conversion_factor_force
+
+                for i in range(nat):
+                     print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],
+                                                                          disp[i][1],
+                                                                          disp[i][2],
+                                                                          f[i][0],
+                                                                          f[i][1],
+                                                                          f[i][2]))
 
 
 def get_energies_QE(pwout_file):
@@ -809,7 +905,6 @@ def get_energies_QE(pwout_file):
 
 
 def print_energies_QE(str_files,
-                      require_conversion,
                       conversion_factor,
                       file_offset):
 
@@ -829,9 +924,7 @@ def print_energies_QE(str_files,
 
         for idata in range(len(etot)):
             val = etot[idata] - etot_offset
-
-            if require_conversion:
-                val *= conversion_factor
+            val *= conversion_factor
 
             print("%19.11E" % val)
 
@@ -843,4 +936,66 @@ def refold(x):
         return x + 1.0
     else:
         return x
+
+def get_unit_conversion_factor(str_unit):
+    
+    Bohr_radius = 0.52917721067
+    Rydberg_to_eV = 13.60569253
+
+    disp_conv_factor = 1.0
+    energy_conv_factor = 1.0
+    force_conv_factor = 1.0
+
+    if str_unit == "ev":
+        disp_conv_factor = Bohr_radius
+        energy_conv_factor = Rydberg_to_eV
+
+    elif str_unit == "rydberg":
+        disp_conv_factor = 1.0
+        energy_conv_factor = 1.0
+
+    elif str_unit == "hartree":
+        disp_conv_factor = 1.0
+        energy_conv_factor = 0.5
+
+    else:
+        print("This cannot happen.")
+        exit(1)
+    
+    force_conv_factor = energy_conv_factor / disp_conv_factor
+
+    return disp_conv_factor, force_conv_factor, energy_conv_factor
+
+def parse(pwin_init, pwout_files, pwout_file_offset, str_unit,
+          print_disp, print_force, print_energy):
+
+    alat, aa, nat, x_frac0 = read_original_QE_mod(pwin_init)
+
+    scale_disp, scale_force, scale_energy = get_unit_conversion_factor(str_unit)
+
+    if print_disp == True and print_force == True:
+        print_displacements_and_forces_QE(pwout_files,
+                                          alat, aa, nat,
+                                          x_frac0,
+                                          scale_disp,
+                                          scale_force,
+                                          pwout_file_offset)
+
+    elif print_disp == True:
+        print_displacements_QE(pwout_files, 
+                               alat, aa, nat, x_frac0,
+                               scale_disp, 
+                               pwout_file_offset)
+
+
+    elif print_force == True:
+        print_atomicforces_QE(pwout_files, 
+                              nat,
+                              scale_force, 
+                              pwout_file_offset)
+
+    elif print_energy == True:
+        print_energies_QE(pwout_files,
+                          scale_energy,
+                          pwout_file_offset)
 

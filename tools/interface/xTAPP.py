@@ -292,7 +292,6 @@ def get_coordinates_xTAPP(str_file, nat):
 
 def print_displacements_xTAPP(str_files,
                               lavec, nat, x0,
-                              require_conversion,
                               conversion_factor,
                               file_offset):
 
@@ -323,9 +322,7 @@ def print_displacements_xTAPP(str_files,
         for idata in range(ndata):
             disp = x[idata, :, :] - x0 - disp_offset
             disp = np.dot(vec_refold(disp), lavec_transpose)
-
-            if require_conversion:
-                disp *= conversion_factor
+            disp *= conversion_factor
 
             for i in range(nat):
                 print("%15.7F %15.7F %15.7F" % (disp[i][0],
@@ -366,7 +363,6 @@ def get_atomicforces_xTAPP(str_file, nat):
 
 def print_atomicforces_xTAPP(str_files,
                              nat,
-                             require_conversion,
                              conversion_factor,
                              file_offset):
 
@@ -387,14 +383,12 @@ def print_atomicforces_xTAPP(str_files,
 
         for idata in range(ndata):
             f = force[idata, :, :] - force_offset
+            f *= conversion_factor
 
-            if require_conversion:
-                f *= conversion_factor
-
-                for i in range(nat):
-                    print("%19.11E %19.11E %19.11E" % (f[i][0],
-                                                       f[i][1],
-                                                       f[i][2]))
+            for i in range(nat):
+                print("%19.11E %19.11E %19.11E" % (f[i][0],
+                                                    f[i][1],
+                                                    f[i][2]))
 
 
 def get_energies_xTAPP(str_file):
@@ -419,8 +413,74 @@ def get_energies_xTAPP(str_file):
     return np.array(etot, dtype=np.float)
 
 
+def print_displacements_and_forces_xTAPP(str_files,
+                                         lavec, nat, x0,
+                                         conversion_factor_disp,
+                                         conversion_factor_force,
+                                         file_offset):
+
+    Bohr_to_angstrom = 0.5291772108
+    vec_refold = np.vectorize(refold)
+
+    lavec /= Bohr_to_angstrom
+    lavec_transpose = lavec.transpose()
+
+    x0 = np.round(x0, 8)
+
+    if file_offset is None:
+        disp_offset = np.zeros((nat, 3))
+        force_offset = np.zeros((nat, 3))
+
+    else:
+        x0_offset = get_coordinates_xTAPP(file_offset, nat)
+        force_offset = get_atomicforces_xTAPP(file_offset, nat)
+        try:
+            x0_offset = np.reshape(x0_offset, (nat, 3))
+        except:
+            print("File %s contains too many position entries" % file_offset)
+        disp_offset = x0_offset - x0
+
+        try:
+            force_offset = np.reshape(force_offset, (nat, 3))
+        except:
+            print("File %s contains too many position entries" % file_offset)
+
+        
+
+    for search_target in str_files:
+
+        x = get_coordinates_xTAPP(search_target, nat)
+        force = get_atomicforces_xTAPP(search_target, nat)
+
+        ndata_disp = len(x) // (3 * nat)
+        ndata_force = len(force) // (3 * nat)
+
+        if ndata_disp != ndata_force:
+            print("Error: The number of entries of displacement and force is inconsistent.")
+            print("Ndata disp : %d, Ndata force : %d" % (ndata_disp, ndata_force))
+            exit(1)
+
+        ndata = ndata_disp
+        x = np.reshape(x, (ndata, nat, 3))
+        force = np.reshape(force, (ndata, nat, 3))           
+
+        for idata in range(ndata):
+            disp = x[idata, :, :] - x0 - disp_offset
+            disp = np.dot(vec_refold(disp), lavec_transpose)
+            disp *= conversion_factor
+            f = force[idata, :, :] - force_offset
+            f *= conversion_factor
+
+            for i in range(nat):
+                print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],
+                                                                     disp[i][1],
+                                                                     disp[i][2],
+                                                                     f[i][0],
+                                                                     f[i][1],
+                                                                     f[i][2]))
+
+
 def print_energies_xTAPP(str_files,
-                         require_conversion,
                          conversion_factor,
                          file_offset):
 
@@ -440,9 +500,7 @@ def print_energies_xTAPP(str_files,
 
         for idata in range(len(etot)):
             val = etot[idata] - etot_offset
-
-            if require_conversion:
-                val *= conversion_factor
+            val *= conversion_factor
 
             print("%19.11E" % val)
 
@@ -455,4 +513,66 @@ def refold(x):
         return x + 1.0
     else:
         return x
+
+
+def get_unit_conversion_factor(str_unit):
+    
+    Bohr_radius = 0.52917721067
+    Rydberg_to_eV = 13.60569253
+
+    disp_conv_factor = 1.0
+    energy_conv_factor = 1.0
+    force_conv_factor = 1.0
+
+    if str_unit == "ev":
+        disp_conv_factor = Bohr_radius
+        energy_conv_factor = 2.0 * Rydberg_to_eV
+
+    elif str_unit == "rydberg":
+        disp_conv_factor = 1.0
+        energy_conv_factor = 2.0
+
+    elif str_unit == "hartree":
+        disp_conv_factor = 1.0
+        energy_conv_factor = 1.0
+
+    else:
+        print("This cannot happen")
+        exit(1)
+    
+    force_conv_factor = energy_conv_factor / disp_conv_factor
+
+    return disp_conv_factor, force_conv_factor, energy_conv_factor
+
+def parse(cg_init, structure_files, structure_file_offset, str_unit,
+          print_disp, print_force, print_energy):
+    
+    aa, nat, x_frac0 = xtapp.read_CG_mod(cg_init)
+    
+    scale_disp, scale_force, scale_energy = get_unit_conversion_factor(str_unit)
+
+    if print_disp == True and print_force == True:
+        print_displacements_and_forces_xTAPP(structure_files,
+                                            aa, nat,
+                                            x_frac0,
+                                            scale_disp,
+                                            scale_force,
+                                            structure_file_offset)
+
+    elif print_disp == True:
+        print_displacements_xTAPP(structure_results, 
+                                  aa, nat, x_frac0,
+                                  scale_disp, 
+                                  structure_file_offset)
+
+    elif print_force == True:
+        print_atomicforces_xTAPP(structure_files, 
+                                 nat,
+                                 scale_force, 
+                                 structure_file_offset)
+
+    elif print_energy == True:
+        print_energies_xTAPP(structure_files, 
+                             scale_energy, 
+                             structure_file_offset)
 
