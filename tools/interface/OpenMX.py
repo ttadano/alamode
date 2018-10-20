@@ -355,7 +355,7 @@ def print_displacements_and_forces_OpenMX(out_files,
             disp[np.absolute(disp) < 1e-5] = 0.0
             disp *= conversion_factor_disp
 
-            f = data - force_offset
+            f = force - force_offset
             f *= conversion_factor_force
 
             for i in range(nat):
