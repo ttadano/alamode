@@ -77,8 +77,8 @@ namespace PHON_NS
         void init();
 
         void add_longrange_matrix(double *,
-                                  std::complex<double> **,
-                                  int);
+                                  double *,
+                                  std::complex<double> **);
 
     private:
 
@@ -130,7 +130,7 @@ namespace PHON_NS
                                              int,
                                              double *,
                                              std::complex<double> **,
-                                             int);
+                                             double *);
 
         void calc_anisotropic_hmat(double,
                                    const double *,

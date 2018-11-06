@@ -156,7 +156,7 @@ namespace PHON_NS
 
         void zerofill_elements_acoustic_at_gamma(double **,
                                                  std::complex<double> ***,
-                                                 const int);
+                                                 const int) const;
 
         void calc_new_dymat_with_evec(std::complex<double> ***,
                                       double **,
@@ -201,9 +201,9 @@ namespace PHON_NS
                         double *);
 
         void symmetrize_dynamical_matrix(unsigned int,
-                                         Eigen::MatrixXcd &);
+                                         Eigen::MatrixXcd &) const;
 
-        void replicate_dymat_for_all_kpoints(std::complex<double> ***);
+        void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
 
         void duplicate_xk_boundary(double *,
                                    std::vector<std::vector<double>> &);

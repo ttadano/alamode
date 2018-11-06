@@ -899,8 +899,8 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
 
 
 void Ewald::add_longrange_matrix(double *xk_in,
-                                 std::complex<double> **dymat_k_out,
-                                 const int ik)
+                                 double *kvec_in,
+                                 std::complex<double> **dymat_k_out)
 {
     int icrd, jcrd, iat, jat;
     int natmin = system->natmin;
@@ -923,7 +923,7 @@ void Ewald::add_longrange_matrix(double *xk_in,
     for (iat = 0; iat < natmin; ++iat) {
         for (jat = 0; jat < natmin; ++jat) {
             calc_short_term_dynamical_matrix(iat, jat, xk, dymat_tmp_l);
-            calc_long_term_dynamical_matrix(iat, jat, xk, dymat_tmp_g, ik);
+            calc_long_term_dynamical_matrix(iat, jat, xk, dymat_tmp_g, kvec_in);
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     dymat_k_out[3 * iat + icrd][3 * jat + jcrd] = dymat_tmp_l[icrd][jcrd]
@@ -1156,7 +1156,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                                             const int jat,
                                             double *xk_in,
                                             std::complex<double> **mat_out,
-                                            const int ik)
+                                            double *kvec_in)
 {
     // Real lattice sum part for a dynamical matrix
 
@@ -1212,7 +1212,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
         // Treat non-analytic term
 
         double kdirec[3], e_kdirec[3];
-        for (i = 0; i < 3; ++i) kdirec[i] = kpoint->kvec_na[ik][i];
+        for (i = 0; i < 3; ++i) kdirec[i] = kvec_in[i];
         rotvec(e_kdirec, kdirec, epsilon);
         double norm = kdirec[0] * e_kdirec[0] + kdirec[1] * e_kdirec[1] + kdirec[2] * e_kdirec[2];
 

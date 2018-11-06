@@ -13,6 +13,7 @@
 #include "dynamical.h"
 #include "kpoint.h"
 #include "anharmonic_core.h"
+#include "ewald.h"
 #include "memory.h"
 #include "thermodynamics.h"
 #include "write_phonons.h"
@@ -183,7 +184,7 @@ void Scph::exec_scph()
     std::complex<double> ****evec_anharm = nullptr;
     std::complex<double> ****delta_dymat_scph = nullptr;
 
-    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     MPI_Bcast(&restart_scph, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&selfenergy_offdiagonal, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
@@ -198,6 +199,10 @@ void Scph::exec_scph()
 
     } else {
 
+        if (dynamical->nonanalytic == 3) {
+            error->exit("exec_scph",
+                        "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
+        }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
         exec_scph_main(delta_dymat_scph);
 
@@ -417,13 +422,13 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
 void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 {
     int i, iT, ik, is, js;
-    auto nk = nk_scph;
-    auto ns = dynamical->neval;
-    auto nk_reduced_scph = kp_irred_scph.size();
-    auto nk_irred_interpolate = kp_irred_interpolate.size();
-    auto Tmin = system->Tmin;
-    auto Tmax = system->Tmax;
-    auto dT = system->dT;
+    const auto nk = nk_scph;
+    const auto ns = dynamical->neval;
+    const auto nk_reduced_scph = kp_irred_scph.size();
+    const auto nk_irred_interpolate = kp_irred_interpolate.size();
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
     double temp;
     double ***omega2_anharm;
     std::complex<double> ***evec_anharm_tmp;
@@ -433,7 +438,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
     std::vector<double> vec_temp;
 
-    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     // Find the degeneracy at each irreducible k points.
 
@@ -1154,7 +1159,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
 void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
                                                std::complex<double> ***v_elems,
-                                               const int fc_order)
+                                               const int fc_order) const
 {
     // Set V3 or V4 elements involving acoustic modes at Gamma point
     // exactly zero.
@@ -1463,7 +1468,7 @@ void Scph::setup_transform_symmetry()
 
 
 void Scph::symmetrize_dynamical_matrix(const unsigned int ik,
-                                       Eigen::MatrixXcd &dymat)
+                                       Eigen::MatrixXcd &dymat) const
 {
     // Symmetrize the dynamical matrix of given index ik.
     using namespace Eigen;
@@ -1506,7 +1511,7 @@ void Scph::symmetrize_dynamical_matrix(const unsigned int ik,
     dymat = dymat_sym / static_cast<double>(nsym_small + nsym_minus);
 }
 
-void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout)
+void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout) const
 {
     using namespace Eigen;
     unsigned int i;
@@ -1881,10 +1886,10 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
                               std::complex<double> ***evec_out)
 {
     unsigned int i, j, is;
-    unsigned int ns = dynamical->neval;
-    unsigned int nk1 = kmesh_orig[0];
-    unsigned int nk2 = kmesh_orig[1];
-    unsigned int nk3 = kmesh_orig[2];
+    const auto ns = dynamical->neval;
+    const auto nk1 = kmesh_orig[0];
+    const auto nk2 = kmesh_orig[1];
+    const auto nk3 = kmesh_orig[2];
 
     double eval_tmp;
     double *eval_real;
@@ -1902,9 +1907,17 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
     }
 
     for (unsigned int ik = 0; ik < nk_dense; ++ik) {
-        dynamical->calc_analytic_k(xk_dense[ik],
-                                   fcs_phonon->fc2_ext,
-                                   mat_harmonic);
+
+        if (dynamical->nonanalytic == 3) {
+            dynamical->calc_analytic_k(xk_dense[ik],
+                                       ewald->fc2_without_dipole,
+                                       mat_harmonic);
+        } else {
+            dynamical->calc_analytic_k(xk_dense[ik],
+                                       fcs_phonon->fc2_ext,
+                                       mat_harmonic);
+        }
+
         r2q(xk_dense[ik], nk1, nk2, nk3, ns, dymat_r, mat_tmp);
 
         for (i = 0; i < ns; ++i) {
@@ -1923,6 +1936,11 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
                 dynamical->calc_nonanalytic_k2(xk_dense[ik],
                                                kvec_dense[ik],
                                                mat_harmonic_na);
+
+            } else if (dynamical->nonanalytic == 3) {
+                ewald->add_longrange_matrix(xk_dense[ik],
+                                            kvec_dense[ik],
+                                            mat_harmonic_na);
             }
 
             for (i = 0; i < ns; ++i) {

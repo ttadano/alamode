@@ -44,16 +44,16 @@ void Thermodynamics::setup()
 }
 
 double Thermodynamics::Cv(const double omega,
-                          const double T)
+                          const double T) const
 {
     if (std::abs(T) < eps) return 0.0;
 
-    double x = omega / (T_to_Ryd * T);
+    auto x = omega / (T_to_Ryd * T);
     return k_Boltzmann * std::pow(x / (2.0 * sinh(0.5 * x)), 2);
 }
 
 double Thermodynamics::Cv_classical(const double omega,
-                                    const double T)
+                                    const double T) const
 {
     if (std::abs(T) < eps) return 0.0;
 
@@ -61,32 +61,32 @@ double Thermodynamics::Cv_classical(const double omega,
 }
 
 double Thermodynamics::fB(const double omega,
-                          const double T)
+                          const double T) const
 {
     if (std::abs(T) < eps || omega < eps8) return 0.0;
 
-    double x = omega / (T_to_Ryd * T);
+    auto x = omega / (T_to_Ryd * T);
     return 1.0 / (std::exp(x) - 1.0);
 }
 
 double Thermodynamics::fC(const double omega,
-                          const double T)
+                          const double T) const
 {
     if (std::abs(T) < eps || omega < eps8) return 0.0;
 
-    double x = omega / (T_to_Ryd * T);
+    auto x = omega / (T_to_Ryd * T);
     return 1.0 / x;
 }
 
-double Thermodynamics::Cv_tot(const double T)
+double Thermodynamics::Cv_tot(const double T) const
 {
     int i;
     unsigned int ik, is;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
     double omega;
-    double ret = 0.0;
+    auto ret = 0.0;
 
-    int N = kpoint->nk_irred * ns;
+    const auto N = kpoint->nk_irred * ns;
     int ik_irred;
 
     if (classical) {
@@ -125,11 +125,11 @@ double Thermodynamics::internal_energy(const double T)
 {
     int i;
     unsigned int ik, is;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
     double omega;
-    double ret = 0.0;
+    auto ret = 0.0;
 
-    int N = kpoint->nk_irred * ns;
+    const auto N = kpoint->nk_irred * ns;
     int ik_irred;
 
     if (classical) {
@@ -163,15 +163,15 @@ double Thermodynamics::internal_energy(const double T)
     return ret * 0.5;
 }
 
-double Thermodynamics::vibrational_entropy(const double T)
+double Thermodynamics::vibrational_entropy(const double T) const
 {
     int i;
     unsigned int ik, is;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
     double omega, x;
-    double ret = 0.0;
+    auto ret = 0.0;
 
-    int N = kpoint->nk_irred * ns;
+    const auto N = kpoint->nk_irred * ns;
     int ik_irred;
 
     if (classical) {
@@ -205,15 +205,15 @@ double Thermodynamics::vibrational_entropy(const double T)
     return -k_Boltzmann * ret;
 }
 
-double Thermodynamics::free_energy(const double T)
+double Thermodynamics::free_energy(const double T) const
 {
     int i;
     unsigned int ik, is;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
     double omega, x;
-    double ret = 0.0;
+    auto ret = 0.0;
 
-    int N = kpoint->nk_irred * ns;
+    const auto N = kpoint->nk_irred * ns;
     int ik_irred;
 
     if (classical) {
@@ -259,7 +259,7 @@ double Thermodynamics::free_energy(const double T)
 
 double Thermodynamics::disp2_avg(const double T,
                                  const unsigned int ns1,
-                                 const unsigned int ns2)
+                                 const unsigned int ns2) const
 {
     int i;
     double ret = 0.0;
@@ -415,7 +415,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
             for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
 
             for (ik = 0; ik < npair_uniq; ++ik) {
-                multi = static_cast<double>(triplet[ik].group.size());
+                multi = triplet[ik].group.size();
 
                 arr_cubic[0] = ns * ik0 + is0;
 
@@ -540,7 +540,7 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
             FE_tmp = 0.0;
 
             for (ik = 0; ik < npair_uniq; ++ik) {
-                multi = static_cast<double>(triplet[ik].group.size());
+                multi = triplet[ik].group.size();
 
                 arr_cubic[0] = ns * ik0 + is0;
 

@@ -79,8 +79,7 @@ namespace PHON_NS
                           std::vector<FcsClassExtent>,
                           double *,
                           std::complex<double> **,
-                          bool,
-                          const int);
+                          bool);
 
 
         double fold(const double);

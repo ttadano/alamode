@@ -368,8 +368,7 @@ void Dynamical::eval_k_ewald(double *xk_in,
                              std::vector<FcsClassExtent> fc2_in,
                              double *eval_out,
                              std::complex<double> **evec_out,
-                             const bool require_evec,
-                             const int ik)
+                             const bool require_evec)
 {
     //
     // Calculate phonon energy for the specific k-point given in fractional basis
@@ -385,7 +384,7 @@ void Dynamical::eval_k_ewald(double *xk_in,
     calc_analytic_k(xk_in, fc2_in, dymat_k);
 
     // Calculate Coulombic contributions including long-range interactions 
-    ewald->add_longrange_matrix(xk_in, mat_longrange, ik);
+    ewald->add_longrange_matrix(xk_in, kvec_in, mat_longrange);
 
     // Add calculated dynamical matrix of Coulomb parts
     for (i = 0; i < system->natmin; ++i) {
@@ -758,11 +757,19 @@ void Dynamical::diagonalize_dynamical_all()
 #endif
     for (ik = 0; ik < nk; ++ik) {
         if (nonanalytic == 3) {
-            eval_k_ewald(kpoint->xk[ik], kpoint->kvec_na[ik], ewald->fc2_without_dipole,
-                         eval_phonon[ik], evec_phonon[ik], require_evec, ik);
+            eval_k_ewald(kpoint->xk[ik],
+                         kpoint->kvec_na[ik],
+                         ewald->fc2_without_dipole,
+                         eval_phonon[ik],
+                         evec_phonon[ik],
+                         require_evec);
         } else {
-            eval_k(kpoint->xk[ik], kpoint->kvec_na[ik], fcs_phonon->fc2_ext,
-                   eval_phonon[ik], evec_phonon[ik], require_evec);
+            eval_k(kpoint->xk[ik],
+                   kpoint->kvec_na[ik],
+                   fcs_phonon->fc2_ext,
+                   eval_phonon[ik],
+                   evec_phonon[ik],
+                   require_evec);
         }
         // Phonon energy is the square-root of the eigenvalue 
         for (is = 0; is < neval; ++is) {
