@@ -156,17 +156,17 @@ namespace PHON_NS
         void set_default_variables();
         void deallocate_variables();
         void load_fc2_xml();
-        void load_fcs_xml();
+        void load_fcs_xml() const;
 
         void examine_translational_invariance(int,
                                               unsigned int,
                                               unsigned int,
                                               double *,
                                               std::vector<FcsClassExtent> &,
-                                              std::vector<FcsArrayWithCell> *);
+                                              std::vector<FcsArrayWithCell> *) const;
 
-        void MPI_Bcast_fc_class(unsigned int);
-        void MPI_Bcast_fcs_array(unsigned int);
+        void MPI_Bcast_fc_class(unsigned int) const;
+        void MPI_Bcast_fcs_array(unsigned int) const;
         void MPI_Bcast_fc2_ext();
     };
 }

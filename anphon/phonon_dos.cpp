@@ -18,11 +18,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "dynamical.h"
 #include "write_phonons.h"
 #include "integration.h"
-#include <algorithm>
 #include <vector>
-#include <fstream>
 #include <iomanip>
-#include "parsephon.h"
 #include "symmetry_core.h"
 #include "thermodynamics.h"
 
@@ -158,15 +155,14 @@ void Dos::setup()
 
 void Dos::calc_dos_all()
 {
-    unsigned int j, k;
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;
 
     memory->allocate(eval, neval, nk);
 
-    for (j = 0; j < nk; ++j) {
-        for (k = 0; k < neval; ++k) {
+    for (unsigned int j = 0; j < nk; ++j) {
+        for (unsigned int k = 0; k < neval; ++k) {
             eval[k][j] = writes->in_kayser(dynamical->eval_phonon[j][k]);
         }
     }
@@ -205,25 +201,24 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
                    double *ret,
                    const unsigned int neval,
                    const int smearing_method,
-                   std::vector<std::vector<KpointList>> &kpinfo)
+                   std::vector<std::vector<KpointList>> &kpinfo) const
 {
-    int i, j, k;
     double *weight;
 
     if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
 #ifdef _OPENMP
-#pragma omp parallel private (weight, k)
+#pragma omp parallel private (weight)
 #endif
     {
         memory->allocate(weight, nk_irreducible);
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i) {
 
             ret[i] = 0.0;
 
-            for (k = 0; k < neval; ++k) {
+            for (int k = 0; k < neval; ++k) {
                 if (smearing_method == -1) {
                     integration->calc_weight_tetrahedron(nk_irreducible, map_k,
                                                          weight, eval[k], energy[i]);
@@ -232,7 +227,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
                                                       eval[k], energy[i], smearing_method);
                 }
 
-                for (j = 0; j < nk_irreducible; ++j) {
+                for (int j = 0; j < nk_irreducible; ++j) {
                     ret[i] += weight[j];
                 }
             }
@@ -251,12 +246,11 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
                                   const unsigned int neval,
                                   const unsigned int natmin,
                                   const int smearing_method,
-                                  std::complex<double> ***evec)
+                                  std::complex<double> ***evec) const
 {
     // Calculate atom projected phonon-DOS
 
     int i;
-    unsigned int j, k;
     int *kmap_identity;
     double *weight;
     double **proj;
@@ -283,7 +277,7 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
             }
         }
 #ifdef _OPENMP
-#pragma omp parallel private (weight, k, j)
+#pragma omp parallel private (weight)
 #endif
         {
             memory->allocate(weight, nk);
@@ -293,7 +287,7 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
             for (i = 0; i < n; ++i) {
                 ret[iat][i] = 0.0;
 
-                for (k = 0; k < neval; ++k) {
+                for (unsigned int k = 0; k < neval; ++k) {
                     if (smearing_method == -1) {
                         integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                              weight, eval[k], energy[i]);
@@ -303,7 +297,7 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
                                                           smearing_method);
                     }
 
-                    for (j = 0; j < nk; ++j) {
+                    for (unsigned int j = 0; j < nk; ++j) {
                         ret[iat][i] += proj[k][j] * weight[j];
                     }
                 }
@@ -323,13 +317,11 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
                               double *energy,
                               double ***ret,
                               const int smearing_method,
-                              const std::vector<std::vector<KpointList>> &kpinfo)
+                              const std::vector<std::vector<KpointList>> &kpinfo) const
 {
     int i, j;
-    int is, js, ik, jk;
+    int jk;
     int k;
-    int ib;
-    int knum;
 
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
@@ -361,9 +353,9 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
-    for (ik = 0; ik < nk_reduced; ++ik) {
+    for (int ik = 0; ik < nk_reduced; ++ik) {
 
-        knum = kpinfo[ik][0].knum;
+        int knum = kpinfo[ik][0].knum;
 
         for (jk = 0; jk < nk; ++jk) {
             for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] + kpoint->xk[jk][i];
@@ -376,10 +368,10 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
             }
         }
 
-        for (ib = 0; ib < ns2; ++ib) {
+        for (int ib = 0; ib < ns2; ++ib) {
 
-            is = ib / ns;
-            js = ib % ns;
+            int is = ib / ns;
+            int js = ib % ns;
 #ifdef _OPENMP
 #pragma omp parallel for private(loc)
 #endif
@@ -442,22 +434,15 @@ void Dos::calc_total_scattering_phase_space(double **omega,
                                             const int smearing_method,
                                             const std::vector<std::vector<KpointList>> &kpinfo,
                                             double ***ret_mode,
-                                            double &ret)
+                                            double &ret) const
 {
     int i, j;
-    int is;
-    int knum;
 
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
     int ns2 = ns * ns;
-    int ib;
 
     int *kmap_identity;
-
-    double multi;
-    double omega0;
-    double sps_tmp1, sps_tmp2;
 
     if (mympi->my_rank == 0) {
         std::cout << " SPS = 1 : Calculating three-phonon scattering phase space ... ";
@@ -473,15 +458,15 @@ void Dos::calc_total_scattering_phase_space(double **omega,
 
     for (int ik = 0; ik < kpinfo.size(); ++ik) {
 
-        knum = kpinfo[ik][0].knum;
-        multi = static_cast<double>(kpinfo[ik].size()) / static_cast<double>(nk);
+        int knum = kpinfo[ik][0].knum;
+        double multi = static_cast<double>(kpinfo[ik].size()) / static_cast<double>(nk);
 
-        for (is = 0; is < ns; ++is) {
+        for (int is = 0; is < ns; ++is) {
 
-            omega0 = writes->in_kayser(omega[knum][is]);
+            double omega0 = writes->in_kayser(omega[knum][is]);
 
-            sps_tmp1 = 0.0;
-            sps_tmp2 = 0.0;
+            double sps_tmp1 = 0.0;
+            double sps_tmp2 = 0.0;
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -489,7 +474,7 @@ void Dos::calc_total_scattering_phase_space(double **omega,
                 double **e_tmp;
                 double *weight;
                 int js, ks;
-                int jk, loc;
+                int loc;
                 double xk_tmp[3];
 
                 memory->allocate(weight, nk);
@@ -497,12 +482,12 @@ void Dos::calc_total_scattering_phase_space(double **omega,
 #ifdef _OPENMP
 #pragma omp for private(i, j), reduction(+: sps_tmp1, sps_tmp2)
 #endif
-                for (ib = 0; ib < ns2; ++ib) {
+                for (int ib = 0; ib < ns2; ++ib) {
 
                     js = ib / ns;
                     ks = ib % ns;
 
-                    for (jk = 0; jk < nk; ++jk) {
+                    for (int jk = 0; jk < nk; ++jk) {
 
                         for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] + kpoint->xk[jk][i];
                         loc = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
@@ -558,9 +543,8 @@ void Dos::calc_total_scattering_phase_space(double **omega,
 }
 
 void Dos::calc_dos_scph(double ***eval_anharm,
-                        double **dos_scph)
+                        double **dos_scph) const
 {
-    unsigned int j, k;
     unsigned int nk = kpoint->nk;
     unsigned int neval = dynamical->neval;
     double **eval;
@@ -576,8 +560,8 @@ void Dos::calc_dos_scph(double ***eval_anharm,
 
         std::cout << " T = " << std::setw(5) << Tmin + static_cast<double>(iT) * dT << std::endl;
 
-        for (j = 0; j < nk; ++j) {
-            for (k = 0; k < neval; ++k) {
+        for (unsigned int j = 0; j < nk; ++j) {
+            for (unsigned int k = 0; k < neval; ++k) {
                 eval[k][j] = writes->in_kayser(eval_anharm[iT][j][k]);
             }
         }
@@ -590,10 +574,10 @@ void Dos::calc_dos_scph(double ***eval_anharm,
 void Dos::calc_scattering_phase_space_with_Bose(double **eval,
                                                 const int smearing_method,
                                                 const std::vector<std::vector<KpointList>> &kp_info,
-                                                double ****ret)
+                                                double ****ret) const
 {
-    unsigned int i, j, k;
-    unsigned int knum, snum;
+    unsigned int i, j;
+    unsigned int knum;
     double xk_tmp[3];
     double **ret_mode;
     double omega0;
@@ -601,12 +585,10 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     double Tmax = system->Tmax;
     double dT = system->dT;
     double *temperature;
-    int N;
     int ik, iT;
     unsigned int nk_irred = kpoint->nk_irred;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
-    unsigned int k1, k2;
     unsigned int imode;
     unsigned int *k2_arr;
     unsigned int ns2 = ns * ns;
@@ -615,14 +597,13 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     double omega_min = emin;
 
     std::vector<int> ks_g, ks_l;
-    int iks;
 
     if (mympi->my_rank == 0) {
         std::cout << " SPS = 2 : Calculating three-phonon scattering phase space" << std::endl;
         std::cout << "           with the Bose distribution function ...";
     }
 
-    N = static_cast<int>((Tmax - Tmin) / dT) + 1;
+    int N = static_cast<int>((Tmax - Tmin) / dT) + 1;
     memory->allocate(temperature, N);
     for (i = 0; i < N; ++i) temperature[i] = Tmin + static_cast<double>(i) * dT;
 
@@ -630,7 +611,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     for (i = 0; i < nk_irred; ++i) {
         for (j = 0; j < ns; ++j) {
-            for (k = 0; k < N; ++k) {
+            for (unsigned int k = 0; k < N; ++k) {
                 ret[i][j][k][0] = 0.0;
                 ret[i][j][k][1] = 0.0;
             }
@@ -682,7 +663,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     for (i = 0; i < nks_tmp; ++i) {
 
-        iks = ks_l[i];
+        int iks = ks_l[i];
 
         if (iks == -1) {
 
@@ -694,11 +675,11 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
         } else {
 
             knum = kp_info[iks / ns][0].knum;
-            snum = iks % ns;
+            unsigned int snum = iks % ns;
 
-            for (k1 = 0; k1 < nk; ++k1) {
+            for (unsigned int k1 = 0; k1 < nk; ++k1) {
                 for (j = 0; j < 3; ++j) xk_tmp[j] = kpoint->xk[knum][j] - kpoint->xk[k1][j];
-                k2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+                unsigned int k2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
                 k2_arr[k1] = k2;
             }
 
@@ -747,11 +728,10 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
                                                      double *temperature,
                                                      unsigned int *k_pair,
                                                      const int smearing_method,
-                                                     double **ret)
+                                                     double **ret) const
 {
     int ib;
     unsigned int i, is, js, k1, k2;
-    unsigned int iT;
     unsigned int ns2 = ns * ns;
     double omega1, omega2;
     double temp;
@@ -820,7 +800,7 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
     }
 
 
-    for (iT = 0; iT < N; ++iT) {
+    for (unsigned int iT = 0; iT < N; ++iT) {
         temp = temperature[iT];
         ret1 = 0.0;
         ret2 = 0.0;

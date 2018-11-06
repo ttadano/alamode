@@ -29,10 +29,10 @@ namespace PHON_NS
         ~Timer();
 
         void reset();
-        double elapsed();
-        void print_elapsed();
+        double elapsed() const;
+        void print_elapsed() const;
 
-        std::string DateAndTime();
+        std::string DateAndTime() const;
 
     private:
 #if defined(WIN32) || defined(_WIN32)

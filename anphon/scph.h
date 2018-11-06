@@ -128,13 +128,13 @@ namespace PHON_NS
         void setup_pp_interaction();
         void setup_transform_ifc();
         void setup_transform_symmetry();
-        void write_scph_energy(double ***);
-        void write_scph_bands(double ***);
-        void write_scph_dos(double ***);
+        void write_scph_energy(double ***) const;
+        void write_scph_bands(double ***) const;
+        void write_scph_dos(double ***) const;
         void write_scph_thermodynamics(double ***,
-                                       std::complex<double> ****);
+                                       std::complex<double> ****) const;
         void write_scph_msd(double ***,
-                            std::complex<double> ****);
+                            std::complex<double> ****) const;
 
         void load_scph_dymat_from_file(std::complex<double> ****);
         void store_scph_dymat_to_file(std::complex<double> ****);
@@ -185,20 +185,20 @@ namespace PHON_NS
                  unsigned int,
                  unsigned int,
                  std::complex<double> ***,
-                 std::complex<double> **);
+                 std::complex<double> **) const;
 
         void diagonalize_interpolated_matrix(std::complex<double> **,
                                              double *,
                                              std::complex<double> **,
-                                             bool);
+                                             bool) const;
 
         void find_degeneracy(std::vector<int> *,
                              unsigned int,
                              const std::vector<std::vector<KpointList>> &,
-                             double **);
+                             double **) const;
 
         double distance(double *,
-                        double *);
+                        double *) const;
 
         void symmetrize_dynamical_matrix(unsigned int,
                                          Eigen::MatrixXcd &) const;
@@ -206,7 +206,7 @@ namespace PHON_NS
         void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
 
         void duplicate_xk_boundary(double *,
-                                   std::vector<std::vector<double>> &);
+                                   std::vector<std::vector<double>> &) const;
 
         void write_anharmonic_correction_fc2(std::complex<double> ****,
                                              unsigned int);
@@ -214,11 +214,11 @@ namespace PHON_NS
         void mpi_bcast_complex(std::complex<double> ****,
                                int,
                                int,
-                               int);
+                               int) const;
 
         double FE_scph(unsigned int,
                        double **,
-                       std::complex<double> ***);
+                       std::complex<double> ***) const;
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],
                                              std::complex<double> ****);

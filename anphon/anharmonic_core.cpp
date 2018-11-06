@@ -125,10 +125,9 @@ void AnharmonicCore::setup()
 
 void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
                                              const unsigned int N,
-                                             double ***vec_out)
+                                             double ***vec_out) const
 {
-    int i, j, k;
-    int ix, iy, iz;
+    int i, j;
 
     double vec[3];
     double **xshift_s;
@@ -142,7 +141,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             mat_convert[i][j] = 0.0;
-            for (k = 0; k < 3; ++k) {
+            for (int k = 0; k < 3; ++k) {
                 mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s_anharm[k][j];
             }
         }
@@ -154,9 +153,9 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     unsigned int icell = 0;
 
-    for (ix = -1; ix <= 1; ++ix) {
-        for (iy = -1; iy <= 1; ++iy) {
-            for (iz = -1; iz <= 1; ++iz) {
+    for (int ix = -1; ix <= 1; ++ix) {
+        for (int iy = -1; iy <= 1; ++iy) {
+            for (int iz = -1; iz <= 1; ++iz) {
                 if (ix == 0 && iy == 0 && iz == 0) continue;
 
                 ++icell;
@@ -168,8 +167,6 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         }
     }
 
-    unsigned int atm_p, atm_s;
-    unsigned int tran_tmp;
     unsigned int icount = 0;
 
     for (const auto &it : fcs_in) {
@@ -180,9 +177,9 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         cells.clear();
 
         for (i = 0; i < it.pairs.size(); ++i) {
-            atm_p = it.pairs[i].index / 3;
-            tran_tmp = it.pairs[i].tran;
-            atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
+            unsigned int atm_p = it.pairs[i].index / 3;
+            unsigned int tran_tmp = it.pairs[i].tran;
+            unsigned int atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
 
             atm_prim.push_back(atm_p);
             atm_super.push_back(atm_s);
@@ -212,10 +209,9 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
                                              const unsigned int N,
                                              const int number_of_groups,
                                              std::vector<double> *fcs_group,
-                                             std::vector<RelativeVector> *&vec_out)
+                                             std::vector<RelativeVector> *&vec_out) const
 {
     int i, j, k;
-    int ix, iy, iz;
 
     double vecs[3][3];
     double **xshift_s;
@@ -240,9 +236,9 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     unsigned int icell = 0;
 
-    for (ix = -1; ix <= 1; ++ix) {
-        for (iy = -1; iy <= 1; ++iy) {
-            for (iz = -1; iz <= 1; ++iz) {
+    for (int ix = -1; ix <= 1; ++ix) {
+        for (int iy = -1; iy <= 1; ++iy) {
+            for (int iz = -1; iz <= 1; ++iz) {
                 if (ix == 0 && iy == 0 && iz == 0) continue;
 
                 ++icell;
@@ -254,9 +250,6 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         }
     }
 
-    unsigned int tran_tmp;
-    unsigned int nsize_group;
-
     atm_prim.resize(N);
     cells.resize(N);
     atm_super.resize(N);
@@ -265,13 +258,13 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     for (auto igroup = 0; igroup < number_of_groups; ++igroup) {
 
-        nsize_group = fcs_group[igroup].size();
+        unsigned int nsize_group = fcs_group[igroup].size();
 
         for (j = 0; j < nsize_group; ++j) {
 
             for (i = 0; i < N; ++i) {
                 atm_prim[i] = fcs_in[icount].pairs[i].index / 3;
-                tran_tmp = fcs_in[icount].pairs[i].tran;
+                unsigned int tran_tmp = fcs_in[icount].pairs[i].tran;
                 cells[i] = fcs_in[icount].pairs[i].cell_s;
                 atm_super[i] = system->map_p2s_anharm[atm_prim[i]][tran_tmp];
             }
@@ -300,7 +293,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
                                                       const unsigned int N,
                                                       int &number_of_groups,
-                                                      std::vector<double> *&fcs_group_out)
+                                                      std::vector<double> *&fcs_group_out) const
 {
     // Find the number of groups which has different evecs.
 
@@ -421,8 +414,8 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
                                           const unsigned int ik2,
                                           std::complex<double> *ret)
 {
-    unsigned int iloc;
     int i, j;
+    unsigned int iloc;
     double phase;
     double dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
     std::complex<double> ret_in;
@@ -449,7 +442,7 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
                         + relvec_v3[i][j].vecs[1][1] * kpoint->xk[ik2][1]
                         + relvec_v3[i][j].vecs[1][2] * kpoint->xk[ik2][2];
 
-                    iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
+                    unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
                     ret_in += fcs_group_v3[i][j] * exp_phase[iloc];
                 }
                 ret[i] = ret_in;
@@ -568,8 +561,8 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
                                           const unsigned int ik3,
                                           std::complex<double> *ret)
 {
-    unsigned int iloc;
     int i, j;
+    unsigned int iloc;
     double phase;
     double dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
     std::complex<double> ret_in;
@@ -599,7 +592,7 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
                         + relvec_v4[i][j].vecs[2][1] * kpoint->xk[ik3][1]
                         + relvec_v4[i][j].vecs[2][2] * kpoint->xk[ik3][2];
 
-                    iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
+                    unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
                     ret_in += fcs_group_v4[i][j] * exp_phase[iloc];
                 }
                 ret[i] = ret_in;
@@ -671,36 +664,29 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
                                              int is,
                                              int js,
                                              double **eval,
-                                             std::complex<double> ***evec)
+                                             std::complex<double> ***evec) const
 {
-    int i, j;
-    int nsize_group;
-
-    double phase;
     std::complex<double> ctmp = std::complex<double>(0.0, 0.0);
-    std::complex<double> vec_tmp, ret_in;
 
     // Return zero if any of the involving phonon has imaginary frequency
     if (eval[0][mode] < eps8 || eval[1][is] < eps8 || eval[2][js] < eps8) return 0.0;
 
     unsigned int ielem = 0;
 
-    for (i = 0; i < ngroup_v3; ++i) {
+    for (int i = 0; i < ngroup_v3; ++i) {
 
-        vec_tmp
-            = evec[0][mode][evec_index_v3[i][0]]
+        std::complex<double> vec_tmp = evec[0][mode][evec_index_v3[i][0]]
             * evec[1][is][evec_index_v3[i][1]]
             * evec[2][js][evec_index_v3[i][2]]
             * invmass_v3[i];
 
-        ret_in = std::complex<double>(0.0, 0.0);
+        std::complex<double> ret_in = std::complex<double>(0.0, 0.0);
 
-        nsize_group = fcs_group_v3[i].size();
+        int nsize_group = fcs_group_v3[i].size();
 
-        for (j = 0; j < nsize_group; ++j) {
+        for (int j = 0; j < nsize_group; ++j) {
 
-            phase
-                = relvec_v3[i][j].vecs[0][0] * xk2[0]
+            double phase = relvec_v3[i][j].vecs[0][0] * xk2[0]
                 + relvec_v3[i][j].vecs[0][1] * xk2[1]
                 + relvec_v3[i][j].vecs[0][2] * xk2[2]
                 + relvec_v3[i][j].vecs[1][0] * xk3[0]
@@ -744,7 +730,6 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
     double n1, n2;
     double omega_inner[2];
 
-    int knum, knum_minus;
     double multi;
 
     for (i = 0; i < N; ++i) ret[i] = 0.0;
@@ -769,8 +754,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
     memory->allocate(v3_arr, npair_uniq, ns * ns);
     memory->allocate(delta_arr, npair_uniq, ns * ns, 2);
 
-    knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    knum_minus = kpoint->knum_minus[knum];
+    int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    int knum_minus = kpoint->knum_minus[knum];
 #ifdef _OPENMP
 #pragma omp parallel for private(multi, arr, k1, k2, is, js, omega_inner)
 #endif
@@ -1067,7 +1052,7 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
 void AnharmonicCore::setup_cubic()
 {
-    int i, j, k;
+    int i;
     double *invsqrt_mass_p;
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
@@ -1094,9 +1079,9 @@ void AnharmonicCore::setup_cubic()
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
 
-    k = 0;
+    int k = 0;
     for (i = 0; i < ngroup_v3; ++i) {
-        for (j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; ++j) {
             evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
         invmass_v3[i]
@@ -1111,7 +1096,7 @@ void AnharmonicCore::setup_cubic()
 
 void AnharmonicCore::setup_quartic()
 {
-    int i, j, k;
+    int i;
     double *invsqrt_mass_p;
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
@@ -1135,9 +1120,9 @@ void AnharmonicCore::setup_quartic()
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
 
-    k = 0;
+    int k = 0;
     for (i = 0; i < ngroup_v4; ++i) {
-        for (j = 0; j < 4; ++j) {
+        for (int j = 0; j < 4; ++j) {
             evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
         invmass_v4[i]
@@ -1158,8 +1143,6 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
 {
     // For accelerating function V3 and V4 by avoiding continual call of std::exp.
 
-    int i;
-
     MPI_Bcast(&use_tuned_ver, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (use_tuned_ver) {
@@ -1168,7 +1151,7 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
         nk_grid[1] = nk_in[1];
         nk_grid[2] = nk_in[2];
 
-        for (i = 0; i < 3; ++i) dnk[i] = static_cast<double>(nk_grid[i]);
+        for (int i = 0; i < 3; ++i) dnk[i] = static_cast<double>(nk_grid[i]);
 
         if (nk_grid[0] == nk_grid[1] && nk_grid[1] == nk_grid[2]) {
             nkrep_out = nk_grid[0];
@@ -1231,9 +1214,9 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
 #endif
             for (ii = 0; ii < 2 * nk_grid[0] - 1; ++ii) {
                 phase[0] = 2.0 * pi * static_cast<double>(ii - nk_grid[0] + 1) / dnk[0];
-                for (jj = 0; jj < 2 * nk_grid[1] - 1; ++jj) {
+                for (int jj = 0; jj < 2 * nk_grid[1] - 1; ++jj) {
                     phase[1] = 2.0 * pi * static_cast<double>(jj - nk_grid[1] + 1) / dnk[1];
-                    for (kk = 0; kk < 2 * nk_grid[2] - 1; ++kk) {
+                    for (int kk = 0; kk < 2 * nk_grid[2] - 1; ++kk) {
                         phase[2] = 2.0 * pi * static_cast<double>(kk - nk_grid[2] + 1) / dnk[2];
                         exp_phase3[ii][jj][kk] = std::exp(im * (phase[0] + phase[1] + phase[2]));
                     }
@@ -1269,10 +1252,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     unsigned int is, js;
     unsigned int k1, k2;
     unsigned int arr[3];
-    unsigned int npair_uniq;
     unsigned int nk_tmp;
-
-    int ik_now;
 
     double n1, n2;
     double f1, f2;
@@ -1296,7 +1276,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                                  false,
                                  triplet);
 
-    npair_uniq = triplet.size();
+    unsigned int npair_uniq = triplet.size();
 
     if (npair_uniq != nk) {
         error->exit("hoge", "Something is wrong.");
@@ -1337,7 +1317,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
 
     for (ik = 0; ik < nk_tmp; ++ik) {
 
-        ik_now = vk_l[ik];
+        int ik_now = vk_l[ik];
 
         if (ik_now == -1) {
 

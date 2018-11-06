@@ -44,7 +44,7 @@ namespace PHON_NS
 
 
         void calc_dos_scph(double ***,
-                           double **);
+                           double **) const;
 
     private:
         void set_default_variables();
@@ -62,7 +62,7 @@ namespace PHON_NS
                       double *,
                       unsigned int,
                       int,
-                      std::vector<std::vector<KpointList>> &);
+                      std::vector<std::vector<KpointList>> &) const;
 
         void calc_atom_projected_dos(unsigned int,
                                      double **,
@@ -72,24 +72,24 @@ namespace PHON_NS
                                      unsigned int,
                                      unsigned int,
                                      int,
-                                     std::complex<double> ***);
+                                     std::complex<double> ***) const;
 
         void calc_two_phonon_dos(unsigned int,
                                  double *,
                                  double ***,
                                  int,
-                                 const std::vector<std::vector<KpointList>> &);
+                                 const std::vector<std::vector<KpointList>> &) const;
 
         void calc_total_scattering_phase_space(double **,
                                                int,
                                                const std::vector<std::vector<KpointList>> &,
                                                double ***,
-                                               double &);
+                                               double &) const;
 
         void calc_scattering_phase_space_with_Bose(double **,
                                                    int,
                                                    const std::vector<std::vector<KpointList>> &,
-                                                   double ****);
+                                                   double ****) const;
 
         void calc_scattering_phase_space_with_Bose_mode(unsigned int,
                                                         unsigned int,
@@ -99,6 +99,6 @@ namespace PHON_NS
                                                         double *,
                                                         unsigned int *,
                                                         int,
-                                                        double **);
+                                                        double **) const;
     };
 }

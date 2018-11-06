@@ -72,26 +72,26 @@ namespace PHON_NS
                     std::complex<double> **,
                     bool);
 
-        void modify_eigenvectors();
+        void modify_eigenvectors() const;
 
         void eval_k_ewald(double *,
                           double *,
                           std::vector<FcsClassExtent>,
                           double *,
                           std::complex<double> **,
-                          bool);
+                          bool) const;
 
 
-        double fold(const double);
-        double freq(const double);
+        double fold(const double) const;
+        double freq(const double) const;
 
         void calc_participation_ratio_all(std::complex<double> ***,
                                           double **,
-                                          double ***);
+                                          double ***) const;
 
         void calc_analytic_k(double *,
                              const std::vector<FcsClassExtent> &,
-                             std::complex<double> **);
+                             std::complex<double> **) const;
 
         void calc_nonanalytic_k(double *,
                                 double *,
@@ -109,16 +109,16 @@ namespace PHON_NS
         void set_default_variables();
         void deallocate_variables();
         void load_born(const unsigned int);
-        void prepare_mindist_list(std::vector<int> **);
+        void prepare_mindist_list(std::vector<int> **) const;
 
         void calc_atomic_participation_ratio(std::complex<double> *,
-                                             double *);
+                                             double *) const;
 
         double distance(double *,
-                        double *);
+                        double *) const;
 
         void connect_band_by_eigen_similarity(std::complex<double> ***,
-                                              int **);
+                                              int **) const;
 
         void detect_imaginary_branches(double **);
 

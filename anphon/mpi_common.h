@@ -31,7 +31,7 @@ namespace PHON_NS
 
         void MPI_Bcast_string(std::string &,
                               int,
-                              MPI_Comm);
+                              MPI_Comm) const;
 
         int my_rank;
         int nprocs;

@@ -26,12 +26,12 @@ namespace PHON_NS
         ~Writes();
 
         void write_phonon_info();
-        void print_phonon_energy();
+        void print_phonon_energy() const;
         void write_gruneisen();
         void setup_result_io();
         void write_input_vars();
-        void write_kappa();
-        void write_selfenergy_isotope();
+        void write_kappa() const;
+        void write_selfenergy_isotope() const;
 
         bool print_xsf;
         bool print_msd;
@@ -40,7 +40,7 @@ namespace PHON_NS
         unsigned int anime_cellsize[3];
         double anime_kpoint[3];
 
-        double in_kayser(const double);
+        double in_kayser(const double) const;
 
         int nbands;
 
@@ -50,22 +50,22 @@ namespace PHON_NS
 
     private:
 
-        void write_phonon_bands();
-        void write_phonon_vel();
-        void write_phonon_vel_all();
-        void write_phonon_dos();
-        void write_two_phonon_dos();
-        void write_scattering_phase_space();
-        void write_scattering_amplitude();
-        void write_normal_mode_direction();
+        void write_phonon_bands() const;
+        void write_phonon_vel() const;
+        void write_phonon_vel_all() const;
+        void write_phonon_dos() const;
+        void write_two_phonon_dos() const;
+        void write_scattering_phase_space() const;
+        void write_scattering_amplitude() const;
+        void write_normal_mode_direction() const;
 
         void write_normal_mode_animation(const double [3],
-                                         const unsigned int [3]);
+                                         const unsigned int [3]) const;
 
-        void write_eigenvectors();
-        void write_thermodynamics();
-        void write_msd();
-        void write_participation_ratio();
+        void write_eigenvectors() const;
+        void write_thermodynamics() const;
+        void write_msd() const;
+        void write_participation_ratio() const;
 
         double Ry_to_kayser;
     };

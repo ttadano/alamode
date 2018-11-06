@@ -104,7 +104,7 @@ namespace PHON_NS
 
         void get_pairs_of_minimum_distance(int,
                                            const int [3],
-                                           double **);
+                                           double **) const;
 
         void calc_longrange_fcs(int,
                                 int,

@@ -35,12 +35,12 @@ namespace PHON_NS
         void calc_isotope_selfenergy(int,
                                      int,
                                      double,
-                                     double &);
+                                     double &) const;
 
         void calc_isotope_selfenergy_tetra(int,
                                            int,
                                            double,
-                                           double &);
+                                           double &) const;
 
         void set_isotope_factor_from_database(const int,
                                               const std::string *,

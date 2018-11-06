@@ -22,20 +22,20 @@ namespace PHON_NS
         ~Error();
 
         void warn(const char *,
-                  const char *);
+                  const char *) const;
 
         void exit(const char *,
-                  const char *);
+                  const char *) const;
 
         void exit(const char *,
                   const char *,
-                  int);
+                  int) const;
 
         void exitall(const char *,
-                     const char *);
+                     const char *) const;
 
         void exit(const char *,
                   const char *,
-                  const char *);
+                  const char *) const;
     };
 }

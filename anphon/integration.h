@@ -70,7 +70,7 @@ namespace PHON_NS
                                   double *,
                                   double *,
                                   double,
-                                  int);
+                                  int) const;
 
         void calc_weight_smearing(int,
                                   int,
@@ -78,7 +78,7 @@ namespace PHON_NS
                                   double *,
                                   double *,
                                   double,
-                                  int);
+                                  int) const;
 
     private:
         void set_default_variables();
@@ -89,21 +89,21 @@ namespace PHON_NS
 
         void prepare_tetrahedron(int,
                                  int,
-                                 int);
+                                 int) const;
 
         inline double fij(double,
                           double,
-                          double);
+                          double) const;
 
         inline double volume(const int *);
 
         std::vector<tetra_pair> tetra_data;
 
-        inline double refold(double);
+        inline double refold(double) const;
 
         void insertion_sort(double *,
                             int *,
-                            int);
+                            int) const;
     };
 
     inline double delta_lorentz(const double omega,

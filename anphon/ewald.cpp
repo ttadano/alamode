@@ -293,7 +293,7 @@ void Ewald::prepare_G()
 
 void Ewald::get_pairs_of_minimum_distance(const int nat,
                                           const int nsize[3],
-                                          double **xf)
+                                          double **xf) const
 {
     // Get pairs and multiplicities
 
@@ -417,7 +417,6 @@ void Ewald::compute_ewald_fcs()
         }
     }
     FcsClassExtent fcext_tmp;
-    int nmulti, icell;
 
     for (iat = 0; iat < natmin; ++iat) {
         atm_s = system->map_p2s[iat][0];
@@ -431,12 +430,12 @@ void Ewald::compute_ewald_fcs()
                     fcext_tmp.atm2 = jat;
                     fcext_tmp.xyz2 = jcrd;
 
-                    nmulti = multiplicity[atm_s][jat];
+                    int nmulti = multiplicity[atm_s][jat];
                     fcext_tmp.fcs_val = fcs_other[3 * iat + icrd][3 * jat + jcrd] / static_cast<double>(nmulti);
 
                     if (std::abs(fcext_tmp.fcs_val) > eps15) {
 
-                        for (icell = 0; icell < nmulti; ++icell) {
+                        for (int icell = 0; icell < nmulti; ++icell) {
                             fcext_tmp.cell_s = distall_ewald[atm_s][jat][icell].cell;
                             fc2_without_dipole.push_back(fcext_tmp);
                         }
@@ -557,7 +556,6 @@ void Ewald::compute_ewald_fcs2()
         }
     }
     FcsClassExtent fcext_tmp;
-    int nmulti, icell;
 
     for (iat = 0; iat < natmin; ++iat) {
         atm_s = system->map_p2s[iat][0];
@@ -571,12 +569,12 @@ void Ewald::compute_ewald_fcs2()
                     fcext_tmp.atm2 = jat;
                     fcext_tmp.xyz2 = jcrd;
 
-                    nmulti = multiplicity[atm_s][jat];
+                    int nmulti = multiplicity[atm_s][jat];
                     fcext_tmp.fcs_val = fcs_other[3 * iat + icrd][3 * jat + jcrd] / static_cast<double>(nmulti);
 
                     if (std::abs(fcext_tmp.fcs_val) > eps15) {
 
-                        for (icell = 0; icell < nmulti; ++icell) {
+                        for (int icell = 0; icell < nmulti; ++icell) {
                             fcext_tmp.cell_s = distall_ewald[atm_s][jat][icell].cell;
                             fc2_without_dipole.push_back(fcext_tmp);
                         }
@@ -817,7 +815,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
 
     int i;
     int icrd, jcrd;
-    int acrd, bcrd, kat, kkd;
+    int acrd, bcrd;
     double gnorm2;
     double x_tmp[3], g_tmp[3], epsilon_gvector[3];
     double common_tmp;
@@ -843,8 +841,8 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                 + g_tmp[1] * epsilon_gvector[1]
                 + g_tmp[2] * epsilon_gvector[2];
 
-            for (kat = 0; kat < system->nat; ++kat) {
-                kkd = system->map_s2p[kat].atom_num;
+            for (int kat = 0; kat < system->nat; ++kat) {
+                int kkd = system->map_s2p[kat].atom_num;
 
                 for (i = 0; i < 3; ++i) {
                     x_tmp[i] = system->xr_s[iat][i] - system->xr_s[kat][i];
@@ -937,15 +935,13 @@ void Ewald::add_longrange_matrix(double *xk_in,
     memory->deallocate(dymat_tmp_g);
 
 
-    // Check
-    std::complex<double> check;
     for (iat = 0; iat < natmin; ++iat) {
         for (icrd = 0; icrd < 3; ++icrd) {
             for (jat = 0; jat < natmin; ++jat) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
 
                     // Hermiticity
-                    check = dymat_k_out[3 * iat + icrd][3 * jat + jcrd]
+                    std::complex<double> check = dymat_k_out[3 * iat + icrd][3 * jat + jcrd]
                         - std::conj(dymat_k_out[3 * jat + jcrd][3 * iat + icrd]);
                     if (std::abs(check) > eps10) {
                         std::cout << std::endl;
@@ -1160,9 +1156,8 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
 {
     // Real lattice sum part for a dynamical matrix
 
-    int i, j, kat;
+    int i, j;
     int icrd, jcrd, acrd, bcrd;
-    int l, atm_s3;
     double vec[3], e_kvec[3];
     std::complex<double> im(0.0, 1.0);
     double tmp;
@@ -1234,14 +1229,12 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
     }
 
 
-    // Reciprocal sum
-    double gd, gkd, phase_g1, phase_g2;
     double g[3], gk[3], vecl[3], g_tmp[3], gk_tmp[3];
     double common;
     std::complex<double> g_test;
 
     for (auto &it : G_vector) {
-        for (l = 0; l < 3; ++l) {
+        for (int l = 0; l < 3; ++l) {
             g[l] = it.vec[l];
             gk[l] = g[l] + xk_in[l];
         }
@@ -1249,17 +1242,17 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
         if (iat == jat) {
 
             rotvec(g_tmp, g, epsilon);
-            gd = g[0] * g_tmp[0] + g[1] * g_tmp[1] + g[2] * g_tmp[2];
+            double gd = g[0] * g_tmp[0] + g[1] * g_tmp[1] + g[2] * g_tmp[2];
             common = std::exp(-0.25 * gd / std::pow(lambda, 2.0)) / gd;
 
-            for (kat = 0; kat < system->natmin; ++kat) {
-                atm_s3 = system->map_p2s[kat][0];
+            for (int kat = 0; kat < system->natmin; ++kat) {
+                int atm_s3 = system->map_p2s[kat][0];
 
                 for (i = 0; i < 3; ++i) {
                     vecl[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s3][i];
                 }
                 rotvec(vecl, vecl, system->lavec_s);
-                phase_g1 = g[0] * vecl[0] + g[1] * vecl[1] + g[2] * vecl[2];
+                double phase_g1 = g[0] * vecl[0] + g[1] * vecl[1] + g[2] * vecl[2];
                 exp_phase = std::exp(im * phase_g1);
 
                 for (icrd = 0; icrd < 3; ++icrd) {
@@ -1280,8 +1273,8 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
         }
 
         rotvec(gk_tmp, gk, epsilon);
-        gkd = gk[0] * gk_tmp[0] + gk[1] * gk_tmp[1] + gk[2] * gk_tmp[2];
-        phase_g2 = gk[0] * vec[0] + gk[1] * vec[1] + gk[2] * vec[2];
+        double gkd = gk[0] * gk_tmp[0] + gk[1] * gk_tmp[1] + gk[2] * gk_tmp[2];
+        double phase_g2 = gk[0] * vec[0] + gk[1] * vec[1] + gk[2] * vec[2];
 
         common = 2.0 * std::exp(-0.25 * gkd / std::pow(lambda, 2.0)) / gkd;
         exp_phase = std::exp(im * phase_g2);
@@ -1313,7 +1306,6 @@ void Ewald::calc_anisotropic_hmat(const double lambda_in,
                                   const double *x,
                                   double **hmat_out)
 {
-    int i;
     int icrd, jcrd;
     double common_tmp[2];
     double x_tmp[3], y_tmp[3];
@@ -1324,7 +1316,7 @@ void Ewald::calc_anisotropic_hmat(const double lambda_in,
         }
     }
 
-    for (i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i) {
         y_tmp[i] = x[i] * lambda_in;
     }
 

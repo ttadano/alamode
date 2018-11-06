@@ -172,10 +172,10 @@ namespace PHON_NS
 
         int get_knum(double,
                      double,
-                     double);
+                     double) const;
 
         int get_knum(const double [3],
-                     const unsigned int [3]);
+                     const unsigned int [3]) const;
 
         void generate_irreducible_kmap(int *,
                                        unsigned int &,
@@ -185,23 +185,23 @@ namespace PHON_NS
                                        unsigned int,
                                        double **,
                                        int,
-                                       int ***);
+                                       int ***) const;
 
         void gen_kmesh(bool,
                        const unsigned int [3],
                        double **,
-                       std::vector<std::vector<KpointList>> &);
+                       std::vector<std::vector<KpointList>> &) const;
 
         void get_small_group_k(const double *,
                                std::vector<int> &,
-                               double [3][3]);
+                               double [3][3]) const;
 
         int knum_sym(int,
-                     int);
+                     int) const;
 
         void get_commensurate_kpoints(const double [3][3],
                                       const double [3][3],
-                                      std::vector<std::vector<double>> &);
+                                      std::vector<std::vector<double>> &) const;
 
         void get_unique_triplet_k(const int,
                                   const bool,
@@ -216,13 +216,13 @@ namespace PHON_NS
         void setup_kpoint_given(const std::vector<KpointInp> &,
                                 unsigned int &,
                                 double **&,
-                                double **&);
+                                double **&) const;
 
         void setup_kpoint_band(const std::vector<KpointInp> &,
                                unsigned int &,
                                double **&,
                                double **&,
-                               double *&);
+                               double *&) const;
 
         void setup_kpoint_mesh(const std::vector<KpointInp> &,
                                unsigned int &,
@@ -232,7 +232,7 @@ namespace PHON_NS
                                double **&,
                                double **&,
                                bool,
-                               std::vector<std::vector<KpointList>> &);
+                               std::vector<std::vector<KpointList>> &) const;
 
         void setup_kpoint_plane(const std::vector<KpointInp> &,
                                 unsigned int &,
@@ -241,25 +241,25 @@ namespace PHON_NS
         void reduce_kpoints(unsigned int,
                             double **,
                             const unsigned int [3],
-                            std::vector<std::vector<KpointList>> &);
+                            std::vector<std::vector<KpointList>> &) const;
 
         void gen_nkminus(unsigned int,
                          unsigned int *,
-                         double **);
+                         double **) const;
 
         void gen_kpoints_plane(const std::vector<KpointInp> &,
                                std::vector<KpointPlane> *,
                                std::vector<KpointPlaneTriangle> *);
 
-        bool in_first_BZ(const double *);
+        bool in_first_BZ(const double *) const;
 
-        void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &);
+        void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &) const;
 
         void mpi_broadcast_kplane_vector(unsigned int,
-                                         std::vector<KpointPlane> *&);
+                                         std::vector<KpointPlane> *&) const;
 
         void calc_small_groups_k_irred(std::vector<int> *);
 
-        std::vector<int> get_small_group_of_k(int);
+        std::vector<int> get_small_group_of_k(int) const;
     };
 }

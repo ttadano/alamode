@@ -50,9 +50,9 @@ namespace PHON_NS
                           std::map<std::string, std::string> &);
 
         void split_str_by_space(const std::string,
-                                std::vector<std::string> &);
+                                std::vector<std::string> &) const;
 
-        bool is_endof_entry(const std::string);
+        bool is_endof_entry(const std::string) const;
 
         template <typename T_to, typename T_from>
         T_to my_cast(T_from const &);

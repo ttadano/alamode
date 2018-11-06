@@ -130,7 +130,7 @@ void PHON::create_pointers()
     ewald = new Ewald(this);
 }
 
-void PHON::destroy_pointers()
+void PHON::destroy_pointers() const
 {
     delete memory;
     delete timer;
@@ -155,7 +155,7 @@ void PHON::destroy_pointers()
     delete ewald;
 }
 
-void PHON::setup_base()
+void PHON::setup_base() const
 {
     system->setup();
     symmetry->setup_symmetry();

@@ -79,7 +79,7 @@ namespace PHON_NS
 
         double volume(double [3],
                       double [3],
-                      double [3]);
+                      double [3]) const;
 
         bool lspin, trevsym_mag;
         int noncollinear;
@@ -97,7 +97,7 @@ namespace PHON_NS
         void load_system_info_from_XML();
 
         void recips(double [3][3],
-                    double [3][3]);
+                    double [3][3]) const;
 
         void setup_atomic_class(unsigned int,
                                 unsigned int *,

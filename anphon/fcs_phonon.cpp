@@ -18,7 +18,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "anharmonic_core.h"
 #include "system.h"
 #include "thermodynamics.h"
-#include "xml_parser.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -207,22 +206,17 @@ void Fcs_phonon::load_fc2_xml()
     pt.clear();
 }
 
-void Fcs_phonon::load_fcs_xml()
+void Fcs_phonon::load_fcs_xml() const
 {
     using namespace boost::property_tree;
     ptree pt;
-    unsigned int order;
     std::string str_tag;
     unsigned int i;
     unsigned int atmn, xyz, cell_s;
 
-    double fcs_val;
-
     std::vector<Triplet> tri_vec;
 
     std::stringstream ss;
-    std::string str_pairs;
-    std::string str_attr;
 
     AtomCellSuper ivec_tmp;
     std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
@@ -238,7 +232,7 @@ void Fcs_phonon::load_fcs_xml()
         error->exit("load_fcs_xml", str_error.c_str());
     }
 
-    for (order = 0; order < maxorder; ++order) {
+    for (unsigned int order = 0; order < maxorder; ++order) {
 
         if (order == 0) {
             str_tag = "Data.ForceConstants.HARMONIC";
@@ -256,13 +250,13 @@ void Fcs_phonon::load_fcs_xml()
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child(str_tag)) {
             const ptree &child = child_.second;
 
-            fcs_val = boost::lexical_cast<double>(child.data());
+            double fcs_val = boost::lexical_cast<double>(child.data());
 
             ivec_with_cell.clear();
 
             for (i = 0; i < order + 2; ++i) {
-                str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
-                str_pairs = child.get<std::string>(str_attr);
+                std::string str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
+                std::string str_pairs = child.get<std::string>(str_attr);
 
                 ss.str("");
                 ss.clear();
@@ -316,22 +310,19 @@ void Fcs_phonon::load_fcs_xml()
     std::cout << "done !" << std::endl;
 }
 
-void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N)
+void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N) const
 {
-    unsigned int i;
     int j, k;
-    int len;
-    int nelem;
     double *fcs_tmp;
     unsigned int ***ind;
 
     Triplet tri_tmp;
     std::vector<Triplet> tri_vec;
 
-    for (i = 0; i < N; ++i) {
+    for (unsigned int i = 0; i < N; ++i) {
 
-        len = force_constant[i].size();
-        nelem = i + 2;
+        int len = force_constant[i].size();
+        int nelem = i + 2;
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -380,10 +371,9 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
     unsigned int i;
     double *fcs_tmp;
     unsigned int **ind;
-    unsigned int nfcs;
     FcsClassExtent fcext_tmp;
 
-    nfcs = fc2_ext.size();
+    unsigned int nfcs = fc2_ext.size();
     MPI_Bcast(&nfcs, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     memory->allocate(fcs_tmp, nfcs);
@@ -423,7 +413,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                                                   const unsigned int natmin,
                                                   double *ret,
                                                   std::vector<FcsClassExtent> &fc2,
-                                                  std::vector<FcsArrayWithCell> *fcs)
+                                                  std::vector<FcsArrayWithCell> *fcs) const
 {
     int i, j, k, l, m;
 
@@ -434,7 +424,6 @@ void Fcs_phonon::examine_translational_invariance(const int n,
 
     bool force_asr = false;
     FcsClassExtent fc2_tmp;
-    std::vector<FcsClassExtent>::iterator it_target;
 
 
     for (i = 0; i < n; ++i) ret[i] = 0.0;
@@ -465,7 +454,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                             fc2_tmp.xyz2 = m;
                             fc2_tmp.cell_s = 0;
                             fc2_tmp.fcs_val = sum2[3 * j + k][m];
-                            it_target = std::find(fc2.begin(), fc2.end(), fc2_tmp);
+                            const auto it_target = std::find(fc2.begin(), fc2.end(), fc2_tmp);
                             if (std::abs(fc2_tmp.fcs_val) > eps12) {
                                 if (it_target != fc2.end()) {
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
@@ -570,22 +559,19 @@ void Fcs_phonon::examine_translational_invariance(const int n,
 }
 
 
-void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N)
+void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
 {
-    unsigned int i;
     int j, k;
-    int len;
-    int nelem;
     double *fcs_tmp;
     unsigned int ***ind;
 
     AtomCellSuper ivec_tmp;
     std::vector<AtomCellSuper> ivec_array;
 
-    for (i = 0; i < N; ++i) {
+    for (unsigned int i = 0; i < N; ++i) {
 
-        len = force_constant_with_cell[i].size();
-        nelem = i + 2;
+        int len = force_constant_with_cell[i].size();
+        int nelem = i + 2;
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
 

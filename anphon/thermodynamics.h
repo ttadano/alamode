@@ -30,41 +30,41 @@ namespace PHON_NS
         void setup();
 
         double Cv(double,
-                  double);
+                  double) const;
 
         double fB(double,
-                  double);
+                  double) const;
 
         double fC(double,
-                  double);
+                  double) const;
 
-        double Cv_tot(double);
+        double Cv_tot(double) const;
 
-        double internal_energy(double);
+        double internal_energy(double) const;
 
-        double vibrational_entropy(double);
+        double vibrational_entropy(double) const;
 
-        double free_energy(double);
+        double free_energy(double) const;
 
         double Cv_classical(double,
-                            double);
+                            double) const;
 
         double disp2_avg(double,
                          unsigned int,
-                         unsigned int);
+                         unsigned int) const;
 
         double coth_T(double,
-                      double);
+                      double) const;
 
         void compute_free_energy_bubble();
 
 
         void compute_FE_bubble(double **,
                                std::complex<double> ***,
-                               double *);
+                               double *) const;
 
         double compute_FE_bubble_SCPH(double,
                                       double **,
-                                      std::complex<double> ***);
+                                      std::complex<double> ***) const;
     };
 }

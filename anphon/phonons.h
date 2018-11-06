@@ -54,7 +54,7 @@ namespace PHON_NS
         class Ewald *ewald;
 
         void create_pointers();
-        void destroy_pointers();
+        void destroy_pointers() const;
 
         std::string mode;
         bool restart_flag;
@@ -62,6 +62,6 @@ namespace PHON_NS
         void execute_phonons();
         void execute_RTA();
         void execute_self_consistent_phonon();
-        void setup_base();
+        void setup_base() const;
     };
 }

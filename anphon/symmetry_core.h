@@ -154,18 +154,18 @@ namespace PHON_NS
         void gensym_withmap(double **,
                             const unsigned int *);
 
-        bool is_proper(double [3][3]);
+        bool is_proper(double [3][3]) const;
 
         void find_lattice_symmetry(double [3][3],
-                                   std::vector<RotationMatrix> &);
+                                   std::vector<RotationMatrix> &) const;
 
         void find_crystal_symmetry(int,
                                    int,
                                    std::vector<unsigned int> *,
                                    double **x,
                                    const std::vector<RotationMatrix> &,
-                                   std::vector<SymmetryOperation> &);
+                                   std::vector<SymmetryOperation> &) const;
 
-        void broadcast_symmlist(std::vector<SymmetryOperation> &);
+        void broadcast_symmlist(std::vector<SymmetryOperation> &) const;
     };
 }

@@ -118,10 +118,8 @@ void Gruneisen::setup()
 
 void Gruneisen::calc_gruneisen()
 {
-    unsigned int i, j;
     auto ns = dynamical->neval;
     auto nk = kpoint->nk;
-    double gamma_imag;
     std::complex<double> **dfc2_reciprocal;
 
     memory->allocate(dfc2_reciprocal, ns, ns);
@@ -139,15 +137,15 @@ void Gruneisen::calc_gruneisen()
 
             gruneisen[ik][is] = std::complex<double>(0.0, 0.0);
 
-            for (i = 0; i < ns; ++i) {
-                for (j = 0; j < ns; ++j) {
+            for (unsigned int i = 0; i < ns; ++i) {
+                for (unsigned int j = 0; j < ns; ++j) {
                     gruneisen[ik][is] += std::conj(dynamical->evec_phonon[ik][is][i])
                         * dfc2_reciprocal[i][j]
                         * dynamical->evec_phonon[ik][is][j];
                 }
             }
 
-            gamma_imag = gruneisen[ik][is].imag();
+            double gamma_imag = gruneisen[ik][is].imag();
             if (std::abs(gamma_imag) > eps10) {
                 error->warn("calc_gruneisen", "Gruneisen parameter is not real");
             }
@@ -169,37 +167,32 @@ void Gruneisen::calc_gruneisen()
 void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
                                      const double *xk_in)
 {
-    unsigned int i, j;
+    unsigned int i;
     unsigned int ns = dynamical->neval;
 
-    unsigned int atm1, atm2, xyz1, xyz2;
-    unsigned int atm1_s, atm2_s;
-    unsigned int tran, cell_s;
-
     double vec[3];
-    double phase;
 
     std::complex<double> im(0.0, 1.0);
 
 
     for (i = 0; i < ns; ++i) {
-        for (j = 0; j < ns; ++j) {
+        for (unsigned int j = 0; j < ns; ++j) {
             dphi2[i][j] = std::complex<double>(0.0, 0.0);
         }
     }
 
     for (const auto &it : delta_fc2) {
 
-        atm1 = it.pairs[0].index / 3;
-        xyz1 = it.pairs[0].index % 3;
-        atm2 = it.pairs[1].index / 3;
-        xyz2 = it.pairs[1].index % 3;
+        unsigned int atm1 = it.pairs[0].index / 3;
+        unsigned int xyz1 = it.pairs[0].index % 3;
+        unsigned int atm2 = it.pairs[1].index / 3;
+        unsigned int xyz2 = it.pairs[1].index % 3;
 
-        tran = it.pairs[1].tran;
-        cell_s = it.pairs[1].cell_s;
+        unsigned int tran = it.pairs[1].tran;
+        unsigned int cell_s = it.pairs[1].cell_s;
 
-        atm1_s = system->map_p2s_anharm[atm1][0];
-        atm2_s = system->map_p2s_anharm[atm2][tran];
+        unsigned int atm1_s = system->map_p2s_anharm[atm1][0];
+        unsigned int atm2_s = system->map_p2s_anharm[atm2][tran];
 
 
         for (i = 0; i < 3; ++i) {
@@ -210,7 +203,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
         rotvec(vec, vec, system->lavec_s_anharm);
         rotvec(vec, vec, system->rlavec_p);
 
-        phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+        double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
             += it.fcs_val * std::exp(im * phase)
@@ -221,7 +214,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
 
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
-                                  std::vector<FcsArrayWithCell> &delta_fcs)
+                                  std::vector<FcsArrayWithCell> &delta_fcs) const
 {
     unsigned int i;
     double vec[3];
@@ -235,7 +228,6 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     AtomCellSuper pairs_tmp;
 
     unsigned int norder = fcs_in[0].pairs.size();
-    unsigned int nelems;
     unsigned int nmulti;
 
     delta_fcs.clear();
@@ -247,7 +239,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
 
     index_old.clear();
-    nelems = 2 * (norder - 2) + 1;
+    unsigned int nelems = 2 * (norder - 2) + 1;
     for (i = 0; i < nelems; ++i) index_old.push_back(-1);
 
     index_with_cell.clear();
@@ -522,7 +514,7 @@ void Gruneisen::write_new_fcsxml(const std::string filename_xml,
 }
 
 
-std::string Gruneisen::double2string(const double d)
+std::string Gruneisen::double2string(const double d) const
 {
     std::string rt;
     std::stringstream ss;

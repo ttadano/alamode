@@ -39,7 +39,7 @@ namespace PHON_NS
 
         double diff(double *,
                     unsigned int,
-                    double);
+                    double) const;
 
         void set_default_variables();
         void deallocate_variables();
@@ -56,11 +56,11 @@ namespace PHON_NS
 
         void calc_derivative_dynmat_k(const double *,
                                       const std::vector<FcsClassExtent> &,
-                                      std::complex<double> ***);
+                                      std::complex<double> ***) const;
 
         void diagonalize_hermite_mat(int,
                                      std::complex<double> **,
-                                     double *);
+                                     double *) const;
 
         bool print_velocity_xyz;
     };

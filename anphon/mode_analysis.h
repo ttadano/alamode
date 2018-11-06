@@ -43,7 +43,7 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
-        void deallocate_variables();
+        void deallocate_variables() const;
 
         std::vector<KsListMode> kslist_fstate_k;
 
@@ -54,7 +54,7 @@ namespace PHON_NS
                                                  const double *,
                                                  const unsigned int,
                                                  const unsigned int,
-                                                 double ***);
+                                                 double ***) const;
 
         void calc_frequency_resolved_final_state_tetrahedron(const unsigned int,
                                                              double *,
@@ -63,7 +63,7 @@ namespace PHON_NS
                                                              const double *,
                                                              const unsigned int,
                                                              const unsigned int,
-                                                             double ***);
+                                                             double ***) const;
 
         void print_momentum_resolved_final_state(const unsigned int,
                                                  double *,
@@ -78,12 +78,12 @@ namespace PHON_NS
 
         void calc_V3norm2(const unsigned int,
                           const unsigned int,
-                          double **);
+                          double **) const;
 
         void calc_Phi3(unsigned int,
                        unsigned int,
                        const std::vector<KsListGroup> &,
-                       std::complex<double> **);
+                       std::complex<double> **) const;
 
         void print_selfenergy(const int,
                               double *);

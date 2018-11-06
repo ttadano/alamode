@@ -21,13 +21,13 @@ Error::Error(PHON *phon): Pointers(phon) {}
 Error::~Error() {}
 
 void Error::warn(const char *file,
-                 const char *message)
+                 const char *message) const
 {
     std::cout << "WARNING in " << file << "  MESSAGE: " << message << std::endl;
 }
 
 void Error::exit(const char *file,
-                 const char *message)
+                 const char *message) const
 {
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
     std::exit(EXIT_FAILURE);
@@ -35,7 +35,7 @@ void Error::exit(const char *file,
 
 void Error::exit(const char *file,
                  const char *message,
-                 int info)
+                 int info) const
 {
     MPI_Finalize();
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
@@ -43,7 +43,7 @@ void Error::exit(const char *file,
 }
 
 void Error::exitall(const char *file,
-                    const char *message)
+                    const char *message) const
 {
     MPI_Finalize();
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
@@ -52,7 +52,7 @@ void Error::exitall(const char *file,
 
 void Error::exit(const char *file,
                  const char *message,
-                 const char *info)
+                 const char *info) const
 {
     std::cout << "ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);

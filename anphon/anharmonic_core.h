@@ -133,22 +133,22 @@ namespace PHON_NS
                                      int,
                                      int,
                                      double **,
-                                     std::complex<double> ***);
+                                     std::complex<double> ***) const;
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      unsigned int,
-                                     double ***);
+                                     double ***) const;
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      unsigned int,
                                      int,
                                      std::vector<double> *,
-                                     std::vector<RelativeVector> *&);
+                                     std::vector<RelativeVector> *&) const;
 
         void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
                                               unsigned int,
                                               int &,
-                                              std::vector<double> *&);
+                                              std::vector<double> *&) const;
 
 
         void calc_self3omega_tetrahedron(double,

@@ -48,11 +48,11 @@ namespace PHON_NS
         void write_result_gamma(unsigned int,
                                 unsigned int,
                                 double ***,
-                                double **);
+                                double **) const;
 
         void average_self_energy_at_degenerate_point(int,
                                                      int,
-                                                     double **);
+                                                     double **) const;
 
         void compute_frequency_resolved_kappa(int,
                                               double ****,

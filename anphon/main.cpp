@@ -8,7 +8,6 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include "mpi_common.h"
 #include "phonons.h"
 #include <iostream>
 

@@ -113,7 +113,7 @@ namespace PHON_NS
         std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
 
         void prepare_delta_fcs(const std::vector<FcsArrayWithCell> &,
-                               std::vector<FcsArrayWithCell> &);
+                               std::vector<FcsArrayWithCell> &) const;
 
         void calc_dfc2_reciprocal(std::complex<double> **,
                                   const double *);
@@ -121,7 +121,7 @@ namespace PHON_NS
         void write_new_fcsxml(std::string,
                               double);
 
-        std::string double2string(double);
+        std::string double2string(double) const;
 
         //  double calc_stress_energy2(const std::vector<FcsArrayWithCell>);
         void calc_stress_energy3(std::vector<FcsArrayWithCell>,
