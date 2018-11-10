@@ -122,7 +122,7 @@ List of input variables
 
 ````
 
-* NONALAYTIC-tag = 0 | 1 | 2 | 3
+* NONANALYTIC-tag = 0 | 1 | 2 | 3
 
  === ===================================================================================
   0  | Non-analytic correction is not considered.
