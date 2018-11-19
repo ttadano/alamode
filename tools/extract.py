@@ -59,7 +59,6 @@ parser.add_option('--get',
                   help="specify which quantity to extract. \
                         Available options are 'disp-force', 'disp', 'force' and 'energy'.")
 
-
 parser.add_option('--unit',
                   action="store",
                   type="string",
@@ -72,7 +71,17 @@ parser.add_option('--offset',
                   help="Specify an output file (either *.xml, *.pw.out, or *.str) of an\
  equilibrium structure to subtract residual forces, displacements, or energies.")
 
+parser.add_option('--emin',
+                  default=None,
+                  type="float",
+                  help="Lower bound of the energy filter (eV) used for selecting output structures.\
+                        Available only in the VASP parser.")
 
+parser.add_option('--emax',
+                  default=None,
+                  type="float",
+                  help="Upper bound of the energy filter (eV) used for selecting output structures.\
+                        Available only in the VASP parser.")
 
 # Main
 
@@ -160,7 +169,8 @@ $ python displace.py -h")
     if code == "VASP":
         vasp.parse(file_original, file_results, 
                    options.offset, str_unit,
-                   print_disp, print_force, print_energy)
+                   print_disp, print_force, print_energy, 
+                   options.emin, options.emax)
 
     elif code == "QE":
         qe.parse(file_original, file_results, 

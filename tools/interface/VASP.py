@@ -246,7 +246,10 @@ def print_displacements_and_forces_VASP(xml_files,
                                         lavec, nat, x0,
                                         conversion_factor_disp,
                                         conversion_factor_force,
-                                        file_offset):
+                                        conversion_factor_energy,
+                                        file_offset,
+                                        filter_emin,
+                                        filter_emax):
     x0 = np.round(x0, 8)
     lavec_transpose = lavec.transpose()
     vec_refold = np.vectorize(refold)
@@ -254,10 +257,12 @@ def print_displacements_and_forces_VASP(xml_files,
     if file_offset is None:
         disp_offset = np.zeros((nat, 3))
         force_offset = np.zeros((nat, 3))
+        epot_offset = 0
 
     else:
         x0_offset, force_offset = get_coordinate_and_force_VASP(file_offset, nat)
-
+        epot_offset, _ = get_energies_VASP(file_offset)
+        epot_offset = np.array(epot_offset, dtype='float')
         try:
             x0_offset = np.reshape(x0_offset, (nat, 3))
         except:
@@ -270,9 +275,14 @@ def print_displacements_and_forces_VASP(xml_files,
 
         disp_offset = x0_offset - x0
 
+        if len(epot_offset) > 1:
+            print("File %s contains too many energy entries" % file_offset)
+
     for search_target in xml_files:
 
         x, force = get_coordinate_and_force_VASP(search_target, nat)
+        epot, ekin = get_energies_VASP(search_target)
+
         ndata = len(x) // (3 * nat)
         ndata2 = len(force) // (3 * nat)
 
@@ -280,6 +290,14 @@ def print_displacements_and_forces_VASP(xml_files,
             print("The numbers of displacement and force entries are different.")
             exit(1)
         
+        ndata_energy = len(epot)
+        if ndata_energy != ndata:
+            print("The numbers of displacement and energy entries are different.")
+            exit(1)
+        
+        epot = np.array(epot, dtype='float')
+        epot -= epot_offset
+
         x = np.reshape(x, (ndata, nat, 3))
         force = np.reshape(force, (ndata, nat, 3))
 
@@ -291,6 +309,15 @@ def print_displacements_and_forces_VASP(xml_files,
             disp *= conversion_factor_disp
             f *= conversion_factor_force
 
+            if filter_emin is not None:
+                if filter_emin > epot[idata]:
+                    continue
+            
+            if filter_emax is not None:
+                if filter_emax < epot[idata]:
+                    continue
+            
+            print("# Filename: %s, Snapshot: %d, E_pot (eV): %s" % (search_target, idata + 1, epot[idata]))
             for i in range(nat):
                 print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i, 0],
                                                                      disp[i, 1],
@@ -394,7 +421,8 @@ def get_unit_conversion_factor(str_unit):
 
 
 def parse(SPOSCAR_init, xml_files, xml_file_offset, str_unit,
-          print_disp, print_force, print_energy):
+          print_disp, print_force, print_energy,
+          filter_emin, filter_emax):
 
     aa, _, elems, nats, x_frac0 = read_POSCAR(SPOSCAR_init)
 
@@ -406,7 +434,10 @@ def parse(SPOSCAR_init, xml_files, xml_file_offset, str_unit,
                                             x_frac0,
                                             scale_disp,
                                             scale_force,
-                                            xml_file_offset)
+                                            scale_energy,
+                                            xml_file_offset,
+                                            filter_emin,
+                                            filter_emax)
     elif print_disp == True:
         print_displacements_VASP(xml_files, 
                                  aa, np.sum(nats), 
