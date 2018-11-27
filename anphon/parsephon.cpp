@@ -259,12 +259,12 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars",
                     "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
-    if (nonanalytic == 3) {
-        if (mode == "SCPH") {
-            error->exit("parse_general_vars",
-                        "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
-        }
-    }
+    // if (nonanalytic == 3) {
+    //     if (mode == "SCPH") {
+    //         error->exit("parse_general_vars",
+    //                     "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
+    //     }
+    // }
 
     // Copy the values to appropriate classes.
 
@@ -457,7 +457,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     std::vector<std::string> input_list{
         "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
         "REALPART", "ISOTOPE", "ISOFACT",
-        "FSTATE_W", "FSTATE_K", "PRIMTMSD", "DOS", "PDOS", "TDOS",
+        "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
         "KAPPA_SPEC", "SELF_W", "FE_BUBBLE"
