@@ -76,5 +76,9 @@ namespace PHON_NS
         double compute_FE_bubble_SCPH(double,
                                       double **,
                                       std::complex<double> ***) const;
+
+        double FE_scph_correction(unsigned int,
+                                  double **,
+                                  std::complex<double> ***) const;
     };
 }

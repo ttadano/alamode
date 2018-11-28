@@ -128,13 +128,7 @@ namespace PHON_NS
         void setup_pp_interaction();
         void setup_transform_ifc();
         void setup_transform_symmetry();
-        void write_scph_energy(double ***) const;
-        void write_scph_bands(double ***) const;
-        void write_scph_dos(double ***) const;
-        void write_scph_thermodynamics(double ***,
-                                       std::complex<double> ****) const;
-        void write_scph_msd(double ***,
-                            std::complex<double> ****) const;
+
 
         void load_scph_dymat_from_file(std::complex<double> ****);
         void store_scph_dymat_to_file(std::complex<double> ****);
@@ -216,9 +210,6 @@ namespace PHON_NS
                                int,
                                int) const;
 
-        double FE_scph_correction(unsigned int,
-                                  double **,
-                                  std::complex<double> ***) const;
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],
                                              std::complex<double> ****);

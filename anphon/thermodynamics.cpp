@@ -670,3 +670,52 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
 
     return FE_return;
 }
+
+
+double Thermodynamics::FE_scph_correction(unsigned int iT,
+                                          double **eval,
+                                          std::complex<double> ***evec) const
+{
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
+    const auto N = nk * ns;
+
+    double ret = 0.0;
+
+#pragma omp parallel for reduction(+ : ret)
+    for (int i = 0; i < N; ++i) {
+        int ik = i / ns;
+        int is = i % ns;
+        double omega = eval[ik][is];
+        if (std::abs(omega) < eps6) continue;
+
+        std::complex<double> tmp_c = std::complex<double>(0.0, 0.0);
+
+        for (int js = 0; js < ns; ++js) {
+            double omega2_harm = dynamical->eval_phonon[ik][js];
+            if (omega2_harm >= 0.0) {
+                omega2_harm = std::pow(omega2_harm, 2);
+            } else {
+                omega2_harm = -std::pow(omega2_harm, 2);
+            }
+
+            for (int ks = 0; ks < ns; ++ks) {
+                for (int ls = 0; ls < ns; ++ls) {
+                    tmp_c += omega2_harm
+                        * dynamical->evec_phonon[ik][js][ks]
+                        * std::conj(dynamical->evec_phonon[ik][js][ls])
+                        * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
+                }
+            }
+        }
+
+        if (thermodynamics->classical) {
+            ret += (tmp_c.real() - omega * omega) * thermodynamics->fC(omega, temp) / (4.0 * omega);
+        } else {
+            ret += (tmp_c.real() - omega * omega) * (1.0 + 2.0 * thermodynamics->fB(omega, temp)) / (8.0 * omega);
+        }
+    }
+
+    return ret / static_cast<double>(nk);
+}

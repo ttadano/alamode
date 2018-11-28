@@ -50,6 +50,16 @@ namespace PHON_NS
         std::string anime_format;
         std::fstream fs_result;
 
+        void write_scph_energy(double ***) const;
+        void write_scph_bands(double ***) const;
+        void write_scph_dos(double ***) const;
+        void write_scph_thermodynamics(double ***,
+                                       std::complex<double> ****) const;
+        void write_scph_msd(double ***,
+                            std::complex<double> ****) const;
+        void write_scph_ucorr(double ***eval,
+                              std::complex<double> ****evec) const;
+
     private:
 
         void write_phonon_bands() const;
@@ -68,7 +78,7 @@ namespace PHON_NS
         void write_thermodynamics() const;
         void write_msd() const;
         void write_disp_correlation() const;
-       
+
         void write_participation_ratio() const;
 
         double Ry_to_kayser;
