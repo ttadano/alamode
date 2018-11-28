@@ -216,9 +216,9 @@ namespace PHON_NS
                                int,
                                int) const;
 
-        double FE_scph(unsigned int,
-                       double **,
-                       std::complex<double> ***) const;
+        double FE_scph_correction(unsigned int,
+                                  double **,
+                                  std::complex<double> ***) const;
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],
                                              std::complex<double> ****);

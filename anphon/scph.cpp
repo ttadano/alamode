@@ -2927,15 +2927,15 @@ void Scph::write_scph_dos(double ***eval) const
 void Scph::write_scph_thermodynamics(double ***eval,
                                      std::complex<double> ****evec) const
 {
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    double T_to_Ryd = thermodynamics->T_to_Ryd;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto T_to_Ryd = thermodynamics->T_to_Ryd;
 
-    int N = nk * ns;
+    const auto N = nk * ns;
 
     std::ofstream ofs_thermo;
     std::string file_thermo = input->job_title + ".scph_thermo";
@@ -2960,60 +2960,60 @@ void Scph::write_scph_thermodynamics(double ***eval,
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
 
-        double temp = Tmin + static_cast<double>(iT) * dT;
+        const auto temp = Tmin + static_cast<double>(iT) * dT;
 
         double heat_capacity = 0.0;
         double free_energy = 0.0;
 
-    if (thermodynamics->classical) {
+        if (thermodynamics->classical) {
 #pragma omp parallel for reduction(+:heat_capacity,free_energy)
-        for (int i = 0; i < N; ++i) {
-            unsigned int ik = i / ns;
-            unsigned int is = i % ns;
-            double omega = eval[iT][ik][is];
+            for (int i = 0; i < N; ++i) {
+                unsigned int ik = i / ns;
+                unsigned int is = i % ns;
+                double omega = eval[iT][ik][is];
 
-            if (omega <= eps8) continue;
+                if (omega <= eps8) continue;
 
-            heat_capacity += thermodynamics->Cv_classical(omega, temp);
+                heat_capacity += thermodynamics->Cv_classical(omega, temp);
 
-            if (std::abs(temp) > eps) {
-                double x = omega / (temp * T_to_Ryd);
-                free_energy += std::log(x);
+                if (std::abs(temp) > eps) {
+                    double x = omega / (temp * T_to_Ryd);
+                    free_energy += std::log(x);
+                }
             }
-        }
 
-        heat_capacity /= static_cast<double>(nk);
-        free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
-
-    } else {
-
-#pragma omp parallel for reduction(+:heat_capacity,free_energy)
-        for (int i = 0; i < N; ++i) {
-            unsigned int ik = i / ns;
-            unsigned int is = i % ns;
-            double omega = eval[iT][ik][is];
-
-            if (omega <= eps8) continue;
-
-            heat_capacity += thermodynamics->Cv(omega, temp);
-
-            if (std::abs(temp) < eps) {
-                free_energy += 0.5 * omega;
-            } else {
-                double x = omega / (temp * T_to_Ryd);
-                free_energy += 0.5 * x + std::log(1.0 - std::exp(-x));
-            }
-        }
-
-        heat_capacity /= static_cast<double>(nk);
-        if (std::abs(temp) < eps) {
-            free_energy /= static_cast<double>(nk);
-        } else {
+            heat_capacity /= static_cast<double>(nk);
             free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
-        }
-    }
 
-        double tmp3 = free_energy + FE_scph(iT, eval[iT], evec[iT]);
+        } else {
+
+#pragma omp parallel for reduction(+:heat_capacity,free_energy)
+            for (int i = 0; i < N; ++i) {
+                unsigned int ik = i / ns;
+                unsigned int is = i % ns;
+                double omega = eval[iT][ik][is];
+
+                if (omega <= eps8) continue;
+
+                heat_capacity += thermodynamics->Cv(omega, temp);
+
+                if (std::abs(temp) < eps) {
+                    free_energy += 0.5 * omega;
+                } else {
+                    double x = omega / (temp * T_to_Ryd);
+                    free_energy += 0.5 * x + std::log(1.0 - std::exp(-x));
+                }
+            }
+
+            heat_capacity /= static_cast<double>(nk);
+            if (std::abs(temp) < eps) {
+                free_energy /= static_cast<double>(nk);
+            } else {
+                free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
+            }
+        }
+
+        double tmp3 = free_energy + FE_scph_correction(iT, eval[iT], evec[iT]);
 
         ofs_thermo << std::setw(16) << std::fixed << temp;
         ofs_thermo << std::setw(18) << std::scientific << heat_capacity / k_Boltzmann;
@@ -3029,14 +3029,14 @@ void Scph::write_scph_thermodynamics(double ***eval,
     ofs_thermo.close();
 }
 
-double Scph::FE_scph(unsigned int iT,
-                     double **eval,
-                     std::complex<double> ***evec) const
+double Scph::FE_scph_correction(unsigned int iT,
+                                double **eval,
+                                std::complex<double> ***evec) const
 {
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    double temp = system->Tmin + static_cast<double>(iT) * system->dT;
-    int N = nk * ns;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
+    const auto N = nk * ns;
 
     double ret = 0.0;
 
@@ -3060,18 +3060,18 @@ double Scph::FE_scph(unsigned int iT,
             for (int ks = 0; ks < ns; ++ks) {
                 for (int ls = 0; ls < ns; ++ls) {
                     tmp_c += omega2_harm
-                        * dynamical->evec_phonon[ik][js][ks] * std::conj(dynamical->evec_phonon[ik][js][ls])
+                        * dynamical->evec_phonon[ik][js][ks]
+                        * std::conj(dynamical->evec_phonon[ik][js][ls])
                         * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
                 }
             }
         }
 
-    if (thermodynamics->classical) {
-        ret += (tmp_c.real() - omega * omega) * thermodynamics->fC(omega, temp) / (4.0 * omega);
-
-    } else {
-        ret += (tmp_c.real() - omega * omega) * (1.0 + 2.0 * thermodynamics->fB(omega, temp)) / (8.0 * omega);
-    }
+        if (thermodynamics->classical) {
+            ret += (tmp_c.real() - omega * omega) * thermodynamics->fC(omega, temp) / (4.0 * omega);
+        } else {
+            ret += (tmp_c.real() - omega * omega) * (1.0 + 2.0 * thermodynamics->fB(omega, temp)) / (8.0 * omega);
+        }
     }
 
     return ret / static_cast<double>(nk);
