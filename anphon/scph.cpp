@@ -246,6 +246,9 @@ void Scph::exec_scph()
             if (writes->print_msd) {
                 writes->write_scph_msd(eval_anharm, evec_anharm);
             }
+            if (writes->print_ucorr) {
+                writes->write_scph_ucorr(eval_anharm, evec_anharm);
+            }
         }
         memory->deallocate(eval_anharm);
         memory->deallocate(evec_anharm);
