@@ -435,12 +435,22 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
                         for (iT = 0; iT < NT; ++iT) {
                             double temp = system->Tmin + static_cast<double>(iT) * system->dT;
-                            double n0 = thermodynamics->fB(omega0, temp);
-                            double n1 = thermodynamics->fB(omega1, temp);
-                            double n2 = thermodynamics->fB(omega2, temp);
 
-                            nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
-                            nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
+                            if (classical) {
+                                double n0 = fC(omega0, temp);
+                                double n1 = fC(omega1, temp);
+                                double n2 = fC(omega2, temp);
+
+                                nsum[0] = n0 * (n1 + n2) + n1 * n2;
+                                nsum[1] = n0 * (n1 + n2) - n1 * n2;
+                            } else {
+                                double n0 = fB(omega0, temp);
+                                double n1 = fB(omega1, temp);
+                                double n2 = fB(omega2, temp);
+
+                                nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
+                                nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
+                            }
 
                             FE_tmp[iT] += v3_tmp * (nsum[0] * omega_sum[0] + 3.0 * nsum[1] * omega_sum[1]);
                         }
@@ -556,12 +566,21 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
                             double v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval, evec))
                                 * static_cast<double>(multi);
 
-                            double n0 = thermodynamics->fB(omega0, temp);
-                            double n1 = thermodynamics->fB(omega1, temp);
-                            double n2 = thermodynamics->fB(omega2, temp);
+                            if (classical) {
+                                double n0 = fC(omega0, temp);
+                                double n1 = fC(omega1, temp);
+                                double n2 = fC(omega2, temp);
 
-                            nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
-                            nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
+                                nsum[0] = n0 * (n1 + n2) + n1 * n2;
+                                nsum[1] = n0 * (n1 + n2) - n1 * n2;
+                            } else {
+                                double n0 = fB(omega0, temp);
+                                double n1 = fB(omega1, temp);
+                                double n2 = fB(omega2, temp);
+
+                                nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
+                                nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
+                            }
 
                             FE_tmp += v3_tmp * (nsum[0] * omega_sum[0] + 3.0 * nsum[1] * omega_sum[1]);
                         }

@@ -311,7 +311,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
                         "The number of KMESH_SCPH is not consistent");
         }
         if (nonanalytic_tmp != dynamical->nonanalytic) {
-            error->exit("load_scph_dymat_from_file",
+            error->warn("load_scph_dymat_from_file",
                         "The NONANALYTIC tag is not consistent");
         }
         if (consider_offdiag_tmp != consider_offdiagonal) {
@@ -2954,14 +2954,19 @@ void Scph::write_scph_thermodynamics(double ***eval,
             << std::endl;
     }
 
+    if (thermodynamics->classical) {
+        ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
+    }
+
     for (unsigned int iT = 0; iT < NT; ++iT) {
 
         double temp = Tmin + static_cast<double>(iT) * dT;
 
-        double tmp1 = 0.0;
-        double tmp2 = 0.0;
+        double heat_capacity = 0.0;
+        double free_energy = 0.0;
 
-#pragma omp parallel for reduction(+:tmp1,tmp2)
+    if (thermodynamics->classical) {
+#pragma omp parallel for reduction(+:heat_capacity,free_energy)
         for (int i = 0; i < N; ++i) {
             unsigned int ik = i / ns;
             unsigned int is = i % ns;
@@ -2969,27 +2974,50 @@ void Scph::write_scph_thermodynamics(double ***eval,
 
             if (omega <= eps8) continue;
 
-            tmp1 += thermodynamics->Cv(omega, temp);
+            heat_capacity += thermodynamics->Cv_classical(omega, temp);
 
-            if (std::abs(temp) < eps) {
-                tmp2 += 0.5 * omega;
-            } else {
+            if (std::abs(temp) > eps) {
                 double x = omega / (temp * T_to_Ryd);
-                tmp2 += 0.5 * x + std::log(1.0 - std::exp(-x));
+                free_energy += std::log(x);
             }
         }
 
-        tmp1 /= static_cast<double>(nk);
-        if (std::abs(temp) < eps) {
-            tmp2 /= static_cast<double>(nk);
-        } else {
-            tmp2 *= temp * T_to_Ryd / static_cast<double>(nk);
+        heat_capacity /= static_cast<double>(nk);
+        free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
+
+    } else {
+
+#pragma omp parallel for reduction(+:heat_capacity,free_energy)
+        for (int i = 0; i < N; ++i) {
+            unsigned int ik = i / ns;
+            unsigned int is = i % ns;
+            double omega = eval[iT][ik][is];
+
+            if (omega <= eps8) continue;
+
+            heat_capacity += thermodynamics->Cv(omega, temp);
+
+            if (std::abs(temp) < eps) {
+                free_energy += 0.5 * omega;
+            } else {
+                double x = omega / (temp * T_to_Ryd);
+                free_energy += 0.5 * x + std::log(1.0 - std::exp(-x));
+            }
         }
-        double tmp3 = tmp2 + FE_scph(iT, eval[iT], evec[iT]);
+
+        heat_capacity /= static_cast<double>(nk);
+        if (std::abs(temp) < eps) {
+            free_energy /= static_cast<double>(nk);
+        } else {
+            free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
+        }
+    }
+
+        double tmp3 = free_energy + FE_scph(iT, eval[iT], evec[iT]);
 
         ofs_thermo << std::setw(16) << std::fixed << temp;
-        ofs_thermo << std::setw(18) << std::scientific << tmp1 / k_Boltzmann;
-        ofs_thermo << std::setw(18) << tmp2;
+        ofs_thermo << std::setw(18) << std::scientific << heat_capacity / k_Boltzmann;
+        ofs_thermo << std::setw(18) << free_energy;
         ofs_thermo << std::setw(18) << tmp3;
 
         if (thermodynamics->calc_FE_bubble) {
@@ -3038,7 +3066,12 @@ double Scph::FE_scph(unsigned int iT,
             }
         }
 
+    if (thermodynamics->classical) {
+        ret += (tmp_c.real() - omega * omega) * thermodynamics->fC(omega, temp) / (4.0 * omega);
+
+    } else {
         ret += (tmp_c.real() - omega * omega) * (1.0 + 2.0 * thermodynamics->fB(omega, temp)) / (8.0 * omega);
+    }
     }
 
     return ret / static_cast<double>(nk);
