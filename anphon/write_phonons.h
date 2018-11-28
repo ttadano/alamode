@@ -35,10 +35,12 @@ namespace PHON_NS
 
         bool print_xsf;
         bool print_msd;
+        bool print_ucorr;
         bool print_anime;
 
         unsigned int anime_cellsize[3];
         double anime_kpoint[3];
+        unsigned int shift_ucorr[3];
 
         double in_kayser(const double) const;
 
@@ -65,6 +67,8 @@ namespace PHON_NS
         void write_eigenvectors() const;
         void write_thermodynamics() const;
         void write_msd() const;
+        void write_disp_correlation() const;
+       
         void write_participation_ratio() const;
 
         double Ry_to_kayser;

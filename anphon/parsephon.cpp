@@ -460,7 +460,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE"
+        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE", "UCORR", "SHIFT_UCORR"
     };
 
     unsigned int cellsize[3];
@@ -478,6 +478,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool print_vel = false;
     bool print_evec = false;
     bool print_msd = false;
+    bool print_ucorr = false;
 
     bool compute_dos = true;
     bool projected_dos = false;
@@ -512,6 +513,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_vel, "PRINTVEL", analysis_var_dict);
         assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
         assign_val(print_msd, "PRINTMSD", analysis_var_dict);
+        assign_val(print_ucorr, "UCORR", analysis_var_dict);
 
         assign_val(compute_dos, "DOS", analysis_var_dict);
         assign_val(projected_dos, "PDOS", analysis_var_dict);
@@ -602,6 +604,35 @@ void Input::parse_analysis_vars(const bool use_default_values)
         }
     }
 
+    if (print_ucorr) {
+        std::string str_shift_ucorr;
+        std::vector<std::string> list_shift_ucorr;
+        assign_val(str_shift_ucorr, "SHIFT_UCORR", analysis_var_dict);
+
+        if (!str_shift_ucorr.empty()) {
+            int shift_ucorr[3];
+            split_str_by_space(str_shift_ucorr, list_shift_ucorr);
+            if (list_shift_ucorr.size() != 3) {
+                error->exit("parse_analysis_vars",
+                            "The number of entries for SHIFT_UCORR must be 3.");
+            }
+
+            for (i = 0; i < 3; ++i) {
+                try {
+                    shift_ucorr[i] = boost::lexical_cast<int>(list_shift_ucorr[i]);
+                }
+                catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                    error->exit("parse_analysis_vars",
+                                "SHIFT_UCORR must be an array of integers.");
+                }
+            }
+            for (i = 0; i < 3; ++i) {
+                writes->shift_ucorr[i] = shift_ucorr[i];
+            }
+        }
+    }
+
     // Copy the values to appropriate classes
 
     phonon_velocity->print_velocity = print_vel;
@@ -609,6 +640,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dynamical->participation_ratio = participation_ratio;
     writes->print_xsf = print_xsf;
     writes->print_anime = print_anime;
+    writes->print_ucorr = print_ucorr;
 
     if (print_anime) {
         for (i = 0; i < 3; ++i) {

@@ -53,6 +53,16 @@ namespace PHON_NS
                          unsigned int,
                          unsigned int) const;
 
+        double disp_corrfunc(const double T_in,
+                             const unsigned int ncrd1,
+                             const unsigned int ncrd2,
+                             const double cell_shift[3],
+                             const unsigned int nk,
+                             const unsigned int ns,
+                             double **xk_in,
+                             double **eval_in,
+                             std::complex<double> ***evec_in) const;
+
         double coth_T(double,
                       double) const;
 
