@@ -40,7 +40,7 @@ namespace PHON_NS
 
         unsigned int anime_cellsize[3];
         double anime_kpoint[3];
-        unsigned int shift_ucorr[3];
+        int shift_ucorr[3];
 
         double in_kayser(const double) const;
 

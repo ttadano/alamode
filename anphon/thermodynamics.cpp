@@ -324,7 +324,7 @@ double Thermodynamics::disp_corrfunc(const double T_in,
     unsigned int ik, is;
     double omega;
     double phase;
-
+    const std::complex<double> im(0.0, 1.0);
     double ret = 0.0;
 
     if (classical) {
@@ -362,7 +362,7 @@ double Thermodynamics::disp_corrfunc(const double T_in,
 
             ret += real(std::conj(evec_in[ik][is][ncrd1])
                     * evec_in[ik][is][ncrd2]
-                    * std::exp(phase))
+                    * std::exp(im * phase))
                 * (fB(omega, T_in) + 0.5) / omega;
         }
     }
