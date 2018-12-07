@@ -423,15 +423,13 @@ def get_options(option_tag, taglists, file_in):
     with open(file_in) as openfileobject:
         for line in openfileobject:
             
-            line = line.strip()
-
             if option_tag in line:
                 flag_add = True
                 list_out.append(line)
             elif len(line.split()) > 0 and line.split()[0] in taglists:
                 flag_add = False
             elif flag_add:
-                if line:
+                if line.strip():
                     list_out.append(line)
 
     return list_out
