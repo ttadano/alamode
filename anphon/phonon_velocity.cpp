@@ -37,14 +37,15 @@ void Phonon_velocity::set_default_variables()
     print_velocity = false;
     phvel = nullptr;
     phvel_xyz = nullptr;
+    velmat = nullptr;
 
     memory->allocate(xshift_s, 27, 3);
 
-    for (int i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
-    int icell = 0;
-    for (int ix = -1; ix <= 1; ++ix) {
-        for (int iy = -1; iy <= 1; ++iy) {
-            for (int iz = -1; iz <= 1; ++iz) {
+    for (auto i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
+    auto icell = 0;
+    for (auto ix = -1; ix <= 1; ++ix) {
+        for (auto iy = -1; iy <= 1; ++iy) {
+            for (auto iz = -1; iz <= 1; ++iz) {
                 if (ix == 0 && iy == 0 && iz == 0) continue;
 
                 ++icell;
@@ -68,6 +69,9 @@ void Phonon_velocity::deallocate_variables()
     if (xshift_s) {
         memory->deallocate(xshift_s);
     }
+    if (velmat) {
+        memory->deallocate(velmat);
+    }
 }
 
 
@@ -78,8 +82,8 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
 
     if (print_velocity) {
 
-        unsigned int nk = kpoint->nk;
-        unsigned int ns = dynamical->neval;
+        const auto nk = kpoint->nk;
+        const auto ns = dynamical->neval;
 
         memory->allocate(phvel, nk, ns);
 
@@ -96,12 +100,12 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
     }
 }
 
-void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
+void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
 {
     unsigned int i;
     unsigned int idiff;
-    unsigned int nk = kpoint->nk;
-    unsigned int n = dynamical->neval;
+    const auto nk = kpoint->nk;
+    const auto n = dynamical->neval;
     double **xk_shift;
     double *xk_tmp;
     double **omega_shift, *omega_tmp;
@@ -116,7 +120,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
         std::cout << " Calculating group velocities of phonon along given k path ... ";
     }
 
-    unsigned int ndiff = 2;
+    const unsigned int ndiff = 2;
     memory->allocate(xk_shift, ndiff, 3);
     memory->allocate(omega_shift, ndiff, n);
     memory->allocate(omega_tmp, ndiff);
@@ -176,10 +180,10 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
 }
 
 void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
-                                           double ***phvel3_out)
+                                           double ***phvel3_out) const
 {
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
     double **vel;
 
     if (mympi->my_rank == 0) {
@@ -215,7 +219,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
 }
 
 void Phonon_velocity::phonon_vel_k(const double *xk_in,
-                                   double **vel_out)
+                                   double **vel_out) const
 {
     unsigned int j;
     unsigned int idiff;
@@ -308,11 +312,11 @@ double Phonon_velocity::diff(double *f,
 void Phonon_velocity::phonon_vel_k2(const double *xk_in,
                                     const double *omega_in,
                                     std::complex<double> **evec_in,
-                                    double **vel_out)
+                                    double **vel_out) const
 {
     unsigned int i, j, l, m;
     unsigned int icrd;
-    int nmode = 3 * system->natmin;
+    const auto nmode = 3 * system->natmin;
 
     std::complex<double> ***ddyn;
     std::complex<double> ctmp;
@@ -334,7 +338,7 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
     memory->allocate(vel_tmp, 3, nmode);
     calc_derivative_dynmat_k(xk_in, fcs_phonon->fc2_ext, ddyn);
 
-    bool do_diagonalize = false;
+    const auto do_diagonalize = false;
 
 
     if (do_diagonalize) {
@@ -476,12 +480,12 @@ void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
                                                const std::vector<FcsClassExtent> &fc2_in,
                                                std::complex<double> ***ddyn_out) const
 {
-    int i, j, k;
+    unsigned int i, j, k;
 
-    int nmode = 3 * system->natmin;
+    const auto nmode = 3 * system->natmin;
 
     double vec[3];
-    std::complex<double> im(0.0, 1.0);
+    const std::complex<double> im(0.0, 1.0);
 
     for (k = 0; k < 3; ++k) {
         for (i = 0; i < nmode; ++i) {
@@ -493,14 +497,14 @@ void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
 
     for (const auto &it : fc2_in) {
 
-        unsigned int atm1_p = it.atm1;
-        unsigned int atm2_s = it.atm2;
-        unsigned int xyz1 = it.xyz1;
-        unsigned int xyz2 = it.xyz2;
-        unsigned int icell = it.cell_s;
+        const auto atm1_p = it.atm1;
+        const auto atm2_s = it.atm2;
+        const auto xyz1 = it.xyz1;
+        const auto xyz2 = it.xyz2;
+        const auto icell = it.cell_s;
 
-        unsigned int atm1_s = system->map_p2s[atm1_p][0];
-        unsigned int atm2_p = system->map_s2p[atm2_s].atom_num;
+        const auto atm1_s = system->map_p2s[atm1_p][0];
+        const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
@@ -510,7 +514,7 @@ void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
         rotvec(vec, vec, system->lavec_s);
         rotvec(vec, vec, system->rlavec_p);
 
-        double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+        auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         for (k = 0; k < 3; ++k) {
             ddyn_out[k][3 * atm1_p + xyz1][3 * atm2_p + xyz2]
@@ -559,4 +563,90 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
     memory->deallocate(RWORK);
     memory->deallocate(WORK);
     memory->deallocate(mat_1D);
+}
+
+void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
+                                               const std::vector<FcsClassExtent> &fc2_in,
+                                               const double *omega_in,
+                                               std::complex<double> **evec_in,
+                                               std::complex<double> ***velmat_out) const
+{
+    // Use Allen's definition
+    // Only the analytic part of the dynamical matrix will be considered.
+    // Non-analytic part must be treated seperately.
+
+    unsigned int i, j, k;
+
+    const auto nmode = 3 * system->natmin;
+
+    double vec[3], vec2[3];
+    const std::complex<double> im(0.0, 1.0);
+    std::complex<double> ***ddymat;
+
+    memory->allocate(ddymat, nmode, nmode, 3);
+
+    for (i = 0; i < nmode; ++i) {
+        for (j = 0; j < nmode; ++j) {
+            for (k = 0; k < 3; ++k) {
+                velmat_out[i][j][k] = std::complex<double>(0.0, 0.0);
+                ddymat[i][j][k] = std::complex<double>(0.0, 0.0);
+            }
+        }
+    }
+
+    for (const auto &it : fc2_in) {
+
+        const auto atm1_p = it.atm1;
+        const auto atm2_s = it.atm2;
+        const auto xyz1 = it.xyz1;
+        const auto xyz2 = it.xyz2;
+        const auto icell = it.cell_s;
+
+        const auto atm1_s = system->map_p2s[atm1_p][0];
+        const auto atm2_p = system->map_s2p[atm2_s].atom_num;
+
+        for (i = 0; i < 3; ++i) {
+            vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
+                - system->xr_s[system->map_p2s[atm2_p][0]][i];
+            vec2[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
+                - system->xr_s[atm1_s][i];
+        }
+
+        rotvec(vec, vec, system->lavec_s);
+        rotvec(vec, vec, system->rlavec_p);
+
+        auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+
+        // vec2 or vec??
+        for (k = 0; k < 3; ++k) {
+            ddymat[3 * atm1_p + xyz1][3 * atm2_p + xyz2][k]
+                += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
+                    system->mass[atm1_s] * system->mass[atm2_s]);
+        }
+    }
+
+    unsigned int ii, jj;
+
+    for (i = 0; i < nmode; ++i) {
+        for (j = 0; j < nmode; ++j) {
+            for (ii = 0; ii < nmode; ++ii) {
+                for (jj = 0; jj < nmode; ++jj) {
+                    for (k = 0; k < 3; ++k) {
+                        velmat_out[i][j][k]
+                            += std::conj(evec_in[i][ii])
+                            * ddymat[ii][jj][k]
+                            * evec_in[j][jj];
+                    }
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < nmode; ++i) {
+        for (j = 0; j < nmode; ++j) {
+            for (k = 0; k < 3; ++k) {
+                velmat_out[i][j][k] *= 0.5 * im / std::sqrt(omega_in[i] * omega_in[j]);
+            }
+        }
+    }
 }

@@ -27,11 +27,18 @@ namespace PHON_NS
         void calc_group_velocity(int);
 
         void phonon_vel_k(const double *,
-                          double **);
+                          double **) const;
+
+        void velocity_matrix_analytic(const double *xk_in,
+                                      const std::vector<FcsClassExtent> &fc2_in,
+                                      const double *omega_in,
+                                      std::complex<double> **evec_in,
+                                      std::complex<double> ***velmat_out) const;
 
         bool print_velocity;
         double **phvel;
         double ***phvel_xyz;
+        std::complex<double> ***velmat;
 
     private:
 
@@ -44,15 +51,16 @@ namespace PHON_NS
         void set_default_variables();
         void deallocate_variables();
 
-        void calc_phonon_vel_band(double **);
+        void calc_phonon_vel_band(double **) const;
 
         void calc_phonon_vel_mesh(double **,
-                                  double ***);
+                                  double ***) const;
 
         void phonon_vel_k2(const double *,
                            const double *,
                            std::complex<double> **,
-                           double **);
+                           double **) const;
+
 
         void calc_derivative_dynmat_k(const double *,
                                       const std::vector<FcsClassExtent> &,
@@ -61,6 +69,7 @@ namespace PHON_NS
         void diagonalize_hermite_mat(int,
                                      std::complex<double> **,
                                      double *) const;
+
 
         bool print_velocity_xyz;
     };
