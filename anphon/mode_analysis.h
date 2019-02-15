@@ -89,6 +89,6 @@ namespace PHON_NS
                               double *);
 
         void print_spectral_function(const int,
-                                     double *);
+                                     const double *);
     };
 }

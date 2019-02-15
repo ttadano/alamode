@@ -44,7 +44,7 @@ namespace PHON_NS
 
         double **xshift_s;
 
-        double diff(double *,
+        double diff(const double *,
                     unsigned int,
                     double) const;
 

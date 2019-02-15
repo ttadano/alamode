@@ -264,7 +264,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     std::vector<double> Temp_array(NT);
 
     for (int i = 0; i < NT; ++i) {
@@ -273,7 +273,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
 
     if (mympi->my_rank == 0) {
 
-        auto consider_offdiagonal = selfenergy_offdiagonal;
+        const auto consider_offdiagonal = selfenergy_offdiagonal;
         double temp;
         std::ifstream ifs_dymat;
         auto file_dymat = input->job_title + ".scph_dymat";
@@ -323,7 +323,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         }
 
         // Check if the precalculated data for the given temperature range exists
-        int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
+        const int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
         std::vector<double> Temp_array_ref(NT_ref);
         for (int i = 0; i < NT_ref; ++i) {
             Temp_array_ref[i] = Tmin_tmp + dT_tmp * static_cast<double>(i);

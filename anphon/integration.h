@@ -53,8 +53,8 @@ namespace PHON_NS
 
         void setup_integration();
 
-        double do_tetrahedron(double *,
-                              double *,
+        double do_tetrahedron(const double *,
+                              const double *,
                               double);
 
         double dos_integration(double *,
@@ -95,7 +95,7 @@ namespace PHON_NS
                           double,
                           double) const;
 
-        inline double volume(const int *);
+        inline double volume(const int *) const;
 
         std::vector<tetra_pair> tetra_data;
 

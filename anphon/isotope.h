@@ -26,7 +26,7 @@ namespace PHON_NS
         double **gamma_isotope;
 
         void setup_isotope_scattering();
-        void calc_isotope_selfenergy_all();
+        void calc_isotope_selfenergy_all() const;
 
     private:
         void set_default_variables();

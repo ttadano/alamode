@@ -27,7 +27,6 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <set>
 #include <vector>
 
 using namespace PHON_NS;
@@ -223,7 +222,7 @@ void Conductivity::prepare_restart()
                     writes->fs_result >> nk_tmp >> ns_tmp;
                     writes->fs_result >> multiplicity;
 
-                    unsigned int nks_tmp = (nk_tmp - 1) * ns + ns_tmp - 1;
+                    const auto nks_tmp = (nk_tmp - 1) * ns + ns_tmp - 1;
 
                     for (i = 0; i < multiplicity; ++i) {
                         writes->fs_result >> vel_dummy[0] >> vel_dummy[1] >> vel_dummy[2];
@@ -264,7 +263,7 @@ void Conductivity::prepare_restart()
 
         for (i = 0; i < nks_done; ++i) {
 
-            std::set<int>::iterator it_set = vks_job.find(arr_done[i]);
+            auto it_set = vks_job.find(arr_done[i]);
 
             if (it_set == vks_job.end()) {
                 std::cout << " rank = " << mympi->my_rank
@@ -289,7 +288,7 @@ void Conductivity::calc_anharmonic_imagself()
 
     // Distribute (k,s) to individual MPI threads
 
-    unsigned int nks_g = vks_job.size();
+    const auto nks_g = vks_job.size();
     vks_l.clear();
 
     unsigned int icount = 0;
@@ -305,7 +304,7 @@ void Conductivity::calc_anharmonic_imagself()
         memory->allocate(nks_thread, mympi->nprocs);
     }
 
-    unsigned int nks_tmp = vks_l.size();
+    auto nks_tmp = vks_l.size();
     MPI_Gather(&nks_tmp, 1, MPI_UNSIGNED, &nks_thread[mympi->my_rank],
                1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
@@ -323,7 +322,7 @@ void Conductivity::calc_anharmonic_imagself()
         memory->deallocate(nks_thread);
     }
 
-    unsigned int nk_tmp = nks_g / mympi->nprocs + 1;
+    auto nk_tmp = nks_g / mympi->nprocs + 1;
 
     if (nks_g % mympi->nprocs != 0) {
         nk_tmp = nks_g / mympi->nprocs + 1;
@@ -348,10 +347,10 @@ void Conductivity::calc_anharmonic_imagself()
 
         } else {
 
-            unsigned int knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
-            unsigned int snum = iks % ns;
+            const auto knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
+            const auto snum = iks % ns;
 
-            double omega = dynamical->eval_phonon[knum][snum];
+            const auto omega = dynamical->eval_phonon[knum][snum];
 
             if (integration->ismear == 0 || integration->ismear == 1) {
                 anharmonic_core->calc_damping_smearing(ntemp,
@@ -393,18 +392,18 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
     for (unsigned int j = 0; j < np; ++j) {
 
-        unsigned int iks_g = ik * np + j + nshift;
+        const auto iks_g = ik * np + j + nshift;
 
         if (iks_g >= kpoint->nk_irred * ns) break;
 
         writes->fs_result << "#GAMMA_EACH" << std::endl;
         writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
 
-        unsigned int nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
+        const auto nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
 
         writes->fs_result << nk_equiv << std::endl;
         for (k = 0; k < nk_equiv; ++k) {
-            unsigned int ktmp = kpoint->kpoint_irred_all[iks_g / ns][k].knum;
+            const auto ktmp = kpoint->kpoint_irred_all[iks_g / ns][k].knum;
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
@@ -444,7 +443,7 @@ void Conductivity::compute_kappa()
 
         if (isotope->include_isotope) {
             for (iks = 0; iks < kpoint->nk_irred * ns; ++iks) {
-                unsigned int snum = iks % ns;
+                const auto snum = iks % ns;
                 if (dynamical->is_imaginary[iks / ns][snum]) {
                     for (i = 0; i < ntemp; ++i) {
                         lifetime[iks][i] = 0.0;
@@ -628,7 +627,7 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
     int nkr = kpoint->nk_irred;
 
     double *eval_tmp;
-    double tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
+    const auto tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
 
     std::vector<int> degeneracy_at_k;
 
@@ -638,18 +637,18 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
 
     memory->allocate(damping_sum, m);
 
-    for (int i = 0; i < nkr; ++i) {
-        int ik = kpoint->kpoint_irred_all[i][0].knum;
+    for (auto i = 0; i < nkr; ++i) {
+        const int ik = kpoint->kpoint_irred_all[i][0].knum;
 
         for (j = 0; j < ns; ++j) eval_tmp[j] = dynamical->eval_phonon[ik][j];
 
         degeneracy_at_k.clear();
 
-        double omega_prev = eval_tmp[0];
-        int ideg = 1;
+        auto omega_prev = eval_tmp[0];
+        auto ideg = 1;
 
         for (j = 1; j < ns; ++j) {
-            double omega_now = eval_tmp[j];
+            const auto omega_now = eval_tmp[j];
 
             if (std::abs(omega_now - omega_prev) < tol_omega) {
                 ++ideg;

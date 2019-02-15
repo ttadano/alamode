@@ -81,7 +81,7 @@ void Input::parce_input(int narg,
                     "&cell entry not found in the input file");
     parse_cell_parameter();
 
-    bool use_defaults_for_analysis = !locate_tag("&analysis");
+    const auto use_defaults_for_analysis = !locate_tag("&analysis");
     parse_analysis_vars(use_defaults_for_analysis);
 
     if (!locate_tag("&kpoint"))
@@ -106,7 +106,7 @@ void Input::parse_general_vars()
     int nkd;
     struct stat st;
     std::string str_tmp;
-    std::vector<std::string> input_list{
+    const std::vector<std::string> input_list{
         "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
         "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
         "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
@@ -136,13 +136,13 @@ void Input::parse_general_vars()
         }
     }
 
-    std::string prefix = general_var_dict["PREFIX"];
-    std::string mode = general_var_dict["MODE"];
-    std::string file_result = prefix + ".result";
+    const auto prefix = general_var_dict["PREFIX"];
+    auto mode = general_var_dict["MODE"];
+    auto file_result = prefix + ".result";
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
 
-    std::string fcsinfo = general_var_dict["FCSXML"];
+    const auto fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -327,7 +327,7 @@ void Input::parse_scph_vars()
     // Read input parameters in the &scph-field.
 
     struct stat st;
-    std::vector<std::string> input_list{
+    const std::vector<std::string> input_list{
         "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
         "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
         "LOWER_TEMP", "WARMSTART"
@@ -380,7 +380,7 @@ void Input::parse_scph_vars()
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
 
-    std::string str_tmp = scph_var_dict["KMESH_SCPH"];
+    auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
     if (!str_tmp.empty()) {
 
@@ -454,7 +454,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    std::vector<std::string> input_list{
+    const std::vector<std::string> input_list{
         "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
         "REALPART", "ISOTOPE", "ISOFACT",
         "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
@@ -899,7 +899,7 @@ void Input::parse_kpoints()
 }
 
 
-int Input::locate_tag(std::string key)
+int Input::locate_tag(const std::string &key)
 {
     int ret = 0;
     std::string line, line2;
@@ -1122,12 +1122,12 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 }
 
 
-bool Input::is_endof_entry(const std::string str) const
+bool Input::is_endof_entry(const std::string &str) const
 {
     return str[0] == '/';
 }
 
-void Input::split_str_by_space(const std::string str,
+void Input::split_str_by_space(const std::string &str,
                                std::vector<std::string> &str_vec) const
 {
     std::string str_tmp;
@@ -1148,7 +1148,7 @@ void Input::split_str_by_space(const std::string str,
 
 template <typename T>
 void Input::assign_val(T &val,
-                       const std::string key,
+                       const std::string &key,
                        std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.

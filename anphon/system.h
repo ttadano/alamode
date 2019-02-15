@@ -77,14 +77,14 @@ namespace PHON_NS
 
         double Tmin, Tmax, dT;
 
-        double volume(double [3],
-                      double [3],
-                      double [3]) const;
+        double volume(const double [3],
+                      const double [3],
+                      const double [3]) const;
 
         bool lspin, trevsym_mag;
         int noncollinear;
 
-        int get_atomic_number_by_name(const std::string);
+        int get_atomic_number_by_name(const std::string &);
 
     private:
         void set_default_variables();
@@ -100,10 +100,10 @@ namespace PHON_NS
                     double [3][3]) const;
 
         void setup_atomic_class(unsigned int,
-                                unsigned int *,
+                                const unsigned int *,
                                 double **);
 
-        void check_consistency_primitive_lattice();
+        void check_consistency_primitive_lattice() const;
 
         std::vector<std::string> element_names{
             "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",

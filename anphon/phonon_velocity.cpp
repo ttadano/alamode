@@ -110,7 +110,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
     double *xk_tmp;
     double **omega_shift, *omega_tmp;
 
-    double h = 1.0e-4;
+    const auto h = 1.0e-4;
 
     std::complex<double> **evec_tmp;
 
@@ -223,14 +223,14 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
 {
     unsigned int j;
     unsigned int idiff;
-    unsigned int n = dynamical->neval;
+    const auto n = dynamical->neval;
     double **xk_shift;
     std::complex<double> **evec_tmp;
     double **omega_shift, *omega_tmp;
     double **kvec_na_tmp;
-    double h = 1.0e-4;
+    const auto h = 1.0e-4;
 
-    unsigned int ndiff = 2;
+    const unsigned int ndiff = 2;
 
     memory->allocate(omega_shift, ndiff, n);
     memory->allocate(xk_shift, ndiff, 3);
@@ -256,7 +256,7 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
         rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->rlavec_p, 'T');
         rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
 
-        double norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
+        auto norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
             + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
             + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
 
@@ -273,9 +273,12 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
 
         for (idiff = 0; idiff < ndiff; ++idiff) {
 
-            dynamical->eval_k(xk_shift[idiff], kvec_na_tmp[0],
-                              fcs_phonon->fc2_ext, omega_shift[idiff],
-                              evec_tmp, false);
+            dynamical->eval_k(xk_shift[idiff],
+                              kvec_na_tmp[0],
+                              fcs_phonon->fc2_ext,
+                              omega_shift[idiff],
+                              evec_tmp,
+                              false);
 
         }
 
@@ -294,16 +297,17 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
     memory->deallocate(kvec_na_tmp);
 }
 
-double Phonon_velocity::diff(double *f,
+double Phonon_velocity::diff(const double *f,
                              const unsigned int n,
-                             double h) const
+                             const double h) const
 {
-    double df;
+    auto df = 0.0;
 
     if (n == 2) {
         df = (f[1] - f[0]) / (2.0 * h);
     } else {
-        error->exit("diff", "Numerical differentiation of n > 2 is not supported yet.");
+        error->exit("diff",
+                    "Numerical differentiation of n > 2 is not supported yet.");
     }
 
     return df;
