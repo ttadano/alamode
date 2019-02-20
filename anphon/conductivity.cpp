@@ -39,7 +39,7 @@ Conductivity::Conductivity(PHON *phon): Pointers(phon)
 Conductivity::~Conductivity()
 {
     deallocate_variables();
-};
+}
 
 void Conductivity::set_default_variables()
 {
@@ -109,7 +109,11 @@ void Conductivity::setup_kappa()
         memory->allocate(vel, nk, ns, 3);
 
         for (i = 0; i < nk; ++i) {
-            phonon_velocity->phonon_vel_k(kpoint->xk[i], vel[i]);
+//            phonon_velocity->phonon_vel_k(kpoint->xk[i], vel[i]);
+            phonon_velocity->phonon_vel_k2(kpoint->xk[i],
+                              dynamical->eval_phonon[i],
+                              dynamical->evec_phonon[i],
+                              vel[i]);
 
             // Generate phonon velocity in Cartesian coordinate
             for (j = 0; j < ns; ++j) {
@@ -119,30 +123,33 @@ void Conductivity::setup_kappa()
             }
         }
 
-        // nondiag_hflux = 1;
-
         if (nondiag_hflux) {
             memory->allocate(velmat, nk, ns, ns, 3);
             std::cout << std::scientific;
 
             for (i = 0; i < nk; ++i) {
-     //           std::cout << "k = " << i << std::endl;
                 phonon_velocity->velocity_matrix_analytic(kpoint->xk[i],
                                                           fcs_phonon->fc2_ext,
                                                           dynamical->eval_phonon[i],
                                                           dynamical->evec_phonon[i],
                                                           velmat[i]);
 
+                double symmetrizer_k[3][3];
+                std::vector<int> smallgroup_k;
+                kpoint->get_small_group_k(kpoint->xk[i], smallgroup_k, symmetrizer_k);
+
                 for (j = 0; j < ns; ++j) {
                     for (k = 0; k < ns; ++k) {
+                        rotvec(velmat[i][j][k], velmat[i][j][k], symmetrizer_k, 'T');
                         rotvec(velmat[i][j][k], velmat[i][j][k], system->lavec_p);
                         for (auto mu = 0; mu < 3; ++mu) {
                             velmat[i][j][k][mu] *= Bohr_in_Angstrom * 1.0e-10 / (time_ry * 2.0 * pi);
                         }
                     }
                 }
-
-                /*for (auto mu = 0; mu < 3; ++mu) {
+                std::cout << "k = " << i << std::endl;
+                std::cout << kpoint->xk[i][0] << "  " << kpoint->xk[i][1] << " " << kpoint->xk[i][2] << std::endl;
+                for (auto mu = 0; mu < 3; ++mu) {
                     std::cout << "mu = " << mu << std::endl;
 
                     std::cout << "Diagonal:\n";
@@ -154,15 +161,14 @@ void Conductivity::setup_kappa()
                     std::cout << "Full:\n";
                     for (j = 0; j < ns; ++j) {
                         for (k = 0; k < ns; ++k) {
-                            std::cout << std::setw(20) << velmat[i][j][k][mu].real() << std::setw(15) << velmat[i][j][k]
-                            [
-                                mu].imag();
+                            std::cout << std::setw(20) << velmat[i][j][k][mu].real() 
+                                      << std::setw(15) << velmat[i][j][k][mu].imag();
                         }
                         std::cout << std::endl;
                     }
                     std::cout << std::endl;
                 }
-                std::cout << std::endl;*/
+                std::cout << std::endl;
             }
         }
 
@@ -439,7 +445,9 @@ void Conductivity::compute_kappa()
         memory->allocate(kappa_mode, ntemp, 9, ns, kpoint->nk_irred);
         memory->allocate(gamma_total, kpoint->nk_irred * ns, ntemp);
 
-        average_self_energy_at_degenerate_point(kpoint->nk_irred * ns, ntemp, damping3);
+        average_self_energy_at_degenerate_point(kpoint->nk_irred * ns,
+                                                ntemp, 
+                                                damping3);
 
         if (isotope->include_isotope) {
             for (iks = 0; iks < kpoint->nk_irred * ns; ++iks) {
@@ -511,11 +519,12 @@ void Conductivity::compute_kappa()
                                 }
 
                                 if (thermodynamics->classical) {
-                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv_classical(
-                                            omega, Temperature[i])
+                                    kappa_mode[i][3 * j + k][is][ik] 
+                                        = thermodynamics->Cv_classical(omega, Temperature[i])
                                         * vv_tmp * lifetime[ns * ik + is][i];
                                 } else {
-                                    kappa_mode[i][3 * j + k][is][ik] = thermodynamics->Cv(omega, Temperature[i])
+                                    kappa_mode[i][3 * j + k][is][ik] 
+                                        = thermodynamics->Cv(omega, Temperature[i])
                                         * vv_tmp * lifetime[ns * ik + is][i];
                                 }
 
@@ -558,7 +567,6 @@ void Conductivity::compute_kappa()
 
                                     for (ik = 0; ik < kpoint->nk_irred; ++ik) {
                                         const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-
                                         const auto omega1 = dynamical->eval_phonon[knum][is];
                                         const auto omega2 = dynamical->eval_phonon[knum][js];
 
@@ -583,7 +591,6 @@ void Conductivity::compute_kappa()
                                                            2.0))
                                             * vv_tmp;
                                     }
-
                                 }
                             }
                         }
@@ -759,3 +766,5 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
 
     std::cout << " done!" << std::endl;
 }
+
+

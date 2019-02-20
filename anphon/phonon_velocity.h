@@ -29,6 +29,11 @@ namespace PHON_NS
         void phonon_vel_k(const double *,
                           double **) const;
 
+                void phonon_vel_k2(const double *,
+                           const double *,
+                           std::complex<double> **,
+                           double **) const;
+
         void velocity_matrix_analytic(const double *xk_in,
                                       const std::vector<FcsClassExtent> &fc2_in,
                                       const double *omega_in,
@@ -56,10 +61,10 @@ namespace PHON_NS
         void calc_phonon_vel_mesh(double **,
                                   double ***) const;
 
-        void phonon_vel_k2(const double *,
-                           const double *,
-                           std::complex<double> **,
-                           double **) const;
+        // void phonon_vel_k2(const double *,
+        //                    const double *,
+        //                    std::complex<double> **,
+        //                    double **) const;
 
 
         void calc_derivative_dynmat_k(const double *,

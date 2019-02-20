@@ -61,5 +61,8 @@ namespace PHON_NS
         void compute_frequency_resolved_kappa(int,
                                               double ****,
                                               int);
+
+        void compute_kappa_diagonal(double ***kappa);
+        void compute_kappa_nondiagonal(double ***kappa_nondiagonal);
     };
 }

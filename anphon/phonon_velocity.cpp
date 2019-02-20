@@ -19,6 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "memory.h"
 #include "system.h"
 #include <complex>
+#include <iomanip>
 
 using namespace PHON_NS;
 
@@ -331,11 +332,9 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
     double **eval_tmp;
 
     if (dynamical->nonanalytic) {
-
         error->exit("phonon_vel_k2",
                     "Sorry. Analytic calculation of \
             group velocity is not supported for NONANALYTIC>0.");
-
     }
 
     memory->allocate(ddyn, 3, nmode, nmode);
@@ -473,6 +472,15 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
     double symmetrizer_k[3][3];
 
     kpoint->get_small_group_k(xk_in, smallgroup_k, symmetrizer_k);
+
+    // std::cout << "symmetrizer_k" << std::endl;
+    // for (i = 0; i < 3; ++i) {
+    //     for (j = 0; j < 3; ++j) {
+    //         std::cout << std::setw(15) << symmetrizer_k[i][j];
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // std::cout << std::endl;
 
     for (i = 0; i < nmode; ++i) {
         rotvec(vel_out[i], vel_out[i], symmetrizer_k, 'T');
@@ -618,6 +626,8 @@ void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
 
         rotvec(vec, vec, system->lavec_s);
         rotvec(vec, vec, system->rlavec_p);
+        rotvec(vec2, vec2, system->lavec_s);
+        rotvec(vec2, vec2, system->rlavec_p);
 
         auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 

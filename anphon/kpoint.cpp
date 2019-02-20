@@ -1042,6 +1042,7 @@ void Kpoint::get_small_group_k(const double *xk_in,
     double srot[3][3];
     double srot_inv[3][3], srot_inv_t[3][3];
     double xk_orig[3], xk_sym[3];
+    double xk_diff[3];
 
     sym_list.clear();
 
@@ -1050,6 +1051,8 @@ void Kpoint::get_small_group_k(const double *xk_in,
             S_avg[i][j] = 0.0;
         }
     }
+
+    for (i = 0; i < 3; ++i) xk_orig[i] = xk_in[i];
 
     for (auto isym = 0; isym < symmetry->nsym; ++isym) {
 
@@ -1061,16 +1064,16 @@ void Kpoint::get_small_group_k(const double *xk_in,
 
         invmat3(srot_inv, srot);
         transpose3(srot_inv_t, srot_inv);
-
-        for (i = 0; i < 3; ++i) xk_orig[i] = xk_in[i];
-
         rotvec(xk_sym, xk_orig, srot_inv_t);
-        for (i = 0; i < 3; ++i) xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
 
+        for (i = 0; i < 3; ++i) {
+            xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+            xk_diff[i] = std::fmod(xk_sym[i] - xk_orig[i], 1.0);
+        }
 
-        if (std::sqrt(std::pow(xk_sym[0] - xk_orig[0], 2)
-            + std::pow(xk_sym[1] - xk_orig[1], 2)
-            + std::pow(xk_sym[2] - xk_orig[2], 2)) < 1.0e-10) {
+        if (std::sqrt(std::pow(xk_diff[0], 2) 
+                    + std::pow(xk_diff[1], 2) 
+                    + std::pow(xk_diff[2], 2)) < eps10) {
             sym_list.push_back(isym);
 
             for (i = 0; i < 3; ++i) {

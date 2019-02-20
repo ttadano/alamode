@@ -7,7 +7,7 @@
 
 MPICXX = g++-8
 CXXFLAGS = -O3 -std=c++11 -fopenmp
-INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/opt/openmpi/include
+INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/opt/openmpi/include -I/usr/local/include -I/usr/local/include/eigen3
 
 LINKER = ${MPICXX}
 
@@ -16,8 +16,8 @@ LINKER = ${MPICXX}
 ## Yosemite
 LDFLAGS = -framework Accelerate
 
-LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi_cxx -lmpi -lgomp
-LIBS = ${LAPACK}  -lfftw3
+LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi -lgomp
+LIBS = ${LAPACK}  -L/usr/local/lib -lfftw3
 
 #----------------------------------------------
 # General rules
