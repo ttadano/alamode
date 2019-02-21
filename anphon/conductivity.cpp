@@ -147,6 +147,7 @@ void Conductivity::setup_kappa()
                         }
                     }
                 }
+                /*
                 std::cout << "k = " << i << std::endl;
                 std::cout << kpoint->xk[i][0] << "  " << kpoint->xk[i][1] << " " << kpoint->xk[i][2] << std::endl;
                 for (auto mu = 0; mu < 3; ++mu) {
@@ -169,6 +170,7 @@ void Conductivity::setup_kappa()
                     std::cout << std::endl;
                 }
                 std::cout << std::endl;
+                */
             }
         }
 
