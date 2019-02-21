@@ -485,6 +485,7 @@ void Conductivity::compute_kappa()
                             lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
                         } else {
                             lifetime[iks][i] = 0.0;
+                            gamma_total[iks][i] = 1.0e+100;
                         }
                     }
                 }
@@ -527,7 +528,6 @@ void Conductivity::compute_kappa()
                                         = thermodynamics->Cv(omega, Temperature[i])
                                         * vv_tmp * lifetime[ns * ik + is][i];
                                 }
-
 
                                 // Convert to SI unit
                                 kappa_mode[i][3 * j + k][is][ik] *= factor_toSI;
@@ -583,25 +583,21 @@ void Conductivity::compute_kappa()
                                         kappa_nondiagonal[i][j][k]
                                             += 2.0 * (omega1 * omega2) / (omega1 + omega2)
                                             * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
-                                                + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
-                                            * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                             + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
+                                            * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
                                             / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                                + std::pow(gamma_total[ik * ns + is][i]
-                                                           + gamma_total[ik * ns + js][i],
-                                                           2.0))
+                                                + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                               + gamma_total[ik * ns + js][i], 2.0))
                                             * vv_tmp;
                                     }
                                 }
                             }
                         }
-
                         kappa_nondiagonal[i][j][k] *= factor_toSI * 1.0e+12 * time_ry / static_cast<double>(nk);
                     }
                 }
             }
-
         }
-
 
         memory->deallocate(lifetime);
         memory->deallocate(gamma_total);
