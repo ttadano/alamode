@@ -16,7 +16,7 @@ LINKER = ${MPICXX}
 ## Yosemite
 LDFLAGS = -framework Accelerate
 
-LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi_cxx -lmpi -lgomp
+LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi -lgomp
 LIBS = ${LAPACK}  -lfftw3
 
 #----------------------------------------------
