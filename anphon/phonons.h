@@ -59,9 +59,9 @@ namespace PHON_NS
         std::string mode;
         bool restart_flag;
 
-        void execute_phonons();
-        void execute_RTA();
-        void execute_self_consistent_phonon();
+        void execute_phonons() const;
+        void execute_RTA() const;
+        void execute_self_consistent_phonon() const;
         void setup_base() const;
     };
 }

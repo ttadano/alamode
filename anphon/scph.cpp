@@ -2560,7 +2560,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             mat_tmp = evec_tmp.transpose() * saes.eigenvectors();
             Dymat = mat_tmp * Dymat * mat_tmp.adjoint();
 
-#ifdef _DEBUG
+#ifdef _DEBUG2
             Dymat_sym = Dymat;
             symmetrize_dynamical_matrix(ik, Dymat_sym);
             std::complex<double> **dymat_exact;
@@ -2592,7 +2592,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         replicate_dymat_for_all_kpoints(dymat_q);
 
-#ifdef _DEBUG
+#ifdef _DEBUG2
         for (ik = 0; ik < nk_interpolate; ++ik) {
 
             knum = kmap_interpolate_to_scph[ik];

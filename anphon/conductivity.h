@@ -34,9 +34,9 @@ namespace PHON_NS
         double **damping3;
         double ***kappa;
         double ***kappa_spec;
-        std::complex<double> ***kappa_nondiagonal;
+        double ***kappa_coherent;
         double *Temperature;
-        int nondiag_hflux;
+        int calc_coherent;
 
     private:
         void set_default_variables();
@@ -62,7 +62,7 @@ namespace PHON_NS
                                               double ****,
                                               int);
 
-        void compute_kappa_diagonal(double ***kappa);
-        void compute_kappa_nondiagonal(double ***kappa_nondiagonal);
+        void compute_kappa_intraband(double ***kappa_intra, double **lifetime);
+        void compute_kappa_coherent(double ***kappa_nondiagonal, double **gamma_total);
     };
 }
