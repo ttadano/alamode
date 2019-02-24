@@ -1460,6 +1460,7 @@ void Writes::write_kappa() const
 
         auto file_kappa = input->job_title + ".kl";
         auto file_kappa2 = input->job_title + ".kl_spec";
+        auto file_kappa_coherent = input->job_title + ".kl_coherent";
 
         std::ofstream ofs_kl;
 
@@ -1514,11 +1515,37 @@ void Writes::write_kappa() const
             ofs_kl.close();
         }
 
+        if (conductivity->calc_coherent) {
+            ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
+            if (!ofs_kl) error->exit("write_kappa", "Could not open file_kappa_coherent");
+
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+                std::endl;
+
+            if (isotope->include_isotope) {
+                ofs_kl << "# Isotope effects are included." << std::endl;
+            }
+
+            for (i = 0; i < conductivity->ntemp; ++i) {
+                ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                    << conductivity->Temperature[i];
+                for (j = 0; j < 3; ++j) {
+                    ofs_kl << std::setw(15) << std::fixed
+                        << std::setprecision(4) << conductivity->kappa_coherent[i][j][j];
+                }
+                ofs_kl << std::endl;
+            }
+            ofs_kl.close();
+        }
+
         std::cout << std::endl;
         std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
         std::cout << " Lattice thermal conductivity is stored in the file " << file_kappa << std::endl;
         if (conductivity->calc_kappa_spec) {
             std::cout << " Thermal conductivity spectra is stored in the file " << file_kappa2 << std::endl;
+        }
+        if (conductivity->calc_coherent) {
+            std::cout << " Coherent part is stored in the file " << file_kappa_coherent << std::endl;
         }
     }
 }

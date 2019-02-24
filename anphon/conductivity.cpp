@@ -490,87 +490,12 @@ void Conductivity::compute_kappa()
         compute_kappa_intraband(kappa, lifetime);
         memory->deallocate(lifetime);
 
-
-        /*
-        
-                memory->allocate(kappa, ntemp, 3, 3);
-        
-                for (i = 0; i < ntemp; ++i) {
-                    for (unsigned int j = 0; j < 3; ++j) {
-                        for (unsigned int k = 0; k < 3; ++k) {
-        
-                            if (Temperature[i] < eps) {
-                                // Set kappa as zero when T = 0.
-                                for (is = 0; is < ns; ++is) {
-                                    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                        kappa_mode[i][3 * j + k][is][ik] = 0.0;
-                                    }
-                                }
-                            } else {
-                                for (is = 0; is < ns; ++is) {
-                                    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                        const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-                                        const auto omega = dynamical->eval_phonon[knum][is];
-                                        auto vv_tmp = 0.0;
-                                        const auto nk_equiv = kpoint->kpoint_irred_all[ik].size();
-        
-                                        // Accumulate group velocity (diad product) for the reducible k points
-                                        for (auto ieq = 0; ieq < nk_equiv; ++ieq) {
-                                            const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
-                                            vv_tmp += vel[ktmp][is][j] * vel[ktmp][is][k];
-                                        }
-        
-                                        if (thermodynamics->classical) {
-                                            kappa_mode[i][3 * j + k][is][ik]
-                                                = thermodynamics->Cv_classical(omega, Temperature[i])
-                                                * vv_tmp * lifetime[ns * ik + is][i];
-                                        } else {
-                                            kappa_mode[i][3 * j + k][is][ik]
-                                                = thermodynamics->Cv(omega, Temperature[i])
-                                                * vv_tmp * lifetime[ns * ik + is][i];
-                                        }
-        
-                                        // Convert to SI unit
-                                        kappa_mode[i][3 * j + k][is][ik] *= factor_toSI;
-        
-                                    }
-                                }
-                            }
-        
-                            kappa[i][j][k] = 0.0;
-        
-                            for (is = 0; is < ns; ++is) {
-                                for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                    kappa[i][j][k] += kappa_mode[i][3 * j + k][is][ik];
-                                }
-                            }
-        
-                            kappa[i][j][k] /= static_cast<double>(nk);
-                        }
-                    }
-                }
-                 
-         */
-
-
         if (calc_coherent) {
             memory->allocate(kappa_coherent, ntemp, 3, 3);
             compute_kappa_coherent(kappa_coherent, gamma_total);
         }
 
         memory->deallocate(gamma_total);
-
-
-        /*  std::cout << "#kappa nondiagonal\n";
-        for (i = 0; i < ntemp; ++i) {
-            for (unsigned int j = 0; j < 3; ++j) {
-                for (unsigned int k = 0; k < 3; ++k) {
-                    std::cout << std::setw(20) << kappa_coherent[i][j][k];
-                }
-            }
-            std::cout << '\n';
-        }
-        std::cout << '\n';*/
     }
 }
 
@@ -722,7 +647,6 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
 void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                                           double **gamma_total) const
 {
-    int i, is, js, ik;
     int ib;
     const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
 
@@ -733,21 +657,21 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
 
     const auto common_factor = factor_toSI * 1.0e+12 * time_ry / static_cast<double>(nk);
 
-    for (i = 0; i < ntemp; ++i) {
+    for (auto i = 0; i < ntemp; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
             for (unsigned int k = 0; k < 3; ++k) {
 
                 kappa_coherent[i][j][k] = 0.0;
 
                 if (Temperature[i] > eps) {
-
+#pragma omp parallel for 
                     for (ib = 0; ib < ns2; ++ib) {
                         kappa_tmp[ib] = czero;
-                        is = ib / ns;
-                        js = ib % ns;
+                        const int is = ib / ns;
+                        const int js = ib % ns;
                         if (js == is) continue; // skip the diagonal component
 
-                        for (ik = 0; ik < kpoint->nk_irred; ++ik) {
+                        for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
                             const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
                             const auto omega1 = dynamical->eval_phonon[knum][is];
                             const auto omega2 = dynamical->eval_phonon[knum][js];
@@ -761,7 +685,6 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                                 const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
-
 
                             kappa_tmp[ib] += 2.0 * (omega1 * omega2) / (omega1 + omega2)
                                 * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
