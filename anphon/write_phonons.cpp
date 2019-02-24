@@ -40,10 +40,23 @@ using namespace PHON_NS;
 Writes::Writes(PHON *phon): Pointers(phon)
 {
     Ry_to_kayser = Hz_to_kayser / time_ry;
+
+    print_ucorr = false;
+    print_xsf = false;
+    print_anime = false;
+    print_msd = false;
+    anime_cellsize[0] = 0;
+    anime_cellsize[1] = 0;
+    anime_cellsize[2] = 0;
     shift_ucorr[0] = 0;
     shift_ucorr[1] = 0;
     shift_ucorr[2] = 0;
-    print_ucorr = false;
+    anime_kpoint[0] = 0.0;
+    anime_kpoint[1] = 0.0;
+    anime_kpoint[2] = 0.0;
+
+    file_result = "";
+    anime_format = "xyz";
 };
 
 Writes::~Writes() {};
@@ -408,10 +421,10 @@ void Writes::print_phonon_energy() const
 {
     unsigned int i;
     unsigned int ik, is;
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
 
-    double kayser_to_THz = 0.0299792458;
+    const auto kayser_to_THz = 0.0299792458;
 
     std::cout << std::endl;
     std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
@@ -460,7 +473,7 @@ void Writes::print_phonon_energy() const
 
             std::cout << "   Mode, Frequency " << std::endl;
 
-            unsigned int knum = kpoint->kpoint_irred_all[ik][0].knum;
+            const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
 
             for (is = 0; is < ns; ++is) {
                 std::cout << std::setw(7) << is + 1;
@@ -482,7 +495,6 @@ void Writes::write_phonon_info()
     if (nbands < 0) {
         nbands = 3 * system->natmin;
     }
-
 
     if (print_anime) {
         write_normal_mode_animation(anime_kpoint, anime_cellsize);
@@ -558,7 +570,7 @@ void Writes::write_phonon_info()
 void Writes::write_phonon_bands() const
 {
     std::ofstream ofs_bands;
-    std::string file_bands = input->job_title + ".bands";
+    auto file_bands = input->job_title + ".bands";
 
     ofs_bands.open(file_bands.c_str(), std::ios::out);
     if (!ofs_bands)
@@ -567,16 +579,16 @@ void Writes::write_phonon_bands() const
 
     unsigned int i, j;
 
-    unsigned int nk = kpoint->nk;
+    const auto nk = kpoint->nk;
 
-    double *kaxis = kpoint->kaxis;
-    double **eval = dynamical->eval_phonon;
+    const auto kaxis = kpoint->kaxis;
+    const auto eval = dynamical->eval_phonon;
 
-    int kcount = 0;
+    auto kcount = 0;
 
     std::string str_tmp = "NONE";
-    std::string str_kpath = "";
-    std::string str_kval = "";
+    std::string str_kpath;
+    std::string str_kval;
 
     for (i = 0; i < kpoint->kpInp.size(); ++i) {
         if (str_tmp != kpoint->kpInp[i].kpelem[0]) {
@@ -629,7 +641,7 @@ void Writes::write_phonon_bands() const
 
     if (dynamical->band_connection == 2) {
         std::ofstream ofs_connect;
-        std::string file_connect = input->job_title + ".connection";
+        auto file_connect = input->job_title + ".connection";
 
         ofs_connect.open(file_connect.c_str(), std::ios::out);
         if (!ofs_connect)
@@ -656,15 +668,15 @@ void Writes::write_phonon_bands() const
 void Writes::write_phonon_vel() const
 {
     std::ofstream ofs_vel;
-    std::string file_vel = input->job_title + ".phvel";
+    auto file_vel = input->job_title + ".phvel";
 
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if (!ofs_vel) error->exit("write_phonon_vel", "cannot open file_vel");
 
-    unsigned int nk = kpoint->nk;
+    const auto nk = kpoint->nk;
 
-    double *kaxis = kpoint->kaxis;
-    double Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
+    auto kaxis = kpoint->kaxis;
+    const auto Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
 
     ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
@@ -687,17 +699,16 @@ void Writes::write_phonon_vel() const
 void Writes::write_phonon_vel_all() const
 {
     std::ofstream ofs_vel;
-    std::string file_vel = input->job_title + ".phvel_all";
+    auto file_vel = input->job_title + ".phvel_all";
 
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if (!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
 
     unsigned int k;
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
 
-    double Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
-    double **eval = dynamical->eval_phonon;
+    const auto Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
+    const auto eval = dynamical->eval_phonon;
 
     ofs_vel << "# Phonon group velocity at all reducible k points." << std::endl;
     ofs_vel << "# irred. knum, knum, mode num, frequency [cm^-1], "
@@ -709,7 +720,7 @@ void Writes::write_phonon_vel_all() const
         ofs_vel << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
 
         for (unsigned int j = 0; j < kpoint->kpoint_irred_all[i].size(); ++j) {
-            unsigned int knum = kpoint->kpoint_irred_all[i][j].knum;
+            const auto knum = kpoint->kpoint_irred_all[i][j].knum;
 
             ofs_vel << "## xk =    ";
             for (k = 0; k < 3; ++k)
@@ -747,7 +758,7 @@ void Writes::write_phonon_dos() const
 {
     int i;
     std::ofstream ofs_dos;
-    std::string file_dos = input->job_title + ".dos";
+    auto file_dos = input->job_title + ".dos";
 
     ofs_dos.open(file_dos.c_str(), std::ios::out);
     if (!ofs_dos) error->exit("write_phonon_dos", "cannot open file_dos");
@@ -788,7 +799,7 @@ void Writes::write_phonon_dos() const
             ofs_dos << std::setw(15) << dos->dos_phonon[i];
         }
         if (dos->projected_dos) {
-            for (int iat = 0; iat < system->natmin; ++iat) {
+            for (auto iat = 0; iat < system->natmin; ++iat) {
                 ofs_dos << std::setw(15) << dos->pdos_phonon[iat][i];
             }
         }
@@ -811,22 +822,21 @@ void Writes::write_phonon_dos() const
 void Writes::write_two_phonon_dos() const
 {
     std::ofstream ofs_tdos;
-
-    std::string file_tdos = input->job_title + ".tdos";
+    auto file_tdos = input->job_title + ".tdos";
     ofs_tdos.open(file_tdos.c_str(), std::ios::out);
 
     ofs_tdos << "# Two-phonon DOS (TDOS) for all irreducible k points. " << std::endl;
     ofs_tdos << "# Energy [cm^-1], emission delta(e-e1-e2), absorption delta (e-e1+e2)" << std::endl;
 
-    int n = dos->n_energy;
+    const auto n = dos->n_energy;
 
-    for (int ik = 0; ik < kpoint->nk_irred; ++ik) {
+    for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
 
         ofs_tdos << "# Irred. kpoint : " << std::setw(5) << ik + 1 << std::endl;
-        for (int i = 0; i < n; ++i) {
+        for (auto i = 0; i < n; ++i) {
             ofs_tdos << std::setw(15) << dos->emin + dos->delta_e * static_cast<double>(i);
 
-            for (int j = 0; j < 2; ++j) ofs_tdos << std::setw(15) << dos->dos2_phonon[ik][i][j];
+            for (auto j = 0; j < 2; ++j) ofs_tdos << std::setw(15) << dos->dos2_phonon[ik][i][j];
             ofs_tdos << std::endl;
         }
         ofs_tdos << std::endl;
@@ -842,7 +852,7 @@ void Writes::write_scattering_phase_space() const
 {
     std::ofstream ofs_sps;
 
-    std::string file_sps = input->job_title + ".sps";
+    auto file_sps = input->job_title + ".sps";
     ofs_sps.open(file_sps.c_str(), std::ios::out);
 
     ofs_sps << "# Total scattering phase space (cm): "
@@ -850,10 +860,10 @@ void Writes::write_scattering_phase_space() const
     ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
     ofs_sps << "# Irred. k, mode, omega (cm^-1), P+ (absorption) (cm), P- (emission) (cm)" << std::endl;
 
-    for (int ik = 0; ik < kpoint->nk_irred; ++ik) {
-        unsigned int knum = kpoint->kpoint_irred_all[ik][0].knum;
+    for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
+        const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
 
-        for (int is = 0; is < dynamical->neval; ++is) {
+        for (auto is = 0; is < dynamical->neval; ++is) {
             ofs_sps << std::setw(5) << ik + 1;
             ofs_sps << std::setw(5) << is + 1;
             ofs_sps << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][is]);
@@ -875,15 +885,15 @@ void Writes::write_scattering_amplitude() const
 {
     int i, j;
     unsigned int knum;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
 
-    std::string file_w = input->job_title + ".sps_Bose";
+    auto file_w = input->job_title + ".sps_Bose";
     std::ofstream ofs_w;
 
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     ofs_w.open(file_w.c_str(), std::ios::out);
 
@@ -906,7 +916,7 @@ void Writes::write_scattering_amplitude() const
 
         for (unsigned int is = 0; is < ns; ++is) {
 
-            double omega = in_kayser(dynamical->eval_phonon[knum][is]);
+            const auto omega = in_kayser(dynamical->eval_phonon[knum][is]);
 
             for (j = 0; j < NT; ++j) {
                 ofs_w << std::setw(5) << i + 1 << std::setw(5) << is + 1 << std::setw(15) << omega;
@@ -930,7 +940,7 @@ void Writes::write_scattering_amplitude() const
 void Writes::write_normal_mode_direction() const
 {
     std::ofstream ofs_anime;
-    std::string file_anime = input->job_title + ".axsf";
+    auto file_anime = input->job_title + ".axsf";
 
     ofs_anime.open(file_anime.c_str(), std::ios::out);
     if (!ofs_anime) error->exit("write_mode_anime", "cannot open file_anime");
@@ -938,10 +948,10 @@ void Writes::write_normal_mode_direction() const
     ofs_anime.setf(std::ios::scientific);
 
     unsigned int i, j, k;
-    unsigned int natmin = system->natmin;
-    unsigned int nk = kpoint->nk;
+    const auto natmin = system->natmin;
+    const auto nk = kpoint->nk;
 
-    double force_factor = 100.0;
+    const auto force_factor = 100.0;
 
     double **xmod;
     std::string *kd_tmp;
@@ -978,10 +988,10 @@ void Writes::write_normal_mode_direction() const
         for (unsigned int imode = 0; imode < nbands; ++imode) {
             ofs_anime << "PRIMCOORD " << std::setw(10) << i + 1 << std::endl;
             ofs_anime << std::setw(10) << natmin << std::setw(10) << 1 << std::endl;
-            double norm = 0.0;
+            auto norm = 0.0;
 
             for (j = 0; j < 3 * natmin; ++j) {
-                std::complex<double> evec_tmp = dynamical->evec_phonon[ik][imode][j];
+                auto evec_tmp = dynamical->evec_phonon[ik][imode][j];
                 norm += std::pow(evec_tmp.real(), 2) + std::pow(evec_tmp.imag(), 2);
             }
 
@@ -989,7 +999,7 @@ void Writes::write_normal_mode_direction() const
 
             for (j = 0; j < natmin; ++j) {
 
-                unsigned int m = system->map_p2s[j][0];
+                const auto m = system->map_p2s[j][0];
 
                 ofs_anime << std::setw(10) << kd_tmp[j];
 
@@ -1019,10 +1029,10 @@ void Writes::write_normal_mode_direction() const
 void Writes::write_eigenvectors() const
 {
     unsigned int i, j;
-    unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
+    const auto nk = kpoint->nk;
+    const auto neval = dynamical->neval;
     std::ofstream ofs_evec;
-    std::string file_evec = input->job_title + ".evec";
+    auto file_evec = input->job_title + ".evec";
 
     ofs_evec.open(file_evec.c_str(), std::ios::out);
     if (!ofs_evec) error->exit("write_eigenvectors", "cannot open file_evec");
@@ -1090,14 +1100,14 @@ double Writes::in_kayser(const double x) const
 
 void Writes::write_thermodynamics() const
 {
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
 
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_thermo;
-    std::string file_thermo = input->job_title + ".thermo";
+    auto file_thermo = input->job_title + ".thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if (!ofs_thermo) error->exit("write_thermodynamics", "cannot open file_thermo");
     if (thermodynamics->calc_FE_bubble) {
@@ -1116,7 +1126,7 @@ void Writes::write_thermodynamics() const
     }
 
     for (unsigned int i = 0; i < NT; ++i) {
-        double T = Tmin + dT * static_cast<double>(i);
+        const auto T = Tmin + dT * static_cast<double>(i);
 
         ofs_thermo << std::setw(16) << std::fixed << T;
         ofs_thermo << std::setw(18) << std::scientific << thermodynamics->Cv_tot(T) / k_Boltzmann;
@@ -1145,13 +1155,12 @@ void Writes::write_gruneisen()
 
         std::ofstream ofs_gruneisen;
 
-        std::string file_gru = input->job_title + ".gruneisen";
+        auto file_gru = input->job_title + ".gruneisen";
         ofs_gruneisen.open(file_gru.c_str(), std::ios::out);
         if (!ofs_gruneisen) error->exit("write_gruneisen", "cannot open file_vel");
 
-        unsigned int nk = kpoint->nk;
-
-        double *kaxis = kpoint->kaxis;
+        const auto nk = kpoint->nk;
+        const auto kaxis = kpoint->kaxis;
 
         ofs_gruneisen << "# k-axis, gamma" << std::endl;
         ofs_gruneisen.setf(std::ios::fixed);
@@ -1172,12 +1181,12 @@ void Writes::write_gruneisen()
     } else {
 
         std::ofstream ofs_gruall;
-        std::string file_gruall = input->job_title + ".gru_all";
+        auto file_gruall = input->job_title + ".gru_all";
         ofs_gruall.open(file_gruall.c_str(), std::ios::out);
         if (!ofs_gruall) error->exit("write_gruneisen", "cannot open file_gruall");
 
-        unsigned int nk = kpoint->nk;
-        unsigned int ns = dynamical->neval;
+        const auto nk = kpoint->nk;
+        const auto ns = dynamical->neval;
 
         ofs_gruall << "# knum, snum, omega [cm^-1], gruneisen parameter" << std::endl;
 
@@ -1209,7 +1218,7 @@ void Writes::write_msd() const
 {
     // Write room mean square displacement of atoms
 
-    std::string file_rmsd = input->job_title + ".msd";
+    auto file_rmsd = input->job_title + ".msd";
     std::ofstream ofs_rmsd;
 
     const auto ns = dynamical->neval;
@@ -1249,12 +1258,12 @@ void Writes::write_scph_msd(double ***eval,
                             std::complex<double> ****evec) const
 {
     unsigned int i, iT;
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     double *Cv;
     double temp;
     double **msd;
@@ -1267,11 +1276,11 @@ void Writes::write_scph_msd(double ***eval,
         temp = Tmin + static_cast<double>(iT) * dT;
 
         for (i = 0; i < ns; ++i) {
-            double tmp = 0.0;
+            auto tmp = 0.0;
 
             for (unsigned int ik = 0; ik < nk; ++ik) {
                 for (unsigned int is = 0; is < ns; ++is) {
-                    double omega = eval[iT][ik][is];
+                    const auto omega = eval[iT][ik][is];
 
                     if (omega < eps8) continue;
                     if (thermodynamics->classical) {
@@ -1289,7 +1298,7 @@ void Writes::write_scph_msd(double ***eval,
     }
 
     std::ofstream ofs_msd;
-    std::string file_msd = input->job_title + ".scph_msd";
+    auto file_msd = input->job_title + ".scph_msd";
     ofs_msd.open(file_msd.c_str(), std::ios::out);
     if (!ofs_msd) error->exit("write_scph_msd", "cannot open file_thermo");
     ofs_msd << "# Mean Square Displacements at a function of temperature." << std::endl;
@@ -1449,8 +1458,9 @@ void Writes::write_kappa() const
     if (mympi->my_rank == 0) {
         int i, j, k;
 
-        std::string file_kappa = input->job_title + ".kl";
-        std::string file_kappa2 = input->job_title + ".kl_spec";
+        auto file_kappa = input->job_title + ".kl";
+        auto file_kappa2 = input->job_title + ".kl_spec";
+        auto file_kappa_coherent = input->job_title + ".kl_coherent";
 
         std::ofstream ofs_kl;
 
@@ -1503,7 +1513,29 @@ void Writes::write_kappa() const
                 ofs_kl << std::endl;
             }
             ofs_kl.close();
+        }
 
+        if (conductivity->calc_coherent) {
+            ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
+            if (!ofs_kl) error->exit("write_kappa", "Could not open file_kappa_coherent");
+
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+                std::endl;
+
+            if (isotope->include_isotope) {
+                ofs_kl << "# Isotope effects are included." << std::endl;
+            }
+
+            for (i = 0; i < conductivity->ntemp; ++i) {
+                ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                    << conductivity->Temperature[i];
+                for (j = 0; j < 3; ++j) {
+                    ofs_kl << std::setw(15) << std::fixed
+                        << std::setprecision(4) << conductivity->kappa_coherent[i][j][j];
+                }
+                ofs_kl << std::endl;
+            }
+            ofs_kl.close();
         }
 
         std::cout << std::endl;
@@ -1512,20 +1544,23 @@ void Writes::write_kappa() const
         if (conductivity->calc_kappa_spec) {
             std::cout << " Thermal conductivity spectra is stored in the file " << file_kappa2 << std::endl;
         }
+        if (conductivity->calc_coherent) {
+            std::cout << " Coherent part is stored in the file " << file_kappa_coherent << std::endl;
+        }
     }
 }
 
 void Writes::write_selfenergy_isotope() const
 {
     unsigned int k;
-    unsigned int ns = dynamical->neval;
-    double **eval = dynamical->eval_phonon;
-    double **gamma_iso = isotope->gamma_isotope;
+    const auto ns = dynamical->neval;
+    const auto eval = dynamical->eval_phonon;
+    const auto gamma_iso = isotope->gamma_isotope;
 
     if (mympi->my_rank == 0) {
         if (isotope->include_isotope == 2) {
 
-            std::string file_iso = input->job_title + ".self_isotope";
+            auto file_iso = input->job_title + ".self_isotope";
             std::ofstream ofs_iso;
 
             ofs_iso.open(file_iso.c_str(), std::ios::out);
@@ -1539,7 +1574,7 @@ void Writes::write_selfenergy_isotope() const
                 ofs_iso << "# Irreducible k point  : " << std::setw(8) << i + 1;
                 ofs_iso << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
 
-                unsigned int knum = kpoint->kpoint_irred_all[i][0].knum;
+                const auto knum = kpoint->kpoint_irred_all[i][0].knum;
 
                 ofs_iso << "## xk = " << std::setw(3);
                 for (k = 0; k < 3; ++k) ofs_iso << std::setw(15) << kpoint->xk[knum][k];
@@ -1570,15 +1605,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 {
     unsigned int i, j, k;
     unsigned int iband, istep;
-    unsigned int ns = dynamical->neval;
-    unsigned int natmin = system->natmin;
-    unsigned int nsuper = ncell[0] * ncell[1] * ncell[2];
-    unsigned int nsteps = 20;
+    const auto ns = dynamical->neval;
+    const auto natmin = system->natmin;
+    const auto nsuper = ncell[0] * ncell[1] * ncell[2];
+    const unsigned int nsteps = 20;
     unsigned int ntmp = nbands;
     unsigned int ndigits = 0;
 
     double phase_time;
-    double max_disp_factor = 0.1;
+    const auto max_disp_factor = 0.1;
     double lavec_super[3][3];
     double dmod[3];
     double xk[3], kvec[3];
@@ -1619,7 +1654,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     }
 
     rotvec(kvec, xk, system->rlavec_p, 'T');
-    double norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
+    const auto norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
     if (norm > eps) {
         for (i = 0; i < 3; ++i) kvec[i] /= norm;
     }
@@ -1698,7 +1733,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     // Normalize the magnitude of displacements
 
-    double mass_min = mass[0];
+    auto mass_min = mass[0];
 
     for (i = 0; i < natmin; ++i) {
         if (mass[i] < mass_min) mass_min = mass[i];
@@ -1706,14 +1741,14 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     for (i = 0; i < ns; ++i) {
 
-        double max_disp_mag = 0.0;
+        auto max_disp_mag = 0.0;
 
         for (j = 0; j < ns; ++j) {
             disp_mag[i][j] = std::sqrt(mass_min / mass[j / 3]) * evec_mag[i][j];
         }
 
         for (j = 0; j < natmin; ++j) {
-            double disp_mag_tmp = 0.0;
+            auto disp_mag_tmp = 0.0;
             for (k = 0; k < 3; ++k) disp_mag_tmp += std::pow(disp_mag[i][3 * j + k], 2);
             disp_mag_tmp = std::sqrt(disp_mag_tmp);
             max_disp_mag = std::max(max_disp_mag, disp_mag_tmp);
@@ -1746,7 +1781,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             ss.str("");
             ss.clear();
             ss << std::setw(ndigits) << std::setfill('0') << iband + 1;
-            std::string result = ss.str();
+            const auto result = ss.str();
 
             file_anime = input->job_title + ".anime" + result + ".axsf";
 
@@ -1814,7 +1849,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             ss.str("");
             ss.clear();
             ss << std::setw(ndigits) << std::setfill('0') << iband + 1;
-            std::string result = ss.str();
+            const auto result = ss.str();
 
             file_anime = input->job_title + ".anime" + result + ".xyz";
 
@@ -1876,16 +1911,16 @@ void Writes::write_participation_ratio() const
 {
     unsigned int i, j, k;
     unsigned int knum;
-    unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
-    unsigned int natmin = system->natmin;
+    const auto nk = kpoint->nk;
+    const auto neval = dynamical->neval;
+    const auto natmin = system->natmin;
 
     double **participation_ratio;
     double ***atomic_participation_ratio;
 
     std::ofstream ofs_pr, ofs_apr;
-    std::string file_pr = input->job_title + ".pr";
-    std::string file_apr = input->job_title + ".apr";
+    auto file_pr = input->job_title + ".pr";
+    auto file_apr = input->job_title + ".apr";
 
     ofs_pr.open(file_pr.c_str(), std::ios::out);
     if (!ofs_pr)
@@ -2019,15 +2054,15 @@ void Writes::write_participation_ratio() const
 
 void Writes::write_scph_energy(double ***eval) const
 {
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_energy;
-    std::string file_energy = input->job_title + ".scph_eval";
+    auto file_energy = input->job_title + ".scph_eval";
 
     ofs_energy.open(file_energy.c_str(), std::ios::out);
     if (!ofs_energy) error->exit("write_scph_energy", "cannot open file_energy");
@@ -2038,7 +2073,7 @@ void Writes::write_scph_energy(double ***eval) const
     for (unsigned int ik = 0; ik < nk; ++ik) {
         for (unsigned int is = 0; is < ns; ++is) {
             for (unsigned int iT = 0; iT < NT; ++iT) {
-                double temp = Tmin + static_cast<double>(iT) * dT;
+                const auto temp = Tmin + static_cast<double>(iT) * dT;
 
                 ofs_energy << std::setw(5) << ik + 1;
                 ofs_energy << std::setw(5) << is + 1;
@@ -2057,25 +2092,25 @@ void Writes::write_scph_energy(double ***eval) const
 void Writes::write_scph_bands(double ***eval) const
 {
     std::ofstream ofs_bands;
-    std::string file_bands = input->job_title + ".scph_bands";
+    auto file_bands = input->job_title + ".scph_bands";
 
     ofs_bands.open(file_bands.c_str(), std::ios::out);
     if (!ofs_bands) error->exit("write_scph_bands", "cannot open file_bands");
 
     unsigned int i;
-    unsigned int nk = kpoint->nk;
+    const auto nk = kpoint->nk;
 
-    double *kaxis = kpoint->kaxis;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    unsigned int ns = dynamical->neval;
-    int kcount = 0;
+    const auto kaxis = kpoint->kaxis;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto ns = dynamical->neval;
+    auto kcount = 0;
 
     std::string str_tmp = "NONE";
-    std::string str_kpath = "";
-    std::string str_kval = "";
+    std::string str_kpath;
+    std::string str_kval;
 
     for (i = 0; i < kpoint->kpInp.size(); ++i) {
         if (str_tmp != kpoint->kpInp[i].kpelem[0]) {
@@ -2103,7 +2138,7 @@ void Writes::write_scph_bands(double ***eval) const
     ofs_bands << "# Temperature [K], k-axis, Eigenvalues [cm^-1]" << std::endl;
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
-        double temp = Tmin + static_cast<double>(iT) * dT;
+        const auto temp = Tmin + static_cast<double>(iT) * dT;
 
         for (i = 0; i < nk; ++i) {
             ofs_bands << std::setw(15) << std::fixed << temp;
@@ -2125,10 +2160,10 @@ void Writes::write_scph_bands(double ***eval) const
 void Writes::write_scph_dos(double ***eval) const
 {
     unsigned int iT;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     double **dos_scph;
 
@@ -2136,7 +2171,7 @@ void Writes::write_scph_dos(double ***eval) const
     dos->calc_dos_scph(eval, dos_scph);
 
     std::ofstream ofs_dos;
-    std::string file_dos = input->job_title + ".scph_dos";
+    auto file_dos = input->job_title + ".scph_dos";
 
     ofs_dos.open(file_dos.c_str(), std::ios::out);
     if (!ofs_dos) error->exit("write_scph_dos", "cannot open file_dos");
@@ -2178,7 +2213,7 @@ void Writes::write_scph_thermodynamics(double ***eval,
     const auto N = nk * ns;
 
     std::ofstream ofs_thermo;
-    std::string file_thermo = input->job_title + ".scph_thermo";
+    auto file_thermo = input->job_title + ".scph_thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if (!ofs_thermo)
         error->exit("write_scph_thermodynamics",
@@ -2202,22 +2237,22 @@ void Writes::write_scph_thermodynamics(double ***eval,
 
         const auto temp = Tmin + static_cast<double>(iT) * dT;
 
-        double heat_capacity = 0.0;
-        double free_energy = 0.0;
+        auto heat_capacity = 0.0;
+        auto free_energy = 0.0;
 
         if (thermodynamics->classical) {
 #pragma omp parallel for reduction(+:heat_capacity,free_energy)
             for (int i = 0; i < N; ++i) {
-                unsigned int ik = i / ns;
-                unsigned int is = i % ns;
-                double omega = eval[iT][ik][is];
+                const auto ik = i / ns;
+                const auto is = i % ns;
+                const auto omega = eval[iT][ik][is];
 
                 if (omega <= eps8) continue;
 
                 heat_capacity += thermodynamics->Cv_classical(omega, temp);
 
                 if (std::abs(temp) > eps) {
-                    double x = omega / (temp * T_to_Ryd);
+                    const auto x = omega / (temp * T_to_Ryd);
                     free_energy += std::log(x);
                 }
             }
@@ -2229,9 +2264,9 @@ void Writes::write_scph_thermodynamics(double ***eval,
 
 #pragma omp parallel for reduction(+:heat_capacity,free_energy)
             for (int i = 0; i < N; ++i) {
-                unsigned int ik = i / ns;
-                unsigned int is = i % ns;
-                double omega = eval[iT][ik][is];
+                const auto ik = i / ns;
+                const auto is = i % ns;
+                const auto omega = eval[iT][ik][is];
 
                 if (omega <= eps8) continue;
 
@@ -2240,7 +2275,7 @@ void Writes::write_scph_thermodynamics(double ***eval,
                 if (std::abs(temp) < eps) {
                     free_energy += 0.5 * omega;
                 } else {
-                    double x = omega / (temp * T_to_Ryd);
+                    const auto x = omega / (temp * T_to_Ryd);
                     free_energy += 0.5 * x + std::log(1.0 - std::exp(-x));
                 }
             }
@@ -2253,7 +2288,7 @@ void Writes::write_scph_thermodynamics(double ***eval,
             }
         }
 
-        double tmp3 = free_energy + thermodynamics->FE_scph_correction(iT, eval[iT], evec[iT]);
+        const auto tmp3 = free_energy + thermodynamics->FE_scph_correction(iT, eval[iT], evec[iT]);
 
         ofs_thermo << std::setw(16) << std::fixed << temp;
         ofs_thermo << std::setw(18) << std::scientific << heat_capacity / k_Boltzmann;

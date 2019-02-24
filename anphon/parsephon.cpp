@@ -174,37 +174,37 @@ void Input::parse_general_vars()
 
     // Default values
 
-    double Tmin = 0.0;
-    double Tmax = 1000.0;
-    double dT = 10.0;
+    auto Tmin = 0.0;
+    auto Tmax = 1000.0;
+    auto dT = 10.0;
 
-    double emin = 0.0;
-    double emax = 1000.0;
-    double delta_e = 10.0;
+    auto emin = 0.0;
+    auto emax = 1000.0;
+    auto delta_e = 10.0;
 
     unsigned int nonanalytic = 0;
-    int nsym = 0;
-    double tolerance = 1.0e-6;
-    bool printsymmetry = false;
-    bool sym_time_reversal = false;
-    bool use_triplet_symmetry = true;
-    bool classical = false;
+    auto nsym = 0;
+    auto tolerance = 1.0e-6;
+    auto printsymmetry = false;
+    auto sym_time_reversal = false;
+    auto use_triplet_symmetry = true;
+    auto classical = false;
     unsigned int band_connection = 0;
     unsigned int bornsym = 0;
 
-    double prec_ewald = 1.0e-12;
+    auto prec_ewald = 1.0e-12;
 
     // if file_result exists in the current directory, 
     // restart mode will be automatically turned on.
-    bool restart = stat(file_result.c_str(), &st) == 0;
+    auto restart = stat(file_result.c_str(), &st) == 0;
 
-    int nbands = -1;
-    std::string borninfo = "";
-    std::string fc2info = "";
+    auto nbands = -1;
+    std::string borninfo;
+    std::string fc2info;
 
-    int ismear = -1;
-    double epsilon = 10.0;
-    double na_sigma = 0.1;
+    auto ismear = -1;
+    auto epsilon = 10.0;
+    auto na_sigma = 0.1;
 
     // Assign given values
 
@@ -326,7 +326,7 @@ void Input::parse_scph_vars()
 {
     // Read input parameters in the &scph-field.
 
-    struct stat st;
+    struct stat st{};
     const std::vector<std::string> input_list{
         "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
         "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
@@ -352,22 +352,22 @@ void Input::parse_scph_vars()
         }
     }
 
-    std::string file_dymat = this->job_title + ".scph_dymat";
+    auto file_dymat = this->job_title + ".scph_dymat";
 
     // Default values
 
-    double tolerance_scph = 1.0e-10;
+    auto tolerance_scph = 1.0e-10;
     unsigned int maxiter = 1000;
-    double mixalpha = 0.1;
-    bool selenergy_offdiagonal = true;
+    auto mixalpha = 0.1;
+    auto selenergy_offdiagonal = true;
     unsigned int ialgo_scph = 0;
-    bool lower_temp = true;
-    bool warm_start = true;
+    auto lower_temp = true;
+    auto warm_start = true;
 
     // if file_dymat exists in the current directory, 
     // restart mode will be automatically turned on for SCPH calculations.
 
-    bool restart_scph = stat(file_dymat.c_str(), &st) == 0;
+    auto restart_scph = stat(file_dymat.c_str(), &st) == 0;
 
     // Assign given values
 
@@ -386,7 +386,7 @@ void Input::parse_scph_vars()
 
         std::istringstream is(str_tmp);
 
-        while (1) {
+        while (true) {
             str_tmp.clear();
             is >> str_tmp;
             if (str_tmp.empty()) {
@@ -409,7 +409,7 @@ void Input::parse_scph_vars()
 
         std::istringstream is(str_tmp);
 
-        while (1) {
+        while (true) {
             str_tmp.clear();
             is >> str_tmp;
             if (str_tmp.empty()) {
@@ -429,7 +429,7 @@ void Input::parse_scph_vars()
 
     // Copy the values to appropriate classes.
 
-    for (int i = 0; i < 3; ++i) {
+    for (auto i = 0; i < 3; ++i) {
         scph->kmesh_scph[i] = kmesh_v[i];
         scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
     }
@@ -460,7 +460,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE", "UCORR", "SHIFT_UCORR"
+        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE", "UCORR", "SHIFT_UCORR",
+        "KAPPA_COHERENT"
     };
 
     unsigned int cellsize[3];
@@ -472,37 +473,38 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     // Default values
 
-    bool print_xsf = false;
-    bool print_anime = false;
+    auto print_xsf = false;
+    auto print_anime = false;
 
-    bool print_vel = false;
-    bool print_evec = false;
-    bool print_msd = false;
-    bool print_ucorr = false;
+    auto print_vel = false;
+    auto print_evec = false;
+    auto print_msd = false;
+    auto print_ucorr = false;
 
-    bool compute_dos = true;
-    bool projected_dos = false;
-    bool two_phonon_dos = false;
-    int scattering_phase_space = 0;
-    bool print_gruneisen = false;
-    bool print_newfcs = false;
-    bool print_V3 = false;
-    bool participation_ratio = false;
+    auto compute_dos = true;
+    auto projected_dos = false;
+    auto two_phonon_dos = false;
+    auto scattering_phase_space = 0;
+    auto print_gruneisen = false;
+    auto print_newfcs = false;
+    auto print_V3 = false;
+    auto participation_ratio = false;
 
-    double delta_a = 0.001;
+    auto delta_a = 0.001;
 
-    int quartic_mode = 0;
-    bool calc_realpart = false;
-    int include_isotope = 0;
-    bool fstate_omega = false;
-    bool fstate_k = false;
-    bool bubble_omega = false;
+    auto quartic_mode = 0;
+    auto calc_realpart = false;
+    auto include_isotope = 0;
+    auto fstate_omega = false;
+    auto fstate_k = false;
+    auto bubble_omega = false;
 
-    int calculate_kappa_spec = 0;
+    auto calculate_kappa_spec = 0;
 
-    bool print_fc2_ewald = false;
-    bool print_self_consistent_fc2 = false;
-    bool calc_FE_bubble = false;
+    auto print_fc2_ewald = false;
+    auto print_self_consistent_fc2 = false;
+    auto calc_FE_bubble = false;
+    auto calc_coherent = 0;
 
 
     // Assign values to variables
@@ -530,6 +532,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
         assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
+        assign_val(calc_coherent, "KAPPA_COHERENT", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
@@ -658,6 +661,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->scattering_phase_space = scattering_phase_space;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
+    conductivity->calc_coherent = calc_coherent;
     anharmonic_core->quartic_mode = quartic_mode;
 
     mode_analysis->ks_input = ks_input;
@@ -891,7 +895,7 @@ void Input::parse_kpoints()
                             "The number of columns must be 8 when KPMODE = 3");
             }
 
-            kpoint->kpInp.push_back(kpelem);
+            kpoint->kpInp.emplace_back(kpelem);
         }
     }
 

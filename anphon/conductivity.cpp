@@ -173,8 +173,6 @@ void Conductivity::setup_kappa()
                 */
             }
         }
-
-
     }
 
     vks_job.clear();
@@ -300,9 +298,9 @@ void Conductivity::calc_anharmonic_imagself()
 
     unsigned int icount = 0;
 
-    for (auto it = vks_job.begin(); it != vks_job.end(); ++it) {
+    for (const auto &it : vks_job) {
         if (icount % mympi->nprocs == mympi->my_rank) {
-            vks_l.push_back(*it);
+            vks_l.push_back(it);
         }
         ++icount;
     }
@@ -379,15 +377,13 @@ void Conductivity::calc_anharmonic_imagself()
         MPI_Gather(&damping3_loc[0], ntemp, MPI_DOUBLE,
                    damping3[nshift_restart + i * mympi->nprocs], ntemp,
                    MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        
+
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart, vel, damping3);
             std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
         }
     }
-    std::cout << "DONE" << std::endl;
     memory->deallocate(damping3_loc);
-    std::cout << "DONE" << std::endl;
 }
 
 void Conductivity::write_result_gamma(const unsigned int ik,
@@ -443,9 +439,6 @@ void Conductivity::compute_kappa()
         memory->allocate(lifetime, kpoint->nk_irred * ns, ntemp);
         memory->allocate(gamma_total, kpoint->nk_irred * ns, ntemp);
 
-        std::cout << "OK0\n";
-
-
         average_self_energy_at_degenerate_point(kpoint->nk_irred * ns,
                                                 ntemp,
                                                 damping3);
@@ -493,91 +486,16 @@ void Conductivity::compute_kappa()
             }
         }
 
-        std::cout << "OK\n";
+        memory->allocate(kappa, ntemp, 3, 3);
         compute_kappa_intraband(kappa, lifetime);
-        std::cout << "OK2\n";
-
-
-        /*
-        
-                memory->allocate(kappa, ntemp, 3, 3);
-        
-                for (i = 0; i < ntemp; ++i) {
-                    for (unsigned int j = 0; j < 3; ++j) {
-                        for (unsigned int k = 0; k < 3; ++k) {
-        
-                            if (Temperature[i] < eps) {
-                                // Set kappa as zero when T = 0.
-                                for (is = 0; is < ns; ++is) {
-                                    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                        kappa_mode[i][3 * j + k][is][ik] = 0.0;
-                                    }
-                                }
-                            } else {
-                                for (is = 0; is < ns; ++is) {
-                                    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                        const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-                                        const auto omega = dynamical->eval_phonon[knum][is];
-                                        auto vv_tmp = 0.0;
-                                        const auto nk_equiv = kpoint->kpoint_irred_all[ik].size();
-        
-                                        // Accumulate group velocity (diad product) for the reducible k points
-                                        for (auto ieq = 0; ieq < nk_equiv; ++ieq) {
-                                            const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
-                                            vv_tmp += vel[ktmp][is][j] * vel[ktmp][is][k];
-                                        }
-        
-                                        if (thermodynamics->classical) {
-                                            kappa_mode[i][3 * j + k][is][ik]
-                                                = thermodynamics->Cv_classical(omega, Temperature[i])
-                                                * vv_tmp * lifetime[ns * ik + is][i];
-                                        } else {
-                                            kappa_mode[i][3 * j + k][is][ik]
-                                                = thermodynamics->Cv(omega, Temperature[i])
-                                                * vv_tmp * lifetime[ns * ik + is][i];
-                                        }
-        
-                                        // Convert to SI unit
-                                        kappa_mode[i][3 * j + k][is][ik] *= factor_toSI;
-        
-                                    }
-                                }
-                            }
-        
-                            kappa[i][j][k] = 0.0;
-        
-                            for (is = 0; is < ns; ++is) {
-                                for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                    kappa[i][j][k] += kappa_mode[i][3 * j + k][is][ik];
-                                }
-                            }
-        
-                            kappa[i][j][k] /= static_cast<double>(nk);
-                        }
-                    }
-                }
-                 
-         */
-
+        memory->deallocate(lifetime);
 
         if (calc_coherent) {
+            memory->allocate(kappa_coherent, ntemp, 3, 3);
             compute_kappa_coherent(kappa_coherent, gamma_total);
         }
 
-        memory->deallocate(lifetime);
         memory->deallocate(gamma_total);
-
-
-        std::cout << "#kappa nondiagonal\n";
-        for (i = 0; i < ntemp; ++i) {
-            for (unsigned int j = 0; j < 3; ++j) {
-                for (unsigned int k = 0; k < 3; ++k) {
-                    std::cout << std::setw(20) << kappa_coherent[i][j][k];
-                }
-            }
-            std::cout << '\n';
-        }
-        std::cout << '\n';
     }
 }
 
@@ -660,11 +578,6 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
 
     memory->allocate(kappa_mode, ntemp, 9, ns, kpoint->nk_irred);
 
-    if (kappa_intra) {
-        memory->deallocate(kappa_intra);
-        kappa_intra = nullptr;
-    }
-    memory->allocate(kappa_intra, ntemp, 3, 3);
 
     for (i = 0; i < ntemp; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
@@ -732,57 +645,66 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
 
 
 void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
-                                          double **gamma_total)
+                                          double **gamma_total) const
 {
-    int i, is, js, ik;
+    int ib;
     const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
 
-    if (kappa_coherent) {
-        memory->deallocate(kappa_coherent);
-        kappa_coherent = nullptr;
-    }
-    memory->allocate(kappa_coherent, ntemp, 3, 3);
+    const int ns2 = ns * ns;
 
-    for (i = 0; i < ntemp; ++i) {
+    const auto czero = std::complex<double>(0.0, 0.0);
+    std::vector<std::complex<double>> kappa_tmp(ns2, czero);
+
+    const auto common_factor = factor_toSI * 1.0e+12 * time_ry / static_cast<double>(nk);
+
+    for (auto i = 0; i < ntemp; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
             for (unsigned int k = 0; k < 3; ++k) {
+
                 kappa_coherent[i][j][k] = 0.0;
 
                 if (Temperature[i] > eps) {
+#pragma omp parallel for 
+                    for (ib = 0; ib < ns2; ++ib) {
+                        kappa_tmp[ib] = czero;
+                        const int is = ib / ns;
+                        const int js = ib % ns;
+                        if (js == is) continue; // skip the diagonal component
 
-                    for (is = 0; is < ns; ++is) {
-                        for (js = 0; js < ns; ++js) {
-                            if (js == is) continue; // skip the diagonal component
+                        for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
+                            const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
+                            const auto omega1 = dynamical->eval_phonon[knum][is];
+                            const auto omega2 = dynamical->eval_phonon[knum][js];
 
-                            for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                                const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-                                const auto omega1 = dynamical->eval_phonon[knum][is];
-                                const auto omega2 = dynamical->eval_phonon[knum][js];
+                            if (omega1 < eps8 || omega2 < eps8) continue;
+                            auto vv_tmp = czero;
+                            const auto nk_equiv = kpoint->kpoint_irred_all[ik].size();
 
-                                if (omega1 < eps8 || omega2 < eps8) continue;
-                                auto vv_tmp = std::complex<double>(0.0, 0.0);
-                                const auto nk_equiv = kpoint->kpoint_irred_all[ik].size();
-
-                                // Accumulate group velocity (diad product) for the reducible k points
-                                for (auto ieq = 0; ieq < nk_equiv; ++ieq) {
-                                    const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
-                                    vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
-                                }
-
-                                kappa_coherent[i][j][k]
-                                    += 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                    * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
-                                        + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
-                                    * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                    / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                         + gamma_total[ik * ns + js][i], 2.0))
-                                    * vv_tmp.real();
+                            // Accumulate group velocity (diad product) for the reducible k points
+                            for (auto ieq = 0; ieq < nk_equiv; ++ieq) {
+                                const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
+                                vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
+
+                            kappa_tmp[ib] += 2.0 * (omega1 * omega2) / (omega1 + omega2)
+                                * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
+                                    + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
+                                * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                    + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                     + gamma_total[ik * ns + js][i], 2.0))
+                                * vv_tmp;
                         }
                     }
+                    for (ib = 0; ib < ns2; ++ib) {
+                        if (std::abs(kappa_tmp[ib].imag()) > eps10) {
+                            error->warn("compute_kappa_coherent",
+                                        "The kappa_coherent has imaginary component.");
+                        }
+                        kappa_coherent[i][j][k] += kappa_tmp[ib].real();
+                    }
                 }
-                kappa_coherent[i][j][k] *= factor_toSI * 1.0e+12 * time_ry / static_cast<double>(nk);
+                kappa_coherent[i][j][k] *= common_factor;
             }
         }
     }

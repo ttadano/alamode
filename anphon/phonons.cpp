@@ -264,7 +264,6 @@ void PHON::execute_RTA() const
         conductivity->setup_kappa();
         conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
-        std::cout << "HOGE\n";
         conductivity->compute_kappa();
         writes->write_kappa();
         writes->write_selfenergy_isotope();

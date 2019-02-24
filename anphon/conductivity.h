@@ -63,6 +63,6 @@ namespace PHON_NS
                                               int);
 
         void compute_kappa_intraband(double ***kappa_intra, double **lifetime);
-        void compute_kappa_coherent(double ***kappa_nondiagonal, double **gamma_total);
+        void compute_kappa_coherent(double ***kappa_coherent, double **gamma_total) const;
     };
 }
