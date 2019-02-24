@@ -161,7 +161,7 @@ void PHON::setup_base() const
     symmetry->setup_symmetry();
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
-    dynamical->setup_dynamical(mode);
+    dynamical->setup_dynamical();
     dos->setup();
     thermodynamics->setup();
     ewald->init();

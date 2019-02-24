@@ -476,8 +476,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
             for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
 
-            for (int ik = 0; ik < npair_uniq; ++ik) {
-                int multi = triplet[ik].group.size();
+            for (auto ik = 0; ik < npair_uniq; ++ik) {
+                const int multi = triplet[ik].group.size();
 
                 arr_cubic[0] = ns * ik0 + is0;
 
@@ -584,7 +584,7 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
         vks_l.push_back(-1);
     }
 
-    double FE_local = 0.0;
+    auto FE_local = 0.0;
 
     if (mympi->my_rank == 0) {
         std::cout << " Total number of modes per MPI process: " << nk_tmp << std::endl;
@@ -608,8 +608,8 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
 
             auto FE_tmp = 0.0;
 
-            for (int ik = 0; ik < npair_uniq; ++ik) {
-                int multi = triplet[ik].group.size();
+            for (auto ik = 0; ik < npair_uniq; ++ik) {
+                const int multi = triplet[ik].group.size();
 
                 arr_cubic[0] = ns * ik0 + is0;
 
@@ -687,13 +687,13 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     for (int i = 0; i < N; ++i) {
         int ik = i / ns;
         int is = i % ns;
-        double omega = eval[ik][is];
+        const auto omega = eval[ik][is];
         if (std::abs(omega) < eps6) continue;
 
-        std::complex<double> tmp_c = std::complex<double>(0.0, 0.0);
+        auto tmp_c = std::complex<double>(0.0, 0.0);
 
         for (int js = 0; js < ns; ++js) {
-            double omega2_harm = dynamical->eval_phonon[ik][js];
+            auto omega2_harm = dynamical->eval_phonon[ik][js];
             if (omega2_harm >= 0.0) {
                 omega2_harm = std::pow(omega2_harm, 2);
             } else {

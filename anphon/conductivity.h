@@ -13,6 +13,7 @@
 #include "pointers.h"
 #include <vector>
 #include <set>
+#include <complex>
 
 namespace PHON_NS
 {
@@ -33,13 +34,16 @@ namespace PHON_NS
         double **damping3;
         double ***kappa;
         double ***kappa_spec;
+        std::complex<double> ***kappa_nondiagonal;
         double *Temperature;
+        int nondiag_hflux;
 
     private:
         void set_default_variables();
         void deallocate_variables();
 
         double ***vel;
+        std::complex<double> ****velmat;
         unsigned int nk, ns;
         int nshift_restart;
         std::vector<int> vks, vks_l, vks_done;
@@ -57,5 +61,8 @@ namespace PHON_NS
         void compute_frequency_resolved_kappa(int,
                                               double ****,
                                               int);
+
+        void compute_kappa_diagonal(double ***kappa);
+        void compute_kappa_nondiagonal(double ***kappa_nondiagonal);
     };
 }

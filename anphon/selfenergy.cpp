@@ -93,11 +93,11 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N,
     for (unsigned int is1 = 0; is1 < ns; ++is1) {
         arr_cubic1[2] = is1;
         arr_cubic2[0] = is1;
-        double omega1 = dynamical->eval_phonon[0][is1];
+        auto omega1 = dynamical->eval_phonon[0][is1];
 
         if (omega1 < eps8) continue;
 
-        std::complex<double> v3_tmp1 = anharmonic_core->V3(arr_cubic1);
+        auto v3_tmp1 = anharmonic_core->V3(arr_cubic1);
 
         for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
 
@@ -106,13 +106,13 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N,
                 arr_cubic2[1] = ns * ik2 + is2;
                 arr_cubic2[2] = ns * kpoint->knum_minus[ik2] + is2;
 
-                std::complex<double> v3_tmp2 = anharmonic_core->V3(arr_cubic2);
-                double omega2 = dynamical->eval_phonon[ik2][is2];
+                auto v3_tmp2 = anharmonic_core->V3(arr_cubic2);
+                const auto omega2 = dynamical->eval_phonon[ik2][is2];
 
                 if (omega2 < eps8) continue;
 
                 for (i = 0; i < N; ++i) {
-                    double T_tmp = T[i];
+                    const auto T_tmp = T[i];
                     if (thermodynamics->classical) {
                         n2 = thermodynamics->fC(omega2, T_tmp);
                         ret_mpi[i] += v3_tmp2 * 2.0 * n2;
@@ -130,7 +130,7 @@ void Selfenergy::selfenergy_tadpole(const unsigned int N,
         }
     }
 
-    double factor = -1.0 / (static_cast<double>(nk) * std::pow(2.0, 3));
+    const auto factor = -1.0 / (static_cast<double>(nk) * std::pow(2.0, 3));
     for (i = 0; i < N; ++i) ret[i] *= factor;
 
     memory->deallocate(ret_tmp);

@@ -42,7 +42,7 @@ void Symmetry::set_default_variables()
 
 void Symmetry::setup_symmetry()
 {
-    unsigned int natmin = system->natmin;
+    const auto natmin = system->natmin;
     double **xtmp;
     unsigned int *kdtmp;
 
@@ -186,7 +186,7 @@ void Symmetry::setup_symmetry_operation(int N,
 void Symmetry::findsym(int N,
                        double aa[3][3],
                        double **x,
-                       std::vector<SymmetryOperation> &symop_all)
+                       std::vector<SymmetryOperation> &symop_all) const
 {
     std::vector<RotationMatrix> LatticeSymmList;
 
@@ -196,8 +196,8 @@ void Symmetry::findsym(int N,
 
     // Generate all the space group operations with translational vectors
     symop_all.clear();
-    find_crystal_symmetry(N, system->nclassatom, system->atomlist_class, x,
-                          LatticeSymmList, symop_all);
+    find_crystal_symmetry(system->nclassatom, system->atomlist_class, x, LatticeSymmList,
+                          symop_all);
 
     LatticeSymmList.clear();
 }
@@ -323,8 +323,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
     }
 }
 
-void Symmetry::find_crystal_symmetry(int N,
-                                     int nclass,
+void Symmetry::find_crystal_symmetry(int nclass,
                                      std::vector<unsigned int> *atomclass,
                                      double **x,
                                      const std::vector<RotationMatrix> &LatticeSymmList,
@@ -545,7 +544,7 @@ void Symmetry::gensym_withmap(double **x,
                         tmp[k] = std::fmod(std::abs(x_mod[k] - x[j][k]), 1.0);
                         tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
                     }
-                    double diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
+                    const auto diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
                     if (diff < tolerance * tolerance) {
                         num_mapped = j;
                         break;
@@ -616,19 +615,13 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
 
 bool Symmetry::is_proper(double rot[3][3]) const
 {
-    bool ret;
+    auto ret = false;
 
-    double det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
+    const auto det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
         - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
         + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
 
-    if (std::abs(det - 1.0) < eps12) {
-        ret = true;
-    } else if (std::abs(det + 1.0) < eps12) {
-        ret = false;
-    } else {
-        error->exit("is_proper", "This cannot happen.");
-    }
+    ret = std::abs(det - 1.0) < eps12;
 
     return ret;
 }
