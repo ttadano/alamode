@@ -5,9 +5,10 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
+# clang++ with link to mpi library
 MPICXX = mpic++
-CXXFLAGS = -O3 -std=c++11 -fopenmp
-INCLUDE = -I../include  -I$(HOME)/include
+CXXFLAGS = -O3 -std=c++11 
+INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/include/eigen3
 
 LINKER = ${MPICXX}
 
