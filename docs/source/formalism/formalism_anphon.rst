@@ -105,6 +105,19 @@ given as follows:
 
 Here, :math:`k` is the Boltzmann constant. These quantities will be saved in the ``PREFIX``.thermo file.
 
+When the self-consistent phonon mode (``MODE = SCPH``) is selected, the anharmonic free-energy 
+defined by the following equation will be calculated and saved in the ``PREFIX``.scph_thermo file:
+
+.. math::
+    :nowrap:
+    
+    \begin{align*}
+     F^{\mathrm{SCP}} &= \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}\left[ \frac{\hbar\Omega_{\boldsymbol{q}j}}{2} + kT\log{\left( 1 - e^{-\hbar\Omega_{\boldsymbol{q}j}/kT}\right)} \right] \\
+     & - \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}\left[ \Omega_{\boldsymbol{q}j}^{2} - (C_{\boldsymbol{q}}^{\dagger}\Lambda_{\boldsymbol{q}}^{(\mathrm{HA})}C_{\boldsymbol{q}})_{jj} \right]
+     \times \frac{\hbar [1 + 2n_{\boldsymbol{q}j} ]}{2\Omega_{\boldsymbol{q}j}}.
+    \end{align*}
+
+Details of the derivation of the above expression can be found in Ref. [7]_.
 
 
 Mean square displacement
@@ -445,3 +458,5 @@ When ``SELF_OFFDIAG = 1``, the off-diagonal elements are also calculated, and th
 .. [5] P\. E. Bl\ |umulaut_o|\ chl, O. Jepsen, and O. K. Andersen, Phys. Rev. B **49**, 1450555 (1994).
 
 .. [6] T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**, 054301 (2015).
+
+.. [7] Y.\ Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**, 033601 (2019).

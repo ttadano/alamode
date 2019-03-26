@@ -551,8 +551,8 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
  === ====================================================================================
   0   Do not compute scattering phase space
-  1   Total and mode-decomposed scattering phase space involving three-phonon processes 
-      will be stored in ``PREFIX``.sps
+  1   | Total and mode-decomposed scattering phase space involving 
+      | the three-phonon processes will be stored in ``PREFIX``.sps
   2   Three-phonon scattering phase space with the Bose factor will be stored 
       in ``PREFIX``.sps_Bose
  === ====================================================================================
@@ -568,8 +568,8 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
  === ====================================================================================
   0   Do not compute the (atomic) participation ratio
-  1   Compute participation ratio and atomic participation ratio, which will be 
-      stored in  ``PREFIX``.pr and ``PREFIX``.apr respectively.
+  1   | Compute participation ratio and atomic participation ratio, which will be 
+      | stored in  ``PREFIX``.pr and ``PREFIX``.apr respectively.
  === ====================================================================================
  
  :Default: 0
@@ -599,8 +599,8 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
  === =========================================================================
   0   Do not consider phonon-isotope scatterings
   1   Consider phonon-isotope scatterings
-  2   Consider phonon-isotope scatterings as in ``ISOTOPE = 1`` and 
-      the corresponding selfenergy will be stored in ``PREFIX``.gamma_isotope
+  2   | Consider phonon-isotope scatterings as in ``ISOTOPE = 1`` and 
+      | the calculated selfenergy is stored in ``PREFIX``.gamma_isotope
  === =========================================================================
  
  :Default: 0
@@ -617,6 +617,21 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
                Here, :math:`f_{i}` is the fraction of the :math:`i`\ th isotope of an element having mass :math:`m_{i}`, 
                and :math:`\bar{m}=\sum_{i}f_{i}m_{i}` is the average mass, respectively. 
                This quantity is equivalent to :math:`g_{2}` appearing in the original paper by S. Tamura [Phys. Rev. B, 27, 858.].
+
+
+````
+
+* FE_BUBBLE-tag = 0 | 1
+
+ === ====================================================================================
+  0   Do not compute the vibrational free-energy associated with the bubble diagram
+  1   | Compute the vibrational free-energy associated with the bubble diagram and 
+      | save it in ``PREFIX``.thermo (when ``MODE = phonons``) or ``PREFIX``.scph_thermo (when ``MODE = SCPH``).
+ === ====================================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: This tag is used when *KPMODE* = 2.
 
 
 ````

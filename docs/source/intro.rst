@@ -54,7 +54,7 @@ Anharmonic properties
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
 * Self-consisitent phonon (SCPH) calculation
-
+* Anharmonic vibrational free-energy
 
 Links
 -----
@@ -88,6 +88,11 @@ If you use the self-consistent phonon (SCPH) method, please cite the following p
   T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**\ , 054301 (2015). 
   [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.92.054301>`__]
 
+If you use ALAMODE to compute anharmonic vibrational free-energies in your research paper,
+please cite the following paper as well:
+
+  Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
+  [`Link <https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.3.033601>`__]
 
 Acknowledgement
 ---------------

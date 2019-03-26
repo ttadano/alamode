@@ -9,20 +9,23 @@ Output files of alm
 
 * ``PREFIX``.pattern_HARMONIC, ``PREFIX``.pattern_ANHARM?
 
- In these files, displacement patterns are printed in units of :math:`\boldsymbol{e}_{x,y,z}`.
- These files are created when ``MODE = suggest``. 
+ In these files, displacement patterns are printed in units of
+ :math:`\boldsymbol{e}_{x,y,z}`.
+ These files are created when ``MODE = suggest``.
  Patterns for anharmonic force constants are printed only when ``NORDER > 1``.
 
 * ``PREFIX``.fcs
 
  Harmonic and anharmonic force constants in Rydberg atomic units.
  In the first section, only symmetry-reduced force constants are printed.
- All symmetry-related force constants are shown in the following section with the symmetry prefactor (:math:`\pm 1`).
+ All symmetry-related force constants are shown in the following section
+ with the symmetry prefactor (:math:`\pm 1`).
  Created when ``MODE = fitting``.
 
 * ``PREFIX``.xml
 
- A XML file containing necessary information for performing phonon calculations.
+ A XML file containing necessary information for performing
+ phonon calculations.
  The files can be read by *anphon* using the ``FCSXML``-tag.
  Created when ``MODE = fitting``.
 
@@ -54,6 +57,8 @@ Output files of anphon
 
  Constant volume heat capacity, vibrational entropy, internal energy, and vibrational free energy.
  Created when ``MODE = phonons`` with **KPMODE** = 2.
+ When ``FE_BUBBLE = 1`` is set in the **&analysis** field, an additional bubble correction term 
+ to the vibrational free energy is also calculated.
 
 * ``PREFIX``.msd
  
@@ -148,6 +153,14 @@ Output files of anphon
 * ``PREFIX``.scph_bands
 
  Anharmonic phonon dispersion curves. The format is same as the ``PREFIX``.bands.
+
+* ``PREFIX``.scph_thermo
+
+ Constant volume heat capacity, vibrational entropy, and vibrational free energy calculated
+ based on the self-consistent phononon calculation. 
+ Created when ``MODE = SCPH`` with **KPMODE** = 2.
+ When ``FE_BUBBLE = 1`` is set in the **&analysis** field, an additional bubble correction term 
+ to the vibrational free energy is also calculated.
 
 * ``PREFIX``.scph_fc2_correction
 
