@@ -8,8 +8,11 @@
 #Intel compiler
 #CXX = icpc
 
+# Linux gcc
+#CXX = g++
+
 # OSX
-CXX = g++-7
+CXX = clang++
 
 CXXFLAGS = -O2 -std=c++11
 
