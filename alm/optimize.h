@@ -30,7 +30,7 @@ namespace ALM_NS
     {
     public:
         // General optimization options
-        int linear_model;      // 1 : least-squares, 2 : elastic net
+        int linear_model; // 1 : least-squares, 2 : elastic net
         int use_sparse_solver; // 0: No, 1: Yes
         int maxnum_iteration;
         double tolerance_iteration;
@@ -43,7 +43,7 @@ namespace ALM_NS
 
         // cross-validation related variables
         int cross_validation; // 0 : No CV mode, -1 or > 0: CV mode
-        double l1_alpha;      // L1-regularization coefficient
+        double l1_alpha; // L1-regularization coefficient
         double l1_alpha_min;
         double l1_alpha_max;
         int num_l1_alpha;

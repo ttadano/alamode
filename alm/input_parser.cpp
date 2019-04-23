@@ -63,15 +63,14 @@ void InputParser::parse_displacement_and_force_files(std::vector<std::vector<dou
                                                      std::vector<std::vector<double>> &f,
                                                      DispForceFile &datfile_in) const
 {
- 
     if (datfile_in.filename_second.empty()) {
         parse_dfset(u, f, datfile_in);
 
-        } else {
-            // When filename_second is not empty, displacement (u) and force (f) data will be 
-            // read from different files given by DFILE and FFILE, respectively.
+    } else {
+        // When filename_second is not empty, displacement (u) and force (f) data will be 
+        // read from different files given by DFILE and FFILE, respectively.
         parse_dfile_and_ffile(u, f, datfile_in);
-        }
+    }
 }
 
 void InputParser::parse_dfset(std::vector<std::vector<double>> &u,
@@ -86,7 +85,7 @@ void InputParser::parse_dfset(std::vector<std::vector<double>> &u,
         nrequired = 6 * nat * datfile_in.ndata;
     }
 
-   std::vector<double> value_arr;
+    std::vector<double> value_arr;
 
     // Read displacements from DFILE
     std::string line;
@@ -175,10 +174,10 @@ void InputParser::parse_dfile_and_ffile(std::vector<std::vector<double>> &u,
         nrequired = -1;
     } else {
         // Total number of data entries (displacement)   
-           nrequired = 3 * nat * datfile_in.ndata;
+        nrequired = 3 * nat * datfile_in.ndata;
     }
 
-   std::vector<double> value_arr, value_arr2;
+    std::vector<double> value_arr, value_arr2;
 
     // Read displacements from DFILE
     std::string line;
@@ -400,14 +399,14 @@ void InputParser::parse_general_vars(ALM *alm)
     }
     if (mode == "fitting") {
         mode = "optimize";
-        warn("parse_general_vars", 
+        warn("parse_general_vars",
              "MODE = fitting is deprecated and will be removed in the next version.\n"
              " Please use MODE = optimize instead.\n");
     }
     if (mode == "lasso") {
         mode = "optimize";
         warn("parse_general_vars",
-             "MODE = lasso is deprecated and will be removed in the next version.\n" 
+             "MODE = lasso is deprecated and will be removed in the next version.\n"
              " Please use MODE = optimize instead with LMODEL = enet option in the &optimize field.\n");
     }
     if (mode == "opt") mode = "optimize";
@@ -882,11 +881,11 @@ void InputParser::parse_optimize_vars(ALM *alm)
             std::cout << " Please use DFSET instead.\n";
             std::cout << " DFSET can be created easily by the unix paste command as:\n\n";
             std::cout << " $ paste DFILE FFILE > DFSET\n\n";
-//            exit("parse_optimize_vars", "Obsolate tag: DFILE, FFILE");
+            //            exit("parse_optimize_vars", "Obsolate tag: DFILE, FFILE");
             datfile_train.filename = fitting_var_dict["DFILE"];
             datfile_train.filename_second = fitting_var_dict["FFILE"];
         } else {
-            exit("parse_optimize_vars", 
+            exit("parse_optimize_vars",
                  "DFSET tag (or both DFILE and FFILE tags) must be given.");
         }
     } else {

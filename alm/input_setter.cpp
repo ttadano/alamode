@@ -99,8 +99,8 @@ void InputSetter::set_cutoff_radii(const int maxorder_in,
                                    const std::vector<double> &cutoff_radii_in)
 {
     if (cutoff_radii_in.size() != (nkd_in * nkd_in * maxorder_in)) {
-        exit("set_cutoff_radii", 
-            "Incorrect size of the input array cutoff_radii_in");
+        exit("set_cutoff_radii",
+             "Incorrect size of the input array cutoff_radii_in");
     }
     if (cutoff_radii) {
         deallocate(cutoff_radii);

@@ -504,7 +504,6 @@ void Cluster::define(const int maxorder_in,
             }
         }
     }
-
 }
 
 int* Cluster::get_nbody_include() const

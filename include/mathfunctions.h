@@ -72,7 +72,7 @@ inline void rotvec(double vec_out[3], double vec_in[3], const double mat[3][3], 
 	}
 }
 
-inline void rotvec(double vec_out[3], double vec_in[3], const double **mat, char mode = 'N')
+inline void rotvec(double vec_out[3], double vec_in[3], double **mat, char mode = 'N')
 {
 	// Perform matrix x vector multiplication. 
 	//
@@ -101,7 +101,7 @@ inline void rotvec(double vec_out[3], double vec_in[3], const double **mat, char
 	}
 }
 
-inline void invmat3(double invmat[3][3], double mat[3][3])
+inline void invmat3(double invmat[3][3], const double mat[3][3])
 {
 	unsigned int i, j;
 	double det;
