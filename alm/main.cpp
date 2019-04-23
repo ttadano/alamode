@@ -8,17 +8,19 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include <stdlib.h>
-#include <iostream>
-#include "alamode.h"
+#include "alm_cui.h"
+#include <cstdlib>
 
 using namespace ALM_NS;
 
-int main(int argc, char **argv)
+int main(const int argc,
+         char **argv)
 {
-    ALM *alm = new ALM(argc, argv);
+    const auto alm_cui = new ALMCUI();
 
-    delete alm;
+    alm_cui->run(argc, argv);
+
+    delete alm_cui;
 
     return EXIT_SUCCESS;
 }

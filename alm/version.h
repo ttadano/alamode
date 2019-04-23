@@ -1,21 +1,15 @@
 /*
- memory.cpp
+ version.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2016 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include "memory.h"
+#pragma once
+ 
+#include <string>
 
-using namespace ALM_NS;
-
-Memory::Memory(ALM *alm) : Pointers(alm)
-{
-}
-
-Memory::~Memory()
-{
-};
+static const std::string ALAMODE_VERSION = "2.0.0 Dev";
