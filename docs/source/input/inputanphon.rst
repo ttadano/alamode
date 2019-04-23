@@ -1,8 +1,8 @@
 .. |umulaut_u|    unicode:: U+00FC
 
 
-Making input files for *anphon*
--------------------------------
+ANPHON: Input files
+-------------------
 
 Format of input files
 ~~~~~~~~~~~~~~~~~~~~~

@@ -1,5 +1,5 @@
-Formalism for program anphon
-============================
+Theoretical background of ANPHON
+================================
 
 .. |umulaut_u|   unicode:: U+00FC
 .. |umulaut_o|   unicode:: U+00F6

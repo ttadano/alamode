@@ -1,6 +1,11 @@
+.. raw:: html
 
-Making input files for *alm*
-----------------------------
+    <style> .red {color:red} </style>
+
+.. role:: red
+
+ALM: Input files 
+----------------
 
 .. _reference_input_alm:
 
@@ -10,7 +15,7 @@ Format of input files
 Each input file should consist of entry fields.
 Available entry fields are 
 
-**&general**, **&interaction**, **&cutoff**, **&cell**, **&position**, and **&fitting**.
+**&general**, **&interaction**, **&cutoff**, **&cell**, **&position**, and **&optimize** (**&fitting**).
 
 
 Each entry field starts from the key label **&field** and ends at the terminate character "/". (This is equivalent to Fortran namelist.) 
@@ -39,10 +44,19 @@ Each variable should be written inside the appropriate entry field.
 List of input variables
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+.. csv-table::
+   :widths: 20, 20, 20, 20, 20, 20
+
+   **&general**
+   :ref:`PREFIX <alm_prefix>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`, :ref:`KD <alm_kd>`, :ref:`TOLERANCE <alm_tolerance>`
+   :ref:`PRINTSYM <alm_printsym>`, :ref:`PERIODIC <alm_periodic>`, :ref:`HESSIAN <alm_hessian>`
+   **&interaction**
+
 
 "&general"-field
 ++++++++++++++++
 
+.. _alm_prefix:
 
 * **PREFIX**-tag : Job prefix to be used for names of output files
 
@@ -51,20 +65,26 @@ List of input variables
 
 ````
 
-* **MODE**-tag = fitting | suggest
+.. _alm_mode:
 
- ========= ===========================================================
-  fitting  | Perform fittings to estimate harmonic and anharmonic IFCs. 
-           | This mode requires appropriate DFILE and FFILE.
+* **MODE**-tag = optimize | suggest | fitting
 
-  suggest  | This mode suggests the displacement patterns necessary 
-           | to estimate harmonic and anharmonic IFCS.
- ========= ===========================================================
+ ============================ ===========================================================
+  optimize (:red:`>= 1.1.0`)  | Estimate harmonic and anharmonic IFCs. 
+                              | This mode requires an appropriate &optimize field.
+
+  fitting (:red:`deprecated`) | An alias of ``MODE = optimize``
+           
+  suggest                     | Suggests the displacement patterns necessary 
+                              | to estimate harmonic and anharmonic IFCS.
+ ============================ ===========================================================
 
  :Default: None
  :Type: String
 
 ````
+
+.. _alm_nat:
 
 * **NAT**-tag : Number of atoms in the supercell
 
@@ -73,12 +93,16 @@ List of input variables
 
 ````
 
+.. _alm_nkd:
+
 * **NKD**-tag : Number of atomic species
 
  :Default: None
  :Type: Integer
 
 ````
+
+.. _alm_kd:
 
 * **KD**-tag = Name[1], ... , Name[``NKD``]
 
@@ -88,30 +112,16 @@ List of input variables
 
 ````
 
-* NSYM-tag = 0 | 1 | nsym
-
- ===== ==========================================================
-   0   | The program automatically generates the crystal symmetry 
-       | operations (rotational and translational parts). 
-       | When ``PRINTSYM = 1``, symmetry operations will be saved 
-       | in the file “SYMM_INFO”.
-
-   1   | Only the identity operation will be considered.
-  nsym | "nsym" symmetry operations will be read from "SYMM_INFO" 
-       | file.
- ===== ==========================================================
-
- :Default: 0
- :Type: Integer
-
-````
+.. _alm_tolerance:
 
 * TOLERANCE-tag : Tolerance for finding symmetry operations
   
- :Default: 1.0e-6
+ :Default: 1.0e-3
  :Type: Double
 
 ````
+
+.. _alm_printsym:
 
 * PRINTSYM-tag = 0 | 1
 
@@ -124,6 +134,8 @@ List of input variables
  :type: Integer
 
 ````
+
+.. _alm_periodic:
 
 * PERIODIC-tag = PERIODIC[1], PERIODIC[2], PERIODIC[3] 
 
@@ -141,6 +153,8 @@ List of input variables
 
 ````
 
+.. _alm_hessian:
+
 * HESSIAN-tag = 0 | 1
 
  ===== =====================================================================
@@ -156,20 +170,38 @@ List of input variables
 "&interaction"-field
 ++++++++++++++++++++
 
+.. _alm_norder:
+
 
 * **NORDER**-tag : The order of force constants to be calculated. Anharmonic terms up to :math:`(m+1)`\ th order will be considered with ``NORDER`` = :math:`m`.
 
  :Default: None
  :Type: Integer
- :Example: ``NORDER`` should be 1 for harmonic calculations, and 2 to include cubic terms.
+ :Example: ``NORDER = 1`` for calculate harmonic terms only, ``NORDER = 2`` to include cubic terms as well, and so on.
 
 ````
+
+.. _alm_nbody:
+
 
 * NBODY-tag : Entry for excluding multiple-body interactions from anharmonic force constants
  
  :Default: ``NBODY`` = [2, 3, 4, ..., ``NORDER`` + 1]
  :Type: Array of integers
- :Example: If one wants to exclude three-body interactions from cubic force constants, one should explicitly give ``NBODY = 2 2``.
+ :Description: This tag may be useful for excluding multi-body clusters which are supposedly less important. For example, a set of fourth-order IFCs :math:`\{\Phi_{ijkl}\}`, where :math:`i, j, k`, and :math:`l` label atoms in the supercell, can be categorized into four different subsets; **on-site**, **two-body**, **three-body**, and **four-body** terms. Neglecting the Cartesian coordinates of IFCs for simplicity, each subset contains the IFC elements shown as follows:
+
+    =========== =========================================================================
+     on-site    | :math:`\{\Phi_{iiii}\}`
+     two-body   | :math:`\{\Phi_{iijj}\}`, :math:`\{\Phi_{iiij}\}` (:math:`i\neq j`)
+     three-body | :math:`\{\Phi_{iijk}\}` (:math:`i\neq j, i\neq k, j \neq k`)
+     four-body  | :math:`\{\Phi_{ijkl}\}` (all subscripts are different from each other)
+    =========== =========================================================================    
+
+    Since the four-body clusters are expected to be less important than the three-body and less-body clusters, you may want to exclude the four-body terms from the Taylor expansion potential because the number of such terms are huge. This can be done by setting the ``NBODY`` tag as ``NBODY = 2 3 3`` togather with ``NORDER = 3``.
+
+ :More examples: ``NORDER = 2; NBODY = 2 2`` includes harmonic and cubic IFCs but excludes three-body clusters from the cubic terms.
+
+                 ``NORDER = 5; NBODY = 2 3 3 2 2`` includes anharmonic terms up to the sixth-order, where the four-body clusters are excluded from the fourth-order IFCs, and the multi (:math:`\geq 3`)-body clusters are excluded from the fifth- and sixth-order IFCs.
 
 ````
 
@@ -269,32 +301,65 @@ fractional coordinate of an atom. There should be ``NAT`` such lines in the &pos
 
 ````
 
-"&fitting"-field
-+++++++++++++++++
+"&optimize"-field ("&fitting"-field)
+++++++++++++++++++++++++++++++++++++
 
-This field is necessary when ``MODE = fitting``.
+This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE = fitting``).
 
-* **DFILE**-tag : File name containing atomic displacements in Cartesian coordinate
+.. _alm_lmodel:
 
- :Default: None
+* LMODEL-tag : Choise of the linear model used for estimating force constants
+
+ =================================== ==========================
+   "least-squares", "LS", "OLS",  1    Ordinary least square
+   "elastic-net", "enet", 2            Elastic net
+ =================================== ==========================
+
+ :Default: least-squares
  :Type: String
- :Description: The format of ``DFILE`` can be found :ref:`here <label_format_DFILE>`
+ :Description: When ``LMODEL = ols``, the force constants are estimated from the displacement-force datasets via the ordinary least-squares (OLS), which is usually sufficient to calculate harmonic and third-order force constants. 
+
+               The elestic net (``LMODEL = enet``) should be useful to calculate the fourth-order (and higher-order) force constants. When the elastic net is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``
 
 ````
 
-* **FFILE**-tag : File name containing atomic forces in Cartesian coordinate
+.. _alm_dfset:
+
+* **DFSET**-tag (:red:`>= 1.1.0`): File name containing displacement-force datasets for training 
 
  :Default: None
  :Type: String
- :Description: The format of ``FFILE`` can be found :ref:`here <label_format_DFILE>`
+ :Description: The format of ``DFSET`` can be found :ref:`here <label_format_DFSET>`
 
 ````
 
-* **NDATA**-tag : Number of displacement-force data sets
+.. _alm_dfile:
+
+* DFILE-tag (:red:`deprecated`) : File name containing atomic displacements in Cartesian coordinate
+
+ :Default: None
+ :Type: String
+ :Description: The format of ``DFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
+
+````
+
+.. _alm_ffile:
+
+* FFILE-tag (:red:`deprecated`): File name containing atomic forces in Cartesian coordinate
+
+ :Default: None
+ :Type: String
+ :Description: The format of ``FFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
+
+````
+
+.. _alm_ndata:
+
+* NDATA-tag : Number of displacement-force data sets
 
  :Default: None
  :Type: Integer
- :Description: ``DFILE`` and ``FFILE`` should contain at least ``NDATA``:math:`\times` ``NAT`` lines.
+ :Description: If ``NDATA`` is not given, the code reads all lines of ``DFSET`` (excluding comment lines) and estimates ``NDATA`` by dividing the line number by ``NAT``. If the number of lines is not divisible by ``NAT``, an error will be raised. ``DFSET`` should contain at least ``NDATA``:math:`\times` ``NAT`` lines.
 
 ````
 
@@ -306,21 +371,176 @@ This field is necessary when ``MODE = fitting``.
 
 ````
 
-* ICONST-tag = 0 | 1 | 2 | 3
+* SKIP-tag : Specifies the range of data to be skipped for training
 
- ===== =========================================================================
-   0    No constraints
-   1    Constraints for translational invariance will be imposed between IFCs.
-   2   | In addition to ``ICONST = 1``, constraints for rotational invariance
-       | will be imposed up to (``NORDER`` + 1)th order.
-   3   | In addition to ``ICONST = 2``, constraints for rotational invariance
-       | between (``NORDER`` + 1)th order and (``NORDER`` + 2)th order, which
-       | are zero, will be considered. 
-  11   | Same as ``ICONST = 1`` but the constraint is imposed algebraically
-       | rather than numerically.
- ===== =========================================================================
+ :Default: None
+ :Type: Two integers connected by a hyphen
+ :Description: ``SKIP`` =\ :math:`i`-:math:`j` skips the data in the range of [:math:`i`:\ :math:`j`]. The :math:`i` and :math:`j` must satisfy :math:`1\leq i \leq j \leq` ``NDATA``.  This option may be useful when doing cross-validation manually (``CV=-1``).
+
+````
+
+* DFSET_CV-tag : File name containing displacement-force datasets used for manual cross-validation
+
+ :Default: ``DFSET_CV = DFSET``
+ :Type: String
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+
+````
+
+* NDATA_CV-tag : Number of displacement-force validation datasets 
+
+ :Default: None 
+ :Type: Integer
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+
+````
+
+* NSTART_CV, NEND_CV-tags : Specifies the range of data to be used for validation
+
+ :Default: ``NSTART_CV = 1``, ``NEND_CV = NDATA_CV``
+ :Type: Integer
+ :Example: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+
+````
+
+* CV-tag : Cross-validation mode for elastic net 
+
+ ===== ===================================================================================================================
+   0   | Cross-validation mode is off. 
+       | The elastic net optimization is solved with the given ``L1_ALPHA`` value. 
+       | The force constants are written to ``PREFIX``.fcs and ``PREFIX``.xml.
+
+  > 0  | ``CV``-fold cross-validation is performed *automatically*. 
+       | ``NDATA`` training datasets are divided into ``CV`` subsets, and ``CV`` different combinations of 
+       | training-validation datasets are created internally. For each combination, the elastic net 
+       | optimization is solved with the various ``L1_ALPHA`` values defined by the ``CV_MINALPHA``, 
+       | ``CV_MAXALPHA``, and ``CV_NALPHA`` tags. The result of each cross-validation is stored in 
+       | ``PREFIX``.enet_cvset[1, ..., ``CV``], and their average and deviation are stored in ``PREFIX``.cvscore. 
+
+  -1   | The cross-validation is performed *manually*.
+       | The Taylor expansion potential is trained by using the training datasets in ``DFSET``, and 
+       | the validation score is calculated by using the data in ``DFSET_CV`` for various ``L1_ALPHA`` values
+       | defined the ``CV_MINALPHA``, ``CV_MAXALPHA``, and ``CV_NALPHA`` tags.
+       | After the calculation, the fitting and validation errors are stored in ``PREFIX``.enet_cv.
+       | This option may be convenient for a large-scale problem since multiple optimization tasks with
+       | different training-validation datasets can be done in parallel.
+ ===== ===================================================================================================================
+
+ :Default: 0
+ :Type: Integer
+
+````
+
+* L1_ALPHA-tag : The coefficient of the L1 regularization term
+
+ :Default: 0.0 
+ :Type: Double
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = 0``.
+
+````
+
+* CV_MINALPHA, CV_MAXALPHA, CV_NALPHA-tags : Options to specify the ``L1_ALPHA`` values used in cross-validation 
+
+ :Default: ``CV_MINALPHA = 1.0e-4``, ``CV_MAXALPHA = 1.0``, ``CV_NALPHA = 1`` 
+ :Type: Double, Double, Integer
+ :Description: ``CV_NALPHA`` values of ``L1_ALPHA`` are generated from ``CV_MINALPHA`` to ``CV_MAXALPHA`` in logarithmic scale. A recommended value of ``CV_MAXALPHA`` is printed out to the log file. This tag is used only when ``LMODEL = enet`` and the cross-validation mode is on (``CV > 0`` or ``CV = -1``).
+
+````
+
+* L1_RATIO-tag : The ratio of the L1 regularization term
+
+ :Default: 1.0 (LASSO)
+ :Type: Double
+ :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``.
+
+````
+
+* STANDARDIZE-tag = 0 | 1
+
+ ===== =============================================================================================
+   0    Do not standardize the sensing matrix
+   1   | Each column of the sensing matrix is standardized in such a way that its mean value
+       | becomes 0 and standard deviation becomes 1. 
+ ===== =============================================================================================
 
  :Default: 1
+ :Type: Integer
+ :Description: This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``STANDARDIZE`` option, you will have to rerun the cross-validation.
+
+
+````
+
+* ENET_DNORM-tag : Normalization factor of atomic displacements
+
+ :Default: 1.0
+ :Type: Double
+ :Description: The normalization factor of atomic displacement :math:`u_{0}` in units of Bohr. When :math:`u_{0} (\neq 1)` is given, the displacement data are scaled as :math:`u_{i} \rightarrow u_{i}/u_{0}` before constructing the sensing matrix. This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``ENET_DNORM`` value, you will have to rerun the cross-validation. Also, this tag has no effect when ``STANDARDIZE = 1``. 
+
+````
+
+* MAXITER-tag : Number of maximum iterations of the coordinate descent algorithm
+
+ :Default: 10000
+ :Type: Integer
+ :Description: Effective when ``LMODEL = enet``.
+
+````
+
+* CONV_TOL-tag : Convergence criterion of the coordinate descent iteration
+
+ :Default: 1.0e-8
+ :Type: Double
+ :Description: The coordinate descent iteration finishes at :math:`i`\ th iteration if :math:`\sqrt{\frac{1}{N}|\boldsymbol{\Phi}_{i} - \boldsymbol{\Phi}_{i-1}|_{2}^{2}} <` ``CONV_TOL`` is satisfied, where :math:`N` is the length of the vector :math:`\boldsymbol{\Phi}`.
+
+````
+
+* SOLUTION_PATH-tag = 0 | 1
+
+ ===== =============================================================================================
+   0    Do not save the solution path.
+   1    Save the solution path of each cross-validation combination in ``PREFIX``.solution_path.
+ ===== =============================================================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: Effective when ``LMODEL = enet`` and the cross-validation mode is on.
+
+````
+
+
+* DEBIAS_OLS-tag = 0 | 1
+
+ ===== =============================================================================================
+   0    Save the solution of the elastic net problem to ``PREFIX``.fcs and ``PREFIX``.xml.
+   1    | After the solution of the elastic net optimization problem is obtained, 
+        | only non-zero coefficients are collected, and the ordinary least-squares fitting is 
+        | solved again with the non-zero coefficients before saving the results to ``PREFIX``.fcs and
+        | ``PREFIX``.xml. This might be useful to reduce the bias of the elastic net solution.
+ ===== =============================================================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: Effective when ``LMODEL = enet`` and ``CV = 0``.
+
+
+````
+
+* ICONST-tag = 0 | 1 | 2 | 3 | 11
+
+ ===== =============================================================================================
+   0    No constraints
+   1   | Constraints for translational invariance will be imposed between IFCs.
+       | Available only when ``LMODEL = ols``.
+  11   | Same as ``ICONST = 1`` but the constraint is imposed *algebraically* rather than numerically.
+       | Select this option when ``LMODEL = enet``.
+   2   | In addition to ``ICONST = 1``, constraints for rotational invariance will be 
+       | imposed up to (``NORDER`` + 1)th order. Available only when ``LMODEL = ols``.
+   3   | In addition to ``ICONST = 2``, constraints for rotational invariance between (``NORDER`` + 1)th order 
+       | and (``NORDER`` + 2)th order, which are zero, will be considered. 
+       | Available only when ``LMODEL = ols``.
+ ===== =============================================================================================
+
+ :Default: 11
  :Type: Integer
  :Description: See :ref:`this page<constraint_IFC>` for the numerical formulae.
 
@@ -350,10 +570,43 @@ This field is necessary when ``MODE = fitting``.
 
 ````
 
+How to make a DFSET file
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _label_format_DFSET:
+
+Format of ``DFSET`` (recommended as of ver. 1.1.0)
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The displacement-force data sets obtained by first-principles (or classical force-field) calculations
+have to be saved to a file, say *DFSET*. Then, the force constants are estimated by setting ``DFSET =`` *DFSET* and with ``MODE = optimize``.
+
+The *DFSET* file must contain the atomic displacements and corresponding forces in Cartesian coordinate for at least ``NDATA`` structures (displacement patterns)
+in the following format: 
+
+.. math::
+    :nowrap:
+
+    # Structure number 1 (this is just a comment line)
+    \begin{eqnarray*}
+     u_{x}(1) & u_{y}(1) & u_{z}(1) & f_{x}(1) & f_{y}(1) & f_{z}(1) \\
+     u_{x}(2) & u_{y}(2) & u_{z}(2) & f_{x}(2) & f_{y}(2) & f_{z}(2) \\
+              & \vdots   &          &          & \vdots   &          \\
+     u_{x}(\mathrm{NAT}) & u_{y}(\mathrm{NAT}) & u_{z}(\mathrm{NAT}) & f_{x}(\mathrm{NAT}) & f_{y}(\mathrm{NAT}) & f_{z}(\mathrm{NAT})
+    \end{eqnarray*}
+    # Structure number 2 
+    \begin{eqnarray*}
+     u_{x}(1) & u_{y}(1) & u_{z}(1) & f_{x}(1) & f_{y}(1) & f_{z}(1) \\
+              & \vdots   &          &          & \vdots   &          
+    \end{eqnarray*}
+
+Here, ``NAT`` is the number of atoms in the supercell. 
+The unit of displacements and forces must be **Bohr** and **Ryd/Bohr**, respectively.
+
 .. _label_format_DFILE:
 
-Format of DFILE and FFILE
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Format of ``DFILE`` and ``FFILE`` (deprecated)
+++++++++++++++++++++++++++++++++++++++++++++++
 
 The displacement-force data sets obtained by first-principles (or classical force-field) calculations
 have to be saved to ``DFILE`` and ``FFILE`` to estimate IFCs with ``MODE = fitting``.
