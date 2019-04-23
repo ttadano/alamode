@@ -27,8 +27,8 @@ namespace ALM_NS
     {
     public:
         std::vector<int> elems; // flattened index of (iatom, icoordinate) in the supercell
-        double sign; // factor (+1 or -1) to convert the mother FC to the child
-        size_t mother; // index of the reducible force constants
+        double sign;            // factor (+1 or -1) to convert the mother FC to the child
+        size_t mother;          // index of the reducible force constants
 
         FcProperty();
 
@@ -111,7 +111,7 @@ namespace ALM_NS
         std::vector<FcProperty>* get_fc_table() const;
 
     private:
-        std::vector<size_t> *nequiv; // stores duplicate number of irreducible force constants
+        std::vector<size_t> *nequiv;       // stores duplicate number of irreducible force constants
         std::vector<FcProperty> *fc_table; // all force constants
         std::vector<FcProperty> *fc_zeros; // zero force constants (due to space group symm.)
 

@@ -83,8 +83,8 @@ namespace PHON_NS
     class SymmetryOperationWithMapping
     {
     public:
-        std::vector<double> rot; // Rotation matrix in Cartesian basis
-        std::vector<double> rot_real; // Rotation matrix in fractional basis
+        std::vector<double> rot;            // Rotation matrix in Cartesian basis
+        std::vector<double> rot_real;       // Rotation matrix in fractional basis
         std::vector<double> rot_reciprocal; // Rotation matrix in reciprocal (fractional) basis
         std::vector<unsigned int> mapping;
         double shift[3]; // Translation vector in fractional basis

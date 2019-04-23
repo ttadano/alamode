@@ -1079,7 +1079,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 
             intlist.clear();
         } // close if
-    } // close loop i
+    }     // close loop i
 
     deallocate(xyzcomponent);
     deallocate(intarr);
@@ -1321,7 +1321,7 @@ void Constraint::generate_rotational_constraint(const System *system,
                             }
 
                         } // nu
-                    } // mu
+                    }     // mu
                 }
             } else {
 
@@ -1544,14 +1544,14 @@ void Constraint::generate_rotational_constraint(const System *system,
                                         }
 
                                     } // nu
-                                } // mu
+                                }     // mu
 
                             } // ixyz
 
                         } while (g.next());
 
                     } // direction
-                } // icrd
+                }     // icrd
             }
 
             // Additional constraint for the last order.
@@ -1619,7 +1619,7 @@ void Constraint::generate_rotational_constraint(const System *system,
                                                     += (*iter_found).sign * static_cast<double>(levi_factor);
                                             }
                                         } // jcrd
-                                    } // lambda
+                                    }     // lambda
 
                                     if (!is_allzero(arr_constraint_self, tolerance, loc_nonzero)) {
                                         if (arr_constraint_self[loc_nonzero] < 0.0) {
@@ -1635,7 +1635,7 @@ void Constraint::generate_rotational_constraint(const System *system,
                                     }
 
                                 } // nu
-                            } // mu
+                            }     // mu
 
                         } // ixyz
 
