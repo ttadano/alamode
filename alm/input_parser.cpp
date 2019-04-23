@@ -62,18 +62,31 @@ void InputParser::run(ALM *alm,
 void InputParser::parse_displacement_and_force_files(std::vector<std::vector<double>> &u,
                                                      std::vector<std::vector<double>> &f,
                                                      DispForceFile &datfile_in) const
+{
+ 
+    if (datfile_in.filename_second.empty()) {
+        parse_dfset(u, f, datfile_in);
 
+        } else {
+            // When filename_second is not empty, displacement (u) and force (f) data will be 
+            // read from different files given by DFILE and FFILE, respectively.
+        parse_dfile_and_ffile(u, f, datfile_in);
+        }
+}
+
+void InputParser::parse_dfset(std::vector<std::vector<double>> &u,
+                              std::vector<std::vector<double>> &f,
+                              DispForceFile &datfile_in) const
 {
     int nrequired;
 
     if (datfile_in.ndata == 0) {
         nrequired = -1;
     } else {
-        // Total number of data entries (displacement + force)
         nrequired = 6 * nat * datfile_in.ndata;
     }
 
-    std::vector<double> value_arr;
+   std::vector<double> value_arr;
 
     // Read displacements from DFILE
     std::string line;
@@ -151,6 +164,131 @@ void InputParser::parse_displacement_and_force_files(std::vector<std::vector<dou
     value_arr.clear();
 }
 
+void InputParser::parse_dfile_and_ffile(std::vector<std::vector<double>> &u,
+                                        std::vector<std::vector<double>> &f,
+                                        DispForceFile &datfile_in) const
+{
+    // This function is prepared to keep the backward compatibility (support DFILE and FFILE tags)
+    int nrequired;
+
+    if (datfile_in.ndata == 0) {
+        nrequired = -1;
+    } else {
+        // Total number of data entries (displacement)   
+           nrequired = 3 * nat * datfile_in.ndata;
+    }
+
+   std::vector<double> value_arr, value_arr2;
+
+    // Read displacements from DFILE
+    std::string line;
+    double val;
+    auto nline_u = 0;
+
+    // Open the target file and copy the data to 1D temporary vector
+    std::ifstream ifs_data;
+    ifs_data.open(datfile_in.filename.c_str(), std::ios::in);
+    if (!ifs_data) exit("openfiles", "cannot open DFILE file");
+    auto reach_end = false;
+    while (std::getline(ifs_data >> std::ws, line)) {
+        if (line[0] != '#') {
+
+            std::istringstream iss(line);
+
+            while (iss >> val) {
+                value_arr.push_back(val);
+                ++nline_u;
+
+                if (nline_u == nrequired) {
+                    reach_end = true;
+                    break;
+                }
+            }
+        }
+
+        if (reach_end) break;
+    }
+    ifs_data.close();
+
+    auto nline_f = 0;
+    ifs_data.open(datfile_in.filename_second.c_str(), std::ios::in);
+    if (!ifs_data) exit("openfiles", "cannot open FFILE file");
+    reach_end = false;
+    while (std::getline(ifs_data >> std::ws, line)) {
+        if (line[0] != '#') {
+
+            std::istringstream iss(line);
+
+            while (iss >> val) {
+                value_arr2.push_back(val);
+                ++nline_f;
+
+                if (nline_f == nrequired) {
+                    reach_end = true;
+                    break;
+                }
+            }
+        }
+
+        if (reach_end) break;
+    }
+    ifs_data.close();
+
+    // Check if the length of the vector is correct.
+    // Also, estimate ndata if it is not set. 
+    auto n_entries = value_arr.size();
+    const auto n_entries2 = value_arr2.size();
+
+    if (nrequired == -1 && (n_entries != n_entries2)) {
+        exit("parse_dfile_and_ffile",
+             "The number of lines in DFILE and FFILE are different.");
+    }
+
+    n_entries = std::min<size_t>(n_entries, n_entries2);
+
+    if (nrequired == -1) {
+        if (n_entries % (3 * nat) == 0) {
+            datfile_in.ndata = n_entries / (3 * nat);
+        } else {
+            exit("parse_dfile_and_ffile",
+                 "The number of lines in DFILE is indivisible by NAT");
+        }
+    } else {
+        if (n_entries < nrequired) {
+            exit("parse_dfile_and_ffile",
+                 "The number of lines in DFILE is too small for the given NDATA = ",
+                 datfile_in.ndata);
+        }
+    }
+
+    if (datfile_in.nstart == 0) datfile_in.nstart = 1;
+    if (datfile_in.nend == 0) datfile_in.nend = datfile_in.ndata;
+
+    // Copy the data into 2D array
+    const auto ndata_used = datfile_in.nend - datfile_in.nstart
+        + 1 - datfile_in.skip_e + datfile_in.skip_s;
+
+    u.resize(ndata_used, std::vector<double>(3 * nat));
+    f.resize(ndata_used, std::vector<double>(3 * nat));
+
+    auto idata = 0;
+    for (size_t i = 0; i < datfile_in.ndata; ++i) {
+        if (i < datfile_in.nstart - 1) continue;
+        if (i >= datfile_in.skip_s - 1 && i < datfile_in.skip_e - 1) continue; // When skip_s == skip_e, skip nothing.
+        if (i > datfile_in.nend - 1) break;
+
+        for (auto j = 0; j < nat; ++j) {
+            for (auto k = 0; k < 3; ++k) {
+                u[idata][3 * j + k] = value_arr[3 * nat * i + 3 * j + k];
+                f[idata][3 * j + k] = value_arr2[3 * nat * i + 3 * j + k];
+            }
+        }
+        ++idata;
+    }
+    value_arr.clear();
+    value_arr2.clear();
+}
+
 void InputParser::parse_input(ALM *alm)
 {
     // The order of calling methods in this method is important.
@@ -204,7 +342,8 @@ void InputParser::parse_input(ALM *alm)
                      "&optimize entry not found in the input file");
             } else {
                 warn("parse_input",
-                     "&fitting field is deprecated. Please use &optimize instead.");
+                     "&fitting field is deprecated and will be removed in the next version.\n"
+                     " Please use &optimize instead.\n");
             }
         }
         parse_optimize_vars(alm);
@@ -261,12 +400,15 @@ void InputParser::parse_general_vars(ALM *alm)
     }
     if (mode == "fitting") {
         mode = "optimize";
-        warn("parse_general_vars", "MODE = fitting is deprecated. Please use MODE = optimize instead.");
+        warn("parse_general_vars", 
+             "MODE = fitting is deprecated and will be removed in the next version.\n"
+             " Please use MODE = optimize instead.\n");
     }
     if (mode == "lasso") {
         mode = "optimize";
         warn("parse_general_vars",
-             "MODE = lasso is deprecated. Please use MODE = optimize instead with LMODEL = enet option in the &optimize field.");
+             "MODE = lasso is deprecated and will be removed in the next version.\n" 
+             " Please use MODE = optimize instead with LMODEL = enet option in the &optimize field.\n");
     }
     if (mode == "opt") mode = "optimize";
 
@@ -735,17 +877,21 @@ void InputParser::parse_optimize_vars(ALM *alm)
     DispForceFile datfile_train;
 
     if (fitting_var_dict["DFSET"].empty()) {
-        if (!fitting_var_dict["DFILE"].empty() || !fitting_var_dict["FFILE"].empty()) {
-            std::cout << " Sorry. DFILE and FFILE tags are obsolate.\n";
+        if (!fitting_var_dict["DFILE"].empty() && !fitting_var_dict["FFILE"].empty()) {
+            std::cout << " DFILE and FFILE tags are obsolate and will be removed in the next version.\n";
             std::cout << " Please use DFSET instead.\n";
             std::cout << " DFSET can be created easily by the unix paste command as:\n\n";
             std::cout << " $ paste DFILE FFILE > DFSET\n\n";
-            exit("parse_optimize_vars", "Obsolate tag: DFILE, FFILE");
+//            exit("parse_optimize_vars", "Obsolate tag: DFILE, FFILE");
+            datfile_train.filename = fitting_var_dict["DFILE"];
+            datfile_train.filename_second = fitting_var_dict["FFILE"];
         } else {
-            exit("parse_optimize_vars", "DFSET tag must be given.");
+            exit("parse_optimize_vars", 
+                 "DFSET tag (or both DFILE and FFILE tags) must be given.");
         }
+    } else {
+        datfile_train.filename = fitting_var_dict["DFSET"];
     }
-    datfile_train.filename = fitting_var_dict["DFSET"];
 
     if (!fitting_var_dict["NDATA"].empty()) {
         assign_val(datfile_train.ndata, "NDATA", fitting_var_dict);
@@ -1293,11 +1439,6 @@ bool InputParser::is_data_range_consistent(const DispForceFile &datfile_in) cons
     const auto skip_s = datfile_in.skip_s;
     const auto skip_e = datfile_in.skip_e;
 
-    // std::cout << "ndata = " << ndata << '\n';
-    // std::cout << "nstart= " << nstart << '\n';
-    // std::cout << "nend  = " << nend << '\n';
-    // std::cout << "skip_s= " << skip_s << '\n';
-    // std::cout << "skip_e= " << skip_e << '\n';
     if (nstart > 0 && skip_s > 0 && skip_s < nstart) return false;
     if (nend > 0 && skip_e > 0 && (skip_e - 1) > nend) return false;
     if (nstart > 0 && nend > 0 && nstart > nend) return false;

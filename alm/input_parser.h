@@ -67,5 +67,12 @@ namespace ALM_NS
         void parse_displacement_and_force_files(std::vector<std::vector<double>> &u,
                                                 std::vector<std::vector<double>> &f,
                                                 DispForceFile &datfile_in) const;
+        void parse_dfset(std::vector<std::vector<double>> &u,
+                         std::vector<std::vector<double>> &f,
+                         DispForceFile &datfile_in) const;
+
+        void parse_dfile_and_ffile(std::vector<std::vector<double>> &u,
+                                   std::vector<std::vector<double>> &f,
+                                   DispForceFile &datfile_in) const;
     };
 }

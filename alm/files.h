@@ -18,12 +18,14 @@ namespace ALM_NS
     {
     public:
         std::string filename;
+        std::string filename_second;
         size_t ndata, nstart, nend;
         size_t skip_s, skip_e;
 
         DispForceFile()
         {
             filename = "";
+            filename_second = "";
             ndata = 0;
             nstart = 0;
             nend = 0;
@@ -53,7 +55,6 @@ namespace ALM_NS
         void set_datfile_validation(const DispForceFile &dat_in);
         DispForceFile get_datfile_train() const;
         DispForceFile get_datfile_validation() const;
-
 
     private:
 
