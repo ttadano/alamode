@@ -19,15 +19,12 @@ namespace ALM_NS
     template <class TYPE>
     class CombinationWithRepetition
     {
-    private:
         std::vector<TYPE> vec;
         unsigned int ndim;
 
 
     public:
-        CombinationWithRepetition()
-        {
-        };
+        CombinationWithRepetition() { };
 
         template <class InputIter>
         CombinationWithRepetition(InputIter begin,
@@ -42,8 +39,7 @@ namespace ALM_NS
 
             vec.clear();
 
-            typename std::set<TYPE>::iterator iter;
-            for (iter = set_tmp.begin(); iter != set_tmp.end(); ++iter) {
+            for (auto iter = set_tmp.begin(); iter != set_tmp.end(); ++iter) {
                 for (unsigned int i = 0; i < ndim; i++) {
                     vec.push_back(*iter);
                 }
@@ -62,8 +58,8 @@ namespace ALM_NS
 
         unsigned int size() const
         {
-            unsigned int n = vec.size() / ndim;
-            unsigned int r = ndim;
+            const unsigned int n = vec.size() / ndim;
+            const auto r = ndim;
             return factorial(n + r - 1, n - 1) / factorial(r);
         }
 
@@ -72,7 +68,7 @@ namespace ALM_NS
                                const unsigned int min = 1) const
         {
             unsigned int result = 1;
-            for (unsigned int i = min + 1; i <= max; ++i) result *= i;
+            for (auto i = min + 1; i <= max; ++i) result *= i;
             return result;
         }
     };

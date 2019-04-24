@@ -6,7 +6,7 @@
 #-----------------------------------------------
 
 CXX = icpc 
-CXXFLAGS = -O2 -xHOST -openmp -std=c++11
+CXXFLAGS = -O2 -xHOST -openmp 
 INCLUDE = -I../include
 
 CXXL = ${CXX}
@@ -24,9 +24,9 @@ LIBS = ${LAPACK}
 
 PROG = alm
 
-CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp \
-	fitting.cpp input.cpp interaction.cpp main.cpp memory.cpp \
-	patterndisp.cpp symmetry.cpp system.cpp timer.cpp writes.cpp 
+CXXSRC= alm.cpp alm_cui.cpp input_parser.cpp input_setter.cpp constraint.cpp fcs.cpp files.cpp \
+        optimize.cpp cluster.cpp main.cpp rref.cpp \
+        patterndisp.cpp symmetry.cpp system.cpp timer.cpp writer.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

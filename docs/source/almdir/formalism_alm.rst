@@ -1,5 +1,5 @@
-Formalism for program alm
-=========================
+ALM: Theoretical background
+=============================
 
 Interatomic force constants (IFCs)
 ----------------------------------
@@ -23,7 +23,7 @@ The are several relationships between IFCs which may be used to reduce the numbe
 
 * Permutation
 
- Firstly, IFCs should be invariant under the exchange of triplet :math:`(\ell,\kappa,\mu)`, e.g. 
+ IFC should be invariant under the exchange of the triplet :math:`(\ell,\kappa,\mu)`, e.g.,
 
  .. math::
 
@@ -31,7 +31,7 @@ The are several relationships between IFCs which may be used to reduce the numbe
 
 * Periodicity
 
- Secondly, since IFCs should depend on interatomic distances, they are invariant under a translation in units of lattice vector, namely 
+ Since IFCs should depend on interatomic distances, they are invariant under a translation in units of the lattice vector, namely
 
  .. math::
  
@@ -52,7 +52,7 @@ The are several relationships between IFCs which may be used to reduce the numbe
 
  .. Note::
 
-   In the current implementation of *alm*, independent IFCs are searched in Cartesian coordinate where the matrix element :math:`O_{\mu\nu}` is 0 or :math:`\pm1` in all symmetry operations except for those of **hexagonal** (trigonal) lattice. Also, except for hexagonal (trigonal) systems, the product :math:`O_{\nu_{1}\mu_{1}}\cdots O_{\nu_{n}\mu_{n}}` in the left hand side of equation :eq:`ifcsym1` becomes non-zero only for a specific pair of :math:`\{\nu\}` (and becomes 0 for all other :math:`\{\nu\}`\ s). Therefore, let :math:`\{\nu^{\prime}\}` be such a pair of :math:`\{\nu\}`, the equation :eq:`ifcsym1` can be reduced to
+   In the implementation of ALM, symmetricaly independent IFCs are searched in Cartesian coordinate where the matrix element :math:`O_{\mu\nu}` is 0 or :math:`\pm1` in all symmetry operations except for those of **hexagonal** (trigonal) lattice. Also, except for hexagonal (trigonal) systems, the product :math:`O_{\nu_{1}\mu_{1}}\cdots O_{\nu_{n}\mu_{n}}` in the left hand side of equation :eq:`ifcsym1` becomes non-zero only for a specific pair of :math:`\{\nu\}` (and becomes 0 for all other :math:`\{\nu\}`\ s). Therefore, let :math:`\{\nu^{\prime}\}` be such a pair of :math:`\{\nu\}`, the equation :eq:`ifcsym1` can be reduced to
 
    .. math::
        :label: ifcsym2
@@ -76,7 +76,7 @@ The constraints for translational invariance are given by
 
     \sum_{\ell_{1}\kappa_{1}}\Phi_{\mu_{1}\mu_{2}\dots\mu_{n}}(\ell_{1}\kappa_{1};\ell_{2}\kappa_{2};\dots;\ell_{n}\kappa_{n}) = 0,
   
-which should be satisfied for arbitrary pairs of :math:`\ell_{2}\kappa_{2},\dots,\ell_{n}\kappa_{n}` and :math:`\mu_{1},\dots,\mu_{n}`. The code *alm* imposes equation :eq:`consttran` by default (``ICONST = 1``). 
+which should be satisfied for arbitrary pairs of :math:`\ell_{2}\kappa_{2},\dots,\ell_{n}\kappa_{n}` and :math:`\mu_{1},\dots,\mu_{n}`. The code **alm** imposes equation :eq:`consttran` by default (``ICONST = 1``). 
 
 The constraints for rotational invariance are
 
@@ -115,26 +115,70 @@ When ``NORDER = 1``, equation :eq:`constrot1` will be considered if ``ICONST = 2
 
 .. _fitting_formalism:
 
-Estimate IFCs by least-square fitting
--------------------------------------
+Estimate IFCs by linear regression
+----------------------------------
 
-The code **alm** extracts harmonic and anharmonic IFCs from a displacement-force data set by solving the following linear least-square problem:
+Basic notations
++++++++++++++++
+
+From the symmetrically independent set of IFCs and the constraints between them for satifying the translational and/or rotational invariance, we can construct an irreducible set of IFCs :math:`\{\Phi_{i}\}`. Let us denote a column vector comprising the :math:`N` irreducible set of IFCs as :math:`\boldsymbol{\Phi}`. Then, the Taylor expansion potential (TEP) defined by equation :eq:`U_Taylor` is written as
+
+.. math::
+    U_{\mathrm{TEP}} = \boldsymbol{b}^{T}\boldsymbol{\Phi}.
+
+Here, :math:`\boldsymbol{b} \in \mathbb{R}^{1\times N}` is a function of atomic displacements :math:`\{u_{i}\}` defined as :math:`\boldsymbol{b} = \partial U / \partial \boldsymbol{\Phi}`. The atomic forces based on the TEP is then given as
+
+.. math::
+    :label: force_tep
+
+    \boldsymbol{F}_{\mathrm{TEP}} = - \frac{\partial U_{\mathrm{TEP}}}{\partial \boldsymbol{u}} = - \frac{\partial \boldsymbol{b}^{T}}{\partial \boldsymbol{u}} \boldsymbol{\Phi} = A \boldsymbol{\Phi},
+
+where :math:`A \in \mathbb{R}^{3N_{s} \times N}` with :math:`N_{s}` being the number of atoms in the supercell, 
+and :math:`\boldsymbol{u}^{T} = (u_{1}^{x}, u_{1}^{y}, u_{1}^{z}, \dots, u_{N_{s}}^{x}, u_{N_{s}}^{y}, u_{N_{s}}^{z})` is the vector comprising :math:`3N_{s}` atomic displacements in the supercell. 
+Note that the matrix :math:`A` and force vector :math:`\boldsymbol{F}_{\mathrm{TEP}}` depend on the atomic configuration of the supercell.
+To make this point clearer, let us denote them as :math:`A(\boldsymbol{u})` and :math:`\boldsymbol{F}_{\mathrm{TEP}}(\boldsymbol{u})`.
+
+To estimate the IFC vector :math:`\boldsymbol{\Phi}` by linear regression, it is usually necessary to consider several different displacement patterns.
+Let us suppose we have :math:`N_d` displacement patterns and atomic forces for each pattern obtained by DFT.
+Then, equation :eq:`force_tep` defined for each displacement pattern can be combined to single equation as
+
+.. math::
+    \boldsymbol{\mathscr{F}}_{\mathrm{TEP}} =  \mathbb{A} \boldsymbol{\Phi},
+
+where :math:`\boldsymbol{\mathscr{F}}^{T} = [\boldsymbol{F}^{T}(\boldsymbol{u}_{1}), \dots, \boldsymbol{F}^{T}(\boldsymbol{u}_{N_d})]` and 
+:math:`\mathbb{A}^{T} = [A^{T}(\boldsymbol{u}_{1}),\dots,A^{T}(\boldsymbol{u}_{N_d})]`.
+
+
+Ordinary least-squares
+++++++++++++++++++++++
+
+In the ordinary least-squares (``LMODEL = least-squares``), IFCs are estimated by solving the following problem:
 
 .. math::
    :label: lsq
 
-   \text{minimize} \ \ \chi^{2} = \sum_{t}^{m} \sum_{i} \|F_{i,t}^{\mathrm{DFT}} - F_{i,t}^{\mathrm{ALM}} \|^{2}.
+   \boldsymbol{\Phi}_{\mathrm{OLS}} = \mathop{\rm argmin}\limits_{\boldsymbol{\Phi}} \frac{1}{2N_{d}} \|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}} - \boldsymbol{\mathscr{F}}_{\mathrm{TEP}} \|^{2}_{2} = \mathop{\rm argmin}\limits_{\boldsymbol{\Phi}} \frac{1}{2N_{d}}   \|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}} - \mathbb{A} \boldsymbol{\Phi} \|^{2}_{2}.
 
-Here, :math:`m` is the number of atomic configurations and the index :math:`i = (\ell,\kappa,\mu)` is the triplet of coordinates. 
-The model force :math:`F_{i,t}^{\mathrm{ALM}}` is a linear function of IFCs :math:`\{\Phi\}` which can be obtained by differentiating :math:`U` (Eq. :eq:`U_Taylor`) by :math:`u_{i}`.
-The parameters (IFCs) are determined so as to best mimic the atomic forces obtained by DFT calculations, :math:`F_{i,t}^{\mathrm{DFT}}`. 
-
-To evaluate goodness of fit, **alm** reports the relative error :math:`\sigma` defined by
+Therefore, the IFCs are determined so that the residual sum of squares (RSS) is minimized. 
+To determine all elements of  :math:`\boldsymbol{\Phi}_{\mathrm{OLS}}` uniquely, :math:`\mathbb{A}^{T}\mathbb{A}` must be full rank. When the fitting is successful, **alm** reports the relative fitting error :math:`\sigma` defined by
 
 .. math::
    :label: fitting_error
 
-   \sigma = \sqrt{\frac{\chi^{2}}{\sum_{t}^{m}\sum_{i} (F_{i,t}^{\mathrm{DFT}})^{2}}},
+   \sigma = \sqrt{\frac{\|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}} - \mathbb{A} \boldsymbol{\Phi} \|^{2}_{2}}{\|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}}\|_{2}^{2}}},
 
-where the numerator is the residual of fit and the denominator is the square sum of DFT forces.
+where the denominator is the square sum of the DFT forces.
 
+Elastic-net regression
+++++++++++++++++++++++
+
+In the elasitc-net optimization (``LMODEL = elastic-net``), IFCs are estimated by solving the following optimization problem:
+
+.. math::
+   :label: enet
+
+   \boldsymbol{\Phi}_{\mathrm{enet}} = \mathop{\rm argmin}\limits_{\boldsymbol{\Phi}} \frac{1}{2N_{d}}   \|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}} - \mathbb{A} \boldsymbol{\Phi} \|^{2}_{2} + \alpha \beta \| \boldsymbol{\Phi}  \|_{1} + \frac{1}{2} \alpha (1-\beta) \| \boldsymbol{\Phi}  \|_{2}^{2},
+
+where :math:`\alpha` is a hyperparameter that controls the trade-off between the sparsity and accuracy of the model, and :math:`\beta \; (0 < \beta \leq 1)` is a hyperparameter that controls the ratio of the :math:`L_{1}` and :math:`L_{2}` regularization terms. :math:`\alpha` and :math:`\beta` must be given by input tags ``L1_ALPHA`` and ``L1_RATIO``, respectively.
+
+An optimal value of :math:`\alpha` can be estimated, for example, by cross-validation (CV). A :math:`n`\ -fold CV can be performed by setting the ``CV``-tag properly.

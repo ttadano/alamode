@@ -19,13 +19,10 @@ Users Guide
    download
    install
    quickstart
+   alm_root
+   anphon_root
    tutorial
-   input/inputalm
-   input/inputanphon
-   output
-   formalism/formalism_alm.rst
-   formalism/formalism_anphon.rst
-
+   faq
 
 
 Indices and tables
