@@ -1,4 +1,4 @@
-Theoretical background of ALM
+ALM: Theoretical background
 =============================
 
 Interatomic force constants (IFCs)

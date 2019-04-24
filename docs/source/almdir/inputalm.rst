@@ -41,17 +41,26 @@ Each variable should be written inside the appropriate entry field.
 
 .. _label_inputvar_alm:
 
-List of input variables
-~~~~~~~~~~~~~~~~~~~~~~~
+List of supported input variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. csv-table::
-   :widths: 20, 20, 20, 20, 20, 20
+   :widths: 20, 20, 20, 20, 20
 
    **&general**
-   :ref:`PREFIX <alm_prefix>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`, :ref:`KD <alm_kd>`, :ref:`TOLERANCE <alm_tolerance>`
-   :ref:`PRINTSYM <alm_printsym>`, :ref:`PERIODIC <alm_periodic>`, :ref:`HESSIAN <alm_hessian>`
+   :ref:`HESSIAN <alm_hessian>`, :ref:`KD <alm_kd>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`
+   :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
    **&interaction**
+   :ref:`NBODY <alm_nbody>`, :ref:`NORDER <alm_norder>`
+   **&optimize**
+   :ref:`CONV_TOL <alm_conv_tol>`, :ref:`CV <alm_cv>`, :ref:`CV_MINALPHA <alm_cv_minalpha>`, :ref:`DEBIAS_OLS <alm_debias_ols>`, :ref:`DFILE <alm_dfile>`
+   :ref:`DFSET <alm_dfset>`, :ref:`DFSET_CV <alm_dfset_cv>`, :ref:`ENET_DNORM <alm_enet_dnorm>`, :ref:`FC2XML <alm_fc2xml>`, :ref:`FC3XML <alm_fc3xml>`
+   :ref:`FFILE <alm_ffile>`, :ref:`ICONST <alm_iconst>`, :ref:`L1_ALPHA <alm_l1_alpha>`, :ref:`L1_RATIO <alm_l1_ratio>`, :ref:`LMODEL <alm_lmodel>`
+   :ref:`MAXITER <alm_maxiter>`, :ref:`NDATA <alm_ndata>`, :ref:`NDATA_CV <alm_ndata_cv>`, :ref:`NSTART NEND <alm_nstart>`, :ref:`NSTART_CV NEND_CV <alm_nstart_cv>`
+   :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`STANDARDIZE <alm_standardize>`
 
+Description of input variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 "&general"-field
 ++++++++++++++++
@@ -363,6 +372,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
+.. _alm_nstart:
+
 * NSTART, NEND-tags : Specifies the range of data to be used for fitting
 
  :Default: ``NSTART = 1``, ``NEND = NDATA``
@@ -370,6 +381,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Example: To use the data in the range of [20:30] out of 50 entries, the tags should be ``NSTART = 20`` and ``NEND = 30``.
 
 ````
+
+.. _alm_skip:
 
 * SKIP-tag : Specifies the range of data to be skipped for training
 
@@ -379,29 +392,81 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
-* DFSET_CV-tag : File name containing displacement-force datasets used for manual cross-validation
+.. _alm_iconst:
 
- :Default: ``DFSET_CV = DFSET``
+* ICONST-tag = 0 | 1 | 2 | 3 | 11
+
+ ===== =============================================================================================
+   0    No constraints
+   1   | Constraints for translational invariance will be imposed between IFCs.
+       | Available only when ``LMODEL = ols``.
+  11   | Same as ``ICONST = 1`` but the constraint is imposed *algebraically* rather than numerically.
+       | Select this option when ``LMODEL = enet``.
+   2   | In addition to ``ICONST = 1``, constraints for rotational invariance will be 
+       | imposed up to (``NORDER`` + 1)th order. Available only when ``LMODEL = ols``.
+   3   | In addition to ``ICONST = 2``, constraints for rotational invariance between (``NORDER`` + 1)th order 
+       | and (``NORDER`` + 2)th order, which are zero, will be considered. 
+       | Available only when ``LMODEL = ols``.
+ ===== =============================================================================================
+
+ :Default: 11
+ :Type: Integer
+ :Description: See :ref:`this page<constraint_IFC>` for the numerical formulae.
+
+````
+
+.. _alm_rotaxis:
+
+
+* ROTAXIS-tag : Rotation axis used to estimate constraints for rotational invariance. This entry is necessary when ``ICONST = 2, 3``.
+
+ :Default: None
  :Type: String
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+ :Example: When one wants to consider the rotational invariance around the :math:`x`\ -axis, one should give ``ROTAXIS = x``. If one needs additional constraints for the rotation around the :math:`y`\ -axis, ``ROTAXIS`` should be ``ROTAXIS = xy``. 
 
 ````
 
-* NDATA_CV-tag : Number of displacement-force validation datasets 
+.. _alm_fc2xml:
 
- :Default: None 
- :Type: Integer
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+* FC2XML-tag : XML file to which the harmonic terms will be fixed upon fitting
+
+ :Default: None
+ :Type: String
+ :Description: When ``FC2XML``-tag is given, harmonic force constants will be fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition is the same as that in the ``FC2XML`` file.
+
+````
+
+.. _alm_fc3xml:
+
+* FC3XML-tag : XML file to which the cubic terms will be fixed upon fitting
+
+ :Default: None
+ :Type: String
+ :Description: Same as the ``FC2XML``-tag, but ``FC3XML`` is to fix cubic force constants. 
 
 ````
 
-* NSTART_CV, NEND_CV-tags : Specifies the range of data to be used for validation
+.. _alm_l1_ratio:
 
- :Default: ``NSTART_CV = 1``, ``NEND_CV = NDATA_CV``
- :Type: Integer
- :Example: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+* L1_RATIO-tag : The ratio of the L1 regularization term
+
+ :Default: 1.0 (LASSO)
+ :Type: Double
+ :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``.
 
 ````
+
+.. _alm_l1_alpha:
+
+* L1_ALPHA-tag : The coefficient of the L1 regularization term
+
+ :Default: 0.0 
+ :Type: Double
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = 0``.
+
+````
+
+.. _alm_cv:
 
 * CV-tag : Cross-validation mode for elastic net 
 
@@ -431,13 +496,38 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
-* L1_ALPHA-tag : The coefficient of the L1 regularization term
+.. _alm_dfset_cv:
 
- :Default: 0.0 
- :Type: Double
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = 0``.
+* DFSET_CV-tag : File name containing displacement-force datasets used for manual cross-validation
+
+ :Default: ``DFSET_CV = DFSET``
+ :Type: String
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
 
 ````
+
+.. _alm_ndata_cv:
+
+* NDATA_CV-tag : Number of displacement-force validation datasets 
+
+ :Default: None 
+ :Type: Integer
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+
+````
+
+.. _alm_nstart_cv:
+
+* NSTART_CV, NEND_CV-tags : Specifies the range of data to be used for validation
+
+ :Default: ``NSTART_CV = 1``, ``NEND_CV = NDATA_CV``
+ :Type: Integer
+ :Example: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+
+````
+
+
+.. _alm_cv_minalpha:
 
 * CV_MINALPHA, CV_MAXALPHA, CV_NALPHA-tags : Options to specify the ``L1_ALPHA`` values used in cross-validation 
 
@@ -447,13 +537,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
-* L1_RATIO-tag : The ratio of the L1 regularization term
-
- :Default: 1.0 (LASSO)
- :Type: Double
- :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``.
-
-````
+.. _alm_standardize:
 
 * STANDARDIZE-tag = 0 | 1
 
@@ -470,6 +554,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
+.. _alm_enet_dnorm:
+
 * ENET_DNORM-tag : Normalization factor of atomic displacements
 
  :Default: 1.0
@@ -477,6 +563,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Description: The normalization factor of atomic displacement :math:`u_{0}` in units of Bohr. When :math:`u_{0} (\neq 1)` is given, the displacement data are scaled as :math:`u_{i} \rightarrow u_{i}/u_{0}` before constructing the sensing matrix. This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``ENET_DNORM`` value, you will have to rerun the cross-validation. Also, this tag has no effect when ``STANDARDIZE = 1``. 
 
 ````
+
+.. _alm_maxiter:
 
 * MAXITER-tag : Number of maximum iterations of the coordinate descent algorithm
 
@@ -486,6 +574,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
+.. _alm_conv_tol:
+
 * CONV_TOL-tag : Convergence criterion of the coordinate descent iteration
 
  :Default: 1.0e-8
@@ -493,6 +583,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Description: The coordinate descent iteration finishes at :math:`i`\ th iteration if :math:`\sqrt{\frac{1}{N}|\boldsymbol{\Phi}_{i} - \boldsymbol{\Phi}_{i-1}|_{2}^{2}} <` ``CONV_TOL`` is satisfied, where :math:`N` is the length of the vector :math:`\boldsymbol{\Phi}`.
 
 ````
+
+.. _alm_solution_path:
 
 * SOLUTION_PATH-tag = 0 | 1
 
@@ -507,6 +599,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
+.. _alm_debias_ols:
 
 * DEBIAS_OLS-tag = 0 | 1
 
@@ -525,50 +618,6 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
-* ICONST-tag = 0 | 1 | 2 | 3 | 11
-
- ===== =============================================================================================
-   0    No constraints
-   1   | Constraints for translational invariance will be imposed between IFCs.
-       | Available only when ``LMODEL = ols``.
-  11   | Same as ``ICONST = 1`` but the constraint is imposed *algebraically* rather than numerically.
-       | Select this option when ``LMODEL = enet``.
-   2   | In addition to ``ICONST = 1``, constraints for rotational invariance will be 
-       | imposed up to (``NORDER`` + 1)th order. Available only when ``LMODEL = ols``.
-   3   | In addition to ``ICONST = 2``, constraints for rotational invariance between (``NORDER`` + 1)th order 
-       | and (``NORDER`` + 2)th order, which are zero, will be considered. 
-       | Available only when ``LMODEL = ols``.
- ===== =============================================================================================
-
- :Default: 11
- :Type: Integer
- :Description: See :ref:`this page<constraint_IFC>` for the numerical formulae.
-
-````
-
-* ROTAXIS-tag : Rotation axis used to estimate constraints for rotational invariance. This entry is necessary when ``ICONST = 2, 3``.
-
- :Default: None
- :Type: String
- :Example: When one wants to consider the rotational invariance around the :math:`x`\ -axis, one should give ``ROTAXIS = x``. If one needs additional constraints for the rotation around the :math:`y`\ -axis, ``ROTAXIS`` should be ``ROTAXIS = xy``. 
-
-````
-
-* FC2XML-tag : XML file to which the harmonic terms will be fixed upon fitting
-
- :Default: None
- :Type: String
- :Description: When ``FC2XML``-tag is given, harmonic force constants will be fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition is the same as that in the ``FC2XML`` file.
-
-````
-
-* FC3XML-tag : XML file to which the cubic terms will be fixed upon fitting
-
- :Default: None
- :Type: String
- :Description: Same as the ``FC2XML``-tag, but ``FC3XML`` is to fix cubic force constants. 
-
-````
 
 How to make a DFSET file
 ~~~~~~~~~~~~~~~~~~~~~~~~
