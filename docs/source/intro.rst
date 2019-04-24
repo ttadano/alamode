@@ -110,7 +110,7 @@ Author & Contact
 
     <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
-| International Center for Young Scientists (ICYS),
+| Research Center for Magnetic and Spintronic Materials (CMSM),
 | National Institute for Material Science (NIMS), 
 | Japan
 
