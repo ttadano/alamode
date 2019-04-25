@@ -18,7 +18,7 @@ ALM: Output files
 
 * ``PREFIX``.xml
 
- A XML file containing necessary information for performing
+ An XML file containing the necessary information for performing
  phonon calculations.
  The files can be read by *anphon* using the ``FCSXML``-tag.
  Created when ``MODE = fitting``.

@@ -51,7 +51,7 @@ Boost C++ and Eigen3 libraries (header files only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some header files of Boost C++ and Eigen3 libraries are necessary to build ALAMODE binaries.
-Here, we will install header files of these libraries in ``$(HOME)/include``.
+Here, we install header files of these libraries in ``$(HOME)/include``.
 You can skip this part if these libraries are already installed on your system.
    
 To install the Boost C++ library, please download a source file from the `webpage <http://www.boost.org>`_ and
@@ -126,7 +126,7 @@ The meaning of each subdirectory is as follows:
 Build ALAMODE by Makefile
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ALAMODE contains two major codes, **alm** and **anphon**, and other small utility scipts.
+ALAMODE contains two major codes, **alm** and **anphon**, and other small utility scripts.
 In directories ``alm/``, ``anphon/``, and ``tools``, we provide sample Makefiles for Linux (Intel compiler) and Mac OSX (gcc, clang).
 Please copy either of them, edit the options appropriately, and issue ``make`` command as follows::
 

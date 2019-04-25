@@ -30,7 +30,7 @@ For example, &general entry field of program *alm* should be given like
     MODE = fitting
   /
 
-Multiple entries can be put in a single line. Also, characters put on the right of sharp (“#”) will be neglected. Therefore, the above example is equivalent to the following::
+Multiple entries can be put in a single line. Also, characters put on the right of sharp (“#”) are neglected. Therefore, the above example is equivalent to the following::
   
   &general
     PREFIX = prefix; MODE = fitting  # Comment line
@@ -206,7 +206,7 @@ Description of input variables
      four-body  | :math:`\{\Phi_{ijkl}\}` (all subscripts are different from each other)
     =========== =========================================================================    
 
-    Since the four-body clusters are expected to be less important than the three-body and less-body clusters, you may want to exclude the four-body terms from the Taylor expansion potential because the number of such terms are huge. This can be done by setting the ``NBODY`` tag as ``NBODY = 2 3 3`` togather with ``NORDER = 3``.
+    Since the four-body clusters are expected to be less important than the three-body and less-body clusters, you may want to exclude the four-body terms from the Taylor expansion potential because the number of such terms is huge. This can be done by setting the ``NBODY`` tag as ``NBODY = 2 3 3`` together with ``NORDER = 3``.
 
  :More examples: ``NORDER = 2; NBODY = 2 2`` includes harmonic and cubic IFCs but excludes three-body clusters from the cubic terms.
 
@@ -226,7 +226,7 @@ For example, the cutoff entry for a harmonic calculation (``NORDER = 1``) of Si 
   Si-Si 10.0
  /
 
-This means that the cutoff radii of 10 :math:`a_{0}` will be used for harmonic Si-Si terms. 
+This means that the cutoff radius of 10 :math:`a_{0}` is used for harmonic Si-Si terms. 
 Please note that the first column should be two character strings, which are contained in the ``KD``-tag, 
 connected by a hyphen (’-’). 
 
@@ -268,7 +268,7 @@ which can equivalently be written by using the wild card (’*’) as
 
 .. important::
 
-  Cutoff radii specified by an earlier entry will be overwritten by a new entry that comes later.
+  Cutoff radii specified by an earlier entry are overwritten by a new entry that comes later.
 
 Once the cutoff radii are properly given, harmonic force constants
 :math:`\Phi_{i,j}^{\mu,\nu}` satisfying :math:`r_{ij} \le r_{c}^{\mathrm{KD}[i]-\mathrm{KD}[j]}` will be searched.
@@ -317,7 +317,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 .. _alm_lmodel:
 
-* LMODEL-tag : Choise of the linear model used for estimating force constants
+* LMODEL-tag : Choice of the linear model used for estimating force constants
 
  =================================== ==========================
    "least-squares", "LS", "OLS",  1    Ordinary least square
@@ -328,7 +328,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Type: String
  :Description: When ``LMODEL = ols``, the force constants are estimated from the displacement-force datasets via the ordinary least-squares (OLS), which is usually sufficient to calculate harmonic and third-order force constants. 
 
-               The elestic net (``LMODEL = enet``) should be useful to calculate the fourth-order (and higher-order) force constants. When the elastic net is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``
+               The elastic net (``LMODEL = enet``) should be useful to calculate the fourth-order (and higher-order) force constants. When the elastic net is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``
 
 ````
 
@@ -368,7 +368,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: None
  :Type: Integer
- :Description: If ``NDATA`` is not given, the code reads all lines of ``DFSET`` (excluding comment lines) and estimates ``NDATA`` by dividing the line number by ``NAT``. If the number of lines is not divisible by ``NAT``, an error will be raised. ``DFSET`` should contain at least ``NDATA``:math:`\times` ``NAT`` lines.
+ :Description: If ``NDATA`` is not given, the code reads all lines of ``DFSET`` (excluding comment lines) and estimates ``NDATA`` by dividing the line number by ``NAT``. If the number of lines is not divisible by ``NAT``, an error is raised. ``DFSET`` should contain at least ``NDATA``:math:`\times` ``NAT`` lines.
 
 ````
 
@@ -398,7 +398,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  ===== =============================================================================================
    0    No constraints
-   1   | Constraints for translational invariance will be imposed between IFCs.
+   1   | Constraint for translational invariance is imposed between IFCs.
        | Available only when ``LMODEL = ols``.
   11   | Same as ``ICONST = 1`` but the constraint is imposed *algebraically* rather than numerically.
        | Select this option when ``LMODEL = enet``.
@@ -428,17 +428,17 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 .. _alm_fc2xml:
 
-* FC2XML-tag : XML file to which the harmonic terms will be fixed upon fitting
+* FC2XML-tag : XML file to which the harmonic terms are fixed upon fitting
 
  :Default: None
  :Type: String
- :Description: When ``FC2XML``-tag is given, harmonic force constants will be fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition is the same as that in the ``FC2XML`` file.
+ :Description: When ``FC2XML``-tag is given, harmonic force constants are fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition is the same as that in the ``FC2XML`` file.
 
 ````
 
 .. _alm_fc3xml:
 
-* FC3XML-tag : XML file to which the cubic terms will be fixed upon fitting
+* FC3XML-tag : XML file to which the cubic terms are fixed upon fitting
 
  :Default: None
  :Type: String
@@ -549,7 +549,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 1
  :Type: Integer
- :Description: This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``STANDARDIZE`` option, you will have to rerun the cross-validation.
+ :Description: This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``STANDARDIZE`` option, you have to rerun the cross-validation.
 
 
 ````

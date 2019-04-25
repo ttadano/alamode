@@ -40,7 +40,7 @@ Harmonic properties
 * Animation and visualization of phonon modes (requires VMD or XCrysDen)
 * 3-phonon scattering phase space
 * Phonon-isotope scattering rate
-* Participation ratio for analyzing localization of phonon modes
+* Participation ratio for analyzing the localization of phonon modes
 
 Anharmonic properties
 ^^^^^^^^^^^^^^^^^^^^^
@@ -53,7 +53,7 @@ Anharmonic properties
 * Phonon linewidth due to 3-phonon interactions
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
-* Self-consisitent phonon (SCPH) calculation
+* Self-consistent phonon (SCPH) calculation
 * Anharmonic vibrational free-energy
 
 Links
@@ -94,8 +94,8 @@ please cite the following paper as well:
   Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
   [`Link <https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.3.033601>`__]
 
-Acknowledgement
----------------
+Acknowledgment
+--------------
 
 This project is/was partially supported by the following projects:
 

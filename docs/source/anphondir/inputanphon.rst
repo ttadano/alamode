@@ -120,7 +120,7 @@ Description of input variables
 
  :Default: None
  :Type: String
- :Description: When ``FC2XML`` is given, the harmonic force constants in this file will be used for calculating dynamical matrices. It is possible to use different size of supercell for harmonic and anharmonic terms, which are specified by ``FC2XML`` and ``FCSXML`` respectively.
+ :Description: When ``FC2XML`` is given, the harmonic force constants in this file are used for calculating dynamical matrices. It is possible to use different size of supercell for harmonic and anharmonic terms, which are specified by ``FC2XML`` and ``FCSXML`` respectively.
 
 ````
 
@@ -254,7 +254,7 @@ Description of input variables
 
   1   | Phonon band is connected by using the similarity of eigenvectors.
 
-  2   | Same as ``BCONNECT=1``. In addition, information of the connectivity is 
+  2   | Same as ``BCONNECT=1``. In addition, information about the connectivity is 
       | saved as ``PREFIX.connection``.
  === ===================================================================================
 
@@ -277,7 +277,7 @@ Description of input variables
 
  :Default: 0
  :Type: Integer
- :Description: When ``CLASSICAL = 1``, all thermodynamic functions including the occupation function, heat capacity, and mean square displacements are calculated using the classical formlae. This option may be useful when comparing the lattice dynamics and molecular dynamics results.
+ :Description: When ``CLASSICAL = 1``, all thermodynamic functions including the occupation function, heat capacity, and mean square displacements are calculated using the classical formulae. This option may be useful when comparing the lattice dynamics and molecular dynamics results.
 
 ````
 

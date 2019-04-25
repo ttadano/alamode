@@ -121,7 +121,7 @@ Estimate IFCs by linear regression
 Basic notations
 +++++++++++++++
 
-From the symmetrically independent set of IFCs and the constraints between them for satifying the translational and/or rotational invariance, we can construct an irreducible set of IFCs :math:`\{\Phi_{i}\}`. Let us denote a column vector comprising the :math:`N` irreducible set of IFCs as :math:`\boldsymbol{\Phi}`. Then, the Taylor expansion potential (TEP) defined by equation :eq:`U_Taylor` is written as
+From the symmetrically independent set of IFCs and the constraints between them for satisfying the translational and/or rotational invariance, we can construct an irreducible set of IFCs :math:`\{\Phi_{i}\}`. Let us denote a column vector comprising the :math:`N` irreducible set of IFCs as :math:`\boldsymbol{\Phi}`. Then, the Taylor expansion potential (TEP) defined by equation :eq:`U_Taylor` is written as
 
 .. math::
     U_{\mathrm{TEP}} = \boldsymbol{b}^{T}\boldsymbol{\Phi}.
@@ -140,7 +140,7 @@ To make this point clearer, let us denote them as :math:`A(\boldsymbol{u})` and 
 
 To estimate the IFC vector :math:`\boldsymbol{\Phi}` by linear regression, it is usually necessary to consider several different displacement patterns.
 Let us suppose we have :math:`N_d` displacement patterns and atomic forces for each pattern obtained by DFT.
-Then, equation :eq:`force_tep` defined for each displacement pattern can be combined to single equation as
+Then, equation :eq:`force_tep` defined for each displacement pattern can be combined to a single equation as
 
 .. math::
     \boldsymbol{\mathscr{F}}_{\mathrm{TEP}} =  \mathbb{A} \boldsymbol{\Phi},

@@ -103,7 +103,7 @@ ANPHON: Output files
 
 * ``PREFIX``.kl_spec
 
- Spectra of lattice thermal conductivity. Only diagonal components will be saved.
+ Spectra of lattice thermal conductivity. Only diagonal components are saved.
  Created when ``MODE = RTA`` and ``KAPPA_SPEC = 1``.
 
 * ``PREFIX``.gamma_isotope
@@ -124,8 +124,7 @@ ANPHON: Output files
 
 * ``PREFIX``.scph_thermo
 
- Constant volume heat capacity, vibrational entropy, and vibrational free energy calculated
- based on the self-consistent phononon calculation. 
+ Constant volume heat capacity, vibrational entropy, and vibrational free energy calculated based on the self-consistent phonon calculation. 
  Created when ``MODE = SCPH`` with **KPMODE** = 2.
  When ``FE_BUBBLE = 1`` is set in the **&analysis** field, an additional bubble correction term 
  to the vibrational free energy is also calculated.

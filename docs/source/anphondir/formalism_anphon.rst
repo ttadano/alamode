@@ -103,7 +103,7 @@ given as follows:
      F &= \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}\left[ \frac{\hbar\omega_{\boldsymbol{q}j}}{2} + kT\log{\left( 1 - e^{-\hbar\omega_{\boldsymbol{q}j}/kT}\right)} \right].
     \end{align*}
 
-Here, :math:`k` is the Boltzmann constant. These quantities will be saved in the ``PREFIX``.thermo file.
+Here, :math:`k` is the Boltzmann constant. These quantities are saved in the ``PREFIX``.thermo file.
 
 When the self-consistent phonon mode (``MODE = SCPH``) is selected, the anharmonic free-energy 
 defined by the following equation will be calculated and saved in the ``PREFIX``.scph_thermo file:
@@ -337,7 +337,7 @@ The phonon lifetime is estimated using the Matthiessen's rule as
 
     \tau_{\boldsymbol{q}j}^{-1}(T) = 2 (\Gamma_{\boldsymbol{q}j}^{\mathrm{anh}}(T) + \Gamma_{\boldsymbol{q}j}^{\mathrm{iso}}).
 
-The lattice thermal conductivity will be written to the file ``PREFIX``.kl.
+The lattice thermal conductivity is saved in the file ``PREFIX``.kl.
 
 The spectra of the lattice thermal conductivity :math:`\kappa_{\mathrm{ph}}^{\mu\mu}(\omega)` can also be calculated by setting ``KAPPA_SPEC = 1`` in the ``&analysis`` field. :math:`\kappa_{\mathrm{ph}}^{\mu\mu}(\omega)` is defined as 
 
@@ -370,7 +370,7 @@ To calculate this, please use the ``--calc cumulative2`` flag and specify the di
 Delta function
 --------------
 
-In order to compute the phonon DOSs and the imaginary part of phonon self-energies,
+To compute the phonon DOSs and the imaginary part of phonon self-energies,
 it is necessary to evaluate the Brillouin-zone integration containing Dirac's delta function.
 For that purpose, we provide 3 options through the ``ISMEAR``-tag.
 
