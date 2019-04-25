@@ -5,9 +5,10 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
+# Use gcc to activate openmp parallelization
 MPICXX = g++-8
-CXXFLAGS = -O3 -std=c++11 -fopenmp
-INCLUDE = -I../include  -I$(HOME)/include -I/usr/local/opt/openmpi/include
+CXXFLAGS = -O2 -std=c++11 -fopenmp
+INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/openmpi/include
 
 LINKER = ${MPICXX}
 
@@ -16,7 +17,7 @@ LINKER = ${MPICXX}
 ## Yosemite
 LDFLAGS = -framework Accelerate
 
-LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi_cxx -lmpi -lgomp
+LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi -lgomp
 LIBS = ${LAPACK}  -lfftw3
 
 #----------------------------------------------
@@ -28,12 +29,7 @@ LIBS = ${LAPACK}  -lfftw3
 
 PROG = anphon
 
-CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
-	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
-	phonon_dos.cpp phonon_velocity.cpp integration.cpp anharmonic_core.cpp \
-	thermodynamics.cpp conductivity.cpp symmetry_core.cpp mode_analysis.cpp \
-        mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp \
-	scph.cpp ewald.cpp
+CXXSRC = $(wildcard *.cpp)
 
 OBJS= ${CXXSRC:.cpp=.o}
 

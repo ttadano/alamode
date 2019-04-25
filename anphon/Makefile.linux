@@ -24,12 +24,7 @@ LIBS = ${LAPACK}
 
 PROG = anphon
 
-CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
-	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
-	phonon_dos.cpp phonon_velocity.cpp integration.cpp anharmonic_core.cpp \
-	thermodynamics.cpp conductivity.cpp symmetry_core.cpp mode_analysis.cpp \
-        mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp \
-	scph.cpp ewald.cpp
+CXXSRC = $(wildcard *.cpp)
 
 OBJS= ${CXXSRC:.cpp=.o}
 

@@ -55,10 +55,10 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
     We are willing to support other software if necessary.
 
 
-5. Estimate IFCs by a least-squares fitting
+5. Estimate IFCs by linear regression
 
-  In order to perform a fitting, please change the variable ``MODE`` of the input file `alm.in` to ``MODE = fitting``. 
-  In addition please add the ``&fitting`` entry with appropriate ``NDATA``, ``DFILE``, and ``FFILE``. (``DFILE`` should be like ``DFILE = disp_all.dat``.) Then, IFCs can be estimated by executing
+  In order to perform a fitting, please change the variable ``MODE`` of the input file `alm.in` to ``MODE = optimize``. 
+  In addition please add the ``&optimize`` entry with appropriate ``DFSET``. Then, IFCs can be estimated by executing
   
   ::
 

@@ -5,15 +5,16 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
+# MPI version of clang++ 
 MPICXX = mpic++
-CXXFLAGS = -O3 -std=c++11 -fopenmp
-INCLUDE = -I../include  -I$(HOME)/include
+CXXFLAGS = -O3 -std=c++11
+INCLUDE = -I../include -I$(HOME)/include
 
 LINKER = ${MPICXX}
 
 ## Mavericks
 #LDFLAGS = -framework vecLib
-## Yosemite
+## Yosemite and newer
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack
