@@ -801,7 +801,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
         "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
     };
 
-    std::map<std::string, std::string> fitting_var_dict;
+    std::map<std::string, std::string> optimize_var_dict;
 
     if (from_stdin) {
         std::cin.ignore();
@@ -809,10 +809,10 @@ void InputParser::parse_optimize_vars(ALM *alm)
         ifs_input.ignore();
     }
 
-    get_var_dict(input_list, fitting_var_dict);
+    get_var_dict(input_list, optimize_var_dict);
 
-    if (!fitting_var_dict["LMODEL"].empty()) {
-        auto str_LMODEL = fitting_var_dict["LMODEL"];
+    if (!optimize_var_dict["LMODEL"].empty()) {
+        auto str_LMODEL = optimize_var_dict["LMODEL"];
         boost::to_lower(str_LMODEL);
 
         if (str_LMODEL == "ols" || str_LMODEL == "ls"
@@ -826,13 +826,13 @@ void InputParser::parse_optimize_vars(ALM *alm)
         }
     }
 
-    if (!fitting_var_dict["SPARSE"].empty()) {
-        assign_val(flag_sparse, "SPARSE", fitting_var_dict);
+    if (!optimize_var_dict["SPARSE"].empty()) {
+        assign_val(flag_sparse, "SPARSE", optimize_var_dict);
         optcontrol.use_sparse_solver = flag_sparse;
     } 
-    if (!fitting_var_dict["SPARSESOLVER"].empty()) {
+    if (!optimize_var_dict["SPARSESOLVER"].empty()) {
         std::string str_sparsesolver;
-        assign_val(str_sparsesolver, "SPARSESOLVER", fitting_var_dict);
+        assign_val(str_sparsesolver, "SPARSESOLVER", optimize_var_dict);
         const auto str_lower = boost::algorithm::to_lower_copy(str_sparsesolver);
      
         if (str_lower != "simplicialldlt" 
@@ -845,81 +845,81 @@ void InputParser::parse_optimize_vars(ALM *alm)
         optcontrol.sparsesolver = str_sparsesolver;
     }
 
-    if (!fitting_var_dict["ENET_DNORM"].empty()) {
+    if (!optimize_var_dict["ENET_DNORM"].empty()) {
         optcontrol.displacement_normalization_factor
-            = boost::lexical_cast<double>(fitting_var_dict["ENET_DNORM"]);
+            = boost::lexical_cast<double>(optimize_var_dict["ENET_DNORM"]);
     }
-    if (!fitting_var_dict["L1_ALPHA"].empty()) {
-        optcontrol.l1_alpha = boost::lexical_cast<double>(fitting_var_dict["L1_ALPHA"]);
+    if (!optimize_var_dict["L1_ALPHA"].empty()) {
+        optcontrol.l1_alpha = boost::lexical_cast<double>(optimize_var_dict["L1_ALPHA"]);
     }
-    if (!fitting_var_dict["CV_MINALPHA"].empty()) {
-        optcontrol.l1_alpha_min = boost::lexical_cast<double>(fitting_var_dict["CV_MINALPHA"]);
+    if (!optimize_var_dict["CV_MINALPHA"].empty()) {
+        optcontrol.l1_alpha_min = boost::lexical_cast<double>(optimize_var_dict["CV_MINALPHA"]);
     }
-    if (!fitting_var_dict["CV_MAXALPHA"].empty()) {
-        optcontrol.l1_alpha_max = boost::lexical_cast<double>(fitting_var_dict["CV_MAXALPHA"]);
+    if (!optimize_var_dict["CV_MAXALPHA"].empty()) {
+        optcontrol.l1_alpha_max = boost::lexical_cast<double>(optimize_var_dict["CV_MAXALPHA"]);
     }
-    if (!fitting_var_dict["CV_NALPHA"].empty()) {
-        optcontrol.num_l1_alpha = boost::lexical_cast<int>(fitting_var_dict["CV_NALPHA"]);
+    if (!optimize_var_dict["CV_NALPHA"].empty()) {
+        optcontrol.num_l1_alpha = boost::lexical_cast<int>(optimize_var_dict["CV_NALPHA"]);
     }
-    if (!fitting_var_dict["CONV_TOL"].empty()) {
-        optcontrol.tolerance_iteration = boost::lexical_cast<double>(fitting_var_dict["CONV_TOL"]);
+    if (!optimize_var_dict["CONV_TOL"].empty()) {
+        optcontrol.tolerance_iteration = boost::lexical_cast<double>(optimize_var_dict["CONV_TOL"]);
     }
-    if (!fitting_var_dict["MAXITER"].empty()) {
-        optcontrol.maxnum_iteration = boost::lexical_cast<int>(fitting_var_dict["MAXITER"]);
+    if (!optimize_var_dict["MAXITER"].empty()) {
+        optcontrol.maxnum_iteration = boost::lexical_cast<int>(optimize_var_dict["MAXITER"]);
     }
-    if (!fitting_var_dict["CV"].empty()) {
-        optcontrol.cross_validation = boost::lexical_cast<int>(fitting_var_dict["CV"]);
+    if (!optimize_var_dict["CV"].empty()) {
+        optcontrol.cross_validation = boost::lexical_cast<int>(optimize_var_dict["CV"]);
     }
-    if (!fitting_var_dict["NWRITE"].empty()) {
-        optcontrol.output_frequency = boost::lexical_cast<int>(fitting_var_dict["NWRITE"]);
+    if (!optimize_var_dict["NWRITE"].empty()) {
+        optcontrol.output_frequency = boost::lexical_cast<int>(optimize_var_dict["NWRITE"]);
     }
-    if (!fitting_var_dict["STANDARDIZE"].empty()) {
-        optcontrol.standardize = boost::lexical_cast<int>(fitting_var_dict["STANDARDIZE"]);
+    if (!optimize_var_dict["STANDARDIZE"].empty()) {
+        optcontrol.standardize = boost::lexical_cast<int>(optimize_var_dict["STANDARDIZE"]);
     }
-    if (!fitting_var_dict["SOLUTION_PATH"].empty()) {
-        optcontrol.save_solution_path = boost::lexical_cast<int>(fitting_var_dict["SOLUTION_PATH"]);
+    if (!optimize_var_dict["SOLUTION_PATH"].empty()) {
+        optcontrol.save_solution_path = boost::lexical_cast<int>(optimize_var_dict["SOLUTION_PATH"]);
     }
-    if (!fitting_var_dict["DEBIAS_OLS"].empty()) {
-        optcontrol.debiase_after_l1opt = boost::lexical_cast<int>(fitting_var_dict["DEBIAS_OLS"]);
+    if (!optimize_var_dict["DEBIAS_OLS"].empty()) {
+        optcontrol.debiase_after_l1opt = boost::lexical_cast<int>(optimize_var_dict["DEBIAS_OLS"]);
     }
-    if (!fitting_var_dict["L1_RATIO"].empty()) {
-        optcontrol.l1_ratio = boost::lexical_cast<double>(fitting_var_dict["L1_RATIO"]);
+    if (!optimize_var_dict["L1_RATIO"].empty()) {
+        optcontrol.l1_ratio = boost::lexical_cast<double>(optimize_var_dict["L1_RATIO"]);
     }
 
 
     DispForceFile datfile_train;
 
-    if (fitting_var_dict["DFSET"].empty()) {
-        if (!fitting_var_dict["DFILE"].empty() && !fitting_var_dict["FFILE"].empty()) {
+    if (optimize_var_dict["DFSET"].empty()) {
+        if (!optimize_var_dict["DFILE"].empty() && !optimize_var_dict["FFILE"].empty()) {
             std::cout << " DFILE and FFILE tags are obsolate and will be removed in the next version.\n";
             std::cout << " Please use DFSET instead.\n";
             std::cout << " DFSET can be created easily by the unix paste command as:\n\n";
             std::cout << " $ paste DFILE FFILE > DFSET\n\n";
             //            exit("parse_optimize_vars", "Obsolate tag: DFILE, FFILE");
-            datfile_train.filename = fitting_var_dict["DFILE"];
-            datfile_train.filename_second = fitting_var_dict["FFILE"];
+            datfile_train.filename = optimize_var_dict["DFILE"];
+            datfile_train.filename_second = optimize_var_dict["FFILE"];
         } else {
             exit("parse_optimize_vars",
                  "DFSET tag (or both DFILE and FFILE tags) must be given.");
         }
     } else {
-        datfile_train.filename = fitting_var_dict["DFSET"];
+        datfile_train.filename = optimize_var_dict["DFSET"];
     }
 
-    if (!fitting_var_dict["NDATA"].empty()) {
-        assign_val(datfile_train.ndata, "NDATA", fitting_var_dict);
+    if (!optimize_var_dict["NDATA"].empty()) {
+        assign_val(datfile_train.ndata, "NDATA", optimize_var_dict);
     }
-    if (!fitting_var_dict["NSTART"].empty()) {
-        assign_val(datfile_train.nstart, "NSTART", fitting_var_dict);
+    if (!optimize_var_dict["NSTART"].empty()) {
+        assign_val(datfile_train.nstart, "NSTART", optimize_var_dict);
     }
-    if (!fitting_var_dict["NEND"].empty()) {
-        assign_val(datfile_train.nend, "NEND", fitting_var_dict);
+    if (!optimize_var_dict["NEND"].empty()) {
+        assign_val(datfile_train.nend, "NEND", optimize_var_dict);
     }
 
-    if (!fitting_var_dict["SKIP"].empty()) {
+    if (!optimize_var_dict["SKIP"].empty()) {
         std::vector<std::string> str_entry;
         std::string str_skip;
-        assign_val(str_skip, "SKIP", fitting_var_dict);
+        assign_val(str_skip, "SKIP", optimize_var_dict);
         boost::split(str_entry, str_skip, boost::is_any_of("-"));
         if (str_entry.size() == 1) {
             datfile_train.skip_s = boost::lexical_cast<int>(str_entry[0]);
@@ -952,19 +952,19 @@ void InputParser::parse_optimize_vars(ALM *alm)
     datfile_validation.skip_s = 0;
     datfile_validation.skip_e = 0;
 
-    if (!fitting_var_dict["NDATA_CV"].empty()) {
-        datfile_validation.ndata = boost::lexical_cast<int>(fitting_var_dict["NDATA_CV"]);
+    if (!optimize_var_dict["NDATA_CV"].empty()) {
+        datfile_validation.ndata = boost::lexical_cast<int>(optimize_var_dict["NDATA_CV"]);
     }
 
-    if (!fitting_var_dict["NSTART_CV"].empty()) {
-        datfile_validation.nstart = boost::lexical_cast<int>(fitting_var_dict["NSTART_CV"]);
+    if (!optimize_var_dict["NSTART_CV"].empty()) {
+        datfile_validation.nstart = boost::lexical_cast<int>(optimize_var_dict["NSTART_CV"]);
     }
-    if (!fitting_var_dict["NEND_CV"].empty()) {
-        datfile_validation.nend = boost::lexical_cast<int>(fitting_var_dict["NEND_CV"]);
+    if (!optimize_var_dict["NEND_CV"].empty()) {
+        datfile_validation.nend = boost::lexical_cast<int>(optimize_var_dict["NEND_CV"]);
     }
 
-    if (!fitting_var_dict["DFSET_CV"].empty()) {
-        datfile_validation.filename = fitting_var_dict["DFSET_CV"];
+    if (!optimize_var_dict["DFSET_CV"].empty()) {
+        datfile_validation.filename = optimize_var_dict["DFSET_CV"];
     }
 
     if (!is_data_range_consistent(datfile_validation)) {
@@ -994,19 +994,19 @@ void InputParser::parse_optimize_vars(ALM *alm)
                                 datfile_validation);
 
 
-    if (fitting_var_dict["ICONST"].empty()) {
+    if (optimize_var_dict["ICONST"].empty()) {
         constraint_flag = 11;
     } else {
-        assign_val(constraint_flag, "ICONST", fitting_var_dict);
+        assign_val(constraint_flag, "ICONST", optimize_var_dict);
     }
 
-    auto fc2_file = fitting_var_dict["FC2XML"];
-    auto fc3_file = fitting_var_dict["FC3XML"];
+    auto fc2_file = optimize_var_dict["FC2XML"];
+    auto fc3_file = optimize_var_dict["FC3XML"];
     const auto fix_harmonic = !fc2_file.empty();
     const auto fix_cubic = !fc3_file.empty();
 
     if (constraint_flag % 10 >= 2) {
-        rotation_axis = fitting_var_dict["ROTAXIS"];
+        rotation_axis = optimize_var_dict["ROTAXIS"];
         if (rotation_axis.empty()) {
             exit("parse_optimize_vars",
                  "ROTAXIS has to be given when ICONST=2 or 3");
@@ -1021,7 +1021,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
                                       fix_harmonic,
                                       fix_cubic);
 
-    fitting_var_dict.clear();
+    optimize_var_dict.clear();
 }
 
 void InputParser::parse_atomic_positions()
