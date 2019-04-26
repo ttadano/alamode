@@ -57,7 +57,8 @@ List of supported input variables
    :ref:`DFSET <alm_dfset>`, :ref:`DFSET_CV <alm_dfset_cv>`, :ref:`ENET_DNORM <alm_enet_dnorm>`, :ref:`FC2XML <alm_fc2xml>`, :ref:`FC3XML <alm_fc3xml>`
    :ref:`FFILE <alm_ffile>`, :ref:`ICONST <alm_iconst>`, :ref:`L1_ALPHA <alm_l1_alpha>`, :ref:`L1_RATIO <alm_l1_ratio>`, :ref:`LMODEL <alm_lmodel>`
    :ref:`MAXITER <alm_maxiter>`, :ref:`NDATA <alm_ndata>`, :ref:`NDATA_CV <alm_ndata_cv>`, :ref:`NSTART NEND <alm_nstart>`, :ref:`NSTART_CV NEND_CV <alm_nstart_cv>`
-   :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`STANDARDIZE <alm_standardize>`
+   :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`SPARSE <alm_sparse>`, :ref:`SPARSESOLVER <alm_sparsesolver>`
+   :ref:`STANDARDIZE <alm_standardize>`
 
 Description of input variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -456,13 +457,67 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
+.. _alm_sparse:
+
+* SPARSE-tag = 0 | 1
+
+ ===== ==============================================================
+   0    Use a direct solver (SVD or QRD) to estimate force constants
+   1    Use a sparse solver to estimate force constants
+ ===== ==============================================================
+
+ :Default: 0
+ :Type: Integer
+ :Description: When you want to calculate force constants of a large system and generate training datasets by displacing only a few atoms from equilibrium positions, the resulting sensing matrix becomes large but sparse. For such matrices, a sparse solver is expected to be more efficient than SVD or QRD in terms of both memory usage and computational time. When ``SPARSE = 1`` is set, the code uses a sparse solver implemented in Eigen3 library. You can change the solver type via ``SPARSESOLVER``. Effective when ``LMODEL = ols``.
+
+````
+
+.. _alm_sparsesolver:
+
+* SPARSESOLVER-tag : Type of the sparse solver to use
+
+ :Default: SimplicialLDLT
+ :Type: String
+ :Description: Currently, only the sparse solvers of Eigen3 library can be used. Available options are `SimplicialLDLT`, `SparseQR`, `ConjugateGradient`, `LeastSquaresConjugateGradient`, and `BiCGSTAB`. When an iterative algorithm (conjugate gradient) is selected, a stopping criterion can be specified by the ``CONV_TOL`` and ``MAXITER`` tags. Effective when ``LMODEL = ols`` and ``SPARSE = 1``.
+
+
+ .. seealso::
+    Eigen documentation page: `Solving Sparse Linear Systems <https://eigen.tuxfamily.org/dox/group__TopicSparseSystems.html>`__
+
+````
+
+.. _alm_maxiter:
+
+* MAXITER-tag : Number of maximum iterations in iterative algorithms
+
+ :Default: 10,000
+ :Type: Integer
+ :Description: Effective when an iterative solver is selected via ``SPARSESOLVER`` (when ``LMODEL = ols``) or when ``LMODEL = enet``.
+
+````
+
+.. _alm_conv_tol:
+
+* CONV_TOL-tag : Convergence criterion of iterative algorithms
+
+ :Default: 1.0e-8
+ :Type: Double
+ :Description: When ``LMODEL = ols`` and an iterative solver is selected via ``SPARSESOLVER``, ``CONV_TOL`` value is passed to the Eigen3 function via `setTolerance()`.
+               When ``LMODEL = enet``, the coordinate descent iteration stops at :math:`i`\ th iteration if :math:`\sqrt{\frac{1}{N}|\boldsymbol{\Phi}_{i} - \boldsymbol{\Phi}_{i-1}|_{2}^{2}} <` ``CONV_TOL`` is satisfied, where :math:`N` is the length of the vector :math:`\boldsymbol{\Phi}`.
+
+
+ .. seealso::
+    Eigen documentation page: `IterativeSolverBase <https://eigen.tuxfamily.org/dox/classEigen_1_1IterativeSolverBase.html>`__
+
+````
+
 .. _alm_l1_ratio:
 
 * L1_RATIO-tag : The ratio of the L1 regularization term
 
  :Default: 1.0 (LASSO)
  :Type: Double
- :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``. See also :ref:`here <alm_theory_enet>`.
+ :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``. Effective when ``LMODEL = enet``. See also :ref:`here <alm_theory_enet>`.
 
 ````
 
@@ -503,6 +558,8 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 0
  :Type: Integer
+ :Description: This tag is used only when ``LMODEL = enet``.
+
 
 ````
 
@@ -559,7 +616,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 1
  :Type: Integer
- :Description: This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``STANDARDIZE`` option, you have to rerun the cross-validation.
+ :Description: This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``STANDARDIZE`` option, you have to rerun the cross-validation. Effective only when ``LMODEL = enet``.
 
 
 ````
@@ -570,29 +627,11 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 1.0
  :Type: Double
- :Description: The normalization factor of atomic displacement :math:`u_{0}` in units of Bohr. When :math:`u_{0} (\neq 1)` is given, the displacement data are scaled as :math:`u_{i} \rightarrow u_{i}/u_{0}` before constructing the sensing matrix. This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``ENET_DNORM`` value, you will have to rerun the cross-validation. Also, this tag has no effect when ``STANDARDIZE = 1``. 
+ :Description: The normalization factor of atomic displacement :math:`u_{0}` in units of Bohr. When :math:`u_{0} (\neq 1)` is given, the displacement data are scaled as :math:`u_{i} \rightarrow u_{i}/u_{0}` before constructing the sensing matrix. This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``ENET_DNORM`` value, you will have to rerun the cross-validation. Effective only when ``LMODEL = enet`` and ``STANDARDIZE = 0``. 
 
 ````
 
-.. _alm_maxiter:
 
-* MAXITER-tag : Number of maximum iterations of the coordinate descent algorithm
-
- :Default: 10000
- :Type: Integer
- :Description: Effective when ``LMODEL = enet``.
-
-````
-
-.. _alm_conv_tol:
-
-* CONV_TOL-tag : Convergence criterion of the coordinate descent iteration
-
- :Default: 1.0e-8
- :Type: Double
- :Description: The coordinate descent iteration finishes at :math:`i`\ th iteration if :math:`\sqrt{\frac{1}{N}|\boldsymbol{\Phi}_{i} - \boldsymbol{\Phi}_{i-1}|_{2}^{2}} <` ``CONV_TOL`` is satisfied, where :math:`N` is the length of the vector :math:`\boldsymbol{\Phi}`.
-
-````
 
 .. _alm_solution_path:
 
