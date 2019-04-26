@@ -829,6 +829,20 @@ void InputParser::parse_optimize_vars(ALM *alm)
     if (!fitting_var_dict["SPARSE"].empty()) {
         assign_val(flag_sparse, "SPARSE", fitting_var_dict);
         optcontrol.use_sparse_solver = flag_sparse;
+    } 
+    if (!fitting_var_dict["SPARSESOLVER"].empty()) {
+        std::string str_sparsesolver;
+        assign_val(str_sparsesolver, "SPARSESOLVER", fitting_var_dict);
+        const auto str_lower = boost::algorithm::to_lower_copy(str_sparsesolver);
+     
+        if (str_lower != "simplicialldlt" 
+            && str_lower != "sparseqr" 
+            && str_lower != "conjugategradient"
+            && str_lower != "leastsquaresconjugategradient" 
+            && str_lower != "bicgstab") {
+            exit("parse_optimize_vars", "Unsupported SPARSESOLVER :", str_sparsesolver.c_str());
+        }
+        optcontrol.sparsesolver = str_sparsesolver;
     }
 
     if (!fitting_var_dict["ENET_DNORM"].empty()) {

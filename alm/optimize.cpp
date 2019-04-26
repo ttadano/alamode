@@ -24,16 +24,13 @@
 #include <string>
 #include <vector>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
-#ifdef WITH_SPARSE_SOLVER
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseQR>
 #include <Eigen/SparseCholesky>
-//#include <Eigen/IterativeLinearSolvers>
-//#include <unsupported/Eigen/SparseExtra>
-//#include <bench/BenchTimer.h>
-#endif
+#include <Eigen/IterativeLinearSolvers>
 
 using namespace ALM_NS;
 
@@ -151,7 +148,7 @@ int Optimize::optimize_main(const Symmetry *symmetry,
 
         if (!constraint->get_constraint_algebraic()) {
             exit("optimize_main",
-                 "Sorry, ICONST=10 or ICONST = 11 must be used when using elastic net.");
+                 "Sorry, ICONST = 10 or ICONST = 11 must be used when using elastic net.");
         }
 
         info_fitting = elastic_net(file_prefix,
@@ -223,7 +220,6 @@ int Optimize::least_squares(const int maxorder,
             // Use a solver for sparse matrix 
             // (Requires less memory for sparse inputs.)
 
-#ifdef WITH_SPARSE_SOLVER
             SpMat sp_amat(nrows, ncols);
             Eigen::VectorXd sp_bvec(nrows);
 
@@ -240,18 +236,15 @@ int Optimize::least_squares(const int maxorder,
                 std::cout << " Now, start fitting ..." << std::endl;
             }
 
-            info_fitting = run_eigen_sparseQR(sp_amat,
-                                              sp_bvec,
-                                              param_out,
-                                              fnorm,
-                                              maxorder,
-                                              fcs,
-                                              constraint,
-                                              verbosity);
-#else
-            std::cout << " Please recompile the code with -DWITH_SPARSE_SOLVER" << std::endl;
-            exit("optimize_main", "Sparse solver not supported.");
-#endif
+            info_fitting = run_eigen_sparse_solver(sp_amat,
+                                                   sp_bvec,
+                                                   param_out,
+                                                   fnorm,
+                                                   maxorder,
+                                                   fcs,
+                                                   constraint,
+                                                   optcontrol.sparsesolver,
+                                                   verbosity);
 
         } else {
 
@@ -1687,9 +1680,6 @@ int Optimize::fit_algebraic_constraints(const size_t N,
     }
 
     if (nrank < N) {
-        warn("fit_without_constraints",
-             "Matrix is rank-deficient. Force constants could not be determined uniquely :(");
-
         std::cout << " **************************************************************************\n";
         std::cout << "  WARNING : Rank deficient                                                 \n\n";
         std::cout << "  Force constants could not be determined uniquely because                 \n";
@@ -2029,7 +2019,6 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
     f_multi.clear();
 }
 
-#ifdef WITH_SPARSE_SOLVER
 void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
                                                   SpMat &sp_amat,
                                                   Eigen::VectorXd &sp_bvec,
@@ -2217,7 +2206,6 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
     sp_amat.setFromTriplets(nonzero_entries.begin(), nonzero_entries.end());
     sp_amat.makeCompressed();
 }
-#endif
 
 
 void Optimize::recover_original_forceconstants(const int maxorder,
@@ -2429,72 +2417,101 @@ int Optimize::rankQRD(const size_t m,
 }
 
 
-#ifdef WITH_SPARSE_SOLVER
-int Optimize::run_eigen_sparseQR(const SpMat &sp_mat,
-                                 const Eigen::VectorXd &sp_bvec,
-                                 std::vector<double> &param_out,
-                                 const double fnorm,
-                                 const int maxorder,
-                                 const Fcs *fcs,
-                                 const Constraint *constraint,
-                                 const int verbosity) const
+int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
+                                      const Eigen::VectorXd &sp_bvec,
+                                      std::vector<double> &param_out,
+                                      const double fnorm,
+                                      const int maxorder,
+                                      const Fcs *fcs,
+                                      const Constraint *constraint,
+                                      const std::string solver_type,
+                                      const int verbosity) const
 {
-    //    Eigen::BenchTimer t;
+    const auto solver_type_lower = boost::algorithm::to_lower_copy(solver_type);
+    Eigen::VectorXd x;
 
     if (verbosity > 0) {
-        std::cout << "  Solve least-squares problem by sparse LDLT." << std::endl;
+        std::cout << "  Solve least-squares problem by Eigen " + solver_type + ".\n";
     }
 
-    SpMat AtA = sp_mat.transpose() * sp_mat;
-    Eigen::VectorXd AtB, x;
-    AtB = sp_mat.transpose() * sp_bvec;
+    if (solver_type_lower == "simplicialldlt") {
+        SpMat AtA = sp_mat.transpose() * sp_mat;
+        Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
 
-    /*
-        t.reset();
-        t.start();
-        Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> qr(sp_mat);
+        Eigen::SimplicialLDLT<SpMat> ldlt(AtA);
+        x = ldlt.solve(AtB);
+
+        if (ldlt.info() != Eigen::Success) {
+            std::cerr << "  Fitting by " + solver_type + " failed." << std::endl;
+            std::cerr << ldlt.info() << std::endl;
+            return 1;
+        }
+
+    } else if (solver_type_lower == "sparseqr") {
+
+        Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(sp_mat);
         x = qr.solve(sp_bvec);
-    
-        t.stop();
-        std::cout << "sqr   : " << qr.info() << " ; " << t.value() 
-        << "s ;  err: " << (AtA * x - AtB).norm() / AtB.norm() << "\n";
-    
-        t.reset();
-        t.start();
-    */
-    Eigen::SimplicialLDLT<SpMat> ldlt(AtA);
-    x = ldlt.solve(AtB);
-    //       t.stop();
-    //   std::cout << "ldlt  : " << ldlt.info() << " ; " << t.value() << "s ;  err: " << (AtA*x-AtB).norm() / AtB.norm() << "\n";
 
-    /*
-         t.reset(); t.start();
-         Eigen::ConjugateGradient<SpMat> cg(AtA);
-         cg.setTolerance(optcontrol.tolerance_iteration);
-         cg.setMaxIterations(optcontrol.maxnum_iteration);
-         x.setZero(); x = cg.solve(AtB);
-         t.stop();
-         std::cout << "cg    : " << cg.info() << " ; " << t.value() << "s ;  err: " << (AtA*x-AtB).norm() / AtB.norm() << "\n";
-    */
-    /*   t.reset(); t.start();
-       Eigen::LeastSquaresConjugateGradient<SpMat> lscg(sp_mat);
-       lscg.setTolerance(eps10);
-       lscg.setMaxIterations(10000000);
-       x.setZero(); x = lscg.solve(sp_bvec);
-  
-       t.stop();
-       std::cout << "lscg  : " << lscg.info() << " ; " << t.value() << "s ;  err: " << (AtA*x-AtB).norm() / AtB.norm() << "\n";*/
+        if (qr.info() != Eigen::Success) {
+            std::cerr << "  Fitting by " + solver_type + " failed." << std::endl;
+            std::cerr << qr.info() << std::endl;
+            return 1;
+        }
 
-    /*
-         t.reset(); t.start();
-         Eigen::BiCGSTAB<SpMat> bicg(AtA);
-         bicg.setTolerance(optcontrol.tolerance_iteration);
-         bicg.setMaxIterations(optcontrol.maxnum_iteration);
-         x.setZero(); x = bicg.solve(AtB);
-         t.stop();
-         std::cout << "bicg    : " << bicg.info() << " ; " << t.value() << "s ;  err: " << (AtA*x-AtB).norm() / AtB.norm() << "\n";
-    
-    */
+    } else if (solver_type_lower == "conjugategradient") {
+        SpMat AtA = sp_mat.transpose() * sp_mat;
+        Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
+
+        Eigen::ConjugateGradient<SpMat> cg(AtA);
+        cg.setTolerance(optcontrol.tolerance_iteration);
+        cg.setMaxIterations(optcontrol.maxnum_iteration);
+        x.setZero();
+        x = cg.solve(AtB);
+
+        if (cg.info() != Eigen::Success) {
+            std::cerr << "  Fitting by " + solver_type + " failed." << std::endl;
+            std::cerr << cg.info() << std::endl;
+            return 1;
+        }
+
+    } else if (solver_type_lower == "leastsquaresconjugategradient") {
+
+#if EIGEN_VERSION_AT_LEAST(3,3,0)
+        Eigen::LeastSquaresConjugateGradient<SpMat> lscg(sp_mat);
+        lscg.setTolerance(optcontrol.tolerance_iteration);
+        lscg.setMaxIterations(optcontrol.maxnum_iteration);
+        x.setZero();
+        x = lscg.solve(sp_bvec);
+
+        if (lscg.info() != Eigen::Success) {
+            std::cerr << "  Fitting by " + solver_type + " failed." << std::endl;
+            std::cerr << lscg.info() << std::endl;
+            return 1;
+        }
+
+#else
+        std::cerr << "The linked Eigen version is too old\n";
+        std::cerr << solver_type + " is available as of 3.3.0\n";
+        return 1;
+#endif
+
+    } else if (solver_type_lower == "bicgstab") {
+        SpMat AtA = sp_mat.transpose() * sp_mat;
+        Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
+
+        Eigen::BiCGSTAB<SpMat> bicg(AtA);
+        bicg.setTolerance(optcontrol.tolerance_iteration);
+        bicg.setMaxIterations(optcontrol.maxnum_iteration);
+        x.setZero();
+        x = bicg.solve(AtB);
+
+        if (bicg.info() != Eigen::Success) {
+            std::cerr << "  Fitting by " + solver_type + " failed." << std::endl;
+            std::cerr << bicg.info() << std::endl;
+            return 1;
+        }
+    }
+
     auto res = sp_bvec - sp_mat * x;
     const auto res2norm = res.squaredNorm();
     const auto nparams = x.size();
@@ -2504,34 +2521,23 @@ int Optimize::run_eigen_sparseQR(const SpMat &sp_mat,
         param_irred[i] = x(i);
     }
 
-    if (ldlt.info() == Eigen::Success) {
-        // Recover reducible set of force constants
+    // Recover reducible set of force constants
 
-        recover_original_forceconstants(maxorder,
-                                        param_irred,
-                                        param_out,
-                                        fcs->get_nequiv(),
-                                        constraint);
+    recover_original_forceconstants(maxorder,
+                                    param_irred,
+                                    param_out,
+                                    fcs->get_nequiv(),
+                                    constraint);
 
-        if (verbosity > 0) {
-            std::cout << "  Residual sum of squares for the solution: "
-                << sqrt(res2norm) << std::endl;
-            std::cout << "  Fitting error (%) : "
-                << sqrt(res2norm / (fnorm * fnorm)) * 100.0 << std::endl;
-        }
-
-        return 0;
-
-    } else {
-
-        std::cerr << "  Fitting by LDLT failed." << std::endl;
-        std::cerr << ldlt.info() << std::endl;
-
-        return 1;
+    if (verbosity > 0) {
+        std::cout << "  Residual sum of squares for the solution: "
+            << sqrt(res2norm) << std::endl;
+        std::cout << "  Fitting error (%) : "
+            << sqrt(res2norm / (fnorm * fnorm)) * 100.0 << std::endl;
     }
-}
 
-#endif
+    return 0;
+}
 
 
 void Optimize::set_optimizer_control(const OptimizerControl &optcontrol_in)

@@ -12,16 +12,13 @@
 
 #include <vector>
 #include "files.h"
-#ifdef WITH_SPARSE_SOLVER
-#include <Eigen/SparseCore>
-using SpMat = Eigen::SparseMatrix<double, Eigen::ColMajor>;
-#endif
-
 #include "constraint.h"
 #include "symmetry.h"
 #include "fcs.h"
 #include "timer.h"
 #include <Eigen/Dense>
+#include <Eigen/SparseCore>
+using SpMat = Eigen::SparseMatrix<double, Eigen::ColMajor>;
 
 
 namespace ALM_NS
@@ -30,8 +27,9 @@ namespace ALM_NS
     {
     public:
         // General optimization options
-        int linear_model;      // 1 : least-squares, 2 : elastic net
-        int use_sparse_solver; // 0: No, 1: Yes
+        int linear_model;         // 1 : least-squares, 2 : elastic net
+        int use_sparse_solver;    // 0: No, 1: Yes
+        std::string sparsesolver; // Method name of Eigen sparse solver
         int maxnum_iteration;
         double tolerance_iteration;
         int output_frequency;
@@ -54,6 +52,7 @@ namespace ALM_NS
         {
             linear_model = 1;
             use_sparse_solver = 0;
+            sparsesolver = "SimplicialLDLT";
             maxnum_iteration = 10000;
             tolerance_iteration = 1.0e-8;
             output_frequency = 1000;
@@ -291,7 +290,6 @@ namespace ALM_NS
                                  const Symmetry *,
                                  const Fcs *) const;
 
-#ifdef WITH_SPARSE_SOLVER
         void get_matrix_elements_in_sparse_form(const int maxorder,
                                                 SpMat &sp_amat,
                                                 Eigen::VectorXd &sp_bvec,
@@ -302,15 +300,15 @@ namespace ALM_NS
                                                 const Fcs *fcs,
                                                 const Constraint *constraint) const;
 
-        int run_eigen_sparseQR(const SpMat &,
-                               const Eigen::VectorXd &,
-                               std::vector<double> &,
-                               const double,
-                               const int,
-                               const Fcs *,
-                               const Constraint *,
-                               const int) const;
-#endif
+        int run_eigen_sparse_solver(const SpMat &sp_mat,
+                                    const Eigen::VectorXd &sp_bvec,
+                                    std::vector<double> &param_out,
+                                    const double fnorm,
+                                    const int maxorder,
+                                    const Fcs *fcs,
+                                    const Constraint *constraint,
+                                    const std::string solver_type,
+                                    const int verbosity) const;
 
         void recover_original_forceconstants(const int maxorder,
                                              const std::vector<double> &param_in,
