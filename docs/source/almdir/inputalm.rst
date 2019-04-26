@@ -36,7 +36,7 @@ Multiple entries can be put in a single line. Also, characters put on the right 
     PREFIX = prefix; MODE = fitting  # Comment line
   /
 
-Each variable should be written inside the appropriate entry field.
+Each variable must be given inside the appropriate entry field.
 
 
 .. _label_inputvar_alm:
@@ -334,7 +334,9 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 .. _alm_dfset:
 
-* **DFSET**-tag (:red:`>= 1.1.0`): File name containing displacement-force datasets for training 
+* **DFSET**-tag: File name containing displacement-force datasets for training
+
+ .. versionadded:: 1.1.0
 
  :Default: None
  :Type: String
@@ -344,17 +346,25 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 .. _alm_dfile:
 
-* DFILE-tag (:red:`deprecated`) : File name containing atomic displacements in Cartesian coordinate
+* DFILE-tag: File name containing atomic displacements in Cartesian coordinate
+
+ .. deprecated:: 1.1.0
+    Use ``DFSET`` instead.
 
  :Default: None
  :Type: String
  :Description: The format of ``DFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
 
+
+
 ````
 
 .. _alm_ffile:
 
-* FFILE-tag (:red:`deprecated`): File name containing atomic forces in Cartesian coordinate
+* FFILE-tag: File name containing atomic forces in Cartesian coordinate
+
+ .. deprecated:: 1.1.0
+    Use ``DFSET`` instead.
 
  :Default: None
  :Type: String
@@ -452,7 +462,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 1.0 (LASSO)
  :Type: Double
- :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``.
+ :Description: The ``L1_RATIO`` changes the regularization term as ``L1_ALPHA`` :math:`\times` [``L1_RATIO`` :math:`|\boldsymbol{\Phi}|_{1}` + :math:`\frac{1}{2}` (1-``L1_RATIO``) :math:`|\boldsymbol{\Phi}|_{2}^{2}`]. Therefore, ``L1_RATIO = 1`` corresponds to LASSO. ``L1_RATIO`` must be ``0 < L1_ratio <= 1``. See also :ref:`here <alm_theory_enet>`.
 
 ````
 
@@ -462,7 +472,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 0.0 
  :Type: Double
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = 0``.
+ :Description: This tag is used only when ``LMODEL = enet`` and ``CV = 0``. See also :ref:`here <alm_theory_enet>`.
 
 ````
 
@@ -656,6 +666,9 @@ The unit of displacements and forces must be **Bohr** and **Ryd/Bohr**, respecti
 
 Format of ``DFILE`` and ``FFILE`` (deprecated)
 ++++++++++++++++++++++++++++++++++++++++++++++
+
+.. deprecated:: 1.1.0
+   Use ``DFSET`` instead.
 
 The displacement-force data sets obtained by first-principles (or classical force-field) calculations
 have to be saved to ``DFILE`` and ``FFILE`` to estimate IFCs with ``MODE = fitting``.

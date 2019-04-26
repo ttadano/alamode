@@ -42,26 +42,23 @@ This should finish in a few seconds.
 
     cp harm1.lammps tmp.lammps
     lmp_serial < in.sw > log.lammps
-    cp COORD COORD.harm1
-    cp FORCE FORCE.harm1
+    cp XFSET XFSET.harm1
 
     for ((i=1;i<=20;i++))
     do
         num=`echo $i | awk '{printf("%02d",$1)}'`
         cp cubic${num}.lammps tmp.lammps
         lmp_serial < in.sw > log.lammps
-        cp COORD COORD.cubic${num}
-        cp FORCE FORCE.cubic${num}
+        cp XFSET XFSET.cubic${num}
     done
 
 After the force calculations are finished, displacement and force data sets 
 can be generated as follows::
 
-    $ python extract.py --LAMMPS=Si222.lammps --get=disp  COORD.harm1 > disp.dat
-    $ python extract.py --LAMMPS=Si222.lammps --get=force FORCE.harm1 > force.dat
+    .. bash::
+    $ python extract.py --LAMMPS=Si222.lammps XFSET.harm1 > DFSET_harmonic
 
-    $ python extract.py --LAMMPS=Si222.lammps --get=disp  COORD.cubic* > disp3.dat
-    $ python extract.py --LAMMPS=Si222.lammps --get=force FORCE.cubic* > force3.dat
+    $ python extract.py --LAMMPS=Si222.lammps XFSET.cubic* > DFSET_harmonic
 
 Then, using these files and following exactly the same procedure as the last tutorial section,
 you can calculate phonons and thermal conductivity of Si using the SW potential.

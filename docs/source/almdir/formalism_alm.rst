@@ -169,6 +169,8 @@ To determine all elements of  :math:`\boldsymbol{\Phi}_{\mathrm{OLS}}` uniquely,
 
 where the denominator is the square sum of the DFT forces.
 
+.. _alm_theory_enet:
+
 Elastic-net regression
 ++++++++++++++++++++++
 
