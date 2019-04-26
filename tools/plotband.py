@@ -36,12 +36,12 @@ parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", de
                   help="normalize the x axis to unity.")
 
 
-# font styles 
+# font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
-mpl.rc('xtick', labelsize = 16)
-mpl.rc('ytick', labelsize = 16)
-mpl.rc('axes' , labelsize = 16)
-mpl.rc('lines', linewidth = 1.5)
+mpl.rc('xtick', labelsize=16)
+mpl.rc('ytick', labelsize=16)
+mpl.rc('axes', labelsize=16)
+mpl.rc('lines', linewidth=1.5)
 mpl.rc('legend', fontsize='small')
 #mpl.rc('text', usetex=True)
 # line colors and styles
@@ -178,14 +178,14 @@ if __name__ == '__main__':
 
     xmin, xmax, ymin, ymax = get_xy_minmax(data_merged)
     fig, ax = plt.subplots()
-    
+
     for i in range(len(data_merged)):
         ax.plot(data_merged[i][0:, 0], data_merged[i][0:, 1],
-                 linestyle=lsty[i], color=color[i], label=files[i])
+                linestyle=lsty[i], color=color[i], label=files[i])
 
         for j in range(2, len(data_merged[i][0][0:])):
             ax.plot(data_merged[i][0:, 0], data_merged[i][0:, j],
-                     linestyle=lsty[i], color=color[i])
+                    linestyle=lsty[i], color=color[i])
 
     if options.unitname.lower() == "mev":
         ax.set_ylabel("Frequency (meV)", labelpad=20)

@@ -56,7 +56,6 @@ parser.add_option('--OpenMX',
                         positions (default: None)")
 
 
-
 def parse_displacement_patterns(files_in):
 
     pattern = []
@@ -93,7 +92,7 @@ def parse_displacement_patterns(files_in):
                     pattern_set.append(disp)
                 pattern_tmp.append(pattern_set)
 
-        print("File %s containts %i displacement patterns" \
+        print("File %s containts %i displacement patterns"
               % (file, len(pattern_tmp)))
 
         for entry in pattern_tmp:
@@ -186,14 +185,15 @@ if __name__ == '__main__':
  please type\n$ python displace.py -h")
         exit(1)
 
-    conditions = [options.VASP is None, 
+    conditions = [options.VASP is None,
                   options.QE is None,
                   options.xTAPP is None,
                   options.LAMMPS is None,
                   options.OpenMX is None]
-    
+
     if conditions.count(True) == len(conditions):
-        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
+        print(
+            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
         exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
@@ -224,7 +224,6 @@ if __name__ == '__main__':
         code = "OpenMX"
         print("--OpenMX option is given: Generate dat files for OpenMX")
         print("")
-
 
     # Assign the magnitude of displacements
     if options.mag is None:
@@ -258,7 +257,7 @@ if __name__ == '__main__':
     elif code == "xTAPP":
         str_outfiles = "%s{counter}.cg" % prefix
         file_original = options.xTAPP
-    
+
     elif code == "LAMMPS":
         str_outfiles = "%s{counter}.lammps" % prefix
         file_original = options.LAMMPS
@@ -266,7 +265,6 @@ if __name__ == '__main__':
     elif code == "OpenMX":
         str_outfiles = "%s{counter}.dat" % prefix
         file_original = options.OpenMX
-
 
     # Read the original file
     if code == "VASP":
@@ -280,13 +278,15 @@ if __name__ == '__main__':
                 file_original)
 
     elif code == "xTAPP":
-        str_header, nat, nkd, aa, aa_inv, x_frac, kd = xtapp.read_CG(file_original)
+        str_header, nat, nkd, aa, aa_inv, x_frac, kd \
+            = xtapp.read_CG(file_original)
         suffix = "cg"
 
     elif code == "LAMMPS":
-        common_settings, nat, x_cart, kd = lammps.read_lammps_structure(file_original)
+        common_settings, nat, x_cart, kd \
+            = lammps.read_lammps_structure(file_original)
         aa_inv = None
-    
+
     elif code == "OpenMX":
         aa, aa_inv, nat, x_frac = openmx.read_OpenMX_input(file_original)
 
@@ -307,14 +307,14 @@ if __name__ == '__main__':
 
         if code == "VASP":
             vasp.write_POSCAR(prefix, counter, header, nzerofills,
-                         aa, elems, nats, disp, x_frac)
+                              aa, elems, nats, disp, x_frac)
 
         elif code == "QE":
             qe.generate_QE_input(prefix, suffix, counter, nzerofills, list_namelist,
-                              list_ATOMIC_SPECIES, list_K_POINTS,
-                              list_CELL_PARAMETERS, list_OCCUPATIONS,
-                              nat, kd_symbol, x_frac, disp)
-        
+                                 list_ATOMIC_SPECIES, list_K_POINTS,
+                                 list_CELL_PARAMETERS, list_OCCUPATIONS,
+                                 nat, kd_symbol, x_frac, disp)
+
         elif code == "xTAPP":
             nsym = 1
             symop = []
@@ -323,14 +323,15 @@ if __name__ == '__main__':
             has_inv = 0
 
             xtapp.gen_CG(prefix, suffix, counter, nzerofills, str_header, nat, kd,
-                   x_frac, disp, nsym, symop, denom_tran, has_inv)
+                         x_frac, disp, nsym, symop, denom_tran, has_inv)
 
         elif code == "LAMMPS":
             lammps.write_lammps_structure(prefix, counter, header, nzerofills,
-                                   common_settings, nat, kd, x_cart, disp)    
+                                          common_settings, nat, kd, x_cart, disp)
 
         elif code == "OpenMX":
-            openmx.write_OpenMX_input(prefix, counter,  nzerofills, disp, aa, file_original)
+            openmx.write_OpenMX_input(
+                prefix, counter,  nzerofills, disp, aa, file_original)
 
     print("")
     print("All input files are created.")

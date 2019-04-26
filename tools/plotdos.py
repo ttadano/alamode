@@ -172,7 +172,8 @@ if __name__ == '__main__':
             symbols, natoms = get_natoms_and_symbols(files[i])
 
             if len(dos_merged[i][0, 1:]) != np.sum(natoms):
-                print("Error: Projected DOS is not contained in the %d-th file" % (i + 1))
+                print(
+                    "Error: Projected DOS is not contained in the %d-th file" % (i + 1))
                 exit(1)
             else:
                 pdos = sum_atom_projected_dos(dos_merged[i][:, 1:], natoms)
@@ -214,6 +215,6 @@ if __name__ == '__main__':
 
     if options.print_key:
         plt.legend(loc='upper right', prop={'size': 12})
-    
+
     plt.tight_layout()
     plt.show()
