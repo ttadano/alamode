@@ -98,7 +98,12 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         std::cout << " OPTIMIZATION\n";
         std::cout << " ============\n\n";
         std::cout << "  LMODEL = " << str_linearmodel[optcontrol.linear_model - 1] << "\n\n";
-        std::cout << "  Training data file (DFSET) : " << filedata_train.filename << "\n\n";
+        if (filedata_train.filename_second.empty()) {
+            std::cout << "  Training data file (DFSET) : " << filedata_train.filename << "\n\n";
+        } else {
+            std::cout << "  Training data file (DFILE) : " << filedata_train.filename << "\n";
+            std::cout << "  Training data file (FFILE) : " << filedata_train.filename_second << "\n\n";
+        }
         std::cout << "  NSTART = " << filedata_train.nstart << "; NEND = " << filedata_train.nend << '\n';
         if (filedata_train.skip_s < filedata_train.skip_e)
             std::cout << ": SKIP = " << filedata_train.skip_s << "-" <<
@@ -195,7 +200,7 @@ int Optimize::least_squares(const int maxorder,
                             const Symmetry *symmetry,
                             const Fcs *fcs,
                             const Constraint *constraint,
-                            std::vector<double> &param_out)
+                            std::vector<double> &param_out) const
 {
     auto info_fitting = 0;
 
@@ -488,7 +493,7 @@ void Optimize::run_enetcv_manual(const std::string job_prefix,
                                  const Fcs *fcs,
                                  const Symmetry *symmetry,
                                  const Constraint *constraint,
-                                 const int verbosity)
+                                 const int verbosity) const
 {
     // Manual CV mode where the test data is read from the user-defined file.
     // Indeed, the test data is already read in the input_parser and stored in u_validation and f_validation.
@@ -1266,9 +1271,9 @@ double Optimize::get_esimated_max_alpha(const Eigen::MatrixXd &Amat,
     return lambda_max;
 }
 
-void ALM_NS::Optimize::apply_scaler_displacement(std::vector<std::vector<double>> &u_inout,
-                                                 const double normalization_factor,
-                                                 const bool scale_back) const
+void Optimize::apply_scaler_displacement(std::vector<std::vector<double>> &u_inout,
+                                         const double normalization_factor,
+                                         const bool scale_back) const
 {
     const auto nrows = u_inout.size();
     const auto ncols = u_inout[0].size();
@@ -1345,8 +1350,8 @@ void Optimize::apply_scalers(const int maxorder,
     }
 }
 
-void ALM_NS::Optimize::finalize_scalers(const int maxorder,
-                                        Constraint *constraint)
+void Optimize::finalize_scalers(const int maxorder,
+                                Constraint *constraint)
 {
     apply_scaler_displacement(u_train,
                               optcontrol.displacement_normalization_factor,
@@ -1684,6 +1689,14 @@ int Optimize::fit_algebraic_constraints(const size_t N,
     if (nrank < N) {
         warn("fit_without_constraints",
              "Matrix is rank-deficient. Force constants could not be determined uniquely :(");
+
+        std::cout << " **************************************************************************\n";
+        std::cout << "  WARNING : Rank deficient                                                 \n\n";
+        std::cout << "  Force constants could not be determined uniquely because                 \n";
+        std::cout << "  the sensing matrix is not full rank.                                     \n";
+        std::cout << "  You may need to reduce the cutoff radii and/or increase the number of    \n";
+        std::cout << "  training datasets.                                                       \n";
+        std::cout << " **************************************************************************\n";
     }
 
     if (nrank == N && verbosity > 0) {

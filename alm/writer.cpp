@@ -79,7 +79,12 @@ void Writer::write_input_vars(const ALM *alm) const
         std::cout << " Optimize:\n";
         std::cout << "  LMODEL = "
             << str_linearmodel[optctrl.linear_model - 1] << '\n';
-        std::cout << "  DFSET = " << alm->files->get_datfile_train().filename << '\n';
+        if (alm->files->get_datfile_train().filename_second.empty()) {
+            std::cout << "  DFSET = " << alm->files->get_datfile_train().filename << '\n';
+        } else {
+            std::cout << "  DFILE = " << alm->files->get_datfile_train().filename << '\n';
+            std::cout << "  FFILE = " << alm->files->get_datfile_train().filename_second << '\n';
+        }
         std::cout << "  NDATA = " << alm->files->get_datfile_train().ndata
             << "; NSTART = " << alm->files->get_datfile_train().nstart
             << "; NEND = " << alm->files->get_datfile_train().nend;
@@ -199,7 +204,7 @@ void Writer::write_force_constants(ALM *alm) const
                 j = alm->symmetry->get_map_s2p()[alm->fcs->get_fc_table()[order][m].elems[0] / 3].atom_num;
                 std::sort(atom_tmp.begin(), atom_tmp.end());
 
-                auto iter_cluster
+                const auto iter_cluster
                     = alm->cluster->get_interaction_cluster(order, j).
                            find(InteractionCluster(atom_tmp, cell_dummy));
 
@@ -339,7 +344,7 @@ void Writer::write_displacement_pattern(ALM *alm) const
 }
 
 
-void Writer::write_misc_xml(ALM *alm)
+void Writer::write_misc_xml(ALM *alm) const
 {
     SystemInfo system_structure;
 
@@ -376,10 +381,14 @@ void Writer::write_misc_xml(ALM *alm)
     std::string str_pos[3];
 
     pt.put("Data.ALM_version", ALAMODE_VERSION);
-    //pt.put("Data.Fitting.DisplaceFile", alm->files->file_disp);
-    //pt.put("Data.Fitting.ForceFile", alm->files->file_force);
-    pt.put("Data.Fitting.Constraint", alm->constraint->get_constraint_mode());
+    if (alm->files->get_datfile_train().filename_second.empty()) {
+        pt.put("Data.Optimize.DFSET", alm->files->get_datfile_train().filename);
+    } else {
+        pt.put("Data.Optimize.DFILE", alm->files->get_datfile_train().filename);
+        pt.put("Data.Optimize.FFILE", alm->files->get_datfile_train().filename_second);
+    }
 
+    pt.put("Data.Optimize.Constraint", alm->constraint->get_constraint_mode());
     pt.put("Data.Structure.NumberOfAtoms", system_structure.nat);
     pt.put("Data.Structure.NumberOfElements", system_structure.nspecies);
 

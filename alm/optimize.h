@@ -150,7 +150,7 @@ namespace ALM_NS
                           const Symmetry *symmetry,
                           const Fcs *fcs,
                           const Constraint *constraint,
-                          std::vector<double> &param_out);
+                          std::vector<double> &param_out) const;
 
         int elastic_net(const std::string job_prefix,
                         const int maxorder,
@@ -176,7 +176,7 @@ namespace ALM_NS
                                const Fcs *fcs,
                                const Symmetry *symmetry,
                                const Constraint *constraint,
-                               const int verbosity);
+                               const int verbosity) const;
 
         void run_enetcv_auto(const std::string job_prefix,
                              const int maxorder,
