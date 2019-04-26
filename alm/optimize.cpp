@@ -233,7 +233,7 @@ int Optimize::least_squares(const int maxorder,
                                                fcs,
                                                constraint);
             if (verbosity > 0) {
-                std::cout << " Now, start fitting ..." << std::endl;
+                std::cout << "  Now, start fitting ..." << std::endl;
             }
 
             info_fitting = run_eigen_sparse_solver(sp_amat,

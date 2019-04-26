@@ -792,7 +792,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
     std::vector<std::vector<double>> u_tmp2, f_tmp2;
 
     const std::vector<std::string> input_list{
-        "LMODEL", "SPARSE",
+        "LMODEL", "SPARSE", "SPARSESOLVER",
         "ICONST", "ROTAXIS", "FC2XML", "FC3XML",
         "NDATA", "NSTART", "NEND", "SKIP", "DFILE", "FFILE", "DFSET",
         "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
@@ -995,7 +995,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
 
 
     if (fitting_var_dict["ICONST"].empty()) {
-        constraint_flag = 1;
+        constraint_flag = 11;
     } else {
         assign_val(constraint_flag, "ICONST", fitting_var_dict);
     }
