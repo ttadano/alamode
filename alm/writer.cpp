@@ -100,7 +100,10 @@ void Writer::write_input_vars(const ALM *alm) const
         std::cout << "  ROTAXIS = " << alm->constraint->get_rotation_axis() << '\n';
         std::cout << "  FC2XML = " << alm->constraint->get_fc_file(2) << '\n';
         std::cout << "  FC3XML = " << alm->constraint->get_fc_file(3) << "\n\n";
-        std::cout << "  SPARSE = " << optctrl.use_sparse_solver << "\n\n";
+        std::cout << "  SPARSE = " << optctrl.use_sparse_solver << '\n';
+        std::cout << "  SPARSESOLVER = " << optctrl.sparsesolver << '\n';
+        std::cout << "  CONV_TOL = " << optctrl.tolerance_iteration << '\n';
+        std::cout << "  MAXITER = " << optctrl.maxnum_iteration << "\n\n";
         if (optctrl.linear_model == 2) {
             std::cout << " Elastic-net related variables:\n";
             std::cout << "  CV = " << std::setw(5) << optctrl.cross_validation << '\n';
@@ -115,8 +118,6 @@ void Writer::write_input_vars(const ALM *alm) const
                 << ";  CV_NALPHA = " << optctrl.num_l1_alpha << '\n';
             std::cout << "  STANDARDIZE = " << optctrl.standardize << '\n';
             std::cout << "  ENET_DNORM = " << optctrl.displacement_normalization_factor << '\n';
-            std::cout << "  CONV_TOL = " << optctrl.tolerance_iteration << '\n';
-            std::cout << "  MAXITER = " << optctrl.maxnum_iteration << '\n';
             std::cout << "  NWRITE = " << std::setw(5) << optctrl.output_frequency << '\n';
             std::cout << "  DEBIAS_OLS = " << optctrl.debiase_after_l1opt << '\n';
             std::cout << '\n';
