@@ -254,6 +254,7 @@ void Scph::exec_scph()
         }
 
         for (auto iT = 0; iT < NT; ++iT) {
+            auto T = Tmin + dT * static_cast<double>(iT);
 
             exec_interpolation(kmesh_interpolate,
                                delta_dymat_scph[iT],
@@ -269,8 +270,13 @@ void Scph::exec_scph()
                     dos->calc_dos_from_given_frequency(eval_anharm[iT],
                                                        dos_scph[iT]);
                 }
-                auto T = Tmin + dT * static_cast<double>(iT);
 
+                heat_capacity[iT] = thermodynamics->Cv_tot(T,
+                                                           kpoint->nk_irred,
+                                                           ns,
+                                                           kpoint->kpoint_irred_all,
+                                                           &kpoint->weight_k[0],
+                                                           eval_anharm[iT]);
 
                 FE_QHA[iT] = thermodynamics->free_energy_QHA(T,
                                                              kpoint->nk_irred,
@@ -311,6 +317,7 @@ void Scph::exec_scph()
                         }
                     }
                 }
+
             }
         }
 
@@ -1955,11 +1962,12 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
     const auto nk2 = kmesh_orig[1];
     const auto nk3 = kmesh_orig[2];
 
+#pragma omp parallel
+{
     double *eval_real;
-
     std::complex<double> **mat_tmp;
     std::complex<double> **mat_harmonic, **mat_harmonic_na;
-    std::vector<double> eval_vec;
+    std::vector<double> eval_vec(ns);
 
     memory->allocate(mat_tmp, ns, ns);
     memory->allocate(eval_real, ns);
@@ -1969,6 +1977,7 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
         memory->allocate(mat_harmonic_na, ns, ns);
     }
 
+#pragma omp for
     for (unsigned int ik = 0; ik < nk_dense; ++ik) {
 
         if (dynamical->nonanalytic == 3) {
@@ -2015,15 +2024,13 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
 
         diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
 
-        eval_vec.clear();
-
         for (is = 0; is < ns; ++is) {
             const auto eval_tmp = eval_real[is];
 
             if (eval_tmp < 0.0) {
-                eval_vec.push_back(-std::sqrt(-eval_tmp));
+                eval_vec[is] = -std::sqrt(-eval_tmp);
             } else {
-                eval_vec.push_back(std::sqrt(eval_tmp));
+                eval_vec[is] = std::sqrt(eval_tmp);
             }
         }
 
@@ -2038,6 +2045,7 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
     if (dynamical->nonanalytic) {
         memory->deallocate(mat_harmonic_na);
     }
+}
 }
 
 
