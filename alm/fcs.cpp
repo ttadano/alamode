@@ -158,7 +158,7 @@ void Fcs::generate_force_constant_table(const int order,
     bool *is_searched;
     int **map_sym;
     double ***rotation;
-    bool use_compatible = true;
+    const bool use_compatible = true;
 
     if (order < 0) return;
 
@@ -329,10 +329,9 @@ void Fcs::generate_force_constant_table(const int order,
 
     if (!ndup.empty()) {
         std::sort(fc_vec.begin(), fc_vec.begin() + ndup[0]);
-        size_t nbegin = ndup[0];
-        size_t nend;
+        auto nbegin = ndup[0];
         for (size_t mm = 1; mm < ndup.size(); ++mm) {
-            nend = nbegin + ndup[mm];
+            const auto nend = nbegin + ndup[mm];
             std::sort(fc_vec.begin() + nbegin, fc_vec.begin() + nend);
             nbegin += ndup[mm];
         }

@@ -36,13 +36,13 @@ void Symmetry::set_default_variables()
     nsym = 0;
     symmetry_flag = true;
     printsymmetry = false;
-    tolerance = 1.0e-6;
+    tolerance = 1.0e-3;
 }
 
 
 void Symmetry::setup_symmetry()
 {
-    unsigned int natmin = system->natmin;
+    const auto natmin = system->natmin;
     double **xtmp;
     unsigned int *kdtmp;
 
@@ -113,15 +113,15 @@ void Symmetry::setup_symmetry_operation(int N,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (const auto &p : SymmList) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
-                        ofs_sym << std::setw(4) << (*p).rot[i][j];
+                        ofs_sym << std::setw(4) << p.rot[i][j];
                     }
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-                    ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
+                    ofs_sym << std::setprecision(15) << std::setw(20) << p.tran[i];
                 }
                 ofs_sym << std::endl;
             }
@@ -616,7 +616,7 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
 
 bool Symmetry::is_proper(double rot[3][3]) const
 {
-    bool ret;
+    bool ret = false;
 
     double det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
         - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])

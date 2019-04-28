@@ -745,7 +745,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
                                                            const Symmetry *symmetry,
                                                            const Cluster *cluster,
                                                            const Fcs *fcs,
-                                                           const int verbosity)
+                                                           const int verbosity) const
 {
     // Create constraint matrices arising from the crystal symmetry.
 
@@ -795,7 +795,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
                                                    const Symmetry *symmetry,
                                                    const Cluster *cluster,
                                                    const Fcs *fcs,
-                                                   const int verbosity)
+                                                   const int verbosity) const
 {
     // Create constraint matrix for the translational invariance (aka acoustic sum rule).
 

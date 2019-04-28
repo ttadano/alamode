@@ -324,7 +324,7 @@ namespace ALM_NS
                                                        const Symmetry *symmetry,
                                                        const Cluster *cluster,
                                                        const Fcs *fcs,
-                                                       const int verbosity);
+                                                       const int verbosity) const;
 
         void get_constraint_translation(const Cell &supercell,
                                         const Symmetry *symmetry,
@@ -341,7 +341,7 @@ namespace ALM_NS
                                                const Symmetry *,
                                                const Cluster *,
                                                const Fcs *,
-                                               const int);
+                                               const int) const;
 
         void fix_forceconstants_to_file(const int,
                                         const Symmetry *,

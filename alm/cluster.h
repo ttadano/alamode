@@ -251,7 +251,7 @@ namespace ALM_NS
                                            const std::vector<std::vector<int>> &map_p2s,
                                            const std::vector<int> &kd,
                                            const std::string *kdname,
-                                           const std::vector<int> *const *interaction_list);
+                                           const std::vector<int> *const *interaction_list) const;
 
         double distance(const double *,
                         const double *) const;

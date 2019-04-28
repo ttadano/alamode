@@ -128,7 +128,7 @@ void Writer::write_input_vars(const ALM *alm) const
     alm->timer->stop_clock("writer");
 }
 
-void Writer::writeall(ALM *alm)
+void Writer::writeall(ALM *alm) const
 {
     alm->timer->start_clock("writer");
 
@@ -540,12 +540,12 @@ void Writer::write_misc_xml(ALM *alm) const
 
     std::sort(alm->fcs->get_fc_table()[0].begin(), alm->fcs->get_fc_table()[0].end());
 
-    for (auto it = alm->fcs->get_fc_table()[0].begin(); it != alm->fcs->get_fc_table()[0].end(); ++it) {
-        auto fctmp = *it;
-        ip = fctmp.mother;
+    for (const auto &it : alm->fcs->get_fc_table()[0]) {
+
+        ip = it.mother;
 
         for (k = 0; k < 2; ++k) {
-            pair_tmp[k] = fctmp.elems[k] / 3;
+            pair_tmp[k] = it.elems[k] / 3;
         }
 
         j = alm->symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
@@ -563,16 +563,16 @@ void Writer::write_misc_xml(ALM *alm) const
                 std::vector<int> cell_now = (*iter_cluster).cell[imult];
 
                 ptree &child = pt.add(elementname,
-                                      double2string(alm->optimize->get_params()[ip] * fctmp.sign
+                                      double2string(alm->optimize->get_params()[ip] * it.sign
                                           / static_cast<double>(multiplicity)));
 
                 child.put("<xmlattr>.pair1", std::to_string(j + 1)
-                          + " " + std::to_string(fctmp.elems[0] % 3 + 1));
+                          + " " + std::to_string(it.elems[0] % 3 + 1));
 
                 for (k = 1; k < 2; ++k) {
                     child.put("<xmlattr>.pair" + std::to_string(k + 1),
                               std::to_string(pair_tmp[k] + 1)
-                              + " " + std::to_string(fctmp.elems[k] % 3 + 1)
+                              + " " + std::to_string(it.elems[k] % 3 + 1)
                               + " " + std::to_string(cell_now[k - 1] + 1));
                 }
             }
@@ -587,15 +587,18 @@ void Writer::write_misc_xml(ALM *alm) const
 
     for (auto order = 1; order < alm->cluster->get_maxorder(); ++order) {
 
-        std::sort(alm->fcs->get_fc_table()[order].begin(), alm->fcs->get_fc_table()[order].end());
+        std::sort(alm->fcs->get_fc_table()[order].begin(),
+                  alm->fcs->get_fc_table()[order].end());
 
-        for (auto it = alm->fcs->get_fc_table()[order].begin();
-             it != alm->fcs->get_fc_table()[order].end(); ++it) {
-            auto fctmp = *it;
-            ip = fctmp.mother + ishift;
+        for (const auto &it : alm->fcs->get_fc_table()[order]) {
+
+            ip = it.mother + ishift;
+
+            // Save nonzero force constants only 
+            if (std::abs(alm->optimize->get_params()[ip]) < eps) continue;
 
             for (k = 0; k < order + 2; ++k) {
-                pair_tmp[k] = fctmp.elems[k] / 3;
+                pair_tmp[k] = it.elems[k] / 3;
             }
             j = alm->symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
 
@@ -620,16 +623,16 @@ void Writer::write_misc_xml(ALM *alm) const
                     auto cell_now = (*iter_cluster).cell[imult];
 
                     auto &child = pt.add(elementname,
-                                         double2string(alm->optimize->get_params()[ip] * fctmp.sign
+                                         double2string(alm->optimize->get_params()[ip] * it.sign
                                              / static_cast<double>(multiplicity)));
 
                     child.put("<xmlattr>.pair1", std::to_string(j + 1)
-                              + " " + std::to_string(fctmp.elems[0] % 3 + 1));
+                              + " " + std::to_string(it.elems[0] % 3 + 1));
 
                     for (k = 1; k < order + 2; ++k) {
                         child.put("<xmlattr>.pair" + std::to_string(k + 1),
                                   std::to_string(pair_tmp[k] + 1)
-                                  + " " + std::to_string(fctmp.elems[k] % 3 + 1)
+                                  + " " + std::to_string(it.elems[k] % 3 + 1)
                                   + " " + std::to_string(cell_now[k - 1] + 1));
                     }
                 }
@@ -680,18 +683,17 @@ void Writer::write_hessian(ALM *alm) const
         }
     }
 
-    for (auto it = alm->fcs->get_fc_table()[0].begin();
-         it != alm->fcs->get_fc_table()[0].end(); ++it) {
-        auto fctmp = *it;
-        const auto ip = fctmp.mother;
+    for (const auto &it : alm->fcs->get_fc_table()[0]) {
 
-        for (i = 0; i < 2; ++i) pair_tmp[i] = fctmp.elems[i] / 3;
+        const auto ip = it.mother;
+
+        for (i = 0; i < 2; ++i) pair_tmp[i] = it.elems[i] / 3;
         for (size_t itran = 0; itran < alm->symmetry->get_ntran(); ++itran) {
             for (i = 0; i < 2; ++i) {
                 pair_tran[i] = alm->symmetry->get_map_sym()[pair_tmp[i]][alm->symmetry->get_symnum_tran()[itran]];
             }
-            hessian[3 * pair_tran[0] + fctmp.elems[0] % 3][3 * pair_tran[1] + fctmp.elems[1] % 3]
-                = alm->optimize->get_params()[ip] * fctmp.sign;
+            hessian[3 * pair_tran[0] + it.elems[0] % 3][3 * pair_tran[1] + it.elems[1] % 3]
+                = alm->optimize->get_params()[ip] * it.sign;
         }
     }
 
@@ -745,25 +747,24 @@ void Writer::write_in_QEformat(ALM *alm) const
             hessian[i][j] = 0.0;
         }
     }
+    for (const auto &it : alm->fcs->get_fc_table()[0]) {
 
-    for (auto it = alm->fcs->get_fc_table()[0].begin(); it != alm->fcs->get_fc_table()[0].end(); ++it) {
-        auto fctmp = *it;
-        const auto ip = fctmp.mother;
+        const auto ip = it.mother;
 
-        for (i = 0; i < 2; ++i) pair_tmp[i] = fctmp.elems[i] / 3;
+        for (i = 0; i < 2; ++i) pair_tmp[i] = it.elems[i] / 3;
         for (size_t itran = 0; itran < alm->symmetry->get_ntran(); ++itran) {
             for (i = 0; i < 2; ++i) {
                 pair_tran[i] = alm->symmetry->get_map_sym()[pair_tmp[i]][alm->symmetry->get_symnum_tran()[itran]];
             }
-            hessian[3 * pair_tran[0] + fctmp.elems[0] % 3][3 * pair_tran[1] + fctmp.elems[1] % 3]
-                = alm->optimize->get_params()[ip] * fctmp.sign;
+            hessian[3 * pair_tran[0] + it.elems[0] % 3][3 * pair_tran[1] + it.elems[1] % 3]
+                = alm->optimize->get_params()[ip] * it.sign;
         }
     }
 
     auto file_fc = alm->files->get_prefix() + ".fc";
 
     ofs_hes.open(file_fc.c_str(), std::ios::out);
-    if (!ofs_hes) exit("write_hessian", "cannot create hessian file");
+    if (!ofs_hes) exit("write_in_QEformat", "cannot create fc file");
 
     ofs_hes << "  1  1  1" << std::endl;
     for (auto icrd = 0; icrd < 3; ++icrd) {
@@ -828,13 +829,13 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
 
     const auto ishift = alm->fcs->get_nequiv()[0].size();
 
-    for (auto it = alm->fcs->get_fc_table()[1].begin(); it != alm->fcs->get_fc_table()[1].end(); ++it) {
-        auto fctmp = *it;
-        const auto ip = fctmp.mother + ishift;
+    for (const auto &it : alm->fcs->get_fc_table()[1]) {
+        
+        const auto ip = it.mother + ishift;
 
         for (i = 0; i < 3; ++i) {
-            pair_tmp[i] = fctmp.elems[i] / 3;
-            coord_tmp[i] = fctmp.elems[i] % 3;
+            pair_tmp[i] = it.elems[i] / 3;
+            coord_tmp[i] = it.elems[i] % 3;
         }
 
         j = alm->symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
@@ -852,14 +853,16 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
             nelems += (*iter_cluster).cell.size();
             has_element[j][pair_tmp[1]][pair_tmp[2]] = 1;
         }
-        fc3[3 * j + coord_tmp[0]][fctmp.elems[1]][fctmp.elems[2]] = alm->optimize->get_params()[ip] * fctmp.sign;
+        fc3[3 * j + coord_tmp[0]][it.elems[1]][it.elems[2]]
+            = alm->optimize->get_params()[ip] * it.sign;
 
-        if (fctmp.elems[1] != fctmp.elems[2]) {
+        if (it.elems[1] != it.elems[2]) {
             if (!has_element[j][pair_tmp[2]][pair_tmp[1]]) {
                 nelems += (*iter_cluster).cell.size();
                 has_element[j][pair_tmp[2]][pair_tmp[1]] = 1;
             }
-            fc3[3 * j + coord_tmp[0]][fctmp.elems[2]][fctmp.elems[1]] = alm->optimize->get_params()[ip] * fctmp.sign;
+            fc3[3 * j + coord_tmp[0]][it.elems[2]][it.elems[1]]
+                = alm->optimize->get_params()[ip] * it.sign;
         }
     }
 
