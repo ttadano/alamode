@@ -180,7 +180,6 @@ void Scph::exec_scph()
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
 
-    double ***eval_anharm = nullptr;
     std::complex<double> ****delta_dymat_scph = nullptr;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
@@ -211,6 +210,8 @@ void Scph::exec_scph()
         }
     }
 
+    postprocess(delta_dymat_scph);
+
     if (kpoint->kpoint_mode == 2) {
         if (thermodynamics->calc_FE_bubble) {
             compute_free_energy_bubble_SCPH(kmesh_interpolate,
@@ -218,7 +219,27 @@ void Scph::exec_scph()
         }
     }
 
+
+    memory->deallocate(delta_dymat_scph);
+}
+
+void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
+{
+    double ***eval_anharm = nullptr;
+    const auto nk_ref = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
     if (mympi->my_rank == 0) {
+
+        std::cout << '\n';
+        std::cout << " Running postprocess of SCPH (calculation of free energy, MSD, DOS)" << std::endl;
+        std::cout << " The number of temperature points: " << std::setw(4) << NT << std::endl;
+        std::cout << std::setw(3);
+
 
         std::complex<double> ***evec_tmp = nullptr;
 
@@ -317,7 +338,12 @@ void Scph::exec_scph()
                         }
                     }
                 }
+            }
 
+            std::cout << '.' << std::flush;
+            if (iT % 25 == 24) {
+                std::cout << std::endl;
+                std::cout << std::setw(3);
             }
         }
 
@@ -345,9 +371,9 @@ void Scph::exec_scph()
         if (heat_capacity) memory->deallocate(heat_capacity);
         if (FE_QHA) memory->deallocate(FE_QHA);
         if (dFE_scph) memory->deallocate(dFE_scph);
-    }
 
-    memory->deallocate(delta_dymat_scph);
+        std::cout << "\n done.\n" << std::flush;
+    }
 }
 
 
@@ -1963,89 +1989,89 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
     const auto nk3 = kmesh_orig[2];
 
 #pragma omp parallel
-{
-    double *eval_real;
-    std::complex<double> **mat_tmp;
-    std::complex<double> **mat_harmonic, **mat_harmonic_na;
-    std::vector<double> eval_vec(ns);
+    {
+        double *eval_real;
+        std::complex<double> **mat_tmp;
+        std::complex<double> **mat_harmonic, **mat_harmonic_na;
+        std::vector<double> eval_vec(ns);
 
-    memory->allocate(mat_tmp, ns, ns);
-    memory->allocate(eval_real, ns);
-    memory->allocate(mat_harmonic, ns, ns);
-
-    if (dynamical->nonanalytic) {
-        memory->allocate(mat_harmonic_na, ns, ns);
-    }
-
-#pragma omp for
-    for (unsigned int ik = 0; ik < nk_dense; ++ik) {
-
-        if (dynamical->nonanalytic == 3) {
-            dynamical->calc_analytic_k(xk_dense[ik],
-                                       ewald->fc2_without_dipole,
-                                       mat_harmonic);
-        } else {
-            dynamical->calc_analytic_k(xk_dense[ik],
-                                       fcs_phonon->fc2_ext,
-                                       mat_harmonic);
-        }
-
-        r2q(xk_dense[ik], nk1, nk2, nk3, ns, dymat_r, mat_tmp);
-
-        for (i = 0; i < ns; ++i) {
-            for (j = 0; j < ns; ++j) {
-                mat_tmp[i][j] += mat_harmonic[i][j];
-            }
-        }
+        memory->allocate(mat_tmp, ns, ns);
+        memory->allocate(eval_real, ns);
+        memory->allocate(mat_harmonic, ns, ns);
 
         if (dynamical->nonanalytic) {
+            memory->allocate(mat_harmonic_na, ns, ns);
+        }
 
-            if (dynamical->nonanalytic == 1) {
-                dynamical->calc_nonanalytic_k(xk_dense[ik],
-                                              kvec_dense[ik],
-                                              mat_harmonic_na);
-            } else if (dynamical->nonanalytic == 2) {
-                dynamical->calc_nonanalytic_k2(xk_dense[ik],
-                                               kvec_dense[ik],
-                                               mat_harmonic_na);
+#pragma omp for
+        for (int ik = 0; ik < nk_dense; ++ik) {
 
-            } else if (dynamical->nonanalytic == 3) {
-                ewald->add_longrange_matrix(xk_dense[ik],
-                                            kvec_dense[ik],
-                                            mat_harmonic_na);
+            if (dynamical->nonanalytic == 3) {
+                dynamical->calc_analytic_k(xk_dense[ik],
+                                           ewald->fc2_without_dipole,
+                                           mat_harmonic);
+            } else {
+                dynamical->calc_analytic_k(xk_dense[ik],
+                                           fcs_phonon->fc2_ext,
+                                           mat_harmonic);
             }
+
+            r2q(xk_dense[ik], nk1, nk2, nk3, ns, dymat_r, mat_tmp);
 
             for (i = 0; i < ns; ++i) {
                 for (j = 0; j < ns; ++j) {
-                    mat_tmp[i][j] += mat_harmonic_na[i][j];
+                    mat_tmp[i][j] += mat_harmonic[i][j];
                 }
             }
-        }
 
-        diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
+            if (dynamical->nonanalytic) {
 
-        for (is = 0; is < ns; ++is) {
-            const auto eval_tmp = eval_real[is];
+                if (dynamical->nonanalytic == 1) {
+                    dynamical->calc_nonanalytic_k(xk_dense[ik],
+                                                  kvec_dense[ik],
+                                                  mat_harmonic_na);
+                } else if (dynamical->nonanalytic == 2) {
+                    dynamical->calc_nonanalytic_k2(xk_dense[ik],
+                                                   kvec_dense[ik],
+                                                   mat_harmonic_na);
 
-            if (eval_tmp < 0.0) {
-                eval_vec[is] = -std::sqrt(-eval_tmp);
-            } else {
-                eval_vec[is] = std::sqrt(eval_tmp);
+                } else if (dynamical->nonanalytic == 3) {
+                    ewald->add_longrange_matrix(xk_dense[ik],
+                                                kvec_dense[ik],
+                                                mat_harmonic_na);
+                }
+
+                for (i = 0; i < ns; ++i) {
+                    for (j = 0; j < ns; ++j) {
+                        mat_tmp[i][j] += mat_harmonic_na[i][j];
+                    }
+                }
             }
+
+            diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
+
+            for (is = 0; is < ns; ++is) {
+                const auto eval_tmp = eval_real[is];
+
+                if (eval_tmp < 0.0) {
+                    eval_vec[is] = -std::sqrt(-eval_tmp);
+                } else {
+                    eval_vec[is] = std::sqrt(eval_tmp);
+                }
+            }
+
+            for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+
         }
 
-        for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+        memory->deallocate(eval_real);
+        memory->deallocate(mat_tmp);
+        memory->deallocate(mat_harmonic);
 
+        if (dynamical->nonanalytic) {
+            memory->deallocate(mat_harmonic_na);
+        }
     }
-
-    memory->deallocate(eval_real);
-    memory->deallocate(mat_tmp);
-    memory->deallocate(mat_harmonic);
-
-    if (dynamical->nonanalytic) {
-        memory->deallocate(mat_harmonic_na);
-    }
-}
 }
 
 
