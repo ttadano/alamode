@@ -1518,7 +1518,7 @@ int Optimize::fit_with_constraints(const size_t N,
                                    double *amat,
                                    const double *bvec,
                                    double *param_out,
-                                   const double * const *cmat,
+                                   const double *const *cmat,
                                    double *dvec,
                                    const int verbosity) const
 {

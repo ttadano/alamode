@@ -133,7 +133,7 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int noncollinear_in,
                                    const int trevsym_in,
                                    const std::string *kdname_in,
-                                   const double * const *magmom_in,
+                                   const double *const *magmom_in,
                                    const double tolerance,
                                    const double tolerance_constraint)
 {

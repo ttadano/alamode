@@ -38,7 +38,7 @@ InputParser::~InputParser()
 
 void InputParser::run(ALM *alm,
                       const int narg,
-                      const char * const *arg)
+                      const char *const *arg)
 {
     if (narg == 1) {
 
@@ -829,16 +829,16 @@ void InputParser::parse_optimize_vars(ALM *alm)
     if (!optimize_var_dict["SPARSE"].empty()) {
         assign_val(flag_sparse, "SPARSE", optimize_var_dict);
         optcontrol.use_sparse_solver = flag_sparse;
-    } 
+    }
     if (!optimize_var_dict["SPARSESOLVER"].empty()) {
         std::string str_sparsesolver;
         assign_val(str_sparsesolver, "SPARSESOLVER", optimize_var_dict);
         const auto str_lower = boost::algorithm::to_lower_copy(str_sparsesolver);
-     
-        if (str_lower != "simplicialldlt" 
-            && str_lower != "sparseqr" 
+
+        if (str_lower != "simplicialldlt"
+            && str_lower != "sparseqr"
             && str_lower != "conjugategradient"
-            && str_lower != "leastsquaresconjugategradient" 
+            && str_lower != "leastsquaresconjugategradient"
             && str_lower != "bicgstab") {
             exit("parse_optimize_vars", "Unsupported SPARSESOLVER :", str_sparsesolver.c_str());
         }

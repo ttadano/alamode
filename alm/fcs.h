@@ -143,7 +143,7 @@ namespace ALM_NS
                                            const size_t natmin,
                                            const std::vector<std::vector<int>> &map_p2s) const;
         double coef_sym(const int,
-                        const double * const *,
+                        const double *const *,
                         const int *,
                         const int *) const;
     };

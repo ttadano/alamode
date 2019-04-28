@@ -277,7 +277,7 @@ namespace ALM_NS
                                  double *amat,
                                  const double *bvec,
                                  double *param_out,
-                                 const double * const *cmat,
+                                 const double *const *cmat,
                                  double *dvec,
                                  const int verbosity) const;
 

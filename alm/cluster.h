@@ -226,14 +226,14 @@ namespace ALM_NS
         // can be made const function, but mindist_pairs is modified
         // in this function.
         void get_pairs_of_minimum_distance(const size_t nat,
-                                           const double * const * const *xc_in,
+                                           const double *const *const *xc_in,
                                            const int *exist) const;
 
         void generate_interaction_information_by_cutoff(const size_t nat,
                                                         const size_t natmin,
                                                         const std::vector<int> &kd,
                                                         const std::vector<std::vector<int>> &map_p2s,
-                                                        const double * const *rc,
+                                                        const double *const *rc,
                                                         std::vector<int> *interaction_list) const;
 
         void set_interaction_by_cutoff(const size_t nat,
@@ -251,7 +251,7 @@ namespace ALM_NS
                                            const std::vector<std::vector<int>> &map_p2s,
                                            const std::vector<int> &kd,
                                            const std::string *kdname,
-                                           const std::vector<int> * const *interaction_list);
+                                           const std::vector<int> *const *interaction_list);
 
         double distance(const double *,
                         const double *) const;
@@ -261,7 +261,7 @@ namespace ALM_NS
         void calc_interaction_clusters(const size_t natmin,
                                        const std::vector<int> &kd,
                                        const std::vector<std::vector<int>> &map_p2s,
-                                       const double * const * const *x_image,
+                                       const double *const *const *x_image,
                                        const int *exist) const;
 
         void set_interaction_cluster(const int order,
@@ -269,7 +269,7 @@ namespace ALM_NS
                                      const std::vector<int> &kd,
                                      const std::vector<std::vector<int>> &map_p2s,
                                      const std::vector<int> *interaction_pair_in,
-                                     const double * const * const *x_image,
+                                     const double *const *const *x_image,
                                      const int *exist,
                                      std::set<InteractionCluster> *interaction_cluster_out) const;
 

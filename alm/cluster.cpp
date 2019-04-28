@@ -254,7 +254,7 @@ double Cluster::distance(const double *x1,
 }
 
 void Cluster::get_pairs_of_minimum_distance(const size_t nat,
-                                            const double * const * const *xc_in,
+                                            const double *const *const *xc_in,
                                             const int *exist) const
 {
     size_t i, j;
@@ -419,7 +419,7 @@ void Cluster::generate_interaction_information_by_cutoff(const size_t nat,
                                                          const size_t natmin,
                                                          const std::vector<int> &kd,
                                                          const std::vector<std::vector<int>> &map_p2s,
-                                                         const double * const *rc,
+                                                         const double *const *rc,
                                                          std::vector<int> *interaction_list) const
 {
     for (size_t i = 0; i < natmin; ++i) {
@@ -541,7 +541,7 @@ void Cluster::print_interaction_information(const size_t natmin,
                                             const std::vector<std::vector<int>> &map_p2s,
                                             const std::vector<int> &kd,
                                             const std::string *kdname,
-                                            const std::vector<int> * const *interaction_list)
+                                            const std::vector<int> *const *interaction_list)
 {
     std::vector<int> intlist;
 
@@ -648,7 +648,7 @@ bool Cluster::satisfy_nbody_rule(const int nelem,
 void Cluster::calc_interaction_clusters(const size_t natmin,
                                         const std::vector<int> &kd,
                                         const std::vector<std::vector<int>> &map_p2s,
-                                        const double * const * const *x_image,
+                                        const double *const *const *x_image,
                                         const int *exist) const
 {
     //
@@ -674,7 +674,7 @@ void Cluster::set_interaction_cluster(const int order,
                                       const std::vector<int> &kd,
                                       const std::vector<std::vector<int>> &map_p2s,
                                       const std::vector<int> *interaction_pair_in,
-                                      const double * const * const *x_image,
+                                      const double *const *const *x_image,
                                       const int *exist,
                                       std::set<InteractionCluster> *interaction_cluster_out) const
 {
