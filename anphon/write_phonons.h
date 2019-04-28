@@ -52,13 +52,12 @@ namespace PHON_NS
 
         void write_scph_energy(double ***) const;
         void write_scph_bands(double ***) const;
-        void write_scph_dos(double ***) const;
-        void write_scph_thermodynamics(double ***,
-                                       std::complex<double> ****) const;
-        void write_scph_msd(double ***,
-                            std::complex<double> ****) const;
-        void write_scph_ucorr(double ***eval,
-                              std::complex<double> ****evec) const;
+        void write_scph_dos(double **) const;
+        void write_scph_thermodynamics(double *heat_capacity,
+                                       double *FE_QHA,
+                                       double *dFE_scph) const;
+        void write_scph_msd(double **) const;
+        void write_scph_ucorr(double ***ucorr_scph) const;
 
     private:
 

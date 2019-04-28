@@ -181,7 +181,6 @@ void Scph::exec_scph()
     const auto dT = system->dT;
 
     double ***eval_anharm = nullptr;
-    std::complex<double> ****evec_anharm = nullptr;
     std::complex<double> ****delta_dymat_scph = nullptr;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
@@ -221,17 +220,98 @@ void Scph::exec_scph()
 
     if (mympi->my_rank == 0) {
 
+        std::complex<double> ***evec_tmp = nullptr;
+
         memory->allocate(eval_anharm, NT, nk_ref, ns);
-        memory->allocate(evec_anharm, NT, nk_ref, ns, ns); // This requires lots of RAM
+        memory->allocate(evec_tmp, nk_ref, ns, ns);
+
+        double **dos_scph = nullptr;
+        double ***pdos_scph = nullptr;
+        double *heat_capacity = nullptr;
+        double *FE_QHA = nullptr;
+        double *dFE_scph = nullptr;
+        double **msd_scph = nullptr;
+        double ***ucorr_scph = nullptr;
+
+        if (kpoint->kpoint_mode == 2) {
+            if (dos->compute_dos) {
+                memory->allocate(dos_scph, NT, dos->n_energy);
+
+                if (dos->projected_dos) {
+                    memory->allocate(pdos_scph, NT, ns, dos->n_energy);
+                }
+            }
+            memory->allocate(heat_capacity, NT);
+            memory->allocate(FE_QHA, NT);
+            memory->allocate(dFE_scph, NT);
+
+            if (writes->print_msd) {
+                memory->allocate(msd_scph, NT, ns);
+            }
+            if (writes->print_ucorr) {
+                memory->allocate(ucorr_scph, NT, ns, ns);
+            }
+        }
 
         for (auto iT = 0; iT < NT; ++iT) {
+
             exec_interpolation(kmesh_interpolate,
                                delta_dymat_scph[iT],
                                nk_ref,
                                kpoint->xk,
                                kpoint->kvec_na,
                                eval_anharm[iT],
-                               evec_anharm[iT]);
+                               evec_tmp);
+
+            if (kpoint->kpoint_mode == 2) {
+
+                if (dos->compute_dos) {
+                    dos->calc_dos_from_given_frequency(eval_anharm[iT],
+                                                       dos_scph[iT]);
+                }
+                auto T = Tmin + dT * static_cast<double>(iT);
+
+
+                FE_QHA[iT] = thermodynamics->free_energy_QHA(T,
+                                                             kpoint->nk_irred,
+                                                             ns,
+                                                             kpoint->kpoint_irred_all,
+                                                             &kpoint->weight_k[0],
+                                                             eval_anharm[iT]);
+
+                dFE_scph[iT] = thermodynamics->FE_scph_correction(iT,
+                                                                  eval_anharm[iT],
+                                                                  evec_tmp);
+
+                if (writes->print_msd) {
+                    double shift[3]{0.0, 0.0, 0.0};
+
+                    for (auto is = 0; is < ns; ++is) {
+                        msd_scph[iT][is] = thermodynamics->disp_corrfunc(T, is, is,
+                                                                         shift, kpoint->nk,
+                                                                         ns,
+                                                                         kpoint->xk,
+                                                                         eval_anharm[iT],
+                                                                         evec_tmp);
+                    }
+                }
+
+                if (writes->print_ucorr) {
+                    double shift[3];
+                    for (auto i = 0; i < 3; ++i) shift[i] = static_cast<double>(writes->shift_ucorr[i]);
+
+                    for (auto is = 0; is < ns; ++is) {
+                        for (auto js = 0; js < ns; ++js) {
+                            ucorr_scph[iT][is][js] = thermodynamics->disp_corrfunc(T, is, js,
+                                                                                   shift, kpoint->nk,
+                                                                                   ns,
+                                                                                   kpoint->xk,
+                                                                                   eval_anharm[iT],
+                                                                                   evec_tmp);
+                        }
+                    }
+                }
+            }
         }
 
         if (kpoint->kpoint_mode == 0) {
@@ -240,18 +320,24 @@ void Scph::exec_scph()
             writes->write_scph_bands(eval_anharm);
         } else if (kpoint->kpoint_mode == 2) {
             if (dos->compute_dos) {
-                writes->write_scph_dos(eval_anharm);
+                writes->write_scph_dos(dos_scph);
             }
-            writes->write_scph_thermodynamics(eval_anharm, evec_anharm);
+            writes->write_scph_thermodynamics(heat_capacity, FE_QHA, dFE_scph);
             if (writes->print_msd) {
-                writes->write_scph_msd(eval_anharm, evec_anharm);
+                writes->write_scph_msd(msd_scph);
             }
             if (writes->print_ucorr) {
-                writes->write_scph_ucorr(eval_anharm, evec_anharm);
+                writes->write_scph_ucorr(ucorr_scph);
             }
         }
         memory->deallocate(eval_anharm);
-        memory->deallocate(evec_anharm);
+        memory->deallocate(evec_tmp);
+
+        if (dos_scph) memory->deallocate(dos_scph);
+        if (pdos_scph) memory->deallocate(pdos_scph);
+        if (heat_capacity) memory->deallocate(heat_capacity);
+        if (FE_QHA) memory->deallocate(FE_QHA);
+        if (dFE_scph) memory->deallocate(dFE_scph);
     }
 
     memory->deallocate(delta_dymat_scph);
@@ -264,7 +350,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     std::vector<double> Temp_array(NT);
 
     for (int i = 0; i < NT; ++i) {
@@ -370,14 +456,14 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
 void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
 {
     int i;
-    unsigned int ns = dynamical->neval;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
+    const auto ns = dynamical->neval;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
     std::ofstream ofs_dymat;
-    std::string file_dymat = input->job_title + ".scph_dymat";
+    auto file_dymat = input->job_title + ".scph_dymat";
 
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     ofs_dymat.open(file_dymat.c_str(), std::ios::out);
 
@@ -399,12 +485,12 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
     ofs_dymat << std::setw(5) << dynamical->nonanalytic;
     ofs_dymat << std::setw(5) << selfenergy_offdiagonal << std::endl;
 
-    for (int iT = 0; iT < NT; ++iT) {
-        double temp = Tmin + static_cast<double>(iT) * dT;
+    for (auto iT = 0; iT < NT; ++iT) {
+        const auto temp = Tmin + static_cast<double>(iT) * dT;
         ofs_dymat << "# " << temp << std::endl;
-        for (int is = 0; is < ns; ++is) {
-            for (int js = 0; js < ns; ++js) {
-                for (int ik = 0; ik < nk_interpolate; ++ik) {
+        for (auto is = 0; is < ns; ++is) {
+            for (auto js = 0; js < ns; ++js) {
+                for (auto ik = 0; ik < nk_interpolate; ++ik) {
                     ofs_dymat << std::setprecision(15)
                         << std::setw(25) << dymat_in[iT][is][js][ik].real();
                     ofs_dymat << std::setprecision(15)
@@ -489,10 +575,10 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
             }
         }
 
-        bool converged_prev = false;
+        auto converged_prev = false;
 
         for (int i = 0; i < vec_temp.size(); ++i) {
-            double temp = vec_temp[i];
+            const auto temp = vec_temp[i];
 
             iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
@@ -568,9 +654,9 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     std::complex<double> ret;
     long int ii;
 
-    auto inv2pi = 1.0 / (2.0 * pi);
-    auto dnk_represent = static_cast<double>(nk_represent);
-    auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
+    const auto inv2pi = 1.0 / (2.0 * pi);
+    const auto dnk_represent = static_cast<double>(nk_represent);
+    const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
     static auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v3_array_at_kpair;
     std::complex<double> ***v3_mpi;
@@ -602,11 +688,11 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
             if (tune_type == 0) {
                 for (j = 0; j < fcs_group[i].size(); ++j) {
-                    double phase = xk_scph[ik][0] * (vec_for_v3[ielem][0][0] - vec_for_v3[ielem][1][0])
+                    const auto phase = xk_scph[ik][0] * (vec_for_v3[ielem][0][0] - vec_for_v3[ielem][1][0])
                         + xk_scph[ik][1] * (vec_for_v3[ielem][0][1] - vec_for_v3[ielem][1][1])
                         + xk_scph[ik][2] * (vec_for_v3[ielem][0][2] - vec_for_v3[ielem][1][2]);
 
-                    int loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
+                    const int loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
                     sum_tmp += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase[loc];
 
@@ -735,11 +821,11 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     // Calculate the matrix elements of quartic terms in reciprocal space.
     // This is the most expensive part of the SCPH calculation.
 
-    auto nk_reduced_interpolate = kp_irred_interpolate.size();
-    auto ns = dynamical->neval;
-    auto ns2 = ns * ns;
-    auto ns3 = ns * ns * ns;
-    auto ns4 = ns * ns * ns * ns;
+    const auto nk_reduced_interpolate = kp_irred_interpolate.size();
+    const auto ns = dynamical->neval;
+    const auto ns2 = ns * ns;
+    const auto ns3 = ns * ns * ns;
+    const auto ns4 = ns * ns * ns * ns;
     unsigned int is, js, ks, ls;
     double phase3[3];
     int loc3[3];
@@ -748,14 +834,14 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     std::complex<double> ret;
     long int ii;
 
-    auto inv2pi = 1.0 / (2.0 * pi);
-    auto dnk_represent = static_cast<double>(nk_represent);
-    auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
-    static std::complex<double> complex_zero = std::complex<double>(0.0, 0.0);
+    const auto inv2pi = 1.0 / (2.0 * pi);
+    const auto dnk_represent = static_cast<double>(nk_represent);
+    const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
 
-    auto nk2_prod = nk_reduced_interpolate * nk_scph;
+    const auto nk2_prod = nk_reduced_interpolate * nk_scph;
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
@@ -770,10 +856,10 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     memory->allocate(v4_mpi, nk2_prod, ns2, ns2);
 
     for (int ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
-        unsigned int ik = ik_prod / nk_scph;
-        unsigned int jk = ik_prod % nk_scph;
+        const auto ik = ik_prod / nk_scph;
+        const auto jk = ik_prod % nk_scph;
 
-        unsigned int knum = kmap_interpolate_to_scph[kp_irred_interpolate[ik][0].knum];
+        const unsigned int knum = kmap_interpolate_to_scph[kp_irred_interpolate[ik][0].knum];
 
         for (is = 0; is < ngroup2; ++is) v4_array_at_kpair[is] = complex_zero;
 
@@ -781,19 +867,19 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
         for (i = 0; i < ngroup2; ++i) {
 
-            std::complex<double> sum_tmp = std::complex<double>(0.0, 0.0);
+            auto sum_tmp = std::complex<double>(0.0, 0.0);
             for (j = 0; j < 4; ++j) ind[i][j] = evec_index4[ielem][j];
 
             if (tune_type == 0) {
                 for (j = 0; j < fcs_group2[i].size(); ++j) {
-                    double phase = - xk_scph[knum][0] * vec_for_v4[ielem][0][0]
+                    const auto phase = - xk_scph[knum][0] * vec_for_v4[ielem][0][0]
                         - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
                         - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
                         + xk_scph[jk][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
                         + xk_scph[jk][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
                         + xk_scph[jk][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
 
-                    int loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
+                    const auto loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
                     sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem] * exp_phase[loc];
 
@@ -951,7 +1037,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     auto inv2pi = 1.0 / (2.0 * pi);
     auto dnk_represent = static_cast<double>(nk_represent);
     auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
-    static std::complex<double> complex_zero = std::complex<double>(0.0, 0.0);
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
 
@@ -1036,10 +1122,10 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     for (long int ii = 0; ii < nset_each; ++ii) {
 
-        int ik_now = ik_vec[ii];
-        int jk_now = jk_vec[ii];
-        int is_now = is_vec[ii];
-        int js_now = js_vec[ii];
+        auto ik_now = ik_vec[ii];
+        auto jk_now = jk_vec[ii];
+        auto is_now = is_vec[ii];
+        auto js_now = js_vec[ii];
 
         if (!(ik_now == ik_old && jk_now == jk_old)) {
 
@@ -1058,14 +1144,14 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
                 if (tune_type == 0) {
                     for (j = 0; j < fcs_group2[i].size(); ++j) {
-                        double phase = - xk_scph[knum][0] * vec_for_v4[ielem][0][0]
+                        auto phase = - xk_scph[knum][0] * vec_for_v4[ielem][0][0]
                             - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
                             - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
                             + xk_scph[jk_now][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
                             + xk_scph[jk_now][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
                             + xk_scph[jk_now][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
 
-                        int loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
+                        auto loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
                         sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem] * exp_phase[loc];
 
@@ -1101,7 +1187,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             unsigned int ks = js / ns;
             unsigned int ls = js % ns;
 
-            std::complex<double> ret = std::complex<double>(0.0, 0.0);
+            auto ret = std::complex<double>(0.0, 0.0);
 
             for (i = 0; i < ngroup2; ++i) {
 
@@ -1285,7 +1371,7 @@ void Scph::setup_kmesh()
 
         for (i = 0; i < 3; ++i) xtmp[i] = xk_scph[ik][i];
         rotvec(xtmp, xtmp, system->rlavec_p, 'T');
-        double norm = xtmp[0] * xtmp[0] + xtmp[1] * xtmp[1] + xtmp[2] * xtmp[2];
+        const auto norm = xtmp[0] * xtmp[0] + xtmp[1] * xtmp[1] + xtmp[2] * xtmp[2];
 
         if (norm > eps) {
             for (i = 0; i < 3; ++i) kvec_na_scph[ik][i] = xk_scph[ik][i] / std::sqrt(norm);
@@ -1318,7 +1404,7 @@ void Scph::setup_kmesh()
     for (ik = 0; ik < nk_interpolate; ++ik) {
         for (i = 0; i < 3; ++i) xtmp[i] = xk_interpolate[ik][i];
 
-        int loc = kpoint->get_knum(xtmp, kmesh_scph);
+        const auto loc = kpoint->get_knum(xtmp, kmesh_scph);
 
         if (loc == -1)
             error->exit("setup_kmesh",
@@ -1410,7 +1496,7 @@ void Scph::setup_transform_symmetry()
             }
 
             for (unsigned int jat = 0; jat < natmin; ++jat) {
-                unsigned int iat = it.mapping[jat];
+                const auto iat = it.mapping[jat];
 
                 // Fractional coordinates of x1 and x2
                 for (icrd = 0; icrd < 3; ++icrd) {
@@ -1423,7 +1509,7 @@ void Scph::setup_transform_symmetry()
                     xtmp[icrd] = xtmp[icrd] - x2[icrd];
                 }
 
-                double phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
+                auto phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
 
                 for (icrd = 0; icrd < 3; ++icrd) {
                     for (jcrd = 0; jcrd < 3; ++jcrd) {
@@ -1701,7 +1787,7 @@ void Scph::setup_pp_interaction()
 
         memory->allocate(exp_phase, 2 * nk_represent - 1);
         for (ii = 0; ii < 2 * nk_represent - 1; ++ii) {
-            double phase = 2.0 * pi * static_cast<double>(ii - nk_represent + 1)
+            const auto phase = 2.0 * pi * static_cast<double>(ii - nk_represent + 1)
                 / static_cast<double>(nk_represent);
             exp_phase[ii] = std::exp(im * phase);
         }
@@ -1809,7 +1895,7 @@ void Scph::setup_transform_ifc()
 
     double dist;
     std::vector<DistList> dist_tmp;
-    ShiftCell shift_tmp;
+    ShiftCell shift_tmp{};
     std::vector<int> vec_tmp;
 
     memory->allocate(mindist_list_scph, nat, nat, ncell);
@@ -1825,7 +1911,7 @@ void Scph::setup_transform_ifc()
                 }
                 std::sort(dist_tmp.begin(), dist_tmp.end());
 
-                double dist_min = dist_tmp[0].dist;
+                const auto dist_min = dist_tmp[0].dist;
                 mindist_list_scph[iat][jat][icell].dist = dist_min;
 
                 for (i = 0; i < ncell_s; ++i) {
@@ -1932,7 +2018,7 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
         eval_vec.clear();
 
         for (is = 0; is < ns; ++is) {
-            double eval_tmp = eval_real[is];
+            const auto eval_tmp = eval_real[is];
 
             if (eval_tmp < 0.0) {
                 eval_vec.push_back(-std::sqrt(-eval_tmp));
@@ -1965,30 +2051,29 @@ void Scph::r2q(const double *xk_in,
 {
     std::complex<double> im(0.0, 1.0);
 
-    auto ncell = nx * ny * nz;
+    const auto ncell = nx * ny * nz;
 
     for (unsigned int i = 0; i < ns; ++i) {
 
-        unsigned int iat = i / 3;
+        const auto iat = i / 3;
 
         for (unsigned int j = 0; j < ns; ++j) {
 
-            unsigned int jat = j / 3;
+            const auto jat = j / 3;
 
             dymat_k_out[i][j] = std::complex<double>(0.0, 0.0);
 
             for (unsigned int icell = 0; icell < ncell; ++icell) {
 
-                std::complex<double> exp_phase = std::complex<double>(0.0, 0.0);
+                auto exp_phase = std::complex<double>(0.0, 0.0);
 
                 // This operation is necessary for the Hermiticity of the dynamical matrix.
-                for (auto it = mindist_list_scph[iat][jat][icell].shift.cbegin();
-                     it != mindist_list_scph[iat][jat][icell].shift.cend(); ++it) {
+                for (const auto &it : mindist_list_scph[iat][jat][icell].shift) {
 
-                    double phase = 2.0 * pi
-                        * (static_cast<double>((*it).sx) * xk_in[0]
-                            + static_cast<double>((*it).sy) * xk_in[1]
-                            + static_cast<double>((*it).sz) * xk_in[2]);
+                    auto phase = 2.0 * pi
+                        * (static_cast<double>(it.sx) * xk_in[0]
+                            + static_cast<double>(it.sy) * xk_in[1]
+                            + static_cast<double>(it.sz) * xk_in[2]);
 
                     exp_phase += std::exp(im * phase);
                 }
@@ -2064,19 +2149,19 @@ void Scph::find_degeneracy(std::vector<int> *degeneracy_out,
 {
     // eval is omega^2 in atomic unit
 
-    unsigned int ns = dynamical->neval;
-    double tol_omega = 1.0e-10;
+    const auto ns = dynamical->neval;
+    const auto tol_omega = 1.0e-10;
 
     for (unsigned int ik = 0; ik < nk_irred; ++ik) {
-        unsigned int knum = kp_info[ik][0].knum;
+        const auto knum = kp_info[ik][0].knum;
 
         degeneracy_out[ik].clear();
 
-        double omega_prev = eval[knum][0];
-        int ideg = 1;
+        auto omega_prev = eval[knum][0];
+        auto ideg = 1;
 
         for (unsigned int is = 1; is < ns; ++is) {
-            double omega_now = eval[knum][is];
+            const auto omega_now = eval[knum][is];
 
             if (std::abs(omega_now - omega_prev) < tol_omega) {
                 ++ideg;
@@ -2123,7 +2208,7 @@ void Scph::calc_new_dymat_with_evec(std::complex<double> ***dymat_out,
 
     for (ik = 0; ik < nk_interpolate; ++ik) {
 
-        int knum = kmap_interpolate_to_scph[ik];
+        const auto knum = kmap_interpolate_to_scph[ik];
 
         // create eigval matrix
 
@@ -2205,13 +2290,13 @@ void Scph::calc_new_dymat_with_evec(std::complex<double> ***dymat_out,
 
                     duplicate_xk_boundary(xk_interpolate[ik], xk_dup);
 
-                    std::complex<double> cexp_phase = std::complex<double>(0.0, 0.0);
+                    auto cexp_phase = std::complex<double>(0.0, 0.0);
 
-                    for (unsigned int i = 0; i < xk_dup.size(); ++i) {
+                    for (const auto &i : xk_dup) {
 
-                        double phase = 2.0 * pi * (xk_dup[i][0] * static_cast<double>(ix)
-                            + xk_dup[i][1] * static_cast<double>(iy)
-                            + xk_dup[i][2] * static_cast<double>(iz));
+                        auto phase = 2.0 * pi * (i[0] * static_cast<double>(ix)
+                            + i[1] * static_cast<double>(iy)
+                            + i[2] * static_cast<double>(iz));
                         cexp_phase += std::exp(-im * phase);
 
                     }
@@ -2297,8 +2382,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     std::complex<double> ***dymat_q;
     std::complex<double> ***Fmat0;
 
-    static std::complex<double> complex_one = std::complex<double>(1.0, 0.0);
-    static std::complex<double> complex_zero = std::complex<double>(0.0, 0.0);
+    const auto complex_one = std::complex<double>(1.0, 0.0);
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
 
     SelfAdjointEigenSolver<MatrixXcd> saes;
 
@@ -2398,7 +2483,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         for (ik = 0; ik < nk; ++ik) {
             for (is = 0; is < ns; ++is) {
-                double omega1 = omega_now(ik, is);
+                auto omega1 = omega_now(ik, is);
                 if (std::abs(omega1) < eps8) {
                     Qmat(is, is) = complex_zero;
                 } else {
@@ -2408,7 +2493,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                         Qmat(is, is) = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1 * omega1),
                                                             0.0);
                     } else {
-                        double n1 = thermodynamics->fB(omega1, T_in);
+                        auto n1 = thermodynamics->fB(omega1, T_in);
                         Qmat(is, is) = std::complex<double>((2.0 * n1 + 1.0) / omega1, 0.0);
                     }
                 }
@@ -2783,9 +2868,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                                            std::complex<double> ****delta_dymat_scph)
 {
-    auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
-    auto nk_ref = kpoint->nk;
-    auto ns = dynamical->neval;
+    const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    const auto nk_ref = kpoint->nk;
+    const auto ns = dynamical->neval;
     double **eval;
     std::complex<double> ***evec;
 
@@ -2802,7 +2887,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     memory->allocate(evec, nk_ref, ns, ns); // This requires lots of RAM
 
     for (auto iT = 0; iT < NT; ++iT) {
-        double temp = system->Tmin + system->dT * float(iT);
+        const auto temp = system->Tmin + system->dT * float(iT);
 
         exec_interpolation(kmesh,
                            delta_dymat_scph[iT],
@@ -2828,7 +2913,9 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
 double Scph::distance(double *x1,
                       double *x2) const
 {
-    double dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
+    auto dist = std::pow(x1[0] - x2[0], 2)
+        + std::pow(x1[1] - x2[1], 2)
+        + std::pow(x1[2] - x2[2], 2);
     dist = std::sqrt(dist);
 
     return dist;
@@ -2874,24 +2961,23 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                            const unsigned int NT)
 {
     unsigned int i, j;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
+    const auto Tmin = system->Tmin;
+    const auto dT = system->dT;
     double ***delta_fc2;
     double **xtmp;
-    unsigned int ns = dynamical->neval;
+    const auto ns = dynamical->neval;
     unsigned int is, js, icell;
     unsigned int iat, jat;
 
     std::ofstream ofs_fc2;
-    std::string file_fc2 = input->job_title + ".scph_fc2_correction";
+    auto file_fc2 = input->job_title + ".scph_fc2_correction";
 
     ofs_fc2.open(file_fc2.c_str(), std::ios::out);
     if (!ofs_fc2)
         error->exit("write_anharmonic_correction_fc2",
                     "Cannot open file_fc2");
 
-    unsigned int ncell = kmesh_interpolate[0] * kmesh_interpolate[1] * kmesh_interpolate[2];
+    const auto ncell = kmesh_interpolate[0] * kmesh_interpolate[1] * kmesh_interpolate[2];
 
     memory->allocate(delta_fc2, ns, ns, ncell);
 
@@ -2927,7 +3013,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     memory->deallocate(xtmp);
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
-        double temp = Tmin + dT * static_cast<double>(iT);
+        const auto temp = Tmin + dT * static_cast<double>(iT);
 
         ofs_fc2 << "# Temp = " << temp << std::endl;
 
@@ -2952,13 +3038,13 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
             for (is = 0; is < ns; ++is) {
                 iat = is / 3;
-                unsigned int icrd = is % 3;
+                const auto icrd = is % 3;
 
                 for (js = 0; js < ns; ++js) {
                     jat = js / 3;
-                    unsigned int jcrd = js % 3;
+                    const auto jcrd = js % 3;
 
-                    unsigned int nmulti = mindist_list_scph[iat][jat][icell].shift.size();
+                    const auto nmulti = mindist_list_scph[iat][jat][icell].shift.size();
 
                     for (auto it = mindist_list_scph[iat][jat][icell].shift.cbegin();
                          it != mindist_list_scph[iat][jat][icell].shift.cend(); ++it) {
