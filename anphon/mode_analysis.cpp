@@ -246,36 +246,27 @@ void ModeAnalysis::setup_mode_analysis()
 
 void ModeAnalysis::run_mode_analysis()
 {
-    double Tmax = system->Tmax;
-    double Tmin = system->Tmin;
-    double dT = system->dT;
-    double *T_arr;
-
-    unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    memory->allocate(T_arr, NT);
-    for (unsigned int i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i) * dT;
-
-    double epsilon = integration->epsilon;
+    const auto epsilon = integration->epsilon;
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = tempinfo.number_of_grids;
 
     if (calc_fstate_k) {
 
         // Momentum-resolved final state amplitude
-        print_momentum_resolved_final_state(NT, T_arr, epsilon);
+        print_momentum_resolved_final_state(NT, &tempinfo.temperature_grid[0], epsilon);
 
     } else {
 
-        print_selfenergy(NT, T_arr);
+        print_selfenergy(NT, &tempinfo.temperature_grid[0]);
 
         if (print_V3) print_V3_elements();
         //        if (print_V3) print_Phi3_elements();
 
-        if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);
+        if (calc_fstate_omega) print_frequency_resolved_final_state(NT, &tempinfo.temperature_grid[0]);
 
-        if (spectral_func) print_spectral_function(NT, T_arr);
+        if (spectral_func) print_spectral_function(NT, &tempinfo.temperature_grid[0]);
 
     }
-
-    memory->deallocate(T_arr);
 }
 
 

@@ -40,6 +40,33 @@ Thermodynamics::~Thermodynamics()
 void Thermodynamics::setup()
 {
     MPI_Bcast(&classical, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+
+    double tmin, tmax, delta_t;
+    if (mympi->my_rank == 0) {
+        tmin = tempinfo.tmin;
+        tmax = tempinfo.tmax;
+        delta_t = tempinfo.delta_t;
+    }
+
+    MPI_Bcast(&tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&delta_t, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (mympi->my_rank > 0) {
+        tempinfo = temperature_information(tmin, tmax, delta_t);
+    }
+}
+
+void Thermodynamics::set_temperature_info(const double tmin_in,
+                                          const double tmax_in,
+                                          const double dt_in)
+{
+    tempinfo = temperature_information(tmin_in, tmax_in, dt_in);
+}
+
+temperature_information Thermodynamics::get_temperature_info() const
+{
+    return tempinfo;
 }
 
 double Thermodynamics::Cv(const double omega,
@@ -405,8 +432,6 @@ double Thermodynamics::coth_T(const double omega,
 
 void Thermodynamics::compute_free_energy_bubble()
 {
-    const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
-
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << " -----------------------------------------------------------------"
@@ -414,7 +439,8 @@ void Thermodynamics::compute_free_energy_bubble()
         std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
     }
 
-    memory->allocate(FE_bubble, NT);
+    memory->allocate(FE_bubble,
+                     thermodynamics->get_temperature_info().number_of_grids);
 
     compute_FE_bubble(dynamical->eval_phonon,
                       dynamical->evec_phonon,
@@ -440,7 +466,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
     unsigned int i0, iT;
     unsigned int arr_cubic[3];
     const int nks0 = nk_reduced * ns;
-    const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = tempinfo.number_of_grids;
     const auto factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
 
     double n0, n1, n2;
@@ -517,7 +544,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
 
                         for (iT = 0; iT < NT; ++iT) {
-                            const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
+                            const auto temp = tempinfo.temperature_grid[iT];
 
                             if (classical) {
                                 n0 = fC(omega0, temp);
@@ -571,7 +598,6 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
     unsigned int i0;
     unsigned int arr_cubic[3];
     const int nks0 = nk_reduced * ns;
-    const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
     const auto factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
     double n0, n1, n2;
 
@@ -637,36 +663,33 @@ double Thermodynamics::compute_FE_bubble_SCPH(const double temp,
                     for (unsigned int is2 = 0; is2 < ns; ++is2) {
                         arr_cubic[2] = ns * ik2 + is2;
 
-                        for (unsigned int iT = 0; iT < NT; ++iT) {
+                        const auto omega0 = eval[ik0][is0];
+                        const auto omega1 = eval[ik1][is1];
+                        const auto omega2 = eval[ik2][is2];
 
-                            const auto omega0 = eval[ik0][is0];
-                            const auto omega1 = eval[ik1][is1];
-                            const auto omega2 = eval[ik2][is2];
+                        omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
+                        omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
-                            omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
-                            omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
+                        const auto v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval, evec))
+                            * static_cast<double>(multi);
 
-                            const auto v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval, evec))
-                                * static_cast<double>(multi);
+                        if (classical) {
+                            n0 = fC(omega0, temp);
+                            n1 = fC(omega1, temp);
+                            n2 = fC(omega2, temp);
 
-                            if (classical) {
-                                n0 = fC(omega0, temp);
-                                n1 = fC(omega1, temp);
-                                n2 = fC(omega2, temp);
+                            nsum[0] = n0 * (n1 + n2) + n1 * n2;
+                            nsum[1] = n0 * (n1 + n2) - n1 * n2;
+                        } else {
+                            n0 = fB(omega0, temp);
+                            n1 = fB(omega1, temp);
+                            n2 = fB(omega2, temp);
 
-                                nsum[0] = n0 * (n1 + n2) + n1 * n2;
-                                nsum[1] = n0 * (n1 + n2) - n1 * n2;
-                            } else {
-                                n0 = fB(omega0, temp);
-                                n1 = fB(omega1, temp);
-                                n2 = fB(omega2, temp);
-
-                                nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
-                                nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
-                            }
-
-                            FE_tmp += v3_tmp * (nsum[0] * omega_sum[0] + 3.0 * nsum[1] * omega_sum[1]);
+                            nsum[0] = (1.0 + n0) * (1.0 + n1 + n2) + n1 * n2;
+                            nsum[1] = n0 * n1 - n1 * n2 + n2 * n0 + n0;
                         }
+
+                        FE_tmp += v3_tmp * (nsum[0] * omega_sum[0] + 3.0 * nsum[1] * omega_sum[1]);
                     }
                 }
             }
@@ -693,7 +716,7 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
 {
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
-    const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
+    const auto temp = thermodynamics->get_temperature_info().temperature_grid[iT];
     const auto N = nk * ns;
 
     double ret = 0.0;

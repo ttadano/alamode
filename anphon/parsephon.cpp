@@ -277,9 +277,7 @@ void Input::parse_general_vars()
     symmetry->printsymmetry = printsymmetry;
     symmetry->time_reversal_sym = sym_time_reversal;
 
-    system->Tmin = Tmin;
-    system->Tmax = Tmax;
-    system->dT = dT;
+    thermodynamics->set_temperature_info(Tmin, Tmax, dT);
     system->nkd = nkd;
 
     memory->allocate(system->symbol_kd, nkd);

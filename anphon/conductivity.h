@@ -29,7 +29,6 @@ namespace PHON_NS
         void compute_kappa();
 
         int calc_kappa_spec;
-        unsigned int ntemp;
         double **damping3;
         double ***kappa;
         double ***kappa_spec;

@@ -123,13 +123,9 @@ void Dos::setup()
         if (scattering_phase_space == 1) {
             memory->allocate(sps3_mode, kpoint->nk_irred, dynamical->neval, 2);
         } else if (scattering_phase_space == 2) {
-            double Tmin = system->Tmin;
-            double Tmax = system->Tmax;
-            double dT = system->dT;
-            unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-
             memory->allocate(sps3_with_bose, kpoint->nk_irred,
-                             dynamical->neval, NT, 2);
+                             dynamical->neval,
+                             thermodynamics->get_temperature_info().number_of_grids, 2);
         }
 
         int ***symmetry_tmp;
@@ -572,10 +568,6 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     double xk_tmp[3];
     double **ret_mode;
     double omega0;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
-    double *temperature;
     int ik, iT;
     unsigned int nk_irred = kpoint->nk_irred;
     unsigned int nk = kpoint->nk;
@@ -589,14 +581,13 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     std::vector<int> ks_g, ks_l;
 
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto N = tempinfo.number_of_grids;
+
     if (mympi->my_rank == 0) {
         std::cout << " SPS = 2 : Calculating three-phonon scattering phase space" << std::endl;
         std::cout << "           with the Bose distribution function ...";
     }
-
-    int N = static_cast<int>((Tmax - Tmin) / dT) + 1;
-    memory->allocate(temperature, N);
-    for (i = 0; i < N; ++i) temperature[i] = Tmin + static_cast<double>(i) * dT;
 
     memory->allocate(k2_arr, nk);
 
@@ -676,7 +667,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
             omega0 = eval[knum][snum];
             calc_scattering_phase_space_with_Bose_mode(nk, ns, N, omega0, eval,
-                                                       temperature, k2_arr,
+                                                       &tempinfo.temperature_grid[0], k2_arr,
                                                        smearing_method, ret_mode);
         }
         MPI_Gather(&ret_mode[0][0], 2 * N, MPI_DOUBLE, &recv_buf[mympi->nprocs * i][0],
@@ -704,7 +695,6 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     memory->deallocate(ret_mode);
     memory->deallocate(k2_arr);
     memory->deallocate(recv_buf);
-    memory->deallocate(temperature);
 
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl;

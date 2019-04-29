@@ -176,13 +176,11 @@ void Scph::exec_scph()
 {
     const auto nk_ref = kpoint->nk;
     const auto ns = dynamical->neval;
-    const auto Tmin = system->Tmin;
-    const auto Tmax = system->Tmax;
-    const auto dT = system->dT;
+
 
     std::complex<double> ****delta_dymat_scph = nullptr;
 
-    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = thermodynamics->get_temperature_info().number_of_grids;
 
     MPI_Bcast(&restart_scph, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&selfenergy_offdiagonal, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
@@ -228,10 +226,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
     double ***eval_anharm = nullptr;
     const auto nk_ref = kpoint->nk;
     const auto ns = dynamical->neval;
-    const auto Tmin = system->Tmin;
-    const auto Tmax = system->Tmax;
-    const auto dT = system->dT;
-    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = tempinfo.number_of_grids;
 
     if (mympi->my_rank == 0) {
 
@@ -275,7 +272,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         }
 
         for (auto iT = 0; iT < NT; ++iT) {
-            auto T = Tmin + dT * static_cast<double>(iT);
+            //      auto T = Tmin + dT * static_cast<double>(iT);
 
             exec_interpolation(kmesh_interpolate,
                                delta_dymat_scph[iT],
@@ -292,14 +289,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                                                        dos_scph[iT]);
                 }
 
-                heat_capacity[iT] = thermodynamics->Cv_tot(T,
+                heat_capacity[iT] = thermodynamics->Cv_tot(tempinfo.temperature_grid[iT],
                                                            kpoint->nk_irred,
                                                            ns,
                                                            kpoint->kpoint_irred_all,
                                                            &kpoint->weight_k[0],
                                                            eval_anharm[iT]);
 
-                FE_QHA[iT] = thermodynamics->free_energy_QHA(T,
+                FE_QHA[iT] = thermodynamics->free_energy_QHA(tempinfo.temperature_grid[iT],
                                                              kpoint->nk_irred,
                                                              ns,
                                                              kpoint->kpoint_irred_all,
@@ -314,7 +311,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                     double shift[3]{0.0, 0.0, 0.0};
 
                     for (auto is = 0; is < ns; ++is) {
-                        msd_scph[iT][is] = thermodynamics->disp_corrfunc(T, is, is,
+                        msd_scph[iT][is] = thermodynamics->disp_corrfunc(tempinfo.temperature_grid[iT],
+                                                                         is, is,
                                                                          shift, kpoint->nk,
                                                                          ns,
                                                                          kpoint->xk,
@@ -329,7 +327,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
 
                     for (auto is = 0; is < ns; ++is) {
                         for (auto js = 0; js < ns; ++js) {
-                            ucorr_scph[iT][is][js] = thermodynamics->disp_corrfunc(T, is, js,
+                            ucorr_scph[iT][is][js] = thermodynamics->disp_corrfunc(tempinfo.temperature_grid[iT],
+                                                                                   is, js,
                                                                                    shift, kpoint->nk,
                                                                                    ns,
                                                                                    kpoint->xk,
@@ -380,15 +379,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
 void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
 {
     const auto ns = dynamical->neval;
-    const auto Tmin = system->Tmin;
-    const auto Tmax = system->Tmax;
-    const auto dT = system->dT;
-    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    std::vector<double> Temp_array(NT);
-
-    for (int i = 0; i < NT; ++i) {
-        Temp_array[i] = Tmin + dT * static_cast<double>(i);
-    }
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = tempinfo.number_of_grids;
 
     if (mympi->my_rank == 0) {
 
@@ -451,7 +443,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         for (int i = 0; i < NT_ref; ++i) {
             flag_load[i] = 0;
             for (int j = 0; j < NT; ++j) {
-                if (std::abs(Temp_array_ref[i] - Temp_array[j]) < eps6) {
+                if (std::abs(Temp_array_ref[i] - tempinfo.temperature_grid[j]) < eps6) {
                     flag_load[i] = 1;
                     break;
                 }
@@ -490,13 +482,10 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
 {
     int i;
     const auto ns = dynamical->neval;
-    const auto Tmin = system->Tmin;
-    const auto Tmax = system->Tmax;
-    const auto dT = system->dT;
+
     std::ofstream ofs_dymat;
     auto file_dymat = input->job_title + ".scph_dymat";
-
-    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto tempinfo = thermodynamics->get_temperature_info();
 
     ofs_dymat.open(file_dymat.c_str(), std::ios::out);
 
@@ -512,15 +501,14 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
         ofs_dymat << std::setw(5) << kmesh_scph[i];
     }
     ofs_dymat << std::endl;
-    ofs_dymat << std::setw(10) << Tmin;
-    ofs_dymat << std::setw(10) << Tmax;
-    ofs_dymat << std::setw(10) << dT << std::endl;
+    ofs_dymat << std::setw(10) << tempinfo.tmin;
+    ofs_dymat << std::setw(10) << tempinfo.tmax;
+    ofs_dymat << std::setw(10) << tempinfo.delta_t << std::endl;
     ofs_dymat << std::setw(5) << dynamical->nonanalytic;
     ofs_dymat << std::setw(5) << selfenergy_offdiagonal << std::endl;
 
-    for (auto iT = 0; iT < NT; ++iT) {
-        const auto temp = Tmin + static_cast<double>(iT) * dT;
-        ofs_dymat << "# " << temp << std::endl;
+    for (auto iT = 0; iT < tempinfo.number_of_grids; ++iT) {
+        ofs_dymat << "# " << tempinfo.temperature_grid[iT] << std::endl;
         for (auto is = 0; is < ns; ++is) {
             for (auto js = 0; js < ns; ++js) {
                 for (auto ik = 0; ik < nk_interpolate; ++ik) {
@@ -543,17 +531,14 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     const auto ns = dynamical->neval;
     const auto nk_reduced_scph = kp_irred_scph.size();
     const auto nk_irred_interpolate = kp_irred_interpolate.size();
-    const auto Tmin = system->Tmin;
-    const auto Tmax = system->Tmax;
-    const auto dT = system->dT;
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = tempinfo.number_of_grids;
     double ***omega2_anharm;
     std::complex<double> ***evec_anharm_tmp;
     std::complex<double> ***v3_array_all;
     std::complex<double> ***v4_array_all;
-
     std::vector<double> vec_temp;
 
-    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     // Find the degeneracy at each irreducible k points.
 
@@ -600,11 +585,11 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
         if (lower_temp) {
             for (iT = NT - 1; iT >= 0; --iT) {
-                vec_temp.push_back(Tmin + static_cast<double>(iT) * dT);
+                vec_temp.push_back(tempinfo.temperature_grid[iT]);
             }
         } else {
             for (iT = 0; iT < NT; ++iT) {
-                vec_temp.push_back(Tmin + static_cast<double>(iT) * dT);
+                vec_temp.push_back(tempinfo.temperature_grid[iT]);
             }
         }
 
@@ -613,7 +598,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
         for (int i = 0; i < vec_temp.size(); ++i) {
             const auto temp = vec_temp[i];
 
-            iT = static_cast<unsigned int>((temp - Tmin) / dT);
+            iT = static_cast<unsigned int>((temp - tempinfo.tmin) / tempinfo.delta_t);
 
             // Initialize phonon eigenvectors with harmonic values
 
@@ -2902,7 +2887,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                                            std::complex<double> ****delta_dymat_scph)
 {
-    const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = tempinfo.number_of_grids;
     const auto nk_ref = kpoint->nk;
     const auto ns = dynamical->neval;
     double **eval;
@@ -2921,7 +2907,6 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     memory->allocate(evec, nk_ref, ns, ns); // This requires lots of RAM
 
     for (auto iT = 0; iT < NT; ++iT) {
-        const auto temp = system->Tmin + system->dT * float(iT);
 
         exec_interpolation(kmesh,
                            delta_dymat_scph[iT],
@@ -2932,7 +2917,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                            evec);
 
         thermodynamics->FE_bubble[iT]
-            = thermodynamics->compute_FE_bubble_SCPH(temp, eval, evec);
+            = thermodynamics->compute_FE_bubble_SCPH(tempinfo.temperature_grid[iT], eval, evec);
     }
 
     memory->deallocate(eval);
@@ -2995,8 +2980,6 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                            const unsigned int NT)
 {
     unsigned int i, j;
-    const auto Tmin = system->Tmin;
-    const auto dT = system->dT;
     double ***delta_fc2;
     double **xtmp;
     const auto ns = dynamical->neval;
@@ -3047,9 +3030,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     memory->deallocate(xtmp);
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
-        const auto temp = Tmin + dT * static_cast<double>(iT);
 
-        ofs_fc2 << "# Temp = " << temp << std::endl;
+        ofs_fc2 << "# Temp = " << thermodynamics->get_temperature_info().temperature_grid[iT] << std::endl;
 
         for (is = 0; is < ns; ++is) {
             iat = is / 3;
