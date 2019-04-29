@@ -208,8 +208,6 @@ void Scph::exec_scph()
         }
     }
 
-    postprocess(delta_dymat_scph);
-
     if (kpoint->kpoint_mode == 2) {
         if (thermodynamics->calc_FE_bubble) {
             compute_free_energy_bubble_SCPH(kmesh_interpolate,
@@ -217,6 +215,7 @@ void Scph::exec_scph()
         }
     }
 
+    postprocess(delta_dymat_scph);
 
     memory->deallocate(delta_dymat_scph);
 }
@@ -2906,13 +2905,14 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
         size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
             + nk_ref * ns * NT * sizeof(double);
 
-        nsize /= 100000000;
+        const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
 
-        std::cout << " Estimated memory usage per MPI process: " << std::setw(6) << nsize << " GByte." << std::endl;
+        std::cout << "  Estimated memory usage per MPI process: " << std::setw(10) 
+        << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
 
-        std::cout << " To avoid possible faults associated with insufficient memory,\n"
-            " please reduce the number of MPI processes per node and/or\n"
-            " the number of temperagure grids" << std::endl;
+        std::cout << "  To avoid possible faults associated with insufficient memory,\n"
+            "  please reduce the number of MPI processes per node and/or\n"
+            "  the number of temperagure grids.\n\n";
     }
 
     memory->allocate(thermodynamics->FE_bubble, NT);
