@@ -127,9 +127,9 @@ namespace PHON_NS
                                std::complex<double> ***,
                                double *) const;
 
-        double compute_FE_bubble_SCPH(double,
-                                      double **,
-                                      std::complex<double> ***) const;
+        void compute_FE_bubble_SCPH(double ***eval_in,
+                                    std::complex<double> ****evec_in,
+                                    double *FE_bubble) const;
 
         double FE_scph_correction(unsigned int,
                                   double **,

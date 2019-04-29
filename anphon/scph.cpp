@@ -2891,8 +2891,8 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     const auto NT = tempinfo.number_of_grids;
     const auto nk_ref = kpoint->nk;
     const auto ns = dynamical->neval;
-    double **eval;
-    std::complex<double> ***evec;
+    double ***eval;
+    std::complex<double> ****evec;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -2900,11 +2900,24 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
             << std::endl;
         std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
         std::cout << " on top of the SCPH calculation." << std::endl;
+        std::cout << '\n';
+        std::cout << " This calculation requires allocation of additional memory:" << std::endl;
+
+        size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
+            + nk_ref * ns * NT * sizeof(double);
+
+        nsize /= 100000000;
+
+        std::cout << " Estimated memory usage per MPI process: " << std::setw(6) << nsize << " GByte." << std::endl;
+
+        std::cout << " To avoid possible faults associated with insufficient memory,\n"
+            " please reduce the number of MPI processes per node and/or\n"
+            " the number of temperagure grids" << std::endl;
     }
 
     memory->allocate(thermodynamics->FE_bubble, NT);
-    memory->allocate(eval, nk_ref, ns);
-    memory->allocate(evec, nk_ref, ns, ns); // This requires lots of RAM
+    memory->allocate(eval, NT, nk_ref, ns);
+    memory->allocate(evec, NT, nk_ref, ns, ns); // This requires lots of RAM
 
     for (auto iT = 0; iT < NT; ++iT) {
 
@@ -2913,12 +2926,11 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                            nk_ref,
                            kpoint->xk,
                            kpoint->kvec_na,
-                           eval,
-                           evec);
-
-        thermodynamics->FE_bubble[iT]
-            = thermodynamics->compute_FE_bubble_SCPH(tempinfo.temperature_grid[iT], eval, evec);
+                           eval[iT],
+                           evec[iT]);
     }
+
+    thermodynamics->compute_FE_bubble_SCPH(eval, evec, thermodynamics->FE_bubble);
 
     memory->deallocate(eval);
     memory->deallocate(evec);

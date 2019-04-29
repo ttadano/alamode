@@ -2026,8 +2026,8 @@ void Writes::write_scph_bands(double ***eval) const
     int kcount = 0;
 
     std::string str_tmp = "NONE";
-    std::string str_kpath = "";
-    std::string str_kval = "";
+    std::string str_kpath;
+    std::string str_kval;
 
     for (i = 0; i < kpoint->kpInp.size(); ++i) {
         if (str_tmp != kpoint->kpInp[i].kpelem[0]) {
