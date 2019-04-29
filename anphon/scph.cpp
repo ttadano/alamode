@@ -177,7 +177,6 @@ void Scph::exec_scph()
     const auto nk_ref = kpoint->nk;
     const auto ns = dynamical->neval;
 
-
     std::complex<double> ****delta_dymat_scph = nullptr;
 
     const auto NT = thermodynamics->get_temperature_info().number_of_grids;
@@ -2905,7 +2904,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
         size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
             + nk_ref * ns * NT * sizeof(double);
 
-        const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
+        const auto nsize_dble = static_cast<double>(nsize) / 1000000000.0;
 
         std::cout << "  Estimated memory usage per MPI process: " << std::setw(10) 
         << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
@@ -2914,10 +2913,15 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
             "  please reduce the number of MPI processes per node and/or\n"
             "  the number of temperagure grids.\n\n";
     }
-
+    if (thermodynamics->FE_bubble) {
+        memory->deallocate(thermodynamics->FE_bubble);
+        thermodynamics->FE_bubble = nullptr;
+    }
     memory->allocate(thermodynamics->FE_bubble, NT);
+    for (auto iT = 0; iT < NT; ++iT) thermodynamics->FE_bubble[iT] = 0.0;
     memory->allocate(eval, NT, nk_ref, ns);
     memory->allocate(evec, NT, nk_ref, ns, ns); // This requires lots of RAM
+
 
     for (auto iT = 0; iT < NT; ++iT) {
 
@@ -2930,7 +2934,8 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                            evec[iT]);
     }
 
-    thermodynamics->compute_FE_bubble_SCPH(eval, evec, thermodynamics->FE_bubble);
+    thermodynamics->compute_FE_bubble_SCPH(eval, evec, 
+                                           thermodynamics->FE_bubble);
 
     memory->deallocate(eval);
     memory->deallocate(evec);
