@@ -42,32 +42,49 @@ void Thermodynamics::setup()
     MPI_Bcast(&classical, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     double tmin, tmax, delta_t;
-    if (mympi->my_rank == 0) {
-        tmin = tempinfo.tmin;
-        tmax = tempinfo.tmax;
-        delta_t = tempinfo.delta_t;
-    }
+    //if (mympi->my_rank == 0) {
+    //    tmin = tempinfo.tmin;
+    //    tmax = tempinfo.tmax;
+    //    delta_t = tempinfo.delta_t;
+    //}
 
     MPI_Bcast(&tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_t, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ntemp, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    if (mympi->my_rank > 0) {
-        tempinfo = temperature_information(tmin, tmax, delta_t);
+    if (mympi->my_rank == 0) {
+        tempgrid.resize(ntemp);
+        for (auto i = 0; i < ntemp; ++i) {
+            tempgrid[i] = tmin + static_cast<double>(i) * delta_t;
+        }
     }
+
+    //if (mympi->my_rank > 0) {
+    //    temperature_information temp_tmp(tmin, tmax, delta_t);
+    //    tempinfo = temp_tmp;
+    //}
 }
 
 void Thermodynamics::set_temperature_info(const double tmin_in,
                                           const double tmax_in,
                                           const double dt_in)
 {
-    tempinfo = temperature_information(tmin_in, tmax_in, dt_in);
+    tmin = tmin_in;
+    tmax = tmax_in;
+    delta_t = dt_in;
+    ntemp = static_cast<unsigned int>((tmax - tmin) / delta_t) + 1;
+    tempgrid.resize(ntemp);
+    for (auto i = 0; i < ntemp; ++i) {
+        tempgrid[i] = tmin + static_cast<double>(i) * delta_t;
+    }
+    //   tempinfo = temperature_information(tmin_in, tmax_in, dt_in);
 }
 
-temperature_information Thermodynamics::get_temperature_info() const
-{
-    return tempinfo;
-}
+//temperature_information Thermodynamics::get_temperature_info() const
+//{
+//    return tempinfo;
+//}
 
 double Thermodynamics::Cv(const double omega,
                           const double temp_in) const
@@ -439,8 +456,7 @@ void Thermodynamics::compute_free_energy_bubble()
         std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
     }
 
-    memory->allocate(FE_bubble,
-                     thermodynamics->get_temperature_info().number_of_grids);
+    memory->allocate(FE_bubble, ntemp);
 
     compute_FE_bubble(dynamical->eval_phonon,
                       dynamical->evec_phonon,
@@ -466,16 +482,16 @@ void Thermodynamics::compute_FE_bubble(double **eval,
     unsigned int i0, iT;
     unsigned int arr_cubic[3];
     const int nks0 = nk_reduced * ns;
-    auto tempinfo = thermodynamics->get_temperature_info();
-    const auto NT = tempinfo.number_of_grids;
+    //  auto tempinfo = thermodynamics->get_temperature_info();
+    //   const auto ntemp = tempinfo.number_of_grids;
     const auto factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
 
     double n0, n1, n2;
     double *FE_local;
     double *FE_tmp;
 
-    memory->allocate(FE_local, NT);
-    memory->allocate(FE_tmp, NT);
+    memory->allocate(FE_local, ntemp);
+    memory->allocate(FE_tmp, ntemp);
     std::vector<KsListGroup> triplet;
 
     std::vector<int> vks_l;
@@ -502,7 +518,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
         std::cout << " Total number of modes per MPI process: " << nk_tmp << std::endl;
     }
 
-    for (iT = 0; iT < NT; ++iT) FE_local[iT] = 0.0;
+    for (iT = 0; iT < ntemp; ++iT) FE_local[iT] = 0.0;
 
     for (i0 = 0; i0 < nk_tmp; ++i0) {
 
@@ -520,7 +536,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
             arr_cubic[0] = ns * ik0 + is0;
 
-            for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
+            for (iT = 0; iT < ntemp; ++iT) FE_tmp[iT] = 0.0;
 
             for (int ik = 0; ik < npair_uniq; ++ik) {
                 const auto multi = static_cast<double>(triplet[ik].group.size());
@@ -547,8 +563,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
                         const auto v3_tmp = std::norm(anharmonic_core->V3(arr_cubic)) * multi;
 
-                        for (iT = 0; iT < NT; ++iT) {
-                            const auto temp = tempinfo.temperature_grid[iT];
+                        for (iT = 0; iT < ntemp; ++iT) {
+                            const auto temp = tempgrid[iT];
 
                             if (classical) {
                                 n0 = fC(omega0, temp);
@@ -572,7 +588,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
                 }
             }
             const auto weight = static_cast<double>(kpoint->kpoint_irred_all[vks_l[i0] / ns].size());
-            for (iT = 0; iT < NT; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
+            for (iT = 0; iT < ntemp; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
         }
 
         if (mympi->my_rank == 0) {
@@ -580,9 +596,9 @@ void Thermodynamics::compute_FE_bubble(double **eval,
         }
     }
 
-    MPI_Allreduce(&FE_local[0], &FE_bubble[0], NT, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&FE_local[0], &FE_bubble[0], ntemp, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    for (iT = 0; iT < NT; ++iT) {
+    for (iT = 0; iT < ntemp; ++iT) {
         FE_bubble[iT] *= factor;
     }
 
@@ -619,10 +635,10 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
     double *FE_local;
     double *FE_tmp;
 
-    const auto NT = tempinfo.number_of_grids;
+    //  const auto ntemp = tempinfo.number_of_grids;
 
-    memory->allocate(FE_local, NT);
-    memory->allocate(FE_tmp, NT);
+    memory->allocate(FE_local, ntemp);
+    memory->allocate(FE_tmp, ntemp);
 
     std::vector<KsListGroup> triplet;
 
@@ -646,7 +662,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
         vks_l.push_back(-1);
     }
 
-    for (iT = 0; iT < NT; ++iT) FE_local[iT] = 0.0;
+    for (iT = 0; iT < ntemp; ++iT) FE_local[iT] = 0.0;
 
     if (mympi->my_rank == 0) {
         std::cout << " Total number of modes per MPI process: " << nk_tmp << std::endl;
@@ -668,7 +684,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
 
             arr_cubic[0] = ns * ik0 + is0;
 
-            for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
+            for (iT = 0; iT < ntemp; ++iT) FE_tmp[iT] = 0.0;
 
             for (ik = 0; ik < npair_uniq; ++ik) {
                 multi = static_cast<double>(triplet[ik].group.size());
@@ -684,7 +700,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                     for (is2 = 0; is2 < ns; ++is2) {
                         arr_cubic[2] = ns * ik2 + is2;
 
-                        for (iT = 0; iT < NT; ++iT) {
+                        for (iT = 0; iT < ntemp; ++iT) {
 
                             omega0 = eval_in[iT][ik0][is0];
                             omega1 = eval_in[iT][ik1][is1];
@@ -698,7 +714,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                             v3_tmp = std::norm(anharmonic_core->V3(arr_cubic,
                                                                    eval_in[iT],
                                                                    evec_in[iT])) * multi;
-                            temp = tempinfo.temperature_grid[iT];
+                            temp = tempgrid[iT];
 
                             if (classical) {
                                 n0 = fC(omega0, temp);
@@ -722,7 +738,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                 }
             }
             weight = static_cast<double>(kpoint->kpoint_irred_all[vks_l[i0] / ns].size());
-            for (iT = 0; iT < NT; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
+            for (iT = 0; iT < ntemp; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
         }
 
         if (mympi->my_rank == 0) {
@@ -730,10 +746,10 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
         }
     }
 
-    MPI_Allreduce(&FE_local[0], &FE_bubble[0], NT,
+    MPI_Allreduce(&FE_local[0], &FE_bubble[0], ntemp,
                   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    for (iT = 0; iT < NT; ++iT) {
+    for (iT = 0; iT < ntemp; ++iT) {
         FE_bubble[iT] *= factor;
     }
 
@@ -748,7 +764,7 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
 {
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
-    const auto temp = thermodynamics->get_temperature_info().temperature_grid[iT];
+    const auto temp = tempgrid[iT];
     const auto N = nk * ns;
 
     auto ret = 0.0;

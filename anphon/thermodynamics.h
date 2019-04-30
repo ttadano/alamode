@@ -24,7 +24,6 @@ namespace PHON_NS
         size_t number_of_grids{};
         std::vector<double> temperature_grid;
 
-        temperature_information() = default;
         ~temperature_information() = default;
 
         temperature_information(const double tmin_,
@@ -41,6 +40,11 @@ namespace PHON_NS
                 temperature_grid[i] = tmin + static_cast<double>(i) * delta_t;
             }
         }
+
+        temperature_information& operator=(const temperature_information &obj)
+        {
+            return *this;
+        }
     };
 
     class Thermodynamics : protected Pointers
@@ -55,12 +59,18 @@ namespace PHON_NS
         bool calc_FE_bubble;
         double *FE_bubble;
 
+        double tmin;
+        double tmax;
+        double delta_t;
+        unsigned int ntemp;
+        std::vector<double> tempgrid;
+
         void setup();
         void set_temperature_info(const double tmin_in,
                                   const double tmax_in,
                                   const double dt_in);
 
-        temperature_information get_temperature_info() const;
+        //    temperature_information get_temperature_info() const;
 
         double Cv(const double omega,
                   const double temp_in) const;
@@ -135,7 +145,7 @@ namespace PHON_NS
                                   double **,
                                   std::complex<double> ***) const;
 
-    private:
-        temperature_information tempinfo;
+        //private:
+        //    temperature_information tempinfo;
     };
 }

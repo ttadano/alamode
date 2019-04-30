@@ -247,24 +247,24 @@ void ModeAnalysis::setup_mode_analysis()
 void ModeAnalysis::run_mode_analysis()
 {
     const auto epsilon = integration->epsilon;
-    auto tempinfo = thermodynamics->get_temperature_info();
-    const auto NT = tempinfo.number_of_grids;
+    //  auto tempinfo = thermodynamics->get_temperature_info();
+    const auto NT = thermodynamics->ntemp;
 
     if (calc_fstate_k) {
 
         // Momentum-resolved final state amplitude
-        print_momentum_resolved_final_state(NT, &tempinfo.temperature_grid[0], epsilon);
+        print_momentum_resolved_final_state(NT, &thermodynamics->tempgrid[0], epsilon);
 
     } else {
 
-        print_selfenergy(NT, &tempinfo.temperature_grid[0]);
+        print_selfenergy(NT, &thermodynamics->tempgrid[0]);
 
         if (print_V3) print_V3_elements();
         //        if (print_V3) print_Phi3_elements();
 
-        if (calc_fstate_omega) print_frequency_resolved_final_state(NT, &tempinfo.temperature_grid[0]);
+        if (calc_fstate_omega) print_frequency_resolved_final_state(NT, &thermodynamics->tempgrid[0]);
 
-        if (spectral_func) print_spectral_function(NT, &tempinfo.temperature_grid[0]);
+        if (spectral_func) print_spectral_function(NT, &thermodynamics->tempgrid[0]);
 
     }
 }

@@ -91,10 +91,10 @@ void Writes::write_input_vars()
     if (writes->nbands >= 0) {
         std::cout << "  NBANDS = " << writes->nbands << std::endl;
     }
-    auto tempinfo = thermodynamics->get_temperature_info();
-    std::cout << "  TMIN = " << tempinfo.tmin
-        << "; TMAX = " << tempinfo.tmax
-        << "; DT = " << tempinfo.delta_t << std::endl;
+
+    std::cout << "  TMIN = " << thermodynamics->tmin
+        << "; TMAX = " << thermodynamics->tmax
+        << "; DT = " << thermodynamics->delta_t << std::endl;
     std::cout << "  EMIN = " << dos->emin
         << "; EMAX = " << dos->emax
         << "; DELTA_E = " << dos->delta_e << std::endl;
@@ -343,11 +343,11 @@ void Writes::setup_result_io()
                             "Could not find #TEMPERATURE tag");
 
             fs_result >> T1 >> T2 >> delta_T;
-            const auto tempinfo = thermodynamics->get_temperature_info();
+            //      const auto tempinfo = thermodynamics->get_temperature_info();
 
-            if (!(T1 == tempinfo.tmin &&
-                T2 == tempinfo.tmax &&
-                delta_T == tempinfo.delta_t)) {
+            if (!(T1 == thermodynamics->tmin &&
+                T2 == thermodynamics->tmax &&
+                delta_T == thermodynamics->delta_t)) {
                 error->exit("setup_result_io",
                             "Temperature information is not consistent");
             }
@@ -396,10 +396,9 @@ void Writes::setup_result_io()
             fs_result << integration->epsilon * Ry_to_kayser << std::endl;
             fs_result << "#END SMEARING" << std::endl;
 
-            const auto tempinfo = thermodynamics->get_temperature_info();
-
             fs_result << "#TEMPERATURE" << std::endl;
-            fs_result << tempinfo.tmin << " " << tempinfo.tmax << " " << tempinfo.delta_t << std::endl;
+            fs_result << thermodynamics->tmin << " " << thermodynamics->tmax
+                << " " << thermodynamics->delta_t << std::endl;
             fs_result << "#END TEMPERATURE" << std::endl;
 
             fs_result << "##END General information" << std::endl;
@@ -900,8 +899,6 @@ void Writes::write_scattering_amplitude() const
     ofs_w << "# k, mode, frequency (cm^-1), temperature, W+ (absorption) (cm), W- (emission) (cm)"
         << std::endl << std::endl;
 
-    const auto tempinfo = thermodynamics->get_temperature_info();
-
     for (i = 0; i < kpoint->kpoint_irred_all.size(); ++i) {
 
         knum = kpoint->kpoint_irred_all[i][0].knum;
@@ -910,9 +907,9 @@ void Writes::write_scattering_amplitude() const
 
             const auto omega = in_kayser(dynamical->eval_phonon[knum][is]);
 
-            for (j = 0; j < tempinfo.number_of_grids; ++j) {
+            for (j = 0; j < thermodynamics->ntemp; ++j) {
                 ofs_w << std::setw(5) << i + 1 << std::setw(5) << is + 1 << std::setw(15) << omega;
-                ofs_w << std::setw(8) << tempinfo.temperature_grid[j];
+                ofs_w << std::setw(8) << thermodynamics->tempgrid[j];
                 ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][1];
                 ofs_w << std::setw(15) << dos->sps3_with_bose[i][is][j][0];
                 ofs_w << std::endl;
@@ -1092,7 +1089,7 @@ double Writes::in_kayser(const double x) const
 
 void Writes::write_thermodynamics() const
 {
-    auto tempinfo = thermodynamics->get_temperature_info();
+    //  auto tempinfo = thermodynamics->get_temperature_info();
     std::ofstream ofs_thermo;
     auto file_thermo = input->job_title + ".thermo";
 
@@ -1115,8 +1112,8 @@ void Writes::write_thermodynamics() const
     }
 
 
-    for (unsigned int i = 0; i < tempinfo.number_of_grids; ++i) {
-        auto T = tempinfo.temperature_grid[i];
+    for (unsigned int i = 0; i < thermodynamics->ntemp; ++i) {
+        auto T = thermodynamics->tempgrid[i];
 
         const auto heat_capacity = thermodynamics->Cv_tot(T,
                                                           kpoint->nk_irred,
@@ -1246,11 +1243,11 @@ void Writes::write_msd() const
     ofs_rmsd << "# Temperature [K], <(u_{1}^{x})^{2}>, <(u_{1}^{y})^{2}>, <(u_{1}^{z})^{2}>, .... [Angstrom^2]" << std::
         endl;
 
-    auto tempinfo = thermodynamics->get_temperature_info();
+    //    auto tempinfo = thermodynamics->get_temperature_info();
 
-    for (unsigned int i = 0; i < tempinfo.number_of_grids; ++i) {
+    for (unsigned int i = 0; i < thermodynamics->ntemp; ++i) {
 
-        const auto T = tempinfo.temperature_grid[i];
+        const auto T = thermodynamics->tempgrid[i];
         ofs_rmsd << std::setw(15) << T;
 
         for (unsigned int j = 0; j < ns; ++j) {
@@ -1277,11 +1274,11 @@ void Writes::write_scph_msd(double **msd_scph) const
     ofs_msd << "# Temperature [K], <(u_{1}^{x})^{2}>, <(u_{1}^{y})^{2}>, <(u_{1}^{z})^{2}>, .... [Angstrom^2]" << std::
         endl;
 
-    auto tempinfo = thermodynamics->get_temperature_info();
+    //   auto tempinfo = thermodynamics->get_temperature_info();
 
-    for (unsigned int iT = 0; iT < tempinfo.number_of_grids; ++iT) {
+    for (unsigned int iT = 0; iT < thermodynamics->ntemp; ++iT) {
 
-        ofs_msd << std::setw(15) << tempinfo.temperature_grid[iT];
+        ofs_msd << std::setw(15) << thermodynamics->tempgrid[iT];
         for (unsigned int i = 0; i < ns; ++i) {
             ofs_msd << std::setw(15) << msd_scph[iT][i] * std::pow(Bohr_in_Angstrom, 2.0);
         }
@@ -1310,16 +1307,16 @@ void Writes::write_disp_correlation() const
     for (auto i = 0; i < 3; ++i) {
         shift[i] = static_cast<double>(shift_ucorr[i]);
     }
-    auto tempinfo = thermodynamics->get_temperature_info();
+    //  auto tempinfo = thermodynamics->get_temperature_info();
 
     ofs <<
         "# Temperature [K], (atom1,crd1), (atom2,crd2), SHIFT_UCORR, <u_{0,atom1}^{crd1} * u_{L, atom2}^{crd2}> [Angstrom^2]\n";
 
-    for (unsigned int i = 0; i < tempinfo.number_of_grids; ++i) {
+    for (unsigned int i = 0; i < thermodynamics->ntemp; ++i) {
         for (unsigned int j = 0; j < ns; ++j) {
             for (unsigned int k = 0; k < ns; ++k) {
 
-                const auto ucorr = thermodynamics->disp_corrfunc(tempinfo.temperature_grid[i],
+                const auto ucorr = thermodynamics->disp_corrfunc(thermodynamics->tempgrid[i],
                                                                  j, k,
                                                                  shift,
                                                                  kpoint->nk,
@@ -1328,7 +1325,7 @@ void Writes::write_disp_correlation() const
                                                                  dynamical->eval_phonon,
                                                                  dynamical->evec_phonon);
 
-                ofs << std::setw(17) << tempinfo.temperature_grid[i];
+                ofs << std::setw(17) << thermodynamics->tempgrid[i];
                 ofs << std::setw(11) << j / 3 + 1;
                 ofs << std::setw(3) << j % 3 + 1;
                 ofs << std::setw(11) << k / 3 + 1;
@@ -1370,17 +1367,17 @@ void Writes::write_scph_ucorr(double ***ucorr_scph) const
         shift[i] = static_cast<double>(shift_ucorr[i]);
     }
 
-    auto tempinfo = thermodynamics->get_temperature_info();
+    // auto tempinfo = thermodynamics->get_temperature_info();
 
     ofs <<
         "# Temperature [K], (atom1,crd1), (atom2,crd2), SHIFT_UCORR, <u_{0,atom1}^{crd1} * u_{L, atom2}^{crd2}> [Angstrom^2]\n";
 
-    for (unsigned int i = 0; i < tempinfo.number_of_grids; ++i) {
+    for (unsigned int i = 0; i < thermodynamics->ntemp; ++i) {
 
         for (unsigned int j = 0; j < ns; ++j) {
             for (unsigned int k = 0; k < ns; ++k) {
 
-                ofs << std::setw(17) << tempinfo.temperature_grid[i];
+                ofs << std::setw(17) << thermodynamics->tempgrid[i];
                 ofs << std::setw(11) << j / 3 + 1;
                 ofs << std::setw(3) << j % 3 + 1;
                 ofs << std::setw(11) << k / 3 + 1;
@@ -1423,7 +1420,7 @@ void Writes::write_kappa() const
             ofs_kl << "# Isotope effects are included." << std::endl;
         }
 
-        for (i = 0; i < thermodynamics->get_temperature_info().number_of_grids; ++i) {
+        for (i = 0; i < thermodynamics->ntemp; ++i) {
             ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
                 << conductivity->Temperature[i];
             for (j = 0; j < 3; ++j) {
@@ -1449,7 +1446,7 @@ void Writes::write_kappa() const
                 ofs_kl << "# Isotope effects are included." << std::endl;
             }
 
-            for (i = 0; i < thermodynamics->get_temperature_info().number_of_grids; ++i) {
+            for (i = 0; i < thermodynamics->ntemp; ++i) {
                 for (j = 0; j < dos->n_energy; ++j) {
                     ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
                         << conductivity->Temperature[i];
@@ -1981,7 +1978,7 @@ void Writes::write_scph_energy(double ***eval) const
 {
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
-    const auto tempinfo = thermodynamics->get_temperature_info();
+    //    const auto tempinfo = thermodynamics->get_temperature_info();
 
     std::ofstream ofs_energy;
     std::string file_energy = input->job_title + ".scph_eval";
@@ -1994,11 +1991,11 @@ void Writes::write_scph_energy(double ***eval) const
 
     for (unsigned int ik = 0; ik < nk; ++ik) {
         for (unsigned int is = 0; is < ns; ++is) {
-            for (unsigned int iT = 0; iT < tempinfo.number_of_grids; ++iT) {
+            for (unsigned int iT = 0; iT < thermodynamics->ntemp; ++iT) {
 
                 ofs_energy << std::setw(5) << ik + 1;
                 ofs_energy << std::setw(5) << is + 1;
-                ofs_energy << std::setw(8) << tempinfo.temperature_grid[iT];
+                ofs_energy << std::setw(8) << thermodynamics->tempgrid[iT];
                 ofs_energy << std::setw(15) << writes->in_kayser(eval[iT][ik][is]);
                 ofs_energy << std::endl;
             }
@@ -2054,11 +2051,11 @@ void Writes::write_scph_bands(double ***eval) const
     ofs_bands << "#" << str_kval << std::endl;
     ofs_bands << "# Temperature [K], k-axis, Eigenvalues [cm^-1]" << std::endl;
 
-    const auto tempinfo = thermodynamics->get_temperature_info();
+    //   const auto tempinfo = thermodynamics->get_temperature_info();
 
-    for (unsigned int iT = 0; iT < tempinfo.number_of_grids; ++iT) {
+    for (unsigned int iT = 0; iT < thermodynamics->ntemp; ++iT) {
         for (i = 0; i < nk; ++i) {
-            ofs_bands << std::setw(15) << std::fixed << tempinfo.temperature_grid[iT];
+            ofs_bands << std::setw(15) << std::fixed << thermodynamics->tempgrid[iT];
             ofs_bands << std::setw(15) << std::fixed << kaxis[i];
             for (unsigned int j = 0; j < ns; ++j) {
                 ofs_bands << std::setw(15) << std::scientific << writes->in_kayser(eval[iT][i][j]);
@@ -2077,7 +2074,7 @@ void Writes::write_scph_bands(double ***eval) const
 void Writes::write_scph_dos(double **dos_scph) const
 {
     unsigned int iT;
-    const auto tempinfo = thermodynamics->get_temperature_info();
+    //   const auto tempinfo = thermodynamics->get_temperature_info();
     std::ofstream ofs_dos;
     auto file_dos = input->job_title + ".scph_dos";
 
@@ -2086,15 +2083,15 @@ void Writes::write_scph_dos(double **dos_scph) const
 
     ofs_dos << "# ";
 
-    for (iT = 0; iT < tempinfo.number_of_grids; ++iT) {
-        ofs_dos << std::setw(15) << tempinfo.temperature_grid[iT];
+    for (iT = 0; iT < thermodynamics->ntemp; ++iT) {
+        ofs_dos << std::setw(15) << thermodynamics->tempgrid[iT];
     }
     ofs_dos << std::endl;
 
     for (unsigned int j = 0; j < dos->n_energy; ++j) {
         ofs_dos << std::setw(15) << dos->energy_dos[j];
 
-        for (iT = 0; iT < tempinfo.number_of_grids; ++iT) {
+        for (iT = 0; iT < thermodynamics->ntemp; ++iT) {
             ofs_dos << std::setw(15) << dos_scph[iT][j];
         }
         ofs_dos << std::endl;
@@ -2108,7 +2105,7 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
                                        double *FE_QHA,
                                        double *dFE_scph) const
 {
-    const auto tempinfo = thermodynamics->get_temperature_info();
+    //  const auto tempinfo = thermodynamics->get_temperature_info();
     std::ofstream ofs_thermo;
     auto file_thermo = input->job_title + ".scph_thermo";
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
@@ -2130,9 +2127,9 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
         ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
     }
 
-    for (unsigned int iT = 0; iT < tempinfo.number_of_grids; ++iT) {
+    for (unsigned int iT = 0; iT < thermodynamics->ntemp; ++iT) {
 
-        ofs_thermo << std::setw(16) << std::fixed << tempinfo.temperature_grid[iT];
+        ofs_thermo << std::setw(16) << std::fixed << thermodynamics->tempgrid[iT];
         ofs_thermo << std::setw(18) << std::scientific << heat_capacity[iT] / k_Boltzmann;
         ofs_thermo << std::setw(18) << FE_QHA[iT];
         ofs_thermo << std::setw(18) << dFE_scph[iT];
