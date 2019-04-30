@@ -128,7 +128,7 @@ double Thermodynamics::Cv_tot(const double temp_in,
 
             omega = eval_in[ik][is];
 
-            if (omega < 0.0) continue;
+            if (omega < eps8) continue;
 
             ret += Cv_classical(omega, temp_in) * weight_k_irred[ik_irred];
         }
@@ -141,7 +141,7 @@ double Thermodynamics::Cv_tot(const double temp_in,
 
             omega = eval_in[ik][is];
 
-            if (omega < 0.0) continue;
+            if (omega < eps8) continue;
 
             ret += Cv(omega, temp_in) * weight_k_irred[ik_irred];
         }
@@ -540,6 +540,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
                         const auto omega1 = eval[ik1][is1];
                         const auto omega2 = eval[ik2][is2];
 
+                        if (omega0 < eps8 || omega1 < eps8 || omega2 < eps8) continue;
+
                         omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
                         omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
@@ -687,6 +689,8 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                             omega0 = eval_in[iT][ik0][is0];
                             omega1 = eval_in[iT][ik1][is1];
                             omega2 = eval_in[iT][ik2][is2];
+
+                            if (omega0 < eps8 || omega1 < eps8 || omega2 < eps8) continue;
 
                             omega_sum[0] = 1.0 / (omega0 + omega1 + omega2);
                             omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
