@@ -696,8 +696,8 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                             omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
                             v3_tmp = std::norm(anharmonic_core->V3(arr_cubic,
-                                                                              eval_in[iT],
-                                                                              evec_in[iT])) * multi;
+                                                                   eval_in[iT],
+                                                                   evec_in[iT])) * multi;
                             temp = tempinfo.temperature_grid[iT];
 
                             if (classical) {
@@ -730,7 +730,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
         }
     }
 
-    MPI_Allreduce(&FE_local[0], &FE_bubble[0], static_cast<int>(NT), 
+    MPI_Allreduce(&FE_local[0], &FE_bubble[0], NT,
                   MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     for (iT = 0; iT < NT; ++iT) {

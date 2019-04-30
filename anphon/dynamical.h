@@ -95,11 +95,11 @@ namespace PHON_NS
 
         void calc_nonanalytic_k(double *,
                                 double *,
-                                std::complex<double> **);
+                                std::complex<double> **) const;
 
         void calc_nonanalytic_k2(double *,
                                  double *,
-                                 std::complex<double> **);
+                                 std::complex<double> **) const;
 
         void calc_analytic_k_ewald(double *,
                                    std::vector<FcsClassExtent>,
