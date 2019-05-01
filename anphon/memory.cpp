@@ -8,15 +8,10 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include "mpi_common.h"
 #include "memory.h"
 
 using namespace PHON_NS;
 
-Memory::Memory(PHON *phon) : Pointers(phon)
-{
-}
+Memory::Memory(PHON *phon) : Pointers(phon) {}
 
-Memory::~Memory()
-{
-};
+Memory::~Memory() {};

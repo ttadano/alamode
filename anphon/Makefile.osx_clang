@@ -1,0 +1,56 @@
+.SUFFIXES: .h .cpp
+#-----------------------------------------------
+# Makefile for the program 'ANPHON'.
+# Please modify the variables properly.
+# We recommend to use Intel c++ compiler.
+#-----------------------------------------------
+
+# MPI version of clang++ 
+MPICXX = mpic++
+CXXFLAGS = -O3 -std=c++11
+INCLUDE = -I../include -I$(HOME)/include
+
+LINKER = ${MPICXX}
+
+## Mavericks
+#LDFLAGS = -framework vecLib
+## Yosemite and newer
+LDFLAGS = -framework Accelerate
+
+LAPACK = -llapack
+LIBS = ${LAPACK}  -lfftw3
+
+#----------------------------------------------
+# General rules
+#----------------------------------------------
+
+.cpp.o:
+	${MPICXX} ${CXXFLAGS} ${INCLUDE} -c $<
+
+PROG = anphon
+
+CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
+	main.cpp memory.cpp system.cpp timer.cpp write_phonons.cpp kpoint.cpp \
+	phonon_dos.cpp phonon_velocity.cpp integration.cpp anharmonic_core.cpp \
+	thermodynamics.cpp conductivity.cpp symmetry_core.cpp mode_analysis.cpp \
+        mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp \
+	scph.cpp ewald.cpp
+
+OBJS= ${CXXSRC:.cpp=.o}
+
+default: anphon
+
+all: ${PROG}
+
+anphon: ${OBJS}
+	${LINKER} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
+
+clean:
+	rm -f ${OBJS}
+
+.PHONY: clean
+
+depend:
+	gcc -MM *.cpp > .depend
+
+-include .depend

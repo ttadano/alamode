@@ -27,9 +27,7 @@ Timer::Timer(PHON *phon): Pointers(phon)
 #endif
 }
 
-Timer::~Timer()
-{
-}
+Timer::~Timer() {}
 
 void Timer::reset()
 {
@@ -40,7 +38,7 @@ void Timer::reset()
 #endif
 }
 
-double Timer::elapsed()
+double Timer::elapsed() const
 {
 #if defined(WIN32) || defined(_WIN32)
     LARGE_INTEGER time_now;
@@ -53,24 +51,23 @@ double Timer::elapsed()
 #endif
 }
 
-void Timer::print_elapsed()
+void Timer::print_elapsed() const
 {
     std::cout << std::endl << " Time Elapsed: " << elapsed() << " sec." << std::endl << std::endl;
 }
 
 
-std::string Timer::DateAndTime()
+std::string Timer::DateAndTime() const
 {
     time_t current;
     std::time(&current);
 
 #if defined(WIN32) || defined(_WIN32)
-    errno_t err_t;
     struct tm local;
 
     char str_now[32];
 
-    err_t = localtime_s(&local, &current);
+    errno_t err_t = localtime_s(&local, &current);
     err_t = asctime_s(str_now, 32, &local);
     return str_now;
 #else

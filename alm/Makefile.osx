@@ -9,12 +9,12 @@
 # OpenMP-enabled gcc can be installed via homebrew
 CXX = g++-8
 CXXFLAGS = -O2 -fopenmp -std=c++11
-INCLUDE = -I../include
+INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
 
 CXXL = ${CXX}
-LDFLAGS = -lgomp
+LDFLAGS = -lgomp -L$(SPGLIB_ROOT)/lib -lsymspg
 
-LAPACK = -llapack
+LAPACK = -llapack -lblas
 LIBS = ${LAPACK}
 
 #-----------------------------------------------
@@ -26,9 +26,7 @@ LIBS = ${LAPACK}
 
 PROG = alm
 
-CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp \
-	fitting.cpp input.cpp interaction.cpp main.cpp memory.cpp \
-	patterndisp.cpp symmetry.cpp system.cpp timer.cpp writes.cpp 
+CXXSRC= $(wildcard *.cpp)
 
 OBJS= ${CXXSRC:.cpp=.o}
 

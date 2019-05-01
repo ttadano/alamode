@@ -20,7 +20,7 @@
  
  MIXALPHA = 0.1
  MAXITER = 500
- TOL_SCPH = 1.0e-8
+ TOL_SCPH = 1.0e-10
 /
 
 &cell

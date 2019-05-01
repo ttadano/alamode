@@ -1,0 +1,19 @@
+&general
+  PREFIX = si222_RTA10
+  MODE   = RTA
+  FCSXML = si222_cubic.xml
+
+  NKD = 1; KD = Si
+/
+
+&cell
+10.21661532467520234378
+  0.0 0.5 0.5
+  0.5 0.0 0.5
+  0.5 0.5 0.0
+/
+
+&kpoint
+  2
+  10 10 10
+/

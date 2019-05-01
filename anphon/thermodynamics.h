@@ -11,33 +11,97 @@
 #pragma once
 
 #include "pointers.h"
+#include <complex>
+#include <vector>
+#include "kpoint.h"
 
 namespace PHON_NS
 {
-    class Thermodynamics: protected Pointers
+    class Thermodynamics : protected Pointers
     {
     public:
         Thermodynamics(class PHON *);
+
         ~Thermodynamics();
 
         double T_to_Ryd;
         bool classical;
+        bool calc_FE_bubble;
+        double *FE_bubble;
+
         void setup();
 
-        double Cv(const double, const double);
-        double fB(const double, const double);
-        double fC(const double, const double);
+        double Cv(const double omega,
+                  const double temp_in) const;
 
-        double Cv_tot(const double);
-        double internal_energy(const double);
-        double vibrational_entropy(const double);
-        double free_energy(const double);
-        double Cv_Debye(const double, const double);
-        double Cv_classical(const double, const double);
-        void Debye_T(const double, double &);
-        double disp2_avg(const double, const unsigned int, const unsigned int);
+        double Cv_classical(const double omega,
+                            const double temp_in) const;
 
-    public:
-        double coth_T(const double, const double);
+        double fB(const double omega,
+                  const double temp_in) const;
+
+        double fC(const double omega,
+                  const double temp_in) const;
+
+        double Cv_tot(const double temp_in,
+                      const unsigned int nk_irred,
+                      const unsigned int ns,
+                      const std::vector<std::vector<KpointList>> &kp_irred,
+                      double *weight_k_irred,
+                      double **eval_in) const;
+
+        double internal_energy(const double temp_in,
+                               const unsigned int nk_irred,
+                               const unsigned int ns,
+                               const std::vector<std::vector<KpointList>> &kp_irred,
+                               double *weight_k_irred,
+                               double **eval_in) const;
+
+        double vibrational_entropy(const double temp_in,
+                                   const unsigned int nk_irred,
+                                   const unsigned int ns,
+                                   const std::vector<std::vector<KpointList>> &kp_irred,
+                                   double *weight_k_irred,
+                                   double **eval_in) const;
+
+        double free_energy_QHA(const double temp_in,
+                               const unsigned int nk_irred,
+                               const unsigned int ns,
+                               const std::vector<std::vector<KpointList>> &kp_irred,
+                               double *weight_k_irred,
+                               double **eval_in) const;
+
+
+        double disp2_avg(double,
+                         unsigned int,
+                         unsigned int) const;
+
+        double disp_corrfunc(const double T_in,
+                             const unsigned int ncrd1,
+                             const unsigned int ncrd2,
+                             const double cell_shift[3],
+                             const unsigned int nk,
+                             const unsigned int ns,
+                             double **xk_in,
+                             double **eval_in,
+                             std::complex<double> ***evec_in) const;
+
+        double coth_T(double,
+                      double) const;
+
+        void compute_free_energy_bubble();
+
+
+        void compute_FE_bubble(double **,
+                               std::complex<double> ***,
+                               double *) const;
+
+        void compute_FE_bubble_SCPH(double ***eval_in,
+                                    std::complex<double> ****evec_in,
+                                    double *FE_bubble);
+
+        double FE_scph_correction(unsigned int,
+                                  double **,
+                                  std::complex<double> ***) const;
     };
 }

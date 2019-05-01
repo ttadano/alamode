@@ -6,11 +6,11 @@
 #-----------------------------------------------
 
 CXX = icpc 
-CXXFLAGS = -O2 -xHOST -openmp -std=c++11
-INCLUDE = -I../include
+CXXFLAGS = -O2 -xHOST -qopenmp -std=c++11
+INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
 
 CXXL = ${CXX}
-LDFLAGS = -mkl
+LDFLAGS = -mkl -L$(SPGLIB_ROOT)/lib -lsymspg
 
 LAPACK = 
 LIBS = ${LAPACK}
@@ -24,9 +24,7 @@ LIBS = ${LAPACK}
 
 PROG = alm
 
-CXXSRC= alamode.cpp constraint.cpp error.cpp fcs.cpp files.cpp \
-	fitting.cpp input.cpp interaction.cpp main.cpp memory.cpp \
-	patterndisp.cpp symmetry.cpp system.cpp timer.cpp writes.cpp 
+CXXSRC= $(wildcard *.cpp)
 
 OBJS= ${CXXSRC:.cpp=.o}
 

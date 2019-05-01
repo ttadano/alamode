@@ -14,7 +14,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <iostream>
 #include <fstream>
 #include <cctype>
 #include <locale>
@@ -24,14 +23,15 @@
 
 namespace PHON_NS
 {
-    class Input: protected Pointers
+    class Input : protected Pointers
     {
     public:
         Input(class PHON *);
+
         ~Input();
-        void parce_input(int, char **);
-        template <typename T_to, typename T_from>
-        T_to my_cast(T_from const &);
+
+        void parce_input(int,
+                         char **);
 
         std::string job_title;
 
@@ -45,15 +45,25 @@ namespace PHON_NS
         void parse_scph_vars();
         void parse_cell_parameter();
         void parse_kpoints();
-        void get_var_dict(std::string, std::map<std::string, std::string> &);
-        void split_str_by_space(const std::string, std::vector<std::string> &);
 
-        bool is_endof_entry(const std::string);
+        void get_var_dict(const std::vector<std::string> &,
+                          std::map<std::string, std::string> &);
+
+        void split_str_by_space(const std::string,
+                                std::vector<std::string> &) const;
+
+        bool is_endof_entry(const std::string) const;
+
+        template <typename T_to, typename T_from>
+        T_to my_cast(T_from const &);
+
         template <typename T>
-        void assign_val(T &, const std::string,
+        void assign_val(T &,
+                        const std::string,
                         std::map<std::string, std::string>);
 
-        std::vector<std::string> my_split(const std::string &str, char delim)
+        std::vector<std::string> my_split(const std::string &str,
+                                          char delim)
         {
             std::istringstream iss(str);
             std::string str_tmp;

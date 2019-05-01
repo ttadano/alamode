@@ -17,49 +17,68 @@
 
 namespace PHON_NS
 {
-    class Writes: protected Pointers
+    class Writes : protected Pointers
     {
     public:
 
         Writes(class PHON *);
+
         ~Writes();
+
         void write_phonon_info();
-        void print_phonon_energy();
+        void print_phonon_energy() const;
         void write_gruneisen();
         void setup_result_io();
         void write_input_vars();
-        void write_kappa();
-        void write_selfenergy_isotope();
+        void write_kappa() const;
+        void write_selfenergy_isotope() const;
 
         bool print_xsf;
         bool print_msd;
+        bool print_ucorr;
         bool print_anime;
 
         unsigned int anime_cellsize[3];
         double anime_kpoint[3];
+        int shift_ucorr[3];
 
-        double in_kayser(const double);
+        double in_kayser(const double) const;
+
         int nbands;
 
         std::string file_result;
         std::string anime_format;
         std::fstream fs_result;
 
+        void write_scph_energy(double ***) const;
+        void write_scph_bands(double ***) const;
+        void write_scph_dos(double **) const;
+        void write_scph_thermodynamics(double *heat_capacity,
+                                       double *FE_QHA,
+                                       double *dFE_scph) const;
+        void write_scph_msd(double **) const;
+        void write_scph_ucorr(double ***ucorr_scph) const;
+
     private:
 
-        void write_phonon_bands();
-        void write_phonon_vel();
-        void write_phonon_vel_all();
-        void write_phonon_dos();
-        void write_two_phonon_dos();
-        void write_scattering_phase_space();
-        void write_scattering_amplitude();
-        void write_normal_mode_direction();
-        void write_normal_mode_animation(const double [3], const unsigned int [3]);
-        void write_eigenvectors();
-        void write_thermodynamics();
-        void write_msd();
-        void write_participation_ratio();
+        void write_phonon_bands() const;
+        void write_phonon_vel() const;
+        void write_phonon_vel_all() const;
+        void write_phonon_dos() const;
+        void write_two_phonon_dos() const;
+        void write_scattering_phase_space() const;
+        void write_scattering_amplitude() const;
+        void write_normal_mode_direction() const;
+
+        void write_normal_mode_animation(const double [3],
+                                         const unsigned int [3]) const;
+
+        void write_eigenvectors() const;
+        void write_thermodynamics() const;
+        void write_msd() const;
+        void write_disp_correlation() const;
+
+        void write_participation_ratio() const;
 
         double Ry_to_kayser;
     };

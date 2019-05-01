@@ -8,52 +8,53 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include "mpi_common.h"
 #include "parsephon.h"
-#include "error.h"
-#include "gruneisen.h"
-#include "system.h"
-#include "kpoint.h"
-#include "fcs_phonon.h"
+#include "conductivity.h"
 #include "dynamical.h"
+#include "error.h"
+#include "ewald.h"
+#include "fcs_phonon.h"
+#include "gruneisen.h"
+#include "integration.h"
+#include "isotope.h"
+#include "kpoint.h"
+#include "memory.h"
+#include "phonon_dos.h"
+#include "phonon_velocity.h"
+#include "anharmonic_core.h"
+#include "mode_analysis.h"
+#include "scph.h"
+#include "symmetry_core.h"
+#include "system.h"
+#include "thermodynamics.h"
 #include "write_phonons.h"
+#include <sys/stat.h>
+#include <sstream>
+#include <istream>
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <algorithm>
-#include "relaxation.h"
-#include "conductivity.h"
-#include "symmetry_core.h"
-#include <istream>
 #include <map>
 #include <vector>
-#include "phonon_dos.h"
-#include <sstream>
-#include <sys/stat.h>
-#include "memory.h"
-#include "isotope.h"
-#include "phonon_velocity.h"
-#include "integration.h"
-#include "scph.h"
-#include "ewald.h"
-#include "thermodynamics.h"
+#include <string>
+#include <algorithm>
 #include <boost/lexical_cast.hpp>
-
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 
 using namespace PHON_NS;
 
 Input::Input(PHON *phon): Pointers(phon)
 {
+    from_stdin = false;
+    job_title = "";
 }
 
 Input::~Input()
 {
-    if (!from_stdin && mympi->my_rank == 0) ifs_input.close();
+    if (ifs_input.is_open()) ifs_input.close();
 }
 
-void Input::parce_input(int narg, char **arg)
+void Input::parce_input(int narg,
+                        char **arg)
 {
     if (narg == 1) {
 
@@ -80,12 +81,7 @@ void Input::parce_input(int narg, char **arg)
                     "&cell entry not found in the input file");
     parse_cell_parameter();
 
-    bool use_defaults_for_analysis;
-    if (!locate_tag("&analysis")) {
-        use_defaults_for_analysis = true;
-    } else {
-        use_defaults_for_analysis = false;
-    }
+    bool use_defaults_for_analysis = !locate_tag("&analysis");
     parse_analysis_vars(use_defaults_for_analysis);
 
     if (!locate_tag("&kpoint"))
@@ -107,34 +103,22 @@ void Input::parse_general_vars()
     // Read input parameters in the &general-field.
 
     int i;
-    int nsym, nbands, ismear, nkd;
-    unsigned int nonanalytic;
-    double *masskd;
-    double Tmin, Tmax, dT, na_sigma, epsilon;
-    double emin, emax, delta_e;
-    double tolerance;
-    double prec_ewald;
-    bool printsymmetry;
-    bool restart;
-    bool sym_time_reversal, use_triplet_symmetry;
-    bool selenergy_offdiagonal;
-    bool update_fc2;
-    bool classical;
-    unsigned int bornsym;
-    unsigned int band_connection;
-
+    int nkd;
     struct stat st;
-    std::string prefix, mode, fcsinfo, fc2info;
-    std::string borninfo, file_result;
-    std::string *kdname;
     std::string str_tmp;
-    std::string str_allowed_list = "PREFIX MODE NSYM TOLERANCE PRINTSYM FCSXML FC2XML TMIN TMAX DT \
-                                   NBANDS NONANALYTIC BORNINFO NA_SIGMA ISMEAR EPSILON EMIN EMAX DELTA_E \
-                                   RESTART TREVSYM NKD KD MASS TRISYM PREC_EWALD CLASSICAL BCONNECT BORNSYM";
-    std::string str_no_defaults = "PREFIX MODE FCSXML NKD KD MASS";
-    std::vector<std::string> no_defaults;
+    std::vector<std::string> input_list{
+        "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+        "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+        "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM"
+    };
+
+    std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
     std::vector<std::string> kdname_v, masskd_v;
     std::map<std::string, std::string> general_var_dict;
+
+    double *masskd = nullptr;
+    std::string *kdname = nullptr;
 
     if (from_stdin) {
         std::cin.ignore();
@@ -142,30 +126,23 @@ void Input::parse_general_vars()
         ifs_input.ignore();
     }
 
-    get_var_dict(str_allowed_list, general_var_dict);
-#if _USE_BOOST
-    boost::split(no_defaults, str_no_defaults, boost::is_space());
-#else 
-    no_defaults = my_split(str_no_defaults, ' ');
-#endif
+    get_var_dict(input_list, general_var_dict);
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
-        if (general_var_dict.find(*it) == general_var_dict.end()) {
+    for (auto &no_default : no_defaults) {
+        if (general_var_dict.find(no_default) == general_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
-                        (*it).c_str());
+                        no_default.c_str());
         }
     }
 
-    prefix = general_var_dict["PREFIX"];
-    mode = general_var_dict["MODE"];
-
-    file_result = prefix + ".result";
+    std::string prefix = general_var_dict["PREFIX"];
+    std::string mode = general_var_dict["MODE"];
+    std::string file_result = prefix + ".result";
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
-    assign_val(nsym, "NSYM", general_var_dict);
 
-    fcsinfo = general_var_dict["FCSXML"];
+    std::string fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -180,56 +157,54 @@ void Input::parse_general_vars()
         }
     }
 
-    split_str_by_space(general_var_dict["MASS"], masskd_v);
+    if (!general_var_dict["MASS"].empty()) {
+        split_str_by_space(general_var_dict["MASS"], masskd_v);
 
-    if (masskd_v.size() != nkd) {
-        error->exit("parse_general_vars",
-                    "The number of entries for MASS is inconsistent with NKD");
-    } else {
-        memory->allocate(masskd, nkd);
-        for (i = 0; i < nkd; ++i) {
-            masskd[i] = my_cast<double>(masskd_v[i]);
+        if (masskd_v.size() != nkd) {
+            error->exit("parse_general_vars",
+                        "The number of entries for MASS is inconsistent with NKD");
+        } else {
+            memory->allocate(masskd, nkd);
+            for (i = 0; i < nkd; ++i) {
+                masskd[i] = my_cast<double>(masskd_v[i]);
+            }
         }
     }
 
+
     // Default values
 
-    Tmin = 0.0;
-    Tmax = 1000.0;
-    dT = 10.0;
+    double Tmin = 0.0;
+    double Tmax = 1000.0;
+    double dT = 10.0;
 
-    emin = 0.0;
-    emax = 1000.0;
-    delta_e = 10.0;
+    double emin = 0.0;
+    double emax = 1000.0;
+    double delta_e = 10.0;
 
-    nonanalytic = 0;
-    nsym = 0;
-    tolerance = 1.0e-6;
-    printsymmetry = false;
-    sym_time_reversal = false;
-    use_triplet_symmetry = true;
-    classical = false;
-    band_connection = 0;
-    bornsym = 0;
+    unsigned int nonanalytic = 0;
+    int nsym = 0;
+    double tolerance = 1.0e-6;
+    bool printsymmetry = false;
+    bool sym_time_reversal = false;
+    bool use_triplet_symmetry = true;
+    bool classical = false;
+    unsigned int band_connection = 0;
+    unsigned int bornsym = 0;
 
-    prec_ewald = 1.0e-12;
+    double prec_ewald = 1.0e-12;
 
     // if file_result exists in the current directory, 
     // restart mode will be automatically turned on.
+    bool restart = stat(file_result.c_str(), &st) == 0;
 
-    if (stat(file_result.c_str(), &st) == 0) {
-        restart = true;
-    } else {
-        restart = false;
-    }
+    int nbands = -1;
+    std::string borninfo = "";
+    std::string fc2info = "";
 
-    nbands = -1;
-    borninfo = "";
-    fc2info = "";
-
-    ismear = -1;
-    epsilon = 10.0;
-    na_sigma = 0.1;
+    int ismear = -1;
+    double epsilon = 10.0;
+    double na_sigma = 0.1;
 
     // Assign given values
 
@@ -271,24 +246,25 @@ void Input::parse_general_vars()
             error->exit("parse_general_vars",
                         "PREC_EWALD should be a small positive value.");
         }
-        ewald->is_longrange = 1;
+        ewald->is_longrange = true;
         ewald->file_longrange = boost::lexical_cast<std::string>(general_var_dict["BORNINFO"]);
         ewald->prec_ewald = prec_ewald;
         ewald->rate_ab = 6.0 / pi;
 
     } else {
-        ewald->is_longrange = 0;
+        ewald->is_longrange = false;
     }
 
     if (nonanalytic > 3) {
-        error->exit("parse_general_vars", "NONANALYTIC-tag can take 0, 1, 2, or 3.");
+        error->exit("parse_general_vars",
+                    "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
-    if (nonanalytic == 3) {
-        if (mode == "SCPH") {
-            error->exit("parse_general_vars",
-                        "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
-        }
-    }
+    // if (nonanalytic == 3) {
+    //     if (mode == "SCPH") {
+    //         error->exit("parse_general_vars",
+    //                     "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
+    //     }
+    // }
 
     // Copy the values to appropriate classes.
 
@@ -306,14 +282,24 @@ void Input::parse_general_vars()
     system->dT = dT;
     system->nkd = nkd;
 
-    memory->allocate(system->mass_kd, nkd);
     memory->allocate(system->symbol_kd, nkd);
     for (i = 0; i < nkd; ++i) {
-        system->mass_kd[i] = masskd[i];
         system->symbol_kd[i] = kdname[i];
     }
-    memory->deallocate(masskd);
-    memory->deallocate(kdname);
+    if (kdname) {
+        memory->deallocate(kdname);
+    }
+
+    if (!general_var_dict["MASS"].empty()) {
+        memory->allocate(system->mass_kd, nkd);
+        for (i = 0; i < nkd; ++i) {
+            system->mass_kd[i] = masskd[i];
+        }
+    }
+    if (masskd) {
+        memory->deallocate(masskd);
+    }
+
 
     dos->emax = emax;
     dos->emin = emin;
@@ -327,16 +313,11 @@ void Input::parse_general_vars()
     dynamical->band_connection = band_connection;
     integration->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsinfo;
-    if (!fc2info.empty()) {
-        update_fc2 = true;
-    } else {
-        update_fc2 = false;
-    }
     fcs_phonon->file_fc2 = fc2info;
-    fcs_phonon->update_fc2 = update_fc2;
+    fcs_phonon->update_fc2 = !fc2info.empty();
     thermodynamics->classical = classical;
     integration->ismear = ismear;
-    relaxation->use_triplet_symmetry = use_triplet_symmetry;
+    anharmonic_core->use_triplet_symmetry = use_triplet_symmetry;
 
     general_var_dict.clear();
 }
@@ -345,22 +326,13 @@ void Input::parse_scph_vars()
 {
     // Read input parameters in the &scph-field.
 
-    int i;
-    unsigned int maxiter;
-    unsigned int ialgo_scph;
-    double tolerance_scph;
-    double mixalpha;
-    bool restart_scph;
-    bool selenergy_offdiagonal;
-    bool lower_temp, warm_start;
-
     struct stat st;
-    std::string file_dymat;
-    std::string str_tmp;
-    std::string str_allowed_list = "KMESH_SCPH KMESH_INTERPOLATE MIXALPHA MAXITER RESTART_SCPH IALGO \
-                                    SELF_OFFDIAG TOL_SCPH LOWER_TEMP WARMSTART";
-    std::string str_no_defaults = "KMESH_SCPH KMESH_INTERPOLATE";
-    std::vector<std::string> no_defaults;
+    std::vector<std::string> input_list{
+        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+        "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+        "LOWER_TEMP", "WARMSTART"
+    };
+    std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
     std::map<std::string, std::string> scph_var_dict;
 
@@ -370,41 +342,32 @@ void Input::parse_scph_vars()
         ifs_input.ignore();
     }
 
-    get_var_dict(str_allowed_list, scph_var_dict);
-#if _USE_BOOST
-    boost::split(no_defaults, str_no_defaults, boost::is_space());
-#else 
-    no_defaults = my_split(str_no_defaults, ' ');
-#endif
+    get_var_dict(input_list, scph_var_dict);
 
-    for (auto it = no_defaults.begin(); it != no_defaults.end(); ++it) {
-        if (scph_var_dict.find(*it) == scph_var_dict.end()) {
+    for (auto &no_default : no_defaults) {
+        if (scph_var_dict.find(no_default) == scph_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &scph input region: ",
-                        (*it).c_str());
+                        no_default.c_str());
         }
     }
 
-    file_dymat = this->job_title + ".scph_dymat";
+    std::string file_dymat = this->job_title + ".scph_dymat";
 
     // Default values
 
-    tolerance_scph = 1.0e-10;
-    maxiter = 1000;
-    mixalpha = 0.1;
-    selenergy_offdiagonal = true;
-    ialgo_scph = 0;
-    lower_temp = true;
-    warm_start = true;
+    double tolerance_scph = 1.0e-10;
+    unsigned int maxiter = 1000;
+    double mixalpha = 0.1;
+    bool selenergy_offdiagonal = true;
+    unsigned int ialgo_scph = 0;
+    bool lower_temp = true;
+    bool warm_start = true;
 
     // if file_dymat exists in the current directory, 
     // restart mode will be automatically turned on for SCPH calculations.
 
-    if (stat(file_dymat.c_str(), &st) == 0) {
-        restart_scph = true;
-    } else {
-        restart_scph = false;
-    }
+    bool restart_scph = stat(file_dymat.c_str(), &st) == 0;
 
     // Assign given values
 
@@ -417,7 +380,7 @@ void Input::parse_scph_vars()
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
 
-    str_tmp = scph_var_dict["KMESH_SCPH"];
+    std::string str_tmp = scph_var_dict["KMESH_SCPH"];
 
     if (!str_tmp.empty()) {
 
@@ -466,7 +429,7 @@ void Input::parse_scph_vars()
 
     // Copy the values to appropriate classes.
 
-    for (i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i) {
         scph->kmesh_scph[i] = kmesh_v[i];
         scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
     }
@@ -491,77 +454,72 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    std::string str_allowed_list = "PRINTEVEC PRINTXSF PRINTVEL QUARTIC KS_INPUT ATOMPROJ REALPART \
-                                   ISOTOPE ISOFACT FSTATE_W FSTATE_K PRINTMSD PDOS TDOS GRUNEISEN NEWFCS DELTA_A \
-                                   ANIME ANIME_CELLSIZE ANIME_FORMAT SPS PRINTV3 PRINTPR FC2_EWALD KAPPA_SPEC \
-                                   SELF_W";
+    std::vector<std::string> input_list{
+        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+        "REALPART", "ISOTOPE", "ISOFACT",
+        "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+        "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
+        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR"
+    };
 
-    bool fstate_omega, fstate_k;
-    bool ks_analyze_mode, atom_project_mode, calc_realpart;
-    bool print_vel, print_evec, print_msd;
-    bool projected_dos, print_gruneisen, print_newfcs;
-    bool two_phonon_dos;
-    bool print_xsf, print_anime;
-    bool print_V3, participation_ratio;
-    bool print_fc2_ewald;
-    bool print_self_consistent_fc2;
-    bool bubble_omega;
+#ifdef _FE_BUBBLE
+    input_list.push_back("FE_BUBBLE");
+#endif
 
-    int quartic_mode;
-    int include_isotope;
-    int scattering_phase_space;
-    int calculate_kappa_spec;
     unsigned int cellsize[3];
 
-    double delta_a;
-    double *isotope_factor;
+    double *isotope_factor = nullptr;
     std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
 
     // Default values
 
-    print_xsf = false;
-    print_anime = false;
+    bool print_xsf = false;
+    bool print_anime = false;
 
-    print_vel = false;
-    print_evec = false;
-    print_msd = false;
+    bool print_vel = false;
+    bool print_evec = false;
+    bool print_msd = false;
+    bool print_ucorr = false;
 
-    projected_dos = false;
-    two_phonon_dos = false;
-    scattering_phase_space = 0;
-    print_gruneisen = false;
-    print_newfcs = false;
-    print_V3 = false;
-    participation_ratio = false;
+    bool compute_dos = true;
+    bool projected_dos = false;
+    bool two_phonon_dos = false;
+    int scattering_phase_space = 0;
+    bool print_gruneisen = false;
+    bool print_newfcs = false;
+    bool print_V3 = false;
+    bool participation_ratio = false;
 
-    delta_a = 0.001;
+    double delta_a = 0.001;
 
-    quartic_mode = 0;
-    ks_analyze_mode = false;
-    atom_project_mode = false;
-    calc_realpart = false;
-    include_isotope = 0;
-    fstate_omega = false;
-    fstate_k = false;
-    bubble_omega = false;
+    int quartic_mode = 0;
+    bool calc_realpart = false;
+    int include_isotope = 0;
+    bool fstate_omega = false;
+    bool fstate_k = false;
+    bool bubble_omega = false;
 
-    calculate_kappa_spec = 0;
+    int calculate_kappa_spec = 0;
 
-    print_fc2_ewald = false;
-    print_self_consistent_fc2 = false;
+    bool print_fc2_ewald = false;
+    bool print_self_consistent_fc2 = false;
+    bool calc_FE_bubble = false;
 
 
     // Assign values to variables
 
     if (!use_default_values) {
-        get_var_dict(str_allowed_list, analysis_var_dict);
+        get_var_dict(input_list, analysis_var_dict);
 
         assign_val(print_vel, "PRINTVEL", analysis_var_dict);
         assign_val(print_evec, "PRINTEVEC", analysis_var_dict);
         assign_val(print_msd, "PRINTMSD", analysis_var_dict);
+        assign_val(print_ucorr, "UCORR", analysis_var_dict);
 
+        assign_val(compute_dos, "DOS", analysis_var_dict);
         assign_val(projected_dos, "PDOS", analysis_var_dict);
         assign_val(two_phonon_dos, "TDOS", analysis_var_dict);
         assign_val(scattering_phase_space, "SPS", analysis_var_dict);
@@ -570,7 +528,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(delta_a, "DELTA_A", analysis_var_dict);
 
         assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
-        assign_val(atom_project_mode, "ATOMPROJ", analysis_var_dict);
         assign_val(calc_realpart, "REALPART", analysis_var_dict);
         assign_val(include_isotope, "ISOTOPE", analysis_var_dict);
         assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
@@ -583,6 +540,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+#ifdef _FE_BUBBLE
+        assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
+#endif
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;
@@ -592,17 +552,21 @@ void Input::parse_analysis_vars(const bool use_default_values)
     }
 
     if (include_isotope) {
-        split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
 
-        if (isofact_v.size() != system->nkd) {
-            error->exit("parse_analysis_vars",
-                        "The number of entries for ISOFACT is inconsistent with NKD");
-        } else {
-            memory->allocate(isotope_factor, system->nkd);
-            for (i = 0; i < system->nkd; ++i) {
-                isotope_factor[i] = my_cast<double>(isofact_v[i]);
+        if (!analysis_var_dict["ISOFACT"].empty()) {
+            split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
+
+            if (isofact_v.size() != system->nkd) {
+                error->exit("parse_analysis_vars",
+                            "The number of entries for ISOFACT is inconsistent with NKD");
+            } else {
+                memory->allocate(isotope_factor, system->nkd);
+                for (i = 0; i < system->nkd; ++i) {
+                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
+                }
             }
         }
+
     }
 
     if (print_anime) {
@@ -646,6 +610,35 @@ void Input::parse_analysis_vars(const bool use_default_values)
         }
     }
 
+    if (print_ucorr) {
+        std::string str_shift_ucorr;
+        std::vector<std::string> list_shift_ucorr;
+        assign_val(str_shift_ucorr, "SHIFT_UCORR", analysis_var_dict);
+
+        if (!str_shift_ucorr.empty()) {
+            int shift_ucorr[3];
+            split_str_by_space(str_shift_ucorr, list_shift_ucorr);
+            if (list_shift_ucorr.size() != 3) {
+                error->exit("parse_analysis_vars",
+                            "The number of entries for SHIFT_UCORR must be 3.");
+            }
+
+            for (i = 0; i < 3; ++i) {
+                try {
+                    shift_ucorr[i] = boost::lexical_cast<int>(list_shift_ucorr[i]);
+                }
+                catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                    error->exit("parse_analysis_vars",
+                                "SHIFT_UCORR must be an array of integers.");
+                }
+            }
+            for (i = 0; i < 3; ++i) {
+                writes->shift_ucorr[i] = shift_ucorr[i];
+            }
+        }
+    }
+
     // Copy the values to appropriate classes
 
     phonon_velocity->print_velocity = print_vel;
@@ -653,6 +646,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dynamical->participation_ratio = participation_ratio;
     writes->print_xsf = print_xsf;
     writes->print_anime = print_anime;
+    writes->print_ucorr = print_ucorr;
 
     if (print_anime) {
         for (i = 0; i < 3; ++i) {
@@ -664,32 +658,38 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     writes->print_msd = print_msd;
 
+    dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
-    relaxation->quartic_mode = quartic_mode;
-    relaxation->atom_project_mode = atom_project_mode;
-    relaxation->calc_realpart = calc_realpart;
-    relaxation->calc_fstate_omega = fstate_omega;
-    relaxation->calc_fstate_k = fstate_k;
-    relaxation->print_V3 = print_V3;
-    relaxation->spectral_func = bubble_omega;
+    anharmonic_core->quartic_mode = quartic_mode;
+
+    mode_analysis->ks_input = ks_input;
+    mode_analysis->calc_realpart = calc_realpart;
+    mode_analysis->calc_fstate_omega = fstate_omega;
+    mode_analysis->calc_fstate_k = fstate_k;
+    mode_analysis->print_V3 = print_V3;
+    mode_analysis->spectral_func = bubble_omega;
     isotope->include_isotope = include_isotope;
-    relaxation->ks_input = ks_input;
 
     gruneisen->print_gruneisen = print_gruneisen;
     gruneisen->print_newfcs = print_newfcs;
     gruneisen->delta_a = delta_a;
+    thermodynamics->calc_FE_bubble = calc_FE_bubble;
 
     ewald->print_fc2_ewald = print_fc2_ewald;
 
     if (include_isotope) {
-        memory->allocate(isotope->isotope_factor, system->nkd);
-        for (i = 0; i < system->nkd; ++i) {
-            isotope->isotope_factor[i] = isotope_factor[i];
+        if (!analysis_var_dict["ISOFACT"].empty()) {
+            memory->allocate(isotope->isotope_factor, system->nkd);
+            for (i = 0; i < system->nkd; ++i) {
+                isotope->isotope_factor[i] = isotope_factor[i];
+            }
         }
+    }
+    if (isotope_factor) {
         memory->deallocate(isotope_factor);
     }
 
@@ -727,7 +727,7 @@ void Input::parse_cell_parameter()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -747,7 +747,7 @@ void Input::parse_cell_parameter()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -757,15 +757,16 @@ void Input::parse_cell_parameter()
     }
 
     if (line_vec.size() != 4) {
-        error->exit("parse_cell_parameter", "Too few or too much lines for the &cell field.\n \
+        error->exit("parse_cell_parameter",
+                    "Too few or too much lines for the &cell field.\n \
                                             The number of valid lines for the &cell field should be 4.");
     }
 
     for (i = 0; i < 4; ++i) {
 
         line = line_vec[i];
-        boost::split(line_split, line,
-                     boost::is_any_of("\t "), boost::token_compress_on);
+        split(line_split, line,
+              boost::is_any_of("\t "), boost::token_compress_on);
 
         if (i == 0) {
             // Lattice factor a
@@ -801,7 +802,7 @@ void Input::parse_kpoints()
 {
     // Read the settings in the &kpoint field.
 
-    int i, kpmode;
+    int kpmode;
     std::string line, line_wo_comment, str_tmp;
     std::vector<std::string> kpelem, line_vec;
     std::string::size_type pos_first_comment_tag;
@@ -821,7 +822,7 @@ void Input::parse_kpoints()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -841,7 +842,7 @@ void Input::parse_kpoints()
                 line_wo_comment = line.substr(0, pos_first_comment_tag);
             }
 
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
 
             if (line_wo_comment.empty()) continue;
             if (is_endof_entry(line_wo_comment)) break;
@@ -850,9 +851,9 @@ void Input::parse_kpoints()
         }
     }
 
-    for (i = 0; i < line_vec.size(); ++i) {
+    for (int i = 0; i < line_vec.size(); ++i) {
         line = line_vec[i];
-        boost::split(kpelem, line, boost::is_any_of("\t "), boost::token_compress_on);
+        split(kpelem, line, boost::is_any_of("\t "), boost::token_compress_on);
 
         if (i == 0) {
             // kpmode 
@@ -932,49 +933,39 @@ int Input::locate_tag(std::string key)
         }
         return ret;
 
-    } else {
+    }
+    ifs_input.clear();
+    ifs_input.seekg(0, std::ios_base::beg);
 
-        ifs_input.clear();
-        ifs_input.seekg(0, std::ios_base::beg);
-
-        while (ifs_input >> line) {
+    while (ifs_input >> line) {
 #ifdef _USE_BOOST
             boost::to_lower(line);
             boost::trim(line);
 #else
-            std::transform(line.begin(), line.end(), line.begin(), tolower);
-            line2 = line;
-            line = trim(line2);
+        std::transform(line.begin(), line.end(), line.begin(), tolower);
+        line2 = line;
+        line = trim(line2);
 #endif
-            if (line == key) {
-                ret = 1;
-                break;
-            }
+        if (line == key) {
+            ret = 1;
+            break;
         }
-        return ret;
     }
+    return ret;
 }
 
-void Input::get_var_dict(const std::string keywords,
+void Input::get_var_dict(const std::vector<std::string> &input_list,
                          std::map<std::string, std::string> &var_dict)
 {
     std::string line, key, val;
     std::string line_wo_comment, line_tmp;
     std::string::size_type pos_first_comment_tag;
     std::vector<std::string> str_entry, str_varval;
-
-
     std::set<std::string> keyword_set;
-#ifdef _USE_BOOST
-    boost::split(keyword_set, keywords, boost::is_space());
-#else
-    std::vector<std::string> strvec_tmp;
-    strvec_tmp = my_split(keywords, ' ');
-    for (auto it = strvec_tmp.begin(); it != strvec_tmp.end(); ++it) {
-        keyword_set.insert(*it);
+
+    for (const auto &it : input_list) {
+        keyword_set.insert(it);
     }
-    strvec_tmp.clear();
-#endif
 
     var_dict.clear();
 
@@ -1013,12 +1004,12 @@ void Input::get_var_dict(const std::string keywords,
 #ifdef _USE_BOOST
                 std::string str_tmp = boost::trim_copy(*it);
 #else
-                std::string str_tmp = trim((*it));
+                std::string str_tmp = trim(*it);
 #endif
                 if (!str_tmp.empty()) {
 #ifdef _USE_BOOST
                     boost::split(str_varval, str_tmp, boost::is_any_of("="));
-#else 
+#else
                     str_varval = my_split(str_tmp, '=');
 #endif
                     if (str_varval.size() != 2) {
@@ -1080,14 +1071,14 @@ void Input::get_var_dict(const std::string keywords,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-            for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
+            for (auto &it : str_entry) {
 
                 // Split the input entry by '='
 
 #ifdef _USE_BOOST
                 std::string str_tmp = boost::trim_copy(*it);
 #else
-                std::string str_tmp = trim((*it));
+                std::string str_tmp = trim(it);
 #endif
                 if (!str_tmp.empty()) {
 #ifdef _USE_BOOST
@@ -1137,17 +1128,13 @@ void Input::get_var_dict(const std::string keywords,
 }
 
 
-bool Input::is_endof_entry(const std::string str)
+bool Input::is_endof_entry(const std::string str) const
 {
-    if (str[0] == '/') {
-        return true;
-    } else {
-        return false;
-    }
+    return str[0] == '/';
 }
 
 void Input::split_str_by_space(const std::string str,
-                               std::vector<std::string> &str_vec)
+                               std::vector<std::string> &str_vec) const
 {
     std::string str_tmp;
     std::istringstream is(str);
@@ -1177,9 +1164,8 @@ void Input::assign_val(T &val,
             val = boost::lexical_cast<T>(dict[key]);
         }
         catch (std::exception &e) {
-            std::string str_tmp;
             std::cout << e.what() << std::endl;
-            str_tmp = "Invalid entry for the " + key + " tag.\n";
+            std::string str_tmp = "Invalid entry for the " + key + " tag.\n";
             str_tmp += " Please check the input value.";
             error->exit("assign_val", str_tmp.c_str());
         }

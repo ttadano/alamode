@@ -31,27 +31,90 @@ using namespace PHON_NS;
 
 System::System(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
 }
 
 System::~System()
 {
-    memory->deallocate(xr_p);
-    memory->deallocate(xr_s);
-    memory->deallocate(xr_s_anharm);
-    memory->deallocate(kd);
-    memory->deallocate(kd_anharm);
-    memory->deallocate(xc);
-    memory->deallocate(mass);
-    memory->deallocate(map_p2s);
-    memory->deallocate(map_p2s_anharm);
-    memory->deallocate(map_s2p);
-    memory->deallocate(map_s2p_anharm);
-    memory->deallocate(mass_kd);
-    memory->deallocate(magmom);
-    if (fcs_phonon->update_fc2) {
+    deallocate_variables();
+}
+
+void System::set_default_variables()
+{
+    xr_p = nullptr;
+    xr_s = nullptr;
+    xc = nullptr;
+    xr_s_anharm = nullptr;
+    kd = nullptr;
+    kd_anharm = nullptr;
+    mass_kd = nullptr;
+    mass = nullptr;
+    mass_anharm = nullptr;
+    symbol_kd = nullptr;
+    map_p2s = nullptr;
+    map_p2s_anharm = nullptr;
+    map_p2s_anharm_orig = nullptr;
+    map_s2p = nullptr;
+    map_s2p_anharm = nullptr;
+    magmom = nullptr;
+    atomlist_class = nullptr;
+}
+
+void System::deallocate_variables()
+{
+    if (xr_p) {
+        memory->deallocate(xr_p);
+    }
+    if (xr_s) {
+        memory->deallocate(xr_s);
+    }
+    if (xc) {
+        memory->deallocate(xc);
+    }
+    if (xr_s_anharm) {
+        memory->deallocate(xr_s_anharm);
+    }
+    if (kd) {
+        memory->deallocate(kd);
+    }
+    if (kd_anharm) {
+        memory->deallocate(kd_anharm);
+    }
+    if (mass_kd) {
+        memory->deallocate(mass_kd);
+    }
+    if (mass) {
+        memory->deallocate(mass);
+    }
+    if (mass_anharm) {
+        memory->deallocate(mass_anharm);
+    }
+    if (symbol_kd) {
+        memory->deallocate(symbol_kd);
+    }
+    if (map_p2s) {
+        memory->deallocate(map_p2s);
+    }
+    if (map_p2s_anharm) {
+        memory->deallocate(map_p2s_anharm);
+    }
+    if (map_s2p) {
+        memory->deallocate(map_s2p);
+    }
+    if (map_s2p_anharm) {
+        memory->deallocate(map_s2p_anharm);
+    }
+    if (magmom) {
+        memory->deallocate(magmom);
+    }
+    if (map_p2s_anharm_orig) {
         memory->deallocate(map_p2s_anharm_orig);
     }
+    if (atomlist_class) {
+        memory->deallocate(atomlist_class);
+    }
 }
+
 
 void System::setup()
 {
@@ -62,6 +125,13 @@ void System::setup()
     unsigned int *kd_prim;
     double **xtmp;
 
+    if (mympi->my_rank == 0) {
+
+        if (!mass_kd) {
+            memory->allocate(mass_kd, nkd);
+            set_mass_elem_from_database(nkd, symbol_kd, mass_kd);
+        }
+    }
     load_system_info_from_XML();
 
     recips(lavec_s, rlavec_s);
@@ -252,7 +322,8 @@ void System::setup()
                 if (symmetry->trev_sym_mag) {
                     cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
                 } else {
-                    cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" << endl;
+                    cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" <<
+                        endl;
                 }
             }
             cout << endl;
@@ -311,7 +382,6 @@ void System::load_system_info_from_XML()
         int i;
         using namespace boost::property_tree;
         ptree pt;
-        int nkd_tmp;
 
         std::map<std::string, int> dict_atomic_kind;
 
@@ -330,7 +400,7 @@ void System::load_system_info_from_XML()
         nat = boost::lexical_cast<unsigned int>(
             get_value_from_xml(pt,
                                "Data.Structure.NumberOfAtoms"));
-        nkd_tmp = boost::lexical_cast<unsigned int>(
+        int nkd_tmp = boost::lexical_cast<unsigned int>(
             get_value_from_xml(pt,
                                "Data.Structure.NumberOfElements"));
 
@@ -353,7 +423,7 @@ void System::load_system_info_from_XML()
             ss.clear();
             ss << get_value_from_xml(pt,
                                      "Data.Structure.LatticeVector.a"
-                                     + boost::lexical_cast<std::string>(i + 1));
+                                     + std::to_string(i + 1));
             ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
         }
 
@@ -363,31 +433,31 @@ void System::load_system_info_from_XML()
         memory->allocate(kd, nat);
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-                const ptree &child = child_.second;
-                const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
-                dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-            }
+            const ptree &child = child_.second;
+            const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+        }
 
         unsigned int index;
 
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-                const ptree &child = child_.second;
-                const std::string str_index = child.get<std::string>("<xmlattr>.index");
-                const std::string str_element = child.get<std::string>("<xmlattr>.element");
+            const ptree &child = child_.second;
+            const std::string str_index = child.get<std::string>("<xmlattr>.index");
+            const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
-                ss.str("");
-                ss.clear();
-                ss << child.data();
+            ss.str("");
+            ss.clear();
+            ss << child.data();
 
-                index = boost::lexical_cast<unsigned int>(str_index) - 1;
+            index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                if (index >= nat)
-                    error->exit("load_system_info_xml",
-                                "index is out of range");
+            if (index >= nat)
+                error->exit("load_system_info_xml",
+                            "index is out of range");
 
-                kd[index] = dict_atomic_kind[str_element];
-                ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
-            }
+            kd[index] = dict_atomic_kind[str_element];
+            ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
+        }
 
         dict_atomic_kind.clear();
 
@@ -396,26 +466,24 @@ void System::load_system_info_from_XML()
         memory->allocate(map_p2s, natmin, ntran);
         memory->allocate(map_s2p, nat);
 
-        unsigned int tran, atom_p, atom_s;
-
         BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-                const ptree &child = child_.second;
-                const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
-                const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
+            const ptree &child = child_.second;
+            const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
+            const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
-                tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-                atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-                atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+            unsigned int tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+            unsigned int atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+            unsigned int atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
-                if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                    error->exit("load_system_info_xml",
-                                "index is out of range");
-                }
-
-                map_p2s[atom_p][tran] = atom_s;
-                map_s2p[atom_s].atom_num = atom_p;
-                map_s2p[atom_s].tran_num = tran;
+            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                error->exit("load_system_info_xml",
+                            "index is out of range");
             }
+
+            map_p2s[atom_p][tran] = atom_s;
+            map_s2p[atom_s].atom_num = atom_p;
+            map_s2p[atom_s].tran_num = tran;
+        }
 
         // Parse magnetic moments
 
@@ -426,25 +494,25 @@ void System::load_system_info_from_XML()
         lspin = true;
         try {
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
-                    if (child_.first == "mag") {
-                        const ptree &child = child_.second;
-                        const std::string str_index = child.get<std::string>("<xmlattr>.index");
+                if (child_.first == "mag") {
+                    const ptree &child = child_.second;
+                    const std::string str_index = child.get<std::string>("<xmlattr>.index");
 
-                        ss.str("");
-                        ss.clear();
-                        ss << child.data();
+                    ss.str("");
+                    ss.clear();
+                    ss << child.data();
 
-                        index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                        if (index >= nat)
-                            error->exit("load_system_info_xml",
-                                        "index is out of range");
+                    if (index >= nat)
+                        error->exit("load_system_info_xml",
+                                    "index is out of range");
 
-                        ss >> magmom_tmp[index][0]
-                            >> magmom_tmp[index][1]
-                            >> magmom_tmp[index][2];
-                    }
+                    ss >> magmom_tmp[index][0]
+                        >> magmom_tmp[index][1]
+                        >> magmom_tmp[index][2];
                 }
+            }
 
         }
         catch (...) {
@@ -514,8 +582,6 @@ void System::load_system_info_from_XML()
 
             // When FC2XML is given, structural information is updated only for harmonic terms.
 
-            int natmin_tmp;
-
             try {
                 read_xml(fcs_phonon->file_fc2, pt);
             }
@@ -543,7 +609,7 @@ void System::load_system_info_from_XML()
                 get_value_from_xml(pt,
                                    "Data.Symmetry.NumberOfTranslations"));
 
-            natmin_tmp = nat / ntran;
+            int natmin_tmp = nat / ntran;
 
             if (natmin_tmp != natmin)
                 error->exit("load_system_info_from_XML",
@@ -564,7 +630,7 @@ void System::load_system_info_from_XML()
                 ss.clear();
                 ss << get_value_from_xml(pt,
                                          "Data.Structure.LatticeVector.a"
-                                         + boost::lexical_cast<std::string>(i + 1));
+                                         + std::to_string(i + 1));
                 ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
 
@@ -574,31 +640,29 @@ void System::load_system_info_from_XML()
             memory->allocate(kd, nat);
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-                    const ptree &child = child_.second;
-                    const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
-                    dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-                }
-
-            unsigned int index;
+                const ptree &child = child_.second;
+                const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+                dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+            }
 
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-                    const ptree &child = child_.second;
-                    const std::string str_index = child.get<std::string>("<xmlattr>.index");
-                    const std::string str_element = child.get<std::string>("<xmlattr>.element");
+                const ptree &child = child_.second;
+                const std::string str_index = child.get<std::string>("<xmlattr>.index");
+                const std::string str_element = child.get<std::string>("<xmlattr>.element");
 
-                    ss.str("");
-                    ss.clear();
-                    ss << child.data();
+                ss.str("");
+                ss.clear();
+                ss << child.data();
 
-                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                unsigned int index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                    if (index >= nat)
-                        error->exit("load_system_info_xml",
-                                    "index is out of range");
+                if (index >= nat)
+                    error->exit("load_system_info_xml",
+                                "index is out of range");
 
-                    kd[index] = dict_atomic_kind[str_element];
-                    ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
-                }
+                kd[index] = dict_atomic_kind[str_element];
+                ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
+            }
 
             dict_atomic_kind.clear();
 
@@ -607,28 +671,25 @@ void System::load_system_info_from_XML()
             memory->allocate(map_p2s, natmin, ntran);
             memory->allocate(map_s2p, nat);
 
-            unsigned int tran, atom_p, atom_s;
-
             BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-                    const ptree &child = child_.second;
-                    const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
-                    const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
+                const ptree &child = child_.second;
+                const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
+                const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
 
-                    tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-                    atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-                    atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+                unsigned int tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+                unsigned int atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+                unsigned int atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
-                    if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                        error->exit("load_system_info_xml", "index is out of range");
-                    }
-
-                    map_p2s[atom_p][tran] = atom_s;
-                    map_s2p[atom_s].atom_num = atom_p;
-                    map_s2p[atom_s].tran_num = tran;
+                if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                    error->exit("load_system_info_xml", "index is out of range");
                 }
 
-
+                map_p2s[atom_p][tran] = atom_s;
+                map_s2p[atom_s].atom_num = atom_p;
+                map_s2p[atom_s].tran_num = tran;
+            }
         }
+
     }
 
     MPI_Bcast(&lavec_s[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -665,16 +726,16 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&kd_anharm[0], nat_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_p2s[0][0], natmin * ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_p2s_anharm[0][0], natmin * ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p[0], nat * sizeof(map_s2p[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof(map_s2p_anharm[0]), MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p[0], nat * sizeof map_s2p[0], MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof map_s2p_anharm[0], MPI_BYTE, 0, MPI_COMM_WORLD);
     if (lspin) MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 
-void System::recips(double vec[3][3], double inverse[3][3])
+void System::recips(double vec[3][3],
+                    double inverse[3][3]) const
 {
-    double det;
-    det = vec[0][0] * vec[1][1] * vec[2][2]
+    double det = vec[0][0] * vec[1][1] * vec[2][2]
         + vec[1][0] * vec[2][1] * vec[0][2]
         + vec[2][0] * vec[0][1] * vec[1][2]
         - vec[0][0] * vec[2][1] * vec[1][2]
@@ -700,11 +761,11 @@ void System::recips(double vec[3][3], double inverse[3][3])
     inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
 }
 
-double System::volume(double vec1[3], double vec2[3], double vec3[3])
+double System::volume(double vec1[3],
+                      double vec2[3],
+                      double vec3[3]) const
 {
-    double vol;
-
-    vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
+    double vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
         + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
         + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
 
@@ -751,8 +812,8 @@ void System::setup_atomic_class(unsigned int N,
                     atomlist_class[count].push_back(i);
                 }
             } else {
-                if ((kd[i] == (*it).element) &&
-                    (std::abs(magmom[i][2] - (*it).magmom) < eps6)) {
+                if (kd[i] == (*it).element &&
+                    std::abs(magmom[i][2] - (*it).magmom) < eps6) {
                     atomlist_class[count].push_back(i);
                 }
             }
@@ -771,8 +832,7 @@ void System::check_consistency_primitive_lattice()
     // This operation is necessary for obtaining correct computational results.
 
     int i, j, k;
-    int iloc;
-    double xdiff[3], norm;
+    double xdiff[3];
     double **x_harm, **x_anharm;
 
     memory->allocate(x_harm, natmin, 3);
@@ -795,7 +855,7 @@ void System::check_consistency_primitive_lattice()
 
     for (i = 0; i < natmin; ++i) {
 
-        iloc = -1;
+        int iloc = -1;
 
         for (j = 0; j < natmin; ++j) {
 
@@ -804,7 +864,7 @@ void System::check_consistency_primitive_lattice()
                 xdiff[k] = xdiff[k] - static_cast<double>(nint(xdiff[k]));
             }
 
-            norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
+            double norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
             if (norm < eps4 && kd[map_p2s[j][0]] == kd_anharm[map_p2s_anharm[i][0]]) {
                 iloc = j;
                 break;
@@ -856,4 +916,39 @@ void System::check_consistency_primitive_lattice()
 
     memory->deallocate(map_p2s_tmp);
     map_anh2harm.clear();
+}
+
+int System::get_atomic_number_by_name(const std::string kdname_in)
+{
+    std::string kdname_copy = kdname_in;
+    kdname_copy[0] = toupper(kdname_copy[0]);
+
+    int ret = -1;
+
+    for (int i = 0; i < element_names.size(); ++i) {
+        if (kdname_copy == element_names[i]) {
+            ret = i;
+            break;
+        }
+    }
+    return ret;
+}
+
+void System::set_mass_elem_from_database(const int nkd,
+                                         const std::string *symbol_in,
+                                         double *mass_kd_out)
+{
+    for (int i = 0; i < nkd; ++i) {
+        int atom_number = get_atomic_number_by_name(symbol_in[i]);
+        if (atom_number >= element_names.size() || atom_number == -1) {
+            error->exit("set_mass_elem_from_database",
+                        "Atomic mass for the given element doesn't exist in the database.\nTherefore, please input MASS manually.");
+        }
+        double mass_tmp = atomic_masses[atom_number];
+        if (mass_tmp < 0.0) {
+            error->exit("set_mass_elem_from_database",
+                        "One of the elements in the KD-tag is unstable. \nTherefore, please input MASS manually.");
+        }
+        mass_kd_out[i] = mass_tmp;
+    }
 }

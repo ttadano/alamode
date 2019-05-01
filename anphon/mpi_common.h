@@ -21,13 +21,17 @@
 
 namespace PHON_NS
 {
-    class MyMPI: protected Pointers
+    class MyMPI : protected Pointers
     {
     public:
-        MyMPI(class PHON *, MPI_Comm);
+        MyMPI(class PHON *,
+              MPI_Comm);
+
         ~MyMPI();
 
-        void MPI_Bcast_string(std::string &, int, MPI_Comm);
+        void MPI_Bcast_string(std::string &,
+                              int,
+                              MPI_Comm) const;
 
         int my_rank;
         int nprocs;

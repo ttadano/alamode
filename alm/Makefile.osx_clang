@@ -1,0 +1,50 @@
+.SUFFIXES: .h .cpp
+#-----------------------------------------------
+# Makefile for the program 'ALM'.
+# Please modify the variables properly.
+# We recommend to use Intel c++ compiler.
+#-----------------------------------------------
+
+# Use clang++ to use hdf5 installed via homebrew
+CXX = g++
+CXXFLAGS = -O2 -std=c++11
+INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
+
+CXXL = ${CXX}
+LDFLAGS = -L$(SPGLIB_ROOT)/lib -lsymspg
+#LDFLAGS = -L/usr/local/lib -lhdf5_cpp -lhdf5 -lsymspg
+
+LAPACK = -llapack -lblas
+LIBS = ${LAPACK}
+
+#-----------------------------------------------
+# General rules 
+#-----------------------------------------------
+
+.cpp.o:
+	${CXX} ${CXXFLAGS} ${INCLUDE} -c $<
+
+PROG = alm
+
+CXXSRC= alm.cpp alm_cui.cpp input_parser.cpp input_setter.cpp constraint.cpp fcs.cpp files.cpp \
+	optimize.cpp cluster.cpp main.cpp rref.cpp \
+	patterndisp.cpp symmetry.cpp system.cpp timer.cpp writer.cpp 
+
+OBJS= ${CXXSRC:.cpp=.o}
+
+default: alm
+
+all: ${PROG}
+
+alm: ${OBJS}
+	${CXXL} ${LDFLAGS} -o $@ ${OBJS} ${LIBS}
+
+clean:
+	rm -f ${OBJS}
+
+.PHONY: clean
+
+depend:
+	gcc -MM *.cpp > .depend
+
+-include .depend

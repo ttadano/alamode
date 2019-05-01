@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <vector>
 
 template <typename T>
 inline void matmul3(T ret[3][3], const T amat[3][3], const T bmat[3][3]) {
@@ -42,7 +43,7 @@ inline void transpose3(double ret[3][3], const double mat[3][3])
 	}
 }
 
-inline void rotvec(double vec_out[3], double vec_in[3], double mat[3][3], char mode = 'N')
+inline void rotvec(double vec_out[3], double vec_in[3], const double mat[3][3], char mode = 'N')
 {
 	// Perform matrix x vector multiplication. 
 	//
@@ -100,7 +101,7 @@ inline void rotvec(double vec_out[3], double vec_in[3], double **mat, char mode 
 	}
 }
 
-inline void invmat3(double invmat[3][3], double mat[3][3])
+inline void invmat3(double invmat[3][3], const double mat[3][3])
 {
 	unsigned int i, j;
 	double det;
@@ -172,4 +173,40 @@ inline void invmat3_i(int invmat[3][3], int mat[3][3])
 inline int nint(double x)
 {
 	return int(x + 0.5 - (x < 0.0));
+}
+
+template <typename T>
+void insort(int n, T *arr)
+{
+    int i, j;
+    T tmp;
+
+    for (i = 1; i < n; ++i) {
+        tmp = arr[i];
+        for (j = i - 1; j >= 0 && arr[j] > tmp; --j) {
+            arr[j + 1] = arr[j];
+        }
+        arr[j + 1] = tmp;
+    }
+}
+
+inline void sort_tail(const int n, int *arr)
+{
+    int i, m;
+
+    m = n - 1;
+    int *ind_tmp;
+
+    ind_tmp = new int[m];
+
+    for (i = 0; i < m; ++i) {
+        ind_tmp[i] = arr[i + 1];
+    }
+
+    insort(m, ind_tmp);
+
+    for (i = 0; i < m; ++i) {
+        arr[i + 1] = ind_tmp[i];
+    }
+    delete [] ind_tmp;
 }

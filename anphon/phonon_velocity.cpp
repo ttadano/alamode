@@ -9,23 +9,35 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
-#include <complex>
-#include <iomanip>
-#include "fcs_phonon.h"
 #include "phonon_velocity.h"
-#include "kpoint.h"
-#include "memory.h"
-#include "dynamical.h"
-#include "system.h"
-#include "error.h"
-#include "write_phonons.h"
 #include "constants.h"
+#include "dynamical.h"
+#include "error.h"
+#include "fcs_phonon.h"
+#include "kpoint.h"
 #include "mathfunctions.h"
+#include "memory.h"
+#include "system.h"
+#include <complex>
 
 using namespace PHON_NS;
 
 Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon)
 {
+    set_default_variables();
+}
+
+Phonon_velocity::~Phonon_velocity()
+{
+    deallocate_variables();
+}
+
+void Phonon_velocity::set_default_variables()
+{
+    print_velocity = false;
+    phvel = nullptr;
+    phvel_xyz = nullptr;
+
     memory->allocate(xshift_s, 27, 3);
 
     for (int i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
@@ -45,19 +57,19 @@ Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon)
     }
 }
 
-Phonon_velocity::~Phonon_velocity()
+void Phonon_velocity::deallocate_variables()
 {
-    if (phon->mode == "PHONONS") {
-        if (print_velocity) {
-            memory->deallocate(phvel);
-
-            if (print_velocity_xyz) {
-                memory->deallocate(phvel_xyz);
-            }
-        }
+    if (phvel) {
+        memory->deallocate(phvel);
     }
-    memory->deallocate(xshift_s);
+    if (phvel_xyz) {
+        memory->deallocate(phvel_xyz);
+    }
+    if (xshift_s) {
+        memory->deallocate(xshift_s);
+    }
 }
+
 
 void Phonon_velocity::calc_group_velocity(const int kpmode)
 {
@@ -87,10 +99,9 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
 void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
 {
     unsigned int i;
-    unsigned int ik, idiff;
+    unsigned int idiff;
     unsigned int nk = kpoint->nk;
     unsigned int n = dynamical->neval;
-    unsigned int ndiff;
     double **xk_shift;
     double *xk_tmp;
     double **omega_shift, *omega_tmp;
@@ -105,7 +116,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
         std::cout << " Calculating group velocities of phonon along given k path ... ";
     }
 
-    ndiff = 2;
+    unsigned int ndiff = 2;
     memory->allocate(xk_shift, ndiff, 3);
     memory->allocate(omega_shift, ndiff, n);
     memory->allocate(omega_tmp, ndiff);
@@ -113,7 +124,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
     memory->allocate(xk_tmp, 3);
 
 
-    for (ik = 0; ik < nk; ++ik) {
+    for (unsigned int ik = 0; ik < nk; ++ik) {
 
         // Represent the given kpoint in Cartesian coordinate
         rotvec(xk_tmp, kpoint->xk[ik], system->rlavec_p, 'T');
@@ -167,7 +178,6 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out)
 void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
                                            double ***phvel3_out)
 {
-    unsigned int i, j, k;
     unsigned int nk = kpoint->nk;
     unsigned int ns = dynamical->neval;
     double **vel;
@@ -178,16 +188,16 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
 
     memory->allocate(vel, ns, 3);
 
-    for (i = 0; i < nk; ++i) {
+    for (unsigned int i = 0; i < nk; ++i) {
         phonon_vel_k(kpoint->xk[i], vel);
         //        phonon_vel_k2(kpoint->xk[i],
         //                      dynamical->eval_phonon[i],
         //                      dynamical->evec_phonon[i],
         //                      vel);
 
-        for (j = 0; j < ns; ++j) {
+        for (unsigned int j = 0; j < ns; ++j) {
             rotvec(vel[j], vel[j], system->lavec_p);
-            for (k = 0; k < 3; ++k) {
+            for (unsigned int k = 0; k < 3; ++k) {
                 vel[j][k] /= 2.0 * pi;
                 phvel3_out[i][j][k] = vel[j][k];
             }
@@ -204,21 +214,19 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
     }
 }
 
-void Phonon_velocity::phonon_vel_k(double *xk_in,
+void Phonon_velocity::phonon_vel_k(const double *xk_in,
                                    double **vel_out)
 {
-    unsigned int i, j;
+    unsigned int j;
     unsigned int idiff;
-    unsigned int ndiff;
     unsigned int n = dynamical->neval;
     double **xk_shift;
     std::complex<double> **evec_tmp;
     double **omega_shift, *omega_tmp;
     double **kvec_na_tmp;
-    double norm;
     double h = 1.0e-4;
 
-    ndiff = 2;
+    unsigned int ndiff = 2;
 
     memory->allocate(omega_shift, ndiff, n);
     memory->allocate(xk_shift, ndiff, 3);
@@ -226,7 +234,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in,
     memory->allocate(evec_tmp, 1, 1);
     memory->allocate(kvec_na_tmp, 2, 3);
 
-    for (i = 0; i < 3; ++i) {
+    for (unsigned int i = 0; i < 3; ++i) {
 
         for (j = 0; j < 3; ++j) {
             xk_shift[0][j] = xk_in[j];
@@ -244,7 +252,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in,
         rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->rlavec_p, 'T');
         rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
 
-        norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
+        double norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
             + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
             + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
 
@@ -284,7 +292,7 @@ void Phonon_velocity::phonon_vel_k(double *xk_in,
 
 double Phonon_velocity::diff(double *f,
                              const unsigned int n,
-                             double h)
+                             double h) const
 {
     double df;
 
@@ -297,12 +305,12 @@ double Phonon_velocity::diff(double *f,
     return df;
 }
 
-void Phonon_velocity::phonon_vel_k2(double *xk_in,
-                                    double *omega_in,
+void Phonon_velocity::phonon_vel_k2(const double *xk_in,
+                                    const double *omega_in,
                                     std::complex<double> **evec_in,
                                     double **vel_out)
 {
-    unsigned int i, j, k, l, m;
+    unsigned int i, j, l, m;
     unsigned int icrd;
     int nmode = 3 * system->natmin;
 
@@ -316,7 +324,8 @@ void Phonon_velocity::phonon_vel_k2(double *xk_in,
 
     if (dynamical->nonanalytic) {
 
-        error->exit("phonon_vel_k2", "Sorry. Analytic calculation of \
+        error->exit("phonon_vel_k2",
+                    "Sorry. Analytic calculation of \
             group velocity is not supported for NONANALYTIC>0.");
 
     }
@@ -333,15 +342,14 @@ void Phonon_velocity::phonon_vel_k2(double *xk_in,
         double tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
 
         std::vector<int> degeneracy_at_k;
-        double omega_now, omega_prev;
 
         degeneracy_at_k.clear();
 
-        omega_prev = omega_in[0];
+        double omega_prev = omega_in[0];
         int ideg = 1;
 
         for (i = 1; i < nmode; ++i) {
-            omega_now = omega_in[i];
+            double omega_now = omega_in[i];
 
             if (std::abs(omega_now - omega_prev) < tol_omega) {
                 ++ideg;
@@ -388,7 +396,7 @@ void Phonon_velocity::phonon_vel_k2(double *xk_in,
                 for (icrd = 0; icrd < 3; ++icrd) {
 
                     for (j = 0; j < ideg; ++j) {
-                        for (k = 0; k < ideg; ++k) {
+                        for (unsigned int k = 0; k < ideg; ++k) {
                             mat_tmp[icrd][j][k] = czero;
 
                             for (l = 0; l < nmode; ++l) {
@@ -464,20 +472,15 @@ void Phonon_velocity::phonon_vel_k2(double *xk_in,
 }
 
 
-void Phonon_velocity::calc_derivative_dynmat_k(double *xk_in,
-                                               std::vector<FcsClassExtent> fc2_in,
-                                               std::complex<double> ***ddyn_out)
+void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
+                                               const std::vector<FcsClassExtent> &fc2_in,
+                                               std::complex<double> ***ddyn_out) const
 {
     int i, j, k;
-    unsigned int atm1_s, atm2_s;
-    unsigned int atm1_p, atm2_p;
-    unsigned int xyz1, xyz2;
-    unsigned int icell;
 
     int nmode = 3 * system->natmin;
 
     double vec[3];
-    double phase;
     std::complex<double> im(0.0, 1.0);
 
     for (k = 0; k < 3; ++k) {
@@ -488,16 +491,16 @@ void Phonon_velocity::calc_derivative_dynmat_k(double *xk_in,
         }
     }
 
-    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
+    for (const auto &it : fc2_in) {
 
-        atm1_p = (*it).atm1;
-        atm2_s = (*it).atm2;
-        xyz1 = (*it).xyz1;
-        xyz2 = (*it).xyz2;
-        icell = (*it).cell_s;
+        unsigned int atm1_p = it.atm1;
+        unsigned int atm2_s = it.atm2;
+        unsigned int xyz1 = it.xyz1;
+        unsigned int xyz2 = it.xyz2;
+        unsigned int icell = it.cell_s;
 
-        atm1_s = system->map_p2s[atm1_p][0];
-        atm2_p = system->map_s2p[atm2_s].atom_num;
+        unsigned int atm1_s = system->map_p2s[atm1_p][0];
+        unsigned int atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
@@ -507,11 +510,12 @@ void Phonon_velocity::calc_derivative_dynmat_k(double *xk_in,
         rotvec(vec, vec, system->lavec_s);
         rotvec(vec, vec, system->rlavec_p);
 
-        phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+        double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         for (k = 0; k < 3; ++k) {
             ddyn_out[k][3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += (*it).fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+                += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
+                    system->mass[atm1_s] * system->mass[atm2_s]);
         }
 
     }
@@ -528,9 +532,8 @@ void Phonon_velocity::calc_derivative_dynmat_k(double *xk_in,
 
 void Phonon_velocity::diagonalize_hermite_mat(const int n,
                                               std::complex<double> **mat_in,
-                                              double *eval_out)
+                                              double *eval_out) const
 {
-    int i, j, k;
     std::complex<double> *mat_1D;
     int LWORK = (2 * n - 1) * 10;
     int INFO;
@@ -544,9 +547,9 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
     memory->allocate(RWORK, 3 * n - 2);
     memory->allocate(WORK, LWORK);
 
-    k = 0;
-    for (j = 0; j < n; ++j) {
-        for (i = 0; i < n; ++i) {
+    int k = 0;
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
             mat_1D[k++] = mat_in[i][j];
         }
     }

@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Binaries
-
-LAMMPS=${HOME}/src/lammps/src/lmp_serial
+# Please modify the following paths appropriately
+#export LD_LIBRARY_PATH=/Users/tadano/src/spglib/lib/:$LD_LIBRARY_PATH
+# Binaries 
+#LAMMPS=${HOME}/src/lammps/src/lmp_serial
+LAMMPS=/usr/local/bin/lmp
 ALAMODE_ROOT=${HOME}/Work/alamode/
 
 # Generate displacement patterns
@@ -117,8 +119,7 @@ for ((i=1; i<=1; i++))
 do
    cp harm${i}.lammps tmp.lammps
    $LAMMPS < in.sw >> run.log
-   mv COORD COORD.harm${i}
-   mv FORCE FORCE.harm${i}
+   mv XFSET XFSET.harm${i}
 done
 
 for ((i=1; i<=20; i++))
@@ -126,15 +127,12 @@ do
    suffix=`echo ${i} | awk '{printf("%02d", $1)}'`
    cp cubic${suffix}.lammps tmp.lammps
    $LAMMPS < in.sw >> run.log
-   mv COORD COORD.cubic${suffix}
-   mv FORCE FORCE.cubic${suffix}
+   mv XFSET XFSET.cubic${suffix}
 done
 
 # Collect data
-python ${ALAMODE_ROOT}/tools/extract.py --LAMMPS ../Si222.lammps --get disp  COORD.harm* > disp_harm.dat
-python ${ALAMODE_ROOT}/tools/extract.py --LAMMPS ../Si222.lammps --get force FORCE.harm* > force_harm.dat
-python ${ALAMODE_ROOT}/tools/extract.py --LAMMPS ../Si222.lammps --get disp  COORD.cubic* > disp_cubic.dat
-python ${ALAMODE_ROOT}/tools/extract.py --LAMMPS ../Si222.lammps --get force FORCE.cubic* > force_cubic.dat
+python ${ALAMODE_ROOT}/tools/extract.py --LAMMPS ../Si222.lammps XFSET.harm* > DFSET_harmonic
+python ${ALAMODE_ROOT}/tools/extract.py --LAMMPS ../Si222.lammps XFSET.cubic* > DFSET_cubic
 
 cd ../
 
@@ -142,15 +140,13 @@ cd ../
 cat << EOF > si_alm1.in
 &general
   PREFIX = si222_harm
-  MODE = fitting
+  MODE = optimize
   NAT = 64; NKD = 1
   KD = Si
 /
 
-&fitting
- NDATA = 1
- DFILE = displace/disp_harm.dat
- FFILE = displace/force_harm.dat
+&optimize
+ DFSET = displace/DFSET_harmonic
 /
 
 &interaction
@@ -243,15 +239,13 @@ ${ALAMODE_ROOT}/alm/alm si_alm1.in >> alm.log
 cat << EOF > si_alm2.in
 &general
   PREFIX = si222_cubic
-  MODE = fitting
+  MODE = optimize
   NAT = 64; NKD = 1
   KD = Si
 /
 
-&fitting
- NDATA = 20
- DFILE = displace/disp_cubic.dat
- FFILE = displace/force_cubic.dat
+&optimize
+ DFSET = displace/DFSET_cubic
  FC2XML = si222_harm.xml
 /
 
@@ -395,4 +389,4 @@ cat << EOF > RTA.in
 
 EOF
 
-mpirun -np 4 ${ALAMODE_ROOT}/anphon/anphon RTA.in > RTA.log
+mpirun -np 1 ${ALAMODE_ROOT}/anphon/anphon RTA.in > RTA.log

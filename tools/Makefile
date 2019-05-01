@@ -8,10 +8,13 @@
 #Intel compiler
 #CXX = icpc
 
-# OSX
+# OSX (gcc)
 CXX = g++-8
 
-CXXFLAGS = -O2 
+# OSX (clang)
+#CXX = g++
+
+CXXFLAGS = -O2 -std=c++11
 
 # Add the directory containing boost header files here
 INCLUDE = -I../include -I$(HOME)/include

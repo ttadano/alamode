@@ -9,26 +9,25 @@
 */
 
 #include "mpi_common.h"
-#include <iostream>
 #include <string>
 #include <cstring>
 
 using namespace PHON_NS;
 
-MyMPI::MyMPI(PHON *phon, MPI_Comm comm): Pointers(phon)
+MyMPI::MyMPI(PHON *phon,
+             MPI_Comm comm): Pointers(phon)
 {
     MPI_Comm_rank(comm, &my_rank);
     MPI_Comm_size(comm, &nprocs);
 }
 
-MyMPI::~MyMPI()
-{
-}
+MyMPI::~MyMPI() {}
 
-void MyMPI::MPI_Bcast_string(std::string &str, int root, MPI_Comm comm)
+void MyMPI::MPI_Bcast_string(std::string &str,
+                             int root,
+                             MPI_Comm comm) const
 {
-    int len;
-    len = str.length();
+    int len = str.length();
     MPI_Bcast(&len, 1, MPI_INT, 0, comm);
 
     // limited to 512 characters
