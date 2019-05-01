@@ -237,7 +237,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         std::cout << '\n';
         std::cout << " Running postprocess of SCPH (calculation of free energy, MSD, DOS)" << std::endl;
         std::cout << " The number of temperature points: " << std::setw(4) << NT << std::endl;
-        std::cout << std::setw(3);
+        std::cout << "   ";
 
         std::complex<double> ***evec_tmp = nullptr;
 
