@@ -45,6 +45,7 @@ Conductivity::~Conductivity()
 void Conductivity::set_default_variables()
 {
     calc_kappa_spec = 0;
+    ntemp = 0;
     damping3 = nullptr;
     kappa = nullptr;
     kappa_spec = nullptr;
@@ -78,16 +79,22 @@ void Conductivity::setup_kappa()
 
     nk = kpoint->nk;
     ns = dynamical->neval;
-    //const auto tempinfo = thermodynamics->get_temperature_info();
+
+    ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    memory->allocate(Temperature, ntemp);
+
+    for (i = 0; i < ntemp; ++i) {
+        Temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
+    }
 
     unsigned int nks_total = kpoint->nk_irred * ns;
     unsigned int nks_each_thread = nks_total / mympi->nprocs;
     unsigned int nrem = nks_total - nks_each_thread * mympi->nprocs;
 
     if (nrem > 0) {
-        memory->allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, thermodynamics->ntemp);
+        memory->allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, ntemp);
     } else {
-        memory->allocate(damping3, nks_total, thermodynamics->ntemp);
+        memory->allocate(damping3, nks_total, ntemp);
     }
 
     if (mympi->my_rank == 0) {
@@ -164,7 +171,7 @@ void Conductivity::prepare_restart()
                         writes->fs_result >> vel_dummy[0] >> vel_dummy[1] >> vel_dummy[2];
                     }
 
-                    for (i = 0; i < thermodynamics->ntemp; ++i) {
+                    for (i = 0; i < ntemp; ++i) {
                         writes->fs_result >> damping3[nks_tmp][i];
                         damping3[nks_tmp][i] *= time_ry / Hz_to_kayser;
                     }
@@ -221,7 +228,6 @@ void Conductivity::calc_anharmonic_imagself()
     unsigned int *nks_thread;
     double *damping3_loc;
 
-    const auto ntemp = thermodynamics->ntemp;
 
     // Distribute (k,s) to individual MPI threads
 
@@ -346,7 +352,7 @@ void Conductivity::write_result_gamma(const unsigned int ik,
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
         }
 
-        for (k = 0; k < thermodynamics->ntemp; ++k) {
+        for (k = 0; k < ntemp; ++k) {
             writes->fs_result << std::setw(15)
                 << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
         }
@@ -361,7 +367,6 @@ void Conductivity::compute_kappa()
     unsigned int iks;
 
     double factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
-    const auto ntemp = thermodynamics->ntemp;
 
     if (mympi->my_rank == 0) {
 

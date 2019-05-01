@@ -353,7 +353,9 @@ void System::setup()
     for (i = 0; i < nat_anharm; ++i) {
         mass_anharm[i] = mass_kd[kd_anharm[i]] * amu_ry;
     }
-
+    MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     memory->allocate(kd_prim, natmin);

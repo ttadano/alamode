@@ -470,7 +470,7 @@ void Dynamical::calc_analytic_k(double *xk_in,
 {
     int i;
 
-    const auto nmode = 3 * system->natmin;
+    auto nmode = 3 * system->natmin;
 
     double vec[3];
     std::complex<double> im(0.0, 1.0);
@@ -485,14 +485,14 @@ void Dynamical::calc_analytic_k(double *xk_in,
 
     for (const auto &it : fc2_in) {
 
-        const auto atm1_p = it.atm1;
-        const auto atm2_s = it.atm2;
-        const auto xyz1 = it.xyz1;
-        const auto xyz2 = it.xyz2;
-        const auto icell = it.cell_s;
+        unsigned int atm1_p = it.atm1;
+        unsigned int atm2_s = it.atm2;
+        unsigned int xyz1 = it.xyz1;
+        unsigned int xyz2 = it.xyz2;
+        unsigned int icell = it.cell_s;
 
-        const auto atm1_s = system->map_p2s[atm1_p][0];
-        const auto atm2_p = system->map_s2p[atm2_s].atom_num;
+        unsigned int atm1_s = system->map_p2s[atm1_p][0];
+        unsigned int atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
@@ -502,7 +502,7 @@ void Dynamical::calc_analytic_k(double *xk_in,
         rotvec(vec, vec, system->lavec_s);
         rotvec(vec, vec, system->rlavec_p);
 
-        auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+        double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
             += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
@@ -512,14 +512,14 @@ void Dynamical::calc_analytic_k(double *xk_in,
 
 void Dynamical::calc_nonanalytic_k(double *xk_in,
                                    double *kvec_na_in,
-                                   std::complex<double> **dymat_na_out) const
+                                   std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by Parlinski's method.
 
     unsigned int i, j;
     unsigned int iat, jat;
-    const auto natmin = system->natmin;
+    unsigned int natmin = system->natmin;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
@@ -613,7 +613,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 
 void Dynamical::calc_nonanalytic_k2(double *xk_in,
                                     double *kvec_na_in,
-                                    std::complex<double> **dymat_na_out) const
+                                    std::complex<double> **dymat_na_out)
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by the mixed-space approach.

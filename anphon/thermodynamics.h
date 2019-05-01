@@ -17,36 +17,6 @@
 
 namespace PHON_NS
 {
-    class temperature_information
-    {
-    public:
-        double tmin{}, tmax{}, delta_t{};
-        size_t number_of_grids{};
-        std::vector<double> temperature_grid;
-
-        ~temperature_information() = default;
-
-        temperature_information(const double tmin_,
-                                const double tmax_,
-                                const double delta_t_)
-        {
-            tmin = tmin_;
-            tmax = tmax_;
-            delta_t = delta_t_;
-            number_of_grids = static_cast<unsigned int>((tmax - tmin) / delta_t) + 1;
-            temperature_grid.resize(number_of_grids);
-
-            for (auto i = 0; i < number_of_grids; ++i) {
-                temperature_grid[i] = tmin + static_cast<double>(i) * delta_t;
-            }
-        }
-
-        temperature_information& operator=(const temperature_information &obj)
-        {
-            return *this;
-        }
-    };
-
     class Thermodynamics : protected Pointers
     {
     public:
@@ -59,18 +29,7 @@ namespace PHON_NS
         bool calc_FE_bubble;
         double *FE_bubble;
 
-        double tmin;
-        double tmax;
-        double delta_t;
-        unsigned int ntemp;
-        std::vector<double> tempgrid;
-
         void setup();
-        void set_temperature_info(const double tmin_in,
-                                  const double tmax_in,
-                                  const double dt_in);
-
-        //    temperature_information get_temperature_info() const;
 
         double Cv(const double omega,
                   const double temp_in) const;
@@ -139,13 +98,10 @@ namespace PHON_NS
 
         void compute_FE_bubble_SCPH(double ***eval_in,
                                     std::complex<double> ****evec_in,
-                                    double *FE_bubble) const;
+                                    double *FE_bubble);
 
         double FE_scph_correction(unsigned int,
                                   double **,
                                   std::complex<double> ***) const;
-
-        //private:
-        //    temperature_information tempinfo;
     };
 }

@@ -75,6 +75,8 @@ namespace PHON_NS
         std::string *symbol_kd;
         double *mass_kd, *mass, *mass_anharm;
 
+        double Tmin, Tmax, dT;
+
         double volume(double [3],
                       double [3],
                       double [3]) const;
