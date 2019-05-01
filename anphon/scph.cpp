@@ -1987,86 +1987,86 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
     const auto nk2 = kmesh_orig[1];
     const auto nk3 = kmesh_orig[2];
 
-        double *eval_real;
-        std::complex<double> **mat_tmp;
-        std::complex<double> **mat_harmonic, **mat_harmonic_na;
-        std::vector<double> eval_vec(ns);
+    double *eval_real;
+    std::complex<double> **mat_tmp;
+    std::complex<double> **mat_harmonic, **mat_harmonic_na;
+    std::vector<double> eval_vec(ns);
 
-        memory->allocate(mat_tmp, ns, ns);
-        memory->allocate(eval_real, ns);
-        memory->allocate(mat_harmonic, ns, ns);
+    memory->allocate(mat_tmp, ns, ns);
+    memory->allocate(eval_real, ns);
+    memory->allocate(mat_harmonic, ns, ns);
 
-        if (dynamical->nonanalytic) {
-            memory->allocate(mat_harmonic_na, ns, ns);
+    if (dynamical->nonanalytic) {
+        memory->allocate(mat_harmonic_na, ns, ns);
+    }
+
+    for (int ik = 0; ik < nk_dense; ++ik) {
+
+        if (dynamical->nonanalytic == 3) {
+            dynamical->calc_analytic_k(xk_dense[ik],
+                                       ewald->fc2_without_dipole,
+                                       mat_harmonic);
+        } else {
+            dynamical->calc_analytic_k(xk_dense[ik],
+                                       fcs_phonon->fc2_ext,
+                                       mat_harmonic);
         }
 
-        for (int ik = 0; ik < nk_dense; ++ik) {
+        r2q(xk_dense[ik], nk1, nk2, nk3, ns, dymat_r, mat_tmp);
 
-            if (dynamical->nonanalytic == 3) {
-                dynamical->calc_analytic_k(xk_dense[ik],
-                                           ewald->fc2_without_dipole,
-                                           mat_harmonic);
-            } else {
-                dynamical->calc_analytic_k(xk_dense[ik],
-                                           fcs_phonon->fc2_ext,
-                                           mat_harmonic);
+        for (i = 0; i < ns; ++i) {
+            for (j = 0; j < ns; ++j) {
+                mat_tmp[i][j] += mat_harmonic[i][j];
             }
+        }
 
-            r2q(xk_dense[ik], nk1, nk2, nk3, ns, dymat_r, mat_tmp);
+        if (dynamical->nonanalytic) {
+
+            if (dynamical->nonanalytic == 1) {
+                dynamical->calc_nonanalytic_k(xk_dense[ik],
+                                              kvec_dense[ik],
+                                              mat_harmonic_na);
+            } else if (dynamical->nonanalytic == 2) {
+                dynamical->calc_nonanalytic_k2(xk_dense[ik],
+                                               kvec_dense[ik],
+                                               mat_harmonic_na);
+
+            } else if (dynamical->nonanalytic == 3) {
+                ewald->add_longrange_matrix(xk_dense[ik],
+                                            kvec_dense[ik],
+                                            mat_harmonic_na);
+            }
 
             for (i = 0; i < ns; ++i) {
                 for (j = 0; j < ns; ++j) {
-                    mat_tmp[i][j] += mat_harmonic[i][j];
+                    mat_tmp[i][j] += mat_harmonic_na[i][j];
                 }
             }
-
-            if (dynamical->nonanalytic) {
-
-                if (dynamical->nonanalytic == 1) {
-                    dynamical->calc_nonanalytic_k(xk_dense[ik],
-                                                  kvec_dense[ik],
-                                                  mat_harmonic_na);
-                } else if (dynamical->nonanalytic == 2) {
-                    dynamical->calc_nonanalytic_k2(xk_dense[ik],
-                                                   kvec_dense[ik],
-                                                   mat_harmonic_na);
-
-                } else if (dynamical->nonanalytic == 3) {
-                    ewald->add_longrange_matrix(xk_dense[ik],
-                                                kvec_dense[ik],
-                                                mat_harmonic_na);
-                }
-
-                for (i = 0; i < ns; ++i) {
-                    for (j = 0; j < ns; ++j) {
-                        mat_tmp[i][j] += mat_harmonic_na[i][j];
-                    }
-                }
-            }
-
-            diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
-
-            for (is = 0; is < ns; ++is) {
-                const auto eval_tmp = eval_real[is];
-
-                if (eval_tmp < 0.0) {
-                    eval_vec[is] = -std::sqrt(-eval_tmp);
-                } else {
-                    eval_vec[is] = std::sqrt(eval_tmp);
-                }
-            }
-
-            for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
-
         }
 
-        memory->deallocate(eval_real);
-        memory->deallocate(mat_tmp);
-        memory->deallocate(mat_harmonic);
+        diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
 
-        if (dynamical->nonanalytic) {
-            memory->deallocate(mat_harmonic_na);
+        for (is = 0; is < ns; ++is) {
+            const auto eval_tmp = eval_real[is];
+
+            if (eval_tmp < 0.0) {
+                eval_vec[is] = -std::sqrt(-eval_tmp);
+            } else {
+                eval_vec[is] = std::sqrt(eval_tmp);
+            }
         }
+
+        for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+
+    }
+
+    memory->deallocate(eval_real);
+    memory->deallocate(mat_tmp);
+    memory->deallocate(mat_harmonic);
+
+    if (dynamical->nonanalytic) {
+        memory->deallocate(mat_harmonic_na);
+    }
 }
 
 
@@ -2916,10 +2916,10 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
             + nk_ref * ns * NT * sizeof(double);
 
         const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
-         std::cout << "  Estimated memory usage per MPI process: " << std::setw(10) 
-        << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
+        std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
+            << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
 
-         std::cout << "  To avoid possible faults associated with insufficient memory,\n"
+        std::cout << "  To avoid possible faults associated with insufficient memory,\n"
             "  please reduce the number of MPI processes per node and/or\n"
             "  the number of temperagure grids.\n\n";
     }
@@ -2939,9 +2939,9 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                            eval[iT],
                            evec[iT]);
     }
-    
+
     thermodynamics->compute_FE_bubble_SCPH(eval, evec, thermodynamics->FE_bubble);
-    
+
     memory->deallocate(eval);
     memory->deallocate(evec);
 

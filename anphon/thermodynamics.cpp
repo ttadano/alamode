@@ -694,7 +694,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
     for (iT = 0; iT < NT; ++iT) {
         FE_bubble[iT] *= factor;
     }
-    
+
     memory->deallocate(FE_local);
     memory->deallocate(FE_tmp);
 }
