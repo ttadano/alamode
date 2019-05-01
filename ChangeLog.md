@@ -1,3 +1,36 @@
+# Ver. 1.1.0 (2019-5-1)
+
+## New
+
+- An interface to OpenMX code (contributed by Yuto Tanaka)
+- Compressive sensing approach (``LMODEL = enet``) in alm code. Many new variables related to the compressive sensing are also added. See the document page for details.
+- ``SPARSE`` and ``SPARSESOLVER`` tags in alm code
+- ``DOS``-tag in anphon code
+- A python script scph_to_qe.py that converts the result of a SCPH calculation to Quantum ESPRESSO force-constant format.
+
+## Changes
+
+- Default value of ``ICONST`` is changed to ``ICONST = 11``
+- Python scripts now work with python3 as well as python2
+- Python interface scripts are move to tools/interface
+- Default values for ``MASS``- and ``ISOFACT``-tags are implemented
+- Implement a sparse version of rref, which improves the performance of alm significantly.
+- Performance improvements of anphon code.
+- ``DFILE`` and ``FFILE`` in alm code are now deprecated. Use ``DFSET`` instead.
+- ``&fitting`` field in alm is replaced with ``&optimize`` field.
+
+## Fix
+
+- Fix a minor bug in calc_damping_tetrahedron. The phonon linewidths at high temperatures and the thermal conductivityies were not affected by this minor error. In very low temperature region (< 10 K), the thermal conductivity may have been underestimated.
+- Fix other minor bugs
+
+# Ver. 1.0.1 (2017-11-21)
+
+## Fix
+- Fixed a minor issue in the previous version
+
+
+
 # Ver. 1.0.2 (2018-1-29)
 
 ## New
