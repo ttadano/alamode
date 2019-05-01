@@ -239,7 +239,6 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         std::cout << " The number of temperature points: " << std::setw(4) << NT << std::endl;
         std::cout << std::setw(3);
 
-
         std::complex<double> ***evec_tmp = nullptr;
 
         memory->allocate(eval_anharm, NT, nk_ref, ns);
@@ -345,6 +344,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                 std::cout << std::setw(3);
             }
         }
+        std::cout << "\n\n";
 
         if (kpoint->kpoint_mode == 0) {
             writes->write_scph_energy(eval_anharm);
@@ -371,7 +371,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         if (FE_QHA) memory->deallocate(FE_QHA);
         if (dFE_scph) memory->deallocate(dFE_scph);
 
-        std::cout << "\n done.\n" << std::flush;
+        //std::cout << "\n done.\n" << std::flush;
     }
 }
 
@@ -533,6 +533,8 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
         }
     }
     ofs_dymat.close();
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dymat;
+    std::cout << " : Anharmonic dynamical matrix (restart file)" << std::endl;
 }
 
 void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
@@ -3011,7 +3013,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     unsigned int iat, jat;
 
     std::ofstream ofs_fc2;
-    auto file_fc2 = input->job_title + ".scph_fc2_correction";
+    auto file_fc2 = input->job_title + ".scph_dfc2";
 
     ofs_fc2.open(file_fc2.c_str(), std::ios::out);
     if (!ofs_fc2)
@@ -3110,6 +3112,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     memory->deallocate(delta_fc2);
 
     ofs_fc2.close();
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_fc2;
+    std::cout << " : Anharmonic corrections to the second-order IFCs" << std::endl;
 }
 
 void Scph::mpi_bcast_complex(std::complex<double> ****data,

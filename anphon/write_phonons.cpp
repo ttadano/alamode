@@ -1296,6 +1296,8 @@ void Writes::write_scph_msd(double **msd_scph) const
     }
 
     ofs_msd.close();
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_msd;
+    std::cout << " : Mean-square-displacement (SCPH level)" << std::endl;
 }
 
 
@@ -1413,7 +1415,7 @@ void Writes::write_scph_ucorr(double ***ucorr_scph) const
     ofs << std::flush;
     ofs.close();
 
-    std::cout << "  " << std::setw(input->job_title.length() + 7) << std::left << file_ucorr;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_ucorr;
     std::cout << " : displacement correlation functions (SCPH level)" << std::endl;
 }
 
@@ -2093,7 +2095,6 @@ void Writes::write_scph_bands(double ***eval) const
     }
 
     ofs_bands.close();
-
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_bands;
     std::cout << " : SCPH band structure" << std::endl;
 }
@@ -2130,6 +2131,8 @@ void Writes::write_scph_dos(double **dos_scph) const
 
     ofs_dos << std::endl;
     ofs_dos.close();
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
+    std::cout << " : SCPH DOS" << std::endl;
 }
 
 void Writes::write_scph_thermodynamics(double *heat_capacity,
@@ -2151,10 +2154,10 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     if (thermodynamics->calc_FE_bubble) {
         ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
         ofs_thermo <<
-            "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH) [Ry], F_{vib} (Bubble) [Ry]"
+            "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry], F_{vib} (Bubble correction) [Ry]"
             << std::endl;
     } else {
-        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH) [Ry]"
+        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry]"
             << std::endl;
     }
 
@@ -2178,4 +2181,6 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     }
 
     ofs_thermo.close();
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_thermo;
+    std::cout << " : SCPH heat capcaity and free energy" << std::endl;
 }
