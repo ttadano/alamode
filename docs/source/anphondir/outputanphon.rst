@@ -120,16 +120,26 @@ ANPHON: Output files
 
 * ``PREFIX``.scph_bands
 
- Anharmonic phonon dispersion curves. The format is same as the ``PREFIX``.bands.
+ Anharmonic phonon dispersion curves. 
+
+* ``PREFIX``.scph_dos
+
+ Anharmonic phonon DOS. Created when ``MODE = SCPH`` and ``DOS = 1`` with **KPMODE** = 2.
+
 
 * ``PREFIX``.scph_thermo
 
  Constant volume heat capacity, vibrational entropy, and vibrational free energy calculated based on the self-consistent phonon calculation. 
  Created when ``MODE = SCPH`` with **KPMODE** = 2.
- When ``FE_BUBBLE = 1`` is set in the **&analysis** field, an additional bubble correction term 
- to the vibrational free energy is also calculated.
+ 
+..  When ``FE_BUBBLE = 1`` is set in the **&analysis** field, an additional bubble correction term 
+..  to the vibrational free energy is also calculated.
 
-* ``PREFIX``.scph_fc2_correction
+* ``PREFIX``.scph_msd
+
+ Mean square displacement calculated within the SCPH theory. Created when ``MODE = SCPH`` and ``PRINTMSD = 1`` with **KPMODE** = 2.
+
+* ``PREFIX``.scph_dfc2
 
  This file contains :math:`\Delta D(\boldsymbol{q}) = D_{\mathrm{SCPH}}(\boldsymbol{q}) - D_{\mathrm{Harmonic}}(\boldsymbol{q})`.
  For the definition, see the :ref:`formalism of the SCPH calculation <formalism_SCPH>`.

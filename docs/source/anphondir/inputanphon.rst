@@ -33,7 +33,7 @@ List of supported input variables
    :ref:`IALGO <anphon_ialgo>`, :ref:`KMESH_INTERPOLATE <anphon_kmesh_interpolate>`, :ref:`KMESH_SCPH <anphon_kmesh_scph>`, :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAXITER <anphon_maxiter>`
    :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
    **&analysis**
-   :ref:`ANIME <anphon_anime>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`FE_BUBBLE <anphon_fe_bubble>`, :ref:`GRUNEISEN <anphon_gruneisen>`, :ref:`ISOFACT <anphon_isofact>`
+   :ref:`ANIME <anphon_anime>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`, :ref:`ISOFACT <anphon_isofact>`
    :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`, :ref:`PDOS <anphon_pdos>`, :ref:`PRINTEVEC <anphon_printevec>`, :ref:`PRINTMSD <anphon_printmsd>`
    :ref:`PRINTPR <anphon_printpr>`, :ref:`PRINTVEL <anphon_printvel>`, :ref:`PRINTXSF <anphon_printxsf>`, :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`
 
@@ -714,22 +714,22 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 ````
 
-.. _anphon_fe_bubble:
+.. .. _anphon_fe_bubble:
 
-* FE_BUBBLE-tag = 0 | 1
+.. * FE_BUBBLE-tag = 0 | 1
 
- === ====================================================================================
-  0   Do not compute the vibrational free-energy associated with the bubble diagram
-  1   | Compute the vibrational free-energy associated with the bubble diagram and 
-      | save it in ``PREFIX``.thermo (when ``MODE = phonons``) or ``PREFIX``.scph_thermo (when ``MODE = SCPH``).
- === ====================================================================================
+..  === ====================================================================================
+..   0   Do not compute the vibrational free-energy associated with the bubble diagram
+..   1   | Compute the vibrational free-energy associated with the bubble diagram and 
+..       | save it in ``PREFIX``.thermo (when ``MODE = phonons``) or ``PREFIX``.scph_thermo (when ``MODE = SCPH``).
+..  === ====================================================================================
  
- :Default: 0
- :Type: Integer
- :Description: This tag is used when *KPMODE* = 2.
+..  :Default: 0
+..  :Type: Integer
+..  :Description: This tag is used when *KPMODE* = 2.
 
 
-````
+.. ````
 
 .. _anphon_anime:
 

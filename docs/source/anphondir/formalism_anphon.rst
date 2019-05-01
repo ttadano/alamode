@@ -436,7 +436,7 @@ can be finer than the :math:`\boldsymbol{q}` grid. After the SCPH iteration conv
     &\Delta D(\boldsymbol{q}) = D_{\mathrm{SCPH}}(\boldsymbol{q}) - D_{\mathrm{Harmonic}}(\boldsymbol{q}), \\
     &D_{\mathrm{SCPH}}(\boldsymbol{q}) = W_{\boldsymbol{q}}C_{\boldsymbol{q}}^{[n]}\Lambda_{\boldsymbol{q}}^{[n]}C_{\boldsymbol{q}}^{[n]\dagger}W_{\boldsymbol{q}}^{\dagger}.
 
-:math:`\Delta D(\boldsymbol{r}(\ell))` is saved in ``PREFIX.scph_fc2_correction``.
+:math:`\Delta D(\boldsymbol{r}(\ell))` is saved in ``PREFIX.scph_dfc2``.
 
 The most computationally expensive part is the calculation of matrix elements of :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell}`.
 When ``SELF_OFFDIAG = 0`` (default), the code only computes the elements of :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},iikk}`. 

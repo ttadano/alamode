@@ -540,7 +540,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
        | The elastic net optimization is solved with the given ``L1_ALPHA`` value. 
        | The force constants are written to ``PREFIX``.fcs and ``PREFIX``.xml.
 
-  > 0  | ``CV``-fold cross-validation is performed *automatically*. 
+  >= 2 | ``CV``-fold cross-validation is performed *automatically*. 
        | ``NDATA`` training datasets are divided into ``CV`` subsets, and ``CV`` different combinations of 
        | training-validation datasets are created internally. For each combination, the elastic net 
        | optimization is solved with the various ``L1_ALPHA`` values defined by the ``CV_MINALPHA``, 
