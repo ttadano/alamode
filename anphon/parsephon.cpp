@@ -460,8 +460,12 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "FE_BUBBLE", "UCORR", "SHIFT_UCORR"
+        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR"
     };
+
+#ifdef _FE_BUBBLE
+    input_list.push_back("FE_BUBBLE");
+#endif
 
     unsigned int cellsize[3];
 
@@ -536,7 +540,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+#ifdef _FE_BUBBLE
         assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
+#endif
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;
