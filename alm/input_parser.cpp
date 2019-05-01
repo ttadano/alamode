@@ -869,6 +869,9 @@ void InputParser::parse_optimize_vars(ALM *alm)
     }
     if (!optimize_var_dict["CV"].empty()) {
         optcontrol.cross_validation = boost::lexical_cast<int>(optimize_var_dict["CV"]);
+        if (optcontrol.cross_validation == 1) {
+            exit("parse_optimize_vars", "CV must not be 1.");
+        }
     }
     if (!optimize_var_dict["NWRITE"].empty()) {
         optcontrol.output_frequency = boost::lexical_cast<int>(optimize_var_dict["NWRITE"]);
