@@ -97,7 +97,9 @@ Terumasa Tadano (National Institute for Materials Science, Japan)
 
 * Tatsuro Nishimoto (Univ. Tokyo)
 * Yusuke Oba (Univ. Tokyo)
+* Yuto Tanaka (Kanazawa Univ.)
 * Atsushi Togo (Kyoto Univ.)
+
 
 
 [license-image]: https://img.shields.io/github/license/ttadano/alamode.svg
