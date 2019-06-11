@@ -490,7 +490,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int scattering_phase_space = 0;
     bool print_gruneisen = false;
     bool print_newfcs = false;
-    bool print_V3 = false;
+    int print_V3 = 0;
     bool participation_ratio = false;
 
     double delta_a = 0.001;

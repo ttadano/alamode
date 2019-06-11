@@ -48,7 +48,7 @@ void ModeAnalysis::set_default_variables()
     calc_realpart = false;
     calc_fstate_omega = false;
     calc_fstate_k = false;
-    print_V3 = false;
+    print_V3 = 0;
     spectral_func = false;
 }
 
@@ -235,7 +235,7 @@ void ModeAnalysis::setup_mode_analysis()
                         "KPMODE = 3 works only when FSTATE_K = 1");
         }
 
-        if (calc_fstate_k && (calc_fstate_omega || print_V3 || spectral_func || calc_realpart)) {
+        if (calc_fstate_k && (calc_fstate_omega || (print_V3 > 0) || spectral_func || calc_realpart)) {
             error->warn("setup_mode_analysis",
                         "FSTATE_K = 1 shouldn't be set with the followings: PRINTV3=1, REALPART=1, FSTATE_W=1, SELF_W=1");
         }
@@ -266,8 +266,11 @@ void ModeAnalysis::run_mode_analysis()
 
         print_selfenergy(NT, T_arr);
 
-        if (print_V3) print_V3_elements();
-        //        if (print_V3) print_Phi3_elements();
+        if (print_V3 == 1) {
+            print_V3_elements();
+        } else if (print_V3 == 2) {
+            print_Phi3_elements();
+        }
 
         if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);
 
@@ -1803,8 +1806,7 @@ void ModeAnalysis::calc_Phi3(const unsigned int knum,
             omega[1] = dynamical->eval_phonon[k1][is];
             omega[2] = dynamical->eval_phonon[k2][js];
 
-            ret[ik][ib] = anharmonic_core->V3(arr) * factor
-                * std::sqrt(omega[0] * omega[1] * omega[2]);
+            ret[ik][ib] = anharmonic_core->Phi3(arr) * factor;
         }
     }
 }
