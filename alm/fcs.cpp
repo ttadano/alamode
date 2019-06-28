@@ -82,7 +82,7 @@ void Fcs::init(const Cluster *cluster,
                                       number_of_atoms,
                                       cluster->get_cluster_list(i),
                                       symmetry,
-                                      "Cartesian",
+                                      preferred_basis,
                                       fc_table[i],
                                       nequiv[i],
                                       fc_zeros[i],
@@ -114,6 +114,8 @@ void Fcs::set_default_variables()
     fc_table = nullptr;
     fc_zeros = nullptr;
     store_zeros = true;
+  //  preferred_basis = "Cartesian";
+    preferred_basis = "Lattice";
 }
 
 void Fcs::deallocate_variables()
@@ -366,25 +368,17 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     int **map_sym;
     double ***rotation;
-
-    if (order < 0) return;
-
     const auto nsym = symmetry->get_SymmData().size();
     const auto natmin = symmetry->get_nat_prim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
 
-    if (nparams == 0) return;
+    if (order < 0 || nparams == 0) return;
+
+    const auto nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
 
     allocate(rotation, nsym, 3, 3);
     allocate(map_sym, nat, nsym);
-    allocate(index_tmp, order + 2);
-
-    const auto nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
-    allocate(xyzcomponent, nxyz, order + 2);
-    get_xyzcomponent(order + 2, xyzcomponent);
-
-    const_out.clear();
 
     get_available_symmop(nat,
                          symmetry,
@@ -393,6 +387,18 @@ void Fcs::get_constraint_symmetry(const size_t nat,
                          map_sym,
                          rotation,
                          use_compatible);
+
+    if (nsym_in_use == 0) {
+        deallocate(rotation);
+        deallocate(map_sym);
+        return;
+    }
+
+    const_out.clear();
+
+    allocate(index_tmp, order + 2);
+    allocate(xyzcomponent, nxyz, order + 2);
+    get_xyzcomponent(order + 2, xyzcomponent);
 
     // Generate temporary list of parameters
     list_found.clear();
@@ -544,6 +550,16 @@ std::vector<size_t>* Fcs::get_nequiv() const
 std::vector<FcProperty>* Fcs::get_fc_table() const
 {
     return fc_table;
+}
+
+void Fcs::set_preferred_basis(const std::string preferred_basis_in)
+{
+    preferred_basis = preferred_basis_in;
+}
+
+std::string Fcs::get_preferred_basis() const
+{
+    return preferred_basis;
 }
 
 void Fcs::get_available_symmop(const size_t nat,

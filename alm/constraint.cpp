@@ -159,6 +159,11 @@ void Constraint::setup(const System *system,
         break;
     }
 
+    if (fcs->get_preferred_basis() == "Lattice" && impose_inv_R) {
+        exit("Constraint::setup()", "Sorry, rotational invariance with preferred_basis == Lattice is "
+             "not supported.\n Use preferred_basis == Cartesian instead.");
+    }
+
     if (verbosity > 0) std::cout << std::endl;
 
     if (const_symmetry) {
@@ -753,10 +758,19 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
     auto has_constraint_from_symm = false;
     std::vector<std::vector<double>> const_tmp;
 
-    for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
-        if (!symmetry->get_SymmData()[isym].compatible_with_cartesian) {
-            has_constraint_from_symm = true;
-            break;
+    if (fcs->get_preferred_basis() == "Cartesian") {
+        for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
+            if (!symmetry->get_SymmData()[isym].compatible_with_cartesian) {
+                has_constraint_from_symm = true;
+                break;
+            }
+        }
+    } else {
+        for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
+            if (!symmetry->get_SymmData()[isym].compatible_with_lattice) {
+                has_constraint_from_symm = true;
+                break;
+            }
         }
     }
 
@@ -774,7 +788,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
         fcs->get_constraint_symmetry(nat,
                                      symmetry,
                                      order,
-                                     "Cartesian",
+                                     fcs->get_preferred_basis(),
                                      fcs->get_fc_table()[order],
                                      fcs->get_nequiv()[order].size(),
                                      tolerance_constraint,

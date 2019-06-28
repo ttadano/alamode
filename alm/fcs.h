@@ -110,10 +110,15 @@ namespace ALM_NS
         std::vector<size_t>* get_nequiv() const;
         std::vector<FcProperty>* get_fc_table() const;
 
+        void set_preferred_basis(const std::string preferred_basis_in);
+        std::string get_preferred_basis() const;
+
     private:
         std::vector<size_t> *nequiv;       // stores duplicate number of irreducible force constants
         std::vector<FcProperty> *fc_table; // all force constants
         std::vector<FcProperty> *fc_zeros; // zero force constants (due to space group symm.)
+
+        std::string preferred_basis; // "Cartesian" or "Lattice"
 
         bool store_zeros;
         void set_default_variables();

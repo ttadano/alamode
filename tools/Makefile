@@ -9,7 +9,7 @@
 #CXX = icpc
 
 # OSX (gcc)
-CXX = g++-8
+CXX = g++-9
 
 # OSX (clang)
 #CXX = g++
