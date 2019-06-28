@@ -453,7 +453,7 @@ void Writer::write_misc_xml(ALM *alm) const
     str_tmp.clear();
 
     pt.put("Data.ForceConstants.HarmonicUnique.NFC2", alm->fcs->get_nequiv()[0].size());
-
+    pt.put("Data.ForceConstants.HarmonicUnique.Basis", alm->fcs->get_preferred_basis());
     size_t ihead = 0;
     size_t k = 0;
     const auto nelem = alm->cluster->get_maxorder() + 1;

@@ -141,6 +141,9 @@ void Symmetry::init(const System *system,
     gen_mapping_information(system->get_supercell(),
                             system->get_atomtype_group());
 
+    set_basis_conversion_matrix(system->get_supercell());
+
+
     if (verbosity > 0) {
         print_symminfo_stdout();
         timer->print_elapsed();
