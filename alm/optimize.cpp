@@ -1360,6 +1360,50 @@ void Optimize::finalize_scalers(const int maxorder,
     }
 }
 
+void Optimize::apply_basis_converter(std::vector<std::vector<double>> &u_multi,
+                                     Eigen::Matrix3d cmat) const
+{
+    const auto nrows = u_multi[0].size();
+    const auto ncols = u_multi.size();
+    size_t i, j;
+    Eigen::Vector3d vec_tmp;
+
+    const auto nat = ncols / 3;
+    for (i = 0; i < nrows; ++i) {
+        for (j = 0; j < nat; ++j) {
+            for (int k = 0; k < 3; ++k) {
+                vec_tmp(k) = u_multi[i][3 * j + k];
+            }
+            vec_tmp = cmat * vec_tmp;
+            for (int k = 0; k < 3; ++k) {
+                u_multi[i][3 * j + k] = vec_tmp(k);
+            }
+        }
+    }
+}
+
+void Optimize::apply_basis_converter_amat(const int natmin3,
+                                          const int ncols,
+                                          double **amat_orig_tmp,
+                                          Eigen::Matrix3d cmat) const
+{
+    const auto natmin = natmin3 / 3;
+    Eigen::Vector3d vec_tmp;
+    const Eigen::Matrix3d cmat_t = cmat.transpose();
+
+    for (auto icol = 0; icol < ncols; ++ icol) {
+        for (auto iat = 0; iat < natmin; ++iat) {
+            for (auto i = 0; i < 3; ++i) {
+                vec_tmp(i) = amat_orig_tmp[3 * iat + i][icol];
+            }
+            vec_tmp = cmat_t * vec_tmp;
+            for (auto i = 0; i < 3; ++i) {
+                amat_orig_tmp[3 * iat + i][icol] = vec_tmp(i);
+            }
+        }
+    }
+}
+
 
 void Optimize::set_training_data(const std::vector<std::vector<double>> &u_train_in,
                                  const std::vector<std::vector<double>> &f_train_in)
@@ -1879,6 +1923,11 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
     data_multiplier(u_in, u_multi, symmetry);
     data_multiplier(f_in, f_multi, symmetry);
 
+    if (fcs->get_preferred_basis() == "Lattice") {
+        apply_basis_converter(u_multi,
+                              symmetry->get_basis_conversion_matrix());
+    }
+
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
 #endif
@@ -1948,6 +1997,13 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                 }
             }
 
+            if (fcs->get_preferred_basis() == "Lattice") {
+                apply_basis_converter_amat(natmin3,
+                                           ncols,
+                                           amat_orig_tmp,
+                                           symmetry->get_basis_conversion_matrix());
+            }
+
             // Convert the full matrix and vector into a smaller irreducible form
             // by using constraint information.
 
@@ -1963,8 +2019,6 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                             * amat_orig_tmp[j][ishift + constraint->get_const_fix(order)[i].p_index_target];
                     }
                 }
-
-                //                std::cout << "pass const_fix" << std::endl;
 
                 for (const auto &it : constraint->get_index_bimap(order)) {
                     inew = it.left + iparam;
@@ -2476,7 +2530,7 @@ int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
 
     } else if (solver_type_lower == "leastsquaresconjugategradient") {
 
-#if EIGEN_VERSION_AT_LEAST(3,3,0)
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
         Eigen::LeastSquaresConjugateGradient<SpMat> lscg(sp_mat);
         lscg.setTolerance(optcontrol.tolerance_iteration);
         lscg.setMaxIterations(optcontrol.maxnum_iteration);

@@ -252,6 +252,13 @@ namespace ALM_NS
         void finalize_scalers(const int maxorder,
                               Constraint *constraint);
 
+        void apply_basis_converter(std::vector<std::vector<double>> &u_multi,
+                                   Eigen::Matrix3d cmat) const;
+
+        void apply_basis_converter_amat(const int natmin3,
+                                        const int ncols,
+                                        double **amat_orig_tmp,
+                                        Eigen::Matrix3d cmat) const;
 
         int fit_without_constraints(const size_t N,
                                     const size_t M,

@@ -114,7 +114,7 @@ void Fcs::set_default_variables()
     fc_table = nullptr;
     fc_zeros = nullptr;
     store_zeros = true;
-  //  preferred_basis = "Cartesian";
+    //  preferred_basis = "Cartesian";
     preferred_basis = "Lattice";
 }
 
@@ -270,7 +270,7 @@ void Fcs::generate_force_constant_table(const int order,
 
                             // Add equivalent interaction list (permutation) if there are two or more indices
                             // which belong to the primitive cell.
-                            // This procedure is necessary for fitting.
+                            // This procedure is necessary for constructing a sensing matrix.
 
                             for (i = 0; i < 3 * nat; ++i) is_searched[i] = false;
                             is_searched[ind_mapped[0]] = true;
@@ -477,11 +477,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
                     if (const_now_omp[loc_nonzero] < 0.0) {
                         for (j = 0; j < nparams; ++j) const_now_omp[j] *= -1.0;
                     }
-                    // maxabs = 0.0;
-                    // for (j = 0; j < nparams; ++j) {
-                    //     maxabs = std::max(maxabs, std::abs(const_now_omp[j]));
-                    // }
-                    // std::cout << "maxabs = " << maxabs << std::endl;
 
                     const_tmp_omp.clear();
                     for (j = 0; j < nparams; ++j) {
