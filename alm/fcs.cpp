@@ -47,7 +47,7 @@ Fcs::~Fcs()
 
 void Fcs::init(const Cluster *cluster,
                const Symmetry *symmetry,
-               const size_t number_of_atoms,
+               const Cell &supercell,
                const int verbosity,
                Timer *timer)
 {
@@ -79,7 +79,7 @@ void Fcs::init(const Cluster *cluster,
     // Generate force constants using the information of interacting atom pairs
     for (i = 0; i < maxorder; ++i) {
         generate_force_constant_table(i,
-                                      number_of_atoms,
+                                      supercell.number_of_atoms,
                                       cluster->get_cluster_list(i),
                                       symmetry,
                                       preferred_basis,
@@ -88,6 +88,9 @@ void Fcs::init(const Cluster *cluster,
                                       fc_zeros[i],
                                       store_zeros);
     }
+
+    set_basis_conversion_matrix(supercell);
+
 
     if (verbosity > 0) {
         std::cout << std::endl;
@@ -113,8 +116,10 @@ void Fcs::set_default_variables()
     nequiv = nullptr;
     fc_table = nullptr;
     fc_zeros = nullptr;
+    fc_cart = nullptr;
     store_zeros = true;
-    //  preferred_basis = "Cartesian";
+
+    // preferred_basis = "Cartesian";
     preferred_basis = "Lattice";
 }
 
@@ -128,6 +133,9 @@ void Fcs::deallocate_variables()
     }
     if (fc_zeros) {
         deallocate(fc_zeros);
+    }
+    if (fc_cart) {
+        deallocate(fc_cart);
     }
 }
 
@@ -547,6 +555,11 @@ std::vector<FcProperty>* Fcs::get_fc_table() const
     return fc_table;
 }
 
+std::vector<ForceConstantTable>* Fcs::get_fc_cart() const
+{
+    return fc_cart;
+}
+
 void Fcs::set_preferred_basis(const std::string preferred_basis_in)
 {
     preferred_basis = preferred_basis_in;
@@ -555,6 +568,125 @@ void Fcs::set_preferred_basis(const std::string preferred_basis_in)
 std::string Fcs::get_preferred_basis() const
 {
     return preferred_basis;
+}
+
+void Fcs::set_forceconstant_cartesian(const int maxorder,
+                                      double *param_in)
+{
+    auto ishift = 0;
+    int j;
+
+    std::vector<int> atoms_old, atoms_now;
+    std::vector<int> coords_now;
+    std::vector<std::vector<int>> coord_list;
+    std::vector<double> fc_list;
+    int **xyzcomponent;
+    double prod_matrix;
+
+    if (fc_cart) {
+        deallocate(fc_cart);
+    }
+    allocate(fc_cart, maxorder);
+
+
+    for (int i = 0; i < maxorder; ++i) {
+
+        auto nelems = i + 2;
+
+        atoms_old.resize(nelems);
+        atoms_now.resize(nelems);
+        coords_now.resize(nelems);
+        coord_list.clear();
+        fc_list.clear();
+
+        const auto nxyz = static_cast<int>(std::pow(3.0, nelems));
+        allocate(xyzcomponent, nxyz, nelems);
+        get_xyzcomponent(nelems, xyzcomponent);
+
+        for (j = 0; j < nelems; ++j) atoms_old[j] = -1;
+        int icount = 0;
+
+        auto fc_table_copy = fc_table[i];
+
+        // Sort fc_table_copy in ascending order of atomic indices.
+        std::sort(fc_table_copy.begin(),
+                  fc_table_copy.end(),
+                  FcProperty::compare_atom_index);
+
+        for (const auto &it : fc_table_copy) {
+
+            for (j = 0; j < nelems; ++j) {
+                atoms_now[j] = it.elems[j] / 3;
+                coords_now[j] = it.elems[j] % 3;
+            }
+
+            if (atoms_now == atoms_old) {
+
+                coord_list.push_back(coords_now);
+                fc_list.push_back(param_in[it.mother + ishift] * it.sign);
+
+                ++icount;
+
+            } else {
+
+                if (icount > 0) {
+                    for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
+
+                        auto fcs_cart = 0.0;
+
+                        for (j = 0; j < icount; ++j) {
+                            prod_matrix = 1.0;
+                            for (auto k = 0; k < nelems; ++k) {
+                                prod_matrix *= basis_conversion_matrix(coord_list[j][k],
+                                                                       xyzcomponent[ixyz][k]);
+                            }
+                            fcs_cart += prod_matrix * fc_list[j];
+                        }
+
+                        if (std::abs(fcs_cart) > eps12) {
+                            fc_cart[i].emplace_back(nelems,
+                                                    fcs_cart,
+                                                    &atoms_old[0],
+                                                    xyzcomponent[ixyz]);
+                        }
+                    }
+                }
+                atoms_old = atoms_now;
+                coord_list.clear();
+                fc_list.clear();
+                coord_list.push_back(coords_now);
+                fc_list.push_back(param_in[it.mother + ishift] * it.sign);
+                icount = 1;
+            }
+        }
+
+        if (icount > 0) {
+            for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
+
+                auto fcs_cart = 0.0;
+
+                for (j = 0; j < icount; ++j) {
+                    prod_matrix = 1.0;
+                    for (auto k = 0; k < nelems; ++k) {
+                        prod_matrix *= basis_conversion_matrix(coord_list[j][k],
+                                                               xyzcomponent[ixyz][k]);
+                    }
+                    fcs_cart += prod_matrix * fc_list[j];
+                }
+
+                if (std::abs(fcs_cart) > eps12) {
+                    fc_cart[i].emplace_back(nelems,
+                                            fcs_cart,
+                                            &atoms_old[0],
+                                            xyzcomponent[ixyz]);
+                }
+            }
+        }
+
+        ishift += nequiv[i].size();
+
+        deallocate(xyzcomponent);
+    }
 }
 
 void Fcs::get_available_symmop(const size_t nat,
@@ -738,4 +870,35 @@ bool Fcs::is_allzero(const std::vector<double> &vec,
         }
     }
     return true;
+}
+
+Eigen::Matrix3d Fcs::get_basis_conversion_matrix() const
+{
+    return basis_conversion_matrix;
+}
+
+void Fcs::set_basis_conversion_matrix(const Cell &supercell)
+{
+    if (preferred_basis == "Lattice") {
+        // multiply the scale factor for making the determinant of the basis_conversion_matrix 
+        // as one.
+        const auto scale_factor = std::pow(supercell.volume, 1.0 / 3.0) / (2.0 * pi);
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                basis_conversion_matrix(i, j)
+                    = supercell.reciprocal_lattice_vector[i][j] * scale_factor;
+            }
+        }
+    } else if (preferred_basis == "Cartesian") {
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                if (i == j) {
+                    basis_conversion_matrix(i, j) = 1.0;
+                } else {
+                    basis_conversion_matrix(i, j) = 0.0;
+
+                }
+            }
+        }
+    }
 }

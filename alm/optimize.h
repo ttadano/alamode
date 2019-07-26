@@ -81,7 +81,7 @@ namespace ALM_NS
 
         int optimize_main(const Symmetry *symmetry,
                           Constraint *constraint,
-                          const Fcs *fcs,
+                          Fcs *fcs,
                           const int maxorder,
                           const std::string file_prefix,
                           const std::vector<std::string> &str_order,
