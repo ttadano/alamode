@@ -84,10 +84,6 @@ const std::vector<int>& Symmetry::get_symnum_tran() const
     return symnum_tran;
 }
 
-Eigen::Matrix3d Symmetry::get_basis_conversion_matrix() const
-{
-    return basis_conversion_matrix;
-}
 
 size_t Symmetry::get_nsym() const
 {
@@ -140,8 +136,6 @@ void Symmetry::init(const System *system,
 
     gen_mapping_information(system->get_supercell(),
                             system->get_atomtype_group());
-
-    set_basis_conversion_matrix(system->get_supercell());
 
 
     if (verbosity > 0) {
@@ -912,12 +906,4 @@ void Symmetry::set_primitive_lattice(const double aa[3][3],
     deallocate(types_tmp);
 }
 
-void Symmetry::set_basis_conversion_matrix(const Cell &supercell)
-{
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            basis_conversion_matrix(i, j) 
-            = supercell.reciprocal_lattice_vector[i][j] / (2.0 * pi);
-        }
-    }
-}
+

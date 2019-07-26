@@ -121,7 +121,6 @@ namespace ALM_NS
         const std::vector<SymmetryOperation>& get_SymmData() const;
         const std::vector<std::vector<int>>& get_map_sym() const;
         const std::vector<int>& get_symnum_tran() const;
-        Eigen::Matrix3d get_basis_conversion_matrix() const;
         size_t get_nsym() const;
         size_t get_ntran() const;
         size_t get_nat_prim() const;
@@ -133,7 +132,6 @@ namespace ALM_NS
         std::vector<Maps> map_s2p;               // [nat]
         std::vector<SymmetryOperation> SymmData; // [nsym]
         std::vector<int> symnum_tran;            // [ntran]
-        Eigen::Matrix3d basis_conversion_matrix;
 
         double tolerance;
         bool use_internal_symm_finder;
@@ -193,7 +191,7 @@ namespace ALM_NS
                                    double **x_prim,
                                    const double symprec) const;
 
-        void set_basis_conversion_matrix(const Cell& supercell);
+
 
         std::string file_sym;
     };

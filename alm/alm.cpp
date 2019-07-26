@@ -601,7 +601,7 @@ void ALM::initialize_interaction()
                   timer);
     fcs->init(cluster,
               symmetry,
-              system->get_supercell().number_of_atoms,
+              system->get_supercell(),
               verbosity,
               timer);
 

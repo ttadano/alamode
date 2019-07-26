@@ -534,18 +534,18 @@ void Writer::write_misc_xml(ALM *alm) const
         }
     }
 
-    size_t ip;
     int imult;
     std::string elementname = "Data.ForceConstants.HARMONIC.FC2";
 
-    std::sort(alm->fcs->get_fc_table()[0].begin(), alm->fcs->get_fc_table()[0].end());
+    auto fc_cart_harmonic = alm->fcs->get_fc_cart()[0];
 
-    for (const auto &it : alm->fcs->get_fc_table()[0]) {
+    std::sort(fc_cart_harmonic.begin(),
+              fc_cart_harmonic.end());
 
-        ip = it.mother;
+    for (const auto &it : fc_cart_harmonic) {
 
         for (k = 0; k < 2; ++k) {
-            pair_tmp[k] = it.elems[k] / 3;
+            pair_tmp[k] = it.atoms[k];
         }
 
         j = alm->symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
@@ -560,19 +560,18 @@ void Writer::write_misc_xml(ALM *alm) const
             multiplicity = (*iter_cluster).cell.size();
 
             for (imult = 0; imult < multiplicity; ++imult) {
-                std::vector<int> cell_now = (*iter_cluster).cell[imult];
+                auto cell_now = (*iter_cluster).cell[imult];
 
-                ptree &child = pt.add(elementname,
-                                      double2string(alm->optimize->get_params()[ip] * it.sign
-                                          / static_cast<double>(multiplicity)));
+                auto &child = pt.add(elementname,
+                                     double2string(it.fc_value / static_cast<double>(multiplicity)));
 
                 child.put("<xmlattr>.pair1", std::to_string(j + 1)
-                          + " " + std::to_string(it.elems[0] % 3 + 1));
+                          + " " + std::to_string(it.coords[0] + 1));
 
                 for (k = 1; k < 2; ++k) {
                     child.put("<xmlattr>.pair" + std::to_string(k + 1),
                               std::to_string(pair_tmp[k] + 1)
-                              + " " + std::to_string(it.elems[k] % 3 + 1)
+                              + " " + std::to_string(it.coords[k] + 1)
                               + " " + std::to_string(cell_now[k - 1] + 1));
                 }
             }
@@ -587,18 +586,17 @@ void Writer::write_misc_xml(ALM *alm) const
 
     for (auto order = 1; order < alm->cluster->get_maxorder(); ++order) {
 
-        std::sort(alm->fcs->get_fc_table()[order].begin(),
-                  alm->fcs->get_fc_table()[order].end());
+        auto fc_cart_anharm = alm->fcs->get_fc_cart()[order];
 
-        for (const auto &it : alm->fcs->get_fc_table()[order]) {
+        std::sort(fc_cart_anharm.begin(),
+                  fc_cart_anharm.end());
 
-            ip = it.mother + ishift;
+        for (const auto &it : fc_cart_anharm) {
 
             // Save nonzero force constants only 
-            if (std::abs(alm->optimize->get_params()[ip]) < eps) continue;
 
             for (k = 0; k < order + 2; ++k) {
-                pair_tmp[k] = it.elems[k] / 3;
+                pair_tmp[k] = it.atoms[k];
             }
             j = alm->symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
 
@@ -623,16 +621,15 @@ void Writer::write_misc_xml(ALM *alm) const
                     auto cell_now = (*iter_cluster).cell[imult];
 
                     auto &child = pt.add(elementname,
-                                         double2string(alm->optimize->get_params()[ip] * it.sign
-                                             / static_cast<double>(multiplicity)));
+                                         double2string(it.fc_value / static_cast<double>(multiplicity)));
 
                     child.put("<xmlattr>.pair1", std::to_string(j + 1)
-                              + " " + std::to_string(it.elems[0] % 3 + 1));
+                              + " " + std::to_string(it.coords[0] + 1));
 
                     for (k = 1; k < order + 2; ++k) {
                         child.put("<xmlattr>.pair" + std::to_string(k + 1),
                                   std::to_string(pair_tmp[k] + 1)
-                                  + " " + std::to_string(it.elems[k] % 3 + 1)
+                                  + " " + std::to_string(it.coords[k] + 1)
                                   + " " + std::to_string(cell_now[k - 1] + 1));
                     }
                 }
@@ -830,7 +827,7 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
     const auto ishift = alm->fcs->get_nequiv()[0].size();
 
     for (const auto &it : alm->fcs->get_fc_table()[1]) {
-        
+
         const auto ip = it.mother + ishift;
 
         for (i = 0; i < 3; ++i) {

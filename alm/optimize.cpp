@@ -58,7 +58,7 @@ void Optimize::deallocate_variables()
 
 int Optimize::optimize_main(const Symmetry *symmetry,
                             Constraint *constraint,
-                            const Fcs *fcs,
+                            Fcs *fcs,
                             const int maxorder,
                             const std::string file_prefix,
                             const std::vector<std::string> &str_order,
@@ -184,6 +184,8 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         std::cout << std::endl;
     }
 
+    fcs->set_forceconstant_cartesian(maxorder,
+                                     params);
     timer->stop_clock("optimize");
 
     return info_fitting;
@@ -1368,30 +1370,30 @@ void Optimize::apply_basis_converter(std::vector<std::vector<double>> &u_multi,
     size_t i, j;
     Eigen::Vector3d vec_tmp;
 
-    std::cout << "nrows = " << nrows << '\n';
+   /* std::cout << "nrows = " << nrows << '\n';
     std::cout << "ncols = " << ncols << '\n';
     std::cout << "cmat:\n";
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            std::cout << std::setw(15) << cmat(i,j);
+            std::cout << std::setw(15) << cmat(i, j);
         }
         std::cout << '\n';
     }
-    std::cout << '\n';
+    std::cout << '\n';*/
 
     const auto nat = ncols / 3;
     for (i = 0; i < nrows; ++i) {
         for (j = 0; j < nat; ++j) {
             for (int k = 0; k < 3; ++k) {
                 vec_tmp(k) = u_multi[i][3 * j + k];
-                std::cout << std::setw(10) << vec_tmp(k);
+        //        std::cout << std::setw(10) << vec_tmp(k);
             }
             vec_tmp = cmat * vec_tmp;
             for (int k = 0; k < 3; ++k) {
                 u_multi[i][3 * j + k] = vec_tmp(k);
-                std::cout << std::setw(10) << vec_tmp(k);
+         //       std::cout << std::setw(10) << vec_tmp(k);
             }
-            std::cout << '\n';
+        //    std::cout << '\n';
         }
     }
 }
@@ -1937,13 +1939,10 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
     data_multiplier(u_in, u_multi, symmetry);
     data_multiplier(f_in, f_multi, symmetry);
 
-    std::cout << "HERE" << std::endl;
-
     if (fcs->get_preferred_basis() == "Lattice") {
         apply_basis_converter(u_multi,
-                              symmetry->get_basis_conversion_matrix());
+                              fcs->get_basis_conversion_matrix());
     }
-    std::cout << "OK" << std::endl;
 
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
@@ -2018,7 +2017,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                 apply_basis_converter_amat(natmin3,
                                            ncols,
                                            amat_orig_tmp,
-                                           symmetry->get_basis_conversion_matrix());
+                                           fcs->get_basis_conversion_matrix());
             }
 
             // Convert the full matrix and vector into a smaller irreducible form
