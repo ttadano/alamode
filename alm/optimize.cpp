@@ -165,13 +165,15 @@ int Optimize::optimize_main(const Symmetry *symmetry,
 
     if (info_fitting == 0) {
         // I should copy fcs_tmp to parameters in the Fcs class?
-
         // Copy force constants to public variable "params"
         if (params) {
             deallocate(params);
         }
         allocate(params, N);
         for (auto i = 0; i < N; ++i) params[i] = fcs_tmp[i];
+
+        fcs->set_forceconstant_cartesian(maxorder,
+                                         params);
     }
 
     fcs_tmp.clear();
@@ -184,8 +186,6 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         std::cout << std::endl;
     }
 
-    fcs->set_forceconstant_cartesian(maxorder,
-                                     params);
     timer->stop_clock("optimize");
 
     return info_fitting;
@@ -1365,35 +1365,22 @@ void Optimize::finalize_scalers(const int maxorder,
 void Optimize::apply_basis_converter(std::vector<std::vector<double>> &u_multi,
                                      Eigen::Matrix3d cmat) const
 {
+    // Convert the basis of displacements from Cartesian to fractional
     const auto nrows = u_multi.size();
     const auto ncols = u_multi[0].size();
     size_t i, j;
     Eigen::Vector3d vec_tmp;
-
-   /* std::cout << "nrows = " << nrows << '\n';
-    std::cout << "ncols = " << ncols << '\n';
-    std::cout << "cmat:\n";
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            std::cout << std::setw(15) << cmat(i, j);
-        }
-        std::cout << '\n';
-    }
-    std::cout << '\n';*/
 
     const auto nat = ncols / 3;
     for (i = 0; i < nrows; ++i) {
         for (j = 0; j < nat; ++j) {
             for (int k = 0; k < 3; ++k) {
                 vec_tmp(k) = u_multi[i][3 * j + k];
-        //        std::cout << std::setw(10) << vec_tmp(k);
             }
             vec_tmp = cmat * vec_tmp;
             for (int k = 0; k < 3; ++k) {
                 u_multi[i][3 * j + k] = vec_tmp(k);
-         //       std::cout << std::setw(10) << vec_tmp(k);
             }
-        //    std::cout << '\n';
         }
     }
 }
@@ -1816,6 +1803,11 @@ void Optimize::get_matrix_elements(const int maxorder,
     data_multiplier(u_in, u_multi, symmetry);
     data_multiplier(f_in, f_multi, symmetry);
 
+    if (fcs->get_preferred_basis() == "Lattice") {
+        apply_basis_converter(u_multi,
+                              fcs->get_basis_conversion_matrix());
+    }
+
 
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
@@ -1875,6 +1867,16 @@ void Optimize::get_matrix_elements(const int maxorder,
                     }
                     ++iparam;
                 }
+            }
+
+            // When the force constants are defined in the fractional coordinate,
+            // we need to multiply the basis_conversion_matrix to obtain atomic forces
+            // in the Cartesian coordinate.
+            if (fcs->get_preferred_basis() == "Lattice") {
+                apply_basis_converter_amat(natmin3,
+                                           ncols,
+                                           amat_orig_tmp,
+                                           fcs->get_basis_conversion_matrix());
             }
 
             for (i = 0; i < natmin3; ++i) {
@@ -2013,6 +2015,9 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                 }
             }
 
+            // When the force constants are defined in the fractional coordinate,
+            // we need to multiply the basis_conversion_matrix to obtain atomic forces
+            // in the Cartesian coordinate.
             if (fcs->get_preferred_basis() == "Lattice") {
                 apply_basis_converter_amat(natmin3,
                                            ncols,
@@ -2130,6 +2135,11 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
     data_multiplier(u_in, u_multi, symmetry);
     data_multiplier(f_in, f_multi, symmetry);
 
+    if (fcs->get_preferred_basis() == "Lattice") {
+        apply_basis_converter(u_multi,
+                              fcs->get_basis_conversion_matrix());
+    }
+
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
 #endif
@@ -2199,6 +2209,16 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
                     }
                     ++iparam;
                 }
+            }
+
+            // When the force constants are defined in the fractional coordinate,
+            // we need to multiply the basis_conversion_matrix to obtain atomic forces
+            // in the Cartesian coordinate.
+            if (fcs->get_preferred_basis() == "Lattice") {
+                apply_basis_converter_amat(natmin3,
+                    ncols,
+                    amat_orig_tmp,
+                    fcs->get_basis_conversion_matrix());
             }
 
             // Convert the full matrix and vector into a smaller irreducible form
