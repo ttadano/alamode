@@ -53,7 +53,8 @@ namespace ALM_NS
                               const std::string *kdname_in,
                               const double *const *magmom_in,
                               double tolerance,
-                              double tolerance_constraint);
+                              double tolerance_constraint,
+                              const std::string basis_force_constant);
 
         void set_optimize_vars(ALM *alm,
                                const std::vector<std::vector<double>> &u_train_in,

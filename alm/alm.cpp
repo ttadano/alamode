@@ -295,6 +295,7 @@ int ALM::get_displacement_patterns(int *atom_indices,
     return -1;
 }
 
+
 size_t ALM::get_number_of_fc_elements(const int fc_order) const
 // harmonic=1, ...
 {

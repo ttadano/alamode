@@ -55,6 +55,7 @@ void Writer::write_input_vars(const ALM *alm) const
     std::cout << "  KD = ";
     for (i = 0; i < nkd; ++i) std::cout << std::setw(4) << alm->get_kdname()[i];
     std::cout << '\n';
+    std::cout << "  FC_BASIS = " << alm->fcs->get_preferred_basis() << '\n';
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << alm->get_periodicity()[i];
     std::cout << '\n';
@@ -500,6 +501,7 @@ void Writer::write_misc_xml(ALM *alm) const
     if (alm->cluster->get_maxorder() > 1) {
 
         pt.put("Data.ForceConstants.CubicUnique.NFC3", alm->fcs->get_nequiv()[1].size());
+        pt.put("Data.ForceConstants.CubicUnique.Basis", alm->fcs->get_preferred_basis());
 
         for (unsigned int ui = 0; ui < alm->fcs->get_nequiv()[1].size(); ++ui) {
             for (i = 0; i < 3; ++i) {

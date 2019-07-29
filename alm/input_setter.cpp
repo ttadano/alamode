@@ -135,7 +135,8 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const std::string *kdname_in,
                                    const double *const *magmom_in,
                                    const double tolerance,
-                                   const double tolerance_constraint)
+                                   const double tolerance_constraint,
+                                   const std::string basis_force_constant)
 {
     size_t i;
 
@@ -175,6 +176,7 @@ void InputSetter::set_general_vars(ALM *alm,
 
     alm->files->print_hessian = print_hessian;
     alm->constraint->set_tolerance_constraint(tolerance_constraint);
+    alm->fcs->set_preferred_basis(basis_force_constant);
 
     if (mode == "suggest") {
         alm->displace->set_disp_basis(str_disp_basis);

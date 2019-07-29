@@ -1831,16 +1831,40 @@ void Constraint::fix_forceconstants_to_file(const int order,
             get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
 
         if (nfcs_ref != nfcs) {
-            exit("load_reference_system_xml",
+            exit("fix_forceconstants_to_file",
                  "The number of harmonic force constants is not consistent.");
+        }
+        std::string preferred_basis_ref = "Cartesian";
+
+        try {
+            preferred_basis_ref = boost::lexical_cast<std::string>(
+                get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.Basis"));
+        }
+        catch (...) { }
+
+        if (preferred_basis_ref != fcs->get_preferred_basis()) {
+            exit("fix_forceconstants_to_file",
+                 "The basis of harmonic force constants is not consistent.");
         }
     } else if (order == 1) {
         const auto nfcs_ref = boost::lexical_cast<size_t>(
             get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.NFC3"));
 
         if (nfcs_ref != nfcs) {
-            exit("load_reference_system_xml",
+            exit("fix_forceconstants_to_file",
                  "The number of cubic force constants is not consistent.");
+        }
+        std::string preferred_basis_ref = "Cartesian";
+
+        try {
+            preferred_basis_ref = boost::lexical_cast<std::string>(
+                get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis"));
+        }
+        catch (...) {}
+
+        if (preferred_basis_ref != fcs->get_preferred_basis()) {
+            exit("fix_forceconstants_to_file",
+                 "The basis of cubic force constants is not consistent.");
         }
     }
 
