@@ -472,7 +472,7 @@ void InputParser::parse_general_vars(ALM *alm)
     }
 
     if (general_var_dict["FC_BASIS"].empty()) {
-        basis_force_constant = "Cartesian";
+        basis_force_constant = "Lattice";
     } else {
         basis_force_constant = general_var_dict["FC_BASIS"];
         if (basis_force_constant != "Cartesian" && basis_force_constant != "Lattice") {
