@@ -449,7 +449,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 #pragma omp for private(i, isym, ixyz), schedule(static)
 #endif
         for (long ii = 0; ii < nfcs; ++ii) {
-        //    FcProperty list_tmp = fc_table_in[ii];
 
             for (i = 0; i < order + 2; ++i) {
                 atm_index[i] = fc_table_in[ii].elems[i] / 3;
