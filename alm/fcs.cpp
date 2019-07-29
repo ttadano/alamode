@@ -703,6 +703,26 @@ void Fcs::get_available_symmop(const size_t nat,
     // use_compatible == true returns the compatible space group (for creating fc_table)
     // use_compatible == false returnes the incompatible supace group (for creating constraint)
 
+    // int k = 0;
+    // for (const auto &it : symmetry->get_SymmData()) {
+    //     std::cout << "SYMM #" << ++k << '\n';
+    //     std::cout << "compatibility (Cart, Latt): " << it.compatible_with_cartesian << " " << it.compatible_with_lattice << '\n';
+    //     for (auto i = 0; i < 3; ++i) {
+    //         for (auto j = 0; j < 3; ++j) {
+    //             std::cout << std::setw(15) << it.rotation_cart[i][j];
+    //         }
+    //         std::cout << '\n';
+    //     }
+    //     std::cout << '\n';
+    //     for (auto i = 0; i < 3; ++i) {
+    //         for (auto j = 0; j < 3; ++j) {
+    //             std::cout << std::setw(15) << it.rotation[i][j];
+    //         }
+    //         std::cout << '\n';
+    //     }
+    //     std::cout << '\n';
+    // }
+
     int i, j;
     int counter = 0;
 

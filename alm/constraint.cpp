@@ -1834,13 +1834,11 @@ void Constraint::fix_forceconstants_to_file(const int order,
             exit("fix_forceconstants_to_file",
                  "The number of harmonic force constants is not consistent.");
         }
-        std::string preferred_basis_ref = "Cartesian";
 
-        try {
-            preferred_basis_ref = boost::lexical_cast<std::string>(
-                get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.Basis"));
-        }
-        catch (...) { }
+        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
+            get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.Basis", 0));
+
+        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
 
         if (preferred_basis_ref != fcs->get_preferred_basis()) {
             exit("fix_forceconstants_to_file",
@@ -1854,13 +1852,10 @@ void Constraint::fix_forceconstants_to_file(const int order,
             exit("fix_forceconstants_to_file",
                  "The number of cubic force constants is not consistent.");
         }
-        std::string preferred_basis_ref = "Cartesian";
 
-        try {
-            preferred_basis_ref = boost::lexical_cast<std::string>(
-                get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis"));
-        }
-        catch (...) {}
+        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
+              get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
+        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
 
         if (preferred_basis_ref != fcs->get_preferred_basis()) {
             exit("fix_forceconstants_to_file",
