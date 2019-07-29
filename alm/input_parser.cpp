@@ -38,7 +38,7 @@ InputParser::~InputParser()
 
 void InputParser::run(ALM *alm,
                       const int narg,
-                      const char * const *arg)
+                      const char *const *arg)
 {
     if (narg == 1) {
 

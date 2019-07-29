@@ -189,12 +189,14 @@ void ALM::set_rotation_axis(const std::string rotation_axis) const // ROTAXIS
     constraint->set_rotation_axis(rotation_axis);
 }
 
-void ALM::set_fc_file(const int order, const std::string fc_file) const
+void ALM::set_fc_file(const int order,
+                      const std::string fc_file) const
 {
     constraint->set_fc_file(order, fc_file);
 }
 
-void ALM::set_fc_fix(const int order, const bool fc_fix) const
+void ALM::set_fc_fix(const int order,
+                     const bool fc_fix) const
 {
     if (order == 2) {
         constraint->set_fix_harmonic(fc_fix);

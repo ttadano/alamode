@@ -968,7 +968,7 @@ void Fcs::get_available_symmop(const size_t nat,
 }
 
 double Fcs::coef_sym(const int n,
-                     const double * const *rot,
+                     const double *const *rot,
                      const int *arr1,
                      const int *arr2) const
 {
