@@ -148,6 +148,16 @@ namespace ALM_NS
                                      ConstraintSparseForm &const_out,
                                      const bool do_rref = false) const;
 
+        void get_constraint_symmetry_in_integer(const size_t nat,
+                                                const Symmetry *symmetry,
+                                                const int order,
+                                                const std::string basis,
+                                                const std::vector<FcProperty> &fc_table_in,
+                                                const size_t nparams,
+                                                const double tolerance,
+                                                ConstraintSparseForm &const_out,
+                                                const bool do_rref = false) const;
+
         std::vector<size_t>* get_nequiv() const;
         std::vector<FcProperty>* get_fc_table() const;
         std::vector<ForceConstantTable>* get_fc_cart() const;
@@ -183,6 +193,8 @@ namespace ALM_NS
                        const std::vector<std::vector<int>> &map_p2s) const;
         bool is_allzero(const std::vector<double> &,
                         double,
+                        int &) const;
+        bool is_allzero(const std::vector<int> &,
                         int &) const;
         void get_available_symmop(const size_t nat,
                                   const Symmetry *symmetry,

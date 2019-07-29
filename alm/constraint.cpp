@@ -785,14 +785,25 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
             std::cout << "   " << std::setw(8) << cluster->get_ordername(order) << " ...";
         }
 
-        fcs->get_constraint_symmetry(nat,
-                                     symmetry,
-                                     order,
-                                     fcs->get_preferred_basis(),
-                                     fcs->get_fc_table()[order],
-                                     fcs->get_nequiv()[order].size(),
-                                     tolerance_constraint,
-                                     const_symmetry[order], true);
+        if (fcs->get_preferred_basis() == "Lattice") {
+            fcs->get_constraint_symmetry_in_integer(nat,
+                                                    symmetry,
+                                                    order,
+                                                    fcs->get_preferred_basis(),
+                                                    fcs->get_fc_table()[order],
+                                                    fcs->get_nequiv()[order].size(),
+                                                    tolerance_constraint,
+                                                    const_symmetry[order], true);
+        } else {
+            fcs->get_constraint_symmetry(nat,
+                                         symmetry,
+                                         order,
+                                         fcs->get_preferred_basis(),
+                                         fcs->get_fc_table()[order],
+                                         fcs->get_nequiv()[order].size(),
+                                         tolerance_constraint,
+                                         const_symmetry[order], true);
+        }
 
         if (has_constraint_from_symm) {
             std::cout << " done." << std::endl;
@@ -1854,7 +1865,7 @@ void Constraint::fix_forceconstants_to_file(const int order,
         }
 
         std::string preferred_basis_ref = boost::lexical_cast<std::string>(
-              get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
+            get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
         if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
 
         if (preferred_basis_ref != fcs->get_preferred_basis()) {
