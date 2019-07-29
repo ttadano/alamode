@@ -159,8 +159,8 @@ void Constraint::setup(const System *system,
         break;
     }
 
-    if (fcs->get_preferred_basis() == "Lattice" && impose_inv_R) {
-        exit("Constraint::setup()", "Sorry, rotational invariance with preferred_basis == Lattice is "
+    if (fcs->get_forceconstant_basis() == "Lattice" && impose_inv_R) {
+        exit("Constraint::setup()", "Sorry, rotational invariance with FC_BASIS = Lattice is "
              "not supported.\n Use preferred_basis == Cartesian instead.");
     }
 
@@ -758,7 +758,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
     auto has_constraint_from_symm = false;
     std::vector<std::vector<double>> const_tmp;
 
-    if (fcs->get_preferred_basis() == "Cartesian") {
+    if (fcs->get_forceconstant_basis() == "Cartesian") {
         for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
             if (!symmetry->get_SymmData()[isym].compatible_with_cartesian) {
                 has_constraint_from_symm = true;
@@ -785,11 +785,11 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
             std::cout << "   " << std::setw(8) << cluster->get_ordername(order) << " ...";
         }
 
-        if (fcs->get_preferred_basis() == "Lattice") {
+        if (fcs->get_forceconstant_basis() == "Lattice") {
             fcs->get_constraint_symmetry_in_integer(nat,
                                                     symmetry,
                                                     order,
-                                                    fcs->get_preferred_basis(),
+                                                    fcs->get_forceconstant_basis(),
                                                     fcs->get_fc_table()[order],
                                                     fcs->get_nequiv()[order].size(),
                                                     tolerance_constraint,
@@ -798,7 +798,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
             fcs->get_constraint_symmetry(nat,
                                          symmetry,
                                          order,
-                                         fcs->get_preferred_basis(),
+                                         fcs->get_forceconstant_basis(),
                                          fcs->get_fc_table()[order],
                                          fcs->get_nequiv()[order].size(),
                                          tolerance_constraint,
@@ -1851,7 +1851,7 @@ void Constraint::fix_forceconstants_to_file(const int order,
 
         if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
 
-        if (preferred_basis_ref != fcs->get_preferred_basis()) {
+        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
             exit("fix_forceconstants_to_file",
                  "The basis of harmonic force constants is not consistent.");
         }
@@ -1868,7 +1868,7 @@ void Constraint::fix_forceconstants_to_file(const int order,
             get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
         if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
 
-        if (preferred_basis_ref != fcs->get_preferred_basis()) {
+        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
             exit("fix_forceconstants_to_file",
                  "The basis of cubic force constants is not consistent.");
         }

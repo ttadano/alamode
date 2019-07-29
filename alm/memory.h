@@ -161,6 +161,7 @@ namespace ALM_NS
     void deallocate(T *&arr)
     {
         delete[] arr;
+        arr = nullptr;
     }
 
     template <typename T>
@@ -168,6 +169,7 @@ namespace ALM_NS
     {
         delete[] arr[0];
         delete[] arr;
+        arr = nullptr;
     }
 
     template <typename T>
@@ -176,6 +178,7 @@ namespace ALM_NS
         delete[] arr[0][0];
         delete[] arr[0];
         delete[] arr;
+        arr = nullptr;
     }
 
     template <typename T>
@@ -185,5 +188,6 @@ namespace ALM_NS
         delete[] arr[0][0];
         delete[] arr[0];
         delete[] arr;
+        arr = nullptr;
     }
 }

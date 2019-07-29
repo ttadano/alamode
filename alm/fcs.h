@@ -18,6 +18,7 @@
 #include "cluster.h"
 #include "symmetry.h"
 #include "timer.h"
+#include <Eigen/Core>
 
 using ConstraintSparseForm = std::vector<std::map<size_t, double>>;
 
@@ -162,8 +163,8 @@ namespace ALM_NS
         std::vector<FcProperty>* get_fc_table() const;
         std::vector<ForceConstantTable>* get_fc_cart() const;
 
-        void set_preferred_basis(const std::string preferred_basis_in);
-        std::string get_preferred_basis() const;
+        void set_forceconstant_basis(const std::string preferred_basis_in);
+        std::string get_forceconstant_basis() const;
         Eigen::Matrix3d get_basis_conversion_matrix() const;
 
         void set_forceconstant_cartesian(const int maxorder,
@@ -209,7 +210,7 @@ namespace ALM_NS
                                            const size_t natmin,
                                            const std::vector<std::vector<int>> &map_p2s) const;
         double coef_sym(const int,
-                        const double *const *,
+                        const double * const *,
                         const int *,
                         const int *) const;
 

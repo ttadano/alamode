@@ -51,7 +51,7 @@ namespace ALM_NS
                               int noncollinear_in,
                               int trevsym_in,
                               const std::string *kdname_in,
-                              const double *const *magmom_in,
+                              const double * const *magmom_in,
                               double tolerance,
                               double tolerance_constraint,
                               const std::string basis_force_constant);

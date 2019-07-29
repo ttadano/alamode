@@ -55,7 +55,7 @@ void Writer::write_input_vars(const ALM *alm) const
     std::cout << "  KD = ";
     for (i = 0; i < nkd; ++i) std::cout << std::setw(4) << alm->get_kdname()[i];
     std::cout << '\n';
-    std::cout << "  FC_BASIS = " << alm->fcs->get_preferred_basis() << '\n';
+    std::cout << "  FC_BASIS = " << alm->get_forceconstant_basis() << '\n';
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << alm->get_periodicity()[i];
     std::cout << '\n';
@@ -454,7 +454,7 @@ void Writer::write_misc_xml(ALM *alm) const
     str_tmp.clear();
 
     pt.put("Data.ForceConstants.HarmonicUnique.NFC2", alm->fcs->get_nequiv()[0].size());
-    pt.put("Data.ForceConstants.HarmonicUnique.Basis", alm->fcs->get_preferred_basis());
+    pt.put("Data.ForceConstants.HarmonicUnique.Basis", alm->get_forceconstant_basis());
     size_t ihead = 0;
     size_t k = 0;
     const auto nelem = alm->cluster->get_maxorder() + 1;
@@ -501,7 +501,7 @@ void Writer::write_misc_xml(ALM *alm) const
     if (alm->cluster->get_maxorder() > 1) {
 
         pt.put("Data.ForceConstants.CubicUnique.NFC3", alm->fcs->get_nequiv()[1].size());
-        pt.put("Data.ForceConstants.CubicUnique.Basis", alm->fcs->get_preferred_basis());
+        pt.put("Data.ForceConstants.CubicUnique.Basis", alm->get_forceconstant_basis());
 
         for (unsigned int ui = 0; ui < alm->fcs->get_nequiv()[1].size(); ++ui) {
             for (i = 0; i < 3; ++i) {

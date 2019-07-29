@@ -91,7 +91,6 @@ void Fcs::init(const Cluster *cluster,
 
     set_basis_conversion_matrix(supercell);
 
-
     if (verbosity > 0) {
         std::cout << std::endl;
         for (i = 0; i < maxorder; ++i) {
@@ -755,12 +754,12 @@ std::vector<ForceConstantTable>* Fcs::get_fc_cart() const
     return fc_cart;
 }
 
-void Fcs::set_preferred_basis(const std::string preferred_basis_in)
+void Fcs::set_forceconstant_basis(const std::string preferred_basis_in)
 {
     preferred_basis = preferred_basis_in;
 }
 
-std::string Fcs::get_preferred_basis() const
+std::string Fcs::get_forceconstant_basis() const
 {
     return preferred_basis;
 }
@@ -969,7 +968,7 @@ void Fcs::get_available_symmop(const size_t nat,
 }
 
 double Fcs::coef_sym(const int n,
-                     const double *const *rot,
+                     const double * const *rot,
                      const int *arr1,
                      const int *arr2) const
 {

@@ -28,7 +28,7 @@ namespace ALM_NS
         ~InputParser();
         void run(ALM *alm,
                  const int narg,
-                 const char *const *arg);
+                 const char * const *arg);
 
         std::string str_magmom;
 
