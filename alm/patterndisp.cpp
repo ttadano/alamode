@@ -46,7 +46,7 @@ void Displace::gen_displacement_pattern(const Cluster *cluster,
     const auto maxorder = cluster->get_maxorder();
     std::string preferred_basis;
     std::vector<int> group_tmp;
-    std::vector<std::map<size_t, double>> *constsym;
+    ConstraintSparseForm *constsym;
     std::vector<std::vector<double>> const_tmp;
 
     std::vector<int> pairs;

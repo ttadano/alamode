@@ -520,8 +520,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
                                      constraint_all.end()),
                          constraint_all.end());
 
-    typedef std::map<size_t, double> ConstDoubleEntry;
-    ConstDoubleEntry const_tmp2;
+    MapConstraintElement const_tmp2;
     auto division_factor = 1.0;
     int counter;
     const_out.clear();
@@ -716,8 +715,7 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
                                      constraint_all.end()),
                          constraint_all.end());
 
-    typedef std::map<size_t, double> ConstDoubleEntry;
-    ConstDoubleEntry const_tmp2;
+    MapConstraintElement const_tmp2;
     auto division_factor = 1.0;
     int counter;
     const_out.clear();

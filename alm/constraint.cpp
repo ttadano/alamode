@@ -544,6 +544,8 @@ void Constraint::get_mapping_constraint(const int nmax,
     int order;
     size_t i;
 
+    std::vector<ConstraintDoubleElement> ConstVec;
+
     for (order = 0; order < nmax; ++order) {
 
         if (const_fix_out[order].empty()) {
@@ -556,6 +558,27 @@ void Constraint::get_mapping_constraint(const int nmax,
 
                 alpha_tmp.clear();
                 p_index_tmp.clear();
+
+#ifndef _USE_MAP_FOR_CONSTRAINT
+                ConstVec.clear();
+                ConstVec.reserve((*p).size());
+                for (const auto &p2: (*p)) {
+                    ConstVec.emplace_back(p2.first, p2.second);
+                }
+                std::sort(ConstVec.begin(), ConstVec.end());
+
+                p_index_target = ConstVec[0].col;
+
+                auto nsize = ConstVec.size();
+                alpha_tmp.resize(nsize-1);
+                p_index_tmp.resize(nsize-1);
+
+                for (i = 1; i < nsize; ++i) {
+                    alpha_tmp[i-1] = ConstVec[i].val;
+                    p_index_tmp[i-1] = ConstVec[i].col;
+                }
+
+#else
                 auto counter = 0;
                 for (const auto &p2 : (*p)) {
                     if (counter == 0) {
@@ -566,6 +589,7 @@ void Constraint::get_mapping_constraint(const int nmax,
                     }
                     ++counter;
                 }
+#endif
 
                 if (!alpha_tmp.empty()) {
                     const_relate_out[order].emplace_back(p_index_target,
@@ -1115,8 +1139,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
                                      constraint_all.end()),
                          constraint_all.end());
 
-    typedef std::map<size_t, double> ConstDoubleEntry;
-    ConstDoubleEntry const_tmp2;
+    MapConstraintElement const_tmp2;
     auto division_factor = 1.0;
     int counter;
     const_out.clear();
@@ -1684,7 +1707,7 @@ void Constraint::generate_rotational_constraint(const System *system,
     } // order
 
     int counter;
-    std::map<size_t, double> const_copy;
+    MapConstraintElement const_copy;
     auto division_factor = 1.0;
 
     for (order = 0; order < maxorder; ++order) {

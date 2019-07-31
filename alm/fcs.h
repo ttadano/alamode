@@ -14,13 +14,20 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <algorithm>
 #include "cluster.h"
 #include "symmetry.h"
 #include "timer.h"
 #include <Eigen/Core>
 
-using ConstraintSparseForm = std::vector<std::map<size_t, double>>;
+// By default, we use unordered_map for better performance of rref_sparse (in rref.cpp).
+#ifdef _USE_MAP_FOR_CONSTRAINT
+using MapConstraintElement = std::map<size_t, double>;
+#else
+using MapConstraintElement = std::unordered_map<size_t, double>;
+#endif
+using ConstraintSparseForm = std::vector<MapConstraintElement>;
 
 namespace ALM_NS
 {
