@@ -152,7 +152,7 @@ namespace ALM_NS
                                 const double val_in) :
             col(col_in), val(val_in) {}
 
-        bool operator<(const ConstraintDoubleElement &obj) {
+        bool operator<(const ConstraintDoubleElement &obj) const {
             return col < obj.col;
         }
     };
