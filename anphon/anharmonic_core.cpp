@@ -987,6 +987,13 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
             is = ib / ns;
             js = ib % ns;
 
+            if ((is >= 6 && is <= 8) || (js >=6 && js <=8)) {
+                for (ik = 0; ik < npair_uniq; ++ik) {
+                    delta_arr[ik][ib][0] = 0.0;
+                    delta_arr[ik][ib][1] = 0.0;
+                }
+                continue;
+            }
             for (k1 = 0; k1 < nk; ++k1) {
 
                 // Prepare two-phonon frequency for the tetrahedron method

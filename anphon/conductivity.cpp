@@ -286,29 +286,35 @@ void Conductivity::calc_anharmonic_imagself()
 
         if (iks == -1) {
 
-            for (unsigned int j = 0; j < ntemp; ++j) damping3_loc[j] = eps; // do nothing
+            for (unsigned int j = 0; j < ntemp; ++j) damping3_loc[j] = 0.0; // do nothing
 
         } else {
 
             unsigned int knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
             unsigned int snum = iks % ns;
 
-            double omega = dynamical->eval_phonon[knum][snum];
+            if (snum >= 6 && snum <=8) {
+                for (unsigned int j = 0; j < ntemp; ++j) damping3_loc[j] = 0.0; // do nothing
 
-            if (integration->ismear == 0 || integration->ismear == 1) {
-                anharmonic_core->calc_damping_smearing(ntemp,
-                                                       Temperature,
-                                                       omega,
-                                                       iks / ns,
-                                                       snum,
-                                                       damping3_loc);
-            } else if (integration->ismear == -1) {
-                anharmonic_core->calc_damping_tetrahedron(ntemp,
-                                                          Temperature,
-                                                          omega,
-                                                          iks / ns,
-                                                          snum,
-                                                          damping3_loc);
+            } else {
+
+                double omega = dynamical->eval_phonon[knum][snum];
+
+                if (integration->ismear == 0 || integration->ismear == 1) {
+                    anharmonic_core->calc_damping_smearing(ntemp,
+                                                        Temperature,
+                                                        omega,
+                                                        iks / ns,
+                                                        snum,
+                                                        damping3_loc);
+                } else if (integration->ismear == -1) {
+                    anharmonic_core->calc_damping_tetrahedron(ntemp,
+                                                            Temperature,
+                                                            omega,
+                                                            iks / ns,
+                                                            snum,
+                                                            damping3_loc);
+                }
             }
         }
 
@@ -392,7 +398,7 @@ void Conductivity::compute_kappa()
                 } else {
                     for (i = 0; i < ntemp; ++i) {
                         damp_tmp = damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum];
-                        if (damp_tmp > 1.0e-100) {
+                        if (damp_tmp > eps) {
                             lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
                         } else {
                             lifetime[iks][i] = 0.0;
@@ -410,7 +416,7 @@ void Conductivity::compute_kappa()
                 } else {
                     for (i = 0; i < ntemp; ++i) {
                         damp_tmp = damping3[iks][i];
-                        if (damp_tmp > 1.0e-100) {
+                        if (damp_tmp > eps) {
                             lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
                         } else {
                             lifetime[iks][i] = 0.0;

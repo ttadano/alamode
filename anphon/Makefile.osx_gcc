@@ -6,7 +6,7 @@
 #-----------------------------------------------
 
 # Use gcc to activate openmp parallelization
-MPICXX = g++-8
+MPICXX = g++-9
 CXXFLAGS = -O2 -std=c++11 -fopenmp
 INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/openmpi/include
 
