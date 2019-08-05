@@ -780,10 +780,6 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
     }
     allocate(fc_cart, maxorder);
 
-    //std::vector<int> atoms_ref;
-    //atoms_ref.push_back(0);
-    //atoms_ref.push_back(9);
-    //atoms_ref.push_back(9);
     std::vector<int> elems_permutation;
 
     std::vector<FcProperty> fc_table_copy;
@@ -810,8 +806,12 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
         for (const auto &it : fc_table[i]) {
             elems_permutation = it.elems;
             do {
-                fc_table_copy.emplace_back(nelems, it.sign, &elems_permutation[0], it.mother);
-            } while (std::next_permutation(elems_permutation.begin() + 1, elems_permutation.end()));
+                fc_table_copy.emplace_back(nelems,
+                                           it.sign,
+                                           &elems_permutation[0],
+                                           it.mother);
+            } while (std::next_permutation(elems_permutation.begin() + 1,
+                                           elems_permutation.end()));
         }
 
         // Sort fc_table_copy in ascending order of atomic indices.
@@ -856,39 +856,6 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
                                                     xyzcomponent[ixyz]);
                         }
                     }
-
- /*                   if (atoms_old == atoms_ref) {
-                        for (j = 0; j < icount; ++j) {
-                            for (auto k = 0; k < nelems; ++k) {
-                                std::cout << std::setw(5) << coord_list[j][k];
-                            }
-                            std::cout << std::setw(15) << fc_list[j] << std::endl;
-                        }
-                        for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
-
-                            auto fcs_cart = 0.0;
-
-                            for (j = 0; j < icount; ++j) {
-                                prod_matrix = 1.0;
-                                for (auto k = 0; k < nelems; ++k) {
-                                    prod_matrix *= basis_conversion_matrix(coord_list[j][k],
-                                                                           xyzcomponent[ixyz][k]);
-                                }
-                                fcs_cart += prod_matrix * fc_list[j];
-                                for (const auto &it3 : coord_list[j]) {
-                                    std::cout << std::setw(5) << it3;
-                                }
-                                for (auto jj = 0; jj < nelems; ++jj) {
-                                    std::cout << std::setw(5) << xyzcomponent[ixyz][jj];
-                                }
-                                std::cout << " prod_matrix = " << prod_matrix;
-                                std::cout << " fcs_cart_now = " << fcs_cart << std::endl;
-                            }
-                            std::cout << std::endl;
-
-                        }
-                    }*/
-
                 }
                 atoms_old = atoms_now;
                 coord_list.clear();
