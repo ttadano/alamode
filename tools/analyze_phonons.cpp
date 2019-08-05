@@ -117,7 +117,11 @@ int main(int argc,
                 if (omega[i][j] < eps6) {
                     tau[k][i][j] = 0.0; // Neglect contributions from imaginary branches
                 } else {
+                    if (damp_tmp > eps) {
                     tau[k][i][j] = 1.0e+12 * Hz_to_kayser * 0.5 / damp_tmp;
+                    } else {
+                      tau[k][i][j] = 0.0;
+                   }
                 }
             }
             ifs.ignore();
