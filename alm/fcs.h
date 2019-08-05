@@ -95,6 +95,7 @@ namespace ALM_NS
     public:
         double fc_value;
         std::vector<int> atoms, coords, flattenarray;
+        bool is_ascending_order; // true if the elements except the first element is sorted in ascending order.
         ForceConstantTable();
 
         ForceConstantTable(const ForceConstantTable &obj) = default;
@@ -112,6 +113,14 @@ namespace ALM_NS
                 atoms[i] = atoms_in[i];
                 coords[i] = coords_in[i];
                 flattenarray[i] = 3 * atoms_in[i] + coords_in[i];
+            }
+            is_ascending_order = true;
+
+            for (auto i = 1; i < nelems - 1; ++i) {
+                if (flattenarray[i] > flattenarray[i + 1]) {
+                    is_ascending_order = false;
+                    break;
+                }
             }
         }
 
@@ -217,7 +226,7 @@ namespace ALM_NS
                                            const size_t natmin,
                                            const std::vector<std::vector<int>> &map_p2s) const;
         double coef_sym(const int,
-                        const double * const *,
+                        const double *const *,
                         const int *,
                         const int *) const;
 

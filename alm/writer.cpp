@@ -595,7 +595,10 @@ void Writer::write_misc_xml(ALM *alm) const
 
         for (const auto &it : fc_cart_anharm) {
 
-            // Save nonzero force constants only 
+            // Print force constants only when the coefficient is nonzero
+            // and the last (order + 1) elements are sorted in ascending order.
+
+            if (!it.is_ascending_order) continue;
 
             for (k = 0; k < order + 2; ++k) {
                 pair_tmp[k] = it.atoms[k];
