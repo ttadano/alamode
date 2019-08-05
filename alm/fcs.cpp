@@ -59,6 +59,13 @@ void Fcs::init(const Cluster *cluster,
     if (verbosity > 0) {
         std::cout << " FORCE CONSTANT" << std::endl;
         std::cout << " ==============" << std::endl << std::endl;
+        std::cout << "  Symmetry is handled in ";
+        if (preferred_basis == "Lattice") {
+            std::cout << "crystallographic (fractional) coordinates.";
+        } else {
+            std::cout << "Cartesian coordinates.";
+    }
+        std::cout << std::endl;
     }
 
     if (fc_table) {
@@ -980,7 +987,7 @@ void Fcs::get_available_symmop(const size_t nat,
 }
 
 double Fcs::coef_sym(const int n,
-                     const double *const *rot,
+                     const double * const *rot,
                      const int *arr1,
                      const int *arr2) const
 {

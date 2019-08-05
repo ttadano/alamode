@@ -531,8 +531,7 @@ void System::print_structure_stdout(const Cell &cell)
     cout << " : a3" << endl;
     cout << endl;
 
-    cout << "  Cell volume = " << cell.volume << " (a.u)^3"
-        << endl << endl;
+    cout << "  Cell volume = " << cell.volume << endl << endl;
 
     cout << "  Reciprocal Lattice Vector" << std::endl;
     cout << setw(16) << supercell.reciprocal_lattice_vector[0][0];

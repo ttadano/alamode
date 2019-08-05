@@ -345,7 +345,7 @@ void Constraint::setup(const System *system,
                 std::cout << "  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:" << std::endl;
                 for (order = 0; order < maxorder; ++order) {
                     std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
-                    std::cout << std::setw(5) << const_translation[order].size();
+                    std::cout << " " << std::setw(6) << const_translation[order].size();
                     std::cout << std::setw(5) << const_rotation_self[order].size();
                     std::cout << std::setw(5) << const_rotation_cross[order].size();
                     std::cout << std::endl;
@@ -358,7 +358,7 @@ void Constraint::setup(const System *system,
                 std::cout << "  The number of such constraints for each order:" << std::endl;
                 for (order = 0; order < maxorder; ++order) {
                     std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
-                    std::cout << std::setw(5) << const_symmetry[order].size();
+                    std::cout << " " << std::setw(6) << const_symmetry[order].size();
                     std::cout << std::endl;
                 }
                 std::cout << std::endl;
@@ -376,7 +376,7 @@ void Constraint::setup(const System *system,
 
             for (order = 0; order < maxorder; ++order) {
                 std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
-                std::cout << std::setw(5) << const_self[order].size();
+                std::cout << " " << std::setw(6) << const_self[order].size();
                 std::cout << std::setw(5) << const_rotation_cross[order].size();
                 std::cout << std::endl;
             }
@@ -801,12 +801,16 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
     has_constraint_from_symm = has_constraint_from_symm & (verbosity > 0);
 
     if (has_constraint_from_symm) {
-        std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
+        std::cout << "  Generating constraints from crystal symmetry" << std::endl;
+        if (fcs->get_forceconstant_basis() == "Lattice") {
+            std::cout << "  in crystallographic (fractional) coordinates ..." << std::endl;
+        } else {
+            std::cout << "  in Cartesian coordinates ..." << std::endl;
     }
 
     for (auto order = 0; order < maxorder; ++order) {
         if (has_constraint_from_symm) {
-            std::cout << "   " << std::setw(8) << cluster->get_ordername(order) << " ...";
+            std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
         }
 
         if (fcs->get_forceconstant_basis() == "Lattice") {
