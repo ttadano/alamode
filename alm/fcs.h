@@ -178,6 +178,7 @@ namespace ALM_NS
         std::vector<size_t>* get_nequiv() const;
         std::vector<FcProperty>* get_fc_table() const;
         std::vector<ForceConstantTable>* get_fc_cart() const;
+        std::vector<size_t> get_nfc_cart(const int permutation) const;
 
         void set_forceconstant_basis(const std::string preferred_basis_in);
         std::string get_forceconstant_basis() const;
@@ -192,6 +193,8 @@ namespace ALM_NS
         std::vector<FcProperty> *fc_zeros; // zero force constants (due to space group symm.)
 
         std::vector<ForceConstantTable> *fc_cart; // all force constants in Cartesian coordinate
+        std::vector<size_t> nfc_cart_permu; // Number of nonzero elements with permutation
+        std::vector<size_t> nfc_cart_nopermu; // Number of nonzero elements without permutation
 
         std::string preferred_basis; // "Cartesian" or "Lattice"
         Eigen::Matrix3d basis_conversion_matrix;

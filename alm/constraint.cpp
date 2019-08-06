@@ -807,6 +807,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
         } else {
             std::cout << "  in Cartesian coordinates ..." << std::endl;
     }
+    }
 
     for (auto order = 0; order < maxorder; ++order) {
         if (has_constraint_from_symm) {

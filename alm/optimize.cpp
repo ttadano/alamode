@@ -171,6 +171,7 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         allocate(params, N);
         for (auto i = 0; i < N; ++i) params[i] = fcs_tmp[i];
 
+        // Set calculated force constants in FCS class
         fcs->set_forceconstant_cartesian(maxorder,
                                          params);
     }

@@ -380,11 +380,37 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
     return constraint->get_index_bimap(order).size();
 }
 
+size_t ALM::get_number_of_fc_origin(const int fc_order,
+                                    const int permutation) const
+{
+    if (fc_order <= 0) {
+        std::cout << "fc_order must be larger than 0." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    const auto maxorder = cluster->get_maxorder();
+    if (fc_order > maxorder) {
+        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    auto nfc_cart = fcs->get_nfc_cart(1);
+
+    if (nfc_cart.size() < fc_order) {
+        std::cout << "fc has not yet been computed or set." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (permutation) {
+        return fcs->get_nfc_cart(1)[fc_order - 1];
+    } else {
+        return fcs->get_nfc_cart(0)[fc_order - 1];
+    }
+}
+
 void ALM::get_fc_origin(double *fc_values,
                         int *elem_indices,
                         // (len(fc_values), fc_order + 1) is flatten.
-                        const int fc_order) const
-// harmonic=1, ...
+                        const int fc_order, // harmonic=1, ...
+                        const int permutation) const
 {
     // Return a set of force constants Phi(i,j,k,...) where i is an atom
     // inside the primitive cell at origin.
@@ -394,32 +420,31 @@ void ALM::get_fc_origin(double *fc_values,
         std::cout << "fc_order must not be larger than maxorder" << std::endl;
         exit(EXIT_FAILURE);
     }
-    if (!optimize->get_params()) {
+    if (!fcs->get_fc_cart()) {
         std::cout << "fc has not yet been computed." << std::endl;
         exit(EXIT_FAILURE);
     }
 
-
-    size_t ishift = 0;
-    size_t ip;
-    for (auto order = 0; order < fc_order; ++order) {
-
-        if (fcs->get_nequiv()[order].empty()) { continue; }
-
         auto id = 0;
 
-        if (order == fc_order - 1) {
-            for (const auto &it : fcs->get_fc_table()[order]) {
-
-                ip = it.mother + ishift;
-                fc_values[id] = optimize->get_params()[ip] * it.sign;
+    if (permutation) {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+            fc_values[id] = it.fc_value;
+            for (auto i = 0; i < fc_order + 1; ++i) {
+                elem_indices[id * (fc_order + 1) + i] = it.flattenarray[i];
+            }
+            ++id;
+        }
+    } else {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+            if (it.is_ascending_order) {
+                fc_values[id] = it.fc_value;
                 for (auto i = 0; i < fc_order + 1; ++i) {
-                    elem_indices[id * (fc_order + 1) + i] = it.elems[i];
+                    elem_indices[id * (fc_order + 1) + i] = it.flattenarray[i];
                 }
                 ++id;
             }
         }
-        ishift += fcs->get_nequiv()[order].size();
     }
 }
 
@@ -480,63 +505,55 @@ void ALM::get_fc_irreducible(double *fc_values,
 
 
 void ALM::get_fc_all(double *fc_values,
-                     int *elem_indices,
-                     // (len(fc_values), fc_order + 1) is flatten.
-                     const int fc_order) const
-// harmonic=1, ...
+                     int *elem_indices,  // (len(fc_values), fc_order + 1) is flatten.
+                     const int fc_order, // harmonic=1, ...
+                     const int permutation) const
 {
     int i;
-    double fc_elem;
     const auto ntran = symmetry->get_ntran();
-
     const auto maxorder = cluster->get_maxorder();
+
     if (fc_order > maxorder) {
         std::cout << "fc_order must not be larger than maxorder" << std::endl;
         exit(EXIT_FAILURE);
     }
-    if (!optimize->get_params()) {
+    if (!fcs->get_fc_cart()) {
         std::cout << "fc has not yet been computed." << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    size_t ishift = 0;
-    size_t ip;
-    std::vector<int> pair_tmp(fc_order + 1);
     std::vector<int> pair_tran(fc_order + 1);
-    std::vector<int> xyz_tmp(fc_order + 1);
+    size_t id = 0;
 
-    for (auto order = 0; order < fc_order; ++order) {
+     if (permutation) {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
 
-        if (fcs->get_nequiv()[order].empty()) { continue; }
-
-        auto id = 0;
-
-        if (order == fc_order - 1) {
-            for (const auto &it : fcs->get_fc_table()[order]) {
-
-                ip = it.mother + ishift;
-                fc_elem = optimize->get_params()[ip] * it.sign;
-
+            for (size_t itran = 0; itran < ntran; ++itran) {
                 for (i = 0; i < fc_order + 1; ++i) {
-                    pair_tmp[i] = it.elems[i] / 3;
-                    xyz_tmp[i] = it.elems[i] % 3;
+                    pair_tran[i] = symmetry->get_map_sym()[it.atoms[i]][symmetry->get_symnum_tran()[itran]];
                 }
-
+                fc_values[id] = it.fc_value;
+                for (i = 0; i < fc_order + 1; ++i) {
+                    elem_indices[id * (fc_order + 1) + i] = 3 * pair_tran[i] + it.coords[i];
+                }
+                ++id;
+            }
+                }
+    } else {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+            if (it.is_ascending_order) {
                 for (size_t itran = 0; itran < ntran; ++itran) {
                     for (i = 0; i < fc_order + 1; ++i) {
-                        pair_tran[i] = symmetry->get_map_sym()[pair_tmp[i]][symmetry->get_symnum_tran()[itran]];
+                        pair_tran[i] = symmetry->get_map_sym()[it.atoms[i]][symmetry->get_symnum_tran()[itran]];
                     }
-                    fc_values[id] = fc_elem;
+                    fc_values[id] = it.fc_value;
                     for (i = 0; i < fc_order + 1; ++i) {
-                        elem_indices[id * (fc_order + 1) + i] =
-                            3 * pair_tran[i] + xyz_tmp[i];
+                        elem_indices[id * (fc_order + 1) + i] = 3 * pair_tran[i] + it.coords[i];
                     }
                     ++id;
                 }
             }
         }
-
-        ishift += fcs->get_nequiv()[order].size();
     }
 }
 
@@ -546,6 +563,9 @@ void ALM::set_fc(double *fc_in) const
                              fc_in,
                              fcs->get_nequiv(),
                              constraint);
+
+    fcs->set_forceconstant_cartesian(cluster->get_maxorder(),
+                                     optimize->get_params());
 }
 
 void ALM::get_matrix_elements(double *amat,
