@@ -409,7 +409,8 @@ size_t ALM::get_number_of_fc_origin(const int fc_order,
 void ALM::get_fc_origin(double *fc_values,
                         int *elem_indices,
                         // (len(fc_values), fc_order + 1) is flatten.
-                        const int fc_order, // harmonic=1, ...
+                        const int fc_order,
+                        // harmonic=1, ...
                         const int permutation) const
 {
     // Return a set of force constants Phi(i,j,k,...) where i is an atom
@@ -425,7 +426,7 @@ void ALM::get_fc_origin(double *fc_values,
         exit(EXIT_FAILURE);
     }
 
-        auto id = 0;
+    auto id = 0;
 
     if (permutation) {
         for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
@@ -505,8 +506,10 @@ void ALM::get_fc_irreducible(double *fc_values,
 
 
 void ALM::get_fc_all(double *fc_values,
-                     int *elem_indices,  // (len(fc_values), fc_order + 1) is flatten.
-                     const int fc_order, // harmonic=1, ...
+                     int *elem_indices,
+                     // (len(fc_values), fc_order + 1) is flatten.
+                     const int fc_order,
+                     // harmonic=1, ...
                      const int permutation) const
 {
     int i;
@@ -525,7 +528,7 @@ void ALM::get_fc_all(double *fc_values,
     std::vector<int> pair_tran(fc_order + 1);
     size_t id = 0;
 
-     if (permutation) {
+    if (permutation) {
         for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
 
             for (size_t itran = 0; itran < ntran; ++itran) {
@@ -538,7 +541,7 @@ void ALM::get_fc_all(double *fc_values,
                 }
                 ++id;
             }
-                }
+        }
     } else {
         for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
             if (it.is_ascending_order) {

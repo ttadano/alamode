@@ -432,7 +432,7 @@ void System::load_system_info_from_XML()
         memory->allocate(xr_s, nat, 3);
         memory->allocate(kd, nat);
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
+        BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
             const ptree &child = child_.second;
             const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
             dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
@@ -440,7 +440,7 @@ void System::load_system_info_from_XML()
 
         unsigned int index;
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
+        BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
             const ptree &child = child_.second;
             const std::string str_index = child.get<std::string>("<xmlattr>.index");
             const std::string str_element = child.get<std::string>("<xmlattr>.element");
@@ -466,7 +466,7 @@ void System::load_system_info_from_XML()
         memory->allocate(map_p2s, natmin, ntran);
         memory->allocate(map_s2p, nat);
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
+        BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
             const ptree &child = child_.second;
             const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
             const std::string str_atom = child.get<std::string>("<xmlattr>.atom");
@@ -493,7 +493,7 @@ void System::load_system_info_from_XML()
 
         lspin = true;
         try {
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
+            BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
                 if (child_.first == "mag") {
                     const ptree &child = child_.second;
                     const std::string str_index = child.get<std::string>("<xmlattr>.index");
@@ -639,13 +639,13 @@ void System::load_system_info_from_XML()
             memory->allocate(xr_s, nat, 3);
             memory->allocate(kd, nat);
 
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
+            BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
                 const ptree &child = child_.second;
                 const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
                 dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
             }
 
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
+            BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
                 const ptree &child = child_.second;
                 const std::string str_index = child.get<std::string>("<xmlattr>.index");
                 const std::string str_element = child.get<std::string>("<xmlattr>.element");
@@ -671,7 +671,7 @@ void System::load_system_info_from_XML()
             memory->allocate(map_p2s, natmin, ntran);
             memory->allocate(map_s2p, nat);
 
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
+            BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
                 const ptree &child = child_.second;
                 const std::string str_tran = child.get<std::string>("<xmlattr>.tran");
                 const std::string str_atom = child.get<std::string>("<xmlattr>.atom");

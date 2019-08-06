@@ -368,8 +368,8 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
 std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3])
 {
     return Phi3(ks,
-              dynamical->eval_phonon,
-              dynamical->evec_phonon);
+                dynamical->eval_phonon,
+                dynamical->evec_phonon);
 }
 
 

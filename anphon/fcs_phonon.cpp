@@ -178,7 +178,7 @@ void Fcs_phonon::load_fc2_xml()
 
     fc2_ext.clear();
 
-    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
+    BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
         const ptree &child = child_.second;
         const std::string str_p1 = child.get<std::string>("<xmlattr>.pair1");
         const std::string str_p2 = child.get<std::string>("<xmlattr>.pair2");
@@ -247,7 +247,7 @@ void Fcs_phonon::load_fcs_xml() const
             error->exit("load_fcs_xml", str_tmp.c_str());
         }
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child(str_tag)) {
+        BOOST_FOREACH(const ptree::value_type& child_, pt.get_child(str_tag)) {
             const ptree &child = child_.second;
 
             double fcs_val = boost::lexical_cast<double>(child.data());

@@ -562,7 +562,7 @@ void Constraint::get_mapping_constraint(const int nmax,
 #ifndef _USE_MAP_FOR_CONSTRAINT
                 ConstVec.clear();
                 ConstVec.reserve((*p).size());
-                for (const auto &p2: (*p)) {
+                for (const auto &p2 : (*p)) {
                     ConstVec.emplace_back(p2.first, p2.second);
                 }
                 std::sort(ConstVec.begin(), ConstVec.end());
@@ -570,12 +570,12 @@ void Constraint::get_mapping_constraint(const int nmax,
                 p_index_target = ConstVec[0].col;
 
                 auto nsize = ConstVec.size();
-                alpha_tmp.resize(nsize-1);
-                p_index_tmp.resize(nsize-1);
+                alpha_tmp.resize(nsize - 1);
+                p_index_tmp.resize(nsize - 1);
 
                 for (i = 1; i < nsize; ++i) {
-                    alpha_tmp[i-1] = ConstVec[i].val;
-                    p_index_tmp[i-1] = ConstVec[i].col;
+                    alpha_tmp[i - 1] = ConstVec[i].val;
+                    p_index_tmp[i - 1] = ConstVec[i].col;
                 }
 
 #else
@@ -806,7 +806,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
             std::cout << "  in crystallographic (fractional) coordinates ..." << std::endl;
         } else {
             std::cout << "  in Cartesian coordinates ..." << std::endl;
-    }
+        }
     }
 
     for (auto order = 0; order < maxorder; ++order) {
