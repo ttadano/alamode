@@ -154,9 +154,8 @@ void rref_sparse(const size_t ncols,
 
     size_t nrank = 0;
     size_t icol = 0;
-
-    // std::set<unsigned int>::iterator it_found;
-    std::map<size_t, double>::iterator it_elem;
+    MapConstraintElement::iterator it_other;
+    MapConstraintElement::iterator it_elem;
 
     for (size_t irow = 0; irow < nrows; ++irow) {
 
@@ -202,10 +201,12 @@ void rref_sparse(const size_t ncols,
 
             // Subtract irow elements from jrow
             for (const auto &it_now : sp_constraint[irow]) {
+                // This part might be accelerated by using std::map::lower_bound
+                // when the datatype of sp_constraint[irow] is std::map.
                 if (it_now.first < icol) {
                     continue;
                 }
-                auto it_other = sp_constraint[jrow].find(it_now.first);
+                it_other = sp_constraint[jrow].find(it_now.first);
                 if (it_other != sp_constraint[jrow].end()) {
                     it_other->second -= scaling_factor * it_now.second;
                     // Delete zero elements and remove from map. 
@@ -220,7 +221,7 @@ void rref_sparse(const size_t ncols,
             // Make sure to erase the icol element from the target row if it exists.
             // When the original pivot element is large, the element after subtraction can sometimes be 
             // larger than the tolerance value because of the loss of significant digis.
-            auto it_other = sp_constraint[jrow].find(icol);
+            it_other = sp_constraint[jrow].find(icol);
             if (it_other != sp_constraint[jrow].end()) {
                 sp_constraint[jrow].erase(it_other);
             }
@@ -242,7 +243,7 @@ void rref_sparse(const size_t ncols,
     // Remove emptry entries from the sp_constraint vector
     sp_constraint.erase(std::remove_if(sp_constraint.begin(),
                                        sp_constraint.end(),
-                                       [](const std::map<size_t, double> &obj) { return obj.empty(); }),
+                                       [](const MapConstraintElement &obj) { return obj.empty(); }),
                         sp_constraint.end());
     sp_constraint.shrink_to_fit();
 }

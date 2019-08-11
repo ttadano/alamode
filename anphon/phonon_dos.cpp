@@ -205,7 +205,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
 {
     double *weight;
 
-//    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
+    //    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
@@ -235,7 +235,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
         memory->deallocate(weight);
     }
 
-//    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+    //    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
 }
 
 void Dos::calc_atom_projected_dos(const unsigned int nk,

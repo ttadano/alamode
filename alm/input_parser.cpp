@@ -38,7 +38,7 @@ InputParser::~InputParser()
 
 void InputParser::run(ALM *alm,
                       const int narg,
-                      const char *const *arg)
+                      const char * const *arg)
 {
     if (narg == 1) {
 
@@ -354,7 +354,7 @@ void InputParser::parse_input(ALM *alm)
 void InputParser::parse_general_vars(ALM *alm)
 {
     size_t i;
-    std::string str_tmp, str_disp_basis;
+    std::string str_tmp, str_disp_basis, basis_force_constant;
     int printsymmetry, is_periodic[3];
     size_t icount, ncount;
     auto trim_dispsign_for_evenfunc = true;
@@ -369,7 +369,7 @@ void InputParser::parse_general_vars(ALM *alm)
     const std::vector<std::string> input_list{
         "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
         "DBASIS", "TRIMEVEN", "VERBOSITY",
-        "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST"
+        "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FC_BASIS"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
     std::map<std::string, std::string> general_var_dict;
@@ -469,6 +469,15 @@ void InputParser::parse_general_vars(ALM *alm)
         tolerance_constraint = 1.0e-6;
     } else {
         assign_val(tolerance_constraint, "TOL_CONST", general_var_dict);
+    }
+
+    if (general_var_dict["FC_BASIS"].empty()) {
+        basis_force_constant = "Lattice";
+    } else {
+        basis_force_constant = general_var_dict["FC_BASIS"];
+        if (basis_force_constant != "Cartesian" && basis_force_constant != "Lattice") {
+            exit("parse_general_vars", "Invalid FC_BASIS.", basis_force_constant.c_str());
+        }
     }
 
     // Convert MAGMOM input to array
@@ -589,7 +598,6 @@ void InputParser::parse_general_vars(ALM *alm)
             assign_val(trim_dispsign_for_evenfunc,
                        "TRIMEVEN", general_var_dict);
         }
-
     }
 
     input_setter->set_general_vars(alm,
@@ -610,7 +618,9 @@ void InputParser::parse_general_vars(ALM *alm)
                                    kdname,
                                    magmom,
                                    tolerance,
-                                   tolerance_constraint);
+                                   tolerance_constraint,
+                                   basis_force_constant);
+
     allocate(magmom, nat, 3);
 
     kdname_v.clear();

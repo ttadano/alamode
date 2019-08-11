@@ -89,14 +89,24 @@ void ALM::set_output_filename_prefix(const std::string prefix) const // PREFIX
     files->set_prefix(prefix);
 }
 
+void ALM::set_print_hessian(const bool print_hessian) const // HESSIAN
+{
+    files->print_hessian = print_hessian;
+}
+
 void ALM::set_print_symmetry(const int printsymmetry) const // PRINTSYM
 {
     symmetry->set_print_symmetry(printsymmetry);
 }
 
-void ALM::set_print_hessian(const bool print_hessian) const // HESSIAN
+void ALM::set_datfile_train(const DispForceFile &dat_in) const
 {
-    files->print_hessian = print_hessian;
+    files->set_datfile_train(dat_in);
+}
+
+void ALM::set_datfile_validation(const DispForceFile &dat_in) const
+{
+    files->set_datfile_validation(dat_in);
 }
 
 void ALM::set_symmetry_tolerance(const double tolerance) const // TOLERANCE
@@ -147,30 +157,31 @@ void ALM::set_magnetic_params(const size_t nat,
     system->set_str_magmom(str_magmom);
 }
 
-void ALM::set_displacement_and_force(const double *u_in,
-                                     const double *f_in,
-                                     const int nat,
-                                     const int ndata_used) const
+void ALM::set_training_data(const std::vector<std::vector<double>> &u,
+                            const std::vector<std::vector<double>> &f) const
 {
-    std::vector<std::vector<double>> u, f;
-
-    u.resize(ndata_used, std::vector<double>(3 * nat));
-    f.resize(ndata_used, std::vector<double>(3 * nat));
-
-    for (auto i = 0; i < ndata_used; i++) {
-        for (auto j = 0; j < 3 * nat; j++) {
-            u[i][j] = u_in[i * nat * 3 + j];
-            f[i][j] = f_in[i * nat * 3 + j];
-        }
-    }
     optimize->set_training_data(u, f);
-    u.clear();
-    f.clear();
 }
 
-void ALM::set_constraint_type(const int constraint_flag) const // ICONST
+void ALM::set_validation_data(const std::vector<std::vector<double>> &u,
+                              const std::vector<std::vector<double>> &f) const
+{
+    optimize->set_validation_data(u, f);
+}
+
+void ALM::set_optimizer_control(const OptimizerControl &optcontrol_in) const
+{
+    optimize->set_optimizer_control(optcontrol_in);
+}
+
+void ALM::set_constraint_mode(const int constraint_flag) const // ICONST
 {
     constraint->set_constraint_mode(constraint_flag);
+}
+
+void ALM::set_tolerance_constraint(const double tolerance_constraint) const // TOL_CONST
+{
+    constraint->set_tolerance_constraint(tolerance_constraint);
 }
 
 void ALM::set_rotation_axis(const std::string rotation_axis) const // ROTAXIS
@@ -178,11 +189,38 @@ void ALM::set_rotation_axis(const std::string rotation_axis) const // ROTAXIS
     constraint->set_rotation_axis(rotation_axis);
 }
 
+void ALM::set_fc_file(const int order,
+                      const std::string fc_file) const
+{
+    constraint->set_fc_file(order, fc_file);
+}
+
+void ALM::set_fc_fix(const int order,
+                     const bool fc_fix) const
+{
+    if (order == 2) {
+        constraint->set_fix_harmonic(fc_fix);
+    }
+    if (order == 3) {
+        constraint->set_fix_cubic(fc_fix);
+    }
+}
+
 void ALM::set_sparse_mode(const int sparse_mode) const // SPARSE
 {
     auto optctrl = optimize->get_optimizer_control();
     optctrl.use_sparse_solver = sparse_mode;
     optimize->set_optimizer_control(optctrl);
+}
+
+void ALM::set_forceconstant_basis(const std::string preferred_basis) const // FC_BASIS
+{
+    fcs->set_forceconstant_basis(preferred_basis);
+}
+
+std::string ALM::get_forceconstant_basis() const
+{
+    return fcs->get_forceconstant_basis();
 }
 
 void ALM::define(const int maxorder,
@@ -197,9 +235,19 @@ void ALM::define(const int maxorder,
                     cutoff_radii);
 }
 
+OptimizerControl ALM::get_optimizer_control() const
+{
+    return optimize->get_optimizer_control();
+}
+
 size_t ALM::get_nrows_sensing_matrix() const
 {
     return optimize->get_number_of_rows_sensing_matrix();
+}
+
+double ALM::get_cv_l1_alpha() const
+{
+    return optimize->get_cv_l1_alpha();
 }
 
 Cell ALM::get_supercell() const
@@ -332,11 +380,38 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
     return constraint->get_index_bimap(order).size();
 }
 
+size_t ALM::get_number_of_fc_origin(const int fc_order,
+                                    const int permutation) const
+{
+    if (fc_order <= 0) {
+        std::cout << "fc_order must be larger than 0." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    const auto maxorder = cluster->get_maxorder();
+    if (fc_order > maxorder) {
+        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    auto nfc_cart = fcs->get_nfc_cart(1);
+
+    if (nfc_cart.size() < fc_order) {
+        std::cout << "fc has not yet been computed or set." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (permutation) {
+        return fcs->get_nfc_cart(1)[fc_order - 1];
+    } else {
+        return fcs->get_nfc_cart(0)[fc_order - 1];
+    }
+}
+
 void ALM::get_fc_origin(double *fc_values,
                         int *elem_indices,
                         // (len(fc_values), fc_order + 1) is flatten.
-                        const int fc_order) const
-// harmonic=1, ...
+                        const int fc_order,
+                        // harmonic=1, ...
+                        const int permutation) const
 {
     // Return a set of force constants Phi(i,j,k,...) where i is an atom
     // inside the primitive cell at origin.
@@ -346,27 +421,31 @@ void ALM::get_fc_origin(double *fc_values,
         std::cout << "fc_order must not be larger than maxorder" << std::endl;
         exit(EXIT_FAILURE);
     }
+    if (!fcs->get_fc_cart()) {
+        std::cout << "fc has not yet been computed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-    size_t ishift = 0;
-    size_t ip;
-    for (auto order = 0; order < fc_order; ++order) {
+    auto id = 0;
 
-        if (fcs->get_nequiv()[order].empty()) { continue; }
-
-        auto id = 0;
-
-        if (order == fc_order - 1) {
-            for (const auto &it : fcs->get_fc_table()[order]) {
-
-                ip = it.mother + ishift;
-                fc_values[id] = optimize->get_params()[ip] * it.sign;
+    if (permutation) {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+            fc_values[id] = it.fc_value;
+            for (auto i = 0; i < fc_order + 1; ++i) {
+                elem_indices[id * (fc_order + 1) + i] = it.flattenarray[i];
+            }
+            ++id;
+        }
+    } else {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+            if (it.is_ascending_order) {
+                fc_values[id] = it.fc_value;
                 for (auto i = 0; i < fc_order + 1; ++i) {
-                    elem_indices[id * (fc_order + 1) + i] = it.elems[i];
+                    elem_indices[id * (fc_order + 1) + i] = it.flattenarray[i];
                 }
                 ++id;
             }
         }
-        ishift += fcs->get_nequiv()[order].size();
     }
 }
 
@@ -383,6 +462,10 @@ void ALM::get_fc_irreducible(double *fc_values,
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
         std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if (!optimize->get_params()) {
+        std::cout << "fc has not yet been computed." << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -425,57 +508,55 @@ void ALM::get_fc_irreducible(double *fc_values,
 void ALM::get_fc_all(double *fc_values,
                      int *elem_indices,
                      // (len(fc_values), fc_order + 1) is flatten.
-                     const int fc_order) const
-// harmonic=1, ...
+                     const int fc_order,
+                     // harmonic=1, ...
+                     const int permutation) const
 {
     int i;
-    double fc_elem;
     const auto ntran = symmetry->get_ntran();
-
     const auto maxorder = cluster->get_maxorder();
+
     if (fc_order > maxorder) {
         std::cout << "fc_order must not be larger than maxorder" << std::endl;
         exit(EXIT_FAILURE);
     }
+    if (!fcs->get_fc_cart()) {
+        std::cout << "fc has not yet been computed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-    size_t ishift = 0;
-    size_t ip;
-    std::vector<int> pair_tmp(fc_order + 1);
     std::vector<int> pair_tran(fc_order + 1);
-    std::vector<int> xyz_tmp(fc_order + 1);
+    size_t id = 0;
 
-    for (auto order = 0; order < fc_order; ++order) {
+    if (permutation) {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
 
-        if (fcs->get_nequiv()[order].empty()) { continue; }
-
-        auto id = 0;
-
-        if (order == fc_order - 1) {
-            for (const auto &it : fcs->get_fc_table()[order]) {
-
-                ip = it.mother + ishift;
-                fc_elem = optimize->get_params()[ip] * it.sign;
-
+            for (size_t itran = 0; itran < ntran; ++itran) {
                 for (i = 0; i < fc_order + 1; ++i) {
-                    pair_tmp[i] = it.elems[i] / 3;
-                    xyz_tmp[i] = it.elems[i] % 3;
+                    pair_tran[i] = symmetry->get_map_sym()[it.atoms[i]][symmetry->get_symnum_tran()[itran]];
                 }
-
+                fc_values[id] = it.fc_value;
+                for (i = 0; i < fc_order + 1; ++i) {
+                    elem_indices[id * (fc_order + 1) + i] = 3 * pair_tran[i] + it.coords[i];
+                }
+                ++id;
+            }
+        }
+    } else {
+        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+            if (it.is_ascending_order) {
                 for (size_t itran = 0; itran < ntran; ++itran) {
                     for (i = 0; i < fc_order + 1; ++i) {
-                        pair_tran[i] = symmetry->get_map_sym()[pair_tmp[i]][symmetry->get_symnum_tran()[itran]];
+                        pair_tran[i] = symmetry->get_map_sym()[it.atoms[i]][symmetry->get_symnum_tran()[itran]];
                     }
-                    fc_values[id] = fc_elem;
+                    fc_values[id] = it.fc_value;
                     for (i = 0; i < fc_order + 1; ++i) {
-                        elem_indices[id * (fc_order + 1) + i] =
-                            3 * pair_tran[i] + xyz_tmp[i];
+                        elem_indices[id * (fc_order + 1) + i] = 3 * pair_tran[i] + it.coords[i];
                     }
                     ++id;
                 }
             }
         }
-
-        ishift += fcs->get_nequiv()[order].size();
     }
 }
 
@@ -485,6 +566,9 @@ void ALM::set_fc(double *fc_in) const
                              fc_in,
                              fcs->get_nequiv(),
                              constraint);
+
+    fcs->set_forceconstant_cartesian(cluster->get_maxorder(),
+                                     optimize->get_params());
 }
 
 void ALM::get_matrix_elements(double *amat,

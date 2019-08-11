@@ -117,7 +117,7 @@ void Cluster::init(const System *system,
 
 
     if (verbosity > 0) {
-        std::cout << "  +++ Cutoff Radii Matrix in Bohr Unit (NKD x NKD matrix) +++" << std::endl;
+        std::cout << "  +++ Cutoff Radii Matrix (NKD x NKD matrix) +++" << std::endl;
 
         for (i = 0; i < maxorder; ++i) {
             std::cout << "  " << std::setw(9) << get_ordername(i) << std::endl;
@@ -254,7 +254,7 @@ double Cluster::distance(const double *x1,
 }
 
 void Cluster::get_pairs_of_minimum_distance(const size_t nat,
-                                            const double *const *const *xc_in,
+                                            const double * const * const *xc_in,
                                             const int *exist) const
 {
     size_t i, j;
@@ -329,7 +329,7 @@ void Cluster::print_neighborlist(const size_t nat,
 
     std::cout << std::endl;
     std::cout << "  List of neighboring atoms below." << std::endl;
-    std::cout << "  Format [N th-nearest shell, distance in Bohr (Number of atoms on the shell)]"
+    std::cout << "  Format [N th-nearest shell, distance (Number of atoms on the shell)]"
         << std::endl << std::endl;
 
     std::vector<int> atomlist;

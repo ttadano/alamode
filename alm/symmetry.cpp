@@ -84,7 +84,6 @@ const std::vector<int>& Symmetry::get_symnum_tran() const
     return symnum_tran;
 }
 
-
 size_t Symmetry::get_nsym() const
 {
     return nsym;
@@ -136,7 +135,6 @@ void Symmetry::init(const System *system,
 
     gen_mapping_information(system->get_supercell(),
                             system->get_atomtype_group());
-
 
     if (verbosity > 0) {
         print_symminfo_stdout();
@@ -905,5 +903,3 @@ void Symmetry::set_primitive_lattice(const double aa[3][3],
     deallocate(position);
     deallocate(types_tmp);
 }
-
-

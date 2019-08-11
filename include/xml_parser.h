@@ -15,14 +15,18 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/optional.hpp>
 
-inline std::string get_value_from_xml(const boost::property_tree::ptree &pt_in, std::string str) 
+inline std::string get_value_from_xml(const boost::property_tree::ptree &pt_in, std::string str, const int exit_when_error = 1) 
 {
     if (boost::optional<std::string> str_entry = pt_in.get_optional<std::string>(str)) {
         return str_entry.get();
     } else {
-        std::cout << " Error in get_value_from_xml" << std::endl;
-        std::cout << " The following entry could not be found in the XML file : " 
-            << str << std::endl;
-        exit(EXIT_FAILURE);
+        if (exit_when_error) {
+            std::cout << " Error in get_value_from_xml" << std::endl;
+            std::cout << " The following entry could not be found in the XML file : " 
+                << str << std::endl;
+            exit(EXIT_FAILURE);
+        } else {
+            return "";
+        }
     }
 }

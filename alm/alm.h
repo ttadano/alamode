@@ -43,8 +43,10 @@ namespace ALM_NS
         void set_verbosity(int verbosity_in);
         int get_verbosity() const;
         void set_output_filename_prefix(std::string prefix) const;
-        void set_print_symmetry(int printsymmetry) const;
         void set_print_hessian(bool print_hessian) const;
+        void set_print_symmetry(int printsymmetry) const;
+        void set_datfile_train(const DispForceFile &dat_in) const;
+        void set_datfile_validation(const DispForceFile &dat_in) const;
         void set_symmetry_tolerance(double tolerance) const;
         void set_displacement_param(bool trim_dispsign_for_evenfunc) const;
         void set_displacement_basis(std::string str_disp_basis) const;
@@ -60,13 +62,20 @@ namespace ALM_NS
                                  const int noncollinear,
                                  const int trev_sym_mag,
                                  const std::string str_magmom) const;
-        void set_displacement_and_force(const double *u_in,
-                                        const double *f_in,
-                                        int nat,
-                                        int ndata_used) const;
-        void set_constraint_type(int constraint_flag) const;
-        void set_rotation_axis(std::string rotation_axis) const;
-        void set_sparse_mode(int sparse_mode) const;
+        void set_training_data(const std::vector<std::vector<double>> &u,
+                               const std::vector<std::vector<double>> &f) const;
+        void set_validation_data(const std::vector<std::vector<double>> &u,
+                                 const std::vector<std::vector<double>> &f) const;
+        void set_optimizer_control(const OptimizerControl &optcontrol_in) const;
+        void set_constraint_mode(const int constraint_flag) const;
+        void set_tolerance_constraint(const double tolerance_constraint) const;
+        void set_rotation_axis(const std::string rotation_axis) const;
+        void set_fc_file(const int order, const std::string fc_file) const;
+        void set_fc_fix(const int order, const bool fc_fix) const;
+        void set_sparse_mode(const int sparse_mode) const;
+        void set_forceconstant_basis(const std::string preferred_basis) const;
+        std::string get_forceconstant_basis() const;
+
         //void set_fitting_filenames(std::string dfile,
         //                           std::string ffile) const;
         void define(const int maxorder,
@@ -74,7 +83,9 @@ namespace ALM_NS
                     const int *nbody_include,
                     const double *cutoff_radii) const;
         //int get_ndata_used() const;
+        OptimizerControl get_optimizer_control() const;
         size_t get_nrows_sensing_matrix() const;
+        double get_cv_l1_alpha() const;
         Cell get_supercell() const;
         std::string* get_kdname() const;
         Spin get_spin() const;
@@ -93,25 +104,30 @@ namespace ALM_NS
         int get_displacement_patterns(int *atom_indices,
                                       double *disp_patterns,
                                       int fc_order) const;          // harmonic=1, ...
-        size_t get_number_of_fc_elements(const int fc_order) const; // harmonic=2, ...
-        size_t get_number_of_irred_fc_elements(const int fc_order); // harmonic=2, ...
+        size_t get_number_of_fc_elements(const int fc_order) const; // harmonic=1, ...
+        size_t get_number_of_irred_fc_elements(const int fc_order); // harmonic=1, ...
+
+        size_t get_number_of_fc_origin(const int fc_order, // harmonic = 1
+                                       const int permutation) const;
 
         void get_fc_origin(double *fc_values,
                            int *elem_indices,
                            // (len(fc_value), fc_order) is flatten.
-                           int fc_order) const; // harmonic=2, ...
+                           int fc_order, // harmonic=1, ...
+                           int permutation = 1) const;
 
 
         void get_fc_irreducible(double *fc_values,
                                 int *elem_indices,
                                 // (len(fc_value), fc_order) is flatten.
-                                int fc_order); // harmonic=2, ...
+                                int fc_order); // harmonic=1, ...
 
 
         void get_fc_all(double *fc_values,
                         int *elem_indices,
                         // (len(fc_value), fc_order) is flatten.
-                        int fc_order) const; // harmonic=2, ...
+                        int fc_order, // harmonic=1, ...
+                        int permutation = 1) const;
 
         void set_fc(double *fc_in) const;
 

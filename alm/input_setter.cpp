@@ -133,19 +133,20 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int noncollinear_in,
                                    const int trevsym_in,
                                    const std::string *kdname_in,
-                                   const double *const *magmom_in,
+                                   const double * const *magmom_in,
                                    const double tolerance,
-                                   const double tolerance_constraint)
+                                   const double tolerance_constraint,
+                                   const std::string basis_force_constant)
 {
     size_t i;
 
-    alm->files->set_prefix(prefix);
+    alm->set_output_filename_prefix(prefix);
     alm->set_run_mode(mode);
     alm->set_verbosity(verbosity);
     nat = nat_in;
     nkd = nkd_in;
-    alm->symmetry->set_print_symmetry(printsymmetry);
-    alm->symmetry->set_tolerance(tolerance);
+    alm->set_print_symmetry(printsymmetry);
+    alm->set_symmetry_tolerance(tolerance);
 
     if (kdname) {
         deallocate(kdname);
@@ -173,12 +174,13 @@ void InputSetter::set_general_vars(ALM *alm,
         is_periodic[i] = is_periodic_in[i];
     }
 
-    alm->files->print_hessian = print_hessian;
-    alm->constraint->set_tolerance_constraint(tolerance_constraint);
+    alm->set_print_hessian(print_hessian);
+    alm->set_tolerance_constraint(tolerance_constraint);
+    alm->set_forceconstant_basis(basis_force_constant);
 
     if (mode == "suggest") {
-        alm->displace->set_disp_basis(str_disp_basis);
-        alm->displace->set_trim_dispsign_for_evenfunc(trim_dispsign_for_evenfunc);
+        alm->set_displacement_basis(str_disp_basis);
+        alm->set_displacement_param(trim_dispsign_for_evenfunc);
     }
 }
 
@@ -198,17 +200,17 @@ void InputSetter::set_optimize_vars(ALM *alm,
                                     const std::vector<std::vector<double>> &f_validation_in,
                                     const OptimizerControl &optcontrol_in) const
 {
-    alm->optimize->set_training_data(u_train_in, f_train_in);
-    alm->optimize->set_validation_data(u_validation_in, f_validation_in);
-    alm->optimize->set_optimizer_control(optcontrol_in);
+    alm->set_training_data(u_train_in, f_train_in);
+    alm->set_validation_data(u_validation_in, f_validation_in);
+    alm->set_optimizer_control(optcontrol_in);
 }
 
 void InputSetter::set_file_vars(ALM *alm,
                                 const DispForceFile &datfile_train_in,
                                 const DispForceFile &datfile_validation_in) const
 {
-    alm->files->set_datfile_train(datfile_train_in);
-    alm->files->set_datfile_validation(datfile_validation_in);
+    alm->set_datfile_train(datfile_train_in);
+    alm->set_datfile_validation(datfile_validation_in);
 }
 
 void InputSetter::set_constraint_vars(ALM *alm,
@@ -219,12 +221,12 @@ void InputSetter::set_constraint_vars(ALM *alm,
                                       const bool fix_harmonic,
                                       const bool fix_cubic) const
 {
-    alm->constraint->set_constraint_mode(constraint_flag);
-    alm->constraint->set_rotation_axis(rotation_axis);
-    alm->constraint->set_fc_file(2, fc2_file);
-    alm->constraint->set_fix_harmonic(fix_harmonic);
-    alm->constraint->set_fc_file(3, fc3_file);
-    alm->constraint->set_fix_cubic(fix_cubic);
+    alm->set_constraint_mode(constraint_flag);
+    alm->set_rotation_axis(rotation_axis);
+    alm->set_fc_file(2, fc2_file);
+    alm->set_fc_fix(2, fix_harmonic);
+    alm->set_fc_file(3, fc3_file);
+    alm->set_fc_fix(3, fix_cubic);
 }
 
 

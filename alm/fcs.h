@@ -14,12 +14,20 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <algorithm>
 #include "cluster.h"
 #include "symmetry.h"
 #include "timer.h"
+#include <Eigen/Core>
 
-using ConstraintSparseForm = std::vector<std::map<size_t, double>>;
+// By default, we use unordered_map for better performance of rref_sparse (in rref.cpp).
+#ifdef _USE_MAP_FOR_CONSTRAINT
+using MapConstraintElement = std::map<size_t, double>;
+#else
+using MapConstraintElement = std::unordered_map<size_t, double>;
+#endif
+using ConstraintSparseForm = std::vector<MapConstraintElement>;
 
 namespace ALM_NS
 {
@@ -87,6 +95,7 @@ namespace ALM_NS
     public:
         double fc_value;
         std::vector<int> atoms, coords, flattenarray;
+        bool is_ascending_order; // true if the elements except the first element is sorted in ascending order.
         ForceConstantTable();
 
         ForceConstantTable(const ForceConstantTable &obj) = default;
@@ -104,6 +113,14 @@ namespace ALM_NS
                 atoms[i] = atoms_in[i];
                 coords[i] = coords_in[i];
                 flattenarray[i] = 3 * atoms_in[i] + coords_in[i];
+            }
+            is_ascending_order = true;
+
+            for (auto i = 1; i < nelems - 1; ++i) {
+                if (flattenarray[i] > flattenarray[i + 1]) {
+                    is_ascending_order = false;
+                    break;
+                }
             }
         }
 
@@ -148,12 +165,23 @@ namespace ALM_NS
                                      ConstraintSparseForm &const_out,
                                      const bool do_rref = false) const;
 
+        void get_constraint_symmetry_in_integer(const size_t nat,
+                                                const Symmetry *symmetry,
+                                                const int order,
+                                                const std::string basis,
+                                                const std::vector<FcProperty> &fc_table_in,
+                                                const size_t nparams,
+                                                const double tolerance,
+                                                ConstraintSparseForm &const_out,
+                                                const bool do_rref = false) const;
+
         std::vector<size_t>* get_nequiv() const;
         std::vector<FcProperty>* get_fc_table() const;
         std::vector<ForceConstantTable>* get_fc_cart() const;
+        std::vector<size_t> get_nfc_cart(const int permutation) const;
 
-        void set_preferred_basis(const std::string preferred_basis_in);
-        std::string get_preferred_basis() const;
+        void set_forceconstant_basis(const std::string preferred_basis_in);
+        std::string get_forceconstant_basis() const;
         Eigen::Matrix3d get_basis_conversion_matrix() const;
 
         void set_forceconstant_cartesian(const int maxorder,
@@ -165,6 +193,8 @@ namespace ALM_NS
         std::vector<FcProperty> *fc_zeros; // zero force constants (due to space group symm.)
 
         std::vector<ForceConstantTable> *fc_cart; // all force constants in Cartesian coordinate
+        std::vector<size_t> nfc_cart_permu; // Number of nonzero elements with permutation
+        std::vector<size_t> nfc_cart_nopermu; // Number of nonzero elements without permutation
 
         std::string preferred_basis; // "Cartesian" or "Lattice"
         Eigen::Matrix3d basis_conversion_matrix;
@@ -184,6 +214,8 @@ namespace ALM_NS
         bool is_allzero(const std::vector<double> &,
                         double,
                         int &) const;
+        bool is_allzero(const std::vector<int> &,
+                        int &) const;
         void get_available_symmop(const size_t nat,
                                   const Symmetry *symmetry,
                                   const std::string basis,
@@ -197,7 +229,7 @@ namespace ALM_NS
                                            const size_t natmin,
                                            const std::vector<std::vector<int>> &map_p2s) const;
         double coef_sym(const int,
-                        const double *const *,
+                        const double * const *,
                         const int *,
                         const int *) const;
 

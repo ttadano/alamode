@@ -159,8 +159,8 @@ void Constraint::setup(const System *system,
         break;
     }
 
-    if (fcs->get_preferred_basis() == "Lattice" && impose_inv_R) {
-        exit("Constraint::setup()", "Sorry, rotational invariance with preferred_basis == Lattice is "
+    if (fcs->get_forceconstant_basis() == "Lattice" && impose_inv_R) {
+        exit("Constraint::setup()", "Sorry, rotational invariance with FC_BASIS = Lattice is "
              "not supported.\n Use preferred_basis == Cartesian instead.");
     }
 
@@ -345,7 +345,7 @@ void Constraint::setup(const System *system,
                 std::cout << "  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:" << std::endl;
                 for (order = 0; order < maxorder; ++order) {
                     std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
-                    std::cout << std::setw(5) << const_translation[order].size();
+                    std::cout << " " << std::setw(6) << const_translation[order].size();
                     std::cout << std::setw(5) << const_rotation_self[order].size();
                     std::cout << std::setw(5) << const_rotation_cross[order].size();
                     std::cout << std::endl;
@@ -358,7 +358,7 @@ void Constraint::setup(const System *system,
                 std::cout << "  The number of such constraints for each order:" << std::endl;
                 for (order = 0; order < maxorder; ++order) {
                     std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
-                    std::cout << std::setw(5) << const_symmetry[order].size();
+                    std::cout << " " << std::setw(6) << const_symmetry[order].size();
                     std::cout << std::endl;
                 }
                 std::cout << std::endl;
@@ -376,7 +376,7 @@ void Constraint::setup(const System *system,
 
             for (order = 0; order < maxorder; ++order) {
                 std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
-                std::cout << std::setw(5) << const_self[order].size();
+                std::cout << " " << std::setw(6) << const_self[order].size();
                 std::cout << std::setw(5) << const_rotation_cross[order].size();
                 std::cout << std::endl;
             }
@@ -544,6 +544,8 @@ void Constraint::get_mapping_constraint(const int nmax,
     int order;
     size_t i;
 
+    std::vector<ConstraintDoubleElement> ConstVec;
+
     for (order = 0; order < nmax; ++order) {
 
         if (const_fix_out[order].empty()) {
@@ -556,6 +558,27 @@ void Constraint::get_mapping_constraint(const int nmax,
 
                 alpha_tmp.clear();
                 p_index_tmp.clear();
+
+#ifndef _USE_MAP_FOR_CONSTRAINT
+                ConstVec.clear();
+                ConstVec.reserve((*p).size());
+                for (const auto &p2 : (*p)) {
+                    ConstVec.emplace_back(p2.first, p2.second);
+                }
+                std::sort(ConstVec.begin(), ConstVec.end());
+
+                p_index_target = ConstVec[0].col;
+
+                auto nsize = ConstVec.size();
+                alpha_tmp.resize(nsize - 1);
+                p_index_tmp.resize(nsize - 1);
+
+                for (i = 1; i < nsize; ++i) {
+                    alpha_tmp[i - 1] = ConstVec[i].val;
+                    p_index_tmp[i - 1] = ConstVec[i].col;
+                }
+
+#else
                 auto counter = 0;
                 for (const auto &p2 : (*p)) {
                     if (counter == 0) {
@@ -566,6 +589,7 @@ void Constraint::get_mapping_constraint(const int nmax,
                     }
                     ++counter;
                 }
+#endif
 
                 if (!alpha_tmp.empty()) {
                     const_relate_out[order].emplace_back(p_index_target,
@@ -758,7 +782,7 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
     auto has_constraint_from_symm = false;
     std::vector<std::vector<double>> const_tmp;
 
-    if (fcs->get_preferred_basis() == "Cartesian") {
+    if (fcs->get_forceconstant_basis() == "Cartesian") {
         for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
             if (!symmetry->get_SymmData()[isym].compatible_with_cartesian) {
                 has_constraint_from_symm = true;
@@ -777,22 +801,38 @@ void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
     has_constraint_from_symm = has_constraint_from_symm & (verbosity > 0);
 
     if (has_constraint_from_symm) {
-        std::cout << "  Generating constraints from crystal symmetry ..." << std::endl;
+        std::cout << "  Generating constraints from crystal symmetry" << std::endl;
+        if (fcs->get_forceconstant_basis() == "Lattice") {
+            std::cout << "  in crystallographic (fractional) coordinates ..." << std::endl;
+        } else {
+            std::cout << "  in Cartesian coordinates ..." << std::endl;
+        }
     }
 
     for (auto order = 0; order < maxorder; ++order) {
         if (has_constraint_from_symm) {
-            std::cout << "   " << std::setw(8) << cluster->get_ordername(order) << " ...";
+            std::cout << "   " << std::setw(8) << cluster->get_ordername(order);
         }
 
-        fcs->get_constraint_symmetry(nat,
-                                     symmetry,
-                                     order,
-                                     fcs->get_preferred_basis(),
-                                     fcs->get_fc_table()[order],
-                                     fcs->get_nequiv()[order].size(),
-                                     tolerance_constraint,
-                                     const_symmetry[order], true);
+        if (fcs->get_forceconstant_basis() == "Lattice") {
+            fcs->get_constraint_symmetry_in_integer(nat,
+                                                    symmetry,
+                                                    order,
+                                                    fcs->get_forceconstant_basis(),
+                                                    fcs->get_fc_table()[order],
+                                                    fcs->get_nequiv()[order].size(),
+                                                    tolerance_constraint,
+                                                    const_symmetry[order], true);
+        } else {
+            fcs->get_constraint_symmetry(nat,
+                                         symmetry,
+                                         order,
+                                         fcs->get_forceconstant_basis(),
+                                         fcs->get_fc_table()[order],
+                                         fcs->get_nequiv()[order].size(),
+                                         tolerance_constraint,
+                                         const_symmetry[order], true);
+        }
 
         if (has_constraint_from_symm) {
             std::cout << " done." << std::endl;
@@ -1104,8 +1144,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
                                      constraint_all.end()),
                          constraint_all.end());
 
-    typedef std::map<size_t, double> ConstDoubleEntry;
-    ConstDoubleEntry const_tmp2;
+    MapConstraintElement const_tmp2;
     auto division_factor = 1.0;
     int counter;
     const_out.clear();
@@ -1673,7 +1712,7 @@ void Constraint::generate_rotational_constraint(const System *system,
     } // order
 
     int counter;
-    std::map<size_t, double> const_copy;
+    MapConstraintElement const_copy;
     auto division_factor = 1.0;
 
     for (order = 0; order < maxorder; ++order) {
@@ -1831,16 +1870,35 @@ void Constraint::fix_forceconstants_to_file(const int order,
             get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
 
         if (nfcs_ref != nfcs) {
-            exit("load_reference_system_xml",
+            exit("fix_forceconstants_to_file",
                  "The number of harmonic force constants is not consistent.");
+        }
+
+        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
+            get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.Basis", 0));
+
+        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
+
+        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
+            exit("fix_forceconstants_to_file",
+                 "The basis of harmonic force constants is not consistent.");
         }
     } else if (order == 1) {
         const auto nfcs_ref = boost::lexical_cast<size_t>(
             get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.NFC3"));
 
         if (nfcs_ref != nfcs) {
-            exit("load_reference_system_xml",
+            exit("fix_forceconstants_to_file",
                  "The number of cubic force constants is not consistent.");
+        }
+
+        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
+            get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
+        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
+
+        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
+            exit("fix_forceconstants_to_file",
+                 "The basis of cubic force constants is not consistent.");
         }
     }
 

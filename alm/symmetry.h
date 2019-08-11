@@ -14,7 +14,6 @@
 #include <vector>
 #include "system.h"
 #include "timer.h"
-#include <Eigen/Core>
 
 namespace ALM_NS
 {
@@ -190,8 +189,6 @@ namespace ALM_NS
                                    int *kd_prim,
                                    double **x_prim,
                                    const double symprec) const;
-
-
 
         std::string file_sym;
     };

@@ -55,6 +55,7 @@ void Writer::write_input_vars(const ALM *alm) const
     std::cout << "  KD = ";
     for (i = 0; i < nkd; ++i) std::cout << std::setw(4) << alm->get_kdname()[i];
     std::cout << '\n';
+    std::cout << "  FC_BASIS = " << alm->get_forceconstant_basis() << '\n';
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << alm->get_periodicity()[i];
     std::cout << '\n';
@@ -453,7 +454,7 @@ void Writer::write_misc_xml(ALM *alm) const
     str_tmp.clear();
 
     pt.put("Data.ForceConstants.HarmonicUnique.NFC2", alm->fcs->get_nequiv()[0].size());
-    pt.put("Data.ForceConstants.HarmonicUnique.Basis", alm->fcs->get_preferred_basis());
+    pt.put("Data.ForceConstants.HarmonicUnique.Basis", alm->get_forceconstant_basis());
     size_t ihead = 0;
     size_t k = 0;
     const auto nelem = alm->cluster->get_maxorder() + 1;
@@ -500,6 +501,7 @@ void Writer::write_misc_xml(ALM *alm) const
     if (alm->cluster->get_maxorder() > 1) {
 
         pt.put("Data.ForceConstants.CubicUnique.NFC3", alm->fcs->get_nequiv()[1].size());
+        pt.put("Data.ForceConstants.CubicUnique.Basis", alm->get_forceconstant_basis());
 
         for (unsigned int ui = 0; ui < alm->fcs->get_nequiv()[1].size(); ++ui) {
             for (i = 0; i < 3; ++i) {
@@ -593,7 +595,10 @@ void Writer::write_misc_xml(ALM *alm) const
 
         for (const auto &it : fc_cart_anharm) {
 
-            // Save nonzero force constants only 
+            // Print force constants only when the coefficient is nonzero
+            // and the last (order + 1) elements are sorted in ascending order.
+
+            if (!it.is_ascending_order) continue;
 
             for (k = 0; k < order + 2; ++k) {
                 pair_tmp[k] = it.atoms[k];
@@ -669,7 +674,6 @@ void Writer::write_hessian(ALM *alm) const
     std::ofstream ofs_hes;
     double **hessian;
 
-    //ALMCore *alm = alm->get_alm();
     const auto nat3 = 3 * alm->get_supercell().number_of_atoms;
 
     allocate(hessian, nat3, nat3);
@@ -680,17 +684,15 @@ void Writer::write_hessian(ALM *alm) const
         }
     }
 
-    for (const auto &it : alm->fcs->get_fc_table()[0]) {
+    for (const auto &it : alm->fcs->get_fc_cart()[0]) {
 
-        const auto ip = it.mother;
+        for (i = 0; i < 2; ++i) pair_tmp[i] = it.atoms[i];
 
-        for (i = 0; i < 2; ++i) pair_tmp[i] = it.elems[i] / 3;
         for (size_t itran = 0; itran < alm->symmetry->get_ntran(); ++itran) {
             for (i = 0; i < 2; ++i) {
                 pair_tran[i] = alm->symmetry->get_map_sym()[pair_tmp[i]][alm->symmetry->get_symnum_tran()[itran]];
             }
-            hessian[3 * pair_tran[0] + it.elems[0] % 3][3 * pair_tran[1] + it.elems[1] % 3]
-                = alm->optimize->get_params()[ip] * it.sign;
+            hessian[3 * pair_tran[0] + it.coords[0]][3 * pair_tran[1] + it.coords[1]] = it.fc_value;
         }
     }
 
@@ -744,17 +746,14 @@ void Writer::write_in_QEformat(ALM *alm) const
             hessian[i][j] = 0.0;
         }
     }
-    for (const auto &it : alm->fcs->get_fc_table()[0]) {
+    for (const auto &it : alm->fcs->get_fc_cart()[0]) {
 
-        const auto ip = it.mother;
-
-        for (i = 0; i < 2; ++i) pair_tmp[i] = it.elems[i] / 3;
+        for (i = 0; i < 2; ++i) pair_tmp[i] = it.atoms[i];
         for (size_t itran = 0; itran < alm->symmetry->get_ntran(); ++itran) {
             for (i = 0; i < 2; ++i) {
                 pair_tran[i] = alm->symmetry->get_map_sym()[pair_tmp[i]][alm->symmetry->get_symnum_tran()[itran]];
             }
-            hessian[3 * pair_tran[0] + it.elems[0] % 3][3 * pair_tran[1] + it.elems[1] % 3]
-                = alm->optimize->get_params()[ip] * it.sign;
+            hessian[3 * pair_tran[0] + it.coords[0]][3 * pair_tran[1] + it.coords[1]] = it.fc_value;
         }
     }
 
@@ -812,7 +811,6 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
         for (j = 0; j < nat3; ++j) {
             for (k = 0; k < nat3; ++k) {
                 fc3[i][j][k] = 0.0;
-
             }
         }
     }
@@ -826,13 +824,13 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
 
     const auto ishift = alm->fcs->get_nequiv()[0].size();
 
-    for (const auto &it : alm->fcs->get_fc_table()[1]) {
+    for (const auto &it : alm->fcs->get_fc_cart()[1]) {
 
-        const auto ip = it.mother + ishift;
+        if (!it.is_ascending_order) continue;
 
         for (i = 0; i < 3; ++i) {
-            pair_tmp[i] = it.elems[i] / 3;
-            coord_tmp[i] = it.elems[i] % 3;
+            pair_tmp[i] = it.atoms[i];
+            coord_tmp[i] = it.coords[i];
         }
 
         j = alm->symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
@@ -850,26 +848,22 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
             nelems += (*iter_cluster).cell.size();
             has_element[j][pair_tmp[1]][pair_tmp[2]] = 1;
         }
-        fc3[3 * j + coord_tmp[0]][it.elems[1]][it.elems[2]]
-            = alm->optimize->get_params()[ip] * it.sign;
+        fc3[3 * j + coord_tmp[0]][it.flattenarray[1]][it.flattenarray[2]] = it.fc_value;
 
-        if (it.elems[1] != it.elems[2]) {
+        if (it.flattenarray[1] != it.flattenarray[2]) {
             if (!has_element[j][pair_tmp[2]][pair_tmp[1]]) {
                 nelems += (*iter_cluster).cell.size();
                 has_element[j][pair_tmp[2]][pair_tmp[1]] = 1;
             }
-            fc3[3 * j + coord_tmp[0]][it.elems[2]][it.elems[1]]
-                = alm->optimize->get_params()[ip] * it.sign;
+            fc3[3 * j + coord_tmp[0]][it.flattenarray[2]][it.flattenarray[1]] = it.fc_value;
         }
     }
-
 
     auto file_fc3 = alm->files->get_prefix() + ".FORCE_CONSTANT_3RD";
 
     ofs_fc3.open(file_fc3.c_str(), std::ios::out);
     if (!ofs_fc3) exit("write_fc3_thirdorderpy_format", "cannot create the file");
     ofs_fc3 << nelems << std::endl;
-
 
     bool swapped;
     double vec1[3], vec2[3];
