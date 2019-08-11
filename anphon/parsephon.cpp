@@ -464,6 +464,10 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "KAPPA_COHERENT"
     };
 
+#ifdef _FE_BUBBLE
+    input_list.push_back("FE_BUBBLE");
+#endif
+
     unsigned int cellsize[3];
 
     double *isotope_factor = nullptr;
@@ -481,14 +485,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
     auto print_msd = false;
     auto print_ucorr = false;
 
-    auto compute_dos = true;
-    auto projected_dos = false;
-    auto two_phonon_dos = false;
-    auto scattering_phase_space = 0;
-    auto print_gruneisen = false;
-    auto print_newfcs = false;
-    auto print_V3 = false;
-    auto participation_ratio = false;
+    bool compute_dos = true;
+    bool projected_dos = false;
+    bool two_phonon_dos = false;
+    int scattering_phase_space = 0;
+    bool print_gruneisen = false;
+    bool print_newfcs = false;
+    int print_V3 = 0;
+    bool participation_ratio = false;
 
     auto delta_a = 0.001;
 
@@ -539,7 +543,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+#ifdef _FE_BUBBLE
         assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
+#endif
 
         if (analysis_var_dict.find("ANIME") == analysis_var_dict.end()) {
             print_anime = false;

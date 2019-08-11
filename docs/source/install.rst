@@ -9,17 +9,18 @@ Mandatory requirements
 
 * C++ compiler (Intel compiler is recommended.)
 * LAPACK library
-* MPI library (Either OpenMPI, MPICH2, or IntelMPI)
+* MPI library (OpenMPI, MPICH2, IntelMPI, etc.)
 * `Boost C++ library <http://www.boost.org>`_
 * FFTW library
 * `Eigen3 library <http://eigen.tuxfamily.org/>`_
+* `spglib <https://atztogo.github.io/spglib/>`_
 
 In addition to the above requirements, users have to get and install a first-principles package 
-(such as VASP_, Wien2k_, QUANTUM-ESPRESSO_, or xTAPP_) or another force field package (such as
+(such as VASP_, QUANTUM-ESPRESSO_, OpenMX_, or xTAPP_) or another force field package (such as
 LAMMPS_) by themselves in order to compute harmonic and anharmonic force constants.
 
 .. _VASP : http://www.vasp.at
-.. _Wien2k : http://www.wien2k.at
+.. _OpenMX : http://www.openmx-square.org
 .. _QUANTUM-ESPRESSO : http://www.quantum-espresso.org
 .. _xTAPP : http://frodo.wpi-aimr.tohoku.ac.jp/xtapp/index.html
 .. _LAMMPS : http://lammps.sandia.gov
@@ -31,7 +32,7 @@ Optional requirements
 * Python (> 2.6), Numpy, and Matplotlib
 * XcrySDen_ or VMD_
 
-We provide some small scripts written in Python (Python 2) for visualizing phonon dispersion relations, phonon DOSs, etc.
+We provide some small scripts written in Python for visualizing phonon dispersion relations, phonon DOSs, etc.
 To use these scripts, one need to install the above Python packages.
 Additionally, XcrySDen is necessary to visualize the normal mode directions and animate the normal mode.
 VMD may be more useful to make an animation, but it may be replaced by any other visualization software which supports the XYZ format.
@@ -44,43 +45,77 @@ How to install
 
 .. highlight:: bash
 
-0. Install the LAPACK, MPI, FFTW, Boost C++, and Eigen3 libraries.
+Here, we do not explain how to install a C++ compiler, LAPACK, MPI, and FFTW libraries because they are usually available on supercomputing systems.
 
-   To install the Boost C++ library, please download a source file from the `webpage <http://www.boost.org>`_ and
-   unpack the file. Then, copy the 'boost' subdirectory to the include folder in the home directory (or anywhere you like).
-   This can be done as follows::
+Boost C++ and Eigen3 libraries (header files only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some header files of Boost C++ and Eigen3 libraries are necessary to build ALAMODE binaries.
+Here, we install header files of these libraries in ``$(HOME)/include``.
+You can skip this part if these libraries are already installed on your system.
+   
+To install the Boost C++ library, please download a source file from the `webpage <http://www.boost.org>`_ and
+unpack the file. Then, copy the 'boost' subdirectory to ``$(HOME)/include``.
+This can be done as follows::
     
-    $ cd
-    $ mkdir etc; cd etc
-    (Download a source file and mv it to ~/etc)
-    $ tar xvf boost_x_yy_z.tar.bz2
-    $ cd ../
-    $ mkdir include; cd include
-    $ ln -s ../etc/boost_x_yy_z/boost .
+  $ cd
+  $ mkdir etc; cd etc
+  (Download a source file and mv it to ~/etc)
+  $ tar xvf boost_x_yy_z.tar.bz2
+  $ cd ../
+  $ mkdir include; cd include
+  $ ln -s ../etc/boost_x_yy_z/boost .
 
-  In this example, we made a symbolic link to the 'boost' subdirectory in ``$HOME/include``.
-  Instead of installing from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
+In this example, we place the boost files in ``$(HOME)/etc`` and create a symbolic link to the ``$(HOME)/boost_x_yy_z/boost`` in ``$(HOME)/include``.
+Instead of installing from source, you can install the Boost library with `Homebrew <http://brew.sh>`_ on Mac OSX.
 
-  In the same way, please install the Eigen3 include files as follows::
+In the same way, please install the Eigen3 include files as follows::
 
-    $ cd
-    $ mkdir etc; cd etc
-    (Download a source file and mv it to ~/etc)
-    $ tar xvf eigen-eigen-*.tar.bz2 (* is an array of letters and digits)
-    $ cd ../
-    $ cd include
-    $ ln -s ../etc/eigen-eigen-*/Eigen .  
+  $ cd
+  $ mkdir etc; cd etc
+  (Download a source file and mv it to ~/etc)
+  $ tar xvf eigen-eigen-*.tar.bz2 (* is an array of letters and digits)
+  $ cd ../
+  $ cd include
+  $ ln -s ../etc/eigen-eigen-*/Eigen .  
 
-1. Download the package of ALAMODE from the download page or clone from the git repository.
 
-2. Change directory to the location of the file and untar the file as follows::
+If you have followed the instruction, you will see the following results::
 
-	$ tar -xvzf alamode-x.y.z.tar.gz 
+  $ pwd
+  /home/tadano/include
+  $ ls -l
+  total 0
+  lrwxrwxrwx 1 tadano sim00 25 May 17  2017 boost -> ../etc/boost_1_64_0/boost
+  lrwxrwxrwx 1 tadano sim00 38 May 17  2017 Eigen -> ../etc/eigen-eigen-67e894c6cd8f/Eigen/
 
-  This will create a directory alamode-x.y.z containing the following subdirectories:
-  
-  * alm/      : Source files for alm (force constant calculation)
-  * anphon/   : Source files for anphon (phonon calculation)
+
+spglib
+~~~~~~
+
+ALAMODE uses spglib to handle symmetries of crystal structures.
+Please install it by following the instruction on the `spglib webpage <https://atztogo.github.io/spglib/install.html>`_.
+Here, we assume spglib is installed in ``$(SPGLIB_ROOT)``.
+
+Download ALAMODE source
+~~~~~~~~~~~~~~~~~~~~~~~
+
+From the download page::
+
+  $ (visit https://sourceforge.net/projects/alamode/files/latest/download?source=files to download the latest version source)
+  $ tar xvzf alamode-x.y.z.tar.gz
+  $ cd alamode-x.y.z
+
+From GitHub repository::
+
+  $ git clone https://github.com/ttadano/alamode.git
+  $ cd alamode
+  $ git checkout master
+
+The meaning of each subdirectory is as follows:
+
+  * alm/      : Source files of alm (force constant calculator)
+  * anphon/   : Source files of anphon (anharmonic phonon calculator)
   * external/ : Third-party include files
   * include/  : Commonly-used include files
   * tools/    : Small auxiliary programs and scripts
@@ -88,33 +123,54 @@ How to install
   * example/  : Example files
 
 
-.. highlight:: makefile
+Build ALAMODE by Makefile
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ALAMODE contains two major codes, **alm** and **anphon**, and other small utility scripts.
+In directories ``alm/``, ``anphon/``, and ``tools``, we provide sample Makefiles for Linux (Intel compiler) and Mac OSX (gcc, clang).
+Please copy either of them, edit the options appropriately, and issue ``make`` command as follows::
 
 
-3. Edit the Makefiles
+    $ cd alm/
+    $ cp Makefile.linux Makefile
+    (Edit Makefile here)
+    $ make -j
 
-  In directories alm/ and anphon/, we provide sample Makefiles for Linux (with Intel compiler) and Mac OSX (with gcc). 
-  Please copy one of them as ``Makefile`` and modify it appropriately for your environment.
+    $ cd ../anphon/
+    $ cp Makefile.linux Makefile
+    (Edit Makefile here)
+    $ make -j
 
-  Here's a typical setting for Linux with Intel compiler::
+    $ cd ../tools/
+    (Edit Makefile here)
+    $ make -j
 
-    CXX = icpc 
-    CXXFLAGS = -O2 -xHOST -openmp -std=c++11
-    INCLUDE = -I../include -I$(HOME)/include
+An example of the Makefiles is shown below:
 
-    CXXL = ${CXX}
-    LDFLAGS = -mkl
+.. literalinclude:: ../../alm/Makefile.linux
+    :caption: **ALM Makefile.linux**
+    :language: makefile
+    :linenos:
+    :lines: 7-17
 
-    LAPACK = 
-    LIBS = ${LAPACK}
+The default options are expected to work with modern Intel compilers.
 
-  To enable OpenMP parallelization, please add the ``-openmp`` (Intel) or ``-fopenmp`` (gcc) option in ``CXXFLAGS``.
-  In addition, the directory containing the boost/ and Eigen/ subdirectories must be given in ``INCLUDE``. 
+.. note::
+   To build the binaries with the example Makefiles, you need to set ``SPGLIB_ROOT`` beforehand from the terminal as::
 
-4. Make executables by ``make`` command.
+       $ export SPGLIB_ROOT=/path/to/spglib/installdir
 
-   If the compilation is successful, the binary file named **alm** (**anphon**) is created in the alm/ (anphon/) directory.
-   To use some auxiliary scripts for post-processing and data conversion, please compile the programs in the tools directory as well.
-   See README.md in the tools directory for details about the auxiliary programs.
 
+Edit LD_LIBRARY_PATH in bashrc
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, add the following line in ``$(HOME)/.bashrc`` (or ``.zshrc`` etc.)::
+
+    (bash, zsh)
+    export LD_LIBRARY_PATH=/path/to/spglib/installdir/lib:$LD_LIBRARY_PATH
+
+    (csh, tcsh)
+    setenv LD_LIBRARY_PATH /path/to/spglib/installdir/lib:$LD_LIBRARY_PATH
+
+This is necessary when you link spglib dynamically.
 

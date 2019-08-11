@@ -11,7 +11,7 @@
 #pragma once
 
 #include <string>
-#include "pointers.h"
+#include <map>
 
 #if defined(WIN32) || defined(_WIN32)
 #include <Windows.h>
@@ -22,23 +22,36 @@
 
 namespace ALM_NS
 {
-    class Timer : protected Pointers
+    class Timer
     {
     public:
-        Timer(class ALM *);
+        Timer();
         ~Timer();
 
-        void reset();
-        double elapsed();
-        void print_elapsed();
-        std::string DateAndTime();
+        void print_elapsed() const;
+        void start_clock(std::string);
+        void stop_clock(std::string);
+        double get_walltime(std::string);
+        double get_cputime(std::string);
+        static std::string DateAndTime();
 
     private:
+        void reset();
+        double elapsed_walltime() const;
+        double elapsed_cputime() const;
+        std::map<std::string, double> walltime;
+        std::map<std::string, double> cputime;
+        double wtime_tmp, ctime_tmp;
+        bool lock;
+
 #if defined(WIN32) || defined(_WIN32)
-        LARGE_INTEGER time_ref;
+        LARGE_INTEGER walltime_ref;
         LARGE_INTEGER frequency;
+        double get_cputime() const;
+        double cputime_ref;
 #else
-        timeval time_ref;
+        timeval walltime_ref;
+        double cputime_ref;
 #endif
     };
 }

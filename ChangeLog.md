@@ -1,3 +1,34 @@
+## New
+
+- An interface to OpenMX code (contributed by Yuto Tanaka)
+- Compressive sensing approach (``LMODEL = enet``) in alm code. Many new variables related to compressive sensing are also added. See the documentation page for details.
+- ``SPARSE`` and ``SPARSESOLVER`` tags in alm code
+- ``DOS``-tag in anphon code
+- A python script scph_to_qe.py that converts the result of an SCPH calculation to Quantum ESPRESSO force-constant format.
+
+## Changes
+
+- The default value of ``ICONST`` is changed to ``ICONST = 11``
+- Python scripts now work with python3 as well as python2
+- Python interface scripts are moved to tools/interface
+- Default values for ``MASS``- and ``ISOFACT``-tags are implemented
+- Implement a sparse version of rref, which improves the performance of alm significantly.
+- Performance improvements of anphon code.
+- ``DFILE`` and ``FFILE`` in alm code are now deprecated. Use ``DFSET`` instead.
+- ``&fitting`` field in alm is replaced with ``&optimize`` field.
+
+## Fix
+
+- Fix a minor bug in calc_damping_tetrahedron. The phonon linewidths at high temperatures and the thermal conductivities were not affected by this minor error. In a very low-temperature region (< 10 K), the thermal conductivity may have been underestimated.
+- Fix other minor bugs
+
+# Ver. 1.0.1 (2017-11-21)
+
+## Fix
+- Fixed a minor issue in the previous version
+
+
+
 # Ver. 1.0.2 (2018-1-29)
 
 ## New
@@ -32,7 +63,7 @@
 
 ## Changes
 
-- P+ and P- are printed seperately in PREFIX.sps when ``SPS = 1``
+- P+ and P- are printed separately in PREFIX.sps when ``SPS = 1``
 - Use C++11 standard. From this version, the C++ compiler must support the C++11 standard.
 - The **anphon** code symmetrize the Born effective charges
 
@@ -48,13 +79,13 @@
 
 - New tag ``HESSIAN`` in program **alm** for printing entire Hessian matrix
 - New tag ``KAPPA_SPEC`` in **anphon** for calculating spectra of thermal conductivity
-- New option ``--offset`` in **extract.py** for subtracting residual forces (displacements) in an equilibrium structure from training data sets. We recommended to use this option if internal coordinates of atoms (Wyckoff potisions) have free parameters.
+- New option ``--offset`` in **extract.py** for subtracting residual forces (displacements) in an equilibrium structure from training data sets. We recommended using this option if internal coordinates of atoms (Wyckoff positions) have free parameters.
 - New option ``--isotope`` in **analyze_phonons.py**
 
 ## Changes
 
 - Improve the performance of thermal conductivity calculations with the tetrahedron method (``ISMEAR=-1``). The new version is <Font color='red'>more than 3 times faster</font> than the previous version.
-- Improve the efficiency of the algorithm for generating constraings for the translational invariance
+- Improve the efficiency of the algorithm for generating constraints for the translational invariance
 - Avoid 'NaN' in thermal conductivity calculations with imaginary branches
 - Loosen the default value of ``TOLERANCE`` for detecting crystal symmetry
 - Stop printing the CLASSICAL entry in PREFIX.result files
@@ -73,7 +104,7 @@
 ## New
 
 - New option ``SPS = 2`` in anphon
-- New tag ``MAGMOM`` for considering collinear spin (alm). The format is same as VASP.
+- New tag ``MAGMOM`` for considering collinear spin (alm). The format is the same as VASP.
 - ALAMODE logo 
 
 ## Changes
@@ -147,7 +178,7 @@
 
 ## New
 
-- New tag PRINTPR (anphon) for calculating (atomic) participation ratio
+- New tag ``PRINTPR`` (anphon) for calculating (atomic) participation ratio
 
 - Implement ``ISOTOPE = 2`` to print the selfenergy due to phonon-isotope scatterings (anphon)
 
@@ -208,7 +239,7 @@
 
 - Fixed a bug in analyze_phonons.cpp
 
-- Fixed a MPI-related bug in relaxationc.pp
+- Fixed an MPI-related bug in relaxationc.pp
 
 - Avoid unnecessary memory allocation in relaxation.cpp
 
@@ -235,4 +266,4 @@
 
 # Ver. 0.9.0 (2014-08-15)
 
--  First release of ALAMODE
+-  The first release of ALAMODE

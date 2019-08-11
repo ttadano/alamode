@@ -18,7 +18,8 @@
 
 using namespace std;
 
-int main(int argc, char *argv[])
+int main(int argc,
+         char *argv[])
 {
     string str;
 
@@ -438,7 +439,8 @@ void calc_tau(int itemp)
     }
 }
 
-void calc_tau_temp(int target_k, int target_s)
+void calc_tau_temp(int target_k,
+                   int target_s)
 {
     double vel_norm;
 
@@ -523,7 +525,9 @@ void calc_kappa()
 }
 
 
-void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
+void calc_kappa_cumulative(double max_length,
+                           double delta_length,
+                           int itemp)
 {
     int nlength = static_cast<int>(max_length / delta_length);
     double length;
@@ -594,7 +598,10 @@ void calc_kappa_cumulative(double max_length, double delta_length, int itemp)
     }
 }
 
-void calc_kappa_cumulative2(double max_length, double delta_length, int itemp, int flag[3])
+void calc_kappa_cumulative2(double max_length,
+                            double delta_length,
+                            int itemp,
+                            int flag[3])
 {
     int nlength = static_cast<int>(max_length / delta_length);
     double length;
@@ -742,7 +749,10 @@ void calc_kappa_boundary(const double len_boundary)
     deallocate(kappa);
 }
 
-void calc_kappa_boundary2(double max_length, double delta_length, int itemp, int flag[3])
+void calc_kappa_boundary2(double max_length,
+                          double delta_length,
+                          int itemp,
+                          int flag[3])
 {
     int nlength = static_cast<int>(max_length / delta_length);
     double length;
@@ -843,7 +853,8 @@ int locate_tag(string key)
     return ret;
 }
 
-double Cv(double omega, double temp)
+double Cv(double omega,
+          double temp)
 {
     double x;
 
@@ -854,8 +865,11 @@ double Cv(double omega, double temp)
 }
 
 void update_tau_isotope(const std::string file,
-                        double **omega, double ***tau,
-                        const int nt, const int nk, const int ns)
+                        double **omega,
+                        double ***tau,
+                        const int nt,
+                        const int nk,
+                        const int ns)
 {
     int i;
     int ik, is, jk, js;
@@ -920,8 +934,11 @@ void update_tau_isotope(const std::string file,
 }
 
 
-void average_gamma_at_degenerate_point(double **e, double ***tau,
-                                       const int nt, const int nk, const int ns)
+void average_gamma_at_degenerate_point(double **e,
+                                       double ***tau,
+                                       const int nt,
+                                       const int nk,
+                                       const int ns)
 {
     int ideg, is;
     double omega_prev, omega_now;
@@ -979,8 +996,10 @@ void average_gamma_at_degenerate_point(double **e, double ***tau,
 }
 
 
-void average_gamma_isotope_at_degenerate_point(double **e, double **tau,
-                                               const int nk, const int ns)
+void average_gamma_isotope_at_degenerate_point(double **e,
+                                               double **tau,
+                                               const int nk,
+                                               const int ns)
 {
     int ideg, is;
     double omega_prev, omega_now;

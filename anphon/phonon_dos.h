@@ -43,8 +43,8 @@ namespace PHON_NS
         double ****sps3_with_bose;
 
 
-        void calc_dos_scph(double ***,
-                           double **) const;
+        void calc_dos_from_given_frequency(double **,
+                                           double *) const;
 
     private:
         void set_default_variables();

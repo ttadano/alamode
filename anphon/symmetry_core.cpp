@@ -36,7 +36,7 @@ void Symmetry::set_default_variables()
     nsym = 0;
     symmetry_flag = true;
     printsymmetry = false;
-    tolerance = 1.0e-6;
+    tolerance = 1.0e-3;
 }
 
 
@@ -113,15 +113,15 @@ void Symmetry::setup_symmetry_operation(int N,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (auto p = SymmList.begin(); p != SymmList.end(); ++p) {
+            for (const auto &p : SymmList) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
-                        ofs_sym << std::setw(4) << (*p).rot[i][j];
+                        ofs_sym << std::setw(4) << p.rot[i][j];
                     }
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-                    ofs_sym << std::setprecision(15) << std::setw(20) << (*p).tran[i];
+                    ofs_sym << std::setprecision(15) << std::setw(20) << p.tran[i];
                 }
                 ofs_sym << std::endl;
             }

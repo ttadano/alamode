@@ -134,6 +134,7 @@ namespace PHON_NS
         void store_scph_dymat_to_file(std::complex<double> ****);
 
         void exec_scph_main(std::complex<double> ****);
+        void postprocess(std::complex<double> ****delta_dymat_scph);
 
         void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
                                                  std::complex<double> ***,

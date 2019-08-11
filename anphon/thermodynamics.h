@@ -12,6 +12,8 @@
 
 #include "pointers.h"
 #include <complex>
+#include <vector>
+#include "kpoint.h"
 
 namespace PHON_NS
 {
@@ -29,25 +31,46 @@ namespace PHON_NS
 
         void setup();
 
-        double Cv(double,
-                  double) const;
+        double Cv(const double omega,
+                  const double temp_in) const;
 
-        double fB(double,
-                  double) const;
+        double Cv_classical(const double omega,
+                            const double temp_in) const;
 
-        double fC(double,
-                  double) const;
+        double fB(const double omega,
+                  const double temp_in) const;
 
-        double Cv_tot(double) const;
+        double fC(const double omega,
+                  const double temp_in) const;
 
-        double internal_energy(double) const;
+        double Cv_tot(const double temp_in,
+                      const unsigned int nk_irred,
+                      const unsigned int ns,
+                      const std::vector<std::vector<KpointList>> &kp_irred,
+                      double *weight_k_irred,
+                      double **eval_in) const;
 
-        double vibrational_entropy(double) const;
+        double internal_energy(const double temp_in,
+                               const unsigned int nk_irred,
+                               const unsigned int ns,
+                               const std::vector<std::vector<KpointList>> &kp_irred,
+                               double *weight_k_irred,
+                               double **eval_in) const;
 
-        double free_energy(double) const;
+        double vibrational_entropy(const double temp_in,
+                                   const unsigned int nk_irred,
+                                   const unsigned int ns,
+                                   const std::vector<std::vector<KpointList>> &kp_irred,
+                                   double *weight_k_irred,
+                                   double **eval_in) const;
 
-        double Cv_classical(double,
-                            double) const;
+        double free_energy_QHA(const double temp_in,
+                               const unsigned int nk_irred,
+                               const unsigned int ns,
+                               const std::vector<std::vector<KpointList>> &kp_irred,
+                               double *weight_k_irred,
+                               double **eval_in) const;
+
 
         double disp2_avg(double,
                          unsigned int,
@@ -73,9 +96,9 @@ namespace PHON_NS
                                std::complex<double> ***,
                                double *) const;
 
-        double compute_FE_bubble_SCPH(double,
-                                      double **,
-                                      std::complex<double> ***) const;
+        void compute_FE_bubble_SCPH(double ***eval_in,
+                                    std::complex<double> ****evec_in,
+                                    double *FE_bubble);
 
         double FE_scph_correction(unsigned int,
                                   double **,

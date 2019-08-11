@@ -8,7 +8,10 @@
 #Intel compiler
 #CXX = icpc
 
-# Linux gcc
+# OSX (gcc)
+CXX = g++-9
+
+# OSX (clang)
 #CXX = g++
 
 # OSX

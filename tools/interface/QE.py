@@ -65,7 +65,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             mode = list_CELL_PARAMETERS[0].rstrip().split()
 
             if len(mode) == 1:
-                print("Error : Please specify either alat, bohr, or angstrom for CELL_PARAMETERS")
+                print(
+                    "Error : Please specify either alat, bohr, or angstrom for CELL_PARAMETERS")
                 exit(1)
             else:
                 mode_str = mode[1].lower()
@@ -73,7 +74,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
             if "alat" in mode_str:
 
                 if not celldm[0]:
-                    print("celldm(1) must be given when 'alat' is used for CELL_PARAMETERS")
+                    print(
+                        "celldm(1) must be given when 'alat' is used for CELL_PARAMETERS")
                     exit(1)
 
                 for i in range(3):
@@ -88,7 +90,8 @@ def gen_lattice_vector(ibrav, celldm, list_CELL_PARAMETERS):
 
             elif "bohr" not in mode_str:
 
-                print("Error : Invalid option for CELL_PARAMETERS: %s" % mode[1])
+                print("Error : Invalid option for CELL_PARAMETERS: %s" %
+                      mode[1])
                 exit(1)
 
     elif ibrav == 1:
@@ -387,7 +390,7 @@ def get_system_info(list_in):
             ntyp = int(entrylist[i + 2])
 
         if "celldm(1)" in entrylist[i]:
-            # Do not assign the value if the comment character '!' 
+            # Do not assign the value if the comment character '!'
             # appears in front of the celldm(1) keyword
             has_comment = False
             for elem in list_in:
@@ -422,7 +425,7 @@ def get_options(option_tag, taglists, file_in):
 
     with open(file_in) as openfileobject:
         for line in openfileobject:
-            
+
             if option_tag in line:
                 flag_add = True
                 list_out.append(line)
@@ -561,7 +564,6 @@ def generate_QE_input(prefix, suffix, counter, nzerofills, list_namelist,
     f.close()
 
 
-
 # Functions for Quantum-ESPRESSO (http://www.quantum-espresso.org)
 
 
@@ -645,7 +647,7 @@ def get_coordinates_QE(pwout_file, nat, alat, lavec_transpose_inv):
     # The basis of the coordinate in x_additional can be different
     # from that of x. Therefore, perform basis conversion here.
     if num_data_disp_extra > 0:
-    
+
         if "alat" in basis:
             conversion_mat = alat * lavec_transpose_inv
         elif "bohr" in basis:
@@ -660,7 +662,8 @@ def get_coordinates_QE(pwout_file, nat, alat, lavec_transpose_inv):
 
         x_additional = np.reshape(x_additional, (num_data_disp_extra, nat, 3))
         for i in range(num_data_disp_extra):
-            x_additional[i, :, :] = np.dot(x_additional[i, :, :], conversion_mat)
+            x_additional[i, :, :] = np.dot(
+                x_additional[i, :, :], conversion_mat)
 
     return x, x_additional, num_data_disp_extra
 
@@ -711,7 +714,7 @@ def print_displacements_QE(pwout_files,
                                             disp[i][2]))
 
         if num_data_disp > 1:
-            # The last coordinate is not printed out because there is no 
+            # The last coordinate is not printed out because there is no
             # atomic force information of that structure.
             for step in range(num_data_disp - 1):
                 x = x_additional[step, :, :]
@@ -753,7 +756,7 @@ def get_atomicforces_QE(pwout_file, nat):
     f.close()
 
     if not found_tag:
-        print("following search tags not found in %s" %  pwout_file)
+        print("following search tags not found in %s" % pwout_file)
         print(search_tag)
         print(search_tag_QE6)
         exit(1)
@@ -796,7 +799,7 @@ def print_displacements_and_forces_QE(pwout_files,
                                       conversion_factor_disp,
                                       conversion_factor_force,
                                       file_offset):
-    
+
     import math
     vec_refold = np.vectorize(refold)
 
@@ -835,19 +838,21 @@ def print_displacements_and_forces_QE(pwout_files,
 
         x, x_additional, num_data_disp_extra \
             = get_coordinates_QE(search_target, nat, alat, lavec_transpose_inv)
- 
+
         force = get_atomicforces_QE(search_target, nat)
         num_data_force = len(force) // (3 * nat)
         force = np.reshape(force, (num_data_force, nat, 3))
-        
+
         if num_data_disp_extra <= 1:
             num_data_disp = 1
         else:
             num_data_disp = num_data_disp_extra
-    
+
         if num_data_disp != num_data_force:
-            print("Error: The number of entries of displacement and force is inconsistent.")
-            print("Ndata disp : %d, Ndata force : %d" % (num_data_disp, num_data_force))
+            print(
+                "Error: The number of entries of displacement and force is inconsistent.")
+            print("Ndata disp : %d, Ndata force : %d" %
+                  (num_data_disp, num_data_force))
             exit(1)
 
         disp = x - x0 - disp_offset
@@ -865,7 +870,7 @@ def print_displacements_and_forces_QE(pwout_files,
                                                                  f[i][2]))
 
         if num_data_disp > 1:
-            # The last coordinate is not printed out because there is no 
+            # The last coordinate is not printed out because there is no
             # atomic force information of that structure.
             for step in range(num_data_disp - 1):
                 x = x_additional[step, :, :]
@@ -876,12 +881,12 @@ def print_displacements_and_forces_QE(pwout_files,
                 f *= conversion_factor_force
 
                 for i in range(nat):
-                     print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],
-                                                                          disp[i][1],
-                                                                          disp[i][2],
-                                                                          f[i][0],
-                                                                          f[i][1],
-                                                                          f[i][2]))
+                    print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],
+                                                                         disp[i][1],
+                                                                         disp[i][2],
+                                                                         f[i][0],
+                                                                         f[i][1],
+                                                                         f[i][2]))
 
 
 def get_energies_QE(pwout_file):
@@ -920,7 +925,7 @@ def print_energies_QE(str_files,
 
     print("# Etot")
     for search_target in str_files:
-    
+
         etot = get_energies_QE(search_target)
 
         for idata in range(len(etot)):
@@ -938,8 +943,9 @@ def refold(x):
     else:
         return x
 
+
 def get_unit_conversion_factor(str_unit):
-    
+
     Bohr_radius = 0.52917721067
     Rydberg_to_eV = 13.60569253
 
@@ -962,19 +968,21 @@ def get_unit_conversion_factor(str_unit):
     else:
         print("This cannot happen.")
         exit(1)
-    
+
     force_conv_factor = energy_conv_factor / disp_conv_factor
 
     return disp_conv_factor, force_conv_factor, energy_conv_factor
+
 
 def parse(pwin_init, pwout_files, pwout_file_offset, str_unit,
           print_disp, print_force, print_energy):
 
     alat, aa, nat, x_frac0 = read_original_QE_mod(pwin_init)
 
-    scale_disp, scale_force, scale_energy = get_unit_conversion_factor(str_unit)
+    scale_disp, scale_force, scale_energy = get_unit_conversion_factor(
+        str_unit)
 
-    if print_disp == True and print_force == True:
+    if print_disp is True and print_force is True:
         print_displacements_and_forces_QE(pwout_files,
                                           alat, aa, nat,
                                           x_frac0,
@@ -982,21 +990,19 @@ def parse(pwin_init, pwout_files, pwout_file_offset, str_unit,
                                           scale_force,
                                           pwout_file_offset)
 
-    elif print_disp == True:
-        print_displacements_QE(pwout_files, 
+    elif print_disp is True:
+        print_displacements_QE(pwout_files,
                                alat, aa, nat, x_frac0,
-                               scale_disp, 
+                               scale_disp,
                                pwout_file_offset)
 
-
-    elif print_force == True:
-        print_atomicforces_QE(pwout_files, 
+    elif print_force is True:
+        print_atomicforces_QE(pwout_files,
                               nat,
-                              scale_force, 
+                              scale_force,
                               pwout_file_offset)
 
-    elif print_energy == True:
+    elif print_energy is True:
         print_energies_QE(pwout_files,
                           scale_energy,
                           pwout_file_offset)
-

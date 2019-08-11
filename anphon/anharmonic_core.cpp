@@ -365,6 +365,13 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
               dynamical->evec_phonon);
 }
 
+std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3])
+{
+    return Phi3(ks,
+                dynamical->eval_phonon,
+                dynamical->evec_phonon);
+}
+
 
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
                                         double **eval_phonon,
@@ -407,6 +414,45 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
 
     return std::complex<double>(ret_re, ret_im)
         / std::sqrt(omega[0] * omega[1] * omega[2]);
+}
+
+std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
+                                          double **eval_phonon,
+                                          std::complex<double> ***evec_phonon)
+{
+    int i;
+    unsigned int kn[3], sn[3];
+    int ns = dynamical->neval;
+
+    double omega[3];
+    std::complex<double> ret = std::complex<double>(0.0, 0.0);
+    double ret_re = 0.0;
+    double ret_im = 0.0;
+
+    for (i = 0; i < 3; ++i) {
+        kn[i] = ks[i] / ns;
+        sn[i] = ks[i] % ns;
+        omega[i] = eval_phonon[kn[i]][sn[i]];
+    }
+
+    if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
+        calc_phi3_reciprocal(kn[1], kn[2], phi3_reciprocal);
+        kindex_phi3_stored[0] = kn[1];
+        kindex_phi3_stored[1] = kn[2];
+    }
+#ifdef _OPENMP
+#pragma omp parallel for private(ret), reduction(+: ret_re, ret_im)
+#endif
+    for (i = 0; i < ngroup_v3; ++i) {
+        ret = evec_phonon[kn[0]][sn[0]][evec_index_v3[i][0]]
+            * evec_phonon[kn[1]][sn[1]][evec_index_v3[i][1]]
+            * evec_phonon[kn[2]][sn[2]][evec_index_v3[i][2]]
+            * invmass_v3[i] * phi3_reciprocal[i];
+        ret_re += ret.real();
+        ret_im += ret.imag();
+    }
+
+    return std::complex<double>(ret_re, ret_im);
 }
 
 

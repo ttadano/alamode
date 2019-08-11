@@ -107,7 +107,8 @@ $ python displace.py -h")
                   options.OpenMX is None]
 
     if conditions.count(True) == len(conditions):
-        print("Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
+        print(
+            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
         exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
@@ -167,13 +168,13 @@ $ python displace.py -h")
 
     # Print data
     if code == "VASP":
-        vasp.parse(file_original, file_results, 
+        vasp.parse(file_original, file_results,
                    options.offset, str_unit,
-                   print_disp, print_force, print_energy, 
+                   print_disp, print_force, print_energy,
                    options.emin, options.emax)
 
     elif code == "QE":
-        qe.parse(file_original, file_results, 
+        qe.parse(file_original, file_results,
                  options.offset, str_unit,
                  print_disp, print_force, print_energy)
 
@@ -186,7 +187,7 @@ $ python displace.py -h")
         openmx.parse(file_original, file_results,
                      options.offset, str_unit,
                      print_disp, print_force, print_energy)
-    
+
     elif code == "LAMMPS":
         lammps.parse(file_original, file_results,
                      options.offset, str_unit,
