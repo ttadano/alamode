@@ -83,6 +83,8 @@ void Conductivity::deallocate_variables()
 
 void Conductivity::setup_kappa()
 {
+    MPI_Bcast(&calc_coherent, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     unsigned int i, j, k;
 
     nk = kpoint->nk;
@@ -105,74 +107,31 @@ void Conductivity::setup_kappa()
         memory->allocate(damping3, nks_total, ntemp);
     }
 
+    const auto factor = Bohr_in_Angstrom * 1.0e-10 / time_ry;
+    
     if (mympi->my_rank == 0) {
         memory->allocate(vel, nk, ns, 3);
-
-        for (i = 0; i < nk; ++i) {
-            phonon_velocity->phonon_vel_k(kpoint->xk[i], vel[i]);
-            //phonon_velocity->phonon_vel_k2(kpoint->xk[i],
-            //                  dynamical->eval_phonon[i],
-            //                  dynamical->evec_phonon[i],
-            //                  vel[i]);
-
-            // Generate phonon velocity in Cartesian coordinate
-            for (j = 0; j < ns; ++j) {
-                rotvec(vel[i][j], vel[i][j], system->lavec_p);
-                for (k = 0; k < 3; ++k) vel[i][j][k] /= 2.0 * pi;
-                for (k = 0; k < 3; ++k) vel[i][j][k] *= Bohr_in_Angstrom * 1.0e-10 / time_ry;
-            }
-        }
-
         if (calc_coherent) {
             memory->allocate(velmat, nk, ns, ns, 3);
-            std::cout << std::scientific;
+        }
+    } else {
+       memory->allocate(vel, 1, 1, 1);
+        if (calc_coherent) {
+            memory->allocate(velmat, 1, 1, 1, 3);
+        }
+    }
 
-            for (i = 0; i < nk; ++i) {
-                phonon_velocity->velocity_matrix_analytic(kpoint->xk[i],
-                                                          fcs_phonon->fc2_ext,
-                                                          dynamical->eval_phonon[i],
-                                                          dynamical->evec_phonon[i],
-                                                          velmat[i]);
-
-                double symmetrizer_k[3][3];
-                std::vector<int> smallgroup_k;
-                kpoint->get_small_group_k(kpoint->xk[i], smallgroup_k, symmetrizer_k);
-
-                for (j = 0; j < ns; ++j) {
-                    for (k = 0; k < ns; ++k) {
-                        rotvec(velmat[i][j][k], velmat[i][j][k], symmetrizer_k, 'T');
-                        rotvec(velmat[i][j][k], velmat[i][j][k], system->lavec_p);
-                        for (auto mu = 0; mu < 3; ++mu) {
-                            velmat[i][j][k][mu] *= Bohr_in_Angstrom * 1.0e-10 / (time_ry * 2.0 * pi);
-                        }
-                    }
-                }
-                /*
-                std::cout << "k = " << i << std::endl;
-                std::cout << kpoint->xk[i][0] << "  " << kpoint->xk[i][1] << " " << kpoint->xk[i][2] << std::endl;
-                for (auto mu = 0; mu < 3; ++mu) {
-                    std::cout << "mu = " << mu << std::endl;
-
-                    std::cout << "Diagonal:\n";
-
-                    for (j = 0; j < ns; ++j) {
-                        std::cout << std::setw(20) << vel[i][j][mu] << std::endl;
-                    }
-
-                    std::cout << "Full:\n";
-                    for (j = 0; j < ns; ++j) {
-                        for (k = 0; k < ns; ++k) {
-                            std::cout << std::setw(20) << velmat[i][j][k][mu].real() 
-                                      << std::setw(15) << velmat[i][j][k][mu].imag();
-                        }
-                        std::cout << std::endl;
-                    }
-                    std::cout << std::endl;
-                }
-                std::cout << std::endl;
-                */
+    phonon_velocity->calc_phonon_vel_mesh(vel);
+    if (mympi->my_rank == 0) {
+        for (i = 0; i < nk; ++i) {
+            for (j = 0; j < ns; ++j) {
+                for (k = 0; k < 3; ++k) vel[i][j][k] *= factor;
             }
         }
+    }
+    
+    if (calc_coherent) {
+        phonon_velocity->calc_phonon_velmat_mesh(velmat);
     }
 
     vks_job.clear();

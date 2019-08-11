@@ -95,9 +95,16 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
         } else if (kpmode == 2) {
             print_velocity_xyz = true;
             memory->allocate(phvel_xyz, nk, ns, 3);
-            calc_phonon_vel_mesh(phvel, phvel_xyz);
-        }
+            calc_phonon_vel_mesh(phvel_xyz);
 
+            for (auto ik = 0; ik < nk; ++ik) {
+                for (auto is = 0; is < ns; ++is) {
+                    phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
+                    + std::pow(phvel_xyz[ik][is][1], 2)
+                    + std::pow(phvel_xyz[ik][is][2], 2));
+               }
+            }
+        }
     }
 }
 
@@ -180,21 +187,66 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
     }
 }
 
-void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
-                                           double ***phvel3_out) const
+void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
 {
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
+
     double **vel;
+    double ***phvel3_loc = nullptr;
+    int *displs = nullptr;
+    int *sendcount = nullptr;
+    int *recvcount = nullptr;
+    std::vector<int> nk_proc;
+    std::vector<int> ik_begin_proc, ik_end_proc;
 
     if (mympi->my_rank == 0) {
         std::cout << " Calculating group velocities of phonons on uniform grid ... ";
     }
 
+    memory->allocate(sendcount, mympi->nprocs);
+    memory->allocate(recvcount, mympi->nprocs);
+    nk_proc.resize(mympi->nprocs);
+
+    auto nk_loc = nk / mympi->nprocs;
+    auto nk_res = nk - nk_loc * mympi->nprocs;
+
+    for (auto i = 0; i < mympi->nprocs; ++i) {
+        nk_proc[i] = nk_loc;
+        if (i < nk_res) ++nk_proc[i];
+        sendcount[i] = 3 * ns * nk_proc[i];
+        recvcount[i] = sendcount[i];
+    }
+
+    if (mympi->my_rank == 0) {
+        memory->allocate(displs, mympi->nprocs);
+        displs[0] = 0;
+        for (auto i = 1; i < mympi->nprocs; ++i) {
+            displs[i] = displs[i-1] + recvcount[i-1];
+        }
+    }
+
+    ik_begin_proc.resize(mympi->nprocs);
+    ik_end_proc.resize(mympi->nprocs);
+    ik_begin_proc[0] = 0;
+    ik_end_proc[0] = nk_proc[0];
+    for (auto i = 1; i < mympi->nprocs; ++i) {
+        ik_begin_proc[i] = ik_end_proc[i - 1];
+        ik_end_proc[i] = ik_begin_proc[i] + nk_proc[i];
+    }
+
+    std::vector<int> klist_proc;
+    for (auto ik = ik_begin_proc[mympi->my_rank]; ik < ik_end_proc[mympi->my_rank]; ++ik) {
+        klist_proc.push_back(ik);
+    }
+
+    nk_loc = klist_proc.size();
+
+    memory->allocate(phvel3_loc, nk_loc, ns, 3);
     memory->allocate(vel, ns, 3);
 
-    for (unsigned int i = 0; i < nk; ++i) {
-        phonon_vel_k(kpoint->xk[i], vel);
+    for (unsigned int i = 0; i < nk_loc; ++i) {
+        phonon_vel_k(kpoint->xk[klist_proc[i]], vel);
         //        phonon_vel_k2(kpoint->xk[i],
         //                      dynamical->eval_phonon[i],
         //                      dynamical->evec_phonon[i],
@@ -204,15 +256,139 @@ void Phonon_velocity::calc_phonon_vel_mesh(double **phvel_out,
             rotvec(vel[j], vel[j], system->lavec_p);
             for (unsigned int k = 0; k < 3; ++k) {
                 vel[j][k] /= 2.0 * pi;
-                phvel3_out[i][j][k] = vel[j][k];
+                phvel3_loc[i][j][k] = vel[j][k];
             }
-            phvel_out[i][j] = std::sqrt(std::pow(vel[j][0], 2)
-                + std::pow(vel[j][1], 2)
-                + std::pow(vel[j][2], 2));
         }
     }
 
     memory->deallocate(vel);
+
+    MPI_Gatherv(&phvel3_loc[0][0][0], sendcount[mympi->my_rank], MPI_DOUBLE,
+                &phvel3_out[0][0][0], &recvcount[0], &displs[0], MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    
+    memory->deallocate(phvel3_loc);
+    memory->deallocate(sendcount);
+    memory->deallocate(recvcount);
+    if (displs) memory->deallocate(displs);
+
+    if (mympi->my_rank == 0) {
+        std::cout << "done!" << std::endl;
+    }
+}
+
+void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const
+{
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+
+    double **vel;
+    std::complex<double> ****velmat_loc = nullptr;
+    int *displs = nullptr;
+    int *sendcount = nullptr;
+    int *recvcount = nullptr;
+    std::vector<int> nk_proc;
+    std::vector<int> ik_begin_proc, ik_end_proc;
+
+    const auto factor = Bohr_in_Angstrom * 1.0e-10 / (time_ry * 2.0 * pi);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " Calculating group velocity matrix of phonons on uniform grid ... ";
+    }
+
+    memory->allocate(sendcount, mympi->nprocs);
+    memory->allocate(recvcount, mympi->nprocs);
+    nk_proc.resize(mympi->nprocs);
+
+    auto nk_loc = nk / mympi->nprocs;
+    auto nk_res = nk - nk_loc * mympi->nprocs;
+
+    for (auto i = 0; i < mympi->nprocs; ++i) {
+        nk_proc[i] = nk_loc;
+        if (i < nk_res) ++nk_proc[i];
+        sendcount[i] = 3 * ns * ns * nk_proc[i];
+        recvcount[i] = sendcount[i];
+    }
+
+    if (mympi->my_rank == 0) {
+        memory->allocate(displs, mympi->nprocs);
+        displs[0] = 0;
+        for (auto i = 1; i < mympi->nprocs; ++i) {
+            displs[i] = displs[i-1] + recvcount[i-1];
+        }
+    }
+
+    ik_begin_proc.resize(mympi->nprocs);
+    ik_end_proc.resize(mympi->nprocs);
+    ik_begin_proc[0] = 0;
+    ik_end_proc[0] = nk_proc[0];
+    for (auto i = 1; i < mympi->nprocs; ++i) {
+        ik_begin_proc[i] = ik_end_proc[i - 1];
+        ik_end_proc[i] = ik_begin_proc[i] + nk_proc[i];
+    }
+
+    std::vector<int> klist_proc;
+    for (auto ik = ik_begin_proc[mympi->my_rank]; ik < ik_end_proc[mympi->my_rank]; ++ik) {
+        klist_proc.push_back(ik);
+    }
+
+    nk_loc = klist_proc.size();
+
+    memory->allocate(velmat_loc, nk_loc, ns, ns, 3);
+
+     for (auto i = 0; i < nk_loc; ++i) {
+         auto knum = klist_proc[i];
+        velocity_matrix_analytic(kpoint->xk[knum],
+                                 fcs_phonon->fc2_ext,
+                                 dynamical->eval_phonon[knum],
+                                 dynamical->evec_phonon[knum],
+                                 velmat_loc[i]);
+
+        double symmetrizer_k[3][3];
+        std::vector<int> smallgroup_k;
+        kpoint->get_small_group_k(kpoint->xk[knum], smallgroup_k, symmetrizer_k);
+
+        for (auto j = 0; j < ns; ++j) {
+            for (auto k = 0; k < ns; ++k) {
+                rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], symmetrizer_k, 'T');
+                rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], system->lavec_p);
+                for (auto mu = 0; mu < 3; ++mu) {
+                    velmat_loc[i][j][k][mu] *= factor;
+                }
+            }
+        }
+        /*
+        std::cout << "k = " << i << std::endl;
+        std::cout << kpoint->xk[i][0] << "  " << kpoint->xk[i][1] << " " << kpoint->xk[i][2] << std::endl;
+        for (auto mu = 0; mu < 3; ++mu) {
+            std::cout << "mu = " << mu << std::endl;
+
+            std::cout << "Diagonal:\n";
+
+            for (j = 0; j < ns; ++j) {
+                std::cout << std::setw(20) << vel[i][j][mu] << std::endl;
+            }
+
+            std::cout << "Full:\n";
+            for (j = 0; j < ns; ++j) {
+                for (k = 0; k < ns; ++k) {
+                    std::cout << std::setw(20) << velmat[i][j][k][mu].real() 
+                                << std::setw(15) << velmat[i][j][k][mu].imag();
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        */
+    }
+
+    MPI_Gatherv(&velmat_loc[0][0][0][0], sendcount[mympi->my_rank], MPI_COMPLEX16,
+                &velmat_out[0][0][0][0], &recvcount[0], &displs[0], MPI_COMPLEX16, 0, MPI_COMM_WORLD);
+    
+    memory->deallocate(velmat_loc);
+    memory->deallocate(sendcount);
+    memory->deallocate(recvcount);
+    if (displs) memory->deallocate(displs);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
