@@ -2164,9 +2164,11 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
 
                     for (j = 0; j < constraint->get_const_relate(order)[i].alpha.size(); ++j) {
 
+                        // This part can issue an error when the constraint matrix is deviate from rref.
                         inew = constraint->get_index_bimap(order).right.at(
                                 constraint->get_const_relate(order)[i].p_index_orig[j]) +
                             iparam;
+
 
                         for (k = 0; k < natmin3; ++k) {
                             amat_mod_tmp[k][inew] -= amat_orig_tmp[k][iold]
