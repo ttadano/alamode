@@ -6,6 +6,7 @@ Each Python scripts does the followings:
 * extract.py : script to extract atomic displacements, forces, and total energies from output files.
 * plotband.py : script for visualizing phonon bands
 * plotdos.py : script for visualizing phonon DOS
+* scph_to_qefc.py : script to create a new Quantum-ESPRESSO force constant file (*.fc) with anharmonic correction.
 
 To use the scripts, Python environment (+ Numpy) is necessary.
 Matplotlib is also required for plotband.py and plotdos.py. 

@@ -496,6 +496,7 @@ void Writes::write_phonon_info()
         nbands = 3 * system->natmin;
     }
 
+
     if (print_anime) {
         write_normal_mode_animation(anime_kpoint, anime_cellsize);
     }
@@ -705,6 +706,7 @@ void Writes::write_phonon_vel_all() const
     if (!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
 
     unsigned int k;
+    auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
 
     const auto Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
@@ -1069,7 +1071,7 @@ void Writes::write_eigenvectors() const
         }
         ofs_evec << std::endl;
         for (j = 0; j < nbands; ++j) {
-            double omega2 = dynamical->eval_phonon[i][j];
+            auto omega2 = dynamical->eval_phonon[i][j];
             if (omega2 >= 0.0) {
                 omega2 = omega2 * omega2;
             } else {
@@ -1128,11 +1130,36 @@ void Writes::write_thermodynamics() const
     for (unsigned int i = 0; i < NT; ++i) {
         const auto T = Tmin + dT * static_cast<double>(i);
 
+        const auto heat_capacity = thermodynamics->Cv_tot(T,
+                                                          kpoint->nk_irred,
+                                                          dynamical->neval,
+                                                          kpoint->kpoint_irred_all,
+                                                          &kpoint->weight_k[0],
+                                                          dynamical->eval_phonon);
+
+        const auto Svib = thermodynamics->vibrational_entropy(T, kpoint->nk_irred, dynamical->neval,
+                                                              kpoint->kpoint_irred_all,
+                                                              &kpoint->weight_k[0], dynamical->eval_phonon);
+
+        const auto Uvib = thermodynamics->internal_energy(T,
+                                                          kpoint->nk_irred,
+                                                          dynamical->neval,
+                                                          kpoint->kpoint_irred_all,
+                                                          &kpoint->weight_k[0],
+                                                          dynamical->eval_phonon);
+
+        const auto FE_QHA = thermodynamics->free_energy_QHA(T,
+                                                            kpoint->nk_irred,
+                                                            dynamical->neval,
+                                                            kpoint->kpoint_irred_all,
+                                                            &kpoint->weight_k[0],
+                                                            dynamical->eval_phonon);
+
         ofs_thermo << std::setw(16) << std::fixed << T;
-        ofs_thermo << std::setw(18) << std::scientific << thermodynamics->Cv_tot(T) / k_Boltzmann;
-        ofs_thermo << std::setw(18) << thermodynamics->vibrational_entropy(T) / k_Boltzmann;
-        ofs_thermo << std::setw(18) << thermodynamics->internal_energy(T);
-        ofs_thermo << std::setw(18) << thermodynamics->free_energy(T);
+        ofs_thermo << std::setw(18) << std::scientific << heat_capacity / k_Boltzmann;
+        ofs_thermo << std::setw(18) << Svib / k_Boltzmann;
+        ofs_thermo << std::setw(18) << Uvib;
+        ofs_thermo << std::setw(18) << FE_QHA;
 
         if (thermodynamics->calc_FE_bubble) {
             ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[i];
@@ -1254,48 +1281,13 @@ void Writes::write_msd() const
 }
 
 
-void Writes::write_scph_msd(double ***eval,
-                            std::complex<double> ****evec) const
+void Writes::write_scph_msd(double **msd_scph) const
 {
-    unsigned int i, iT;
-    const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    double *Cv;
-    double temp;
-    double **msd;
-
-    memory->allocate(Cv, NT);
-    memory->allocate(msd, NT, ns);
-
-    for (iT = 0; iT < NT; ++iT) {
-
-        temp = Tmin + static_cast<double>(iT) * dT;
-
-        for (i = 0; i < ns; ++i) {
-            auto tmp = 0.0;
-
-            for (unsigned int ik = 0; ik < nk; ++ik) {
-                for (unsigned int is = 0; is < ns; ++is) {
-                    const auto omega = eval[iT][ik][is];
-
-                    if (omega < eps8) continue;
-                    if (thermodynamics->classical) {
-                        tmp += std::norm(evec[iT][ik][is][i])
-                            * thermodynamics->fC(omega, temp) / omega;
-                    } else {
-                        tmp += std::norm(evec[iT][ik][is][i])
-                            * (thermodynamics->fB(omega, temp) + 0.5) / omega;
-                    }
-                }
-            }
-            msd[iT][i] = tmp * std::pow(Bohr_in_Angstrom, 2.0)
-                / (static_cast<double>(nk) * system->mass[system->map_p2s[i / 3][0]]);
-        }
-    }
 
     std::ofstream ofs_msd;
     auto file_msd = input->job_title + ".scph_msd";
@@ -1305,19 +1297,19 @@ void Writes::write_scph_msd(double ***eval,
     ofs_msd << "# Temperature [K], <(u_{1}^{x})^{2}>, <(u_{1}^{y})^{2}>, <(u_{1}^{z})^{2}>, .... [Angstrom^2]" << std::
         endl;
 
-    for (iT = 0; iT < NT; ++iT) {
-        temp = Tmin + static_cast<double>(iT) * dT;
+    for (unsigned int iT = 0; iT < NT; ++iT) {
+        const auto temp = Tmin + static_cast<double>(iT) * dT;
 
         ofs_msd << std::setw(15) << temp;
-        for (i = 0; i < ns; ++i) {
-            ofs_msd << std::setw(15) << msd[iT][i];
+        for (unsigned int i = 0; i < ns; ++i) {
+            ofs_msd << std::setw(15) << msd_scph[iT][i] * std::pow(Bohr_in_Angstrom, 2.0);
         }
         ofs_msd << std::endl;
     }
 
     ofs_msd.close();
-
-    memory->deallocate(msd);
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_msd;
+    std::cout << " : Mean-square-displacement (SCPH level)" << std::endl;
 }
 
 
@@ -1350,7 +1342,6 @@ void Writes::write_disp_correlation() const
     for (unsigned int i = 0; i < NT; ++i) {
 
         const auto T = Tmin + static_cast<double>(i) * dT;
-
 
         for (unsigned int j = 0; j < ns; ++j) {
             for (unsigned int k = 0; k < ns; ++k) {
@@ -1385,8 +1376,7 @@ void Writes::write_disp_correlation() const
 }
 
 
-void Writes::write_scph_ucorr(double ***eval,
-                              std::complex<double> ****evec) const
+void Writes::write_scph_ucorr(double ***ucorr_scph) const
 {
     auto file_ucorr = input->job_title + ".scph_ucorr";
     std::ofstream ofs;
@@ -1417,17 +1407,8 @@ void Writes::write_scph_ucorr(double ***eval,
 
         const auto T = Tmin + static_cast<double>(i) * dT;
 
-
         for (unsigned int j = 0; j < ns; ++j) {
             for (unsigned int k = 0; k < ns; ++k) {
-
-                const auto ucorr = thermodynamics->disp_corrfunc(T, j, k,
-                                                                 shift,
-                                                                 kpoint->nk,
-                                                                 ns,
-                                                                 kpoint->xk,
-                                                                 eval[i],
-                                                                 evec[i]);
 
                 ofs << std::setw(17) << T;
                 ofs << std::setw(11) << j / 3 + 1;
@@ -1437,7 +1418,7 @@ void Writes::write_scph_ucorr(double ***eval,
                 ofs << std::setw(4) << writes->shift_ucorr[0];
                 ofs << std::setw(4) << writes->shift_ucorr[1];
                 ofs << std::setw(4) << writes->shift_ucorr[2];
-                ofs << std::setw(15) << ucorr * std::pow(Bohr_in_Angstrom, 2.0);
+                ofs << std::setw(15) << ucorr_scph[i][j][k] * std::pow(Bohr_in_Angstrom, 2.0);
                 ofs << '\n';
             }
         }
@@ -1446,7 +1427,7 @@ void Writes::write_scph_ucorr(double ***eval,
     ofs << std::flush;
     ofs.close();
 
-    std::cout << "  " << std::setw(input->job_title.length() + 7) << std::left << file_ucorr;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_ucorr;
     std::cout << " : displacement correlation functions (SCPH level)" << std::endl;
 }
 
@@ -1546,9 +1527,9 @@ void Writes::write_kappa() const
         }
         if (conductivity->calc_coherent) {
             std::cout << " Coherent part is stored in the file " << file_kappa_coherent << std::endl;
+}
         }
     }
-}
 
 void Writes::write_selfenergy_isotope() const
 {
@@ -2152,23 +2133,17 @@ void Writes::write_scph_bands(double ***eval) const
     }
 
     ofs_bands.close();
-
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_bands;
     std::cout << " : SCPH band structure" << std::endl;
 }
 
-void Writes::write_scph_dos(double ***eval) const
+void Writes::write_scph_dos(double **dos_scph) const
 {
     unsigned int iT;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-
-    double **dos_scph;
-
-    memory->allocate(dos_scph, NT, dos->n_energy);
-    dos->calc_dos_scph(eval, dos_scph);
 
     std::ofstream ofs_dos;
     auto file_dos = input->job_title + ".scph_dos";
@@ -2193,24 +2168,19 @@ void Writes::write_scph_dos(double ***eval) const
     }
 
     ofs_dos << std::endl;
-
     ofs_dos.close();
-
-    memory->deallocate(dos_scph);
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
+    std::cout << " : SCPH DOS" << std::endl;
 }
 
-void Writes::write_scph_thermodynamics(double ***eval,
-                                       std::complex<double> ****evec) const
+void Writes::write_scph_thermodynamics(double *heat_capacity,
+                                       double *FE_QHA,
+                                       double *dFE_scph) const
 {
-    const auto nk = kpoint->nk;
-    const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    const auto T_to_Ryd = thermodynamics->T_to_Ryd;
-
-    const auto N = nk * ns;
 
     std::ofstream ofs_thermo;
     auto file_thermo = input->job_title + ".scph_thermo";
@@ -2222,10 +2192,10 @@ void Writes::write_scph_thermodynamics(double ***eval,
     if (thermodynamics->calc_FE_bubble) {
         ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
         ofs_thermo <<
-            "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH) [Ry], F_{vib} (Bubble) [Ry]"
+            "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry], F_{vib} (Bubble correction) [Ry]"
             << std::endl;
     } else {
-        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH) [Ry]"
+        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry]"
             << std::endl;
     }
 
@@ -2237,63 +2207,10 @@ void Writes::write_scph_thermodynamics(double ***eval,
 
         const auto temp = Tmin + static_cast<double>(iT) * dT;
 
-        auto heat_capacity = 0.0;
-        auto free_energy = 0.0;
-
-        if (thermodynamics->classical) {
-#pragma omp parallel for reduction(+:heat_capacity,free_energy)
-            for (int i = 0; i < N; ++i) {
-                const auto ik = i / ns;
-                const auto is = i % ns;
-                const auto omega = eval[iT][ik][is];
-
-                if (omega <= eps8) continue;
-
-                heat_capacity += thermodynamics->Cv_classical(omega, temp);
-
-                if (std::abs(temp) > eps) {
-                    const auto x = omega / (temp * T_to_Ryd);
-                    free_energy += std::log(x);
-                }
-            }
-
-            heat_capacity /= static_cast<double>(nk);
-            free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
-
-        } else {
-
-#pragma omp parallel for reduction(+:heat_capacity,free_energy)
-            for (int i = 0; i < N; ++i) {
-                const auto ik = i / ns;
-                const auto is = i % ns;
-                const auto omega = eval[iT][ik][is];
-
-                if (omega <= eps8) continue;
-
-                heat_capacity += thermodynamics->Cv(omega, temp);
-
-                if (std::abs(temp) < eps) {
-                    free_energy += 0.5 * omega;
-                } else {
-                    const auto x = omega / (temp * T_to_Ryd);
-                    free_energy += 0.5 * x + std::log(1.0 - std::exp(-x));
-                }
-            }
-
-            heat_capacity /= static_cast<double>(nk);
-            if (std::abs(temp) < eps) {
-                free_energy /= static_cast<double>(nk);
-            } else {
-                free_energy *= temp * T_to_Ryd / static_cast<double>(nk);
-            }
-        }
-
-        const auto tmp3 = free_energy + thermodynamics->FE_scph_correction(iT, eval[iT], evec[iT]);
-
         ofs_thermo << std::setw(16) << std::fixed << temp;
-        ofs_thermo << std::setw(18) << std::scientific << heat_capacity / k_Boltzmann;
-        ofs_thermo << std::setw(18) << free_energy;
-        ofs_thermo << std::setw(18) << tmp3;
+        ofs_thermo << std::setw(18) << std::scientific << heat_capacity[iT] / k_Boltzmann;
+        ofs_thermo << std::setw(18) << FE_QHA[iT];
+        ofs_thermo << std::setw(18) << dFE_scph[iT];
 
         if (thermodynamics->calc_FE_bubble) {
             ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[iT];
@@ -2302,4 +2219,6 @@ void Writes::write_scph_thermodynamics(double ***eval,
     }
 
     ofs_thermo.close();
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_thermo;
+    std::cout << " : SCPH heat capcaity and free energy" << std::endl;
 }

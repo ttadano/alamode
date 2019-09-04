@@ -29,10 +29,13 @@ namespace PHON_NS
         void phonon_vel_k(const double *,
                           double **) const;
 
-                void phonon_vel_k2(const double *,
-                           const double *,
-                           std::complex<double> **,
-                           double **) const;
+        void phonon_vel_k2(const double *,
+                    const double *,
+                    std::complex<double> **,
+                    double **) const;
+
+        void calc_phonon_vel_mesh(double ***) const;
+        void calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const;
 
         void velocity_matrix_analytic(const double *xk_in,
                                       const std::vector<FcsClassExtent> &fc2_in,
@@ -57,9 +60,6 @@ namespace PHON_NS
         void deallocate_variables();
 
         void calc_phonon_vel_band(double **) const;
-
-        void calc_phonon_vel_mesh(double **,
-                                  double ***) const;
 
         // void phonon_vel_k2(const double *,
         //                    const double *,

@@ -118,6 +118,7 @@ namespace PHON_NS
 
         std::complex<double> V3(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
+        std::complex<double> Phi3(const unsigned int [3]);
 
         std::complex<double> V3(const unsigned int [3],
                                 double **,
@@ -126,6 +127,10 @@ namespace PHON_NS
         std::complex<double> V4(const unsigned int [4],
                                 double **,
                                 std::complex<double> ***);
+
+        std::complex<double> Phi3(const unsigned int [3],
+                                  double **,
+                                  std::complex<double> ***);
 
         std::complex<double> V3_mode(int,
                                      double *,

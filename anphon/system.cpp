@@ -493,7 +493,7 @@ void System::load_system_info_from_XML()
 
         lspin = true;
         try {
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
+            BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
                 if (child_.first == "mag") {
                     const auto &child = child_.second;
                     const auto str_index = child.get<std::string>("<xmlattr>.index");

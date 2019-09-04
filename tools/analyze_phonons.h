@@ -43,22 +43,40 @@ int isotope;
 bool classical;
 
 void calc_tau(int);
-void calc_tau_temp(int, int);
+void calc_tau_temp(int,
+                   int);
 void calc_kappa();
-void calc_kappa_cumulative(double, double, int);
-void calc_kappa_cumulative2(double, double, int, int [3]);
+void calc_kappa_cumulative(double,
+                           double,
+                           int);
+void calc_kappa_cumulative2(double,
+                            double,
+                            int,
+                            int [3]);
 void calc_kappa_boundary(const double);
-void calc_kappa_boundary2(double, double, int, int [3]);
-double Cv(double, double);
+void calc_kappa_boundary2(double,
+                          double,
+                          int,
+                          int [3]);
+double Cv(double,
+          double);
 
-void average_gamma_at_degenerate_point(double **, double ***,
-                                       const int, const int, const int);
-void average_gamma_isotope_at_degenerate_point(double **, double **,
-                                               const int, const int);
+void average_gamma_at_degenerate_point(double **,
+                                       double ***,
+                                       const int,
+                                       const int,
+                                       const int);
+void average_gamma_isotope_at_degenerate_point(double **,
+                                               double **,
+                                               const int,
+                                               const int);
 
 void update_tau_isotope(const std::string,
-                        double **, double ***,
-                        const int, const int, const int);
+                        double **,
+                        double ***,
+                        const int,
+                        const int,
+                        const int);
 
 static const double Ryd_to_kayser = Hz_to_kayser / time_ry;
 static const double kayser_to_Ryd = 1.0 / Ryd_to_kayser;

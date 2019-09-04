@@ -35,7 +35,7 @@ namespace PHON_NS
         bool calc_realpart;
         bool calc_fstate_omega;
         bool calc_fstate_k;
-        bool print_V3;
+        int print_V3;
         bool spectral_func;
 
         std::string ks_input;

@@ -40,7 +40,7 @@ Harmonic properties
 * Animation and visualization of phonon modes (requires VMD or XCrysDen)
 * 3-phonon scattering phase space
 * Phonon-isotope scattering rate
-* Participation ratio for analyzing localization of phonon modes
+* Participation ratio for analyzing the localization of phonon modes
 
 Anharmonic properties
 ^^^^^^^^^^^^^^^^^^^^^
@@ -53,8 +53,8 @@ Anharmonic properties
 * Phonon linewidth due to 3-phonon interactions
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
-* Self-consisitent phonon (SCPH) calculation
-
+* Self-consistent phonon (SCPH) calculation
+* Anharmonic vibrational free-energy
 
 Links
 -----
@@ -88,9 +88,14 @@ If you use the self-consistent phonon (SCPH) method, please cite the following p
   T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**\ , 054301 (2015). 
   [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.92.054301>`__]
 
+If you use ALAMODE to compute anharmonic vibrational free-energies in your research paper,
+please cite the following paper as well:
 
-Acknowledgement
----------------
+  Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
+  [`Link <https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.3.033601>`__]
+
+Acknowledgment
+--------------
 
 This project is/was partially supported by the following projects:
 
@@ -105,7 +110,7 @@ Author & Contact
 
     <script>gen_mail_to_link('Terumasa TADANO', 'terumasa.tadano','gmail.com')</script>
 
-| International Center for Young Scientists (ICYS),
+| Research Center for Magnetic and Spintronic Materials (CMSM),
 | National Institute for Material Science (NIMS), 
 | Japan
 

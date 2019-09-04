@@ -205,7 +205,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
 {
     double *weight;
 
-    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
+    //    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
@@ -235,7 +235,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
         memory->deallocate(weight);
     }
 
-    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+    //    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
 }
 
 void Dos::calc_atom_projected_dos(const unsigned int nk,
@@ -542,33 +542,24 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     }
 }
 
-void Dos::calc_dos_scph(double ***eval_anharm,
-                        double **dos_scph) const
+void Dos::calc_dos_from_given_frequency(double **eval_in,
+                                        double *dos_out) const
 {
     const auto nk = kpoint->nk;
     const auto neval = dynamical->neval;
     double **eval;
 
-    const auto Tmin = system->Tmin;
-    const auto Tmax = system->Tmax;
-    const auto dT = system->dT;
-    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-
     memory->allocate(eval, neval, nk);
-
-    for (unsigned int iT = 0; iT < NT; ++iT) {
-
-        std::cout << " T = " << std::setw(5) << Tmin + static_cast<double>(iT) * dT << std::endl;
-
         for (unsigned int j = 0; j < nk; ++j) {
             for (unsigned int k = 0; k < neval; ++k) {
-                eval[k][j] = writes->in_kayser(eval_anharm[iT][j][k]);
+            eval[k][j] = writes->in_kayser(eval_in[j][k]);
             }
         }
 
         calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
-                 dos_scph[iT], neval, integration->ismear, kpoint->kpoint_irred_all);
-    }
+             dos_out, neval, integration->ismear, kpoint->kpoint_irred_all);
+
+    memory->deallocate(eval);
 }
 
 void Dos::calc_scattering_phase_space_with_Bose(double **eval,
