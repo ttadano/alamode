@@ -284,6 +284,7 @@ void Constraint::setup(const System *system,
                                  const_rotation_self[order].begin(),
                                  const_rotation_self[order].end());
 
+//        rref_sparse(nparam, const_self[order], tolerance_constraint);
         rref_sparse(nparam, const_self[order], tolerance_constraint);
     }
 
@@ -293,6 +294,29 @@ void Constraint::setup(const System *system,
                            const_fix,
                            const_relate,
                            index_bimap);
+
+#ifdef _DEBUG
+    for (auto order = 0; order < maxorder; ++order) {
+        std::cout << "const_relate:\n";
+
+        for (const auto &it: const_relate[order]) {
+            std::cout << std::setw(5) << it.p_index_target;
+            std::cout << " : ";
+            for (auto m = 0; m < it.alpha.size(); ++m) {
+                std::cout << "(" << std::setw(15) << it.alpha[m] << ", " << std::setw(5) << it.p_index_orig[m] << ") ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << "\nindex_bimap:\n";
+
+        for (const auto &it: index_bimap[order]) {
+            std::cout << std::setw(5) << it.left << " <--> " << it.right << std::endl;
+        }
+        
+    }
+
+#endif
 
     if (!constraint_algebraic) {
 

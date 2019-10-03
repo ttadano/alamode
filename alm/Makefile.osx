@@ -12,7 +12,8 @@ CXXFLAGS = -O2 -fopenmp -std=c++11
 INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
 
 CXXL = ${CXX}
-LDFLAGS = -lgomp -L$(SPGLIB_ROOT)/lib -lsymspg
+#LDFLAGS = -lgomp -L$(SPGLIB_ROOT)/lib -lsymspg libsymspg.a
+LDFLAGS = -lgomp $(SPGLIB_ROOT)/lib/libsymspg.a
 
 LAPACK = -llapack -lblas
 LIBS = ${LAPACK}
