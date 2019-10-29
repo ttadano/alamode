@@ -1049,7 +1049,13 @@ void Writes::write_eigenvectors() const
 
     ofs_evec << std::endl;
     ofs_evec << "# Number of phonon modes: " << std::setw(10) << nbands << std::endl;
-    ofs_evec << "# Number of k points : " << std::setw(10) << nk << std::endl << std::endl;
+    ofs_evec << "# Number of k points : " << std::setw(10) << nk << std::endl;
+    ofs_evec << "# Number of atomic kinds : " << std::setw(4) << system->nkd << '\n';
+    ofs_evec << "# Atomic masses :";
+    for (i = 0; i < system->nkd; ++i) {
+        ofs_evec << std::setw(15) << system->mass_kd[i];
+    }
+    ofs_evec << "\n\n";
     ofs_evec << "# Eigenvalues and eigenvectors for each phonon modes below:" << std::endl << std::endl;
 
     for (i = 0; i < nk; ++i) {
