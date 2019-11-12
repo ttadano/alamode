@@ -129,6 +129,7 @@ void PHON::create_pointers()
     isotope = new Isotope(this);
     scph = new Scph(this);
     ewald = new Ewald(this);
+    dielec = new Dielec(this);
 }
 
 void PHON::destroy_pointers() const
@@ -154,6 +155,7 @@ void PHON::destroy_pointers() const
     delete isotope;
     delete scph;
     delete ewald;
+    delete dielec;
 }
 
 void PHON::setup_base() const
@@ -167,6 +169,7 @@ void PHON::setup_base() const
     thermodynamics->setup();
     ewald->init();
     anharmonic_core->setup();
+    dielec->init();    
 
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;
@@ -213,8 +216,9 @@ void PHON::execute_phonons()
         thermodynamics->compute_free_energy_bubble();
     }
 
+    dielec->compute_dielectric_constant();
+
     if (mympi->my_rank == 0) {
-        dielec->compute_dielectric_constant();
 
         writes->print_phonon_energy();
         writes->write_phonon_info();

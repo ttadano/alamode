@@ -11,8 +11,6 @@
 #pragma once
 
 #include "pointers.h"
-#include <vector>
-#include <set>
 
 namespace PHON_NS
 {
@@ -24,10 +22,10 @@ namespace PHON_NS
 
         void init();
         void compute_dielectric_constant();
+        int calc_dielectric_constant;
 
     private:
 
-        int calc_dielectric_constant;
         void set_default_variables();
         void deallocate_variables();
         double ***dielec;

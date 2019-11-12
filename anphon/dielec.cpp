@@ -9,6 +9,8 @@
 */
 
 #include "mpi_common.h"
+#include "dielec.h"
+#include "constants.h"
 #include "dynamical.h"
 #include "error.h"
 #include "mathfunctions.h"
@@ -17,7 +19,6 @@
 #include "write_phonons.h"
 #include "phonon_dos.h"
 #include "fcs_phonon.h"
-#include "dielec.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -52,25 +53,22 @@ void Dielec::deallocate_variables()
 void Dielec::init()
 {
     MPI_Bcast(&calc_dielectric_constant, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    std::cout << "DIELEC = " << calc_dielectric_constant << std::endl;
 }
 
 void Dielec::compute_dielectric_constant()
 {
-    unsigned int ns;
-    std::cout << "ok\n";
-    ns = dynamical->neval;
+    const auto ns = dynamical->neval;
+    const auto nomega = dos->n_energy;
+    const auto freq_dyn = dos->energy_dos;
+    const auto z_star = dynamical->borncharge;
 
-        std::cout << "ok\n";
-
-
-    double *xk, *kvec;
+    double *xk, *kdirec;
     double *eval;
     std::complex<double> **evec;
 
-
-
     memory->allocate(xk, 3);
-    memory->allocate(kvec, 3);
+    memory->allocate(kdirec, 3);
     memory->allocate(eval, ns);
     memory->allocate(evec, ns, ns);
 
@@ -78,19 +76,31 @@ void Dielec::compute_dielectric_constant()
 
     for (auto i = 0; i < 3; ++i) {
         xk[i] = 0.0;
-        kvec[i] = 0.0;
     }
 
-    // dynamical->eval_k(xk, kvec, fcs_phonon->fc2_ext, eval, evec, true);
+    rotvec(kdirec, xk, system->rlavec_p, 'T');
+    auto norm = kdirec[0] * kdirec[0] + kdirec[1] * kdirec[1] + kdirec[2] * kdirec[2];
+    if (norm > eps) {
+        for (auto i = 0; i < 3; ++i) kdirec[i] /= std::sqrt(norm);
+    }
 
-    // for (auto i = 0; i < ns; ++i) {
-    //     std::cout << "eval = " << eval[i] << std::endl;
-    //     for (auto j = 0; j < ns; ++j) {
-    //         std::cout << std::setw(15) << evec[i][j].real();
-    //         std::cout << std::setw(15) << evec[i][j].imag();
-    //         std::cout << std::endl;
-    //     }
-    //     std::cout << std::endl;
-    // }
+    kdirec[0] = 1.0;
 
+
+    dynamical->eval_k(xk, kdirec, fcs_phonon->fc2_ext, eval, evec, true);
+
+    for (auto i = 0; i < ns; ++i) {
+        std::cout << "eval = " << eval[i] << std::endl;
+        for (auto j = 0; j < ns; ++j) {
+            std::cout << std::setw(15) << evec[i][j].real();
+            std::cout << std::setw(15) << evec[i][j].imag();
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
+    memory->deallocate(xk);
+    memory->deallocate(kdirec);
+    memory->deallocate(eval);
+    memory->deallocate(evec);
 }
