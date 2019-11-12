@@ -52,6 +52,7 @@ namespace PHON_NS
         class Isotope *isotope;
         class Scph *scph;
         class Ewald *ewald;
+        class Dielec *dielec;
 
         void create_pointers();
         void destroy_pointers() const;

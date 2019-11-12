@@ -35,6 +35,7 @@
 #include "version.h"
 #include "scph.h"
 #include "ewald.h"
+#include "dielec.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -213,12 +214,15 @@ void PHON::execute_phonons()
     }
 
     if (mympi->my_rank == 0) {
+        dielec->compute_dielectric_constant();
+
         writes->print_phonon_energy();
         writes->write_phonon_info();
 
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
         }
+
     }
 }
 
