@@ -9,10 +9,10 @@
 #CXX = icpc
 
 # OSX (gcc)
-CXX = g++-9
+#CXX = g++-9
 
 # OSX (clang)
-#CXX = g++
+CXX = g++
 
 CXXFLAGS = -O2 -std=c++11
 
