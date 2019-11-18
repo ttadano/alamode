@@ -69,43 +69,6 @@ def get_kpath_and_kval(file_in):
     else:
         return [], []
 
-    if kpath[0] == '#' and kval[0] == '#':
-        kval_float = [float(val) for val in kval[1:]]
-        kpath_list = []
-        for i in range(len(kpath[1:])):
-            if kpath[i + 1] == 'G':
-                kpath_list.append('\Gamma')
-            else:
-                kpath_list.append(kpath[i + 1])
-
-        kval_uniq = []
-        for x in kval_float:
-            if x not in kval_uniq:
-                kval_uniq.append(x)
-
-        kpath_new = []
-        kval_new = []
-        ktmp = -1.0
-
-        for x in kval_uniq:
-            kpath_tmp = []
-            for i, kval in enumerate(kval_float):
-                if kval == x:
-                    kpath_tmp.append(kpath_list[i])
-
-            if len(kpath_tmp) == 1:
-                kpath_new.append("$\mathrm{%s}$" % kpath_tmp[0])
-            elif len(kpath_tmp) == 2:
-                kpath_new.append("$\mathrm{%s|%s}$" %
-                                 (kpath_tmp[0], kpath_tmp[1]))
-            else:
-                print("This cannot happen.")
-                exit(1)
-
-        return kpath_new, kval_uniq
-    else:
-        return [], []
-
 
 def change_scale(array, str_scale):
 
@@ -229,10 +192,17 @@ def gridspec_setup(data_merged, xtickslabels, xticksvars):
             ix_xmin_arr = np.where(kval <= xmin_ax)
             ix_xmax_arr = np.where(kval >= xmax_ax)
 
-            ix_xmin = int(ix_xmin_arr[0][-1])
-            ix_xmax = int(ix_xmax_arr[0][0])
+            if len(ix_xmin_arr[0]) > 0:
+                ix_xmin = int(ix_xmin_arr[0][-1])
+            else:
+                ix_xmin = 0
 
-            data_ax.append(data_merged[j][ix_xmin:ix_xmax+1, :])
+            if len(ix_xmax_arr[0]) > 0:
+                ix_xmax = int(ix_xmax_arr[0][0])
+            else:
+                ix_xmax = -2
+
+            data_ax.append(data_merged[j][ix_xmin:(ix_xmax+1), :])
 
         data_all_axes.append(data_ax)
 
@@ -290,12 +260,14 @@ def run_plot(nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, data_
         ax = plt.subplot(gs[iax])
 
         for i in range(len(data_merged_ax[iax])):
-            ax.plot(data_merged_ax[iax][i][0:, 0], data_merged_ax[iax][i][0:, 1],
-                    linestyle=lsty[i], color=color[i], label=files[i])
 
-            for j in range(2, len(data_merged_ax[iax][i][0][0:])):
-                ax.plot(data_merged_ax[iax][i][0:, 0], data_merged_ax[iax][i][0:, j],
-                        linestyle=lsty[i], color=color[i])
+            if len(data_merged_ax[iax][i]) > 0:
+                ax.plot(data_merged_ax[iax][i][0:, 0], data_merged_ax[iax][i][0:, 1],
+                        linestyle=lsty[i], color=color[i], label=files[i])
+
+                for j in range(2, len(data_merged_ax[iax][i][0][0:])):
+                    ax.plot(data_merged_ax[iax][i][0:, 0], data_merged_ax[iax][i][0:, j],
+                            linestyle=lsty[i], color=color[i])
 
         if iax == 0:
             if options.unitname.lower() == "mev":
@@ -314,8 +286,8 @@ def run_plot(nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, data_
         ax.set_xticklabels(xticklabels_ax[iax])
         ax.xaxis.grid(True, linestyle='-')
 
-    if options.print_key:
-        plt.legend(loc='best', prop={'size': 10})
+        if options.print_key and iax == 0:
+            ax.legend(loc='best', prop={'size': 10})
 
     plt.show()
 
