@@ -13,6 +13,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <iomanip>
 #include "constants.h"
 #include "conductivity.h"
+#include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
 #include "fcs_phonon.h"
@@ -540,6 +541,10 @@ void Writes::write_phonon_info()
 
     if (gruneisen->print_gruneisen) {
         write_gruneisen();
+    }
+
+    if (dielec->calc_dielectric_constant) {
+        write_dielectric_function();
     }
 
     if (print_anime) {
@@ -2000,6 +2005,33 @@ void Writes::write_participation_ratio() const
     std::cout << " : Atomic participation ratio for all k points" << std::endl;
 }
 
+void Writes::write_dielectric_function() const
+{
+    std::ofstream ofs_dielec;
+    auto file_dielec = input->job_title + ".dielec";
+
+    ofs_dielec.open(file_dielec.c_str(), std::ios::out);
+    if (!ofs_dielec) error->exit("write_phonon_vel", "cannot open file_vel");
+
+    unsigned int nomega;
+    auto omega_grid = dielec->get_omega_grid(nomega);
+    auto dielecfunc = dielec->get_dielectric_func();
+
+    ofs_dielec << "# Real part of dielectric function (phonon part only)\n";
+    ofs_dielec << "# Frequency (cm^-1), xx, yy, zz\n";
+    for (auto iomega = 0; iomega < nomega; ++iomega) {
+        ofs_dielec << std::setw(10) << omega_grid[iomega];
+        for (auto i = 0; i < 3; ++i) {
+                ofs_dielec << std::setw(15) << dielecfunc[iomega][i][i];
+        }
+        ofs_dielec << '\n';
+    }
+    ofs_dielec << std::endl;
+    ofs_dielec.close();
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dielec;
+    std::cout << " : Frequency-dependent dielectric function" << std::endl;
+}
 
 void Writes::write_scph_energy(double ***eval) const
 {
@@ -2189,4 +2221,45 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     ofs_thermo.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_thermo;
     std::cout << " : SCPH heat capcaity and free energy" << std::endl;
+}
+
+void Writes::write_scph_dielec(double ****dielec_scph) const
+{
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    std::ofstream ofs_dielec;
+    auto file_dielec = input->job_title + ".scph_dielec";
+
+    ofs_dielec.open(file_dielec.c_str(), std::ios::out);
+    if (!ofs_dielec) error->exit("write_scph_dielec", "cannot open PREFIX.scph_dielec");
+
+    unsigned int nomega;
+    auto omega_grid = dielec->get_omega_grid(nomega);
+    auto dielecfunc = dielec->get_dielectric_func();
+
+    ofs_dielec << "# Real part of dielectric function (phonon part only)\n";
+    ofs_dielec << "# Temperature (K), Frequency (cm^-1), xx, yy, zz\n";
+
+    for (unsigned int iT = 0; iT < NT; ++iT) {
+
+        const auto temp = Tmin + static_cast<double>(iT) * dT;
+
+        for (auto iomega = 0; iomega < nomega; ++iomega) {
+            ofs_dielec << std::setw(16) << std::fixed << temp;
+            ofs_dielec << std::setw(10) << std::scientific << omega_grid[iomega];
+            for (auto i = 0; i < 3; ++i) {
+                ofs_dielec << std::setw(15) << dielec_scph[iT][iomega][i][i];
+            }
+            ofs_dielec << '\n';
+        }
+        ofs_dielec << std::endl;
+    }
+
+    ofs_dielec.close();
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dielec;
+    std::cout << " : SCPH frequency-dependent dielectric function" << std::endl;
 }

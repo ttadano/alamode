@@ -45,6 +45,7 @@ namespace PHON_NS
 
         void calc_dos_from_given_frequency(double **,
                                            double *) const;
+        void set_dos_energy_grid();
 
     private:
         void set_default_variables();

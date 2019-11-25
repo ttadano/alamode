@@ -42,6 +42,7 @@ void Dielec::set_default_variables()
 {
     calc_dielectric_constant = 0;
     dielec = nullptr;
+    omega_grid = nullptr;
 }
 
 void Dielec::deallocate_variables()
@@ -49,83 +50,141 @@ void Dielec::deallocate_variables()
     if (dielec) {
         memory->deallocate(dielec);
     }
+    if (omega_grid) {
+        memory->deallocate(omega_grid);
+    }
 }
 
 void Dielec::init()
 {
+    // This should be called after Dos::setup()
+
+    if (mympi->my_rank == 0) {
+        emax = dos->emax;
+        emin = dos->emin;
+        delta_e = dos->delta_e;
+        nomega = static_cast<int>((emax - emin) / delta_e);
+    }
+
     MPI_Bcast(&calc_dielectric_constant, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    std::cout << "DIELEC = " << calc_dielectric_constant << std::endl;
+    MPI_Bcast(&nomega, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (calc_dielectric_constant) {
+
+        if (dynamical->file_born == "") {
+            error->exitall("Dielec::init()", "BORNINFO must be set when DIELEC = 1.");
+        }
+
+        memory->allocate(omega_grid, nomega);
+
+        for (auto i = 0; i < nomega; ++i) {
+            omega_grid[i] = emin + delta_e * static_cast<double>(i);
+        }
+
+        // If borncharge in dynamical class is not initialized, do it here.
+        if (!dynamical->borncharge) {
+            const auto verbosity_level = 1;
+            dynamical->setup_dielectric(verbosity_level);
+        }
+    }
 }
 
-void Dielec::compute_dielectric_constant()
+double* Dielec::get_omega_grid(unsigned int &nomega_in) const
 {
-    const auto ns = dynamical->neval;
-    const auto nomega = dos->n_energy;
-    const auto freq_dyn = dos->energy_dos;
-    const auto zstar = dynamical->borncharge;
+    nomega_in = nomega;
+    return omega_grid;
+}
 
+double*** Dielec::get_dielectric_func() const
+{
+    return dielec;
+}
+
+void Dielec::run_dielec_calculation()
+{
     double *xk, *kdirec;
     double *eval;
     std::complex<double> **evec;
+    const auto ns = dynamical->neval;
 
     memory->allocate(xk, 3);
-    memory->allocate(kdirec, 3);
     memory->allocate(eval, ns);
     memory->allocate(evec, ns, ns);
+    memory->allocate(dielec, nomega, 3, 3);
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
 
-    rotvec(kdirec, xk, system->rlavec_p, 'T');
-    auto norm = kdirec[0] * kdirec[0] + kdirec[1] * kdirec[1] + kdirec[2] * kdirec[2];
-    if (norm > eps) {
-        for (auto i = 0; i < 3; ++i) kdirec[i] /= std::sqrt(norm);
-    }
+    dynamical->eval_k(xk, xk, fcs_phonon->fc2_ext, eval, evec, true);
 
-//    kdirec[0] = 1.0;
-    dynamical->eval_k(xk, kdirec, fcs_phonon->fc2_ext, eval, evec, true);
+    compute_dielectric_function(nomega, omega_grid,
+                                eval, evec, dielec);
 
+    memory->deallocate(xk);
+    memory->deallocate(eval);
+    memory->deallocate(evec);
+}
+
+void Dielec::compute_dielectric_function(const unsigned int nomega_in,
+                                         double *omega_grid_in,
+                                         double *eval_in, 
+                                         std::complex<double> **evec_in,
+                                         double ***dielec_out)
+{
+    const auto ns = dynamical->neval;
+    const auto zstar = dynamical->borncharge;
+
+#ifdef _DEBUG
     for (auto i = 0; i < ns; ++i) {
-        std::cout << "eval = " << eval[i] << std::endl;
+        std::cout << "eval = " << eval_in[i] << std::endl;
         for (auto j = 0; j < ns; ++j) {
-            std::cout << std::setw(15) << evec[i][j].real();
-            std::cout << std::setw(15) << evec[i][j].imag();
+            std::cout << std::setw(15) << evec_in[i][j].real();
+            std::cout << std::setw(15) << evec_in[i][j].imag();
             std::cout << std::endl;
         }
         std::cout << std::endl;
     }
+#endif
 
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
-            evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]]);
+            evec_in[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]]);
         }
     }
 
+#ifdef _DEBUG
     for (auto i = 0; i < ns; ++i) {
-        std::cout << "U = " << eval[i] << std::endl;
+        std::cout << "U = " << eval_in[i] << std::endl;
         for (auto j = 0; j < ns; ++j) {
-            std::cout << std::setw(15) << real(evec[i][j]);
-            std::cout << std::setw(15) << evec[i][j].imag();
+            std::cout << std::setw(15) << real(evec_in[i][j]);
+            std::cout << std::setw(15) << evec_in[i][j].imag();
             std::cout << std::endl;
         }
         std::cout << std::endl;
     }
+#endif
 
     double ***s_born;
     double **zstar_u;
 
     memory->allocate(zstar_u, 3, ns);
-    std::cout << "Zstar_u:\n";
+    memory->allocate(s_born, 3, 3, ns);
 
     for (auto i = 0; i < 3; ++i) {
         for (auto is = 0; is < ns; ++is) {
             zstar_u[i][is] = 0.0;
 
             for (auto j = 0; j < ns; ++j) {
-                zstar_u[i][is] += zstar[j / 3][i][j % 3] * evec[is][j].real();
+                zstar_u[i][is] += zstar[j / 3][i][j % 3] * evec_in[is][j].real();
             }
         }
     }
 
+
+#ifdef _DEBUG
+    std::cout << "Zstar_u:\n";
     for (auto is = 0; is < ns; ++is) {
         for (auto i = 0; i < 3; ++i) {
             std::cout << std::setw(15) << zstar_u[i][is];
@@ -134,18 +193,7 @@ void Dielec::compute_dielectric_constant()
     }
     std::cout << std::endl;
 
-    memory->allocate(s_born, 3, 3, ns);
-
     std::cout << "S_born:\n";
-
-    for (auto i = 0; i < 3; ++i) {
-        for (auto j = 0; j < 3; ++j) {
-            for (auto is = 0; is < ns; ++is) {
-                s_born[i][j][is] = zstar_u[i][is] * zstar_u[j][is];
-            }
-        }
-    }
-
     for (auto is = 0; is < ns; ++is) {
         for (auto i = 0; i < 3; ++i) {
             for (auto j = 0; j < 3; ++j) {
@@ -156,50 +204,34 @@ void Dielec::compute_dielectric_constant()
         std::cout << '\n';
     }
 
-    memory->allocate(dielec, nomega, 3, 3);
+#endif
 
-    auto freq_conv_factor = time_ry * time_ry / (Hz_to_kayser * Hz_to_kayser);
-    auto factor = 8.0 * pi / system->volume_p;
-    double w2_tmp;
-    for (auto iomega = 0; iomega < nomega; ++iomega) {
-        w2_tmp = freq_dyn[iomega]*freq_dyn[iomega] * freq_conv_factor;
-
-        for (auto i = 0; i < 3; ++i) { 
-            for (auto j = 0; j < 3; ++j) {
-                dielec[iomega][i][j] = 0.0;
-
-                for (auto is = 3; is < ns; ++is) {
-                    dielec[iomega][i][j] += s_born[i][j][is] / (eval[is] - w2_tmp);
-                }
-                dielec[iomega][i][j] *= factor;
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            for (auto is = 0; is < ns; ++is) {
+                s_born[i][j][is] = zstar_u[i][is] * zstar_u[j][is];
             }
         }
     }
 
-    std::ofstream ofs_dielec;
-    auto file_dielec = input->job_title + ".dielec";
+    auto freq_conv_factor = time_ry * time_ry / (Hz_to_kayser * Hz_to_kayser);
+    auto factor = 8.0 * pi / system->volume_p;
+    double w2_tmp;
+    for (auto iomega = 0; iomega < nomega_in; ++iomega) {
+        w2_tmp = omega_grid_in[iomega] * omega_grid_in[iomega] * freq_conv_factor;
 
-    ofs_dielec.open(file_dielec.c_str(), std::ios::out);
-    if (!ofs_dielec) error->exit("write_phonon_vel", "cannot open file_vel");
+        for (auto i = 0; i < 3; ++i) { 
+            for (auto j = 0; j < 3; ++j) {
+                dielec_out[iomega][i][j] = 0.0;
 
-    for (auto iomega = 0; iomega < nomega; ++iomega) {
-        ofs_dielec << std::setw(10) << freq_dyn[iomega];
-        for (auto i = 0; i < 3; ++i) {
-                ofs_dielec << std::setw(15) << dielec[iomega][i][i];
+                for (auto is = 3; is < ns; ++is) {
+                    dielec_out[iomega][i][j] += s_born[i][j][is] / (eval_in[is] - w2_tmp);
+                }
+                dielec_out[iomega][i][j] *= factor;
+            }
         }
-        ofs_dielec << '\n';
     }
-    ofs_dielec << std::endl;
-    ofs_dielec.close();
-
-    memory->deallocate(xk);
-    memory->deallocate(kdirec);
-    memory->deallocate(eval);
-    memory->deallocate(evec);
 
     memory->deallocate(zstar_u);
     memory->deallocate(s_born);
-
-
-
 }

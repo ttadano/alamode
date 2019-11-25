@@ -13,6 +13,7 @@
 #include "dynamical.h"
 #include "kpoint.h"
 #include "anharmonic_core.h"
+#include "dielec.h"
 #include "ewald.h"
 #include "memory.h"
 #include "thermodynamics.h"
@@ -232,6 +233,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
+    unsigned int nomega_dielec;
+
     if (mympi->my_rank == 0) {
 
         std::cout << '\n';
@@ -240,7 +243,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         std::cout << "   ";
 
         std::complex<double> ***evec_tmp = nullptr;
-
+        double **eval_gam = nullptr;
+        std::complex<double> ***evec_gam = nullptr;
+        double **xk_gam = nullptr;
         memory->allocate(eval_anharm, NT, nk_ref, ns);
         memory->allocate(evec_tmp, nk_ref, ns, ns);
 
@@ -251,6 +256,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         double *dFE_scph = nullptr;
         double **msd_scph = nullptr;
         double ***ucorr_scph = nullptr;
+        double ****dielec_scph = nullptr;
+        double *omega_grid = nullptr;
 
         if (kpoint->kpoint_mode == 2) {
             if (dos->compute_dos) {
@@ -270,6 +277,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
             if (writes->print_ucorr) {
                 memory->allocate(ucorr_scph, NT, ns, ns);
             }
+        }
+        if (dielec->calc_dielectric_constant) {
+            omega_grid = dielec->get_omega_grid(nomega_dielec);
+            memory->allocate(dielec_scph, NT, nomega_dielec, 3, 3);
+            memory->allocate(eval_gam, 1, ns);
+            memory->allocate(evec_gam, 1, ns, ns);
+            memory->allocate(xk_gam, 1, 3);
+            for (auto i = 0; i < 3; ++i) xk_gam[0][i] = 0.0;
         }
 
         for (auto iT = 0; iT < NT; ++iT) {
@@ -338,6 +353,22 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                 }
             }
 
+            if (dielec->calc_dielectric_constant) {
+                exec_interpolation(kmesh_interpolate,
+                                   delta_dymat_scph[iT],
+                                   1,
+                                   xk_gam,
+                                   xk_gam,
+                                   eval_gam,
+                                   evec_gam);
+
+                dielec->compute_dielectric_function(nomega_dielec,
+                                                    omega_grid,
+                                                    eval_gam[0], 
+                                                    evec_gam[0], 
+                                                    dielec_scph[iT]);
+            }
+
             std::cout << '.' << std::flush;
             if (iT % 25 == 24) {
                 std::cout << std::endl;
@@ -362,6 +393,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                 writes->write_scph_ucorr(ucorr_scph);
             }
         }
+        if (dielec->calc_dielectric_constant) {
+            writes->write_scph_dielec(dielec_scph);
+        }
         memory->deallocate(eval_anharm);
         memory->deallocate(evec_tmp);
 
@@ -370,8 +404,12 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
         if (heat_capacity) memory->deallocate(heat_capacity);
         if (FE_QHA) memory->deallocate(FE_QHA);
         if (dFE_scph) memory->deallocate(dFE_scph);
+        if (dielec_scph) memory->deallocate(dielec_scph);
 
-        //std::cout << "\n done.\n" << std::flush;
+        if (eval_gam) memory->deallocate(eval_gam);
+        if (evec_gam) memory->deallocate(evec_gam);
+        if (xk_gam) memory->deallocate(evec_gam);
+        if (omega_grid) memory->deallocate(omega_grid);
     }
 }
 

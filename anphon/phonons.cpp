@@ -211,12 +211,14 @@ void PHON::execute_phonons()
     if (gruneisen->print_gruneisen) {
         gruneisen->calc_gruneisen();
     }
+    if (dielec->calc_dielectric_constant) {
+        dielec->run_dielec_calculation();
+    }
 
     if (thermodynamics->calc_FE_bubble) {
         thermodynamics->compute_free_energy_bubble();
     }
 
-    dielec->compute_dielectric_constant();
 
     if (mympi->my_rank == 0) {
 

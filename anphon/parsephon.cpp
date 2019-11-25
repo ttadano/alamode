@@ -260,6 +260,10 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars",
                     "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
+    if (nonanalytic && borninfo == "") {
+        error->exit("parse_general_vars",
+                    "BORNINFO must be specified when NONANALYTIC > 0.");
+    }
     // if (nonanalytic == 3) {
     //     if (mode == "SCPH") {
     //         error->exit("parse_general_vars",
