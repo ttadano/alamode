@@ -2249,7 +2249,7 @@ void Writes::write_scph_dielec(double ****dielec_scph) const
 
         for (auto iomega = 0; iomega < nomega; ++iomega) {
             ofs_dielec << std::setw(16) << std::fixed << temp;
-            ofs_dielec << std::setw(10) << std::scientific << omega_grid[iomega];
+            ofs_dielec << std::setw(15) << std::scientific << omega_grid[iomega];
             for (auto i = 0; i < 3; ++i) {
                 ofs_dielec << std::setw(15) << dielec_scph[iT][iomega][i][i];
             }

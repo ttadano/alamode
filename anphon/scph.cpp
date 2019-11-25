@@ -362,6 +362,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                                    eval_gam,
                                    evec_gam);
 
+                for (auto is = 0; is < ns; ++is) {
+                    if (eval_gam[0][is] < 0.0) {
+                        eval_gam[0][is] = -std::pow(eval_gam[0][is], 2.0);
+                    } else {
+                        eval_gam[0][is] =  std::pow(eval_gam[0][is], 2.0);
+                    }
+                }
+
                 dielec->compute_dielectric_function(nomega_dielec,
                                                     omega_grid,
                                                     eval_gam[0], 
@@ -408,8 +416,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
 
         if (eval_gam) memory->deallocate(eval_gam);
         if (evec_gam) memory->deallocate(evec_gam);
-        if (xk_gam) memory->deallocate(evec_gam);
-        if (omega_grid) memory->deallocate(omega_grid);
+        if (xk_gam) memory->deallocate(xk_gam);
     }
 }
 
