@@ -58,7 +58,7 @@ def read_POSCAR(file_in):
         nat_elem = [int(tmp) for tmp in file_pos.readline().rstrip().split()]
 
     nat = np.sum(nat_elem)
-    basis = file_pos.readline().rstrip()
+    basis = file_pos.readline().strip()
     x = np.zeros((nat, 3))
 
     for i in range(nat):
