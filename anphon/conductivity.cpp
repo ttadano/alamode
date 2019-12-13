@@ -616,6 +616,17 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
 
     const auto common_factor = factor_toSI * 1.0e+12 * time_ry / static_cast<double>(nk);
 
+    const bool save_kappa_coherent_elements = true;
+    std::complex<double> **kappa_save = nullptr;
+
+    std::ofstream ofs;
+    std::string file_kc = "tmp.kc_elems";
+    if (save_kappa_coherent_elements) {
+        ofs.open(file_kc.c_str(), std::ios::out);
+        if (!ofs) error->exit("compute_kappa_coherent", "cannot open file_kc");
+        memory->allocate(kappa_save, ns2, kpoint->nk_irred);
+    }
+
     for (auto i = 0; i < ntemp; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
             for (unsigned int k = 0; k < 3; ++k) {
@@ -653,6 +664,17 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                                     + 4.0 * std::pow(gamma_total[ik * ns + is][i]
                                                      + gamma_total[ik * ns + js][i], 2.0))
                                 * vv_tmp;
+                            
+                            if (save_kappa_coherent_elements) {
+                                kappa_save[ib][ik] = 2.0 * (omega1 * omega2) / (omega1 + omega2)
+                                    * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
+                                        + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
+                                    * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                    / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                        + gamma_total[ik * ns + js][i], 2.0))
+                                    * vv_tmp;
+                            }
                         }
                     }
                     for (ib = 0; ib < ns2; ++ib) {
@@ -662,10 +684,40 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                         }
                         kappa_coherent[i][j][k] += kappa_tmp[ib].real();
                     }
+
+                    if (save_kappa_coherent_elements && j == k) {
+                        for (ib = 0; ib < ns2; ++ib) {
+
+                            const int is = ib / ns;
+                            const int js = ib % ns;
+
+                            for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
+                                ofs << std::setw(5) << Temperature[i];
+                                ofs << std::setw(3) << j + 1 << std::setw(3) << k + 1;
+                                ofs << std::setw(4) << is + 1;
+                                ofs << std::setw(4) << js + 1;
+                                ofs << std::setw(6) << ik + 1;
+                                const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
+                                const auto omega1 = dynamical->eval_phonon[knum][is];
+                                const auto omega2 = dynamical->eval_phonon[knum][js];
+                                ofs << std::setw(15) << writes->in_kayser(omega1);
+                                ofs << std::setw(15) << writes->in_kayser(omega2);
+                                ofs << std::setw(15) << kappa_save[ib][ik].real();
+                                ofs << std::setw(15) << kappa_save[ib][ik].imag();
+                                ofs << '\n';
+                            }
+                        }
+                        ofs << '\n';
+                    }
                 }
                 kappa_coherent[i][j][k] *= common_factor;
             }
         }
+    }
+
+    if (save_kappa_coherent_elements) {
+        ofs.close();
+        memory->deallocate(kappa_save);
     }
 }
 
