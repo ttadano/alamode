@@ -199,9 +199,6 @@ double Integration::do_tetrahedron(const double *energy,
         const auto f3 = tetra_data[2].f;
         const auto f4 = tetra_data[3].f;
 
-        const auto vol = volume(tetras[i]);
-        vol_tot += vol;
-
         if (e3 <= e_ref && e_ref < e4) {
             g = 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
 
@@ -210,7 +207,7 @@ double Integration::do_tetrahedron(const double *energy,
             I3 = frac3 * fij(e3, e4, e_ref);
             I4 = frac3 * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
 
-            ret += vol * g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
+            ret += g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
@@ -223,7 +220,7 @@ double Integration::do_tetrahedron(const double *energy,
             I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 -
                 e1);
 
-            ret += vol * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
+            ret += I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4;
 
         } else if (e1 <= e_ref && e_ref < e2) {
             g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
@@ -233,13 +230,13 @@ double Integration::do_tetrahedron(const double *energy,
             I3 = frac3 * fij(e3, e1, e_ref);
             I4 = frac3 * fij(e4, e1, e_ref);
 
-            ret += vol * g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
+            ret += g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         }
 
     }
 
-    return ret / vol_tot;
+    return ret / static_cast<double>(ntetra);
 }
 
 double Integration::dos_integration(double *energy,
@@ -262,20 +259,18 @@ double Integration::dos_integration(double *energy,
         const auto e3 = e_tetra[2];
         const auto e4 = e_tetra[3];
 
-        const auto vol = volume(tetras[i]);
-        vol_tot += vol;
 
         if (e3 <= e_ref && e_ref < e4) {
-            dos_ret += vol * (3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3)));
+            dos_ret += 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
         } else if (e2 <= e_ref && e_ref < e3) {
-            dos_ret += vol * 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
+            dos_ret += 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
                 * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
         } else if (e1 <= e_ref && e_ref < e2) {
-            dos_ret += vol * 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
+            dos_ret += 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
         }
     }
 
-    return dos_ret / vol_tot;
+    return dos_ret / static_cast<double>(ntetra);
 }
 
 
@@ -288,10 +283,6 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
     int i;
 
     double g;
-
-    double vol_tot = 0.0;
-    // std::vector<TetraWithKnum> tetra_data;
-    // TetraWithKnum pair;
     double e_tmp[4];
     int sort_arg[4], kindex[4];
 
@@ -315,16 +306,12 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
         const auto k3 = kindex[sort_arg[2]];
         const auto k4 = kindex[sort_arg[3]];
 
-        const auto vol = volume(tetras[i]);
-        vol_tot += vol;
-
         auto I1 = 0.0;
         auto I2 = 0.0;
         auto I3 = 0.0;
         auto I4 = 0.0;
 
         if (e3 <= e_ref && e_ref < e4) {
-            // g = 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
             g = std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
 
             I1 = g * fij(e1, e4, e_ref);
@@ -333,8 +320,6 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
             I4 = g * (fij(e4, e1, e_ref) + fij(e4, e2, e_ref) + fij(e4, e3, e_ref));
 
         } else if (e2 <= e_ref && e_ref < e3) {
-            //  g = 3.0 * ((e2 - e1) + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-            //      * std::pow((e_ref - e2), 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
             g = (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
                 * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
 
@@ -344,7 +329,6 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
             I4 = g * fij(e4, e1, e_ref) + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 - e1);
 
         } else if (e1 <= e_ref && e_ref < e2) {
-            //  g = 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
             g = std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
 
             I1 = g * (fij(e1, e2, e_ref) + fij(e1, e3, e_ref) + fij(e1, e4, e_ref));
@@ -353,13 +337,13 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
             I4 = g * fij(e4, e1, e_ref);
 
         }
-        weight[k1] += vol * I1;
-        weight[k2] += vol * I2;
-        weight[k3] += vol * I3;
-        weight[k4] += vol * I4;
+        weight[k1] += I1;
+        weight[k2] += I2;
+        weight[k3] += I3;
+        weight[k4] += I4;
     }
-
-    for (i = 0; i < nk_irreducible; ++i) weight[i] /= vol_tot;
+    auto factor = 1.0 / static_cast<double>(ntetra);
+    for (i = 0; i < nk_irreducible; ++i) weight[i] *= factor;
 }
 
 void Integration::calc_weight_smearing(const std::vector<std::vector<KpointList>> &kpinfo,
