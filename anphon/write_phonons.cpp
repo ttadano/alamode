@@ -319,7 +319,7 @@ void Writes::setup_result_io()
             fs_result >> epsilon_tmp;
 
             if (ismear != integration->ismear) {
-                error->exit("setup_result_io",
+                error->warn("setup_result_io",
                             "Smearing method is not consistent");
             }
             if (ismear != -1 && std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4) {
@@ -327,7 +327,7 @@ void Writes::setup_result_io()
                     << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << std::endl;
                 std::cout << "epsilon from input: " << std::setw(15)
                     << std::setprecision(10) << integration->epsilon * Ry_to_kayser << std::endl;
-                error->exit("setup_result_io",
+                error->warn("setup_result_io",
                             "Smearing width is not consistent");
             }
 
