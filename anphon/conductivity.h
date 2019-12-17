@@ -48,6 +48,7 @@ namespace PHON_NS
         int nshift_restart;
         std::vector<int> vks, vks_l, vks_done;
         std::set<int> vks_job;
+        std::string file_coherent_elems;
 
         void write_result_gamma(unsigned int,
                                 unsigned int,
