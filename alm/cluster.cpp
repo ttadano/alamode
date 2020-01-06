@@ -23,6 +23,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <algorithm>
 #include <set>
 #include <cmath>
+#include <numeric>
 
 using namespace ALM_NS;
 
@@ -895,6 +896,19 @@ void Cluster::set_interaction_cluster(const int order,
                               MinDistList::compare_max_distance);
                     distmax = *std::max_element(distance_list[0].dist.begin(),
                                                 distance_list[0].dist.end());
+
+                    comb_cell_atom_center.clear();
+
+                    // std::cout << "distmax = " << distmax << std::endl;
+                    for (const auto &it : distance_list) {
+                        auto distmax_now = *std::max_element(it.dist.begin(), it.dist.end());
+                       // std::cout << "distmax_now = " << distmax_now << std::endl;
+                       // std::cout << "sum of distance = " << std::accumulate(it.dist.begin(), it.dist.end(), 0.0) << std::endl;
+                        if (std::abs(distmax_now - distmax) < 1.0e-6) {
+                            comb_cell_atom_center.push_back(it.cell);
+                        }
+                    }
+                    // std::cout << std::endl;
                     interaction_cluster_out[i].insert(InteractionCluster(data_now,
                                                                          comb_cell_atom_center,
                                                                          distmax));
