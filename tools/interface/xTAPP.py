@@ -255,8 +255,8 @@ def gen_CG(prefix, suffix, counter, nzerofills, str_header,
 
 def read_CG_mod(file_in):
 
-    lavec, nat, nkd, list_dummy = read_tappinput(file_in)
-    x0, kd, list_dummy = read_atomdata(file_in, nat, nkd)
+    lavec, nat, nkd, _ = read_tappinput(file_in)
+    x0, _, _ = read_atomdata(file_in, nat, nkd)
 
     return lavec, nat, x0
 
@@ -468,9 +468,9 @@ def print_displacements_and_forces_xTAPP(str_files,
         for idata in range(ndata):
             disp = x[idata, :, :] - x0 - disp_offset
             disp = np.dot(vec_refold(disp), lavec_transpose)
-            disp *= conversion_factor
+            disp *= conversion_factor_disp
             f = force[idata, :, :] - force_offset
-            f *= conversion_factor
+            f *= conversion_factor_force
 
             for i in range(nat):
                 print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],

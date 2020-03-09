@@ -57,7 +57,7 @@ parser.add_option('--OpenMX',
 parser.add_option('--get',
                   default="disp-force",
                   help="specify which quantity to extract. \
-                        Available options are 'disp-force', 'disp', 'force' and 'energy'.")
+                        Available options are 'disp-force', 'disp', 'force', 'energy', and 'born'.")
 
 parser.add_option('--unit',
                   action="store",
@@ -137,13 +137,14 @@ $ python displace.py -h")
 
     # Check output option
     str_get = options.get.lower()
-    if str_get not in ["disp-force", "disp", "force", "energy"]:
+    if str_get not in ["disp-force", "disp", "force", "energy", "born", "dielec"]:
         print("Error: Please specify which quantity to extract by the --get option.")
         exit(1)
 
     print_disp = False
     print_force = False
     print_energy = False
+    print_borninfo = False
 
     if str_get == "disp-force":
         print_disp = True
@@ -154,6 +155,11 @@ $ python displace.py -h")
         print_force = True
     elif str_get == "energy":
         print_energy = True
+    elif str_get == "born" or str_get == "dielec":
+        print_borninfo = True
+        if code != "VASP":
+            print("Sorry, --get born is available only for VASP.")
+            exit(1)
 
     # Check unit option
     str_unit = options.unitname.lower()
@@ -171,6 +177,7 @@ $ python displace.py -h")
         vasp.parse(file_original, file_results,
                    options.offset, str_unit,
                    print_disp, print_force, print_energy,
+                   print_borninfo,
                    options.emin, options.emax)
 
     elif code == "QE":
