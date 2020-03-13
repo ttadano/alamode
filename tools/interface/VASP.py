@@ -285,7 +285,7 @@ def print_displacements_and_forces_VASP(xml_files,
     for search_target in xml_files:
 
         x, force = get_coordinate_and_force_VASP(search_target, nat)
-        epot, ekin = get_energies_VASP(search_target)
+        epot, _ = get_energies_VASP(search_target)
 
         ndata = len(x) // (3 * nat)
         ndata2 = len(force) // (3 * nat)
@@ -396,6 +396,57 @@ def print_energies_VASP(xml_files,
                 print("%s" % ekin[i])
 
 
+def get_borninfo_VASP(xml_file):
+
+    dielec = []
+    borncharge = []
+
+    try:
+        xml = etree.parse(xml_file)
+        root = xml.getroot()
+
+        for elems in root.findall('calculation/varray'):
+            if elems.get('name') == "epsilon":
+                str_tmp = [elems2.text for elems2 in elems.findall('v')]
+
+                for i in range(len(str_tmp)):
+                    dielec.extend([float(t) for t in str_tmp[i].split()])
+
+        for elems in root.findall('calculation/array'):
+            if elems.get('name') == "born_charges":
+                for elems2 in elems.findall('set'):
+                    str_tmp = [elems3.text for elems3 in elems2.findall('v')]
+
+                    for i in range(len(str_tmp)):
+                        borncharge.extend([float(t)
+                                           for t in str_tmp[i].split()])
+
+        nat = len(borncharge) // 9
+        dielec = np.reshape(np.array(dielec), (3, 3))
+        borncharge = np.reshape(np.array(borncharge), (nat, 3, 3))
+        return dielec, borncharge
+    except:
+        print("Error in reading Born charges from the XML file: %s" % xml_file)
+
+
+def print_borninfo_VASP(xml_files):
+
+    for search_target in xml_files:
+
+        dielec, borncharge = get_borninfo_VASP(search_target)
+        nat, _, _ = np.shape(borncharge)
+
+        for i in range(3):
+            print("%16.8F %16.8F %16.8F" %
+                  (dielec[i, 0], dielec[i, 1], dielec[i, 2]))
+
+        for j in range(nat):
+            for i in range(3):
+                print("%16.8F %16.8F %16.8F" % (borncharge[j, i, 0],
+                                                borncharge[j, i, 1],
+                                                borncharge[j, i, 2]))
+
+
 def get_unit_conversion_factor(str_unit):
 
     Bohr_radius = 0.52917721067
@@ -427,10 +478,10 @@ def get_unit_conversion_factor(str_unit):
 
 
 def parse(SPOSCAR_init, xml_files, xml_file_offset, str_unit,
-          print_disp, print_force, print_energy,
+          print_disp, print_force, print_energy, print_borninfo,
           filter_emin, filter_emax):
 
-    aa, _, elems, nats, x_frac0 = read_POSCAR(SPOSCAR_init)
+    aa, _, _, nats, x_frac0 = read_POSCAR(SPOSCAR_init)
 
     scale_disp, scale_force, scale_energy = get_unit_conversion_factor(
         str_unit)
@@ -461,6 +512,9 @@ def parse(SPOSCAR_init, xml_files, xml_file_offset, str_unit,
         print_energies_VASP(xml_files,
                             scale_energy,
                             xml_file_offset)
+
+    elif print_borninfo is True:
+        print_borninfo_VASP(xml_files)
 
 
 def refold(x):
