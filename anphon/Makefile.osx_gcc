@@ -18,7 +18,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi -lgomp
-LIBS = ${LAPACK} -L/usr/local/lib/ -lfftw3
+LIBS = ${LAPACK}  -lfftw3
 
 #----------------------------------------------
 # General rules
