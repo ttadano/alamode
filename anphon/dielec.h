@@ -31,11 +31,13 @@ namespace PHON_NS
                                          std::complex<double> **evec_in,
                                          double ***dielec_out);
         int calc_dielectric_constant;
+        std::vector<std::vector<double>> get_zstar_mode() const;
 
     private:
 
         void set_default_variables();
         void deallocate_variables();
+        void compute_mode_effective_charge(std::vector<std::vector<double>> &zstar_mode) const;
         double *omega_grid;
         double ***dielec;
         unsigned int nomega;

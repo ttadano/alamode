@@ -49,6 +49,9 @@ void ModeAnalysis::set_default_variables()
     calc_fstate_omega = false;
     calc_fstate_k = false;
     print_V3 = 0;
+    print_V4 = 0;
+//    calc_selfenergy = 0;
+    print_zmode = false;
     spectral_func = false;
 }
 
@@ -264,12 +267,17 @@ void ModeAnalysis::run_mode_analysis()
 
     } else {
 
+        //if (print_selfenergy) print_selfenergy(NT, T_arr);
         print_selfenergy(NT, T_arr);
 
         if (print_V3 == 1) {
             print_V3_elements();
         } else if (print_V3 == 2) {
             print_Phi3_elements();
+        }
+
+        if (print_zmode) {
+
         }
 
         if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);

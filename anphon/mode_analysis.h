@@ -36,6 +36,9 @@ namespace PHON_NS
         bool calc_fstate_omega;
         bool calc_fstate_k;
         int print_V3;
+        int print_V4;
+//        int print_selfenergy;
+        bool print_zmode;
         bool spectral_func;
 
         std::string ks_input;
