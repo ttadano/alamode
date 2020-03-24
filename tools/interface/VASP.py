@@ -406,7 +406,7 @@ def get_borninfo_VASP(xml_file):
         root = xml.getroot()
 
         for elems in root.findall('calculation/varray'):
-            if elems.get('name') == "epsilon":
+            if elems.get('name') in ["epsilon", "epsilon_scf"]:
                 str_tmp = [elems2.text for elems2 in elems.findall('v')]
 
                 for i in range(len(str_tmp)):
