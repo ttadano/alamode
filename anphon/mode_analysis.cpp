@@ -1677,9 +1677,7 @@ void ModeAnalysis::calc_V3norm2(const unsigned int ik_in,
                                  anharmonic_core->use_triplet_symmetry,
                                  true,
                                  triplet);
-#ifdef _OPENMP
-#pragma omp parallel for private(is, js, k1, k2, arr)
-#endif
+
     for (int ib = 0; ib < ns2; ++ib) {
         is = ib / ns;
         js = ib % ns;
@@ -1799,30 +1797,24 @@ void ModeAnalysis::calc_Phi3(const unsigned int knum,
     unsigned int is, js;
     unsigned int k1, k2;
     unsigned int arr[3];
-    int ns = dynamical->neval;
-    int ns2 = ns * ns;
+    const int ns = dynamical->neval;
+    const int ns2 = ns * ns;
     double omega[3];
 
     double factor = std::pow(amu_ry, 1.5);
+    const auto ntriplet = triplet.size();
 
-#ifdef _OPENMP
-#pragma omp parallel for private(is, js, k1, k2, arr, omega)
-#endif
     for (int ib = 0; ib < ns2; ++ib) {
         is = ib / ns;
         js = ib % ns;
 
-        for (unsigned int ik = 0; ik < triplet.size(); ++ik) {
+        for (unsigned int ik = 0; ik < ntriplet; ++ik) {
             k1 = triplet[ik].group[0].ks[0];
             k2 = triplet[ik].group[0].ks[1];
 
             arr[0] = ns * knum + snum;
             arr[1] = ns * k1 + is;
             arr[2] = ns * k2 + js;
-
-            omega[0] = dynamical->eval_phonon[knum][snum];
-            omega[1] = dynamical->eval_phonon[k1][is];
-            omega[2] = dynamical->eval_phonon[k2][js];
 
             ret[ik][ib] = anharmonic_core->Phi3(arr) * factor;
         }
