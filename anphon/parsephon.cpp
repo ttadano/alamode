@@ -466,7 +466,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
         "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-        "DIELEC"
+        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE"
     };
 
 #ifdef _FE_BUBBLE
@@ -497,6 +497,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool print_gruneisen = false;
     bool print_newfcs = false;
     int print_V3 = 0;
+    int print_V4 = 0;
     bool participation_ratio = false;
 
     double delta_a = 0.001;
@@ -515,6 +516,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool calc_FE_bubble = false;
 
     auto calculate_dielectric_constant = 0;
+    auto calc_selfenergy = 0;
+    auto print_zmode = false;
 
 
     // Assign values to variables
@@ -543,12 +546,15 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
         assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
+        assign_val(calc_selfenergy, "SELF_ENERGY", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
+        assign_val(print_V4, "PRINTV4", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
         assign_val(calculate_dielectric_constant, "DIELEC", analysis_var_dict);
+        assign_val(print_zmode, "ZMODE", analysis_var_dict);
 #ifdef _FE_BUBBLE
         assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
 #endif
@@ -681,7 +687,10 @@ void Input::parse_analysis_vars(const bool use_default_values)
     mode_analysis->calc_fstate_omega = fstate_omega;
     mode_analysis->calc_fstate_k = fstate_k;
     mode_analysis->print_V3 = print_V3;
+    mode_analysis->print_V4 = print_V4;
     mode_analysis->spectral_func = bubble_omega;
+    mode_analysis->calc_selfenergy = calc_selfenergy;
+    mode_analysis->print_zmode = print_zmode;
     isotope->include_isotope = include_isotope;
 
     gruneisen->print_gruneisen = print_gruneisen;

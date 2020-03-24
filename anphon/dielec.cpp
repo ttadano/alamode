@@ -242,7 +242,6 @@ std::vector<std::vector<double>> Dielec::get_zstar_mode() const
     const auto ns = dynamical->neval;
     std::vector<std::vector<double>> zstar_mode(ns, std::vector<double>(3));
     compute_mode_effective_charge(zstar_mode);
-
     return zstar_mode;
 }
 
@@ -256,7 +255,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
 
     // If borncharge in dynamical class is not initialized, do it here.
     if (!dynamical->borncharge) {
-        const auto verbosity_level = 1;
+        const auto verbosity_level = 0;
         dynamical->setup_dielectric(verbosity_level);
     }
 
@@ -270,10 +269,14 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     memory->allocate(evec, ns, ns);
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
+//    xk[2] = eps8;
+//    xk[1] = eps6;
 
     dynamical->eval_k(&xk[0], &xk[0], 
                       fcs_phonon->fc2_ext, 
                       eval, evec, true);
+
+    // Probably, I need to symmetrize the eigenvector here.
 
     // Divide by sqrt of atomic mass to get normal coordinate
     for (auto i = 0; i < ns; ++i) {
@@ -286,14 +289,14 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     // Gonze & Lee, PRB 55, 10355 (1997).
     for (auto i = 0; i < 3; ++i) {
         for (auto is = 0; is < ns; ++is) {
-            zstar_mode[i][is] = 0.0;
+            zstar_mode[is][i] = 0.0;
             auto normalization_factor = 0.0;
 
             for (auto j = 0; j < ns; ++j) {
-                zstar_mode[i][is] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
+                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
                 normalization_factor += std::norm(evec[is][j]);
             }
-            zstar_mode[i][is] /= std::sqrt(normalization_factor);
+            zstar_mode[is][i] /= std::sqrt(normalization_factor);
         }
     }
 

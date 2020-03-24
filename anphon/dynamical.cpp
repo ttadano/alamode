@@ -825,7 +825,7 @@ void Dynamical::setup_dielectric(const unsigned int verbosity)
     if (borncharge) memory->deallocate(borncharge);
 
     memory->allocate(borncharge, system->natmin, 3, 3);
-    if (mympi->my_rank == 0) load_born(symmetrize_borncharge);
+    if (mympi->my_rank == 0) load_born(symmetrize_borncharge, verbosity);
 
     MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
