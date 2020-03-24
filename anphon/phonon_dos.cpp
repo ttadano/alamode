@@ -101,12 +101,8 @@ void Dos::setup()
         error->exit("Dos::setup()", "Too small delta_e");
 
     if (flag_dos) {
-        n_energy = static_cast<int>((emax - emin) / delta_e);
-        memory->allocate(energy_dos, n_energy);
 
-        for (i = 0; i < n_energy; ++i) {
-            energy_dos[i] = emin + delta_e * static_cast<double>(i);
-        }
+        set_dos_energy_grid();
 
         if (compute_dos) {
             memory->allocate(dos_phonon, n_energy);
@@ -150,6 +146,16 @@ void Dos::setup()
                                           kpoint->xk, symmetry->nsym, symmetry_tmp);
 
         memory->deallocate(symmetry_tmp);
+    }
+}
+
+void Dos::set_dos_energy_grid()
+{
+    n_energy = static_cast<int>((emax - emin) / delta_e);
+    memory->allocate(energy_dos, n_energy);
+
+    for (auto i = 0; i < n_energy; ++i) {
+        energy_dos[i] = emin + delta_e * static_cast<double>(i);
     }
 }
 

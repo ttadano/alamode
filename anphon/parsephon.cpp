@@ -10,6 +10,7 @@
 
 #include "parsephon.h"
 #include "conductivity.h"
+#include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
 #include "ewald.h"
@@ -259,6 +260,10 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars",
                     "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
+    if (nonanalytic && borninfo == "") {
+        error->exit("parse_general_vars",
+                    "BORNINFO must be specified when NONANALYTIC > 0.");
+    }
     // if (nonanalytic == 3) {
     //     if (mode == "SCPH") {
     //         error->exit("parse_general_vars",
@@ -460,7 +465,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR"
+        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+        "DIELEC"
     };
 
 #ifdef _FE_BUBBLE
@@ -508,6 +514,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool print_self_consistent_fc2 = false;
     bool calc_FE_bubble = false;
 
+    auto calculate_dielectric_constant = 0;
+
 
     // Assign values to variables
 
@@ -540,6 +548,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+        assign_val(calculate_dielectric_constant, "DIELEC", analysis_var_dict);
 #ifdef _FE_BUBBLE
         assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
 #endif
@@ -665,6 +674,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     anharmonic_core->quartic_mode = quartic_mode;
+    dielec->calc_dielectric_constant = calculate_dielectric_constant;
 
     mode_analysis->ks_input = ks_input;
     mode_analysis->calc_realpart = calc_realpart;

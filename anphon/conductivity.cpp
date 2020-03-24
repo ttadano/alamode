@@ -40,7 +40,7 @@ Conductivity::Conductivity(PHON *phon): Pointers(phon)
 Conductivity::~Conductivity()
 {
     deallocate_variables();
-};
+}
 
 void Conductivity::set_default_variables()
 {

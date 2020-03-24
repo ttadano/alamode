@@ -41,6 +41,7 @@ namespace PHON_NS
             isotope(ptr->isotope),
             scph(ptr->scph),
             ewald(ptr->ewald),
+            dielec(ptr->dielec),
             timer(ptr->timer) { }
 
         virtual ~Pointers() { }
@@ -69,6 +70,7 @@ namespace PHON_NS
         Isotope *&isotope;
         Scph *&scph;
         Ewald *&ewald;
+        Dielec *&dielec;
         Timer *&timer;
     };
 }

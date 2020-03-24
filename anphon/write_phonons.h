@@ -58,6 +58,7 @@ namespace PHON_NS
                                        double *dFE_scph) const;
         void write_scph_msd(double **) const;
         void write_scph_ucorr(double ***ucorr_scph) const;
+        void write_scph_dielec(double ****dielec_scph) const;
 
     private:
 
@@ -79,6 +80,7 @@ namespace PHON_NS
         void write_disp_correlation() const;
 
         void write_participation_ratio() const;
+        void write_dielectric_function() const;
 
         double Ry_to_kayser;
     };

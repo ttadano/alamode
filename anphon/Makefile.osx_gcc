@@ -7,8 +7,8 @@
 
 # Use gcc to activate openmp parallelization
 MPICXX = g++-9
-CXXFLAGS = -O2 -std=c++11 -fopenmp
-INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/openmpi/include
+CXXFLAGS = -O2 -std=c++11 -fopenmp -g 
+INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/openmpi/include -I/usr/local/include/ -I/usr/local/include/eigen3/
 
 LINKER = ${MPICXX}
 

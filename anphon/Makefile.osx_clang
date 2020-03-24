@@ -34,7 +34,7 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	phonon_dos.cpp phonon_velocity.cpp integration.cpp anharmonic_core.cpp \
 	thermodynamics.cpp conductivity.cpp symmetry_core.cpp mode_analysis.cpp \
         mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp \
-	scph.cpp ewald.cpp
+	scph.cpp ewald.cpp dielec.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

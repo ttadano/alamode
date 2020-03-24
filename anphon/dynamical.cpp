@@ -154,12 +154,8 @@ void Dynamical::setup_dynamical(std::string mode)
     MPI_Bcast(&band_connection, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (nonanalytic) {
-        memory->allocate(borncharge, system->natmin, 3, 3);
-
-        if (mympi->my_rank == 0) load_born(symmetrize_borncharge);
-
-        MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        setup_dielectric();
+        
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         memory->allocate(mindist_list, system->natmin, system->nat);
@@ -824,8 +820,20 @@ void Dynamical::modify_eigenvectors() const
     //}
 }
 
+void Dynamical::setup_dielectric(const unsigned int verbosity) 
+{
+    if (borncharge) memory->deallocate(borncharge);
 
-void Dynamical::load_born(const unsigned int flag_symmborn)
+    memory->allocate(borncharge, system->natmin, 3, 3);
+    if (mympi->my_rank == 0) load_born(symmetrize_borncharge);
+
+    MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+}
+
+
+void Dynamical::load_born(const unsigned int flag_symmborn, 
+                          const unsigned int verbosity)
 {
     // Read the dielectric tensor and born effective charges from file_born
 
@@ -851,32 +859,33 @@ void Dynamical::load_born(const unsigned int flag_symmborn)
     }
     ifs_born.close();
 
-
-    std::cout << "  Dielectric constants and Born effective charges are read from "
-        << file_born << "." << std::endl << std::endl;
-    std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            std::cout << std::setw(15) << dielec[i][j];
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-
-
-    std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
-    for (i = 0; i < system->natmin; ++i) {
-        std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-            << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
-
-        for (j = 0; j < 3; ++j) {
-            for (k = 0; k < 3; ++k) {
-                std::cout << std::setw(15) << std::fixed
-                    << std::setprecision(6) << borncharge[i][j][k];
+    if (verbosity > 0) {
+        std::cout << "  Dielectric constants and Born effective charges are read from "
+            << file_born << "." << std::endl << std::endl;
+        std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                std::cout << std::setw(15) << dielec[i][j];
             }
             std::cout << std::endl;
         }
+        std::cout << std::endl;
+
+        std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
+        for (i = 0; i < system->natmin; ++i) {
+            std::cout << "  Atom" << std::setw(5) << i + 1 << "("
+                << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+
+            for (j = 0; j < 3; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    std::cout << std::setw(15) << std::fixed
+                        << std::setprecision(6) << borncharge[i][j][k];
+                }
+                std::cout << std::endl;
+            }
+        }
     }
+
 
     // Check if the ASR is satisfied. If not, enforce it.
 
@@ -897,10 +906,12 @@ void Dynamical::load_born(const unsigned int flag_symmborn)
     }
 
     if (res > eps10) {
-        std::cout << std::endl;
-        std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
-        std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
-
+        if (verbosity > 0) {
+            std::cout << std::endl;
+            std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
+            std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
+        }
+        
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
@@ -970,7 +981,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn)
             }
         }
 
-        if (diff_sym > 0.5) {
+        if (diff_sym > 0.5 && verbosity > 0) {
             std::cout << std::endl;
             std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
         }
@@ -984,18 +995,20 @@ void Dynamical::load_born(const unsigned int flag_symmborn)
         }
         memory->deallocate(born_sym);
 
-        if (diff_sym > eps8 || res > eps10) {
-            std::cout << std::endl;
-            std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
-            for (i = 0; i < system->natmin; ++i) {
-                std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                    << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+        if (verbosity > 0) {
+            if (diff_sym > eps8 || res > eps10) {
+                std::cout << std::endl;
+                std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
+                for (i = 0; i < system->natmin; ++i) {
+                    std::cout << "  Atom" << std::setw(5) << i + 1 << "("
+                        << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 
-                for (j = 0; j < 3; ++j) {
-                    for (k = 0; k < 3; ++k) {
-                        std::cout << std::setw(15) << borncharge[i][j][k];
+                    for (j = 0; j < 3; ++j) {
+                        for (k = 0; k < 3; ++k) {
+                            std::cout << std::setw(15) << borncharge[i][j][k];
+                        }
+                        std::cout << std::endl;
                     }
-                    std::cout << std::endl;
                 }
             }
         }

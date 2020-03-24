@@ -64,6 +64,7 @@ namespace PHON_NS
 
         void diagonalize_dynamical_all();
         void setup_dynamical(std::string);
+        void setup_dielectric(const unsigned int verbosity = 1);
 
         void eval_k(double *,
                     double *,
@@ -108,7 +109,8 @@ namespace PHON_NS
     private:
         void set_default_variables();
         void deallocate_variables();
-        void load_born(const unsigned int);
+        void load_born(const unsigned int flag_symmborn, 
+                       const unsigned int verbosity = 1);
         void prepare_mindist_list(std::vector<int> **) const;
 
         void calc_atomic_participation_ratio(std::complex<double> *,
