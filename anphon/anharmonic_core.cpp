@@ -47,6 +47,7 @@ void AnharmonicCore::set_default_variables()
     quartic_mode = 0;
     use_tuned_ver = true;
     use_triplet_symmetry = true;
+    use_quartet_symmetry = true;
     relvec_v3 = nullptr;
     relvec_v4 = nullptr;
     invmass_v3 = nullptr;
@@ -372,6 +373,13 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3])
                 dynamical->evec_phonon);
 }
 
+std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4])
+{
+    return Phi4(ks,
+                dynamical->eval_phonon,
+                dynamical->evec_phonon);
+}
+
 
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
                                         double **eval_phonon,
@@ -601,6 +609,53 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
         / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
 }
 
+std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
+                                        double **eval_phonon,
+                                        std::complex<double> ***evec_phonon)
+{
+    int i;
+    int ns = dynamical->neval;
+    unsigned int kn[4], sn[4];
+    double omega[4];
+    double ret_re = 0.0;
+    double ret_im = 0.0;
+    std::complex<double> ret = std::complex<double>(0.0, 0.0);
+
+    for (i = 0; i < 4; ++i) {
+        kn[i] = ks[i] / ns;
+        sn[i] = ks[i] % ns;
+        omega[i] = eval_phonon[kn[i]][sn[i]];
+    }
+
+    if (kn[1] != kindex_phi4_stored[0]
+        || kn[2] != kindex_phi4_stored[1]
+        || kn[3] != kindex_phi4_stored[2]) {
+
+        calc_phi4_reciprocal(kn[1],
+                             kn[2],
+                             kn[3],
+                             phi4_reciprocal);
+
+        kindex_phi4_stored[0] = kn[1];
+        kindex_phi4_stored[1] = kn[2];
+        kindex_phi4_stored[2] = kn[3];
+    }
+
+#ifdef _OPENMP
+#pragma omp parallel for private(ret), reduction(+: ret_re, ret_im)
+#endif
+    for (i = 0; i < ngroup_v4; ++i) {
+        ret = evec_phonon[kn[0]][sn[0]][evec_index_v4[i][0]]
+              * evec_phonon[kn[1]][sn[1]][evec_index_v4[i][1]]
+              * evec_phonon[kn[2]][sn[2]][evec_index_v4[i][2]]
+              * evec_phonon[kn[3]][sn[3]][evec_index_v4[i][3]]
+              * invmass_v4[i] * phi4_reciprocal[i];
+        ret_re += ret.real();
+        ret_im += ret.imag();
+    }
+
+    return std::complex<double>(ret_re, ret_im);
+}
 
 void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
                                           const unsigned int ik2,

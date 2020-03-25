@@ -207,7 +207,13 @@ namespace PHON_NS
                                   const bool,
                                   const bool,
                                   std::vector<KsListGroup> &,
-                                  const int sign = -1);
+                                  const int sign = -1) const;
+
+        void get_unique_quartet_k(const int ik,
+                                  const bool use_quartet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &quartet,
+                                  const int sign = -1) const;
 
     private:
         void set_default_variables();

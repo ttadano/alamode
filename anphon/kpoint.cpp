@@ -21,6 +21,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <cmath>
 #include <set>
 #include <map>
+#include <algorithm>
 #include "parsephon.h"
 #include "mathfunctions.h"
 
@@ -1238,7 +1239,7 @@ void Kpoint::get_unique_triplet_k(const int ik,
                                   const bool use_triplet_symmetry,
                                   const bool use_permutation_symmetry,
                                   std::vector<KsListGroup> &triplet,
-                                  const int sign)
+                                  const int sign) const
 {
     // This function returns the irreducible set of (k2, k3) satisfying the momentum conservation.
     // When sign = -1 (default), pairs satisfying - k1 + k2 + k3 = G are returned.
@@ -1307,6 +1308,95 @@ void Kpoint::get_unique_triplet_k(const int ik,
         if (!kslist.empty()) {
             triplet.emplace_back(kslist);
         }
+    }
+
+    memory->deallocate(flag_found);
+}
+
+
+void Kpoint::get_unique_quartet_k(const int ik,
+                                  const bool use_quartet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &quartet,
+                                  const int sign) const
+{
+    // This function returns the irreducible set of (k2, k3, k4) satisfying the momentum conservation.
+    // When sign = -1 (default), pairs satisfying - k1 + k2 + k3 + k4 = G are returned.
+    // When sign =  1, pairs satisfying k1 + k2 + k3 + k4 = G are returned.
+    //
+
+    int i;
+    int num_group_k;
+    std::vector<int> ks_in(3);
+    int knum = kpoint_irred_all[ik][0].knum;
+    bool **flag_found;
+    std::vector<KsList> kslist;
+    double xk[3], xk1[3], xk2[3], xk3[3];
+
+    memory->allocate(flag_found, nk, nk);
+
+    if (use_quartet_symmetry) {
+        num_group_k = small_group_of_k[ik].size();
+    } else {
+        num_group_k = 1;
+    }
+
+    for (i = 0; i < 3; ++i) xk[i] = this->xk[knum][i];
+    for (i = 0; i < nk; ++i) {
+        for (int j = 0; j < nk; ++j) {
+            flag_found[i][j] = false;
+        }
+    }
+
+    quartet.clear();
+
+    for (int ik1 = 0; ik1 < nk; ++ik1) {
+
+        for (i = 0; i < 3; ++i) xk1[i] = this->xk[ik1][i];
+
+        int ik2_start = 0;
+        if (use_permutation_symmetry) ik2_start = ik1;
+
+        for (int ik2 = ik2_start; ik2 < nk; ++ik2) {
+            for (i = 0; i < 3; ++i) xk2[i] = this->xk[ik2][i];
+
+            if (sign == -1) {
+                for (i = 0; i < 3; ++i) xk3[i] = xk[i] - xk1[i] - xk2[i];
+            } else {
+                for (i = 0; i < 3; ++i) xk3[i] = -xk[i] - xk1[i] - xk2[i];
+            }
+
+            int ik3 = get_knum(xk3[0], xk3[1], xk3[2]);
+
+            kslist.clear();
+
+            if (ik3 > ik2 && use_permutation_symmetry) continue;
+
+            for (int isym = 0; isym < num_group_k; ++isym) {
+
+                ks_in[0] = knum_sym(ik1, small_group_of_k[ik][isym]);
+                ks_in[1] = knum_sym(ik2, small_group_of_k[ik][isym]);
+                ks_in[2] = knum_sym(ik3, small_group_of_k[ik][isym]);
+
+                kslist.emplace_back(3, &ks_in[0], small_group_of_k[ik][isym]);
+                flag_found[ks_in[0]][ks_in[1]] = true;
+
+                if (use_permutation_symmetry) {
+                    std::sort(ks_in.begin(), ks_in.end());
+                    do {
+                        if (!flag_found[ks_in[0]][ks_in[1]]) {
+                            kslist.emplace_back(3, &ks_in[0], small_group_of_k[ik][isym]);
+                            flag_found[ks_in[0]][ks_in[1]] = true;
+                        }
+                    } while (std::next_permutation(ks_in.begin(), ks_in.end()));
+                }
+            }
+
+            if (!kslist.empty()) {
+                quartet.emplace_back(kslist);
+            }
+        }
+
     }
 
     memory->deallocate(flag_found);

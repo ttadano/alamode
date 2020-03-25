@@ -75,15 +75,28 @@ namespace PHON_NS
         void print_frequency_resolved_final_state(const unsigned int,
                                                   double *);
 
-        void print_V3_elements();
+        void print_V3_elements() const;
+        void print_V4_elements() const;
 
-        void print_Phi3_elements();
+        void print_Phi3_elements() const;
+        void print_Phi4_elements() const;
+
 
         void calc_V3norm2(const unsigned int,
                           const unsigned int,
                           double **) const;
 
+        void calc_V4norm2(const unsigned int,
+                          const unsigned int,
+                          const std::vector<KsListGroup> &,
+                          double **) const;
+
         void calc_Phi3(unsigned int,
+                       unsigned int,
+                       const std::vector<KsListGroup> &,
+                       std::complex<double> **) const;
+
+        void calc_Phi4(unsigned int,
                        unsigned int,
                        const std::vector<KsListGroup> &,
                        std::complex<double> **) const;

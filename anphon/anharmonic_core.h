@@ -115,10 +115,12 @@ namespace PHON_NS
         int quartic_mode;
         bool use_tuned_ver;
         bool use_triplet_symmetry;
+        bool use_quartet_symmetry;
 
         std::complex<double> V3(const unsigned int [3]);
         std::complex<double> V4(const unsigned int [4]);
         std::complex<double> Phi3(const unsigned int [3]);
+        std::complex<double> Phi4(const unsigned int [4]);
 
         std::complex<double> V3(const unsigned int [3],
                                 double **,
@@ -129,6 +131,10 @@ namespace PHON_NS
                                 std::complex<double> ***);
 
         std::complex<double> Phi3(const unsigned int [3],
+                                  double **,
+                                  std::complex<double> ***);
+
+        std::complex<double> Phi4(const unsigned int [4],
                                   double **,
                                   std::complex<double> ***);
 
