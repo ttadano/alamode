@@ -1378,8 +1378,10 @@ void Kpoint::get_unique_quartet_k(const int ik,
                 ks_in[1] = knum_sym(ik2, small_group_of_k[ik][isym]);
                 ks_in[2] = knum_sym(ik3, small_group_of_k[ik][isym]);
 
-                kslist.emplace_back(3, &ks_in[0], small_group_of_k[ik][isym]);
-                flag_found[ks_in[0]][ks_in[1]] = true;
+                if (!flag_found[ks_in[0]][ks_in[1]]) {
+                    kslist.emplace_back(3, &ks_in[0], small_group_of_k[ik][isym]);
+                    flag_found[ks_in[0]][ks_in[1]] = true;
+                }
 
                 if (use_permutation_symmetry) {
                     std::sort(ks_in.begin(), ks_in.end());

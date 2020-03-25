@@ -1880,6 +1880,17 @@ void ModeAnalysis::print_Phi3_elements() const
                                      triplet, 1);
         unsigned int nk_size = triplet.size();
 
+        for (const auto &it : triplet) {
+            for (auto ig = 0; ig < it.group.size(); ++ig) {
+                for (auto kk = 0; kk < 2; ++kk) {
+                    std::cout << std::setw(5) << it.group[ig].ks[kk] + 1;
+                }
+                std::cout << '\n';
+            }
+            std::cout << '\n';
+        }
+
+
         memory->allocate(phi3, nk_size, ns * ns);
 
         calc_Phi3(knum, snum, triplet, phi3);
@@ -1972,6 +1983,18 @@ void ModeAnalysis::print_Phi4_elements() const
                                      true,
                                      quartet, 1);
         unsigned int nk_size = quartet.size();
+
+        for (const auto &it : quartet) {
+            for (auto ig = 0; ig < it.group.size(); ++ig) {
+                for (auto kk = 0; kk < 3; ++kk) {
+                    std::cout << std::setw(5) << it.group[ig].ks[kk] + 1;
+                }
+                std::cout << '\n';
+            }
+            std::cout << '\n';
+        }
+
+        error->exitall("hoge", "hoge");
 
         memory->allocate(phi4, nk_size, ns * ns * ns);
 
