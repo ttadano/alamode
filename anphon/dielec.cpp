@@ -296,6 +296,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
                 zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
                 normalization_factor += std::norm(evec[is][j]);
             }
+//            std::cout << "normalization_factor = " << normalization_factor << '\n';
             zstar_mode[is][i] /= std::sqrt(normalization_factor);
         }
     }

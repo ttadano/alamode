@@ -19,13 +19,13 @@ and energies.
 """
 
 from __future__ import print_function
-import numpy as np
-import optparse
-import interface.VASP as vasp
-import interface.QE as qe
-import interface.xTAPP as xtapp
-import interface.OpenMX as openmx
+
 import interface.LAMMPS as lammps
+import interface.OpenMX as openmx
+import interface.QE as qe
+import interface.VASP as vasp
+import interface.xTAPP as xtapp
+import optparse
 
 usage = "usage: %prog [options] vasprun*.xml (or *.pw.out or *.str or *.md or *.out)"
 parser = optparse.OptionParser(usage=usage)

@@ -417,6 +417,12 @@ void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,
             if (norm > eps) {
                 for (j = 0; j < 3; ++j) kdirec[i][j] /= std::sqrt(norm);
             }
+
+//            if (std::abs(norm) < eps) {
+//                kdirec[i][0] = 1.0;
+//                kdirec[i][1] = -1.0;
+//                kdirec[i][2] = 0.0;
+//            }
         }
     }
 
