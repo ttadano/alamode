@@ -15,6 +15,7 @@
 #include <vector>
 #include <complex>
 #include <string>
+#include <Eigen/Core>
 
 namespace PHON_NS
 {
@@ -127,6 +128,11 @@ namespace PHON_NS
         void project_degenerate_eigenvectors(double *xk_in,
                                              std::vector<std::vector<double>> &project_directions,
                                              std::complex<double> **evec_out) const;
+
+        int transform_eigenvectors(double *xk_in,
+                                              std::vector<double> perturb_direction,
+                                              const double dk,
+                                              Eigen::MatrixXcd &evec_sub) const;
 
 
         double **xshift_s;
