@@ -124,6 +124,10 @@ namespace PHON_NS
 
         void detect_imaginary_branches(double **);
 
+        void project_degenerate_eigenvectors(double *xk_in,
+                                             std::vector<std::vector<double>> &project_directions,
+                                             std::complex<double> **evec_out) const;
+
 
         double **xshift_s;
         char UPLO;

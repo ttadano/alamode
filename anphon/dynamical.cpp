@@ -29,6 +29,9 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
+
 
 
 using namespace PHON_NS;
@@ -764,6 +767,8 @@ void Dynamical::diagonalize_dynamical_all()
     if (kpoint->kpoint_mode == 2 && phon->mode == "RTA") {
         detect_imaginary_branches(dynamical->eval_phonon);
     }
+
+    modify_eigenvectors();
 }
 
 
@@ -776,13 +781,6 @@ void Dynamical::modify_eigenvectors() const
 
     auto nk = kpoint->nk;
     auto ns = neval;
-
-    /*   if (mympi->my_rank == 0) {
-           std::cout << " **********      NOTICE      ********** " << std::endl;
-           std::cout << " For the brevity of the calculation, " << std::endl;
-           std::cout << " phonon eigenvectors will be modified" << std::endl;
-           std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
-       }*/
 
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
@@ -814,11 +812,390 @@ void Dynamical::modify_eigenvectors() const
     memory->deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    //if (mympi->my_rank == 0) {
-    //    std::cout << " done !" << std::endl;
-    //    std::cout << " **************************************" << std::endl;
-    //}
+    
+
+    std::cout << "Use project_degenerate_eigenvectors\n\n";
+
+    std::vector<std::vector<double>> projectors;
+    std::vector<double> vecs(3);
+
+    vecs[0] = 1.0; vecs[1] = 0.0; vecs[2] = 0.0;
+    projectors.push_back(vecs);
+
+    vecs[0] = 0.0; vecs[1] = 1.0; vecs[2] = 0.0;
+    projectors.push_back(vecs);
+
+    std::complex<double> **evec_mod;
+    double *xk2;
+
+    memory->allocate(xk2, 3);
+    memory->allocate(evec_mod, ns, ns);
+
+     for (auto i = 0; i < 3; ++i) xk2[i] = 0.0;
+
+     xk2[1] = 0.5;
+
+    project_degenerate_eigenvectors(xk2, projectors, evec_mod);
+
+    memory->deallocate(evec_mod);
 }
+
+void Dynamical::project_degenerate_eigenvectors(double *xk_in,
+                                                std::vector<std::vector<double>> &project_directions,
+                                                std::complex<double> **evec_out) const
+{
+    int i, j;
+    const auto ns = this->neval;
+
+    //
+    // The projector is given in the real space Cartesian coordinate.
+    // Let's transform the basis into the crystal coordinate and normalize the norm to unity.
+    //
+    std::vector<std::vector<double>> directions;
+    std::vector<double> vec(3);
+    for (const auto &it : project_directions) {
+        for (i = 0; i < 3; ++i) {
+            vec[i] = it[i];
+        }
+        rotvec(&vec[0], &vec[0], system->rlavec_p);
+
+        auto norm = 0.0;
+        for (i = 0; i < 3; ++i) {
+            norm += vec[i] * vec[i];
+        }
+        norm = std::sqrt(norm);
+        for (i = 0; i < 3; ++i) vec[i] = vec[i] / norm;
+
+        directions.push_back(vec);
+    }
+
+    std::cout << "directions\n\n";
+
+    for (const auto &it: directions) {
+        for (i = 0; i < 3; ++i) {
+            std::cout << std::setw(15) << it[i];
+        }
+        std::cout << '\n';
+    }
+    std::cout << '\n';
+
+    //
+    // Diagonalize dymat at xk_in and get degeneracy information.
+    //
+    Eigen::MatrixXcd dymat(ns, ns), ddymat(ns, ns);
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> saes, saes2;
+
+    std::complex<double> **dymat_tmp, **dymat_dq;
+
+    memory->allocate(dymat_tmp, ns, ns);
+    memory->allocate(dymat_dq, ns, ns);
+
+    calc_analytic_k(xk_in, fcs_phonon->fc2_ext, dymat_tmp);
+
+    for (i = 0; i < ns; ++i) {
+        for (j = 0; j < ns; ++j) {
+            dymat(i,j) = dymat_tmp[i][j];
+        }
+    }
+
+    saes.compute(dymat);
+
+    auto eval_orig = saes.eigenvalues();
+    auto evec_orig = saes.eigenvectors();
+
+    //
+    // Construct degeneracy information
+    //
+    const double tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
+
+    std::vector<int> degeneracy_at_k;
+
+    degeneracy_at_k.clear();
+    double omega_prev = eval_orig[0];
+    int ideg = 1;
+
+    for (j = 1; j < ns; ++j) {
+        double omega_now = eval_orig[j];
+
+        if (std::abs(omega_now - omega_prev) < tol_omega) {
+            ++ideg;
+        } else {
+            degeneracy_at_k.push_back(ideg);
+            ideg = 1;
+            omega_prev = omega_now;
+        }
+    }
+    degeneracy_at_k.push_back(ideg);
+
+    for (const auto &it: degeneracy_at_k) {
+        std::cout << it << std::endl;
+    }
+
+    const auto ndirec = directions.size();
+
+    //
+    // For each degenerate subset, apply the perturbation field in the direction
+    // defined by "directions".
+    //
+    int ishift = 0;
+    double xk_shift[3];
+    const double dk = 1.0e-6; // Small value is preferrable
+    const double tol_ediff = dk * dk * 1.0e-2;
+    Eigen::MatrixXcd evec_orig_sub, evec_new_sub, pertmat, Umat;
+    Eigen::MatrixXcd evec_new(ns, ns);
+    Eigen::VectorXd eval_pert;
+
+    for (auto iset = 0; iset < degeneracy_at_k.size(); ++iset) {
+
+        int lifted_deg[2] = {0,0};
+
+        if (degeneracy_at_k[iset] == 1) {
+            // Non degenerate case. just copy the original eigenvector
+
+            evec_new.block(0, ishift, ns, 1) = evec_orig.block(0, ishift, ns, 1);
+
+        } else if (degeneracy_at_k[iset] == 2) {
+            // Doubly degenerate case.
+
+            for (i = 0; i < 3; ++i) xk_shift[i] = xk_in[i] + directions[0][i] * dk;
+
+            calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
+
+            for (auto is = 0; is < ns; ++is) {
+                for (auto js = 0; js < ns; ++js) {
+                    ddymat(is, js) = dymat_dq[is][js];
+                }
+            }
+
+            // This is a subset of eigenvectors of degenerate modes
+            evec_orig_sub = evec_orig.block(0, ishift, ns, 2);
+
+            // The perturbation matrix (the size is ndeg x ndeg)
+            pertmat = evec_orig_sub.adjoint() * ddymat * evec_orig_sub;
+
+            // Diagonalize
+            saes2.compute(pertmat);
+            eval_pert = saes2.eigenvalues();
+            Umat = saes2.eigenvectors();
+
+            // Transform the eigenvectors and keep it for later
+            evec_new_sub = evec_orig_sub * Umat;
+
+            if (std::abs(eval_pert[0] - eval_pert[1]) > tol_ediff * std::abs(eval_pert[1])) {
+                // Degeneracy is lifted!
+                //
+                // We assume that the applied perturbation increases the energy.
+                // If this is the case, the eigenvector along the perturbed direction should be
+                // the second one, whose energy is higher than the first one.
+                //
+                evec_new.block(0, ishift, ns, 1) = evec_new_sub.block(0, 1, ns, 1);
+                evec_new.block(0, ishift + 1, ns, 1) = evec_new_sub.block(0, 0, ns, 1);
+            } else {
+                std::cout << " The degeneracy could not be lifted by the given projections" << std::endl;
+                std::cout << " evals\n";
+                std::cout << eval_pert << std::endl;
+                std::cout << " difference\n";
+                std::cout << std::abs(eval_pert[0] - eval_pert[1])/std::abs(eval_pert[1]) << std::endl;
+                // set eigenvector here
+                evec_new.block(0, ishift, ns, 2) = evec_orig.block(0, ishift, ns, 2);
+            }
+
+        } else if (degeneracy_at_k[iset] == 3) {
+               // Triply degenerate case
+
+               std::cout << "ndirec = " << ndirec << '\n';
+
+               if (ndirec == 0) {
+
+                   evec_new.block(0, ishift, ns, 3) = evec_orig.block(0, ishift, ns, 3);
+
+               } else if (ndirec == 1) {
+
+                   for (i = 0; i < 3; ++i) xk_shift[i] = xk_in[i] + directions[0][i] * dk;
+
+                   calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
+
+                   for (auto is = 0; is < ns; ++is) {
+                       for (auto js = 0; js < ns; ++js) {
+                           ddymat(is, js) = dymat_dq[is][js];
+                       }
+                   }
+
+                   // This is a subset of eigenvectors of degenerate modes
+                   evec_orig_sub = evec_orig.block(0, ishift, ns, degeneracy_at_k[iset]);
+
+                   // The perturbation matrix (the size is ndeg x ndeg)
+                   pertmat = evec_orig_sub.adjoint() * ddymat * evec_orig_sub;
+
+                   // Diagonalize
+                   saes2.compute(pertmat);
+                   eval_pert = saes2.eigenvalues();
+                   Umat = saes2.eigenvectors();
+
+                   // Transform the eigenvectors and keep it for later
+                   evec_new_sub = evec_orig_sub * Umat;
+
+                   if (std::abs(eval_pert[0] - eval_pert[1]) > tol_ediff * std::abs(eval_pert[1])) {
+
+                       // Degeneracy is partially lifted!
+                       //
+                       // We assume that the applied perturbation increases the energy.
+                       // If this is the case, the eigenvector along the perturbed direction should be
+                       // the second one, whose energy is higher than the first one.
+                       //
+
+                       evec_new.block(0, ishift, ns, 1) = evec_new_sub.block(0, 0, ns, 1);
+                       evec_new.block(0, ishift + 1, ns, 2) = evec_new_sub.block(0, 1, ns, 2);
+
+                   } else if (std::abs(eval_pert[1] - eval_pert[2]) > tol_ediff * std::abs(eval_pert[2])) {
+
+                       evec_new.block(0, ishift, ns, 1) = evec_new_sub.block(0, 2, ns, 1);
+                       evec_new.block(0, ishift + 1, ns, 2) = evec_new_sub.block(0, 0, ns, 2);
+
+                   } else {
+                       // set eigenvector here
+                       evec_new.block(0, ishift, ns, 3) = evec_orig.block(0, ishift, ns, 3);
+                   }
+
+               } else if (ndirec >= 2) {
+
+                   for (i = 0; i < 3; ++i) xk_shift[i] = xk_in[i] + directions[0][i] * dk;
+
+                   calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
+
+                   for (auto is = 0; is < ns; ++is) {
+                       for (auto js = 0; js < ns; ++js) {
+                           ddymat(is, js) = dymat_dq[is][js];
+                       }
+                   }
+
+                   // This is a subset of eigenvectors of degenerate modes
+                   evec_orig_sub = evec_orig.block(0, ishift, ns, 3);
+
+                   // The perturbation matrix (the size is ndeg x ndeg)
+                   pertmat = evec_orig_sub.adjoint() * ddymat * evec_orig_sub;
+
+                   // Diagonalize
+                   saes2.compute(pertmat);
+                   eval_pert = saes2.eigenvalues();
+                   Umat = saes2.eigenvectors();
+
+                   // Transform the eigenvectors and keep it for later
+                   evec_new_sub = evec_orig_sub * Umat;
+
+                   std::cout << "evec 1st perturbation\n";
+                   std::cout << evec_new_sub << std::endl;
+
+                   std::cout << "eval 1st perturbation\n";
+                   std::cout << eval_pert << std::endl;
+
+                   if (std::abs(eval_pert[0] - eval_pert[1]) > tol_ediff * std::abs(eval_pert[1])) {
+
+                       evec_new.block(0, ishift, ns, 1) = evec_new_sub.block(0, 0, ns, 1);
+
+                       auto evec_new_sub2 = evec_new_sub.block(0, 1, ns, 2);
+
+                       for (i = 0; i < 3; ++i) xk_shift[i] = xk_in[i] + directions[1][i] * dk;
+
+                       calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
+
+                       for (auto is = 0; is < ns; ++is) {
+                           for (auto js = 0; js < ns; ++js) {
+                               ddymat(is, js) = dymat_dq[is][js];
+                           }
+                       }
+
+                       // The perturbation matrix (the size is ndeg x ndeg)
+                       pertmat = evec_new_sub2.adjoint() * ddymat * evec_new_sub2;
+
+                       // Diagonalize
+                       saes2.compute(pertmat);
+                       eval_pert = saes2.eigenvalues();
+                       Umat = saes2.eigenvectors();
+
+                       // Transform the eigenvectors and keep it for later
+                       evec_new_sub2 = evec_new_sub2 * Umat;
+
+                       if (std::abs(eval_pert[0] - eval_pert[1]) > tol_ediff * std::abs(eval_pert[1])) {
+                           evec_new.block(0, ishift + 1, ns, 1) = evec_new_sub2.block(0, 1, ns, 1);
+                           evec_new.block(0, ishift + 2, ns, 1) = evec_new_sub2.block(0, 0, ns, 1);
+                       } else {
+                           std::cout << " The degeneracy could not be lifted by the given projections" << std::endl;
+                           // set eigenvector here
+                           evec_new.block(0, ishift + 1, ns, 2) = evec_new_sub.block(0, 1, ns, 2);
+                       }
+
+
+                   } else if (std::abs(eval_pert[1] - eval_pert[2]) > tol_ediff * std::abs(eval_pert[2])) {
+
+                       evec_new.block(0, ishift, ns, 1) = evec_new_sub.block(0, 2, ns, 1);
+
+                       std::cout << "evec_new now\n";
+                       std::cout << evec_new << std::endl;
+
+                       auto evec_new_sub2 = evec_new_sub.block(0, 0, ns, 2);
+
+                       for (i = 0; i < 3; ++i) xk_shift[i] = xk_in[i] + directions[1][i] * dk;
+                      // for (i = 0; i < 3; ++i) xk_shift[i] = xk_shift[i] + directions[1][i] * dk;
+
+                       calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
+
+                       for (auto is = 0; is < ns; ++is) {
+                           for (auto js = 0; js < ns; ++js) {
+                               ddymat(is, js) = dymat_dq[is][js];
+                           }
+                       }
+
+                       // The perturbation matrix (the size is ndeg x ndeg)
+                       pertmat = evec_new_sub2.adjoint() * ddymat * evec_new_sub2;
+
+                       // Diagonalize
+                       saes2.compute(pertmat);
+                       eval_pert = saes2.eigenvalues();
+                       Umat = saes2.eigenvectors();
+
+                       // Transform the eigenvectors and keep it for later
+                       evec_new_sub2 = evec_new_sub2 * Umat;
+
+                       std::cout << "evec 2nd perturbation\n";
+                       std::cout << evec_new_sub2 << std::endl;
+
+                       std::cout << "eval 2nd perturbation\n";
+                       std::cout << eval_pert << std::endl;
+
+                       if (std::abs(eval_pert[0] - eval_pert[1]) > tol_ediff * std::abs(eval_pert[1])) {
+                           evec_new.block(0, ishift + 1, ns, 1) = evec_new_sub2.block(0, 1, ns, 1);
+                           evec_new.block(0, ishift + 2, ns, 1) = evec_new_sub2.block(0, 0, ns, 1);
+                       } else {
+                           std::cout << " The degeneracy could not be lifted by the given projections" << std::endl;
+                           // set eigenvector here
+                           evec_new.block(0, ishift + 1, ns, 2) = evec_new_sub.block(0, 0, ns, 2);
+                       }
+
+                   } else {
+                       // set eigenvector here
+                       evec_new.block(0, ishift, ns, 3) = evec_orig.block(0, ishift, ns, 3);
+                   }
+               }
+
+        } else {
+            error->exitall("project_degenerate_eigenvectors", "This should not happen.");
+        }
+
+        ishift += degeneracy_at_k[iset];
+    }
+
+    std::cout << "DONE\n\n";
+
+    std::cout << "Final eigenvectors\n";
+    std::cout << evec_new << std::endl;
+
+    std::cout << "Check if the original dynamical matrix can be recovered\n";
+    std::cout << evec_new * eval_orig.asDiagonal() * evec_new.adjoint() - dymat << std::endl;
+
+}
+
+
 
 void Dynamical::setup_dielectric(const unsigned int verbosity) 
 {

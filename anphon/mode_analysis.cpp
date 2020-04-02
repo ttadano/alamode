@@ -1167,17 +1167,6 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                 // K point indexes for each triangle
                 for (k = 0; k < 3; ++k) knum_triangle[k] = it.knum[k];
 
-                //for (k=0; k<3; ++k) std::cout << " " << knum_triangle[k];
-                //std::cout << std::endl;
-
-
-                //for (k = 0; k < 3; ++k) {
-                //    std::cout << "xk1 = " << xk1[0] << " " << xk1[1] << " " << xk1[2] << std::endl;
-                //    std::cout << "xk2 = " << xk_plane[knum_triangle[k]][0] << " " << xk_plane[knum_triangle[k]][1] << " " << xk_plane[knum_triangle[k]][2] << std::endl;
-                //    std::cout << "xk3 = " << xk_plane2[knum_triangle[k]][0] << " " << xk_plane2[knum_triangle[k]][1] << " " << xk_plane2[knum_triangle[k]][2] << std::endl;
-                //    std::cout << std::endl;
-                //}
-
                 for (is = 0; is < ns; ++is) {
                     for (js = 0; js < ns; ++js) {
                         // The case of delta(w1 - w2 - w3) 
@@ -1187,9 +1176,6 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                             omega_sum[k] = eval_tmp[mode]
                                 - eval[knum_triangle[k]][is]
                                 - eval2[knum_triangle[k]][js];
-                            //std::cout << " " << writes->in_kayser(eval_tmp[mode]) 
-                            //<< " " << writes->in_kayser(eval[knum_triangle[k]][is])
-                            //<< " " << writes->in_kayser(eval2[knum_triangle[k]][js]) << std::endl;
                         }
                         if (omega_sum[0] > 0.0 && omega_sum[1] > 0.0 && omega_sum[2] > 0.0 ||
                             omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0)
@@ -1879,17 +1865,6 @@ void ModeAnalysis::print_Phi3_elements() const
                                      true,
                                      triplet, 1);
         unsigned int nk_size = triplet.size();
-
-//        for (const auto &it : triplet) {
-//            for (auto ig = 0; ig < it.group.size(); ++ig) {
-//                for (auto kk = 0; kk < 2; ++kk) {
-//                    std::cout << std::setw(5) << it.group[ig].ks[kk] + 1;
-//                }
-//                std::cout << '\n';
-//            }
-//            std::cout << '\n';
-//        }
-
 
         memory->allocate(phi3, nk_size, ns * ns);
 
