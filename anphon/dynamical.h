@@ -107,7 +107,7 @@ namespace PHON_NS {
                                    std::complex<double> **);
 
         void project_degenerate_eigenvectors(double *xk_in,
-                                             std::vector <std::vector<double>> &project_directions,
+                                             const std::vector <std::vector<double>> &project_directions,
                                              std::complex<double> **evec_out) const;
 
         std::vector <std::vector<double>> get_projection_directions() const;

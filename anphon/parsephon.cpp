@@ -466,7 +466,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
         "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
         "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE"
+        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
 
 #ifdef _FE_BUBBLE
@@ -479,6 +479,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
+    std::vector<std::string> projection_axes;
 
     // Default values
 
@@ -518,6 +519,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     auto calculate_dielectric_constant = 0;
     auto calc_selfenergy = 0;
     auto print_zmode = false;
+
+    auto do_projection = false;
 
 
     // Assign values to variables
@@ -563,6 +566,10 @@ void Input::parse_analysis_vars(const bool use_default_values)
             print_anime = false;
         } else {
             print_anime = true;
+        }
+
+        if (analysis_var_dict.find("PROJECTION_AXES") != analysis_var_dict.end()) {
+            do_projection = true;
         }
     }
 
@@ -652,6 +659,42 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 writes->shift_ucorr[i] = shift_ucorr[i];
             }
         }
+    }
+
+    if (do_projection) {
+        std::string str_projection_axes;
+        assign_val(str_projection_axes, "PROJECTION_AXES", analysis_var_dict);
+        std::vector<double> direction(3);
+        std::vector<std::vector<double>> projection_directions;
+        if (!str_projection_axes.empty()) {
+            std::vector<std::string> str_projection_each, str_vec;
+            boost::split(str_projection_each, str_projection_axes, boost::is_any_of(","));
+
+            if (str_projection_each.size() > 2) {
+                error->warn("parse_analysis_vars",
+                            "Too many entries for PROJECTION_AXES. Only the first two will be used.");
+            }
+
+            for (i = 0; i < str_projection_each.size(); ++i) {
+                split_str_by_space(str_projection_each[i], str_vec);
+                if (str_vec.size() != 3) {
+                    error->exit("parse_analysis_vars",
+                                "The number of entries for each vector in PROJECTION_AXES must be 3.");
+                }
+                for (auto j = 0; j < 3; ++j) {
+                    try {
+                        direction[j] = boost::lexical_cast<double>(str_vec[j]);
+                    } catch (std::exception &e) {
+                        std::cout << e.what() << std::endl;
+                        error->exit("parse_analysis_vars",
+                                    "subset of PROJECTION_AXES must be an array of doubles.");
+                    }
+                }
+                projection_directions.push_back(direction);
+            }
+        }
+
+        dynamical->set_projection_directions(projection_directions);
     }
 
     // Copy the values to appropriate classes

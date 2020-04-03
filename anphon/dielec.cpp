@@ -275,20 +275,16 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     std::vector<std::vector<double>> projectors;
     std::vector<double> vecs(3);
 
-//    vecs[0] = 1.0; vecs[1] = 0.0; vecs[2] = 0.0;
-    vecs[0] = 1.0; vecs[1] = -1.0; vecs[2] = 0.0;
-    projectors.push_back(vecs);
+    if (dynamical->get_projection_directions().size()) {
+        dynamical->project_degenerate_eigenvectors(&xk[0],
+                                                   dynamical->get_projection_directions(),
+                                                   evec);
+    }
 
-//    vecs[0] = 0.0; vecs[1] = 1.0; vecs[2] = 0.0;
-    vecs[0] = 1.0; vecs[1] = 1.0; vecs[2] = 0.0;
-    projectors.push_back(vecs);
-    dynamical->project_degenerate_eigenvectors(&xk[0],
-                                               projectors,
-                                               evec);
     // Divide by sqrt of atomic mass to get normal coordinate
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
-            evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]]);
+            evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]] / amu_ry);
         }
     }
 
@@ -300,7 +296,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
             auto normalization_factor = 0.0;
 
             for (auto j = 0; j < ns; ++j) {
-                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
+                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * std::abs(evec[is][j]);
                 normalization_factor += std::norm(evec[is][j]);
             }
             if (do_normalize) zstar_mode[is][i] /= std::sqrt(normalization_factor);

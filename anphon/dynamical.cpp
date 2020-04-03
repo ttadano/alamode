@@ -153,6 +153,27 @@ void Dynamical::setup_dynamical(std::string mode)
     MPI_Bcast(&nonanalytic, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&band_connection, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
+    // Bcast projection_directions
+    unsigned int nsize_proj = projection_directions.size();
+    MPI_Bcast(&nsize_proj, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    for (auto i = 0; i < nsize_proj; ++i) {
+        double vec[3];
+        std::vector<double> vec2(3);
+
+        if (mympi->my_rank == 0) {
+            for (auto j = 0; j < 3; ++j) {
+                vec[j] = projection_directions[i][j];
+            }
+        }
+        MPI_Bcast(&vec[0], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        if (mympi->my_rank > 0) {
+            for (auto j = 0; j < 3; ++j) vec2[j] = vec[j];
+            projection_directions.push_back(vec2);
+        }
+    }
+
     if (nonanalytic) {
         setup_dielectric();
 
@@ -754,7 +775,20 @@ void Dynamical::diagonalize_dynamical_all()
         detect_imaginary_branches(dynamical->eval_phonon);
     }
 
-    modify_eigenvectors();
+    // modify_eigenvectors();
+    if (projection_directions.size()) {
+        for (const auto &it : projection_directions) {
+            for (const auto &it2 : it) {
+                std::cout << std::setw(15) << it2;
+            }
+            std::cout << '\n';
+        }
+        for (auto ik = 0; ik < nk; ++ik) {
+            project_degenerate_eigenvectors(kpoint->xk[ik],
+                                            projection_directions,
+                                            evec_phonon[ik]);
+        }
+    }
 }
 
 void Dynamical::modify_eigenvectors() const
@@ -798,38 +832,11 @@ void Dynamical::modify_eigenvectors() const
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    const bool do_projection_eigenvectors = true;
-
-    if (do_projection_eigenvectors) {
-        std::cout << " Use project_degenerate_eigenvectors\n\n";
-
-        std::vector <std::vector<double>> projectors;
-        std::vector<double> vecs(3);
-
-//    vecs[0] = 1.0; vecs[1] = 0.0; vecs[2] = 0.0;
-        vecs[0] = 1.0;
-        vecs[1] = -1.0;
-        vecs[2] = 0.0;
-        projectors.push_back(vecs);
-
-//    vecs[0] = 0.0; vecs[1] = 1.0; vecs[2] = 0.0;
-        vecs[0] = 1.0;
-        vecs[1] = 1.0;
-        vecs[2] = 0.0;
-        projectors.push_back(vecs);
-
-        std::complex<double> **evec_mod;
-        double *xk2;
-
-        for (ik = 0; ik < nk; ++ik) {
-            project_degenerate_eigenvectors(kpoint->xk[ik], projectors, evec_phonon[ik]);
-        }
-    }
 
 }
 
 void Dynamical::project_degenerate_eigenvectors(double *xk_in,
-                                                std::vector <std::vector<double>> &project_directions,
+                                                const std::vector <std::vector<double>> &project_directions,
                                                 std::complex<double> **evec_out) const
 {
     int i, j;
@@ -1479,4 +1486,14 @@ void Dynamical::detect_imaginary_branches(double **eval)
             std::cout << " you can safely ignore this message." << std::endl << std::endl << std::flush;
         }
     }
+}
+
+void Dynamical::set_projection_directions(const std::vector <std::vector<double>> projections_in)
+{
+    projection_directions = projections_in;
+}
+
+std::vector <std::vector<double>> Dynamical::get_projection_directions() const
+{
+    return projection_directions;
 }
