@@ -241,11 +241,12 @@ std::vector<std::vector<double>> Dielec::get_zstar_mode() const
 {
     const auto ns = dynamical->neval;
     std::vector<std::vector<double>> zstar_mode(ns, std::vector<double>(3));
-    compute_mode_effective_charge(zstar_mode);
+    compute_mode_effective_charge(zstar_mode, false);
     return zstar_mode;
 }
 
-void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zstar_mode) const
+void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zstar_mode,
+                                           const bool do_normalize) const
 {
     // Compute the effective charges of normal coordinate at q = 0.
 
@@ -269,15 +270,21 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     memory->allocate(evec, ns, ns);
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
-//    xk[2] = eps8;
-//    xk[1] = eps6;
-
-    dynamical->eval_k(&xk[0], &xk[0], 
-                      fcs_phonon->fc2_ext, 
-                      eval, evec, true);
 
     // Probably, I need to symmetrize the eigenvector here.
+    std::vector<std::vector<double>> projectors;
+    std::vector<double> vecs(3);
 
+//    vecs[0] = 1.0; vecs[1] = 0.0; vecs[2] = 0.0;
+    vecs[0] = 1.0; vecs[1] = -1.0; vecs[2] = 0.0;
+    projectors.push_back(vecs);
+
+//    vecs[0] = 0.0; vecs[1] = 1.0; vecs[2] = 0.0;
+    vecs[0] = 1.0; vecs[1] = 1.0; vecs[2] = 0.0;
+    projectors.push_back(vecs);
+    dynamical->project_degenerate_eigenvectors(&xk[0],
+                                               projectors,
+                                               evec);
     // Divide by sqrt of atomic mass to get normal coordinate
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
@@ -285,7 +292,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
         }
     }
 
-    // Compute the mode effective charges defined by Eq. (53) of 
+    // Compute the mode effective charges defined by Eq. (53) or its numerator of
     // Gonze & Lee, PRB 55, 10355 (1997).
     for (auto i = 0; i < 3; ++i) {
         for (auto is = 0; is < ns; ++is) {
@@ -296,8 +303,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
                 zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
                 normalization_factor += std::norm(evec[is][j]);
             }
-//            std::cout << "normalization_factor = " << normalization_factor << '\n';
-            zstar_mode[is][i] /= std::sqrt(normalization_factor);
+            if (do_normalize) zstar_mode[is][i] /= std::sqrt(normalization_factor);
         }
     }
 

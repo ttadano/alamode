@@ -2217,7 +2217,7 @@ void ModeAnalysis::print_normalmode_borncharge() const
             error->exit("print_normalmode_borncharge",
                         "Cannot open file file_zstar");
 
-        ofs_zstar << "# Born effective charges of each phonon mode at q = (0, 0, 0). dimensionless\n";
+        ofs_zstar << "# Born effective charges of each phonon mode at q = (0, 0, 0). Unit is (amu)^{-1/2}\n";
         for (auto is = 0; is < ns; ++is) {
             ofs_zstar << "# Mode " << std::setw(5) << is + 1 << '\n';
             ofs_zstar << "#";

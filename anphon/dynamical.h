@@ -107,6 +107,11 @@ namespace PHON_NS
                                    std::vector<FcsClassExtent>,
                                    std::complex<double> **);
 
+        void project_degenerate_eigenvectors(double *xk_in,
+                                             std::vector<std::vector<double>> &project_directions,
+                                             std::complex<double> **evec_out) const;
+
+
     private:
         void set_default_variables();
         void deallocate_variables();
@@ -125,9 +130,9 @@ namespace PHON_NS
 
         void detect_imaginary_branches(double **);
 
-        void project_degenerate_eigenvectors(double *xk_in,
-                                             std::vector<std::vector<double>> &project_directions,
-                                             std::complex<double> **evec_out) const;
+//        void project_degenerate_eigenvectors(double *xk_in,
+//                                             std::vector<std::vector<double>> &project_directions,
+//                                             std::complex<double> **evec_out) const;
 
         int transform_eigenvectors(double *xk_in,
                                               std::vector<double> perturb_direction,

@@ -821,10 +821,12 @@ void Dynamical::modify_eigenvectors() const
     std::vector<std::vector<double>> projectors;
     std::vector<double> vecs(3);
 
-    vecs[0] = 1.0; vecs[1] = 0.0; vecs[2] = 0.0;
+//    vecs[0] = 1.0; vecs[1] = 0.0; vecs[2] = 0.0;
+    vecs[0] = 1.0; vecs[1] = -1.0; vecs[2] = 0.0;
     projectors.push_back(vecs);
 
-    vecs[0] = 0.0; vecs[1] = 1.0; vecs[2] = 0.0;
+//    vecs[0] = 0.0; vecs[1] = 1.0; vecs[2] = 0.0;
+    vecs[0] = 1.0; vecs[1] = 1.0; vecs[2] = 0.0;
     projectors.push_back(vecs);
 
     std::complex<double> **evec_mod;
