@@ -12,6 +12,7 @@
 
 #include "pointers.h"
 #include <complex>
+#include <vector>
 
 namespace PHON_NS
 {
