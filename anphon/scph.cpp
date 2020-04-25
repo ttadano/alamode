@@ -3166,50 +3166,11 @@ void Scph::mpi_bcast_complex(std::complex<double> ****data,
                              const int nk,
                              const int ns) const
 {
-#ifdef MPI_COMPLEX16
-    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #elif defined MPI_DOUBLE_COMPLEX
     MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #else
-    unsigned int iT, ik, is, js;
-    double ***data_real, ***data_imag;
-
-    memory->allocate(data_real, ns, ns, nk);
-    memory->allocate(data_imag, ns, ns, nk);
-
-    for (iT = 0; iT < NT; ++iT) {
-
-        if (mympi->my_rank == 0) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    for (ik = 0; ik < nk; ++ik) {
-
-                        data_real[is][js][ik] = data[iT][is][js][ik].real();
-                        data_imag[is][js][ik] = data[iT][is][js][ik].imag();
-                    }
-                }
-            }
-        }
-
-        MPI_Bcast(&data_real[0][0][0], nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&data_imag[0][0][0], nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-        if (mympi->my_rank > 0) {
-            for (iT = 0; iT < NT; ++iT) {
-                for (is = 0; is < ns; ++is) {
-                    for (js = 0; js < ns; ++js) {
-                        for (ik = 0; ik < nk; ++ik) {
-                            data[iT][is][js][ik]
-                                = std::complex<double>(data_real[is][js][ik],
-                                                       data_imag[is][js][ik]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    memory->deallocate(data_real);
-    memory->deallocate(data_imag);
+    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
 #endif
 }
