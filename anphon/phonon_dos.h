@@ -97,8 +97,8 @@ namespace PHON_NS
                                                         unsigned int,
                                                         double,
                                                         double **,
-                                                        double *,
-                                                        unsigned int *,
+                                                        const double *,
+                                                        const unsigned int *,
                                                         int,
                                                         double **) const;
     };

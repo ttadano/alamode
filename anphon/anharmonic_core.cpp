@@ -177,9 +177,9 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         cells.clear();
 
         for (i = 0; i < it.pairs.size(); ++i) {
-            unsigned int atm_p = it.pairs[i].index / 3;
-            unsigned int tran_tmp = it.pairs[i].tran;
-            unsigned int atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
+            auto atm_p = it.pairs[i].index / 3;
+            const auto tran_tmp = it.pairs[i].tran;
+            auto atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
 
             atm_prim.push_back(atm_p);
             atm_super.push_back(atm_s);
@@ -264,7 +264,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
             for (i = 0; i < N; ++i) {
                 atm_prim[i] = fcs_in[icount].pairs[i].index / 3;
-                unsigned int tran_tmp = fcs_in[icount].pairs[i].tran;
+                const auto tran_tmp = fcs_in[icount].pairs[i].tran;
                 cells[i] = fcs_in[icount].pairs[i].cell_s;
                 atm_super[i] = system->map_p2s_anharm[atm_prim[i]][tran_tmp];
             }
@@ -379,12 +379,12 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
 {
     int i;
     unsigned int kn[3], sn[3];
-    int ns = dynamical->neval;
+    const int ns = dynamical->neval;
 
     double omega[3];
-    std::complex<double> ret = std::complex<double>(0.0, 0.0);
-    double ret_re = 0.0;
-    double ret_im = 0.0;
+    auto ret = std::complex<double>(0.0, 0.0);
+    auto ret_re = 0.0;
+    auto ret_im = 0.0;
 
     for (i = 0; i < 3; ++i) {
         kn[i] = ks[i] / ns;
@@ -463,7 +463,7 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
     int i, j;
     unsigned int iloc;
     double phase;
-    double dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
+    const auto dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
     std::complex<double> ret_in;
     unsigned int nsize_group;
 
@@ -555,12 +555,12 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
                                         std::complex<double> ***evec_phonon)
 {
     int i;
-    int ns = dynamical->neval;
+    const int ns = dynamical->neval;
     unsigned int kn[4], sn[4];
     double omega[4];
-    double ret_re = 0.0;
-    double ret_im = 0.0;
-    std::complex<double> ret = std::complex<double>(0.0, 0.0);
+    auto ret_re = 0.0;
+    auto ret_im = 0.0;
+    auto ret = std::complex<double>(0.0, 0.0);
 
     for (i = 0; i < 4; ++i) {
         kn[i] = ks[i] / ns;
@@ -610,7 +610,7 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
     int i, j;
     unsigned int iloc;
     double phase;
-    double dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
+    const auto dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
     std::complex<double> ret_in;
     unsigned int nsize_group;
 
@@ -721,18 +721,18 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
 
     for (int i = 0; i < ngroup_v3; ++i) {
 
-        std::complex<double> vec_tmp = evec[0][mode][evec_index_v3[i][0]]
+        auto vec_tmp = evec[0][mode][evec_index_v3[i][0]]
             * evec[1][is][evec_index_v3[i][1]]
             * evec[2][js][evec_index_v3[i][2]]
             * invmass_v3[i];
 
-        std::complex<double> ret_in = std::complex<double>(0.0, 0.0);
+        auto ret_in = std::complex<double>(0.0, 0.0);
 
-        int nsize_group = fcs_group_v3[i].size();
+        const int nsize_group = fcs_group_v3[i].size();
 
-        for (int j = 0; j < nsize_group; ++j) {
+        for (auto j = 0; j < nsize_group; ++j) {
 
-            double phase = relvec_v3[i][j].vecs[0][0] * xk2[0]
+            auto phase = relvec_v3[i][j].vecs[0][0] * xk2[0]
                 + relvec_v3[i][j].vecs[0][1] * xk2[1]
                 + relvec_v3[i][j].vecs[0][2] * xk2[2]
                 + relvec_v3[i][j].vecs[1][0] * xk3[0]
@@ -762,9 +762,9 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
     // Lorentzian or Gaussian smearing will be used.
     // This version employs the crystal symmetry to reduce the computational cost
 
-    int nk = kpoint->nk;
-    int ns = dynamical->neval;
-    int ns2 = ns * ns;
+    const int nk = kpoint->nk;
+    const int ns = dynamical->neval;
+    const auto ns2 = ns * ns;
     unsigned int i;
     int ik;
     unsigned int is, js;
@@ -786,7 +786,7 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
 
     double f1, f2;
 
-    double epsilon = integration->epsilon;
+    const auto epsilon = integration->epsilon;
 
     std::vector<KsListGroup> triplet;
 
@@ -795,13 +795,13 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
                                  sym_permutation,
                                  triplet);
 
-    int npair_uniq = triplet.size();
+    const int npair_uniq = triplet.size();
 
     memory->allocate(v3_arr, npair_uniq, ns * ns);
     memory->allocate(delta_arr, npair_uniq, ns * ns, 2);
 
-    int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    int knum_minus = kpoint->knum_minus[knum];
+    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kpoint->knum_minus[knum];
 #ifdef _OPENMP
 #pragma omp parallel for private(multi, arr, k1, k2, is, js, omega_inner)
 #endif
@@ -923,11 +923,11 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
     // Tetrahedron method will be used.
     // This version employs the crystal symmetry to reduce the computational cost
 
-    int nk = kpoint->nk;
-    int ns = dynamical->neval;
+    const int nk = kpoint->nk;
+    const int ns = dynamical->neval;
 
     int ik, ib;
-    int ns2 = ns * ns;
+    const auto ns2 = ns * ns;
 
     unsigned int i;
     unsigned int jk;
@@ -960,13 +960,13 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
                                  sym_permutation,
                                  triplet);
 
-    unsigned int npair_uniq = triplet.size();
+    const auto npair_uniq = triplet.size();
 
     memory->allocate(v3_arr, npair_uniq, ns2);
     memory->allocate(delta_arr, npair_uniq, ns2, 2);
 
-    int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    int knum_minus = kpoint->knum_minus[knum];
+    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kpoint->knum_minus[knum];
 
     memory->allocate(kmap_identity, nk);
 
@@ -1288,11 +1288,11 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     // This version employs the crystal symmetry to reduce the computational cost
     // In addition, both MPI and OpenMP parallizations are used in a hybrid way inside this function.
 
-    int nk = kpoint->nk;
-    int ns = dynamical->neval;
+    const int nk = kpoint->nk;
+    const int ns = dynamical->neval;
 
     int ik, ib, iomega;
-    int ns2 = ns * ns;
+    const auto ns2 = ns * ns;
 
     unsigned int i;
     unsigned int is, js;
@@ -1313,8 +1313,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     std::vector<KsListGroup> triplet;
     std::vector<int> vk_l;
 
-    int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    int knum_minus = kpoint->knum_minus[knum];
+    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kpoint->knum_minus[knum];
     double omega0 = eval[knum_minus][snum];
 
     kpoint->get_unique_triplet_k(ik_in,
@@ -1322,7 +1322,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                                  false,
                                  triplet);
 
-    unsigned int npair_uniq = triplet.size();
+    const auto npair_uniq = triplet.size();
 
     if (npair_uniq != nk) {
         error->exit("hoge", "Something is wrong.");

@@ -216,12 +216,12 @@ void Scph::exec_scph()
             compute_free_energy_bubble_SCPH(kmesh_interpolate,
                                             delta_dymat_scph);
         }
-    }
+        }
 
     postprocess(delta_dymat_scph);
 
     memory->deallocate(delta_dymat_scph);
-}
+    }
 
 void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
 {
@@ -351,7 +351,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                         }
                     }
                 }
-            }
+        }
 
             if (dielec->calc_dielectric_constant) {
                 exec_interpolation(kmesh_interpolate,
@@ -427,7 +427,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
-    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     std::vector<double> Temp_array(NT);
 
     for (int i = 0; i < NT; ++i) {
@@ -436,7 +436,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
 
     if (mympi->my_rank == 0) {
 
-        auto consider_offdiagonal = selfenergy_offdiagonal;
+        const auto consider_offdiagonal = selfenergy_offdiagonal;
         double temp;
         std::ifstream ifs_dymat;
         auto file_dymat = input->job_title + ".scph_dymat";
@@ -486,7 +486,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         }
 
         // Check if the precalculated data for the given temperature range exists
-        int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
+        const int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
         std::vector<double> Temp_array_ref(NT_ref);
         for (int i = 0; i < NT_ref; ++i) {
             Temp_array_ref[i] = Tmin_tmp + dT_tmp * static_cast<double>(i);
@@ -2721,7 +2721,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             mat_tmp = evec_tmp.transpose() * saes.eigenvectors();
             Dymat = mat_tmp * Dymat * mat_tmp.adjoint();
 
-#ifdef _DEBUG
+#ifdef _DEBUG2
             Dymat_sym = Dymat;
             symmetrize_dynamical_matrix(ik, Dymat_sym);
             std::complex<double> **dymat_exact;
@@ -2753,7 +2753,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         replicate_dymat_for_all_kpoints(dymat_q);
 
-#ifdef _DEBUG
+#ifdef _DEBUG2
         for (ik = 0; ik < nk_interpolate; ++ik) {
 
             knum = kmap_interpolate_to_scph[ik];

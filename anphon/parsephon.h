@@ -39,7 +39,7 @@ namespace PHON_NS
         std::ifstream ifs_input;
         bool from_stdin;
 
-        int locate_tag(std::string);
+        int locate_tag(const std::string &);
         void parse_general_vars();
         void parse_analysis_vars(const bool);
         void parse_scph_vars();
@@ -49,21 +49,21 @@ namespace PHON_NS
         void get_var_dict(const std::vector<std::string> &,
                           std::map<std::string, std::string> &);
 
-        void split_str_by_space(const std::string,
+        void split_str_by_space(const std::string &,
                                 std::vector<std::string> &) const;
 
-        bool is_endof_entry(const std::string) const;
+        bool is_endof_entry(const std::string &str) const;
 
         template <typename T_to, typename T_from>
         T_to my_cast(T_from const &);
 
         template <typename T>
         void assign_val(T &,
-                        const std::string,
+                        const std::string &,
                         std::map<std::string, std::string>);
 
         std::vector<std::string> my_split(const std::string &str,
-                                          char delim)
+                                          char delim) const
         {
             std::istringstream iss(str);
             std::string str_tmp;
