@@ -900,12 +900,12 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     // Calculate the matrix elements of quartic terms in reciprocal space.
     // This is the most expensive part of the SCPH calculation.
 
-    const auto nk_reduced_interpolate = kp_irred_interpolate.size();
-    const auto ns = dynamical->neval;
-    const auto ns2 = ns * ns;
-    const auto ns3 = ns * ns * ns;
-    const auto ns4 = ns * ns * ns * ns;
-    unsigned int is, js, ks, ls;
+    const size_t nk_reduced_interpolate = kp_irred_interpolate.size();
+    const size_t ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns * ns * ns;
+    const size_t ns4 = ns * ns * ns * ns;
+    size_t is, js, ks, ls;
     double phase3[3];
     int loc3[3];
     unsigned int **ind;
@@ -920,7 +920,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
 
-    const auto nk2_prod = nk_reduced_interpolate * nk_scph;
+    const size_t nk2_prod = nk_reduced_interpolate * nk_scph;
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
@@ -934,7 +934,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     memory->allocate(ind, ngroup2, 4);
     memory->allocate(v4_mpi, nk2_prod, ns2, ns2);
 
-    for (int ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
+    for (size_t ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
         const auto ik = ik_prod / nk_scph;
         const auto jk = ik_prod % nk_scph;
 
@@ -1100,11 +1100,11 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     // Calculate the matrix elements of quartic terms in reciprocal space.
     // This is the most expensive part of the SCPH calculation.
 
-    int ik_prod;
-    auto nk_reduced_interpolate = kp_irred_interpolate.size();
-    auto ns = dynamical->neval;
-    auto ns2 = ns * ns;
-    auto ns4 = ns * ns * ns * ns;
+    size_t ik_prod;
+    const size_t nk_reduced_interpolate = kp_irred_interpolate.size();
+    const size_t ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns4 = ns * ns * ns * ns;
     int is, js;
     unsigned int knum;
     double phase3[3];
