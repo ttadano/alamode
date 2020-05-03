@@ -1073,13 +1073,35 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     memory->deallocate(v4_array_at_kpair);
     memory->deallocate(ind);
+
+// Now, communicate the calculated data.
+// When the data count is larger than 2^31-1, split it.
+
+    long maxsize = 1;
+    maxsize=(maxsize<<31)-1;
+
+    const size_t count = nk2_prod * ns4;
+    const size_t count_sub = nk2_prod * ns2;
+
+    if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod*ns4, 
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
         MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod * ns4,
-                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
+                      MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
 #endif
+    } else {
+        for (is = 0; is < ns2; ++is) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+            MPI_Allreduce(&v4_mpi[0][0][is], &v4_out[0][0][is], count_sub,
+        MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+            MPI_Allreduce(&v4_mpi[0][0][is], &v4_out[0][0][is], count_sub,
+                          MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+        }
+    }
 
     memory->deallocate(v4_mpi);
 
@@ -1289,16 +1311,34 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     memory->deallocate(v4_array_at_kpair);
     memory->deallocate(ind);
 
-    std::cout << "RANK = " << mympi->my_rank;
-    std::cout << " size = " << nk2_prod * ns4 << std::endl;
+// Now, communicate the calculated data.
+// When the data count is larger than 2^31-1, split it.
 
-//#ifdef MPI_CXX_DOUBLE_COMPLEX
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod*ns4, 
+    long maxsize = 1;
+    maxsize=(maxsize<<31)-1;
+
+    const size_t count = nk2_prod * ns4;
+    const size_t count_sub = nk2_prod * ns2;
+
+    if (count <= maxsize) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
         MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
-//#else
-//    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod * ns4,
-//                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-//#endif
+#else
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
+                      MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    } else {
+        for (is = 0; is < ns2; ++is) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+            MPI_Allreduce(&v4_mpi[0][0][is], &v4_out[0][0][is], count_sub,
+        MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+            MPI_Allreduce(&v4_mpi[0][0][is], &v4_out[0][0][is], count_sub,
+                          MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+        }
+    }
 
     memory->deallocate(v4_mpi);
 
