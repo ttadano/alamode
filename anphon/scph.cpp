@@ -1288,13 +1288,17 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     memory->deallocate(v4_array_at_kpair);
     memory->deallocate(ind);
-#ifdef MPI_CXX_DOUBLE_COMPLEX
+
+    std::cout << "RANK = " << mympi->my_rank;
+    std::cout << " size = " << nk2_prod * ns4 << std::endl;
+
+//#ifdef MPI_CXX_DOUBLE_COMPLEX
     MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod*ns4, 
         MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
-#else
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod * ns4,
-                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
+//#else
+//    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod * ns4,
+//                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+//#endif
 
     memory->deallocate(v4_mpi);
 
