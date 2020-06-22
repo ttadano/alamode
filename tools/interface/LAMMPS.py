@@ -32,14 +32,21 @@ def read_lammps_structure(file_in):
 
     atoms = np.array(atoms)
     nat = len(atoms)
-    kd = np.array(atoms[:, 1], dtype=np.int)
-    x = np.array(atoms[:, 2:5], dtype=np.float64)
+    ncols = len(atoms[0,:])
+    if ncols == 5:
+        kd = np.array(atoms[:, 1], dtype=np.int)
+        x = np.array(atoms[:, 2:5], dtype=np.float64)
+        charges = None
+    elif ncols == 6:
+        kd = np.array(atoms[:, 1], dtype=np.int)
+        x = np.array(atoms[:, 3:6], dtype=np.float64)
+        charges = np.array(atoms[:,2], dtype=np.float64)
 
-    return common_settings, nat, x, kd
+    return common_settings, nat, x, kd, charges
 
 
 def write_lammps_structure(prefix, counter, header, nzerofills,
-                           common_settings, nat, kd, x_cart, disp):
+                           common_settings, nat, kd, x_cart, disp, charge):
 
     filename = prefix + str(counter).zfill(nzerofills) + ".lammps"
     f = open(filename, 'w')
@@ -49,12 +56,21 @@ def write_lammps_structure(prefix, counter, header, nzerofills,
         f.write("%s\n" % line)
 
     f.write("%s\n\n" % "Atoms")
-    for i in range(nat):
-        f.write("%5d %3d" % (i + 1, kd[i]))
-        for j in range(3):
-            f.write("%20.15f" % (x_cart[i][j] + disp[i][j]))
+
+    if charge is None:
+        for i in range(nat):
+            f.write("%5d %3d" % (i + 1, kd[i]))
+            for j in range(3):
+                f.write("%20.15f" % (x_cart[i][j] + disp[i][j]))
+            f.write("\n")
         f.write("\n")
-    f.write("\n")
+    else:
+        for i in range(nat):
+            f.write("%5d %3d %11.6f" % (i + 1, kd[i], charge[i]))
+            for j in range(3):
+                f.write("%20.15f" % (x_cart[i][j] + disp[i][j]))
+            f.write("\n")
+        f.write("\n")
     f.close()
 
 

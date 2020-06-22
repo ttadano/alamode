@@ -283,7 +283,7 @@ if __name__ == '__main__':
         suffix = "cg"
 
     elif code == "LAMMPS":
-        common_settings, nat, x_cart, kd \
+        common_settings, nat, x_cart, kd, charge \
             = lammps.read_lammps_structure(file_original)
         aa_inv = None
 
@@ -327,7 +327,7 @@ if __name__ == '__main__':
 
         elif code == "LAMMPS":
             lammps.write_lammps_structure(prefix, counter, header, nzerofills,
-                                          common_settings, nat, kd, x_cart, disp)
+                                          common_settings, nat, kd, x_cart, disp, charge)
 
         elif code == "OpenMX":
             openmx.write_OpenMX_input(
