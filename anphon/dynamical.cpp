@@ -852,7 +852,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
         for (i = 0; i < 3; ++i) {
             vec[i] = it[i];
         }
-        rotvec(&vec[0], &vec[0], system->rlavec_p);
+        rotvec(&vec[0], &vec[0], system->lavec_p, 'T');
 
         auto norm = 0.0;
         for (i = 0; i < 3; ++i) {
@@ -919,7 +919,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
     // defined by "directions".
     //
     int ishift = 0;
-    const double dk = 1.0e-4; // Small value is preferrable
+    const double dk = 1.0e-3; // Small value may be preferable.
     Eigen::MatrixXcd evec_new(ns, ns);
 
     for (auto iset = 0; iset < degeneracy_at_k.size(); ++iset) {
@@ -1002,25 +1002,40 @@ int Dynamical::transform_eigenvectors(double *xk_in,
                                       Eigen::MatrixXcd &evec_sub) const
 {
     int i;
-    double xk_shift[3];
+    double xk_shift[3], xk_shift_minus[3];
     const auto ns = this->neval;
     const auto tol_ediff = dk * dk * 1.0e-2;
-    std::complex<double> **dymat_dq;
+    std::complex<double> **dymat_dq, **dymat_dq_minus;
 
     int is_lifted = 0;
 
     Eigen::MatrixXcd ddymat(ns, ns);
 
-    for (i = 0; i < 3; ++i) xk_shift[i] = xk_in[i] + perturb_direction[i] * dk;
+    for (i = 0; i < 3; ++i) {
+        xk_shift[i] = xk_in[i] + perturb_direction[i] * dk;
+        xk_shift_minus[i] = xk_in[i] - perturb_direction[i] * dk;
+    }
+
+//    for (i = 0; i < 3; ++i) {
+//        std::cout << std::setw(15) << perturb_direction[i] << std::endl;
+//    }
+//    std::cout << std::endl;
 
     memory->allocate(dymat_dq, ns, ns);
+    memory->allocate(dymat_dq_minus, ns, ns);
     calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
+    calc_analytic_k(xk_shift_minus, fcs_phonon->fc2_ext, dymat_dq_minus);
+
     for (auto is = 0; is < ns; ++is) {
         for (auto js = 0; js < ns; ++js) {
-            ddymat(is, js) = dymat_dq[is][js];
+            // This treatment helps to avoid unwanted small imaginary components
+            // in the perturbation matrix.
+            ddymat(is, js) = (dymat_dq[is][js] + dymat_dq_minus[is][js]) / (2.0 * dk);
         }
     }
     memory->deallocate(dymat_dq);
+    memory->deallocate(dymat_dq_minus);
+
 
     // The perturbation matrix (the size is ndeg x ndeg)
     auto pertmat = evec_sub.adjoint() * ddymat * evec_sub;
