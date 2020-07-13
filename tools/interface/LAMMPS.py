@@ -33,6 +33,7 @@ def read_lammps_structure(file_in):
     atoms = np.array(atoms)
     nat = len(atoms)
     ncols = len(atoms[0, :])
+
     if ncols == 5:
         kd = np.array(atoms[:, 1], dtype=np.int)
         x = np.array(atoms[:, 2:5], dtype=np.float64)
@@ -356,11 +357,11 @@ def get_unit_conversion_factor(str_unit):
 def parse(lammps_init, dump_files, dump_file_offset, str_unit,
           output_flags):
 
-    _, nat, x_cart0, _ = read_lammps_structure(lammps_init)
+    _, nat, x_cart0, _, _ = read_lammps_structure(lammps_init)
     scale_disp, scale_force, _ = get_unit_conversion_factor(str_unit)
 
     print_disp, print_force, print_energy, _ = output_flags
-    
+
     if print_disp is True and print_force is True:
         print_displacements_and_forces_LAMMPS(dump_files, nat,
                                               x_cart0,
