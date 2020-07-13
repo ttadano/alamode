@@ -454,12 +454,14 @@ def get_unit_conversion_factor(str_unit):
 
 
 def parse(dat_init, out_files, out_file_offset, str_unit,
-          print_disp, print_force, print_energy):
+          output_flags):
 
     aa, aa_inv, nat, x_frac0 = read_OpenMX_input(dat_init)
 
     scale_disp, scale_force, scale_energy = get_unit_conversion_factor(
         str_unit)
+
+    print_disp, print_force, print_energy, _ = output_flags
 
     if print_disp is True and print_force is True:
         print_displacements_and_forces_OpenMX(out_files,

@@ -16,7 +16,7 @@ import numpy as np
 def read_lammps_structure(file_in):
 
     f = open(file_in, 'r')
-    header_comment = f.readline()
+    f.readline()
 
     common_settings = []
 
@@ -32,7 +32,7 @@ def read_lammps_structure(file_in):
 
     atoms = np.array(atoms)
     nat = len(atoms)
-    ncols = len(atoms[0,:])
+    ncols = len(atoms[0, :])
     if ncols == 5:
         kd = np.array(atoms[:, 1], dtype=np.int)
         x = np.array(atoms[:, 2:5], dtype=np.float64)
@@ -40,7 +40,7 @@ def read_lammps_structure(file_in):
     elif ncols == 6:
         kd = np.array(atoms[:, 1], dtype=np.int)
         x = np.array(atoms[:, 3:6], dtype=np.float64)
-        charges = np.array(atoms[:,2], dtype=np.float64)
+        charges = np.array(atoms[:, 2], dtype=np.float64)
 
     return common_settings, nat, x, kd, charges
 
@@ -354,11 +354,13 @@ def get_unit_conversion_factor(str_unit):
 
 
 def parse(lammps_init, dump_files, dump_file_offset, str_unit,
-          print_disp, print_force, print_energy):
+          output_flags):
 
     _, nat, x_cart0, _ = read_lammps_structure(lammps_init)
     scale_disp, scale_force, _ = get_unit_conversion_factor(str_unit)
 
+    print_disp, print_force, print_energy, _ = output_flags
+    
     if print_disp is True and print_force is True:
         print_displacements_and_forces_LAMMPS(dump_files, nat,
                                               x_cart0,

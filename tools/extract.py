@@ -19,124 +19,119 @@ and energies.
 """
 
 from __future__ import print_function
-import numpy as np
-import optparse
+import argparse
 import interface.VASP as vasp
 import interface.QE as qe
 import interface.xTAPP as xtapp
 import interface.OpenMX as openmx
 import interface.LAMMPS as lammps
 
-usage = "usage: %prog [options] vasprun*.xml (or *.pw.out or *.str or *.md or *.out)"
-parser = optparse.OptionParser(usage=usage)
+parser = argparse.ArgumentParser()
 
-parser.add_option('--VASP',
-                  metavar='orig.POSCAR',
-                  help="VASP POSCAR file with equilibrium atomic \
+parser.add_argument('--VASP',
+                    metavar='SPOSCAR',
+                    help="VASP POSCAR file with equilibrium atomic \
                         positions (default: None)")
 
-parser.add_option('--QE',
-                  metavar='orig.pw.in',
-                  help="Quantum-ESPRESSO input file with equilibrium\
+parser.add_argument('--QE',
+                    metavar='supercell.pw.in',
+                    help="Quantum-ESPRESSO input file with equilibrium\
                   atomic positions (default: None)")
 
-parser.add_option('--xTAPP',
-                  metavar='orig.cg',
-                  help="xTAPP CG file with equilibrium atomic \
+parser.add_argument('--xTAPP',
+                    metavar='supercell.cg',
+                    help="xTAPP CG file with equilibrium atomic \
                         positions (default: None)")
 
-parser.add_option('--LAMMPS',
-                  metavar='orig.lammps',
-                  help="LAMMPS structure file with equilibrium atomic positions (default: None)")
-
-parser.add_option('--OpenMX',
-                  metavar='orig.dat',
-                  help="OpenMX dat file with equilibrium atomic \
+parser.add_argument('--LAMMPS',
+                    metavar='supercell.lammps',
+                    help="LAMMPS structure file with equilibrium atomic \
                         positions (default: None)")
 
-parser.add_option('--get',
-                  default="disp-force",
-                  help="specify which quantity to extract. \
-                        Available options are 'disp-force', 'disp', 'force', 'energy', and 'born'.")
+parser.add_argument('--OpenMX',
+                    metavar='supercell.dat',
+                    help="OpenMX dat file with equilibrium atomic \
+                        positions (default: None)")
 
-parser.add_option('--unit',
-                  action="store",
-                  type="string",
-                  dest="unitname",
-                  default="Rydberg",
-                  help="print atomic displacements and forces in units of UNIT. \
-                        Available options are 'eV', 'Rydberg' (default), and 'Hartree'.")
+parser.add_argument('--get',
+                    default="disp-force",
+                    help="specify which quantity to extract. \
+                        Available options are 'disp-force', 'disp', \
+                        'force', 'energy', and 'born'. \
+                        (default: disp-force)")
 
-parser.add_option('--offset',
-                  help="Specify an output file (either *.xml, *.pw.out, or *.str) of an\
- equilibrium structure to subtract residual forces, displacements, or energies.")
+parser.add_argument('--unit',
+                    action="store",
+                    metavar="OUTPUT_UNIT",
+                    dest="unitname",
+                    default="Rydberg",
+                    help="print atomic displacements and forces in units of UNIT. \
+                          Available options are 'eV', 'Rydberg' (default), and 'Hartree'.")
 
-parser.add_option('--emin',
-                  default=None,
-                  type="float",
-                  help="Lower bound of the energy filter (eV) used for selecting output structures.\
+parser.add_argument('--offset',
+                    help="Specify an output file (either *.xml, *.pw.out, or *.str) of an\
+                         equilibrium structure to subtract residual forces, \
+                         displacements, or energies.")
+
+parser.add_argument('--emin',
+                    default=None,
+                    type=float,
+                    help="Lower bound of the energy filter (eV) used for selecting output structures.\
                         Available only in the VASP parser.")
 
-parser.add_option('--emax',
-                  default=None,
-                  type="float",
-                  help="Upper bound of the energy filter (eV) used for selecting output structures.\
+parser.add_argument('--emax',
+                    default=None,
+                    type=float,
+                    help="Upper bound of the energy filter (eV) used for selecting output structures.\
                         Available only in the VASP parser.")
 
-# Main
+parser.add_argument('target_file', metavar='file_to_parse', type=str, nargs='+',
+                    help="Output file of DFT codes, e.g., vasprun.xml.")
 
-if __name__ == "__main__":
 
-    options, args = parser.parse_args()
-    file_results = args[0:]
-
-    if len(file_results) == 0:
-        print("Usage: extract.py [options] vasprun*.xml \
-(or *.pw.out, or *.str)")
-        print()
-        print("For details of available options, please type\n\
-$ python displace.py -h")
-        exit(1)
+def check_options(args):
 
     # Check the calculator option
 
-    conditions = [options.VASP is None,
-                  options.QE is None,
-                  options.xTAPP is None,
-                  options.LAMMPS is None,
-                  options.OpenMX is None]
+    conditions = [args.VASP is None,
+                  args.QE is None,
+                  args.xTAPP is None,
+                  args.LAMMPS is None,
+                  args.OpenMX is None]
 
     if conditions.count(True) == len(conditions):
         print(
-            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
+            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, \
+                --OpenMX option must be given.")
         exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
-        print("Error : --VASP, --QE, --xTAPP, --LAMMPS, and --OpenMX cannot be given simultaneously.")
+        print("Error : --VASP, --QE, --xTAPP, --LAMMPS, and \
+            --OpenMX cannot be given simultaneously.")
         exit(1)
 
-    elif options.VASP:
+    elif args.VASP:
         code = "VASP"
-        file_original = options.VASP
+        file_original = args.VASP
 
-    elif options.QE:
+    elif args.QE:
         code = "QE"
-        file_original = options.QE
+        file_original = args.QE
 
-    elif options.xTAPP:
+    elif args.xTAPP:
         code = "xTAPP"
-        file_original = options.xTAPP
+        file_original = args.xTAPP
 
-    elif options.LAMMPS:
+    elif args.LAMMPS:
         code = "LAMMPS"
-        file_original = options.LAMMPS
+        file_original = args.LAMMPS
 
-    elif options.OpenMX:
+    elif args.OpenMX:
         code = "OpenMX"
-        file_original = options.OpenMX
+        file_original = args.OpenMX
 
     # Check output option
-    str_get = options.get.lower()
+    str_get = args.get.lower()
     if str_get not in ["disp-force", "disp", "force", "energy", "born", "dielec"]:
         print("Error: Please specify which quantity to extract by the --get option.")
         exit(1)
@@ -161,8 +156,10 @@ $ python displace.py -h")
             print("Sorry, --get born is available only for VASP.")
             exit(1)
 
+    output_flags = [print_disp, print_force, print_energy, print_borninfo]
+
     # Check unit option
-    str_unit = options.unitname.lower()
+    str_unit = args.unitname.lower()
     if str_unit in ["ev", "electron_volt"]:
         str_unit = "ev"
     elif str_unit in ["ry", "ryd", "rydberg"]:
@@ -170,32 +167,45 @@ $ python displace.py -h")
     elif str_unit in ["ha", "hartree"]:
         str_unit = "hartree"
     else:
-        print("Error: Invalid unit name : %s" % options.unitname)
+        print("Error: Invalid unit name : %s" % args.unitname)
+
+    return code, file_original, output_flags, str_unit
+
+
+def run_parse(args, code, file_original, file_results, output_flags, str_unit):
 
     # Print data
     if code == "VASP":
         vasp.parse(file_original, file_results,
-                   options.offset, str_unit,
-                   print_disp, print_force, print_energy,
-                   print_borninfo,
-                   options.emin, options.emax)
+                   args.offset, str_unit,
+                   output_flags,
+                   args.emin, args.emax)
 
     elif code == "QE":
         qe.parse(file_original, file_results,
-                 options.offset, str_unit,
-                 print_disp, print_force, print_energy)
+                 args.offset, str_unit,
+                 output_flags)
 
     elif code == "xTAPP":
         xtapp.parse(file_original, file_results,
-                    options.offset, str_unit,
-                    print_disp, print_force, print_energy)
+                    args.offset, str_unit,
+                    output_flags)
 
     elif code == "OpenMX":
         openmx.parse(file_original, file_results,
-                     options.offset, str_unit,
-                     print_disp, print_force, print_energy)
+                     args.offset, str_unit,
+                     output_flags)
 
     elif code == "LAMMPS":
         lammps.parse(file_original, file_results,
-                     options.offset, str_unit,
-                     print_disp, print_force, print_energy)
+                     args.offset, str_unit,
+                     output_flags)
+
+
+if __name__ == "__main__":
+
+    args = parser.parse_args()
+    file_results = args.target_file
+    
+    code, file_original, output_flags, str_unit = check_options(args)
+    run_parse(args, code, file_original, file_results, output_flags, str_unit)

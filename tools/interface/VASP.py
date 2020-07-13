@@ -478,13 +478,15 @@ def get_unit_conversion_factor(str_unit):
 
 
 def parse(SPOSCAR_init, xml_files, xml_file_offset, str_unit,
-          print_disp, print_force, print_energy, print_borninfo,
+          output_flags,
           filter_emin, filter_emax):
 
     aa, _, _, nats, x_frac0 = read_POSCAR(SPOSCAR_init)
 
     scale_disp, scale_force, scale_energy = get_unit_conversion_factor(
         str_unit)
+
+    print_disp, print_force, print_energy, print_borninfo = output_flags
 
     if print_disp is True and print_force is True:
         print_displacements_and_forces_VASP(xml_files,
