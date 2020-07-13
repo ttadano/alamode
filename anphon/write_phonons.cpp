@@ -687,13 +687,24 @@ void Writes::write_phonon_vel() const
     ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
     ofs_vel.setf(std::ios::fixed);
 
-    for (unsigned int i = 0; i < nk; ++i) {
-        ofs_vel << std::setw(8) << kaxis[i];
-        for (unsigned int j = 0; j < nbands; ++j) {
-            ofs_vel << std::setw(15)
-                << std::abs(phonon_velocity->phvel[i][j] * Ry_to_SI_vel);
+    if (dynamical->band_connection == 0) {
+        for (auto i = 0; i < nk; ++i) {
+            ofs_vel << std::setw(8) << kaxis[i];
+            for (auto j = 0; j < nbands; ++j) {
+                ofs_vel << std::setw(15)
+                        << std::abs(phonon_velocity->phvel[i][j] * Ry_to_SI_vel);
+            }
+            ofs_vel << std::endl;
         }
-        ofs_vel << std::endl;
+    } else {
+        for (auto i = 0; i < nk; ++i) {
+            ofs_vel << std::setw(8) << kaxis[i];
+            for (auto j = 0; j < nbands; ++j) {
+                ofs_vel << std::setw(15)
+                        << std::abs(phonon_velocity->phvel[i][dynamical->index_bconnect[i][j]] * Ry_to_SI_vel);
+            }
+            ofs_vel << std::endl;
+        }
     }
 
     ofs_vel.close();
@@ -1203,12 +1214,22 @@ void Writes::write_gruneisen()
         ofs_gruneisen << "# k-axis, gamma" << std::endl;
         ofs_gruneisen.setf(std::ios::fixed);
 
-        for (unsigned int i = 0; i < nk; ++i) {
-            ofs_gruneisen << std::setw(8) << kaxis[i];
-            for (unsigned int j = 0; j < nbands; ++j) {
-                ofs_gruneisen << std::setw(15) << gruneisen->gruneisen[i][j].real();
+        if (dynamical->band_connection == 0) {
+            for (unsigned int i = 0; i < nk; ++i) {
+                ofs_gruneisen << std::setw(8) << kaxis[i];
+                for (unsigned int j = 0; j < nbands; ++j) {
+                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen[i][j].real();
+                }
+                ofs_gruneisen << std::endl;
             }
-            ofs_gruneisen << std::endl;
+        } else {
+            for (unsigned int i = 0; i < nk; ++i) {
+                ofs_gruneisen << std::setw(8) << kaxis[i];
+                for (unsigned int j = 0; j < nbands; ++j) {
+                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen[i][dynamical->index_bconnect[i][j]].real();
+                }
+                ofs_gruneisen << std::endl;
+            }
         }
 
         ofs_gruneisen.close();
