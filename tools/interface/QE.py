@@ -12,7 +12,6 @@
 
 import numpy as np
 
-
 def get_namelist(file_in, namelist_tag):
 
     list_out = []
@@ -533,38 +532,37 @@ def read_original_QE(file_in):
         nat, lavec, kd_symbol, x_frac, lavec_inv
 
 
-def generate_QE_input(prefix, suffix, counter, nzerofills, list_namelist,
-                      list_ATOMS, list_KP, list_CELL, list_OCCU,
-                      nat, kd_symbol, x, u):
+def generate_input(prefix, counter, disp, nzerofills, params_orig):
 
-    filename = prefix + str(counter).zfill(nzerofills) + "." + suffix
+    x = params_orig['x_frac']
+    nat = params_orig['nat']
+    kd_symbol = params_orig['kd_symbol']
+
+    filename = prefix + str(counter).zfill(nzerofills) + ".pw.in"
     f = open(filename, 'w')
 
-    for entry in list_namelist:
+    for entry in params_orig['namelist']:
         f.write(entry)
 
-    for entry in list_ATOMS:
+    for entry in params_orig['ATOMIC_SPECIES']:
         f.write(entry)
 
     f.write("ATOMIC_POSITIONS crystal\n")
     for i in range(nat):
         f.write("%s %20.15f %20.15f %20.15f\n" % (kd_symbol[i],
-                                                  x[i][0] + u[i, 0],
-                                                  x[i][1] + u[i, 1],
-                                                  x[i][2] + u[i, 2]))
+                                                  x[i][0] + disp[i, 0],
+                                                  x[i][1] + disp[i, 1],
+                                                  x[i][2] + disp[i, 2]))
 
-    for entry in list_KP:
+    for entry in params_orig['K_POINTS']:
         f.write(entry)
-    for entry in list_CELL:
+    for entry in params_orig['CELL_PARAMETERS']:
         f.write(entry)
-    for entry in list_OCCU:
+    for entry in params_orig['OCCUPATIONS']:
         f.write(entry)
 
     f.write("\n")
     f.close()
-
-
-# Functions for Quantum-ESPRESSO (http://www.quantum-espresso.org)
 
 
 def read_original_QE_mod(file_in):

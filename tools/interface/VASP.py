@@ -28,6 +28,63 @@ except ImportError:
         import elementtree.ElementTree as etree
 
 
+class VaspParser(object):
+
+    def __init__(self):
+        self._prefix = None
+        self.lattice_vector = None
+        self.inverse_lattice_vector = None
+        self.elements = None
+        self.nat_elem = None
+        self.nat = 0
+        self._x_fractional = None
+        self._counter = 0
+
+    def load_initial_structure(self, file_in):
+
+        with open(file_in, 'r') as file_pos:
+            file_pos.readline()
+            a = float(file_pos.readline().rstrip())
+            lavec = np.zeros((3, 3))
+            for i in range(3):
+                arr = file_pos.readline().rstrip().split()
+                if len(arr) != 3:
+                    raise RuntimeError("Could not read POSCAR properly")
+                for j in range(3):
+                    lavec[i, j] = a * float(arr[j])
+
+            lavec = lavec.transpose()
+            invlavec = np.linalg.inv(lavec)
+            elements = file_pos.readline().rstrip().split()
+
+            if elements[0].isdigit():
+                nat_elem = [int(tmp) for tmp in elements]
+                elements = []
+            else:
+                nat_elem = [int(tmp) for tmp in file_pos.readline().rstrip().split()]
+
+            nat = np.sum(nat_elem)
+            basis = file_pos.readline().strip()
+            x = np.zeros((nat, 3))
+
+            for i in range(nat):
+                arr = file_pos.readline().rstrip().split()
+                for j in range(3):
+                    x[i][j] = float(arr[j])
+
+            if basis == "Direct" or basis == "direct" or basis == "D" or basis == "d":
+                xf = x
+            else:
+                xf = np.dot(x, invlavec)
+
+        self.lattice_vector = lavec
+        self.inverse_lattice_vector = invlavec
+        self.elements = elements
+        self.nat_elem = nat_elem
+        self.nat = np.sum(nat_elem)
+        self._x_fractional = xf
+
+
 def read_POSCAR(file_in):
 
     file_pos = open(file_in, 'r')
@@ -76,9 +133,13 @@ def read_POSCAR(file_in):
     return lavec, invlavec, elements, nat_elem, xf
 
 
-def write_POSCAR(prefix, counter, header, nzerofills,
-                 lavec, elems, nat, disp, coord):
+def generate_input(prefix, counter, header, disp, nzerofills,
+                   params_orig):
 
+    lavec = params_orig['lavec']
+    elems = params_orig['elems']
+    nats = params_orig['nats']
+    coord = params_orig['x_frac']
     filename = prefix + str(counter).zfill(nzerofills) + ".POSCAR"
     f = open(filename, 'w')
     f.write("%s\n" % header)
@@ -94,8 +155,8 @@ def write_POSCAR(prefix, counter, header, nzerofills,
     if len(elems) > 0:
         f.write("\n")
 
-    for i in range(len(nat)):
-        f.write("%d " % nat[i])
+    for i in range(len(nats)):
+        f.write("%d " % nats[i])
     f.write("\n")
 
     f.write("Direct\n")
@@ -125,7 +186,7 @@ def get_coordinate_VASP(xml_file, nat):
         return np.array(x, dtype=np.float)
 
     except:
-        print("Error in reading atomic positions from the XML file: %s" % xml_file)
+        raise RuntimeError("Error in reading atomic positions from the XML file: %s" % xml_file)
 
 
 def print_displacements_VASP(xml_files,

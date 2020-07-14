@@ -3,9 +3,9 @@
 # displace.py
 #
 # Simple script to generate input files of given displacement patterns.
-# Currently, VASP, Quantum-ESPRESSO, and xTAPP are supported.
+# Currently, VASP, Quantum-ESPRESSO, LAMMPS, OpenMX, and xTAPP are supported.
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014-2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -62,6 +62,45 @@ parser.add_argument('--OpenMX',
 parser.add_argument('pattern_file', metavar='prefix.pattern_*', type=str, nargs='+',
                     help="ALM pattern file(s) generated with MODE = suggest")
 
+parser.add_argument('--random', action="store_true", dest="random", default=False,
+                    help="Generate randomly-displaced structures.")
+
+parser.add_argument('--temp', type=float,
+                    help="Target temperature of the random distribution of \
+                        Q (default: 300). Used if --MD is not given.")
+
+parser.add_argument('--start', type=int, default=1,
+                    help="Specify where to start using the data. Used if --MD is given.\
+                         (default: 1)")
+
+parser.add_argument('--end', type=int, default=None,
+                    help="Specify where to finish using the data. Used if --MD is given. "
+                         " (default: None)")
+
+parser.add_argument('-e', '--every', type=int, default=50,
+                    help="Specify the interval of data sampling. Used if --MD is given. "
+                         "(default: 50)")
+
+parser.add_argument('-md', '--load_mddata', type=str,
+                    help="Specify the file containing displacements of MD trajectories.")
+
+parser.add_argument('--prim', type=str,
+                    help="Specify the file containing structure data of the primitive lattice.")
+
+parser.add_argument('--evec', type=str,
+                    help="Specify the file containing harmonic eigenvalues and eigenvectors.")
+
+parser.add_argument('-nd', '--num_disp', type=int,
+                    help="Specify the number of displacement patterns.")
+
+parser.add_argument('-cl', '--classical', action="store_true", dest="classical", default=False,
+                     help="Use classical expectation value for <Q^2>.")
+
+parser.add_argument('--print', action="store_true", dest="print_disp", default=False,
+                    help="Print displacements to stdout")
+
+parser.add_argument('--pes', help="Specify the target mode to compute PES.")
+parser.add_argument('--Qrange', help='Range of normal coordinate Q in units of eV/Ang.')
 
 
 def parse_displacement_patterns(files_in):
@@ -228,10 +267,126 @@ def check_options(args):
     return code, file_original, struct_format, str_outfiles, suffix
 
 
+def get_original_parameter_set(code, file_original):
+    # Read the original file
+
+    param_dic = {}
+
+    if code == "VASP":
+        aa, aa_inv, elems, nats, x_frac = vasp.read_POSCAR(file_original)
+        nat = np.sum(nats)
+
+        param_dic['nat'] = nat
+        param_dic['lavec'] = aa
+        param_dic['invlavec'] = aa_inv
+        param_dic['elems'] = elems
+        param_dic['nats'] = nats
+        param_dic['x_frac'] = x_frac
+
+    elif code == "QE":
+        list_namelist, list_ATOMIC_SPECIES, \
+            list_K_POINTS, list_CELL_PARAMETERS, list_OCCUPATIONS, \
+            nat, lavec, kd_symbol, x_frac, aa_inv = qe.read_original_QE(
+                file_original)
+
+        param_dic['nat'] = nat
+        param_dic['lavec'] = lavec
+        param_dic['invlavec'] = aa_inv
+        param_dic['kd_symbol'] = kd_symbol
+        param_dic['x_frac'] = x_frac
+        param_dic['namelist'] = list_namelist
+        param_dic['ATOMIC_SPECIES'] = list_ATOMIC_SPECIES
+        param_dic['K_POINTS'] = list_K_POINTS
+        param_dic['CELL_PARAMETERS'] = list_CELL_PARAMETERS
+        param_dic['OCCUPATIONS'] = list_OCCUPATIONS
+
+    elif code == "xTAPP":
+        str_header, nat, nkd, aa, aa_inv, x_frac, kd \
+            = xtapp.read_CG_file(file_original)
+
+        param_dic['nat'] = nat
+        param_dic['lavec'] = aa
+        param_dic['invlavec'] = aa_inv
+        param_dic['x_frac'] = x_frac
+        param_dic['kd'] = kd
+        param_dic['nkd'] = nkd
+        param_dic['str_header'] = str_header
+
+    elif code == "LAMMPS":
+        common_settings, nat, x_cart, kd, charge \
+            = lammps.read_lammps_structure(file_original)
+#        aa_inv = None
+
+        param_dic['nat'] = nat
+        param_dic['kd'] = kd
+        param_dic['charge'] = charge
+        param_dic['common_settings'] = common_settings
+        param_dic['x_cart'] = x_cart
+        param_dic['lavec'] = None
+        param_dic['invlavec'] = None
+
+    elif code == "OpenMX":
+        aa, aa_inv, nat, x_frac = openmx.read_OpenMX_input(file_original)
+
+        param_dic['lavec'] = aa
+        param_dic['invlavec'] = aa_inv
+        param_dic['nat'] = nat
+        param_dic['x_frac'] = x_frac
+
+    return param_dic
+
+
+def generate_finite_displacements(file_pattern, nat, aa_inv):
+
+    header_list = []
+    disp_list = []
+    disp_pattern = parse_displacement_patterns(file_pattern)
+    counter = 1
+
+    for pattern in disp_pattern:
+        header, disp = gen_displacement(counter, pattern,
+                                        disp_length,
+                                        nat, aa_inv)
+        counter += 1
+        header_list.append(header)
+        disp_list.append(disp)
+
+    return header_list, disp_list
+
+
+def write_displaced_structures(params_orig, header_list, disp_list):
+
+    nzerofills = get_number_of_zerofill(len(disp_list))
+
+    counter = 1
+    for header, disp in zip(header_list, disp_list):
+        if code == "VASP":
+            vasp.generate_input(prefix, counter, header,
+                                disp, nzerofills, params_orig)
+
+        elif code == "QE":
+            qe.generate_input(prefix, counter,
+                              disp, nzerofills, params_orig)
+
+        elif code == "xTAPP":
+            xtapp.generate_input(prefix, counter,
+                                 disp, nzerofills, params_orig)
+
+        elif code == "LAMMPS":
+            lammps.generate_input(prefix, counter, header,
+                                  disp, nzerofills, params_orig)
+
+        elif code == "OpenMX":
+            openmx.generate_input(prefix, counter,
+                                  disp, nzerofills, params_orig, file_original)
+
+        counter += 1
+
+
 if __name__ == '__main__':
 
     print("*****************************************************************")
-    print("    displace.py --  Generator of displaced cofigurations         ")
+    print("    displace.py --  Generator of displaced configurations        ")
     print("*****************************************************************")
     print("")
 
@@ -241,75 +396,20 @@ if __name__ == '__main__':
     code, file_original, struct_format, str_outfiles, suffix = check_options(args)
     disp_length = args.mag
     prefix = args.prefix
-
-    # Read the original file
-    if code == "VASP":
-        aa, aa_inv, elems, nats, x_frac = vasp.read_POSCAR(file_original)
-        nat = np.sum(nats)
-
-    elif code == "QE":
-        list_namelist, list_ATOMIC_SPECIES, \
-            list_K_POINTS, list_CELL_PARAMETERS, list_OCCUPATIONS, \
-            nat, lavec, kd_symbol, x_frac, aa_inv = qe.read_original_QE(
-                file_original)
-
-    elif code == "xTAPP":
-        str_header, nat, nkd, aa, aa_inv, x_frac, kd \
-            = xtapp.read_CG(file_original)
-        suffix = "cg"
-
-    elif code == "LAMMPS":
-        common_settings, nat, x_cart, kd, charge \
-            = lammps.read_lammps_structure(file_original)
-        aa_inv = None
-
-    elif code == "OpenMX":
-        aa, aa_inv, nat, x_frac = openmx.read_OpenMX_input(file_original)
+    params = get_original_parameter_set(code, file_original)
 
     print(" Output format                  : %s" % struct_format)
     print(" Structure before displacements : %s" % file_original)
     print(" Output file names              : %s" % str_outfiles)
     print(" Magnitude of displacements     : %s Angstrom" % disp_length)
-    print(" Number of atoms                : %i" % nat)
+    print(" Number of atoms                : %i" % params['nat'])
     print("")
     print("-----------------------------------------------------------------")
 
-    disp_pattern = parse_displacement_patterns(file_pattern)
-    nzerofills = get_number_of_zerofill(len(disp_pattern))
-    counter = 0
+    header_list, disp_list = generate_finite_displacements(file_pattern, params['nat'], params['invlavec'])
+    nzerofills = get_number_of_zerofill(len(disp_list))
 
-    for pattern in disp_pattern:
-        counter += 1
-        header, disp = gen_displacement(counter, pattern, disp_length,
-                                        nat, aa_inv)
-
-        if code == "VASP":
-            vasp.write_POSCAR(prefix, counter, header, nzerofills,
-                              aa, elems, nats, disp, x_frac)
-
-        elif code == "QE":
-            qe.generate_QE_input(prefix, suffix, counter, nzerofills, list_namelist,
-                                 list_ATOMIC_SPECIES, list_K_POINTS,
-                                 list_CELL_PARAMETERS, list_OCCUPATIONS,
-                                 nat, kd_symbol, x_frac, disp)
-
-        elif code == "xTAPP":
-            nsym = 1
-            symop = []
-            symop.append([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
-            denom_tran = 1
-            has_inv = 0
-
-            xtapp.gen_CG(prefix, suffix, counter, nzerofills, str_header, nat, kd,
-                         x_frac, disp, nsym, symop, denom_tran, has_inv)
-
-        elif code == "LAMMPS":
-            lammps.write_lammps_structure(prefix, counter, header, nzerofills,
-                                          common_settings, nat, kd, x_cart, disp, charge)
-
-        elif code == "OpenMX":
-            openmx.write_OpenMX_input(
-                prefix, counter,  nzerofills, disp, aa, file_original)
+    write_displaced_structures(params, header_list, disp_list)
 
     print("")
     print("All input files are created.")

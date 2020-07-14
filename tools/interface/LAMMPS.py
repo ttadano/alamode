@@ -46,17 +46,21 @@ def read_lammps_structure(file_in):
     return common_settings, nat, x, kd, charges
 
 
-def write_lammps_structure(prefix, counter, header, nzerofills,
-                           common_settings, nat, kd, x_cart, disp, charge):
+def generate_input(prefix, counter, header, disp, nzerofills, params_orig):
 
     filename = prefix + str(counter).zfill(nzerofills) + ".lammps"
     f = open(filename, 'w')
     f.write("%s\n" % header)
 
-    for line in common_settings:
+    for line in params_orig['common_settings']:
         f.write("%s\n" % line)
 
     f.write("%s\n\n" % "Atoms")
+
+    nat = params_orig['nat']
+    kd = params_orig['kd']
+    charge = params_orig['charge']
+    x_cart = params_orig['x_cart']
 
     if charge is None:
         for i in range(nat):

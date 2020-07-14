@@ -12,9 +12,6 @@
 
 import numpy as np
 
-"""OpenMX"""
-# Function for OpenMX
-
 
 def read_OpenMX_input(file_original):
 
@@ -35,7 +32,7 @@ def read_OpenMX_input(file_original):
     coord_flag = 0
     coord_row = 0
 
-    # read oroginal file and pull out some infomations
+    # read original file and pull out some information
     for line in f:
         ss = line.strip().split()
         # number of atoms
@@ -90,12 +87,14 @@ def read_OpenMX_input(file_original):
     return lavec, lavec_inv, nat, x_frac0
 
 
-def write_OpenMX_input(prefix, counter, nzerofills, disp, lavec, file_in):
+def generate_input(prefix, counter, disp, nzerofills, params_orig, file_in):
 
     search_target = [
         "atoms.number", "<atoms.speciesandcoordinates",
         "atoms.speciesandcoordinates.unit", "system.name"
     ]
+
+    lavec = params_orig['lavec']
 
     filename = prefix + str(counter).zfill(nzerofills) + ".dat"
     fout = open(filename, 'w')
@@ -168,10 +167,6 @@ def write_OpenMX_input(prefix, counter, nzerofills, disp, lavec, file_in):
     fout.close()
 
 
-"""OpenMX"""
-# Function for OpenMX
-
-
 def read_outfile(out_file, nat, column):
 
     x = np.zeros([nat, 3], dtype=np.float64)
@@ -210,7 +205,6 @@ def read_outfile(out_file, nat, column):
     return x
 
 
-# displacements
 def get_coordinates_OpenMX(out_file, nat, lavec, conv):
     x = read_outfile(out_file, nat, 2)
     for i in range(nat):
@@ -245,15 +239,11 @@ def print_displacements_OpenMX(out_files,
     for search_target in out_files:
 
         x = get_coordinates_OpenMX(search_target, nat, lavec, conv)
-        #ndata = len(x) / (3 * nat)
         ndata = 1
-        #x = np.reshape(x, (1, nat, 3))
 
         for idata in range(ndata):
-            #disp = x[idata, :, :] - x0 - disp_offset
             disp = x - x0 - disp_offset
             disp[disp > 0.96] -= 1.0
-            #disp = np.dot(vec_refold(disp), conv_inv)
             for i in range(nat):
                 disp[i] = np.dot(conv_inv, disp[i])
 
@@ -289,14 +279,10 @@ def print_atomicforces_OpenMX(out_files,
 
     for search_target in out_files:
         data = get_atomicforces_OpenMX(search_target, nat)
-        #ndata = len(data) / (3 * nat)
         ndata = 1
-        #data = np.reshape(data, (ndata, nat, 3))
 
         for idata in range(ndata):
-            #f = data[idata, :, :] - force_offset
             f = data - force_offset
-
             f *= conversion_factor
 
             for i in range(nat):
@@ -343,10 +329,8 @@ def print_displacements_and_forces_OpenMX(out_files,
         ndata = 1
 
         for idata in range(ndata):
-            #disp = x[idata, :, :] - x0 - disp_offset
             disp = x - x0 - disp_offset
             disp[disp > 0.96] -= 1.0
-            #disp = np.dot(vec_refold(disp), conv_inv)
             for i in range(nat):
                 disp[i] = np.dot(conv_inv, disp[i])
 
@@ -365,7 +349,6 @@ def print_displacements_and_forces_OpenMX(out_files,
                                                                      f[i][2]))
 
 
-# total enegy
 def get_energies_OpenMX(out_file):
 
     target = "Utot."

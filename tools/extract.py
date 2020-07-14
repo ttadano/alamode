@@ -4,9 +4,9 @@
 #
 # Simple script to extract atomic displacements, atomic forces, and
 # energies from output files.
-# Currently, VASP, Quantum-ESPRESSO, and xTAPP are supported.
+# Currently, VASP, Quantum-ESPRESSO, LAMMPS, OpenMX, and xTAPP are supported.
 #
-# Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+# Copyright (c) 2014-2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory

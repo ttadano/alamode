@@ -184,12 +184,16 @@ def read_atomdata(file_in, nat_in, nkd_in):
     return x_out, kd_out, list_atom
 
 
-def read_CG(file_in):
+def read_CG_file(file_in, get_complete_info=True):
 
     lavec, nat, nkd, str_tappinput = read_tappinput(file_in)
+    x, kd, str_atom = read_atomdata(file_in, nat, nkd)
+
+    if not get_complete_info:
+        return lavec, nat, x
+
     str_kpoint = read_kpdata(file_in)
     str_struct_opt, str_opt_constr = read_structure_optimize(file_in)
-    x, kd, str_atom = read_atomdata(file_in, nat, nkd)
 
     str_header = ""
 
@@ -210,18 +214,23 @@ def read_CG(file_in):
     return str_header, nat, nkd, lavec, lavec_inv, x, kd
 
 
-def gen_CG(prefix, suffix, counter, nzerofills, str_header,
-           nat, kd, x, u, nsym, symop, denom_tran, has_inv):
+def write_CG_file(prefix, counter, disp, nzerofills, params_orig,
+                  nsym, symop, denom_tran, has_inv):
 
-    filename = prefix + str(counter).zfill(nzerofills) + "." + suffix
+    filename = prefix + str(counter).zfill(nzerofills) + ".cg"
     f = open(filename, 'w')
+
+    str_header = params_orig['str_header']
+    kd = params_orig['kd']
+    x = params_orig['x_frac']
+    nat = params_orig['nat']
     f.write("%s" % str_header)
 
     for i in range(nat):
         f.write("%i %20.15f %20.15f %20.15f\n" % (kd[i],
-                                                  x[i][0] + u[i, 0],
-                                                  x[i][1] + u[i, 1],
-                                                  x[i][2] + u[i, 2]))
+                                                  x[i][0] + disp[i, 0],
+                                                  x[i][1] + disp[i, 1],
+                                                  x[i][2] + disp[i, 2]))
 
     f.write("# symmetry data\n")
     f.write("&symmetry\n")
@@ -253,12 +262,15 @@ def gen_CG(prefix, suffix, counter, nzerofills, str_header,
     f.close()
 
 
-def read_CG_mod(file_in):
+def generate_input(prefix, counter, disp, nzerofills, params_orig):
+    nsym = 1
+    symop = []
+    symop.append([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
+    denom_tran = 1
+    has_inv = 0
 
-    lavec, nat, nkd, _ = read_tappinput(file_in)
-    x0, _, _ = read_atomdata(file_in, nat, nkd)
-
-    return lavec, nat, x0
+    write_CG_file(prefix, counter, disp, nzerofills, params_orig,
+                  nsym, symop, denom_tran, has_inv)
 
 
 def get_coordinates_xTAPP(str_file, nat):
@@ -522,7 +534,6 @@ def get_unit_conversion_factor(str_unit):
 
     disp_conv_factor = 1.0
     energy_conv_factor = 1.0
-    force_conv_factor = 1.0
 
     if str_unit == "ev":
         disp_conv_factor = Bohr_radius
@@ -548,7 +559,7 @@ def get_unit_conversion_factor(str_unit):
 def parse(cg_init, structure_files, structure_file_offset, str_unit,
           output_flags):
 
-    aa, nat, x_frac0 = read_CG_mod(cg_init)
+    aa, nat, x_frac0 = read_CG_file(cg_init, False)
 
     scale_disp, scale_force, scale_energy \
         = get_unit_conversion_factor(str_unit)
