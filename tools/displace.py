@@ -396,20 +396,28 @@ if __name__ == '__main__':
     code, file_original, struct_format, str_outfiles, suffix = check_options(args)
     disp_length = args.mag
     prefix = args.prefix
-    params = get_original_parameter_set(code, file_original)
+    #params = get_original_parameter_set(code, file_original)
+    structure = vasp.VaspParser()
+    structure.load_initial_structure(file_original)
 
     print(" Output format                  : %s" % struct_format)
     print(" Structure before displacements : %s" % file_original)
     print(" Output file names              : %s" % str_outfiles)
     print(" Magnitude of displacements     : %s Angstrom" % disp_length)
-    print(" Number of atoms                : %i" % params['nat'])
+    #print(" Number of atoms                : %i" % params['nat'])
     print("")
     print("-----------------------------------------------------------------")
 
-    header_list, disp_list = generate_finite_displacements(file_pattern, params['nat'], params['invlavec'])
-    nzerofills = get_number_of_zerofill(len(disp_list))
+#    header_list, disp_list = generate_finite_displacements(file_pattern, params['nat'], params['invlavec'])
+    header_list, disp_list = generate_finite_displacements(file_pattern,
+                                                           structure.nat,
+                                                           structure.inverse_lattice_vector)
 
-    write_displaced_structures(params, header_list, disp_list)
+    #nzerofills = get_number_of_zerofill(len(disp_list))
+
+    #write_displaced_structures(params, header_list, disp_list)
+
+    structure.generate_structures(prefix, header_list, disp_list)
 
     print("")
     print("All input files are created.")

@@ -176,10 +176,12 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
 
     # Print data
     if code == "VASP":
-        vasp.parse(file_original, file_results,
-                   args.offset, str_unit,
-                   output_flags,
-                   args.emin, args.emax)
+        handler = vasp.VaspParser()
+        handler.parse(file_original, file_results, args.offset, str_unit, output_flags, args.emin, args.emax)
+        # vasp.parse(file_original, file_results,
+        #            args.offset, str_unit,
+        #            output_flags,
+        #            args.emin, args.emax)
 
     elif code == "QE":
         qe.parse(file_original, file_results,
