@@ -89,7 +89,6 @@ class xTappParser(object):
         elif self._print_energy:
             self._print_energies(stdout_files, stdout_file_offset)
 
-
     def _generate_input(self, header, disp):
         nsym = 1
         symop = []
@@ -148,7 +147,6 @@ class xTappParser(object):
             nzero += 1
 
         self._nzerofills = nzero
-
 
     @staticmethod
     def _read_tappinput(file_in, Bohr_to_Ang):
@@ -523,7 +521,6 @@ class xTappParser(object):
             raise RuntimeError("%s tag not found in %s" % (search_tag, str_file))
 
         return np.array(etot, dtype=np.float)
-
 
     @staticmethod
     def _refold(x):
