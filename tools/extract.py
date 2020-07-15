@@ -191,9 +191,9 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
                       str_unit, output_flags, args.emin, args.emax)
 
     elif code == "OpenMX":
-        openmx.parse(file_original, file_results,
-                     args.offset, str_unit,
-                     output_flags)
+        handler = openmx.OpenmxParser()
+        handler.parse(file_original, file_results, args.offset,
+                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "LAMMPS":
         handler = lammps.LammpsParser()

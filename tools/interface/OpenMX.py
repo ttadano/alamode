@@ -61,10 +61,10 @@ class OpenmxParser(object):
             for i, line in enumerate(lines):
 
                 if search_target[0] in line.lower():
-                    nat = int(line.strip().split()[-1])
+                    nat = int(line.strip().split()[1])
 
                 elif search_target[1] in line.lower():
-                    coord_unit = line.strip().split()[-1].lower()
+                    coord_unit = line.strip().split()[1].lower()
 
                 elif search_target[2] in line.lower():
                     ipos_coord = i + 1
@@ -88,11 +88,11 @@ class OpenmxParser(object):
                 x_frac0.append([float(t) for t in line_split[2:5]])
                 initial_charges.append([float(t) for t in line_split[5:7]])
 
-            for line in lines[ipos_lavec:ipos_lavec+3]:
+            for line in lines[ipos_lavec:ipos_lavec + 3]:
                 lavec.append([float(t) for t in line.strip().split()])
 
             common_settings.append(lines[:ipos_coord])
-            common_settings.append(line[fpos_coord:])
+            common_settings.append(lines[fpos_coord:])
 
         x_frac0 = np.array(x_frac0)
         lavec = np.array(lavec).transpose()
@@ -113,7 +113,6 @@ class OpenmxParser(object):
         self._common_settings = common_settings
         self._initial_structure_loaded = True
 
-
     def generate_structures(self, prefix, header_list, disp_list):
 
         self._set_number_of_zerofill(len(disp_list))
@@ -122,406 +121,242 @@ class OpenmxParser(object):
         for header, disp in zip(header_list, disp_list):
             self._generate_input(header, disp)
 
-    def parse(self, initial_pwin, pwout_files, pwout_file_offset, str_unit,
+    def parse(self, initial_dat, out_files, out_file_offset, str_unit,
               output_flags, filter_emin=None, filter_emax=None):
 
         if not self._initial_structure_loaded:
-            self.load_initial_structure(initial_pwin)
+            self.load_initial_structure(initial_dat)
 
         self._set_unit_conversion_factor(str_unit)
         self._set_output_flags(output_flags)
 
         if self._print_disp or self._print_force:
-            self._print_displacements_and_forces(pwout_files,
-                                                 pwout_file_offset,
+            self._print_displacements_and_forces(out_files,
+                                                 out_file_offset,
                                                  filter_emin,
                                                  filter_emax)
         elif self._print_energy:
-            self._print_energies(pwout_files, pwout_file_offset)
+            self._print_energies(out_files, out_file_offset)
 
+    def _generate_input(self, header, disp):
 
+        filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".dat"
 
-
-def generate_input(prefix, counter, disp, nzerofills, params_orig, file_in):
-
-    search_target = [
-        "atoms.number", "<atoms.speciesandcoordinates",
-        "atoms.speciesandcoordinates.unit", "system.name"
-    ]
-
-    lavec = params_orig['lavec']
-
-    filename = prefix + str(counter).zfill(nzerofills) + ".dat"
-    fout = open(filename, 'w')
-    fin = open(file_in, 'r')
-
-    nat = 0
-    coord_flag = 0
-    coord_row = 0
-
-    conv = (np.linalg.inv(lavec)).T
-    conv_inv = np.linalg.inv(conv)
-
-    for i in range(nat):
-        print(np.dot(conv_inv, disp[i]))
-
-    disp[disp < 0] += 1
-
-    for line in fin:
-        ss = line.strip().split()
-        # number of atoms
-        if len(ss) > 0 and ss[0].lower() == search_target[0]:
-            nat = int(ss[1])
-            x_frac = np.zeros((nat, 3))
-            #coord = OrderedDict()
-            coord = {}
-            for i in range(nat):
-                coord[i+1] = []
-
-        # coordinates_unit
-        if len(ss) > 0 and ss[0].lower() == search_target[2]:
-            coord_unit = ss[1].lower()
-
-        # coordinates
-        if coord_flag == 1:
-            coord_column = len(ss)
-            for i in range(1, coord_column):
-                if i > 1:
-                    coord[int(ss[0])].append(float(ss[i]))
+        with open(filename, 'w') as f:
+            for line in self._common_settings[0]:
+                if "atoms.speciesandcoordinates.unit" in line.lower():
+                    f.write("Atoms.SpeciesAndCoordinates.Unit frac\n")
                 else:
-                    coord[int(ss[0])].append(ss[i])
+                    f.write("%s\n" % line)
 
-            # convert to frac
-            if coord_unit == "ang":
-                coord[coord_row+1] = np.dot(conv, coord[coord_row+1])
+            for i in range(self._nat):
+                f.write("%4d %3s" % (i + 1, self._kd[i]))
+                for j in range(3):
+                    f.write("%20.16f" % (self._x_fractional[i, j] + disp[i, j]))
+                for j in range(2):
+                    f.write("%6.2f" % (self._initial_charges[i, j]))
+                f.write('\n')
 
-            # add displacement
-            for j in range(1, 4):
-                coord[coord_row+1][j] += disp[coord_row][j-1]
-                coord[coord_row+1][j] = format(coord[coord_row+1][j], '20.16f')
+            for line in self._common_settings[1]:
+                f.write("%s\n" % line)
 
-            fout.write(str(coord_row+1) + " ")
-            fout.write("  ".join(map(str, coord[coord_row+1])))
-            fout.write("\n")
-            coord_row += 1
-            if coord_row == nat:
-                coord_flag = 0
+        self._counter += 1
 
-        elif len(ss) > 0 and ss[0].lower() == search_target[3]:
-            ss[1] = prefix + str(counter).zfill(nzerofills)
-            fout.write("                      ".join(map(str, ss)))
-            fout.write("\n")
+    def _print_displacements_and_forces(self, out_files,
+                                        file_offset, filter_emin, filter_emax):
+
+        # vec_refold = np.vectorize(refold)
+        lavec_transpose = self._lattice_vector.transpose()
+
+        x0 = np.round(self._x_fractional, 8)
+
+        if file_offset is None:
+            disp_offset = np.zeros((self._nat, 3))
+            force_offset = np.zeros((self._nat, 3))
+            epot_offset = 0.0
 
         else:
-            fout.write(line)
+            x0_offset, force_offset = self._get_coordinate_and_force_outfile(file_offset)
+            try:
+                x0_offset = np.reshape(x0_offset, (self._nat, 3))
+            except:
+                raise RuntimeError("File %s contains too many position entries" % file_offset)
 
-        if len(ss) > 0 and ss[0].lower() == search_target[1]:
-            coord_flag = 1
+            disp_offset = x0_offset - x0
+            try:
+                force_offset = np.reshape(force_offset, (self._nat, 3))
+            except:
+                raise RuntimeError("File %s contains too many force entries" % file_offset)
 
-    fin.close()
-    fout.close()
+            epot_offset = self._get_energies_outfile(file_offset)
 
+        for search_target in out_files:
 
-def read_outfile(out_file, nat, column):
+            x, force = self._get_coordinate_and_force_outfile(search_target)
+            epot = self._get_energies_outfile(search_target)
+            epot -= epot_offset
+            epot *= self._RYDBERG_TO_EV * 2.0
 
-    x = np.zeros([nat, 3], dtype=np.float64)
+            ndata = 1
 
-    f = open(out_file, 'r')
+            for idata in range(ndata):
 
-    flag = 0
-    atom_count = 0
-    nat_out = 0
-    for line in f:
-        ss = line.strip().split()
-        if len(ss) > 0:
+                if filter_emin is not None:
+                    if filter_emin > epot[idata]:
+                        continue
 
-            if ss[0] == "<coordinates.forces":
-                flag = 1
-                continue
+                if filter_emax is not None:
+                    if filter_emax < epot[idata]:
+                        continue
 
-            if flag == 0:
-                continue
+                if self._print_disp:
+                    disp = x - x0 - disp_offset
+                    disp[disp > 0.96] -= 1.0
+                    for i in range(self._nat):
+                        disp[i] = np.dot(disp[i], lavec_transpose)
 
-            elif flag == 1 and nat_out == 0:
-                nat_out = int(ss[0])
-                continue
+                    disp[np.absolute(disp) < 1e-5] = 0.0
+                    disp *= self._disp_conversion_factor
 
-            elif flag == 1 and nat_out > 0:
-                for i in range(3):
-                    x[atom_count][i] = float(ss[i+column])
+                if self._print_force:
+                    f = force - force_offset
+                    f *= self._force_conversion_factor
 
-                atom_count += 1
+                print("# Filename: %s, Snapshot: %d, E_pot (eV): %s" %
+                      (search_target, idata + 1, epot[idata]))
 
-        if atom_count == nat:
-            break
+                if self._print_disp and self._print_force:
+                    for i in range(self._nat):
+                        print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i, 0],
+                                                                             disp[i, 1],
+                                                                             disp[i, 2],
+                                                                             f[i, 0],
+                                                                             f[i, 1],
+                                                                             f[i, 2]))
+                elif self._print_disp:
+                    for i in range(self._nat):
+                        print("%15.7F %15.7F %15.7F" % (disp[i, 0],
+                                                        disp[i, 1],
+                                                        disp[i, 2]))
+                elif self._print_force:
+                    for i in range(self._nat):
+                        print("%15.8E %15.8E %15.8E" % (f[i, 0],
+                                                        f[i, 1],
+                                                        f[i, 2]))
 
-    f.close()
+    def _print_energies(self, out_files, file_offset):
 
-    return x
-
-
-def get_coordinates_OpenMX(out_file, nat, lavec, conv):
-    x = read_outfile(out_file, nat, 2)
-    for i in range(nat):
-        # convert unit ang to frac
-        x[i] = np.dot(conv, x[i])
-
-    return x
-
-
-def print_displacements_OpenMX(out_files,
-                               lavec, lavec_inv, nat, x0,
-                               conversion_factor,
-                               file_offset):
-
-    vec_refold = np.vectorize(refold)
-    lavec_transpose = lavec.transpose()
-    conv = lavec_inv
-    conv_inv = np.linalg.inv(conv)
-
-    x0 = np.round(x0, 8)
-
-    if file_offset is None:
-        disp_offset = np.zeros([nat, 3])
-    else:
-        x0_offset = get_coordinates_OpenMX(file_offset, nat, lavec, conv)
-        try:
-            x0_offset = np.reshape(x0_offset, (nat, 3))
-        except:
-            raise RuntimeError("File %s contains too many position entries" % file_offset)
-        disp_offset = x0_offset - x0
-
-    for search_target in out_files:
-
-        x = get_coordinates_OpenMX(search_target, nat, lavec, conv)
-        ndata = 1
-
-        for idata in range(ndata):
-            disp = x - x0 - disp_offset
-            disp[disp > 0.96] -= 1.0
-            for i in range(nat):
-                disp[i] = np.dot(conv_inv, disp[i])
-
-            disp[np.absolute(disp) < 1e-5] = 0.0
-            disp *= conversion_factor
-
-            for i in range(nat):
-                print("%15.7F %15.7F %15.7F" % (disp[i][0],
-                                                disp[i][1],
-                                                disp[i][2]))
-
-
-# atomic forces
-def get_atomicforces_OpenMX(out_file, nat):
-    force = read_outfile(out_file, nat, 5)
-
-    return force
-
-
-def print_atomicforces_OpenMX(out_files,
-                              nat,
-                              conversion_factor,
-                              file_offset):
-
-    if file_offset is None:
-        force_offset = np.zeros((nat, 3))
-    else:
-        data0 = get_atomicforces_OpenMX(file_offset, nat)
-        try:
-            force_offset = np.reshape(data0, (nat, 3))
-        except:
-            raise RuntimeError("File %s contains too many force entries" % file_offset)
-
-    for search_target in out_files:
-        data = get_atomicforces_OpenMX(search_target, nat)
-        ndata = 1
-
-        for idata in range(ndata):
-            f = data - force_offset
-            f *= conversion_factor
-
-            for i in range(nat):
-                print("%15.8E %15.8E %15.8E" % (f[i][0],
-                                                f[i][1],
-                                                f[i][2]))
-
-
-def print_displacements_and_forces_OpenMX(out_files,
-                                          lavec, lavec_inv, nat, x0,
-                                          conversion_factor_disp,
-                                          conversion_factor_force,
-                                          file_offset):
-
-    vec_refold = np.vectorize(refold)
-    lavec_transpose = lavec.transpose()
-    conv = lavec_inv
-    conv_inv = np.linalg.inv(conv)
-
-    x0 = np.round(x0, 8)
-
-    if file_offset is None:
-        disp_offset = np.zeros((nat, 3))
-        force_offset = np.zeros((nat, 3))
-    else:
-        x0_offset = get_coordinates_OpenMX(file_offset, nat, lavec, conv)
-        force_offset = get_atomicforces_OpenMX(file_offset, nat)
-
-        try:
-            x0_offset = np.reshape(x0_offset, (nat, 3))
-        except:
-            print("File %s contains too many position entries" % file_offset)
-        disp_offset = x0_offset - x0
-
-        try:
-            force_offset = np.reshape(force_offset, (nat, 3))
-        except:
-            print("File %s contains too many force entries" % file_offset)
-
-    for search_target in out_files:
-
-        x = get_coordinates_OpenMX(search_target, nat, lavec, conv)
-        force = get_atomicforces_OpenMX(search_target, nat)
-        ndata = 1
-
-        for idata in range(ndata):
-            disp = x - x0 - disp_offset
-            disp[disp > 0.96] -= 1.0
-            for i in range(nat):
-                disp[i] = np.dot(conv_inv, disp[i])
-
-            disp[np.absolute(disp) < 1e-5] = 0.0
-            disp *= conversion_factor_disp
-
-            f = force - force_offset
-            f *= conversion_factor_force
-
-            for i in range(nat):
-                print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i][0],
-                                                                     disp[i][1],
-                                                                     disp[i][2],
-                                                                     f[i][0],
-                                                                     f[i][1],
-                                                                     f[i][2]))
-
-
-def get_energies_OpenMX(out_file):
-
-    target = "Utot."
-    etot = []
-
-    f = open(out_file, 'r')
-    for line in f:
-        ss = line.strip().split()
-        if len(ss) > 0 and ss[0] == target:
-            etot.extend([float(ss[1])])
-            break
+        if file_offset is None:
+            etot_offset = 0.0
         else:
-            continue
+            etot_offset = self._get_energies_outfile(file_offset)
 
-    if len(etot) == 0:
-        print("Total energy not found.")
-        exit(1)
+        print("# Etot")
+        for search_target in out_files:
 
-    return np.array(etot, dtype=np.float)
+            etot = self._get_energies_outfile(search_target)
 
+            for idata in range(len(etot)):
+                val = etot[idata] - etot_offset
+                val *= self._energy_conversion_factor
+                print("%19.11E" % val)
 
-def print_energies_OpenMX(out_files,
-                          conversion_factor,
-                          file_offset):
+    def _set_number_of_zerofill(self, npattern):
 
-    if file_offset is None:
-        etot_offset = 0.0
-    else:
-        data = get_energies_OpenMX(file_offset)
-        if len(data) > 1:
-            print("File %s contains too many energy entries" % file_offset)
-            exit(1)
-        etot_offset = data[0]
+        nzero = 1
 
-    print("# Etot")
-    for search_target in out_files:
+        while True:
+            npattern //= 10
+            if npattern == 0:
+                break
+            nzero += 1
 
-        etot = get_energies_OpenMX(search_target)
+        self._nzerofills = nzero
 
-        for idata in range(len(etot)):
-            val = etot[idata] - etot_offset
+    def _set_unit_conversion_factor(self, str_unit):
 
-            val *= conversion_factor
+        if str_unit == "ev":
+            disp_conv_factor = 1.0
+            energy_conv_factor = 2.0 * self._RYDBERG_TO_EV
+            force_conv_factor = energy_conv_factor / self._BOHR_TO_ANGSTROM
 
-            print("%19.11E" % val)
+        elif str_unit == "rydberg":
+            disp_conv_factor = 1.0 / self._BOHR_TO_ANGSTROM
+            energy_conv_factor = 2.0
+            force_conv_factor = 2.0
 
+        elif str_unit == "hartree":
+            disp_conv_factor = 1.0 / self._BOHR_TO_ANGSTROM
+            energy_conv_factor = 1.0
+            force_conv_factor = 1.0
 
-def refold(x):
-    if x >= 0.5:
-        return x - 1.0
-    elif x < -0.5:
-        return x + 1.0
-    else:
-        return x
+        else:
+            raise RuntimeError("This cannot happen")
 
+        self._disp_conversion_factor = disp_conv_factor
+        self._force_conversion_factor = force_conv_factor
+        self._energy_conversion_factor = energy_conv_factor
 
-def get_unit_conversion_factor(str_unit):
+    def _set_output_flags(self, output_flags):
+        self._print_disp, self._print_force, \
+        self._print_energy, self._print_born = output_flags
 
-    Bohr_radius = 0.52917721067
-    Rydberg_to_eV = 13.60569253
+    @property
+    def nat(self):
+        return self._nat
 
-    disp_conv_factor = 1.0
-    energy_conv_factor = 1.0
-    force_conv_factor = 1.0
+    @property
+    def inverse_lattice_vector(self):
+        return self._inverse_lattice_vector
 
-    if str_unit == "ev":
-        disp_conv_factor = 1.0
-        energy_conv_factor = 2.0 * Rydberg_to_eV
-        force_conv_factor = energy_conv_factor
+    def _get_coordinate_and_force_outfile(self, out_file):
+        """
+        Return fractional coordinates and atomic forces in units of Hartree/Bohr
+        """
+        search_flag = "<coordinates.forces"
+        f = open(out_file, 'r')
+        line = f.readline()
+        found_tag = False
 
-    elif str_unit == "rydberg":
-        disp_conv_factor = 1.0 / Bohr_radius
-        energy_conv_factor = 2.0
-        force_conv_factor = 2.0
+        x = np.zeros((self._nat, 3))
+        force = np.zeros((self._nat, 3))
 
-    elif str_unit == "hartree":
-        disp_conv_factor = 1.0 / Bohr_radius
-        energy_conv_factor = 1.0
-        force_conv_factor = 1.0
+        while line:
+            if search_flag in line:
+                found_tag = True
+                f.readline()  # skip one line
+                for i in range(self._nat):
+                    line = f.readline()
+                    x[i][:] = [float(t) for t in line.rstrip().split()[2:5]]
+                    force[i][:] = [float(t) for t in line.rstrip().split()[5:]]
+                break
+            line = f.readline()
 
-    else:
-        print("This cannot happen")
-        exit(1)
+        if not found_tag:
+            raise RuntimeError("%s tag not found in %s" % (search_flag, out_file))
 
-    return disp_conv_factor, force_conv_factor, energy_conv_factor
+        x = np.array(x)
+        for i in range(self._nat):
+            x[i, :] = np.dot(x[i, :], self._inverse_lattice_vector.transpose())
 
+        return x, np.array(force)
 
-def parse(dat_init, out_files, out_file_offset, str_unit,
-          output_flags):
+    @staticmethod
+    def _get_energies_outfile(out_file):
 
-    aa, aa_inv, nat, x_frac0 = read_OpenMX_input(dat_init)
+        target = "Utot."
+        etot = []
 
-    scale_disp, scale_force, scale_energy = get_unit_conversion_factor(
-        str_unit)
+        f = open(out_file, 'r')
+        for line in f:
+            ss = line.strip().split()
+            if len(ss) > 0 and ss[0] == target:
+                etot.extend([float(ss[1])])
+                break
+            else:
+                continue
 
-    print_disp, print_force, print_energy, _ = output_flags
+        if len(etot) == 0:
+            raise RuntimeError("Total energy not found.")
 
-    if print_disp is True and print_force is True:
-        print_displacements_and_forces_OpenMX(out_files,
-                                              aa, aa_inv, nat,
-                                              x_frac0,
-                                              scale_disp,
-                                              scale_force,
-                                              out_file_offset)
-    elif print_disp is True:
-        print_displacements_OpenMX(out_files,
-                                   aa, aa_inv, nat,
-                                   x_frac0,
-                                   scale_disp,
-                                   out_file_offset)
-
-    elif print_force is True:
-        print_atomicforces_OpenMX(out_files,
-                                  nat,
-                                  scale_force,
-                                  out_file_offset)
-
-    elif print_energy is True:
-        print_energies_OpenMX(out_files,
-                              scale_energy,
-                              out_file_offset)
+        return np.array(etot, dtype=np.float)
