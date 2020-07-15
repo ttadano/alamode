@@ -177,28 +177,21 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
     # Print data
     if code == "VASP":
         handler = vasp.VaspParser()
-        handler.parse(file_original, file_results, args.offset,
-                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "QE":
         handler = qe.QEParser()
-        handler.parse(file_original, file_results, args.offset,
-                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "xTAPP":
         handler = xtapp.xTappParser()
-        handler.parse(file_original, file_results, args.offset,
-                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "OpenMX":
         handler = openmx.OpenmxParser()
-        handler.parse(file_original, file_results, args.offset,
-                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "LAMMPS":
         handler = lammps.LammpsParser()
-        handler.parse(file_original, file_results, args.offset,
-                      str_unit, output_flags, args.emin, args.emax)
+
+    handler.parse(file_original, file_results, args.offset,
+                  str_unit, output_flags, args.emin, args.emax)
 
 if __name__ == "__main__":
 
