@@ -120,16 +120,18 @@ class QEParser(object):
                 f.write(entry)
             f.write("\n")
 
+        self._counter += 1
+
     def _print_displacements_and_forces(self, pwout_files,
                                         file_offset, filter_emin, filter_emax):
 
         x0 = np.round(self._x_fractional, 8)
-        lavec_transpose = self._lattice_vector.transpose()
+        lavec_transpose = self._lattice_vector.transpose() / self._BOHR_TO_ANGSTROM
         vec_refold = np.vectorize(self._refold)
 
         # Parse offset component
         if file_offset is None:
-            disp_offset = np.zeros((self._nat, 3))
+            disp_offset = np.zeros((1, self._nat, 3))
             force_offset = np.zeros((self._nat, 3))
             epot_offset = 0.0
 
@@ -175,20 +177,21 @@ class QEParser(object):
 
             epot = np.array(epot, dtype=np.float)
             epot -= epot_offset
+            epot *= self._RYDBERG_TO_EV
 
             for idata in range(num_data_disp):
 
                 if filter_emin is not None:
-                    if filter_emin > epot[idata] * self._RYDBERG_TO_EV:
+                    if filter_emin > epot[idata]:
                         continue
 
                 if filter_emax is not None:
-                    if filter_emax < epot[idata] * self._RYDBERG_TO_EV:
+                    if filter_emax < epot[idata]:
                         continue
 
                 if self._print_disp:
                     disp = x[idata, :, :] - x0 - disp_offset
-                    disp = np.dot(vec_refold(disp[0,:,:]), lavec_transpose)
+                    disp = np.dot(vec_refold(disp[0, :, :]), lavec_transpose)
                     disp *= self._disp_conversion_factor
 
                 if self._print_force:
@@ -196,7 +199,7 @@ class QEParser(object):
                     f *= self._force_conversion_factor
 
                 print("# Filename: %s, Snapshot: %d, E_pot (eV): %s" %
-                      (search_target, idata + 1, epot[idata] * self._RYDBERG_TO_EV))
+                      (search_target, idata + 1, epot[idata]))
 
                 if self._print_disp and self._print_force:
                     for i in range(self._nat):
@@ -660,16 +663,16 @@ class QEParser(object):
     def _set_unit_conversion_factor(self, str_unit):
 
         if str_unit == "ev":
+            self._disp_conversion_factor = self._BOHR_TO_ANGSTROM
+            self._energy_conversion_factor = self._RYDBERG_TO_EV
+
+        elif str_unit == "rydberg":
             self._disp_conversion_factor = 1.0
             self._energy_conversion_factor = 1.0
 
-        elif str_unit == "rydberg":
-            self._disp_conversion_factor = 1.0 / self._BOHR_TO_ANGSTROM
-            self._energy_conversion_factor = 1.0 / self._RYDBERG_TO_EV
-
         elif str_unit == "hartree":
-            self._disp_conversion_factor = 1.0 / self._BOHR_TO_ANGSTROM
-            self._energy_conversion_factor = 0.5 / self._RYDBERG_TO_EV
+            self._disp_conversion_factor = 1.0
+            self._energy_conversion_factor = 0.5
 
         else:
             raise RuntimeError("This cannot happen.")
