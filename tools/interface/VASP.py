@@ -164,13 +164,13 @@ class VaspParser(object):
         if file_offset is None:
             disp_offset = np.zeros((self._nat, 3))
             force_offset = np.zeros((self._nat, 3))
-            epot_offset = 0
+            epot_offset = 0.0
 
         else:
             x0_offset, force_offset \
                 = self._get_coordinates_and_forces_vasprunxml(file_offset)
             epot_offset, _ = self._get_energies_vasprunxml(file_offset)
-            epot_offset = np.array(epot_offset, dtype='float')
+            epot_offset = np.array(epot_offset, dtype=np.float)
             try:
                 x0_offset = np.reshape(x0_offset, (self._nat, 3))
             except:
@@ -184,7 +184,7 @@ class VaspParser(object):
             disp_offset = x0_offset - x0
 
             if len(epot_offset) > 1:
-                print("File %s contains too many energy entries" % file_offset)
+                raise RuntimeError("File %s contains too many energy entries" % file_offset)
 
         for search_target in xml_files:
 
@@ -201,7 +201,7 @@ class VaspParser(object):
             if ndata_energy != ndata:
                 raise RuntimeError("The numbers of displacement and energy entries are different.")
 
-            epot = np.array(epot, dtype='float')
+            epot = np.array(epot, dtype=np.float)
             epot -= epot_offset
 
             if self._print_disp:
@@ -237,9 +237,9 @@ class VaspParser(object):
                         print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i, 0],
                                                                              disp[i, 1],
                                                                              disp[i, 2],
-                                                                             f[i][0],
-                                                                             f[i][1],
-                                                                             f[i][2]))
+                                                                             f[i, 0],
+                                                                             f[i, 1],
+                                                                             f[i, 2]))
                 elif self._print_disp:
                     for i in range(self._nat):
                         print("%15.7F %15.7F %15.7F" % (disp[i, 0],
@@ -247,9 +247,9 @@ class VaspParser(object):
                                                         disp[i, 2]))
                 elif self._print_force:
                     for i in range(self._nat):
-                        print("%15.8E %15.8E %15.8E" % (f[i][0],
-                                                        f[i][1],
-                                                        f[i][2]))
+                        print("%15.8E %15.8E %15.8E" % (f[i, 0],
+                                                        f[i, 1],
+                                                        f[i, 2]))
 
     def _print_energies(self, xml_files, file_offset):
 
