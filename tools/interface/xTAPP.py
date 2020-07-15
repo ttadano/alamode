@@ -13,7 +13,7 @@
 import numpy as np
 
 
-class xTappParser(object):
+class XtappParser(object):
 
     def __init__(self):
         self._prefix = None

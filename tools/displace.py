@@ -398,7 +398,10 @@ if __name__ == '__main__':
     prefix = args.prefix
     #params = get_original_parameter_set(code, file_original)
     #structure = vasp.VaspParser()
-    structure = qe.QEParser()
+    #structure = xtapp.xTappParser()
+    #structure = qe.QEParser()
+    #structure = lammps.LammpsParser()
+    structure = openmx.OpenmxParser()
     structure.load_initial_structure(file_original)
 
     print(" Output format                  : %s" % struct_format)

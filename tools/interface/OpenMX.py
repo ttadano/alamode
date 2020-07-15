@@ -4,6 +4,7 @@
 # Interface to OpenMX (http://openmx-square.org)
 #
 # Copyright (c) 2018 Yuto Tanaka
+# Copyright (c) 2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -13,78 +14,132 @@
 import numpy as np
 
 
-def read_OpenMX_input(file_original):
+class OpenmxParser(object):
 
-    search_target = [
-        "atoms.number", "atoms.speciesandcoordinates.unit",
-        "<atoms.speciesandcoordinates", "<atoms.unitvectors"
-    ]
+    def __init__(self):
+        self._prefix = None
+        self._lattice_vector = None
+        self._inverse_lattice_vector = None
+        self._kd = None
+        self._initial_charges = None
+        self._common_settings = None
+        self._nat = 0
+        self._x_fractional = None
+        self._counter = 1
+        self._nzerofills = 0
+        self._disp_conversion_factor = 1.0
+        self._energy_conversion_factor = 1.0
+        self._force_conversion_factor = 1.0
+        self._initial_structure_loaded = False
+        self._print_disp = True
+        self._print_force = True
+        self._print_energy = False
+        self._print_born = False
+        self._BOHR_TO_ANGSTROM = 0.5291772108
+        self._RYDBERG_TO_EV = 13.60569253
 
-    # open original file
-    f = open(file_original, 'r')
+    def load_initial_structure(self, file_original):
 
-    # set initial patameters
-    nat = 0
-    lavec_flag = 0
-    lavec_row = 0
-    lavec = np.zeros([3, 3])
+        search_target = [
+            "atoms.number", "atoms.speciesandcoordinates.unit",
+            "<atoms.speciesandcoordinates", "<atoms.unitvectors",
+            "atoms.speciesandcoordinates>"
+        ]
 
-    coord_flag = 0
-    coord_row = 0
+        nat = None
+        lavec = []
+        common_settings = []
+        kd = []
+        x_frac0 = []
+        initial_charges = []
 
-    # read original file and pull out some information
-    for line in f:
-        ss = line.strip().split()
-        # number of atoms
-        if len(ss) > 0 and ss[0].lower() == search_target[0]:
-            nat = int(ss[1])
+        # read original file and pull out some information
 
-        # atomic coordinates
-        if coord_flag == 1:
-            for j in range(3):
-                x_frac0[coord_row][j] = float(ss[j+2])
+        with open(file_original, 'r') as f:
+            lines = f.read().splitlines()
 
-            coord_row += 1
-            if coord_row == nat:
-                coord_flag = 0
+            for i, line in enumerate(lines):
 
-        # latice vector
-        if lavec_flag == 1:
-            for i in range(3):
-                lavec[lavec_row][i] = float(ss[i])
-            lavec_row += 1
-            if lavec_row == 3:
-                lavec_flag = 0
+                if search_target[0] in line.lower():
+                    nat = int(line.strip().split()[-1])
 
-        # unit of atomic coordinates
-        if len(ss) > 0 and ss[0].lower() == search_target[1]:
-            coord_unit = ss[1].lower()
+                elif search_target[1] in line.lower():
+                    coord_unit = line.strip().split()[-1].lower()
 
-        if len(ss) > 0 and ss[0].lower() == search_target[2]:
-            coord_flag = 1
-            # initialize x_frac0 array
-            x_frac0 = np.zeros([nat, 3])
+                elif search_target[2] in line.lower():
+                    ipos_coord = i + 1
 
-        if len(ss) > 0 and ss[0].lower() == search_target[3]:
-            lavec_flag = 1
+                elif search_target[4] in line.lower():
+                    fpos_coord = i
 
-        if np.linalg.norm(lavec) > 0 and lavec_flag == 0:
-            break
+                elif search_target[3] in line.lower():
+                    ipos_lavec = i + 1
 
-    # errors
-    if nat == 0:
-        print("Could not read dat file properly.")
-        exit(1)
+            if nat is None:
+                raise RuntimeError("Failed to extract the Atoms.Number value from the file.")
 
-    lavec_inv = (np.linalg.inv(lavec)).T
-    # convert to frac
-    if coord_unit == "ang":
-        for i in range(nat):
-            x_frac0[i] = np.dot(lavec_inv, x_frac0[i])
+            if nat != (fpos_coord - ipos_coord):
+                raise RuntimeError("The number of entries in Atoms.SpeciesAndCoordinates does not match"
+                                   "with the Atoms.Number value.")
 
-    f.close()
+            for line in lines[ipos_coord:fpos_coord]:
+                line_split = line.strip().split()
+                kd.append(line_split[1])
+                x_frac0.append([float(t) for t in line_split[2:5]])
+                initial_charges.append([float(t) for t in line_split[5:7]])
 
-    return lavec, lavec_inv, nat, x_frac0
+            for line in lines[ipos_lavec:ipos_lavec+3]:
+                lavec.append([float(t) for t in line.strip().split()])
+
+            common_settings.append(lines[:ipos_coord])
+            common_settings.append(line[fpos_coord:])
+
+        x_frac0 = np.array(x_frac0)
+        lavec = np.array(lavec).transpose()
+        lavec_inv = np.linalg.inv(lavec)
+        initial_charges = np.array(initial_charges)
+
+        # convert to frac
+        if coord_unit == "ang":
+            for i in range(nat):
+                x_frac0[i] = np.dot(x_frac0[i], lavec_inv)
+
+        self._lattice_vector = lavec
+        self._inverse_lattice_vector = np.linalg.inv(lavec)
+        self._nat = nat
+        self._x_fractional = x_frac0
+        self._kd = kd
+        self._initial_charges = initial_charges
+        self._common_settings = common_settings
+        self._initial_structure_loaded = True
+
+
+    def generate_structures(self, prefix, header_list, disp_list):
+
+        self._set_number_of_zerofill(len(disp_list))
+        self._prefix = prefix
+
+        for header, disp in zip(header_list, disp_list):
+            self._generate_input(header, disp)
+
+    def parse(self, initial_pwin, pwout_files, pwout_file_offset, str_unit,
+              output_flags, filter_emin=None, filter_emax=None):
+
+        if not self._initial_structure_loaded:
+            self.load_initial_structure(initial_pwin)
+
+        self._set_unit_conversion_factor(str_unit)
+        self._set_output_flags(output_flags)
+
+        if self._print_disp or self._print_force:
+            self._print_displacements_and_forces(pwout_files,
+                                                 pwout_file_offset,
+                                                 filter_emin,
+                                                 filter_emax)
+        elif self._print_energy:
+            self._print_energies(pwout_files, pwout_file_offset)
+
+
 
 
 def generate_input(prefix, counter, disp, nzerofills, params_orig, file_in):
@@ -233,7 +288,7 @@ def print_displacements_OpenMX(out_files,
         try:
             x0_offset = np.reshape(x0_offset, (nat, 3))
         except:
-            print("File %s contains too many position entries" % file_offset)
+            raise RuntimeError("File %s contains too many position entries" % file_offset)
         disp_offset = x0_offset - x0
 
     for search_target in out_files:
@@ -275,7 +330,7 @@ def print_atomicforces_OpenMX(out_files,
         try:
             force_offset = np.reshape(data0, (nat, 3))
         except:
-            print("File %s contains too many force entries" % file_offset)
+            raise RuntimeError("File %s contains too many force entries" % file_offset)
 
     for search_target in out_files:
         data = get_atomicforces_OpenMX(search_target, nat)

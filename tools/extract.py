@@ -177,21 +177,18 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
     # Print data
     if code == "VASP":
         handler = vasp.VaspParser()
-        handler.parse(file_original, file_results, args.offset, str_unit, output_flags, args.emin, args.emax)
-        # vasp.parse(file_original, file_results,
-        #            args.offset, str_unit,
-        #            output_flags,
-        #            args.emin, args.emax)
+        handler.parse(file_original, file_results, args.offset,
+                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "QE":
-        qe.parse(file_original, file_results,
-                 args.offset, str_unit,
-                 output_flags)
+        handler = qe.QEParser()
+        handler.parse(file_original, file_results, args.offset,
+                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "xTAPP":
-        xtapp.parse(file_original, file_results,
-                    args.offset, str_unit,
-                    output_flags)
+        handler = xtapp.xTappParser()
+        handler.parse(file_original, file_results, args.offset,
+                      str_unit, output_flags, args.emin, args.emax)
 
     elif code == "OpenMX":
         openmx.parse(file_original, file_results,
@@ -199,10 +196,9 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
                      output_flags)
 
     elif code == "LAMMPS":
-        lammps.parse(file_original, file_results,
-                     args.offset, str_unit,
-                     output_flags)
-
+        handler = lammps.LammpsParser()
+        handler.parse(file_original, file_results, args.offset,
+                      str_unit, output_flags, args.emin, args.emax)
 
 if __name__ == "__main__":
 
