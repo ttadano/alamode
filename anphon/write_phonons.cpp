@@ -1046,7 +1046,7 @@ void Writes::write_normal_mode_direction() const
 
 void Writes::write_eigenvectors() const
 {
-    unsigned int i, j;
+    unsigned int i, j, k;
     const auto nk = kpoint->nk;
     const auto neval = dynamical->neval;
     std::ofstream ofs_evec;
@@ -1086,6 +1086,23 @@ void Writes::write_eigenvectors() const
     ofs_evec << "\n\n";
     ofs_evec << "# Eigenvalues and eigenvectors for each phonon modes below:" << std::endl << std::endl;
 
+    unsigned int **index_bconnect_tmp;
+    memory->allocate(index_bconnect_tmp, nk, nbands);
+
+    if (dynamical->index_bconnect) {
+        for (i = 0; i < nk; ++i) {
+            for (j = 0; j < nbands; ++j) {
+                index_bconnect_tmp[i][j] = dynamical->index_bconnect[i][j];
+            }
+        }
+    } else {
+        for (i = 0; i < nk; ++i) {
+            for (j = 0; j < nbands; ++j) {
+                index_bconnect_tmp[i][j] = j;
+            }
+        }
+    }
+
     for (i = 0; i < nk; ++i) {
         ofs_evec << "## kpoint " << std::setw(7) << i + 1 << " : ";
         for (j = 0; j < 3; ++j) {
@@ -1093,7 +1110,10 @@ void Writes::write_eigenvectors() const
         }
         ofs_evec << std::endl;
         for (j = 0; j < nbands; ++j) {
-            auto omega2 = dynamical->eval_phonon[i][j];
+
+            k = index_bconnect_tmp[i][j];
+
+            auto omega2 = dynamical->eval_phonon[i][k];
             if (omega2 >= 0.0) {
                 omega2 = omega2 * omega2;
             } else {
@@ -1103,15 +1123,17 @@ void Writes::write_eigenvectors() const
             ofs_evec << "### mode " << std::setw(8) << j + 1 << " : ";
             ofs_evec << std::setw(15) << omega2 << std::endl;
 
-            for (unsigned int k = 0; k < neval; ++k) {
-                ofs_evec << std::setw(15) << real(dynamical->evec_phonon[i][j][k]);
-                ofs_evec << std::setw(15) << imag(dynamical->evec_phonon[i][j][k]) << std::endl;
+            for (unsigned int m = 0; m < neval; ++m) {
+                ofs_evec << std::setw(15) << real(dynamical->evec_phonon[i][k][m]);
+                ofs_evec << std::setw(15) << imag(dynamical->evec_phonon[i][k][m]) << std::endl;
             }
             ofs_evec << std::endl;
         }
         ofs_evec << std::endl;
     }
     ofs_evec.close();
+
+    memory->deallocate(index_bconnect_tmp);
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_evec;
     std::cout << " : Eigenvector of all k points" << std::endl;

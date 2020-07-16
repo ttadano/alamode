@@ -18,7 +18,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack
-LIBS = ${LAPACK} -L/usr/local/Cellar/fftw/3.3.8_1/lib/ -lfftw3 -L//usr/local/opt/libomp/lib/ -lomp
+LIBS = ${LAPACK} -L/usr/local/lib/ -lfftw3 -L//usr/local/opt/libomp/lib/ -lomp
 
 #----------------------------------------------
 # General rules
