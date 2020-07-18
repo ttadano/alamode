@@ -13,20 +13,44 @@ string(REGEX MATCH "ALAMODE_VERSION = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" alm_versio
 set(alm_version ${CMAKE_MATCH_1})
 MESSAGE("Setting up for ANPHON code (ALAMODE version: ${CMAKE_MATCH_1})")
 
-include_directories("/usr/local/include")
-set(fftlibrary "-L/usr/local/lib -lfftw3")
+if (FFTW3_ROOT)
+    include_directories("${FFTW3_ROOT}/include")
+    set(fftw3library "-L${FFTW3_ROOT}lib -lfftw3")
+endif()
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+find_package(Boost)
+if (Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+else()
+    if (BOOST_INCLUDE)
+        include_directories(${BOOST_INCLUDE})
+    else()
+        message(FATAL_ERROR "Boost was not found.
+        Please specify the location of boost include directories
+        via -DBOOST_INCLUDE option.")
+    endif()
+endif()
+
+find_package(Eigen3)
+if (Eigen3_FOUND)
+    include_directories(${EIGEN3_INCLUDE_DIR})
+else()
+    if (EIGEN3_INCLUDE)
+        include_directories(${EIGEN3_INCLUDE})
+    else()
+        message(FATAL_ERROR "Eigen3 was not found.
+        Please specify the location of boost include directories
+        via -DEIGEN3_INCLUDE option.")
+    endif()
+endif()
+
 find_package(LAPACK REQUIRED)
 include_directories(${Lapack_INCLUDE_DIRS})
-find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(MPI REQUIRED)
 include_directories(${MPI_C_INCLUDE_DIRS})
 
@@ -86,6 +110,11 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/timer.h
             ${PROJECT_SOURCE_DIR}/write_phonons.h)
 
+message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
+message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")
 # Executable
 add_executable(anphon ${SOURCES} ${HEADERS})
-target_link_libraries(anphon ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${MPI_C_LIBRARIES} ${fftlibrary})
+target_link_libraries(anphon ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${MPI_CXX_LIBRARIES})
+if (fftw3library)
+    target_link_libraries(${fftw3library})
+endif()
