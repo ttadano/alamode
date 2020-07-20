@@ -75,6 +75,7 @@ namespace PHON_NS
                                          const unsigned int [3]) const;
 
         void write_eigenvectors() const;
+        void write_eigenvectors_HDF5() const;
         void write_thermodynamics() const;
         void write_msd() const;
         void write_disp_correlation() const;

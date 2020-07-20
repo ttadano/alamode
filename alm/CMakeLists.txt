@@ -18,7 +18,8 @@ if (SPGLIB_PATH)
     include_directories("${SPGLIB_PATH}/include")
     set(spglib "-L${SPGLIB_PATH}/lib -lsymspg")
 else()
-    message(FATAL_ERROR "SPGLIB_PATH must be set via -DSPGLIB_PATH option.")
+    message("SPGLIB_PATH is not given by -DSPGLIB_PATH option. Just add -lsymspg.")
+    set(spglib "-lsymspg")
 endif()
 #
 # Add openmp flag if available
