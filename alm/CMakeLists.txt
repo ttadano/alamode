@@ -14,11 +14,12 @@ string(REGEX MATCH "ALAMODE_VERSION = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" alm_versio
 set(alm_version ${CMAKE_MATCH_1})
 MESSAGE("Setting up for ALM code (ALAMODE version: ${CMAKE_MATCH_1})")
 
-if (SPGLIB_PATH)
-    include_directories("${SPGLIB_PATH}/include")
-    set(spglib "-L${SPGLIB_PATH}/lib -lsymspg")
+if (SPGLIB_ROOT)
+    include_directories("${SPGLIB_ROOT}/include")
+    set(spglib "-L${SPGLIB_ROOT}/lib -L${SPGLIB_ROOT}/lib64 -lsymspg")
 else()
-    message(FATAL_ERROR "SPGLIB_PATH must be set via -DSPGLIB_PATH option.")
+    message("SPGLIB_ROOT is not given by -DSPGLIB_ROOT option. Just add -lsymspg.")
+    set(spglib "-lsymspg")
 endif()
 #
 # Add openmp flag if available
@@ -54,14 +55,31 @@ else()
     endif()
 endif()
 
+if (WITH_HDF5_SUPPORT)
+    add_definitions(-D_HDF5)
+    find_package(HDF5 COMPONENTS CXX)
+    if (HDF5_FOUND)
+        include_directories(${HDF5_INCLUDE_DIRS})
+        set(hdf5library ${HDF5_LIBRARIES})
+    else()
+        if (HDF5_ROOT)
+            include_directories("${HDF5_ROOT}/include")
+            set(hdf5library "-L${HDF5_ROOT}/lib -lhdf5_cpp -lhdf5")
+        else()
+            message(FATAL_ERROR "HDF5 was not found.
+            Please specify the HDF5 install directory
+            via -DHDF5_ROOT option.")
+        endif()
+    endif()
+endif()
+
 find_package(LAPACK REQUIRED)
 include_directories(${Lapack_INCLUDE_DIRS})
 
 # Source code
 include_directories("${PROJECT_SOURCE_DIR}/../include")
 set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp
-            ${PROJECT_SOURCE_DIR}/cluster.cpp
-            ${PROJECT_SOURCE_DIR}/constraint.cpp
+            ${PROJECT_SOURCE_DIR}/cluster.cpp ${PROJECT_SOURCE_DIR}/constraint.cpp
             ${PROJECT_SOURCE_DIR}/fcs.cpp
             ${PROJECT_SOURCE_DIR}/files.cpp
             ${PROJECT_SOURCE_DIR}/input_parser.cpp
@@ -98,7 +116,9 @@ add_executable(alm ${PROJECT_SOURCE_DIR}/main.cpp
                    ${PROJECT_SOURCE_DIR}/alm_cui.cpp
                    ${SOURCES} ${HEADERS})
 target_link_libraries(alm ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib})
-target_link_libraries(alm ${LAPACK_LIBRARIES})
+if (WITH_HDF5_SUPPORT)
+    target_link_libraries(alm ${hdf5library})
+endif()
 
 if (BUILD_LIBRARIES)
     set(serial "${alm_version}")
@@ -106,6 +126,9 @@ if (BUILD_LIBRARIES)
     # Shared library
     add_library(almcxx SHARED ${SOURCES})
     target_link_libraries(almcxx ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib})
+    if (WITH_HDF5_SUPPORT)
+        target_link_libraries(almcxx ${hdf5library})
+    endif()
     set_property(TARGET almcxx PROPERTY VERSION ${serial})
     set_property(TARGET almcxx PROPERTY SOVERSION ${soserial})
     install(TARGETS almcxx DESTINATION ${PROJECT_SOURCE_DIR}/lib)
