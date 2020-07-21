@@ -57,7 +57,7 @@ endif()
 
 if (WITH_HDF5_SUPPORT)
     add_definitions(-D_HDF5)
-    find_package(HDF5 COMPONENTS CXX REQUIRED)
+    find_package(HDF5 COMPONENTS CXX)
     if (HDF5_FOUND)
         include_directories(${HDF5_INCLUDE_DIRS})
         set(hdf5library ${HDF5_LIBRARIES})
