@@ -31,7 +31,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "isotope.h"
 #include "integration.h"
 #include "scph.h"
+#ifdef _HDF5
 #include "H5Cpp.h"
+#endif
 
 using namespace PHON_NS;
 
@@ -543,7 +545,9 @@ void Writes::write_phonon_info()
 
     if (dynamical->print_eigenvectors) {
         write_eigenvectors();
+#ifdef _HDF5
         write_eigenvectors_HDF5();
+#endif
     }
 
     if (dynamical->participation_ratio) {
@@ -1135,7 +1139,7 @@ void Writes::write_eigenvectors() const
     std::cout << " : Eigenvector of all k points" << std::endl;
 }
 
-
+#ifdef _HDF5
 void Writes::write_eigenvectors_HDF5() const
 {
     using namespace H5;
@@ -1363,6 +1367,7 @@ void Writes::write_eigenvectors_HDF5() const
 
     group_kpoint.close();
 }
+#endif
 
 
 double Writes::in_kayser(const double x) const

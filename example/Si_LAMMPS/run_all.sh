@@ -3,9 +3,9 @@
 # Please modify the following paths appropriately
 #export LD_LIBRARY_PATH=/Users/tadano/src/spglib/lib/:$LD_LIBRARY_PATH
 # Binaries 
-#LAMMPS=${HOME}/src/lammps/src/lmp_serial
-LAMMPS=/usr/local/bin/lmp
-ALAMODE_ROOT=${HOME}/Work/alamode/
+LAMMPS=${HOME}/src/lammps/cmake/_build/lmp
+#LAMMPS=/usr/local/bin/lmp
+ALAMODE_ROOT=${HOME}/src/alamode/
 
 # Generate displacement patterns
 
