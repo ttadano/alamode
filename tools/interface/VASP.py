@@ -35,6 +35,7 @@ class VaspParser(object):
         self._lattice_vector = None
         self._inverse_lattice_vector = None
         self._elements = None
+        self._kd = None
         self._nat_elem = None
         self._nat = 0
         self._x_fractional = None
@@ -88,9 +89,14 @@ class VaspParser(object):
             else:
                 xf = np.dot(x, invlavec)
 
+            kd = []
+            for i in range(len(nat_elem)):
+                kd.extend([i] * nat_elem[i])
+
         self._lattice_vector = lavec
         self._inverse_lattice_vector = invlavec
         self._elements = elements
+        self._kd = np.array(kd, dtype=int)
         self._nat_elem = nat_elem
         self._nat = np.sum(nat_elem)
         self._x_fractional = xf
@@ -385,6 +391,10 @@ class VaspParser(object):
     @property
     def inverse_lattice_vector(self):
         return self._inverse_lattice_vector
+
+    @property
+    def atomic_kinds(self):
+        return self._kd
 
     @property
     def x_fractional(self):

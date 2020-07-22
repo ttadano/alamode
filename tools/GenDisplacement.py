@@ -19,9 +19,12 @@ import cmath
 
 class AlamodeDisplace(object):
 
-    def __init__(self, displacement_mode, codeobj_base,
+    def __init__(self,
+                 displacement_mode,
+                 codeobj_base,
                  file_evec=None,
-                 file_primitive=None):
+                 file_primitive=None,
+                 verbosity=1):
         self._pattern = []
         self._primitive_lattice_vector = None
         self._inverse_primitive_lattice_vector = None
@@ -31,7 +34,7 @@ class AlamodeDisplace(object):
         self._counter = 1
         self._displacement_magnitude = 0.02
         self._md_snapshots = None  # displacements in angstrom unit
-        self._verbosity = 1
+        self._verbosity = verbosity
         self._classical = False
         self._commensurate_qpoints = []
         self._mapping_shift = None
@@ -72,13 +75,8 @@ class AlamodeDisplace(object):
                                    "options are used at the same time or '--pes' is invoked.")
 
         if file_evec:
-
             self._load_phonon_results(file_evec)
-
-            #print(self._omega2)
-
         else:
-
             if self._displacement_mode == "pes":
                 raise RuntimeError("The --evec option is necessary when '--pes' is invoked.")
 
@@ -100,28 +98,105 @@ class AlamodeDisplace(object):
                 print("/")
                 exit(0)
 
-    def generate(self, file_pattern=None,
+    def generate(self,
+                 file_pattern=None,
                  file_mddata=None,
                  option_every=None,
                  magnitude=0.00,
                  number_of_displacements=1,
-                 temperature=None):
+                 temperature=None,
+                 classical=False,
+                 option_pes=None,
+                 option_qrange=None):
 
         self._counter = 1
         self._displacement_magnitude = magnitude
+        self._classical = classical
 
         header_list = []
         disp_list = []
+
+        if self._displacement_mode == "fd":
+
+            if not file_pattern:
+                raise RuntimeError("pattern file must be given with --pattern option")
+            self._parse_displacement_patterns(file_pattern)
+
+            if self._verbosity > 0:
+                print(" Displacement mode              : Finite displacement\n")
+                print(" %d displacement pattern are generated from\n"
+                      " the given *.pattern_* files" % len(self._pattern))
+                print("")
+
+            for pattern in self._pattern:
+                header, disp = self._get_finite_displacement(pattern)
+                self._counter += 1
+                header_list.append(header)
+                disp_list.append(disp)
+
+            return header_list, disp_list
+
+        if self._displacement_mode == "random":
+
+            if self._verbosity > 0:
+                print(" Displacement mode              : Random displacement\n")
+                print(" %d randomly-displaced configurations are generated from\n"
+                      " the original supercell structure" % number_of_displacements)
+                print(" The direction of displacement is random, but the displacement\n"
+                      " magnitude of each atom is fixed to %.2f Angstrom" % self._displacement_magnitude)
+                print("")
+
+            disp_random = self._get_random_displacements(number_of_displacements,
+                                                         "gauss")
+            for i in range(number_of_displacements):
+                header = "Random disp. with mag %f : %i" % (self._displacement_magnitude,
+                                                            self._counter)
+                header_list.append(header)
+                disp_list.append(disp_random[i])
+                self._counter += 1
+
+            return header_list, disp_list
 
         if self._displacement_mode == "md":
 
             list_every = self._sample_md_snapshots(file_mddata, option_every)
 
             if self._verbosity > 0:
-                print(" The --load_mddata option is given:")
+                print(" Displacement mode              : MD sampling\n")
                 print(" Sampling range and interval: [%d:%d], interval = %d"
                       % (list_every[0] + 1, list_every[1], list_every[2]))
                 print(" %d snapshots are sampled from the LOAD_MDDATA file(s)" % len(self._md_snapshots))
+                print("")
+
+            ndisp = len(self._md_snapshots)
+
+            for i in range(ndisp):
+                header = "Snapshot sampled from MD data: %i" % self._counter
+                disp_tmp = self._md_snapshots[i]
+
+                # Convert disp_tmp in fractional coordinates
+                for j in range(self._supercell.nat):
+                    disp_tmp[j] = np.dot(disp_tmp[j],
+                                         self._supercell.inverse_lattice_vector.transpose())
+
+                header_list.append(header)
+                disp_list.append(disp_tmp)
+                self._counter += 1
+
+            return header_list, disp_list
+
+        if self._displacement_mode == "md_plus_random":
+
+            list_every = self._sample_md_snapshots(file_mddata, option_every)
+
+            if self._verbosity > 0:
+                print(" Displacement mode              : MD sampling + random displacement\n")
+                print(" Sampling range and interval: [%d:%d], interval = %d"
+                      % (list_every[0] + 1, list_every[1], list_every[2]))
+                print(" %d snapshots are sampled from the LOAD_MDDATA file(s)" % len(self._md_snapshots))
+                print(" Then, random displacements of %.2f Angstrom are\n"
+                      " added to each atom in each snapshot.\n"
+                      " The direction of displacement is random." % self._displacement_magnitude)
                 print("")
 
             ndisp = len(self._md_snapshots)
@@ -144,33 +219,71 @@ class AlamodeDisplace(object):
 
             return header_list, disp_list
 
-        if self._displacement_mode == "fd":
+        if self._displacement_mode == "random_normalcoordinate":
 
-            if not file_pattern:
-                raise RuntimeError("pattern file must be given with --pattern option")
-            self._parse_displacement_patterns(file_pattern)
+            if self._verbosity > 0:
+                print(" Displacement mode              : Random displacement in normal coordinate\n")
+                print(" %d randomly-displaced configurations are generated from\n"
+                      " the original supercell structure" % number_of_displacements)
+                print(" The normal coordinate distribution is generated randomly from \n"
+                      " the following conditions:\n\n"
+                      " Temperature : %f K" % temperature)
+                if self._classical:
+                    print(" Statistics  : Classical (no zero-point vibration)")
+                else:
+                    print(" Statistics  : Quantum (with zero-point vibration)")
+                print("")
 
-            for pattern in self._pattern:
-                header, disp = self._get_finite_displacement(pattern)
-                self._counter += 1
-                header_list.append(header)
-                disp_list.append(disp)
-
-            return header_list, disp_list
-
-        if self._displacement_mode == "random":
-            disp_random = self._get_random_displacements(number_of_displacements,
-                                                         "gauss")
+            disp_random = self._get_random_displacements_normalcoordinate(number_of_displacements,
+                                                                          temperature)
             for i in range(number_of_displacements):
-                header = "Random disp. with mag %f : %i" % (self._displacement_magnitude,
-                                                            self._counter)
+                header = "Random disp. in normal coordinates at T = %f K: %i" % (temperature,
+                                                                                 self._counter)
                 header_list.append(header)
-                disp_list.append(disp_random[i])
+                disp_list.append(disp_random[:, :, i])
                 self._counter += 1
 
             return header_list, disp_list
 
-        return header_list, disp_list
+        if self._displacement_mode == "pes":
+
+            if option_pes is None or option_qrange is None:
+                raise RuntimeError("--pes and --Qrange options should be given.")
+
+            target_q, target_mode = [int(t) - 1 for t in option_pes.split()]
+            Qmin, Qmax = option_qrange.split()
+            Qlist = np.linspace(float(Qmin), float(Qmax), number_of_displacements)
+
+            if self._verbosity > 0:
+                print(" Displacement mode              : Along specific normal coordinate\n")
+                print(" %d configurations are generated from\n"
+                      " the original supercell structure" % number_of_displacements)
+                print(" The normal coordinate of the following phonon mode is excited:\n\n"
+                      " xk = %f %f %f" %
+                      (self._qpoints[target_q, 0],
+                       self._qpoints[target_q, 1],
+                       self._qpoints[target_q, 2]))
+                print(" branch : %d" % (target_mode + 1))
+                print("")
+
+            disp_pes = self._generate_displacements_pes(np.array(Qlist), target_q, target_mode)
+
+            for i in range(number_of_displacements):
+                header = "Displacement along normal coordinate Q (q= %f %f %f, branch : %d), " \
+                         "magnitude = %f (u^{1/2} ang)" \
+                         % (self._qpoints[target_q, 0],
+                            self._qpoints[target_q, 1],
+                            self._qpoints[target_q, 2],
+                            target_mode + 1, Qlist[i])
+
+                header_list.append(header)
+                disp_list.append(disp_pes[:, :, i])
+                self._counter += 1
+
+            return header_list, disp_list
+
+        else:
+            raise RuntimeError("This cannot happen")
 
     def _sample_md_snapshots(self, file_mddata, str_every):
 
@@ -318,6 +431,9 @@ class AlamodeDisplace(object):
 
     def _get_random_displacements_normalcoordinate(self, ndata, temperature):
 
+        if temperature is None:
+            raise RuntimeError("The temperature must be given with the --temp option.")
+
         nq = len(self._qpoints)
         Q_R = np.zeros((nq, self._nmode, ndata))
         Q_I = np.zeros((nq, self._nmode, ndata))
@@ -346,7 +462,8 @@ class AlamodeDisplace(object):
                 for imode in range(self._nmode):
                     for icrd in range(3):
                         disp[iat, icrd, :] += Q_R[iq, imode, :] * \
-                                              self._evec[iq, imode, 3 * jat + icrd].real * phase_real
+                                              self._evec[iq, imode, 3 * jat + icrd].real \
+                                              * phase_real
 
             for iq in self._qlist_uniq:
                 xq_tmp = self._qpoints[iq, :]
@@ -358,13 +475,19 @@ class AlamodeDisplace(object):
                         disp[iat, icrd, :] += math.sqrt(2.0) * (
                                 Q_R[iq, imode, :] * ctmp.real - Q_I[iq, imode, :] * ctmp.imag)
 
-        kd = np.array(kd, dtype=int)
-        for iat in range(nat):
-            factor[iat] = 1.0 / math.sqrt(mass[kd[iat]] * amu_ry * float(nq))
+        factor = np.zeros(self._supercell.nat)
+        for iat in range(self._supercell.nat):
+            factor[iat] = 1.0 / math.sqrt(self._mass[self._supercell.atomic_kinds[iat]]
+                                          * self._AMU_RYD * float(nq))
 
         for idata in range(ndata):
             for i in range(3):
                 disp[:, i, idata] = factor[:] * disp[:, i, idata]
+
+            # Transform to the fractional coordinate
+            for iat in range(self._supercell.nat):
+                disp[iat, :, idata] = np.dot(disp[iat, :, idata],
+                                             self._supercell.inverse_lattice_vector.transpose())
 
         return disp
 
@@ -377,10 +500,10 @@ class AlamodeDisplace(object):
 
         for iq in range(nq):
             for imode in range(nmode):
-                if self.omega2[iq, imode] < 0.0:
-                    omega[iq, imode] = math.sqrt(-self.omega2[iq, imode])
+                if self._omega2[iq, imode] < 0.0:
+                    omega[iq, imode] = math.sqrt(-self._omega2[iq, imode])
                 else:
-                    omega[iq, imode] = math.sqrt(self.omega2[iq, imode])
+                    omega[iq, imode] = math.sqrt(self._omega2[iq, imode])
 
                 if omega[iq, imode] > 1.0e-6:
                     if self._classical:
@@ -391,6 +514,46 @@ class AlamodeDisplace(object):
                             (1.0 + 2.0 * self._n_bose(omega[iq, imode], temp)) / (2.0 * omega[iq, imode]))
 
         return sigma
+
+    def _generate_displacements_pes(self, Q_array, iq, imode):
+
+        tol_zero = 1.0e-3
+        Q_R = Q_array / self._BOHR_TO_ANGSTROM  # in units of u^{1/2} Bohr
+
+        ndata = len(Q_R)
+        # nq = len(self._qpoints)
+        xq_tmp = self._qpoints[iq, :]
+
+        is_commensurate = False
+        for xq in self._commensurate_qpoints:
+            xtmp = (xq - xq_tmp) % 1.0
+            if math.sqrt(np.dot(xtmp, xtmp)) < tol_zero:
+                is_commensurate = True
+                break
+        if not is_commensurate:
+            raise RuntimeWarning("The q point specified by --pes is "
+                                 "not commensurate with the supercell.")
+
+        disp = np.zeros((self._supercell.nat, 3, ndata))
+
+        for iat in range(self._supercell.nat):
+            xshift = self._mapping_shift[iat, :]
+            jat = self._mapping_s2p[iat]
+            phase_real = math.cos(2.0 * math.pi * np.dot(xq_tmp, xshift))
+            for icrd in range(3):
+                disp[iat, icrd, :] += Q_R[:] * \
+                                      self._evec[iq, imode, 3 * jat + icrd].real * phase_real
+
+        factor = np.zeros(self._supercell.nat)
+        for iat in range(self._supercell.nat):
+            # factor[iat] = 1.0 / math.sqrt(self._mass[self._supercell.atomic_kinds[iat]] * float(nq))
+            factor[iat] = 1.0 / math.sqrt(self._mass[self._supercell.atomic_kinds[iat]])
+
+        for idata in range(ndata):
+            for i in range(3):
+                disp[:, i, idata] = factor[:] * disp[:, i, idata]
+
+        return disp
 
     def _find_commensurate_q(self):
 
@@ -591,39 +754,6 @@ class AlamodeDisplace(object):
         self._qlist_uniq = qlist_uniq
         self._mass = mass
         self._nmode = nmode
-
-
-
-
-
-    def generate_PES_displacements(Q_in, xq, iq, imode, evec, nat, map_s2p, shift, kd, mass):
-
-        Bohr_in_AA = 0.52917721067
-        Q_R = Q_in / Bohr_in_AA  # in units of u^{1/2} Bohr
-
-        ndata = len(Q_R)
-        nq = len(xq)
-
-        disp = np.zeros((nat, 3, ndata))
-
-        for iat in range(nat):
-            xshift = shift[iat, :]
-            jat = map_s2p[iat]
-            xq_tmp = xq[iq, :]
-            phase_real = math.cos(2.0 * math.pi * np.dot(xq_tmp, xshift))
-            for icrd in range(3):
-                disp[iat, icrd, :] += Q_R[:] * \
-                                      evec[iq, imode, 3 * jat + icrd].real * phase_real
-
-        factor = np.zeros(nat)
-        for iat in range(nat):
-            factor[iat] = 1.0 / math.sqrt(mass[kd[iat]] * float(nq))
-
-        for idata in range(ndata):
-            for i in range(3):
-                disp[:, i, idata] = factor[:] * disp[:, i, idata]
-
-        return disp
 
     @staticmethod
     def _char_xyz(entry):

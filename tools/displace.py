@@ -18,6 +18,7 @@ Input structure file generator for displaced configurations.
 
 from __future__ import print_function
 import argparse
+import numpy as np
 from interface.VASP import VaspParser
 from interface.QE import QEParser
 from interface.xTAPP import XtappParser
@@ -72,10 +73,10 @@ parser.add_argument('--temp', type=float, default=None,
 parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
                     help="Specify the range and interval of data sampling. "
                          "--every=1:1000:10 means sampling one structure for every 10 snapshots"
-                         "from the 1st step to the 1000th step.Used if --MD is given. "
+                         "from the 1st step to the 1000th step. Used if --MD is given."
                          "(default: 50)")
 
-parser.add_argument('-md', '--load_mddata', type=str, nargs='+',
+parser.add_argument('-md', '--load_mddata', type=str, nargs='+', default=None,
                     help="Specify the file(s) containing displacements of MD trajectories.")
 
 parser.add_argument('--prim', type=str, default=None,
@@ -90,17 +91,19 @@ parser.add_argument('-nd', '--num_disp', type=int, default=1,
 parser.add_argument('-cl', '--classical', action="store_true", dest="classical", default=False,
                     help="Use classical expectation value for <Q^2>.")
 
-parser.add_argument('-p', '--print', action="store_true", dest="print_disp", default=False,
+parser.add_argument('-p', '--print', action="store_true", dest="print_disp_stdout", default=False,
                     help="Print displacements to stdout")
 
-parser.add_argument('--pes', type=str, default=None,
-                    help="Specify the target mode to compute PES.")
+parser.add_argument('--pes', type=str, default=None, metavar='"q_index branch_index"',
+                    help="Specify the target mode to displace atoms for calculating "
+                         "the potential energy surface. --pes='5 10' will generate displacements"
+                         "that correspond to the phonon mode at the 5th q point and the 10th branch.")
 
-parser.add_argument('--Qrange', type=str, default=None,
-                    help='Range of normal coordinate Q in units of eV/Ang.')
+parser.add_argument('--Qrange', type=str, default=None, metavar='"Qmin Qmax"',
+                    help='Range of normal coordinate amplitude Q in units of amu^{1/2}*Angstrom')
 
 
-def check_options(args):
+def check_code_options(args):
     conditions = [args.VASP is None,
                   args.QE is None,
                   args.xTAPP is None,
@@ -149,6 +152,46 @@ def check_options(args):
     return code, file_original, struct_format, str_outfiles
 
 
+def check_displace_options(args):
+
+    conditions = [args.pattern_file is None,
+                  args.load_mddata is None,
+                  args.pes is None]
+
+    if conditions.count(True) == len(conditions) and args.random is False:
+        raise RuntimeError(
+            "Error : Either --pattern_file (-pf), --load_mddata (-md), --random, or --pes must be given.")
+
+    elif len(conditions) - conditions.count(True) > 1:
+        raise RuntimeError("Error : Either --pattern_file (-pf), "
+                           "--load_mddata (-md), and --pes cannot be used simultaneously."
+                           "Choose one of them.")
+
+    displacement_mode = None
+
+    if args.pattern_file:
+        displacement_mode = "fd"
+
+    elif args.load_mddata:
+        if args.random:
+            displacement_mode = "md_plus_random"
+        else:
+            displacement_mode = "md"
+
+    elif args.pes:
+        displacement_mode = "pes"
+    else:
+        if args.random:
+            if args.temp is not None:
+                displacement_mode = "random_normalcoordinate"
+            else:
+                displacement_mode = "random"
+        else:
+            raise RuntimeError("Unknown displacement mode")
+
+    return displacement_mode
+
+
 def get_code_object(code):
     if code == "VASP":
         return VaspParser()
@@ -166,40 +209,73 @@ def get_code_object(code):
         return LammpsParser()
 
 
+def displace(displacement_mode, codeobj, args):
+
+    verbosity = 1
+    if args.print_disp_stdout:
+        verbosity = 0
+
+    dispobj = AlamodeDisplace(displacement_mode, codeobj,
+                              file_primitive=args.prim,
+                              file_evec=args.evec,
+                              verbosity=verbosity)
+
+    return dispobj.generate(file_pattern=args.pattern_file,
+                            file_mddata=args.load_mddata,
+                            option_every=args.every,
+                            magnitude=args.mag,
+                            number_of_displacements=args.num_disp,
+                            temperature=args.temp,
+                            classical=args.classical,
+                            option_pes=args.pes,
+                            option_qrange=args.Qrange)
+
+
+def print_displacement_stdout(disp_list, codeobj):
+
+    lavec_transpose = codeobj.lattice_vector.transpose()
+
+    for disp in disp_list:
+        disp_tmp = np.dot(disp, lavec_transpose)
+        for i in range(codeobj.nat):
+            print("%15.7f %15.7f %15.7f" % (disp_tmp[i, 0],
+                                            disp_tmp[i, 1],
+                                            disp_tmp[i, 2]))
+        print('')
+
+
 if __name__ == '__main__':
-    print("*****************************************************************")
-    print("    displace.py --  Generator of displaced configurations        ")
-    print("                      Version. 1.2.0                             ")
-    print("*****************************************************************")
-    print("")
 
     args = parser.parse_args()
-    file_pattern = args.pattern_file
 
-    code, file_original, struct_format, str_outfiles = check_options(args)
+    if not args.print_disp_stdout:
+        print("*****************************************************************")
+        print("    displace.py --  Generator of displaced configurations        ")
+        print("                      Version. 1.2.0                             ")
+        print("*****************************************************************")
+        print("")
+
+    code, file_original, struct_format, str_outfiles = check_code_options(args)
+    displacement_mode = check_displace_options(args)
 
     codeobj = get_code_object(code)
     codeobj.load_initial_structure(file_original)
 
-    print(" Output format                  : %s" % struct_format)
-    print(" Structure before displacements : %s" % file_original)
-    print(" Output file names              : %s" % str_outfiles)
-    print(" Magnitude of displacements     : %s Angstrom" % args.mag)
-    print(" Number of atoms                : %i" % codeobj.nat)
-    print("")
+    if not args.print_disp_stdout:
+        print(" Output format                  : %s" % struct_format)
+        print(" Structure before displacements : %s" % file_original)
+        print(" Output file names              : %s" % str_outfiles)
+        print(" Magnitude of displacements     : %s Angstrom" % args.mag)
+        print(" Number of atoms                : %i" % codeobj.nat)
+        print("")
 
-    dispobj = AlamodeDisplace("fd", codeobj,
-                              file_primitive=args.prim,
-                              file_evec=args.evec)
-    header_list, disp_list = dispobj.generate(file_pattern=file_pattern,
-                                              file_mddata=args.load_mddata,
-                                              option_every=args.every,
-                                              magnitude=args.mag,
-                                              number_of_displacements=args.num_disp,
-                                              temperature=args.temp)
-
+    header_list, disp_list = displace(displacement_mode, codeobj, args)
     codeobj.generate_structures(args.prefix, header_list, disp_list)
-    print(" Number of displacements        : %i" % len(disp_list))
-    print("-----------------------------------------------------------------")
-    print("")
-    print("All input files are created.")
+
+    if not args.print_disp_stdout:
+        print(" Number of displacements        : %i" % len(disp_list))
+        print("-----------------------------------------------------------------")
+        print("")
+        print("All input files are created.")
+    else:
+        print_displacement_stdout(disp_list, codeobj)

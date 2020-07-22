@@ -314,6 +314,10 @@ class OpenmxParser(object):
         return self._inverse_lattice_vector
 
     @property
+    def atomic_kinds(self):
+        return self._kd
+
+    @property
     def x_fractional(self):
         return self._x_fractional
 
