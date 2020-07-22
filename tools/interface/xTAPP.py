@@ -3,7 +3,7 @@
 #
 # Interface to xTAPP (http://xtapp.cp.is.s.u-tokyo.ac.jp)
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014–2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -249,8 +249,16 @@ class XtappParser(object):
         return self._nat
 
     @property
+    def lattice_vector(self):
+        return self._lattice_vector
+
+    @property
     def inverse_lattice_vector(self):
         return self._inverse_lattice_vector
+
+    @property
+    def x_fractional(self):
+        return self._x_fractional
 
     def _print_displacements_and_forces(self, stdout_files,
                                         file_offset, filter_emin, filter_emax):

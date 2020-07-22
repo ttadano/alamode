@@ -295,8 +295,16 @@ class LammpsParser(object):
         return self._nat
 
     @property
+    def lattice_vector(self):
+        return self._lattice_vector
+
+    @property
     def inverse_lattice_vector(self):
         return self._inverse_lattice_vector
+
+    @property
+    def x_fractional(self):
+        return self._x_fractional
 
     @staticmethod
     def _get_coordinate_and_force_lammps(lammps_dump_file):

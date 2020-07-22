@@ -13,17 +13,17 @@
 #
 
 """
-Input file generator for displaced configurations.
+Input structure file generator for displaced configurations.
 """
 
 from __future__ import print_function
 import argparse
-import numpy as np
-import interface.VASP as vasp
-import interface.QE as qe
-import interface.xTAPP as xtapp
-import interface.OpenMX as openmx
-import interface.LAMMPS as lammps
+from interface.VASP import VaspParser
+from interface.QE import QEParser
+from interface.xTAPP import XtappParser
+from interface.OpenMX import OpenmxParser
+from interface.LAMMPS import LammpsParser
+from GenDisplacement import AlamodeDisplace
 
 parser = argparse.ArgumentParser()
 
@@ -59,139 +59,45 @@ parser.add_argument('--OpenMX',
                     help="dat file with equilibrium atomic \
                         positions (default: None)")
 
-parser.add_argument('pattern_file', metavar='prefix.pattern_*', type=str, nargs='+',
+parser.add_argument('-pf', '--pattern_file', metavar='prefix.pattern_*', type=str, nargs='+',
                     help="ALM pattern file(s) generated with MODE = suggest")
 
 parser.add_argument('--random', action="store_true", dest="random", default=False,
                     help="Generate randomly-displaced structures.")
 
-parser.add_argument('--temp', type=float,
+parser.add_argument('--temp', type=float, default=None,
                     help="Target temperature of the random distribution of \
-                        Q (default: 300). Used if --MD is not given.")
+                        Q (default: None). Used if --MD is not given.")
 
-parser.add_argument('--start', type=int, default=1,
-                    help="Specify where to start using the data. Used if --MD is given.\
-                         (default: 1)")
-
-parser.add_argument('--end', type=int, default=None,
-                    help="Specify where to finish using the data. Used if --MD is given. "
-                         " (default: None)")
-
-parser.add_argument('-e', '--every', type=int, default=50,
-                    help="Specify the interval of data sampling. Used if --MD is given. "
+parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
+                    help="Specify the range and interval of data sampling. "
+                         "--every=1:1000:10 means sampling one structure for every 10 snapshots"
+                         "from the 1st step to the 1000th step.Used if --MD is given. "
                          "(default: 50)")
 
-parser.add_argument('-md', '--load_mddata', type=str,
-                    help="Specify the file containing displacements of MD trajectories.")
+parser.add_argument('-md', '--load_mddata', type=str, nargs='+',
+                    help="Specify the file(s) containing displacements of MD trajectories.")
 
-parser.add_argument('--prim', type=str,
+parser.add_argument('--prim', type=str, default=None,
                     help="Specify the file containing structure data of the primitive lattice.")
 
-parser.add_argument('--evec', type=str,
+parser.add_argument('--evec', type=str, default=None,
                     help="Specify the file containing harmonic eigenvalues and eigenvectors.")
 
-parser.add_argument('-nd', '--num_disp', type=int,
+parser.add_argument('-nd', '--num_disp', type=int, default=1,
                     help="Specify the number of displacement patterns.")
 
 parser.add_argument('-cl', '--classical', action="store_true", dest="classical", default=False,
                     help="Use classical expectation value for <Q^2>.")
 
-parser.add_argument('--print', action="store_true", dest="print_disp", default=False,
+parser.add_argument('-p', '--print', action="store_true", dest="print_disp", default=False,
                     help="Print displacements to stdout")
 
-parser.add_argument('--pes', help="Specify the target mode to compute PES.")
-parser.add_argument('--Qrange', help='Range of normal coordinate Q in units of eV/Ang.')
+parser.add_argument('--pes', type=str, default=None,
+                    help="Specify the target mode to compute PES.")
 
-
-def parse_displacement_patterns(files_in):
-    pattern = []
-
-    for file in files_in:
-        pattern_tmp = []
-
-        f = open(file, 'r')
-        tmp, basis = f.readline().rstrip().split(':')
-        if basis == 'F':
-            print("Warning: DBASIS must be 'C'")
-            exit(1)
-
-        while True:
-            line = f.readline()
-
-            if not line:
-                break
-
-            line_split_by_colon = line.rstrip().split(':')
-            is_entry = len(line_split_by_colon) == 2
-
-            if is_entry:
-                pattern_set = []
-                natom_move = int(line_split_by_colon[1])
-                for i in range(natom_move):
-                    disp = []
-                    line = f.readline()
-                    line_split = line.rstrip().split()
-                    disp.append(int(line_split[0]))
-                    for j in range(3):
-                        disp.append(float(line_split[j + 1]))
-
-                    pattern_set.append(disp)
-                pattern_tmp.append(pattern_set)
-
-        print("File %s containts %i displacement patterns"
-              % (file, len(pattern_tmp)))
-
-        for entry in pattern_tmp:
-            if entry not in pattern:
-                pattern.append(entry)
-
-        f.close()
-
-    print("Number of unique displacement patterns = %d" % len(pattern))
-
-    return pattern
-
-
-def char_xyz(entry):
-    if entry % 3 == 0:
-        return 'x'
-    if entry % 3 == 1:
-        return 'y'
-    if entry % 3 == 2:
-        return 'z'
-
-
-def gen_displacement(counter_in, pattern, disp_mag, nat, invlavec):
-    poscar_header = "Disp. Num. %i" % counter_in
-    poscar_header += " ( %f Angstrom" % disp_mag
-
-    disp = np.zeros((nat, 3))
-
-    for displace in pattern:
-        atom = displace[0] - 1
-
-        poscar_header += ", %i : " % displace[0]
-
-        str_direction = ""
-
-        for i in range(3):
-            if abs(displace[i + 1]) > 1.0e-10:
-                if displace[i + 1] > 0.0:
-                    str_direction += "+" + char_xyz(i)
-                else:
-                    str_direction += "-" + char_xyz(i)
-
-            disp[atom][i] += displace[i + 1] * disp_mag
-
-        poscar_header += str_direction
-
-    poscar_header += ")"
-
-    if invlavec is not None:
-        for i in range(nat):
-            disp[i] = np.dot(disp[i], invlavec.T)
-
-    return poscar_header, disp
+parser.add_argument('--Qrange', type=str, default=None,
+                    help='Range of normal coordinate Q in units of eV/Ang.')
 
 
 def check_options(args):
@@ -202,13 +108,13 @@ def check_options(args):
                   args.OpenMX is None]
 
     if conditions.count(True) == len(conditions):
-        print(
-            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, --OpenMX option must be given.")
-        exit(1)
+        raise RuntimeError(
+            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, "
+            "--OpenMX option must be given.")
 
     elif len(conditions) - conditions.count(True) > 1:
-        print("Error : --VASP, --QE, --xTAPP, --LAMMPS, and --OpenMX cannot be given simultaneously.")
-        exit(1)
+        raise RuntimeError("Error : --VASP, --QE, --xTAPP, --LAMMPS, and "
+                           "--OpenMX cannot be given simultaneously.")
 
     elif args.VASP:
         code = "VASP"
@@ -243,43 +149,27 @@ def check_options(args):
     return code, file_original, struct_format, str_outfiles
 
 
-def generate_finite_displacements(file_pattern, nat, aa_inv):
-    header_list = []
-    disp_list = []
-    disp_pattern = parse_displacement_patterns(file_pattern)
-    counter = 1
-
-    for pattern in disp_pattern:
-        header, disp = gen_displacement(counter, pattern,
-                                        disp_length,
-                                        nat, aa_inv)
-        counter += 1
-        header_list.append(header)
-        disp_list.append(disp)
-
-    return header_list, disp_list
-
-
 def get_code_object(code):
     if code == "VASP":
-        return vasp.VaspParser()
+        return VaspParser()
 
     if code == "QE":
-        return qe.QEParser()
+        return QEParser()
 
     if code == "OpenMX":
-        return openmx.OpenmxParser()
+        return OpenmxParser()
 
     if code == "xTAPP":
-        return xtapp.XtappParser()
+        return XtappParser()
 
     if code == "LAMMPS":
-        return lammps.LammpsParser()
+        return LammpsParser()
 
 
 if __name__ == '__main__':
     print("*****************************************************************")
     print("    displace.py --  Generator of displaced configurations        ")
+    print("                      Version. 1.2.0                             ")
     print("*****************************************************************")
     print("")
 
@@ -287,8 +177,6 @@ if __name__ == '__main__':
     file_pattern = args.pattern_file
 
     code, file_original, struct_format, str_outfiles = check_options(args)
-    disp_length = args.mag
-    prefix = args.prefix
 
     codeobj = get_code_object(code)
     codeobj.load_initial_structure(file_original)
@@ -296,16 +184,22 @@ if __name__ == '__main__':
     print(" Output format                  : %s" % struct_format)
     print(" Structure before displacements : %s" % file_original)
     print(" Output file names              : %s" % str_outfiles)
-    print(" Magnitude of displacements     : %s Angstrom" % disp_length)
+    print(" Magnitude of displacements     : %s Angstrom" % args.mag)
     print(" Number of atoms                : %i" % codeobj.nat)
     print("")
+
+    dispobj = AlamodeDisplace("fd", codeobj,
+                              file_primitive=args.prim,
+                              file_evec=args.evec)
+    header_list, disp_list = dispobj.generate(file_pattern=file_pattern,
+                                              file_mddata=args.load_mddata,
+                                              option_every=args.every,
+                                              magnitude=args.mag,
+                                              number_of_displacements=args.num_disp,
+                                              temperature=args.temp)
+
+    codeobj.generate_structures(args.prefix, header_list, disp_list)
+    print(" Number of displacements        : %i" % len(disp_list))
     print("-----------------------------------------------------------------")
-
-    header_list, disp_list = generate_finite_displacements(file_pattern,
-                                                           codeobj.nat,
-                                                           codeobj.inverse_lattice_vector)
-
-    codeobj.generate_structures(prefix, header_list, disp_list)
-
     print("")
     print("All input files are created.")

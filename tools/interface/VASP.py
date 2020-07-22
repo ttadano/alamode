@@ -3,7 +3,7 @@
 #
 # Interface to VASP (https://www.vasp.at)
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014–2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -48,6 +48,8 @@ class VaspParser(object):
         self._print_force = True
         self._print_energy = False
         self._print_born = False
+        self._BOHR_TO_ANGSTROM = 0.5291772108
+        self._RYDBERG_TO_EV = 13.60569253
 
     def load_initial_structure(self, file_in):
 
@@ -121,6 +123,41 @@ class VaspParser(object):
 
         elif self._print_born:
             self._print_borninfo(xml_files)
+
+    def get_displacements(self, xml_files, unit="bohr"):
+
+        if not self._initial_structure_loaded:
+            raise RuntimeError("Please call load_initial_structure before using this method")
+
+        x0 = np.round(self._x_fractional, 8)
+        lavec_transpose = self._lattice_vector.transpose()
+        vec_refold = np.vectorize(self._refold)
+
+        disp_merged = []
+
+        if unit == "bohr":
+            unit_factor = 1.0 / self._BOHR_TO_ANGSTROM
+        elif unit == "angstrom":
+            unit_factor = 1.0
+        else:
+            raise RuntimeError("Invalid unit type. Valid values are 'bohr' and 'angstrom'.")
+
+        for search_target in xml_files:
+            x, _ = self._get_coordinates_and_forces_vasprunxml(search_target)
+
+            ndata = len(x) // (3 * self._nat)
+            x = np.reshape(x, (ndata, self._nat, 3))
+            disp = np.zeros((ndata, self._nat, 3))
+
+            for idata in range(ndata):
+                disp[idata, :, :] = x[idata, :, :] - x0
+                disp[idata, :, :] = np.dot(vec_refold(disp[idata, :, :]), lavec_transpose)
+                disp[idata, :, :] *= unit_factor
+
+            disp_merged.extend(disp)
+
+        return disp_merged
+
 
     def _generate_input(self, header, disp):
 
@@ -316,20 +353,17 @@ class VaspParser(object):
 
     def _set_unit_conversion_factor(self, str_unit):
 
-        Bohr_radius = 0.52917721067
-        Rydberg_to_eV = 13.60569253
-
         if str_unit == "ev":
             self._disp_conversion_factor = 1.0
             self._energy_conversion_factor = 1.0
 
         elif str_unit == "rydberg":
-            self._disp_conversion_factor = 1.0 / Bohr_radius
-            self._energy_conversion_factor = 1.0 / Rydberg_to_eV
+            self._disp_conversion_factor = 1.0 / self._BOHR_TO_ANGSTROM
+            self._energy_conversion_factor = 1.0 / self._RYDBERG_TO_EV
 
         elif str_unit == "hartree":
-            self._disp_conversion_factor = 1.0 / Bohr_radius
-            self._energy_conversion_factor = 0.5 / Rydberg_to_eV
+            self._disp_conversion_factor = 1.0 / self._BOHR_TO_ANGSTROM
+            self._energy_conversion_factor = 0.5 / self._RYDBERG_TO_EV
 
         else:
             raise RuntimeError("This cannot happen.")
@@ -345,8 +379,16 @@ class VaspParser(object):
         return self._nat
 
     @property
+    def lattice_vector(self):
+        return self._lattice_vector
+
+    @property
     def inverse_lattice_vector(self):
         return self._inverse_lattice_vector
+
+    @property
+    def x_fractional(self):
+        return self._x_fractional
 
     @staticmethod
     def _get_coordinates_vasprunxml(xml_file):
