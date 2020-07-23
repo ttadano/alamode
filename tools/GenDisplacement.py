@@ -71,19 +71,20 @@ class AlamodeDisplace(object):
         else:
             if self._displacement_mode == "random_normalcoordinate" \
                     or self._displacement_mode == "pes":
-                raise RuntimeError("The --prim option is necessary when '--random --temperature' "
-                                   "options are used at the same time or '--pes' is invoked.")
+                raise RuntimeError("The --prim option is necessary when '--random_normalcoord' "
+                                   "or '--pes' is invoked.")
 
         if file_evec:
             self._load_phonon_results(file_evec)
+
         else:
             if self._displacement_mode == "pes":
                 raise RuntimeError("The --evec option is necessary when '--pes' is invoked.")
 
             if self._displacement_mode == "random_normalcoordinate":
 
-                print("The --evec option is necessary when '--random --temperature'\n"
-                      "options are used at the same time. \n"
+                print("The --evec option is necessary when '--random_normalcoord'\n"
+                      "option is used. \n"
                       "Please generate a PREFIX.evec file by using the ANPHON code\n"
                       "with the following inputs and then run displace.py again with\n"
                       "--evec=PREFIX.evec option:\n\n")
@@ -320,7 +321,7 @@ class AlamodeDisplace(object):
         else:
             raise RuntimeError("Invalid format of the --every option.")
 
-        self._md_snapshots = disp_merged[0:1000:10]
+        self._md_snapshots = disp_merged[start:end:interval]
 
         return [start, end, interval]
 
@@ -502,6 +503,8 @@ class AlamodeDisplace(object):
             for imode in range(nmode):
                 if self._omega2[iq, imode] < 0.0:
                     omega[iq, imode] = math.sqrt(-self._omega2[iq, imode])
+                    print("Warning: Detected imaginary mode at iq = %d, imode = %d.\n"
+                          "Use the absolute frequency for this mode.\n" % (iq + 1, imode + 1))
                 else:
                     omega[iq, imode] = math.sqrt(self._omega2[iq, imode])
 
@@ -581,7 +584,9 @@ class AlamodeDisplace(object):
                         convertor[i, j] = np.sign(convertor[i, j]) / float(nnp)
                     else:
                         raise RuntimeError("Failed to express the inverse transformation matrix"
-                                           "by using fractional numbers")
+                                           "by using fractional numbers.\n\n"
+                                           "Please make sure that the lattice parameters of \n"
+                                           "the supercell and primitive cell are consistent.\n")
 
         comb = []
         for Lx in range(nmax):

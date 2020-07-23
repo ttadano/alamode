@@ -24,6 +24,7 @@ class QEParser(object):
         self._nat = 0
         self._x_fractional = None
         self._kd = None
+        self._kdnames = None
         self._counter = 1
         self._nzerofills = 0
         self._disp_conversion_factor = 1.0
@@ -141,7 +142,7 @@ class QEParser(object):
                 f.write(entry)
             f.write("ATOMIC_POSITIONS crystal\n")
             for i in range(self._nat):
-                f.write("%s %20.15f %20.15f %20.15f\n" % (self._kd[i],
+                f.write("%s %20.15f %20.15f %20.15f\n" % (self._kdname[self._kd[i]],
                                                           self._x_fractional[i][0] + disp[i, 0],
                                                           self._x_fractional[i][1] + disp[i, 1],
                                                           self._x_fractional[i][2] + disp[i, 2]))
@@ -678,7 +679,21 @@ class QEParser(object):
         elif "crystal" not in mode_str:
             raise RuntimeError("Error : Invalid option for ATOMIC_POSITIONS: %s" % mode_str)
 
-        self._kd = kd
+        kdname = []
+        for entry in kd:
+            if entry not in kdname:
+                kdname.append(entry)
+        dict_kd = {}
+        counter = 0
+        for name in kdname:
+            dict_kd[name] = counter
+            counter += 1
+        kd_int = []
+        for entry in kd:
+            kd_int.append(dict_kd[entry])
+
+        self._kd = kd_int
+        self._kdname = kdname
         self._x_fractional = xtmp
 
     def _set_number_of_zerofill(self, npattern):

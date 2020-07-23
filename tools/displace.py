@@ -66,9 +66,13 @@ parser.add_argument('-pf', '--pattern_file', metavar='prefix.pattern_*', type=st
 parser.add_argument('--random', action="store_true", dest="random", default=False,
                     help="Generate randomly-displaced structures.")
 
-parser.add_argument('--temp', type=float, default=None,
+parser.add_argument('--random_normalcoord', action="store_true", dest="random_normalcoord", default=False,
+                    help="Generate randomly-displaced structures in normal coordinate basis. "
+                         "Please give the --temp option as well.")
+
+parser.add_argument('--temp', type=float, default=100,
                     help="Target temperature of the random distribution of \
-                        Q (default: None). Used if --MD is not given.")
+                        Q (default: 100). Used if --MD is not given.")
 
 parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
                     help="Specify the range and interval of data sampling. "
@@ -156,18 +160,22 @@ def check_displace_options(args):
 
     conditions = [args.pattern_file is None,
                   args.load_mddata is None,
+                  args.random is False,
+                  args.random_normalcoord is False,
                   args.pes is None]
 
-    if conditions.count(True) == len(conditions) and args.random is False:
+    print(conditions)
+
+    if conditions.count(True) == len(conditions):
         raise RuntimeError(
-            "Error : Either --pattern_file (-pf), --load_mddata (-md), --random, or --pes must be given.")
+            "Either --pattern_file (-pf), --load_mddata (-md), "
+            "--random, --random_normalcoord, or --pes must be given.")
 
     elif len(conditions) - conditions.count(True) > 1:
-        raise RuntimeError("Error : Either --pattern_file (-pf), "
-                           "--load_mddata (-md), and --pes cannot be used simultaneously."
-                           "Choose one of them.")
-
-    displacement_mode = None
+        raise RuntimeError("The given combination of --pattern_file (-pf), "
+                           "--load_mddata (-md), --random, --random_normalcoord, "
+                           "and --pes is not allowed. Only combination allowed is "
+                           "--load_mddata and --random.")
 
     if args.pattern_file:
         displacement_mode = "fd"
@@ -178,16 +186,14 @@ def check_displace_options(args):
         else:
             displacement_mode = "md"
 
+    elif args.random_normalcoord:
+        displacement_mode = "random_normalcoordinate"
+
     elif args.pes:
         displacement_mode = "pes"
+
     else:
-        if args.random:
-            if args.temp is not None:
-                displacement_mode = "random_normalcoordinate"
-            else:
-                displacement_mode = "random"
-        else:
-            raise RuntimeError("Unknown displacement mode")
+        displacement_mode = "random"
 
     return displacement_mode
 
