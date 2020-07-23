@@ -97,6 +97,39 @@ class QEParser(object):
         elif self._print_energy:
             self._print_energies(pwout_files, pwout_file_offset)
 
+    def get_displacements(self, pwout_files, unit="bohr"):
+
+        if not self._initial_structure_loaded:
+            raise RuntimeError("Please call load_initial_structure before using this method")
+
+        x0 = np.round(self._x_fractional, 8)
+        lavec_transpose = self._lattice_vector.transpose()
+        vec_refold = np.vectorize(self._refold)
+
+        disp_merged = []
+
+        if unit == "bohr":
+            unit_factor = 1.0 / self._BOHR_TO_ANGSTROM
+        elif unit == "angstrom":
+            unit_factor = 1.0
+        else:
+            raise RuntimeError("Invalid unit type. Valid values are 'bohr' and 'angstrom'.")
+
+        for search_target in pwout_files:
+            x = self._get_coordinates_pwout(search_target)
+
+            ndata, _, _ = np.shape(x)
+            disp = np.zeros((ndata, self._nat, 3))
+
+            for idata in range(ndata):
+                disp[idata, :, :] = x[idata, :, :] - x0
+                disp[idata, :, :] = np.dot(vec_refold(disp[idata, :, :]), lavec_transpose)
+                disp[idata, :, :] *= unit_factor
+
+            disp_merged.extend(disp)
+
+        return disp_merged
+
     def _generate_input(self, header, disp):
 
         filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".pw.in"
