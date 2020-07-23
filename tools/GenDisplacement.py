@@ -503,8 +503,9 @@ class AlamodeDisplace(object):
             for imode in range(nmode):
                 if self._omega2[iq, imode] < 0.0:
                     omega[iq, imode] = math.sqrt(-self._omega2[iq, imode])
-                    print("Warning: Detected imaginary mode at iq = %d, imode = %d.\n"
-                          "Use the absolute frequency for this mode.\n" % (iq + 1, imode + 1))
+                    if self._verbosity > 0:
+                        print("Warning: Detected imaginary mode at iq = %d, imode = %d.\n"
+                              "Use the absolute frequency for this mode.\n" % (iq + 1, imode + 1))
                 else:
                     omega[iq, imode] = math.sqrt(self._omega2[iq, imode])
 

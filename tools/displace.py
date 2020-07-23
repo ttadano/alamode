@@ -164,14 +164,15 @@ def check_displace_options(args):
                   args.random_normalcoord is False,
                   args.pes is None]
 
-    print(conditions)
+    number_of_matches = conditions.count(True)
 
-    if conditions.count(True) == len(conditions):
+    if number_of_matches == len(conditions):
         raise RuntimeError(
             "Either --pattern_file (-pf), --load_mddata (-md), "
             "--random, --random_normalcoord, or --pes must be given.")
 
-    elif len(conditions) - conditions.count(True) > 1:
+    elif (len(conditions) - number_of_matches == 2 and not (args.load_mddata and args.random)) \
+            or len(conditions) - number_of_matches > 2:
         raise RuntimeError("The given combination of --pattern_file (-pf), "
                            "--load_mddata (-md), --random, --random_normalcoord, "
                            "and --pes is not allowed. Only combination allowed is "

@@ -20,11 +20,11 @@ and energies.
 
 from __future__ import print_function
 import argparse
-import interface.VASP as vasp
-import interface.QE as qe
-import interface.xTAPP as xtapp
-import interface.OpenMX as openmx
-import interface.LAMMPS as lammps
+from interface.VASP import VaspParser
+from interface.QE import QEParser
+from interface.xTAPP import XtappParser
+from interface.OpenMX import OpenmxParser
+from interface.LAMMPS import LammpsParser
 
 parser = argparse.ArgumentParser()
 
@@ -100,15 +100,13 @@ def check_options(args):
                   args.OpenMX is None]
 
     if conditions.count(True) == len(conditions):
-        print(
-            "Error : Either --VASP, --QE, --xTAPP, --LAMMPS, \
+        raise RuntimeError(
+            "Either --VASP, --QE, --xTAPP, --LAMMPS, \
                 --OpenMX option must be given.")
-        exit(1)
 
     elif len(conditions) - conditions.count(True) > 1:
-        print("Error : --VASP, --QE, --xTAPP, --LAMMPS, and \
+        raise RuntimeError("Error : --VASP, --QE, --xTAPP, --LAMMPS, and \
             --OpenMX cannot be given simultaneously.")
-        exit(1)
 
     elif args.VASP:
         code = "VASP"
@@ -133,8 +131,7 @@ def check_options(args):
     # Check output option
     str_get = args.get.lower()
     if str_get not in ["disp-force", "disp", "force", "energy", "born", "dielec"]:
-        print("Error: Please specify which quantity to extract by the --get option.")
-        exit(1)
+        raise RuntimeError("Error: Please specify which quantity to extract by the --get option.")
 
     print_disp = False
     print_force = False
@@ -153,8 +150,7 @@ def check_options(args):
     elif str_get == "born" or str_get == "dielec":
         print_borninfo = True
         if code != "VASP":
-            print("Sorry, --get born is available only for VASP.")
-            exit(1)
+            raise RuntimeError("Sorry, --get born is available only for VASP.")
 
     output_flags = [print_disp, print_force, print_energy, print_borninfo]
 
@@ -176,19 +172,19 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
 
     # Print data
     if code == "VASP":
-        handler = vasp.VaspParser()
+        handler = VaspParser()
 
     elif code == "QE":
-        handler = qe.QEParser()
+        handler = QEParser()
 
     elif code == "xTAPP":
-        handler = xtapp.xTappParser()
+        handler = XtappParser()
 
     elif code == "OpenMX":
-        handler = openmx.OpenmxParser()
+        handler = OpenmxParser()
 
     elif code == "LAMMPS":
-        handler = lammps.LammpsParser()
+        handler = LammpsParser()
 
     handler.parse(file_original, file_results, args.offset,
                   str_unit, output_flags, args.emin, args.emax)

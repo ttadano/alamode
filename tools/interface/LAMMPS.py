@@ -11,6 +11,7 @@
 #
 
 import numpy as np
+import math
 
 
 class LammpsParser(object):
@@ -24,6 +25,7 @@ class LammpsParser(object):
         self._common_settings = None
         self._nat = 0
         self._x_cartesian = None
+        self._x_fractional = None
         self._counter = 1
         self._nzerofills = 0
         self._disp_conversion_factor = 1.0
@@ -39,6 +41,7 @@ class LammpsParser(object):
 
     def load_initial_structure(self, file_in):
 
+        lammps_box_params = {}
         f = open(file_in, 'r')
         f.readline()
 
@@ -46,6 +49,11 @@ class LammpsParser(object):
         for line in f:
             if "Atoms" in line:
                 break
+
+            split_line = line.strip().split()
+            if len(split_line) % 2 == 0:
+                for i in range(len(split_line) // 2):
+                    lammps_box_params[split_line[i + len(split_line) // 2]] = float(split_line[i])
             common_settings.append(line.rstrip())
 
         atoms = []
@@ -67,8 +75,11 @@ class LammpsParser(object):
             charges = np.array(atoms[:, 2], dtype=np.float64)
 
         self._common_settings = common_settings
+        self._lattice_vector = self._compute_lattice_vector_from_boxparams(lammps_box_params)
+        self._inverse_lattice_vector = np.linalg.inv(self._lattice_vector)
         self._nat = nat
         self._x_cartesian = x
+        self._x_fractional = self._get_fractional_coordinate(x, self._inverse_lattice_vector)
         self._kd = kd
         self._charges = charges
         self._initial_structure_loaded = True
@@ -112,15 +123,17 @@ class LammpsParser(object):
         if self._charges is None:
             for i in range(self._nat):
                 f.write("%5d %3d" % (i + 1, self._kd[i]))
+                disp_tmp = np.dot(disp[i], self._lattice_vector.transpose())
                 for j in range(3):
-                    f.write("%20.15f" % (self._x_cartesian[i][j] + disp[i][j]))
+                    f.write("%20.15f" % (self._x_cartesian[i][j] + disp_tmp[j]))
                 f.write("\n")
             f.write("\n")
         else:
             for i in range(self._nat):
                 f.write("%5d %3d %11.6f" % (i + 1, self._kd[i], self._charges[i]))
+                disp_tmp = np.dot(disp[i], self._lattice_vector.transpose())
                 for j in range(3):
-                    f.write("%20.15f" % (self._x_cartesian[i][j] + disp[i][j]))
+                    f.write("%20.15f" % (self._x_cartesian[i][j] + disp_tmp[j]))
                 f.write("\n")
             f.write("\n")
         f.close()
@@ -178,6 +191,60 @@ class LammpsParser(object):
                                                                                 f[i, 2]))
         else:
             raise RuntimeError("Could not find ITEM: TIMESTEP keyword in the dump file %s" % lammps_files[0])
+
+    @staticmethod
+    def _compute_lattice_vector_from_boxparams(box_params):
+
+        xlo = box_params['xlo']
+        xhi = box_params['xhi']
+        ylo = box_params['ylo']
+        yhi = box_params['yhi']
+        zlo = box_params['zlo']
+        zhi = box_params['zhi']
+        if 'xy' in box_params.keys():
+            xy = box_params['xy']
+        if 'xz' in box_params.keys():
+            xz = box_params['xz']
+        if 'yz' in box_params.keys():
+            yz = box_params['yz']
+
+        lx = xhi - xlo
+        ly = yhi - ylo
+        lz = zhi - zlo
+        a = lx
+        b = math.sqrt(ly**2 + xy**2)
+        c = math.sqrt(lz**2 + xz**2 + yz**2)
+        cosalpha = (xy * xz + ly * yz) / (b * c)
+        cosbeta = xz / c
+        cosgamma = xy / b
+
+        singamma = math.sqrt(1.0 - cosgamma**2)
+
+        lavec = np.zeros((3, 3))
+
+        lavec[0, 0] = a
+        lavec[0, 1] = b * cosgamma
+        lavec[1, 1] = b * singamma
+        lavec[0, 2] = c * cosbeta
+        lavec[1, 2] = c * (cosalpha - cosbeta * cosgamma) / singamma
+        lavec[2, 2] = c * math.sqrt(1.0 - cosbeta**2 - ((cosalpha - cosbeta * cosgamma) / singamma)**2)
+
+        return lavec
+
+    @staticmethod
+    def _get_fractional_coordinate(xc, aa_inv):
+
+        if aa_inv is None:
+            return None
+
+        convmat = aa_inv.transpose()
+        nat, _ = np.shape(xc)
+        xf = np.zeros((nat, 3))
+
+        for i in range(nat):
+            xf[i] = np.dot(xc[i], convmat)
+
+        return xf
 
     def _print_displacements(self, lammps_files, file_offset):
 
