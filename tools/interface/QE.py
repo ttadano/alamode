@@ -24,7 +24,7 @@ class QEParser(object):
         self._nat = 0
         self._x_fractional = None
         self._kd = None
-        self._kdnames = None
+        self._kdname = None
         self._counter = 1
         self._nzerofills = 0
         self._disp_conversion_factor = 1.0
@@ -43,7 +43,6 @@ class QEParser(object):
         self._list_K_POINTS = []
         self._list_CELL_PARAMETERS = []
         self._list_OCCUPATIONS = []
-        self._list_merged_namelist = []
         self._celldm = [[] * 6]
         self._BOHR_TO_ANGSTROM = 0.5291772108
         self._RYDBERG_TO_EV = 13.60569253
@@ -67,16 +66,13 @@ class QEParser(object):
 
         # Set lattice vectors and fractional coordinates
         self._set_system_info()
-        self._list_merged_namelist.extend(self._list_CONTROL)
-        self._list_merged_namelist.extend(self._list_SYSTEM)
-        self._list_merged_namelist.extend(self._list_ELECTRONS)
-
         self._initial_structure_loaded = True
 
     def generate_structures(self, prefix, header_list, disp_list):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
+        self._counter = 1
 
         for header, disp in zip(header_list, disp_list):
             self._generate_input(header, disp)
@@ -136,7 +132,11 @@ class QEParser(object):
         filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".pw.in"
 
         with open(filename, 'w') as f:
-            for entry in self._list_merged_namelist:
+            for entry in self._list_CONTROL:
+                f.write(entry)
+            for entry in self._list_SYSTEM:
+                f.write(entry)
+            for entry in self._list_ELECTRONS:
                 f.write(entry)
             for entry in self._list_ATOMIC_SPECIES:
                 f.write(entry)
@@ -735,6 +735,10 @@ class QEParser(object):
     def nat(self):
         return self._nat
 
+    @nat.setter
+    def nat(self, nat):
+        self._nat = nat
+
     @property
     def lattice_vector(self):
         return self._lattice_vector
@@ -744,12 +748,55 @@ class QEParser(object):
         return self._inverse_lattice_vector
 
     @property
-    def atomic_kinds(self):
+    def kd(self):
         return self._kd
+
+    @property
+    def kd_in_str(self):
+        return [self._kdname[i] for i in self._kd]
+
+    @kd.setter
+    def kd(self, kd):
+        self._kd = kd
+
+    @kd_in_str.setter
+    def kd_in_str(self, kd_in_str):
+        map_name2num = {}
+        for i, name in enumerate(self._kdname):
+            map_name2num[name] = i
+        self._kd = [map_name2num[t] for t in kd_in_str]
 
     @property
     def x_fractional(self):
         return self._x_fractional
+
+    @x_fractional.setter
+    def x_fractional(self, x_fractional):
+        self._x_fractional = x_fractional
+
+    @property
+    def list_system(self):
+        return self._list_SYSTEM
+
+    @list_system.setter
+    def list_system(self, list_in):
+        self._list_SYSTEM = list_in
+
+    @property
+    def list_cell_parameters(self):
+        return self._list_CELL_PARAMETERS
+
+    @list_cell_parameters.setter
+    def list_cell_parameters(self, list_in):
+        self._list_CELL_PARAMETERS = list_in
+
+    @property
+    def list_k_points(self):
+        return self._list_K_POINTS
+
+    @list_k_points.setter
+    def list_k_points(self, list_in):
+        self._list_K_POINTS = list_in
 
     @staticmethod
     def _get_namelist(file_in, namelist_tag):

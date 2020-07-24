@@ -106,6 +106,7 @@ class VaspParser(object):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
+        self._counter = 1
 
         for header, disp in zip(header_list, disp_list):
             self._generate_input(header, disp)
