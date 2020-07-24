@@ -283,12 +283,12 @@ if __name__ == '__main__':
         print("")
 
     header_list, disp_list = displace(displacement_mode, codeobj, args)
-    codeobj.generate_structures(args.prefix, header_list, disp_list)
 
     if not args.print_disp_stdout:
         print(" Number of displacements        : %i" % len(disp_list))
         print("-----------------------------------------------------------------")
         print("")
+        codeobj.generate_structures(args.prefix, header_list, disp_list)
         print("All input files are created.")
     else:
         print_displacement_stdout(disp_list, codeobj)
