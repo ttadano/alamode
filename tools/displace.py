@@ -156,7 +156,7 @@ def check_code_options(args):
     return code, file_original, struct_format, str_outfiles
 
 
-def check_displace_options(args):
+def check_displace_options(args, code):
 
     conditions = [args.pattern_file is None,
                   args.load_mddata is None,
@@ -195,6 +195,12 @@ def check_displace_options(args):
 
     else:
         displacement_mode = "random"
+
+    if args.load_mddata and (code == "OpenMX" or code == "LAMMPS" or code == "xTAPP"):
+        raise RuntimeError("Sorry. --load_mddata option is available only for VASP and QE.")
+
+    if (args.pes or displacement_mode == "random_normalcoordinate") and code == "LAMMPS":
+        raise RuntimeError("sorry. --random_normalcoord and --pes are not supported for LAMMPS.")
 
     return displacement_mode
 
@@ -263,7 +269,7 @@ if __name__ == '__main__':
         print("")
 
     code, file_original, struct_format, str_outfiles = check_code_options(args)
-    displacement_mode = check_displace_options(args)
+    displacement_mode = check_displace_options(args, code)
 
     codeobj = get_code_object(code)
     codeobj.load_initial_structure(file_original)
