@@ -3,7 +3,7 @@
 #
 # Interface to LAMMPS (http://lammps.sandia.gov)
 #
-# Copyright (c) 2017 Terumasa Tadano
+# Copyright (c) 2017-2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory

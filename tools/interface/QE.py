@@ -3,7 +3,7 @@
 #
 # Interface to Quantum ESPRESSO (http://www.quantum-espresso.org)
 #
-# Copyright (c) 2014 Terumasa Tadano
+# Copyright (c) 2014-2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
@@ -742,6 +742,11 @@ class QEParser(object):
     @property
     def lattice_vector(self):
         return self._lattice_vector
+
+    @lattice_vector.setter
+    def lattice_vector(self, lattice_vector):
+        self._lattice_vector = lattice_vector
+        self._inverse_lattice_vector = np.linalg.inv(lattice_vector)
 
     @property
     def inverse_lattice_vector(self):

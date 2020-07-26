@@ -2,22 +2,34 @@ import sys
 import os
 import collections
 import numpy as np
-from pymatgen import Structure, IStructure
+import argparse
+from pymatgen import Structure
 from pymatgen.io.vasp import inputs
 from pymatgen.core.periodic_table import get_el_sp
 from interface.QE import QEParser
 from GenDisplacement import AlamodeDisplace
 
-scaling_matrix = [[2, 0, 0],
-                  [0, 2, 0],
-                  [0, 0, 2]]
-
-Bohr = 0.52917721067
-file_original = sys.argv[1]
-prefix = "super222_0.01"
-prefix_poscar = "harm_0.01_"
-disp_magnitude_angstrom = 0.01
 ALAMODE_root = "~/Work/alamode"
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--mag',
+                    type=float, default=0.02,
+                    help="Magnitude of displacement in units of \
+                        Angstrom (default: 0.02)")
+
+parser.add_argument('--prefix',
+                    type=str, default="disp",
+                    help="Prefix of the files to be created. (default: disp)")
+
+parser.add_argument('-d', '--dim',
+                    default=None, type=str,
+                    help="Transformation matrix")
+
+parser.add_argument('file_primitive', metavar='primitive.pw.in',
+                    default=None,
+                    help="Original primitive cell input file for pw.x")
+
 
 
 def gen_kpoints_file(structure):
@@ -40,6 +52,8 @@ def gen_species_dictionary(atomic_number_uniq):
 
 def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
                   ndata=0, dfset='DFSET'):
+
+    Bohr = 0.52917721067
 
     if (mode != "suggest" and mode != "optimize"):
         raise RuntimeError("Invalid MODE: %s" % mode)
@@ -86,6 +100,31 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
             f.write(" DFSET = %s\n" % dfset)
             f.write("/\n\n")
 
+def process_args(args):
+
+    if args.dim is None:
+        scaling_matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    else:
+        str_dim = args.dim.strip().split()
+        if len(str_dim) == 1:
+            nsize = int(str_dim[0])
+            scaling_matrix = [[nsize, 0, 0], [0, nsize, 0], [0, 0, nsize]]
+        elif len(str_dim) == 3:
+            nsize1 = int(str_dim[0])
+            nsize2 = int(str_dim[1])
+            nsize3 = int(str_dim[2])
+            scaling_matrix = [[nsize1, 0, 0], [0, nsize2, 0], [0, 0, nsize3]]
+        elif len(str_dim) == 9:
+            nsizes = [int(t) for t in str_dim]
+            scaling_matrix = [[nsizes[0], nsizes[1], nsizes[2]],
+                              [nsizes[3], nsizes[4], nsizes[5]],
+                              [nsizes[6], nsizes[7], nsizes[8]]]
+        else:
+            raise RuntimeError("Invalid format of --dim.")
+
+    return args.mag, args.prefix, scaling_matrix
+
+
 def update_qeobj(qeparse_in, structure_in):
 
     kmesh, kshift = gen_kpoints_file(structure)
@@ -120,6 +159,7 @@ def update_qeobj(qeparse_in, structure_in):
     list_K_POINTS_new.append(qeparse_in.list_k_points[0])
     list_K_POINTS_new.append(str_kmesh)
 
+    qeparse_in.lattice_vector = structure_in.lattice.matrix.transpose()
     qeparse_in.x_fractional = structure_in.frac_coords
     qeparse_in.kd_in_str = [str(t) for t in structure_in.species]
     qeparse_in.nat = structure_in.num_sites
@@ -132,12 +172,15 @@ def update_qeobj(qeparse_in, structure_in):
 
 if __name__ == '__main__':
 
-    qeobj = QEParser()
-    qeobj.load_initial_structure(file_original)
+    args = parser.parse_args()
+    disp_magnitude_angstrom, prefix, scaling_matrix = process_args(args)
 
-    structure = IStructure(qeobj.lattice_vector.transpose(),
-                           qeobj.kd_in_str,
-                           qeobj.x_fractional)
+    qeobj = QEParser()
+    qeobj.load_initial_structure(args.file_primitive)
+
+    structure = Structure(qeobj.lattice_vector.transpose(),
+                          qeobj.kd_in_str,
+                          qeobj.x_fractional)
 
     Structure.make_supercell(structure, scaling_matrix)
 
@@ -145,29 +188,29 @@ if __name__ == '__main__':
     print("")
 
     suffix = 'scf.in'
-    prefix = 'supercell'
+    prefix0 = 'supercell'
     disp = np.zeros((structure.num_sites, 3))
 
     # update structural information of qeobj
     qeobj_mod = update_qeobj(qeobj, structure)
 
     # create the supercell structure
-    qeobj_mod.generate_structures(prefix, ['original'], [disp])
+    qeobj_mod.generate_structures(prefix0, ['original'], [disp])
     # rename the file
-    command = ("mv %s1.pw.in %s0.scf.in" % (prefix, prefix))
+    command = ("mv %s1.pw.in %s0.scf.in" % (prefix0, prefix0))
     os.system(command)
 
     # Generate displacement files
-    gen_alm_input('ALM0.in', prefix, 'suggest', structure, 1, "*-* None")
+    gen_alm_input('ALM0.in', prefix0, 'suggest', structure, 1, "*-* None")
     command = ("%s/alm/alm ALM0.in > ALM0.log" % ALAMODE_root)
     os.system(command)
 
     dispobj = AlamodeDisplace("fd", qeobj_mod, verbosity=0)
     header_list, disp_list \
-        = dispobj.generate(file_pattern=["%s.pattern_HARMONIC" % prefix],
+        = dispobj.generate(file_pattern=["%s.pattern_HARMONIC" % prefix0],
                            magnitude=disp_magnitude_angstrom)
 
-    qeobj_mod.generate_structures(prefix_poscar,
+    qeobj_mod.generate_structures(prefix,
                                   header_list,
                                   disp_list)
 

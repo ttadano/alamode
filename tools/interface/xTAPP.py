@@ -3,7 +3,7 @@
 #
 # Interface to xTAPP (http://xtapp.cp.is.s.u-tokyo.ac.jp)
 #
-# Copyright (c) 2014–2020 Terumasa Tadano
+# Copyright (c) 2014-2020 Terumasa Tadano
 #
 # This file is distributed under the terms of the MIT license.
 # Please see the file 'LICENCE.txt' in the root directory
