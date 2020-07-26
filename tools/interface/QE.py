@@ -13,6 +13,7 @@ from __future__ import print_function
 import numpy as np
 import math
 import copy
+import sys
 
 
 class QEParser(object):
@@ -171,19 +172,25 @@ class QEParser(object):
 
         else:
             x_offset = self._get_coordinates_pwout(file_offset)
-            ndata_offset, _, _ = np.shape(x_offset)
+            if x_offset is None:
+                raise RuntimeError("File %s does not contain position entry" % file_offset)
 
+            ndata_offset, _, _ = np.shape(x_offset)
             if ndata_offset > 1:
                 raise RuntimeError("File %s contains too many position entries" % file_offset)
 
             disp_offset = x_offset - x0
             force_offset = self._get_atomicforces_pwout(file_offset)
+            if force_offset is None:
+                raise RuntimeError("File %s does not contain force entry" % file_offset)
             try:
                 force_offset = np.reshape(force_offset, (self._nat, 3))
             except:
                 raise RuntimeError("File %s contains too many force entries" % file_offset)
 
             epot_offset = self._get_energies_pwout(file_offset)
+            if epot_offset is None:
+                raise RuntimeError("File %s does not contain energy entry" % file_offset)
             epot_offset = np.array(epot_offset, dtype=np.float)
             if len(epot_offset) > 1:
                 raise RuntimeError("File %s contains too many energy entries" % file_offset)
@@ -192,10 +199,13 @@ class QEParser(object):
 
             x = self._get_coordinates_pwout(search_target)
             force = self._get_atomicforces_pwout(search_target)
-            num_data_force = len(force) // (3 * self._nat)
-            force = np.reshape(force, (num_data_force, self._nat, 3))
             epot = self._get_energies_pwout(search_target)
 
+            if x is None or force is None or epot is None:
+                continue
+
+            num_data_force = len(force) // (3 * self._nat)
+            force = np.reshape(force, (num_data_force, self._nat, 3))
             num_data_disp, _, _ = np.shape(x)
 
             if num_data_disp != num_data_force and self._print_disp and self._print_force:
@@ -259,6 +269,9 @@ class QEParser(object):
             etot_offset = 0.0
         else:
             data = self._get_energies_pwout(file_offset)
+            if data is None:
+                raise RuntimeError("File %s does not contain energy entry" % file_offset)
+
             if len(data) > 1:
                 raise RuntimeError("File %s contains too many energy entries" % file_offset)
             etot_offset = data[0]
@@ -266,6 +279,8 @@ class QEParser(object):
         print("# Etot")
         for search_target in pwout_files:
             etot = self._get_energies_pwout(search_target)
+            if etot is None:
+                continue
             for idata in range(len(etot)):
                 val = etot[idata] - etot_offset
                 val *= self._energy_conversion_factor
@@ -878,7 +893,8 @@ class QEParser(object):
             line = f.readline()
 
         if not found_tag:
-            raise RuntimeError("%s tag not found in %s" % (search_flag, pwout_file))
+            print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
+            return None
 
         x = self._celldm[0] * np.dot(x, self._inverse_lattice_vector.transpose()) \
             * self._BOHR_TO_ANGSTROM
@@ -953,10 +969,10 @@ class QEParser(object):
         f.close()
 
         if not found_tag:
-            print("following search tags not found in %s" % pwout_file)
-            print(search_tag)
-            print(search_tag_QE6)
-            exit(1)
+            print("following search tags not found in %s" % pwout_file, file=sys.stderr)
+            print(search_tag, file=sys.stderr)
+            print(search_tag_QE6, file=sys.stderr)
+            return None
 
         return np.array(force, dtype=np.float)
 
@@ -972,6 +988,7 @@ class QEParser(object):
                     found_tag = True
 
         if not found_tag:
-            raise RuntimeError("%s tag not found in %s" % (search_tag, pwout_file))
+            print("%s tag not found in %s" % (search_tag, pwout_file), file=sys.stderr)
+            return None
 
         return np.array(etot, dtype=np.float)
