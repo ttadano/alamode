@@ -174,8 +174,6 @@ double Integration::do_tetrahedron(const double *energy,
 
     tetra_pair pair;
 
-    auto vol_tot = 0.0;
-
     for (unsigned int i = 0; i < ntetra; ++i) {
 
         tetra_data.clear();

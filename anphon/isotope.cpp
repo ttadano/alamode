@@ -72,7 +72,6 @@ void Isotope::setup_isotope_scattering()
         }
         MPI_Bcast(&isotope_factor[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-
         if (mympi->my_rank == 0) {
             std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered" << std::endl;
             std::cout << "               with the following scattering factors." << std::endl;
@@ -82,9 +81,9 @@ void Isotope::setup_isotope_scattering()
                 std::cout << std::scientific << std::setw(17) << isotope_factor[i] << std::endl;
             }
             std::cout << std::endl;
-        }
 
-        memory->allocate(gamma_isotope, kpoint->nk_irred, dynamical->neval);
+            memory->allocate(gamma_isotope, kpoint->nk_irred, dynamical->neval);
+        }
     }
 }
 
@@ -100,7 +99,6 @@ void Isotope::calc_isotope_selfenergy(const int knum,
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
     const auto natmin = system->natmin;
-
     const auto epsilon = integration->epsilon;
 
     ret = 0.0;
@@ -150,20 +148,14 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
 
     ret = 0.0;
 
-    double **eval;
-    double **weight;
+    double *eval;
+    double *weight;
 
-    memory->allocate(eval, ns, nk);
-    memory->allocate(weight, ns, nk);
+    memory->allocate(eval, nk);
+    memory->allocate(weight, nk);
 
-    for (ik = 0; ik < nk; ++ik) {
-        for (is = 0; is < ns; ++is) {
-            eval[is][ik] = dynamical->eval_phonon[ik][is];
-        }
-    }
-
-    for (ik = 0; ik < nk; ++ik) {
-        for (is = 0; is < ns; ++is) {
+    for (is = 0; is < ns; ++is) {
+        for (ik = 0; ik < nk; ++ik) {
 
             auto prod = 0.0;
 
@@ -172,19 +164,21 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
-                        * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
-            weight[is][ik] = prod * eval[is][ik];
-        }
-    }
 
-    for (is = 0; is < ns; ++is) {
-        ret += integration->do_tetrahedron(eval[is], weight[is], omega);
+            weight[ik] = prod * dynamical->eval_phonon[ik][is];
+            eval[ik] = dynamical->eval_phonon[ik][is];
+        }
+        ret += integration->do_tetrahedron(eval, weight, omega);
     }
 
     ret *= pi * omega * 0.25;
+
+    memory->deallocate(eval);
+    memory->deallocate(weight);
 }
 
 
@@ -194,7 +188,8 @@ void Isotope::calc_isotope_selfenergy_all() const
     const auto ns = dynamical->neval;
     const auto nks = kpoint->nk_irred * ns;
     double tmp;
-    double *gamma_tmp, *gamma_loc;
+    double *gamma_tmp = nullptr;
+    double *gamma_loc = nullptr;
 
     if (include_isotope) {
 
@@ -202,7 +197,11 @@ void Isotope::calc_isotope_selfenergy_all() const
             std::cout << " Calculating self-energies from isotope scatterings ... ";
         }
 
-        memory->allocate(gamma_tmp, nks);
+        if (mympi->my_rank == 0)  {
+            memory->allocate(gamma_tmp, nks);
+        } else {
+            memory->allocate(gamma_tmp, 1);
+        }
         memory->allocate(gamma_loc, nks);
 
         for (i = 0; i < nks; ++i) gamma_loc[i] = 0.0;
@@ -222,9 +221,11 @@ void Isotope::calc_isotope_selfenergy_all() const
         MPI_Reduce(&gamma_loc[0], &gamma_tmp[0], nks,
                    MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-        for (i = 0; i < kpoint->nk_irred; ++i) {
-            for (int j = 0; j < ns; ++j) {
-                gamma_isotope[i][j] = gamma_tmp[ns * i + j];
+        if (mympi->my_rank == 0) {
+            for (i = 0; i < kpoint->nk_irred; ++i) {
+                for (int j = 0; j < ns; ++j) {
+                    gamma_isotope[i][j] = gamma_tmp[ns * i + j];
+                }
             }
         }
 
@@ -245,12 +246,14 @@ void Isotope::set_isotope_factor_from_database(const int nkd,
         const auto atom_number = system->get_atomic_number_by_name(symbol_in[i]);
         if (atom_number >= isotope_factors.size() || atom_number == -1) {
             error->exit("set_isotope_factor_from_database",
-                        "The isotope factor for the given element doesn't exist in the database.\nTherefore, please input ISOFACT manually.");
+                        "The isotope factor for the given element doesn't exist in the database.\n"
+                        "Therefore, please input ISOFACT manually.");
         }
         const auto isofact_tmp = isotope_factors[atom_number];
         if (isofact_tmp < -0.5) {
             error->exit("set_isotope_factor_from_database",
-                        "One of the elements in the KD-tag is unstable. \nTherefore, please input ISOFACT manually.");
+                        "One of the elements in the KD-tag is unstable. "
+                        "Therefore, please input ISOFACT manually.");
         }
         isofact_out[i] = isofact_tmp;
     }
