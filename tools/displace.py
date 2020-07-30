@@ -186,8 +186,8 @@ def check_displace_options(args, code):
             displacement_mode = "md_plus_random"
         else:
             displacement_mode = "md"
-    elif args.random_normalcoord:
 
+    elif args.random_normalcoord:
         displacement_mode = "random_normalcoordinate"
 
     elif args.pes:

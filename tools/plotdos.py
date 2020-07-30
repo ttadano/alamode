@@ -13,8 +13,8 @@
 
 import numpy as np
 import optparse
-import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 # parser options
 usage = "usage: %prog [options] file1.dos file2.dos ... "

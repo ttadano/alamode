@@ -18,8 +18,8 @@
 Generator of new QE fc file containing anharmonic correction
 """
 
-import numpy as np
 import sys
+import numpy as np
 
 
 def parse_QEfc(file_QEfc):

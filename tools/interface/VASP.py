@@ -10,7 +10,6 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 from __future__ import print_function
-
 import numpy as np
 
 try:

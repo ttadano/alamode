@@ -16,10 +16,10 @@ the C++ analyzer program "analyze_phonons.cpp".
 To execute this script, the above c++ program has to be
 compiled and made executable beforehand.
 """
-import optparse
-import os
-import subprocess
 import sys
+import os
+import optparse
+import subprocess
 
 parser = optparse.OptionParser()
 parser.add_option('--temp', help="target temperature to analyze")
