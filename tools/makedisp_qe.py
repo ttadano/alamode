@@ -6,10 +6,11 @@ import argparse
 from pymatgen import Structure
 from pymatgen.io.vasp import inputs
 from pymatgen.core.periodic_table import get_el_sp
+import seekpath
 from interface.QE import QEParser
 from GenDisplacement import AlamodeDisplace
 
-ALAMODE_root = "~/Work/alamode"
+ALAMODE_root = "~/src/alamode"
 
 parser = argparse.ArgumentParser()
 
@@ -29,6 +30,10 @@ parser.add_argument('-d', '--dim',
 parser.add_argument('file_primitive', metavar='primitive.pw.in',
                     default=None,
                     help="Original primitive cell input file for pw.x")
+
+parser.add_argument('--dfset',
+                    type=str, default=None,
+                    help="The displacement-force datasets for harmonic phonon calculation.")
 
 
 
@@ -98,7 +103,60 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
         if mode == "optimize":
             f.write("&optimize\n")
             f.write(" DFSET = %s\n" % dfset)
+            f.write(" SPARSE = 1\n")
             f.write("/\n\n")
+
+
+def gen_anphon_input(filename, prefix,
+                     mode, structure, path_info, npoints=51):
+
+    Bohr = 0.52917721067
+
+    if mode != "phonons":
+        raise RuntimeError("Invalid MODE: %s" % mode)
+
+    atomic_numbers_uniq = list(
+        collections.OrderedDict.fromkeys(structure.atomic_numbers))
+
+    species_index = gen_species_dictionary(atomic_numbers_uniq)
+    # Make input for ALM
+    with open(filename, 'w') as f:
+        f.write("&general\n")
+        f.write(" PREFIX = %s\n" % prefix)
+        f.write(" MODE = %s\n" % mode)
+        str_spec = ""
+        for num in atomic_numbers_uniq:
+            str_spec += str(get_el_sp(num)) + " "
+        f.write(" NKD = %i; KD = %s\n" % (structure.ntypesp, str_spec))
+        f.write(" TOLERANCE = 1.0e-3\n")
+        f.write(" FCSXML = %s.xml\n" % prefix)
+        f.write("/\n\n")
+        f.write("&cell\n")
+        f.write("%20.14f\n" % (1.0/Bohr))
+        for i in range(3):
+            for j in range(3):
+                f.write("%20.13f" % structure.lattice.matrix[i][j])
+            f.write("\n")
+        f.write("/\n\n")
+        f.write("&kpoint\n")
+        f.write(" 1\n")
+
+        kpath = path_info["path"]
+        point_coords = path_info["point_coords"]
+
+        for line in kpath:
+            f.write(" %s" % line[0])
+            coord_s = point_coords[line[0]]
+            coord_e = point_coords[line[1]]
+            for coord in coord_s:
+                f.write(" %15.8f" % coord)
+
+            f.write(" %s" % line[1])
+            for coord in coord_e:
+                f.write("%15.8f" % coord)
+            f.write(" %d\n" % npoints)
+        f.write("/\n\n")
+
 
 def process_args(args):
 
@@ -127,7 +185,7 @@ def process_args(args):
 
 def update_qeobj(qeparse_in, structure_in):
 
-    kmesh, kshift = gen_kpoints_file(structure)
+    kmesh, kshift = gen_kpoints_file(structure_in)
 
     # Update nat entry
     list_system_new = qeparse_in.list_system
@@ -170,13 +228,10 @@ def update_qeobj(qeparse_in, structure_in):
     return qeparse_in
 
 
-if __name__ == '__main__':
-
-    args = parser.parse_args()
-    disp_magnitude_angstrom, prefix, scaling_matrix = process_args(args)
+def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angstrom):
 
     qeobj = QEParser()
-    qeobj.load_initial_structure(args.file_primitive)
+    qeobj.load_initial_structure(file_primitive)
 
     structure = Structure(qeobj.lattice_vector.transpose(),
                           qeobj.kd_in_str,
@@ -187,7 +242,6 @@ if __name__ == '__main__':
     print("Supercell generated. # Atoms: %i" % structure.num_sites)
     print("")
 
-    suffix = 'scf.in'
     prefix0 = 'supercell'
     disp = np.zeros((structure.num_sites, 3))
 
@@ -213,4 +267,78 @@ if __name__ == '__main__':
     qeobj_mod.generate_structures(prefix,
                                   header_list,
                                   disp_list)
+
+
+def run_optimize(file_primitive, file_dfset, scaling_matrix):
+
+    qeobj = QEParser()
+    qeobj.load_initial_structure(file_primitive)
+
+    structure = Structure(qeobj.lattice_vector.transpose(),
+                          qeobj.kd_in_str,
+                          qeobj.x_fractional)
+
+    Structure.make_supercell(structure, scaling_matrix)
+
+    print("Supercell generated. # Atoms: %i" % structure.num_sites)
+    print("")
+
+    prefix0 = 'supercell'
+    # Generate displacement files
+    gen_alm_input('ALM1.in', prefix0, 'optimize',
+                  structure, 1, "*-* None",
+                  dfset=file_dfset)
+    command = ("%s/alm/alm ALM1.in > ALM1.log" % ALAMODE_root)
+    os.system(command)
+
+
+def gen_bzpath(structure):
+
+    cell = (structure.lattice.matrix,
+            structure.frac_coords,
+            structure.atomic_numbers)
+
+    path_info = seekpath.get_path(cell, True, "hpkot", 1.0e-3, 1.0e-3, 1.0)
+
+    return path_info
+
+
+def gen_phband(file_primitive):
+
+    qeobj = QEParser()
+    qeobj.load_initial_structure(file_primitive)
+
+    structure = Structure(qeobj.lattice_vector.transpose(),
+                          qeobj.kd_in_str,
+                          qeobj.x_fractional)
+
+    path_info = gen_bzpath(structure)
+
+    prefix0 = 'supercell'
+    gen_anphon_input('phband.in', prefix0, 'phonons',
+                     structure, path_info)
+
+    command = ("%s/anphon/anphon phband.in > phband.log" % ALAMODE_root)
+    os.system(command)
+
+
+if __name__ == '__main__':
+
+    args = parser.parse_args()
+    disp_magnitude_angstrom, prefix, scaling_matrix = process_args(args)
+
+    if args.dfset is None:
+        run_displacement(args.file_primitive,
+                         prefix,
+                         scaling_matrix,
+                         disp_magnitude_angstrom)
+    else:
+        run_optimize(args.file_primitive,
+                     args.dfset,
+                     scaling_matrix)
+
+        gen_phband(args.file_primitive)
+
+
+
 
