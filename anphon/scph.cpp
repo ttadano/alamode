@@ -216,12 +216,12 @@ void Scph::exec_scph()
             compute_free_energy_bubble_SCPH(kmesh_interpolate,
                                             delta_dymat_scph);
         }
-    }
+        }
 
     postprocess(delta_dymat_scph);
 
     memory->deallocate(delta_dymat_scph);
-}
+    }
 
 void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
 {
@@ -351,7 +351,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                         }
                     }
                 }
-            }
+        }
 
             if (dielec->calc_dielectric_constant) {
                 exec_interpolation(kmesh_interpolate,
@@ -427,7 +427,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
-    auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
     std::vector<double> Temp_array(NT);
 
     for (int i = 0; i < NT; ++i) {
@@ -436,7 +436,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
 
     if (mympi->my_rank == 0) {
 
-        auto consider_offdiagonal = selfenergy_offdiagonal;
+        const auto consider_offdiagonal = selfenergy_offdiagonal;
         double temp;
         std::ifstream ifs_dymat;
         auto file_dymat = input->job_title + ".scph_dymat";
@@ -486,7 +486,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         }
 
         // Check if the precalculated data for the given temperature range exists
-        int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
+        const int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
         std::vector<double> Temp_array_ref(NT_ref);
         for (int i = 0; i < NT_ref; ++i) {
             Temp_array_ref[i] = Tmin_tmp + dT_tmp * static_cast<double>(i);
@@ -900,12 +900,12 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     // Calculate the matrix elements of quartic terms in reciprocal space.
     // This is the most expensive part of the SCPH calculation.
 
-    const auto nk_reduced_interpolate = kp_irred_interpolate.size();
-    const auto ns = dynamical->neval;
-    const auto ns2 = ns * ns;
-    const auto ns3 = ns * ns * ns;
-    const auto ns4 = ns * ns * ns * ns;
-    unsigned int is, js, ks, ls;
+    const size_t nk_reduced_interpolate = kp_irred_interpolate.size();
+    const size_t ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns * ns * ns;
+    const size_t ns4 = ns * ns * ns * ns;
+    size_t is, js, ks, ls;
     double phase3[3];
     int loc3[3];
     unsigned int **ind;
@@ -920,7 +920,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
 
-    const auto nk2_prod = nk_reduced_interpolate * nk_scph;
+    const size_t nk2_prod = nk_reduced_interpolate * nk_scph;
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
@@ -934,7 +934,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     memory->allocate(ind, ngroup2, 4);
     memory->allocate(v4_mpi, nk2_prod, ns2, ns2);
 
-    for (int ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
+    for (size_t ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
         const auto ik = ik_prod / nk_scph;
         const auto jk = ik_prod % nk_scph;
 
@@ -1073,16 +1073,53 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     memory->deallocate(v4_array_at_kpair);
     memory->deallocate(ind);
+
+// Now, communicate the calculated data.
+// When the data count is larger than 2^31-1, split it.
+
+    long maxsize = 1;
+    maxsize=(maxsize<<31)-1;
+
+    const size_t count = nk2_prod * ns4;
+    const size_t count_sub = ns4;
+
+    if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod*ns4, 
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
         MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod * ns4,
-                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
+                      MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
 #endif
+    } else if (count_sub <= maxsize) {
+        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+            MPI_Allreduce(&v4_mpi[ik_prod][0][0], &v4_out[ik_prod][0][0],
+                          count_sub,
+                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+            MPI_Allreduce(&v4_mpi[ik_prod][0][0], &v4_out[ik_prod][0][0],
+                          count_sub,
+                          MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+        }
+    } else {
+        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+            for (is = 0; is < ns2; ++is) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+                MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
+                          ns2,
+                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+                MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
+                              ns2,
+                              MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+            }
+        }
+    }
 
     memory->deallocate(v4_mpi);
-
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
 
@@ -1100,11 +1137,11 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     // Calculate the matrix elements of quartic terms in reciprocal space.
     // This is the most expensive part of the SCPH calculation.
 
-    int ik_prod;
-    auto nk_reduced_interpolate = kp_irred_interpolate.size();
-    auto ns = dynamical->neval;
-    auto ns2 = ns * ns;
-    auto ns4 = ns * ns * ns * ns;
+    size_t ik_prod;
+    const size_t nk_reduced_interpolate = kp_irred_interpolate.size();
+    const size_t ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns4 = ns * ns * ns * ns;
     int is, js;
     unsigned int knum;
     double phase3[3];
@@ -1288,13 +1325,51 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     memory->deallocate(v4_array_at_kpair);
     memory->deallocate(ind);
+
+// Now, communicate the calculated data.
+// When the data count is larger than 2^31-1, split it.
+
+    long maxsize = 1;
+    maxsize=(maxsize<<31)-1;
+
+    const size_t count = nk2_prod * ns4;
+    const size_t count_sub = ns4;
+
+    if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod*ns4, 
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
         MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
-    MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], nk2_prod * ns4,
-                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
+                      MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
 #endif
+    } else if (count_sub <= maxsize) {
+        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+            MPI_Allreduce(&v4_mpi[ik_prod][0][0], &v4_out[ik_prod][0][0],
+                          count_sub,
+                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+            MPI_Allreduce(&v4_mpi[ik_prod][0][0], &v4_out[ik_prod][0][0],
+                          count_sub,
+                          MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+        }
+    } else {
+        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+            for (is = 0; is < ns2; ++is) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+                MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
+                          ns2,
+                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+                MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
+                              ns2,
+                              MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+            }
+        }
+    }
 
     memory->deallocate(v4_mpi);
 
@@ -2721,7 +2796,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             mat_tmp = evec_tmp.transpose() * saes.eigenvectors();
             Dymat = mat_tmp * Dymat * mat_tmp.adjoint();
 
-#ifdef _DEBUG
+#ifdef _DEBUG2
             Dymat_sym = Dymat;
             symmetrize_dynamical_matrix(ik, Dymat_sym);
             std::complex<double> **dymat_exact;
@@ -2753,7 +2828,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         replicate_dymat_for_all_kpoints(dymat_q);
 
-#ifdef _DEBUG
+#ifdef _DEBUG2
         for (ik = 0; ik < nk_interpolate; ++ik) {
 
             knum = kmap_interpolate_to_scph[ik];
@@ -3166,50 +3241,11 @@ void Scph::mpi_bcast_complex(std::complex<double> ****data,
                              const int nk,
                              const int ns) const
 {
-#ifdef MPI_COMPLEX16
-    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #elif defined MPI_DOUBLE_COMPLEX
     MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #else
-    unsigned int iT, ik, is, js;
-    double ***data_real, ***data_imag;
-
-    memory->allocate(data_real, ns, ns, nk);
-    memory->allocate(data_imag, ns, ns, nk);
-
-    for (iT = 0; iT < NT; ++iT) {
-
-        if (mympi->my_rank == 0) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    for (ik = 0; ik < nk; ++ik) {
-
-                        data_real[is][js][ik] = data[iT][is][js][ik].real();
-                        data_imag[is][js][ik] = data[iT][is][js][ik].imag();
-                    }
-                }
-            }
-        }
-
-        MPI_Bcast(&data_real[0][0][0], nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&data_imag[0][0][0], nk * ns * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-        if (mympi->my_rank > 0) {
-            for (iT = 0; iT < NT; ++iT) {
-                for (is = 0; is < ns; ++is) {
-                    for (js = 0; js < ns; ++js) {
-                        for (ik = 0; ik < nk; ++ik) {
-                            data[iT][is][js][ik]
-                                = std::complex<double>(data_real[is][js][ik],
-                                                       data_imag[is][js][ik]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    memory->deallocate(data_real);
-    memory->deallocate(data_imag);
+    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
 #endif
 }

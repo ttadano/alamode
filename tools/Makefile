@@ -14,6 +14,9 @@
 # OSX (clang)
 CXX = g++
 
+# OSX
+CXX = clang++
+
 CXXFLAGS = -O2 -std=c++11
 
 # Add the directory containing boost header files here

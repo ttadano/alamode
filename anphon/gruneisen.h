@@ -118,7 +118,7 @@ namespace PHON_NS
         void calc_dfc2_reciprocal(std::complex<double> **,
                                   const double *);
 
-        void write_new_fcsxml(std::string,
+        void write_new_fcsxml(const std::string &,
                               double);
 
         std::string double2string(double) const;

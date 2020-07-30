@@ -164,7 +164,7 @@ void PHON::setup_base() const
     symmetry->setup_symmetry();
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
-    dynamical->setup_dynamical(mode);
+    dynamical->setup_dynamical();
     dos->setup();
     thermodynamics->setup();
     ewald->init();
@@ -182,7 +182,7 @@ void PHON::setup_base() const
     }
 }
 
-void PHON::execute_phonons()
+void PHON::execute_phonons() const
 {
     if (mympi->my_rank == 0) {
         std::cout << "                      MODE = phonons                         " << std::endl;
@@ -232,7 +232,7 @@ void PHON::execute_phonons()
     }
 }
 
-void PHON::execute_RTA()
+void PHON::execute_RTA() const
 {
     if (mympi->my_rank == 0) {
         std::cout << "                        MODE = RTA                           " << std::endl;
@@ -280,7 +280,7 @@ void PHON::execute_RTA()
     }
 }
 
-void PHON::execute_self_consistent_phonon()
+void PHON::execute_self_consistent_phonon() const
 {
     if (mympi->my_rank == 0) {
         std::cout << "                        MODE = SCPH                           " << std::endl;

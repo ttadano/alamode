@@ -8,7 +8,7 @@
 # MPI version of clang++ with libomp installed via Homebrew
 MPICXX = mpic++
 CXXFLAGS = -O3 -std=c++11 -Xpreprocessor -fopenmp
-INCLUDE = -I../include -I$(HOME)/include -I/usr/local/include/Eigen3 -I/usr/local/Cellar/fftw/3.3.8_1/include/
+INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/boost/include/ -I/usr/local/opt/eigen/include/eigen3/ -I/usr/local/opt/fftw/include/  -I/usr/local/opt/libomp/include/
 
 LINKER = ${MPICXX}
 
@@ -18,7 +18,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack
-LIBS = ${LAPACK} -L/usr/local/Cellar/fftw/3.3.8_1/lib/ -lfftw3 -lomp
+LIBS = ${LAPACK} -L/usr/local/lib/ -lfftw3 -L//usr/local/opt/libomp/lib/ -lomp
 
 #----------------------------------------------
 # General rules

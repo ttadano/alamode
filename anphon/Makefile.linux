@@ -6,10 +6,18 @@
 #-----------------------------------------------
 
 MPICXX = mpicxx 
-CXXFLAGS = -O3 -xHOST -openmp -std=c++11
+#MPICXX = mpiicpc 
+
+# add -D_HDF5 to activate HDF5 support
+CXXFLAGS = -O3 -xHOST -qopenmp -std=c++11
+
+# when the HDF5 support is activated, 
+# you may need to add -I$(HDF5_ROOT)/include
 INCLUDE = -I../include 
 
 LINKER = ${MPICXX}
+# when the HDF5 support is activated, 
+# you may need to add -L$(HDF5_ROOT)/lib -lhdf5_cpp -lhdf5
 LDFLAGS = -mkl 
 
 LAPACK = 

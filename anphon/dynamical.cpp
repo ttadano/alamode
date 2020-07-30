@@ -97,7 +97,7 @@ void Dynamical::deallocate_variables()
     }
 }
 
-void Dynamical::setup_dynamical(std::string mode)
+void Dynamical::setup_dynamical()
 {
     neval = 3 * system->natmin;
 
@@ -130,12 +130,12 @@ void Dynamical::setup_dynamical(std::string mode)
 
     memory->allocate(xshift_s, 27, 3);
 
-    for (int i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
-    int icell = 0;
+    for (auto i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
+    auto icell = 0;
 
-    for (int ix = -1; ix <= 1; ++ix) {
-        for (int iy = -1; iy <= 1; ++iy) {
-            for (int iz = -1; iz <= 1; ++iz) {
+    for (auto ix = -1; ix <= 1; ++ix) {
+        for (auto iy = -1; iy <= 1; ++iy) {
+            for (auto iz = -1; iz <= 1; ++iz) {
                 if (ix == 0 && iy == 0 && iz == 0) continue;
 
                 ++icell;
@@ -193,12 +193,12 @@ void Dynamical::setup_dynamical(std::string mode)
 void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 {
     unsigned int i, j;
-    unsigned int nneib = 27;
+    const unsigned int nneib = 27;
 
     double ***xcrd;
 
-    auto nat = system->nat;
-    auto natmin = system->natmin;
+    const auto nat = system->nat;
+    const auto natmin = system->natmin;
 
     std::vector <DistWithCell> **distall;
 
@@ -211,9 +211,9 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
         }
     }
     auto icell = 0;
-    for (int isize = -1; isize <= 1; ++isize) {
-        for (int jsize = -1; jsize <= 1; ++jsize) {
-            for (int ksize = -1; ksize <= 1; ++ksize) {
+    for (auto isize = -1; isize <= 1; ++isize) {
+        for (auto jsize = -1; jsize <= 1; ++jsize) {
+            for (auto ksize = -1; ksize <= 1; ++ksize) {
 
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
 
@@ -234,7 +234,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
     }
 
     for (i = 0; i < natmin; ++i) {
-        unsigned int iat = system->map_p2s[i][0];
+        const auto iat = system->map_p2s[i][0];
         for (j = 0; j < nat; ++j) {
             distall[i][j].clear();
             for (icell = 0; icell < nneib; ++icell) {
@@ -252,7 +252,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
         for (j = 0; j < nat; ++j) {
             mindist_out[i][j].clear();
 
-            double dist_min = distall[i][j][0].dist;
+            const auto dist_min = distall[i][j][0].dist;
             for (auto it = distall[i][j].begin(); it != distall[i][j].end(); ++it) {
                 if (std::abs((*it).dist - dist_min) < 1.0e-3) {
                     mindist_out[i][j].push_back((*it).cell);
@@ -275,10 +275,10 @@ double Dynamical::distance(double *x1,
 
 void Dynamical::eval_k(double *xk_in,
                        double *kvec_in,
-                       std::vector <FcsClassExtent> fc2_ext,
+                       const std::vector<FcsClassExtent> &fc2_ext,
                        double *eval_out,
                        std::complex<double> **evec_out,
-                       bool require_evec)
+                       bool require_evec) const
 {
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -375,7 +375,7 @@ void Dynamical::eval_k(double *xk_in,
 
 void Dynamical::eval_k_ewald(double *xk_in,
                              double *kvec_in,
-                             std::vector <FcsClassExtent> fc2_in,
+                             const std::vector<FcsClassExtent> &fc2_in,
                              double *eval_out,
                              std::complex<double> **evec_out,
                              const bool require_evec) const
@@ -412,10 +412,10 @@ void Dynamical::eval_k_ewald(double *xk_in,
         for (i = 0; i < system->natmin; ++i) {
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
-                    std::complex<double> check = std::complex<double>(0.0, 0.0);
-                    int count = 0;
+                    auto check = std::complex<double>(0.0, 0.0);
+                    auto count = 0;
                     for (j = 0; j < system->natmin; ++j) {
-                        double mass = system->mass[system->map_p2s[i][0]] * system->mass[system->map_p2s[j][0]];
+                        const auto mass = system->mass[system->map_p2s[i][0]] * system->mass[system->map_p2s[j][0]];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
                         count += 1;
                     }
@@ -476,35 +476,35 @@ void Dynamical::eval_k_ewald(double *xk_in,
     memory->deallocate(amat);
 }
 
-void Dynamical::calc_analytic_k(double *xk_in,
-                                const std::vector <FcsClassExtent> &fc2_in,
+void Dynamical::calc_analytic_k(const double *xk_in,
+                                const std::vector<FcsClassExtent> &fc2_in,
                                 std::complex<double> **dymat_out) const
 {
     int i;
 
-    auto nmode = 3 * system->natmin;
+    const auto nmode = 3 * system->natmin;
 
     double vec[3];
-    std::complex<double> im(0.0, 1.0);
+    const std::complex<double> im(0.0, 1.0);
     std::complex<double> **ctmp;
 
     memory->allocate(ctmp, nmode, nmode);
     for (i = 0; i < nmode; ++i) {
-        for (int j = 0; j < nmode; ++j) {
+        for (auto j = 0; j < nmode; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);
         }
     }
 
     for (const auto &it : fc2_in) {
 
-        unsigned int atm1_p = it.atm1;
-        unsigned int atm2_s = it.atm2;
-        unsigned int xyz1 = it.xyz1;
-        unsigned int xyz2 = it.xyz2;
-        unsigned int icell = it.cell_s;
+        const auto atm1_p = it.atm1;
+        const auto atm2_s = it.atm2;
+        const auto xyz1 = it.xyz1;
+        const auto xyz2 = it.xyz2;
+        const auto icell = it.cell_s;
 
-        unsigned int atm1_s = system->map_p2s[atm1_p][0];
-        unsigned int atm2_p = system->map_s2p[atm2_s].atom_num;
+        const auto atm1_s = system->map_p2s[atm1_p][0];
+        const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
@@ -514,7 +514,7 @@ void Dynamical::calc_analytic_k(double *xk_in,
         rotvec(vec, vec, system->lavec_s);
         rotvec(vec, vec, system->rlavec_p);
 
-        double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+        const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
                 += it.fcs_val * std::exp(im * phase)
@@ -522,21 +522,23 @@ void Dynamical::calc_analytic_k(double *xk_in,
     }
 }
 
+
 void Dynamical::calc_nonanalytic_k(double *xk_in,
                                    double *kvec_na_in,
-                                   std::complex<double> **dymat_na_out)
+                                   std::complex<double> **dymat_na_out) const
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by Parlinski's method.
 
     unsigned int i, j;
     unsigned int iat, jat;
-    unsigned int natmin = system->natmin;
+    const auto natmin = system->natmin;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
     double xk_tmp[3], xdiff[3];
-    std::complex<double> im(0.0, 1.0);
+    const std::complex<double> im(0.0, 1.0);
+
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -545,14 +547,14 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
     }
 
     rotvec(kepsilon, kvec_na_in, dielec);
-    double denom = kvec_na_in[0] * kepsilon[0]
-                   + kvec_na_in[1] * kepsilon[1]
-                   + kvec_na_in[2] * kepsilon[2];
+    const auto denom = kvec_na_in[0] * kepsilon[0]
+        + kvec_na_in[1] * kepsilon[1]
+        + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
         for (iat = 0; iat < natmin; ++iat) {
-            unsigned int atm_p1 = system->map_p2s[iat][0];
+            const auto atm_p1 = system->map_p2s[iat][0];
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -563,7 +565,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
             rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
             for (jat = 0; jat < natmin; ++jat) {
-                unsigned int atm_p2 = system->map_p2s[jat][0];
+                const auto atm_p2 = system->map_p2s[jat][0];
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -586,9 +588,9 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
     }
 
     rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
-    double norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
+    const auto norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
 
-    double factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
+    const auto factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -620,9 +622,9 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
     }
 }
 
-void Dynamical::calc_nonanalytic_k2(double *xk_in,
+void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                                     double *kvec_na_in,
-                                    std::complex<double> **dymat_na_out)
+                                    std::complex<double> **dymat_na_out) const
 {
     // Calculate the non-analytic part of dynamical matrices 
     // by the mixed-space approach.
@@ -798,8 +800,10 @@ void Dynamical::modify_eigenvectors() const
     unsigned int js;
     std::complex<double> *evec_tmp;
 
-    auto nk = kpoint->nk;
-    auto ns = neval;
+    const auto nk = kpoint->nk;
+    const auto ns = neval;
+  //  auto nk = kpoint->nk;
+  //  auto ns = neval;
 
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
@@ -810,7 +814,7 @@ void Dynamical::modify_eigenvectors() const
 
         if (!flag_done[ik]) {
 
-            unsigned int nk_inv = kpoint->knum_minus[ik];
+            const auto nk_inv = kpoint->knum_minus[ik];
 
             for (unsigned int is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
@@ -1211,7 +1215,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             }
         }
 
-        for (int isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
+        for (auto isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
@@ -1243,7 +1247,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
         // Check if the Born effective charges given by the users satisfy the symmetry.
 
-        double diff_sym = 0.0;
+        auto diff_sym = 0.0;
         for (iat = 0; iat < system->natmin; ++iat) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -1307,9 +1311,9 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
                                              double **ret,
                                              double ***ret_all) const
 {
-    auto nk = kpoint->nk;
-    auto ns = dynamical->neval;
-    auto natmin = system->natmin;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto natmin = system->natmin;
 
     double *atomic_pr;
 
@@ -1319,7 +1323,7 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
         for (auto is = 0; is < ns; ++is) {
             calc_atomic_participation_ratio(evec[ik][is], atomic_pr);
 
-            double sum = 0.0;
+            auto sum = 0.0;
 
             for (auto iat = 0; iat < natmin; ++iat) {
                 sum += atomic_pr[iat];
@@ -1337,7 +1341,7 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
                                                 double *ret) const
 {
     unsigned int iat;
-    auto natmin = system->natmin;
+    const auto natmin = system->natmin;
 
     for (iat = 0; iat < natmin; ++iat) ret[iat] = 0.0;
 
@@ -1347,7 +1351,7 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
                     + std::norm(evec[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
     }
 
-    double sum = 0.0;
+    auto sum = 0.0;
 
     for (iat = 0; iat < natmin; ++iat) sum += ret[iat] * ret[iat];
 
@@ -1359,8 +1363,8 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
                                                  int **index_sorted) const
 {
     int ik, is, js;
-    auto nk = kpoint->nk;
-    auto ns = neval;
+    const auto nk = kpoint->nk;
+    const auto ns = neval;
     std::vector<int> index;
     std::complex<double> **evec_tmp;
     std::vector <std::vector<double>> abs_similarity;
@@ -1444,13 +1448,13 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
 void Dynamical::detect_imaginary_branches(double **eval)
 {
     int ik, is;
-    auto nk = kpoint->nk;
-    auto ns = dynamical->neval;
-    auto nks = ns * nk;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto nks = ns * nk;
     int knum;
     double omega;
 
-    bool is_anyof_imaginary = false;
+    auto is_anyof_imaginary = false;
     if (mympi->my_rank == 0) {
 
         memory->allocate(is_imaginary, kpoint->nk_irred, ns);
@@ -1476,9 +1480,9 @@ void Dynamical::detect_imaginary_branches(double **eval)
             for (ik = 0; ik < kpoint->nk_irred; ++ik) {
                 for (is = 0; is < ns; ++is) {
                     if (is_imaginary[ik][is]) {
-                        int ndup = kpoint->kpoint_irred_all[ik].size();
+                        const int ndup = kpoint->kpoint_irred_all[ik].size();
                         count += ndup;
-                        for (int i = 0; i < ndup; ++i) {
+                        for (auto i = 0; i < ndup; ++i) {
                             knum = kpoint->kpoint_irred_all[ik][i].knum;
                             omega = eval[knum][is];
                             for (int j = 0; j < 3; ++j) {

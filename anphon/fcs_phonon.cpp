@@ -163,7 +163,7 @@ void Fcs_phonon::load_fc2_xml()
             read_xml(file_fc2, pt);
         }
         catch (std::exception &e) {
-            std::string str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
+            auto str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
             error->exit("load_fc2_xml", str_error.c_str());
         }
     } else {
@@ -171,17 +171,17 @@ void Fcs_phonon::load_fc2_xml()
             read_xml(file_fcs, pt);
         }
         catch (std::exception &e) {
-            std::string str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
+            auto str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
             error->exit("load_fc2_xml", str_error.c_str());
         }
     }
 
     fc2_ext.clear();
 
-    BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
-        const ptree &child = child_.second;
-        const std::string str_p1 = child.get<std::string>("<xmlattr>.pair1");
-        const std::string str_p2 = child.get<std::string>("<xmlattr>.pair2");
+    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
+        const auto &child = child_.second;
+        const auto str_p1 = child.get<std::string>("<xmlattr>.pair1");
+        const auto str_p2 = child.get<std::string>("<xmlattr>.pair2");
 
         ss1.str("");
         ss2.str("");
@@ -218,7 +218,7 @@ void Fcs_phonon::load_fcs_xml() const
 
     std::stringstream ss;
 
-    AtomCellSuper ivec_tmp;
+    AtomCellSuper ivec_tmp{};
     std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
 
 
@@ -228,7 +228,7 @@ void Fcs_phonon::load_fcs_xml() const
         read_xml(file_fcs, pt);
     }
     catch (std::exception &e) {
-        std::string str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
+        auto str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
         error->exit("load_fcs_xml", str_error.c_str());
     }
 
@@ -240,23 +240,23 @@ void Fcs_phonon::load_fcs_xml() const
             str_tag = "Data.ForceConstants.ANHARM" + std::to_string(order + 2);
         }
 
-        boost::optional<ptree&> child_ = pt.get_child_optional(str_tag);
+        auto child_ = pt.get_child_optional(str_tag);
 
         if (!child_) {
-            std::string str_tmp = str_tag + " flag not found in the XML file";
+            auto str_tmp = str_tag + " flag not found in the XML file";
             error->exit("load_fcs_xml", str_tmp.c_str());
         }
 
-        BOOST_FOREACH(const ptree::value_type& child_, pt.get_child(str_tag)) {
-            const ptree &child = child_.second;
+        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child(str_tag)) {
+            const auto &child = child_.second;
 
-            double fcs_val = boost::lexical_cast<double>(child.data());
+            auto fcs_val = boost::lexical_cast<double>(child.data());
 
             ivec_with_cell.clear();
 
             for (i = 0; i < order + 2; ++i) {
-                std::string str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
-                std::string str_pairs = child.get<std::string>(str_attr);
+                auto str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
+                auto str_pairs = child.get<std::string>(str_attr);
 
                 ss.str("");
                 ss.clear();
@@ -373,7 +373,7 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
     unsigned int **ind;
     FcsClassExtent fcext_tmp;
 
-    unsigned int nfcs = fc2_ext.size();
+    auto nfcs = fc2_ext.size();
     MPI_Bcast(&nfcs, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     memory->allocate(fcs_tmp, nfcs);
@@ -422,7 +422,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
     double ***sum3;
     double ****sum4;
 
-    bool force_asr = false;
+    const auto force_asr = false;
     FcsClassExtent fc2_tmp;
 
 
