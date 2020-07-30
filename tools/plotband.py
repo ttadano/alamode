@@ -11,10 +11,11 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 
-import matplotlib as mpl
 import numpy as np
 import optparse
+import matplotlib as mpl
 from matplotlib.gridspec import GridSpec
+
 
 try:
     mpl.use("Qt5agg")

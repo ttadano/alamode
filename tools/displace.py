@@ -27,12 +27,6 @@ from interface.LAMMPS import LammpsParser
 from GenDisplacement import AlamodeDisplace
 
 parser = argparse.ArgumentParser()
-import interface.OpenMX as openmx
-import interface.QE as qe
-import interface.VASP as vasp
-import interface.xTAPP as xtapp
-import numpy as np
-import optparse
 
 parser.add_argument('--mag',
                     type=float, default=0.02,

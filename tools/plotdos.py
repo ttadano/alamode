@@ -11,10 +11,10 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import optparse
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 # parser options
 usage = "usage: %prog [options] file1.dos file2.dos ... "
