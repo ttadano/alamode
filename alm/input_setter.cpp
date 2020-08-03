@@ -133,7 +133,7 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int noncollinear_in,
                                    const int trevsym_in,
                                    const std::string *kdname_in,
-                                   const double * const *magmom_in,
+                                   const double *const *magmom_in,
                                    const double tolerance,
                                    const double tolerance_constraint,
                                    const std::string basis_force_constant)
@@ -160,7 +160,7 @@ void InputSetter::set_general_vars(ALM *alm,
     }
     allocate(magmom, nat);
 
-    for (i = 0; i < nat; i ++) {
+    for (i = 0; i < nat; i++) {
         for (auto j = 0; j < 3; j++) {
             magmom[i][j] = magmom_in[i][j];
         }

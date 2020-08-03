@@ -12,10 +12,8 @@
 
 #include <string>
 
-namespace ALM_NS
-{
-    class DispForceFile
-    {
+namespace ALM_NS {
+    class DispForceFile {
     public:
         std::string filename;
         size_t ndata, nstart, nend;
@@ -32,14 +30,16 @@ namespace ALM_NS
         }
 
         ~DispForceFile() = default;
+
         DispForceFile(const DispForceFile &obj) = default;
-        DispForceFile& operator=(const DispForceFile &obj) = default;
+
+        DispForceFile &operator=(const DispForceFile &obj) = default;
     };
 
-    class Files
-    {
+    class Files {
     public:
         Files();
+
         ~Files();
 
         void init();
@@ -48,10 +48,15 @@ namespace ALM_NS
         std::string file_fcs, file_hes;
 
         void set_prefix(const std::string);
+
         std::string get_prefix() const;
+
         void set_datfile_train(const DispForceFile &dat_in);
+
         void set_datfile_validation(const DispForceFile &dat_in);
+
         DispForceFile get_datfile_train() const;
+
         DispForceFile get_datfile_validation() const;
 
     private:

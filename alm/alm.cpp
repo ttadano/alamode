@@ -125,13 +125,10 @@ void ALM::set_cell(const size_t nat,
 }
 
 void ALM::set_magnetic_params(const size_t nat,
-                              const double (*magmom)[3],
-                              // MAGMOM
+                              const double (*magmom)[3], // MAGMOM
                               const bool lspin,
-                              const int noncollinear,
-                              // NONCOLLINEAR
-                              const int trev_sym_mag,
-                              // TREVSYM
+                              const int noncollinear, // NONCOLLINEAR
+                              const int trev_sym_mag, // TREVSYM
                               const std::string str_magmom) const // MAGMOM
 {
     system->set_spin_variables(nat,
@@ -259,7 +256,7 @@ Cell ALM::get_supercell() const
     return system->get_supercell();
 }
 
-std::string* ALM::get_kdname() const
+std::string *ALM::get_kdname() const
 {
     return system->get_kdname();
 }
@@ -274,17 +271,17 @@ std::string ALM::get_str_magmom() const
     return system->get_str_magmom();
 }
 
-double*** ALM::get_x_image() const
+double ***ALM::get_x_image() const
 {
     return system->get_x_image();
 }
 
-int* ALM::get_periodicity() const
+int *ALM::get_periodicity() const
 {
     return system->get_periodicity();
 }
 
-const std::vector<std::vector<int>>& ALM::get_atom_mapping_by_pure_translations() const
+const std::vector<std::vector<int>> &ALM::get_atom_mapping_by_pure_translations() const
 {
     return symmetry->get_map_p2s();
 }
@@ -294,7 +291,7 @@ int ALM::get_maxorder() const
     return cluster->get_maxorder();
 }
 
-int* ALM::get_nbody_include() const
+int *ALM::get_nbody_include() const
 {
     return cluster->get_nbody_include();
 }
@@ -411,8 +408,7 @@ size_t ALM::get_number_of_fc_origin(const int fc_order,
 }
 
 void ALM::get_fc_origin(double *fc_values,
-                        int *elem_indices,
-                        // (len(fc_values), fc_order + 1) is flatten.
+                        int *elem_indices,  // (len(fc_values), fc_order + 1) is flatten.
                         const int fc_order, // harmonic=1, ...
                         const int permutation) const
 {
@@ -454,8 +450,7 @@ void ALM::get_fc_origin(double *fc_values,
 
 
 void ALM::get_fc_irreducible(double *fc_values,
-                             int *elem_indices,
-                             // (len(fc_values), fc_order + 1) is flatten.
+                             int *elem_indices,  // (len(fc_values), fc_order + 1) is flatten.
                              const int fc_order) // harmonic=1, ...
 {
     // Return an irreducible set of force constants.
@@ -499,7 +494,7 @@ void ALM::get_fc_irreducible(double *fc_values,
                 fc_values[inew] = fc_elem;
                 for (auto i = 0; i < fc_order + 1; ++i) {
                     elem_indices[inew * (fc_order + 1) + i] =
-                        fcs->get_fc_table()[order][it.right].elems[i];
+                            fcs->get_fc_table()[order][it.right].elems[i];
                 }
             }
         }

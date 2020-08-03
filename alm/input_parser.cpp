@@ -38,7 +38,7 @@ InputParser::~InputParser()
 
 void InputParser::run(ALM *alm,
                       const int narg,
-                      const char * const *arg)
+                      const char *const *arg)
 {
     if (narg == 1) {
 
@@ -64,8 +64,8 @@ std::string InputParser::get_run_mode() const
 }
 
 void InputParser::parse_displacement_and_force_files(std::vector<std::vector<double>> &u,
-                              std::vector<std::vector<double>> &f,
-                              DispForceFile &datfile_in) const
+                                                     std::vector<std::vector<double>> &f,
+                                                     DispForceFile &datfile_in) const
 {
     int nrequired;
 
@@ -132,7 +132,7 @@ void InputParser::parse_displacement_and_force_files(std::vector<std::vector<dou
 
     // Copy the data into 2D array
     const auto ndata_used = datfile_in.nend - datfile_in.nstart
-        + 1 - datfile_in.skip_e + datfile_in.skip_s;
+                            + 1 - datfile_in.skip_e + datfile_in.skip_s;
 
     u.resize(ndata_used, std::vector<double>(3 * nat));
     f.resize(ndata_used, std::vector<double>(3 * nat));
@@ -232,9 +232,9 @@ void InputParser::parse_general_vars(ALM *alm)
 
     std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
     const std::vector<std::string> input_list{
-        "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
-        "DBASIS", "TRIMEVEN", "VERBOSITY",
-        "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FC_BASIS"
+            "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
+            "DBASIS", "TRIMEVEN", "VERBOSITY",
+            "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FC_BASIS"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
     std::map<std::string, std::string> general_var_dict;
@@ -664,13 +664,13 @@ void InputParser::parse_optimize_vars(ALM *alm)
     std::vector<std::vector<double>> u_tmp2, f_tmp2;
 
     const std::vector<std::string> input_list{
-        "LMODEL", "SPARSE", "SPARSESOLVER",
-        "ICONST", "ROTAXIS", "FC2XML", "FC3XML",
-        "NDATA", "NSTART", "NEND", "SKIP", "DFILE", "FFILE", "DFSET",
-        "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
-        "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
-        "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
-        "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
+            "LMODEL", "SPARSE", "SPARSESOLVER",
+            "ICONST", "ROTAXIS", "FC2XML", "FC3XML",
+            "NDATA", "NSTART", "NEND", "SKIP", "DFILE", "FFILE", "DFSET",
+            "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
+            "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
+            "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
+            "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
     };
 
     std::map<std::string, std::string> optimize_var_dict;
@@ -691,7 +691,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
             || str_LMODEL == "least-squares" || str_LMODEL == "1") {
             optcontrol.linear_model = 1;
         } else if (str_LMODEL == "enet" || str_LMODEL == "elastic-net"
-            || str_LMODEL == "2") {
+                   || str_LMODEL == "2") {
             optcontrol.linear_model = 2;
         } else {
             exit("parse_optimize_vars", "Invalid OPTIMIZER-tag");
@@ -719,7 +719,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
 
     if (!optimize_var_dict["ENET_DNORM"].empty()) {
         optcontrol.displacement_normalization_factor
-            = boost::lexical_cast<double>(optimize_var_dict["ENET_DNORM"]);
+                = boost::lexical_cast<double>(optimize_var_dict["ENET_DNORM"]);
     }
     if (!optimize_var_dict["L1_ALPHA"].empty()) {
         optcontrol.l1_alpha = boost::lexical_cast<double>(optimize_var_dict["L1_ALPHA"]);
@@ -775,7 +775,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
             exit("parse_optimize_vars", "DFSET tag must be given.");
         }
     }
-        datfile_train.filename = optimize_var_dict["DFSET"];
+    datfile_train.filename = optimize_var_dict["DFSET"];
 
     if (!optimize_var_dict["NDATA"].empty()) {
         assign_val(datfile_train.ndata, "NDATA", optimize_var_dict);
@@ -1154,9 +1154,9 @@ void InputParser::parse_cutoff_radii()
             for (k = 0; k < nkd; ++k) {
                 if (undefined_cutoff[order][j][k]) {
                     std::cout << " Cutoff radius for " << std::setw(3)
-                        << order + 2 << "th-order terms" << std::endl;
+                              << order + 2 << "th-order terms" << std::endl;
                     std::cout << " are not defined between elements " << std::setw(3) << j + 1
-                        << " and " << std::setw(3) << k + 1 << std::endl;
+                              << " and " << std::setw(3) << k + 1 << std::endl;
                     exit("parse_cutoff_radii", "Incomplete cutoff radii");
                 }
             }
@@ -1293,13 +1293,13 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
-                            << key << std::endl;
+                                  << key << std::endl;
                         exit("get_var_dict", "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         exit("get_var_dict", "Redundant input parameter");
                     }
 
@@ -1397,7 +1397,7 @@ void InputParser::split_str_by_space(const std::string str,
     str_tmp.clear();
 }
 
-template <typename T>
+template<typename T>
 void InputParser::assign_val(T &val,
                              const std::string key,
                              std::map<std::string, std::string> dict)

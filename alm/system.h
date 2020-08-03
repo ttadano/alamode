@@ -14,10 +14,8 @@
 #include <vector>
 #include "timer.h"
 
-namespace ALM_NS
-{
-    class AtomType
-    {
+namespace ALM_NS {
+    class AtomType {
     public:
         int element;
         double magmom;
@@ -34,8 +32,7 @@ namespace ALM_NS
         }
     };
 
-    class Cell
-    {
+    class Cell {
     public:
         double lattice_vector[3][3];
         double reciprocal_lattice_vector[3][3];
@@ -47,8 +44,7 @@ namespace ALM_NS
         std::vector<std::vector<double>> x_cartesian;
     };
 
-    class Spin
-    {
+    class Spin {
     public:
         bool lspin;
         int time_reversal_symm;
@@ -56,36 +52,49 @@ namespace ALM_NS
         std::vector<std::vector<double>> magmom;
     };
 
-    class System
-    {
+    class System {
     public:
         System();
+
         ~System();
+
         void init(const int,
                   Timer *);
+
         void frac2cart(double **) const;
 
         void set_supercell(const double [3][3],
                            const size_t,
                            const int *,
                            const double [][3]);
+
         void set_kdname(const std::string *);
+
         void set_periodicity(const int [3]);
+
         void set_spin_variables(const size_t nat,
                                 const bool,
                                 const int,
                                 const int,
                                 const double (*)[3]);
+
         void set_str_magmom(std::string);
 
-        const Cell& get_supercell() const;
-        double*** get_x_image() const;
-        int* get_exist_image() const;
-        std::string* get_kdname() const;
-        int* get_periodicity() const;
-        const Spin& get_spin() const;
-        const std::string& get_str_magmom() const;
-        const std::vector<std::vector<unsigned int>>& get_atomtype_group() const;
+        const Cell &get_supercell() const;
+
+        double ***get_x_image() const;
+
+        int *get_exist_image() const;
+
+        std::string *get_kdname() const;
+
+        int *get_periodicity() const;
+
+        const Spin &get_spin() const;
+
+        const std::string &get_str_magmom() const;
+
+        const std::vector<std::vector<unsigned int>> &get_atomtype_group() const;
 
     private:
         // Variables for geometric structure
@@ -102,19 +111,26 @@ namespace ALM_NS
         // concatenate atomic kind and magmom (only for collinear case)
         std::vector<std::vector<unsigned int>> atomtype_group;
 
-        enum LatticeType { Direct, Reciprocal };
+        enum LatticeType {
+            Direct, Reciprocal
+        };
 
         void set_reciprocal_latt(const double [3][3],
                                  double [3][3]) const;
+
         void set_default_variables();
+
         void deallocate_variables();
 
         double volume(const double [3][3],
                       LatticeType) const;
+
         void set_atomtype_group();
 
         void generate_coordinate_of_periodic_images();
+
         void print_structure_stdout(const Cell &);
+
         void print_magmom_stdout() const;
     };
 }

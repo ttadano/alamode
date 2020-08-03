@@ -13,26 +13,29 @@
 #include "alm.h"
 #include <string>
 
-namespace ALM_NS
-{
-    class InputSetter
-    {
+namespace ALM_NS {
+    class InputSetter {
     public:
         InputSetter();
+
         ~InputSetter();
 
         void set_cell_parameter(const double a,
                                 const double lavec_in[3][3]);
+
         void set_atomic_positions(const size_t nat_in,
                                   const int *kd_in,
                                   const double (*xcoord_in)[3]);
+
         void set_geometric_structure(ALM *alm);
 
         void set_interaction_vars(const int maxorder_in,
                                   const int *nbody_include_in);
+
         void set_cutoff_radii(const int maxorder_in,
                               const size_t nkd_in,
                               const std::vector<double> &cutoff_radii_in);
+
         void define(ALM *alm) const;
 
         void set_general_vars(ALM *alm,
@@ -51,7 +54,7 @@ namespace ALM_NS
                               int noncollinear_in,
                               int trevsym_in,
                               const std::string *kdname_in,
-                              const double * const *magmom_in,
+                              const double *const *magmom_in,
                               double tolerance,
                               double tolerance_constraint,
                               const std::string basis_force_constant);

@@ -14,19 +14,17 @@
 #include<set>
 #include "../external/combination.hpp"
 
-namespace ALM_NS
-{
-    template <class TYPE>
-    class CombinationWithRepetition
-    {
+namespace ALM_NS {
+    template<class TYPE>
+    class CombinationWithRepetition {
         std::vector<TYPE> vec;
         unsigned int ndim;
 
 
     public:
-        CombinationWithRepetition() { };
+        CombinationWithRepetition() {};
 
-        template <class InputIter>
+        template<class InputIter>
         CombinationWithRepetition(InputIter begin,
                                   InputIter end,
                                   const unsigned int n)
