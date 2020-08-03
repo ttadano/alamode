@@ -35,6 +35,7 @@ void ALMCUI::run(const int narg,
     // alm->mode is set herein.
     auto input_parser = new InputParser();
     input_parser->run(alm, narg, arg);
+    auto run_mode = input_parser->get_run_mode();
     delete input_parser;
 
     if (alm->get_verbosity() > 0) {
@@ -42,7 +43,7 @@ void ALMCUI::run(const int narg,
         std::cout << " +                         Program ALM                             +" << std::endl;
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
-        std::cout << "                         +" << std::endl;
+        std::cout << "                       +" << std::endl;
         std::cout << " +-----------------------------------------------------------------+" << std::endl;
         std::cout << std::endl;
 #ifdef _OPENMP
@@ -56,18 +57,20 @@ void ALMCUI::run(const int narg,
     auto writer = new Writer();
 
     if (alm->get_verbosity() > 0) {
-        writer->write_input_vars(alm);
+        writer->write_input_vars(alm, run_mode);
     }
 
-    alm->run();
+    alm->init_fc_table();
 
-    if (alm->get_run_mode() == "optimize") {
+    if (run_mode == "optimize") {
+        alm->run_optimize();
         if (alm->get_optimizer_control().linear_model == 1 ||
             (alm->get_optimizer_control().linear_model == 2
                 && alm->get_optimizer_control().cross_validation == 0)) {
             writer->writeall(alm);
         }
-    } else if (alm->get_run_mode() == "suggest") {
+    } else if (run_mode == "suggest") {
+        alm->run_suggest();
         writer->write_displacement_pattern(alm);
     }
     delete writer;

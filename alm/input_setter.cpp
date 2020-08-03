@@ -141,7 +141,6 @@ void InputSetter::set_general_vars(ALM *alm,
     size_t i;
 
     alm->set_output_filename_prefix(prefix);
-    alm->set_run_mode(mode);
     alm->set_verbosity(verbosity);
     nat = nat_in;
     nkd = nkd_in;
@@ -200,7 +199,8 @@ void InputSetter::set_optimize_vars(ALM *alm,
                                     const std::vector<std::vector<double>> &f_validation_in,
                                     const OptimizerControl &optcontrol_in) const
 {
-    alm->set_training_data(u_train_in, f_train_in);
+    alm->set_u_train(u_train_in);
+    alm->set_f_train(f_train_in);
     alm->set_validation_data(u_validation_in, f_validation_in);
     alm->set_optimizer_control(optcontrol_in);
 }

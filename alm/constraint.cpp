@@ -95,7 +95,7 @@ void Constraint::setup(const System *system,
                        const Fcs *fcs,
                        const Cluster *cluster,
                        const Symmetry *symmetry,
-                       const std::string alm_mode,
+                       const int linear_model,
                        const int verbosity,
                        Timer *timer)
 {
@@ -110,9 +110,10 @@ void Constraint::setup(const System *system,
     constraint_mode = constraint_mode % 10;
     const auto maxorder = cluster->get_maxorder();
 
-    if (alm_mode == "lasso") {
+    if (linear_model == 2) {
         if (constraint_mode > 1) {
-            warn("Constraint::setup()", "Sorry, only ICONST = 11 is supported when MODE = lasso.");
+            warn("Constraint::setup", "Sorry, only ICONST = 11 is supported \n"
+            "                      when LMODEL = enet. We set ICONST = 11 in this run.\n");
             constraint_mode = 1;
         }
         constraint_algebraic = 1;
@@ -951,8 +952,8 @@ void Constraint::get_constraint_translation(const Cell &supercell,
     if (order < 0) return;
 
     if (nparams == 0) return;
-    allocate(ind, order + 2);
 
+    allocate(ind, order + 2);
 
     // Create force constant table for search
 
@@ -1403,8 +1404,8 @@ void Constraint::generate_rotational_constraint(const System *system,
             } else {
 
                 // Constraint between different orders
-                auto interaction_list_now(cluster->get_interaction_pair(order, i));
 
+                auto interaction_list_now(cluster->get_interaction_pair(order, i));
                 auto interaction_list_old(cluster->get_interaction_pair(order - 1, i));
                 std::sort(interaction_list_now.begin(), interaction_list_now.end());
                 std::sort(interaction_list_old.begin(), interaction_list_old.end());
@@ -1881,8 +1882,8 @@ void Constraint::fix_forceconstants_to_file(const int order,
     const auto ntran_ref = boost::lexical_cast<size_t>(
         get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
     const auto natmin_ref = nat_ref / ntran_ref;
-    if (natmin_ref != symmetry->get_nat_prim()) {
 
+    if (natmin_ref != symmetry->get_nat_prim()) {
         exit("fix_forceconstants_to_file",
              "The number of atoms in the primitive cell is not consistent.");
     }

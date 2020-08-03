@@ -90,8 +90,8 @@ namespace ALM_NS
                           const DispForceFile &filedata_validation,
                           Timer *timer);
 
-        void set_training_data(const std::vector<std::vector<double>> &u_train_in,
-                               const std::vector<std::vector<double>> &f_train_in);
+        void set_u_train(const std::vector<std::vector<double>> &u_train_in);
+        void set_f_train(const std::vector<std::vector<double>> &f_train_in);
 
         void set_validation_data(const std::vector<std::vector<double>> &u_validation_in,
                                  const std::vector<std::vector<double>> &f_validation_in);
@@ -99,6 +99,7 @@ namespace ALM_NS
         std::vector<std::vector<double>> get_u_train() const;
         std::vector<std::vector<double>> get_f_train() const;
 
+        size_t get_number_of_data() const;
 
         void get_matrix_elements_algebraic_constraint(const int maxorder,
                                                       std::vector<double> &amat,
@@ -115,8 +116,8 @@ namespace ALM_NS
                             std::vector<size_t> *nequiv,
                             const Constraint *constraint);
 
-
         size_t get_number_of_rows_sensing_matrix() const;
+
         double* get_params() const;
 
         void set_optimizer_control(const OptimizerControl &);

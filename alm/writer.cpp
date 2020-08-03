@@ -30,11 +30,13 @@
 
 using namespace ALM_NS;
 
-Writer::Writer() = default;
+Writer::Writer() {
+    maxorder_to_write = 3;
+};
 
 Writer::~Writer() = default;
 
-void Writer::write_input_vars(const ALM *alm) const
+void Writer::write_input_vars(const ALM *alm, const std::string run_mode) const
 {
     size_t i;
 
@@ -48,7 +50,7 @@ void Writer::write_input_vars(const ALM *alm) const
     std::cout << " -------------------------------------------------------------------" << '\n';
     std::cout << " General:\n";
     std::cout << "  PREFIX = " << alm->files->get_prefix() << '\n';
-    std::cout << "  MODE = " << alm->get_run_mode() << '\n';
+    std::cout << "  MODE = " << run_mode << '\n';
     std::cout << "  NAT = " << nat << "; NKD = " << nkd << '\n';
     std::cout << "  PRINTSYM = " << alm->symmetry->get_print_symmetry()
         << "; TOLERANCE = " << alm->symmetry->get_tolerance() << '\n';
@@ -71,21 +73,16 @@ void Writer::write_input_vars(const ALM *alm) const
     }
     std::cout << "\n\n";
 
-    if (alm->get_run_mode() == "suggest") {
+    if (run_mode == "suggest") {
         std::cout << "  DBASIS = " << alm->displace->get_disp_basis() << "\n\n";
 
-    } else if (alm->get_run_mode() == "optimize") {
+    } else if (run_mode == "optimize") {
         const auto optctrl = alm->optimize->get_optimizer_control();
         std::vector<std::string> str_linearmodel{"least-squares", "elastic-net"};
         std::cout << " Optimize:\n";
         std::cout << "  LMODEL = "
             << str_linearmodel[optctrl.linear_model - 1] << '\n';
-        if (alm->files->get_datfile_train().filename_second.empty()) {
             std::cout << "  DFSET = " << alm->files->get_datfile_train().filename << '\n';
-        } else {
-            std::cout << "  DFILE = " << alm->files->get_datfile_train().filename << '\n';
-            std::cout << "  FFILE = " << alm->files->get_datfile_train().filename_second << '\n';
-        }
         std::cout << "  NDATA = " << alm->files->get_datfile_train().ndata
             << "; NSTART = " << alm->files->get_datfile_train().nstart
             << "; NEND = " << alm->files->get_datfile_train().nend;
@@ -383,14 +380,10 @@ void Writer::write_misc_xml(ALM *alm) const
     std::string str_pos[3];
 
     pt.put("Data.ALM_version", ALAMODE_VERSION);
-    if (alm->files->get_datfile_train().filename_second.empty()) {
         pt.put("Data.Optimize.DFSET", alm->files->get_datfile_train().filename);
-    } else {
-        pt.put("Data.Optimize.DFILE", alm->files->get_datfile_train().filename);
-        pt.put("Data.Optimize.FFILE", alm->files->get_datfile_train().filename_second);
-    }
+    //pt.put("Data.Fitting.ForceFile", alm->files->file_force);
+    pt.put("Data.Fitting.Constraint", alm->constraint->get_constraint_mode());
 
-    pt.put("Data.Optimize.Constraint", alm->constraint->get_constraint_mode());
     pt.put("Data.Structure.NumberOfAtoms", system_structure.nat);
     pt.put("Data.Structure.NumberOfElements", system_structure.nspecies);
 
@@ -587,6 +580,8 @@ void Writer::write_misc_xml(ALM *alm) const
     // Print anharmonic force constants to the xml file.
 
     for (auto order = 1; order < alm->cluster->get_maxorder(); ++order) {
+
+        if (order >= maxorder_to_write) break;
 
         auto fc_cart_anharm = alm->fcs->get_fc_cart()[order];
 

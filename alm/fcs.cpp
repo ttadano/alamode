@@ -922,7 +922,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
         nfc_cart_permu[i] = fc_cart[i].size();
         nfc_cart_nopermu[i] = std::count_if(fc_cart[i].begin(),
                                             fc_cart[i].end(),
-                                            [](const ForceConstantTable &obj) { return obj.is_ascending_order; });
+                                            [](const ForceConstantTable &obj){return obj.is_ascending_order;});
     }
 }
 

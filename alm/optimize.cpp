@@ -32,6 +32,8 @@
 #include <Eigen/SparseCholesky>
 #include <Eigen/IterativeLinearSolvers>
 
+#include <omp.h>
+
 using namespace ALM_NS;
 
 Optimize::Optimize()
@@ -70,11 +72,15 @@ int Optimize::optimize_main(const Symmetry *symmetry,
 {
     timer->start_clock("optimize");
 
+    const auto natmin = symmetry->get_nat_prim();
+
     const auto ndata_used = filedata_train.nend - filedata_train.nstart + 1
                             - filedata_train.skip_e + filedata_train.skip_s;
     const auto ndata_used_validation = filedata_validation.nend - filedata_validation.nstart + 1;
+    const auto ntran = symmetry->get_ntran();
     auto info_fitting = 0;
     const auto M = get_number_of_rows_sensing_matrix();
+    const auto M_validation = 3 * natmin * ndata_used_validation * ntran;
     size_t N = 0;
     size_t N_new = 0;
     for (auto i = 0; i < maxorder; ++i) {
@@ -92,26 +98,27 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         std::cout << " OPTIMIZATION\n";
         std::cout << " ============\n\n";
         std::cout << "  LMODEL = " << str_linearmodel[optcontrol.linear_model - 1] << "\n\n";
-        if (filedata_train.filename_second.empty()) {
+        if (filedata_train.filename != "") {
             std::cout << "  Training data file (DFSET) : " << filedata_train.filename << "\n\n";
-        } else {
-            std::cout << "  Training data file (DFILE) : " << filedata_train.filename << "\n";
-            std::cout << "  Training data file (FFILE) : " << filedata_train.filename_second << "\n\n";
-        }
         std::cout << "  NSTART = " << filedata_train.nstart << "; NEND = " << filedata_train.nend << '\n';
-        if (filedata_train.skip_s < filedata_train.skip_e)
+            if (filedata_train.skip_s < filedata_train.skip_e) {
             std::cout << ": SKIP = " << filedata_train.skip_s << "-" <<
                       filedata_train.skip_e - 1 << '\n';
+            }
         std::cout << "  " << ndata_used
                   << " entries will be used for training.\n\n";
+        }
 
         if (optcontrol.cross_validation == -1) {
             std::cout << "  CV = -1 : Manual cross-validation mode is selected\n";
+            if (filedata_validation.filename != "") {
+
             std::cout << "  Validation data file (DFSET_CV) : " << filedata_validation.filename << "\n\n";
             std::cout << "  NSTART_CV = " << filedata_validation.nstart << "; NEND_CV = " << filedata_validation.nend <<
                       std::endl;
             std::cout << "  " << ndata_used_validation
                       << " entries will be used for validation." << std::endl << std::endl;
+            }
         }
 
         std::cout << "  Total Number of Parameters : " << N << '\n';
@@ -1166,11 +1173,11 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
 
         std::cout << std::endl;
         if (optcontrol.standardize) {
-            std::cout << " STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b." << std::endl;
-            std::cout << "                   The ENET_DNORM-tag will be neglected." << std::endl;
+            std::cout << "  STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b." << std::endl;
+            std::cout << "                    The ENET_DNORM-tag will be neglected." << std::endl << std::endl;
         } else {
-            std::cout << " STANDARDIZE = 0 : No standardization of matrix A and vector b." << std::endl;
-            std::cout << "                   Columns of matrix A will be scaled by the ENET_DNORM value." << std::endl;
+            std::cout << "  STANDARDIZE = 0 : No standardization of matrix A and vector b." << std::endl;
+            std::cout << "                    Columns of matrix A will be scaled by the ENET_DNORM value." << std::endl << std::endl;
         }
     }
 
@@ -1512,14 +1519,17 @@ void Optimize::apply_basis_converter_amat(const int natmin3,
 }
 
 
-void Optimize::set_training_data(const std::vector<std::vector<double>> &u_train_in,
-                                 const std::vector<std::vector<double>> &f_train_in)
+void Optimize::set_u_train(const std::vector<std::vector<double>> &u_train_in)
 {
     u_train.clear();
-    f_train.clear();
     u_train = u_train_in;
-    f_train = f_train_in;
     u_train.shrink_to_fit();
+}
+
+void Optimize::set_f_train(const std::vector<std::vector<double>> &f_train_in)
+{
+    f_train.clear();
+    f_train = f_train_in;
     f_train.shrink_to_fit();
 }
 
@@ -1544,6 +1554,10 @@ std::vector<std::vector<double>> Optimize::get_f_train() const
     return f_train;
 }
 
+size_t Optimize::get_number_of_data() const
+{
+    return u_train.size();
+}
 
 void Optimize::set_fcs_values(const int maxorder,
                               double *fc_in,
@@ -1586,7 +1600,6 @@ size_t Optimize::get_number_of_rows_sensing_matrix() const
 {
     return u_train.size() * u_train[0].size();
 }
-
 
 int Optimize::fit_without_constraints(const size_t N,
                                       const size_t M,
@@ -1669,7 +1682,7 @@ int Optimize::fit_with_constraints(const size_t N,
                                    double *amat,
                                    const double *bvec,
                                    double *param_out,
-                                   const double *const *cmat,
+                                   const double * const *cmat,
                                    double *dvec,
                                    const int verbosity) const
 {
@@ -2141,8 +2154,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
 
                     for (j = 0; j < natmin3; ++j) {
                         bvec[j + idata] -= constraint->get_const_fix(order)[i].val_to_fix
-                                           * amat_orig_tmp[j][ishift +
-                                                              constraint->get_const_fix(order)[i].p_index_target];
+                            * amat_orig_tmp[j][ishift + constraint->get_const_fix(order)[i].p_index_target];
                     }
                 }
 
@@ -2165,7 +2177,6 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                         inew = constraint->get_index_bimap(order).right.at(
                                 constraint->get_const_relate(order)[i].p_index_orig[j]) +
                                iparam;
-
 
                         for (k = 0; k < natmin3; ++k) {
                             amat_mod_tmp[k][inew] -= amat_orig_tmp[k][iold]
@@ -2340,8 +2351,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
 
                     for (j = 0; j < natmin3; ++j) {
                         sp_bvec(j + idata) -= constraint->get_const_fix(order)[i].val_to_fix
-                                              * amat_orig_tmp[j][ishift +
-                                                                 constraint->get_const_fix(order)[i].p_index_target];
+                            * amat_orig_tmp[j][ishift + constraint->get_const_fix(order)[i].p_index_target];
                     }
                 }
 
@@ -2545,7 +2555,7 @@ double Optimize::gamma(const int n,
 }
 
 
-double *Optimize::get_params() const
+double* Optimize::get_params() const
 {
     return params;
 }
