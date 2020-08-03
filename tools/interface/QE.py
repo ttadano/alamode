@@ -893,7 +893,7 @@ class QEParser(object):
             line = f.readline()
 
         if not found_tag:
-            print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
+            #print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
             return None
 
         x = self._celldm[0] * np.dot(x, self._inverse_lattice_vector.transpose()) \
