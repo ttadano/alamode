@@ -772,6 +772,10 @@ std::string Fcs::get_forceconstant_basis() const
 void Fcs::set_forceconstant_cartesian(const int maxorder,
                                       double *param_in)
 {
+    // Convert the force constant basis from Lattice to Cartesian.
+    // This operation takes a while for higher-order anharmonic terms.
+    // TODO: Improve performance
+
     auto ishift = 0;
     int j;
 
@@ -779,6 +783,10 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
     std::vector<int> coords_now;
     std::vector<std::vector<int>> coord_list;
     std::vector<double> fc_list;
+    std::vector<std::vector<std::vector<int>>> coord_list_grp;
+    std::vector<std::vector<double>> fc_list_grp;
+    std::vector<std::vector<int>> atoms_grp;
+
     int **xyzcomponent;
     double prod_matrix;
 
@@ -809,7 +817,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
         get_xyzcomponent(nelems, xyzcomponent);
 
         for (j = 0; j < nelems; ++j) atoms_old[j] = -1;
-        int icount = 0;
+        auto icount = 0;
 
         fc_table_copy.clear();
         for (const auto &it : fc_table[i]) {
@@ -828,6 +836,10 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
                   fc_table_copy.end(),
                   FcProperty::compare_atom_index);
 
+        coord_list_grp.clear();
+        fc_list_grp.clear();
+        atoms_grp.clear();
+
         for (const auto &it : fc_table_copy) {
 
             for (j = 0; j < nelems; ++j) {
@@ -837,35 +849,19 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
 
             if (atoms_now == atoms_old) {
 
-                coord_list.push_back(coords_now);
-                fc_list.push_back(param_in[it.mother + ishift] * it.sign);
+                coord_list.emplace_back(coords_now);
+                fc_list.emplace_back(param_in[it.mother + ishift] * it.sign);
 
                 ++icount;
 
             } else {
 
                 if (icount > 0) {
-                    for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
-
-                        auto fcs_cart = 0.0;
-
-                        for (j = 0; j < icount; ++j) {
-                            prod_matrix = 1.0;
-                            for (auto k = 0; k < nelems; ++k) {
-                                prod_matrix *= basis_conversion_matrix(coord_list[j][k],
-                                                                       xyzcomponent[ixyz][k]);
-                            }
-                            fcs_cart += prod_matrix * fc_list[j];
-                        }
-
-                        if (std::abs(fcs_cart) > eps12) {
-                            fc_cart[i].emplace_back(nelems,
-                                                    fcs_cart,
-                                                    &atoms_old[0],
-                                                    xyzcomponent[ixyz]);
-                        }
-                    }
+                    coord_list_grp.emplace_back(coord_list);
+                    fc_list_grp.emplace_back(fc_list);
+                    atoms_grp.emplace_back(atoms_old);
                 }
+
                 atoms_old = atoms_now;
                 coord_list.clear();
                 fc_list.clear();
@@ -876,30 +872,51 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
         }
 
         if (icount > 0) {
-            for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
+            coord_list_grp.emplace_back(coord_list);
+            fc_list_grp.emplace_back(fc_list);
+            atoms_grp.emplace_back(atoms_old);
+        }
 
-                auto fcs_cart = 0.0;
+        const int ngrp = coord_list_grp.size();
 
-                for (j = 0; j < icount; ++j) {
-                    prod_matrix = 1.0;
-                    for (auto k = 0; k < nelems; ++k) {
-                        prod_matrix *= basis_conversion_matrix(coord_list[j][k],
-                                                               xyzcomponent[ixyz][k]);
+#pragma omp parallel
+        {
+            std::vector<ForceConstantTable> fc_cart_omp;
+
+#pragma omp for private(prod_matrix, j), schedule(guided), nowait
+            for (int igrp = 0; igrp < ngrp; ++igrp) {
+                for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
+
+                    auto fcs_cart = 0.0;
+                    const auto nentry = coord_list_grp[igrp].size();
+                    for (j = 0; j < nentry; ++j) {
+                        prod_matrix = 1.0;
+                        for (auto k = 0; k < nelems; ++k) {
+                            prod_matrix *= basis_conversion_matrix(coord_list_grp[igrp][j][k],
+                                                                   xyzcomponent[ixyz][k]);
+                        }
+                        fcs_cart += prod_matrix * fc_list_grp[igrp][j];
                     }
-                    fcs_cart += prod_matrix * fc_list[j];
-                }
 
-                if (std::abs(fcs_cart) > eps12) {
-                    fc_cart[i].emplace_back(nelems,
-                                            fcs_cart,
-                                            &atoms_old[0],
-                                            xyzcomponent[ixyz]);
+                    if (std::abs(fcs_cart) > eps12) {
+                        fc_cart_omp.emplace_back(nelems,
+                                                 fcs_cart,
+                                                 &atoms_grp[igrp][0],
+                                                 xyzcomponent[ixyz]);
+                    }
                 }
             }
+
+#pragma omp critical
+            {
+                for (const auto &it : fc_cart_omp) {
+                    fc_cart[i].emplace_back(it);
+                }
+            }
+            fc_cart_omp.clear();
         }
 
         ishift += nequiv[i].size();
-
         deallocate(xyzcomponent);
 
         nfc_cart_permu[i] = fc_cart[i].size();
