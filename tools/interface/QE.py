@@ -92,8 +92,12 @@ class QEParser(object):
                                                  pwout_file_offset,
                                                  filter_emin,
                                                  filter_emax)
+
         elif self._print_energy:
             self._print_energies(pwout_files, pwout_file_offset)
+
+        elif self._print_born:
+            self._print_borninfo(pwout_files)
 
     def get_displacements(self, pwout_files, unit="bohr"):
 
@@ -285,6 +289,23 @@ class QEParser(object):
                 val = etot[idata] - etot_offset
                 val *= self._energy_conversion_factor
                 print("%19.11E" % val)
+
+    def _print_borninfo(self, phout_files):
+
+        for search_target in phout_files:
+
+            dielec, borncharge = self._get_borninfo_phout(search_target)
+            nat_prim, _, _ = np.shape(borncharge)
+
+            for i in range(3):
+                print("%16.8F %16.8F %16.8F" %
+                      (dielec[i, 0], dielec[i, 1], dielec[i, 2]))
+
+            for j in range(nat_prim):
+                for i in range(3):
+                    print("%16.8F %16.8F %16.8F" % (borncharge[j, i, 0],
+                                                    borncharge[j, i, 1],
+                                                    borncharge[j, i, 2]))
 
     def _set_system_info(self):
 
@@ -992,3 +1013,43 @@ class QEParser(object):
             return None
 
         return np.array(etot, dtype=np.float)
+
+    @staticmethod
+    def _get_borninfo_phout(phout_file):
+        dielec = []
+        borncharge = []
+
+        search_tag1 = "Dielectric constant in cartesian axis"
+
+        f = open(phout_file, 'r')
+        line = f.readline()
+
+        found_tag1 = False
+        found_tag2 = False
+
+        while line:
+            if search_tag1 in line:
+                found_tag1 = True
+                f.readline()
+                for i in range(3):
+                    line = f.readline()
+                    dielec.extend([float(t) for t in line.strip().split()[1:4]])
+
+            if "Px" in line or "Py" in line or "Pz" in line:
+                found_tag2 = True
+                borncharge.extend(float(t) for t in line.strip().split()[2:5])
+
+            line = f.readline()
+        f.close()
+
+        if not found_tag1 or not found_tag2:
+            print("Dielectric constants or Born effective charges are not found"
+                  "in %s" % phout_file, file=sys.stderr)
+            return None
+
+        nat = len(borncharge) // 9
+        dielec = np.reshape(np.array(dielec[9:]), (3, 3))
+        borncharge = np.reshape(np.array(borncharge), (nat, 3, 3))
+        return dielec, borncharge
+
+

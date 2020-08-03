@@ -149,8 +149,8 @@ def check_options(args):
         print_energy = True
     elif str_get == "born" or str_get == "dielec":
         print_borninfo = True
-        if code != "VASP":
-            raise RuntimeError("Sorry, --get born is available only for VASP.")
+        if code != "VASP" and code != "QE":
+            raise RuntimeError("Sorry, --get born is available only for VASP and QE.")
 
     output_flags = [print_disp, print_force, print_energy, print_borninfo]
 
