@@ -30,10 +30,7 @@
 
 using namespace ALM_NS;
 
-Writer::Writer()
-{
-    maxorder_to_write = 3;
-};
+Writer::Writer() = default;
 
 Writer::~Writer() = default;
 
@@ -382,8 +379,7 @@ void Writer::write_misc_xml(ALM *alm) const
 
     pt.put("Data.ALM_version", ALAMODE_VERSION);
     pt.put("Data.Optimize.DFSET", alm->files->get_datfile_train().filename);
-    //pt.put("Data.Fitting.ForceFile", alm->files->file_force);
-    pt.put("Data.Fitting.Constraint", alm->constraint->get_constraint_mode());
+    pt.put("Data.Optimize.Constraint", alm->constraint->get_constraint_mode());
 
     pt.put("Data.Structure.NumberOfAtoms", system_structure.nat);
     pt.put("Data.Structure.NumberOfElements", system_structure.nspecies);
@@ -582,7 +578,7 @@ void Writer::write_misc_xml(ALM *alm) const
 
     for (auto order = 1; order < alm->cluster->get_maxorder(); ++order) {
 
-        if (order >= maxorder_to_write) break;
+        if (order >= alm->get_nmaxsave()) break;
 
         auto fc_cart_anharm = alm->fcs->get_fc_cart()[order];
 

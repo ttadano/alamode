@@ -59,9 +59,14 @@ namespace ALM_NS {
 
         DispForceFile get_datfile_validation() const;
 
+        void set_output_maxorder(const int maxorder);
+
+        int get_output_maxorder() const;
+
     private:
 
         std::string job_title;
         DispForceFile datfile_train, datfile_validation;
+        int output_maxorder;
     };
 }

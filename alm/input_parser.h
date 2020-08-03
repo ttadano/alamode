@@ -60,10 +60,10 @@ namespace ALM_NS {
 
         int locate_tag(const std::string);
 
-        void split_str_by_space(const std::string,
-                                std::vector<std::string> &) const;
+        static void split_str_by_space(const std::string,
+                                std::vector<std::string> &) ;
 
-        bool is_endof_entry(const std::string) const;
+        static bool is_endof_entry(const std::string) ;
 
         void get_var_dict(const std::vector<std::string> &,
                           std::map<std::string,
@@ -73,7 +73,7 @@ namespace ALM_NS {
 
         template<typename T>
         void assign_val(T &,
-                        const std::string,
+                        const std::string&,
                         std::map<std::string, std::string>);
 
         void parse_displacement_and_force_files(std::vector<std::vector<double>> &u,

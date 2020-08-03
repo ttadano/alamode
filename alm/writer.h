@@ -61,8 +61,6 @@ namespace ALM_NS {
 
         void write_displacement_pattern(ALM *) const;
 
-        int maxorder_to_write;
-
     private:
         void write_force_constants(ALM *) const;
 

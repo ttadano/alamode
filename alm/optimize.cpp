@@ -63,11 +63,12 @@ int Optimize::optimize_main(const Symmetry *symmetry,
                             Constraint *constraint,
                             Fcs *fcs,
                             const int maxorder,
-                            const std::string file_prefix,
+                            const std::string &file_prefix,
                             const std::vector<std::string> &str_order,
                             const int verbosity,
                             const DispForceFile &filedata_train,
                             const DispForceFile &filedata_validation,
+                            const int output_maxorder,
                             Timer *timer)
 {
     timer->start_clock("optimize");
@@ -176,7 +177,8 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         for (auto i = 0; i < N; ++i) params[i] = fcs_tmp[i];
 
         // Set calculated force constants in FCS class
-        fcs->set_forceconstant_cartesian(maxorder,
+        auto maxorder_min = std::min(maxorder, output_maxorder);
+        fcs->set_forceconstant_cartesian(maxorder_min,
                                          params);
     }
 

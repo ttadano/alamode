@@ -84,11 +84,12 @@ namespace ALM_NS {
                           Constraint *constraint,
                           Fcs *fcs,
                           const int maxorder,
-                          const std::string file_prefix,
+                          const std::string& file_prefix,
                           const std::vector<std::string> &str_order,
                           const int verbosity,
                           const DispForceFile &filedata_train,
                           const DispForceFile &filedata_validation,
+                          const int output_maxorder,
                           Timer *timer);
 
         void set_u_train(const std::vector<std::vector<double>> &u_train_in);

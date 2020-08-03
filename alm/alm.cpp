@@ -209,6 +209,16 @@ std::string ALM::get_forceconstant_basis() const
     return fcs->get_forceconstant_basis();
 }
 
+void ALM::set_nmaxsave(const int nmaxsave) const // NMAXSAVE
+{
+    files->set_output_maxorder(nmaxsave);
+}
+
+int ALM::get_nmaxsave() const
+{
+    return files->get_output_maxorder();
+}
+
 void ALM::define(const int maxorder,
                  const size_t nkd,
                  const int *nbody_include,
@@ -628,6 +638,7 @@ int ALM::run_optimize()
                                               verbosity,
                                               files->get_datfile_train(),
                                               files->get_datfile_validation(),
+                                              files->get_output_maxorder(),
                                               timer);
     return info;
 }

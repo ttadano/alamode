@@ -136,7 +136,8 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const double *const *magmom_in,
                                    const double tolerance,
                                    const double tolerance_constraint,
-                                   const std::string basis_force_constant)
+                                   const std::string basis_force_constant,
+                                   const int nmaxsave)
 {
     size_t i;
 
@@ -176,6 +177,7 @@ void InputSetter::set_general_vars(ALM *alm,
     alm->set_print_hessian(print_hessian);
     alm->set_tolerance_constraint(tolerance_constraint);
     alm->set_forceconstant_basis(basis_force_constant);
+    alm->set_nmaxsave(nmaxsave);
 
     if (mode == "suggest") {
         alm->set_displacement_basis(str_disp_basis);

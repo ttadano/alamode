@@ -104,6 +104,10 @@ namespace ALM_NS {
 
         std::string get_forceconstant_basis() const;
 
+        void set_nmaxsave(const int nmaxsave) const; // NMAXSAVE
+
+        int get_nmaxsave() const;
+
         //void set_fitting_filenames(std::string dfile,
         //                           std::string ffile) const;
         void define(const int maxorder,
