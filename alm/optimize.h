@@ -26,7 +26,7 @@ namespace ALM_NS {
     class OptimizerControl {
     public:
         // General optimization options
-        int linear_model;         // 1 : least-squares, 2 : elastic net
+        int linear_model;         // 1 : least-squares, 2 : elastic net, 3 : adaptive lasso (experimental)
         int use_sparse_solver;    // 0: No, 1: Yes
         std::string sparsesolver; // Method name of Eigen sparse solver
         int maxnum_iteration;
@@ -84,7 +84,7 @@ namespace ALM_NS {
                           Constraint *constraint,
                           Fcs *fcs,
                           const int maxorder,
-                          const std::string& file_prefix,
+                          const std::string &file_prefix,
                           const std::vector<std::string> &str_order,
                           const int verbosity,
                           const DispForceFile &filedata_train,
@@ -172,6 +172,17 @@ namespace ALM_NS {
                         const int verbosity,
                         std::vector<double> &param_out);
 
+        int adaptive_lasso(const std::string job_prefix,
+                           const int maxorder,
+                           const size_t N_new,
+                           const size_t M,
+                           const Symmetry *symmetry,
+                           const std::vector<std::string> &str_order,
+                           const Fcs *fcs,
+                           Constraint *constraint,
+                           const int verbosity,
+                           std::vector<double> &param_out);
+
 
         double run_elastic_net_crossvalidation(const std::string job_prefix,
                                                const int maxorder,
@@ -193,6 +204,27 @@ namespace ALM_NS {
                                const Symmetry *symmetry,
                                const Constraint *constraint,
                                const int verbosity);
+
+        double run_adaptive_lasso_crossvalidation(const std::string job_prefix,
+                                                  const int maxorder,
+                                                  const Fcs *fcs,
+                                                  const Symmetry *symmetry,
+                                                  const Constraint *constraint,
+                                                  const int verbosity);
+
+        double run_adaptive_lasso_cv_manual(const std::string job_prefix,
+                                            const int maxorder,
+                                            const Fcs *fcs,
+                                            const Symmetry *symmetry,
+                                            const Constraint *constraint,
+                                            const int verbosity);
+
+        double run_adaptive_lasso_cv_auto(const std::string job_prefix,
+                                          const int maxorder,
+                                          const Fcs *fcs,
+                                          const Symmetry *symmetry,
+                                          const Constraint *constraint,
+                                          const int verbosity);
 
         void write_cvresult_to_file(const std::string file_out,
                                     const std::vector<double> &alphas,
@@ -226,6 +258,15 @@ namespace ALM_NS {
                                           const Constraint *constraint,
                                           const int verbosity,
                                           std::vector<double> &param_out) const;
+
+        void run_adaptive_lasso_optimization(const int maxorder,
+                                             const size_t M,
+                                             const size_t N_new,
+                                             const Fcs *fcs,
+                                             const Symmetry *symmetry,
+                                             const Constraint *constraint,
+                                             const int verbosity,
+                                             std::vector<double> &param_out) const;
 
         void run_least_squares_with_nonzero_coefs(const Eigen::MatrixXd &A_in,
                                                   const Eigen::VectorXd &b_in,
