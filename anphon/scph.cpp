@@ -693,7 +693,8 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                                          degeneracy_at_k,
                                          converged_prev,
                                          cmat_convert,
-                                         selfenergy_offdiagonal);
+                                         selfenergy_offdiagonal,
+                                         writes->getVerbosity());
 
             calc_new_dymat_with_evec(dymat_anharm[iT],
                                      omega2_anharm[iT],
@@ -2484,7 +2485,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                                         std::vector<int> *degeneracy_info,
                                         bool &flag_converged,
                                         std::complex<double> ***cmat_convert,
-                                        const bool offdiag)
+                                        const bool offdiag,
+                                        const unsigned int verbosity)
 {
     // This is the main function of the SCPH equation.
     // The detailed algorithm can be found in PRB 92, 054301 (2015).
@@ -2559,7 +2561,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         for (is = 0; is < ns; ++is) {
 
             if (flag_converged) {
-                if (omega2_out[ik][is] < 0.0 && std::abs(omega2_out[ik][is]) > 1.0e-16) {
+                if (omega2_out[ik][is] < 0.0 && std::abs(omega2_out[ik][is]) > 1.0e-16 && verbosity > 0) {
                     std::cout << "Warning : Large negative frequency detected" << std::endl;
                 }
 
@@ -2607,7 +2609,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             eval_interpolate[knum][is] = omega2_HA(knum, is);
         }
 
-        dynamical->calc_analytic_k(xk_interpolate[ik], fcs_phonon->fc2_ext,
+        dynamical->calc_analytic_k(xk_interpolate[ik],
+                fcs_phonon->fc2_ext,
                                    dymat_harmonic[ik]);
     }
 
@@ -2755,16 +2758,20 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
                 if (omega2_tmp < 0.0 && std::abs(omega2_tmp) > 1.0e-16) {
 
-                    std::cout << " Detect imaginary : ";
-                    std::cout << "  knum = " << knum + 1 << " is = " << is + 1 << std::endl;
-                    for (int j = 0; j < 3; ++j) {
-                        std::cout << "  xk = " << std::setw(15) << xk_scph[knum][j];
+                    if (verbosity > 1) {
+                        std::cout << " Detect imaginary : ";
+                        std::cout << "  knum = " << knum + 1 << " is = " << is + 1 << '\n';
+                        for (int j = 0; j < 3; ++j) {
+                            std::cout << "  xk = " << std::setw(15) << xk_scph[knum][j];
+                        }
+                        std::cout << '\n';
                     }
-                    std::cout << std::endl;
 
                     if (v4_array_all[nk * ik + knum][(ns + 1) * is][(ns + 1) * is].real() > 0.0) {
-                        std::cout << "  onsite V4 is positive" << std::endl;
-                        std::cout << std::endl;
+                        if (verbosity > 1) {
+                            std::cout << "  onsite V4 is positive\n\n";
+                        }
+
                         if (flag_converged) {
                             ++icount;
                             eval_tmp(is) = omega2_out[knum][is] * std::pow(0.99, icount);
@@ -2773,8 +2780,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                             eval_tmp(is) = -eval_tmp(is) * std::pow(0.99, icount);
                         }
                     } else {
-                        std::cout << "  onsite V4 is negative" << std::endl;
-                        std::cout << std::endl;
+                        if (verbosity > 1) {
+                            std::cout << "  onsite V4 is negative\n\n";
+                        }
                         eval_tmp(is) = std::abs(omega2_tmp);
                     }
                 }
@@ -2909,7 +2917,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
 
         if (iloop == 0) {
-            std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A" << std::endl;
+            if (verbosity > 0) {
+                std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A" << std::endl;
+            }
 
             for (ik = 0; ik < nk; ++ik) {
                 for (is = 0; is < ns; ++is) {
@@ -2919,7 +2929,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         } else {
 
-            std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
             diff = 0.0;
 
             for (ik = 0; ik < nk_interpolate; ++ik) {
@@ -2929,7 +2938,10 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 }
             }
             diff /= static_cast<double>(nk_interpolate * ns);
-            std::cout << " DIFF = " << std::setw(15) << std::sqrt(diff) << std::endl;
+            if (verbosity > 0) {
+                std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
+                std::cout << " DIFF = " << std::setw(15) << std::sqrt(diff) << std::endl;
+            }
             for (ik = 0; ik < nk; ++ik) {
                 for (is = 0; is < ns; ++is) {
                     omega_old(ik, is) = omega_now(ik, is);
@@ -2948,10 +2960,10 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                     }
                 }
                 if (!has_negative) {
-                    std::cout << "  DIFF < SCPH_TOL : break SCPH loop" << std::endl;
+                    if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL : break SCPH loop\n";
                     break;
                 }
-                std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected." << std::endl;
+                if (verbosity > 0)  std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected.\n";
             }
         }
 
@@ -2965,13 +2977,17 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     } // end loop iteration
 
     if (std::sqrt(diff) < conv_tol) {
-        std::cout << " Temp = " << T_in;
-        std::cout << " : convergence achieved in " << std::setw(5)
-            << iloop + 1 << " iterations." << std::endl;
+        if (verbosity > 0) {
+            std::cout << " Temp = " << T_in;
+            std::cout << " : convergence achieved in " << std::setw(5)
+                      << iloop + 1 << " iterations." << std::endl;
+        }
         flag_converged = true;
     } else {
-        std::cout << "Temp = " << T_in;
-        std::cout << " : not converged." << std::endl;
+        if (verbosity > 0) {
+            std::cout << "Temp = " << T_in;
+            std::cout << " : not converged." << std::endl;
+        }
         flag_converged = false;
     }
 
@@ -2992,15 +3008,17 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
     }
 
-    std::cout << "New eigenvalues" << std::endl;
-    for (ik = 0; ik < nk_interpolate; ++ik) {
-        knum = kmap_interpolate_to_scph[ik];
-        for (is = 0; is < ns; ++is) {
-            std::cout << " ik_interpolate = " << std::setw(5) << ik + 1;
-            std::cout << " is = " << std::setw(5) << is + 1;
-            std::cout << " omega2 = " << std::setw(15) << omega2_out[knum][is] << std::endl;
+    if (verbosity > 1) {
+        std::cout << "New eigenvalues" << std::endl;
+        for (ik = 0; ik < nk_interpolate; ++ik) {
+            knum = kmap_interpolate_to_scph[ik];
+            for (is = 0; is < ns; ++is) {
+                std::cout << " ik_interpolate = " << std::setw(5) << ik + 1;
+                std::cout << " is = " << std::setw(5) << is + 1;
+                std::cout << " omega2 = " << std::setw(15) << omega2_out[knum][is] << std::endl;
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 
     memory->deallocate(mat_omega2_harmonic);

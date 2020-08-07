@@ -164,7 +164,8 @@ namespace PHON_NS
                                           std::vector<int> *,
                                           bool &,
                                           std::complex<double> ***,
-                                          bool);
+                                          bool,
+                                          const unsigned int verbosity);
 
         void exec_interpolation(const unsigned int [3],
                                 std::complex<double> ***,

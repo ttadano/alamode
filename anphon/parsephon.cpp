@@ -111,7 +111,8 @@ void Input::parse_general_vars()
         "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
         "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
         "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
-        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM"
+        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+        "VERBOSITY"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -192,6 +193,7 @@ void Input::parse_general_vars()
     auto classical = false;
     unsigned int band_connection = 0;
     unsigned int bornsym = 0;
+    unsigned int verbosity = 1;
 
     auto prec_ewald = 1.0e-12;
 
@@ -236,6 +238,7 @@ void Input::parse_general_vars()
     assign_val(band_connection, "BCONNECT", general_var_dict);
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
     assign_val(bornsym, "BORNSYM", general_var_dict);
+    assign_val(verbosity, "VERBOSITY", general_var_dict);
 
     if (band_connection > 2) {
         error->exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");

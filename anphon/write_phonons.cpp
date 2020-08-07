@@ -57,6 +57,7 @@ Writes::Writes(PHON *phon) : Pointers(phon)
 
     file_result = "";
     anime_format = "xyz";
+    verbosity = 1;
 };
 
 Writes::~Writes() {};
@@ -2574,4 +2575,14 @@ void Writes::write_scph_dielec(double ****dielec_scph) const
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dielec;
     std::cout << " : SCPH frequency-dependent dielectric function" << std::endl;
+}
+
+unsigned int Writes::getVerbosity() const
+{
+    return verbosity;
+}
+
+void Writes::setVerbosity(unsigned int verbosity_in)
+{
+    verbosity = verbosity_in;
 }

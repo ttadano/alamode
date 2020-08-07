@@ -60,6 +60,9 @@ namespace PHON_NS
         void write_scph_ucorr(double ***ucorr_scph) const;
         void write_scph_dielec(double ****dielec_scph) const;
 
+        unsigned int getVerbosity() const;
+        void setVerbosity(unsigned int verbosity_in);
+
     private:
 
         void write_phonon_bands() const;
@@ -87,5 +90,8 @@ namespace PHON_NS
         void write_dielectric_function() const;
 
         double Ry_to_kayser;
+        unsigned int verbosity;
+    public:
+
     };
 }
