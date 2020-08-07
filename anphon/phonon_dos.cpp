@@ -25,7 +25,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Dos::Dos(PHON *phon): Pointers(phon)
+Dos::Dos(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -384,11 +384,11 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
             for (jk = 0; jk < nk; ++jk) {
                 loc = k_pair[jk];
                 e_tmp[0][jk]
-                    = writes->in_kayser(dynamical->eval_phonon[jk][is]
-                        + dynamical->eval_phonon[loc][js]);
+                        = writes->in_kayser(dynamical->eval_phonon[jk][is]
+                                            + dynamical->eval_phonon[loc][js]);
                 e_tmp[1][jk]
-                    = writes->in_kayser(dynamical->eval_phonon[jk][is]
-                        - dynamical->eval_phonon[loc][js]);
+                        = writes->in_kayser(dynamical->eval_phonon[jk][is]
+                                            - dynamical->eval_phonon[loc][js]);
             }
 
 
@@ -541,7 +541,7 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     memory->deallocate(kmap_identity);
 
     ret = (sps_sum1 + 2.0 * sps_sum2)
-        / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
+          / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -556,13 +556,13 @@ void Dos::calc_dos_from_given_frequency(double **eval_in,
     double **eval;
 
     memory->allocate(eval, neval, nk);
-        for (unsigned int j = 0; j < nk; ++j) {
-            for (unsigned int k = 0; k < neval; ++k) {
+    for (unsigned int j = 0; j < nk; ++j) {
+        for (unsigned int k = 0; k < neval; ++k) {
             eval[k][j] = writes->in_kayser(eval_in[j][k]);
-            }
         }
+    }
 
-        calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
+    calc_dos(nk_irreducible, kmap_irreducible, eval, n_energy, energy_dos,
              dos_out, neval, integration->ismear, kpoint->kpoint_irred_all);
 
     memory->deallocate(eval);

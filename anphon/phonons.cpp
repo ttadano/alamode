@@ -38,7 +38,9 @@
 #include "dielec.h"
 
 #ifdef _OPENMP
+
 #include <omp.h>
+
 #endif
 
 using namespace PHON_NS;
@@ -64,8 +66,8 @@ PHON::PHON(int narg,
         std::cout << " Job started at " << timer->DateAndTime() << std::endl;
         std::cout << " The number of MPI processes: " << mympi->nprocs << std::endl;
 #ifdef _OPENMP
-        std::cout << " The number of OpenMP threads: " 
-            << omp_get_max_threads() << std::endl;
+        std::cout << " The number of OpenMP threads: "
+                  << omp_get_max_threads() << std::endl;
 #endif
         std::cout << std::endl;
 
@@ -95,7 +97,7 @@ PHON::PHON(int narg,
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl << " Job finished at "
-            << timer->DateAndTime() << std::endl;
+                  << timer->DateAndTime() << std::endl;
     }
     destroy_pointers();
 }
@@ -169,7 +171,7 @@ void PHON::setup_base() const
     thermodynamics->setup();
     ewald->init();
     anharmonic_core->setup();
-    dielec->init();    
+    dielec->init();
 
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;

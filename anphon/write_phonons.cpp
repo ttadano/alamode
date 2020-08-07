@@ -31,6 +31,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "isotope.h"
 #include "integration.h"
 #include "scph.h"
+
 #ifdef _HDF5
 #include "H5Cpp.h"
 #endif
@@ -64,6 +65,8 @@ Writes::~Writes() {};
 
 void Writes::write_input_vars()
 {
+    if (verbosity == 0) return;
+
     unsigned int i;
 
     std::cout << std::endl;

@@ -46,7 +46,7 @@
 
 using namespace PHON_NS;
 
-Scph::Scph(PHON *phon): Pointers(phon)
+Scph::Scph(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -216,12 +216,12 @@ void Scph::exec_scph()
             compute_free_energy_bubble_SCPH(kmesh_interpolate,
                                             delta_dymat_scph);
         }
-        }
+    }
 
     postprocess(delta_dymat_scph);
 
     memory->deallocate(delta_dymat_scph);
-    }
+}
 
 void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
 {
@@ -351,7 +351,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                         }
                     }
                 }
-        }
+            }
 
             if (dielec->calc_dielectric_constant) {
                 exec_interpolation(kmesh_interpolate,
@@ -366,14 +366,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
                     if (eval_gam[0][is] < 0.0) {
                         eval_gam[0][is] = -std::pow(eval_gam[0][is], 2.0);
                     } else {
-                        eval_gam[0][is] =  std::pow(eval_gam[0][is], 2.0);
+                        eval_gam[0][is] = std::pow(eval_gam[0][is], 2.0);
                     }
                 }
 
                 dielec->compute_dielectric_function(nomega_dielec,
                                                     omega_grid,
-                                                    eval_gam[0], 
-                                                    evec_gam[0], 
+                                                    eval_gam[0],
+                                                    evec_gam[0],
                                                     dielec_scph[iT]);
             }
 
@@ -486,7 +486,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         }
 
         // Check if the precalculated data for the given temperature range exists
-        const int NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
+        const auto NT_ref = static_cast<unsigned int>((Tmax_tmp - Tmin_tmp) / dT_tmp) + 1;
         std::vector<double> Temp_array_ref(NT_ref);
         for (int i = 0; i < NT_ref; ++i) {
             Temp_array_ref[i] = Tmin_tmp + dT_tmp * static_cast<double>(i);
@@ -510,7 +510,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
                         ifs_dymat >> dymat_real >> dymat_imag;
                         if (flag_load[iT]) {
                             dymat_out[icount][is][js][ik]
-                                = std::complex<double>(dymat_real, dymat_imag);
+                                    = std::complex<double>(dymat_real, dymat_imag);
                         }
                     }
                 }
@@ -569,9 +569,9 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
             for (auto js = 0; js < ns; ++js) {
                 for (auto ik = 0; ik < nk_interpolate; ++ik) {
                     ofs_dymat << std::setprecision(15)
-                        << std::setw(25) << dymat_in[iT][is][js][ik].real();
+                              << std::setw(25) << dymat_in[iT][is][js][ik].real();
                     ofs_dymat << std::setprecision(15)
-                        << std::setw(25) << dymat_in[iT][is][js][ik].imag();
+                              << std::setw(25) << dymat_in[iT][is][js][ik].imag();
                     ofs_dymat << std::endl;
                 }
             }
@@ -584,7 +584,8 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
 
 void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 {
-    int iT, ik, is;
+    unsigned int iT;
+    int ik, is;
     const auto nk = nk_scph;
     const auto ns = dynamical->neval;
     const auto nk_reduced_scph = kp_irred_scph.size();
@@ -656,9 +657,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
         auto converged_prev = false;
 
-        for (int i = 0; i < vec_temp.size(); ++i) {
-            const auto temp = vec_temp[i];
-
+        for (double temp : vec_temp) {
             iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
             // Initialize phonon eigenvectors with harmonic values
@@ -769,8 +768,8 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
             if (tune_type == 0) {
                 for (j = 0; j < fcs_group[i].size(); ++j) {
                     const auto phase = xk_scph[ik][0] * (vec_for_v3[ielem][0][0] - vec_for_v3[ielem][1][0])
-                        + xk_scph[ik][1] * (vec_for_v3[ielem][0][1] - vec_for_v3[ielem][1][1])
-                        + xk_scph[ik][2] * (vec_for_v3[ielem][0][2] - vec_for_v3[ielem][1][2]);
+                                       + xk_scph[ik][1] * (vec_for_v3[ielem][0][1] - vec_for_v3[ielem][1][1])
+                                       + xk_scph[ik][2] * (vec_for_v3[ielem][0][2] - vec_for_v3[ielem][1][2]);
 
                     const int loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
@@ -787,7 +786,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                     }
 
                     sum_tmp += fcs_group[i][j] * invmass_for_v3[ielem]
-                        * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
+                               * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
 
                     ++ielem;
                 }
@@ -819,9 +818,9 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                 for (i = 0; i < ngroup; ++i) {
 
                     ret += v3_array_at_kpair[i]
-                        * evec_in[0][is][ind[i][0]]
-                        * evec_in[ik][js][ind[i][1]]
-                        * std::conj(evec_in[ik][ks][ind[i][2]]);
+                           * evec_in[0][is][ind[i][0]]
+                           * evec_in[ik][js][ind[i][1]]
+                           * std::conj(evec_in[ik][ks][ind[i][2]]);
                 }
 
                 v3_mpi[ik][is][ns * js + ks] = factor * ret;
@@ -843,9 +842,9 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                     for (i = 0; i < ngroup; ++i) {
 
                         ret += v3_array_at_kpair[i]
-                            * evec_in[0][is][ind[i][0]]
-                            * evec_in[ik][js][ind[i][1]]
-                            * std::conj(evec_in[ik][ks][ind[i][2]]);
+                               * evec_in[0][is][ind[i][0]]
+                               * evec_in[ik][js][ind[i][1]]
+                               * std::conj(evec_in[ik][ks][ind[i][2]]);
                     }
 
                     v3_mpi[ik][is][ns * js + ks] = factor * ret;
@@ -862,9 +861,9 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                     for (i = 0; i < ngroup; ++i) {
 
                         ret += v3_array_at_kpair[i]
-                            * evec_in[0][is][ind[i][0]]
-                            * evec_in[ik][js][ind[i][1]]
-                            * std::conj(evec_in[ik][js][ind[i][2]]);
+                               * evec_in[0][is][ind[i][0]]
+                               * evec_in[ik][js][ind[i][1]]
+                               * std::conj(evec_in[ik][js][ind[i][2]]);
                     }
 
                     v3_mpi[ik][is][(ns + 1) * js] = factor * ret;
@@ -876,10 +875,11 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     memory->deallocate(v3_array_at_kpair);
     memory->deallocate(ind);
 #ifdef MPI_CXX_DOUBLE_COMPLEX
-    MPI_Allreduce(&v3_mpi[0][0][0], &v3_out[0][0][0], nk_scph * ns3,
-        MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&v3_mpi[0][0][0], &v3_out[0][0][0],
+                  static_cast<int>(nk_scph) * ns3,
+                  MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
-    MPI_Allreduce(&v3_mpi[0][0][0], &v3_out[0][0][0], nk_scph * ns3,
+    MPI_Allreduce(&v3_mpi[0][0][0], &v3_out[0][0][0], static_cast<int>(nk_scph) * ns3,
                   MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
@@ -952,12 +952,12 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
             if (tune_type == 0) {
                 for (j = 0; j < fcs_group2[i].size(); ++j) {
-                    const auto phase = - xk_scph[knum][0] * vec_for_v4[ielem][0][0]
-                        - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
-                        - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
-                        + xk_scph[jk][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
-                        + xk_scph[jk][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
-                        + xk_scph[jk][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
+                    const auto phase = -xk_scph[knum][0] * vec_for_v4[ielem][0][0]
+                                       - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
+                                       - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
+                                       + xk_scph[jk][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
+                                       + xk_scph[jk][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
+                                       + xk_scph[jk][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
 
                     const auto loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
@@ -969,13 +969,13 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 for (j = 0; j < fcs_group2[i].size(); ++j) {
 
                     for (ii = 0; ii < 3; ++ii) {
-                        phase3[ii] = - xk_scph[knum][ii] * vec_for_v4[ielem][0][ii]
-                            + xk_scph[jk][ii] * (vec_for_v4[ielem][1][ii] - vec_for_v4[ielem][2][ii]);
+                        phase3[ii] = -xk_scph[knum][ii] * vec_for_v4[ielem][0][ii]
+                                     + xk_scph[jk][ii] * (vec_for_v4[ielem][1][ii] - vec_for_v4[ielem][2][ii]);
                         loc3[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
 
                     sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem]
-                        * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
+                               * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
 
                     ++ielem;
                 }
@@ -1010,10 +1010,10 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 for (i = 0; i < ngroup2; ++i) {
 
                     ret += v4_array_at_kpair[i]
-                        * evec_in[knum][is][ind[i][0]]
-                        * std::conj(evec_in[knum][js][ind[i][1]])
-                        * evec_in[jk][ks][ind[i][2]]
-                        * std::conj(evec_in[jk][ls][ind[i][3]]);
+                           * evec_in[knum][is][ind[i][0]]
+                           * std::conj(evec_in[knum][js][ind[i][1]])
+                           * evec_in[jk][ks][ind[i][2]]
+                           * std::conj(evec_in[jk][ls][ind[i][3]]);
                 }
 
                 v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
@@ -1039,10 +1039,10 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                     for (i = 0; i < ngroup2; ++i) {
 
                         ret += v4_array_at_kpair[i]
-                            * evec_in[knum][is][ind[i][0]]
-                            * std::conj(evec_in[knum][js][ind[i][1]])
-                            * evec_in[jk][ks][ind[i][2]]
-                            * std::conj(evec_in[jk][ls][ind[i][3]]);
+                               * evec_in[knum][is][ind[i][0]]
+                               * std::conj(evec_in[knum][js][ind[i][1]])
+                               * evec_in[jk][ks][ind[i][2]]
+                               * std::conj(evec_in[jk][ls][ind[i][3]]);
                     }
 
                     v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
@@ -1060,10 +1060,10 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                     for (i = 0; i < ngroup2; ++i) {
 
                         ret += v4_array_at_kpair[i]
-                            * evec_in[knum][is][ind[i][0]]
-                            * std::conj(evec_in[knum][is][ind[i][1]])
-                            * evec_in[jk][js][ind[i][2]]
-                            * std::conj(evec_in[jk][js][ind[i][3]]);
+                               * evec_in[knum][is][ind[i][0]]
+                               * std::conj(evec_in[knum][is][ind[i][1]])
+                               * evec_in[jk][js][ind[i][2]]
+                               * std::conj(evec_in[jk][js][ind[i][3]]);
                     }
 
                     v4_mpi[ik_prod][(ns + 1) * is][(ns + 1) * js] = factor * ret;
@@ -1079,7 +1079,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 // When the data count is larger than 2^31-1, split it.
 
     long maxsize = 1;
-    maxsize=(maxsize<<31)-1;
+    maxsize = (maxsize << 31) - 1;
 
     const size_t count = nk2_prod * ns4;
     const size_t count_sub = ns4;
@@ -1087,7 +1087,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
         MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
-        MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+                      MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
         MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
                       MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
@@ -1109,8 +1109,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             for (is = 0; is < ns2; ++is) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
                 MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
-                          ns2,
-                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+                              ns2,
+                              MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
                 MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
                               ns2,
@@ -1261,12 +1261,12 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
                 if (tune_type == 0) {
                     for (j = 0; j < fcs_group2[i].size(); ++j) {
-                        auto phase = - xk_scph[knum][0] * vec_for_v4[ielem][0][0]
-                            - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
-                            - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
-                            + xk_scph[jk_now][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
-                            + xk_scph[jk_now][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
-                            + xk_scph[jk_now][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
+                        auto phase = -xk_scph[knum][0] * vec_for_v4[ielem][0][0]
+                                     - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
+                                     - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
+                                     + xk_scph[jk_now][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
+                                     + xk_scph[jk_now][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
+                                     + xk_scph[jk_now][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
 
                         auto loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
@@ -1278,13 +1278,13 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                     for (j = 0; j < fcs_group2[i].size(); ++j) {
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            phase3[k] = - xk_scph[knum][k] * vec_for_v4[ielem][0][k]
-                                + xk_scph[jk_now][k] * (vec_for_v4[ielem][1][k] - vec_for_v4[ielem][2][k]);
+                            phase3[k] = -xk_scph[knum][k] * vec_for_v4[ielem][0][k]
+                                        + xk_scph[jk_now][k] * (vec_for_v4[ielem][1][k] - vec_for_v4[ielem][2][k]);
                             loc3[k] = nint(phase3[k] * dnk[k] * inv2pi) % nk_grid[k] + nk_grid[k] - 1;
                         }
 
                         sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem]
-                            * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
+                                   * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
 
                         ++ielem;
                     }
@@ -1309,10 +1309,10 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             for (i = 0; i < ngroup2; ++i) {
 
                 ret += v4_array_at_kpair[i]
-                    * evec_in[knum][is_now][ind[i][0]]
-                    * std::conj(evec_in[knum][js_now][ind[i][1]])
-                    * evec_in[jk_now][ks][ind[i][2]]
-                    * std::conj(evec_in[jk_now][ls][ind[i][3]]);
+                       * evec_in[knum][is_now][ind[i][0]]
+                       * std::conj(evec_in[knum][js_now][ind[i][1]])
+                       * evec_in[jk_now][ks][ind[i][2]]
+                       * std::conj(evec_in[jk_now][ls][ind[i][3]]);
             }
 
             v4_mpi[ik_prod][is_prod][js] = factor * ret;
@@ -1331,7 +1331,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 // When the data count is larger than 2^31-1, split it.
 
     long maxsize = 1;
-    maxsize=(maxsize<<31)-1;
+    maxsize = (maxsize << 31) - 1;
 
     const size_t count = nk2_prod * ns4;
     const size_t count_sub = ns4;
@@ -1339,7 +1339,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
         MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
-        MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+                      MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
         MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
                       MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
@@ -1361,8 +1361,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             for (is = 0; is < ns2; ++is) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
                 MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
-                          ns2,
-                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+                              ns2,
+                              MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #else
                 MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
                               ns2,
@@ -1400,7 +1400,7 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
 
-    if (fc_order < 3 && fc_order > 4) {
+    if (!(fc_order == 3 || fc_order == 4)) {
         error->exit("zerofill_elements_acoustic_at_gamma",
                     "The fc_order must be either 3 or 4.");
     }
@@ -1534,6 +1534,7 @@ void Scph::setup_kmesh()
     }
 
     if (mympi->my_rank == 0) {
+//        if (verbosity > 0) {
         std::cout << " Setting up the SCPH calculations ..." << std::endl << std::endl;
         std::cout << "  Gamma-centered uniform grid with the following mesh density:" << std::endl;
         std::cout << "  nk1:" << std::setw(5) << kmesh_scph[0] << std::endl;
@@ -1551,7 +1552,8 @@ void Scph::setup_kmesh()
         std::cout << std::endl;
         std::cout << "  Number of k points : " << nk_interpolate << std::endl;
         std::cout << "  Number of irreducible k points : "
-            << kp_irred_interpolate.size() << std::endl;
+                  << kp_irred_interpolate.size() << std::endl;
+//        }
     }
 
     memory->allocate(kmap_interpolate_to_scph, nk_interpolate);
@@ -1669,7 +1671,7 @@ void Scph::setup_transform_symmetry()
                 for (icrd = 0; icrd < 3; ++icrd) {
                     for (jcrd = 0; jcrd < 3; ++jcrd) {
                         gamma_tmp[3 * iat + icrd][3 * jat + jcrd]
-                            = S_cart[icrd][jcrd] * std::exp(im * phase);
+                                = S_cart[icrd][jcrd] * std::exp(im * phase);
                     }
                 }
             }
@@ -1782,7 +1784,7 @@ void Scph::setup_eigvecs()
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl
-            << " Diagonalizing dynamical matrices for all k points ... ";
+                  << " Diagonalizing dynamical matrices for all k points ... ";
     }
 
     memory->allocate(evec_harmonic, nk_scph, ns, ns);
@@ -1846,9 +1848,9 @@ void Scph::setup_pp_interaction()
         j = 0;
         for (const auto &it : fcs_phonon->force_constant_with_cell[1]) {
             invmass_for_v3[j]
-                = invsqrt_mass_p[it.pairs[0].index / 3]
-                * invsqrt_mass_p[it.pairs[1].index / 3]
-                * invsqrt_mass_p[it.pairs[2].index / 3];
+                    = invsqrt_mass_p[it.pairs[0].index / 3]
+                      * invsqrt_mass_p[it.pairs[1].index / 3]
+                      * invsqrt_mass_p[it.pairs[2].index / 3];
 
             ++j;
         }
@@ -1858,7 +1860,7 @@ void Scph::setup_pp_interaction()
         for (i = 0; i < fcs_phonon->force_constant_with_cell[1].size(); ++i) {
             for (j = 0; j < 3; ++j) {
                 evec_index3[i][j]
-                    = fcs_phonon->force_constant_with_cell[1][i].pairs[j].index;
+                        = fcs_phonon->force_constant_with_cell[1][i].pairs[j].index;
             }
         }
 
@@ -1878,10 +1880,10 @@ void Scph::setup_pp_interaction()
     j = 0;
     for (const auto &it : fcs_phonon->force_constant_with_cell[2]) {
         invmass_for_v4[j]
-            = invsqrt_mass_p[it.pairs[0].index / 3]
-            * invsqrt_mass_p[it.pairs[1].index / 3]
-            * invsqrt_mass_p[it.pairs[2].index / 3]
-            * invsqrt_mass_p[it.pairs[3].index / 3];
+                = invsqrt_mass_p[it.pairs[0].index / 3]
+                  * invsqrt_mass_p[it.pairs[1].index / 3]
+                  * invsqrt_mass_p[it.pairs[2].index / 3]
+                  * invsqrt_mass_p[it.pairs[3].index / 3];
 
         ++j;
     }
@@ -1891,7 +1893,7 @@ void Scph::setup_pp_interaction()
     for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
         for (j = 0; j < 4; ++j) {
             evec_index4[i][j]
-                = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
+                    = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
         }
     }
 
@@ -1943,7 +1945,7 @@ void Scph::setup_pp_interaction()
         memory->allocate(exp_phase, 2 * nk_represent - 1);
         for (ii = 0; ii < 2 * nk_represent - 1; ++ii) {
             const auto phase = 2.0 * pi * static_cast<double>(ii - nk_represent + 1)
-                / static_cast<double>(nk_represent);
+                               / static_cast<double>(nk_represent);
             exp_phase[ii] = std::exp(im * phase);
         }
 
@@ -2037,11 +2039,11 @@ void Scph::setup_transform_ifc()
         for (j = 0; j < ncell; ++j) {
             for (iat = 0; iat < nat; ++iat) {
                 x_all[i][j][iat][0] = xf_p[iat][0] + static_cast<double>(shift_cell[j][0])
-                    + static_cast<double>(nkx * shift_cell_super[i][0]);
+                                      + static_cast<double>(nkx * shift_cell_super[i][0]);
                 x_all[i][j][iat][1] = xf_p[iat][1] + static_cast<double>(shift_cell[j][1])
-                    + static_cast<double>(nky * shift_cell_super[i][1]);
+                                      + static_cast<double>(nky * shift_cell_super[i][1]);
                 x_all[i][j][iat][2] = xf_p[iat][2] + static_cast<double>(shift_cell[j][2])
-                    + static_cast<double>(nkz * shift_cell_super[i][2]);
+                                      + static_cast<double>(nkz * shift_cell_super[i][2]);
 
                 rotvec(x_all[i][j][iat], x_all[i][j][iat], system->lavec_p);
             }
@@ -2075,11 +2077,11 @@ void Scph::setup_transform_ifc()
                     if (std::abs(dist_min - dist) < eps8) {
 
                         shift_tmp.sx = shift_cell[icell][0]
-                            + nkx * shift_cell_super[dist_tmp[i].cell_s][0];
+                                       + nkx * shift_cell_super[dist_tmp[i].cell_s][0];
                         shift_tmp.sy = shift_cell[icell][1]
-                            + nky * shift_cell_super[dist_tmp[i].cell_s][1];
+                                       + nky * shift_cell_super[dist_tmp[i].cell_s][1];
                         shift_tmp.sz = shift_cell[icell][2]
-                            + nkz * shift_cell_super[dist_tmp[i].cell_s][2];
+                                       + nkz * shift_cell_super[dist_tmp[i].cell_s][2];
 
                         mindist_list_scph[iat][jat][icell].shift.push_back(shift_tmp);
                     }
@@ -2223,9 +2225,9 @@ void Scph::r2q(const double *xk_in,
                 for (const auto &it : mindist_list_scph[iat][jat][icell].shift) {
 
                     auto phase = 2.0 * pi
-                        * (static_cast<double>(it.sx) * xk_in[0]
-                            + static_cast<double>(it.sy) * xk_in[1]
-                            + static_cast<double>(it.sz) * xk_in[2]);
+                                 * (static_cast<double>(it.sx) * xk_in[0]
+                                    + static_cast<double>(it.sy) * xk_in[1]
+                                    + static_cast<double>(it.sz) * xk_in[2]);
 
                     exp_phase += std::exp(im * phase);
                 }
@@ -2447,8 +2449,8 @@ void Scph::calc_new_dymat_with_evec(std::complex<double> ***dymat_out,
                     for (const auto &i : xk_dup) {
 
                         auto phase = 2.0 * pi * (i[0] * static_cast<double>(ix)
-                            + i[1] * static_cast<double>(iy)
-                            + i[2] * static_cast<double>(iz));
+                                                 + i[1] * static_cast<double>(iy)
+                                                 + i[2] * static_cast<double>(iz));
                         cexp_phase += std::exp(-im * phase);
 
                     }
@@ -2610,7 +2612,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
 
         dynamical->calc_analytic_k(xk_interpolate[ik],
-                fcs_phonon->fc2_ext,
+                                   fcs_phonon->fc2_ext,
                                    dymat_harmonic[ik]);
     }
 
@@ -2675,7 +2677,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 for (is = 0; is < ns; ++is) {
                     for (js = 0; js < ns; ++js) {
                         dmat_convert[ik][is][js] = alpha * dmat_convert[ik][is][js]
-                            + (1.0 - alpha) * dmat_convert_old[ik][is][js];
+                                                   + (1.0 - alpha) * dmat_convert_old[ik][is][js];
                     }
                 }
             }
@@ -2703,14 +2705,14 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                     re_tmp = 0.0;
                     im_tmp = 0.0;
 
-#pragma omp parallel for private(jk,kk,ks), reduction(+:re_tmp, im_tmp)
+#pragma omp parallel for private(jk, kk, ks), reduction(+:re_tmp, im_tmp)
                     for (jk = 0; jk < nk; ++jk) {
 
                         kk = nk * ik + jk;
 
                         for (ks = 0; ks < ns; ++ks) {
                             ctmp = v4_array_all[kk][i][(ns + 1) * ks]
-                                * dmat_convert[jk][ks][ks];
+                                   * dmat_convert[jk][ks][ks];
                             re_tmp += ctmp.real();
                             im_tmp += ctmp.imag();
                         }
@@ -2729,7 +2731,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                         re_tmp = 0.0;
                         im_tmp = 0.0;
 
-#pragma omp parallel for private(jk,kk,ks), reduction(+:re_tmp, im_tmp)
+#pragma omp parallel for private(jk, kk, ks), reduction(+:re_tmp, im_tmp)
                         for (jk = 0; jk < nk; ++jk) {
 
                             kk = nk * ik + jk;
@@ -2737,7 +2739,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                             for (ks = 0; ks < ns; ++ks) {
                                 for (unsigned int ls = 0; ls < ns; ++ls) {
                                     ctmp = v4_array_all[kk][i][ns * ks + ls]
-                                        * dmat_convert[jk][ks][ls];
+                                           * dmat_convert[jk][ks][ls];
                                     re_tmp += ctmp.real();
                                     im_tmp += ctmp.imag();
                                 }
@@ -2879,8 +2881,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
                 fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
-                                                  reinterpret_cast<fftw_complex*>(dymat_q[is][js]),
-                                                  reinterpret_cast<fftw_complex*>(dymat_new[is][js]),
+                                                  reinterpret_cast<fftw_complex *>(dymat_q[is][js]),
+                                                  reinterpret_cast<fftw_complex *>(dymat_new[is][js]),
                                                   FFTW_FORWARD, FFTW_ESTIMATE);
                 fftw_execute(plan);
                 fftw_destroy_plan(plan);
@@ -2963,7 +2965,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                     if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL : break SCPH loop\n";
                     break;
                 }
-                if (verbosity > 0)  std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected.\n";
+                if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected.\n";
             }
         }
 
@@ -3046,22 +3048,22 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << " -----------------------------------------------------------------"
-            << std::endl;
+                  << std::endl;
         std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
         std::cout << " on top of the SCPH calculation." << std::endl;
         std::cout << '\n';
         std::cout << " This calculation requires allocation of additional memory:" << std::endl;
 
         size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
-            + nk_ref * ns * NT * sizeof(double);
+                       + nk_ref * ns * NT * sizeof(double);
 
         const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
         std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
-            << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
+                  << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
 
         std::cout << "  To avoid possible faults associated with insufficient memory,\n"
-            "  please reduce the number of MPI processes per node and/or\n"
-            "  the number of temperagure grids.\n\n";
+                     "  please reduce the number of MPI processes per node and/or\n"
+                     "  the number of temperagure grids.\n\n";
     }
 
     memory->allocate(thermodynamics->FE_bubble, NT);
@@ -3092,18 +3094,18 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
 
 
 double Scph::distance(double *x1,
-                      double *x2) const
+                      double *x2)
 {
     auto dist = std::pow(x1[0] - x2[0], 2)
-        + std::pow(x1[1] - x2[1], 2)
-        + std::pow(x1[2] - x2[2], 2);
+                + std::pow(x1[1] - x2[1], 2)
+                + std::pow(x1[2] - x2[2], 2);
     dist = std::sqrt(dist);
 
     return dist;
 }
 
 void Scph::duplicate_xk_boundary(double *xk_in,
-                                 std::vector<std::vector<double>> &vec_xk) const
+                                 std::vector<std::vector<double>> &vec_xk)
 {
     int i;
     int n[3];
@@ -3206,9 +3208,9 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
                 for (icell = 0; icell < ncell; ++icell) {
                     delta_fc2[is][js][icell]
-                        = delta_dymat[iT][is][js][icell].real()
-                        * std::sqrt(system->mass[system->map_p2s[iat][0]]
-                            * system->mass[system->map_p2s[jat][0]]);
+                            = delta_dymat[iT][is][js][icell].real()
+                              * std::sqrt(system->mass[system->map_p2s[iat][0]]
+                                          * system->mass[system->map_p2s[jat][0]]);
                 }
 
             }
@@ -3236,7 +3238,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                         ofs_fc2 << std::setw(5) << iat << std::setw(3) << icrd;
                         ofs_fc2 << std::setw(4) << jat << std::setw(3) << jcrd;
                         ofs_fc2 << std::setprecision(15) << std::setw(25)
-                            << delta_fc2[is][js][icell] / static_cast<double>(nmulti) << std::endl;
+                                << delta_fc2[is][js][icell] / static_cast<double>(nmulti) << std::endl;
 
                     }
 
@@ -3255,15 +3257,20 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 }
 
 void Scph::mpi_bcast_complex(std::complex<double> ****data,
-                             const int NT,
-                             const int nk,
-                             const int ns) const
+                             const unsigned int NT,
+                             const unsigned int nk,
+                             const unsigned int ns)
 {
+    const int _NT = static_cast<int>(NT);
+    const int _nk = static_cast<int>(nk);
+    const int _ns = static_cast<int>(ns);
+
 #ifdef MPI_CXX_DOUBLE_COMPLEX
-    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&data[0][0][0][0], _NT * _nk * _ns * _ns,
+              MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #elif defined MPI_DOUBLE_COMPLEX
-    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&data[0][0][0][0], _NT * _nk * _ns * _ns, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 #else
-    MPI_Bcast(&data[0][0][0][0], NT * nk * ns * ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&data[0][0][0][0], _NT * _nk * _ns * _ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
 #endif
 }

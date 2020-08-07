@@ -15,10 +15,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <vector>
 #include <map>
 
-namespace PHON_NS
-{
-    class KpointList
-    {
+namespace PHON_NS {
+    class KpointList {
     public:
         std::vector<double> kval;
         unsigned int knum;
@@ -29,11 +27,10 @@ namespace PHON_NS
 
         KpointList(const unsigned int knum_in,
                    const std::vector<double> &vec)
-            : kval(vec), knum(knum_in) {};
+                : kval(vec), knum(knum_in) {};
     };
 
-    class KpointInp
-    {
+    class KpointInp {
     public:
         std::vector<std::string> kpelem;
 
@@ -42,8 +39,7 @@ namespace PHON_NS
         KpointInp(const std::vector<std::string> &obj) : kpelem(obj) {};
     };
 
-    class KpointPlaneGeometry
-    {
+    class KpointPlaneGeometry {
     public:
         double xk_origin[3];
         double xk_edges[2][3];
@@ -67,8 +63,7 @@ namespace PHON_NS
         }
     };
 
-    class KpointPlane
-    {
+    class KpointPlane {
     public:
         double k[3];
         int n[2];
@@ -83,8 +78,7 @@ namespace PHON_NS
         }
     };
 
-    class KpointPlaneTriangle
-    {
+    class KpointPlaneTriangle {
     public:
         int index;
         int knum[3];
@@ -102,8 +96,7 @@ namespace PHON_NS
         }
     };
 
-    class KsList
-    {
+    class KsList {
     public:
         std::vector<int> ks;
         int symnum;
@@ -129,8 +122,7 @@ namespace PHON_NS
         }
     };
 
-    class KsListGroup
-    {
+    class KsListGroup {
     public:
         std::vector<KsList> group;
 
@@ -139,8 +131,7 @@ namespace PHON_NS
         KsListGroup(const std::vector<KsList> &a) : group(a) {};
     };
 
-    class Kpoint : protected Pointers
-    {
+    class Kpoint : protected Pointers {
     public:
         Kpoint(class PHON *);
 
@@ -211,6 +202,7 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         void setup_kpoint_given(const std::vector<KpointInp> &,

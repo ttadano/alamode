@@ -94,142 +94,142 @@ void Kpoint::kpoint_setups(const std::string mode)
     }
 
     switch (kpoint_mode) {
-    case 0:
+        case 0:
 
-        if (mympi->my_rank == 0) {
-            std::cout << "  KPMODE = 0 : Calculation on given k points" << std::endl;
-        }
+            if (mympi->my_rank == 0) {
+                std::cout << "  KPMODE = 0 : Calculation on given k points" << std::endl;
+            }
 
-        setup_kpoint_given(kpInp, nk, xk, kvec_na);
+            setup_kpoint_given(kpInp, nk, xk, kvec_na);
 
-        if (mympi->my_rank == 0) {
-            std::cout << "  Number of k points : " << nk << std::endl << std::endl;
-            std::cout << "  List of k points : " << std::endl;
-            for (i = 0; i < nk; ++i) {
-                std::cout << std::setw(5) << i + 1 << ":";
-                for (j = 0; j < 3; ++j) {
-                    std::cout << std::setw(15) << xk[i][j];
+            if (mympi->my_rank == 0) {
+                std::cout << "  Number of k points : " << nk << std::endl << std::endl;
+                std::cout << "  List of k points : " << std::endl;
+                for (i = 0; i < nk; ++i) {
+                    std::cout << std::setw(5) << i + 1 << ":";
+                    for (j = 0; j < 3; ++j) {
+                        std::cout << std::setw(15) << xk[i][j];
+                    }
+                    std::cout << std::endl;
                 }
                 std::cout << std::endl;
             }
-            std::cout << std::endl;
-        }
 
-        break;
+            break;
 
-    case 1:
+        case 1:
 
-        if (mympi->my_rank == 0) {
-            std::cout << "  KPMODE = 1: Band structure calculation" << std::endl;
-        }
-
-        setup_kpoint_band(kpInp, nk, xk, kvec_na, kaxis);
-
-        if (mympi->my_rank == 0) {
-            std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
-            std::cout << "  List of k paths : " << std::endl;
-
-            for (i = 0; i < kpInp.size(); ++i) {
-                std::cout << std::setw(4) << i + 1 << ":";
-                std::cout << std::setw(3) << kpInp[i].kpelem[0];
-                std::cout << " (";
-                for (int k = 0; k < 3; ++k) {
-                    std::cout << std::setprecision(4) << std::setw(8)
-                        << std::atof(kpInp[i].kpelem[k + 1].c_str());
-                }
-                std::cout << ")";
-                std::cout << std::setw(3) << kpInp[i].kpelem[4];
-                std::cout << " (";
-                for (int k = 0; k < 3; ++k) {
-                    std::cout << std::setprecision(4) << std::setw(8)
-                        << std::atof(kpInp[i].kpelem[k + 5].c_str());
-                }
-                std::cout << ")";
-                std::cout << std::setw(4) << kpInp[i].kpelem[8] << std::endl;
+            if (mympi->my_rank == 0) {
+                std::cout << "  KPMODE = 1: Band structure calculation" << std::endl;
             }
-            std::cout << std::endl;
-            std::cout << "  Number of k points : " << nk << std::endl << std::endl;
 
-        }
+            setup_kpoint_band(kpInp, nk, xk, kvec_na, kaxis);
 
-        break;
+            if (mympi->my_rank == 0) {
+                std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
+                std::cout << "  List of k paths : " << std::endl;
 
-    case 2:
+                for (i = 0; i < kpInp.size(); ++i) {
+                    std::cout << std::setw(4) << i + 1 << ":";
+                    std::cout << std::setw(3) << kpInp[i].kpelem[0];
+                    std::cout << " (";
+                    for (int k = 0; k < 3; ++k) {
+                        std::cout << std::setprecision(4) << std::setw(8)
+                                  << std::atof(kpInp[i].kpelem[k + 1].c_str());
+                    }
+                    std::cout << ")";
+                    std::cout << std::setw(3) << kpInp[i].kpelem[4];
+                    std::cout << " (";
+                    for (int k = 0; k < 3; ++k) {
+                        std::cout << std::setprecision(4) << std::setw(8)
+                                  << std::atof(kpInp[i].kpelem[k + 5].c_str());
+                    }
+                    std::cout << ")";
+                    std::cout << std::setw(4) << kpInp[i].kpelem[8] << std::endl;
+                }
+                std::cout << std::endl;
+                std::cout << "  Number of k points : " << nk << std::endl << std::endl;
 
-        if (mympi->my_rank == 0) {
-            std::cout << "  KPMODE = 2: Uniform grid" << std::endl;
-        }
+            }
 
-        setup_kpoint_mesh(kpInp, nk, nkx, nky, nkz,
-                          xk,
-                          kvec_na,
-                          symmetry->symmetry_flag,
-                          kpoint_irred_all);
+            break;
 
-        nk_irred = kpoint_irred_all.size();
+        case 2:
 
-        weight_k.clear();
-        for (i = 0; i < kpoint_irred_all.size(); ++i) {
-            weight_k.push_back(static_cast<double>(kpoint_irred_all[i].size()) / static_cast<double>(nk));
-        }
+            if (mympi->my_rank == 0) {
+                std::cout << "  KPMODE = 2: Uniform grid" << std::endl;
+            }
 
-        if (mympi->my_rank == 0) {
-            std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
-            std::cout << "  nk1:" << std::setw(4) << nkx << std::endl;
-            std::cout << "  nk2:" << std::setw(4) << nky << std::endl;
-            std::cout << "  nk3:" << std::setw(4) << nkz << std::endl;
-            std::cout << std::endl;
-            std::cout << "  Number of k points : " << nk << std::endl;
-            std::cout << "  Number of irreducible k points : " << kpoint_irred_all.size() << std::endl << std::endl;
-            std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
+            setup_kpoint_mesh(kpInp, nk, nkx, nky, nkz,
+                              xk,
+                              kvec_na,
+                              symmetry->symmetry_flag,
+                              kpoint_irred_all);
 
+            nk_irred = kpoint_irred_all.size();
+
+            weight_k.clear();
             for (i = 0; i < kpoint_irred_all.size(); ++i) {
-                std::cout << "  " << std::setw(5) << i + 1 << ":";
-                for (j = 0; j < 3; ++j) {
-                    std::cout << std::setprecision(5) << std::setw(14)
-                        << std::scientific << kpoint_irred_all[i][0].kval[j];
+                weight_k.push_back(static_cast<double>(kpoint_irred_all[i].size()) / static_cast<double>(nk));
+            }
+
+            if (mympi->my_rank == 0) {
+                std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
+                std::cout << "  nk1:" << std::setw(4) << nkx << std::endl;
+                std::cout << "  nk2:" << std::setw(4) << nky << std::endl;
+                std::cout << "  nk3:" << std::setw(4) << nkz << std::endl;
+                std::cout << std::endl;
+                std::cout << "  Number of k points : " << nk << std::endl;
+                std::cout << "  Number of irreducible k points : " << kpoint_irred_all.size() << std::endl << std::endl;
+                std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
+
+                for (i = 0; i < kpoint_irred_all.size(); ++i) {
+                    std::cout << "  " << std::setw(5) << i + 1 << ":";
+                    for (j = 0; j < 3; ++j) {
+                        std::cout << std::setprecision(5) << std::setw(14)
+                                  << std::scientific << kpoint_irred_all[i][0].kval[j];
+                    }
+                    std::cout << std::setprecision(6) << std::setw(11)
+                              << std::fixed << weight_k[i] << std::endl;
                 }
-                std::cout << std::setprecision(6) << std::setw(11)
-                    << std::fixed << weight_k[i] << std::endl;
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
-        }
 
-        memory->allocate(knum_minus, nk);
-        gen_nkminus(nk, knum_minus, xk);
+            memory->allocate(knum_minus, nk);
+            gen_nkminus(nk, knum_minus, xk);
 
-        for (i = 0; i < nk_irred; ++i) {
-            for (j = 0; j < kpoint_irred_all[i].size(); ++j) {
-                kmap_to_irreducible.insert(std::map<int, int>::value_type(kpoint_irred_all[i][j].knum, i));
+            for (i = 0; i < nk_irred; ++i) {
+                for (j = 0; j < kpoint_irred_all[i].size(); ++j) {
+                    kmap_to_irreducible.insert(std::map<int, int>::value_type(kpoint_irred_all[i][j].knum, i));
+                }
             }
-        }
-        // Compute small group of every irreducible k points for later use
-        memory->allocate(small_group_of_k, nk_irred);
-        calc_small_groups_k_irred(small_group_of_k);
+            // Compute small group of every irreducible k points for later use
+            memory->allocate(small_group_of_k, nk_irred);
+            calc_small_groups_k_irred(small_group_of_k);
 
-        break;
+            break;
 
-    case 3:
+        case 3:
 
-        if (mympi->my_rank == 0) {
-            std::cout << "  KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
-        }
-
-        setup_kpoint_plane(kpInp, nplanes, kp_planes);
-
-        if (mympi->my_rank == 0) {
-            std::cout << "  Number of planes : " << nplanes << std::endl;
-            for (i = 0; i < nplanes; ++i) {
-                std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :";
-                std::cout << std::setw(8) << kp_planes[i].size() << std::endl;
+            if (mympi->my_rank == 0) {
+                std::cout << "  KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
             }
-            std::cout << std::endl;
-        }
 
-        break;
+            setup_kpoint_plane(kpInp, nplanes, kp_planes);
 
-    default:
-        error->exit("setup_kpoints", "This cannot happen.");
+            if (mympi->my_rank == 0) {
+                std::cout << "  Number of planes : " << nplanes << std::endl;
+                for (i = 0; i < nplanes; ++i) {
+                    std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :";
+                    std::cout << std::setw(8) << kp_planes[i].size() << std::endl;
+                }
+                std::cout << std::endl;
+            }
+
+            break;
+
+        default:
+            error->exit("setup_kpoints", "This cannot happen.");
     }
 }
 
@@ -256,8 +256,8 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
             rotvec(kdirec[j], k[j], system->rlavec_p, 'T');
 
             const auto norm = kdirec[j][0] * kdirec[j][0]
-                + kdirec[j][1] * kdirec[j][1]
-                + kdirec[j][2] * kdirec[j][2];
+                              + kdirec[j][1] * kdirec[j][1]
+                              + kdirec[j][2] * kdirec[j][2];
 
             if (norm > eps) {
                 for (i = 0; i < 3; ++i) kdirec[j][i] /= std::sqrt(norm);
@@ -324,8 +324,8 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 
             rotvec(direc_tmp, direc_tmp, system->rlavec_p, 'T');
             auto norm = std::pow(direc_tmp[0], 2)
-                + std::pow(direc_tmp[1], 2)
-                + std::pow(direc_tmp[2], 2);
+                        + std::pow(direc_tmp[1], 2)
+                        + std::pow(direc_tmp[2], 2);
             norm = std::sqrt(norm);
 
             if (norm > eps) {
@@ -335,8 +335,8 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
             for (j = 0; j < nk_path[i]; ++j) {
                 for (k = 0; k < 3; ++k) {
                     xk[ik][k] = k_start[i][k]
-                        + (k_end[i][k] - k_start[i][k])
-                        * static_cast<double>(j) / static_cast<double>(nk_path[i] - 1);
+                                + (k_end[i][k] - k_start[i][k])
+                                  * static_cast<double>(j) / static_cast<double>(nk_path[i] - 1);
 
                     kdirec[ik][k] = direc_tmp[k];
                 }
@@ -350,9 +350,9 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
                         for (k = 0; k < 3; ++k) tmp[k] = xk[ik][k] - xk[ik - 1][k];
                         rotvec(tmp, tmp, system->rlavec_p, 'T');
                         axis[ik] = axis[ik - 1]
-                            + std::sqrt(tmp[0] * tmp[0]
-                                + tmp[1] * tmp[1]
-                                + tmp[2] * tmp[2]);
+                                   + std::sqrt(tmp[0] * tmp[0]
+                                               + tmp[1] * tmp[1]
+                                               + tmp[2] * tmp[2]);
                     }
                 }
                 ++ik;
@@ -410,8 +410,8 @@ void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,
 
             rotvec(kdirec[i], kdirec[i], system->rlavec_p, 'T');
             const auto norm = kdirec[i][0] * kdirec[i][0]
-                + kdirec[i][1] * kdirec[i][1]
-                + kdirec[i][2] * kdirec[i][2];
+                              + kdirec[i][1] * kdirec[i][1]
+                              + kdirec[i][2] * kdirec[i][2];
 
             if (norm > eps) {
                 for (j = 0; j < 3; ++j) kdirec[i][j] /= std::sqrt(norm);
@@ -768,7 +768,7 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
 
                 for (j = 0; j < 3; ++j) {
                     xk_tmp[j] = static_cast<double>(ik1) * frac1 * xk1[j]
-                        + static_cast<double>(ik2) * frac2 * xk2[j];
+                                + static_cast<double>(ik2) * frac2 * xk2[j];
                 }
                 if (in_first_BZ(xk_tmp)) {
                     n_in[0] = ik1;
@@ -786,7 +786,7 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
 
                 for (j = 0; j < 3; ++j) {
                     xk[m][j] = static_cast<double>(ik1) * frac1 * xk1[j]
-                        + static_cast<double>(ik2) * frac2 * xk2[j];
+                               + static_cast<double>(ik2) * frac2 * xk2[j];
                 }
                 ++m;
             }
@@ -871,8 +871,8 @@ int Kpoint::get_knum(const double kx,
     diff[2] = static_cast<double>(nint(kz * dkz)) - kz * dkz;
 
     const auto norm = std::sqrt(diff[0] * diff[0]
-        + diff[1] * diff[1]
-        + diff[2] * diff[2]);
+                                + diff[1] * diff[1]
+                                + diff[2] * diff[2]);
 
     if (norm >= eps12) return -1;
 
@@ -894,8 +894,8 @@ int Kpoint::get_knum(const double xk[3],
     for (i = 0; i < 3; ++i) diff[i] = static_cast<double>(nint(xk[i] * dnk[i])) - xk[i] * dnk[i];
 
     const auto norm = std::sqrt(diff[0] * diff[0]
-        + diff[1] * diff[1]
-        + diff[2] * diff[2]);
+                                + diff[1] * diff[1]
+                                + diff[2] * diff[2]);
 
     if (norm >= eps12) return -1;
 
@@ -1071,9 +1071,9 @@ void Kpoint::get_small_group_k(const double *xk_in,
             xk_diff[i] = std::fmod(xk_sym[i] - xk_orig[i], 1.0);
         }
 
-        if (std::sqrt(std::pow(xk_diff[0], 2) 
-                    + std::pow(xk_diff[1], 2) 
-                    + std::pow(xk_diff[2], 2)) < eps10) {
+        if (std::sqrt(std::pow(xk_diff[0], 2)
+                      + std::pow(xk_diff[1], 2)
+                      + std::pow(xk_diff[2], 2)) < eps10) {
             sym_list.push_back(isym);
 
             for (i = 0; i < 3; ++i) {
@@ -1138,8 +1138,8 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
     transpose3(convmat, convmat);
 
     const auto det = convmat[0][0] * (convmat[1][1] * convmat[2][2] - convmat[2][1] * convmat[1][2])
-        - convmat[1][0] * (convmat[0][1] * convmat[2][2] - convmat[2][1] * convmat[0][2])
-        + convmat[2][0] * (convmat[0][1] * convmat[1][2] - convmat[1][1] * convmat[0][2]);
+                     - convmat[1][0] * (convmat[0][1] * convmat[2][2] - convmat[2][1] * convmat[0][2])
+                     + convmat[2][0] * (convmat[0][1] * convmat[1][2] - convmat[1][1] * convmat[0][2]);
 
     const auto nkmax = static_cast<int>(std::ceil(1.0 / det));
 
@@ -1221,8 +1221,8 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
             }
 
             const auto norm = std::sqrt(qdiff[0] * qdiff[0]
-                + qdiff[1] * qdiff[1]
-                + qdiff[2] * qdiff[2]);
+                                        + qdiff[1] * qdiff[1]
+                                        + qdiff[2] * qdiff[2]);
 
             if (norm < tol) {
                 new_entry = false;

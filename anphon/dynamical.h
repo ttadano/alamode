@@ -16,10 +16,8 @@
 #include <complex>
 #include <string>
 
-namespace PHON_NS
-{
-    class DistWithCell
-    {
+namespace PHON_NS {
+    class DistWithCell {
     public:
         int cell;
         double dist;
@@ -36,8 +34,7 @@ namespace PHON_NS
         return a.dist < b.dist;
     }
 
-    class Dynamical : protected Pointers
-    {
+    class Dynamical : protected Pointers {
     public:
         Dynamical(class PHON *);
 
@@ -63,7 +60,9 @@ namespace PHON_NS
         bool **is_imaginary{};
 
         void diagonalize_dynamical_all();
+
         void setup_dynamical();
+
         void setup_dielectric(const unsigned int verbosity = 1);
 
         void eval_k(double *,
@@ -84,6 +83,7 @@ namespace PHON_NS
 
 
         double fold(const double) const;
+
         double freq(const double) const;
 
         void calc_participation_ratio_all(std::complex<double> ***,
@@ -108,9 +108,12 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
-        void load_born(const unsigned int flag_symmborn, 
+
+        void load_born(const unsigned int flag_symmborn,
                        const unsigned int verbosity = 1);
+
         void prepare_mindist_list(std::vector<int> **) const;
 
         void calc_atomic_participation_ratio(std::complex<double> *,

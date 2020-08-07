@@ -29,7 +29,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-System::System(PHON *phon): Pointers(phon)
+System::System(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -233,20 +233,20 @@ void System::setup()
         volume_p = volume(vec_tmp[0], vec_tmp[1], vec_tmp[2]);
 
         cout << "  Volume of the primitive cell : "
-            << volume_p << " (a.u.)^3" << endl << endl;
+             << volume_p << " (a.u.)^3" << endl << endl;
         cout << "  Number of atoms in the supercell     : "
-            << nat_anharm << endl;
+             << nat_anharm << endl;
         cout << "  Number of atoms in the primitive cell: "
-            << natmin << endl << endl;
+             << natmin << endl << endl;
 
         if (fcs_phonon->update_fc2) {
             cout << endl;
             cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in "
-                << fcs_phonon->file_fc2 << endl;
+                 << fcs_phonon->file_fc2 << endl;
             cout << endl;
 
             cout << " * Supercell for HARMONIC (from "
-                << fcs_phonon->file_fc2 << " )" << endl << endl;
+                 << fcs_phonon->file_fc2 << " )" << endl << endl;
 
             cout << setw(16) << lavec_s[0][0];
             cout << setw(15) << lavec_s[1][0];
@@ -323,7 +323,7 @@ void System::setup()
                     cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
                 } else {
                     cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" <<
-                        endl;
+                         endl;
                 }
             }
             cout << endl;
@@ -390,7 +390,7 @@ void System::load_system_info_from_XML()
         }
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FCSXML ( "
-                + fcs_phonon->file_fcs + " )";
+                                    + fcs_phonon->file_fcs + " )";
             error->exit("load_system_info_from_XML",
                         str_error.c_str());
         }
@@ -398,19 +398,19 @@ void System::load_system_info_from_XML()
         // Parse nat and ntran
 
         nat = boost::lexical_cast<unsigned int>(
-            get_value_from_xml(pt,
-                               "Data.Structure.NumberOfAtoms"));
+                get_value_from_xml(pt,
+                                   "Data.Structure.NumberOfAtoms"));
         int nkd_tmp = boost::lexical_cast<unsigned int>(
-            get_value_from_xml(pt,
-                               "Data.Structure.NumberOfElements"));
+                get_value_from_xml(pt,
+                                   "Data.Structure.NumberOfElements"));
 
         if (nkd != nkd_tmp)
             error->exit("load_system_info_from_XML",
                         "NKD in the FCSXML file is not consistent with that given in the input file.");
 
         ntran = boost::lexical_cast<unsigned int>(
-            get_value_from_xml(pt,
-                               "Data.Symmetry.NumberOfTranslations"));
+                get_value_from_xml(pt,
+                                   "Data.Symmetry.NumberOfTranslations"));
 
         natmin = nat / ntran;
 
@@ -432,32 +432,32 @@ void System::load_system_info_from_XML()
         memory->allocate(xr_s, nat, 3);
         memory->allocate(kd, nat);
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-            const auto &child = child_.second;
-            const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
-            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-        }
+        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
+                        const auto &child = child_.second;
+                        const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
+                        dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+                    }
 
         unsigned int index;
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-            const auto &child = child_.second;
-            const auto str_index = child.get<std::string>("<xmlattr>.index");
-            const auto str_element = child.get<std::string>("<xmlattr>.element");
+        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
+                        const auto &child = child_.second;
+                        const auto str_index = child.get<std::string>("<xmlattr>.index");
+                        const auto str_element = child.get<std::string>("<xmlattr>.element");
 
-            ss.str("");
-            ss.clear();
-            ss << child.data();
+                        ss.str("");
+                        ss.clear();
+                        ss << child.data();
 
-            index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                        index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-            if (index >= nat)
-                error->exit("load_system_info_xml",
-                            "index is out of range");
+                        if (index >= nat)
+                            error->exit("load_system_info_xml",
+                                        "index is out of range");
 
-            kd[index] = dict_atomic_kind[str_element];
-            ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
-        }
+                        kd[index] = dict_atomic_kind[str_element];
+                        ss >> xr_s[index][0] >> xr_s[index][1] >> xr_s[index][2];
+                    }
 
         dict_atomic_kind.clear();
 
@@ -466,24 +466,24 @@ void System::load_system_info_from_XML()
         memory->allocate(map_p2s, natmin, ntran);
         memory->allocate(map_s2p, nat);
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-            const auto &child = child_.second;
-            const auto str_tran = child.get<std::string>("<xmlattr>.tran");
-            const auto str_atom = child.get<std::string>("<xmlattr>.atom");
+        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
+                        const auto &child = child_.second;
+                        const auto str_tran = child.get<std::string>("<xmlattr>.tran");
+                        const auto str_atom = child.get<std::string>("<xmlattr>.atom");
 
-            const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-            const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-            const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+                        const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+                        const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+                        const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
-            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                error->exit("load_system_info_xml",
-                            "index is out of range");
-            }
+                        if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                            error->exit("load_system_info_xml",
+                                        "index is out of range");
+                        }
 
-            map_p2s[atom_p][tran] = atom_s;
-            map_s2p[atom_s].atom_num = atom_p;
-            map_s2p[atom_s].tran_num = tran;
-        }
+                        map_p2s[atom_p][tran] = atom_s;
+                        map_s2p[atom_s].atom_num = atom_p;
+                        map_s2p[atom_s].tran_num = tran;
+                    }
 
         // Parse magnetic moments
 
@@ -493,26 +493,26 @@ void System::load_system_info_from_XML()
 
         lspin = true;
         try {
-            BOOST_FOREACH(const ptree::value_type& child_, pt.get_child("Data.MagneticMoments")) {
-                if (child_.first == "mag") {
-                    const auto &child = child_.second;
-                    const auto str_index = child.get<std::string>("<xmlattr>.index");
+            BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.MagneticMoments")) {
+                            if (child_.first == "mag") {
+                                const auto &child = child_.second;
+                                const auto str_index = child.get<std::string>("<xmlattr>.index");
 
-                    ss.str("");
-                    ss.clear();
-                    ss << child.data();
+                                ss.str("");
+                                ss.clear();
+                                ss << child.data();
 
-                    index = boost::lexical_cast<unsigned int>(str_index) - 1;
+                                index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                    if (index >= nat)
-                        error->exit("load_system_info_xml",
-                                    "index is out of range");
+                                if (index >= nat)
+                                    error->exit("load_system_info_xml",
+                                                "index is out of range");
 
-                    ss >> magmom_tmp[index][0]
-                        >> magmom_tmp[index][1]
-                        >> magmom_tmp[index][2];
-                }
-            }
+                                ss >> magmom_tmp[index][0]
+                                   >> magmom_tmp[index][1]
+                                   >> magmom_tmp[index][2];
+                            }
+                        }
 
         }
         catch (...) {
@@ -528,8 +528,8 @@ void System::load_system_info_from_XML()
 
             try {
                 noncollinear = boost::lexical_cast<int>(
-                    get_value_from_xml(pt,
-                                       "Data.MagneticMoments.Noncollinear"));
+                        get_value_from_xml(pt,
+                                           "Data.MagneticMoments.Noncollinear"));
             }
             catch (...) {
                 noncollinear = 0;
@@ -537,8 +537,8 @@ void System::load_system_info_from_XML()
 
             try {
                 symmetry->trev_sym_mag = boost::lexical_cast<int>(
-                    get_value_from_xml(pt,
-                                       "Data.MagneticMoments.TimeReversalSymmetry"));
+                        get_value_from_xml(pt,
+                                           "Data.MagneticMoments.TimeReversalSymmetry"));
             }
             catch (...) {
                 symmetry->trev_sym_mag = true;
@@ -587,7 +587,7 @@ void System::load_system_info_from_XML()
             }
             catch (std::exception &e) {
                 auto str_error = "Cannot open file FC2XML ( "
-                    + fcs_phonon->file_fc2 + " )";
+                                 + fcs_phonon->file_fc2 + " )";
                 error->exit("load_system_info_from_XML",
                             str_error.c_str());
             }
@@ -595,19 +595,19 @@ void System::load_system_info_from_XML()
             // Parse nat and ntran
 
             nat = boost::lexical_cast<unsigned int>(
-                get_value_from_xml(pt,
-                                   "Data.Structure.NumberOfAtoms"));
+                    get_value_from_xml(pt,
+                                       "Data.Structure.NumberOfAtoms"));
             nkd_tmp = boost::lexical_cast<unsigned int>(
-                get_value_from_xml(pt,
-                                   "Data.Structure.NumberOfElements"));
+                    get_value_from_xml(pt,
+                                       "Data.Structure.NumberOfElements"));
 
             if (nkd != nkd_tmp)
                 error->exit("load_system_info_from_XML",
                             "NKD in the FC2XML file is not consistent with that given in the input file.");
 
             ntran = boost::lexical_cast<unsigned int>(
-                get_value_from_xml(pt,
-                                   "Data.Symmetry.NumberOfTranslations"));
+                    get_value_from_xml(pt,
+                                       "Data.Symmetry.NumberOfTranslations"));
 
             const int natmin_tmp = nat / ntran;
 
@@ -639,30 +639,30 @@ void System::load_system_info_from_XML()
             memory->allocate(xr_s, nat, 3);
             memory->allocate(kd, nat);
 
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.AtomicElements")) {
-                const auto &child = child_.second;
-                const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
-                dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-            }
+            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
+                            const auto &child = child_.second;
+                            const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
+                            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+                        }
 
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Structure.Position")) {
-                const auto &child = child_.second;
-                const auto str_index = child.get<std::string>("<xmlattr>.index");
-                const auto str_element = child.get<std::string>("<xmlattr>.element");
+            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
+                            const auto &child = child_.second;
+                            const auto str_index = child.get<std::string>("<xmlattr>.index");
+                            const auto str_element = child.get<std::string>("<xmlattr>.element");
 
-                ss.str("");
-                ss.clear();
-                ss << child.data();
+                            ss.str("");
+                            ss.clear();
+                            ss << child.data();
 
-                auto index_kd = boost::lexical_cast<unsigned int>(str_index) - 1;
+                            auto index_kd = boost::lexical_cast<unsigned int>(str_index) - 1;
 
-                if (index_kd >= nat)
-                    error->exit("load_system_info_xml",
-                                "index is out of range");
+                            if (index_kd >= nat)
+                                error->exit("load_system_info_xml",
+                                            "index is out of range");
 
-                kd[index_kd] = dict_atomic_kind[str_element];
-                ss >> xr_s[index_kd][0] >> xr_s[index_kd][1] >> xr_s[index_kd][2];
-            }
+                            kd[index_kd] = dict_atomic_kind[str_element];
+                            ss >> xr_s[index_kd][0] >> xr_s[index_kd][1] >> xr_s[index_kd][2];
+                        }
 
             dict_atomic_kind.clear();
 
@@ -671,23 +671,23 @@ void System::load_system_info_from_XML()
             memory->allocate(map_p2s, natmin, ntran);
             memory->allocate(map_s2p, nat);
 
-            BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.Symmetry.Translations")) {
-                const auto &child = child_.second;
-                const auto str_tran = child.get<std::string>("<xmlattr>.tran");
-                const auto str_atom = child.get<std::string>("<xmlattr>.atom");
+            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
+                            const auto &child = child_.second;
+                            const auto str_tran = child.get<std::string>("<xmlattr>.tran");
+                            const auto str_atom = child.get<std::string>("<xmlattr>.atom");
 
-                const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-                const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-                const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+                            const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+                            const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+                            const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
-                if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                    error->exit("load_system_info_xml", "index is out of range");
-                }
+                            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+                                error->exit("load_system_info_xml", "index is out of range");
+                            }
 
-                map_p2s[atom_p][tran] = atom_s;
-                map_s2p[atom_s].atom_num = atom_p;
-                map_s2p[atom_s].tran_num = tran;
-            }
+                            map_p2s[atom_p][tran] = atom_s;
+                            map_s2p[atom_s].atom_num = atom_p;
+                            map_s2p[atom_s].tran_num = tran;
+                        }
         }
 
     }
@@ -736,11 +736,11 @@ void System::recips(double vec[3][3],
                     double inverse[3][3]) const
 {
     const auto det = vec[0][0] * vec[1][1] * vec[2][2]
-        + vec[1][0] * vec[2][1] * vec[0][2]
-        + vec[2][0] * vec[0][1] * vec[1][2]
-        - vec[0][0] * vec[2][1] * vec[1][2]
-        - vec[2][0] * vec[1][1] * vec[0][2]
-        - vec[1][0] * vec[0][1] * vec[2][2];
+                     + vec[1][0] * vec[2][1] * vec[0][2]
+                     + vec[2][0] * vec[0][1] * vec[1][2]
+                     - vec[0][0] * vec[2][1] * vec[1][2]
+                     - vec[2][0] * vec[1][1] * vec[0][2]
+                     - vec[1][0] * vec[0][1] * vec[2][2];
 
     if (std::abs(det) < eps12) {
         error->exit("recips", "Lattice Vector is singular");
@@ -766,8 +766,8 @@ double System::volume(const double vec1[3],
                       const double vec3[3]) const
 {
     const auto vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
-        + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
-        + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
+                              + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
+                              + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
 
     return vol;
 }

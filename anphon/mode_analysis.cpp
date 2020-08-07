@@ -103,7 +103,7 @@ void ModeAnalysis::setup_mode_analysis()
                     kslist_fstate_k.emplace_back(ktmp, snum_tmp - 1);
                 }
                 std::cout << " The number of entries = "
-                    << kslist_fstate_k.size() << std::endl;
+                          << kslist_fstate_k.size() << std::endl;
             } else {
                 kslist.clear();
                 for (i = 0; i < nlist; ++i) {
@@ -315,17 +315,17 @@ void ModeAnalysis::print_selfenergy(const int NT,
         std::cout << std::endl;
         std::cout << " Calculate the line width (FWHM) of phonons" << std::endl;
         std::cout << " due to 3-phonon interactions for given "
-            << kslist.size() << " modes." << std::endl;
+                  << kslist.size() << " modes." << std::endl;
 
         if (calc_realpart) {
             if (anharmonic_core->quartic_mode == 1) {
                 std::cout << " REALPART = 1 and " << std::endl;
                 std::cout << " QUARTIC  = 1     : Additionally, frequency shift of phonons due to 3-phonon" << std::
-                    endl;
+                endl;
                 std::cout << "                    and 4-phonon interactions will be calculated." << std::endl;
             } else {
                 std::cout << " REALPART = 1 : Additionally, frequency shift of phonons due to 3-phonon" << std::
-                    endl;
+                endl;
                 std::cout << "                interactions will be calculated." << std::endl;
             }
         }
@@ -371,7 +371,7 @@ void ModeAnalysis::print_selfenergy(const int NT,
             std::cout << ")" << std::endl;
             std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
             std::cout << "  Frequency (cm^-1) : "
-                << std::setw(15) << writes->in_kayser(omega) << std::endl;
+                      << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
         const auto ik_irred = kpoint->kmap_to_irreducible[knum];
@@ -415,7 +415,7 @@ void ModeAnalysis::print_selfenergy(const int NT,
 
             for (j = 0; j < NT; ++j) {
                 ofs_linewidth << std::setw(10) << T_arr[j]
-                    << std::setw(15) << writes->in_kayser(2.0 * damping_a[j]);
+                              << std::setw(15) << writes->in_kayser(2.0 * damping_a[j]);
 
                 if (anharmonic_core->quartic_mode == 2) {
                     //							ofs_mode_tau << std::setw(15) << writes->in_kayser(damp4[j]);
@@ -564,7 +564,7 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
             std::cout << ")" << std::endl;
             std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
             std::cout << "  Frequency (cm^-1) : " << std::setw(15)
-                << writes->in_kayser(omega0) << std::endl;
+                      << writes->in_kayser(omega0) << std::endl;
         }
 
         if (integration->ismear == -1) {
@@ -707,35 +707,35 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
 
                     if (integration->ismear == 0) {
                         prod_tmp[0] = n1
-                            * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon)
-                                - delta_lorentz(omega0 + omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_lorentz(omega0 + omega_inner[0] + omega_inner[1], epsilon));
                         prod_tmp[1] = n2
-                            * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1], epsilon)
-                                - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                         for (j = 0; j < M; ++j) {
                             ret_mpi[i][j][0] += v3_tmp * multi
-                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
-                                * prod_tmp[0];
+                                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[0];
                             ret_mpi[i][j][1] += v3_tmp * multi
-                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
-                                * prod_tmp[1];
+                                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[1];
                         }
                     } else if (integration->ismear == 1) {
                         prod_tmp[0] = n1
-                            * (delta_gauss(omega0 - omega_inner[0] - omega_inner[1], epsilon)
-                                - delta_gauss(omega0 + omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_gauss(omega0 - omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_gauss(omega0 + omega_inner[0] + omega_inner[1], epsilon));
                         prod_tmp[1] = n2
-                            * (delta_gauss(omega0 + omega_inner[0] - omega_inner[1], epsilon)
-                                - delta_gauss(omega0 - omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_gauss(omega0 + omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_gauss(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                         for (j = 0; j < M; ++j) {
                             ret_mpi[i][j][0] += v3_tmp * multi
-                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
-                                * prod_tmp[0];
+                                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[0];
                             ret_mpi[i][j][1] += v3_tmp * multi
-                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
-                                * prod_tmp[1];
+                                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[1];
                         }
                     }
                 }
@@ -972,10 +972,10 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             error->exit("calc_momentum_resolved_final_state", "exit.");
         } else if (integration->ismear == 0) {
             std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
-                << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else if (integration->ismear == 1) {
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
-                << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else {
             error->exit("print_momentum_resolved_final_state", "Invalid ISMEAR");
         }
@@ -983,7 +983,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         std::cout << std::endl;
         std::cout << " FSTATE_K = 1 : Calculate the momentum-resolved final state amplitude" << std::endl;
         std::cout << "                due to 3-phonon interactions for given "
-            << kslist_fstate_k.size() << " entries." << std::endl;
+                  << kslist_fstate_k.size() << " entries." << std::endl;
         std::cout << std::endl;
     }
 
@@ -1019,9 +1019,9 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
         for (j = 0; j < 3; ++j) {
             xk_vec1[j] = kpoint->kp_plane_geometry[i].xk_edges[0][j]
-                - kpoint->kp_plane_geometry[i].xk_origin[j];
+                         - kpoint->kp_plane_geometry[i].xk_origin[j];
             xk_vec2[j] = kpoint->kp_plane_geometry[i].xk_edges[1][j]
-                - kpoint->kp_plane_geometry[i].xk_origin[j];
+                         - kpoint->kp_plane_geometry[i].xk_origin[j];
         }
 
 
@@ -1031,8 +1031,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
         rotvec(xk_norm, xk_norm, system->rlavec_p, 'T');
         const auto norm_ref = std::sqrt(xk_norm[0] * xk_norm[0]
-            + xk_norm[1] * xk_norm[1]
-            + xk_norm[2] * xk_norm[2]);
+                                        + xk_norm[1] * xk_norm[1]
+                                        + xk_norm[2] * xk_norm[2]);
 
         memory->allocate(xk_plane, nk_plane, 3);
         memory->allocate(xk_plane2, nk_plane, 3);
@@ -1048,8 +1048,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < nk2_plane; ++k) {
                 for (l = 0; l < 3; ++l) {
                     xk_plane[m][l] = kpoint->kp_plane_geometry[i].xk_origin[l]
-                        + xk_vec1[l] * static_cast<double>(j) * div1
-                        + xk_vec2[l] * static_cast<double>(k) * div2;
+                                     + xk_vec1[l] * static_cast<double>(j) * div1
+                                     + xk_vec2[l] * static_cast<double>(k) * div2;
                 }
                 ++m;
             }
@@ -1061,8 +1061,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < 3; ++k) kvec_plane[j][k] = dynamical->fold(xk_plane[j][k]);
             rotvec(kvec_plane[j], kvec_plane[j], system->rlavec_p, 'T');
             norm = std::sqrt(kvec_plane[j][0] * kvec_plane[j][0]
-                + kvec_plane[j][1] * kvec_plane[j][1]
-                + kvec_plane[j][2] * kvec_plane[j][2]);
+                             + kvec_plane[j][1] * kvec_plane[j][1]
+                             + kvec_plane[j][2] * kvec_plane[j][2]);
 
             if (norm > eps) {
                 for (k = 0; k < 3; ++k) kvec_plane[j][k] /= norm;
@@ -1090,8 +1090,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < 3; ++k) kvec[k] = kslist_fstate_k[j].xk[k];
             rotvec(kvec, kvec, system->rlavec_p, 'T');
             norm = std::sqrt(kvec[0] * kvec[0]
-                + kvec[1] * kvec[1]
-                + kvec[2] * kvec[2]);
+                             + kvec[1] * kvec[1]
+                             + kvec[2] * kvec[2]);
 
             if (norm > eps) {
                 for (k = 0; k < 3; ++k) kvec[k] /= norm;
@@ -1121,8 +1121,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                 for (l = 0; l < 3; ++l) kvec_plane[k][l] = xk_plane2[k][l];
                 rotvec(kvec_plane[k], kvec_plane[k], system->rlavec_p, 'T');
                 norm = std::sqrt(kvec_plane[k][0] * kvec_plane[k][0]
-                    + kvec_plane[k][1] * kvec_plane[k][1]
-                    + kvec_plane[k][2] * kvec_plane[k][2]);
+                                 + kvec_plane[k][1] * kvec_plane[k][1]
+                                 + kvec_plane[k][2] * kvec_plane[k][2]);
 
                 if (norm > eps) {
                     for (l = 0; l < 3; ++l) kvec_plane[k][l] /= norm;
@@ -1165,8 +1165,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                         //     std::cout << "is = " << is << " js = " << js << std::endl;
                         for (k = 0; k < 3; ++k) {
                             omega_sum[k] = eval_tmp[mode]
-                                - eval[knum_triangle[k]][is]
-                                - eval2[knum_triangle[k]][js];
+                                           - eval[knum_triangle[k]][is]
+                                           - eval2[knum_triangle[k]][js];
                             //std::cout << " " << writes->in_kayser(eval_tmp[mode]) 
                             //<< " " << writes->in_kayser(eval[knum_triangle[k]][is])
                             //<< " " << writes->in_kayser(eval2[knum_triangle[k]][js]) << std::endl;
@@ -1182,7 +1182,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                    + frac * xk_plane[knum_triangle[1]][k]);
+                                                 + frac * xk_plane[knum_triangle[1]][k]);
                             }
                             kplist_conserved[is][js][0].push_back(xk_vec);
                         }
@@ -1194,7 +1194,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                    + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][0].push_back(xk_vec);
                         }
@@ -1206,7 +1206,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[1]][k]
-                                    + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][0].push_back(xk_vec);
                         }
@@ -1215,8 +1215,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                         for (k = 0; k < 3; ++k) {
                             omega_sum[k] = eval_tmp[mode]
-                                - eval[knum_triangle[k]][is]
-                                + eval2[knum_triangle[k]][js];
+                                           - eval[knum_triangle[k]][is]
+                                           + eval2[knum_triangle[k]][js];
                         }
                         if (omega_sum[0] > 0.0 && omega_sum[1] > 0.0 && omega_sum[2] > 0.0 ||
                             omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0)
@@ -1229,7 +1229,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                    + frac * xk_plane[knum_triangle[1]][k]);
+                                                 + frac * xk_plane[knum_triangle[1]][k]);
                             }
                             kplist_conserved[is][js][1].push_back(xk_vec);
                         }
@@ -1241,7 +1241,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                    + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][1].push_back(xk_vec);
                         }
@@ -1253,7 +1253,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[1]][k]
-                                    + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][1].push_back(xk_vec);
                         }
@@ -1415,7 +1415,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             std::cout << ")" << std::endl;
             std::cout << "  Mode index = " << std::setw(5) << mode + 1 << std::endl;
             std::cout << "  Frequency (cm^-1) : " << std::setw(15)
-                << writes->in_kayser(eval[0][mode]) << std::endl;
+                      << writes->in_kayser(eval[0][mode]) << std::endl;
 
             int count_kp = 0;
 
@@ -1425,9 +1425,9 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                 }
             }
             std::cout << "  Number of k points satisfying the selection rule : "
-                << count_kp << std::endl;
+                      << count_kp << std::endl;
             std::cout << "  Number of symmetry operations at k point : "
-                << small_group_k.size() << std::endl << std::endl;
+                      << small_group_k.size() << std::endl << std::endl;
         }
 
         for (is = 0; is < ns; ++is) {
@@ -1580,7 +1580,7 @@ void ModeAnalysis::print_V3_elements()
             std::cout << ")" << std::endl;
             std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
             std::cout << "  Frequency (cm^-1) : "
-                << std::setw(15) << writes->in_kayser(omega) << std::endl;
+                      << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
         const auto ik_irred = kpoint->kmap_to_irreducible[knum];
@@ -1625,10 +1625,10 @@ void ModeAnalysis::print_V3_elements()
                     for (unsigned int js = 0; js < ns; ++js) {
                         ofs_V3 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
                         ofs_V3 << std::setw(15)
-                            << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                               << writes->in_kayser(dynamical->eval_phonon[k1][is]);
                         ofs_V3 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
                         ofs_V3 << std::setw(15)
-                            << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                               << writes->in_kayser(dynamical->eval_phonon[k2][js]);
                         ofs_V3 << std::setw(15) << v3norm[j][ib];
                         ofs_V3 << std::setw(5) << multi;
                         ofs_V3 << std::endl;
@@ -1714,7 +1714,7 @@ void ModeAnalysis::print_Phi3_elements()
             std::cout << ")" << std::endl;
             std::cout << "  Mode index = " << std::setw(5) << snum + 1 << std::endl;
             std::cout << "  Frequency (cm^-1) : "
-                << std::setw(15) << writes->in_kayser(omega) << std::endl;
+                      << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
         const auto ik_irred = kpoint->kmap_to_irreducible[knum];
@@ -1759,10 +1759,10 @@ void ModeAnalysis::print_Phi3_elements()
                     for (unsigned int js = 0; js < ns; ++js) {
                         ofs_V3 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
                         ofs_V3 << std::setw(15)
-                            << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                               << writes->in_kayser(dynamical->eval_phonon[k1][is]);
                         ofs_V3 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
                         ofs_V3 << std::setw(15)
-                            << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                               << writes->in_kayser(dynamical->eval_phonon[k2][js]);
                         ofs_V3 << std::setw(15) << phi3[j][ib].real();
                         ofs_V3 << std::setw(15) << phi3[j][ib].imag();
                         ofs_V3 << std::setw(5) << multi;
@@ -1913,8 +1913,8 @@ void ModeAnalysis::print_spectral_function(const int NT,
                 for (iomega = 0; iomega < nomega; ++iomega) {
                     ofs_self << std::setw(10) << T_now << std::setw(15) << writes->in_kayser(omega);
                     ofs_self << std::setw(10) << writes->in_kayser(omega_array[iomega])
-                        << std::setw(15) << writes->in_kayser(self3_real[iT][iomega])
-                        << std::setw(15) << writes->in_kayser(self3_imag[iT][iomega]) << std::endl;
+                             << std::setw(15) << writes->in_kayser(self3_real[iT][iomega])
+                             << std::setw(15) << writes->in_kayser(self3_imag[iT][iomega]) << std::endl;
                 }
                 ofs_self << std::endl;
             }

@@ -15,12 +15,10 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <vector>
 #include "fcs_phonon.h"
 
-namespace PHON_NS
-{
-    class KsListMode
-    {
+namespace PHON_NS {
+    class KsListMode {
     public:
-        double xk[3];
+        double xk[3]{};
         int nmode;
 
         KsListMode();
@@ -33,8 +31,7 @@ namespace PHON_NS
         }
     };
 
-    class KpointListWithCoordinate
-    {
+    class KpointListWithCoordinate {
     public:
         double xk[3];
         double x, y;
@@ -57,8 +54,7 @@ namespace PHON_NS
         }
     };
 
-    class RelativeVector
-    {
+    class RelativeVector {
     public:
         double vecs[3][3];
 
@@ -89,8 +85,7 @@ namespace PHON_NS
     };
 
 
-    class AnharmonicCore : protected Pointers
-    {
+    class AnharmonicCore : protected Pointers {
     public:
         AnharmonicCore(class PHON *);
 
@@ -117,7 +112,9 @@ namespace PHON_NS
         bool use_triplet_symmetry;
 
         std::complex<double> V3(const unsigned int [3]);
+
         std::complex<double> V4(const unsigned int [4]);
+
         std::complex<double> Phi3(const unsigned int [3]);
 
         std::complex<double> V3(const unsigned int [3],
@@ -168,6 +165,7 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         std::complex<double> im;
@@ -195,6 +193,7 @@ namespace PHON_NS
         int kindex_phi4_stored[3] = {-1, -1, -1};
 
         void setup_cubic();
+
         void setup_quartic();
 
         void store_exponential_for_acceleration(const int nk_in[3],

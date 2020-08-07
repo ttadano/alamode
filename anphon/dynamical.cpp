@@ -33,7 +33,7 @@
 
 using namespace PHON_NS;
 
-Dynamical::Dynamical(PHON *phon): Pointers(phon)
+Dynamical::Dynamical(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -155,7 +155,7 @@ void Dynamical::setup_dynamical()
 
     if (nonanalytic) {
         setup_dielectric();
-        
+
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         memory->allocate(mindist_list, system->natmin, system->nat);
@@ -165,7 +165,7 @@ void Dynamical::setup_dynamical()
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << " -----------------------------------------------------------------"
-            << std::endl << std::endl;
+                  << std::endl << std::endl;
     }
 }
 
@@ -250,8 +250,8 @@ double Dynamical::distance(double *x1,
                            double *x2) const
 {
     return std::sqrt(std::pow(x1[0] - x2[0], 2)
-        + std::pow(x1[1] - x2[1], 2)
-        + std::pow(x1[2] - x2[2], 2));
+                     + std::pow(x1[1] - x2[1], 2)
+                     + std::pow(x1[2] - x2[2], 2));
 }
 
 
@@ -297,8 +297,8 @@ void Dynamical::eval_k(double *xk_in,
     // zone-center or zone-boundaries.
 
     if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0)
-        + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
-        + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
+                  + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
+                  + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
         for (i = 0; i < 3 * system->natmin; ++i) {
             for (j = 0; j < 3 * system->natmin; ++j) {
@@ -492,7 +492,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                - system->xr_s[system->map_p2s[atm2_p][0]][i];
+                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -501,7 +501,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-            += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
     }
 }
 
@@ -531,8 +531,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 
     rotvec(kepsilon, kvec_na_in, dielec);
     const auto denom = kvec_na_in[0] * kepsilon[0]
-        + kvec_na_in[1] * kepsilon[1]
-        + kvec_na_in[2] * kepsilon[2];
+                       + kvec_na_in[1] * kepsilon[1]
+                       + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -563,7 +563,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
                     for (j = 0; j < 3; ++j) {
 
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                            = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
+                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
 
                     }
                 }
@@ -589,7 +589,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 
             for (i = 0; i < 3; ++i) {
                 xdiff[i] = system->xr_s[system->map_p2s[iat][0]][i]
-                    - system->xr_s[system->map_p2s[jat][0]][i];
+                           - system->xr_s[system->map_p2s[jat][0]][i];
             }
 
             rotvec(xdiff, xdiff, system->lavec_s);
@@ -631,8 +631,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
     rotvec(kepsilon, kvec_na_in, dielec);
     double denom = kvec_na_in[0] * kepsilon[0]
-        + kvec_na_in[1] * kepsilon[1]
-        + kvec_na_in[2] * kepsilon[2];
+                   + kvec_na_in[1] * kepsilon[1]
+                   + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -673,7 +673,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
                         for (unsigned int k = 0; k < 3; ++k) {
                             vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
-                                - system->xr_s[atm_p2][k];
+                                     - system->xr_s[atm_p2][k];
                         }
 
                         rotvec(vec, vec, system->lavec_s);
@@ -690,8 +690,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                            = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]))
-                            * exp_phase;
+                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]))
+                                  * exp_phase;
                     }
                 }
             }
@@ -820,7 +820,7 @@ void Dynamical::modify_eigenvectors() const
     //}
 }
 
-void Dynamical::setup_dielectric(const unsigned int verbosity) 
+void Dynamical::setup_dielectric(const unsigned int verbosity)
 {
     if (borncharge) memory->deallocate(borncharge);
 
@@ -832,7 +832,7 @@ void Dynamical::setup_dielectric(const unsigned int verbosity)
 }
 
 
-void Dynamical::load_born(const unsigned int flag_symmborn, 
+void Dynamical::load_born(const unsigned int flag_symmborn,
                           const unsigned int verbosity)
 {
     // Read the dielectric tensor and born effective charges from file_born
@@ -861,7 +861,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
     if (verbosity > 0) {
         std::cout << "  Dielectric constants and Born effective charges are read from "
-            << file_born << "." << std::endl << std::endl;
+                  << file_born << "." << std::endl << std::endl;
         std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -874,12 +874,12 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
         for (i = 0; i < system->natmin; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+                      << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
                     std::cout << std::setw(15) << std::fixed
-                        << std::setprecision(6) << borncharge[i][j][k];
+                              << std::setprecision(6) << borncharge[i][j][k];
                 }
                 std::cout << std::endl;
             }
@@ -911,7 +911,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
             std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
         }
-        
+
         for (i = 0; i < system->natmin; ++i) {
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
@@ -1001,7 +1001,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
                 for (i = 0; i < system->natmin; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                        << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+                              << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :"
+                              << std::endl;
 
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
@@ -1075,8 +1076,8 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
 
     for (iat = 0; iat < natmin; ++iat) {
         ret[iat] = (std::norm(evec[3 * iat])
-            + std::norm(evec[3 * iat + 1])
-            + std::norm(evec[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
+                    + std::norm(evec[3 * iat + 1])
+                    + std::norm(evec[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
     }
 
     auto sum = 0.0;
@@ -1152,8 +1153,7 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
             iota(index.begin(), index.end(), 0);
             std::sort(index.begin(), index.end(),
                       [&abs_similarity, is](int i1,
-                                            int i2)
-                      {
+                                            int i2) {
                           return abs_similarity[is][i1] > abs_similarity[is][i2];
                       });
 
@@ -1220,15 +1220,15 @@ void Dynamical::detect_imaginary_branches(double **eval)
                                 std::cout << std::setw(15) << kpoint->xk[knum][j];
                             }
                             std::cout << std::setw(4) << is + 1 << " :"
-                                << std::setw(10) << std::fixed
-                                << writes->in_kayser(omega) << " (cm^-1)" << std::endl;
+                                      << std::setw(10) << std::fixed
+                                      << writes->in_kayser(omega) << " (cm^-1)" << std::endl;
                             std::cout << std::scientific;
                         }
                     }
                 }
             }
             std::cout << std::setw(5) << count << " imaginary branches out of "
-                << std::setw(5) << nks << " total branches." << std::endl;
+                      << std::setw(5) << nks << " total branches." << std::endl;
             std::cout << std::endl;
             std::cout << " Phonon-phonon scattering rate and thermal conductivity involving these" << std::endl;
             std::cout << " imaginary branches will be treated as zero in the following calculations." << std::endl;

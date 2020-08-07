@@ -17,10 +17,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "anharmonic_core.h"
 #include "kpoint.h"
 
-namespace PHON_NS
-{
-    class ModeAnalysis : protected Pointers
-    {
+namespace PHON_NS {
+    class ModeAnalysis : protected Pointers {
     public:
         ModeAnalysis(class PHON *);
 
@@ -46,6 +44,7 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
+
         void deallocate_variables() const;
 
         std::vector<KsListMode> kslist_fstate_k;

@@ -28,7 +28,7 @@
 
 using namespace PHON_NS;
 
-Dielec::Dielec(PHON *phon): Pointers(phon)
+Dielec::Dielec(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -92,13 +92,13 @@ void Dielec::init()
     }
 }
 
-double* Dielec::get_omega_grid(unsigned int &nomega_in) const
+double *Dielec::get_omega_grid(unsigned int &nomega_in) const
 {
     nomega_in = nomega;
     return omega_grid;
 }
 
-double*** Dielec::get_dielectric_func() const
+double ***Dielec::get_dielectric_func() const
 {
     return dielec;
 }
@@ -129,7 +129,7 @@ void Dielec::run_dielec_calculation()
 
 void Dielec::compute_dielectric_function(const unsigned int nomega_in,
                                          double *omega_grid_in,
-                                         double *eval_in, 
+                                         double *eval_in,
                                          std::complex<double> **evec_in,
                                          double ***dielec_out)
 {
@@ -220,7 +220,7 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
     for (auto iomega = 0; iomega < nomega_in; ++iomega) {
         w2_tmp = omega_grid_in[iomega] * omega_grid_in[iomega] * freq_conv_factor;
 
-        for (auto i = 0; i < 3; ++i) { 
+        for (auto i = 0; i < 3; ++i) {
             for (auto j = 0; j < 3; ++j) {
                 dielec_out[iomega][i][j] = 0.0;
 
@@ -251,7 +251,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     // Compute the effective charges of normal coordinate at q = 0.
 
     if (dynamical->file_born == "") {
-            error->exitall("Dielec::compute_mode_effective_charge()", "BORNINFO must be set when DIELEC = 1.");
+        error->exitall("Dielec::compute_mode_effective_charge()", "BORNINFO must be set when DIELEC = 1.");
     }
 
     // If borncharge in dynamical class is not initialized, do it here.
@@ -271,8 +271,8 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
 
-    dynamical->eval_k(&xk[0], &xk[0], 
-                      fcs_phonon->fc2_ext, 
+    dynamical->eval_k(&xk[0], &xk[0],
+                      fcs_phonon->fc2_ext,
                       eval, evec, true);
 
     // Divide by sqrt of atomic mass to get normal coordinate

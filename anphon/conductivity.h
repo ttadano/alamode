@@ -15,18 +15,19 @@
 #include <set>
 #include <complex>
 
-namespace PHON_NS
-{
-    class Conductivity : protected Pointers
-    {
+namespace PHON_NS {
+    class Conductivity : protected Pointers {
     public:
         Conductivity(class PHON *);
 
         ~Conductivity();
 
         void setup_kappa();
+
         void prepare_restart();
+
         void calc_anharmonic_imagself();
+
         void compute_kappa();
 
         int calc_kappa_spec;
@@ -40,6 +41,7 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         double ***vel;
@@ -64,6 +66,7 @@ namespace PHON_NS
                                               int);
 
         void compute_kappa_intraband(double ***kappa_intra, double **lifetime);
+
         void compute_kappa_coherent(double ***kappa_coherent, double **gamma_total) const;
     };
 }

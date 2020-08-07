@@ -21,10 +21,8 @@
 #include <functional>
 #include <sstream>
 
-namespace PHON_NS
-{
-    class Input : protected Pointers
-    {
+namespace PHON_NS {
+    class Input : protected Pointers {
     public:
         Input(class PHON *);
 
@@ -40,10 +38,15 @@ namespace PHON_NS
         bool from_stdin;
 
         int locate_tag(const std::string &);
+
         void parse_general_vars();
+
         void parse_analysis_vars(const bool);
+
         void parse_scph_vars();
+
         void parse_cell_parameter();
+
         void parse_kpoints();
 
         void get_var_dict(const std::vector<std::string> &,
@@ -54,10 +57,10 @@ namespace PHON_NS
 
         bool is_endof_entry(const std::string &str) const;
 
-        template <typename T_to, typename T_from>
+        template<typename T_to, typename T_from>
         T_to my_cast(T_from const &);
 
-        template <typename T>
+        template<typename T>
         void assign_val(T &,
                         const std::string &,
                         std::map<std::string, std::string>);
@@ -77,7 +80,7 @@ namespace PHON_NS
     };
 
     // trim from start
-    static inline std::string& ltrim(std::string &s)
+    static inline std::string &ltrim(std::string &s)
     {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(),
                                         std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -85,7 +88,7 @@ namespace PHON_NS
     }
 
     // trim from end
-    static inline std::string& rtrim(std::string &s)
+    static inline std::string &rtrim(std::string &s)
     {
         s.erase(std::find_if(s.rbegin(), s.rend(),
                              std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
@@ -93,7 +96,7 @@ namespace PHON_NS
     }
 
     // trim from both ends
-    static inline std::string& trim(std::string &s)
+    static inline std::string &trim(std::string &s)
     {
         return ltrim(rtrim(s));
     }

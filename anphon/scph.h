@@ -15,10 +15,8 @@
 #include <complex>
 #include <Eigen/Dense>
 
-namespace PHON_NS
-{
-    class DistList
-    {
+namespace PHON_NS {
+    class DistList {
     public:
         unsigned int cell_s;
         double dist;
@@ -34,29 +32,25 @@ namespace PHON_NS
         }
     };
 
-    struct ShiftCell
-    {
+    struct ShiftCell {
     public:
         int sx, sy, sz;
     };
 
-    struct MinimumDistList
-    {
+    struct MinimumDistList {
     public:
         double dist;
         std::vector<ShiftCell> shift;
     };
 
-    struct KpointSymmetry
-    {
+    struct KpointSymmetry {
     public:
         unsigned int symmetry_op;
         unsigned int knum_irred_orig;
         unsigned int knum_orig;
     };
 
-    class Scph : protected Pointers
-    {
+    class Scph : protected Pointers {
     public:
 
         Scph(class PHON *phon);
@@ -78,6 +72,7 @@ namespace PHON_NS
         std::vector<std::vector<KpointList>> kp_irred_interpolate;
 
         void exec_scph();
+
         void setup_scph();
 
         double mixalpha;
@@ -121,19 +116,26 @@ namespace PHON_NS
 
 
         void set_default_variables();
+
         void deallocate_variables();
 
         void setup_kmesh();
+
         void setup_eigvecs();
+
         void setup_pp_interaction();
+
         void setup_transform_ifc();
+
         void setup_transform_symmetry();
 
 
         void load_scph_dymat_from_file(std::complex<double> ****);
+
         void store_scph_dymat_to_file(std::complex<double> ****);
 
         void exec_scph_main(std::complex<double> ****);
+
         void postprocess(std::complex<double> ****delta_dymat_scph);
 
         void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
@@ -193,24 +195,24 @@ namespace PHON_NS
                              const std::vector<std::vector<KpointList>> &,
                              double **) const;
 
-        double distance(double *,
-                        double *) const;
+        static double distance(double *,
+                               double *);
 
         void symmetrize_dynamical_matrix(unsigned int,
                                          Eigen::MatrixXcd &) const;
 
         void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
 
-        void duplicate_xk_boundary(double *,
-                                   std::vector<std::vector<double>> &) const;
+        static void duplicate_xk_boundary(double *,
+                                          std::vector<std::vector<double>> &);
 
         void write_anharmonic_correction_fc2(std::complex<double> ****,
                                              unsigned int);
 
-        void mpi_bcast_complex(std::complex<double> ****,
-                               int,
-                               int,
-                               int) const;
+        static void mpi_bcast_complex(std::complex<double> ****data,
+                                      const unsigned int NT,
+                                      const unsigned int nk,
+                                      const unsigned int ns);
 
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],

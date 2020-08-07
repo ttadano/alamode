@@ -43,7 +43,7 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon): Pointers(phon)
+Input::Input(PHON *phon) : Pointers(phon)
 {
     from_stdin = false;
     job_title = "";
@@ -108,11 +108,11 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-        "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-        "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-        "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
-        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-        "VERBOSITY"
+            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+            "VERBOSITY"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -336,9 +336,9 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-        "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-        "LOWER_TEMP", "WARMSTART"
+            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+            "LOWER_TEMP", "WARMSTART"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -463,13 +463,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     const std::vector<std::string> input_list{
-        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-        "REALPART", "ISOTOPE", "ISOFACT",
-        "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-        "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-        "DIELEC", "KAPPA_COHERENT"
+            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+            "REALPART", "ISOTOPE", "ISOFACT",
+            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+            "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
+            "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+            "DIELEC", "KAPPA_COHERENT"
     };
 
 #ifdef _FE_BUBBLE
@@ -955,8 +955,8 @@ int Input::locate_tag(const std::string &key)
 
     while (ifs_input >> line) {
 #ifdef _USE_BOOST
-            boost::to_lower(line);
-            boost::trim(line);
+        boost::to_lower(line);
+        boost::trim(line);
 #else
         std::transform(line.begin(), line.end(), line.begin(), tolower);
         line2 = line;
@@ -1048,7 +1048,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         error->exit("get_var_dict",
                                     "Redundant input parameter");
                     }
@@ -1119,14 +1119,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
-                            << key << std::endl;
+                                  << key << std::endl;
                         error->exit("get_var_dict",
                                     "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         error->exit("get_var_dict",
                                     "Redundant input parameter");
                     }
@@ -1168,7 +1168,7 @@ void Input::split_str_by_space(const std::string &str,
     str_tmp.clear();
 }
 
-template <typename T>
+template<typename T>
 void Input::assign_val(T &val,
                        const std::string &key,
                        std::map<std::string, std::string> dict)
@@ -1189,7 +1189,7 @@ void Input::assign_val(T &val,
 }
 
 
-template <typename T_to, typename T_from>
+template<typename T_to, typename T_from>
 T_to Input::my_cast(T_from const &x)
 {
     std::stringstream ss;

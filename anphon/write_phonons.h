@@ -15,10 +15,8 @@
 #include <string>
 #include <fstream>
 
-namespace PHON_NS
-{
-    class Writes : protected Pointers
-    {
+namespace PHON_NS {
+    class Writes : protected Pointers {
     public:
 
         Writes(class PHON *);
@@ -26,11 +24,17 @@ namespace PHON_NS
         ~Writes();
 
         void write_phonon_info();
+
         void print_phonon_energy() const;
+
         void write_gruneisen();
+
         void setup_result_io();
+
         void write_input_vars();
+
         void write_kappa() const;
+
         void write_selfenergy_isotope() const;
 
         bool print_xsf;
@@ -51,27 +55,41 @@ namespace PHON_NS
         std::fstream fs_result;
 
         void write_scph_energy(double ***) const;
+
         void write_scph_bands(double ***) const;
+
         void write_scph_dos(double **) const;
+
         void write_scph_thermodynamics(double *heat_capacity,
                                        double *FE_QHA,
                                        double *dFE_scph) const;
+
         void write_scph_msd(double **) const;
+
         void write_scph_ucorr(double ***ucorr_scph) const;
+
         void write_scph_dielec(double ****dielec_scph) const;
 
         unsigned int getVerbosity() const;
+
         void setVerbosity(unsigned int verbosity_in);
 
     private:
 
         void write_phonon_bands() const;
+
         void write_phonon_vel() const;
+
         void write_phonon_vel_all() const;
+
         void write_phonon_dos() const;
+
         void write_two_phonon_dos() const;
+
         void write_scattering_phase_space() const;
+
         void write_scattering_amplitude() const;
+
         void write_normal_mode_direction() const;
 
         void write_normal_mode_animation(const double [3],
@@ -82,11 +100,15 @@ namespace PHON_NS
 #ifdef _HDF5
         void write_eigenvectors_HDF5() const;
 #endif
+
         void write_thermodynamics() const;
+
         void write_msd() const;
+
         void write_disp_correlation() const;
 
         void write_participation_ratio() const;
+
         void write_dielectric_function() const;
 
         double Ry_to_kayser;

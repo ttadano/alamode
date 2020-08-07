@@ -13,16 +13,16 @@
 #ifdef _WIN32
 #include <mpi.h>
 #else
+
 #include "mpi.h"
+
 #endif
 
 #include <string>
 #include "pointers.h"
 
-namespace PHON_NS
-{
-    class MyMPI : protected Pointers
-    {
+namespace PHON_NS {
+    class MyMPI : protected Pointers {
     public:
         MyMPI(class PHON *,
               MPI_Comm);
