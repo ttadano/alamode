@@ -76,7 +76,7 @@ void Writer::write_input_vars(const ALM *alm, const std::string run_mode) const
 
     } else if (run_mode == "optimize") {
         const auto optctrl = alm->optimize->get_optimizer_control();
-        std::vector<std::string> str_linearmodel{"least-squares", "elastic-net"};
+        std::vector<std::string> str_linearmodel{"least-squares", "elastic-net", "adaptive-lasso"};
         std::cout << " Optimize:\n";
         std::cout << "  LMODEL = "
                   << str_linearmodel[optctrl.linear_model - 1] << '\n';

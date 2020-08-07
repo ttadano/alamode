@@ -462,7 +462,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    const std::vector<std::string> input_list{
+    std::vector<std::string> input_list{
             "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
             "REALPART", "ISOTOPE", "ISOFACT",
             "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
