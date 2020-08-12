@@ -43,21 +43,28 @@ int isotope;
 bool classical;
 
 void calc_tau(int);
+
 void calc_tau_temp(int,
                    int);
+
 void calc_kappa();
+
 void calc_kappa_cumulative(double,
                            double,
                            int);
+
 void calc_kappa_cumulative2(double,
                             double,
                             int,
                             int [3]);
+
 void calc_kappa_boundary(const double);
+
 void calc_kappa_boundary2(double,
                           double,
                           int,
                           int [3]);
+
 double Cv(double,
           double);
 
@@ -66,6 +73,7 @@ void average_gamma_at_degenerate_point(double **,
                                        const int,
                                        const int,
                                        const int);
+
 void average_gamma_isotope_at_degenerate_point(double **,
                                                double **,
                                                const int,
@@ -84,21 +92,19 @@ static const double T_to_Ryd = k_Boltzmann / Ryd;
 
 
 // trim from start
-static inline std::string& ltrim(std::string &s)
-{
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+static inline std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) {return !std::isspace(c);}));
     return s;
 }
 
 // trim from end
-static inline std::string& rtrim(std::string &s)
-{
-    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+static inline std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {return !std::isspace(ch);}).base(), s.end());
     return s;
 }
 
 // trim from both ends
-static inline std::string& trim(std::string &s)
+static inline std::string &trim(std::string &s)
 {
     return ltrim(rtrim(s));
 }
