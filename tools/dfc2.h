@@ -97,6 +97,7 @@ double temp;
 double lavec_s[3][3], lavec_p[3][3];
 double rlavec_p[3][3];
 double **xr_s, **xr_p;
+unsigned int is_periodic[3];
 
 void load_fc2_xml(const std::string);
 

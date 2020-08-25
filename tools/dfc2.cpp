@@ -28,17 +28,29 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace std;
 
-int main()
+int main(int argc, char *argv[])
 {
-    cout << " DFC2 -- a generator of renormalized harmonic FCs from SCPH outputs." << endl;
-    cout << " XML file containing original FC2 : ";
-    cin >> original_xml;
-    cout << " Output xml filename with anharmonic correction : ";
-    cin >> new_xml;
-    cout << " FC2 correction file from SCPH calculation : ";
-    cin >> file_fc2_correction;
-    cout << " Target temperature : ";
-    cin >> temp;
+    if (argc == 1) {
+        cout << " DFC2 -- a generator of renormalized harmonic FCs from SCPH outputs." << endl;
+        cout << " XML file containing original FC2 : ";
+        cin >> original_xml;
+        cout << " Output xml filename with anharmonic correction : ";
+        cin >> new_xml;
+        cout << " FC2 correction file from SCPH calculation : ";
+        cin >> file_fc2_correction;
+        cout << " Target temperature : ";
+        cin >> temp;
+    } else if (argc == 5) {
+        original_xml = argv[1];
+        new_xml = argv[2];
+        file_fc2_correction = argv[3];
+        temp = boost::lexical_cast<float>(argv[4]);
+    } else {
+        std::cout << "Usage: " << std::endl;
+        std::cout << "(command line) > dfc2 FC2XML_ORIG FC2XML_NEW SCPH_DFC2 TEMPERATURE" << std::endl;
+        std::cout << "(interactive) > dfc2 " << std::endl;
+        std::cout << std::endl;
+    }
 
     // Load original harmonic force constants and structure data of the supercell
     load_fc2_xml(original_xml);
@@ -108,6 +120,11 @@ void load_fc2_xml(const std::string file_in)
                                   + boost::lexical_cast<string>(i + 1));
         ss1 >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
     }
+
+    ss1.str("");
+    ss1.clear();
+    ss1 << get_value_from_xml(pt, "Data.Structure.Periodicity");
+    ss1 >> is_periodic[0] >> is_periodic[1] >> is_periodic[2];
 
     // Parse atomic elements and coordinates
 
@@ -485,6 +502,12 @@ void write_new_xml(const std::vector <FcsClassExtent> fc2_in,
     pt.put("Data.Structure.LatticeVector.a1", str_pos[0]);
     pt.put("Data.Structure.LatticeVector.a2", str_pos[1]);
     pt.put("Data.Structure.LatticeVector.a3", str_pos[2]);
+
+    std::stringstream ss;
+    ss << is_periodic[0] << " "
+       << is_periodic[1] << " "
+       << is_periodic[2];
+    pt.put("Data.Structure.Periodicity", ss.str());
 
     pt.put("Data.Structure.Position", "");
 

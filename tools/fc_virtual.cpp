@@ -356,9 +356,7 @@ void mix_forceconstant(std::vector <FcsArrayWithCell> *fc_orig1,
                        std::vector <FcsArrayWithCell> *fc_new,
                        const double alpha, const int maxorder)
 {
-    // Mix force constants simply assuming the order of appearence is the same.
-
-    double fcs_tmp;
+    // Mix force constants with the given mixing fraction "alpha"
 
     for (auto order = 0; order < maxorder; ++order) {
 
