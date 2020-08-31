@@ -584,7 +584,6 @@ void Scph::store_scph_dymat_to_file(std::complex<double> ****dymat_in)
 
 void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 {
-    unsigned int iT;
     int ik, is;
     const auto nk = nk_scph;
     const auto ns = dynamical->neval;
@@ -646,19 +645,19 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
         vec_temp.clear();
 
         if (lower_temp) {
-            for (iT = NT - 1; iT >= 0; --iT) {
-                vec_temp.push_back(Tmin + static_cast<double>(iT) * dT);
+            for (int i = NT - 1; i >= 0; --i) {
+                vec_temp.push_back(Tmin + static_cast<double>(i) * dT);
             }
         } else {
-            for (iT = 0; iT < NT; ++iT) {
-                vec_temp.push_back(Tmin + static_cast<double>(iT) * dT);
+            for (int i = 0; i < NT; ++i) {
+                vec_temp.push_back(Tmin + static_cast<double>(i) * dT);
             }
         }
 
         auto converged_prev = false;
 
         for (double temp : vec_temp) {
-            iT = static_cast<unsigned int>((temp - Tmin) / dT);
+            auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
             // Initialize phonon eigenvectors with harmonic values
 
