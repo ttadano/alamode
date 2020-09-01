@@ -141,6 +141,15 @@ void System::set_supercell(const double lavec_in[3][3],
         for (j = 0; j < 3; ++j) {
             xtmp[j] = xf_in[i][j];
         }
+        // The fractional coordinate should be in the range of 0<=xf<1.
+        for (j = 0; j < 3; ++j) {
+            while (xtmp[j] >= 1.0) {
+                xtmp[j] -= 1.0;
+            }
+            while (xtmp[j] < 0.0) {
+                xtmp[j] += 1.0;
+            }
+        }
         supercell.x_fractional.push_back(xtmp);
     }
 
