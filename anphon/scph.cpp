@@ -3187,7 +3187,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
     for (i = 0; i < system->natmin; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_fc2 << std::setw(15) << xtmp[i][j];
+            ofs_fc2 << std::setw(20) << xtmp[i][j];
         }
         ofs_fc2 << std::setw(5) << system->kd[system->map_p2s[i][0]] + 1 << std::endl;
     }
