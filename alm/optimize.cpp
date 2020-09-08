@@ -74,7 +74,6 @@ int Optimize::optimize_main(const Symmetry *symmetry,
     timer->start_clock("optimize");
 
     const auto natmin = symmetry->get_nat_prim();
-
     const auto ndata_used = filedata_train.nend - filedata_train.nstart + 1
                             - filedata_train.skip_e + filedata_train.skip_s;
     const auto ndata_used_validation = filedata_validation.nend - filedata_validation.nstart + 1;
@@ -99,7 +98,7 @@ int Optimize::optimize_main(const Symmetry *symmetry,
         std::cout << " OPTIMIZATION\n";
         std::cout << " ============\n\n";
         std::cout << "  LMODEL = " << str_linearmodel[optcontrol.linear_model - 1] << "\n\n";
-        if (filedata_train.filename != "") {
+        if (!filedata_train.filename.empty()) {
             std::cout << "  Training data file (DFSET) : " << filedata_train.filename << "\n\n";
             std::cout << "  NSTART = " << filedata_train.nstart << "; NEND = " << filedata_train.nend << '\n';
             if (filedata_train.skip_s < filedata_train.skip_e) {
@@ -112,17 +111,14 @@ int Optimize::optimize_main(const Symmetry *symmetry,
 
         if (optcontrol.cross_validation == -1) {
             std::cout << "  CV = -1 : Manual cross-validation mode is selected\n";
-            if (filedata_validation.filename != "") {
-
+            if (!filedata_validation.filename.empty()) {
                 std::cout << "  Validation data file (DFSET_CV) : " << filedata_validation.filename << "\n\n";
                 std::cout << "  NSTART_CV = " << filedata_validation.nstart << "; NEND_CV = "
-                          << filedata_validation.nend <<
-                          std::endl;
+                          << filedata_validation.nend << '\n';
                 std::cout << "  " << ndata_used_validation
-                          << " entries will be used for validation." << std::endl << std::endl;
+                          << " entries will be used for validation.\n\n";
             }
         }
-
         std::cout << "  Total Number of Parameters : " << N << '\n';
         if (constraint->get_constraint_algebraic()) {
             std::cout << "  Total Number of Free Parameters : " << N_new << '\n';
@@ -136,7 +132,6 @@ int Optimize::optimize_main(const Symmetry *symmetry,
     if (optcontrol.linear_model == 1) {
         // Use ordinary least-squares
 
-
         info_fitting = least_squares(maxorder,
                                      N,
                                      N_new,
@@ -147,65 +142,49 @@ int Optimize::optimize_main(const Symmetry *symmetry,
                                      constraint,
                                      fcs_tmp);
 
-    } else if (optcontrol.linear_model == 2) {
-        // Use elastic net
+    } else if (optcontrol.linear_model == 2 or optcontrol.linear_model == 3) {
+
+        // Use elastic net or adaptive lasso
 
         if (!constraint->get_constraint_algebraic()) {
             exit("optimize_main",
                  "Sorry, ICONST = 10 or ICONST = 11 must be used when using elastic net.");
         }
 
-        info_fitting = elastic_net(file_prefix,
-                                   maxorder,
-                                   N_new,
-                                   M,
-                                   symmetry,
-                                   str_order,
-                                   fcs,
-                                   constraint,
-                                   verbosity,
-                                   fcs_tmp);
-
-    } else if (optcontrol.linear_model == 3) {
-
-        if (!constraint->get_constraint_algebraic()) {
-            exit("optimize_main",
-                 "Sorry, ICONST = 10 or ICONST = 11 must be used when using adaptive lasso.");
-        }
-
-        if (optcontrol.standardize) {
-            if (verbosity > 0) {
-                warn("optimize_main", "STANDARDIZE = 1 in adaptive LASSO is meaningless.\n"
-                                      " Switch to STANDARDIZE = 0.");
+        if (optcontrol.linear_model == 3) {
+            if (optcontrol.standardize) {
+                if (verbosity > 0) {
+                    warn("optimize_main", "STANDARDIZE = 1 in adaptive LASSO is meaningless.\n"
+                                          " Switch to STANDARDIZE = 0.");
+                }
+                optcontrol.standardize = 0;
             }
-            optcontrol.standardize = 0;
-        }
 
-        if (std::abs(optcontrol.displacement_normalization_factor - 1.0) > eps) {
-            if (verbosity > 0) {
-                warn("optimize_main", "DNORM_BASIS != 1.0 should be avoided in adaptive LASSO.\n"
-                                      " Switch to DNORM_BASIS = 1.0.");
+            if (std::abs(optcontrol.displacement_normalization_factor - 1.0) > eps) {
+                if (verbosity > 0) {
+                    warn("optimize_main", "DNORM_BASIS != 1.0 should be avoided in adaptive LASSO.\n"
+                                          " Switch to DNORM_BASIS = 1.0.");
+                }
+                optcontrol.displacement_normalization_factor = 1.0;
             }
-            optcontrol.displacement_normalization_factor = 1.0;
-        }
 
-        if (std::abs(optcontrol.l1_ratio - 1.0) > eps) {
-            if (verbosity > 0) {
-                warn("optimize_main", "L1_RATIO != 1.0 should be avoided in adaptive LASSO");
+            if (std::abs(optcontrol.l1_ratio - 1.0) > eps) {
+                if (verbosity > 0) {
+                    warn("optimize_main", "L1_RATIO != 1.0 should be avoided in adaptive LASSO");
+                }
             }
         }
 
-        info_fitting = adaptive_lasso(file_prefix,
-                                      maxorder,
-                                      N_new,
-                                      M,
-                                      symmetry,
-                                      str_order,
-                                      fcs,
-                                      constraint,
-                                      verbosity,
-                                      fcs_tmp);
-
+        info_fitting = compressive_sensing(file_prefix,
+                                           maxorder,
+                                           N_new,
+                                           M,
+                                           symmetry,
+                                           str_order,
+                                           fcs,
+                                           constraint,
+                                           verbosity,
+                                           fcs_tmp);
     }
 
     if (info_fitting == 0) {
@@ -266,7 +245,7 @@ int Optimize::least_squares(const int maxorder,
 
         if (optcontrol.use_sparse_solver) {
 
-            // Use a solver for sparse matrix 
+            // Use a solver for sparse matrix
             // (Requires less memory for sparse inputs.)
 
             SpMat sp_amat(nrows, ncols);
@@ -375,60 +354,63 @@ int Optimize::least_squares(const int maxorder,
 }
 
 
-int Optimize::elastic_net(const std::string job_prefix,
-                          const int maxorder,
-                          const size_t N_new,
-                          const size_t M,
-                          const Symmetry *symmetry,
-                          const std::vector<std::string> &str_order,
-                          const Fcs *fcs,
-                          Constraint *constraint,
-                          const int verbosity,
-                          std::vector<double> &param_out)
+int Optimize::compressive_sensing(const std::string job_prefix,
+                                  const int maxorder,
+                                  const size_t N_new,
+                                  const size_t M,
+                                  const Symmetry *symmetry,
+                                  const std::vector<std::string> &str_order,
+                                  const Fcs *fcs,
+                                  Constraint *constraint,
+                                  const int verbosity,
+                                  std::vector<double> &param_out)
 {
+    // Perform compressive sensing analysis of the linear model either based on
+    // the elastic net or adaptive lasso.
+
     int info_fitting;
 
     std::vector<double> param_tmp(N_new, 0.0);
 
-    // Scale displacements if DNORM is not 1 and the data is not standardized.
+    // Scale displacements if DNORM != 1.0 and the data is not standardized.
+    // This rule is not applied when the adaptive lasso is selected.
     const int scale_displacement
             = std::abs(optcontrol.displacement_normalization_factor - 1.0) > eps
-              && optcontrol.standardize == 0;
+              && (optcontrol.standardize == 0)
+              && (optcontrol.linear_model == 2);
 
     if (optcontrol.cross_validation == 0) {
-        // Calculate force
-        // constants at given L1-alpha
 
         if (scale_displacement) {
             apply_scalers(maxorder, constraint);
         }
 
         // Optimize with a given L1 coefficient (l1_alpha)
-        run_elastic_net_optimization(maxorder,
-                                     M,
-                                     N_new,
-                                     fcs,
-                                     symmetry,
-                                     constraint,
-                                     verbosity,
-                                     param_tmp);
+        optimize_with_given_l1alpha(maxorder,
+                                    M,
+                                    N_new,
+                                    fcs,
+                                    symmetry,
+                                    constraint,
+                                    verbosity,
+                                    param_tmp);
 
         if (verbosity > 0) {
             size_t iparam = 0;
-            std::vector<int> nzero_lasso(maxorder);
+            std::vector<int> nzero_cs(maxorder);
 
             for (auto i = 0; i < maxorder; ++i) {
-                nzero_lasso[i] = 0;
+                nzero_cs[i] = 0;
                 for (const auto &it : constraint->get_index_bimap(i)) {
                     const auto inew = it.left + iparam;
-                    if (std::abs(param_tmp[inew]) < eps) ++nzero_lasso[i];
+                    if (std::abs(param_tmp[inew]) < eps) ++nzero_cs[i];
                 }
                 iparam += constraint->get_index_bimap(i).size();
             }
 
             for (auto order = 0; order < maxorder; ++order) {
                 std::cout << "  Number of non-zero " << std::setw(9) << str_order[order] << " FCs : "
-                          << constraint->get_index_bimap(order).size() - nzero_lasso[order] << std::endl;
+                          << constraint->get_index_bimap(order).size() - nzero_cs[order] << std::endl;
             }
             std::cout << std::endl;
         }
@@ -452,18 +434,18 @@ int Optimize::elastic_net(const std::string job_prefix,
 
     } else {
         // Run cross validation (manually or automatically) to
-        // get L1 alpha to give minimum CV score
+        // get a L1 alpha that gives the minimum CV score
         if (scale_displacement) {
             apply_scalers(maxorder, constraint);
         }
 
         // cv_l1_alpha is a private variable of Optimize class.
-        cv_l1_alpha = run_elastic_net_crossvalidation(job_prefix,
-                                                      maxorder,
-                                                      fcs,
-                                                      symmetry,
-                                                      constraint,
-                                                      verbosity);
+        cv_l1_alpha = crossvalidation(job_prefix,
+                                      maxorder,
+                                      fcs,
+                                      symmetry,
+                                      constraint,
+                                      verbosity);
         if (scale_displacement) {
             finalize_scalers(maxorder, constraint);
         }
@@ -475,552 +457,86 @@ int Optimize::elastic_net(const std::string job_prefix,
 }
 
 
-int Optimize::adaptive_lasso(const std::string job_prefix,
-                             const int maxorder,
-                             const size_t N_new,
-                             const size_t M,
-                             const Symmetry *symmetry,
-                             const std::vector<std::string> &str_order,
-                             const Fcs *fcs,
-                             Constraint *constraint,
-                             const int verbosity,
-                             std::vector<double> &param_out)
-{
-    int info_fitting;
-
-    std::vector<double> param_tmp(N_new, 0.0);
-
-    if (optcontrol.cross_validation == 0) {
-        // Calculate force
-        // constants at given L1-alpha
-
-        // Optimize with a given L1 coefficient (l1_alpha)
-        run_adaptive_lasso_optimization(maxorder,
-                                        M,
-                                        N_new,
-                                        fcs,
-                                        symmetry,
-                                        constraint,
-                                        verbosity,
-                                        param_tmp);
-
-        if (verbosity > 0) {
-            size_t iparam = 0;
-            std::vector<int> nzero_lasso(maxorder);
-
-            for (auto i = 0; i < maxorder; ++i) {
-                nzero_lasso[i] = 0;
-                for (const auto &it : constraint->get_index_bimap(i)) {
-                    const auto inew = it.left + iparam;
-                    if (std::abs(param_tmp[inew]) < eps) ++nzero_lasso[i];
-                }
-                iparam += constraint->get_index_bimap(i).size();
-            }
-
-            for (auto order = 0; order < maxorder; ++order) {
-                std::cout << "  Number of non-zero " << std::setw(9) << str_order[order] << " FCs : "
-                          << constraint->get_index_bimap(order).size() - nzero_lasso[order] << std::endl;
-            }
-            std::cout << std::endl;
-        }
-
-        recover_original_forceconstants(maxorder,
-                                        param_tmp,
-                                        param_out,
-                                        fcs->get_nequiv(),
-                                        constraint);
-        info_fitting = 0;
-
-    } else {
-        // Run cross validation (manually or automatically) to
-        // get L1 alpha to give minimum CV score
-
-        // cv_l1_alpha is a private variable of Optimize class.
-        cv_l1_alpha = run_adaptive_lasso_crossvalidation(job_prefix,
-                                                         maxorder,
-                                                         fcs,
-                                                         symmetry,
-                                                         constraint,
-                                                         verbosity);
-        info_fitting = 1;
-    }
-
-    return info_fitting;
-}
-
-double Optimize::run_elastic_net_crossvalidation(const std::string job_prefix,
-                                                 const int maxorder,
-                                                 const Fcs *fcs,
-                                                 const Symmetry *symmetry,
-                                                 const Constraint *constraint,
-                                                 const int verbosity)
-{
-    // Cross-validation mode:
-    // Returns alpha giving minimum CV score
-
-
-    if (verbosity > 0) {
-        std::cout << "  Elastic-net cross-validation with the following parameters:" << std::endl;
-        std::cout << "   L1_RATIO = " << optcontrol.l1_ratio << std::endl;
-        std::cout << "   CV = " << std::setw(15) << optcontrol.cross_validation << std::endl;
-        if (optcontrol.l1_alpha_min > 0) {
-            std::cout << "   CV_MINALPHA = " << std::setw(15) << optcontrol.l1_alpha_min;
-        } else {
-            std::cout << "   CV_MINALPHA = CV_MAXALPHA*1e-6 ";
-        }
-        if (optcontrol.l1_alpha_max > 0) {
-            std::cout << "  CV_MAXALPHA = " << std::setw(15) << optcontrol.l1_alpha_max << std::endl;
-        } else {
-            std::cout << " CV_MAXALPHA = (Use recommended value)" << std::endl;
-        }
-        std::cout << "   CV_NALPHA = " << std::setw(5) << optcontrol.num_l1_alpha << std::endl;
-        std::cout << "   CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << std::endl;
-        std::cout << "   MAXITER = " << std::setw(5) << optcontrol.maxnum_iteration << std::endl;
-        std::cout << "   ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << std::endl;
-        std::cout << std::endl;
-
-        if (optcontrol.standardize) {
-            std::cout << "  STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b." << std::
-            endl;
-            std::cout << "                    The ENET_DNORM-tag will be neglected." << std::endl;
-        } else {
-            std::cout << "  STANDARDIZE = 0 : No standardization of matrix A and vector b." << std::endl;
-            std::cout << "                    Columns of matrix A will be scaled by the ENET_DNORM value." << std::
-            endl;
-        }
-        std::cout << std::endl;
-
-        if (optcontrol.cross_validation == -1) {
-            std::cout << "  CV = -1: Manual CV mode." << std::endl;
-            std::cout << "           Validation data is read from DFSET_CV" << std::endl;
-        } else if (optcontrol.cross_validation > 0) {
-            std::cout << "  CV > 0: Automatic CV mode." << std::endl;
-        } else {
-            exit("run_elastic_net_crossvalidation",
-                 "This cannot happen.");
-        }
-        std::cout << std::endl;
-    }
-
-
-    // Returns alpha at minimum CV
-    if (optcontrol.cross_validation == -1) {
-        return run_enetcv_manual(job_prefix,
-                                 maxorder,
-                                 fcs,
-                                 symmetry,
-                                 constraint,
-                                 verbosity);
-    } else {
-        return run_enetcv_auto(job_prefix,
-                               maxorder,
-                               fcs,
-                               symmetry,
-                               constraint,
-                               verbosity);
-    }
-}
-
-double Optimize::run_enetcv_manual(const std::string job_prefix,
-                                   const int maxorder,
-                                   const Fcs *fcs,
-                                   const Symmetry *symmetry,
-                                   const Constraint *constraint,
-                                   const int verbosity)
-{
-    // Manual CV mode where the test data is read from the user-defined file.
-    // Indeed, the test data is already read in the input_parser and stored in u_validation and f_validation.
-
-    std::vector<double> amat_1D, amat_1D_validation;
-    std::vector<double> bvec, bvec_validation;
-    std::vector<double> alphas, training_error, validation_error;
-    std::vector<std::vector<int>> nonzeros;
-    double fnorm, fnorm_validation;
-
-    size_t N_new = 0;
-    if (constraint->get_constraint_algebraic()) {
-        for (auto i = 0; i < maxorder; ++i) {
-            N_new += constraint->get_index_bimap(i).size();
-        }
-    }
-
-    get_matrix_elements_algebraic_constraint(maxorder,
-                                             amat_1D,
-                                             bvec,
-                                             u_train,
-                                             f_train,
-                                             fnorm,
-                                             symmetry,
-                                             fcs,
-                                             constraint);
-
-    get_matrix_elements_algebraic_constraint(maxorder,
-                                             amat_1D_validation,
-                                             bvec_validation,
-                                             u_validation,
-                                             f_validation,
-                                             fnorm_validation,
-                                             symmetry,
-                                             fcs,
-                                             constraint);
-
-    Eigen::MatrixXd A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
-    Eigen::VectorXd b = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
-    Eigen::MatrixXd A_validation = Eigen::Map<Eigen::MatrixXd>(&amat_1D_validation[0],
-                                                               amat_1D_validation.size() / N_new, N_new);
-    Eigen::VectorXd b_validation = Eigen::Map<Eigen::VectorXd>(&bvec_validation[0], bvec_validation.size());
-
-    const auto estimated_max_alpha = get_estimated_max_alpha(A, b);
-
-    if (verbosity > 0) {
-        std::cout << "  Recommended CV_MAXALPHA = "
-                  << estimated_max_alpha
-                  << std::endl << std::endl;
-    }
-
-    const auto file_coef = job_prefix + ".solution_path";
-    const auto file_cv = job_prefix + ".enet_cv";
-
-    compute_alphas(optcontrol.l1_alpha_max,
-                   optcontrol.l1_alpha_min,
-                   optcontrol.num_l1_alpha,
-                   alphas);
-
-    run_enet_solution_path(maxorder, A, b, A_validation, b_validation,
-                           fnorm, fnorm_validation,
-                           file_coef, verbosity,
-                           constraint,
-                           alphas,
-                           training_error, validation_error, nonzeros);
-
-    write_cvresult_to_file(file_cv,
-                           alphas,
-                           training_error,
-                           validation_error,
-                           nonzeros);
-
-    const auto ialpha = get_ialpha_at_minimum_validation_error(validation_error);
-
-    if (verbosity > 0) {
-        std::cout << "  The manual CV has been done." << std::endl;
-        std::cout << "  Minimum validation error at alpha = "
-                  << alphas[ialpha] << std::endl;
-        std::cout << "  The CV result is saved in " << file_cv << std::endl;
-    }
-
-    return alphas[ialpha];
-}
-
-double Optimize::run_enetcv_auto(const std::string job_prefix,
+double Optimize::crossvalidation(const std::string job_prefix,
                                  const int maxorder,
                                  const Fcs *fcs,
                                  const Symmetry *symmetry,
                                  const Constraint *constraint,
                                  const int verbosity)
 {
-    // Automatic CV mode.
-
-    size_t N_new = 0;
-    if (constraint->get_constraint_algebraic()) {
-        for (auto i = 0; i < maxorder; ++i) {
-            N_new += constraint->get_index_bimap(i).size();
-        }
-    }
-
-    const auto nstructures = u_train.size();
-    const auto nsets = optcontrol.cross_validation;
-
-    if (nsets > nstructures) {
-        exit("run_elastic_net_crossvalidation",
-             "The input CV is larger than the total number of training data.");
-    }
-
-    std::vector<int> ndata_block(nsets, nstructures / nsets);
-    for (auto iset = 0; iset < nsets; ++iset) {
-        if (nstructures - nsets * (nstructures / nsets) > iset) {
-            ++ndata_block[iset];
-        }
-    }
-
-    std::vector<std::vector<double>> u_train_tmp, u_validation_tmp;
-    std::vector<std::vector<double>> f_train_tmp, f_validation_tmp;
-
-    std::vector<double> amat_1D, amat_1D_validation;
-    std::vector<double> bvec, bvec_validation;
-    std::vector<double> alphas, training_error, validation_error;
-    std::vector<std::vector<int>> nonzeros;
-    std::vector<std::vector<double>> training_error_accum, validation_error_accum;
-    double fnorm, fnorm_validation, estimated_max_alpha;
-
-    auto ishift = 0;
-
-    if (verbosity > 0) {
-        std::cout << "  Start " << nsets << "-fold CV with "
-                  << u_train.size() << " Datasets" << std::endl;
-        std::cout << std::endl;
-    }
-
-    if (!(optcontrol.l1_alpha_max > 0)) {
-        estimated_max_alpha = 0;
-        for (auto iset = 0; iset < nsets; ++iset) {
-            const auto istart_validation = ishift;
-            const auto iend_validation = istart_validation + ndata_block[iset];
-
-            u_train_tmp.clear();
-            f_train_tmp.clear();
-            u_validation_tmp.clear();
-            f_validation_tmp.clear();
-
-            for (auto idata = 0; idata < nstructures; ++idata) {
-                if (idata >= istart_validation && idata < iend_validation) {
-                    u_validation_tmp.emplace_back(u_train[idata]);
-                    f_validation_tmp.emplace_back(f_train[idata]);
-                } else {
-                    u_train_tmp.emplace_back(u_train[idata]);
-                    f_train_tmp.emplace_back(f_train[idata]);
-                }
-            }
-            ishift += ndata_block[iset];
-
-            get_matrix_elements_algebraic_constraint(maxorder,
-                                                     amat_1D,
-                                                     bvec,
-                                                     u_train_tmp,
-                                                     f_train_tmp,
-                                                     fnorm,
-                                                     symmetry,
-                                                     fcs,
-                                                     constraint);
-
-            Eigen::MatrixXd A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
-            Eigen::VectorXd b = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
-            const auto this_estimated_max_alpha = get_estimated_max_alpha(A, b);
-
-            if (verbosity > 0) {
-                std::cout << "  Recommended CV_MAXALPHA (" << std::setw(3)
-                          << iset + 1 << ") = "
-                          << this_estimated_max_alpha << std::endl;
-            }
-
-            if (this_estimated_max_alpha > estimated_max_alpha) {
-                estimated_max_alpha = this_estimated_max_alpha;
-            }
-        }
-        ishift = 0;
-    }
-
-    for (auto iset = 0; iset < nsets; ++iset) {
-
-        if (verbosity > 0) {
-            std::cout << std::endl;
-            std::cout << "  SET : " << std::setw(3) << iset + 1 << std::endl;
-        }
-        const auto istart_validation = ishift;
-        const auto iend_validation = istart_validation + ndata_block[iset];
-
-        u_train_tmp.clear();
-        f_train_tmp.clear();
-        u_validation_tmp.clear();
-        f_validation_tmp.clear();
-
-        for (auto idata = 0; idata < nstructures; ++idata) {
-            if (idata >= istart_validation && idata < iend_validation) {
-                u_validation_tmp.emplace_back(u_train[idata]);
-                f_validation_tmp.emplace_back(f_train[idata]);
-            } else {
-                u_train_tmp.emplace_back(u_train[idata]);
-                f_train_tmp.emplace_back(f_train[idata]);
-            }
-        }
-        ishift += ndata_block[iset];
-
-        get_matrix_elements_algebraic_constraint(maxorder,
-                                                 amat_1D,
-                                                 bvec,
-                                                 u_train_tmp,
-                                                 f_train_tmp,
-                                                 fnorm,
-                                                 symmetry,
-                                                 fcs,
-                                                 constraint);
-
-        get_matrix_elements_algebraic_constraint(maxorder,
-                                                 amat_1D_validation,
-                                                 bvec_validation,
-                                                 u_validation_tmp,
-                                                 f_validation_tmp,
-                                                 fnorm_validation,
-                                                 symmetry,
-                                                 fcs,
-                                                 constraint);
-
-        Eigen::MatrixXd A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
-        Eigen::VectorXd b = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
-        Eigen::MatrixXd A_validation = Eigen::Map<Eigen::MatrixXd>(&amat_1D_validation[0],
-                                                                   amat_1D_validation.size() / N_new, N_new);
-        Eigen::VectorXd b_validation = Eigen::Map<Eigen::VectorXd>(&bvec_validation[0], bvec_validation.size());
-
-        if (verbosity > 0) {
-            std::cout << "  Recommended CV_MAXALPHA = "
-                      << get_estimated_max_alpha(A, b)
-                      << std::endl << std::endl;
-        }
-
-        const auto file_coef = job_prefix + ".solution_path" + std::to_string(iset + 1);
-        const auto file_cv = job_prefix + ".enet_cvset" + std::to_string(iset + 1);
-
-        if (optcontrol.l1_alpha_max > 0) {
-            compute_alphas(optcontrol.l1_alpha_max,
-                           optcontrol.l1_alpha_min,
-                           optcontrol.num_l1_alpha,
-                           alphas);
-        } else {
-            if (optcontrol.l1_alpha_min > 0) {
-                compute_alphas(estimated_max_alpha,
-                               optcontrol.l1_alpha_min,
-                               optcontrol.num_l1_alpha,
-                               alphas);
-            } else {
-                compute_alphas(estimated_max_alpha,
-                               estimated_max_alpha * 1e-6,
-                               optcontrol.num_l1_alpha,
-                               alphas);
-            }
-        }
-
-        run_enet_solution_path(maxorder, A, b, A_validation, b_validation,
-                               fnorm, fnorm_validation,
-                               file_coef, verbosity,
-                               constraint,
-                               alphas,
-                               training_error, validation_error, nonzeros);
-
-        if (job_prefix != "") {
-            write_cvresult_to_file(file_cv,
-                                   alphas,
-                                   training_error,
-                                   validation_error,
-                                   nonzeros);
-        }
-
-        if (verbosity > 0) {
-            std::cout << "  SET " << std::setw(3) << iset + 1 << " has been finished." << std::endl;
-            std::cout << "  Minimum validation error at alpha = "
-                      << alphas[get_ialpha_at_minimum_validation_error(validation_error)] << std::endl;
-            if (job_prefix != "") {
-                std::cout << "  The CV result is saved in " << file_cv << std::endl << std::endl;
-            }
-            std::cout << "  ---------------------------------------------------" << std::endl;
-        }
-
-        training_error_accum.emplace_back(training_error);
-        validation_error_accum.emplace_back(validation_error);
-    }
-
-    std::vector<double> terr_mean, terr_std;
-    std::vector<double> verr_mean, verr_std;
-
-    const auto nalphas = alphas.size();
-
-    terr_mean.resize(nalphas);
-    terr_std.resize(nalphas);
-    verr_mean.resize(nalphas);
-    verr_std.resize(nalphas);
-
-    set_errors_of_cvscore(terr_mean, terr_std, verr_mean, verr_std,
-                          training_error_accum, validation_error_accum);
-    const auto ialpha_minimum = get_ialpha_at_minimum_validation_error(verr_mean);
-
-    if (job_prefix != "") {
-        const auto file_cvscore = job_prefix + ".cvscore";
-        write_cvscore_to_file(file_cvscore,
-                              alphas,
-                              terr_mean,
-                              terr_std,
-                              verr_mean,
-                              verr_std,
-                              ialpha_minimum,
-                              nsets);
-
-        if (verbosity > 0) {
-            std::cout << " Average and standard deviation of the CV error are" << std::endl;
-            std::cout << " saved in " << file_cvscore << std::endl;
-            std::cout << " Minimum CVSCORE at alpha = " << alphas[ialpha_minimum] << std::endl;
-            std::cout << std::endl;
-        }
-    }
-
-    return alphas[ialpha_minimum];
-}
-
-
-double Optimize::run_adaptive_lasso_crossvalidation(const std::string job_prefix,
-                                                    const int maxorder,
-                                                    const Fcs *fcs,
-                                                    const Symmetry *symmetry,
-                                                    const Constraint *constraint,
-                                                    const int verbosity)
-{
     // Cross-validation mode:
     // Returns alpha giving minimum CV score
 
 
     if (verbosity > 0) {
-        std::cout << "  Adaptive LASSO cross-validation with the following parameters:" << std::endl;
-        std::cout << "   CV = " << std::setw(15) << optcontrol.cross_validation << std::endl;
+        std::vector<std::string> str_linearmodel{"Elastic-net", "Adaptive LASSO"};
+        std::cout << str_linearmodel[optcontrol.linear_model - 2];
+        std::cout << "  cross-validation with the following parameters:\n";
+        std::cout << "   L1_RATIO = " << optcontrol.l1_ratio << '\n';
+        std::cout << "   CV = " << std::setw(15) << optcontrol.cross_validation << '\n';
         if (optcontrol.l1_alpha_min > 0) {
             std::cout << "   CV_MINALPHA = " << std::setw(15) << optcontrol.l1_alpha_min;
         } else {
             std::cout << "   CV_MINALPHA = CV_MAXALPHA*1e-6 ";
         }
         if (optcontrol.l1_alpha_max > 0) {
-            std::cout << "  CV_MAXALPHA = " << std::setw(15) << optcontrol.l1_alpha_max << std::endl;
+            std::cout << "  CV_MAXALPHA = " << std::setw(15) << optcontrol.l1_alpha_max << '\n';
         } else {
-            std::cout << " CV_MAXALPHA = (Use recommended value)" << std::endl;
+            std::cout << " CV_MAXALPHA = (Use recommended value)" << '\n';
         }
-        std::cout << "   CV_NALPHA = " << std::setw(5) << optcontrol.num_l1_alpha << std::endl;
-        std::cout << "   CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << std::endl;
-        std::cout << "   MAXITER = " << std::setw(5) << optcontrol.maxnum_iteration << std::endl;
-        std::cout << "   ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << std::endl;
-        std::cout << std::endl;
+        std::cout << "   CV_NALPHA = " << std::setw(5) << optcontrol.num_l1_alpha << '\n';
+        std::cout << "   CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << '\n';
+        std::cout << "   MAXITER = " << std::setw(5) << optcontrol.maxnum_iteration << '\n';
+        std::cout << "   ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << '\n';
+        std::cout << '\n';
+
+        if (optcontrol.linear_model == 2) {
+            if (optcontrol.standardize) {
+                std::cout << "  STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b.\n";
+                std::cout << "                    The ENET_DNORM-tag will be neglected.\n\n";
+            } else {
+                std::cout << "  STANDARDIZE = 0 : No standardization of matrix A and vector b.\n";
+                std::cout << "                    Columns of matrix A will be scaled by the ENET_DNORM value.\n\n";
+            }
+        }
 
         if (optcontrol.cross_validation == -1) {
-            std::cout << "  CV = -1: Manual CV mode." << std::endl;
-            std::cout << "           Validation data is read from DFSET_CV" << std::endl;
+            std::cout << "  CV = -1: Manual CV mode.\n";
+            std::cout << "           Validation data is read from DFSET_CV\n";
         } else if (optcontrol.cross_validation > 0) {
-            std::cout << "  CV > 0: Automatic CV mode." << std::endl;
+            std::cout << "  CV > 0: Automatic CV mode.\n";
         } else {
-            exit("run_adaptive_lasso_crossvalidation",
+            exit("crossvalidation",
                  "This cannot happen.");
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
 
     // Returns alpha at minimum CV
     if (optcontrol.cross_validation == -1) {
-        return run_adaptive_lasso_cv_manual(job_prefix,
-                                            maxorder,
-                                            fcs,
-                                            symmetry,
-                                            constraint,
-                                            verbosity);
+        return run_manual_cv(job_prefix,
+                             maxorder,
+                             fcs,
+                             symmetry,
+                             constraint,
+                             verbosity);
     } else {
-        return run_adaptive_lasso_cv_auto(job_prefix,
-                                          maxorder,
-                                          fcs,
-                                          symmetry,
-                                          constraint,
-                                          verbosity);
+        return run_auto_cv(job_prefix,
+                           maxorder,
+                           fcs,
+                           symmetry,
+                           constraint,
+                           verbosity);
     }
 }
 
-double Optimize::run_adaptive_lasso_cv_manual(const std::string job_prefix,
-                                              const int maxorder,
-                                              const Fcs *fcs,
-                                              const Symmetry *symmetry,
-                                              const Constraint *constraint,
-                                              const int verbosity)
+double Optimize::run_manual_cv(const std::string job_prefix,
+                               const int maxorder,
+                               const Fcs *fcs,
+                               const Symmetry *symmetry,
+                               const Constraint *constraint,
+                               const int verbosity)
 {
     // Manual CV mode where the test data is read from the user-defined file.
     // Indeed, the test data is already read in the input_parser and stored in u_validation and f_validation.
@@ -1064,17 +580,19 @@ double Optimize::run_adaptive_lasso_cv_manual(const std::string job_prefix,
                                                                amat_1D_validation.size() / N_new, N_new);
     Eigen::VectorXd b_validation = Eigen::Map<Eigen::VectorXd>(&bvec_validation[0], bvec_validation.size());
 
-    // Merge training and validation sets and run OLS once to get weight.
-    Eigen::MatrixXd A_merged(A.rows() + A_validation.rows(), N_new);
-    Eigen::VectorXd b_merged(b.size() + b_validation.size());
-    A_merged << A, A_validation;
-    b_merged << b, b_validation;
+    if (optcontrol.linear_model == 3) {
+        // Merge training and validation sets and run OLS once to get the weight in adalasso.
+        Eigen::MatrixXd A_merged(A.rows() + A_validation.rows(), N_new);
+        Eigen::VectorXd b_merged(b.size() + b_validation.size());
+        A_merged << A, A_validation;
+        b_merged << b, b_validation;
 
-    Eigen::VectorXd x_ols = A_merged.colPivHouseholderQr().solve(b_merged);
-    Eigen::VectorXd weight_adalasso = x_ols.cwiseAbs();
+        Eigen::VectorXd x_ols = A_merged.colPivHouseholderQr().solve(b_merged);
+        Eigen::VectorXd weight_adalasso = x_ols.cwiseAbs();
 
-    A = A * weight_adalasso.asDiagonal();
-    A_validation = A_validation * weight_adalasso.asDiagonal();
+        A = A * weight_adalasso.asDiagonal();
+        A_validation = A_validation * weight_adalasso.asDiagonal();
+    }
 
     const auto estimated_max_alpha = get_estimated_max_alpha(A, b);
 
@@ -1092,12 +610,12 @@ double Optimize::run_adaptive_lasso_cv_manual(const std::string job_prefix,
                    optcontrol.num_l1_alpha,
                    alphas);
 
-    run_enet_solution_path(maxorder, A, b, A_validation, b_validation,
-                           fnorm, fnorm_validation,
-                           file_coef, verbosity,
-                           constraint,
-                           alphas,
-                           training_error, validation_error, nonzeros);
+    solution_path(maxorder, A, b, A_validation, b_validation,
+                  fnorm, fnorm_validation,
+                  file_coef, verbosity,
+                  constraint,
+                  alphas,
+                  training_error, validation_error, nonzeros);
 
     write_cvresult_to_file(file_cv,
                            alphas,
@@ -1117,12 +635,12 @@ double Optimize::run_adaptive_lasso_cv_manual(const std::string job_prefix,
     return alphas[ialpha];
 }
 
-double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
-                                            const int maxorder,
-                                            const Fcs *fcs,
-                                            const Symmetry *symmetry,
-                                            const Constraint *constraint,
-                                            const int verbosity)
+double Optimize::run_auto_cv(const std::string job_prefix,
+                             const int maxorder,
+                             const Fcs *fcs,
+                             const Symmetry *symmetry,
+                             const Constraint *constraint,
+                             const int verbosity)
 {
     // Automatic CV mode.
 
@@ -1137,7 +655,7 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
     const auto nsets = optcontrol.cross_validation;
 
     if (nsets > nstructures) {
-        exit("run_elastic_net_crossvalidation",
+        exit("run_auto_cv",
              "The input CV is larger than the total number of training data.");
     }
 
@@ -1157,6 +675,7 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
     std::vector<std::vector<int>> nonzeros;
     std::vector<std::vector<double>> training_error_accum, validation_error_accum;
     double fnorm, fnorm_validation, estimated_max_alpha;
+    Eigen::VectorXd weight_adalasso;
 
     auto ishift = 0;
 
@@ -1166,22 +685,24 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
         std::cout << std::endl;
     }
 
-    get_matrix_elements_algebraic_constraint(maxorder,
-                                             amat_1D,
-                                             bvec,
-                                             u_train,
-                                             f_train,
-                                             fnorm,
-                                             symmetry,
-                                             fcs,
-                                             constraint);
+    if (optcontrol.linear_model == 3) {
+        get_matrix_elements_algebraic_constraint(maxorder,
+                                                 amat_1D,
+                                                 bvec,
+                                                 u_train,
+                                                 f_train,
+                                                 fnorm,
+                                                 symmetry,
+                                                 fcs,
+                                                 constraint);
 
-    Eigen::MatrixXd A_full = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
-    Eigen::VectorXd b_full = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
-    Eigen::VectorXd x_ols = A_full.colPivHouseholderQr().solve(b_full);
-    Eigen::VectorXd weight_adalasso = x_ols.cwiseAbs();
+        Eigen::MatrixXd A_full = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
+        Eigen::VectorXd b_full = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
+        Eigen::VectorXd x_ols = A_full.colPivHouseholderQr().solve(b_full);
+        weight_adalasso = x_ols.cwiseAbs();
+    }
 
-    if (!(optcontrol.l1_alpha_max > 0)) {
+    if (optcontrol.l1_alpha_max <= 0) {
         estimated_max_alpha = 0;
         for (auto iset = 0; iset < nsets; ++iset) {
             const auto istart_validation = ishift;
@@ -1215,8 +736,7 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
 
             Eigen::MatrixXd A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
             Eigen::VectorXd b = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
-
-            A = A * weight_adalasso.asDiagonal();
+            if (optcontrol.linear_model == 3) A = A * weight_adalasso.asDiagonal();
             const auto this_estimated_max_alpha = get_estimated_max_alpha(A, b);
 
             if (verbosity > 0) {
@@ -1283,8 +803,10 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
                                                                    amat_1D_validation.size() / N_new, N_new);
         Eigen::VectorXd b_validation = Eigen::Map<Eigen::VectorXd>(&bvec_validation[0], bvec_validation.size());
 
-        A = A * weight_adalasso.asDiagonal();
-        A_validation = A_validation * weight_adalasso.asDiagonal();
+        if (optcontrol.linear_model == 3) {
+            A = A * weight_adalasso.asDiagonal();
+            A_validation = A_validation * weight_adalasso.asDiagonal();
+        }
 
         if (verbosity > 0) {
             std::cout << "  Recommended CV_MAXALPHA = "
@@ -1314,14 +836,14 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
             }
         }
 
-        run_enet_solution_path(maxorder, A, b, A_validation, b_validation,
-                               fnorm, fnorm_validation,
-                               file_coef, verbosity,
-                               constraint,
-                               alphas,
-                               training_error, validation_error, nonzeros);
+        solution_path(maxorder, A, b, A_validation, b_validation,
+                      fnorm, fnorm_validation,
+                      file_coef, verbosity,
+                      constraint,
+                      alphas,
+                      training_error, validation_error, nonzeros);
 
-        if (job_prefix != "") {
+        if (!job_prefix.empty()) {
             write_cvresult_to_file(file_cv,
                                    alphas,
                                    training_error,
@@ -1333,7 +855,7 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
             std::cout << "  SET " << std::setw(3) << iset + 1 << " has been finished." << std::endl;
             std::cout << "  Minimum validation error at alpha = "
                       << alphas[get_ialpha_at_minimum_validation_error(validation_error)] << std::endl;
-            if (job_prefix != "") {
+            if (!job_prefix.empty()) {
                 std::cout << "  The CV result is saved in " << file_cv << std::endl << std::endl;
             }
             std::cout << "  ---------------------------------------------------" << std::endl;
@@ -1357,7 +879,7 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
                           training_error_accum, validation_error_accum);
     const auto ialpha_minimum = get_ialpha_at_minimum_validation_error(verr_mean);
 
-    if (job_prefix != "") {
+    if (!job_prefix.empty()) {
         const auto file_cvscore = job_prefix + ".cvscore";
         write_cvscore_to_file(file_cvscore,
                               alphas,
@@ -1487,20 +1009,20 @@ int Optimize::get_ialpha_at_minimum_validation_error(const std::vector<double> &
                                           validation_error.end()));
 }
 
-void Optimize::run_enet_solution_path(const int maxorder,
-                                      Eigen::MatrixXd &A,
-                                      Eigen::VectorXd &b,
-                                      Eigen::MatrixXd &A_validation,
-                                      Eigen::VectorXd &b_validation,
-                                      const double fnorm,
-                                      const double fnorm_validation,
-                                      const std::string file_coef,
-                                      const int verbosity,
-                                      const Constraint *constraint,
-                                      const std::vector<double> &alphas,
-                                      std::vector<double> &training_error,
-                                      std::vector<double> &validation_error,
-                                      std::vector<std::vector<int>> &nonzeros) const
+void Optimize::solution_path(const int maxorder,
+                             Eigen::MatrixXd &A,
+                             Eigen::VectorXd &b,
+                             Eigen::MatrixXd &A_validation,
+                             Eigen::VectorXd &b_validation,
+                             const double fnorm,
+                             const double fnorm_validation,
+                             const std::string file_coef,
+                             const int verbosity,
+                             const Constraint *constraint,
+                             const std::vector<double> &alphas,
+                             std::vector<double> &training_error,
+                             std::vector<double> &validation_error,
+                             std::vector<std::vector<int>> &nonzeros) const
 {
     int initialize_mode;
 
@@ -1656,16 +1178,16 @@ void Optimize::compute_alphas(const double l1_alpha_max,
     }
 }
 
-void Optimize::run_elastic_net_optimization(const int maxorder,
-                                            const size_t M,
-                                            const size_t N_new,
-                                            const Fcs *fcs,
-                                            const Symmetry *symmetry,
-                                            const Constraint *constraint,
-                                            const int verbosity,
-                                            std::vector<double> &param_out) const
+void Optimize::optimize_with_given_l1alpha(const int maxorder,
+                                           const size_t M,
+                                           const size_t N_new,
+                                           const Fcs *fcs,
+                                           const Symmetry *symmetry,
+                                           const Constraint *constraint,
+                                           const int verbosity,
+                                           std::vector<double> &param_out) const
 {
-    // Start Elastic-net optimization
+    // Start Elastic-net or adaptive lasso optimization
     int i;
     bool *has_prod;
     double fnorm;
@@ -1675,6 +1197,7 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
     Eigen::VectorXd scale_beta, factor_std;
     Eigen::VectorXd fdiff;
     Eigen::VectorXd mean, dev;
+    Eigen::VectorXd weight_adalasso;
 
     std::vector<double> amat_1D;
     std::vector<double> bvec;
@@ -1689,10 +1212,15 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
                                              fcs,
                                              constraint);
 
-    // Coordinate descent
 
     A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], M, N_new);
     b = Eigen::Map<Eigen::VectorXd>(&bvec[0], M);
+
+    if (optcontrol.linear_model == 3) {
+        Eigen::VectorXd x_ols = A.colPivHouseholderQr().solve(b);
+        weight_adalasso = x_ols.cwiseAbs();
+        A = A * weight_adalasso.asDiagonal();
+    }
 
     Prod.setZero(N_new, N_new);
     grad0.resize(N_new);
@@ -1709,34 +1237,36 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
     }
 
     if (verbosity > 0) {
-        std::cout << "  Elastic-net minimization with the following parameters:" << std::endl;
-        std::cout << "   L1_RATIO = " << optcontrol.l1_ratio << std::endl;
+        if (optcontrol.linear_model == 2) {
+            std::cout << "  Elastic-net minimization with the following parameters:" << std::endl;
+            std::cout << "   L1_RATIO = " << optcontrol.l1_ratio << std::endl;
+            std::cout << "   ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor
+                      << std::endl;
+            if (optcontrol.standardize) {
+                std::cout << "  STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b."
+                          << std::endl;
+                std::cout << "                    The ENET_DNORM-tag will be neglected." << std::endl << std::endl;
+            } else {
+                std::cout << "  STANDARDIZE = 0 : No standardization of matrix A and vector b." << std::endl;
+                std::cout << "                    Columns of matrix A will be scaled by the ENET_DNORM value."
+                          << std::endl
+                          << std::endl;
+            }
+        } else if (optcontrol.linear_model == 3) {
+            std::cout << "  Adaptive LASSO optimization with the following parameters:" << std::endl;
+        }
         std::cout << "   L1_ALPHA = " << std::setw(15) << optcontrol.l1_alpha << std::endl;
         std::cout << "   CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << std::endl;
         std::cout << "   MAXITER = " << std::setw(5) << optcontrol.maxnum_iteration << std::endl;
-        std::cout << "   ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << std::endl;
-
         std::cout << std::endl;
-        if (optcontrol.standardize) {
-            std::cout << "  STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b."
-                      << std::endl;
-            std::cout << "                    The ENET_DNORM-tag will be neglected." << std::endl << std::endl;
-        } else {
-            std::cout << "  STANDARDIZE = 0 : No standardization of matrix A and vector b." << std::endl;
-            std::cout << "                    Columns of matrix A will be scaled by the ENET_DNORM value." << std::endl
-                      << std::endl;
-        }
     }
 
-    // Standardize if necessary
+    get_standardizer(A, mean, dev, factor_std, scale_beta);
 
-    if (optcontrol.standardize) {
-        get_standardizer(A, mean, dev, factor_std, scale_beta);
+    // Standardize if necessary only for the elastic net
+    if (optcontrol.standardize && optcontrol.linear_model == 2) {
         apply_standardizer(A, mean, dev);
-    } else {
-        get_standardizer(A, mean, dev, factor_std, scale_beta);
     }
-
     grad0 = A.transpose() * b;
     grad = grad0;
 
@@ -1752,8 +1282,14 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
                        scale_beta,
                        verbosity);
 
-    for (i = 0; i < N_new; ++i) {
-        param_out[i] = x[i] * factor_std[i];
+    if (optcontrol.linear_model == 2) {
+        for (i = 0; i < N_new; ++i) {
+            param_out[i] = x[i] * factor_std[i];
+        }
+    } else if (optcontrol.linear_model == 3) {
+        for (i = 0; i < N_new; ++i) {
+            param_out[i] = x[i] * factor_std[i] * weight_adalasso[i];
+        }
     }
 
     if (verbosity > 0) {
@@ -1768,7 +1304,7 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
 
     deallocate(has_prod);
 
-    if (optcontrol.debiase_after_l1opt) {
+    if (optcontrol.debiase_after_l1opt && optcontrol.linear_model == 2) {
         run_least_squares_with_nonzero_coefs(A, b,
                                              factor_std,
                                              param_out,
@@ -1776,102 +1312,6 @@ void Optimize::run_elastic_net_optimization(const int maxorder,
     }
 }
 
-void Optimize::run_adaptive_lasso_optimization(const int maxorder,
-                                               const size_t M,
-                                               const size_t N_new,
-                                               const Fcs *fcs,
-                                               const Symmetry *symmetry,
-                                               const Constraint *constraint,
-                                               const int verbosity,
-                                               std::vector<double> &param_out) const
-{
-    // Start adaptive LASSO optimization
-    int i;
-    bool *has_prod;
-    double fnorm;
-
-    Eigen::MatrixXd A, Prod;
-    Eigen::VectorXd b, grad0, grad, x;
-    Eigen::VectorXd scale_beta, factor_std;
-    Eigen::VectorXd fdiff;
-    Eigen::VectorXd mean, dev;
-
-    std::vector<double> amat_1D;
-    std::vector<double> bvec;
-
-    get_matrix_elements_algebraic_constraint(maxorder,
-                                             amat_1D,
-                                             bvec,
-                                             u_train,
-                                             f_train,
-                                             fnorm,
-                                             symmetry,
-                                             fcs,
-                                             constraint);
-
-    A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], M, N_new);
-    b = Eigen::Map<Eigen::VectorXd>(&bvec[0], M);
-
-    Eigen::VectorXd x_ols = A.colPivHouseholderQr().solve(b);
-    Eigen::VectorXd weight_adalasso = x_ols.cwiseAbs();
-
-    A = A * weight_adalasso.asDiagonal();
-
-    Prod.setZero(N_new, N_new);
-    grad0.resize(N_new);
-    grad.resize(N_new);
-    x.setZero(N_new);
-    scale_beta.resize(N_new);
-    factor_std.resize(N_new);
-    fdiff.resize(M);
-
-    allocate(has_prod, N_new);
-
-    for (i = 0; i < N_new; ++i) {
-        has_prod[i] = false;
-    }
-
-    if (verbosity > 0) {
-        std::cout << "  Adaptive LASSO optimization with the following parameters:" << std::endl;
-        std::cout << "   L1_ALPHA = " << std::setw(15) << optcontrol.l1_alpha << std::endl;
-        std::cout << "   CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << std::endl;
-        std::cout << "   MAXITER = " << std::setw(5) << optcontrol.maxnum_iteration << std::endl;
-
-        std::cout << std::endl;
-    }
-
-    get_standardizer(A, mean, dev, factor_std, scale_beta);
-    grad0 = A.transpose() * b;
-    grad = grad0;
-
-#pragma omp parallel for
-    for (i = 0; i < N_new; ++i) {
-        scale_beta(i) = 1.0 / (1.0 / scale_beta(i) + (1.0 - optcontrol.l1_ratio) * optcontrol.l1_alpha);
-    }
-
-    // Coordinate Descent Method
-    coordinate_descent(M, N_new, optcontrol.l1_alpha,
-                       0,
-                       x, A, b, grad0, has_prod, Prod, grad, fnorm,
-                       scale_beta,
-                       verbosity);
-
-    for (i = 0; i < N_new; ++i) {
-        param_out[i] = x[i] * factor_std[i] * weight_adalasso[i];
-    }
-
-    if (verbosity > 0) {
-        double correction_intercept = 0.0;
-        for (size_t i = 0; i < N_new; ++i) {
-            correction_intercept += x(i) * mean(i) * factor_std(i);
-        }
-        fdiff = A * x - b + correction_intercept * Eigen::VectorXd::Ones(M);
-        const auto res1 = fdiff.dot(fdiff) / (fnorm * fnorm);
-        std::cout << "  RESIDUAL (%): " << std::sqrt(res1) * 100.0 << std::endl;
-    }
-
-    deallocate(has_prod);
-}
 
 void Optimize::run_least_squares_with_nonzero_coefs(const Eigen::MatrixXd &A_in,
                                                     const Eigen::VectorXd &b_in,
@@ -3292,7 +2732,7 @@ int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
         SpMat AtA = sp_mat.transpose() * sp_mat;
         Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
 
-        Eigen::SimplicialLDLT <SpMat> ldlt(AtA);
+        Eigen::SimplicialLDLT<SpMat> ldlt(AtA);
         x = ldlt.solve(AtB);
 
         if (ldlt.info() != Eigen::Success) {
@@ -3303,7 +2743,7 @@ int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
 
     } else if (solver_type_lower == "sparseqr") {
 
-        Eigen::SparseQR <SpMat, Eigen::COLAMDOrdering<int>> qr(sp_mat);
+        Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(sp_mat);
         x = qr.solve(sp_bvec);
 
         if (qr.info() != Eigen::Success) {
@@ -3316,7 +2756,7 @@ int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
         SpMat AtA = sp_mat.transpose() * sp_mat;
         Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
 
-        Eigen::ConjugateGradient <SpMat> cg(AtA);
+        Eigen::ConjugateGradient<SpMat> cg(AtA);
         cg.setTolerance(optcontrol.tolerance_iteration);
         cg.setMaxIterations(optcontrol.maxnum_iteration);
         x.setZero();
@@ -3353,7 +2793,7 @@ int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
         SpMat AtA = sp_mat.transpose() * sp_mat;
         Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
 
-        Eigen::BiCGSTAB <SpMat> bicg(AtA);
+        Eigen::BiCGSTAB<SpMat> bicg(AtA);
         bicg.setTolerance(optcontrol.tolerance_iteration);
         bicg.setMaxIterations(optcontrol.maxnum_iteration);
         x.setZero();

@@ -161,16 +161,16 @@ namespace ALM_NS {
                           const Constraint *constraint,
                           std::vector<double> &param_out);
 
-        int elastic_net(const std::string job_prefix,
-                        const int maxorder,
-                        const size_t N_new,
-                        const size_t M,
-                        const Symmetry *symmetry,
-                        const std::vector<std::string> &str_order,
-                        const Fcs *fcs,
-                        Constraint *constraint,
-                        const int verbosity,
-                        std::vector<double> &param_out);
+        int compressive_sensing(const std::string job_prefix,
+                                const int maxorder,
+                                const size_t N_new,
+                                const size_t M,
+                                const Symmetry *symmetry,
+                                const std::vector<std::string> &str_order,
+                                const Fcs *fcs,
+                                Constraint *constraint,
+                                const int verbosity,
+                                std::vector<double> &param_out);
 
         int adaptive_lasso(const std::string job_prefix,
                            const int maxorder,
@@ -184,47 +184,26 @@ namespace ALM_NS {
                            std::vector<double> &param_out);
 
 
-        double run_elastic_net_crossvalidation(const std::string job_prefix,
-                                               const int maxorder,
-                                               const Fcs *fcs,
-                                               const Symmetry *symmetry,
-                                               const Constraint *constraint,
-                                               const int verbosity);
-
-        double run_enetcv_manual(const std::string job_prefix,
-                                 const int maxorder,
-                                 const Fcs *fcs,
-                                 const Symmetry *symmetry,
-                                 const Constraint *constraint,
-                                 const int verbosity);
-
-        double run_enetcv_auto(const std::string job_prefix,
+        double crossvalidation(const std::string job_prefix,
                                const int maxorder,
                                const Fcs *fcs,
                                const Symmetry *symmetry,
                                const Constraint *constraint,
                                const int verbosity);
 
-        double run_adaptive_lasso_crossvalidation(const std::string job_prefix,
-                                                  const int maxorder,
-                                                  const Fcs *fcs,
-                                                  const Symmetry *symmetry,
-                                                  const Constraint *constraint,
-                                                  const int verbosity);
+        double run_manual_cv(const std::string job_prefix,
+                             const int maxorder,
+                             const Fcs *fcs,
+                             const Symmetry *symmetry,
+                             const Constraint *constraint,
+                             const int verbosity);
 
-        double run_adaptive_lasso_cv_manual(const std::string job_prefix,
-                                            const int maxorder,
-                                            const Fcs *fcs,
-                                            const Symmetry *symmetry,
-                                            const Constraint *constraint,
-                                            const int verbosity);
-
-        double run_adaptive_lasso_cv_auto(const std::string job_prefix,
-                                          const int maxorder,
-                                          const Fcs *fcs,
-                                          const Symmetry *symmetry,
-                                          const Constraint *constraint,
-                                          const int verbosity);
+        double run_auto_cv(const std::string job_prefix,
+                           const int maxorder,
+                           const Fcs *fcs,
+                           const Symmetry *symmetry,
+                           const Constraint *constraint,
+                           const int verbosity);
 
         void write_cvresult_to_file(const std::string file_out,
                                     const std::vector<double> &alphas,
@@ -250,23 +229,14 @@ namespace ALM_NS {
 
         int get_ialpha_at_minimum_validation_error(const std::vector<double> &validation_error) const;
 
-        void run_elastic_net_optimization(const int maxorder,
-                                          const size_t M,
-                                          const size_t N_new,
-                                          const Fcs *fcs,
-                                          const Symmetry *symmetry,
-                                          const Constraint *constraint,
-                                          const int verbosity,
-                                          std::vector<double> &param_out) const;
-
-        void run_adaptive_lasso_optimization(const int maxorder,
-                                             const size_t M,
-                                             const size_t N_new,
-                                             const Fcs *fcs,
-                                             const Symmetry *symmetry,
-                                             const Constraint *constraint,
-                                             const int verbosity,
-                                             std::vector<double> &param_out) const;
+        void optimize_with_given_l1alpha(const int maxorder,
+                                         const size_t M,
+                                         const size_t N_new,
+                                         const Fcs *fcs,
+                                         const Symmetry *symmetry,
+                                         const Constraint *constraint,
+                                         const int verbosity,
+                                         std::vector<double> &param_out) const;
 
         void run_least_squares_with_nonzero_coefs(const Eigen::MatrixXd &A_in,
                                                   const Eigen::VectorXd &b_in,
@@ -408,20 +378,20 @@ namespace ALM_NS {
                                 const Eigen::VectorXd &scale_beta,
                                 const int verbosity) const;
 
-        void run_enet_solution_path(const int maxorder,
-                                    Eigen::MatrixXd &A,
-                                    Eigen::VectorXd &b,
-                                    Eigen::MatrixXd &A_validation,
-                                    Eigen::VectorXd &b_validation,
-                                    const double fnorm,
-                                    const double fnorm_validation,
-                                    const std::string file_coef,
-                                    const int verbosity,
-                                    const Constraint *constraint,
-                                    const std::vector<double> &alphas,
-                                    std::vector<double> &training_error,
-                                    std::vector<double> &validation_error,
-                                    std::vector<std::vector<int>> &nonzeros) const;
+        void solution_path(const int maxorder,
+                           Eigen::MatrixXd &A,
+                           Eigen::VectorXd &b,
+                           Eigen::MatrixXd &A_validation,
+                           Eigen::VectorXd &b_validation,
+                           const double fnorm,
+                           const double fnorm_validation,
+                           const std::string file_coef,
+                           const int verbosity,
+                           const Constraint *constraint,
+                           const std::vector<double> &alphas,
+                           std::vector<double> &training_error,
+                           std::vector<double> &validation_error,
+                           std::vector<std::vector<int>> &nonzeros) const;
 
         void compute_alphas(const double l1_alpha_max,
                             const double l1_alpha_min,
