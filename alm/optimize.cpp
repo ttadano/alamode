@@ -875,7 +875,7 @@ double Optimize::run_enetcv_auto(const std::string job_prefix,
                            optcontrol.num_l1_alpha,
                            alphas);
         } else {
-            if (optcontrol.l1_alpha_max > 0) {
+            if (optcontrol.l1_alpha_min > 0) {
                 compute_alphas(estimated_max_alpha,
                                optcontrol.l1_alpha_min,
                                optcontrol.num_l1_alpha,
@@ -1301,7 +1301,7 @@ double Optimize::run_adaptive_lasso_cv_auto(const std::string job_prefix,
                            optcontrol.num_l1_alpha,
                            alphas);
         } else {
-            if (optcontrol.l1_alpha_max > 0) {
+            if (optcontrol.l1_alpha_min > 0) {
                 compute_alphas(estimated_max_alpha,
                                optcontrol.l1_alpha_min,
                                optcontrol.num_l1_alpha,
