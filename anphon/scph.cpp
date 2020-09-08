@@ -91,6 +91,8 @@ void Scph::set_default_variables()
     exp_phase = nullptr;
     exp_phase3 = nullptr;
     mindist_list_scph = nullptr;
+
+    bubble = 0;
 }
 
 
@@ -165,6 +167,7 @@ void Scph::setup_scph()
 {
     relax_coordinate = false;
     MPI_Bcast(&relax_coordinate, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&bubble, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     setup_kmesh();
     setup_eigvecs();
@@ -182,6 +185,7 @@ void Scph::exec_scph()
     const auto dT = system->dT;
 
     std::complex<double> ****delta_dymat_scph = nullptr;
+    std::complex<double> ****delta_dymat_scph_plus_bubble = nullptr;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
@@ -218,9 +222,17 @@ void Scph::exec_scph()
         }
     }
 
+    if (bubble) {
+        memory->allocate(delta_dymat_scph_plus_bubble, NT, ns, ns, nk_interpolate);
+        bubble_correction(delta_dymat_scph,
+                          delta_dymat_scph_plus_bubble);
+    }
+
     postprocess(delta_dymat_scph);
 
     memory->deallocate(delta_dymat_scph);
+    if (delta_dymat_scph_plus_bubble) memory->deallocate(delta_dymat_scph_plus_bubble);
+
 }
 
 void Scph::postprocess(std::complex<double> ****delta_dymat_scph)
@@ -3091,6 +3103,59 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     }
 }
 
+void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
+                             std::complex<double> ****delta_dymat_scph_plus_bubble)
+{
+    const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
+    const auto nk_ref = kpoint->nk;
+    const auto ns = dynamical->neval;
+    double ***eval;
+    std::complex<double> ****evec;
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl;
+        std::cout << " -----------------------------------------------------------------"
+                  << std::endl;
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+        std::cout << " on top of the SCPH calculation." << std::endl;
+        std::cout << '\n';
+        std::cout << " This calculation requires allocation of additional memory:" << std::endl;
+
+        size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
+                       + nk_ref * ns * NT * sizeof(double);
+
+        const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
+        std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
+                  << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
+
+        std::cout << "  To avoid possible faults associated with insufficient memory,\n"
+                     "  please reduce the number of MPI processes per node and/or\n"
+                     "  the number of temperagure grids.\n\n";
+    }
+
+    memory->allocate(eval, NT, nk_scph, ns);
+    memory->allocate(evec, NT, nk_scph, ns, ns);
+
+    for (auto iT = 0; iT < NT; ++iT) {
+        const auto temp = system->Tmin + system->dT * float(iT);
+
+        exec_interpolation(kmesh_interpolate,
+                           delta_dymat_scph[iT],
+                           nk_scph,
+                           xk_scph,
+                           kvec_na_scph,
+                           eval[iT],
+                           evec[iT]);
+    }
+
+
+    memory->deallocate(eval);
+    memory->deallocate(evec);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done!" << std::endl << std::endl;
+    }
+}
 
 double Scph::distance(double *x1,
                       double *x2)

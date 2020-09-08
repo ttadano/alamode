@@ -338,7 +338,7 @@ void Input::parse_scph_vars()
     const std::vector<std::string> input_list{
             "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
             "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-            "LOWER_TEMP", "WARMSTART"
+            "LOWER_TEMP", "WARMSTART", "BUBBLE"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -371,6 +371,7 @@ void Input::parse_scph_vars()
     unsigned int ialgo_scph = 0;
     auto lower_temp = true;
     auto warm_start = true;
+    unsigned int bubble = 0;
 
     // if file_dymat exists in the current directory, 
     // restart mode will be automatically turned on for SCPH calculations.
@@ -387,6 +388,7 @@ void Input::parse_scph_vars()
     assign_val(tolerance_scph, "TOL_SCPH", scph_var_dict);
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
+    assign_val(bubble, "BUBBLE", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -449,6 +451,7 @@ void Input::parse_scph_vars()
     scph->tolerance_scph = tolerance_scph;
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
+    scph->bubble = bubble;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();

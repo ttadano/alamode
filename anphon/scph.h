@@ -60,6 +60,7 @@ namespace PHON_NS {
         unsigned int kmesh_scph[3];
         unsigned int kmesh_interpolate[3];
         unsigned int ialgo;
+        unsigned int bubble;
 
         bool restart_scph;
         bool warmstart_scph;
@@ -217,6 +218,9 @@ namespace PHON_NS {
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],
                                              std::complex<double> ****);
+
+        void bubble_correction(std::complex<double> ****,
+                               std::complex<double> ****);
     };
 
     extern "C" {
