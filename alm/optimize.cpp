@@ -630,6 +630,11 @@ double Optimize::run_manual_cv(const std::string job_prefix,
         std::cout << "  Minimum validation error at alpha = "
                   << alphas[ialpha] << std::endl;
         std::cout << "  The CV result is saved in " << file_cv << std::endl;
+
+        if (ialpha == optcontrol.num_l1_alpha - 1) {
+            warn("run_manual_cv", "The minimum validation score occurs at CV_MINALPHA.\n"
+                                  " Please use a smaller CV_MINALPHA to suppress this message.");
+        }
     }
 
     return alphas[ialpha];
@@ -852,13 +857,18 @@ double Optimize::run_auto_cv(const std::string job_prefix,
         }
 
         if (verbosity > 0) {
-            std::cout << "  SET " << std::setw(3) << iset + 1 << " has been finished." << std::endl;
-            std::cout << "  Minimum validation error at alpha = "
-                      << alphas[get_ialpha_at_minimum_validation_error(validation_error)] << std::endl;
+            auto ialpha = get_ialpha_at_minimum_validation_error(validation_error);
+            std::cout << "  SET " << std::setw(3) << iset + 1 << " has been finished.\n";
+            std::cout << "  Minimum validation error at alpha = " << alphas[ialpha] << '\n';
             if (!job_prefix.empty()) {
-                std::cout << "  The CV result is saved in " << file_cv << std::endl << std::endl;
+                std::cout << "  The CV result is saved in " << file_cv << "\n\n";
             }
-            std::cout << "  ---------------------------------------------------" << std::endl;
+
+            if (ialpha == optcontrol.num_l1_alpha - 1) {
+                warn("run_auto_cv", "The minimum validation score occurs at CV_MINALPHA.\n"
+                                      " Please use a smaller CV_MINALPHA to suppress this message.");
+            }
+            std::cout << "  ---------------------------------------------------\n";
         }
 
         training_error_accum.emplace_back(training_error);
@@ -891,10 +901,9 @@ double Optimize::run_auto_cv(const std::string job_prefix,
                               nsets);
 
         if (verbosity > 0) {
-            std::cout << " Average and standard deviation of the CV error are" << std::endl;
-            std::cout << " saved in " << file_cvscore << std::endl;
-            std::cout << " Minimum CVSCORE at alpha = " << alphas[ialpha_minimum] << std::endl;
-            std::cout << std::endl;
+            std::cout << " Average and standard deviation of the CV error are\n";
+            std::cout << " saved in " << file_cvscore << '\n';
+            std::cout << " Minimum CVSCORE at alpha = " << alphas[ialpha_minimum] << "\n\n";
         }
     }
 
@@ -908,14 +917,16 @@ void Optimize::write_cvresult_to_file(const std::string file_out,
                                       const std::vector<double> &validation_error,
                                       const std::vector<std::vector<int>> &nonzeros) const
 {
+    std::vector<std::string> str_linearmodel{"Elastic-net", "Adaptive LASSO"};
     std::ofstream ofs_cv;
     ofs_cv.open(file_out.c_str(), std::ios::out);
-    ofs_cv << "# Algorithm : Coordinate descent" << std::endl;
-    ofs_cv << "# L1_RATIO = " << optcontrol.l1_ratio << std::endl;
-    ofs_cv << "# ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << std::endl;
-    ofs_cv << "# STANDARDIZE = " << optcontrol.standardize << std::endl;
-    ofs_cv << "# CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << std::endl;
-    ofs_cv << "# L1 ALPHA, Fitting error, Validation error, Num. zero IFCs (2nd, 3rd, ...) " << std::endl;
+    ofs_cv << "# Algorithm : Coordinate descent" << '\n';
+    ofs_cv << "# Linear model : " << str_linearmodel[optcontrol.linear_model - 2] << '\n';
+    ofs_cv << "# L1_RATIO = " << optcontrol.l1_ratio << '\n';
+    ofs_cv << "# ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << '\n';
+    ofs_cv << "# STANDARDIZE = " << optcontrol.standardize << '\n';
+    ofs_cv << "# CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << '\n';
+    ofs_cv << "# L1 ALPHA, Fitting error, Validation error, Num. zero IFCs (2nd, 3rd, ...) \n";
 
     const auto maxorder = nonzeros[0].size();
     for (auto ialpha = 0; ialpha < alphas.size(); ++ialpha) {
@@ -940,16 +951,17 @@ void Optimize::write_cvscore_to_file(const std::string file_out,
                                      const size_t nsets) const
 {
     const auto nalphas = alphas.size();
-
+    std::vector<std::string> str_linearmodel{"Elastic-net", "Adaptive LASSO"};
     std::ofstream ofs_cv;
     ofs_cv.open(file_out.c_str(), std::ios::out);
-    ofs_cv << "# Algorithm : Coordinate descent" << std::endl;
-    ofs_cv << "# L1_RATIO = " << optcontrol.l1_ratio << std::endl;
-    ofs_cv << "# ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << std::endl;
-    ofs_cv << "# STANDARDIZE = " << optcontrol.standardize << std::endl;
-    ofs_cv << "# CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << std::endl;
-    ofs_cv << "# " << nsets << "-fold cross-validation scores" << std::endl;
-    ofs_cv << "# L1 ALPHA, Fitting error (mean, std), Validation error (mean, std) " << std::endl;
+    ofs_cv << "# Algorithm : Coordinate descent" << '\n';
+    ofs_cv << "# Linear model : " << str_linearmodel[optcontrol.linear_model - 2] << '\n';
+    ofs_cv << "# L1_RATIO = " << optcontrol.l1_ratio << '\n';
+    ofs_cv << "# ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << '\n';
+    ofs_cv << "# STANDARDIZE = " << optcontrol.standardize << '\n';
+    ofs_cv << "# CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << '\n';
+    ofs_cv << "# " << nsets << "-fold cross-validation scores\n";
+    ofs_cv << "# L1 ALPHA, Fitting error (mean, std), Validation error (mean, std) \n";
 
     for (size_t ialpha = 0; ialpha < nalphas; ++ialpha) {
         ofs_cv << std::setw(15) << alphas[ialpha];
@@ -1451,14 +1463,14 @@ double Optimize::get_estimated_max_alpha(const Eigen::MatrixXd &Amat,
     }
 
     C = C.transpose() * bvec;
-    auto lambda_max = 0.0;
+    auto max_alpha = 0.0;
 
     for (auto i = 0; i < ncols; ++i) {
-        lambda_max = std::max<double>(lambda_max, std::abs(C(i)));
+        max_alpha = std::max<double>(max_alpha, std::abs(C(i)));
     }
-    lambda_max /= static_cast<double>(nrows);
+    max_alpha /= static_cast<double>(nrows);
 
-    return lambda_max;
+    return max_alpha;
 }
 
 void Optimize::apply_scaler_displacement(std::vector<std::vector<double>> &u_inout,
