@@ -214,7 +214,7 @@ void Selfenergy::selfenergy_a(const unsigned int N,
                         f2 = n2 - n1;
                     }
                     ret_mpi[i] += v3_tmp * (f1 * omega_sum[0] + f2 * omega_sum[1]);
-                }
+                 }
             }
         }
     }

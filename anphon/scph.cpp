@@ -22,6 +22,7 @@
 #include "system.h"
 #include "error.h"
 #include "mathfunctions.h"
+#include "integration.h"
 #include "parsephon.h"
 #include "phonon_dos.h"
 #include "symmetry_core.h"
@@ -73,16 +74,16 @@ void Scph::set_default_variables()
     xk_scph = nullptr;
     kvec_na_scph = nullptr;
     xk_interpolate = nullptr;
-    vec_for_v3 = nullptr;
-    vec_for_v4 = nullptr;
-    invmass_for_v3 = nullptr;
-    invmass_for_v4 = nullptr;
-    evec_index3 = nullptr;
-    evec_index4 = nullptr;
+    relvec_v3 = nullptr;
+    relvec_v4 = nullptr;
+    invmass_v3 = nullptr;
+    invmass_v4 = nullptr;
+    evec_index_v3 = nullptr;
+    evec_index_v4 = nullptr;
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
-    fcs_group = nullptr;
-    fcs_group2 = nullptr;
+    fcs_group_v3 = nullptr;
+    fcs_group_v4 = nullptr;
     omega2_harmonic = nullptr;
     mat_transform_sym = nullptr;
     small_group_at_k = nullptr;
@@ -93,6 +94,7 @@ void Scph::set_default_variables()
     mindist_list_scph = nullptr;
 
     bubble = 0;
+    phi3_reciprocal = nullptr;
 }
 
 
@@ -119,29 +121,29 @@ void Scph::deallocate_variables()
     if (omega2_harmonic) {
         memory->deallocate(omega2_harmonic);
     }
-    if (vec_for_v3) {
-        memory->deallocate(vec_for_v3);
+    if (relvec_v3) {
+        memory->deallocate(relvec_v3);
     }
-    if (vec_for_v4) {
-        memory->deallocate(vec_for_v4);
+    if (relvec_v4) {
+        memory->deallocate(relvec_v4);
     }
-    if (invmass_for_v3) {
-        memory->deallocate(invmass_for_v3);
+    if (invmass_v3) {
+        memory->deallocate(invmass_v3);
     }
-    if (invmass_for_v4) {
-        memory->deallocate(invmass_for_v4);
+    if (invmass_v4) {
+        memory->deallocate(invmass_v4);
     }
-    if (evec_index3) {
-        memory->deallocate(evec_index3);
+    if (evec_index_v3) {
+        memory->deallocate(evec_index_v3);
     }
-    if (evec_index4) {
-        memory->deallocate(evec_index4);
+    if (evec_index_v4) {
+        memory->deallocate(evec_index_v4);
     }
-    if (fcs_group) {
-        memory->deallocate(fcs_group);
+    if (fcs_group_v3) {
+        memory->deallocate(fcs_group_v3);
     }
-    if (fcs_group2) {
-        memory->deallocate(fcs_group2);
+    if (fcs_group_v4) {
+        memory->deallocate(fcs_group_v4);
     }
     if (exp_phase) {
         memory->deallocate(exp_phase);
@@ -160,6 +162,9 @@ void Scph::deallocate_variables()
     }
     if (kpoint_map_symmetry) {
         memory->deallocate(kpoint_map_symmetry);
+    }
+    if (phi3_reciprocal) {
+        memory->deallocate(phi3_reciprocal);
     }
 }
 
@@ -761,45 +766,39 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
         }
     }
 
-    memory->allocate(v3_array_at_kpair, ngroup);
-    memory->allocate(ind, ngroup, 3);
+    memory->allocate(v3_array_at_kpair, ngroup_v3);
+    memory->allocate(ind, ngroup_v3, 3);
     memory->allocate(v3_mpi, nk_scph, ns, ns2);
 
     for (unsigned int ik = mympi->my_rank; ik < nk_scph; ik += mympi->nprocs) {
 
-        for (is = 0; is < ngroup; ++is) v3_array_at_kpair[is] = complex_zero;
+        for (is = 0; is < ngroup_v3; ++is) v3_array_at_kpair[is] = complex_zero;
 
-        unsigned int ielem = 0;
-
-        for (i = 0; i < ngroup; ++i) {
+        for (i = 0; i < ngroup_v3; ++i) {
 
             std::complex<double> sum_tmp = std::complex<double>(0.0, 0.0);
-            for (j = 0; j < 3; ++j) ind[i][j] = evec_index3[ielem][j];
+            for (j = 0; j < 3; ++j) ind[i][j] = evec_index_v3[i][j];
 
             if (tune_type == 0) {
-                for (j = 0; j < fcs_group[i].size(); ++j) {
-                    const auto phase = xk_scph[ik][0] * (vec_for_v3[ielem][0][0] - vec_for_v3[ielem][1][0])
-                                       + xk_scph[ik][1] * (vec_for_v3[ielem][0][1] - vec_for_v3[ielem][1][1])
-                                       + xk_scph[ik][2] * (vec_for_v3[ielem][0][2] - vec_for_v3[ielem][1][2]);
+                for (j = 0; j < fcs_group_v3[i].size(); ++j) {
+                    const auto phase = xk_scph[ik][0] * (relvec_v3[i][j].vecs[0][0] - relvec_v3[i][j].vecs[1][0])
+                                       + xk_scph[ik][1] * (relvec_v3[i][j].vecs[0][1] - relvec_v3[i][j].vecs[1][1])
+                                       + xk_scph[ik][2] * (relvec_v3[i][j].vecs[0][2] - relvec_v3[i][j].vecs[1][2]);
 
                     const int loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
-                    sum_tmp += fcs_group[i][j] * invmass_for_v3[ielem] * exp_phase[loc];
-
-                    ++ielem;
+                    sum_tmp += fcs_group_v3[i][j] * invmass_v3[i] * exp_phase[loc];
                 }
             } else if (tune_type == 1) {
-                for (j = 0; j < fcs_group2[i].size(); ++j) {
+                for (j = 0; j < fcs_group_v4[i].size(); ++j) {
 
                     for (ii = 0; ii < 3; ++ii) {
-                        phase3[ii] = xk_scph[ik][ii] * (vec_for_v3[ielem][0][ii] - vec_for_v3[ielem][1][ii]);
+                        phase3[ii] = xk_scph[ik][ii] * (relvec_v3[i][j].vecs[0][ii] - relvec_v3[i][j].vecs[1][ii]);
                         loc3[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
 
-                    sum_tmp += fcs_group[i][j] * invmass_for_v3[ielem]
+                    sum_tmp += fcs_group_v3[i][j] * invmass_v3[i]
                                * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
-
-                    ++ielem;
                 }
             }
             v3_array_at_kpair[i] = sum_tmp;
@@ -826,7 +825,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
                 ret = std::complex<double>(0.0, 0.0);
 
-                for (i = 0; i < ngroup; ++i) {
+                for (i = 0; i < ngroup_v3; ++i) {
 
                     ret += v3_array_at_kpair[i]
                            * evec_in[0][is][ind[i][0]]
@@ -850,7 +849,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
                     ret = std::complex<double>(0.0, 0.0);
 
-                    for (i = 0; i < ngroup; ++i) {
+                    for (i = 0; i < ngroup_v3; ++i) {
 
                         ret += v3_array_at_kpair[i]
                                * evec_in[0][is][ind[i][0]]
@@ -869,7 +868,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
                     ret = std::complex<double>(0.0, 0.0);
 
-                    for (i = 0; i < ngroup; ++i) {
+                    for (i = 0; i < ngroup_v3; ++i) {
 
                         ret += v3_array_at_kpair[i]
                                * evec_in[0][is][ind[i][0]]
@@ -942,8 +941,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
         }
     }
 
-    memory->allocate(v4_array_at_kpair, ngroup2);
-    memory->allocate(ind, ngroup2, 4);
+    memory->allocate(v4_array_at_kpair, ngroup_v4);
+    memory->allocate(ind, ngroup_v4, 4);
     memory->allocate(v4_mpi, nk2_prod, ns2, ns2);
 
     for (size_t ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
@@ -952,43 +951,37 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
         const unsigned int knum = kmap_interpolate_to_scph[kp_irred_interpolate[ik][0].knum];
 
-        for (is = 0; is < ngroup2; ++is) v4_array_at_kpair[is] = complex_zero;
+        for (is = 0; is < ngroup_v4; ++is) v4_array_at_kpair[is] = complex_zero;
 
-        unsigned int ielem = 0;
-
-        for (i = 0; i < ngroup2; ++i) {
+        for (i = 0; i < ngroup_v4; ++i) {
 
             auto sum_tmp = std::complex<double>(0.0, 0.0);
-            for (j = 0; j < 4; ++j) ind[i][j] = evec_index4[ielem][j];
+            for (j = 0; j < 4; ++j) ind[i][j] = evec_index_v4[i][j];
 
             if (tune_type == 0) {
-                for (j = 0; j < fcs_group2[i].size(); ++j) {
-                    const auto phase = -xk_scph[knum][0] * vec_for_v4[ielem][0][0]
-                                       - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
-                                       - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
-                                       + xk_scph[jk][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
-                                       + xk_scph[jk][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
-                                       + xk_scph[jk][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
+                for (j = 0; j < fcs_group_v4[i].size(); ++j) {
+                    const auto phase = -xk_scph[knum][0] * relvec_v4[i][j].vecs[0][0]
+                                       - xk_scph[knum][1] * relvec_v4[i][j].vecs[0][1]
+                                       - xk_scph[knum][2] * relvec_v4[i][j].vecs[0][2]
+                                       + xk_scph[jk][0] * (relvec_v4[i][j].vecs[1][0] - relvec_v4[i][j].vecs[2][0])
+                                       + xk_scph[jk][1] * (relvec_v4[i][j].vecs[1][1] - relvec_v4[i][j].vecs[2][1])
+                                       + xk_scph[jk][2] * (relvec_v4[i][j].vecs[1][2] - relvec_v4[i][j].vecs[2][2]);
 
                     const auto loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
-                    sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem] * exp_phase[loc];
-
-                    ++ielem;
+                    sum_tmp += fcs_group_v4[i][j] * invmass_v4[i] * exp_phase[loc];
                 }
             } else if (tune_type == 1) {
-                for (j = 0; j < fcs_group2[i].size(); ++j) {
+                for (j = 0; j < fcs_group_v4[i].size(); ++j) {
 
                     for (ii = 0; ii < 3; ++ii) {
-                        phase3[ii] = -xk_scph[knum][ii] * vec_for_v4[ielem][0][ii]
-                                     + xk_scph[jk][ii] * (vec_for_v4[ielem][1][ii] - vec_for_v4[ielem][2][ii]);
+                        phase3[ii] = -xk_scph[knum][ii] * relvec_v4[i][j].vecs[0][ii]
+                                     + xk_scph[jk][ii] * (relvec_v4[i][j].vecs[1][ii] - relvec_v4[i][j].vecs[2][ii]);
                         loc3[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
 
-                    sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem]
+                    sum_tmp += fcs_group_v4[i][j] * invmass_v4[i]
                                * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
-
-                    ++ielem;
                 }
             }
             v4_array_at_kpair[i] = sum_tmp;
@@ -1018,7 +1011,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
                 ret = std::complex<double>(0.0, 0.0);
 
-                for (i = 0; i < ngroup2; ++i) {
+                for (i = 0; i < ngroup_v4; ++i) {
 
                     ret += v4_array_at_kpair[i]
                            * evec_in[knum][is][ind[i][0]]
@@ -1047,7 +1040,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
                     ret = std::complex<double>(0.0, 0.0);
 
-                    for (i = 0; i < ngroup2; ++i) {
+                    for (i = 0; i < ngroup_v4; ++i) {
 
                         ret += v4_array_at_kpair[i]
                                * evec_in[knum][is][ind[i][0]]
@@ -1068,7 +1061,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
                     ret = std::complex<double>(0.0, 0.0);
 
-                    for (i = 0; i < ngroup2; ++i) {
+                    for (i = 0; i < ngroup_v4; ++i) {
 
                         ret += v4_array_at_kpair[i]
                                * evec_in[knum][is][ind[i][0]]
@@ -1227,8 +1220,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
         }
     }
 
-    memory->allocate(v4_array_at_kpair, ngroup2);
-    memory->allocate(ind, ngroup2, 4);
+    memory->allocate(v4_array_at_kpair, ngroup_v4);
+    memory->allocate(ind, ngroup_v4, 4);
     memory->allocate(v4_mpi, nk2_prod, ns2, ns2);
 
     for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
@@ -1261,43 +1254,37 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
             knum = kmap_interpolate_to_scph[kp_irred_interpolate[ik_now][0].knum];
 
-            for (is = 0; is < ngroup2; ++is) v4_array_at_kpair[is] = complex_zero;
+            for (is = 0; is < ngroup_v4; ++is) v4_array_at_kpair[is] = complex_zero;
 
-            unsigned int ielem = 0;
-
-            for (i = 0; i < ngroup2; ++i) {
+            for (i = 0; i < ngroup_v4; ++i) {
 
                 std::complex<double> sum_tmp = std::complex<double>(0.0, 0.0);
-                for (j = 0; j < 4; ++j) ind[i][j] = evec_index4[ielem][j];
+                for (j = 0; j < 4; ++j) ind[i][j] = evec_index_v4[i][j];
 
                 if (tune_type == 0) {
-                    for (j = 0; j < fcs_group2[i].size(); ++j) {
-                        auto phase = -xk_scph[knum][0] * vec_for_v4[ielem][0][0]
-                                     - xk_scph[knum][1] * vec_for_v4[ielem][0][1]
-                                     - xk_scph[knum][2] * vec_for_v4[ielem][0][2]
-                                     + xk_scph[jk_now][0] * (vec_for_v4[ielem][1][0] - vec_for_v4[ielem][2][0])
-                                     + xk_scph[jk_now][1] * (vec_for_v4[ielem][1][1] - vec_for_v4[ielem][2][1])
-                                     + xk_scph[jk_now][2] * (vec_for_v4[ielem][1][2] - vec_for_v4[ielem][2][2]);
+                    for (j = 0; j < fcs_group_v4[i].size(); ++j) {
+                        auto phase = -xk_scph[knum][0] * relvec_v4[i][j].vecs[0][0]
+                                     - xk_scph[knum][1] * relvec_v4[i][j].vecs[0][1]
+                                     - xk_scph[knum][2] * relvec_v4[i][j].vecs[0][2]
+                                     + xk_scph[jk_now][0] * (relvec_v4[i][j].vecs[1][0] - relvec_v4[i][j].vecs[2][0])
+                                     + xk_scph[jk_now][1] * (relvec_v4[i][j].vecs[1][1] - relvec_v4[i][j].vecs[2][1])
+                                     + xk_scph[jk_now][2] * (relvec_v4[i][j].vecs[1][2] - relvec_v4[i][j].vecs[2][2]);
 
                         auto loc = nint(phase * dnk_represent * inv2pi) % nk_represent + nk_represent - 1;
 
-                        sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem] * exp_phase[loc];
-
-                        ++ielem;
+                        sum_tmp += fcs_group_v4[i][j] * invmass_v4[i] * exp_phase[loc];
                     }
                 } else if (tune_type == 1) {
-                    for (j = 0; j < fcs_group2[i].size(); ++j) {
+                    for (j = 0; j < fcs_group_v4[i].size(); ++j) {
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            phase3[k] = -xk_scph[knum][k] * vec_for_v4[ielem][0][k]
-                                        + xk_scph[jk_now][k] * (vec_for_v4[ielem][1][k] - vec_for_v4[ielem][2][k]);
+                            phase3[k] = -xk_scph[knum][k] * relvec_v4[i][j].vecs[0][k]
+                                        + xk_scph[jk_now][k] * (relvec_v4[i][j].vecs[1][k] - relvec_v4[i][j].vecs[2][k]);
                             loc3[k] = nint(phase3[k] * dnk[k] * inv2pi) % nk_grid[k] + nk_grid[k] - 1;
                         }
 
-                        sum_tmp += fcs_group2[i][j] * invmass_for_v4[ielem]
+                        sum_tmp += fcs_group_v4[i][j] * invmass_v4[i]
                                    * exp_phase3[loc3[0]][loc3[1]][loc3[2]];
-
-                        ++ielem;
                     }
                 }
                 v4_array_at_kpair[i] = sum_tmp;
@@ -1317,7 +1304,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
             auto ret = std::complex<double>(0.0, 0.0);
 
-            for (i = 0; i < ngroup2; ++i) {
+            for (i = 0; i < ngroup_v4; ++i) {
 
                 ret += v4_array_at_kpair[i]
                        * evec_in[knum][is_now][ind[i][0]]
@@ -1824,7 +1811,7 @@ void Scph::setup_pp_interaction()
     double *invsqrt_mass_p;
 
     if (mympi->my_rank == 0) {
-        if (relax_coordinate) {
+        if (relax_coordinate || bubble > 0) {
             std::cout << " Preparing for calculating V3 & V4  ...";
         } else {
             std::cout << " Preparing for calculating V4  ...";
@@ -1843,71 +1830,66 @@ void Scph::setup_pp_interaction()
     }
 
     // Setup for V3 if relax_coordinate = True.
-    if (relax_coordinate) {
+    if (relax_coordinate || bubble > 0) {
 
         std::sort(fcs_phonon->force_constant_with_cell[1].begin(),
                   fcs_phonon->force_constant_with_cell[1].end());
 
         anharmonic_core->prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1], 3,
-                                                          ngroup, fcs_group);
+                                                          ngroup_v3, fcs_group_v3);
+        memory->allocate(invmass_v3, ngroup_v3);
+        memory->allocate(evec_index_v3, ngroup_v3, 3);
+        memory->allocate(relvec_v3, ngroup_v3);
+        memory->allocate(phi3_reciprocal, ngroup_v3);
 
-        memory->allocate(vec_for_v3, fcs_phonon->force_constant_with_cell[1].size(), 2, 3);
-        memory->allocate(invmass_for_v3, fcs_phonon->force_constant_with_cell[1].size());
-        memory->allocate(evec_index3, fcs_phonon->force_constant_with_cell[1].size(), 3);
-
-
-        j = 0;
-        for (const auto &it : fcs_phonon->force_constant_with_cell[1]) {
-            invmass_for_v3[j]
-                    = invsqrt_mass_p[it.pairs[0].index / 3]
-                      * invsqrt_mass_p[it.pairs[1].index / 3]
-                      * invsqrt_mass_p[it.pairs[2].index / 3];
-
-            ++j;
-        }
         anharmonic_core->prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
-                                                 3, vec_for_v3);
+                                3,
+                                ngroup_v3,
+                                fcs_group_v3,
+                                relvec_v3);
 
-        for (i = 0; i < fcs_phonon->force_constant_with_cell[1].size(); ++i) {
-            for (j = 0; j < 3; ++j) {
-                evec_index3[i][j]
-                        = fcs_phonon->force_constant_with_cell[1][i].pairs[j].index;
+        int k = 0;
+        for (i = 0; i < ngroup_v3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
             }
+            invmass_v3[i]
+                    = invsqrt_mass_p[evec_index_v3[i][0] / 3]
+                      * invsqrt_mass_p[evec_index_v3[i][1] / 3]
+                      * invsqrt_mass_p[evec_index_v3[i][2] / 3];
+            k += fcs_group_v3[i].size();
         }
-
     }
 
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
 
     anharmonic_core->prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2], 4,
-                                                      ngroup2, fcs_group2);
+                                                      ngroup_v4, fcs_group_v4);
 
-    memory->allocate(vec_for_v4, fcs_phonon->force_constant_with_cell[2].size(), 3, 3);
-    memory->allocate(invmass_for_v4, fcs_phonon->force_constant_with_cell[2].size());
-    memory->allocate(evec_index4, fcs_phonon->force_constant_with_cell[2].size(), 4);
+    memory->allocate(invmass_v4, ngroup_v4);
+    memory->allocate(evec_index_v4, ngroup_v4, 4);
+    memory->allocate(relvec_v4, ngroup_v4);
+   // memory->allocate(phi4_reciprocal, ngroup_v4);
 
-
-    j = 0;
-    for (const auto &it : fcs_phonon->force_constant_with_cell[2]) {
-        invmass_for_v4[j]
-                = invsqrt_mass_p[it.pairs[0].index / 3]
-                  * invsqrt_mass_p[it.pairs[1].index / 3]
-                  * invsqrt_mass_p[it.pairs[2].index / 3]
-                  * invsqrt_mass_p[it.pairs[3].index / 3];
-
-        ++j;
-    }
     anharmonic_core->prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
-                                             4, vec_for_v4);
+                                               4,
+                                               ngroup_v4,
+                                               fcs_group_v4,
+                                               relvec_v4);
 
-    for (i = 0; i < fcs_phonon->force_constant_with_cell[2].size(); ++i) {
-        for (j = 0; j < 4; ++j) {
-            evec_index4[i][j]
-                    = fcs_phonon->force_constant_with_cell[2][i].pairs[j].index;
+    int k = 0;
+    for (i = 0; i < ngroup_v4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
+        invmass_v4[i]
+                = invsqrt_mass_p[evec_index_v4[i][0] / 3]
+                  * invsqrt_mass_p[evec_index_v4[i][1] / 3]
+                  * invsqrt_mass_p[evec_index_v4[i][2] / 3]
+                  * invsqrt_mass_p[evec_index_v4[i][3] / 3];
+        k += fcs_group_v4[i].size();
     }
-
 
     memory->deallocate(invsqrt_mass_p);
 
@@ -3107,33 +3089,39 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                              std::complex<double> ****delta_dymat_scph_plus_bubble)
 {
     const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
-    const auto nk_ref = kpoint->nk;
     const auto ns = dynamical->neval;
-    double ***eval;
+    double factor = 1.0 / (static_cast<double>(nk_scph) * std::pow(2.0, 4));
+    unsigned int i;
+    unsigned int arr_cubic[3];
+    double xk_tmp[3];
+    std::complex<double> omega_sum[2];
+    std::complex<double> ret_mpi;
+    std::complex<double> im(0.0, 1.0);
+
+    double n1, n2;
+    double f1, f2;
+
+    auto epsilon = integration->epsilon;
+    std::complex<double> omega_shift;
+    const auto nk_irred_interpolate = kp_irred_interpolate.size();
+
+    double ***eval, ***eval_bubble;
     std::complex<double> ****evec;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << " -----------------------------------------------------------------"
                   << std::endl;
-        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+        std::cout << " Calculating the bubble self-energy " << std::endl;
         std::cout << " on top of the SCPH calculation." << std::endl;
         std::cout << '\n';
-        std::cout << " This calculation requires allocation of additional memory:" << std::endl;
-
-        size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
-                       + nk_ref * ns * NT * sizeof(double);
-
-        const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
-        std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
-                  << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
-
-        std::cout << "  To avoid possible faults associated with insufficient memory,\n"
-                     "  please reduce the number of MPI processes per node and/or\n"
-                     "  the number of temperagure grids.\n\n";
     }
 
+    epsilon *= time_ry / Hz_to_kayser;
+    MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
     memory->allocate(eval, NT, nk_scph, ns);
+    memory->allocate(eval_bubble, NT, nk_scph, ns);
     memory->allocate(evec, NT, nk_scph, ns, ns);
 
     for (auto iT = 0; iT < NT; ++iT) {
@@ -3146,8 +3134,67 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                            kvec_na_scph,
                            eval[iT],
                            evec[iT]);
-    }
 
+        for (auto ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+            auto knum_interpolate = kp_irred_interpolate[ik][0].knum;
+            auto knum = kmap_interpolate_to_scph[knum_interpolate];
+
+            for (auto m = 0; m < 3; ++m) xk_tmp[m] = -xk_scph[knum][m];
+            auto knum_minus = kpoint->get_knum(xk_tmp, kmesh_scph);
+
+            for (unsigned int snum = 0; snum < ns; ++snum) {
+                arr_cubic[0] = ns * knum_minus + snum;
+
+                if (bubble == 1) {
+                    omega_shift = im * epsilon;
+                } else if (bubble == 2) {
+                    omega_shift = eval[iT][knum][snum] + im * epsilon;
+                }
+
+                ret_mpi = std::complex<double>(0.0, 0.0);
+
+                for (auto ik1 = 0; ik1 < nk_scph; ++ik1) {
+
+                    for (auto m = 0; m < 3; ++m) xk_tmp[m] = xk_scph[knum][m] - xk_scph[ik1][m];
+                    auto ik2 = kpoint->get_knum(xk_tmp, kmesh_scph);
+
+                    for (unsigned int is1 = 0; is1 < ns; ++is1) {
+
+                        arr_cubic[1] = ns * ik1 + is1;
+                        double omega1 = eval[iT][ik1][is1];
+
+                        for (unsigned int is2 = 0; is2 < ns; ++is2) {
+
+                            arr_cubic[2] = ns * ik2 + is2;
+                            double omega2 = eval[iT][ik2][is2];
+                            double v3_tmp = std::norm(V3_this(arr_cubic, eval[iT], evec[iT]));
+
+                            omega_sum[0] = 1.0 / (omega_shift + omega1 + omega2) - 1.0 / (omega_shift - omega1 - omega2);
+                            omega_sum[1] = 1.0 / (omega_shift + omega1 - omega2) - 1.0 / (omega_shift - omega1 + omega2);
+
+                            if (thermodynamics->classical) {
+                                n1 = thermodynamics->fC(omega1, temp);
+                                n2 = thermodynamics->fC(omega2, temp);
+                                f1 = n1 + n2;
+                                f2 = n2 - n1;
+                            } else {
+                                n1 = thermodynamics->fB(omega1, temp);
+                                n2 = thermodynamics->fB(omega2, temp);
+                                f1 = n1 + n2 + 1.0;
+                                f2 = n2 - n1;
+                            }
+                            ret_mpi += v3_tmp * (f1 * omega_sum[0] + f2 * omega_sum[1]);
+                        }
+                    }
+                }
+                ret_mpi *= factor;
+                if (mympi->my_rank == 0) {
+                    std::cout << "Bubble frequency shift = " << writes->in_kayser(-ret_mpi.real()) << std::endl;
+                }
+            }
+        }
+    }
 
     memory->deallocate(eval);
     memory->deallocate(evec);
@@ -3156,6 +3203,115 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
         std::cout << " done!" << std::endl << std::endl;
     }
 }
+
+std::complex<double> Scph::V3_this(const unsigned int ks[3],
+                                   double **eval,
+                                   std::complex<double> ***evec) {
+    int i;
+    unsigned int kn[3], sn[3];
+    const int ns = dynamical->neval;
+
+    double omega[3];
+    auto ret = std::complex<double>(0.0, 0.0);
+    auto ret_re = 0.0;
+    auto ret_im = 0.0;
+
+    for (i = 0; i < 3; ++i) {
+        kn[i] = ks[i] / ns;
+        sn[i] = ks[i] % ns;
+        omega[i] = eval[kn[i]][sn[i]];
+    }
+
+    // Return zero if any of the involving phonon has imaginary frequency
+    if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8) return 0.0;
+
+    if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
+        calc_phi3_reciprocal_this(kn[1], kn[2], phi3_reciprocal);
+        kindex_phi3_stored[0] = kn[1];
+        kindex_phi3_stored[1] = kn[2];
+    }
+#ifdef _OPENMP
+#pragma omp parallel for private(ret), reduction(+: ret_re, ret_im)
+#endif
+    for (i = 0; i < ngroup_v3; ++i) {
+        ret = evec[kn[0]][sn[0]][evec_index_v3[i][0]]
+              * evec[kn[1]][sn[1]][evec_index_v3[i][1]]
+              * evec[kn[2]][sn[2]][evec_index_v3[i][2]]
+              * invmass_v3[i] * phi3_reciprocal[i];
+        ret_re += ret.real();
+        ret_im += ret.imag();
+    }
+
+    return std::complex<double>(ret_re, ret_im)
+           / std::sqrt(omega[0] * omega[1] * omega[2]);
+}
+
+void Scph::calc_phi3_reciprocal_this(const unsigned int ik1,
+                                     const unsigned int ik2,
+                                     std::complex<double> *ret)
+{
+    int i, j;
+    unsigned int iloc;
+    double phase;
+    const auto dnk_represent = static_cast<double>(nk_represent) / (2.0 * pi);
+    std::complex<double> ret_in;
+    unsigned int nsize_group;
+
+
+        if (tune_type == 0) {
+
+#pragma omp parallel for private(ret_in, nsize_group, j, phase, iloc)
+            for (i = 0; i < ngroup_v3; ++i) {
+
+                ret_in = std::complex<double>(0.0, 0.0);
+                nsize_group = fcs_group_v3[i].size();
+
+                for (j = 0; j < nsize_group; ++j) {
+
+                    phase = relvec_v3[i][j].vecs[0][0] * xk_scph[ik1][0]
+                            + relvec_v3[i][j].vecs[0][1] * xk_scph[ik1][1]
+                            + relvec_v3[i][j].vecs[0][2] * xk_scph[ik1][2]
+                            + relvec_v3[i][j].vecs[1][0] * xk_scph[ik2][0]
+                            + relvec_v3[i][j].vecs[1][1] * xk_scph[ik2][1]
+                            + relvec_v3[i][j].vecs[1][2] * xk_scph[ik2][2];
+
+                    unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
+                    ret_in += fcs_group_v3[i][j] * exp_phase[iloc];
+                }
+                ret[i] = ret_in;
+            }
+
+        } else if (tune_type == 1) {
+
+            // Tuned version is used when nk1=nk2=nk3 doesn't hold.
+
+            int loc[3];
+            double phase3[3];
+            const auto inv2pi = 1.0 / (2.0 * pi);
+
+#pragma omp parallel for private(ret_in, nsize_group, j, phase3, loc)
+            for (i = 0; i < ngroup_v3; ++i) {
+
+                ret_in = std::complex<double>(0.0, 0.0);
+                nsize_group = fcs_group_v3[i].size();
+
+                for (j = 0; j < nsize_group; ++j) {
+
+                    for (auto ii = 0; ii < 3; ++ii) {
+                        phase3[ii]
+                                = relvec_v3[i][j].vecs[0][ii] * xk_scph[ik1][ii]
+                                  + relvec_v3[i][j].vecs[1][ii] * xk_scph[ik2][ii];
+
+                        loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
+                    }
+
+                    ret_in += fcs_group_v3[i][j] * exp_phase3[loc[0]][loc[1]][loc[2]];
+                }
+                ret[i] = ret_in;
+            }
+        }
+}
+
 
 double Scph::distance(double *x1,
                       double *x2)

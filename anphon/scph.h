@@ -12,6 +12,7 @@
 
 #include "pointers.h"
 #include "kpoint.h"
+#include "anharmonic_core.h"
 #include <complex>
 #include <Eigen/Dense>
 
@@ -90,13 +91,17 @@ namespace PHON_NS {
         int *kmap_interpolate_to_scph;
 
         // Information for calculating the ph-ph interaction coefficients
-        double ***vec_for_v3, *invmass_for_v3;
-        double ***vec_for_v4, *invmass_for_v4;
-        int **evec_index3;
-        int **evec_index4;
-        int ngroup, ngroup2;
-        std::vector<double> *fcs_group;
-        std::vector<double> *fcs_group2;
+        double *invmass_v3;
+        double *invmass_v4;
+        int **evec_index_v3;
+        int **evec_index_v4;
+        int ngroup_v3, ngroup_v4;
+        std::vector<RelativeVector> *relvec_v3, *relvec_v4;
+        std::complex<double> *phi3_reciprocal;
+        int kindex_phi3_stored[2] = {-1, -1};
+
+        std::vector<double> *fcs_group_v3;
+        std::vector<double> *fcs_group_v4;
         std::complex<double> *exp_phase, ***exp_phase3;
         int nk_grid[3];
         int nk_represent;
@@ -221,6 +226,17 @@ namespace PHON_NS {
 
         void bubble_correction(std::complex<double> ****,
                                std::complex<double> ****);
+
+        std::complex<double> V3_this(const unsigned int ks[3],
+                                     double **eval,
+                                     std::complex<double> ***evec);
+
+        void calc_phi3_reciprocal_this(const unsigned int ik1,
+                                             const unsigned int ik2,
+                                             std::complex<double> *ret);
+
+
+
     };
 
     extern "C" {
