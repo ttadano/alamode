@@ -238,7 +238,7 @@ void Scph::exec_scph()
 
     postprocess(delta_dymat_scph,
                 delta_dymat_scph_plus_bubble);
-    
+
     memory->deallocate(delta_dymat_scph);
     if (delta_dymat_scph_plus_bubble) memory->deallocate(delta_dymat_scph_plus_bubble);
 
@@ -3299,8 +3299,13 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                 MPI_Reduce(&ret_mpi, &ret_sum, 1, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 
                 if (mympi->my_rank == 0) {
-                    eval_bubble[iT][knum][snum] = eval[knum][snum]*eval[knum][snum]
+                    eval_bubble[iT][knum][snum] = eval[knum][snum] * eval[knum][snum]
                             - 2.0 * eval[knum][snum] *ret_sum.real();
+
+                    for (auto jk = 1; jk < kp_irred_interpolate[ik].size(); ++jk) {
+                        auto knum2 = kmap_interpolate_to_scph[kp_irred_interpolate[ik][jk].knum];
+                        eval_bubble[iT][knum2][snum] = eval_bubble[iT][knum][snum];
+                    }
                 }
             }
         }

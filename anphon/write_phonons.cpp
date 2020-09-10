@@ -2390,7 +2390,7 @@ void Writes::write_scph_energy(double ***eval, const int bubble) const
     std::string file_energy;
 
     if (bubble == 0) {
-         file_energy = input->job_title + ".scph_eval";
+        file_energy = input->job_title + ".scph_eval";
     } else if (bubble == 1) {
         file_energy = input->job_title + ".scph+bubble(0)_eval";
     } else if (bubble == 2) {
@@ -2515,7 +2515,7 @@ void Writes::write_scph_dos(double **dos_scph, const int bubble) const
     std::string file_dos;
 
     if (bubble == 0) {
-         file_dos = input->job_title + ".scph_dos";
+        file_dos = input->job_title + ".scph_dos";
     } else if (bubble == 1) {
         file_dos = input->job_title + ".scph+bubble(0)_dos";
     } else if (bubble == 2) {
