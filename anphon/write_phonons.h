@@ -54,19 +54,22 @@ namespace PHON_NS {
         std::string anime_format;
         std::fstream fs_result;
 
-        void write_scph_energy(double ***) const;
+        void write_scph_energy(double ***,
+                               const int bubble = 0) const;
 
-        void write_scph_bands(double ***) const;
+        void write_scph_bands(double ***,
+                              const int bubble = 0) const;
 
-        void write_scph_dos(double **) const;
+        void write_scph_dos(double **,
+                            const int bubble = 0) const;
 
         void write_scph_thermodynamics(double *heat_capacity,
                                        double *FE_QHA,
                                        double *dFE_scph) const;
 
-        void write_scph_msd(double **) const;
+        void write_scph_msd(double **, const int bubble = 0) const;
 
-        void write_scph_ucorr(double ***ucorr_scph) const;
+        void write_scph_ucorr(double ***ucorr_scph, const int bubble = 0) const;
 
         void write_scph_dielec(double ****dielec_scph) const;
 

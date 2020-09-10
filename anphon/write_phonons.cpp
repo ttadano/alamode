@@ -1570,7 +1570,7 @@ void Writes::write_msd() const
 }
 
 
-void Writes::write_scph_msd(double **msd_scph) const
+void Writes::write_scph_msd(double **msd_scph, const int bubble) const
 {
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
@@ -1579,7 +1579,14 @@ void Writes::write_scph_msd(double **msd_scph) const
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_msd;
-    auto file_msd = input->job_title + ".scph_msd";
+    std::string file_msd;
+    if (bubble == 0) {
+        file_msd = input->job_title + ".scph_msd";
+    } else if (bubble == 1) {
+        file_msd = input->job_title + ".scph+bubble(0)_msd";
+    } else if (bubble == 2) {
+        file_msd = input->job_title + ".scph+bubble(w)_msd";
+    }
     ofs_msd.open(file_msd.c_str(), std::ios::out);
     if (!ofs_msd) error->exit("write_scph_msd", "cannot open file_thermo");
     ofs_msd << "# Mean Square Displacements at a function of temperature." << std::endl;
@@ -1598,7 +1605,13 @@ void Writes::write_scph_msd(double **msd_scph) const
 
     ofs_msd.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_msd;
-    std::cout << " : Mean-square-displacement (SCPH level)" << std::endl;
+    if (bubble == 0) {
+        std::cout << " : Mean-square-displacement (SCPH level)" << std::endl;
+    } else if (bubble == 1) {
+        std::cout << " : Mean-square-displacement (SCPH+Bubble(0) level)" << std::endl;
+    } else if (bubble == 2) {
+        std::cout << " : Mean-square-displacement (SCPH+Bubble(w) level)" << std::endl;
+    }
 }
 
 
@@ -1665,9 +1678,10 @@ void Writes::write_disp_correlation() const
 }
 
 
-void Writes::write_scph_ucorr(double ***ucorr_scph) const
+void Writes::write_scph_ucorr(double ***ucorr_scph,
+                              const int bubble) const
 {
-    auto file_ucorr = input->job_title + ".scph_ucorr";
+    std::string file_ucorr;
     std::ofstream ofs;
 
     const auto ns = dynamical->neval;
@@ -1675,6 +1689,14 @@ void Writes::write_scph_ucorr(double ***ucorr_scph) const
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    if (bubble == 0) {
+        file_ucorr = input->job_title + ".scph_ucorr";
+    } else if (bubble == 1) {
+        file_ucorr = input->job_title + ".scph+bubble(0)_ucorr";
+    } else if (bubble == 2) {
+        file_ucorr = input->job_title + ".scph+bubble(w)_ucorr";
+    }
 
     ofs.open(file_ucorr.c_str(), std::ios::out);
     if (!ofs) error->exit("write_disp_correlation", "Could not open file_rmsd");
@@ -1717,7 +1739,13 @@ void Writes::write_scph_ucorr(double ***ucorr_scph) const
     ofs.close();
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_ucorr;
-    std::cout << " : displacement correlation functions (SCPH level)" << std::endl;
+    if (bubble == 0) {
+        std::cout << " : displacement correlation functions (SCPH level)" << std::endl;
+    } else if (bubble == 1) {
+        std::cout << " : displacement correlation functions (SCPH+Bubble(0) level)" << std::endl;
+    } else if (bubble == 2) {
+        std::cout << " : displacement correlation functions (SCPH+Bubble(w) level)" << std::endl;
+    }
 }
 
 
@@ -2349,7 +2377,7 @@ void Writes::write_dielectric_function() const
     std::cout << " : Frequency-dependent dielectric function" << std::endl;
 }
 
-void Writes::write_scph_energy(double ***eval) const
+void Writes::write_scph_energy(double ***eval, const int bubble) const
 {
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
@@ -2359,7 +2387,15 @@ void Writes::write_scph_energy(double ***eval) const
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_energy;
-    auto file_energy = input->job_title + ".scph_eval";
+    std::string file_energy;
+
+    if (bubble == 0) {
+         file_energy = input->job_title + ".scph_eval";
+    } else if (bubble == 1) {
+        file_energy = input->job_title + ".scph+bubble(0)_eval";
+    } else if (bubble == 2) {
+        file_energy = input->job_title + ".scph+bubble(w)_eval";
+    }
 
     ofs_energy.open(file_energy.c_str(), std::ios::out);
     if (!ofs_energy) error->exit("write_scph_energy", "cannot open file_energy");
@@ -2386,10 +2422,18 @@ void Writes::write_scph_energy(double ***eval) const
     ofs_energy.close();
 }
 
-void Writes::write_scph_bands(double ***eval) const
+void Writes::write_scph_bands(double ***eval, const int bubble) const
 {
     std::ofstream ofs_bands;
-    auto file_bands = input->job_title + ".scph_bands";
+    std::string file_bands;
+
+    if (bubble == 0) {
+        file_bands = input->job_title + ".scph_bands";
+    } else if (bubble == 1) {
+        file_bands = input->job_title + ".scph+bubble(0)_bands";
+    } else if (bubble == 2) {
+        file_bands = input->job_title + ".scph+bubble(w)_bands";
+    }
 
     ofs_bands.open(file_bands.c_str(), std::ios::out);
     if (!ofs_bands) error->exit("write_scph_bands", "cannot open file_bands");
@@ -2450,10 +2494,16 @@ void Writes::write_scph_bands(double ***eval) const
 
     ofs_bands.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_bands;
-    std::cout << " : SCPH band structure" << std::endl;
+    if (bubble == 0) {
+        std::cout << " : SCPH band structure" << std::endl;
+    } else if (bubble == 1) {
+        std::cout << " : SCPH+Bubble(0) band structure" << std::endl;
+    } else if (bubble == 2) {
+        std::cout << " : SCPH+Bubble(w) band structure" << std::endl;
+    }
 }
 
-void Writes::write_scph_dos(double **dos_scph) const
+void Writes::write_scph_dos(double **dos_scph, const int bubble) const
 {
     unsigned int iT;
     const auto Tmin = system->Tmin;
@@ -2462,7 +2512,15 @@ void Writes::write_scph_dos(double **dos_scph) const
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     std::ofstream ofs_dos;
-    auto file_dos = input->job_title + ".scph_dos";
+    std::string file_dos;
+
+    if (bubble == 0) {
+         file_dos = input->job_title + ".scph_dos";
+    } else if (bubble == 1) {
+        file_dos = input->job_title + ".scph+bubble(0)_dos";
+    } else if (bubble == 2) {
+        file_dos = input->job_title + ".scph+bubble(w)_dos";
+    }
 
     ofs_dos.open(file_dos.c_str(), std::ios::out);
     if (!ofs_dos) error->exit("write_scph_dos", "cannot open file_dos");
@@ -2486,7 +2544,13 @@ void Writes::write_scph_dos(double **dos_scph) const
     ofs_dos << std::endl;
     ofs_dos.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
-    std::cout << " : SCPH DOS" << std::endl;
+    if (bubble == 0) {
+        std::cout << " : SCPH DOS" << std::endl;
+    } else if (bubble == 1) {
+        std::cout << " : SCPH+Bubble(0) DOS" << std::endl;
+    } else if (bubble == 2) {
+        std::cout << " : SCPH+Bubble(w) DOS" << std::endl;
+    }
 }
 
 void Writes::write_scph_thermodynamics(double *heat_capacity,

@@ -142,7 +142,8 @@ namespace PHON_NS {
 
         void exec_scph_main(std::complex<double> ****);
 
-        void postprocess(std::complex<double> ****delta_dymat_scph);
+        void postprocess(std::complex<double> ****delta_dymat_scph,
+                         std::complex<double> ****delta_dymat_scph_plus_bubble);
 
         void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
                                                  std::complex<double> ***,
@@ -212,8 +213,9 @@ namespace PHON_NS {
         static void duplicate_xk_boundary(double *,
                                           std::vector<std::vector<double>> &);
 
-        void write_anharmonic_correction_fc2(std::complex<double> ****,
-                                             unsigned int);
+        void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
+                                             const unsigned int NT,
+                                             const int type = 0);
 
         static void mpi_bcast_complex(std::complex<double> ****data,
                                       const unsigned int NT,
