@@ -1261,8 +1261,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
-            std::cout << " IALGO = 1 : Use different algorithm efficient when ns >> nk" << std::endl;
-            std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... ";
+            std::cout << " IALGO = 1 : Use different algorithm efficient when ns >> nk\n";
+            std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... \n";
         } else {
             error->exit("compute_V4_elements_mpi_over_kpoint",
                         "This function can be used only when SELF_OFFDIAG = 1");
@@ -1372,7 +1372,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
                         for (unsigned int k = 0; k < 3; ++k) {
                             phase3[k] = -xk_scph[knum][k] * relvec_v4[i][j].vecs[0][k]
-                                        + xk_scph[jk_now][k] * (relvec_v4[i][j].vecs[1][k] - relvec_v4[i][j].vecs[2][k]);
+                                        + xk_scph[jk_now][k] * (relvec_v4[i][j].vecs[1][k]
+                                                                - relvec_v4[i][j].vecs[2][k]);
                             loc3[k] = nint(phase3[k] * dnk[k] * inv2pi) % nk_grid[k] + nk_grid[k] - 1;
                         }
 
@@ -1427,6 +1428,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const size_t count = nk2_prod * ns4;
     const size_t count_sub = ns4;
 
+    if (mympi->my_rank == 0) {
+        std::cout << "Communicating v4_array over MPI ...";
+    }
     if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
         MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
@@ -1461,6 +1465,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 #endif
             }
         }
+    }
+    if (mympi->my_rank == 0) {
+        std::cout << "done.\n";
     }
 
     memory->deallocate(v4_mpi);
@@ -1936,10 +1943,10 @@ void Scph::setup_pp_interaction()
         memory->allocate(phi3_reciprocal, ngroup_v3);
 
         anharmonic_core->prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
-                                3,
-                                ngroup_v3,
-                                fcs_group_v3,
-                                relvec_v3);
+                                                 3,
+                                                 ngroup_v3,
+                                                 fcs_group_v3,
+                                                 relvec_v3);
 
         int k = 0;
         for (i = 0; i < ngroup_v3; ++i) {
@@ -1963,13 +1970,13 @@ void Scph::setup_pp_interaction()
     memory->allocate(invmass_v4, ngroup_v4);
     memory->allocate(evec_index_v4, ngroup_v4, 4);
     memory->allocate(relvec_v4, ngroup_v4);
-   // memory->allocate(phi4_reciprocal, ngroup_v4);
+    // memory->allocate(phi4_reciprocal, ngroup_v4);
 
     anharmonic_core->prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
-                                               4,
-                                               ngroup_v4,
-                                               fcs_group_v4,
-                                               relvec_v4);
+                                             4,
+                                             ngroup_v4,
+                                             fcs_group_v4,
+                                             relvec_v4);
 
     int k = 0;
     for (i = 0; i < ngroup_v4; ++i) {
@@ -3300,7 +3307,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
 
                 if (mympi->my_rank == 0) {
                     eval_bubble[iT][knum][snum] = eval[knum][snum] * eval[knum][snum]
-                            - 2.0 * eval[knum][snum] *ret_sum.real();
+                                                  - 2.0 * eval[knum][snum] * ret_sum.real();
 
                     for (auto jk = 1; jk < kp_irred_interpolate[ik].size(); ++jk) {
                         auto knum2 = kmap_interpolate_to_scph[kp_irred_interpolate[ik][jk].knum];
@@ -3329,7 +3336,8 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
 
 std::complex<double> Scph::V3_this(const unsigned int ks[3],
                                    double **eval,
-                                   std::complex<double> ***evec) {
+                                   std::complex<double> ***evec)
+{
     int i;
     unsigned int kn[3], sn[3];
     const int ns = dynamical->neval;
@@ -3381,58 +3389,58 @@ void Scph::calc_phi3_reciprocal_this(const unsigned int ik1,
     unsigned int nsize_group;
 
 
-        if (tune_type == 0) {
+    if (tune_type == 0) {
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase, iloc)
-            for (i = 0; i < ngroup_v3; ++i) {
+        for (i = 0; i < ngroup_v3; ++i) {
 
-                ret_in = std::complex<double>(0.0, 0.0);
-                nsize_group = fcs_group_v3[i].size();
+            ret_in = std::complex<double>(0.0, 0.0);
+            nsize_group = fcs_group_v3[i].size();
 
-                for (j = 0; j < nsize_group; ++j) {
+            for (j = 0; j < nsize_group; ++j) {
 
-                    phase = relvec_v3[i][j].vecs[0][0] * xk_scph[ik1][0]
-                            + relvec_v3[i][j].vecs[0][1] * xk_scph[ik1][1]
-                            + relvec_v3[i][j].vecs[0][2] * xk_scph[ik1][2]
-                            + relvec_v3[i][j].vecs[1][0] * xk_scph[ik2][0]
-                            + relvec_v3[i][j].vecs[1][1] * xk_scph[ik2][1]
-                            + relvec_v3[i][j].vecs[1][2] * xk_scph[ik2][2];
+                phase = relvec_v3[i][j].vecs[0][0] * xk_scph[ik1][0]
+                        + relvec_v3[i][j].vecs[0][1] * xk_scph[ik1][1]
+                        + relvec_v3[i][j].vecs[0][2] * xk_scph[ik1][2]
+                        + relvec_v3[i][j].vecs[1][0] * xk_scph[ik2][0]
+                        + relvec_v3[i][j].vecs[1][1] * xk_scph[ik2][1]
+                        + relvec_v3[i][j].vecs[1][2] * xk_scph[ik2][2];
 
-                    unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
-                    ret_in += fcs_group_v3[i][j] * exp_phase[iloc];
-                }
-                ret[i] = ret_in;
+                unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
+                ret_in += fcs_group_v3[i][j] * exp_phase[iloc];
             }
+            ret[i] = ret_in;
+        }
 
-        } else if (tune_type == 1) {
+    } else if (tune_type == 1) {
 
-            // Tuned version is used when nk1=nk2=nk3 doesn't hold.
+        // Tuned version is used when nk1=nk2=nk3 doesn't hold.
 
-            int loc[3];
-            double phase3[3];
-            const auto inv2pi = 1.0 / (2.0 * pi);
+        int loc[3];
+        double phase3[3];
+        const auto inv2pi = 1.0 / (2.0 * pi);
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase3, loc)
-            for (i = 0; i < ngroup_v3; ++i) {
+        for (i = 0; i < ngroup_v3; ++i) {
 
-                ret_in = std::complex<double>(0.0, 0.0);
-                nsize_group = fcs_group_v3[i].size();
+            ret_in = std::complex<double>(0.0, 0.0);
+            nsize_group = fcs_group_v3[i].size();
 
-                for (j = 0; j < nsize_group; ++j) {
+            for (j = 0; j < nsize_group; ++j) {
 
-                    for (auto ii = 0; ii < 3; ++ii) {
-                        phase3[ii]
-                                = relvec_v3[i][j].vecs[0][ii] * xk_scph[ik1][ii]
-                                  + relvec_v3[i][j].vecs[1][ii] * xk_scph[ik2][ii];
+                for (auto ii = 0; ii < 3; ++ii) {
+                    phase3[ii]
+                            = relvec_v3[i][j].vecs[0][ii] * xk_scph[ik1][ii]
+                              + relvec_v3[i][j].vecs[1][ii] * xk_scph[ik2][ii];
 
-                        loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
-                    }
-
-                    ret_in += fcs_group_v3[i][j] * exp_phase3[loc[0]][loc[1]][loc[2]];
+                    loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                 }
-                ret[i] = ret_in;
+
+                ret_in += fcs_group_v3[i][j] * exp_phase3[loc[0]][loc[1]][loc[2]];
             }
+            ret[i] = ret_in;
         }
+    }
 }
 
 
@@ -3500,9 +3508,9 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     std::ofstream ofs_fc2;
 
     if (type == 0) {
-         file_fc2 = input->job_title + ".scph_dfc2";
+        file_fc2 = input->job_title + ".scph_dfc2";
     } else if (type == 1) {
-         file_fc2 = input->job_title + ".scph+bubble(0)_dfc2";
+        file_fc2 = input->job_title + ".scph+bubble(0)_dfc2";
     } else if (type == 2) {
         file_fc2 = input->job_title + ".scph+bubble(w)_dfc2";
     }
