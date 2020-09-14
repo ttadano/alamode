@@ -1261,7 +1261,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
-            std::cout << " IALGO = 1 : Use different algorithm efficient when ns >> nk\n";
+            std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk\n";
             std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... \n";
         } else {
             error->exit("compute_V4_elements_mpi_over_kpoint",
