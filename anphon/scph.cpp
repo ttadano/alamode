@@ -711,15 +711,6 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-    // Find the degeneracy at each irreducible k points.
-
-    std::vector<int> *degeneracy_at_k;
-    memory->allocate(degeneracy_at_k, nk_reduced_scph);
-    find_degeneracy(degeneracy_at_k,
-                    nk_reduced_scph,
-                    kp_irred_scph,
-                    omega2_harmonic);
-
     // Compute matrix element of 4-phonon interaction
 
     memory->allocate(omega2_anharm, NT, nk, ns);
@@ -798,7 +789,6 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
-                                         degeneracy_at_k,
                                          converged_prev,
                                          cmat_convert,
                                          selfenergy_offdiagonal,
@@ -820,7 +810,6 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     memory->deallocate(omega2_anharm);
     memory->deallocate(v4_array_all);
     memory->deallocate(evec_anharm_tmp);
-    memory->deallocate(degeneracy_at_k);
 }
 
 
@@ -2390,25 +2379,23 @@ void Scph::diagonalize_interpolated_matrix(std::complex<double> **mat_in,
 }
 
 void Scph::find_degeneracy(std::vector<int> *degeneracy_out,
-                           const unsigned int nk_irred,
-                           const std::vector<std::vector<KpointList>> &kp_info,
-                           double **eval) const
+                           const unsigned int nk_in,
+                           double **eval_in) const
 {
     // eval is omega^2 in atomic unit
 
     const auto ns = dynamical->neval;
-    const auto tol_omega = 1.0e-10;
+    const auto tol_omega = 1.0e-7;
 
-    for (unsigned int ik = 0; ik < nk_irred; ++ik) {
-        const auto knum = kp_info[ik][0].knum;
+    for (unsigned int ik = 0; ik < nk_in; ++ik) {
 
         degeneracy_out[ik].clear();
 
-        auto omega_prev = eval[knum][0];
+        auto omega_prev = eval_in[ik][0];
         auto ideg = 1;
 
         for (unsigned int is = 1; is < ns; ++is) {
-            const auto omega_now = eval[knum][is];
+            const auto omega_now = eval_in[ik][is];
 
             if (std::abs(omega_now - omega_prev) < tol_omega) {
                 ++ideg;
@@ -2577,7 +2564,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                                         double **omega2_out,
                                         std::complex<double> ***evec_anharm_scph,
                                         const double temp,
-                                        std::vector<int> *degeneracy_info,
                                         bool &flag_converged,
                                         std::complex<double> ***cmat_convert,
                                         const bool offdiag,
@@ -3210,6 +3196,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     double **eval = nullptr;
     double ***eval_bubble = nullptr;
     std::complex<double> ***evec;
+    double *real_self = nullptr;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -3235,7 +3222,14 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                 }
             }
         }
+        memory->allocate(real_self, ns);
     }
+
+    const auto nk_reduced_scph = kp_irred_scph.size();
+
+    std::vector<int> *degeneracy_at_k;
+    memory->allocate(degeneracy_at_k, nk_scph);
+
 
 
     for (auto iT = 0; iT < NT; ++iT) {
@@ -3248,6 +3242,10 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                            kvec_na_scph,
                            eval,
                            evec);
+
+        find_degeneracy(degeneracy_at_k,
+                        nk_scph,
+                        eval);
 
         for (auto ik = 0; ik < nk_irred_interpolate; ++ik) {
 
@@ -3306,9 +3304,32 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                 MPI_Reduce(&ret_mpi, &ret_sum, 1, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 
                 if (mympi->my_rank == 0) {
-                    eval_bubble[iT][knum][snum] = eval[knum][snum] * eval[knum][snum]
-                                                  - 2.0 * eval[knum][snum] * ret_sum.real();
+                    real_self[snum] = ret_sum.real();
+                }
+            }
 
+            if (mympi->my_rank == 0) {
+                // average self energy of degenerate modes
+                int ishift = 0;
+                double real_self_avg = 0.0;
+
+                for (const auto &it : degeneracy_at_k[knum])
+                {
+                    for (auto m = 0; m < it; ++m) {
+                        real_self_avg += real_self[m + ishift];
+                    }
+                    real_self_avg /= static_cast<double>(it);
+
+                    for (auto m = 0; m < it; ++m) {
+                        real_self[m + ishift] = real_self_avg;
+                    }
+                    real_self_avg = 0.0;
+                    ishift += it;
+                }
+                
+                for (unsigned int snum = 0; snum < ns; ++snum) {
+                    eval_bubble[iT][knum][snum] = eval[knum][snum] * eval[knum][snum]
+                                                  - 2.0 * eval[knum][snum] * real_self[snum];
                     for (auto jk = 1; jk < kp_irred_interpolate[ik].size(); ++jk) {
                         auto knum2 = kmap_interpolate_to_scph[kp_irred_interpolate[ik][jk].knum];
                         eval_bubble[iT][knum2][snum] = eval_bubble[iT][knum][snum];
@@ -3326,6 +3347,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
 
     memory->deallocate(eval);
     memory->deallocate(evec);
+    memory->deallocate(degeneracy_at_k);
 
     if (eval_bubble) memory->deallocate(eval_bubble);
 

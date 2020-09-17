@@ -170,7 +170,6 @@ namespace PHON_NS {
                                           double **,
                                           std::complex<double> ***,
                                           double,
-                                          std::vector<int> *,
                                           bool &,
                                           std::complex<double> ***,
                                           bool,
@@ -197,10 +196,9 @@ namespace PHON_NS {
                                              std::complex<double> **,
                                              bool) const;
 
-        void find_degeneracy(std::vector<int> *,
-                             unsigned int,
-                             const std::vector<std::vector<KpointList>> &,
-                             double **) const;
+        void find_degeneracy(std::vector<int> *degeneracy_out,
+                             unsigned int nk_in,
+                             double **eval_in) const;
 
         static double distance(double *,
                                double *);

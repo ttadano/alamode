@@ -1288,7 +1288,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     // for the given frequency range of omega, phonon frequency (eval) and phonon eigenvectors (evec).
     // The tetrahedron method will be used.
     // This version employs the crystal symmetry to reduce the computational cost
-    // In addition, both MPI and OpenMP parallizations are used in a hybrid way inside this function.
+    // In addition, both MPI and OpenMP parallelization are used in a hybrid way inside this function.
 
     const int nk = kpoint->nk;
     const int ns = dynamical->neval;
@@ -1327,7 +1327,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     const auto npair_uniq = triplet.size();
 
     if (npair_uniq != nk) {
-        error->exit("hoge", "Something is wrong.");
+        error->exit("calc_self3omega_tetrahedron", "Something is wrong.");
     }
 
     memory->allocate(kpairs, nk, 2);
