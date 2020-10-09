@@ -3176,27 +3176,17 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
 {
     const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
     const auto ns = dynamical->neval;
-    double factor = 1.0 / (static_cast<double>(nk_scph) * std::pow(2.0, 4));
     unsigned int i;
-    unsigned int arr_cubic[3];
     double xk_tmp[3];
-    std::complex<double> omega_sum[2];
-    std::complex<double> ret_mpi;
-    std::complex<double> im(0.0, 1.0);
-
-    double n1, n2;
-    double f1, f2;
-    const auto ns2 = ns * ns;
-    const auto nks = nk_scph * ns2;
 
     auto epsilon = integration->epsilon;
-    std::complex<double> omega_shift;
     const auto nk_irred_interpolate = kp_irred_interpolate.size();
 
     double **eval = nullptr;
     double ***eval_bubble = nullptr;
     std::complex<double> ***evec;
     double *real_self = nullptr;
+    std::vector<std::complex<double>> omegalist;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -3231,7 +3221,6 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     memory->allocate(degeneracy_at_k, nk_scph);
 
 
-
     for (auto iT = 0; iT < NT; ++iT) {
         const auto temp = system->Tmin + system->dT * float(iT);
 
@@ -3256,56 +3245,126 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
             auto knum_minus = kpoint->get_knum(xk_tmp, kmesh_scph);
 
             for (unsigned int snum = 0; snum < ns; ++snum) {
-                arr_cubic[0] = ns * knum_minus + snum;
+
+                if (eval[knum][snum] < eps8) {
+                    if (mympi->my_rank == 0) real_self[snum] = 0.0;
+                    continue;
+                }
+
+                omegalist.clear();
 
                 if (bubble == 1) {
-                    omega_shift = im * epsilon;
+
+                    omegalist.push_back(im * epsilon);
+
+                    auto se_bubble = get_bubble_selfenergy(nk_scph,
+                                                           ns,
+                                                           kmesh_scph,
+                                                           xk_scph,
+                                                           eval,
+                                                           evec,
+                                                           knum,
+                                                           snum,
+                                                           temp,
+                                                           omegalist);
+
+                    if (mympi->my_rank == 0) real_self[snum] = se_bubble[0].real();
+
                 } else if (bubble == 2) {
-                    omega_shift = eval[knum][snum] + im * epsilon;
-                }
 
-                ret_mpi = std::complex<double>(0.0, 0.0);
-                auto ret_sum = std::complex<double>(0.0, 0.0);
+                    omegalist.push_back(eval[knum][snum] + im * epsilon);
 
-                for (auto iks = mympi->my_rank; iks < nks; iks += mympi->nprocs) {
+                    auto se_bubble = get_bubble_selfenergy(nk_scph,
+                                                           ns,
+                                                           kmesh_scph,
+                                                           xk_scph,
+                                                           eval,
+                                                           evec,
+                                                           knum,
+                                                           snum,
+                                                           temp,
+                                                           omegalist);
 
-                    auto ik1 = iks / ns2;
-                    auto is1 = (iks % ns2) / ns;
-                    auto is2 = iks % ns;
+                    if (mympi->my_rank == 0) real_self[snum] = se_bubble[0].real();
 
-                    for (auto m = 0; m < 3; ++m) xk_tmp[m] = xk_scph[knum][m] - xk_scph[ik1][m];
-                    auto ik2 = kpoint->get_knum(xk_tmp, kmesh_scph);
+                } else if (bubble == 3) {
 
-                    double omega1 = eval[ik1][is1];
-                    double omega2 = eval[ik2][is2];
+                    auto maxfreq = eval[knum][snum] + 50.0 * time_ry / Hz_to_kayser;
+                    auto minfreq = eval[knum][snum] - 50.0 * time_ry / Hz_to_kayser;
 
-                    arr_cubic[1] = ns * ik1 + is1;
-                    arr_cubic[2] = ns * ik2 + is2;
+                    if (minfreq < 0.0) minfreq = 0.0;
 
-                    double v3_tmp = std::norm(V3_this(arr_cubic, eval, evec));
+                    const auto domega = 0.1 * time_ry / Hz_to_kayser;
+                    auto nomega = static_cast<unsigned int>((maxfreq - minfreq) / domega) + 1;
 
-                    omega_sum[0] = 1.0 / (omega_shift + omega1 + omega2) - 1.0 / (omega_shift - omega1 - omega2);
-                    omega_sum[1] = 1.0 / (omega_shift + omega1 - omega2) - 1.0 / (omega_shift - omega1 + omega2);
-
-                    if (thermodynamics->classical) {
-                        n1 = thermodynamics->fC(omega1, temp);
-                        n2 = thermodynamics->fC(omega2, temp);
-                        f1 = n1 + n2;
-                        f2 = n2 - n1;
-                    } else {
-                        n1 = thermodynamics->fB(omega1, temp);
-                        n2 = thermodynamics->fB(omega2, temp);
-                        f1 = n1 + n2 + 1.0;
-                        f2 = n2 - n1;
+                    for (auto iomega = 0; iomega < nomega; ++iomega) {
+                        omegalist.push_back(minfreq + static_cast<double>(iomega) * domega + im * epsilon);
                     }
-                    ret_mpi += v3_tmp * (f1 * omega_sum[0] + f2 * omega_sum[1]);
-                }
-                ret_mpi *= factor;
-                MPI_Reduce(&ret_mpi, &ret_sum, 1, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 
-                if (mympi->my_rank == 0) {
-                    real_self[snum] = ret_sum.real();
+                    auto se_bubble = get_bubble_selfenergy(nk_scph,
+                                                           ns,
+                                                           kmesh_scph,
+                                                           xk_scph,
+                                                           eval,
+                                                           evec,
+                                                           knum,
+                                                           snum,
+                                                           temp,
+                                                           omegalist);
+
+                    if (mympi->my_rank == 0) {
+
+                        std::vector<double> nonlinear_func(nomega);
+                        for (auto iomega = 0; iomega < nomega; ++iomega) {
+                            nonlinear_func[iomega] = omegalist[iomega].real() * omegalist[iomega].real()
+                                                     - eval[knum][snum] * eval[knum][snum]
+                                                     + 2.0 * eval[knum][snum] * se_bubble[iomega].real();
+                        }
+
+                        // find a root of nonlinear_func = 0 from the sign change.
+                        int count_root = 0;
+                        std::vector<unsigned int> root_index;
+
+                        for (auto iomega = 0; iomega < nomega - 1; ++iomega) {
+                            if (nonlinear_func[iomega] * nonlinear_func[iomega + 1] < 0.0) {
+                                ++count_root;
+                                root_index.push_back(iomega);
+                            }
+                        }
+
+                        if (count_root == 0) {
+                            error->warn("bubble_correction",
+                                        "Could not find a root in the nonlinear equation at this temperature. "
+                                        "Use the w=0 component.");
+
+                            real_self[snum] = se_bubble[0].real();
+
+                        } else {
+                            if (count_root > 1) {
+                                error->warn("bubble_correction",
+                                            "Multiple roots were found in the nonlinear equation at this temperature. "
+                                            "Use the lowest-frequency solution");
+
+                            }
+
+                            // Instead of performing a linear interpolation (secant method) of nonlinear_func,
+                            // we interpolate the bubble self-energy. Since the frequency grid is dense (0.1 cm^-1 step),
+                            // this approximation should not make any problems (hopefully).
+
+                            double omega_solution = omegalist[root_index[0] + 1].real()
+                                                    - nonlinear_func[root_index[0] + 1]
+                                                      * domega / (nonlinear_func[root_index[0] + 1] -
+                                                                  nonlinear_func[root_index[0]]);
+
+                            real_self[snum] = (se_bubble[root_index[0] + 1].real()
+                                               - se_bubble[root_index[0]].real())
+                                              * (omega_solution - omegalist[root_index[0] + 1].real()) / domega
+                                              + se_bubble[root_index[0] + 1].real();
+                        }
+                    }
+
                 }
+
             }
 
             if (mympi->my_rank == 0) {
@@ -3313,8 +3372,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                 int ishift = 0;
                 double real_self_avg = 0.0;
 
-                for (const auto &it : degeneracy_at_k[knum])
-                {
+                for (const auto &it : degeneracy_at_k[knum]) {
                     for (auto m = 0; m < it; ++m) {
                         real_self_avg += real_self[m + ishift];
                     }
@@ -3326,7 +3384,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                     real_self_avg = 0.0;
                     ishift += it;
                 }
-                
+
                 for (unsigned int snum = 0; snum < ns; ++snum) {
                     eval_bubble[iT][knum][snum] = eval[knum][snum] * eval[knum][snum]
                                                   - 2.0 * eval[knum][snum] * real_self[snum];
@@ -3354,6 +3412,96 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl << std::endl;
     }
+}
+
+std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const unsigned int nk_in,
+                                                              const unsigned int ns_in,
+                                                              const unsigned int kmesh_in[3],
+                                                              double **xk_in,
+                                                              double **eval_in,
+                                                              std::complex<double> ***evec_in,
+                                                              const unsigned int knum,
+                                                              const unsigned int snum,
+                                                              const double temp_in,
+                                                              const std::vector<std::complex<double>> &omegalist)
+{
+    unsigned int arr_cubic[3];
+    double xk_tmp[3];
+    std::complex<double> omega_sum[2], omega_shift;
+
+    double factor = 1.0 / (static_cast<double>(nk_in) * std::pow(2.0, 4));
+    const auto ns2 = ns_in * ns_in;
+    const auto nks = nk_in * ns2;
+
+    std::complex<double> im(0.0, 1.0);
+
+    double n1, n2;
+    double f1, f2;
+    for (auto m = 0; m < 3; ++m) xk_tmp[m] = -xk_in[knum][m];
+    auto knum_minus = kpoint->get_knum(xk_tmp, kmesh_in);
+
+    arr_cubic[0] = ns_in * knum_minus + snum;
+
+    std::vector<std::complex<double>> se_bubble(omegalist.size());
+
+    const auto nomega = omegalist.size();
+
+    std::complex<double> *ret_sum, *ret_mpi;
+    memory->allocate(ret_sum, nomega);
+    memory->allocate(ret_mpi, nomega);
+
+    for (auto iomega = 0; iomega < nomega; ++iomega) {
+        ret_sum[iomega] = std::complex<double>(0.0, 0.0);
+        ret_mpi[iomega] = std::complex<double>(0.0, 0.0);
+    }
+
+    for (auto iks = mympi->my_rank; iks < nks; iks += mympi->nprocs) {
+
+        auto ik1 = iks / ns2;
+        auto is1 = (iks % ns2) / ns_in;
+        auto is2 = iks % ns_in;
+
+        for (auto m = 0; m < 3; ++m) xk_tmp[m] = xk_in[knum][m] - xk_in[ik1][m];
+        auto ik2 = kpoint->get_knum(xk_tmp, kmesh_in);
+
+        double omega1 = eval_in[ik1][is1];
+        double omega2 = eval_in[ik2][is2];
+
+        arr_cubic[1] = ns_in * ik1 + is1;
+        arr_cubic[2] = ns_in * ik2 + is2;
+
+        double v3_tmp = std::norm(V3_this(arr_cubic, eval_in, evec_in));
+
+        if (thermodynamics->classical) {
+            n1 = thermodynamics->fC(omega1, temp_in);
+            n2 = thermodynamics->fC(omega2, temp_in);
+            f1 = n1 + n2;
+            f2 = n2 - n1;
+        } else {
+            n1 = thermodynamics->fB(omega1, temp_in);
+            n2 = thermodynamics->fB(omega2, temp_in);
+            f1 = n1 + n2 + 1.0;
+            f2 = n2 - n1;
+        }
+        for (auto iomega = 0; iomega < nomega; ++iomega) {
+            omega_sum[0] = 1.0 / (omegalist[iomega] + omega1 + omega2) - 1.0 / (omegalist[iomega] - omega1 - omega2);
+            omega_sum[1] = 1.0 / (omegalist[iomega] + omega1 - omega2) - 1.0 / (omegalist[iomega] - omega1 + omega2);
+            ret_mpi[iomega] += v3_tmp * (f1 * omega_sum[0] + f2 * omega_sum[1]);
+        }
+    }
+    for (auto iomega = 0; iomega < nomega; ++iomega) {
+        ret_mpi[iomega] *= factor;
+    }
+    MPI_Reduce(&ret_mpi[0], &ret_sum[0], nomega, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    for (auto iomega = 0; iomega < nomega; ++iomega) {
+        se_bubble[iomega] = ret_sum[iomega];
+    }
+
+    memory->deallocate(ret_mpi);
+    memory->deallocate(ret_sum);
+
+    return se_bubble;
 }
 
 std::complex<double> Scph::V3_this(const unsigned int ks[3],
@@ -3535,6 +3683,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
         file_fc2 = input->job_title + ".scph+bubble(0)_dfc2";
     } else if (type == 2) {
         file_fc2 = input->job_title + ".scph+bubble(w)_dfc2";
+    } else if (type == 3) {
+        file_fc2 = input->job_title + ".scph+bubble(wQP)_dfc2";
     }
 
     ofs_fc2.open(file_fc2.c_str(), std::ios::out);
@@ -3642,6 +3792,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
         std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(0))" << std::endl;
     } else if (type == 2) {
         std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(w))" << std::endl;
+    } else if (type == 3) {
+        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(wQP))" << std::endl;
     }
 }
 

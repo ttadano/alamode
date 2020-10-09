@@ -1586,6 +1586,8 @@ void Writes::write_scph_msd(double **msd_scph, const int bubble) const
         file_msd = input->job_title + ".scph+bubble(0)_msd";
     } else if (bubble == 2) {
         file_msd = input->job_title + ".scph+bubble(w)_msd";
+    } else if (bubble == 3) {
+        file_msd = input->job_title + ".scph+bubble(wQP)_msd";
     }
     ofs_msd.open(file_msd.c_str(), std::ios::out);
     if (!ofs_msd) error->exit("write_scph_msd", "cannot open file_thermo");
@@ -1611,6 +1613,8 @@ void Writes::write_scph_msd(double **msd_scph, const int bubble) const
         std::cout << " : Mean-square-displacement (SCPH+Bubble(0) level)" << std::endl;
     } else if (bubble == 2) {
         std::cout << " : Mean-square-displacement (SCPH+Bubble(w) level)" << std::endl;
+    } else if (bubble == 3) {
+        std::cout << " : Mean-square-displacement (SCPH+Bubble(wQP) level)" << std::endl;
     }
 }
 
@@ -2433,6 +2437,8 @@ void Writes::write_scph_bands(double ***eval, const int bubble) const
         file_bands = input->job_title + ".scph+bubble(0)_bands";
     } else if (bubble == 2) {
         file_bands = input->job_title + ".scph+bubble(w)_bands";
+    } else if (bubble == 3) {
+        file_bands = input->job_title + ".scph+bubble(wQP)_bands";
     }
 
     ofs_bands.open(file_bands.c_str(), std::ios::out);
@@ -2500,6 +2506,8 @@ void Writes::write_scph_bands(double ***eval, const int bubble) const
         std::cout << " : SCPH+Bubble(0) band structure" << std::endl;
     } else if (bubble == 2) {
         std::cout << " : SCPH+Bubble(w) band structure" << std::endl;
+    } else if (bubble == 3) {
+        std::cout << " : SCPH+Bubble(wQP) band structure" << std::endl;
     }
 }
 

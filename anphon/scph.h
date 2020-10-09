@@ -235,6 +235,17 @@ namespace PHON_NS {
                                              const unsigned int ik2,
                                              std::complex<double> *ret);
 
+        std::vector<std::complex<double>> get_bubble_selfenergy(const unsigned int nk_in,
+                                                                      const unsigned int ns_in,
+                                                                      const unsigned int kmesh_in[3],
+                                                                      double **xk_in,
+                                                                      double **eval_in,
+                                                                      std::complex<double> ***evec_in,
+                                                                      const unsigned int knum,
+                                                                      const unsigned int snum,
+                                                                      const double temp_in,
+                                                                      const std::vector<std::complex<double>> &omegalist);
+
 
 
     };
