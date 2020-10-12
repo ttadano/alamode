@@ -3236,7 +3236,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                         nk_scph,
                         eval);
 
-        std::cout << " Temperature (K) : " << std::setw(6) << temp << '\n';
+        if (mympi->my_rank == 0) std::cout << " Temperature (K) : " << std::setw(6) << temp << '\n';
 
         for (auto ik = 0; ik < nk_irred_interpolate; ++ik) {
 
@@ -3353,7 +3353,8 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                                                 "Use the lowest-frequency solution");
                                     std::cout << "   solution found at the following frequencies:\n";
                                     for (auto iroot = 0; iroot < count_root; ++iroot) {
-                                        std::cout << std::setw(15) << writes->in_kayser(omegalist[root_index[iroot]].real());
+                                        std::cout << std::setw(15)
+                                                  << writes->in_kayser(omegalist[root_index[iroot]].real());
                                     }
                                     std::cout << '\n';
                                 }
