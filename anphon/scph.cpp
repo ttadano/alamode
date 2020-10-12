@@ -3236,6 +3236,8 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                         nk_scph,
                         eval);
 
+        std::cout << " Temperature (K) : " << std::setw(6) << temp << '\n';
+
         for (auto ik = 0; ik < nk_irred_interpolate; ++ik) {
 
             auto knum_interpolate = kp_irred_interpolate[ik][0].knum;
@@ -3244,127 +3246,140 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
             for (auto m = 0; m < 3; ++m) xk_tmp[m] = -xk_scph[knum][m];
             auto knum_minus = kpoint->get_knum(xk_tmp, kmesh_scph);
 
+            if (mympi->my_rank == 0) {
+                std::cout << "  Irred. k: " << std::setw(5) << ik + 1 << " (";
+                for (auto m = 0; m < 3; ++m) std::cout << std::setw(15) << xk_scph[knum][m];
+                std::cout << ")\n";
+            }
+
             for (unsigned int snum = 0; snum < ns; ++snum) {
+
 
                 if (eval[knum][snum] < eps8) {
                     if (mympi->my_rank == 0) real_self[snum] = 0.0;
-                    continue;
-                }
+                } else {
+                    omegalist.clear();
 
-                omegalist.clear();
+                    if (bubble == 1) {
 
-                if (bubble == 1) {
+                        omegalist.push_back(im * epsilon);
 
-                    omegalist.push_back(im * epsilon);
+                        auto se_bubble = get_bubble_selfenergy(nk_scph,
+                                                               ns,
+                                                               kmesh_scph,
+                                                               xk_scph,
+                                                               eval,
+                                                               evec,
+                                                               knum,
+                                                               snum,
+                                                               temp,
+                                                               omegalist);
 
-                    auto se_bubble = get_bubble_selfenergy(nk_scph,
-                                                           ns,
-                                                           kmesh_scph,
-                                                           xk_scph,
-                                                           eval,
-                                                           evec,
-                                                           knum,
-                                                           snum,
-                                                           temp,
-                                                           omegalist);
+                        if (mympi->my_rank == 0) real_self[snum] = se_bubble[0].real();
 
-                    if (mympi->my_rank == 0) real_self[snum] = se_bubble[0].real();
+                    } else if (bubble == 2) {
 
-                } else if (bubble == 2) {
+                        omegalist.push_back(eval[knum][snum] + im * epsilon);
 
-                    omegalist.push_back(eval[knum][snum] + im * epsilon);
+                        auto se_bubble = get_bubble_selfenergy(nk_scph,
+                                                               ns,
+                                                               kmesh_scph,
+                                                               xk_scph,
+                                                               eval,
+                                                               evec,
+                                                               knum,
+                                                               snum,
+                                                               temp,
+                                                               omegalist);
 
-                    auto se_bubble = get_bubble_selfenergy(nk_scph,
-                                                           ns,
-                                                           kmesh_scph,
-                                                           xk_scph,
-                                                           eval,
-                                                           evec,
-                                                           knum,
-                                                           snum,
-                                                           temp,
-                                                           omegalist);
+                        if (mympi->my_rank == 0) real_self[snum] = se_bubble[0].real();
 
-                    if (mympi->my_rank == 0) real_self[snum] = se_bubble[0].real();
+                    } else if (bubble == 3) {
 
-                } else if (bubble == 3) {
+                        auto maxfreq = eval[knum][snum] + 50.0 * time_ry / Hz_to_kayser;
+                        auto minfreq = eval[knum][snum] - 50.0 * time_ry / Hz_to_kayser;
 
-                    auto maxfreq = eval[knum][snum] + 50.0 * time_ry / Hz_to_kayser;
-                    auto minfreq = eval[knum][snum] - 50.0 * time_ry / Hz_to_kayser;
+                        if (minfreq < 0.0) minfreq = 0.0;
 
-                    if (minfreq < 0.0) minfreq = 0.0;
+                        const auto domega = 0.1 * time_ry / Hz_to_kayser;
+                        auto nomega = static_cast<unsigned int>((maxfreq - minfreq) / domega) + 1;
 
-                    const auto domega = 0.1 * time_ry / Hz_to_kayser;
-                    auto nomega = static_cast<unsigned int>((maxfreq - minfreq) / domega) + 1;
-
-                    for (auto iomega = 0; iomega < nomega; ++iomega) {
-                        omegalist.push_back(minfreq + static_cast<double>(iomega) * domega + im * epsilon);
-                    }
-
-                    auto se_bubble = get_bubble_selfenergy(nk_scph,
-                                                           ns,
-                                                           kmesh_scph,
-                                                           xk_scph,
-                                                           eval,
-                                                           evec,
-                                                           knum,
-                                                           snum,
-                                                           temp,
-                                                           omegalist);
-
-                    if (mympi->my_rank == 0) {
-
-                        std::vector<double> nonlinear_func(nomega);
                         for (auto iomega = 0; iomega < nomega; ++iomega) {
-                            nonlinear_func[iomega] = omegalist[iomega].real() * omegalist[iomega].real()
-                                                     - eval[knum][snum] * eval[knum][snum]
-                                                     + 2.0 * eval[knum][snum] * se_bubble[iomega].real();
+                            omegalist.push_back(minfreq + static_cast<double>(iomega) * domega + im * epsilon);
                         }
 
-                        // find a root of nonlinear_func = 0 from the sign change.
-                        int count_root = 0;
-                        std::vector<unsigned int> root_index;
+                        auto se_bubble = get_bubble_selfenergy(nk_scph,
+                                                               ns,
+                                                               kmesh_scph,
+                                                               xk_scph,
+                                                               eval,
+                                                               evec,
+                                                               knum,
+                                                               snum,
+                                                               temp,
+                                                               omegalist);
 
-                        for (auto iomega = 0; iomega < nomega - 1; ++iomega) {
-                            if (nonlinear_func[iomega] * nonlinear_func[iomega + 1] < 0.0) {
-                                ++count_root;
-                                root_index.push_back(iomega);
+                        if (mympi->my_rank == 0) {
+
+                            std::vector<double> nonlinear_func(nomega);
+                            for (auto iomega = 0; iomega < nomega; ++iomega) {
+                                nonlinear_func[iomega] = omegalist[iomega].real() * omegalist[iomega].real()
+                                                         - eval[knum][snum] * eval[knum][snum]
+                                                         + 2.0 * eval[knum][snum] * se_bubble[iomega].real();
                             }
-                        }
 
-                        if (count_root == 0) {
-                            error->warn("bubble_correction",
-                                        "Could not find a root in the nonlinear equation at this temperature. "
-                                        "Use the w=0 component.");
+                            // find a root of nonlinear_func = 0 from the sign change.
+                            int count_root = 0;
+                            std::vector<unsigned int> root_index;
 
-                            real_self[snum] = se_bubble[0].real();
+                            for (auto iomega = 0; iomega < nomega - 1; ++iomega) {
+                                if (nonlinear_func[iomega] * nonlinear_func[iomega + 1] < 0.0) {
+                                    ++count_root;
+                                    root_index.push_back(iomega);
+                                }
+                            }
 
-                        } else {
-                            if (count_root > 1) {
+                            if (count_root == 0) {
                                 error->warn("bubble_correction",
-                                            "Multiple roots were found in the nonlinear equation at this temperature. "
-                                            "Use the lowest-frequency solution");
+                                            "Could not find a root in the nonlinear equation at this temperature. "
+                                            "Use the w=0 component.");
 
+                                real_self[snum] = se_bubble[0].real();
+
+                            } else {
+                                if (count_root > 1) {
+                                    error->warn("bubble_correction",
+                                                "Multiple roots were found in the nonlinear equation at this temperature. "
+                                                "Use the lowest-frequency solution");
+                                    std::cout << "   solution found at the following frequencies:\n";
+                                    for (auto iroot = 0; iroot < count_root; ++iroot) {
+                                        std::cout << std::setw(15) << writes->in_kayser(omegalist[root_index[iroot]].real());
+                                    }
+                                    std::cout << '\n';
+                                }
+
+                                // Instead of performing a linear interpolation (secant method) of nonlinear_func,
+                                // we interpolate the bubble self-energy. Since the frequency grid is dense (0.1 cm^-1 step),
+                                // this approximation should not make any problems (hopefully).
+
+                                double omega_solution = omegalist[root_index[0] + 1].real()
+                                                        - nonlinear_func[root_index[0] + 1]
+                                                          * domega / (nonlinear_func[root_index[0] + 1] -
+                                                                      nonlinear_func[root_index[0]]);
+
+                                real_self[snum] = (se_bubble[root_index[0] + 1].real()
+                                                   - se_bubble[root_index[0]].real())
+                                                  * (omega_solution - omegalist[root_index[0] + 1].real()) / domega
+                                                  + se_bubble[root_index[0] + 1].real();
                             }
-
-                            // Instead of performing a linear interpolation (secant method) of nonlinear_func,
-                            // we interpolate the bubble self-energy. Since the frequency grid is dense (0.1 cm^-1 step),
-                            // this approximation should not make any problems (hopefully).
-
-                            double omega_solution = omegalist[root_index[0] + 1].real()
-                                                    - nonlinear_func[root_index[0] + 1]
-                                                      * domega / (nonlinear_func[root_index[0] + 1] -
-                                                                  nonlinear_func[root_index[0]]);
-
-                            real_self[snum] = (se_bubble[root_index[0] + 1].real()
-                                               - se_bubble[root_index[0]].real())
-                                              * (omega_solution - omegalist[root_index[0] + 1].real()) / domega
-                                              + se_bubble[root_index[0] + 1].real();
                         }
                     }
-
                 }
-
+                if (mympi->my_rank == 0) {
+                    std::cout << "   branch : " << std::setw(5) << snum + 1;
+                    std::cout << " omega = " << std::setw(15) << writes->in_kayser(eval[knum][snum]) << " (cm^-1); ";
+                    std::cout << " Re[Self] = " << std::setw(15) << writes->in_kayser(real_self[snum]) << " (cm^-1)\n";
+                }
             }
 
             if (mympi->my_rank == 0) {
@@ -3393,6 +3408,8 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                         eval_bubble[iT][knum2][snum] = eval_bubble[iT][knum][snum];
                     }
                 }
+
+                std::cout << '\n';
             }
         }
 
