@@ -808,6 +808,10 @@ class QEParser(object):
         self._kd = [map_name2num[t] for t in kd_in_str]
 
     @property
+    def atomic_kinds(self):
+        return self._kd
+
+    @property
     def x_fractional(self):
         return self._x_fractional
 
