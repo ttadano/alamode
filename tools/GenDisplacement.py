@@ -439,6 +439,7 @@ class AlamodeDisplace(object):
         Q_R = np.zeros((nq, self._nmode, ndata))
         Q_I = np.zeros((nq, self._nmode, ndata))
 
+        # get sigma in units of bohr*amu_ry^(1/2)
         sigma = self._get_gaussian_sigma(temperature)
 
         for iq in range(nq):
@@ -483,7 +484,8 @@ class AlamodeDisplace(object):
 
         for idata in range(ndata):
             for i in range(3):
-                disp[:, i, idata] = factor[:] * disp[:, i, idata]
+                # convert the unit of disp from bohr*amu_ry^(1/2) to angstrom
+                disp[:, i, idata] = factor[:] * disp[:, i, idata] * self._BOHR_TO_ANGSTROM
 
             # Transform to the fractional coordinate
             for iat in range(self._supercell.nat):
@@ -493,6 +495,11 @@ class AlamodeDisplace(object):
         return disp
 
     def _get_gaussian_sigma(self, temp):
+        """
+         Computes the deviation of Q, i.e., sqrt{<Q^2>} from the phonon frequency
+         and input temperature. Since omega is defined in the Rydberg atomic unit,
+         the return value (sigma) is also in the Rydberg atomic unit (bohr*amu_ry^(1/2)).
+        """
 
         nq = len(self._qpoints)
         nmode = self._nmode
@@ -522,7 +529,7 @@ class AlamodeDisplace(object):
     def _generate_displacements_pes(self, Q_array, iq, imode):
 
         tol_zero = 1.0e-3
-        Q_R = Q_array / self._BOHR_TO_ANGSTROM  # in units of u^{1/2} Bohr
+        Q_R = Q_array  # in units of u^{1/2} Angstrom
 
         ndata = len(Q_R)
         # nq = len(self._qpoints)
@@ -558,6 +565,7 @@ class AlamodeDisplace(object):
                 disp[:, i, idata] = factor[:] * disp[:, i, idata]
 
             # Transform to the fractional coordinate
+            # The lattice vector is defined in units of Angstrom, so this operation is fine.
             for iat in range(self._supercell.nat):
                 disp[iat, :, idata] = np.dot(disp[iat, :, idata],
                                              self._supercell.inverse_lattice_vector.transpose())
