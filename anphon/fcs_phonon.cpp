@@ -497,11 +497,11 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                 }
             }
 
-            for (auto it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
-                j = (*it).pairs[0].index;
-                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
-                l = (*it).pairs[2].index % 3;
-                sum3[j][k][l] += (*it).fcs_val;
+            for (const auto &it : fcs[i]) {
+                j = it.pairs[0].index;
+                k = 3 * (natmin * it.pairs[1].tran + it.pairs[1].index / 3) + it.pairs[1].index % 3;
+                l = it.pairs[2].index % 3;
+                sum3[j][k][l] += it.fcs_val;
             }
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3 * nat; ++k) {

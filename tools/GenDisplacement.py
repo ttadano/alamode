@@ -557,6 +557,11 @@ class AlamodeDisplace(object):
             for i in range(3):
                 disp[:, i, idata] = factor[:] * disp[:, i, idata]
 
+            # Transform to the fractional coordinate
+            for iat in range(self._supercell.nat):
+                disp[iat, :, idata] = np.dot(disp[iat, :, idata],
+                                             self._supercell.inverse_lattice_vector.transpose())
+
         return disp
 
     def _find_commensurate_q(self):
