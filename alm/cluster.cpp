@@ -79,7 +79,7 @@ void Cluster::init(const System *system,
     allocate(cluster_list, maxorder);
 
     // Default values of cutoof_radii and nbody_include
-    if (! cutoff_radii) {
+    if (!cutoff_radii) {
         allocate(cutoff_radii, maxorder, nkd, nkd);
         for (i = 0; i < maxorder; ++i) {
             for (j = 0; j < nkd; ++j) {
@@ -89,7 +89,7 @@ void Cluster::init(const System *system,
             }
         }
     }
-    if (! nbody_include) {
+    if (!nbody_include) {
         allocate(nbody_include, maxorder);
         for (i = 0; i < maxorder; ++i) {
             nbody_include[i] = i + 2;
@@ -254,7 +254,7 @@ double Cluster::distance(const double *x1,
 }
 
 void Cluster::get_pairs_of_minimum_distance(const size_t nat,
-                                            const double * const * const *xc_in,
+                                            const double *const *const *xc_in,
                                             const int *exist) const
 {
     size_t i, j;
@@ -330,7 +330,7 @@ void Cluster::print_neighborlist(const size_t nat,
     std::cout << std::endl;
     std::cout << "  List of neighboring atoms below." << std::endl;
     std::cout << "  Format [N th-nearest shell, distance (Number of atoms on the shell)]"
-        << std::endl << std::endl;
+              << std::endl << std::endl;
 
     std::vector<int> atomlist;
 
@@ -341,7 +341,7 @@ void Cluster::print_neighborlist(const size_t nat,
 
         iat = map_p2s[i][0];
         std::cout << std::setw(5) << iat + 1 << " ("
-            << std::setw(3) << kdname[kd[iat] - 1] << "): ";
+                  << std::setw(3) << kdname[kd[iat] - 1] << "): ";
 
         auto dist_tmp = 0.0;
 
@@ -357,7 +357,7 @@ void Cluster::print_neighborlist(const size_t nat,
                     if (nthnearest > 1) std::cout << std::setw(13) << " ";
 
                     std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp
-                        << " (" << std::setw(3) << atomlist.size() << ") -";
+                              << " (" << std::setw(3) << atomlist.size() << ") -";
 
                     icount = 0;
                     for (k = 0; k < atomlist.size(); ++k) {
@@ -370,7 +370,7 @@ void Cluster::print_neighborlist(const size_t nat,
 
                         std::cout << std::setw(4) << atomlist[k] + 1;
                         std::cout << "(" << std::setw(3)
-                            << kdname[kd[atomlist[k]] - 1] << ")";
+                                  << kdname[kd[atomlist[k]] - 1] << ")";
 
                     }
                     std::cout << std::endl;
@@ -390,7 +390,7 @@ void Cluster::print_neighborlist(const size_t nat,
             if (nthnearest > 1) std::cout << std::setw(13) << " ";
 
             std::cout << std::setw(3) << nthnearest << std::setw(10) << dist_tmp
-                << " (" << std::setw(3) << atomlist.size() << ") -";
+                      << " (" << std::setw(3) << atomlist.size() << ") -";
 
             icount = 0;
             for (k = 0; k < atomlist.size(); ++k) {
@@ -403,7 +403,7 @@ void Cluster::print_neighborlist(const size_t nat,
 
                 std::cout << std::setw(4) << atomlist[k] + 1;
                 std::cout << "(" << std::setw(3)
-                    << kdname[kd[atomlist[k]] - 1] << ")";
+                          << kdname[kd[atomlist[k]] - 1] << ")";
 
             }
             std::cout << std::endl;
@@ -506,7 +506,7 @@ void Cluster::define(const int maxorder_in,
     }
 }
 
-int* Cluster::get_nbody_include() const
+int *Cluster::get_nbody_include() const
 {
     return nbody_include;
 }
@@ -520,18 +520,18 @@ std::string Cluster::get_ordername(const unsigned int order) const
     }
 }
 
-const std::set<IntList>& Cluster::get_cluster_list(const unsigned int order) const
+const std::set<IntList> &Cluster::get_cluster_list(const unsigned int order) const
 {
     return cluster_list[order];
 }
 
-const std::vector<int>& Cluster::get_interaction_pair(const unsigned int order,
+const std::vector<int> &Cluster::get_interaction_pair(const unsigned int order,
                                                       const size_t atom_index) const
 {
     return interaction_pair[order][atom_index];
 }
 
-const std::set<InteractionCluster>& Cluster::get_interaction_cluster(const unsigned int order,
+const std::set<InteractionCluster> &Cluster::get_interaction_cluster(const unsigned int order,
                                                                      const size_t atom_index) const
 {
     return interaction_cluster[order][atom_index];
@@ -569,8 +569,8 @@ void Cluster::print_interaction_information(const size_t natmin,
 
             // write atoms inside the cutoff radius
             std::cout << "    Atom " << std::setw(5) << iat + 1
-                << "(" << std::setw(3) << kdname[kd[iat] - 1]
-                << ")" << " interacts with atoms ... " << std::endl;
+                      << "(" << std::setw(3) << kdname[kd[iat] - 1]
+                      << ")" << " interacts with atoms ... " << std::endl;
 
             for (size_t id = 0; id < intlist.size(); ++id) {
                 if (id % 6 == 0) {
@@ -582,12 +582,12 @@ void Cluster::print_interaction_information(const size_t natmin,
                     }
                 }
                 std::cout << std::setw(5) << intlist[id] + 1 << "("
-                    << std::setw(3) << kdname[kd[intlist[id]] - 1] << ")";
+                          << std::setw(3) << kdname[kd[intlist[id]] - 1] << ")";
             }
 
             std::cout << std::endl << std::endl;
             std::cout << "    Number of total interaction pairs = "
-                << interaction_list[order][i].size() << std::endl << std::endl;
+                      << interaction_list[order][i].size() << std::endl << std::endl;
         }
     }
 

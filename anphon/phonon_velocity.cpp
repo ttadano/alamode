@@ -23,7 +23,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Phonon_velocity::Phonon_velocity(PHON *phon): Pointers(phon)
+Phonon_velocity::Phonon_velocity(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -100,9 +100,9 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
             for (auto ik = 0; ik < nk; ++ik) {
                 for (auto is = 0; is < ns; ++is) {
                     phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
-                    + std::pow(phvel_xyz[ik][is][1], 2)
-                    + std::pow(phvel_xyz[ik][is][2], 2));
-               }
+                                              + std::pow(phvel_xyz[ik][is][1], 2)
+                                              + std::pow(phvel_xyz[ik][is][2], 2));
+                }
             }
         }
     }
@@ -222,7 +222,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
         memory->allocate(displs, mympi->nprocs);
         displs[0] = 0;
         for (auto i = 1; i < mympi->nprocs; ++i) {
-            displs[i] = displs[i-1] + recvcount[i-1];
+            displs[i] = displs[i - 1] + recvcount[i - 1];
         }
     }
 
@@ -265,7 +265,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
 
     MPI_Gatherv(&phvel3_loc[0][0][0], sendcount[mympi->my_rank], MPI_DOUBLE,
                 &phvel3_out[0][0][0], &recvcount[0], &displs[0], MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    
+
     memory->deallocate(phvel3_loc);
     memory->deallocate(sendcount);
     memory->deallocate(recvcount);
@@ -313,7 +313,7 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
         memory->allocate(displs, mympi->nprocs);
         displs[0] = 0;
         for (auto i = 1; i < mympi->nprocs; ++i) {
-            displs[i] = displs[i-1] + recvcount[i-1];
+            displs[i] = displs[i - 1] + recvcount[i - 1];
         }
     }
 
@@ -335,8 +335,8 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
 
     memory->allocate(velmat_loc, nk_loc, ns, ns, 3);
 
-     for (auto i = 0; i < nk_loc; ++i) {
-         auto knum = klist_proc[i];
+    for (auto i = 0; i < nk_loc; ++i) {
+        auto knum = klist_proc[i];
         velocity_matrix_analytic(kpoint->xk[knum],
                                  fcs_phonon->fc2_ext,
                                  dynamical->eval_phonon[knum],
@@ -384,7 +384,7 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
 
     MPI_Gatherv(&velmat_loc[0][0][0][0], sendcount[mympi->my_rank], MPI_COMPLEX16,
                 &velmat_out[0][0][0][0], &recvcount[0], &displs[0], MPI_COMPLEX16, 0, MPI_COMM_WORLD);
-    
+
     memory->deallocate(velmat_loc);
     memory->deallocate(sendcount);
     memory->deallocate(recvcount);
@@ -434,15 +434,15 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
         rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
 
         auto norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
-            + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
-            + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
+                              + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
+                              + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
 
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[0][j] /= norm;
         }
         norm = std::sqrt(kvec_na_tmp[1][0] * kvec_na_tmp[1][0]
-            + kvec_na_tmp[1][1] * kvec_na_tmp[1][1]
-            + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
+                         + kvec_na_tmp[1][1] * kvec_na_tmp[1][1]
+                         + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
 
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[1][j] /= norm;
@@ -696,7 +696,7 @@ void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                - system->xr_s[system->map_p2s[atm2_p][0]][i];
+                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -706,7 +706,7 @@ void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
 
         for (k = 0; k < 3; ++k) {
             ddyn_out[k][3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
+                    += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
                     system->mass[atm1_s] * system->mass[atm2_s]);
         }
 
@@ -795,9 +795,9 @@ void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                - system->xr_s[system->map_p2s[atm2_p][0]][i];
+                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
             vec2[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                - system->xr_s[atm1_s][i];
+                      - system->xr_s[atm1_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -810,7 +810,7 @@ void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
         // vec2 or vec??
         for (k = 0; k < 3; ++k) {
             ddymat[3 * atm1_p + xyz1][3 * atm2_p + xyz2][k]
-                += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
+                    += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
                     system->mass[atm1_s] * system->mass[atm2_s]);
         }
     }
@@ -823,9 +823,9 @@ void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
                 for (jj = 0; jj < nmode; ++jj) {
                     for (k = 0; k < 3; ++k) {
                         velmat_out[i][j][k]
-                            += std::conj(evec_in[i][ii])
-                            * ddymat[ii][jj][k]
-                            * evec_in[j][jj];
+                                += std::conj(evec_in[i][ii])
+                                   * ddymat[ii][jj][k]
+                                   * evec_in[j][jj];
                     }
                 }
             }

@@ -43,7 +43,7 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon): Pointers(phon)
+Input::Input(PHON *phon) : Pointers(phon)
 {
     from_stdin = false;
     job_title = "";
@@ -108,10 +108,11 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-        "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-        "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-        "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
-        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM"
+            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+            "VERBOSITY"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -192,6 +193,7 @@ void Input::parse_general_vars()
     auto classical = false;
     unsigned int band_connection = 0;
     unsigned int bornsym = 0;
+    unsigned int verbosity = 1;
 
     auto prec_ewald = 1.0e-12;
 
@@ -236,6 +238,7 @@ void Input::parse_general_vars()
     assign_val(band_connection, "BCONNECT", general_var_dict);
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
     assign_val(bornsym, "BORNSYM", general_var_dict);
+    assign_val(verbosity, "VERBOSITY", general_var_dict);
 
     if (band_connection > 2) {
         error->exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
@@ -333,9 +336,9 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-        "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-        "LOWER_TEMP", "WARMSTART"
+            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+            "LOWER_TEMP", "WARMSTART", "BUBBLE"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -368,6 +371,7 @@ void Input::parse_scph_vars()
     unsigned int ialgo_scph = 0;
     auto lower_temp = true;
     auto warm_start = true;
+    unsigned int bubble = 0;
 
     // if file_dymat exists in the current directory, 
     // restart mode will be automatically turned on for SCPH calculations.
@@ -384,6 +388,7 @@ void Input::parse_scph_vars()
     assign_val(tolerance_scph, "TOL_SCPH", scph_var_dict);
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
+    assign_val(bubble, "BUBBLE", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -446,6 +451,7 @@ void Input::parse_scph_vars()
     scph->tolerance_scph = tolerance_scph;
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
+    scph->bubble = bubble;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
@@ -459,13 +465,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
     // Read input parameters in the &analysis field.
     int i;
 
-    const std::vector<std::string> input_list{
-        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-        "REALPART", "ISOTOPE", "ISOFACT",
-        "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-        "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+    std::vector<std::string> input_list{
+            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+            "REALPART", "ISOTOPE", "ISOFACT",
+            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+            "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
+            "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
         "KAPPA_COHERENT",
         "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
@@ -1004,8 +1010,8 @@ int Input::locate_tag(const std::string &key)
 
     while (ifs_input >> line) {
 #ifdef _USE_BOOST
-            boost::to_lower(line);
-            boost::trim(line);
+        boost::to_lower(line);
+        boost::trim(line);
 #else
         std::transform(line.begin(), line.end(), line.begin(), tolower);
         line2 = line;
@@ -1097,7 +1103,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         error->exit("get_var_dict",
                                     "Redundant input parameter");
                     }
@@ -1168,14 +1174,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
-                            << key << std::endl;
+                                  << key << std::endl;
                         error->exit("get_var_dict",
                                     "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         error->exit("get_var_dict",
                                     "Redundant input parameter");
                     }
@@ -1217,7 +1223,7 @@ void Input::split_str_by_space(const std::string &str,
     str_tmp.clear();
 }
 
-template <typename T>
+template<typename T>
 void Input::assign_val(T &val,
                        const std::string &key,
                        std::map<std::string, std::string> dict)
@@ -1238,7 +1244,7 @@ void Input::assign_val(T &val,
 }
 
 
-template <typename T_to, typename T_from>
+template<typename T_to, typename T_from>
 T_to Input::my_cast(T_from const &x)
 {
     std::stringstream ss;

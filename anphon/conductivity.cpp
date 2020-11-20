@@ -32,7 +32,7 @@
 
 using namespace PHON_NS;
 
-Conductivity::Conductivity(PHON *phon): Pointers(phon)
+Conductivity::Conductivity(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -110,14 +110,14 @@ void Conductivity::setup_kappa()
     }
 
     const auto factor = Bohr_in_Angstrom * 1.0e-10 / time_ry;
-    
+
     if (mympi->my_rank == 0) {
         memory->allocate(vel, nk, ns, 3);
         if (calc_coherent) {
             memory->allocate(velmat, nk, ns, ns, 3);
         }
     } else {
-       memory->allocate(vel, 1, 1, 1);
+        memory->allocate(vel, 1, 1, 1);
         if (calc_coherent) {
             memory->allocate(velmat, 1, 1, 1, 3);
         }
@@ -131,7 +131,7 @@ void Conductivity::setup_kappa()
             }
         }
     }
-    
+
     if (calc_coherent) {
         phonon_velocity->calc_phonon_velmat_mesh(velmat);
         if (calc_coherent == 2) {
@@ -176,7 +176,7 @@ void Conductivity::prepare_restart()
                 for (auto is = 0; is < dynamical->neval; ++is) {
                     writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
                     writes->fs_result << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[ik][is]) << std::
-                        endl;
+                    endl;
                 }
             }
 
@@ -237,7 +237,7 @@ void Conductivity::prepare_restart()
 
             if (it_set == vks_job.end()) {
                 std::cout << " rank = " << mympi->my_rank
-                    << " arr_done = " << arr_done[i] << std::endl;
+                          << " arr_done = " << arr_done[i] << std::endl;
                 error->exit("prepare_restart", "This cannot happen");
             } else {
                 vks_job.erase(it_set);
@@ -379,7 +379,7 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
         for (k = 0; k < ntemp; ++k) {
             writes->fs_result << std::setw(15)
-                << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+                              << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
         }
         writes->fs_result << "#END GAMMA_EACH" << std::endl;
     }
@@ -570,12 +570,12 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                    = thermodynamics->Cv_classical(omega, Temperature[i])
-                                    * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv_classical(omega, Temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                    = thermodynamics->Cv(omega, Temperature[i])
-                                    * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv(omega, Temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
                             // Convert to SI unit
@@ -627,7 +627,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
         ofs.open(file_coherent_elems.c_str(), std::ios::out);
         if (!ofs) error->exit("compute_kappa_coherent", "cannot open file_kc");
         ofs << "# Temperature [K], 1st and 2nd xyz components, ibranch, jbranch, ik_irred, "
-        "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
+               "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
         memory->allocate(kappa_save, ns2, kpoint->nk_irred);
     }
 
@@ -638,12 +638,12 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                 kappa_coherent[i][j][k] = 0.0;
 
                 if (Temperature[i] > eps) {
-#pragma omp parallel for 
+#pragma omp parallel for
                     for (ib = 0; ib < ns2; ++ib) {
                         kappa_tmp[ib] = czero;
                         const int is = ib / ns;
                         const int js = ib % ns;
-                        
+
                         if (js == is) continue; // skip the diagonal component
 
                         for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
@@ -661,15 +661,15 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                            * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
-                                                + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
-                                            * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                            / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                                + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                                + gamma_total[ik * ns + js][i], 2.0))
-                                                * vv_tmp;
+                                              * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
+                                                 + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
+                                              * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                              / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                                 + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                                  + gamma_total[ik * ns + js][i], 2.0))
+                                              * vv_tmp;
                             kappa_tmp[ib] += kcelem_tmp;
-                            
+
                             if (calc_coherent == 2 && j == k) {
                                 kappa_save[ib][ik] = kcelem_tmp * common_factor_output;
                             }

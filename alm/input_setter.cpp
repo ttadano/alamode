@@ -133,15 +133,15 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int noncollinear_in,
                                    const int trevsym_in,
                                    const std::string *kdname_in,
-                                   const double * const *magmom_in,
+                                   const double *const *magmom_in,
                                    const double tolerance,
                                    const double tolerance_constraint,
-                                   const std::string basis_force_constant)
+                                   const std::string basis_force_constant,
+                                   const int nmaxsave)
 {
     size_t i;
 
     alm->set_output_filename_prefix(prefix);
-    alm->set_run_mode(mode);
     alm->set_verbosity(verbosity);
     nat = nat_in;
     nkd = nkd_in;
@@ -161,7 +161,7 @@ void InputSetter::set_general_vars(ALM *alm,
     }
     allocate(magmom, nat);
 
-    for (i = 0; i < nat; i ++) {
+    for (i = 0; i < nat; i++) {
         for (auto j = 0; j < 3; j++) {
             magmom[i][j] = magmom_in[i][j];
         }
@@ -177,6 +177,7 @@ void InputSetter::set_general_vars(ALM *alm,
     alm->set_print_hessian(print_hessian);
     alm->set_tolerance_constraint(tolerance_constraint);
     alm->set_forceconstant_basis(basis_force_constant);
+    alm->set_nmaxsave(nmaxsave);
 
     if (mode == "suggest") {
         alm->set_displacement_basis(str_disp_basis);
@@ -200,7 +201,8 @@ void InputSetter::set_optimize_vars(ALM *alm,
                                     const std::vector<std::vector<double>> &f_validation_in,
                                     const OptimizerControl &optcontrol_in) const
 {
-    alm->set_training_data(u_train_in, f_train_in);
+    alm->set_u_train(u_train_in);
+    alm->set_f_train(f_train_in);
     alm->set_validation_data(u_validation_in, f_validation_in);
     alm->set_optimizer_control(optcontrol_in);
 }

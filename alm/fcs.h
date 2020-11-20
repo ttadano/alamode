@@ -29,10 +29,8 @@ using MapConstraintElement = std::unordered_map<size_t, double>;
 #endif
 using ConstraintSparseForm = std::vector<MapConstraintElement>;
 
-namespace ALM_NS
-{
-    class FcProperty
-    {
+namespace ALM_NS {
+    class FcProperty {
     public:
         std::vector<int> elems; // flattened index of (iatom, icoordinate) in the supercell
         double sign;            // factor (+1 or -1) to convert the mother FC to the child
@@ -90,8 +88,7 @@ namespace ALM_NS
         }
     };
 
-    class ForceConstantTable
-    {
+    class ForceConstantTable {
     public:
         double fc_value;
         std::vector<int> atoms, coords, flattenarray;
@@ -131,10 +128,10 @@ namespace ALM_NS
         }
     };
 
-    class Fcs
-    {
+    class Fcs {
     public:
         Fcs();
+
         ~Fcs();
 
         void init(const Cluster *cluster,
@@ -145,6 +142,7 @@ namespace ALM_NS
 
         void get_xyzcomponent(int,
                               int **) const;
+
         void generate_force_constant_table(const int,
                                            const size_t nat,
                                            const std::set<IntList> &,
@@ -175,13 +173,18 @@ namespace ALM_NS
                                                 ConstraintSparseForm &const_out,
                                                 const bool do_rref = false) const;
 
-        std::vector<size_t>* get_nequiv() const;
-        std::vector<FcProperty>* get_fc_table() const;
-        std::vector<ForceConstantTable>* get_fc_cart() const;
+        std::vector<size_t> *get_nequiv() const;
+
+        std::vector<FcProperty> *get_fc_table() const;
+
+        std::vector<ForceConstantTable> *get_fc_cart() const;
+
         std::vector<size_t> get_nfc_cart(const int permutation) const;
 
         void set_forceconstant_basis(const std::string preferred_basis_in);
+
         std::string get_forceconstant_basis() const;
+
         Eigen::Matrix3d get_basis_conversion_matrix() const;
 
         void set_forceconstant_cartesian(const int maxorder,
@@ -200,22 +203,30 @@ namespace ALM_NS
         Eigen::Matrix3d basis_conversion_matrix;
 
         bool store_zeros;
+
         void set_default_variables();
+
         void deallocate_variables();
+
         bool is_ascending(int,
                           const int *) const;
+
         bool is_inprim(const int n,
                        const int *arr,
                        const size_t natmin,
                        const std::vector<std::vector<int>> &map_p2s) const;
+
         bool is_inprim(const int n,
                        const size_t natmin,
                        const std::vector<std::vector<int>> &map_p2s) const;
+
         bool is_allzero(const std::vector<double> &,
                         double,
                         int &) const;
+
         bool is_allzero(const std::vector<int> &,
                         int &) const;
+
         void get_available_symmop(const size_t nat,
                                   const Symmetry *symmetry,
                                   const std::string basis,
@@ -223,13 +234,15 @@ namespace ALM_NS
                                   int **mapping_symm,
                                   double ***rotation,
                                   const bool use_compatible) const;
+
         int get_minimum_index_in_primitive(const int n,
                                            const int *arr,
                                            const size_t nat,
                                            const size_t natmin,
                                            const std::vector<std::vector<int>> &map_p2s) const;
+
         double coef_sym(const int,
-                        const double * const *,
+                        const double *const *,
                         const int *,
                         const int *) const;
 
@@ -239,12 +252,10 @@ namespace ALM_NS
 
 // Define a hash function for FcProperty class
 // Use boost::hash_combine
-namespace std
-{
-    template <>
-    struct hash<ALM_NS::FcProperty>
-    {
-        std::size_t operator ()(ALM_NS::FcProperty const &obj) const
+namespace std {
+    template<>
+    struct hash<ALM_NS::FcProperty> {
+        std::size_t operator()(ALM_NS::FcProperty const &obj) const
         {
             hash<int> hasher;
             size_t seed = 0;

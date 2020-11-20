@@ -38,7 +38,7 @@ InputParser::~InputParser()
 
 void InputParser::run(ALM *alm,
                       const int narg,
-                      const char * const *arg)
+                      const char *const *arg)
 {
     if (narg == 1) {
 
@@ -58,36 +58,26 @@ void InputParser::run(ALM *alm,
     parse_input(alm);
 }
 
+std::string InputParser::get_run_mode() const
+{
+    return mode;
+}
 
 void InputParser::parse_displacement_and_force_files(std::vector<std::vector<double>> &u,
                                                      std::vector<std::vector<double>> &f,
                                                      DispForceFile &datfile_in) const
-{
-    if (datfile_in.filename_second.empty()) {
-        parse_dfset(u, f, datfile_in);
-
-    } else {
-        // When filename_second is not empty, displacement (u) and force (f) data will be 
-        // read from different files given by DFILE and FFILE, respectively.
-        parse_dfile_and_ffile(u, f, datfile_in);
-    }
-}
-
-void InputParser::parse_dfset(std::vector<std::vector<double>> &u,
-                              std::vector<std::vector<double>> &f,
-                              DispForceFile &datfile_in) const
 {
     int nrequired;
 
     if (datfile_in.ndata == 0) {
         nrequired = -1;
     } else {
+        // Total number of data entries (displacement + force)
         nrequired = 6 * nat * datfile_in.ndata;
     }
 
     std::vector<double> value_arr;
 
-    // Read displacements from DFILE
     std::string line;
     double val;
     auto nline_u = 0;
@@ -141,7 +131,7 @@ void InputParser::parse_dfset(std::vector<std::vector<double>> &u,
 
     // Copy the data into 2D array
     const auto ndata_used = datfile_in.nend - datfile_in.nstart
-        + 1 - datfile_in.skip_e + datfile_in.skip_s;
+                            + 1 - datfile_in.skip_e + datfile_in.skip_s;
 
     u.resize(ndata_used, std::vector<double>(3 * nat));
     f.resize(ndata_used, std::vector<double>(3 * nat));
@@ -161,131 +151,6 @@ void InputParser::parse_dfset(std::vector<std::vector<double>> &u,
         ++idata;
     }
     value_arr.clear();
-}
-
-void InputParser::parse_dfile_and_ffile(std::vector<std::vector<double>> &u,
-                                        std::vector<std::vector<double>> &f,
-                                        DispForceFile &datfile_in) const
-{
-    // This function is prepared to keep the backward compatibility (support DFILE and FFILE tags)
-    int nrequired;
-
-    if (datfile_in.ndata == 0) {
-        nrequired = -1;
-    } else {
-        // Total number of data entries (displacement)   
-        nrequired = 3 * nat * datfile_in.ndata;
-    }
-
-    std::vector<double> value_arr, value_arr2;
-
-    // Read displacements from DFILE
-    std::string line;
-    double val;
-    auto nline_u = 0;
-
-    // Open the target file and copy the data to 1D temporary vector
-    std::ifstream ifs_data;
-    ifs_data.open(datfile_in.filename.c_str(), std::ios::in);
-    if (!ifs_data) exit("openfiles", "cannot open DFILE file");
-    auto reach_end = false;
-    while (std::getline(ifs_data >> std::ws, line)) {
-        if (line[0] != '#') {
-
-            std::istringstream iss(line);
-
-            while (iss >> val) {
-                value_arr.push_back(val);
-                ++nline_u;
-
-                if (nline_u == nrequired) {
-                    reach_end = true;
-                    break;
-                }
-            }
-        }
-
-        if (reach_end) break;
-    }
-    ifs_data.close();
-
-    auto nline_f = 0;
-    ifs_data.open(datfile_in.filename_second.c_str(), std::ios::in);
-    if (!ifs_data) exit("openfiles", "cannot open FFILE file");
-    reach_end = false;
-    while (std::getline(ifs_data >> std::ws, line)) {
-        if (line[0] != '#') {
-
-            std::istringstream iss(line);
-
-            while (iss >> val) {
-                value_arr2.push_back(val);
-                ++nline_f;
-
-                if (nline_f == nrequired) {
-                    reach_end = true;
-                    break;
-                }
-            }
-        }
-
-        if (reach_end) break;
-    }
-    ifs_data.close();
-
-    // Check if the length of the vector is correct.
-    // Also, estimate ndata if it is not set. 
-    auto n_entries = value_arr.size();
-    const auto n_entries2 = value_arr2.size();
-
-    if (nrequired == -1 && (n_entries != n_entries2)) {
-        exit("parse_dfile_and_ffile",
-             "The number of lines in DFILE and FFILE are different.");
-    }
-
-    n_entries = std::min<size_t>(n_entries, n_entries2);
-
-    if (nrequired == -1) {
-        if (n_entries % (3 * nat) == 0) {
-            datfile_in.ndata = n_entries / (3 * nat);
-        } else {
-            exit("parse_dfile_and_ffile",
-                 "The number of lines in DFILE is indivisible by NAT");
-        }
-    } else {
-        if (n_entries < nrequired) {
-            exit("parse_dfile_and_ffile",
-                 "The number of lines in DFILE is too small for the given NDATA = ",
-                 datfile_in.ndata);
-        }
-    }
-
-    if (datfile_in.nstart == 0) datfile_in.nstart = 1;
-    if (datfile_in.nend == 0) datfile_in.nend = datfile_in.ndata;
-
-    // Copy the data into 2D array
-    const auto ndata_used = datfile_in.nend - datfile_in.nstart
-        + 1 - datfile_in.skip_e + datfile_in.skip_s;
-
-    u.resize(ndata_used, std::vector<double>(3 * nat));
-    f.resize(ndata_used, std::vector<double>(3 * nat));
-
-    auto idata = 0;
-    for (size_t i = 0; i < datfile_in.ndata; ++i) {
-        if (i < datfile_in.nstart - 1) continue;
-        if (i >= datfile_in.skip_s - 1 && i < datfile_in.skip_e - 1) continue; // When skip_s == skip_e, skip nothing.
-        if (i > datfile_in.nend - 1) break;
-
-        for (auto j = 0; j < nat; ++j) {
-            for (auto k = 0; k < 3; ++k) {
-                u[idata][3 * j + k] = value_arr[3 * nat * i + 3 * j + k];
-                f[idata][3 * j + k] = value_arr2[3 * nat * i + 3 * j + k];
-            }
-        }
-        ++idata;
-    }
-    value_arr.clear();
-    value_arr2.clear();
 }
 
 void InputParser::parse_input(ALM *alm)
@@ -336,14 +201,8 @@ void InputParser::parse_input(ALM *alm)
 
     if (mode == "optimize") {
         if (!locate_tag("&optimize")) {
-            if (!locate_tag("&fitting")) {
-                exit("parse_input",
-                     "&optimize entry not found in the input file");
-            } else {
-                warn("parse_input",
-                     "&fitting field is deprecated and will be removed in the next version.\n"
-                     " Please use &optimize instead.\n");
-            }
+            exit("parse_input",
+                 "&optimize entry not found in the input file");
         }
         parse_optimize_vars(alm);
     }
@@ -363,13 +222,14 @@ void InputParser::parse_general_vars(ALM *alm)
     double **magmom, magmag{0.0};
     double tolerance;
     double tolerance_constraint;
-    int verbosity;
+    int verbosity, nmaxsave;
 
     std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
     const std::vector<std::string> input_list{
-        "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
-        "DBASIS", "TRIMEVEN", "VERBOSITY",
-        "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FC_BASIS"
+            "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
+            "DBASIS", "TRIMEVEN", "VERBOSITY",
+            "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FC_BASIS",
+            "NMAXSAVE"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
     std::map<std::string, std::string> general_var_dict;
@@ -394,20 +254,8 @@ void InputParser::parse_general_vars(ALM *alm)
     mode = general_var_dict["MODE"];
 
     std::transform(mode.begin(), mode.end(), mode.begin(), tolower);
-    if (mode != "fitting" && mode != "suggest" && mode != "lasso" && mode != "optimize" && mode != "opt") {
+    if (mode != "suggest" && mode != "optimize" && mode != "opt") {
         exit("parse_general_vars", "Invalid MODE variable");
-    }
-    if (mode == "fitting") {
-        mode = "optimize";
-        warn("parse_general_vars",
-             "MODE = fitting is deprecated and will be removed in the next version.\n"
-             " Please use MODE = optimize instead.\n");
-    }
-    if (mode == "lasso") {
-        mode = "optimize";
-        warn("parse_general_vars",
-             "MODE = lasso is deprecated and will be removed in the next version.\n"
-             " Please use MODE = optimize instead with LMODEL = enet option in the &optimize field.\n");
     }
     if (mode == "opt") mode = "optimize";
 
@@ -480,6 +328,12 @@ void InputParser::parse_general_vars(ALM *alm)
         }
     }
 
+    if (general_var_dict["NMAXSAVE"].empty()) {
+        nmaxsave = 6;
+    } else {
+        assign_val(nmaxsave, "NMAXSAVE", general_var_dict);
+    }
+
     // Convert MAGMOM input to array
     allocate(magmom, nat, 3);
     auto lspin = false;
@@ -512,13 +366,12 @@ void InputParser::parse_general_vars(ALM *alm)
         if (noncollinear) {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (std::vector<std::string>::const_iterator it = magmom_v.begin();
-                 it != magmom_v.end(); ++it) {
-                if ((*it).find('*') != std::string::npos) {
+            for (const auto & it : magmom_v) {
+                if (it.find('*') != std::string::npos) {
                     exit("parse_general_vars",
                          "Wild card '*' is not supported when NONCOLLINEAR = 1.");
                 } else {
-                    magmag = boost::lexical_cast<double>((*it));
+                    magmag = boost::lexical_cast<double>(it);
                     if (icount / 3 >= nat) {
                         exit("parse_general_vars", "Too many entries for MAGMOM.");
                     }
@@ -534,15 +387,14 @@ void InputParser::parse_general_vars(ALM *alm)
         } else {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (std::vector<std::string>::const_iterator it = magmom_v.begin();
-                 it != magmom_v.end(); ++it) {
+            for (const auto & it : magmom_v) {
 
-                if ((*it).find('*') != std::string::npos) {
-                    if ((*it) == "*") {
+                if (it.find('*') != std::string::npos) {
+                    if (it == "*") {
                         exit("parse_general_vars",
                              "Please place '*' without space for the MAGMOM-tag.");
                     }
-                    boost::split(str_split, (*it), boost::is_any_of("*"));
+                    boost::split(str_split, it, boost::is_any_of("*"));
                     if (str_split.size() != 2) {
                         exit("parse_general_vars",
                              "Invalid format for the MAGMOM-tag.");
@@ -567,7 +419,7 @@ void InputParser::parse_general_vars(ALM *alm)
                     }
 
                 } else {
-                    magmag = boost::lexical_cast<double>((*it));
+                    magmag = boost::lexical_cast<double>(it);
                     if (icount == nat) {
                         icount = 0;
                         break;
@@ -619,7 +471,8 @@ void InputParser::parse_general_vars(ALM *alm)
                                    magmom,
                                    tolerance,
                                    tolerance_constraint,
-                                   basis_force_constant);
+                                   basis_force_constant,
+                                   nmaxsave);
 
     allocate(magmom, nat, 3);
 
@@ -684,8 +537,8 @@ void InputParser::parse_cell_parameter()
 
     if (line_vec.size() != 4) {
         exit("parse_cell_parameter",
-             "Too few or too much lines for the &cell field.\n \
-                                            The number of valid lines for the &cell field should be 4.");
+             "Too few or too much lines for the &cell field.\n"
+             "The number of valid lines for the &cell field should be 4.");
     }
 
     for (auto i = 0; i < 4; ++i) {
@@ -776,7 +629,7 @@ void InputParser::parse_interaction_vars()
     }
 
     if (nbody_include[0] != 2) {
-        warn("parce_input",
+        warn("parse_interaction_vars",
              "Harmonic interaction is always 2 body (except on-site 1 body)");
     }
 
@@ -802,13 +655,13 @@ void InputParser::parse_optimize_vars(ALM *alm)
     std::vector<std::vector<double>> u_tmp2, f_tmp2;
 
     const std::vector<std::string> input_list{
-        "LMODEL", "SPARSE", "SPARSESOLVER",
-        "ICONST", "ROTAXIS", "FC2XML", "FC3XML",
-        "NDATA", "NSTART", "NEND", "SKIP", "DFILE", "FFILE", "DFSET",
-        "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
-        "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
-        "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
-        "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
+            "LMODEL", "SPARSE", "SPARSESOLVER",
+            "ICONST", "ROTAXIS", "FC2XML", "FC3XML",
+            "NDATA", "NSTART", "NEND", "SKIP", "DFSET",
+            "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
+            "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
+            "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
+            "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
     };
 
     std::map<std::string, std::string> optimize_var_dict;
@@ -829,8 +682,10 @@ void InputParser::parse_optimize_vars(ALM *alm)
             || str_LMODEL == "least-squares" || str_LMODEL == "1") {
             optcontrol.linear_model = 1;
         } else if (str_LMODEL == "enet" || str_LMODEL == "elastic-net"
-            || str_LMODEL == "2") {
+                   || str_LMODEL == "2") {
             optcontrol.linear_model = 2;
+        } else if (str_LMODEL == "adaptive-lasso" || str_LMODEL == "3") {
+            optcontrol.linear_model = 3;
         } else {
             exit("parse_optimize_vars", "Invalid OPTIMIZER-tag");
         }
@@ -857,7 +712,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
 
     if (!optimize_var_dict["ENET_DNORM"].empty()) {
         optcontrol.displacement_normalization_factor
-            = boost::lexical_cast<double>(optimize_var_dict["ENET_DNORM"]);
+                = boost::lexical_cast<double>(optimize_var_dict["ENET_DNORM"]);
     }
     if (!optimize_var_dict["L1_ALPHA"].empty()) {
         optcontrol.l1_alpha = boost::lexical_cast<double>(optimize_var_dict["L1_ALPHA"]);
@@ -903,21 +758,9 @@ void InputParser::parse_optimize_vars(ALM *alm)
     DispForceFile datfile_train;
 
     if (optimize_var_dict["DFSET"].empty()) {
-        if (!optimize_var_dict["DFILE"].empty() && !optimize_var_dict["FFILE"].empty()) {
-            std::cout << " DFILE and FFILE tags are obsolate and will be removed in the next version.\n";
-            std::cout << " Please use DFSET instead.\n";
-            std::cout << " DFSET can be created easily by the unix paste command as:\n\n";
-            std::cout << " $ paste DFILE FFILE > DFSET\n\n";
-            //            exit("parse_optimize_vars", "Obsolate tag: DFILE, FFILE");
-            datfile_train.filename = optimize_var_dict["DFILE"];
-            datfile_train.filename_second = optimize_var_dict["FFILE"];
-        } else {
-            exit("parse_optimize_vars",
-                 "DFSET tag (or both DFILE and FFILE tags) must be given.");
-        }
-    } else {
-        datfile_train.filename = optimize_var_dict["DFSET"];
+        exit("parse_optimize_vars", "DFSET tag must be given.");
     }
+    datfile_train.filename = optimize_var_dict["DFSET"];
 
     if (!optimize_var_dict["NDATA"].empty()) {
         assign_val(datfile_train.ndata, "NDATA", optimize_var_dict);
@@ -1296,9 +1139,9 @@ void InputParser::parse_cutoff_radii()
             for (k = 0; k < nkd; ++k) {
                 if (undefined_cutoff[order][j][k]) {
                     std::cout << " Cutoff radius for " << std::setw(3)
-                        << order + 2 << "th-order terms" << std::endl;
+                              << order + 2 << "th-order terms" << std::endl;
                     std::cout << " are not defined between elements " << std::setw(3) << j + 1
-                        << " and " << std::setw(3) << k + 1 << std::endl;
+                              << " and " << std::setw(3) << k + 1 << std::endl;
                     exit("parse_cutoff_radii", "Incomplete cutoff radii");
                 }
             }
@@ -1435,13 +1278,13 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
-                            << key << std::endl;
+                                  << key << std::endl;
                         exit("get_var_dict", "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         exit("get_var_dict", "Redundant input parameter");
                     }
 
@@ -1515,13 +1358,13 @@ int InputParser::locate_tag(const std::string key)
     return ret;
 }
 
-bool InputParser::is_endof_entry(const std::string str) const
+bool InputParser::is_endof_entry(const std::string str)
 {
     return str[0] == '/';
 }
 
 void InputParser::split_str_by_space(const std::string str,
-                                     std::vector<std::string> &str_vec) const
+                                     std::vector<std::string> &str_vec)
 {
     std::string str_tmp;
     std::istringstream is(str);
@@ -1539,9 +1382,9 @@ void InputParser::split_str_by_space(const std::string str,
     str_tmp.clear();
 }
 
-template <typename T>
+template<typename T>
 void InputParser::assign_val(T &val,
-                             const std::string key,
+                             const std::string& key,
                              std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.

@@ -15,10 +15,8 @@
 #include <vector>
 #include <complex>
 
-namespace PHON_NS
-{
-    class Phonon_velocity : protected Pointers
-    {
+namespace PHON_NS {
+    class Phonon_velocity : protected Pointers {
     public:
         Phonon_velocity(class PHON *);
 
@@ -30,11 +28,12 @@ namespace PHON_NS
                           double **) const;
 
         void phonon_vel_k2(const double *,
-                    const double *,
-                    std::complex<double> **,
-                    double **) const;
+                           const double *,
+                           std::complex<double> **,
+                           double **) const;
 
         void calc_phonon_vel_mesh(double ***) const;
+
         void calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const;
 
         void velocity_matrix_analytic(const double *xk_in,
@@ -57,6 +56,7 @@ namespace PHON_NS
                     double) const;
 
         void set_default_variables();
+
         void deallocate_variables();
 
         void calc_phonon_vel_band(double **) const;

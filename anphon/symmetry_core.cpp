@@ -21,7 +21,7 @@
 
 using namespace PHON_NS;
 
-Symmetry::Symmetry(PHON *phon): Pointers(phon)
+Symmetry::Symmetry(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -76,7 +76,7 @@ void Symmetry::setup_symmetry()
 
     if (mympi->my_rank == 0) {
         std::cout << "  Number of symmetry operations : "
-            << nsym << std::endl << std::endl;
+                  << nsym << std::endl << std::endl;
         gensym_withmap(xtmp, kdtmp);
     }
     memory->deallocate(xtmp);
@@ -108,8 +108,8 @@ void Symmetry::setup_symmetry_operation(int N,
 
         if (printsymmetry) {
             std::cout
-                << "  PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO_PRIM file."
-                << std::endl << std::endl;
+                    << "  PRINTSYMM = 1: Symmetry information will be stored in SYMM_INFO_PRIM file."
+                    << std::endl << std::endl;
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
@@ -134,7 +134,7 @@ void Symmetry::setup_symmetry_operation(int N,
         // Identity operation only !
 
         std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered."
-            << std::endl << std::endl;
+                  << std::endl << std::endl;
 
         int rot_tmp[3][3];
         double tran_tmp[3];
@@ -155,8 +155,8 @@ void Symmetry::setup_symmetry_operation(int N,
     } else {
 
         std::cout
-            << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO_PRIM file"
-            << std::endl << std::endl;
+                << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO_PRIM file"
+                << std::endl << std::endl;
 
         int nsym2;
         int rot_tmp[3][3];
@@ -171,10 +171,10 @@ void Symmetry::setup_symmetry_operation(int N,
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym
-                >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
-                >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2]
-                >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
-                >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
+                    >> rot_tmp[0][0] >> rot_tmp[0][1] >> rot_tmp[0][2]
+                    >> rot_tmp[1][0] >> rot_tmp[1][1] >> rot_tmp[1][2]
+                    >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
+                    >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
             SymmList.emplace_back(rot_tmp, tran_tmp);
         }
@@ -262,8 +262,8 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
                                             continue;
 
                                         double det = m11 * (m22 * m33 - m32 * m23)
-                                            - m21 * (m12 * m33 - m32 * m13)
-                                            + m31 * (m12 * m23 - m22 * m13);
+                                                     - m21 * (m12 * m33 - m32 * m13)
+                                                     + m31 * (m12 * m23 - m22 * m13);
 
                                         if (det != 1 && det != -1) continue;
 
@@ -388,10 +388,10 @@ void Symmetry::find_crystal_symmetry(int nclass,
             isok = true;
 
             is_identity_matrix =
-                std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
-                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) < eps12;
+                    std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
+                    + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                    + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) < eps12;
 
             if (is_identity_matrix) continue;
 
@@ -454,12 +454,12 @@ void Symmetry::find_crystal_symmetry(int nclass,
                 }
 
                 mag_sym1 = std::pow(mag[0] - mag_rot[0], 2.0)
-                    + std::pow(mag[1] - mag_rot[1], 2.0)
-                    + std::pow(mag[2] - mag_rot[2], 2.0) < eps6;
+                           + std::pow(mag[1] - mag_rot[1], 2.0)
+                           + std::pow(mag[2] - mag_rot[2], 2.0) < eps6;
 
                 mag_sym2 = std::pow(mag[0] + mag_rot[0], 2.0)
-                    + std::pow(mag[1] + mag_rot[1], 2.0)
-                    + std::pow(mag[2] + mag_rot[2], 2.0) < eps6;
+                           + std::pow(mag[1] + mag_rot[1], 2.0)
+                           + std::pow(mag[2] + mag_rot[2], 2.0) < eps6;
 
                 if (!mag_sym1 && !mag_sym2) {
                     isok = false;
@@ -618,8 +618,8 @@ bool Symmetry::is_proper(double rot[3][3]) const
     auto ret = false;
 
     const auto det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
-        - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
-        + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
+                     - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
+                     + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
 
     ret = std::abs(det - 1.0) < eps12;
 

@@ -22,7 +22,7 @@
 
 using namespace PHON_NS;
 
-Integration::Integration(PHON *phon): Pointers(phon)
+Integration::Integration(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -64,10 +64,10 @@ void Integration::setup_integration()
             std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
         } else if (ismear == 0) {
             std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
-                << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else if (ismear == 1) {
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
-                << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else {
             error->exit("setup_relaxation", "Invalid ksum_mode");
         }
@@ -209,14 +209,15 @@ double Integration::do_tetrahedron(const double *energy,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+                                                      * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                ((e3 - e1) * (e4 - e1));
 
             I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 -
-                e1);
+                                                                                                                  e1);
             I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
             I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
             I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 -
-                e1);
+                                                                                                                  e1);
 
             ret += I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4;
 
@@ -262,7 +263,8 @@ double Integration::dos_integration(double *energy,
             dos_ret += 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
         } else if (e2 <= e_ref && e_ref < e3) {
             dos_ret += 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+                                                             * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                       ((e3 - e1) * (e4 - e1));
         } else if (e1 <= e_ref && e_ref < e2) {
             dos_ret += 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
         }
@@ -319,7 +321,8 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) / ((e3 - e1) * (e4 - e1));
+                                                * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                ((e3 - e1) * (e4 - e1));
 
             I1 = g * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
             I2 = g * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
@@ -412,8 +415,8 @@ double Integration::volume(const int *klist) const
     rotvec(k3, k3, system->rlavec_p, 'T');
 
     const auto vol = std::abs(k1[0] * (k2[1] * k3[2] - k2[2] * k3[1])
-        + k1[1] * (k2[2] * k3[0] - k2[0] * k3[2])
-        + k1[2] * (k2[0] * k3[1] - k2[1] * k3[0]));
+                              + k1[1] * (k2[2] * k3[0] - k2[0] * k3[2])
+                              + k1[2] * (k2[0] * k3[1] - k2[1] * k3[0]));
 
     return vol;
 }

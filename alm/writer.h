@@ -14,10 +14,8 @@
 #include <vector>
 #include "alm.h"
 
-namespace ALM_NS
-{
-    class AtomProperty
-    {
+namespace ALM_NS {
+    class AtomProperty {
     public:
         double x, y, z;
         int kind;
@@ -41,8 +39,7 @@ namespace ALM_NS
         }
     };
 
-    class SystemInfo
-    {
+    class SystemInfo {
     public:
         double lattice_vector[3][3];
         std::vector<AtomProperty> atoms;
@@ -52,22 +49,29 @@ namespace ALM_NS
         SystemInfo() = default;;
     };
 
-    class Writer
-    {
+    class Writer {
     public:
         Writer();
+
         ~Writer();
 
         void writeall(ALM *) const;
-        void write_input_vars(const ALM *) const;
+
+        void write_input_vars(const ALM *alm, const std::string run_mode) const;
+
         void write_displacement_pattern(ALM *) const;
 
     private:
         void write_force_constants(ALM *) const;
+
         void write_misc_xml(ALM *) const;
+
         void write_hessian(ALM *) const;
+
         void write_in_QEformat(ALM *) const;
+
         void write_fc3_thirdorderpy_format(ALM *) const;
+
         std::string easyvizint(int) const;
 
         std::string double2string(double,

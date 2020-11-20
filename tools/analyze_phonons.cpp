@@ -140,8 +140,8 @@ int main(int argc,
 
         if (beg_k < 0 || beg_k >= nk || end_k < 0 || end_k > nk) {
             cout << "ERROR: kpoint index out-of-range ["
-                << 1 << ":" << nk << "] : "
-                << setw(5) << beg_k + 1 << setw(5) << end_k << endl;
+                 << 1 << ":" << nk << "] : "
+                 << setw(5) << beg_k + 1 << setw(5) << end_k << endl;
             exit(1);
         }
 
@@ -152,8 +152,8 @@ int main(int argc,
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -184,14 +184,14 @@ int main(int argc,
 
         if (target_k < 0 || target_k >= nk) {
             cout << "ERROR: kpoint index out-of-range ["
-                << 1 << ":" << nk << "] : "
-                << setw(5) << target_k + 1 << endl;
+                 << 1 << ":" << nk << "] : "
+                 << setw(5) << target_k + 1 << endl;
             exit(1);
         }
         if (target_s < 0 || target_s >= ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << target_s + 1 << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << target_s + 1 << endl;
             exit(1);
         }
 
@@ -212,8 +212,8 @@ int main(int argc,
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -239,8 +239,8 @@ int main(int argc,
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
         isotope = atoi(argv[6]);
@@ -277,8 +277,8 @@ int main(int argc,
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -320,8 +320,8 @@ int main(int argc,
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
 
@@ -360,8 +360,8 @@ int main(int argc,
 
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
-                << 1 << ":" << ns << "] : "
-                << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << 1 << ":" << ns << "] : "
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
             exit(1);
         }
         isotope = atoi(argv[6]);
@@ -414,16 +414,16 @@ void calc_tau(int itemp)
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         kappa[i][j] += c_tmp
-                            * vel[ik][is][k][i]
-                            * vel[ik][is][k][j]
-                            * tau_tmp;
+                                       * vel[ik][is][k][i]
+                                       * vel[ik][is][k][j]
+                                       * tau_tmp;
                     }
                 }
             }
 
             vel_norm = sqrt(vel[ik][is][0][0] * vel[ik][is][0][0]
-                + vel[ik][is][0][1] * vel[ik][is][0][1]
-                + vel[ik][is][0][2] * vel[ik][is][0][2]);
+                            + vel[ik][is][0][1] * vel[ik][is][0][1]
+                            + vel[ik][is][0][2] * vel[ik][is][0][2]);
             cout << setw(5) << ik + 1 << setw(5) << is + 1;
             cout << setw(15) << omega[ik][is] << setw(15) << tau_tmp;
             cout << setw(15) << vel_norm << setw(15) << tau_tmp * vel_norm * 0.001;
@@ -445,8 +445,8 @@ void calc_tau_temp(int target_k,
     double vel_norm;
 
     vel_norm = sqrt(vel[target_k][target_s][0][0] * vel[target_k][target_s][0][0]
-        + vel[target_k][target_s][0][1] * vel[target_k][target_s][0][1]
-        + vel[target_k][target_s][0][2] * vel[target_k][target_s][0][2]);
+                    + vel[target_k][target_s][0][1] * vel[target_k][target_s][0][1]
+                    + vel[target_k][target_s][0][2] * vel[target_k][target_s][0][2]);
 
     cout << "# Temperature dependence of the damping function will be printed" << endl;
     cout << "# for phonon specified by kpoint " << target_k + 1 << " and mode " << target_s + 1 << endl;
@@ -501,9 +501,9 @@ void calc_kappa()
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             kappa[it][j][k] += c_tmp
-                                * vel[ik][is][i][j]
-                                * vel[ik][is][i][k]
-                                * tau_tmp;
+                                               * vel[ik][is][i][j]
+                                               * vel[ik][is][i][k]
+                                               * tau_tmp;
                         }
                     }
                 }
@@ -569,8 +569,8 @@ void calc_kappa_cumulative(double max_length,
                 }
 
                 vel_tmp = pow(vel[ik][is][0][0], 2)
-                    + pow(vel[ik][is][0][1], 2)
-                    + pow(vel[ik][is][0][2], 2);
+                          + pow(vel[ik][is][0][1], 2)
+                          + pow(vel[ik][is][0][2], 2);
                 mfp_tmp = tau_tmp * sqrt(vel_tmp) * 0.001;
 
                 if (mfp_tmp < length) {
@@ -578,9 +578,9 @@ void calc_kappa_cumulative(double max_length,
                         for (j = 0; j < 3; ++j) {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
-                                    * vel[ik][is][i][j]
-                                    * vel[ik][is][i][k]
-                                    * tau_tmp;
+                                               * vel[ik][is][i][j]
+                                               * vel[ik][is][i][k]
+                                               * tau_tmp;
                             }
                         }
                     }
@@ -660,9 +660,9 @@ void calc_kappa_cumulative2(double max_length,
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             kappa[j][k] += c_tmp
-                                * vel[ik][is][i][j]
-                                * vel[ik][is][i][k]
-                                * tau_tmp;
+                                           * vel[ik][is][i][j]
+                                           * vel[ik][is][i][k]
+                                           * tau_tmp;
                         }
                     }
                 }
@@ -717,18 +717,18 @@ void calc_kappa_boundary(const double len_boundary)
                 }
 
                 vel_norm = vel[ik][is][0][0] * vel[ik][is][0][0]
-                    + vel[ik][is][0][1] * vel[ik][is][0][1]
-                    + vel[ik][is][0][2] * vel[ik][is][0][2];
+                           + vel[ik][is][0][1] * vel[ik][is][0][1]
+                           + vel[ik][is][0][2] * vel[ik][is][0][2];
                 mfp_tmp = std::sqrt(vel_norm) * tau_tmp * 0.001;
 
                 for (i = 0; i < n_weight[ik]; ++i) {
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             kappa[it][j][k] += c_tmp
-                                * vel[ik][is][i][j]
-                                * vel[ik][is][i][k]
-                                * tau_tmp
-                                * len_boundary / (len_boundary + 2.0 * mfp_tmp);
+                                               * vel[ik][is][i][j]
+                                               * vel[ik][is][i][k]
+                                               * tau_tmp
+                                               * len_boundary / (len_boundary + 2.0 * mfp_tmp);
                         }
                     }
                 }
@@ -802,17 +802,17 @@ void calc_kappa_boundary2(double max_length,
                         if (flag[j]) {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
-                                    * vel[ik][is][i][j]
-                                    * vel[ik][is][i][k]
-                                    * tau_tmp
-                                    * length / (length + 2.0 * mfp_tmp[j]);
+                                               * vel[ik][is][i][j]
+                                               * vel[ik][is][i][k]
+                                               * tau_tmp
+                                               * length / (length + 2.0 * mfp_tmp[j]);
                             }
                         } else {
                             for (k = 0; k < 3; ++k) {
                                 kappa[j][k] += c_tmp
-                                    * vel[ik][is][i][j]
-                                    * vel[ik][is][i][k]
-                                    * tau_tmp;
+                                               * vel[ik][is][i][j]
+                                               * vel[ik][is][i][k]
+                                               * tau_tmp;
                             }
                         }
                     }

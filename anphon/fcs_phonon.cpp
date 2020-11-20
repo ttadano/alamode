@@ -29,7 +29,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Fcs_phonon::Fcs_phonon(PHON *phon): Pointers(phon)
+Fcs_phonon::Fcs_phonon(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -138,7 +138,7 @@ void Fcs_phonon::setup(std::string mode)
         std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
         for (i = 0; i < maxorder; ++i) {
             std::cout << "   Order " << i + 2 << " : " << std::setw(12)
-                << std::scientific << maxdev[i] << std::endl;
+                      << std::scientific << maxdev[i] << std::endl;
         }
         std::cout << std::endl;
         memory->deallocate(maxdev);
@@ -178,31 +178,31 @@ void Fcs_phonon::load_fc2_xml()
 
     fc2_ext.clear();
 
-    BOOST_FOREACH (const ptree::value_type& child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
-        const auto &child = child_.second;
-        const auto str_p1 = child.get<std::string>("<xmlattr>.pair1");
-        const auto str_p2 = child.get<std::string>("<xmlattr>.pair2");
+    BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
+                    const auto &child = child_.second;
+                    const auto str_p1 = child.get<std::string>("<xmlattr>.pair1");
+                    const auto str_p2 = child.get<std::string>("<xmlattr>.pair2");
 
-        ss1.str("");
-        ss2.str("");
-        ss1.clear();
-        ss2.clear();
+                    ss1.str("");
+                    ss2.str("");
+                    ss1.clear();
+                    ss2.clear();
 
-        ss1 << str_p1;
-        ss2 << str_p2;
+                    ss1 << str_p1;
+                    ss2 << str_p2;
 
-        ss1 >> atm1 >> xyz1;
-        ss2 >> atm2 >> xyz2 >> cell_s;
+                    ss1 >> atm1 >> xyz1;
+                    ss2 >> atm2 >> xyz2 >> cell_s;
 
-        fcext_tmp.atm1 = atm1 - 1;
-        fcext_tmp.xyz1 = xyz1 - 1;
-        fcext_tmp.atm2 = atm2 - 1;
-        fcext_tmp.xyz2 = xyz2 - 1;
-        fcext_tmp.cell_s = cell_s - 1;
-        fcext_tmp.fcs_val = boost::lexical_cast<double>(child.data());
+                    fcext_tmp.atm1 = atm1 - 1;
+                    fcext_tmp.xyz1 = xyz1 - 1;
+                    fcext_tmp.atm2 = atm2 - 1;
+                    fcext_tmp.xyz2 = xyz2 - 1;
+                    fcext_tmp.cell_s = cell_s - 1;
+                    fcext_tmp.fcs_val = boost::lexical_cast<double>(child.data());
 
-        fc2_ext.push_back(fcext_tmp);
-    }
+                    fc2_ext.push_back(fcext_tmp);
+                }
     pt.clear();
 }
 
@@ -247,64 +247,64 @@ void Fcs_phonon::load_fcs_xml() const
             error->exit("load_fcs_xml", str_tmp.c_str());
         }
 
-        BOOST_FOREACH (const ptree::value_type& child_, pt.get_child(str_tag)) {
-            const auto &child = child_.second;
+        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child(str_tag)) {
+                        const auto &child = child_.second;
 
-            auto fcs_val = boost::lexical_cast<double>(child.data());
+                        auto fcs_val = boost::lexical_cast<double>(child.data());
 
-            ivec_with_cell.clear();
+                        ivec_with_cell.clear();
 
-            for (i = 0; i < order + 2; ++i) {
-                auto str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
-                auto str_pairs = child.get<std::string>(str_attr);
+                        for (i = 0; i < order + 2; ++i) {
+                            auto str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
+                            auto str_pairs = child.get<std::string>(str_attr);
 
-                ss.str("");
-                ss.clear();
-                ss << str_pairs;
+                            ss.str("");
+                            ss.clear();
+                            ss << str_pairs;
 
-                if (i == 0) {
+                            if (i == 0) {
 
-                    ss >> atmn >> xyz;
-                    if (update_fc2) {
-                        ivec_tmp.index = 3 * system->map_p2s_anharm_orig[atmn - 1][0] + xyz - 1;
-                    } else {
-                        ivec_tmp.index = 3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1;
+                                ss >> atmn >> xyz;
+                                if (update_fc2) {
+                                    ivec_tmp.index = 3 * system->map_p2s_anharm_orig[atmn - 1][0] + xyz - 1;
+                                } else {
+                                    ivec_tmp.index = 3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1;
+                                }
+                                ivec_tmp.cell_s = 0;
+                                ivec_tmp.tran = 0; // dummy
+                                ivec_with_cell.push_back(ivec_tmp);
+                            } else {
+
+                                ss >> atmn >> xyz >> cell_s;
+
+                                ivec_tmp.index = 3 * (atmn - 1) + xyz - 1;
+                                ivec_tmp.cell_s = cell_s - 1;
+                                ivec_tmp.tran = 0; // dummy
+                                ivec_with_cell.push_back(ivec_tmp);
+                            }
+
+                        }
+
+                        if (std::abs(fcs_val) > eps) {
+
+                            do {
+
+                                ivec_copy.clear();
+
+                                for (i = 0; i < ivec_with_cell.size(); ++i) {
+                                    atmn = ivec_with_cell[i].index / 3;
+                                    xyz = ivec_with_cell[i].index % 3;
+                                    ivec_tmp.index = 3 * system->map_s2p_anharm[atmn].atom_num + xyz;
+                                    ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
+                                    ivec_tmp.tran = system->map_s2p_anharm[atmn].tran_num;
+                                    ivec_copy.push_back(ivec_tmp);
+                                }
+
+                                force_constant_with_cell[order].emplace_back(fcs_val, ivec_copy);
+
+                            } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
+                        }
                     }
-                    ivec_tmp.cell_s = 0;
-                    ivec_tmp.tran = 0; // dummy
-                    ivec_with_cell.push_back(ivec_tmp);
-                } else {
-
-                    ss >> atmn >> xyz >> cell_s;
-
-                    ivec_tmp.index = 3 * (atmn - 1) + xyz - 1;
-                    ivec_tmp.cell_s = cell_s - 1;
-                    ivec_tmp.tran = 0; // dummy
-                    ivec_with_cell.push_back(ivec_tmp);
-                }
-
-            }
-
-            if (std::abs(fcs_val) > eps) {
-
-                do {
-
-                    ivec_copy.clear();
-
-                    for (i = 0; i < ivec_with_cell.size(); ++i) {
-                        atmn = ivec_with_cell[i].index / 3;
-                        xyz = ivec_with_cell[i].index % 3;
-                        ivec_tmp.index = 3 * system->map_s2p_anharm[atmn].atom_num + xyz;
-                        ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
-                        ivec_tmp.tran = system->map_s2p_anharm[atmn].tran_num;
-                        ivec_copy.push_back(ivec_tmp);
-                    }
-
-                    force_constant_with_cell[order].emplace_back(fcs_val, ivec_copy);
-
-                } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
-            }
-        }
     }
 
     std::cout << "done !" << std::endl;
@@ -444,7 +444,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
 
             if (force_asr) {
                 std::cout << "  force_asr = true: Modify harmonic force constans so that the ASR is satisfied." << std::
-                    endl;
+                endl;
                 for (j = 0; j < natmin; ++j) {
                     for (k = 0; k < 3; ++k) {
                         for (m = 0; m < 3; ++m) {
@@ -497,11 +497,11 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                 }
             }
 
-            for (auto it = fcs[i].cbegin(); it != fcs[i].cend(); ++it) {
-                j = (*it).pairs[0].index;
-                k = 3 * (natmin * (*it).pairs[1].tran + (*it).pairs[1].index / 3) + (*it).pairs[1].index % 3;
-                l = (*it).pairs[2].index % 3;
-                sum3[j][k][l] += (*it).fcs_val;
+            for (const auto &it : fcs[i]) {
+                j = it.pairs[0].index;
+                k = 3 * (natmin * it.pairs[1].tran + it.pairs[1].index / 3) + it.pairs[1].index % 3;
+                l = it.pairs[2].index % 3;
+                sum3[j][k][l] += it.fcs_val;
             }
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3 * nat; ++k) {

@@ -15,10 +15,8 @@
 #include <vector>
 #include <string>
 
-namespace PHON_NS
-{
-    class Selfenergy : protected Pointers
-    {
+namespace PHON_NS {
+    class Selfenergy : protected Pointers {
     public:
         Selfenergy(class PHON *phon);
 

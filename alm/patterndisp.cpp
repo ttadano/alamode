@@ -124,8 +124,8 @@ void Displace::gen_displacement_pattern(const Cluster *cluster,
     if (verbosity > 0) {
         for (order = 0; order < maxorder; ++order) {
             std::cout << "  Number of free" << std::setw(9)
-                << cluster->get_ordername(order) << " FCs : "
-                << index_bimap_tmp[order].size() << std::endl;
+                      << cluster->get_ordername(order) << " FCs : "
+                      << index_bimap_tmp[order].size() << std::endl;
         }
         std::cout << std::endl;
     }
@@ -202,8 +202,8 @@ void Displace::gen_displacement_pattern(const Cluster *cluster,
 
         for (order = 0; order < maxorder; ++order) {
             std::cout << "  Number of disp. patterns for " << std::setw(9)
-                << cluster->get_ordername(order) << " : "
-                << pattern_all[order].size() << std::endl;
+                      << cluster->get_ordername(order) << " : "
+                      << pattern_all[order].size() << std::endl;
         }
         std::cout << std::endl;
     }
@@ -224,7 +224,7 @@ void Displace::set_disp_basis(const std::string disp_basis_in)
     disp_basis = disp_basis_in;
 }
 
-const std::vector<AtomWithDirection>& Displace::get_pattern_all(const int order) const
+const std::vector<AtomWithDirection> &Displace::get_pattern_all(const int order) const
 {
     return pattern_all[order];
 }
@@ -452,13 +452,13 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     if (preferred_basis == "Cartesian") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                += symmetry->get_SymmData()[isym].rotation_cart[j][k] * disp[list_disp_atom[i]][k];
+                                    += symmetry->get_SymmData()[isym].rotation_cart[j][k] * disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                += static_cast<double>(symmetry->get_SymmData()[isym].rotation[j][k])
-                                * disp[list_disp_atom[i]][k];
+                                    += static_cast<double>(symmetry->get_SymmData()[isym].rotation[j][k])
+                                       * disp[list_disp_atom[i]][k];
                         }
                     } else {
                         exit("find_unique_sign_pairs",
@@ -515,14 +515,14 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     if (preferred_basis == "Cartesian") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                += symmetry->get_SymmData()[symnum_vec[isym]].rotation_cart[j][k]
-                                * disp[list_disp_atom[i]][k];
+                                    += symmetry->get_SymmData()[symnum_vec[isym]].rotation_cart[j][k]
+                                       * disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                += static_cast<double>(symmetry->get_SymmData()[symnum_vec[isym]].rotation[j][k])
-                                * disp[list_disp_atom[i]][k];
+                                    += static_cast<double>(symmetry->get_SymmData()[symnum_vec[isym]].rotation[j][k])
+                                       * disp[list_disp_atom[i]][k];
                         }
                     } else {
                         exit("find_unique_sign_pairs",

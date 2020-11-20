@@ -97,6 +97,7 @@ void Dynamical::deallocate_variables()
     }
 }
 
+
 void Dynamical::setup_dynamical()
 {
     neval = 3 * system->natmin;
@@ -189,6 +190,7 @@ void Dynamical::setup_dynamical()
                   << std::endl << std::endl;
     }
 }
+
 
 void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 {
@@ -476,6 +478,7 @@ void Dynamical::eval_k_ewald(double *xk_in,
     memory->deallocate(amat);
 }
 
+
 void Dynamical::calc_analytic_k(const double *xk_in,
                                 const std::vector<FcsClassExtent> &fc2_in,
                                 std::complex<double> **dymat_out) const
@@ -517,8 +520,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += it.fcs_val * std::exp(im * phase)
-                   / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
     }
 }
 
@@ -548,8 +550,8 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 
     rotvec(kepsilon, kvec_na_in, dielec);
     const auto denom = kvec_na_in[0] * kepsilon[0]
-        + kvec_na_in[1] * kepsilon[1]
-        + kvec_na_in[2] * kepsilon[2];
+                       + kvec_na_in[1] * kepsilon[1]
+                       + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -566,6 +568,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 
             for (jat = 0; jat < natmin; ++jat) {
                 const auto atm_p2 = system->map_p2s[jat][0];
+
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -636,6 +639,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     double born_tmp[3][3];
     double vec[3];
     std::complex<double> im(0.0, 1.0);
+
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -802,8 +806,13 @@ void Dynamical::modify_eigenvectors() const
 
     const auto nk = kpoint->nk;
     const auto ns = neval;
-  //  auto nk = kpoint->nk;
-  //  auto ns = neval;
+
+    /*   if (mympi->my_rank == 0) {
+           std::cout << " **********      NOTICE      ********** " << std::endl;
+           std::cout << " For the brevity of the calculation, " << std::endl;
+           std::cout << " phonon eigenvectors will be modified" << std::endl;
+           std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
+       }*/
 
     memory->allocate(flag_done, nk);
     memory->allocate(evec_tmp, ns);
@@ -835,8 +844,10 @@ void Dynamical::modify_eigenvectors() const
     memory->deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
-
-
+    //if (mympi->my_rank == 0) {
+    //    std::cout << " done !" << std::endl;
+    //    std::cout << " **************************************" << std::endl;
+    //}
 }
 
 void Dynamical::project_degenerate_eigenvectors(double *xk_in,
@@ -1107,6 +1118,7 @@ void Dynamical::setup_dielectric(const unsigned int verbosity)
     MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
+
 void Dynamical::load_born(const unsigned int flag_symmborn,
                           const unsigned int verbosity)
 {
@@ -1307,6 +1319,7 @@ double Dynamical::freq(const double x) const
     return -std::sqrt(-x);
 }
 
+
 void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
                                              double **ret,
                                              double ***ret_all) const
@@ -1358,6 +1371,7 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
     for (iat = 0; iat < natmin; ++iat)
         ret[iat] /= std::sqrt(static_cast<double>(natmin) * sum);
 }
+
 
 void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
                                                  int **index_sorted) const
@@ -1444,6 +1458,7 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
     }
     memory->deallocate(evec_tmp);
 }
+
 
 void Dynamical::detect_imaginary_branches(double **eval)
 {

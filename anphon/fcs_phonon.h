@@ -15,15 +15,12 @@
 #include <vector>
 #include <set>
 
-namespace PHON_NS
-{
-    struct Triplet
-    {
+namespace PHON_NS {
+    struct Triplet {
         unsigned int atom, cell, xyz;
     };
 
-    class FcsClass
-    {
+    class FcsClass {
     public:
         std::vector<Triplet> elems;
         double fcs_val;
@@ -44,7 +41,7 @@ namespace PHON_NS
 
         FcsClass(const double val,
                  const std::vector<Triplet> &vec)
-            : elems(vec), fcs_val(val) {};
+                : elems(vec), fcs_val(val) {};
 
         bool operator<(const FcsClass &obj) const
         {
@@ -59,8 +56,7 @@ namespace PHON_NS
         }
     };
 
-    class FcsClassExtent
-    {
+    class FcsClassExtent {
     public:
         unsigned int atm1, atm2;
         unsigned int xyz1, xyz2;
@@ -82,13 +78,12 @@ namespace PHON_NS
         bool operator==(const FcsClassExtent &a) const
         {
             return (this->atm1 == a.atm1) & (this->atm2 == a.atm2)
-                & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
-                & (this->cell_s == a.cell_s);
+                   & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
+                   & (this->cell_s == a.cell_s);
         }
     };
 
-    struct AtomCellSuper
-    {
+    struct AtomCellSuper {
         unsigned int index;
         unsigned int tran;
         unsigned int cell_s;
@@ -100,8 +95,7 @@ namespace PHON_NS
         return a.index < b.index;
     }
 
-    class FcsArrayWithCell
-    {
+    class FcsArrayWithCell {
     public:
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
@@ -110,7 +104,7 @@ namespace PHON_NS
 
         FcsArrayWithCell(const double fcs_in,
                          const std::vector<AtomCellSuper> &pairs_in)
-            : pairs(pairs_in), fcs_val(fcs_in) {};
+                : pairs(pairs_in), fcs_val(fcs_in) {};
 
         bool operator<(const FcsArrayWithCell &obj) const
         {
@@ -131,8 +125,7 @@ namespace PHON_NS
         }
     };
 
-    class Fcs_phonon : protected Pointers
-    {
+    class Fcs_phonon : protected Pointers {
     public:
         Fcs_phonon(class PHON *);
 
@@ -154,8 +147,11 @@ namespace PHON_NS
         bool require_quartic;
 
         void set_default_variables();
+
         void deallocate_variables();
+
         void load_fc2_xml();
+
         void load_fcs_xml() const;
 
         void examine_translational_invariance(int,
@@ -166,7 +162,9 @@ namespace PHON_NS
                                               std::vector<FcsArrayWithCell> *) const;
 
         void MPI_Bcast_fc_class(unsigned int) const;
+
         void MPI_Bcast_fcs_array(unsigned int) const;
+
         void MPI_Bcast_fc2_ext();
     };
 }

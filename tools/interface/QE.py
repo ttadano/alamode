@@ -808,6 +808,10 @@ class QEParser(object):
         self._kd = [map_name2num[t] for t in kd_in_str]
 
     @property
+    def atomic_kinds(self):
+        return self._kd
+
+    @property
     def x_fractional(self):
         return self._x_fractional
 
@@ -914,7 +918,7 @@ class QEParser(object):
             line = f.readline()
 
         if not found_tag:
-            print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
+            #print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
             return None
 
         x = self._celldm[0] * np.dot(x, self._inverse_lattice_vector.transpose()) \

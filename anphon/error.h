@@ -12,10 +12,8 @@
 
 #include "pointers.h"
 
-namespace PHON_NS
-{
-    class Error : protected Pointers
-    {
+namespace PHON_NS {
+    class Error : protected Pointers {
     public:
         Error(class PHON *);
 

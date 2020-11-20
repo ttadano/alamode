@@ -22,7 +22,7 @@
 
 using namespace PHON_NS;
 
-Isotope::Isotope(PHON *phon): Pointers(phon)
+Isotope::Isotope(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 };
@@ -113,7 +113,7 @@ void Isotope::calc_isotope_selfenergy(const int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
-                        * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
@@ -197,7 +197,7 @@ void Isotope::calc_isotope_selfenergy_all() const
             std::cout << " Calculating self-energies from isotope scatterings ... ";
         }
 
-        if (mympi->my_rank == 0)  {
+        if (mympi->my_rank == 0) {
             memory->allocate(gamma_tmp, nks);
         } else {
             memory->allocate(gamma_tmp, 1);

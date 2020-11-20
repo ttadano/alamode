@@ -16,16 +16,14 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <string>
 #include <algorithm>
 
-class Maps
-{
+class Maps {
 public:
     unsigned int atom_num;
     unsigned int tran_num;
 };
 
 
-class FcsClassExtent
-{
+class FcsClassExtent {
 public:
     unsigned int atm1, atm2;
     unsigned int xyz1, xyz2;
@@ -45,8 +43,7 @@ public:
     }
 };
 
-class DeltaFcs
-{
+class DeltaFcs {
 public:
     int sx, sy, sz;
     int atm1, xyz1;
@@ -57,14 +54,13 @@ public:
              const int atm1, const int xyz1,
              const int atm2, const int xyz2,
              const double dfc2) :
-        sx(sx), sy(sy), sz(sz),
-        atm1(atm1), xyz1(xyz1),
-        atm2(atm2), xyz2(xyz2),
-        dfc2(dfc2) {};
+            sx(sx), sy(sy), sz(sz),
+            atm1(atm1), xyz1(xyz1),
+            atm2(atm2), xyz2(xyz2),
+            dfc2(dfc2) {};
 };
 
-class FcsTrans
-{
+class FcsTrans {
 public:
     int fcs_index;
     std::vector<int> arr;
@@ -101,20 +97,26 @@ double temp;
 double lavec_s[3][3], lavec_p[3][3];
 double rlavec_p[3][3];
 double **xr_s, **xr_p;
+unsigned int is_periodic[3];
 
 void load_fc2_xml(const std::string);
+
 void load_delta_fc2(const std::string, const double);
-void calculate_new_fc2(std::vector<FcsClassExtent>,
-                       std::vector<DeltaFcs>,
-                       std::vector<FcsClassExtent> &);
+
+void calculate_new_fc2(std::vector <FcsClassExtent>,
+                       std::vector <DeltaFcs>,
+                       std::vector <FcsClassExtent> &);
+
 void recips(double [3][3], double [3][3]);
-void write_new_xml(const std::vector<FcsClassExtent>,
+
+void write_new_xml(const std::vector <FcsClassExtent>,
                    const std::string);
+
 std::string double2string(const double, const int nprec = 15);
 
 
 unsigned int **map_p2s;
 Maps *map_s2p;
 
-std::vector<FcsClassExtent> fc2_orig, fc2_new;
-std::vector<DeltaFcs> delta_fc2;
+std::vector <FcsClassExtent> fc2_orig, fc2_new;
+std::vector <DeltaFcs> delta_fc2;

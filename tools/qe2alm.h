@@ -30,15 +30,13 @@ double **xcrd, **xcrd_super;
 std::string *kd_symbol;
 
 bool include_na;
-bool consider_asr;
-;
+bool consider_asr;;
 int nq[3];
 double dielec[3][3];
 double ***born;
 double ***fc2;
 
-class DistInfo
-{
+class DistInfo {
 public:
     int cell;
     double dist;
@@ -66,10 +64,14 @@ inline bool operator<(const DistInfo a, const DistInfo b)
     return a.dist < b.dist;
 }
 
-std::vector<DistInfo> **mindist;
+std::vector <DistInfo> **mindist;
 
 void calc_lattice_vector(const int, double [6], double [3][3]);
+
 void recips(double [3][3], double [3][3]);
+
 std::string double2string(const double);
-void get_pairs_of_minimum_distance(const int, const int, int **, double **, std::vector<DistInfo> **);
+
+void get_pairs_of_minimum_distance(const int, const int, int **, double **, std::vector <DistInfo> **);
+
 double distance(double *, double *);

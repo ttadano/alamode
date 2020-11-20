@@ -96,7 +96,7 @@ void System::set_supercell(const double lavec_in[3][3],
     for (i = 0; i < nkd; i++) {
         if (static_cast<size_t>(unique_nums[i]) > nkd) {
             std::cout << " WARNING : integers assigned to atoms are wrong. "
-                << " The numbers will be resorted." << std::endl;
+                      << " The numbers will be resorted." << std::endl;
             wrong_number = true;
             break;
         }
@@ -141,6 +141,15 @@ void System::set_supercell(const double lavec_in[3][3],
         for (j = 0; j < 3; ++j) {
             xtmp[j] = xf_in[i][j];
         }
+        // The fractional coordinate should be in the range of 0<=xf<1.
+        for (j = 0; j < 3; ++j) {
+            while (xtmp[j] >= 1.0) {
+                xtmp[j] -= 1.0;
+            }
+            while (xtmp[j] < 0.0) {
+                xtmp[j] += 1.0;
+            }
+        }
         supercell.x_fractional.push_back(xtmp);
     }
 
@@ -168,24 +177,24 @@ void System::set_supercell(const double lavec_in[3][3],
     }
 }
 
-const Cell& System::get_supercell() const
+const Cell &System::get_supercell() const
 {
     return supercell;
 }
 
-double*** System::get_x_image() const
+double ***System::get_x_image() const
 {
     return x_image;
 }
 
-int* System::get_exist_image() const
+int *System::get_exist_image() const
 {
     return exist_image;
 }
 
 void System::set_periodicity(const int is_periodic_in[3])
 {
-    if (! is_periodic) {
+    if (!is_periodic) {
         // This should be already allocated though.
         allocate(is_periodic, 3);
     }
@@ -194,7 +203,7 @@ void System::set_periodicity(const int is_periodic_in[3])
     }
 }
 
-int* System::get_periodicity() const
+int *System::get_periodicity() const
 {
     return is_periodic;
 }
@@ -212,7 +221,7 @@ void System::set_kdname(const std::string *kdname_in)
     }
 }
 
-std::string* System::get_kdname() const
+std::string *System::get_kdname() const
 {
     return kdname;
 }
@@ -236,12 +245,12 @@ void System::set_reciprocal_latt(const double aa[3][3],
     */
 
     const auto det
-        = aa[0][0] * aa[1][1] * aa[2][2]
-        + aa[1][0] * aa[2][1] * aa[0][2]
-        + aa[2][0] * aa[0][1] * aa[1][2]
-        - aa[0][0] * aa[2][1] * aa[1][2]
-        - aa[2][0] * aa[1][1] * aa[0][2]
-        - aa[1][0] * aa[0][1] * aa[2][2];
+            = aa[0][0] * aa[1][1] * aa[2][2]
+              + aa[1][0] * aa[2][1] * aa[0][2]
+              + aa[2][0] * aa[0][1] * aa[1][2]
+              - aa[0][0] * aa[2][1] * aa[1][2]
+              - aa[2][0] * aa[1][1] * aa[0][2]
+              - aa[1][0] * aa[0][1] * aa[2][2];
 
     if (std::abs(det) < eps12) {
         exit("set_reciprocal_latt", "Lattice Vector is singular");
@@ -303,8 +312,8 @@ double System::volume(const double latt_in[3][3],
     }
 
     const auto vol = std::abs(mat[0][0] * (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1])
-        + mat[0][1] * (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2])
-        + mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]));
+                              + mat[0][1] * (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2])
+                              + mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]));
 
     return vol;
 }
@@ -366,7 +375,7 @@ void System::set_spin_variables(const size_t nat_in,
     }
 }
 
-const Spin& System::get_spin() const
+const Spin &System::get_spin() const
 {
     return spin;
 }
@@ -377,12 +386,12 @@ void System::set_str_magmom(std::string str_magmom_in)
     str_magmom = str_magmom_in;
 }
 
-const std::string& System::get_str_magmom() const
+const std::string &System::get_str_magmom() const
 {
     return str_magmom;
 }
 
-const std::vector<std::vector<unsigned int>>& System::get_atomtype_group() const
+const std::vector<std::vector<unsigned int>> &System::get_atomtype_group() const
 {
     return atomtype_group;
 }
@@ -588,11 +597,11 @@ void System::print_magmom_stdout() const
         cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << endl;
         if (spin.time_reversal_symm) {
             cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group"
-                << endl;
+                 << endl;
         } else {
             cout <<
-                "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group"
-                << endl;
+                 "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group"
+                 << endl;
         }
     }
     cout << endl << endl;

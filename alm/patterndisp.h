@@ -21,10 +21,8 @@
 #include "constraint.h"
 #include "system.h"
 
-namespace ALM_NS
-{
-    class DispAtomSet
-    {
+namespace ALM_NS {
+    class DispAtomSet {
     public:
         std::vector<int> atomset;
 
@@ -33,8 +31,7 @@ namespace ALM_NS
         DispAtomSet(std::vector<int> atomset_in) : atomset(std::move(atomset_in)) {}
     };
 
-    class DirectionVec
-    {
+    class DirectionVec {
     public:
         double direction[3]{};
 
@@ -46,8 +43,7 @@ namespace ALM_NS
         }
     };
 
-    class DispDirectionHarmonic
-    {
+    class DispDirectionHarmonic {
     public:
         int atom;
         std::vector<DirectionVec> directionlist;
@@ -64,8 +60,7 @@ namespace ALM_NS
         }
     };
 
-    class AtomWithDirection
-    {
+    class AtomWithDirection {
     public:
         std::vector<int> atoms;
         std::vector<double> directions;
@@ -97,8 +92,7 @@ namespace ALM_NS
     }
 
 
-    class IndexWithSign
-    {
+    class IndexWithSign {
     public:
         int ind, sign;
 
@@ -118,10 +112,10 @@ namespace ALM_NS
         return a.ind < b.ind;
     }
 
-    class Displace
-    {
+    class Displace {
     public:
         Displace();
+
         ~Displace();
 
         void gen_displacement_pattern(const Cluster *cluster,
@@ -132,9 +126,12 @@ namespace ALM_NS
                                       const int verbosity);
 
         void set_trim_dispsign_for_evenfunc(const bool);
+
         std::string get_disp_basis() const;
+
         void set_disp_basis(const std::string);
-        const std::vector<AtomWithDirection>& get_pattern_all(const int) const;
+
+        const std::vector<AtomWithDirection> &get_pattern_all(const int) const;
 
     private:
         bool trim_dispsign_for_evenfunc;
@@ -142,8 +139,11 @@ namespace ALM_NS
         std::vector<AtomWithDirection> *pattern_all;
 
         std::vector<DispDirectionHarmonic> disp_harm, disp_harm_best;
+
         void set_default_variables();
+
         void deallocate_variables();
+
         void generate_pattern_all(const int maxorder,
                                   const size_t nat,
                                   const double lavec[3][3],

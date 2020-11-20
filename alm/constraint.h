@@ -23,10 +23,8 @@
 #include "system.h"
 #include "timer.h"
 
-namespace ALM_NS
-{
-    class ConstraintClass
-    {
+namespace ALM_NS {
+    class ConstraintClass {
     public:
         std::vector<double> w_const;
 
@@ -34,7 +32,7 @@ namespace ALM_NS
 
         ConstraintClass(const ConstraintClass &a) = default;
 
-        ConstraintClass(std::vector<double> vec) : w_const(std::move(vec)) { }
+        ConstraintClass(std::vector<double> vec) : w_const(std::move(vec)) {}
 
         ConstraintClass(const int n,
                         const double *arr,
@@ -52,19 +50,17 @@ namespace ALM_NS
         }
     };
 
-    class ConstraintTypeFix
-    {
+    class ConstraintTypeFix {
     public:
         size_t p_index_target;
         double val_to_fix;
 
         ConstraintTypeFix(const size_t index_in,
                           const double val_in) :
-            p_index_target(index_in), val_to_fix(val_in) { }
+                p_index_target(index_in), val_to_fix(val_in) {}
     };
 
-    class ConstraintTypeRelate
-    {
+    class ConstraintTypeRelate {
     public:
         size_t p_index_target;
         std::vector<double> alpha;
@@ -73,7 +69,7 @@ namespace ALM_NS
         ConstraintTypeRelate(const size_t index_in,
                              std::vector<double> alpha_in,
                              std::vector<size_t> p_index_in) :
-            p_index_target(index_in), alpha(std::move(alpha_in)), p_index_orig(std::move(p_index_in)) { }
+                p_index_target(index_in), alpha(std::move(alpha_in)), p_index_orig(std::move(p_index_in)) {}
     };
 
     inline bool equal_within_eps12(const std::vector<double> &a,
@@ -88,8 +84,7 @@ namespace ALM_NS
         return true;
     }
 
-    class ConstraintIntegerElement
-    {
+    class ConstraintIntegerElement {
         // For sparse representation
     public:
         size_t col;
@@ -97,7 +92,7 @@ namespace ALM_NS
 
         ConstraintIntegerElement(const size_t col_in,
                                  const int val_in) :
-            col(col_in), val(val_in) {}
+                col(col_in), val(val_in) {}
     };
 
     // Operator for sort
@@ -141,8 +136,7 @@ namespace ALM_NS
         return true;
     }
 
-    class ConstraintDoubleElement
-    {
+    class ConstraintDoubleElement {
         // For sparse representation
     public:
         size_t col;
@@ -150,9 +144,10 @@ namespace ALM_NS
 
         ConstraintDoubleElement(const size_t col_in,
                                 const double val_in) :
-            col(col_in), val(val_in) {}
+                col(col_in), val(val_in) {}
 
-        bool operator<(const ConstraintDoubleElement &obj) const {
+        bool operator<(const ConstraintDoubleElement &obj) const
+        {
             return col < obj.col;
         }
     };
@@ -204,17 +199,17 @@ namespace ALM_NS
         return obj1.begin()->first < obj2.begin()->first;
     }
 
-    class Constraint
-    {
+    class Constraint {
     public:
         Constraint();
+
         ~Constraint();
 
         void setup(const System *system,
                    const Fcs *fcs,
                    const Cluster *cluster,
                    const Symmetry *symmetry,
-                   const std::string alm_mode,
+                   const int linear_model,
                    const int verbosity,
                    Timer *timer);
 
@@ -226,36 +221,53 @@ namespace ALM_NS
                                     boost::bimap<size_t, size_t> *index_bimap_out) const;
 
         int get_constraint_mode() const;
+
         void set_constraint_mode(const int);
+
         size_t get_number_of_constraints() const;
+
         std::string get_fc_file(const int) const;
+
         void set_fc_file(const int,
                          const std::string);
+
         bool get_fix_harmonic() const;
+
         void set_fix_harmonic(const bool);
+
         bool get_fix_cubic() const;
+
         void set_fix_cubic(const bool);
+
         int get_constraint_algebraic() const;
 
-        double** get_const_mat() const;
-        double* get_const_rhs() const;
+        double **get_const_mat() const;
+
+        double *get_const_rhs() const;
 
         double get_tolerance_constraint() const;
+
         void set_tolerance_constraint(const double);
 
         bool get_exist_constraint() const;
+
         bool get_extra_constraint_from_symmetry() const;
 
         std::string get_rotation_axis() const;
+
         void set_rotation_axis(const std::string);
 
-        const ConstraintSparseForm& get_const_symmetry(const int) const;
-        const std::vector<ConstraintTypeFix>& get_const_fix(const int) const;
+        const ConstraintSparseForm &get_const_symmetry(const int) const;
+
+        const std::vector<ConstraintTypeFix> &get_const_fix(const int) const;
+
         void set_const_fix_val_to_fix(const int order,
                                       const size_t idx,
                                       const double val);
-        const std::vector<ConstraintTypeRelate>& get_const_relate(const int) const;
-        const boost::bimap<size_t, size_t>& get_index_bimap(const int) const;
+
+        const std::vector<ConstraintTypeRelate> &get_const_relate(const int) const;
+
+        const boost::bimap<size_t, size_t> &get_index_bimap(const int) const;
 
     private:
 
@@ -288,6 +300,7 @@ namespace ALM_NS
         ConstraintSparseForm *const_self;
 
         void set_default_variables();
+
         void deallocate_variables();
 
         int levi_civita(const int,
@@ -309,11 +322,14 @@ namespace ALM_NS
         void print_constraint(const ConstraintSparseForm &) const;
 
         void setup_rotation_axis(bool [3][3]);
+
         bool is_allzero(const int,
                         const double *,
                         const int nshift = 0) const;
+
         bool is_allzero(const std::vector<int> &,
                         int &) const;
+
         bool is_allzero(const std::vector<double> &,
                         const double,
                         int &,

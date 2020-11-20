@@ -32,7 +32,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Gruneisen::Gruneisen(PHON *phon): Pointers(phon)
+Gruneisen::Gruneisen(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 };
@@ -140,8 +140,8 @@ void Gruneisen::calc_gruneisen()
             for (unsigned int i = 0; i < ns; ++i) {
                 for (unsigned int j = 0; j < ns; ++j) {
                     gruneisen[ik][is] += std::conj(dynamical->evec_phonon[ik][is][i])
-                        * dfc2_reciprocal[i][j]
-                        * dynamical->evec_phonon[ik][is][j];
+                                         * dfc2_reciprocal[i][j]
+                                         * dynamical->evec_phonon[ik][is][j];
                 }
             }
 
@@ -153,7 +153,7 @@ void Gruneisen::calc_gruneisen()
             if (std::abs(dynamical->eval_phonon[ik][is]) < eps8) {
                 gruneisen[ik][is] = 0.0;
             } else {
-                gruneisen[ik][is] /= - 6.0 * std::pow(dynamical->eval_phonon[ik][is], 2);
+                gruneisen[ik][is] /= -6.0 * std::pow(dynamical->eval_phonon[ik][is], 2);
             }
         }
     }
@@ -197,7 +197,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[cell_s][i]
-                - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
+                     - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
@@ -206,8 +206,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
-            += it.fcs_val * std::exp(im * phase)
-            / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+                += it.fcs_val * std::exp(im * phase)
+                   / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
 
     }
 }
@@ -300,10 +300,10 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                    1].tran]]
-                [i]
-                - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                + xshift_s[it.pairs[norder - 1].cell_s][i];
+                                                                                                         1].tran]]
+                     [i]
+                     - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                     + xshift_s[it.pairs[norder - 1].cell_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
@@ -352,14 +352,14 @@ void Gruneisen::write_new_fcsxml_all()
 
         std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_xml;
         std::cout << " : Force constants of the system expanded by "
-            << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+                  << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
 
         file_xml = input->job_title + "_-.xml";
         write_new_fcsxml(file_xml, -delta_a);
 
         std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_xml;
         std::cout << " : Force constants of the system compressed by "
-            << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+                  << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
     }
 }
 

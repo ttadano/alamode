@@ -14,8 +14,7 @@
 #include <cstdlib>
 
 
-namespace ALM_NS
-{
+namespace ALM_NS {
     inline void warn(const char *file,
                      const char *message)
     {
@@ -29,7 +28,7 @@ namespace ALM_NS
         std::exit(EXIT_FAILURE);
     }
 
-    template <typename T>
+    template<typename T>
     void exit(const char *file,
               const char *message,
               const T info)

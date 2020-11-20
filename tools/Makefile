@@ -15,7 +15,7 @@
 CXX = g++
 
 # OSX
-CXX = clang++
+#CXX = clang++
 
 CXXFLAGS = -O2 -std=c++11
 
@@ -29,9 +29,9 @@ INCLUDE = -I../include -I$(HOME)/include
 .cpp.o:
 	${CXX} ${CXXFLAGS} ${INCLUDE} -c $<
 
-PROG = analyze_phonons qe2alm dfc2
+PROG = analyze_phonons qe2alm dfc2 fc_virtual
 
-CXXSRC = analyze_phonons.cpp qe2alm.cpp dfc2.cpp
+CXXSRC = analyze_phonons.cpp qe2alm.cpp dfc2.cpp fc_virtual.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 
@@ -46,6 +46,9 @@ qe2alm: qe2alm.o
 	${CXX} ${CXXFLAGS} -o $@ $<
 
 dfc2: dfc2.o
+	${CXX} ${CXXFLAGS} -o $@ $<
+
+fc_virtual: fc_virtual.o
 	${CXX} ${CXXFLAGS} -o $@ $<
 
 clean:

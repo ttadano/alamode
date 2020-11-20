@@ -83,6 +83,7 @@ namespace PHON_NS {
                           bool) const;
 
         double fold(const double) const;
+
         double freq(const double) const;
 
         void calc_participation_ratio_all(std::complex<double> ***,
