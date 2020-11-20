@@ -104,7 +104,7 @@ namespace PHON_NS {
                               double *);
 
         void print_spectral_function(const int,
-                                     const double *);
+                                     double *);
 
         void print_normalmode_borncharge() const;
     };
