@@ -41,6 +41,7 @@ namespace PHON_NS {
         bool print_msd;
         bool print_ucorr;
         bool print_anime;
+        bool print_zmode;
 
         unsigned int anime_cellsize[3];
         double anime_kpoint[3];
@@ -99,6 +100,9 @@ namespace PHON_NS {
                                          const unsigned int [3]) const;
 
         void write_eigenvectors() const;
+
+        void print_normalmode_borncharge() const;
+
 
 #ifdef _HDF5
         void write_eigenvectors_HDF5() const;

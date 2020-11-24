@@ -723,6 +723,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     }
 
     writes->print_msd = print_msd;
+    writes->print_zmode = print_zmode;
 
     dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
@@ -742,7 +743,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     mode_analysis->print_V4 = print_V4;
     mode_analysis->spectral_func = bubble_omega;
     mode_analysis->calc_selfenergy = calc_selfenergy;
-    mode_analysis->print_zmode = print_zmode;
     isotope->include_isotope = include_isotope;
 
     gruneisen->print_gruneisen = print_gruneisen;

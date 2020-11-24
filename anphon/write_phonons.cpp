@@ -46,6 +46,7 @@ Writes::Writes(PHON *phon) : Pointers(phon)
     print_xsf = false;
     print_anime = false;
     print_msd = false;
+    print_zmode = false;
     anime_cellsize[0] = 0;
     anime_cellsize[1] = 0;
     anime_cellsize[2] = 0;
@@ -576,6 +577,10 @@ void Writes::write_phonon_info()
                       << input->job_title + ".anime*.xyz";
             std::cout << " : XYZ files for animate phonon modes" << std::endl;
         }
+    }
+
+    if (print_zmode) {
+        print_normalmode_borncharge();
     }
 }
 
@@ -2206,6 +2211,39 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     memory->deallocate(evec_theta);
     memory->deallocate(disp_mag);
     memory->deallocate(mass);
+}
+
+void Writes::print_normalmode_borncharge() const
+{
+
+    if (mympi->my_rank == 0) {
+
+        auto zstar_born = dielec->get_zstar_mode();
+
+        const auto ns = dynamical->neval;
+
+        std::string file_zstar = input->job_title + ".Born_mode";
+        std::ofstream ofs_zstar;
+        ofs_zstar.open(file_zstar.c_str(), std::ios::out);
+        if (!ofs_zstar)
+            error->exit("print_normalmode_borncharge",
+                        "Cannot open file file_zstar");
+
+        ofs_zstar << "# Born effective charges of each phonon mode at q = (0, 0, 0). Unit is (amu)^{-1/2}\n";
+        for (auto is = 0; is < ns; ++is) {
+            ofs_zstar << "# Mode " << std::setw(5) << is + 1 << '\n';
+            ofs_zstar << "#";
+            ofs_zstar << std::setw(14) << 'x';
+            ofs_zstar << std::setw(15) << 'y';
+            ofs_zstar << std::setw(15) << 'z';
+            ofs_zstar << '\n';
+            for (auto i = 0; i < 3; ++i) {
+                ofs_zstar << std::setw(15) << std::fixed << zstar_born[is][i];
+            }
+            ofs_zstar << "\n\n";
+        }
+        ofs_zstar.close();
+    }
 }
 
 

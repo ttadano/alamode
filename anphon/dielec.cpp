@@ -279,12 +279,15 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
         dynamical->project_degenerate_eigenvectors(&xk[0],
                                                    dynamical->get_projection_directions(),
                                                    evec);
+    } else {
+        dynamical->eval_k(&xk[0], &xk[0], fcs_phonon->fc2_ext, eval, evec, true);
     }
 
     // Divide by sqrt of atomic mass to get normal coordinate
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
             evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]] / amu_ry);
+//            evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]]);
         }
     }
 
@@ -296,9 +299,11 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
             auto normalization_factor = 0.0;
 
             for (auto j = 0; j < ns; ++j) {
-                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * std::abs(evec[is][j]);
+//                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * std::abs(evec[is][j]);
+                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
                 normalization_factor += std::norm(evec[is][j]);
             }
+
             if (do_normalize) zstar_mode[is][i] /= std::sqrt(normalization_factor);
         }
     }

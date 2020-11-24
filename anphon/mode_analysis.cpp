@@ -52,7 +52,6 @@ void ModeAnalysis::set_default_variables()
     print_V3 = 0;
     print_V4 = 0;
     calc_selfenergy = 0;
-    print_zmode = false;
     spectral_func = false;
 }
 
@@ -136,7 +135,6 @@ void ModeAnalysis::setup_mode_analysis()
     MPI_Bcast(&print_V3, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&print_V4, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_selfenergy, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&print_zmode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&spectral_func, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     unsigned int nlist;
@@ -296,9 +294,7 @@ void ModeAnalysis::run_mode_analysis()
         } else if (print_V4 == 2) {
             print_Phi4_elements();
         }
-
-        if (print_zmode) print_normalmode_borncharge();
-
+        
         if (calc_fstate_omega) print_frequency_resolved_final_state(NT, T_arr);
 
         if (spectral_func) print_spectral_function(NT, T_arr);
@@ -2200,36 +2196,4 @@ void ModeAnalysis::print_spectral_function(const int NT,
 }
 
 
-void ModeAnalysis::print_normalmode_borncharge() const
-{
 
-    if (mympi->my_rank == 0) {
-
-        auto zstar_born = dielec->get_zstar_mode();
-
-        const auto ns = dynamical->neval;
-
-        std::string file_zstar = input->job_title + ".Born_mode";
-        std::ofstream ofs_zstar;
-        ofs_zstar.open(file_zstar.c_str(), std::ios::out);
-        if (!ofs_zstar)
-            error->exit("print_normalmode_borncharge",
-                        "Cannot open file file_zstar");
-
-        ofs_zstar << "# Born effective charges of each phonon mode at q = (0, 0, 0). Unit is (amu)^{-1/2}\n";
-        for (auto is = 0; is < ns; ++is) {
-            ofs_zstar << "# Mode " << std::setw(5) << is + 1 << '\n';
-            ofs_zstar << "#";
-            ofs_zstar << std::setw(14) << 'x';
-            ofs_zstar << std::setw(15) << 'y';
-            ofs_zstar << std::setw(15) << 'z';
-            ofs_zstar << '\n';
-            for (auto i = 0; i < 3; ++i) {
-                ofs_zstar << std::setw(15) << std::fixed << zstar_born[is][i];
-            }
-            ofs_zstar << "\n\n";
-        }
-        ofs_zstar.close();
-    }       
-
-}
