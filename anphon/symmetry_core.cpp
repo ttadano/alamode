@@ -32,7 +32,7 @@ Symmetry::~Symmetry() {}
 void Symmetry::set_default_variables()
 {
     file_sym = "SYMM_INFO_PRIM";
-    time_reversal_sym = false;
+    time_reversal_sym = true;
     nsym = 0;
     symmetry_flag = true;
     printsymmetry = false;
