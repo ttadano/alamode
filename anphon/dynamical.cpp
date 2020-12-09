@@ -891,6 +891,17 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
 
     calc_analytic_k(xk_in, fcs_phonon->fc2_ext, dymat_tmp);
 
+    if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0)
+                  + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
+                  + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
+
+        for (i = 0; i < 3 * system->natmin; ++i) {
+            for (j = 0; j < 3 * system->natmin; ++j) {
+                dymat_tmp[i][j] = std::complex<double>(dymat_tmp[i][j].real(), 0.0);
+            }
+        }
+    }
+
     for (i = 0; i < ns; ++i) {
         for (j = 0; j < ns; ++j) {
             dymat(i, j) = dymat_tmp[i][j];
@@ -906,7 +917,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
     //
     // Construct degeneracy information
     //
-    const double tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
+    const double tol_omega = 1.0e-14; // Approximately equal to (0.01 cm^{-1})^2
 
     std::vector<int> degeneracy_at_k;
 
@@ -937,26 +948,47 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
     const double dk = 1.0e-3; // Small value may be preferable.
     Eigen::MatrixXcd evec_new(ns, ns);
 
-    for (auto iset = 0; iset < degeneracy_at_k.size(); ++iset) {
+    for (int iset : degeneracy_at_k) {
 
-        if (degeneracy_at_k[iset] == 1) {
+        if (iset == 1) {
             // Non degenerate case. just copy the original eigenvector
 
             evec_new.block(0, ishift, ns, 1) = evec_orig.block(0, ishift, ns, 1);
 
-        } else if (degeneracy_at_k[iset] == 2) {
+        } else if (iset == 2) {
             // Doubly degenerate case.
 
-            Eigen::MatrixXcd evec_sub = evec_orig.block(0, ishift, ns, 2);
-            auto is_lifted = transform_eigenvectors(xk_in, directions[0], dk, evec_sub);
+            if (ndirec == 0) {
+                evec_new.block(0, ishift, ns, 2) = evec_orig.block(0, ishift, ns, 2);
+            } else {
 
-            evec_new.block(0, ishift, ns, 2) = evec_sub.block(0, 0, ns, 2);
-            if (is_lifted == 0) {
-                std::cout << " The first projection did not lift the two-fold degeneracy.\n"
-                             " Try another projection!\n";
+                Eigen::MatrixXcd evec_sub = evec_orig.block(0, ishift, ns, 2);
+                auto is_lifted = transform_eigenvectors(xk_in, directions[0], dk, evec_sub);
+
+                if (is_lifted == 0 and ndirec >= 2) {
+                    evec_sub = evec_orig.block(0, ishift, ns, 2);
+                    is_lifted = transform_eigenvectors(xk_in, directions[1], dk, evec_sub);
+
+                    if (is_lifted == 0 and ndirec >= 3) {
+                        evec_sub = evec_orig.block(0, ishift, ns, 2);
+                        is_lifted = transform_eigenvectors(xk_in, directions[2], dk, evec_sub);
+                    }
+                }
+
+                if (is_lifted == 0) {
+                    std::cout << " xk = ";
+                    for (i = 0; i < 3; ++i) std::cout << std::setw(15) << xk_in[i];
+                    std::cout << '\n';
+                    std::cout << " All projections did not lift the two-fold degeneracy.\n"
+                                 " Try another projection!\n";
+
+                    evec_new.block(0, ishift, ns, 2) = evec_orig.block(0, ishift, ns, 2);
+                } else {
+                    evec_new.block(0, ishift, ns, 2) = evec_sub.block(0, 0, ns, 2);
+                }
             }
 
-        } else if (degeneracy_at_k[iset] == 3) {
+        } else if (iset == 3) {
             // Triply degenerate case
 
             if (ndirec == 0) {
@@ -970,6 +1002,9 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
 
                 evec_new.block(0, ishift, ns, 3) = evec_sub.block(0, 0, ns, 3);
                 if (is_lifted == 0) {
+                    std::cout << " xk = ";
+                    for (i = 0; i < 3; ++i) std::cout << std::setw(15) << xk_in[i];
+                    std::cout << '\n';
                     std::cout << " The first projection did not lift the two-fold degeneracy.\n"
                                  " Try another projection!\n";
                 }
@@ -986,6 +1021,9 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
                 evec_new.block(0, ishift + 1, ns, 2) = evec_sub2.block(0, 0, ns, 2);
 
                 if (is_lifted1 == 0 || is_lifted2 == 0) {
+                    std::cout << " xk = ";
+                    for (i = 0; i < 3; ++i) std::cout << std::setw(15) << xk_in[i];
+                    std::cout << '\n';
                     std::cout << " The given projections did not lift the three-fold degeneracy.\n"
                                  " Try another set of projections!\n";
                 }
@@ -993,10 +1031,11 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
             }
 
         } else {
+            std::cout << iset << '\n';
             error->exitall("project_degenerate_eigenvectors", "This should not happen.");
         }
 
-        ishift += degeneracy_at_k[iset];
+        ishift += iset;
     }
 
 #ifdef _DEBUG
