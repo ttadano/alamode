@@ -782,18 +782,25 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // modify_eigenvectors();
-    if (projection_directions.size()) {
-        for (const auto &it : projection_directions) {
-            for (const auto &it2 : it) {
-                std::cout << std::setw(15) << it2;
+    if (!projection_directions.empty()) {
+        if (mympi->my_rank == 0) {
+            for (const auto &it : projection_directions) {
+                for (const auto &it2 : it) {
+                    std::cout << std::setw(15) << it2;
+                }
+                std::cout << '\n';
             }
-            std::cout << '\n';
+
+            for (auto ik = 0; ik < nk; ++ik) {
+                project_degenerate_eigenvectors(kpoint->xk[ik],
+                                                projection_directions,
+                                                evec_phonon[ik]);
+            }
         }
-        for (auto ik = 0; ik < nk; ++ik) {
-            project_degenerate_eigenvectors(kpoint->xk[ik],
-                                            projection_directions,
-                                            evec_phonon[ik]);
-        }
+
+        MPI_Bcast(&evec_phonon[0][0][0],
+                  nk * dynamical->neval * dynamical->neval,
+                  MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
     }
 }
 

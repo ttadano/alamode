@@ -82,28 +82,29 @@ namespace PHON_NS {
 
         void calc_V3norm2(const unsigned int,
                           const unsigned int,
-                          double **) const;
+                          const std::vector<KsListGroup> &,
+                          std::vector<std::vector<double>> &) const;
 
         void calc_V4norm2(const unsigned int,
                           const unsigned int,
                           const std::vector<KsListGroup> &,
-                          double **) const;
+                          std::vector<std::vector<double>> &) const;
 
-        void calc_Phi3(unsigned int,
-                       unsigned int,
+        void calc_Phi3(const unsigned int,
+                       const unsigned int,
                        const std::vector<KsListGroup> &,
-                       std::complex<double> **) const;
+                       std::vector<std::vector<std::complex<double>>> &) const;
 
-        void calc_Phi4(unsigned int,
-                       unsigned int,
+        void calc_Phi4(const unsigned int,
+                       const unsigned int,
                        const std::vector<KsListGroup> &,
-                       std::complex<double> **) const;
+                       std::vector<std::vector<std::complex<double>>> &) const;
 
-        void print_selfenergy(const int,
+        void print_selfenergy(const unsigned int,
                               double *);
 
-        void print_spectral_function(const int,
-                                     double *);
+        void print_spectral_function(const unsigned int,
+                                     const double *);
 
     };
 }
