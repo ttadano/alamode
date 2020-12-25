@@ -293,10 +293,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             memory->allocate(FE_QHA, NT);
             memory->allocate(dFE_scph, NT);
 
-            if (writes->print_msd) {
+            if (writes->getPrintMSD()) {
                 memory->allocate(msd_scph, NT, ns);
             }
-            if (writes->print_ucorr) {
+            if (writes->getPrintUcorr()) {
                 memory->allocate(ucorr_scph, NT, ns, ns);
             }
         }
@@ -345,7 +345,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                                   eval_anharm[iT],
                                                                   evec_tmp);
 
-                if (writes->print_msd) {
+                if (writes->getPrintMSD()) {
                     double shift[3]{0.0, 0.0, 0.0};
 
                     for (auto is = 0; is < ns; ++is) {
@@ -358,9 +358,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                     }
                 }
 
-                if (writes->print_ucorr) {
+                if (writes->getPrintUcorr()) {
                     double shift[3];
-                    for (auto i = 0; i < 3; ++i) shift[i] = static_cast<double>(writes->shift_ucorr[i]);
+                    for (auto i = 0; i < 3; ++i) shift[i] = static_cast<double>(writes->getShiftUcorr()[i]);
 
                     for (auto is = 0; is < ns; ++is) {
                         for (auto js = 0; js < ns; ++js) {
@@ -416,10 +416,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 writes->write_scph_dos(dos_scph);
             }
             writes->write_scph_thermodynamics(heat_capacity, FE_QHA, dFE_scph);
-            if (writes->print_msd) {
+            if (writes->getPrintMSD()) {
                 writes->write_scph_msd(msd_scph);
             }
-            if (writes->print_ucorr) {
+            if (writes->getPrintUcorr()) {
                 writes->write_scph_ucorr(ucorr_scph);
             }
         }
@@ -458,7 +458,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                                &kpoint->weight_k[0],
                                                                eval_anharm[iT]);
 
-                    if (writes->print_msd) {
+                    if (writes->getPrintMSD()) {
                         double shift[3]{0.0, 0.0, 0.0};
 
                         for (auto is = 0; is < ns; ++is) {
@@ -471,9 +471,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                         }
                     }
 
-                    if (writes->print_ucorr) {
+                    if (writes->getPrintUcorr()) {
                         double shift[3];
-                        for (auto i = 0; i < 3; ++i) shift[i] = static_cast<double>(writes->shift_ucorr[i]);
+                        for (auto i = 0; i < 3; ++i) shift[i] = static_cast<double>(writes->getShiftUcorr()[i]);
 
                         for (auto is = 0; is < ns; ++is) {
                             for (auto js = 0; js < ns; ++js) {
@@ -505,10 +505,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 if (dos->compute_dos) {
                     writes->write_scph_dos(dos_scph, bubble);
                 }
-                if (writes->print_msd) {
+                if (writes->getPrintMSD()) {
                     writes->write_scph_msd(msd_scph, bubble);
                 }
-                if (writes->print_ucorr) {
+                if (writes->getPrintUcorr()) {
                     writes->write_scph_ucorr(ucorr_scph, bubble);
                 }
             }

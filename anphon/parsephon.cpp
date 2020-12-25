@@ -470,8 +470,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
             "REALPART", "ISOTOPE", "ISOFACT",
             "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
             "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-            "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-            "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+            "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
+            "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
             "DIELEC", "KAPPA_COHERENT"
     };
 
@@ -479,7 +479,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
     input_list.push_back("FE_BUBBLE");
 #endif
 
-    unsigned int cellsize[3];
+    unsigned int cellsize[3] = {1, 1, 1};
+    int shift_ucorr[3] = {0, 0, 0};
+    double anime_kpoint_double[3] = {0., 0., 0.};
 
     double *isotope_factor = nullptr;
     std::string ks_input, anime_format;
@@ -495,6 +497,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     auto print_evec = false;
     auto print_msd = false;
     auto print_ucorr = false;
+    auto anime_frames = 20;
 
     bool compute_dos = true;
     bool projected_dos = false;
@@ -593,6 +596,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
             error->exit("parse_analysis_vars",
                         "The number of entries for ANIME should be 3.");
         }
+        for (i = 0; i < 3; ++i) {
+            anime_kpoint_double[i] = my_cast<double>(anime_kpoint[i]);
+        }
 
         split_str_by_space(analysis_var_dict["ANIME_CELLSIZE"], anime_cellsize);
 
@@ -612,7 +618,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
             }
             if (cellsize[i] < 1) {
                 error->exit("parse_analysis_vars",
-                            "Please give positive integers in ANIME_CELLSIZE.");
+                            "Please give positive integers for ANIME_CELLSIZE.");
             }
         }
 
@@ -625,6 +631,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_format != "XSF" && anime_format != "AXSF" && anime_format != "XYZ") {
             error->exit("parse_analysis_vars", "Invalid ANIME_FORMAT");
         }
+
+        assign_val(anime_frames, "ANIME_FRAMES", analysis_var_dict);
     }
 
     if (print_ucorr) {
@@ -633,7 +641,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(str_shift_ucorr, "SHIFT_UCORR", analysis_var_dict);
 
         if (!str_shift_ucorr.empty()) {
-            int shift_ucorr[3];
             split_str_by_space(str_shift_ucorr, list_shift_ucorr);
             if (list_shift_ucorr.size() != 3) {
                 error->exit("parse_analysis_vars",
@@ -650,9 +657,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
                                 "SHIFT_UCORR must be an array of integers.");
                 }
             }
-            for (i = 0; i < 3; ++i) {
-                writes->shift_ucorr[i] = shift_ucorr[i];
-            }
+//            for (i = 0; i < 3; ++i) {
+//                writes->shift_ucorr[i] = shift_ucorr[i];
+//            }
         }
     }
 
@@ -661,19 +668,29 @@ void Input::parse_analysis_vars(const bool use_default_values)
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     dynamical->participation_ratio = participation_ratio;
-    writes->print_xsf = print_xsf;
-    writes->print_anime = print_anime;
-    writes->print_ucorr = print_ucorr;
+//    writes->print_xsf = print_xsf;
+//    writes->print_anime = print_anime;
+//    writes->print_ucorr = print_ucorr;
 
-    if (print_anime) {
-        for (i = 0; i < 3; ++i) {
-            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-            writes->anime_cellsize[i] = cellsize[i];
-        }
-        writes->anime_format = anime_format;
-    }
+    writes->setWriteOptions(print_msd,
+                            print_xsf,
+                            print_anime,
+                            anime_format,
+                            anime_frames,
+                            cellsize,
+                            anime_kpoint_double,
+                            print_ucorr,
+                            shift_ucorr);
 
-    writes->print_msd = print_msd;
+//    if (print_anime) {
+//        for (i = 0; i < 3; ++i) {
+//            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
+//            writes->anime_cellsize[i] = cellsize[i];
+//        }
+//        writes->anime_format = anime_format;
+//    }
+//
+//    writes->print_msd = print_msd;
 
     dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
