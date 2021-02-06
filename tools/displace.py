@@ -74,6 +74,11 @@ parser.add_argument('--temp', type=float, default=100,
                     help="Target temperature of the random distribution of \
                         Q (default: 100). Used if --MD is not given.")
 
+parser.add_argument('--ignore_imag', action="store_true", dest="ignore_imag", default=False,
+                    help="Ignore imaginary modes when generating random displacements by"
+                         "--random_normalcoord option. By default, imaginary frequency"
+                         "will be replaced with its absolute value.")
+
 parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
                     help="Specify the range and interval of data sampling. "
                          "--every=1:1000:10 means sampling one structure for every 10 snapshots"
@@ -96,7 +101,7 @@ parser.add_argument('-cl', '--classical', action="store_true", dest="classical",
                     help="Use classical expectation value for <Q^2>.")
 
 parser.add_argument('-p', '--print', action="store_true", dest="print_disp_stdout", default=False,
-                    help="Print displacements to stdout")
+                    help="Print displacements to stdout. The unit is Angstrom.")
 
 parser.add_argument('--pes', type=str, default=None, metavar='"q_index branch_index"',
                     help="Specify the target mode to displace atoms for calculating "
@@ -241,7 +246,8 @@ def displace(displacement_mode, codeobj, args):
                             temperature=args.temp,
                             classical=args.classical,
                             option_pes=args.pes,
-                            option_qrange=args.Qrange)
+                            option_qrange=args.Qrange,
+                            ignore_imag=args.ignore_imag)
 
 
 def print_displacement_stdout(disp_list, codeobj):
