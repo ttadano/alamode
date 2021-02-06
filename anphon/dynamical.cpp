@@ -202,7 +202,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
     const auto nat = system->nat;
     const auto natmin = system->natmin;
 
-    std::vector <DistWithCell> **distall;
+    std::vector<DistWithCell> **distall;
 
     memory->allocate(distall, natmin, nat);
     memory->allocate(xcrd, nneib, nat, 3);
@@ -858,7 +858,7 @@ void Dynamical::modify_eigenvectors() const
 }
 
 void Dynamical::project_degenerate_eigenvectors(double *xk_in,
-                                                const std::vector <std::vector<double>> &project_directions,
+                                                const std::vector<std::vector<double>> &project_directions,
                                                 std::complex<double> **evec_out) const
 {
     int i, j;
@@ -868,7 +868,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
     // The projector is given in the real space Cartesian coordinate.
     // Let's transform the basis into the crystal coordinate and normalize the norm to unity.
     //
-    std::vector <std::vector<double>> directions;
+    std::vector<std::vector<double>> directions;
     std::vector<double> vec(3);
     for (const auto &it : project_directions) {
         for (i = 0; i < 3; ++i) {
@@ -890,7 +890,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
     // Diagonalize dymat at xk_in and get degeneracy information.
     //
     Eigen::MatrixXcd dymat(ns, ns);
-    Eigen::SelfAdjointEigenSolver <Eigen::MatrixXcd> saes;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> saes;
 
     std::complex<double> **dymat_tmp;
 
@@ -1102,7 +1102,7 @@ int Dynamical::transform_eigenvectors(double *xk_in,
     auto pertmat = evec_sub.adjoint() * ddymat * evec_sub;
 
     // Diagonalize
-    Eigen::SelfAdjointEigenSolver <Eigen::MatrixXcd> saes;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> saes;
 
     saes.compute(pertmat);
     auto eval_pert = saes.eigenvalues();
@@ -1427,7 +1427,7 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
     const auto ns = neval;
     std::vector<int> index;
     std::complex<double> **evec_tmp;
-    std::vector <std::vector<double>> abs_similarity;
+    std::vector<std::vector<double>> abs_similarity;
     std::complex<double> dprod;
     std::vector<int> found;
 
@@ -1568,12 +1568,12 @@ void Dynamical::detect_imaginary_branches(double **eval)
     }
 }
 
-void Dynamical::set_projection_directions(const std::vector <std::vector<double>> projections_in)
+void Dynamical::set_projection_directions(const std::vector<std::vector<double>> projections_in)
 {
     projection_directions = projections_in;
 }
 
-std::vector <std::vector<double>> Dynamical::get_projection_directions() const
+std::vector<std::vector<double>> Dynamical::get_projection_directions() const
 {
     return projection_directions;
 }

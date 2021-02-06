@@ -250,8 +250,9 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
 {
     // Compute the effective charges of normal coordinate at q = 0.
 
-    if (dynamical->file_born == "") {
-        error->exitall("Dielec::compute_mode_effective_charge()", "BORNINFO must be set when DIELEC = 1.");
+    if (dynamical->file_born.empty()) {
+        error->exitall("Dielec::compute_mode_effective_charge()",
+                       "BORNINFO must be set when DIELEC = 1.");
     }
 
     // If borncharge in dynamical class is not initialized, do it here.
@@ -275,7 +276,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     std::vector<std::vector<double>> projectors;
     std::vector<double> vecs(3);
 
-    if (dynamical->get_projection_directions().size()) {
+    if (!dynamical->get_projection_directions().empty()) {
         dynamical->project_degenerate_eigenvectors(&xk[0],
                                                    dynamical->get_projection_directions(),
                                                    evec);
@@ -299,11 +300,9 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
             auto normalization_factor = 0.0;
 
             for (auto j = 0; j < ns; ++j) {
-//                zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * std::abs(evec[is][j]);
                 zstar_mode[is][i] += zstar_atom[j / 3][i][j % 3] * evec[is][j].real();
                 normalization_factor += std::norm(evec[is][j]);
             }
-
             if (do_normalize) zstar_mode[is][i] /= std::sqrt(normalization_factor);
         }
     }
