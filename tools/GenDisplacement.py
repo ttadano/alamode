@@ -108,7 +108,8 @@ class AlamodeDisplace(object):
                  temperature=None,
                  classical=False,
                  option_pes=None,
-                 option_qrange=None):
+                 option_qrange=None,
+                 ignore_imag=False):
 
         self._counter = 1
         self._displacement_magnitude = magnitude
@@ -236,7 +237,8 @@ class AlamodeDisplace(object):
                 print("")
 
             disp_random = self._get_random_displacements_normalcoordinate(number_of_displacements,
-                                                                          temperature)
+                                                                          temperature,
+                                                                          ignore_imag)
             for i in range(number_of_displacements):
                 header = "Random disp. in normal coordinates at T = %f K: %i" % (temperature,
                                                                                  self._counter)
@@ -430,7 +432,7 @@ class AlamodeDisplace(object):
 
         return disp_random
 
-    def _get_random_displacements_normalcoordinate(self, ndata, temperature):
+    def _get_random_displacements_normalcoordinate(self, ndata, temperature, ignore_imag):
 
         if temperature is None:
             raise RuntimeError("The temperature must be given with the --temp option.")
@@ -440,7 +442,7 @@ class AlamodeDisplace(object):
         Q_I = np.zeros((nq, self._nmode, ndata))
 
         # get sigma in units of bohr*amu_ry^(1/2)
-        sigma = self._get_gaussian_sigma(temperature)
+        sigma = self._get_gaussian_sigma(temperature, ignore_imag)
 
         for iq in range(nq):
             for imode in range(self._nmode):
@@ -486,6 +488,7 @@ class AlamodeDisplace(object):
             for i in range(3):
                 # convert the unit of disp from bohr*amu_ry^(1/2) to angstrom
                 disp[:, i, idata] = factor[:] * disp[:, i, idata] * self._BOHR_TO_ANGSTROM
+                #disp[:, i, idata] = factor[:] * disp[:, i, idata]
 
             # Transform to the fractional coordinate
             for iat in range(self._supercell.nat):
@@ -494,7 +497,7 @@ class AlamodeDisplace(object):
 
         return disp
 
-    def _get_gaussian_sigma(self, temp):
+    def _get_gaussian_sigma(self, temp, ignore_imag):
         """
          Computes the deviation of Q, i.e., sqrt{<Q^2>} from the phonon frequency
          and input temperature. Since omega is defined in the Rydberg atomic unit,
@@ -509,10 +512,16 @@ class AlamodeDisplace(object):
         for iq in range(nq):
             for imode in range(nmode):
                 if self._omega2[iq, imode] < 0.0:
-                    omega[iq, imode] = math.sqrt(-self._omega2[iq, imode])
-                    if self._verbosity > 0:
-                        print("Warning: Detected imaginary mode at iq = %d, imode = %d.\n"
-                              "Use the absolute frequency for this mode.\n" % (iq + 1, imode + 1))
+                    if ignore_imag:
+                        omega[iq, imode] = 0.0
+                        if self._verbosity > 0:
+                            print("Warning: Detected imaginary mode at iq = %d, imode = %d.\n"
+                                  "This more will be ignored.\n" % (iq + 1, imode + 1))
+                    else:
+                        omega[iq, imode] = math.sqrt(-self._omega2[iq, imode])
+                        if self._verbosity > 0:
+                            print("Warning: Detected imaginary mode at iq = %d, imode = %d.\n"
+                                  "Use the absolute frequency for this mode.\n" % (iq + 1, imode + 1))
                 else:
                     omega[iq, imode] = math.sqrt(self._omega2[iq, imode])
 

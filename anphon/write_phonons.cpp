@@ -56,6 +56,7 @@ Writes::Writes(PHON *phon) : Pointers(phon)
     anime_kpoint[0] = 0.0;
     anime_kpoint[1] = 0.0;
     anime_kpoint[2] = 0.0;
+    anime_frames = 20;
 
     file_result = "";
     anime_format = "xyz";
@@ -175,7 +176,7 @@ void Writes::write_input_vars()
         if (kpoint->kpoint_mode == 2) {
             std::cout << "  PDOS = " << dos->projected_dos
                       << "; TDOS = " << dos->two_phonon_dos << std::endl;
-            std::cout << "  PRINTMSD = " << writes->print_msd << std::endl;
+            std::cout << "  PRINTMSD = " << print_msd << std::endl;
             std::cout << "  SPS = " << dos->scattering_phase_space << std::endl;
             std::cout << std::endl;
         }
@@ -228,7 +229,7 @@ void Writes::setup_result_io()
 
             std::cout << " RESTART = 1 : Restart from the interrupted run." << std::endl;
             std::cout << "               Phonon lifetimes will be load from file " << file_result << std::endl;
-            std::cout << "               and check the consistency of the computatioal settings." << std::endl;
+            std::cout << "               and check the consistency of the computational settings." << std::endl;
 
             // Restart
             fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
@@ -421,6 +422,43 @@ void Writes::setup_result_io()
         }
     }
 }
+
+void Writes::setWriteOptions(const bool print_msd_,
+                             const bool print_xsf_,
+                             const bool print_anime_,
+                             const std::string &anime_format_,
+                             const int anime_frames_,
+                             const unsigned int anime_cellsize_[3],
+                             const double anime_kpoint_[3],
+                             const bool print_ucorr_,
+                             const int shift_ucorr_[3])
+{
+    print_msd = print_msd_;
+    print_xsf = print_xsf_;
+    print_anime = print_anime_;
+    anime_format = anime_format_;
+    anime_frames = anime_frames_;
+    print_ucorr = print_ucorr_;
+
+    for (auto i = 0; i < 3; ++i) {
+        anime_cellsize[i] = anime_cellsize_[i];
+        anime_kpoint[i] = anime_kpoint_[i];
+        shift_ucorr[i] = shift_ucorr_[i];
+    }
+}
+
+bool Writes::getPrintMSD() const {
+    return print_msd;
+}
+
+bool Writes::getPrintUcorr() const {
+    return print_ucorr;
+}
+
+std::array<int, 3> Writes::getShiftUcorr() const {
+    return {shift_ucorr[0], shift_ucorr[1], shift_ucorr[2]};
+}
+
 
 void Writes::print_phonon_energy() const
 {
@@ -1915,7 +1953,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     const auto ns = dynamical->neval;
     const auto natmin = system->natmin;
     const auto nsuper = ncell[0] * ncell[1] * ncell[2];
-    const unsigned int nsteps = 20;
     unsigned int ntmp = nbands;
     unsigned int ndigits = 0;
 
@@ -2041,31 +2078,28 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     // Normalize the magnitude of displacements
 
     auto mass_min = mass[0];
-
     for (i = 0; i < natmin; ++i) {
         if (mass[i] < mass_min) mass_min = mass[i];
     }
 
-    for (i = 0; i < ns; ++i) {
-
+    for (iband = 0; iband < nbands; ++iband) {
         auto max_disp_mag = 0.0;
 
         for (j = 0; j < ns; ++j) {
-            disp_mag[i][j] = std::sqrt(mass_min / mass[j / 3]) * evec_mag[i][j];
+            disp_mag[iband][j] = std::sqrt(mass_min / mass[j / 3]) * evec_mag[iband][j];
         }
 
         for (j = 0; j < natmin; ++j) {
             auto disp_mag_tmp = 0.0;
-            for (k = 0; k < 3; ++k) disp_mag_tmp += std::pow(disp_mag[i][3 * j + k], 2);
+            for (k = 0; k < 3; ++k) disp_mag_tmp += std::pow(disp_mag[iband][3 * j + k], 2);
             disp_mag_tmp = std::sqrt(disp_mag_tmp);
             max_disp_mag = std::max(max_disp_mag, disp_mag_tmp);
         }
 
-        for (j = 0; j < ns; ++j) disp_mag[i][j] *= max_disp_factor / max_disp_mag;
+        for (j = 0; j < ns; ++j) disp_mag[iband][j] *= max_disp_factor / max_disp_mag;
     }
 
     // Convert atomic positions to Cartesian coordinate
-
     for (i = 0; i < nsuper; ++i) {
         for (j = 0; j < natmin; ++j) {
             rotvec(xmod[i][j], xmod[i][j], lavec_super);
@@ -2097,19 +2131,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                 error->exit("write_normal_mode_animation",
                             "cannot open file_anime");
 
-            ofs_anime.unsetf(std::ios::scientific);
-
-            ofs_anime << "# Animation of a phonon mode" << std::endl;
-            ofs_anime << "# K point : ";
-            for (i = 0; i < 3; ++i) ofs_anime << std::setw(8) << xk_in[i];
-            ofs_anime << std::endl;
-            ofs_anime << "# Mode index : " << std::setw(4) << iband + 1 << std::endl;
-            ofs_anime << "# Frequency (cm^-1) : " << in_kayser(eval[iband]) << std::endl;
-            ofs_anime << std::endl;
-
             ofs_anime.setf(std::ios::scientific);
 
-            ofs_anime << "ANIMSTEPS " << nsteps << std::endl;
+            ofs_anime << "ANIMSTEPS " << anime_frames << std::endl;
             ofs_anime << "CRYSTAL" << std::endl;
             ofs_anime << "PRIMVEC" << std::endl;
 
@@ -2120,9 +2144,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                 ofs_anime << std::endl;
             }
 
-            for (istep = 0; istep < nsteps; ++istep) {
+            for (istep = 0; istep < anime_frames; ++istep) {
 
-                phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
+                phase_time = 2.0 * pi / static_cast<double>(anime_frames) * static_cast<double>(istep);
 
                 ofs_anime << "PRIMCOORD " << std::setw(10) << istep + 1 << std::endl;
                 ofs_anime << std::setw(10) << natmin * nsuper << std::setw(10) << 1 << std::endl;
@@ -2135,7 +2159,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                         + disp_mag[j][k]
+                                         + disp_mag[iband][3 * j + k]
                                            * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
@@ -2167,9 +2191,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
             ofs_anime.setf(std::ios::scientific);
 
-            for (istep = 0; istep < nsteps; ++istep) {
+            for (istep = 0; istep < anime_frames; ++istep) {
 
-                phase_time = 4.0 * pi / static_cast<double>(nsteps) * static_cast<double>(istep);
+                phase_time = 2.0 * pi / static_cast<double>(anime_frames) * static_cast<double>(istep);
 
                 ofs_anime.unsetf(std::ios::scientific);
 
@@ -2189,17 +2213,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                         + disp_mag[j][k]
+                                         + disp_mag[iband][3 * j + k]
                                            * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
                 }
             }
-
             ofs_anime.close();
         }
-
     }
 
     memory->deallocate(xmod);

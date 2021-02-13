@@ -37,23 +37,28 @@ namespace PHON_NS {
 
         void write_selfenergy_isotope() const;
 
-        bool print_xsf;
-        bool print_msd;
-        bool print_ucorr;
-        bool print_anime;
+
+
+
+
         bool print_zmode;
 
-        unsigned int anime_cellsize[3];
-        double anime_kpoint[3];
-        int shift_ucorr[3];
+
+
+
+
 
         double in_kayser(const double) const;
 
-        int nbands;
-
-        std::string file_result;
-        std::string anime_format;
-        std::fstream fs_result;
+        void setWriteOptions(const bool print_msd_,
+                              const bool print_xsf_,
+                              const bool print_anime_,
+                              const std::string &anime_format_,
+                              const int anime_steps_,
+                              const unsigned int anime_cellsize_[3],
+                              const double anime_kpoint_[3],
+                              const bool print_ucorr_,
+                              const int shift_ucorr_[3]);
 
         void write_scph_energy(double ***,
                                const int bubble = 0) const;
@@ -75,8 +80,15 @@ namespace PHON_NS {
         void write_scph_dielec(double ****dielec_scph) const;
 
         unsigned int getVerbosity() const;
-
         void setVerbosity(unsigned int verbosity_in);
+
+        bool getPrintMSD() const;
+        bool getPrintUcorr() const;
+        std::array<int, 3> getShiftUcorr() const;
+
+        std::fstream fs_result;
+        std::string file_result;
+        int nbands;
 
     private:
 
@@ -120,6 +132,21 @@ namespace PHON_NS {
 
         double Ry_to_kayser;
         unsigned int verbosity;
+
+        int anime_frames;
+
+        bool print_xsf;
+        bool print_msd;
+        bool print_ucorr;
+        bool print_anime;
+
+        unsigned int anime_cellsize[3];
+        double anime_kpoint[3];
+        int shift_ucorr[3];
+
+        std::string anime_format;
+
+
     public:
 
     };

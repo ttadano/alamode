@@ -926,7 +926,7 @@ class QEParser(object):
 
         # Search additional entries containing atomic position
         # (for parsing MD trajectory)
-        search_flag2 = "ATOMIC_POSITIONS (crystal)"
+        search_flag2 = "ATOMIC_POSITIONS "
         x_additional = []
 
         while line:
