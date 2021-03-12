@@ -670,9 +670,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
                                 "SHIFT_UCORR must be an array of integers.");
                 }
             }
-            for (i = 0; i < 3; ++i) {
-                writes->shift_ucorr[i] = shift_ucorr[i];
-            }
         }
     }
 
