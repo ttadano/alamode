@@ -162,6 +162,8 @@ You can specify the binary to build, for example, as
     ::
 
       % export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$CONDA_PREFIX/lib64:$LD_LIBRARY_PATH
+          
+
 
 Install using native environment (optional for experts)
 -------------------------------------------------------

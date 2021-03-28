@@ -48,17 +48,21 @@ List of supported input variables
    :widths: 20, 20, 20, 20, 20
 
    **&general**
-   :ref:`HESSIAN <alm_hessian>`, :ref:`KD <alm_kd>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`
-   :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
+   :ref:`HESSIAN <alm_hessian>`, :ref:`FCSYM_BASIS <alm_fcsym_basis>`, :ref:`KD <alm_kd>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`
+   :ref:`NKD <alm_nkd>`, :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
    **&interaction**
    :ref:`NBODY <alm_nbody>`, :ref:`NORDER <alm_norder>`
    **&optimize**
-   :ref:`CONV_TOL <alm_conv_tol>`, :ref:`CV <alm_cv>`, :ref:`CV_MINALPHA <alm_cv_minalpha>`, :ref:`DEBIAS_OLS <alm_debias_ols>`, :ref:`DFILE <alm_dfile>`
+   :ref:`CONV_TOL <alm_conv_tol>`, :ref:`CV <alm_cv>`, :ref:`CV_MINALPHA <alm_cv_minalpha>`, :ref:`DEBIAS_OLS <alm_debias_ols>`
    :ref:`DFSET <alm_dfset>`, :ref:`DFSET_CV <alm_dfset_cv>`, :ref:`ENET_DNORM <alm_enet_dnorm>`, :ref:`FC2XML <alm_fc2xml>`, :ref:`FC3XML <alm_fc3xml>`
-   :ref:`FFILE <alm_ffile>`, :ref:`ICONST <alm_iconst>`, :ref:`L1_ALPHA <alm_l1_alpha>`, :ref:`L1_RATIO <alm_l1_ratio>`, :ref:`LMODEL <alm_lmodel>`
+   :ref:`ICONST <alm_iconst>`, :ref:`L1_ALPHA <alm_l1_alpha>`, :ref:`L1_RATIO <alm_l1_ratio>`, :ref:`LMODEL <alm_lmodel>`
    :ref:`MAXITER <alm_maxiter>`, :ref:`NDATA <alm_ndata>`, :ref:`NDATA_CV <alm_ndata_cv>`, :ref:`NSTART NEND <alm_nstart>`, :ref:`NSTART_CV NEND_CV <alm_nstart_cv>`
    :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`SPARSE <alm_sparse>`, :ref:`SPARSESOLVER <alm_sparsesolver>`
    :ref:`STANDARDIZE <alm_standardize>`
+
+..   , :ref:`DFILE <alm_dfile>`
+..  :ref:`FFILE <alm_ffile>`,
+
 
 Description of input variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,6 +146,20 @@ Description of input variables
 
  :Default: 0
  :type: Integer
+
+````
+
+.. _alm_fcsym_basis:
+
+* FCSYM_BASIS-tag = Cartesian | Lattice
+
+ ============ ====================================================
+  Cartesian   Symmetry  won’t be saved in “SYMM_INFO”
+  Lattice     ymmetry operations will be saved in “SYMM_INFO”
+ ============ ====================================================
+
+ :Default: Lattice
+ :type: String
 
 ````
 
@@ -323,13 +341,14 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  =================================== ==========================
    "least-squares", "LS", "OLS",  1    Ordinary least square
    "elastic-net", "enet", 2            Elastic net
+   "adaptive-lasso", 3                 Adaptive LASSO
  =================================== ==========================
 
  :Default: least-squares
  :Type: String
  :Description: When ``LMODEL = ols``, the force constants are estimated from the displacement-force datasets via the ordinary least-squares (OLS), which is usually sufficient to calculate harmonic and third-order force constants. 
 
-               The elastic net (``LMODEL = enet``) should be useful to calculate the fourth-order (and higher-order) force constants. When the elastic net is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``
+               The elastic net (``LMODEL = enet``) or adaptive LASSO (``LMODEL = adaptive-lasso``) are useful for calculating fourth-order (and higher-order) force constants. When the elastic net or adaptive LASSO is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``. Please be noted that ``STANDARDIZE`` will be effective only for the elastic net.
 
 ````
 
@@ -345,33 +364,33 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 ````
 
-.. _alm_dfile:
+.. .. _alm_dfile:
 
-* DFILE-tag: File name containing atomic displacements in Cartesian coordinate
+.. * DFILE-tag: File name containing atomic displacements in Cartesian coordinate
 
- .. deprecated:: 1.1.0
-    Use ``DFSET`` instead.
+..  .. deprecated:: 1.1.0
+..     Use ``DFSET`` instead.
 
- :Default: None
- :Type: String
- :Description: The format of ``DFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
+..  :Default: None
+..  :Type: String
+..  :Description: The format of ``DFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
 
 
 
-````
+.. ````
 
-.. _alm_ffile:
+.. .. _alm_ffile:
 
-* FFILE-tag: File name containing atomic forces in Cartesian coordinate
+.. * FFILE-tag: File name containing atomic forces in Cartesian coordinate
 
- .. deprecated:: 1.1.0
-    Use ``DFSET`` instead.
+..  .. deprecated:: 1.1.0
+..     Use ``DFSET`` instead.
 
- :Default: None
- :Type: String
- :Description: The format of ``FFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
+..  :Default: None
+..  :Type: String
+..  :Description: The format of ``FFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
 
-````
+.. ````
 
 .. _alm_ndata:
 

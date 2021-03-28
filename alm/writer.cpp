@@ -55,7 +55,7 @@ void Writer::write_input_vars(const ALM *alm, const std::string run_mode) const
     std::cout << "  KD = ";
     for (i = 0; i < nkd; ++i) std::cout << std::setw(4) << alm->get_kdname()[i];
     std::cout << '\n';
-    std::cout << "  FC_BASIS = " << alm->get_forceconstant_basis() << '\n';
+    std::cout << "  FCSYM_BASIS = " << alm->get_forceconstant_basis() << '\n';
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << alm->get_periodicity()[i];
     std::cout << '\n';
