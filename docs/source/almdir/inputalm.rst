@@ -27,13 +27,13 @@ For example, &general entry field of program *alm* should be given like
   &general
     # Comment line
     PREFIX = prefix
-    MODE = fitting
+    MODE = optimize
   /
 
 Multiple entries can be put in a single line. Also, characters put on the right of sharp (“#”) are neglected. Therefore, the above example is equivalent to the following::
   
   &general
-    PREFIX = prefix; MODE = fitting  # Comment line
+    PREFIX = prefix; MODE = optimize  # Comment line
   /
 
 Each variable must be given inside the appropriate entry field.
@@ -48,8 +48,9 @@ List of supported input variables
    :widths: 20, 20, 20, 20, 20
 
    **&general**
-   :ref:`HESSIAN <alm_hessian>`, :ref:`FCSYM_BASIS <alm_fcsym_basis>`, :ref:`KD <alm_kd>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`
-   :ref:`NKD <alm_nkd>`, :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
+   :ref:`HESSIAN <alm_hessian>`, :ref:`FCSYM_BASIS <alm_fcsym_basis>`, :ref:`KD <alm_kd>`, :ref:`MAGMOM <alm_magmom>`, :ref:`MODE <alm_mode>`
+   :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`, :ref:`NMAXSAVE <alm_nmaxsave>`, :ref:`NONCOLLINEAR <alm_noncollinear>`
+   :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
    **&interaction**
    :ref:`NBODY <alm_nbody>`, :ref:`NORDER <alm_norder>`
    **&optimize**
@@ -83,15 +84,14 @@ Description of input variables
 
 * **MODE**-tag = optimize | suggest | fitting
 
- ============================ ===========================================================
-  optimize (:red:`>= 1.1.0`)  | Estimate harmonic and anharmonic IFCs. 
-                              | This mode requires an appropriate &optimize field.
+ =================================== ====================================================================
+  optimize (:red:`>= 1.1.0`)         | Estimate harmonic and anharmonic IFCs. 
+                                     | This mode requires an appropriate &optimize field.
 
-  fitting (:red:`deprecated`) | An alias of ``MODE = optimize``
-           
-  suggest                     | Suggests the displacement patterns necessary 
-                              | to estimate harmonic and anharmonic IFCS.
- ============================ ===========================================================
+  fitting (:red:`obsolete in 1.2.0`) | An alias of ``MODE = optimize``. Please use ``optimize`` instead.
+  suggest                            | Suggests the displacement patterns necessary 
+                                     | to estimate harmonic and anharmonic IFCS.
+ =================================== ====================================================================
 
  :Default: None
  :Type: String
@@ -153,13 +153,53 @@ Description of input variables
 
 * FCSYM_BASIS-tag = Cartesian | Lattice
 
- ============ ====================================================
-  Cartesian   Symmetry  won’t be saved in “SYMM_INFO”
-  Lattice     ymmetry operations will be saved in “SYMM_INFO”
- ============ ====================================================
+ ============== ===========================================================================
+  Cartesian, C   Symmetry reduction of force constant is performed in the Cartesian basis
+
+  Lattice, L     Symmetry reduction of force constant is performed in the :math:`\boldsymbol{a}_1, \boldsymbol{a}_2, \boldsymbol{a}_3` basis
+ ============== ===========================================================================
 
  :Default: Lattice
  :type: String
+ :Description: The calculation results should not depend on the choice of ``FCSYM_BASIS`` when ``LMODEL = ols``. For other regression methods (enet, adaptive LASSO), an optical value of the ``L1_ALPHA`` changes when you change the ``FCSYM_BASIS`` option.  
+ 
+    In some cases, ``FCSYM_BASIS = Lattice`` is more stable and efficient. In particular, we recommend setting ``FCSYM_BASIS = Lattice`` for hexagonal systems. If a calculation with ``FCSYM_BASIS = Lattice`` is slow, please switch to ``FCSYM_BASIS = Cartesian``.
+    
+    For more details about the symmetry reduction of force constants, please see :ref:`here <IFC_crystal_symmetry>`.
+
+ .. important::
+
+     When ``FCSYM_BASIS = Lattice``, the basis of force constants saved in ``PREFIX``.fcs becomes the :math:`\boldsymbol{a}_1, \boldsymbol{a}_2, \boldsymbol{a}_3` basis. Hence, to compare the values of force constants saved in ``PREFIX``.fcs, you will have to change their basis to the Cartesian basis manually. The basis of force constants saved in ``PREFIX``.xml is Cartesian irrespective of the ``FCSYM_BASIS`` value.
+
+     Also, imposing the constraints for rotational invariance with ``FCSYM_BASIS = Lattice`` is not supported. Therefore, if you want to apply the constraints for rotational invariance, please use ``FCSYM_BASIS = Cartesian``.
+
+````
+
+.. _alm_magmom:
+
+* MAGMOM-tag : List of magnetic moments
+
+ :Default: 0 ... 0 (``NAT`` entries when ``NONCOLLINEAR = 0``, 3x\ ``NAT`` entries when ``NONCOLLINEAR = 1``.)
+ :type: Array of double
+ :Example: When a supercell containts 64 atoms and the local magnetic moments of the first 32 atoms are up and those of the last 32 atoms are down, please set the ``MAGMOM`` tag as ``MAGMOM = 32*1 32*-1``. The wildcard (``*``) is available when ``NONCOLLINEAR = 0``. For the noncollinear case (``NONCOLLINEAR = 1``), the wildcard is not supported. So, please give the magnetic moment explicitly as ``MAGMOM = 0 0 1 0 0 1 0 0 1 ... 0 0 -1 0 0 -1 ...`` (3\ :math:`\times`\ ``NAT`` entries in *one line*).
+
+ .. note::
+
+     ``MAGMOM`` information is used only for generating space group operations. So, the values of the magnetic moment are somewhat arbitrary. For the 4\ :math:`\times` 4\ :math:`\times` 4 supercell of ferromagnetic bcc Fe (64 atoms), for instance, ``MAGMOM = 64*1`` and ``MAGMOM = 64*2`` give the same results. By contrast, ``MAGMOM = 32*1 32*2`` of course gives a different result because it breaks the symmetry of the original lattice.
+
+````
+
+.. _alm_noncollinear:
+
+* NONCOLLINEAR-tag = 0 | 1
+
+ :Default: 0 
+ :type: Integer
+ :Description: When ``NONCOLLINEAR = 1``, the code accepts a noncollinear magnetic structure as an input to the ``MAGMOM`` tag and uses it for generating space group operations. The spin quantization axis is fixed to the (0,0,1) direction of the Cartesian coordinate.
+
+ .. caution::
+
+     Still experimental. Please use with care.
 
 ````
 
@@ -178,6 +218,16 @@ Description of input variables
  :Default: 1 1 1
  :type: Array of integers
  :Description: This tag is useful for generating interacting atoms in low dimensional systems. When ``PERIODIC[i]`` is zero, periodic boundary condition is turned off along the direction of the lattice vector :math:`\boldsymbol{a}_{i}`.
+
+````
+
+.. _alm_nmaxsave:
+
+* NMAXSAVE-tag : The maximum order of anharmonic force constants printed out in ``PREFIX``.xml
+
+ :Default: min(5, ``NORDER``) 
+ :Type: Integer
+ :Example: If your model includes anharmonic terms up to the sixth-order (``NORDER = 5``), but you want to avoid printing out the fifth-order and sixth-order IFCs in ``PREFIX``.xml, please set ``NMAXSAVE = 3``.
 
 ````
 
@@ -464,6 +514,10 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Type: String
  :Description: When ``FC2XML``-tag is given, harmonic force constants are fixed to the values stored in the ``FC2XML`` file. This may be useful for optimizing cubic and higher-order terms without changing the harmonic terms. Please make sure that the number of harmonic terms in the new computational condition is the same as that in the ``FC2XML`` file.
 
+ .. important::
+
+     The ``FCSYM_BASIS`` option must be the same as the one used when creating the reference harmonic force constant file (``FC2XML``). The code raises an error when they are inconsistent.
+
 ````
 
 .. _alm_fc3xml:
@@ -474,7 +528,12 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Type: String
  :Description: Same as the ``FC2XML``-tag, but ``FC3XML`` is to fix cubic force constants. 
 
+ .. important::
+ 
+     The ``FCSYM_BASIS`` option must be the same as the one used when creating the reference cubic force constant file (``FC3XML``). The code raises an error when they are inconsistent.
+
 ````
+
 
 .. _alm_sparse:
 

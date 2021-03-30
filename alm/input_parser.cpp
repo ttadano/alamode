@@ -309,7 +309,7 @@ void InputParser::parse_general_vars(ALM *alm)
     }
 
     if (general_var_dict["TOLERANCE"].empty()) {
-        tolerance = 1.0e-6;
+        tolerance = 1.0e-3;
     } else {
         assign_val(tolerance, "TOLERANCE", general_var_dict);
     }
@@ -332,7 +332,7 @@ void InputParser::parse_general_vars(ALM *alm)
     }
 
     if (general_var_dict["NMAXSAVE"].empty()) {
-        nmaxsave = 6;
+        nmaxsave = 5;
     } else {
         assign_val(nmaxsave, "NMAXSAVE", general_var_dict);
     }
