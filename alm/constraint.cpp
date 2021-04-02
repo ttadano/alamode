@@ -161,8 +161,8 @@ void Constraint::setup(const System *system,
     }
 
     if (fcs->get_forceconstant_basis() == "Lattice" && impose_inv_R) {
-        exit("Constraint::setup()", "Sorry, rotational invariance with FC_BASIS = Lattice is "
-                                    "not supported.\n Use preferred_basis == Cartesian instead.");
+        exit("Constraint::setup()", "Sorry, rotational invariance with FCSYM_BASIS = Lattice is "
+                                    "not supported.\n Use FCSYM_BASIS = Cartesian instead.");
     }
 
     if (verbosity > 0) std::cout << std::endl;

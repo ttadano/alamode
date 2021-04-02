@@ -199,7 +199,7 @@ void ALM::set_sparse_mode(const int sparse_mode) const // SPARSE
     optimize->set_optimizer_control(optctrl);
 }
 
-void ALM::set_forceconstant_basis(const std::string preferred_basis) const // FC_BASIS
+void ALM::set_forceconstant_basis(const std::string preferred_basis) const // FCSYM_BASIS
 {
     fcs->set_forceconstant_basis(preferred_basis);
 }

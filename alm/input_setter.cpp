@@ -118,11 +118,11 @@ void InputSetter::set_cutoff_radii(const int maxorder_in,
 }
 
 void InputSetter::set_general_vars(ALM *alm,
-                                   const std::string prefix,
-                                   const std::string mode,
+                                   const std::string& prefix,
+                                   const std::string& mode,
                                    const int verbosity,
-                                   const std::string str_disp_basis,
-                                   const std::string str_magmom,
+                                   const std::string& str_disp_basis,
+                                   const std::string& str_magmom,
                                    const size_t nat_in,
                                    const size_t nkd_in,
                                    const int printsymmetry,
@@ -136,7 +136,7 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const double *const *magmom_in,
                                    const double tolerance,
                                    const double tolerance_constraint,
-                                   const std::string basis_force_constant,
+                                   const std::string& basis_force_constant,
                                    const int nmaxsave)
 {
     size_t i;
@@ -217,9 +217,9 @@ void InputSetter::set_file_vars(ALM *alm,
 
 void InputSetter::set_constraint_vars(ALM *alm,
                                       const int constraint_flag,
-                                      const std::string rotation_axis,
-                                      const std::string fc2_file,
-                                      const std::string fc3_file,
+                                      const std::string& rotation_axis,
+                                      const std::string& fc2_file,
+                                      const std::string& fc3_file,
                                       const bool fix_harmonic,
                                       const bool fix_cubic) const
 {

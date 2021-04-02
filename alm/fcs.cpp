@@ -761,7 +761,13 @@ std::vector<ForceConstantTable> *Fcs::get_fc_cart() const
 
 void Fcs::set_forceconstant_basis(const std::string preferred_basis_in)
 {
-    preferred_basis = preferred_basis_in;
+    if (preferred_basis_in[0] == 'c') {
+        preferred_basis = "Cartesian";
+    } else if (preferred_basis_in[0] == 'l') {
+        preferred_basis = "Lattice";
+    } else {
+        preferred_basis = preferred_basis_in;
+    }
 }
 
 std::string Fcs::get_forceconstant_basis() const

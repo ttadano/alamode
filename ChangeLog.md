@@ -1,3 +1,37 @@
+# Ver. 1.2.0 (2021-04-02)
+
+## New features
+
+- CMake installation option
+- ``FC_BASIS`` tag (**alm**) for better stability of force constant symmetrization
+- ``NONCOLLINEAR`` tag (**alm**) for phonon calculations with noncollinear magnetism
+- ``NMAXSAVE`` tag (**alm**) that controls the maximum order of anharmonic terms to be saved in a file
+- ``LMODEL = adaptive-lasso`` (**alm**) that performs adaptive LASSO 
+- ``KAPPA_COHERENT`` tag (**anphon**) for computing the coherent part of thermal conductivity
+- ``ANIME_FRAMES`` tag (**anphon**) that controls the number of frames saved for animation outputs
+- ``extract.py`` can extract the dielectric tensor and Born effective charges from vasprun.xml (VASP) and ph.x outputs (Quantum ESPRESSO) by the ``--get born`` option.
+- ``fc_virtual.cpp`` which perform a virtual crystal approximation (VCA) like interpolation of force constants
+
+## Changes
+
+- The old tags ``DFILE`` and ``FFILE`` are not obsolete. Use ``DFSET`` instead.
+- The filename extension of ``PREFIX``.enet_cv is changed as ``PREFIX``.cvset.
+- ``CV_MINALPHA`` and ``CV_MAXALPHA`` are now set automatically (by default)
+- The default value of ``CV_NALPHA`` is changed to 50
+- The header part in PREFIX.evec has been modified slightly. Please be careful if you are using PREFIX.evec for further analyses.
+- ``plotband.py`` now works nicely for discontinuous BZ paths.
+- When ``BCONNECT > 0`` and KPMODE = 1, phonon velocities, polarization vectors, and Grüneisen parameters are also reordered before saved in files.
+- Support command line usage of ``dfc2``
+
+## Fixes
+
+- The tetrahedron method (``ISMEAR = -1``) now works correctly even when the number of momentum points along each axis is only one. (fix issue #10)
+- Fix an issue of MPI communicators when sending large messages (> 2^31-1).
+- The parser for LAMMPS now can read *.lammps file that contains charge entries. (fix issue #13)
+- Fix a bug in the ``ANIME`` option
+
+# Ver. 1.1.0 (2019-05-01)
+
 ## New
 
 - An interface to OpenMX code (contributed by Yuto Tanaka)

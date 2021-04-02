@@ -228,7 +228,7 @@ void InputParser::parse_general_vars(ALM *alm)
     const std::vector<std::string> input_list{
             "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
             "DBASIS", "TRIMEVEN", "VERBOSITY",
-            "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FC_BASIS",
+            "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
             "NMAXSAVE"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
@@ -309,7 +309,7 @@ void InputParser::parse_general_vars(ALM *alm)
     }
 
     if (general_var_dict["TOLERANCE"].empty()) {
-        tolerance = 1.0e-6;
+        tolerance = 1.0e-3;
     } else {
         assign_val(tolerance, "TOLERANCE", general_var_dict);
     }
@@ -319,17 +319,20 @@ void InputParser::parse_general_vars(ALM *alm)
         assign_val(tolerance_constraint, "TOL_CONST", general_var_dict);
     }
 
-    if (general_var_dict["FC_BASIS"].empty()) {
+    if (general_var_dict["FCSYM_BASIS"].empty()) {
         basis_force_constant = "Lattice";
     } else {
-        basis_force_constant = general_var_dict["FC_BASIS"];
-        if (basis_force_constant != "Cartesian" && basis_force_constant != "Lattice") {
-            exit("parse_general_vars", "Invalid FC_BASIS.", basis_force_constant.c_str());
+        basis_force_constant = general_var_dict["FCSYM_BASIS"];
+        boost::to_lower(basis_force_constant);
+
+        if (basis_force_constant[0] != 'c' && basis_force_constant[0] != 'l') {
+            exit("parse_general_vars", "Invalid FC_BASIS.",
+                 basis_force_constant.c_str());
         }
     }
 
     if (general_var_dict["NMAXSAVE"].empty()) {
-        nmaxsave = 6;
+        nmaxsave = 5;
     } else {
         assign_val(nmaxsave, "NMAXSAVE", general_var_dict);
     }

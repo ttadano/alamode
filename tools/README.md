@@ -1,24 +1,24 @@
 This directory contains small python scripts and C++ programs which may be used as subsidiary tools.
 
-Each Python scripts does the followings:
+## Python scripts 
 
-* displace.py : script to generate input files of displaced configurations for VASP, Quantum-ESPRESSO, and xTAPP.
-* extract.py : script to extract atomic displacements, forces, and total energies from output files.
-* plotband.py : script for visualizing phonon bands
-* plotdos.py : script for visualizing phonon DOS
-* scph_to_qefc.py : script to create a new Quantum-ESPRESSO force constant file (*.fc) with anharmonic correction.
+- displace.py : Generate input structure files of displaced configurations for VASP, Quantum-ESPRESSO, OpenMX, LAMMPS, and xTAPP.
+- extract.py : Extract atomic displacements, forces, total energies, and effective charges from output files.
+- plotband.py : Visualize phonon bands
+- plotdos.py : Visualize phonon DOS and atom-projected phonon DOS
+- scph_to_qefc.py : Create a new Quantum-ESPRESSO force constant file (*.fc) with anharmonic correction.
 
-To use the scripts, Python environment (+ Numpy) is necessary.
+To use the scripts, Python environment (+ Numpy) is necessary. 
 Matplotlib is also required for plotband.py and plotdos.py. 
 
-Usage of each script may be found in the header part of the source.
+To see available options of each script, please run the script with ``--help`` option.
 
-Each c++ code does the followings:
+## C++ scripts (binaries)
 
-* analyze\_phonons.\* : programs for analyzing phonon lifetimes, mean-free-path, 
-and (cumulative) thermal-conductivity using the .result file as an input
-* qe2alm.\* : program to convert Quantum-ESPRESSO force constant files to 
-ALAMODE xml files.
+- analyze\_phonons.\* : Computes (and prints out) phonon lifetimes, mean-free-path, and (cumulative) thermal-conductivity using the .result file as an input
+- qe2alm.\* : Converts a Quantum-ESPRESSO force constant file to the ALAMODE XML format.
+- dfc2.\* : Create effective harmonic force constant (ALAMODE XML) from input harmonic force constant (XML format) and PREFIX.scph_dfc2.
+- virtual.\* : Performs linear interpolation of force constants
 
-To use these code, please edit the Makefile and do make.
+To use these code, please edit the Makefile and do make (or use Cmake).
 

@@ -37,6 +37,8 @@ The are several relationships between IFCs which may be used to reduce the numbe
  
   \Phi_{\mu_{1}\mu_{2}\dots\mu_{n}}(\ell_{1}\kappa_{1};\ell_{2}\kappa_{2};\dots;\ell_{n}\kappa_{n})=\Phi_{\mu_{1}\mu_{2}\dots\mu_{n}}(0\kappa_{1};\ell_{2}-\ell_{1}\kappa_{2};\dots;\ell_{n}-\ell_{1}\kappa_{n}). 
 
+.. _IFC_crystal_symmetry:
+
 * Crystal symmetry
 
  A crystal symmetry operation maps an atom :math:`\vec{r}(\ell\kappa)` to another equivalent atom :math:`\vec{r}(LK)` by rotation and translation.
@@ -52,7 +54,7 @@ The are several relationships between IFCs which may be used to reduce the numbe
 
  .. Note::
 
-   In the implementation of ALM, symmetricaly independent IFCs are searched in Cartesian coordinate where the matrix element :math:`O_{\mu\nu}` is 0 or :math:`\pm1` in all symmetry operations except for those of **hexagonal** (trigonal) lattice. Also, except for hexagonal (trigonal) systems, the product :math:`O_{\nu_{1}\mu_{1}}\cdots O_{\nu_{n}\mu_{n}}` in the left hand side of equation :eq:`ifcsym1` becomes non-zero only for a specific pair of :math:`\{\nu\}` (and becomes 0 for all other :math:`\{\nu\}`\ s). Therefore, let :math:`\{\nu^{\prime}\}` be such a pair of :math:`\{\nu\}`, the equation :eq:`ifcsym1` can be reduced to
+   When ``FCSYM_BASIS = Cartesian``, symmetricaly irreducible set of IFCs is searched in the Cartesian coordinate where the matrix element :math:`O_{\mu\nu}` is 0 or :math:`\pm1` for all space group operations except for those of the **hexagonal** (trigonal) systems. Also, except for the hexagonal (trigonal) systems, the product :math:`O_{\nu_{1}\mu_{1}}\cdots O_{\nu_{n}\mu_{n}}` in the left hand side of equation :eq:`ifcsym1` becomes non-zero only for a specific pair of :math:`\{\nu\}` (and becomes 0 for all other :math:`\{\nu\}`\ s). Therefore, let :math:`\{\nu^{\prime}\}` be such a pair of :math:`\{\nu\}`, the equation :eq:`ifcsym1` can be reduced to
 
    .. math::
        :label: ifcsym2
@@ -60,6 +62,8 @@ The are several relationships between IFCs which may be used to reduce the numbe
        \Phi_{\nu_{1}^{\prime}\dots\nu_{n}^{\prime}}(L_{1}K_{1};\dots;L_{n}K_{n}) = s \Phi_{\mu_{1}\dots\mu_{n}}(\ell_{1}\kappa_{1};\dots;\ell_{n}\kappa_{n}),
    
    where :math:`s=\pm1`. The code employs equation :eq:`ifcsym2` instead of equation :eq:`ifcsym1` to reduce the number of IFCs. If IFCs of the left-hand side and the right-hand side of equation :eq:`ifcsym2` are equivalent and the coupling coefficient is :math:`s=-1`, the IFC is removed since it becomes zero. For **hexagonal** (trigonal) systems, there can be symmetry operations where multiple terms in the left-hand side of equation :eq:`ifcsym1` become non-zero. For such cases, equation :eq:`ifcsym1` is not used to reduce the number of IFCs. Alternatively, the corresponding symmetry relationships are imposed as constraints between IFCs in solving fitting problems.
+
+   When ``FCSYM_BASIS = Lattice`` (default), the symmetry reduction of IFCs is performed in the lattice coordinate. In this case, all elements of the rotational matrix become either 0 or :math:`\pm1` in the :math:`\boldsymbol{a}_1, \boldsymbol{a}_2, \boldsymbol{a}_3` basis even for the **hexagonal** systems. Therefore, the numerical stability of the reduction process, particularly of the construction of rref (reduced row echelon form), is improved even when the number of numerical digits for irrational numbers given in an input file is less than sufficient (double precision).
 
 
 .. _constraint_IFC:
@@ -184,3 +188,34 @@ In the elasitc-net optimization (``LMODEL = elastic-net``), IFCs are estimated b
 where :math:`\alpha` is a hyperparameter that controls the trade-off between the sparsity and accuracy of the model, and :math:`\beta \; (0 < \beta \leq 1)` is a hyperparameter that controls the ratio of the :math:`L_{1}` and :math:`L_{2}` regularization terms. :math:`\alpha` and :math:`\beta` must be given by input tags ``L1_ALPHA`` and ``L1_RATIO``, respectively.
 
 An optimal value of :math:`\alpha` can be estimated, for example, by cross-validation (CV). A :math:`n`\ -fold CV can be performed by setting the ``CV``-tag properly.
+
+Adaptive LASSO [1]_ 
+++++++++++++++++++++
+
+In adaptive LASSO (``LMODEL = adaptive-lasso``), IFCs are estimated by solving the following optimization problem:
+
+.. math::
+   :label: adalasso
+
+   \boldsymbol{\Phi}_{\mathrm{adalasso}} = \mathop{\rm argmin}\limits_{\boldsymbol{\Phi}} \frac{1}{2N_{d}}   \|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}} - \mathbb{A} \boldsymbol{\Phi} \|^{2}_{2} + \alpha \sum_i w_i |\Phi_i| ,
+
+where :math:`\alpha` is a hyperparameter given by ``L1_ALPHA``, and :math:`w_i` is the parameter-dependent weight. In ALM, we simply use :math:`w_i = 1/|\Phi_{\mathrm{OLS},i}|` with :math:`\Phi_{\mathrm{OLS},i}` being the coefficient estimator produced by an OLS fitting. Hence, in this option, the size of the training dataset must be large enough to make the matrix :math:`\mathbb{A}` *overdetermined*. The code keeps running even when :math:`\mathbb{A}` is *underdetermined*. So, please be careful.
+
+.. note::
+
+    The minimum size of the training dataset necessary for making :math:`\mathbb{A}` overdetermined can be roughly estimated as follows: 
+    
+    We assume that there are :math:`N` independent IFCs (after imposing constraints, if there is any). In this case, the number of columns of matrix :math:`\mathbb{A}` becomes :math:`N`, and :math:`\mathbb{A}` becomes overdetermined when the number of independent rows of :math:`\mathbb{A}` is :math:`N` or larger. If the training structures are generated randomly and all atoms are displaced from their original positions in each configuration, we can generate :math:`3\times N_{\mathrm{atom}}` (:math:`N_{\mathrm{atom}}` is the number of atoms in the supercell) linearly independent rows of :math:`\mathbb{A}` from one displaced configuration , i.e., one static DFT calculation. Hence, we expect that :math:`\mathbb{A}` becomes overdetermined when
+
+    .. math::
+
+        N_d \geq \frac{N}{3N_{\mathrm{atom}}}
+
+    where :math:`N_d` is the number of displacement patterns in the training dataset. 
+
+    In cross validation, the entire training dataset is divided into smaller subsets. For each subset, the above condition should be satisfied.
+
+
+````
+
+.. [1] H\. Zou, *The Adaptive Lasso and Its Oracle Properties*, J\. Am\. Stat\. Assoc\. **101**, 1418 (2006).

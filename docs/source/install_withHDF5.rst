@@ -33,6 +33,7 @@ Optional requirements
 
 * Python (> 2.6), Numpy, and Matplotlib
 * XcrySDen_ or VMD_
+* HDF5 library (as of alamode >= 1.2.0)
 
 We provide some small scripts written in Python for visualizing phonon dispersion relations, phonon DOSs, etc.
 To use these scripts, one need to install the above Python packages.
@@ -232,6 +233,11 @@ FFTW
 If you use the MKL wrapper of FFT, this step can be skipped. 
 If you want to use the native FFTW library, please follow the instruction on the `FFTW webpage <http://www.fftw.org>`_.
 
+HDF5 (optional)
++++++++++++++++
+
+Please install the HDF5 library following the instruction on the `HDF5 webpage <https://www.hdfgroup.org/downloads/hdf5/source-code/>`_.
+If you don't need to activate the HDF5 format support in ALAMODE, please skip this.
 
 Step 2. Download source
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -272,6 +278,10 @@ The directory structure supposed in this section is shown as below::
     ├── include
     └── lib
 
+   $HDF5_ROOT (optional)
+    ├── include
+    └── lib
+
    $FFTW3_ROOT (optional)
     ├── include
     └── lib
@@ -288,6 +298,8 @@ To build Makefiles with CMake, please issue the following commands::
   % mkdir _build; cd _build
   % cmake -DUSE_MKL_FFT=yes -DSPGLIB_ROOT=${SPGLIB_ROOT} \ 
     -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-O2 -xHOST" ..
+
+If you want to activate the HDF5 support, please add ``-DWITH_HDF5_SUPPORT=yes`` in the cmake option.
 
 .. You can use ``-DCMAKE_C_COMPILER`` and ``-DCMAKE_CXX_COMPILER`` options to specify the compilers to build ALAMODE binaries. 
 .. If these options are not given, cmake will detect the compilers automatically by referencing the environmental variables 
@@ -311,12 +323,12 @@ To build Makefiles with CMake, please issue the following commands::
 
 .. note::
 
-    If cmake cannot find Boost, Eigen3, or FFTW automatically, you need to tell where these libraries are installed by
-    are installed by using ``-DBOOST_INCLUDE``, ``-DEIGEN3_INCLUDE``, and ``-DFFTW3_ROOT`` options.
+    If cmake cannot find Boost, Eigen3, HDF5, or FFTW automatically, you need to tell where these libraries are installed by
+    are installed by using ``-DBOOST_INCLUDE``, ``-DEIGEN3_INCLUDE``, ``-DHDF5_ROOT``, and ``-DFFTW3_ROOT`` options.
     For example, if the directory structure of Step 2 is used, the cmake option will be::
     
-        % cmake -DUSE_MKL_FFT=yes -DSPGLIB_ROOT=${SPGLIB_ROOT} \
-          -DBOOST_INCLUDE=${HOME}/include -DEIGEN3_INCLUDE=${HOME}/include \
+        % cmake -DUSE_MKL_FFT=yes -DWITH_HDF5_SUPPORT=yes -DSPGLIB_ROOT=${SPGLIB_ROOT} \
+          -DBOOST_INCLUDE=${HOME}/include -DEIGEN3_INCLUDE=${HOME}/include -DHDF5_ROOT=${HDF5_ROOT} \
           -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-O2 -xHOST" .. 
 
 After the configuration finishes successfully, please issue
@@ -336,7 +348,8 @@ You can specify the binary to build, for example, as
     When using the binaries, it may be necessary to set ``$LD_LIBRARY_PATH`` as
     ::
       % export SPGLIB_ROOT=/path/to/spglib/installdir
-      % export LD_LIBRARY_PATH=$SPGLIB_ROOT/lib:$LD_LIBRARY_PATH
+      % export HDF5_ROOT=/path/to/hdf5/installdir (when compiled with -DWITH_HDF5_SUPPORT=yes in cmake)
+      % export LD_LIBRARY_PATH=$SPGLIB_ROOT/lib:$HDF5_ROOT/lib:$LD_LIBRARY_PATH
 
 
 Step 3-2. Build by Makefile 
@@ -348,6 +361,7 @@ In directories ``alm/``, ``anphon/``, and ``tools``, we provide sample Makefiles
 Please copy either of them, edit the options appropriately, and issue ``make`` command as follows::
 
     % export SPGLIB_ROOT=/path/to/spglib/installdir
+    % export HDF5_ROOT=/path/to/hdf5/installdir
 
     % cd alm/
     % cp Makefile.linux Makefile
@@ -379,4 +393,5 @@ The default options are expected to work with modern Intel compilers.
     When using the binaries, it may be necessary to set ``$LD_LIBRARY_PATH`` as
     ::
       % export SPGLIB_ROOT=/path/to/spglib/installdir
-      % export LD_LIBRARY_PATH=$SPGLIB_ROOT/lib:$LD_LIBRARY_PATH
+      % export HDF5_ROOT=/path/to/hdf5/installdir (when compiled with -D_HDF5 in CXXFLAGS)
+      % export LD_LIBRARY_PATH=$SPGLIB_ROOT/lib:$HDF5_ROOT/lib:$LD_LIBRARY_PATH
