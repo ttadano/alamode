@@ -16,19 +16,17 @@
 #include <vector>
 #include "fcs_phonon.h"
 
-namespace PHON_NS
-{
-    class FcsAlignedForGruneisen
-    {
+namespace PHON_NS {
+    class FcsAlignedForGruneisen {
     public:
         std::vector<AtomCellSuper> pairs;
         double fcs_val;
 
-        FcsAlignedForGruneisen() { };
+        FcsAlignedForGruneisen() {};
 
         FcsAlignedForGruneisen(const double fcs_in,
                                const std::vector<AtomCellSuper> &pairs_in)
-            : pairs(pairs_in), fcs_val(fcs_in) {};
+                : pairs(pairs_in), fcs_val(fcs_in) {};
 
         bool operator<(const FcsAlignedForGruneisen &obj) const
         {
@@ -87,8 +85,7 @@ namespace PHON_NS
     //                                        array_b.begin(), array_b.end());
     //}
 
-    class Gruneisen : protected Pointers
-    {
+    class Gruneisen : protected Pointers {
     public:
         Gruneisen(class PHON *);
 
@@ -103,10 +100,12 @@ namespace PHON_NS
         std::complex<double> **gruneisen;
 
         void calc_gruneisen();
+
         void write_new_fcsxml_all();
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         double **xshift_s;
@@ -118,7 +117,7 @@ namespace PHON_NS
         void calc_dfc2_reciprocal(std::complex<double> **,
                                   const double *);
 
-        void write_new_fcsxml(std::string,
+        void write_new_fcsxml(const std::string &,
                               double);
 
         std::string double2string(double) const;

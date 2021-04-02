@@ -12,13 +12,12 @@
 
 #include "pointers.h"
 #include "kpoint.h"
+#include "anharmonic_core.h"
 #include <complex>
 #include <Eigen/Dense>
 
-namespace PHON_NS
-{
-    class DistList
-    {
+namespace PHON_NS {
+    class DistList {
     public:
         unsigned int cell_s;
         double dist;
@@ -34,29 +33,25 @@ namespace PHON_NS
         }
     };
 
-    struct ShiftCell
-    {
+    struct ShiftCell {
     public:
         int sx, sy, sz;
     };
 
-    struct MinimumDistList
-    {
+    struct MinimumDistList {
     public:
         double dist;
         std::vector<ShiftCell> shift;
     };
 
-    struct KpointSymmetry
-    {
+    struct KpointSymmetry {
     public:
         unsigned int symmetry_op;
         unsigned int knum_irred_orig;
         unsigned int knum_orig;
     };
 
-    class Scph : protected Pointers
-    {
+    class Scph : protected Pointers {
     public:
 
         Scph(class PHON *phon);
@@ -66,6 +61,7 @@ namespace PHON_NS
         unsigned int kmesh_scph[3];
         unsigned int kmesh_interpolate[3];
         unsigned int ialgo;
+        unsigned int bubble;
 
         bool restart_scph;
         bool warmstart_scph;
@@ -78,6 +74,7 @@ namespace PHON_NS
         std::vector<std::vector<KpointList>> kp_irred_interpolate;
 
         void exec_scph();
+
         void setup_scph();
 
         double mixalpha;
@@ -94,13 +91,17 @@ namespace PHON_NS
         int *kmap_interpolate_to_scph;
 
         // Information for calculating the ph-ph interaction coefficients
-        double ***vec_for_v3, *invmass_for_v3;
-        double ***vec_for_v4, *invmass_for_v4;
-        int **evec_index3;
-        int **evec_index4;
-        int ngroup, ngroup2;
-        std::vector<double> *fcs_group;
-        std::vector<double> *fcs_group2;
+        double *invmass_v3;
+        double *invmass_v4;
+        int **evec_index_v3;
+        int **evec_index_v4;
+        int ngroup_v3, ngroup_v4;
+        std::vector<RelativeVector> *relvec_v3, *relvec_v4;
+        std::complex<double> *phi3_reciprocal;
+        int kindex_phi3_stored[2] = {-1, -1};
+
+        std::vector<double> *fcs_group_v3;
+        std::vector<double> *fcs_group_v4;
         std::complex<double> *exp_phase, ***exp_phase3;
         int nk_grid[3];
         int nk_represent;
@@ -121,20 +122,28 @@ namespace PHON_NS
 
 
         void set_default_variables();
+
         void deallocate_variables();
 
         void setup_kmesh();
+
         void setup_eigvecs();
+
         void setup_pp_interaction();
+
         void setup_transform_ifc();
+
         void setup_transform_symmetry();
 
 
         void load_scph_dymat_from_file(std::complex<double> ****);
+
         void store_scph_dymat_to_file(std::complex<double> ****);
 
         void exec_scph_main(std::complex<double> ****);
-        void postprocess(std::complex<double> ****delta_dymat_scph);
+
+        void postprocess(std::complex<double> ****delta_dymat_scph,
+                         std::complex<double> ****delta_dymat_scph_plus_bubble);
 
         void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
                                                  std::complex<double> ***,
@@ -161,10 +170,10 @@ namespace PHON_NS
                                           double **,
                                           std::complex<double> ***,
                                           double,
-                                          std::vector<int> *,
                                           bool &,
                                           std::complex<double> ***,
-                                          bool);
+                                          bool,
+                                          const unsigned int verbosity);
 
         void exec_interpolation(const unsigned int [3],
                                 std::complex<double> ***,
@@ -187,33 +196,58 @@ namespace PHON_NS
                                              std::complex<double> **,
                                              bool) const;
 
-        void find_degeneracy(std::vector<int> *,
-                             unsigned int,
-                             const std::vector<std::vector<KpointList>> &,
-                             double **) const;
+        void find_degeneracy(std::vector<int> *degeneracy_out,
+                             unsigned int nk_in,
+                             double **eval_in) const;
 
-        double distance(double *,
-                        double *) const;
+        static double distance(double *,
+                               double *);
 
         void symmetrize_dynamical_matrix(unsigned int,
                                          Eigen::MatrixXcd &) const;
 
         void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
 
-        void duplicate_xk_boundary(double *,
-                                   std::vector<std::vector<double>> &) const;
+        static void duplicate_xk_boundary(double *,
+                                          std::vector<std::vector<double>> &);
 
-        void write_anharmonic_correction_fc2(std::complex<double> ****,
-                                             unsigned int);
+        void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
+                                             const unsigned int NT,
+                                             const int type = 0);
 
-        void mpi_bcast_complex(std::complex<double> ****,
-                               int,
-                               int,
-                               int) const;
+        static void mpi_bcast_complex(std::complex<double> ****data,
+                                      const unsigned int NT,
+                                      const unsigned int nk,
+                                      const unsigned int ns);
 
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],
                                              std::complex<double> ****);
+
+        void bubble_correction(std::complex<double> ****,
+                               std::complex<double> ****);
+
+        std::complex<double> V3_this(const unsigned int ks[3],
+                                     double **eval,
+                                     std::complex<double> ***evec);
+
+        void calc_phi3_reciprocal_this(const unsigned int ik1,
+                                             const unsigned int ik2,
+                                             std::complex<double> *ret);
+
+        std::vector<std::complex<double>> get_bubble_selfenergy(const unsigned int nk_in,
+                                                                      const unsigned int ns_in,
+                                                                      const unsigned int kmesh_in[3],
+                                                                      double **xk_in,
+                                                                      double **eval_in,
+                                                                      std::complex<double> ***evec_in,
+                                                                      const unsigned int knum,
+                                                                      const unsigned int snum,
+                                                                      const double temp_in,
+                                                                      const std::vector<std::complex<double>> &omegalist);
+
+
+
     };
 
     extern "C" {

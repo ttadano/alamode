@@ -67,7 +67,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\boost\include\boost-1_67;$(UniversalCRT_IncludePath);$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>C:\boost\include\boost-1_67;$(UniversalCRT_IncludePath);C:\Program Files (x86)\Microsoft SDKs\MPI\Include\;$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;C:\eigen_c++;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <LibraryPath>$(UniversalCRT_LibraryPath_x86);$(MSMPI_LIB32);C:\fftw3\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -75,8 +75,8 @@
     <LibraryPath>$(UniversalCRT_LibraryPath_x64);$(MSMPI_LIB64);C:\fftw3\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x64);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\eigen_c++;$(UniversalCRT_IncludePath);$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(UniversalCRT_LibraryPath_x86);$(MSMPI_LIB32);C:\fftw3\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);</LibraryPath>
+    <IncludePath>C:\eigen_c++;$(UniversalCRT_IncludePath);$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <LibraryPath>$(UniversalCRT_LibraryPath_x86);$(MSMPI_LIB32);C:\fftw3\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\eigen_c++;$(UniversalCRT_IncludePath);$(MSMPI_INC);$(MSMPI_INC)x86;C:\fftw3\include;C:\boost\boost_1_60_0;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSDK_IncludePath)</IncludePath>

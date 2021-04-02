@@ -16,20 +16,23 @@
 #if defined(WIN32) || defined(_WIN32)
 #include <Windows.h>
 #else
+
 #include <time.h>
 #include <sys/time.h>
+
 #endif
 
-namespace PHON_NS
-{
-    class Timer : protected Pointers
-    {
+namespace PHON_NS {
+    class Timer : protected Pointers {
     public:
         Timer(class PHON *);
+
         ~Timer();
 
         void reset();
+
         double elapsed() const;
+
         void print_elapsed() const;
 
         std::string DateAndTime() const;

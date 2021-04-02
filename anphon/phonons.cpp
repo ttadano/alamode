@@ -35,9 +35,12 @@
 #include "version.h"
 #include "scph.h"
 #include "ewald.h"
+#include "dielec.h"
 
 #ifdef _OPENMP
+
 #include <omp.h>
+
 #endif
 
 using namespace PHON_NS;
@@ -63,8 +66,8 @@ PHON::PHON(int narg,
         std::cout << " Job started at " << timer->DateAndTime() << std::endl;
         std::cout << " The number of MPI processes: " << mympi->nprocs << std::endl;
 #ifdef _OPENMP
-        std::cout << " The number of OpenMP threads: " 
-            << omp_get_max_threads() << std::endl;
+        std::cout << " The number of OpenMP threads: "
+                  << omp_get_max_threads() << std::endl;
 #endif
         std::cout << std::endl;
 
@@ -94,7 +97,7 @@ PHON::PHON(int narg,
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl << " Job finished at "
-            << timer->DateAndTime() << std::endl;
+                  << timer->DateAndTime() << std::endl;
     }
     destroy_pointers();
 }
@@ -128,6 +131,7 @@ void PHON::create_pointers()
     isotope = new Isotope(this);
     scph = new Scph(this);
     ewald = new Ewald(this);
+    dielec = new Dielec(this);
 }
 
 void PHON::destroy_pointers() const
@@ -153,6 +157,7 @@ void PHON::destroy_pointers() const
     delete isotope;
     delete scph;
     delete ewald;
+    delete dielec;
 }
 
 void PHON::setup_base() const
@@ -161,11 +166,12 @@ void PHON::setup_base() const
     symmetry->setup_symmetry();
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
-    dynamical->setup_dynamical(mode);
+    dynamical->setup_dynamical();
     dos->setup();
     thermodynamics->setup();
     ewald->init();
     anharmonic_core->setup();
+    dielec->init();
 
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations." << std::endl;
@@ -178,7 +184,7 @@ void PHON::setup_base() const
     }
 }
 
-void PHON::execute_phonons()
+void PHON::execute_phonons() const
 {
     if (mympi->my_rank == 0) {
         std::cout << "                      MODE = phonons                         " << std::endl;
@@ -207,22 +213,28 @@ void PHON::execute_phonons()
     if (gruneisen->print_gruneisen) {
         gruneisen->calc_gruneisen();
     }
+    if (dielec->calc_dielectric_constant) {
+        dielec->run_dielec_calculation();
+    }
 
     if (thermodynamics->calc_FE_bubble) {
         thermodynamics->compute_free_energy_bubble();
     }
 
+
     if (mympi->my_rank == 0) {
+
         writes->print_phonon_energy();
         writes->write_phonon_info();
 
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
         }
+
     }
 }
 
-void PHON::execute_RTA()
+void PHON::execute_RTA() const
 {
     if (mympi->my_rank == 0) {
         std::cout << "                        MODE = RTA                           " << std::endl;
@@ -270,7 +282,7 @@ void PHON::execute_RTA()
     }
 }
 
-void PHON::execute_self_consistent_phonon()
+void PHON::execute_self_consistent_phonon() const
 {
     if (mympi->my_rank == 0) {
         std::cout << "                        MODE = SCPH                           " << std::endl;

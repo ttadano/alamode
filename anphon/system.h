@@ -15,10 +15,8 @@
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
 
-namespace PHON_NS
-{
-    class AtomType
-    {
+namespace PHON_NS {
+    class AtomType {
     public:
         int element;
         double magmom;
@@ -35,8 +33,7 @@ namespace PHON_NS
         }
     };
 
-    class System : protected Pointers
-    {
+    class System : protected Pointers {
     public:
         System(class PHON *);
 
@@ -63,8 +60,7 @@ namespace PHON_NS
         unsigned int **map_p2s, **map_p2s_anharm;
         unsigned int **map_p2s_anharm_orig;
 
-        class Maps
-        {
+        class Maps {
         public:
             unsigned int atom_num;
             unsigned int tran_num;
@@ -77,17 +73,18 @@ namespace PHON_NS
 
         double Tmin, Tmax, dT;
 
-        double volume(double [3],
-                      double [3],
-                      double [3]) const;
+        double volume(const double [3],
+                      const double [3],
+                      const double [3]) const;
 
         bool lspin, trevsym_mag;
         int noncollinear;
 
-        int get_atomic_number_by_name(const std::string);
+        int get_atomic_number_by_name(const std::string &);
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         void set_mass_elem_from_database(const int,
@@ -100,30 +97,38 @@ namespace PHON_NS
                     double [3][3]) const;
 
         void setup_atomic_class(unsigned int,
-                                unsigned int *,
+                                const unsigned int *,
                                 double **);
 
-        void check_consistency_primitive_lattice();
+        void check_consistency_primitive_lattice() const;
 
         std::vector<std::string> element_names{
-            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
-            "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
-            "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe",
-            "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf",
-            "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
-            "Pa", "U", "Np", "Pu"
+                "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
+                "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br",
+                "Kr",
+                "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I",
+                "Xe",
+                "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+                "Hf",
+                "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac",
+                "Th",
+                "Pa", "U", "Np", "Pu"
         };
         std::vector<double> atomic_masses{
-            1.007941, 4.002602, 6.940037, 9.012183, 10.811028, 12.010736, 14.006703, 15.999405, 18.998403, 20.180046,
-            22.989769, 24.305052, 26.981539, 28.085499, 30.973762, 32.064787, 35.452938, 39.947799, 39.098301,
-            40.078023, 44.955908, 47.866745, 50.941465, 51.996132, 54.938044, 55.845144, 58.933194, 58.693347,
-            63.546040, 65.377783, 69.723066, 72.627550, 74.921595, 78.959389, 79.903528, 83.798000, 85.467664,
-            87.616644, 88.905840, 91.223642, 92.906373, 95.959789, -1, 101.064940, 102.905498, 106.415328,
-            107.868150, 112.411558, 114.818087, 118.710113, 121.759784, 127.603126, 126.904472, 131.292761, 132.905452,
-            137.326892, 138.905469, 140.115731, 140.907658, 144.241596, -1, 150.366356, 151.964378, 157.252131,
-            158.925355, 162.499473, 164.930329, 167.259083, 168.934218, 173.054150, 174.966815, 178.484979, 180.947876,
-            183.841778, 186.206705, 190.224860, 192.216052, 195.084457, 196.966569, 200.599167, 204.383413, 207.216908,
-            208.980399, -1, -1, -1, -1, -1, -1, 232.038056, 231.035884, 238.028910, -1, -1
+                1.007941, 4.002602, 6.940037, 9.012183, 10.811028, 12.010736, 14.006703, 15.999405, 18.998403,
+                20.180046,
+                22.989769, 24.305052, 26.981539, 28.085499, 30.973762, 32.064787, 35.452938, 39.947799, 39.098301,
+                40.078023, 44.955908, 47.866745, 50.941465, 51.996132, 54.938044, 55.845144, 58.933194, 58.693347,
+                63.546040, 65.377783, 69.723066, 72.627550, 74.921595, 78.959389, 79.903528, 83.798000, 85.467664,
+                87.616644, 88.905840, 91.223642, 92.906373, 95.959789, -1, 101.064940, 102.905498, 106.415328,
+                107.868150, 112.411558, 114.818087, 118.710113, 121.759784, 127.603126, 126.904472, 131.292761,
+                132.905452,
+                137.326892, 138.905469, 140.115731, 140.907658, 144.241596, -1, 150.366356, 151.964378, 157.252131,
+                158.925355, 162.499473, 164.930329, 167.259083, 168.934218, 173.054150, 174.966815, 178.484979,
+                180.947876,
+                183.841778, 186.206705, 190.224860, 192.216052, 195.084457, 196.966569, 200.599167, 204.383413,
+                207.216908,
+                208.980399, -1, -1, -1, -1, -1, -1, 232.038056, 231.035884, 238.028910, -1, -1
         }; // For unstable elements, the atomic mass is set to -1
     };
 }

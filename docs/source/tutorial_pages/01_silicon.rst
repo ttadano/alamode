@@ -179,11 +179,11 @@ and the multiplicity :math:`P` is the number of times each interaction :math:`(i
 For example, :math:`P = 2` for the pair :math:`(1x, 2x)` because the distance :math:`r_{1,2}` is exactly the same as the distance :math:`r_{1,2'}` where the atom 2' is a neighboring image of atom 2 under the periodic boundary condition.
 If you compare the magnitude of IFCs, the values in the third column should be divided by :math:`P`.
 
-In the log file :red:`si_alm2.log`, the :ref:`fitting error<fitting_formalism>` is printed.
+In the log file :red:`si_alm.log2`, the :ref:`fitting error<fitting_formalism>` is printed.
 Try
 ::
 
-  $ grep "Fitting error" si_alm2.log
+  $ grep "Fitting error" si_alm.log2
   Fitting error (%) : 0.567187
 
 The other file :red:`si222.xml` contains crystal structure, symmetry, IFCs, and all other information necessary for subsequent phonon calculations.

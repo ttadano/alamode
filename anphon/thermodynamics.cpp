@@ -23,7 +23,7 @@
 
 using namespace PHON_NS;
 
-Thermodynamics::Thermodynamics(PHON *phon): Pointers(phon)
+Thermodynamics::Thermodynamics(PHON *phon) : Pointers(phon)
 {
     T_to_Ryd = k_Boltzmann / Ryd;
     calc_FE_bubble = false;
@@ -296,8 +296,8 @@ double Thermodynamics::disp2_avg(const double T,
             if (omega < eps8) continue;
 
             ret += real(dynamical->evec_phonon[ik][is][ns1]
-                    * std::conj(dynamical->evec_phonon[ik][is][ns2]))
-                * T * T_to_Ryd / (omega * omega);
+                        * std::conj(dynamical->evec_phonon[ik][is][ns2]))
+                   * T * T_to_Ryd / (omega * omega);
         }
     } else {
 #pragma omp parallel for private(ik, is, omega), reduction(+:ret)
@@ -311,15 +311,15 @@ double Thermodynamics::disp2_avg(const double T,
             if (omega < eps8) continue;
 
             ret += real(dynamical->evec_phonon[ik][is][ns1]
-                    * std::conj(dynamical->evec_phonon[ik][is][ns2]))
-                * (fB(omega, T) + 0.5) / omega;
+                        * std::conj(dynamical->evec_phonon[ik][is][ns2]))
+                   * (fB(omega, T) + 0.5) / omega;
         }
     }
 
 
     ret *= 1.0 / (static_cast<double>(nk)
-        * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]]
-            * system->mass[system->map_p2s[ns2 / 3][0]]));
+                  * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]]
+                              * system->mass[system->map_p2s[ns2 / 3][0]]));
 
     return ret;
 }
@@ -352,13 +352,13 @@ double Thermodynamics::disp_corrfunc(const double T_in,
             if (omega < eps8) continue;
 
             phase = 2.0 * pi * (xk_in[ik][0] * cell_shift[0]
-                + xk_in[ik][1] * cell_shift[1]
-                + xk_in[ik][2] * cell_shift[2]);
+                                + xk_in[ik][1] * cell_shift[1]
+                                + xk_in[ik][2] * cell_shift[2]);
 
             ret += real(std::conj(evec_in[ik][is][ncrd1])
-                    * evec_in[ik][is][ncrd2]
-                    * std::exp(phase))
-                * T_in * T_to_Ryd / (omega * omega);
+                        * evec_in[ik][is][ncrd2]
+                        * std::exp(phase))
+                   * T_in * T_to_Ryd / (omega * omega);
 
         }
 
@@ -372,19 +372,19 @@ double Thermodynamics::disp_corrfunc(const double T_in,
             if (omega < eps8) continue;
 
             phase = 2.0 * pi * (xk_in[ik][0] * cell_shift[0]
-                + xk_in[ik][1] * cell_shift[1]
-                + xk_in[ik][2] * cell_shift[2]);
+                                + xk_in[ik][1] * cell_shift[1]
+                                + xk_in[ik][2] * cell_shift[2]);
 
             ret += real(std::conj(evec_in[ik][is][ncrd1])
-                    * evec_in[ik][is][ncrd2]
-                    * std::exp(im * phase))
-                * (fB(omega, T_in) + 0.5) / omega;
+                        * evec_in[ik][is][ncrd2]
+                        * std::exp(im * phase))
+                   * (fB(omega, T_in) + 0.5) / omega;
         }
     }
 
     ret *= 1.0 / (static_cast<double>(nk)
-        * std::sqrt(system->mass[system->map_p2s[ncrd1 / 3][0]]
-            * system->mass[system->map_p2s[ncrd2 / 3][0]]));
+                  * std::sqrt(system->mass[system->map_p2s[ncrd1 / 3][0]]
+                              * system->mass[system->map_p2s[ncrd2 / 3][0]]));
 
     return ret;
 }
@@ -410,7 +410,7 @@ void Thermodynamics::compute_free_energy_bubble()
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << " -----------------------------------------------------------------"
-            << std::endl;
+                  << std::endl;
         std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
     }
 
@@ -491,8 +491,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
             for (iT = 0; iT < NT; ++iT) FE_tmp[iT] = 0.0;
 
-            for (int ik = 0; ik < npair_uniq; ++ik) {
-                int multi = triplet[ik].group.size();
+            for (auto ik = 0; ik < npair_uniq; ++ik) {
+                const int multi = triplet[ik].group.size();
 
                 arr_cubic[0] = ns * ik0 + is0;
 
@@ -515,7 +515,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
                         omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
                         const auto v3_tmp = std::norm(anharmonic_core->V3(arr_cubic))
-                            * static_cast<double>(multi);
+                                            * static_cast<double>(multi);
 
 
                         for (iT = 0; iT < NT; ++iT) {
@@ -661,7 +661,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                             omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
                             v3_tmp = std::norm(anharmonic_core->V3(arr_cubic, eval_in[iT], evec_in[iT]))
-                                * static_cast<double>(multi);
+                                     * static_cast<double>(multi);
 
                             if (classical) {
                                 n0 = fC(omega0, temp);
@@ -715,13 +715,13 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     for (int i = 0; i < N; ++i) {
         int ik = i / ns;
         int is = i % ns;
-        double omega = eval[ik][is];
+        const auto omega = eval[ik][is];
         if (std::abs(omega) < eps6) continue;
 
-        std::complex<double> tmp_c = std::complex<double>(0.0, 0.0);
+        auto tmp_c = std::complex<double>(0.0, 0.0);
 
         for (int js = 0; js < ns; ++js) {
-            double omega2_harm = dynamical->eval_phonon[ik][js];
+            auto omega2_harm = dynamical->eval_phonon[ik][js];
             if (omega2_harm >= 0.0) {
                 omega2_harm = std::pow(omega2_harm, 2);
             } else {
@@ -731,9 +731,9 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
             for (int ks = 0; ks < ns; ++ks) {
                 for (int ls = 0; ls < ns; ++ls) {
                     tmp_c += omega2_harm
-                        * dynamical->evec_phonon[ik][js][ks]
-                        * std::conj(dynamical->evec_phonon[ik][js][ls])
-                        * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
+                             * dynamical->evec_phonon[ik][js][ks]
+                             * std::conj(dynamical->evec_phonon[ik][js][ls])
+                             * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
                 }
             }
         }

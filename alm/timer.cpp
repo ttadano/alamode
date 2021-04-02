@@ -53,8 +53,8 @@ double Timer::elapsed_walltime() const
 #else
     timeval time_now;
     gettimeofday(&time_now, nullptr);
-    return (time_now.tv_sec - walltime_ref.tv_sec) 
-        + (time_now.tv_usec - walltime_ref.tv_usec) * 1.0e-6;
+    return (time_now.tv_sec - walltime_ref.tv_sec)
+           + (time_now.tv_usec - walltime_ref.tv_usec) * 1.0e-6;
 #endif
 }
 
@@ -90,7 +90,7 @@ double Timer::elapsed_cputime() const
 void Timer::print_elapsed() const
 {
     std::cout << "  Time Elapsed: " << elapsed_walltime() << " sec."
-        << std::endl << std::endl;
+              << std::endl << std::endl;
 }
 
 

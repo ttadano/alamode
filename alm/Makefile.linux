@@ -7,10 +7,13 @@
 
 CXX = icpc 
 CXXFLAGS = -O2 -xHOST -qopenmp -std=c++11
+#CXXFLAGS = -O2 -xHOST -qopenmp -std=c++11 -D_HDF5
 INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
+#INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include -I$(HDF5_ROOT)/include
 
 CXXL = ${CXX}
 LDFLAGS = -mkl -L$(SPGLIB_ROOT)/lib -lsymspg
+#LDFLAGS = -mkl -L$(SPGLIB_ROOT)/lib -lsymspg -L$(HDF5_ROOT)/lib -lhdf5_cpp -lhdf5
 
 LAPACK = 
 LIBS = ${LAPACK}

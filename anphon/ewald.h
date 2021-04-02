@@ -18,10 +18,8 @@
 #include "fcs_phonon.h"
 
 
-namespace PHON_NS
-{
-    class Gvecs
-    {
+namespace PHON_NS {
+    class Gvecs {
     public:
         double vec[3];
 
@@ -35,8 +33,7 @@ namespace PHON_NS
         };
     };
 
-    class DistInfo
-    {
+    class DistInfo {
     public:
         int cell;
         double dist;
@@ -55,8 +52,7 @@ namespace PHON_NS
     };
 
 
-    class Ewald : protected Pointers
-    {
+    class Ewald : protected Pointers {
     public:
         Ewald(class PHON *);
 
@@ -95,11 +91,15 @@ namespace PHON_NS
         std::vector<DistInfo> **distall_ewald;
 
         void set_default_variables();
+
         void deallocate_variables();
 
         void prepare_Ewald(const double [3][3]);
+
         void prepare_G();
+
         void compute_ewald_fcs();
+
         void compute_ewald_fcs2();
 
         void get_pairs_of_minimum_distance(int,

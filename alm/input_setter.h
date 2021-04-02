@@ -13,34 +13,37 @@
 #include "alm.h"
 #include <string>
 
-namespace ALM_NS
-{
-    class InputSetter
-    {
+namespace ALM_NS {
+    class InputSetter {
     public:
         InputSetter();
+
         ~InputSetter();
 
         void set_cell_parameter(const double a,
                                 const double lavec_in[3][3]);
+
         void set_atomic_positions(const size_t nat_in,
                                   const int *kd_in,
                                   const double (*xcoord_in)[3]);
+
         void set_geometric_structure(ALM *alm);
 
         void set_interaction_vars(const int maxorder_in,
                                   const int *nbody_include_in);
+
         void set_cutoff_radii(const int maxorder_in,
                               const size_t nkd_in,
                               const std::vector<double> &cutoff_radii_in);
+
         void define(ALM *alm) const;
 
         void set_general_vars(ALM *alm,
-                              std::string prefix,
-                              std::string mode,
+                              const std::string& prefix,
+                              const std::string& mode,
                               int verbosity,
-                              std::string str_disp_basis,
-                              std::string str_magmom,
+                              const std::string& str_disp_basis,
+                              const std::string& str_magmom,
                               size_t nat_in,
                               size_t nkd_in,
                               int printsymmetry,
@@ -53,7 +56,9 @@ namespace ALM_NS
                               const std::string *kdname_in,
                               const double *const *magmom_in,
                               double tolerance,
-                              double tolerance_constraint);
+                              double tolerance_constraint,
+                              const std::string& basis_force_constant,
+                              const int nmaxsave);
 
         void set_optimize_vars(ALM *alm,
                                const std::vector<std::vector<double>> &u_train_in,
@@ -68,9 +73,9 @@ namespace ALM_NS
 
         void set_constraint_vars(ALM *alm,
                                  int constraint_flag,
-                                 std::string rotation_axis,
-                                 std::string fc2_file,
-                                 std::string fc3_file,
+                                 const std::string& rotation_axis,
+                                 const std::string& fc2_file,
+                                 const std::string& fc3_file,
                                  bool fix_harmonic,
                                  bool fix_cubic) const;
 

@@ -15,6 +15,7 @@ using namespace ALM_NS;
 Files::Files()
 {
     print_hessian = false;
+    output_maxorder = 5;
 }
 
 Files::~Files() = default;
@@ -53,4 +54,12 @@ DispForceFile Files::get_datfile_train() const
 DispForceFile Files::get_datfile_validation() const
 {
     return datfile_validation;
+}
+
+void Files::set_output_maxorder(const int maxorder) {
+    output_maxorder = maxorder;
+}
+
+int Files::get_output_maxorder() const {
+    return output_maxorder;
 }

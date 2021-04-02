@@ -14,10 +14,8 @@
 #include <string>
 #include <vector>
 
-namespace PHON_NS
-{
-    class SymmetryOperation
-    {
+namespace PHON_NS {
+    class SymmetryOperation {
     public:
         int rot[3][3];
         double tran[3];
@@ -63,8 +61,7 @@ namespace PHON_NS
         }
     };
 
-    class RotationMatrix
-    {
+    class RotationMatrix {
     public:
         int mat[3][3];
 
@@ -80,8 +77,7 @@ namespace PHON_NS
         }
     };
 
-    class SymmetryOperationWithMapping
-    {
+    class SymmetryOperationWithMapping {
     public:
         std::vector<double> rot;            // Rotation matrix in Cartesian basis
         std::vector<double> rot_real;       // Rotation matrix in fractional basis
@@ -117,8 +113,7 @@ namespace PHON_NS
     };
 
 
-    class Symmetry : protected Pointers
-    {
+    class Symmetry : protected Pointers {
     public:
         Symmetry(class PHON *);
 
@@ -139,6 +134,7 @@ namespace PHON_NS
         std::string file_sym;
 
         void set_default_variables();
+
         void setup_symmetry_operation(int,
                                       unsigned int &,
                                       double [3][3],
@@ -149,7 +145,7 @@ namespace PHON_NS
         void findsym(int,
                      double [3][3],
                      double **,
-                     std::vector<SymmetryOperation> &);
+                     std::vector<SymmetryOperation> &) const;
 
         void gensym_withmap(double **,
                             const unsigned int *);
@@ -159,12 +155,12 @@ namespace PHON_NS
         void find_lattice_symmetry(double [3][3],
                                    std::vector<RotationMatrix> &) const;
 
-        void find_crystal_symmetry(int,
-                                   int,
-                                   std::vector<unsigned int> *,
-                                   double **x,
-                                   const std::vector<RotationMatrix> &,
-                                   std::vector<SymmetryOperation> &) const;
+        void find_crystal_symmetry(
+                int,
+                std::vector<unsigned int> *,
+                double **x,
+                const std::vector<RotationMatrix> &,
+                std::vector<SymmetryOperation> &) const;
 
         void broadcast_symmlist(std::vector<SymmetryOperation> &) const;
     };

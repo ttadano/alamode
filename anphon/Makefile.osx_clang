@@ -5,10 +5,10 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-# MPI version of clang++ 
+# MPI version of clang++ with libomp installed via Homebrew
 MPICXX = mpic++
-CXXFLAGS = -O3 -std=c++11
-INCLUDE = -I../include -I$(HOME)/include
+CXXFLAGS = -O3 -std=c++11 -Xpreprocessor -fopenmp
+INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/boost/include/ -I/usr/local/opt/eigen/include/eigen3/ -I/usr/local/opt/fftw/include/  -I/usr/local/opt/libomp/include/
 
 LINKER = ${MPICXX}
 
@@ -18,7 +18,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack
-LIBS = ${LAPACK}  -lfftw3
+LIBS = ${LAPACK} -L/usr/local/lib/ -lfftw3 -L//usr/local/opt/libomp/lib/ -lomp
 
 #----------------------------------------------
 # General rules
@@ -34,7 +34,7 @@ CXXSRC= phonons.cpp error.cpp fcs_phonon.cpp parsephon.cpp dynamical.cpp  \
 	phonon_dos.cpp phonon_velocity.cpp integration.cpp anharmonic_core.cpp \
 	thermodynamics.cpp conductivity.cpp symmetry_core.cpp mode_analysis.cpp \
         mpi_common.cpp gruneisen.cpp isotope.cpp selfenergy.cpp \
-	scph.cpp ewald.cpp
+	scph.cpp ewald.cpp dielec.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

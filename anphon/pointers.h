@@ -12,38 +12,37 @@
 
 #include "phonons.h"
 
-namespace PHON_NS
-{
-    class Pointers
-    {
+namespace PHON_NS {
+    class Pointers {
     public:
         Pointers(PHON *ptr) :
-            phon(ptr),
-            memory(ptr->memory),
-            error(ptr->error),
-            input(ptr->input),
-            system(ptr->system),
-            symmetry(ptr->symmetry),
-            kpoint(ptr->kpoint),
-            integration(ptr->integration),
-            fcs_phonon(ptr->fcs_phonon),
-            dynamical(ptr->dynamical),
-            phonon_velocity(ptr->phonon_velocity),
-            thermodynamics(ptr->thermodynamics),
-            anharmonic_core(ptr->anharmonic_core),
-            mode_analysis(ptr->mode_analysis),
-            selfenergy(ptr->selfenergy),
-            conductivity(ptr->conductivity),
-            writes(ptr->writes),
-            dos(ptr->dos),
-            gruneisen(ptr->gruneisen),
-            mympi(ptr->mympi),
-            isotope(ptr->isotope),
-            scph(ptr->scph),
-            ewald(ptr->ewald),
-            timer(ptr->timer) { }
+                phon(ptr),
+                memory(ptr->memory),
+                error(ptr->error),
+                input(ptr->input),
+                system(ptr->system),
+                symmetry(ptr->symmetry),
+                kpoint(ptr->kpoint),
+                integration(ptr->integration),
+                fcs_phonon(ptr->fcs_phonon),
+                dynamical(ptr->dynamical),
+                phonon_velocity(ptr->phonon_velocity),
+                thermodynamics(ptr->thermodynamics),
+                anharmonic_core(ptr->anharmonic_core),
+                mode_analysis(ptr->mode_analysis),
+                selfenergy(ptr->selfenergy),
+                conductivity(ptr->conductivity),
+                writes(ptr->writes),
+                dos(ptr->dos),
+                gruneisen(ptr->gruneisen),
+                mympi(ptr->mympi),
+                isotope(ptr->isotope),
+                scph(ptr->scph),
+                ewald(ptr->ewald),
+                dielec(ptr->dielec),
+                timer(ptr->timer) {}
 
-        virtual ~Pointers() { }
+        virtual ~Pointers() {}
 
     protected:
         PHON *phon;
@@ -69,6 +68,7 @@ namespace PHON_NS
         Isotope *&isotope;
         Scph *&scph;
         Ewald *&ewald;
+        Dielec *&dielec;
         Timer *&timer;
     };
 }

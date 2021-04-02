@@ -15,10 +15,8 @@
 #include "kpoint.h"
 #include <vector>
 
-namespace PHON_NS
-{
-    struct tetra_pair
-    {
+namespace PHON_NS {
+    struct tetra_pair {
         double e;
         double f;
     };
@@ -29,8 +27,7 @@ namespace PHON_NS
         return a.e < b.e;
     }
 
-    struct TetraWithKnum
-    {
+    struct TetraWithKnum {
         double e;
         int knum;
     };
@@ -41,10 +38,10 @@ namespace PHON_NS
         return a.e < b.e;
     }
 
-    class Integration : protected Pointers
-    {
+    class Integration : protected Pointers {
     public:
         Integration(class PHON *);
+
         ~Integration();
 
         bool use_tetrahedron;
@@ -53,8 +50,8 @@ namespace PHON_NS
 
         void setup_integration();
 
-        double do_tetrahedron(double *,
-                              double *,
+        double do_tetrahedron(const double *,
+                              const double *,
                               double);
 
         double dos_integration(double *,
@@ -82,6 +79,7 @@ namespace PHON_NS
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         unsigned int ntetra;
@@ -95,7 +93,7 @@ namespace PHON_NS
                           double,
                           double) const;
 
-        inline double volume(const int *);
+        inline double volume(const int *) const;
 
         std::vector<tetra_pair> tetra_data;
 
@@ -115,6 +113,6 @@ namespace PHON_NS
     inline double delta_gauss(const double omega,
                               const double epsilon)
     {
-        return std::exp(- omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
+        return std::exp(-omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
     }
 }

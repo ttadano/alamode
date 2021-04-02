@@ -15,10 +15,8 @@
 #include <cstdlib>
 #include "pointers.h"
 
-namespace PHON_NS
-{
-    class Memory : protected Pointers
-    {
+namespace PHON_NS {
+    class Memory : protected Pointers {
     public:
         Memory(class PHON *);
 
@@ -26,15 +24,15 @@ namespace PHON_NS
 
         // allocator 
 
-        template <typename T>
-        T* allocate(T *&arr,
+        template<typename T>
+        T *allocate(T *&arr,
                     const unsigned int n1)
         {
 #ifdef _SX
             arr = new T [n1];
 #else
             try {
-                arr = new T [n1];
+                arr = new T[n1];
             }
             catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 1-dimensional array" << std::endl;
@@ -46,8 +44,8 @@ namespace PHON_NS
             return arr;
         }
 
-        template <typename T>
-        T** allocate(T **&arr,
+        template<typename T>
+        T **allocate(T **&arr,
                      const unsigned int n1,
                      const unsigned int n2)
         {
@@ -60,7 +58,7 @@ namespace PHON_NS
 #else
             try {
                 arr = new T *[n1];
-                arr[0] = new T [n1 * n2];
+                arr[0] = new T[n1 * n2];
                 for (unsigned int i = 1; i < n1; ++i) {
                     arr[i] = arr[0] + i * n2;
                 }
@@ -69,15 +67,15 @@ namespace PHON_NS
                 std::cout << " Caught an exception when trying to allocate 2-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2) << std::
-                    endl;
+                endl;
                 exit(EXIT_FAILURE);
             }
 #endif
             return arr;
         }
 
-        template <typename T>
-        T*** allocate(T ***&arr,
+        template<typename T>
+        T ***allocate(T ***&arr,
                       const unsigned int n1,
                       const unsigned int n2,
                       const unsigned int n3)
@@ -96,7 +94,7 @@ namespace PHON_NS
             try {
                 arr = new T **[n1];
                 arr[0] = new T *[n1 * n2];
-                arr[0][0] = new T [n1 * n2 * n3];
+                arr[0][0] = new T[n1 * n2 * n3];
                 for (unsigned int i = 0; i < n1; ++i) {
                     arr[i] = arr[0] + i * n2;
                     for (unsigned int j = 0; j < n2; ++j) {
@@ -108,15 +106,15 @@ namespace PHON_NS
                 std::cout << " Caught an exception when trying to allocate 3-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << std::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3) << std
-                    ::endl;
+                ::endl;
                 exit(EXIT_FAILURE);
             }
 #endif
             return arr;
         }
 
-        template <typename T>
-        T**** allocate(T ****&arr,
+        template<typename T>
+        T ****allocate(T ****&arr,
                        const unsigned int n1,
                        const unsigned int n2,
                        const unsigned int n3,
@@ -142,7 +140,7 @@ namespace PHON_NS
                 arr = new T ***[n1];
                 arr[0] = new T **[n1 * n2];
                 arr[0][0] = new T *[n1 * n2 * n3];
-                arr[0][0][0] = new T [n1 * n2 * n3 * n4];
+                arr[0][0][0] = new T[n1 * n2 * n3 * n4];
 
                 for (unsigned int i = 0; i < n1; ++i) {
                     arr[i] = arr[0] + i * n2;
@@ -157,9 +155,9 @@ namespace PHON_NS
             catch (std::bad_alloc &ba) {
                 std::cout << " Caught an exception when trying to allocate 4-dimensional array" << std::endl;
                 std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << "x" << n4 << std
-                    ::endl;
+                ::endl;
                 std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3, n4) <<
-                    std::endl;
+                          std::endl;
                 exit(EXIT_FAILURE);
             }
 #endif
@@ -168,34 +166,34 @@ namespace PHON_NS
 
         // deallocator
 
-        template <typename T>
+        template<typename T>
         void deallocate(T *&arr)
         {
-            delete [] arr;
+            delete[] arr;
         }
 
-        template <typename T>
+        template<typename T>
         void deallocate(T **&arr)
         {
-            delete [] arr[0];
-            delete [] arr;
+            delete[] arr[0];
+            delete[] arr;
         }
 
-        template <typename T>
+        template<typename T>
         void deallocate(T ***&arr)
         {
-            delete [] arr[0][0];
-            delete [] arr[0];
-            delete [] arr;
+            delete[] arr[0][0];
+            delete[] arr[0];
+            delete[] arr;
         }
 
-        template <typename T>
+        template<typename T>
         void deallocate(T ****&arr)
         {
-            delete [] arr[0][0][0];
-            delete [] arr[0][0];
-            delete [] arr[0];
-            delete [] arr;
+            delete[] arr[0][0][0];
+            delete[] arr[0][0];
+            delete[] arr[0];
+            delete[] arr;
         }
 
         // memsize calculator

@@ -15,10 +15,8 @@
 #include <vector>
 #include <complex>
 
-namespace PHON_NS
-{
-    class Dos : protected Pointers
-    {
+namespace PHON_NS {
+    class Dos : protected Pointers {
     public:
         Dos(class PHON *);
 
@@ -46,8 +44,11 @@ namespace PHON_NS
         void calc_dos_from_given_frequency(double **,
                                            double *) const;
 
+        void set_dos_energy_grid();
+
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         unsigned int nk_irreducible;
@@ -96,8 +97,8 @@ namespace PHON_NS
                                                         unsigned int,
                                                         double,
                                                         double **,
-                                                        double *,
-                                                        unsigned int *,
+                                                        const double *,
+                                                        const unsigned int *,
                                                         int,
                                                         double **) const;
     };

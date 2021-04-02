@@ -21,15 +21,15 @@
 #include "symmetry.h"
 #include "timer.h"
 
-namespace ALM_NS
-{
-    class IntList
-    {
+namespace ALM_NS {
+    class IntList {
     public:
         std::vector<int> iarray;
 
         IntList() = default;
+
         ~IntList() = default;
+
         IntList(const IntList &a) = default;
 
         IntList(const int n,
@@ -59,15 +59,16 @@ namespace ALM_NS
     };
 
 
-    class DistInfo
-    {
+    class DistInfo {
     public:
         int cell;
         double dist;
         double relvec[3]{};
 
         DistInfo() = default;
+
         ~DistInfo() = default;
+
         DistInfo(const DistInfo &obj) = default;
 
         DistInfo(const int n,
@@ -95,7 +96,7 @@ namespace ALM_NS
         DistList() = default;
 
         DistList(const size_t atom_,
-                 const double dist_) : atom(atom_), dist(dist_) { };
+                 const double dist_) : atom(atom_), dist(dist_) {};
 
         bool operator<(const DistList &a) const
         {
@@ -106,8 +107,7 @@ namespace ALM_NS
         }
     };
 
-    class MinDistList
-    {
+    class MinDistList {
     public:
         std::vector<int> cell;
         std::vector<double> dist;
@@ -116,7 +116,7 @@ namespace ALM_NS
 
         MinDistList(std::vector<int> cell_in,
                     std::vector<double> dist_in)
-            : cell(std::move(cell_in)), dist(std::move(dist_in)) {};
+                : cell(std::move(cell_in)), dist(std::move(dist_in)) {};
 
         static bool compare_sum_distance(const MinDistList &a,
                                          const MinDistList &b)
@@ -147,8 +147,7 @@ namespace ALM_NS
         }
     };
 
-    class InteractionCluster
-    {
+    class InteractionCluster {
     public:
         std::vector<int> atom;
         std::vector<std::vector<int>> cell;
@@ -159,11 +158,11 @@ namespace ALM_NS
         InteractionCluster(std::vector<int> atom_in,
                            std::vector<std::vector<int>> cell_in,
                            const double dist_in)
-            : atom(std::move(atom_in)), cell(std::move(cell_in)), distmax(dist_in) {};
+                : atom(std::move(atom_in)), cell(std::move(cell_in)), distmax(dist_in) {};
 
         InteractionCluster(std::vector<int> atom_in,
                            std::vector<std::vector<int>> cell_in)
-            : atom(std::move(atom_in)), cell(std::move(cell_in)), distmax(0.0) {};
+                : atom(std::move(atom_in)), cell(std::move(cell_in)), distmax(0.0) {};
 
 
         bool operator<(const InteractionCluster &a) const
@@ -173,10 +172,10 @@ namespace ALM_NS
         }
     };
 
-    class Cluster
-    {
+    class Cluster {
     public:
         Cluster();
+
         ~Cluster();
 
         void init(const System *system,
@@ -199,12 +198,17 @@ namespace ALM_NS
                     const double *cutoff_radii_in);
 
         int get_maxorder() const;
-        int* get_nbody_include() const;
+
+        int *get_nbody_include() const;
+
         std::string get_ordername(const unsigned int order) const;
-        const std::set<IntList>& get_cluster_list(const unsigned int order) const;
-        const std::vector<int>& get_interaction_pair(const unsigned int order,
+
+        const std::set<IntList> &get_cluster_list(const unsigned int order) const;
+
+        const std::vector<int> &get_interaction_pair(const unsigned int order,
                                                      const size_t atom_index) const;
-        const std::set<InteractionCluster>& get_interaction_cluster(const unsigned int order,
+
+        const std::set<InteractionCluster> &get_interaction_cluster(const unsigned int order,
                                                                     const size_t atom_index) const;
 
     private:
@@ -221,6 +225,7 @@ namespace ALM_NS
         // Interacting many-body clusters with mirrow image information
 
         void set_default_variables();
+
         void deallocate_variables();
 
         // can be made const function, but mindist_pairs is modified
@@ -255,6 +260,7 @@ namespace ALM_NS
 
         double distance(const double *,
                         const double *) const;
+
         int nbody(const int,
                   const int *) const;
 
@@ -284,12 +290,10 @@ namespace ALM_NS
     };
 }
 
-namespace std
-{
-    template <>
-    struct hash<ALM_NS::IntList>
-    {
-        std::size_t operator ()(ALM_NS::IntList const &obj) const
+namespace std {
+    template<>
+    struct hash<ALM_NS::IntList> {
+        std::size_t operator()(ALM_NS::IntList const &obj) const
         {
             hash<int> hasher;
             size_t seed = 0;

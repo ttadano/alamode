@@ -98,13 +98,24 @@ ANPHON: Output files
 
 * ``PREFIX``.kl
 
- Lattice thermal conductivity tensor.
- Created when ``MODE = RTA``.
+ Lattice thermal conductivity tensor (Peierls term). Created when ``MODE = RTA``.
 
 * ``PREFIX``.kl_spec
 
  Spectra of lattice thermal conductivity. Only diagonal components are saved.
  Created when ``MODE = RTA`` and ``KAPPA_SPEC = 1``.
+
+
+* ``PREFIX``.kl_coherent
+
+ Coherent component of lattice thermal conductivity. Created when ``KAPPA_COHERENT > 0`` in ``MODE = RTA``.
+
+
+* ``PREFIX``.kc_elem
+
+ Momentum- and mode-decomposed contributions to the coherent components of lattice thermal conductivity. 
+ Created when ``KAPPA_COHERENT = 2`` in ``MODE = RTA``.
+
 
 * ``PREFIX``.gamma_isotope
 

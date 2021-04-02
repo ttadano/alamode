@@ -13,19 +13,21 @@
 #include "pointers.h"
 #include <vector>
 #include <set>
+#include <complex>
 
-namespace PHON_NS
-{
-    class Conductivity : protected Pointers
-    {
+namespace PHON_NS {
+    class Conductivity : protected Pointers {
     public:
         Conductivity(class PHON *);
 
         ~Conductivity();
 
         void setup_kappa();
+
         void prepare_restart();
+
         void calc_anharmonic_imagself();
+
         void compute_kappa();
 
         int calc_kappa_spec;
@@ -33,17 +35,22 @@ namespace PHON_NS
         double **damping3;
         double ***kappa;
         double ***kappa_spec;
+        double ***kappa_coherent;
         double *Temperature;
+        int calc_coherent;
 
     private:
         void set_default_variables();
+
         void deallocate_variables();
 
         double ***vel;
+        std::complex<double> ****velmat;
         unsigned int nk, ns;
         int nshift_restart;
         std::vector<int> vks, vks_l, vks_done;
         std::set<int> vks_job;
+        std::string file_coherent_elems;
 
         void write_result_gamma(unsigned int,
                                 unsigned int,
@@ -57,5 +64,9 @@ namespace PHON_NS
         void compute_frequency_resolved_kappa(int,
                                               double ****,
                                               int);
+
+        void compute_kappa_intraband(double ***kappa_intra, double **lifetime);
+
+        void compute_kappa_coherent(double ***kappa_coherent, double **gamma_total) const;
     };
 }

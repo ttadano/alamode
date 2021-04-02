@@ -10,6 +10,7 @@
 
 #include "parsephon.h"
 #include "conductivity.h"
+#include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
 #include "ewald.h"
@@ -42,7 +43,7 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon): Pointers(phon)
+Input::Input(PHON *phon) : Pointers(phon)
 {
     from_stdin = false;
     job_title = "";
@@ -81,7 +82,7 @@ void Input::parce_input(int narg,
                     "&cell entry not found in the input file");
     parse_cell_parameter();
 
-    bool use_defaults_for_analysis = !locate_tag("&analysis");
+    const auto use_defaults_for_analysis = !locate_tag("&analysis");
     parse_analysis_vars(use_defaults_for_analysis);
 
     if (!locate_tag("&kpoint"))
@@ -106,11 +107,12 @@ void Input::parse_general_vars()
     int nkd;
     struct stat st;
     std::string str_tmp;
-    std::vector<std::string> input_list{
-        "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-        "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-        "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
-        "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM"
+    const std::vector<std::string> input_list{
+            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+            "VERBOSITY"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -136,13 +138,13 @@ void Input::parse_general_vars()
         }
     }
 
-    std::string prefix = general_var_dict["PREFIX"];
-    std::string mode = general_var_dict["MODE"];
-    std::string file_result = prefix + ".result";
+    const auto prefix = general_var_dict["PREFIX"];
+    auto mode = general_var_dict["MODE"];
+    auto file_result = prefix + ".result";
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
 
-    std::string fcsinfo = general_var_dict["FCSXML"];
+    const auto fcsinfo = general_var_dict["FCSXML"];
     assign_val(nkd, "NKD", general_var_dict);
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -174,37 +176,38 @@ void Input::parse_general_vars()
 
     // Default values
 
-    double Tmin = 0.0;
-    double Tmax = 1000.0;
-    double dT = 10.0;
+    auto Tmin = 0.0;
+    auto Tmax = 1000.0;
+    auto dT = 10.0;
 
-    double emin = 0.0;
-    double emax = 1000.0;
-    double delta_e = 10.0;
+    auto emin = 0.0;
+    auto emax = 1000.0;
+    auto delta_e = 10.0;
 
     unsigned int nonanalytic = 0;
-    int nsym = 0;
-    double tolerance = 1.0e-6;
-    bool printsymmetry = false;
-    bool sym_time_reversal = false;
-    bool use_triplet_symmetry = true;
-    bool classical = false;
+    auto nsym = 0;
+    auto tolerance = 1.0e-6;
+    auto printsymmetry = false;
+    auto sym_time_reversal = false;
+    auto use_triplet_symmetry = true;
+    auto classical = false;
     unsigned int band_connection = 0;
     unsigned int bornsym = 0;
+    unsigned int verbosity = 1;
 
-    double prec_ewald = 1.0e-12;
+    auto prec_ewald = 1.0e-12;
 
     // if file_result exists in the current directory, 
     // restart mode will be automatically turned on.
-    bool restart = stat(file_result.c_str(), &st) == 0;
+    auto restart = stat(file_result.c_str(), &st) == 0;
 
-    int nbands = -1;
-    std::string borninfo = "";
-    std::string fc2info = "";
+    auto nbands = -1;
+    std::string borninfo;
+    std::string fc2info;
 
-    int ismear = -1;
-    double epsilon = 10.0;
-    double na_sigma = 0.1;
+    auto ismear = -1;
+    auto epsilon = 10.0;
+    auto na_sigma = 0.1;
 
     // Assign given values
 
@@ -235,6 +238,7 @@ void Input::parse_general_vars()
     assign_val(band_connection, "BCONNECT", general_var_dict);
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
     assign_val(bornsym, "BORNSYM", general_var_dict);
+    assign_val(verbosity, "VERBOSITY", general_var_dict);
 
     if (band_connection > 2) {
         error->exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
@@ -258,6 +262,10 @@ void Input::parse_general_vars()
     if (nonanalytic > 3) {
         error->exit("parse_general_vars",
                     "NONANALYTIC-tag can take 0, 1, 2, or 3.");
+    }
+    if (nonanalytic && borninfo == "") {
+        error->exit("parse_general_vars",
+                    "BORNINFO must be specified when NONANALYTIC > 0.");
     }
     // if (nonanalytic == 3) {
     //     if (mode == "SCPH") {
@@ -326,11 +334,11 @@ void Input::parse_scph_vars()
 {
     // Read input parameters in the &scph-field.
 
-    struct stat st;
-    std::vector<std::string> input_list{
-        "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-        "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-        "LOWER_TEMP", "WARMSTART"
+    struct stat st{};
+    const std::vector<std::string> input_list{
+            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+            "LOWER_TEMP", "WARMSTART", "BUBBLE"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -352,22 +360,23 @@ void Input::parse_scph_vars()
         }
     }
 
-    std::string file_dymat = this->job_title + ".scph_dymat";
+    auto file_dymat = this->job_title + ".scph_dymat";
 
     // Default values
 
-    double tolerance_scph = 1.0e-10;
+    auto tolerance_scph = 1.0e-10;
     unsigned int maxiter = 1000;
-    double mixalpha = 0.1;
-    bool selenergy_offdiagonal = true;
+    auto mixalpha = 0.1;
+    auto selenergy_offdiagonal = true;
     unsigned int ialgo_scph = 0;
-    bool lower_temp = true;
-    bool warm_start = true;
+    auto lower_temp = true;
+    auto warm_start = true;
+    unsigned int bubble = 0;
 
     // if file_dymat exists in the current directory, 
     // restart mode will be automatically turned on for SCPH calculations.
 
-    bool restart_scph = stat(file_dymat.c_str(), &st) == 0;
+    auto restart_scph = stat(file_dymat.c_str(), &st) == 0;
 
     // Assign given values
 
@@ -379,14 +388,15 @@ void Input::parse_scph_vars()
     assign_val(tolerance_scph, "TOL_SCPH", scph_var_dict);
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
+    assign_val(bubble, "BUBBLE", scph_var_dict);
 
-    std::string str_tmp = scph_var_dict["KMESH_SCPH"];
+    auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
     if (!str_tmp.empty()) {
 
         std::istringstream is(str_tmp);
 
-        while (1) {
+        while (true) {
             str_tmp.clear();
             is >> str_tmp;
             if (str_tmp.empty()) {
@@ -409,7 +419,7 @@ void Input::parse_scph_vars()
 
         std::istringstream is(str_tmp);
 
-        while (1) {
+        while (true) {
             str_tmp.clear();
             is >> str_tmp;
             if (str_tmp.empty()) {
@@ -429,7 +439,7 @@ void Input::parse_scph_vars()
 
     // Copy the values to appropriate classes.
 
-    for (int i = 0; i < 3; ++i) {
+    for (auto i = 0; i < 3; ++i) {
         scph->kmesh_scph[i] = kmesh_v[i];
         scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
     }
@@ -441,6 +451,7 @@ void Input::parse_scph_vars()
     scph->tolerance_scph = tolerance_scph;
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
+    scph->bubble = bubble;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
@@ -455,34 +466,40 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::vector<std::string> input_list{
-        "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-        "REALPART", "ISOTOPE", "ISOFACT",
-        "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-        "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-        "ANIME_FORMAT", "SPS", "PRINTV3", "PRINTPR", "FC2_EWALD",
-        "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR"
+            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+            "REALPART", "ISOTOPE", "ISOFACT",
+            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+            "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
+            "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+        "KAPPA_COHERENT",
+        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
 
 #ifdef _FE_BUBBLE
     input_list.push_back("FE_BUBBLE");
 #endif
 
-    unsigned int cellsize[3];
+    unsigned int cellsize[3] = {1, 1, 1};
+    int shift_ucorr[3] = {0, 0, 0};
+    double anime_kpoint_double[3] = {0., 0., 0.};
 
     double *isotope_factor = nullptr;
     std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
+    std::vector<std::string> projection_axes;
 
     // Default values
 
-    bool print_xsf = false;
-    bool print_anime = false;
+    auto print_xsf = false;
+    auto print_anime = false;
 
-    bool print_vel = false;
-    bool print_evec = false;
-    bool print_msd = false;
-    bool print_ucorr = false;
+    auto print_vel = false;
+    auto print_evec = false;
+    auto print_msd = false;
+    auto print_ucorr = false;
+    auto anime_frames = 20;
 
     bool compute_dos = true;
     bool projected_dos = false;
@@ -490,24 +507,31 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int scattering_phase_space = 0;
     bool print_gruneisen = false;
     bool print_newfcs = false;
-    bool print_V3 = false;
+    int print_V3 = 0;
+    int print_V4 = 0;
     bool participation_ratio = false;
 
-    double delta_a = 0.001;
+    auto delta_a = 0.001;
 
-    int quartic_mode = 0;
-    bool calc_realpart = false;
-    int include_isotope = 0;
-    bool fstate_omega = false;
-    bool fstate_k = false;
-    bool bubble_omega = false;
+    auto quartic_mode = 0;
+    auto calc_realpart = false;
+    auto include_isotope = 0;
+    auto fstate_omega = false;
+    auto fstate_k = false;
+    auto bubble_omega = false;
 
-    int calculate_kappa_spec = 0;
+    auto calculate_kappa_spec = 0;
 
-    bool print_fc2_ewald = false;
-    bool print_self_consistent_fc2 = false;
-    bool calc_FE_bubble = false;
+    auto print_fc2_ewald = false;
+    auto print_self_consistent_fc2 = false;
+    auto calc_FE_bubble = false;
+    auto calc_coherent = 0;
 
+    auto calculate_dielectric_constant = 0;
+    auto calc_selfenergy = 0;
+    auto print_zmode = false;
+
+    auto do_projection = false;
 
     // Assign values to variables
 
@@ -534,12 +558,17 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
         assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
+        assign_val(calc_coherent, "KAPPA_COHERENT", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
+        assign_val(calc_selfenergy, "SELF_ENERGY", analysis_var_dict);
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
+        assign_val(print_V4, "PRINTV4", analysis_var_dict);
         assign_val(participation_ratio, "PRINTPR", analysis_var_dict);
         assign_val(print_fc2_ewald, "FC2_EWALD", analysis_var_dict);
+        assign_val(calculate_dielectric_constant, "DIELEC", analysis_var_dict);
+        assign_val(print_zmode, "ZMODE", analysis_var_dict);
 #ifdef _FE_BUBBLE
         assign_val(calc_FE_bubble, "FE_BUBBLE", analysis_var_dict);
 #endif
@@ -548,6 +577,10 @@ void Input::parse_analysis_vars(const bool use_default_values)
             print_anime = false;
         } else {
             print_anime = true;
+        }
+
+        if (analysis_var_dict.find("PROJECTION_AXES") != analysis_var_dict.end()) {
+            do_projection = true;
         }
     }
 
@@ -576,6 +609,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
             error->exit("parse_analysis_vars",
                         "The number of entries for ANIME should be 3.");
         }
+        for (i = 0; i < 3; ++i) {
+            anime_kpoint_double[i] = my_cast<double>(anime_kpoint[i]);
+        }
 
         split_str_by_space(analysis_var_dict["ANIME_CELLSIZE"], anime_cellsize);
 
@@ -595,7 +631,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
             }
             if (cellsize[i] < 1) {
                 error->exit("parse_analysis_vars",
-                            "Please give positive integers in ANIME_CELLSIZE.");
+                            "Please give positive integers for ANIME_CELLSIZE.");
             }
         }
 
@@ -608,6 +644,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_format != "XSF" && anime_format != "AXSF" && anime_format != "XYZ") {
             error->exit("parse_analysis_vars", "Invalid ANIME_FORMAT");
         }
+
+        assign_val(anime_frames, "ANIME_FRAMES", analysis_var_dict);
     }
 
     if (print_ucorr) {
@@ -616,7 +654,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(str_shift_ucorr, "SHIFT_UCORR", analysis_var_dict);
 
         if (!str_shift_ucorr.empty()) {
-            int shift_ucorr[3];
             split_str_by_space(str_shift_ucorr, list_shift_ucorr);
             if (list_shift_ucorr.size() != 3) {
                 error->exit("parse_analysis_vars",
@@ -633,10 +670,43 @@ void Input::parse_analysis_vars(const bool use_default_values)
                                 "SHIFT_UCORR must be an array of integers.");
                 }
             }
-            for (i = 0; i < 3; ++i) {
-                writes->shift_ucorr[i] = shift_ucorr[i];
+        }
+    }
+
+    if (do_projection) {
+        std::string str_projection_axes;
+        assign_val(str_projection_axes, "PROJECTION_AXES", analysis_var_dict);
+        std::vector<double> direction(3);
+        std::vector<std::vector<double>> projection_directions;
+        if (!str_projection_axes.empty()) {
+            std::vector<std::string> str_projection_each, str_vec;
+            boost::split(str_projection_each, str_projection_axes, boost::is_any_of(","));
+
+            if (str_projection_each.size() > 2) {
+                error->warn("parse_analysis_vars",
+                            "Too many entries for PROJECTION_AXES. Only the first two will be used.");
+            }
+
+            for (i = 0; i < str_projection_each.size(); ++i) {
+                split_str_by_space(str_projection_each[i], str_vec);
+                if (str_vec.size() != 3) {
+                    error->exit("parse_analysis_vars",
+                                "The number of entries for each vector in PROJECTION_AXES must be 3.");
+                }
+                for (auto j = 0; j < 3; ++j) {
+                    try {
+                        direction[j] = boost::lexical_cast<double>(str_vec[j]);
+                    } catch (std::exception &e) {
+                        std::cout << e.what() << std::endl;
+                        error->exit("parse_analysis_vars",
+                                    "subset of PROJECTION_AXES must be an array of doubles.");
+                    }
+                }
+                projection_directions.push_back(direction);
             }
         }
+
+        dynamical->set_projection_directions(projection_directions);
     }
 
     // Copy the values to appropriate classes
@@ -644,19 +714,29 @@ void Input::parse_analysis_vars(const bool use_default_values)
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     dynamical->participation_ratio = participation_ratio;
-    writes->print_xsf = print_xsf;
-    writes->print_anime = print_anime;
-    writes->print_ucorr = print_ucorr;
+//    writes->print_xsf = print_xsf;
+//    writes->print_anime = print_anime;
+//    writes->print_ucorr = print_ucorr;
 
-    if (print_anime) {
-        for (i = 0; i < 3; ++i) {
-            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-            writes->anime_cellsize[i] = cellsize[i];
-        }
-        writes->anime_format = anime_format;
-    }
+    writes->setWriteOptions(print_msd,
+                            print_xsf,
+                            print_anime,
+                            anime_format,
+                            anime_frames,
+                            cellsize,
+                            anime_kpoint_double,
+                            print_ucorr,
+                            shift_ucorr);
 
-    writes->print_msd = print_msd;
+//    if (print_anime) {
+//        for (i = 0; i < 3; ++i) {
+//            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
+//            writes->anime_cellsize[i] = cellsize[i];
+//        }
+//        writes->anime_format = anime_format;
+//    }
+//
+//    writes->print_msd = print_msd;
 
     dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
@@ -664,14 +744,18 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->scattering_phase_space = scattering_phase_space;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
+    conductivity->calc_coherent = calc_coherent;
     anharmonic_core->quartic_mode = quartic_mode;
+    dielec->calc_dielectric_constant = calculate_dielectric_constant;
 
     mode_analysis->ks_input = ks_input;
     mode_analysis->calc_realpart = calc_realpart;
     mode_analysis->calc_fstate_omega = fstate_omega;
     mode_analysis->calc_fstate_k = fstate_k;
     mode_analysis->print_V3 = print_V3;
+    mode_analysis->print_V4 = print_V4;
     mode_analysis->spectral_func = bubble_omega;
+    mode_analysis->calc_selfenergy = calc_selfenergy;
     isotope->include_isotope = include_isotope;
 
     gruneisen->print_gruneisen = print_gruneisen;
@@ -897,7 +981,7 @@ void Input::parse_kpoints()
                             "The number of columns must be 8 when KPMODE = 3");
             }
 
-            kpoint->kpInp.push_back(kpelem);
+            kpoint->kpInp.emplace_back(kpelem);
         }
     }
 
@@ -905,7 +989,7 @@ void Input::parse_kpoints()
 }
 
 
-int Input::locate_tag(std::string key)
+int Input::locate_tag(const std::string &key)
 {
     int ret = 0;
     std::string line, line2;
@@ -939,8 +1023,8 @@ int Input::locate_tag(std::string key)
 
     while (ifs_input >> line) {
 #ifdef _USE_BOOST
-            boost::to_lower(line);
-            boost::trim(line);
+        boost::to_lower(line);
+        boost::trim(line);
 #else
         std::transform(line.begin(), line.end(), line.begin(), tolower);
         line2 = line;
@@ -1032,7 +1116,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         error->exit("get_var_dict",
                                     "Redundant input parameter");
                     }
@@ -1103,14 +1187,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
-                            << key << std::endl;
+                                  << key << std::endl;
                         error->exit("get_var_dict",
                                     "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                            << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file." << std::endl;
                         error->exit("get_var_dict",
                                     "Redundant input parameter");
                     }
@@ -1128,12 +1212,12 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 }
 
 
-bool Input::is_endof_entry(const std::string str) const
+bool Input::is_endof_entry(const std::string &str) const
 {
     return str[0] == '/';
 }
 
-void Input::split_str_by_space(const std::string str,
+void Input::split_str_by_space(const std::string &str,
                                std::vector<std::string> &str_vec) const
 {
     std::string str_tmp;
@@ -1152,9 +1236,9 @@ void Input::split_str_by_space(const std::string str,
     str_tmp.clear();
 }
 
-template <typename T>
+template<typename T>
 void Input::assign_val(T &val,
-                       const std::string key,
+                       const std::string &key,
                        std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.
@@ -1173,7 +1257,7 @@ void Input::assign_val(T &val,
 }
 
 
-template <typename T_to, typename T_from>
+template<typename T_to, typename T_from>
 T_to Input::my_cast(T_from const &x)
 {
     std::stringstream ss;

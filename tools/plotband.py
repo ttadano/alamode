@@ -14,6 +14,7 @@
 import numpy as np
 import optparse
 import matplotlib as mpl
+from matplotlib.gridspec import GridSpec
 try:
     mpl.use("Qt5agg")
 except:
@@ -38,12 +39,11 @@ parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", de
 
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
-mpl.rc('xtick', labelsize=16)
+mpl.rc('xtick', labelsize=12)
 mpl.rc('ytick', labelsize=16)
 mpl.rc('axes', labelsize=16)
 mpl.rc('lines', linewidth=1.5)
 mpl.rc('legend', fontsize='small')
-#mpl.rc('text', usetex=True)
 # line colors and styles
 color = ['b', 'g', 'r', 'm', 'k', 'c', 'y', 'r']
 lsty = ['-', '-', '-', '-', '--', '--', '--', '--']
@@ -58,13 +58,14 @@ def get_kpath_and_kval(file_in):
 
     if kpath[0] == '#' and kval[0] == '#':
         kval_float = [float(val) for val in kval[1:]]
-        kpath_mod = []
+        kpath_list = []
         for i in range(len(kpath[1:])):
             if kpath[i + 1] == 'G':
-                kpath_mod.append('$\Gamma$')
+                kpath_list.append('$\Gamma$')
             else:
-                kpath_mod.append('$\mathrm{' + kpath[i + 1] + '}$')
-        return kpath_mod, kval_float
+                kpath_list.append("$\mathrm{%s}$" % kpath[i + 1])
+
+        return kpath_list, kval_float
     else:
         return [], []
 
@@ -143,6 +144,154 @@ def get_xy_minmax(array):
     return xmin, xmax, ymin, ymax
 
 
+def gridspec_setup(data_merged, xtickslabels, xticksvars):
+
+    xmaxs = []
+    xmins = []
+
+    xticks_grids = []
+    xticklabels_grids = []
+    xticklabels_tmp = []
+    xticks_tmp = []
+
+    for i in range(len(xtickslabels)):
+
+        if i == 0:
+            xmins.append(xticksvars[0])
+        else:
+            if xticksvars[i] == xticksvars[i-1]:
+                xmaxs.append(xticksvars[i - 1])
+                xmins.append(xticksvars[i])
+
+                xticks_grids.append(xticks_tmp)
+                xticklabels_grids.append(xticklabels_tmp)
+                xticklabels_tmp = []
+                xticks_tmp = []
+
+        xticklabels_tmp.append(xtickslabels[i])
+        xticks_tmp.append(xticksvars[i])
+
+    xticks_grids.append(xticks_tmp)
+    xticklabels_grids.append(xticklabels_tmp)
+    xmaxs.append(xticksvars[-1])
+
+    naxes = len(xticks_grids)
+    nfiles = len(data_merged)
+
+    data_all_axes = []
+
+    for i in range(naxes):
+        data_ax = []
+
+        xmin_ax = xmins[i]
+        xmax_ax = xmaxs[i]
+
+        for j in range(nfiles):
+
+            kval = np.array(data_merged[j][0:, 0])
+            ix_xmin_arr = np.where(kval <= xmin_ax)
+            ix_xmax_arr = np.where(kval >= xmax_ax)
+
+            if len(ix_xmin_arr[0]) > 0:
+                ix_xmin = int(ix_xmin_arr[0][-1])
+            else:
+                ix_xmin = 0
+
+            if len(ix_xmax_arr[0]) > 0:
+                ix_xmax = int(ix_xmax_arr[0][0])
+            else:
+                ix_xmax = -2
+
+            data_ax.append(data_merged[j][ix_xmin:(ix_xmax+1), :])
+
+        data_all_axes.append(data_ax)
+
+    return naxes, xticks_grids, xticklabels_grids, xmins, xmaxs, data_all_axes
+
+
+def preprocess_data(files, unitname, normalize_xaxis):
+
+    xtickslabels, xticksvars = get_kpath_and_kval(files[0])
+
+    data_merged = []
+
+    for file in files:
+        data_tmp = np.loadtxt(file, dtype=float)
+        data_merged.append(data_tmp)
+
+    data_merged = change_scale(data_merged, unitname)
+
+    if normalize_xaxis:
+        data_merged, xticksvars = normalize_to_unity(data_merged, xticksvars)
+
+    xmin, xmax, ymin, ymax = get_xy_minmax(data_merged)
+
+    if options.emin is None and options.emax is None:
+        factor = 1.05
+        ymin *= factor
+        ymax *= factor
+    else:
+        if options.emin is not None:
+            ymin = options.emin
+        if options.emax is not None:
+            ymax = options.emax
+        if ymin > ymax:
+            print("Warning: emin > emax")
+
+    naxes, xticks_grids, xticklabels_grids, xmins, xmaxs, data_merged_grids \
+        = gridspec_setup(data_merged, xtickslabels, xticksvars)
+
+    return naxes, xticks_grids, xticklabels_grids, \
+        xmins, xmaxs, ymin, ymax, data_merged_grids
+
+
+def run_plot(nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, data_merged_ax):
+
+    fig = plt.figure()
+
+    width_ratios = []
+    for xmin, xmax in zip(xmin_ax, xmax_ax):
+        width_ratios.append(xmax - xmin)
+
+    gs = GridSpec(nrows=1, ncols=nax, width_ratios=width_ratios)
+    gs.update(wspace=0.1)
+
+    for iax in range(nax):
+        ax = plt.subplot(gs[iax])
+
+        for i in range(len(data_merged_ax[iax])):
+
+            if len(data_merged_ax[iax][i]) > 0:
+                ax.plot(data_merged_ax[iax][i][0:, 0], data_merged_ax[iax][i][0:, 1],
+                        linestyle=lsty[i], color=color[i], label=files[i])
+
+                for j in range(2, len(data_merged_ax[iax][i][0][0:])):
+                    ax.plot(data_merged_ax[iax][i][0:, 0], data_merged_ax[iax][i][0:, j],
+                            linestyle=lsty[i], color=color[i])
+
+        if iax == 0:
+            if options.unitname.lower() == "mev":
+                ax.set_ylabel("Frequency (meV)", labelpad=20)
+            elif options.unitname.lower() == "thz":
+                ax.set_ylabel("Frequency (THz)", labelpad=20)
+            else:
+                ax.set_ylabel("Frequency (cm${}^{-1}$)", labelpad=10)
+
+        else:
+            ax.set_yticklabels([])
+            ax.set_yticks([])
+
+        plt.axis([xmin_ax[iax], xmax_ax[iax], ymin, ymax])
+        ax.set_xticks(xticks_ax[iax])
+        ax.set_xticklabels(xticklabels_ax[iax])
+        ax.xaxis.grid(True, linestyle='-')
+
+        if options.print_key and iax == 0:
+            ax.legend(loc='best', prop={'size': 10})
+
+    plt.show()
+
+
 if __name__ == '__main__':
     '''
     Simple script for visualizing phonon dispersion relations.
@@ -164,57 +313,9 @@ if __name__ == '__main__':
     else:
         print("Number of files = %d" % nfiles)
 
-    xtickslabels, xticksvars = get_kpath_and_kval(files[0])
-    data_merged = []
+    nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, \
+        data_merged_ax = preprocess_data(
+            files, options.unitname, options.normalize_xaxis)
 
-    for file in files:
-        data_tmp = np.loadtxt(file, dtype=float)
-        data_merged.append(data_tmp)
-
-    data_merged = change_scale(data_merged, options.unitname)
-
-    if options.normalize_xaxis:
-        data_merged, xticksvars = normalize_to_unity(data_merged, xticksvars)
-
-    xmin, xmax, ymin, ymax = get_xy_minmax(data_merged)
-    fig, ax = plt.subplots()
-
-    for i in range(len(data_merged)):
-        ax.plot(data_merged[i][0:, 0], data_merged[i][0:, 1],
-                linestyle=lsty[i], color=color[i], label=files[i])
-
-        for j in range(2, len(data_merged[i][0][0:])):
-            ax.plot(data_merged[i][0:, 0], data_merged[i][0:, j],
-                    linestyle=lsty[i], color=color[i])
-
-    if options.unitname.lower() == "mev":
-        ax.set_ylabel("Frequency (meV)", labelpad=20)
-    elif options.unitname.lower() == "thz":
-        ax.set_ylabel("Frequency (THz)", labelpad=20)
-    else:
-        ax.set_ylabel("Frequency (cm${}^{-1}$)", labelpad=10)
-
-    if options.emin == None and options.emax == None:
-        factor = 1.05
-        ymin *= factor
-        ymax *= factor
-    else:
-        if options.emin != None:
-            ymin = options.emin
-        if options.emax != None:
-            ymax = options.emax
-
-        if ymin > ymax:
-            print("Warning: emin > emax")
-
-    plt.axis([xmin, xmax, ymin, ymax])
-
-    ax.set_xticks(xticksvars[0:])
-    ax.set_xticklabels(xtickslabels[0:])
-    ax.xaxis.grid(True, linestyle='-')
-
-    if options.print_key:
-        plt.legend(loc='best', prop={'size': 10})
-
-#	plt.savefig('band_tmp.png', dpi=300, transparent=True)
-    plt.show()
+    run_plot(nax, xticks_ax, xticklabels_ax,
+             xmin_ax, xmax_ax, ymin, ymax, data_merged_ax)

@@ -16,29 +16,38 @@
 #if defined(WIN32) || defined(_WIN32)
 #include <Windows.h>
 #else
+
 #include <time.h>
 #include <sys/time.h>
+
 #endif
 
-namespace ALM_NS
-{
-    class Timer
-    {
+namespace ALM_NS {
+    class Timer {
     public:
         Timer();
+
         ~Timer();
 
         void print_elapsed() const;
+
         void start_clock(std::string);
+
         void stop_clock(std::string);
+
         double get_walltime(std::string);
+
         double get_cputime(std::string);
+
         static std::string DateAndTime();
 
     private:
         void reset();
+
         double elapsed_walltime() const;
+
         double elapsed_cputime() const;
+
         std::map<std::string, double> walltime;
         std::map<std::string, double> cputime;
         double wtime_tmp, ctime_tmp;

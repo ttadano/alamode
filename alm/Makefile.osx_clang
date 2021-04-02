@@ -5,17 +5,17 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-# Use clang++ to use hdf5 installed via homebrew
+# Use clang++ with libomp installed via Homebrew
 CXX = g++
-CXXFLAGS = -O2 -std=c++11
-INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
+CXXFLAGS = -O2 -std=c++11 -Xpreprocessor -fopenmp 
+INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include -I/usr/local/include/eigen3
 
 CXXL = ${CXX}
-LDFLAGS = -L$(SPGLIB_ROOT)/lib -lsymspg
+LDFLAGS = $(SPGLIB_ROOT)/lib/libsymspg.a
 #LDFLAGS = -L/usr/local/lib -lhdf5_cpp -lhdf5 -lsymspg
-
+ 
 LAPACK = -llapack -lblas
-LIBS = ${LAPACK}
+LIBS = ${LAPACK} -lomp
 
 #-----------------------------------------------
 # General rules 

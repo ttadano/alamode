@@ -1,6 +1,12 @@
 
 .. _label_tutorial:
 
+.. raw:: html
+
+    <style> .red {color:red} </style>
+
+.. role:: red
+
 Tutorial
 ========
 

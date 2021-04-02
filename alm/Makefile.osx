@@ -5,14 +5,20 @@
 # We recommend to use Intel c++ compiler.
 #-----------------------------------------------
 
-# Use gcc >= 4.8 to use OpenMP 
 # OpenMP-enabled gcc can be installed via homebrew
-CXX = g++-8
+CXX = g++-10
+
+# add -D_HDF5 to activate HDF5 support
 CXXFLAGS = -O2 -fopenmp -std=c++11
+
+# When HDF5 support is activated, you need to add -I$(HDF5_ROOT)/include
 INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include
 
 CXXL = ${CXX}
-LDFLAGS = -lgomp -L$(SPGLIB_ROOT)/lib -lsymspg
+
+# When HDF5 support is activated, you need to add -L$(HDF5_ROOT)/lib -lhdf5_cpp -lhdf5
+#LDFLAGS = -lgomp -L$(SPGLIB_ROOT)/lib -lsymspg libsymspg.a
+LDFLAGS = -lgomp $(SPGLIB_ROOT)/lib/libsymspg.a
 
 LAPACK = -llapack -lblas
 LIBS = ${LAPACK}

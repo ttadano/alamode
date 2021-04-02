@@ -25,7 +25,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Dos::Dos(PHON *phon): Pointers(phon)
+Dos::Dos(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
@@ -101,12 +101,8 @@ void Dos::setup()
         error->exit("Dos::setup()", "Too small delta_e");
 
     if (flag_dos) {
-        n_energy = static_cast<int>((emax - emin) / delta_e);
-        memory->allocate(energy_dos, n_energy);
 
-        for (i = 0; i < n_energy; ++i) {
-            energy_dos[i] = emin + delta_e * static_cast<double>(i);
-        }
+        set_dos_energy_grid();
 
         if (compute_dos) {
             memory->allocate(dos_phonon, n_energy);
@@ -123,10 +119,10 @@ void Dos::setup()
         if (scattering_phase_space == 1) {
             memory->allocate(sps3_mode, kpoint->nk_irred, dynamical->neval, 2);
         } else if (scattering_phase_space == 2) {
-            double Tmin = system->Tmin;
-            double Tmax = system->Tmax;
-            double dT = system->dT;
-            unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+            const auto Tmin = system->Tmin;
+            const auto Tmax = system->Tmax;
+            const auto dT = system->dT;
+            const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
             memory->allocate(sps3_with_bose, kpoint->nk_irred,
                              dynamical->neval, NT, 2);
@@ -153,10 +149,20 @@ void Dos::setup()
     }
 }
 
+void Dos::set_dos_energy_grid()
+{
+    n_energy = static_cast<int>((emax - emin) / delta_e);
+    memory->allocate(energy_dos, n_energy);
+
+    for (auto i = 0; i < n_energy; ++i) {
+        energy_dos[i] = emin + delta_e * static_cast<double>(i);
+    }
+}
+
 void Dos::calc_dos_all()
 {
-    unsigned int nk = kpoint->nk;
-    unsigned int neval = dynamical->neval;
+    const auto nk = kpoint->nk;
+    const auto neval = dynamical->neval;
     double **eval;
 
     memory->allocate(eval, neval, nk);
@@ -205,7 +211,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
 {
     double *weight;
 
-//    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
+    //    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
@@ -235,7 +241,7 @@ void Dos::calc_dos(const unsigned int nk_irreducible,
         memory->deallocate(weight);
     }
 
-//    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+    //    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
 }
 
 void Dos::calc_atom_projected_dos(const unsigned int nk,
@@ -323,17 +329,17 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
     int jk;
     int k;
 
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    unsigned int nk_reduced = kpoint->nk_irred;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const auto nk_reduced = kpoint->nk_irred;
 
-    int ns2 = ns * ns;
+    const int ns2 = ns * ns;
 
     int *kmap_identity;
 
     double **e_tmp;
     double **weight;
-    double emax2 = 2.0 * emax;
+    auto emax2 = 2.0 * emax;
 
     double xk_tmp[3];
 
@@ -378,11 +384,11 @@ void Dos::calc_two_phonon_dos(const unsigned int n,
             for (jk = 0; jk < nk; ++jk) {
                 loc = k_pair[jk];
                 e_tmp[0][jk]
-                    = writes->in_kayser(dynamical->eval_phonon[jk][is]
-                        + dynamical->eval_phonon[loc][js]);
+                        = writes->in_kayser(dynamical->eval_phonon[jk][is]
+                                            + dynamical->eval_phonon[loc][js]);
                 e_tmp[1][jk]
-                    = writes->in_kayser(dynamical->eval_phonon[jk][is]
-                        - dynamical->eval_phonon[loc][js]);
+                        = writes->in_kayser(dynamical->eval_phonon[jk][is]
+                                            - dynamical->eval_phonon[loc][js]);
             }
 
 
@@ -438,9 +444,9 @@ void Dos::calc_total_scattering_phase_space(double **omega,
 {
     int i, j;
 
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
-    int ns2 = ns * ns;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
+    const int ns2 = ns * ns;
 
     int *kmap_identity;
 
@@ -453,20 +459,20 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
     ret = 0.0;
-    double sps_sum1 = 0.0;
-    double sps_sum2 = 0.0;
+    auto sps_sum1 = 0.0;
+    auto sps_sum2 = 0.0;
 
     for (int ik = 0; ik < kpinfo.size(); ++ik) {
 
-        int knum = kpinfo[ik][0].knum;
-        double multi = static_cast<double>(kpinfo[ik].size()) / static_cast<double>(nk);
+        const auto knum = kpinfo[ik][0].knum;
+        const auto multi = static_cast<double>(kpinfo[ik].size()) / static_cast<double>(nk);
 
         for (int is = 0; is < ns; ++is) {
 
-            double omega0 = writes->in_kayser(omega[knum][is]);
+            const auto omega0 = writes->in_kayser(omega[knum][is]);
 
-            double sps_tmp1 = 0.0;
-            double sps_tmp2 = 0.0;
+            auto sps_tmp1 = 0.0;
+            auto sps_tmp2 = 0.0;
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -535,7 +541,7 @@ void Dos::calc_total_scattering_phase_space(double **omega,
     memory->deallocate(kmap_identity);
 
     ret = (sps_sum1 + 2.0 * sps_sum2)
-        / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
+          / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -572,20 +578,20 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
     double xk_tmp[3];
     double **ret_mode;
     double omega0;
-    double Tmin = system->Tmin;
-    double Tmax = system->Tmax;
-    double dT = system->dT;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
     double *temperature;
     int ik, iT;
-    unsigned int nk_irred = kpoint->nk_irred;
-    unsigned int nk = kpoint->nk;
-    unsigned int ns = dynamical->neval;
+    const auto nk_irred = kpoint->nk_irred;
+    const auto nk = kpoint->nk;
+    const auto ns = dynamical->neval;
     unsigned int imode;
     unsigned int *k2_arr;
-    unsigned int ns2 = ns * ns;
+    auto ns2 = ns * ns;
     double **recv_buf;
-    double omega_max = emax;
-    double omega_min = emin;
+    const auto omega_max = emax;
+    const auto omega_min = emin;
 
     std::vector<int> ks_g, ks_l;
 
@@ -594,7 +600,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
         std::cout << "           with the Bose distribution function ...";
     }
 
-    int N = static_cast<int>((Tmax - Tmin) / dT) + 1;
+    const auto N = static_cast<int>((Tmax - Tmin) / dT) + 1;
     memory->allocate(temperature, N);
     for (i = 0; i < N; ++i) temperature[i] = Tmin + static_cast<double>(i) * dT;
 
@@ -611,9 +617,9 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
 
     memory->allocate(ret_mode, N, 2);
 
-    unsigned int nks_total = nk_irred * ns;
-    unsigned int nks_each_thread = nks_total / mympi->nprocs;
-    unsigned int nrem = nks_total - nks_each_thread * mympi->nprocs;
+    const auto nks_total = nk_irred * ns;
+    const auto nks_each_thread = nks_total / mympi->nprocs;
+    const auto nrem = nks_total - nks_each_thread * mympi->nprocs;
 
     if (nrem > 0) {
         memory->allocate(recv_buf, (nks_each_thread + 1) * mympi->nprocs, 2 * N);
@@ -666,7 +672,7 @@ void Dos::calc_scattering_phase_space_with_Bose(double **eval,
         } else {
 
             knum = kp_info[iks / ns][0].knum;
-            unsigned int snum = iks % ns;
+            const auto snum = iks % ns;
 
             for (unsigned int k1 = 0; k1 < nk; ++k1) {
                 for (j = 0; j < 3; ++j) xk_tmp[j] = kpoint->xk[knum][j] - kpoint->xk[k1][j];
@@ -716,14 +722,14 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
                                                      const unsigned int N,
                                                      const double omega,
                                                      double **eval,
-                                                     double *temperature,
-                                                     unsigned int *k_pair,
+                                                     const double *temperature,
+                                                     const unsigned int *k_pair,
                                                      const int smearing_method,
                                                      double **ret) const
 {
     int ib;
     unsigned int i, is, js, k1, k2;
-    unsigned int ns2 = ns * ns;
+    const auto ns2 = ns * ns;
     double omega1, omega2;
     double temp;
     double ret1, ret2;
@@ -740,7 +746,7 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
     memory->allocate(kmap_identity, nk);
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
-    double omega0 = writes->in_kayser(omega);
+    const auto omega0 = writes->in_kayser(omega);
 
 #ifdef _OPENMP
 #pragma omp parallel private(i, is, js, k1, k2, omega1, omega2, energy_tmp, weight)

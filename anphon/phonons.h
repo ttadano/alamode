@@ -13,15 +13,15 @@
 #ifdef _WIN32
 #include <mpi.h>
 #else
+
 #include "mpi.h"
+
 #endif
 
 #include <string>
 
-namespace PHON_NS
-{
-    class PHON
-    {
+namespace PHON_NS {
+    class PHON {
     public:
         PHON(int,
              char **,
@@ -30,38 +30,66 @@ namespace PHON_NS
         virtual ~PHON();
 
         class Memory *memory;
+
         class Error *error;
+
         class Timer *timer;
+
         class Input *input;
+
         class System *system;
+
         class Symmetry *symmetry;
+
         class Kpoint *kpoint;
+
         class Integration *integration;
+
         class Fcs_phonon *fcs_phonon;
+
         class Dynamical *dynamical;
+
         class Phonon_velocity *phonon_velocity;
+
         class Thermodynamics *thermodynamics;
+
         class AnharmonicCore *anharmonic_core;
+
         class ModeAnalysis *mode_analysis;
+
         class Selfenergy *selfenergy;
+
         class Conductivity *conductivity;
+
         class Writes *writes;
+
         class Dos *dos;
+
         class Gruneisen *gruneisen;
+
         class MyMPI *mympi;
+
         class Isotope *isotope;
+
         class Scph *scph;
+
         class Ewald *ewald;
 
+        class Dielec *dielec;
+
         void create_pointers();
+
         void destroy_pointers() const;
 
         std::string mode;
         bool restart_flag;
 
-        void execute_phonons();
-        void execute_RTA();
-        void execute_self_consistent_phonon();
+        void execute_phonons() const;
+
+        void execute_RTA() const;
+
+        void execute_self_consistent_phonon() const;
+
         void setup_base() const;
     };
 }

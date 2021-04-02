@@ -6,9 +6,9 @@
 #-----------------------------------------------
 
 # Use gcc to activate openmp parallelization
-MPICXX = g++-8
-CXXFLAGS = -O2 -std=c++11 -fopenmp
-INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/openmpi/include
+MPICXX = g++-10
+CXXFLAGS = -O2 -std=c++11 -fopenmp -g 
+INCLUDE = -I../include -I$(HOME)/include -I/usr/local/opt/openmpi/include -I/usr/local/include/ -I/usr/local/include/eigen3/
 
 LINKER = ${MPICXX}
 
@@ -18,7 +18,7 @@ LINKER = ${MPICXX}
 LDFLAGS = -framework Accelerate
 
 LAPACK = -llapack -L/usr/local/opt/openmpi/lib -lmpi -lgomp
-LIBS = ${LAPACK}  -lfftw3
+LIBS = ${LAPACK}  -L/usr/local/lib -lfftw3 -lhdf5 -lhdf5_cpp -lhdf5_hl
 
 #----------------------------------------------
 # General rules

@@ -41,9 +41,9 @@ it is necessary to add the non\-analytic part of the dynamical matrix defined by
 .. math::
 
     D_{\mu\nu}^{\mathrm{NA}}(\kappa\kappa^{\prime};\boldsymbol{q}) = \frac{1}{\sqrt{M_{\kappa}M_{\kappa^{\prime}}}}
-    \frac{4\pi e^{2}}{\Omega} \frac{(Z_{\kappa}^{*}\boldsymbol{q})_{\mu}(Z_{\kappa^{\prime}}^{*}\boldsymbol{q})_{\nu}}{\boldsymbol{q}\cdot\epsilon^{\infty}\boldsymbol{q}},
+    \frac{4\pi e^{2}}{V} \frac{(Z_{\kappa}^{*}\boldsymbol{q})_{\mu}(Z_{\kappa^{\prime}}^{*}\boldsymbol{q})_{\nu}}{\boldsymbol{q}\cdot\epsilon^{\infty}\boldsymbol{q}},
 
-where :math:`\Omega` is the volume of the primitive cell, :math:`Z_{\kappa}^{*}` is the Born effective charge tensor of atom :math:`\kappa`, 
+where :math:`V` is the volume of the primitive cell, :math:`Z_{\kappa}^{*}` is the Born effective charge tensor of atom :math:`\kappa`, 
 and :math:`\epsilon^{\infty}` is the dielectric constant tensor, respectively.
 In program *anphon*, either the Parlinski's way [1]_ or the mixed-space approach [2]_ can be used. 
 In the Parlinski's approach (``NONANALYTIC = 1``), the total dynamical matrix is given by
@@ -113,7 +113,7 @@ defined by the following equation will be calculated and saved in the ``PREFIX``
     
     \begin{align*}
      F^{\mathrm{SCP}} &= \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}\left[ \frac{\hbar\Omega_{\boldsymbol{q}j}}{2} + kT\log{\left( 1 - e^{-\hbar\Omega_{\boldsymbol{q}j}/kT}\right)} \right] \\
-     & - \frac{1}{N_{q}}\sum_{\boldsymbol{q},j}\left[ \Omega_{\boldsymbol{q}j}^{2} - (C_{\boldsymbol{q}}^{\dagger}\Lambda_{\boldsymbol{q}}^{(\mathrm{HA})}C_{\boldsymbol{q}})_{jj} \right]
+     & - \frac{1}{4N_{q}}\sum_{\boldsymbol{q},j}\left[ \Omega_{\boldsymbol{q}j}^{2} - (C_{\boldsymbol{q}}^{\dagger}\Lambda_{\boldsymbol{q}}^{(\mathrm{HA})}C_{\boldsymbol{q}})_{jj} \right]
      \times \frac{\hbar [1 + 2n_{\boldsymbol{q}j} ]}{2\Omega_{\boldsymbol{q}j}}.
     \end{align*}
 
@@ -321,16 +321,16 @@ The average mass :math:`M_{\kappa}` is substituted by the value specified in the
 
 .. _kappa:
 
-Lattice thermal conductivity
-----------------------------
+Lattice thermal conductivity (Peierls term)
+-------------------------------------------
 
 The lattice thermal conductivity tensor :math:`\kappa_{\mathrm{ph}}^{\mu\nu}(T)` is estimated within the relaxation-time approximation as
 
 .. math::
   
-  \kappa_{\mathrm{ph}}^{\mu\nu}(T) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}(T)v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\tau_{\boldsymbol{q}j}(T),
+  \kappa_{\mathrm{ph}}^{\mu\nu}(T) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}(T)v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\tau_{\boldsymbol{q}j}(T),
 
-where :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T` and :math:`\tau_{\boldsymbol{q}j}(T)` is the phonon lifetime.
+where :math:`V` is the unit cell volume, :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T`, and :math:`\tau_{\boldsymbol{q}j}(T)` is the phonon lifetime.
 The phonon lifetime is estimated using the Matthiessen's rule as
 
 .. math::
@@ -355,17 +355,33 @@ The accumulative lattice thermal conductivity :math:`\kappa_{\mathrm{ph,acc}}^{\
 
 .. math::
   
-  \kappa_{\mathrm{ph,acc}}^{\mu\mu}(L) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\tau_{\boldsymbol{q}j}\Theta (L-|\boldsymbol{v}_{\boldsymbol{q}j}|\tau_{\boldsymbol{q}j}),
+  \kappa_{\mathrm{ph,acc}}^{\mu\mu}(L) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\tau_{\boldsymbol{q}j}\Theta (L-|\boldsymbol{v}_{\boldsymbol{q}j}|\tau_{\boldsymbol{q}j}),
 
 where :math:`\Theta(x)` is the step function. This quantity can be calculated by using the script ``analyze_phonons.py`` with ``--calc cumulative`` flag. 
 One can also use another definition for the accumulative thermal conductivity:
 
 .. math::
   
-  \kappa_{\mathrm{ph,acc}}^{\mu\nu}(L) = \frac{1}{\Omega N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\tau_{\boldsymbol{q}j}\Theta (L-|v_{\boldsymbol{q}j}^{\mu}|\tau_{\boldsymbol{q}j}).
+  \kappa_{\mathrm{ph,acc}}^{\mu\nu}(L) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\tau_{\boldsymbol{q}j}\Theta (L-|v_{\boldsymbol{q}j}^{\mu}|\tau_{\boldsymbol{q}j}).
 
 In this case, the contribution to the total thermal conductivity is limited only from phonon modes whose mean-free-path along the :math:`\mu`\ -direction is smaller than :math:`L`.
 To calculate this, please use the ``--calc cumulative2`` flag and specify the direction :math:`\mu` by the ``--direction`` option.
+
+.. _kappa_coherent:
+
+Coherent component of lattice thermal conductivity
+--------------------------------------------------
+
+The coherent components of lattice thermal conductivity (see Ref. [8]_), which are associated with the band off-diagonal components of the harmonic heat-flux operator, is calculated as 
+
+.. math::
+  
+  \kappa_{\mathrm{c}}^{\mu\nu}(T) = \frac{1}{V N_{q}} \sum_{\substack{\boldsymbol{q},jj'\\ j\neq j'}}\frac{c_{\boldsymbol{q}j}\omega_{\boldsymbol{q}j'} + c_{\boldsymbol{q}j'}\omega_{\boldsymbol{q}j}}{\omega_{\boldsymbol{q}j}+ \omega_{\boldsymbol{q}j'}}  v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu} \frac{\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'}}{(\omega_{\boldsymbol{q}j}-\omega_{\boldsymbol{q}j'})^{2}+(\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'})^2},
+
+where :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T` and :math:`\Gamma_{\boldsymbol{q}j}` is the total phonon linewidth (half width) of phonon mode :math:`\boldsymbol{q}j`. 
+
+:math:`\boldsymbol{v}_{\boldsymbol{q}jj'}` is a band off-diagonal generalization of the group velocity [9]_. When ``KAPPA_COHERENT = 1 | 2`` the coherent component is calculated and saved in ``PREFIX``.kl_coherent. When ``KAPPA_COHERENT = 2``, all components of the coherent term before summation are saved in ``PREFIX``.kc_elem.
+
 
 Delta function
 --------------
@@ -459,4 +475,9 @@ When ``SELF_OFFDIAG = 1``, the off-diagonal elements are also calculated, and th
 
 .. [6] T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**, 054301 (2015).
 
-.. [7] Y.\ Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**, 033601 (2019).
+.. [7] Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**, 033601 (2019).
+
+.. [8] M\. Simoncelli, N. Marzari, and F. Mauri, Nat. Phys. **15**, 809 (2019).
+
+.. [9] P\. B. Allen and J. L. Feldman, Phys. Rev. B **48**, 12581 (1993).
+

@@ -15,10 +15,8 @@
 #include "system.h"
 #include "timer.h"
 
-namespace ALM_NS
-{
-    class SymmetryOperation
-    {
+namespace ALM_NS {
+    class SymmetryOperation {
     public:
         int rotation[3][3];         // in lattice basis
         double tran[3];             // in Cartesian basis
@@ -77,8 +75,7 @@ namespace ALM_NS
         }
     };
 
-    class RotationMatrix
-    {
+    class RotationMatrix {
     public:
         int mat[3][3];
 
@@ -94,17 +91,16 @@ namespace ALM_NS
         }
     };
 
-    class Maps
-    {
+    class Maps {
     public:
         int atom_num;
         int tran_num;
     };
 
-    class Symmetry
-    {
+    class Symmetry {
     public:
         Symmetry();
+
         ~Symmetry();
 
         void init(const System *system,
@@ -112,16 +108,27 @@ namespace ALM_NS
                   Timer *timer);
 
         double get_tolerance() const;
+
         void set_tolerance(const double);
+
         int get_print_symmetry() const;
+
         void set_print_symmetry(const int);
-        const std::vector<Maps>& get_map_s2p() const;
-        const std::vector<std::vector<int>>& get_map_p2s() const;
-        const std::vector<SymmetryOperation>& get_SymmData() const;
-        const std::vector<std::vector<int>>& get_map_sym() const;
-        const std::vector<int>& get_symnum_tran() const;
+
+        const std::vector<Maps> &get_map_s2p() const;
+
+        const std::vector<std::vector<int>> &get_map_p2s() const;
+
+        const std::vector<SymmetryOperation> &get_SymmData() const;
+
+        const std::vector<std::vector<int>> &get_map_sym() const;
+
+        const std::vector<int> &get_symnum_tran() const;
+
         size_t get_nsym() const;
+
         size_t get_ntran() const;
+
         size_t get_nat_prim() const;
 
     private:
@@ -137,7 +144,9 @@ namespace ALM_NS
         int printsymmetry;
 
         void set_default_variables();
+
         void deallocate_variables();
+
         void setup_symmetry_operation(const Cell &,
                                       const int [3],
                                       const std::vector<std::vector<unsigned int>> &,
@@ -158,6 +167,7 @@ namespace ALM_NS
                            std::string &);
 
         bool is_translation(const int [3][3]) const;
+
         bool is_proper(const double [3][3]) const;
 
         void symop_in_cart(double [3][3],
@@ -167,7 +177,7 @@ namespace ALM_NS
 
         void print_symminfo_stdout() const;
 
-        template <typename T>
+        template<typename T>
         bool is_compatible(const T [3][3],
                            double tolerance_zero = 1.0e-5);
 

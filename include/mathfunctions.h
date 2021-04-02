@@ -43,7 +43,8 @@ inline void transpose3(double ret[3][3], const double mat[3][3])
 	}
 }
 
-inline void rotvec(double vec_out[3], double vec_in[3], const double mat[3][3], char mode = 'N')
+template<typename T>
+inline void rotvec(T vec_out[3], const T vec_in[3], const double mat[3][3], char mode = 'N')
 {
 	// Perform matrix x vector multiplication. 
 	//
@@ -52,7 +53,7 @@ inline void rotvec(double vec_out[3], double vec_in[3], const double mat[3][3], 
 	//
 
 	unsigned int i;
-	double vec_tmp[3];
+	T vec_tmp[3];
 
 	for (i = 0; i < 3; ++i){
 		vec_tmp[i] = vec_in[i];

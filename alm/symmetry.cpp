@@ -58,28 +58,28 @@ void Symmetry::set_print_symmetry(const int printsymmetry_in)
     printsymmetry = printsymmetry_in;
 }
 
-const std::vector<Maps>& Symmetry::get_map_s2p() const
+const std::vector<Maps> &Symmetry::get_map_s2p() const
 {
     return map_s2p;
 }
 
-const std::vector<std::vector<int>>& Symmetry::get_map_p2s() const
+const std::vector<std::vector<int>> &Symmetry::get_map_p2s() const
 {
     return map_p2s;
 }
 
 
-const std::vector<SymmetryOperation>& Symmetry::get_SymmData() const
+const std::vector<SymmetryOperation> &Symmetry::get_SymmData() const
 {
     return SymmData;
 }
 
-const std::vector<std::vector<int>>& Symmetry::get_map_sym() const
+const std::vector<std::vector<int>> &Symmetry::get_map_sym() const
 {
     return map_sym;
 }
 
-const std::vector<int>& Symmetry::get_symnum_tran() const
+const std::vector<int> &Symmetry::get_symnum_tran() const
 {
     return symnum_tran;
 }
@@ -172,6 +172,14 @@ void Symmetry::setup_symmetry_operation(const Cell &cell,
 
     SymmData.clear();
 
+    if (spin.lspin && spin.noncollinear) {
+        use_internal_symm_finder = true;
+
+        if (verbosity > 0) {
+            std::cout << "  Switch to the internal symmetry finder from spglib when NONCOLLINEAR = 1.\n";
+        }
+    }
+
     if (use_internal_symm_finder) {
         // SymmData is written.
         findsym_alm(cell, is_periodic, atomtype_group, spin);
@@ -195,7 +203,7 @@ void Symmetry::setup_symmetry_operation(const Cell &cell,
         std::ofstream ofs_sym;
         if (verbosity > 0) {
             std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file."
-                << std::endl << std::endl;
+                      << std::endl << std::endl;
         }
 
         ofs_sym.open(file_sym.c_str(), std::ios::out);
@@ -320,8 +328,8 @@ void Symmetry::find_lattice_symmetry(const double aa[3][3],
                                             continue;
 
                                         det = m11 * (m22 * m33 - m32 * m23)
-                                            - m21 * (m12 * m33 - m32 * m13)
-                                            + m31 * (m12 * m23 - m22 * m13);
+                                              - m21 * (m12 * m33 - m32 * m13)
+                                              + m31 * (m12 * m23 - m22 * m13);
 
                                         if (det != 1 && det != -1) continue;
 
@@ -462,10 +470,10 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
                 continue;
 
             is_identity_matrix =
-            (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
-                + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
+                    (std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
+                     + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
+                     + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
+                     + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2)) < eps12;
             if (is_identity_matrix) continue;
 
             isok = true;
@@ -532,12 +540,12 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
                     }
 
                     mag_sym1 = (std::pow(mag[0] - mag_rot[0], 2.0)
-                        + std::pow(mag[1] - mag_rot[1], 2.0)
-                        + std::pow(mag[2] - mag_rot[2], 2.0)) < eps6;
+                                + std::pow(mag[1] - mag_rot[1], 2.0)
+                                + std::pow(mag[2] - mag_rot[2], 2.0)) < eps6;
 
                     mag_sym2 = (std::pow(mag[0] + mag_rot[0], 2.0)
-                        + std::pow(mag[1] + mag_rot[1], 2.0)
-                        + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
+                                + std::pow(mag[1] + mag_rot[1], 2.0)
+                                + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
 
                     if (!mag_sym1 && !mag_sym2) {
                         isok = false;
@@ -579,13 +587,8 @@ int Symmetry::findsym_spglib(const Cell &cell,
 
     const auto nat = cell.number_of_atoms;
 
-    if (spin.lspin && spin.noncollinear) {
-        exit("findsym_spglib", "NONCOLLINEAR spin is not supported in spglib.");
-    }
-
     allocate(position, nat);
     allocate(types_tmp, nat);
-
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -687,7 +690,7 @@ void Symmetry::print_symminfo_stdout() const
     if (ntran > 1) {
         std::cout << "  Given system is not a primitive cell." << std::endl;
         std::cout << "  There are " << std::setw(5)
-            << ntran << " translation operations." << std::endl;
+                  << ntran << " translation operations." << std::endl;
     } else {
         std::cout << "  Given system is a primitive cell." << std::endl;
     }
@@ -815,14 +818,14 @@ void Symmetry::gen_mapping_information(const Cell &cell,
 bool Symmetry::is_translation(const int rot[3][3]) const
 {
     const auto ret =
-        rot[0][0] == 1 && rot[0][1] == 0 && rot[0][2] == 0 &&
-        rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 &&
-        rot[2][0] == 0 && rot[2][1] == 0 && rot[2][2] == 1;
+            rot[0][0] == 1 && rot[0][1] == 0 && rot[0][2] == 0 &&
+            rot[1][0] == 0 && rot[1][1] == 1 && rot[1][2] == 0 &&
+            rot[2][0] == 0 && rot[2][1] == 0 && rot[2][2] == 1;
 
     return ret;
 }
 
-template <typename T>
+template<typename T>
 bool Symmetry::is_compatible(const T rot[3][3],
                              const double tolerance_zero)
 {
@@ -843,8 +846,8 @@ bool Symmetry::is_compatible(const T rot[3][3],
 bool Symmetry::is_proper(const double rot[3][3]) const
 {
     const auto det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
-        - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
-        + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
+                     - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
+                     + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
 
     if (std::abs(det - 1.0) < eps12) {
         return true;
