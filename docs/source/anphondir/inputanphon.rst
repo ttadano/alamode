@@ -33,9 +33,10 @@ List of supported input variables
    :ref:`IALGO <anphon_ialgo>`, :ref:`KMESH_INTERPOLATE <anphon_kmesh_interpolate>`, :ref:`KMESH_SCPH <anphon_kmesh_scph>`, :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAXITER <anphon_maxiter>`
    :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
    **&analysis**
-   :ref:`ANIME <anphon_anime>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`, :ref:`ISOFACT <anphon_isofact>`
-   :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`, :ref:`PDOS <anphon_pdos>`, :ref:`PRINTEVEC <anphon_printevec>`, :ref:`PRINTMSD <anphon_printmsd>`
-   :ref:`PRINTPR <anphon_printpr>`, :ref:`PRINTVEL <anphon_printvel>`, :ref:`PRINTXSF <anphon_printxsf>`, :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`
+   :ref:`ANIME <anphon_anime>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`, :ref:`ISOFACT <anphon_isofact>`
+   :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_COHERENT <anphon_kappa_coherent>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`, :ref:`PDOS <anphon_pdos>`, :ref:`PRINTEVEC <anphon_printevec>`
+   :ref:`PRINTMSD <anphon_printmsd>`, :ref:`PRINTPR <anphon_printpr>`, :ref:`PRINTVEL <anphon_printvel>`, :ref:`PRINTXSF <anphon_printxsf>`
+   :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`
 
 
 
@@ -666,6 +667,28 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 
 ````
 
+.. _anphon_kappa_coherent:
+
+* KAPPA_COHERENT-tag = 0 | 1 | 2
+
+ === ====================================================================================
+  0    Do not compute the coherent component of thermal conductivity
+  1    Compute the coherent component of thermal conductivity and save it in ``PREFIX``.kl_coherent.
+  2  | In addition to above (``KAPPA_COHERENT = 1``), all elements of the coherent term
+     | are saved in ``PREFIX``.kc_elem.
+ === ====================================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: This flag is available when ``MODE = RTA``. For the theoretical details, please see :ref:`this page <kappa_coherent>`.
+
+ .. caution::
+
+     Still experimental. Please check the validity of results carefully.
+
+
+````
+
 .. _anphon_kappa_spec:
 
 * KAPPA_SPEC-tag = 0 | 1
@@ -742,6 +765,15 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
                animate phonon modes at (0, 0, 1/2). When ``ANIME`` is given, ``ANIME_CELLSIZE`` is also necessary.
                You can choose the format of animation files, either AXSF or XYZ, by ``ANIME_FORMAT`` tag.
 
+
+````
+
+.. _anphon_anime_frames:
+
+* ANIME_FRAMES-tag: The number of frames saved in animation files
+
+ :Default: 20
+ :Type: Integer
 
 ````
 
