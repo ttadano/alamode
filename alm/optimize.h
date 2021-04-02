@@ -63,7 +63,7 @@ namespace ALM_NS {
             l1_alpha_min = -1.0;  // Recommended l1_alpha_max * 1e-6
             l1_alpha_max = -1.0;  // Use recommended value
             l1_ratio = 1.0;
-            num_l1_alpha = 100;
+            num_l1_alpha = 50;
             save_solution_path = 0;
         }
 

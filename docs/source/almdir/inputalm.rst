@@ -61,9 +61,6 @@ List of supported input variables
    :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`SPARSE <alm_sparse>`, :ref:`SPARSESOLVER <alm_sparsesolver>`
    :ref:`STANDARDIZE <alm_standardize>`
 
-..   , :ref:`DFILE <alm_dfile>`
-..  :ref:`FFILE <alm_ffile>`,
-
 
 Description of input variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,7 +85,6 @@ Description of input variables
   optimize (:red:`>= 1.1.0`)         | Estimate harmonic and anharmonic IFCs. 
                                      | This mode requires an appropriate &optimize field.
 
-  fitting (:red:`obsolete in 1.2.0`) | An alias of ``MODE = optimize``. Please use ``optimize`` instead.
   suggest                            | Suggests the displacement patterns necessary 
                                      | to estimate harmonic and anharmonic IFCS.
  =================================== ====================================================================
@@ -286,7 +282,7 @@ Description of input variables
 "&cutoff"-field
 +++++++++++++++
 
-In this entry field, one needs to specify cutoff radii of interaction for each order in units of Bohr. 
+In this entry field, one needs to specify cutoff radii of interaction for each order in units of bohr. 
 In the current implementation, cutoff radii should be defined for every possible pair of atomic elements. 
 For example, the cutoff entry for a harmonic calculation (``NORDER = 1``) of Si (``NKD = 1``) should be like
 ::
@@ -350,7 +346,7 @@ In the case of cubic terms, force constants :math:`\Phi_{ijk}^{\mu\nu\lambda}` s
 "&cell"-field
 +++++++++++++
 
-Please give the cell parameters in this entry in units of Bohr as the following::
+Please give the cell parameters in this entry in units of bohr as the following::
 
  &cell
   a
@@ -382,7 +378,7 @@ fractional coordinate of an atom. There should be ``NAT`` such lines in the &pos
 "&optimize"-field ("&fitting"-field)
 ++++++++++++++++++++++++++++++++++++
 
-This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE = fitting``).
+This field is necessary when ``MODE = optimize``.
 
 .. _alm_lmodel:
 
@@ -413,34 +409,6 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Description: The format of ``DFSET`` can be found :ref:`here <label_format_DFSET>`
 
 ````
-
-.. .. _alm_dfile:
-
-.. * DFILE-tag: File name containing atomic displacements in Cartesian coordinate
-
-..  .. deprecated:: 1.1.0
-..     Use ``DFSET`` instead.
-
-..  :Default: None
-..  :Type: String
-..  :Description: The format of ``DFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
-
-
-
-.. ````
-
-.. .. _alm_ffile:
-
-.. * FFILE-tag: File name containing atomic forces in Cartesian coordinate
-
-..  .. deprecated:: 1.1.0
-..     Use ``DFSET`` instead.
-
-..  :Default: None
-..  :Type: String
-..  :Description: The format of ``FFILE`` can be found :ref:`here <label_format_DFILE>`. This tag is deprecated and will be removed in a future major release. Please use ``DFSET`` instead.
-
-.. ````
 
 .. _alm_ndata:
 
@@ -570,7 +538,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 10,000
  :Type: Integer
- :Description: Effective when an iterative solver is selected via ``SPARSESOLVER`` (when ``LMODEL = ols``) or when ``LMODEL = enet``.
+ :Description: Effective when an iterative solver is selected via ``SPARSESOLVER`` (when ``LMODEL = ols``) or when ``LMODEL = enet | adaptive-lasso``.
 
 ````
 
@@ -581,7 +549,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
  :Default: 1.0e-8
  :Type: Double
  :Description: When ``LMODEL = ols`` and an iterative solver is selected via ``SPARSESOLVER``, ``CONV_TOL`` value is passed to the Eigen3 function via `setTolerance()`.
-               When ``LMODEL = enet``, the coordinate descent iteration stops at :math:`i`\ th iteration if :math:`\sqrt{\frac{1}{N}|\boldsymbol{\Phi}_{i} - \boldsymbol{\Phi}_{i-1}|_{2}^{2}} <` ``CONV_TOL`` is satisfied, where :math:`N` is the length of the vector :math:`\boldsymbol{\Phi}`.
+               When ``LMODEL = enet | adaptive-lasso``, the coordinate descent iteration stops at :math:`i`\ th iteration if :math:`\sqrt{\frac{1}{N}|\boldsymbol{\Phi}_{i} - \boldsymbol{\Phi}_{i-1}|_{2}^{2}} <` ``CONV_TOL`` is satisfied, where :math:`N` is the length of the vector :math:`\boldsymbol{\Phi}`.
 
 
  .. seealso::
@@ -605,7 +573,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 0.0 
  :Type: Double
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = 0``. See also :ref:`here <alm_theory_enet>`.
+ :Description: This tag is used when ``LMODEL = enet | adaptive-lasso`` and ``CV = 0``. See also :ref:`here <alm_theory_enet>`.
 
 ````
 
@@ -623,20 +591,20 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
        | training-validation datasets are created internally. For each combination, the elastic net 
        | optimization is solved with the various ``L1_ALPHA`` values defined by the ``CV_MINALPHA``, 
        | ``CV_MAXALPHA``, and ``CV_NALPHA`` tags. The result of each cross-validation is stored in 
-       | ``PREFIX``.enet_cvset[1, ..., ``CV``], and their average and deviation are stored in ``PREFIX``.cvscore. 
+       | ``PREFIX``.cvset[1, ..., ``CV``], and their average and deviation are stored in ``PREFIX``.cvscore. 
 
   -1   | The cross-validation is performed *manually*.
        | The Taylor expansion potential is trained by using the training datasets in ``DFSET``, and 
        | the validation score is calculated by using the data in ``DFSET_CV`` for various ``L1_ALPHA`` values
        | defined the ``CV_MINALPHA``, ``CV_MAXALPHA``, and ``CV_NALPHA`` tags.
-       | After the calculation, the fitting and validation errors are stored in ``PREFIX``.enet_cv.
+       | After the calculation, the fitting and validation errors are stored in ``PREFIX``.cvset.
        | This option may be convenient for a large-scale problem since multiple optimization tasks with
        | different training-validation datasets can be done in parallel.
  ===== ===================================================================================================================
 
  :Default: 0
  :Type: Integer
- :Description: This tag is used only when ``LMODEL = enet``.
+ :Description: This tag is used when ``LMODEL = enet | adaptive-lasso``.
 
 
 ````
@@ -647,7 +615,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: ``DFSET_CV = DFSET``
  :Type: String
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+ :Description: This tag is used when ``LMODEL = enet | adaptive-lasso`` and ``CV = -1``.
 
 ````
 
@@ -657,7 +625,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: None 
  :Type: Integer
- :Description: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+ :Description: This tag is used when ``LMODEL = enet | adaptive-lasso`` and ``CV = -1``.
 
 ````
 
@@ -667,7 +635,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: ``NSTART_CV = 1``, ``NEND_CV = NDATA_CV``
  :Type: Integer
- :Example: This tag is used only when ``LMODEL = enet`` and ``CV = -1``.
+ :Example: This tag is used when ``LMODEL = enet | adaptive-lasso`` and ``CV = -1``.
 
 ````
 
@@ -676,9 +644,13 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
 * CV_MINALPHA, CV_MAXALPHA, CV_NALPHA-tags : Options to specify the ``L1_ALPHA`` values used in cross-validation 
 
- :Default: ``CV_MINALPHA = 1.0e-4``, ``CV_MAXALPHA = 1.0``, ``CV_NALPHA = 1`` 
+ :Default: ``CV_MAXALPHA`` is set automatically
+
+           ``CV_MINALPHA = CV_MAXALPHA * 1.0e-6``
+
+           ``CV_NALPHA = 50`` 
  :Type: Double, Double, Integer
- :Description: ``CV_NALPHA`` values of ``L1_ALPHA`` are generated from ``CV_MINALPHA`` to ``CV_MAXALPHA`` in logarithmic scale. A recommended value of ``CV_MAXALPHA`` is printed out to the log file. This tag is used only when ``LMODEL = enet`` and the cross-validation mode is on (``CV > 0`` or ``CV = -1``).
+ :Description: ``CV_NALPHA`` values of ``L1_ALPHA`` are generated from ``CV_MINALPHA`` to ``CV_MAXALPHA`` in logarithmic scale. When ``CV_MAXALPHA`` is not specified by user, the code automatically sets ``CV_MAXALPHA`` so that the maximum ``L1_ALPHA`` makes all coefficients zero. The default value of ``CV_MINALPHA`` is ``CV_MAXALPHA * 1.0e-6``, which is reasonable in many cases. If the minimum value of the validation score is found at ``CV_MINALPHA``, you may need to use a smaller value of ``CV_MINALPHA``. This tag is used when ``LMODEL = enet | adaptive-lasso`` and the cross-validation mode is on (``CV > 0`` or ``CV = -1``).
 
 ````
 
@@ -705,7 +677,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 1.0
  :Type: Double
- :Description: The normalization factor of atomic displacement :math:`u_{0}` in units of Bohr. When :math:`u_{0} (\neq 1)` is given, the displacement data are scaled as :math:`u_{i} \rightarrow u_{i}/u_{0}` before constructing the sensing matrix. This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``ENET_DNORM`` value, you will have to rerun the cross-validation. Effective only when ``LMODEL = enet`` and ``STANDARDIZE = 0``. 
+ :Description: The normalization factor of atomic displacement :math:`u_{0}` in units of bohr. When :math:`u_{0} (\neq 1)` is given, the displacement data are scaled as :math:`u_{i} \rightarrow u_{i}/u_{0}` before constructing the sensing matrix. This option influences the optimal ``L1_ALPHA`` value. So, if you change the ``ENET_DNORM`` value, you will have to rerun the cross-validation. Effective only when ``LMODEL = enet`` and ``STANDARDIZE = 0``. 
 
 ````
 
@@ -722,7 +694,7 @@ This field is necessary when ``MODE = optimize`` (or a deprecated option ``MODE 
 
  :Default: 0
  :Type: Integer
- :Description: Effective when ``LMODEL = enet`` and the cross-validation mode is on.
+ :Description: Effective when ``LMODEL = enet | adaptive-lasso`` and the cross-validation mode is on.
 
 ````
 
@@ -751,8 +723,8 @@ How to make a DFSET file
 
 .. _label_format_DFSET:
 
-Format of ``DFSET`` (recommended as of ver. 1.1.0)
-++++++++++++++++++++++++++++++++++++++++++++++++++
+Format of ``DFSET`` 
+++++++++++++++++++++
 
 The displacement-force data sets obtained by first-principles (or classical force-field) calculations
 have to be saved to a file, say *DFSET*. Then, the force constants are estimated by setting ``DFSET =`` *DFSET* and with ``MODE = optimize``.
@@ -777,30 +749,4 @@ in the following format:
     \end{eqnarray*}
 
 Here, ``NAT`` is the number of atoms in the supercell. 
-The unit of displacements and forces must be **Bohr** and **Ryd/Bohr**, respectively.
-
-.. _label_format_DFILE:
-
-Format of ``DFILE`` and ``FFILE`` (deprecated)
-++++++++++++++++++++++++++++++++++++++++++++++
-
-.. deprecated:: 1.1.0
-   Use ``DFSET`` instead.
-
-The displacement-force data sets obtained by first-principles (or classical force-field) calculations
-have to be saved to ``DFILE`` and ``FFILE`` to estimate IFCs with ``MODE = fitting``.
-In ``DFILE``, please explicitly specify the atomic displacements :math:`u_{\alpha}(\ell\kappa)` **in units of Bohr** as follows:
- 
-.. math::
-    :nowrap:
-  
-    \begin{eqnarray*}
-     u_{x}(1) & u_{y}(1) & u_{z}(1) \\
-     u_{x}(2) & u_{y}(2) & u_{z}(2) \\
-     & \vdots & \\
-     u_{x}(\mathrm{NAT}) & u_{y}(\mathrm{NAT}) & u_{z}(\mathrm{NAT})
-    \end{eqnarray*}
-
-When there are ``NAT`` atoms in the supercell and ``NDATA`` data sets, 
-there should be  ``NAT`` :math:`\times` ``NDATA`` lines in the ``DFILE`` without blank lines.
-In ``FFILE``, please specify the corresponding atomic forces **in units of Ryd/Bohr**.
+The unit of displacements and forces must be **bohr** and **Ryd/bohr**, respectively.

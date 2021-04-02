@@ -15,6 +15,9 @@
 ## Changes
 
 - The old tags ``DFILE`` and ``FFILE`` are not obsolete. Use ``DFSET`` instead.
+- The filename extension of ``PREFIX``.enet_cv is changed as ``PREFIX``.cvset.
+- ``CV_MINALPHA`` and ``CV_MAXALPHA`` are now set automatically (by default)
+- The default value of ``CV_NALPHA`` is changed to 50
 - The header part in PREFIX.evec has been modified slightly. Please be careful if you are using PREFIX.evec for further analyses.
 - ``plotband.py`` now works nicely for discontinuous BZ paths.
 - When ``BCONNECT > 0`` and KPMODE = 1, phonon velocities, polarization vectors, and Grüneisen parameters are also reordered before saved in files.
