@@ -603,7 +603,7 @@ double Optimize::run_manual_cv(const std::string job_prefix,
     }
 
     const auto file_coef = job_prefix + ".solution_path";
-    const auto file_cv = job_prefix + ".enet_cv";
+    const auto file_cv = job_prefix + ".cvset";
 
     compute_alphas(optcontrol.l1_alpha_max,
                    optcontrol.l1_alpha_min,
@@ -820,7 +820,7 @@ double Optimize::run_auto_cv(const std::string job_prefix,
         }
 
         const auto file_coef = job_prefix + ".solution_path" + std::to_string(iset + 1);
-        const auto file_cv = job_prefix + ".enet_cvset" + std::to_string(iset + 1);
+        const auto file_cv = job_prefix + ".cvset" + std::to_string(iset + 1);
 
         if (optcontrol.l1_alpha_max > 0) {
             compute_alphas(optcontrol.l1_alpha_max,
