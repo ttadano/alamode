@@ -3,7 +3,7 @@
 [![License][license-image]][license-url]
 [![Doc status][docs-image]][docs-url]
 
-### Version 1.1.0
+### Version 1.2.0
 ![alt ALAMODE](./docs/img/alamode.png)
 
 
@@ -24,7 +24,6 @@ linewidth, and other anharmonic phonon properties from first principles.
 ### General
 * Extraction of harmonic and anharmonic force constants based on the supercell approach
 * Applicable to any crystal structures and low-dimensional systems
-* Accurate treatment of translational and rotational invariance
 * Interface to VASP, Quantum-ESPRESSO, OpenMX, xTAPP, and LAMMPS codes
 * Parallelization with MPI+OpenMP
 
@@ -45,6 +44,7 @@ linewidth, and other anharmonic phonon properties from first principles.
 * Gruneisen parameter via cubic force constants
 * Lattice thermal conductivity by BTE-RTA
 * Cumulative thermal conductivity
+* Coherent component of lattice thermal conductivity
 * Phonon linewidth due to 3-phonon interactions
 * Phonon frequency shift due to 3- and 4-phonon interactions
 * Temperature-dependent effective potential method
@@ -75,7 +75,10 @@ If you download the GitHub version, please use the 'master' branch.
 ## Install
 The directories alm/, anphon/, and tools/ contain separate Makefiles.
 Please modify the Makefiles appropriately by changing variables such as 
-CXX, CXXFLAGS, or MPICXX. Then, issuing the "make" command creates the binary for each program. Please see the documentation for more details.
+CXX, CXXFLAGS, or MPICXX. Then, issuing the "make" command creates the binary for each program. 
+
+As of version 1.2.0, we also support a build by CMake. This option is recommended for all users.
+Please see the documentation page for more details.
 
 
 ## Documentation
