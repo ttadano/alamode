@@ -45,7 +45,7 @@ void ALMCUI::run(const int narg,
         std::cout << " +                         Program ALM                             +" << std::endl;
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
-        std::cout << "                       +" << std::endl;
+        std::cout << "                         +" << std::endl;
         std::cout << " +-----------------------------------------------------------------+" << std::endl;
         std::cout << std::endl;
 #ifdef _OPENMP
