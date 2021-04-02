@@ -49,8 +49,8 @@ List of supported input variables
 
    **&general**
    :ref:`HESSIAN <alm_hessian>`, :ref:`FCSYM_BASIS <alm_fcsym_basis>`, :ref:`KD <alm_kd>`, :ref:`MAGMOM <alm_magmom>`, :ref:`MODE <alm_mode>`
-   :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`, :ref:`NMAXSAVE <alm_nmaxsave>`, :ref:`NONCOLLINEAR <alm_noncollinear>`
-   :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
+   :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`, :ref:`NMAXSAVE <alm_nmaxsave>`, :ref:`NONCOLLINEAR <alm_noncollinear>`, :ref:`PERIODIC <alm_periodic>` 
+   :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
    **&interaction**
    :ref:`NBODY <alm_nbody>`, :ref:`NORDER <alm_norder>`
    **&optimize**
@@ -195,7 +195,7 @@ Description of input variables
 
  :Default: 0 
  :type: Integer
- :Description: When ``NONCOLLINEAR = 1``, the code accepts a noncollinear magnetic structure as an input to the ``MAGMOM`` tag and uses it for generating space group operations. The spin quantization axis is fixed to the (0,0,1) direction of the Cartesian coordinate.
+ :Description: When ``NONCOLLINEAR = 1``, the code accepts a noncollinear magnetic structure as an input to the ``MAGMOM`` tag and uses it for generating space group operations. The spin quantization axis is fixed to the (0,0,1) direction of the Cartesian axis.
 
  .. caution::
 

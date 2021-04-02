@@ -188,3 +188,34 @@ In the elasitc-net optimization (``LMODEL = elastic-net``), IFCs are estimated b
 where :math:`\alpha` is a hyperparameter that controls the trade-off between the sparsity and accuracy of the model, and :math:`\beta \; (0 < \beta \leq 1)` is a hyperparameter that controls the ratio of the :math:`L_{1}` and :math:`L_{2}` regularization terms. :math:`\alpha` and :math:`\beta` must be given by input tags ``L1_ALPHA`` and ``L1_RATIO``, respectively.
 
 An optimal value of :math:`\alpha` can be estimated, for example, by cross-validation (CV). A :math:`n`\ -fold CV can be performed by setting the ``CV``-tag properly.
+
+Adaptive LASSO [1]_ 
+++++++++++++++++++++
+
+In adaptive LASSO (``LMODEL = adaptive-lasso``), IFCs are estimated by solving the following optimization problem:
+
+.. math::
+   :label: adalasso
+
+   \boldsymbol{\Phi}_{\mathrm{adalasso}} = \mathop{\rm argmin}\limits_{\boldsymbol{\Phi}} \frac{1}{2N_{d}}   \|\boldsymbol{\mathscr{F}}_{\mathrm{DFT}} - \mathbb{A} \boldsymbol{\Phi} \|^{2}_{2} + \alpha \sum_i w_i |\Phi_i| ,
+
+where :math:`\alpha` is a hyperparameter given by ``L1_ALPHA``, and :math:`w_i` is the parameter-dependent weight. In ALM, we simply use :math:`w_i = 1/|\Phi_{\mathrm{OLS},i}|` with :math:`\Phi_{\mathrm{OLS},i}` being the coefficient estimator produced by an OLS fitting. Hence, in this option, the size of the training dataset must be large enough to make the matrix :math:`\mathbb{A}` *overdetermined*. The code keeps running even when :math:`\mathbb{A}` is *underdetermined*. So, please be careful.
+
+.. note::
+
+    The minimum size of the training dataset necessary for making :math:`\mathbb{A}` overdetermined can be roughly estimated as follows: 
+    
+    We assume that there are :math:`N` independent IFCs (after imposing constraints, if there is any). In this case, the number of columns of matrix :math:`\mathbb{A}` becomes :math:`N`, and :math:`\mathbb{A}` becomes overdetermined when the number of independent rows of :math:`\mathbb{A}` is :math:`N` or larger. If the training structures are generated randomly and all atoms are displaced from their original positions in each configuration, we can generate :math:`3\times N_{\mathrm{atom}}` (:math:`N_{\mathrm{atom}}` is the number of atoms in the supercell) linearly independent rows of :math:`\mathbb{A}` from one displaced configuration , i.e., one static DFT calculation. Hence, we expect that :math:`\mathbb{A}` becomes overdetermined when
+
+    .. math::
+
+        N_d \geq \frac{N}{3N_{\mathrm{atom}}}
+
+    where :math:`N_d` is the number of displacement patterns in the training dataset. 
+
+    In cross validation, the entire training dataset is divided into smaller subsets. For each subset, the above condition should be satisfied.
+
+
+````
+
+.. [1] H\. Zou, *The Adaptive Lasso and Its Oracle Properties*, J\. Am\. Stat\. Assoc\. **101**, 1418 (2006).
