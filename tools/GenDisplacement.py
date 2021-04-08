@@ -89,6 +89,13 @@ class AlamodeDisplace(object):
                       "with the following inputs and then run displace.py again with\n"
                       "--evec=PREFIX.evec option:\n\n")
 
+                print("&cell")
+                print("1.0")
+                for elem in self._primitive_lattice_vector.transpose():
+                    for i in range(3):
+                        print("%20.15f" % (elem[i]/self._BOHR_TO_ANGSTROM), end='')
+                    print('')
+                print("/")
                 print("&kpoint")
                 print("0")
                 for elem in self._commensurate_qpoints:
