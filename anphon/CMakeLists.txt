@@ -18,6 +18,9 @@ if (FFTW3_ROOT)
     set(fftw3library "-L${FFTW3_ROOT}/lib -lfftw3")
 elseif(NOT USE_MKL_FFT)
     set(fftw3library "-lfftw3")
+else()
+    set(mkl_root "$ENV{MKLROOT}")
+    include_directories("${mkl_root}/include/fftw")
 endif()
 
 find_package(OpenMP)
@@ -73,6 +76,11 @@ if (WITH_HDF5_SUPPORT)
         endif()
     endif()
 endif()
+
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()
 
 # Source code
 include_directories("${PROJECT_SOURCE_DIR}/../include")
