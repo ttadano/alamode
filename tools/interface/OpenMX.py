@@ -21,6 +21,8 @@ class OpenmxParser(object):
         self._lattice_vector = None
         self._inverse_lattice_vector = None
         self._atomic_kinds = None
+        self._element_list = []
+        self._element_dict = {}
         self._initial_charges = None
         self._common_settings = None
         self._nat = 0
@@ -136,11 +138,21 @@ class OpenmxParser(object):
             for i in range(nat):
                 x_frac0[i] = np.dot(x_frac0[i], lavec_inv) * self._BOHR_TO_ANGSTROM
 
+        kd_uniq = []
+        for entry in kd:
+            if entry not in kd_uniq:
+                kd_uniq.append(entry)
+
+        self._element_list = kd_uniq
+        counter = 0
+        for entry in kd_uniq:
+            self._element_dict[entry] = counter
+            counter += 1
         self._lattice_vector = lavec
         self._inverse_lattice_vector = lavec_inv
         self._nat = nat
         self._x_fractional = x_frac0
-        self._atomic_kinds = kd
+        self._atomic_kinds = [self._element_dict[elem] for elem in kd]
         self._initial_charges = initial_charges
         self._kmesh = kgrid
         self._common_settings = common_settings
@@ -193,7 +205,7 @@ class OpenmxParser(object):
                     f.write("Atoms.SpeciesAndCoordinates.Unit frac\n")
                     f.write("<Atoms.SpeciesAndCoordinates\n")
                     for i in range(self._nat):
-                        f.write("%4d %3s" % (i + 1, self._atomic_kinds[i]))
+                        f.write("%4d %3s" % (i + 1, self._element_list[self._atomic_kinds[i]]))
                         for j in range(3):
                             f.write("%21.16f" % (self._x_fractional[i, j] + disp[i, j]))
                         for j in range(2):
@@ -386,9 +398,13 @@ class OpenmxParser(object):
     def atomic_kinds(self):
         return self._atomic_kinds
 
+    @property
+    def atomic_kinds_in_str(self):
+        return [self._element_list[i] for i in self._atomic_kinds]
+
     @atomic_kinds.setter
     def atomic_kinds(self, kd):
-        self._atomic_kinds = kd
+        self._atomic_kinds = [self._element_dict[elem] for elem in kd]
 
     @property
     def x_fractional(self):
