@@ -566,10 +566,12 @@ class AlamodeDisplace(object):
         for iat in range(self._supercell.nat):
             xshift = self._mapping_shift[iat, :]
             jat = self._mapping_s2p[iat]
-            phase_real = math.cos(2.0 * math.pi * np.dot(xq_tmp, xshift))
+            phase_base = 2.0 * math.pi * np.dot(xq_tmp, xshift)
             for icrd in range(3):
+                phase_shift_evec = cmath.phase(self._evec[iq, imode, 3 * jat + icrd])
                 disp[iat, icrd, :] += Q_R[:] * \
-                                      self._evec[iq, imode, 3 * jat + icrd].real * phase_real
+                                      np.absolute(self._evec[iq, imode, 3 * jat + icrd]) \
+                                      * math.sin(phase_base + phase_shift_evec)
 
         factor = np.zeros(self._supercell.nat)
         for iat in range(self._supercell.nat):
