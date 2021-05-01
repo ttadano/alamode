@@ -202,12 +202,15 @@ class OpenmxParser(object):
                     f.write("scf.Kgrid %d %d %d\n" % (self._kmesh[0], self._kmesh[1], self._kmesh[2]))
 
                 elif "atoms.speciesandcoordinates.unit" in line.lower():
-                    f.write("Atoms.SpeciesAndCoordinates.Unit frac\n")
+                    f.write("Atoms.SpeciesAndCoordinates.Unit Ang\n")
                     f.write("<Atoms.SpeciesAndCoordinates\n")
+
                     for i in range(self._nat):
                         f.write("%4d %3s" % (i + 1, self._element_list[self._atomic_kinds[i]]))
+                        x_cartesian_disp = np.dot(self._x_fractional[i, :] + disp[i, :],
+                                                  self._lattice_vector.transpose())
                         for j in range(3):
-                            f.write("%21.16f" % (self._x_fractional[i, j] + disp[i, j]))
+                            f.write("%21.16f" % x_cartesian_disp[j])
                         for j in range(2):
                             f.write("%6.2f" % (self._initial_charges[i, j]))
                         f.write('\n')
