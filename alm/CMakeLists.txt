@@ -27,6 +27,7 @@ endif()
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (openmplibrary OpenMP::OpenMP_CXX)
 endif()
 
 find_package(Boost)
@@ -115,7 +116,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
 add_executable(alm ${PROJECT_SOURCE_DIR}/main.cpp
                    ${PROJECT_SOURCE_DIR}/alm_cui.cpp
                    ${SOURCES} ${HEADERS})
-target_link_libraries(alm ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib})
+target_link_libraries(alm ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib} ${openmplibrary})
 if (WITH_HDF5_SUPPORT)
     target_link_libraries(alm ${hdf5library})
 endif()

@@ -87,6 +87,7 @@ namespace PHON_NS {
         double lambda;
         double Gmax, Lmax;
         int nl[3], ng[3], num_l, num_g;
+        bool force_permutation_sym;
 
         std::vector<DistInfo> **distall_ewald;
 
@@ -131,6 +132,12 @@ namespace PHON_NS {
                                              double *,
                                              std::complex<double> **,
                                              double *);
+
+        void calc_realspace_sum(const int iat,
+                                const int jat,
+                                const double xdist[3],
+                                const double lambda_in,
+                                std::vector<std::vector<double>> &ret);
 
         void calc_anisotropic_hmat(double,
                                    const double *,
