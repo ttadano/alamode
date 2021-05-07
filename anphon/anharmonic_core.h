@@ -107,6 +107,13 @@ namespace PHON_NS {
                                       unsigned int,
                                       double *);
 
+        void calc_damping4_smearing(unsigned int,
+                                   double *,
+                                   double,
+                                   unsigned int,
+                                   unsigned int,
+                                   double *);
+
         int quartic_mode;
         bool use_tuned_ver;
         bool use_triplet_symmetry;
@@ -142,10 +149,6 @@ namespace PHON_NS {
                                      int,
                                      double **,
                                      std::complex<double> ***) const;
-
-        void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                     unsigned int,
-                                     double ***) const;
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      unsigned int,

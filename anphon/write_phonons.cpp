@@ -59,6 +59,7 @@ Writes::Writes(PHON *phon) : Pointers(phon)
     anime_frames = 20;
 
     file_result = "";
+    file_result4 = "";
     anime_format = "xyz";
     verbosity = 1;
 };

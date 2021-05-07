@@ -125,89 +125,6 @@ void AnharmonicCore::setup()
     }
 }
 
-
-void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
-                                             const unsigned int N,
-                                             double ***vec_out) const
-{
-    int i, j;
-
-    double vec[3];
-    double **xshift_s;
-
-    std::vector<unsigned int> atm_super, atm_prim;
-    std::vector<unsigned int> xyz;
-    std::vector<unsigned int> cells;
-
-    double mat_convert[3][3];
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            mat_convert[i][j] = 0.0;
-            for (int k = 0; k < 3; ++k) {
-                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s_anharm[k][j];
-            }
-        }
-    }
-
-    memory->allocate(xshift_s, 27, 3);
-
-    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
-
-    unsigned int icell = 0;
-
-    for (int ix = -1; ix <= 1; ++ix) {
-        for (int iy = -1; iy <= 1; ++iy) {
-            for (int iz = -1; iz <= 1; ++iz) {
-                if (ix == 0 && iy == 0 && iz == 0) continue;
-
-                ++icell;
-
-                xshift_s[icell][0] = static_cast<double>(ix);
-                xshift_s[icell][1] = static_cast<double>(iy);
-                xshift_s[icell][2] = static_cast<double>(iz);
-            }
-        }
-    }
-
-    unsigned int icount = 0;
-
-    for (const auto &it : fcs_in) {
-
-        atm_super.clear();
-        atm_prim.clear();
-        xyz.clear();
-        cells.clear();
-
-        for (i = 0; i < it.pairs.size(); ++i) {
-            auto atm_p = it.pairs[i].index / 3;
-            const auto tran_tmp = it.pairs[i].tran;
-            auto atm_s = system->map_p2s_anharm[atm_p][tran_tmp];
-
-            atm_prim.push_back(atm_p);
-            atm_super.push_back(atm_s);
-            cells.push_back(it.pairs[i].cell_s);
-        }
-
-
-        for (i = 0; i < N - 1; ++i) {
-
-            for (j = 0; j < 3; ++j) {
-                vec[j] = system->xr_s_anharm[atm_super[i + 1]][j] + xshift_s[cells[i + 1]][j]
-                         - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][j];
-            }
-
-            rotvec(vec, vec, mat_convert);
-
-            for (j = 0; j < 3; ++j) {
-                vec_out[icount][i][j] = vec[j];
-            }
-        }
-        ++icount;
-    }
-    memory->deallocate(xshift_s);
-}
-
 void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
                                              const unsigned int N,
                                              const int number_of_groups,
@@ -1150,6 +1067,206 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
     memory->deallocate(kmap_identity);
 
     for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4);
+}
+
+void AnharmonicCore::calc_damping4_smearing(const unsigned int N,
+                                           double *T,
+                                           const double omega,
+                                           const unsigned int ik_in,
+                                           const unsigned int snum,
+                                           double *ret)
+{
+    // This function returns the imaginary part of phonon self-energy
+    // for the given frequency omega.
+    // Lorentzian or Gaussian smearing will be used.
+    // This version employs the crystal symmetry to reduce the computational cost
+
+    const int nk = kpoint->nk;
+    const int ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns2 * ns;
+    unsigned int i;
+    int ik;
+    unsigned int is, js, ks;
+    unsigned int arr[4];
+
+    int k1, k2, k3;
+
+    double T_tmp;
+    double n1, n2;
+    double omega_inner[3];
+
+    double multi;
+
+    for (i = 0; i < N; ++i) ret[i] = 0.0;
+
+    double **v4_arr;
+    double ***delta_arr;
+    double ret_tmp;
+
+    double f1, f2, f3;
+
+    const auto epsilon = integration->epsilon;
+
+    std::vector<KsListGroup> quartet;
+
+    kpoint->get_unique_quartet_k(ik_in,
+                                 use_quartet_symmetry,
+                                 sym_permutation,
+                                 quartet);
+
+    const int npair_uniq = quartet.size();
+
+    memory->allocate(v4_arr, npair_uniq, ns3);
+    memory->allocate(delta_arr, npair_uniq, ns3, 2);
+
+    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kpoint->knum_minus[knum];
+
+
+#ifdef _OPENMP
+#pragma omp parallel for private(arr, k1, k2, k3, is, js, ks, omega_inner)
+#endif
+    for (ik = 0; ik < npair_uniq; ++ik) {
+
+        arr[0] = ns * knum_minus + snum;
+
+        k1 = quartet[ik].group[0].ks[0];
+        k2 = quartet[ik].group[0].ks[1];
+        k3 = quartet[ik].group[0].ks[2];
+
+        for (is = 0; is < ns; ++is) {
+            arr[1] = ns * k1 + is;
+            omega_inner[0] = dynamical->eval_phonon[k1][is];
+
+            for (js = 0; js < ns; ++js) {
+                arr[2] = ns * k2 + js;
+                omega_inner[1] = dynamical->eval_phonon[k2][js];
+
+                for (ks = 0; ks < ns; ++ks) {
+                    arr[3] = ns * k3 + ks;
+                    omega_inner[2] = dynamical->eval_phonon[k3][ks];
+
+                    const auto jb = ns2 * is + ns * js + ks;
+
+                    if (integration->ismear == 0) {
+                        delta_arr[ik][jb][0]
+                                = delta_lorentz(omega - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
+                        delta_arr[ik][jb][1]
+                                = delta_lorentz(omega - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+                                  - delta_lorentz(omega + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                    } else if (integration->ismear == 1) {
+                        delta_arr[ik][jb][0] = 0.0;
+                        delta_arr[ik][jb][1] = 0.0;
+                        const auto sum_omega1 = omega - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                        const auto sum_omega2 = omega - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                        const auto sum_omega3 = omega + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                        if (std::abs(sum_omega1) < 2.0 * epsilon) {
+                            delta_arr[ik][jb][0] = delta_gauss(sum_omega1, epsilon);
+                        }
+                       if (std::abs(sum_omega2) < 2.0 * epsilon) {
+                           delta_arr[ik][jb][1] += delta_gauss(sum_omega2, epsilon);
+                       }
+                       if (std::abs(sum_omega3) < 2.0 * epsilon) {
+                           delta_arr[ik][jb][1] -= delta_gauss(sum_omega3, epsilon);
+                       }
+//                        delta_arr[ik][jb][1]
+//                                = delta_gauss(omega - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+//                                  - delta_gauss(omega + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                    }
+
+                }
+            }
+        }
+    }
+
+    for (ik = 0; ik < npair_uniq; ++ik) {
+
+        k1 = quartet[ik].group[0].ks[0];
+        k2 = quartet[ik].group[0].ks[1];
+        k3 = quartet[ik].group[0].ks[2];
+
+        multi = static_cast<double>(quartet[ik].group.size());
+
+        for (size_t ib = 0; ib < ns3; ++ib) {
+            is = ib / ns2;
+            js = (ib - ns2*is) / ns;
+            ks = ib % ns;
+
+            if (delta_arr[ik][ib][0] > 0.0 || std::abs(delta_arr[ik][ib][1]) > 0.0) {
+
+                arr[0] = ns * knum_minus + snum;
+                arr[1] = ns * k1 + is;
+                arr[2] = ns * k2 + js;
+                arr[3] = ns * k3 + ks;
+
+                v4_arr[ik][ib] = std::norm(V4(arr,
+                                              dynamical->eval_phonon,
+                                              dynamical->evec_phonon)) * multi;
+            } else {
+                v4_arr[ik][ib] = 0.0;
+            }
+        }
+    }
+
+
+    for (i = 0; i < N; ++i) {
+        T_tmp = T[i];
+        ret_tmp = 0.0;
+#ifdef _OPENMP
+#pragma omp parallel for private(k1, k2, k3, is, js, ks, omega_inner, n1, n2, f1, f2, f3), reduction(+:ret_tmp)
+#endif
+        for (ik = 0; ik < npair_uniq; ++ik) {
+
+            k1 = quartet[ik].group[0].ks[0];
+            k2 = quartet[ik].group[0].ks[1];
+            k3 = quartet[ik].group[0].ks[2];
+
+            for (is = 0; is < ns; ++is) {
+
+                omega_inner[0] = dynamical->eval_phonon[k1][is];
+
+                for (js = 0; js < ns; ++js) {
+
+                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+
+                    for (ks = 0; ks < ns; ++ks) {
+
+                        omega_inner[2] = dynamical->eval_phonon[k3][ks];
+
+                        if (thermodynamics->classical) {
+                            f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                            f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+                            f3 = thermodynamics->fC(omega_inner[2], T_tmp);
+
+                            n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3;
+                            n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                        } else {
+                            f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                            f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+                            f3 = thermodynamics->fB(omega_inner[2], T_tmp);
+
+                            n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3 + 1.0;
+                            n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                        }
+
+                        ret_tmp += v4_arr[ik][ns2 * is + ns * js + ks]
+                                   * (n1 * delta_arr[ik][ns2 * is + ns * js + ks][0]
+                                      + n2 * delta_arr[ik][ns2 * is + ns * js + ks][1]);
+
+                    }
+                }
+            }
+        }
+        ret[i] = ret_tmp;
+    }
+
+    memory->deallocate(v4_arr);
+    memory->deallocate(delta_arr);
+    quartet.clear();
+
+    for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4) / (3.0 * static_cast<double>(nk * nk));
 }
 
 
