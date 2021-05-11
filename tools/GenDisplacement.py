@@ -548,7 +548,6 @@ class AlamodeDisplace(object):
         Q_R = Q_array  # in units of u^{1/2} Angstrom
 
         ndata = len(Q_R)
-        # nq = len(self._qpoints)
         xq_tmp = self._qpoints[iq, :]
 
         is_commensurate = False
@@ -567,11 +566,10 @@ class AlamodeDisplace(object):
             xshift = self._mapping_shift[iat, :]
             jat = self._mapping_s2p[iat]
             phase_base = 2.0 * math.pi * np.dot(xq_tmp, xshift)
+            cexp_phase = cmath.exp(1.0j * phase_base)
             for icrd in range(3):
-                phase_shift_evec = cmath.phase(self._evec[iq, imode, 3 * jat + icrd])
                 disp[iat, icrd, :] += Q_R[:] * \
-                                      np.absolute(self._evec[iq, imode, 3 * jat + icrd]) \
-                                      * math.sin(phase_base + phase_shift_evec)
+                                      (self._evec[iq, imode, 3 * jat + icrd] * cexp_phase).real
 
         factor = np.zeros(self._supercell.nat)
         for iat in range(self._supercell.nat):
