@@ -726,7 +726,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
                             cellsize,
                             anime_kpoint_double,
                             print_ucorr,
-                            shift_ucorr);
+                            shift_ucorr,
+                            print_zmode);
 
 //    if (print_anime) {
 //        for (i = 0; i < 3; ++i) {

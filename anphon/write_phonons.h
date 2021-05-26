@@ -58,7 +58,8 @@ namespace PHON_NS {
                               const unsigned int anime_cellsize_[3],
                               const double anime_kpoint_[3],
                               const bool print_ucorr_,
-                              const int shift_ucorr_[3]);
+                              const int shift_ucorr_[3],
+                              const bool print_zmode_);
 
         void write_scph_energy(double ***,
                                const int bubble = 0) const;

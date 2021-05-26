@@ -431,7 +431,8 @@ void Writes::setWriteOptions(const bool print_msd_,
                              const unsigned int anime_cellsize_[3],
                              const double anime_kpoint_[3],
                              const bool print_ucorr_,
-                             const int shift_ucorr_[3])
+                             const int shift_ucorr_[3],
+                             const bool print_zmode_)
 {
     print_msd = print_msd_;
     print_xsf = print_xsf_;
@@ -439,6 +440,7 @@ void Writes::setWriteOptions(const bool print_msd_,
     anime_format = anime_format_;
     anime_frames = anime_frames_;
     print_ucorr = print_ucorr_;
+    print_zmode = print_zmode_;
 
     for (auto i = 0; i < 3; ++i) {
         anime_cellsize[i] = anime_cellsize_[i];
