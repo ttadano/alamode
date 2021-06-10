@@ -2428,11 +2428,17 @@ void Writes::write_dielectric_function() const
     auto dielecfunc = dielec->get_dielectric_func();
 
     ofs_dielec << "# Real part of dielectric function (phonon part only)\n";
-    ofs_dielec << "# Frequency (cm^-1), xx, yy, zz\n";
+    ofs_dielec << "# Frequency (cm^-1), xx, yy, zz,   xy, xz, yx, yz, zx, zy\n";
     for (auto iomega = 0; iomega < nomega; ++iomega) {
         ofs_dielec << std::setw(10) << omega_grid[iomega];
         for (auto i = 0; i < 3; ++i) {
             ofs_dielec << std::setw(15) << dielecfunc[iomega][i][i];
+        }
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                if (i == j) continue;
+                ofs_dielec << std::setw(15) << dielecfunc[iomega][i][j];
+            }
         }
         ofs_dielec << '\n';
     }
