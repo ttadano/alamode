@@ -95,7 +95,7 @@ void Scph::set_default_variables()
 
     bubble = 0;
     phi3_reciprocal = nullptr;
-    compute_Cv_anharmonic = 1;
+    compute_Cv_anharmonic = 0;
 }
 
 
