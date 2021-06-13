@@ -37,16 +37,7 @@ namespace PHON_NS {
 
         void write_selfenergy_isotope() const;
 
-
-
-
-
         bool print_zmode;
-
-
-
-
-
 
         double in_kayser(const double) const;
 
@@ -71,6 +62,7 @@ namespace PHON_NS {
                             const int bubble = 0) const;
 
         void write_scph_thermodynamics(double *heat_capacity,
+                                       double *heat_capacity_correction,
                                        double *FE_QHA,
                                        double *dFE_scph) const;
 

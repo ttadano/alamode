@@ -116,7 +116,8 @@ class AlamodeDisplace(object):
                  classical=False,
                  option_pes=None,
                  option_qrange=None,
-                 ignore_imag=False):
+                 ignore_imag=False,
+                 imag_evec=False):
 
         self._counter = 1
         self._displacement_magnitude = magnitude
@@ -276,7 +277,10 @@ class AlamodeDisplace(object):
                 print(" branch : %d" % (target_mode + 1))
                 print("")
 
-            disp_pes = self._generate_displacements_pes(np.array(Qlist), target_q, target_mode)
+            disp_pes = self._generate_displacements_pes(np.array(Qlist),
+                                                        target_q,
+                                                        target_mode,
+                                                        imag_evec)
 
             for i in range(number_of_displacements):
                 header = "Displacement along normal coordinate Q (q= %f %f %f, branch : %d), " \
@@ -542,7 +546,7 @@ class AlamodeDisplace(object):
 
         return sigma
 
-    def _generate_displacements_pes(self, Q_array, iq, imode):
+    def _generate_displacements_pes(self, Q_array, iq, imode, use_imaginary_part):
 
         tol_zero = 1.0e-3
         Q_R = Q_array  # in units of u^{1/2} Angstrom
@@ -567,9 +571,15 @@ class AlamodeDisplace(object):
             jat = self._mapping_s2p[iat]
             phase_base = 2.0 * math.pi * np.dot(xq_tmp, xshift)
             cexp_phase = cmath.exp(1.0j * phase_base)
-            for icrd in range(3):
-                disp[iat, icrd, :] += Q_R[:] * \
-                                      (self._evec[iq, imode, 3 * jat + icrd] * cexp_phase).real
+
+            if use_imaginary_part:
+                for icrd in range(3):
+                    disp[iat, icrd, :] += Q_R[:] * \
+                                          (self._evec[iq, imode, 3 * jat + icrd] * cexp_phase).imag
+            else:
+                for icrd in range(3):
+                    disp[iat, icrd, :] += Q_R[:] * \
+                                          (self._evec[iq, imode, 3 * jat + icrd] * cexp_phase).real
 
         factor = np.zeros(self._supercell.nat)
         for iat in range(self._supercell.nat):
@@ -585,6 +595,10 @@ class AlamodeDisplace(object):
             for iat in range(self._supercell.nat):
                 disp[iat, :, idata] = np.dot(disp[iat, :, idata],
                                              self._supercell.inverse_lattice_vector.transpose())
+
+        if use_imaginary_part:
+            if np.max(np.abs(disp)) < 1.0e-10:
+                print("Warning. All displacements are zero for the phonon modes specified by --pes.")
 
         return disp
 

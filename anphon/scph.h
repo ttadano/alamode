@@ -41,7 +41,7 @@ namespace PHON_NS {
     struct MinimumDistList {
     public:
         double dist;
-        std::vector<ShiftCell> shift;
+        std::vector <ShiftCell> shift;
     };
 
     struct KpointSymmetry {
@@ -70,8 +70,8 @@ namespace PHON_NS {
 
         double **xk_scph, **kvec_na_scph;
         double **xk_interpolate;
-        std::vector<std::vector<KpointList>> kp_irred_scph;
-        std::vector<std::vector<KpointList>> kp_irred_interpolate;
+        std::vector <std::vector<KpointList>> kp_irred_scph;
+        std::vector <std::vector<KpointList>> kp_irred_interpolate;
 
         void exec_scph();
 
@@ -96,7 +96,7 @@ namespace PHON_NS {
         int **evec_index_v3;
         int **evec_index_v4;
         int ngroup_v3, ngroup_v4;
-        std::vector<RelativeVector> *relvec_v3, *relvec_v4;
+        std::vector <RelativeVector> *relvec_v3, *relvec_v4;
         std::complex<double> *phi3_reciprocal;
         int kindex_phi3_stored[2] = {-1, -1};
 
@@ -119,6 +119,8 @@ namespace PHON_NS {
         std::vector<int> *small_group_at_k;
         std::vector<int> *symop_minus_at_k;
         KpointSymmetry *kpoint_map_symmetry;
+
+        int compute_Cv_anharmonic;
 
 
         void set_default_variables();
@@ -209,7 +211,7 @@ namespace PHON_NS {
         void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
 
         static void duplicate_xk_boundary(double *,
-                                          std::vector<std::vector<double>> &);
+                                          std::vector <std::vector<double>> &);
 
         void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                              const unsigned int NT,
@@ -220,6 +222,11 @@ namespace PHON_NS {
                                       const unsigned int nk,
                                       const unsigned int ns);
 
+        void get_derivative_central_diff(const double delta_t,
+                                         const unsigned int nk,
+                                         double **omega0,
+                                         double **omega2,
+                                         double **domega_dt);
 
         void compute_free_energy_bubble_SCPH(const unsigned int [3],
                                              std::complex<double> ****);
@@ -232,20 +239,19 @@ namespace PHON_NS {
                                      std::complex<double> ***evec);
 
         void calc_phi3_reciprocal_this(const unsigned int ik1,
-                                             const unsigned int ik2,
-                                             std::complex<double> *ret);
+                                       const unsigned int ik2,
+                                       std::complex<double> *ret);
 
-        std::vector<std::complex<double>> get_bubble_selfenergy(const unsigned int nk_in,
-                                                                      const unsigned int ns_in,
-                                                                      const unsigned int kmesh_in[3],
-                                                                      double **xk_in,
-                                                                      double **eval_in,
-                                                                      std::complex<double> ***evec_in,
-                                                                      const unsigned int knum,
-                                                                      const unsigned int snum,
-                                                                      const double temp_in,
-                                                                      const std::vector<std::complex<double>> &omegalist);
-
+        std::vector <std::complex<double>> get_bubble_selfenergy(const unsigned int nk_in,
+                                                                 const unsigned int ns_in,
+                                                                 const unsigned int kmesh_in[3],
+                                                                 double **xk_in,
+                                                                 double **eval_in,
+                                                                 std::complex<double> ***evec_in,
+                                                                 const unsigned int knum,
+                                                                 const unsigned int snum,
+                                                                 const double temp_in,
+                                                                 const std::vector <std::complex<double>> &omegalist);
 
 
     };

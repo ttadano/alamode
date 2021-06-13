@@ -44,28 +44,36 @@ namespace PHON_NS {
         double Cv_tot(const double temp_in,
                       const unsigned int nk_irred,
                       const unsigned int ns,
-                      const std::vector<std::vector<KpointList>> &kp_irred,
+                      const std::vector <std::vector<KpointList>> &kp_irred,
                       double *weight_k_irred,
                       double **eval_in) const;
+
+        double Cv_anharm_correction(const double temp_in,
+                                    const unsigned int nk_irred,
+                                    const unsigned int ns,
+                                    const std::vector <std::vector<KpointList>> &kp_irred,
+                                    double *weight_k_irred,
+                                    double **eval_in,
+                                    double **del_eval_in) const;
 
         double internal_energy(const double temp_in,
                                const unsigned int nk_irred,
                                const unsigned int ns,
-                               const std::vector<std::vector<KpointList>> &kp_irred,
+                               const std::vector <std::vector<KpointList>> &kp_irred,
                                double *weight_k_irred,
                                double **eval_in) const;
 
         double vibrational_entropy(const double temp_in,
                                    const unsigned int nk_irred,
                                    const unsigned int ns,
-                                   const std::vector<std::vector<KpointList>> &kp_irred,
+                                   const std::vector <std::vector<KpointList>> &kp_irred,
                                    double *weight_k_irred,
                                    double **eval_in) const;
 
         double free_energy_QHA(const double temp_in,
                                const unsigned int nk_irred,
                                const unsigned int ns,
-                               const std::vector<std::vector<KpointList>> &kp_irred,
+                               const std::vector <std::vector<KpointList>> &kp_irred,
                                double *weight_k_irred,
                                double **eval_in) const;
 

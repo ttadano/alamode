@@ -92,7 +92,7 @@ parser.add_argument('--prim', type=str, default=None,
                     help="Specify the file containing structure data of the primitive lattice.")
 
 parser.add_argument('--evec', type=str, default=None,
-                    help="Specify the file containing harmonic eigenvalues and eigenvectors.")
+                    help="Specify the filename containing eigenvalues and eigenvectors.")
 
 parser.add_argument('-nd', '--num_disp', type=int, default=1,
                     help="Specify the number of displacement patterns.")
@@ -106,7 +106,17 @@ parser.add_argument('-p', '--print', action="store_true", dest="print_disp_stdou
 parser.add_argument('--pes', type=str, default=None, metavar='"q_index branch_index"',
                     help="Specify the target mode to displace atoms for calculating "
                          "the potential energy surface. --pes='5 10' will generate displacements"
-                         "that correspond to the phonon mode at the 5th q point and the 10th branch.")
+                         "that correspond to the phonon mode at the 5th q point and the 10th branch."
+                         "Only the real part of the phonon eigenvector is used by default."
+                         "To use the imaginary part instead, please add --imag-evec option.")
+
+parser.add_argument('--imag_evec', action="store_true", dest="imag_evec", default=False,
+                    help="In the --pes mode, the imaginary part of the phonon eigenvectors"
+                         "will be used when --imag_evec option is given. By default, the"
+                         "real part of the eigenvectors are used. Please be noted that "
+                         "adding this option generates zero displacements for the phonon modes"
+                         "at the Brillouin zone center and boundaries because the eigenvectors"
+                         "at these points are purely real.")
 
 parser.add_argument('--Qrange', type=str, default=None, metavar='"Qmin Qmax"',
                     help='Range of normal coordinate amplitude Q in units of amu^{1/2}*Angstrom')
@@ -247,7 +257,8 @@ def displace(displacement_mode, codeobj, args):
                             classical=args.classical,
                             option_pes=args.pes,
                             option_qrange=args.Qrange,
-                            ignore_imag=args.ignore_imag)
+                            ignore_imag=args.ignore_imag,
+                            imag_evec=args.imag_evec)
 
 
 def print_displacement_stdout(disp_list, codeobj):
@@ -270,7 +281,7 @@ if __name__ == '__main__':
     if not args.print_disp_stdout:
         print("*****************************************************************")
         print("    displace.py --  Generator of displaced configurations        ")
-        print("                      Version. 1.2.0                             ")
+        print("                      Version. 1.2.1                             ")
         print("*****************************************************************")
         print("")
 

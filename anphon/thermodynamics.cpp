@@ -80,7 +80,7 @@ double Thermodynamics::fC(const double omega,
 double Thermodynamics::Cv_tot(const double temp_in,
                               const unsigned int nk_irred,
                               const unsigned int ns,
-                              const std::vector<std::vector<KpointList>> &kp_irred,
+                              const std::vector <std::vector<KpointList>> &kp_irred,
                               double *weight_k_irred,
                               double **eval_in) const
 {
@@ -123,10 +123,60 @@ double Thermodynamics::Cv_tot(const double temp_in,
     return ret;
 }
 
+double Thermodynamics::Cv_anharm_correction(const double temp_in,
+                                            const unsigned int nk_irred,
+                                            const unsigned int ns,
+                                            const std::vector <std::vector<KpointList>> &kp_irred,
+                                            double *weight_k_irred,
+                                            double **eval_in,
+                                            double **del_eval_in) const
+{
+    int i;
+    unsigned int ik, is;
+    double omega, domega_dt;
+    auto ret = 0.0;
+
+    const auto N = nk_irred * ns;
+    int ik_irred;
+
+    if (classical) {
+#pragma omp parallel for private(ik_irred, ik, is, omega, domega_dt), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik_irred = i / ns;
+            ik = kp_irred[ik_irred][0].knum;
+            is = i % ns;
+
+            omega = eval_in[ik][is];
+            domega_dt = del_eval_in[ik][is];
+
+            if (omega < eps8) continue;
+
+            ret -= Cv_classical(omega, temp_in) * (temp_in / omega) * domega_dt * weight_k_irred[ik_irred];
+        }
+    } else {
+#pragma omp parallel for private(ik_irred, ik, is, omega, domega_dt), reduction(+:ret)
+        for (i = 0; i < N; ++i) {
+            ik_irred = i / ns;
+            ik = kp_irred[ik_irred][0].knum;
+            is = i % ns;
+
+            omega = eval_in[ik][is];
+            domega_dt = del_eval_in[ik][is];
+
+            if (omega < eps8) continue;
+
+            ret -= Cv(omega, temp_in) * (temp_in / omega) * domega_dt * weight_k_irred[ik_irred];
+        }
+    }
+
+    return ret;
+}
+
+
 double Thermodynamics::internal_energy(const double temp_in,
                                        const unsigned int nk_irred,
                                        const unsigned int ns,
-                                       const std::vector<std::vector<KpointList>> &kp_irred,
+                                       const std::vector <std::vector<KpointList>> &kp_irred,
                                        double *weight_k_irred,
                                        double **eval_in) const
 {
@@ -172,7 +222,7 @@ double Thermodynamics::internal_energy(const double temp_in,
 double Thermodynamics::vibrational_entropy(const double temp_in,
                                            const unsigned int nk_irred,
                                            const unsigned int ns,
-                                           const std::vector<std::vector<KpointList>> &kp_irred,
+                                           const std::vector <std::vector<KpointList>> &kp_irred,
                                            double *weight_k_irred,
                                            double **eval_in) const
 {
@@ -218,7 +268,7 @@ double Thermodynamics::vibrational_entropy(const double temp_in,
 double Thermodynamics::free_energy_QHA(const double temp_in,
                                        const unsigned int nk_irred,
                                        const unsigned int ns,
-                                       const std::vector<std::vector<KpointList>> &kp_irred,
+                                       const std::vector <std::vector<KpointList>> &kp_irred,
                                        double *weight_k_irred,
                                        double **eval_in) const
 {
@@ -449,7 +499,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
     memory->allocate(FE_local, NT);
     memory->allocate(FE_tmp, NT);
-    std::vector<KsListGroup> triplet;
+    std::vector <KsListGroup> triplet;
 
     std::vector<int> vks_l;
     vks_l.clear();
@@ -585,7 +635,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
 
     memory->allocate(FE_local, NT);
     memory->allocate(FE_tmp, NT);
-    std::vector<KsListGroup> triplet;
+    std::vector <KsListGroup> triplet;
 
     std::vector<int> vks_l;
     vks_l.clear();

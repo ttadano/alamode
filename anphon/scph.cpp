@@ -95,6 +95,7 @@ void Scph::set_default_variables()
 
     bubble = 0;
     phi3_reciprocal = nullptr;
+    compute_Cv_anharmonic = 1;
 }
 
 
@@ -274,6 +275,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         double **dos_scph = nullptr;
         double ***pdos_scph = nullptr;
         double *heat_capacity = nullptr;
+        double *heat_capacity_correction = nullptr;
         double *FE_QHA = nullptr;
         double *dFE_scph = nullptr;
         double **msd_scph = nullptr;
@@ -298,6 +300,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             }
             if (writes->getPrintUcorr()) {
                 memory->allocate(ucorr_scph, NT, ns, ns);
+            }
+            if (compute_Cv_anharmonic) {
+                memory->allocate(heat_capacity_correction, NT);
             }
         }
         if (dielec->calc_dielectric_constant) {
@@ -407,6 +412,35 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         }
         std::cout << "\n\n";
 
+        if (kpoint->kpoint_mode == 2 && compute_Cv_anharmonic > 0) {
+            double **domega_dt = nullptr;
+            memory->allocate(domega_dt, nk_ref, ns);
+            if (compute_Cv_anharmonic == 1) {
+                // Use central difference to evaluate temperature derivative of
+                // anharmonic frequencies
+
+                heat_capacity_correction[0] = 0.0;
+                heat_capacity_correction[NT - 1] = 0.0;
+
+                for (auto iT = 1; iT < NT - 1; ++iT) {
+                    auto T = Tmin + dT * static_cast<double>(iT);
+
+                    get_derivative_central_diff(dT, nk_ref,
+                                                eval_anharm[iT - 1],
+                                                eval_anharm[iT + 1],
+                                                domega_dt);
+
+                    heat_capacity_correction[iT] = thermodynamics->Cv_anharm_correction(T,
+                                                                                        kpoint->nk_irred,
+                                                                                        ns,
+                                                                                        kpoint->kpoint_irred_all,
+                                                                                        &kpoint->weight_k[0],
+                                                                                        eval_anharm[iT],
+                                                                                        domega_dt);
+                }
+            }
+        }
+
         if (kpoint->kpoint_mode == 0) {
             writes->write_scph_energy(eval_anharm);
         } else if (kpoint->kpoint_mode == 1) {
@@ -415,7 +449,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             if (dos->compute_dos) {
                 writes->write_scph_dos(dos_scph);
             }
-            writes->write_scph_thermodynamics(heat_capacity, FE_QHA, dFE_scph);
+            writes->write_scph_thermodynamics(heat_capacity,
+                                              heat_capacity_correction,
+                                              FE_QHA,
+                                              dFE_scph);
             if (writes->getPrintMSD()) {
                 writes->write_scph_msd(msd_scph);
             }
@@ -520,6 +557,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         if (dos_scph) memory->deallocate(dos_scph);
         if (pdos_scph) memory->deallocate(pdos_scph);
         if (heat_capacity) memory->deallocate(heat_capacity);
+        if (heat_capacity_correction) memory->deallocate(heat_capacity_correction);
         if (FE_QHA) memory->deallocate(FE_QHA);
         if (dFE_scph) memory->deallocate(dFE_scph);
         if (dielec_scph) memory->deallocate(dielec_scph);
@@ -2133,7 +2171,7 @@ void Scph::setup_transform_ifc()
     }
 
     double dist;
-    std::vector<DistList> dist_tmp;
+    std::vector <DistList> dist_tmp;
     ShiftCell shift_tmp{};
     std::vector<int> vec_tmp;
 
@@ -2506,7 +2544,7 @@ void Scph::calc_new_dymat_with_evec(std::complex<double> ***dymat_out,
     const auto nk2 = kmesh_interpolate[1];
     const auto nk3 = kmesh_interpolate[2];
 
-    std::vector<std::vector<double>> xk_dup;
+    std::vector <std::vector<double>> xk_dup;
 
     int icell = 0;
 
@@ -2619,7 +2657,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     const auto complex_one = std::complex<double>(1.0, 0.0);
     const auto complex_zero = std::complex<double>(0.0, 0.0);
 
-    SelfAdjointEigenSolver<MatrixXcd> saes;
+    SelfAdjointEigenSolver <MatrixXcd> saes;
 
     memory->allocate(mat_omega2_harmonic, nk_interpolate, ns, ns);
     memory->allocate(eval_interpolate, nk, ns);
@@ -3133,7 +3171,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
         std::cout << '\n';
         std::cout << " This calculation requires allocation of additional memory:" << std::endl;
 
-        size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
+        size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex < double > )
                        + nk_ref * ns * NT * sizeof(double);
 
         const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
@@ -3186,7 +3224,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     double ***eval_bubble = nullptr;
     std::complex<double> ***evec;
     double *real_self = nullptr;
-    std::vector<std::complex<double>> omegalist;
+    std::vector <std::complex<double>> omegalist;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -3432,16 +3470,16 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     }
 }
 
-std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const unsigned int nk_in,
-                                                              const unsigned int ns_in,
-                                                              const unsigned int kmesh_in[3],
-                                                              double **xk_in,
-                                                              double **eval_in,
-                                                              std::complex<double> ***evec_in,
-                                                              const unsigned int knum,
-                                                              const unsigned int snum,
-                                                              const double temp_in,
-                                                              const std::vector<std::complex<double>> &omegalist)
+std::vector <std::complex<double>> Scph::get_bubble_selfenergy(const unsigned int nk_in,
+                                                               const unsigned int ns_in,
+                                                               const unsigned int kmesh_in[3],
+                                                               double **xk_in,
+                                                               double **eval_in,
+                                                               std::complex<double> ***evec_in,
+                                                               const unsigned int knum,
+                                                               const unsigned int snum,
+                                                               const double temp_in,
+                                                               const std::vector <std::complex<double>> &omegalist)
 {
     unsigned int arr_cubic[3];
     double xk_tmp[3];
@@ -3460,7 +3498,7 @@ std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const unsigned int
 
     arr_cubic[0] = ns_in * knum_minus + snum;
 
-    std::vector<std::complex<double>> se_bubble(omegalist.size());
+    std::vector <std::complex<double>> se_bubble(omegalist.size());
 
     const auto nomega = omegalist.size();
 
@@ -3644,7 +3682,7 @@ double Scph::distance(double *x1,
 }
 
 void Scph::duplicate_xk_boundary(double *xk_in,
-                                 std::vector<std::vector<double>> &vec_xk)
+                                 std::vector <std::vector<double>> &vec_xk)
 {
     int i;
     int n[3];
@@ -3832,4 +3870,20 @@ void Scph::mpi_bcast_complex(std::complex<double> ****data,
 #else
     MPI_Bcast(&data[0][0][0][0], _NT * _nk * _ns * _ns, MPI_COMPLEX16, 0, MPI_COMM_WORLD);
 #endif
+}
+
+void Scph::get_derivative_central_diff(const double delta_t,
+                                       const unsigned int nk,
+                                       double **omega0,
+                                       double **omega2,
+                                       double **domega_dt)
+{
+    const auto ns = dynamical->neval;
+    const auto inv_dt = 1.0 / (2.0 * delta_t);
+    for (auto ik = 0; ik < nk; ++ik) {
+        for (auto is = 0; is < ns; ++is) {
+            domega_dt[ik][is] = (omega2[ik][is] - omega0[ik][is]) * inv_dt;
+        //    std::cout << "domega_dt = " << domega_dt[ik][is] << '\n';
+        }
+    }
 }

@@ -2630,6 +2630,7 @@ void Writes::write_scph_dos(double **dos_scph, const int bubble) const
 }
 
 void Writes::write_scph_thermodynamics(double *heat_capacity,
+                                       double *heat_capacity_correction,
                                        double *FE_QHA,
                                        double *dFE_scph) const
 {
@@ -2637,6 +2638,12 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    bool print_anharmonic_correction_Cv = false;
+
+    if (heat_capacity_correction) {
+        print_anharmonic_correction_Cv = true;
+    }
 
     std::ofstream ofs_thermo;
     auto file_thermo = input->job_title + ".scph_thermo";
@@ -2659,12 +2666,17 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
         ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
     }
 
+
+
     for (unsigned int iT = 0; iT < NT; ++iT) {
 
         const auto temp = Tmin + static_cast<double>(iT) * dT;
 
         ofs_thermo << std::setw(16) << std::fixed << temp;
         ofs_thermo << std::setw(18) << std::scientific << heat_capacity[iT] / k_Boltzmann;
+        if (print_anharmonic_correction_Cv) {
+            ofs_thermo << std::setw(18) << std::scientific << heat_capacity_correction[iT] / k_Boltzmann;
+        }
         ofs_thermo << std::setw(18) << FE_QHA[iT];
         ofs_thermo << std::setw(18) << dFE_scph[iT];
 
