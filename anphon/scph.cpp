@@ -935,7 +935,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
         if (self_offdiag) {
 
             // All matrix elements will be calculated when considering the off-diagonal
-            // elements of phonon selfenergy.
+            // elements of the phonon self-energy (i.e., when considering polarization mixing).
 
 #pragma omp parallel for private(is, js, ks, ret, i)
             for (ii = 0; ii < ns3; ++ii) {
@@ -973,7 +973,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
                         ret += v3_array_at_kpair[i]
                                * evec_in[0][is][ind[i][0]]
-                               * evec_in[ik][js][ind[i][1]]
+                               *evec_in[ik][js][ind[i][1]]
                                * std::conj(evec_in[ik][ks][ind[i][2]]);
                     }
 
@@ -1080,9 +1080,9 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
             if (tune_type == 0) {
                 for (j = 0; j < fcs_group_v4[i].size(); ++j) {
-                    const auto phase = -xk_scph[knum][0] * relvec_v4[i][j].vecs[0][0]
-                                       - xk_scph[knum][1] * relvec_v4[i][j].vecs[0][1]
-                                       - xk_scph[knum][2] * relvec_v4[i][j].vecs[0][2]
+                    const auto phase =  xk_scph[knum][0] * relvec_v4[i][j].vecs[0][0]
+                                       + xk_scph[knum][1] * relvec_v4[i][j].vecs[0][1]
+                                       + xk_scph[knum][2] * relvec_v4[i][j].vecs[0][2]
                                        + xk_scph[jk][0] * (relvec_v4[i][j].vecs[1][0] - relvec_v4[i][j].vecs[2][0])
                                        + xk_scph[jk][1] * (relvec_v4[i][j].vecs[1][1] - relvec_v4[i][j].vecs[2][1])
                                        + xk_scph[jk][2] * (relvec_v4[i][j].vecs[1][2] - relvec_v4[i][j].vecs[2][2]);
@@ -1095,7 +1095,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 for (j = 0; j < fcs_group_v4[i].size(); ++j) {
 
                     for (ii = 0; ii < 3; ++ii) {
-                        phase3[ii] = -xk_scph[knum][ii] * relvec_v4[i][j].vecs[0][ii]
+                        phase3[ii] = xk_scph[knum][ii] * relvec_v4[i][j].vecs[0][ii]
                                      + xk_scph[jk][ii] * (relvec_v4[i][j].vecs[1][ii] - relvec_v4[i][j].vecs[2][ii]);
                         loc3[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
@@ -1118,7 +1118,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
         if (self_offdiag) {
 
             // All matrix elements will be calculated when considering the off-diagonal
-            // elements of phonon selfenergy.
+            // elements of the phonon self-energy (loop diagram).
 
 #pragma omp parallel for private(is, js, ks, ls, ret, i)
             for (ii = 0; ii < ns4; ++ii) {
@@ -1134,8 +1134,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 for (i = 0; i < ngroup_v4; ++i) {
 
                     ret += v4_array_at_kpair[i]
-                           * evec_in[knum][is][ind[i][0]]
-                           * std::conj(evec_in[knum][js][ind[i][1]])
+                           * std::conj(evec_in[knum][is][ind[i][0]])
+                           * evec_in[knum][js][ind[i][1]]
                            * evec_in[jk][ks][ind[i][2]]
                            * std::conj(evec_in[jk][ls][ind[i][3]]);
                 }
@@ -1163,8 +1163,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                     for (i = 0; i < ngroup_v4; ++i) {
 
                         ret += v4_array_at_kpair[i]
-                               * evec_in[knum][is][ind[i][0]]
-                               * std::conj(evec_in[knum][js][ind[i][1]])
+                               * std::conj(evec_in[knum][is][ind[i][0]])
+                               * evec_in[knum][js][ind[i][1]]
                                * evec_in[jk][ks][ind[i][2]]
                                * std::conj(evec_in[jk][ls][ind[i][3]]);
                     }
@@ -1184,8 +1184,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                     for (i = 0; i < ngroup_v4; ++i) {
 
                         ret += v4_array_at_kpair[i]
-                               * evec_in[knum][is][ind[i][0]]
-                               * std::conj(evec_in[knum][is][ind[i][1]])
+                               * std::conj(evec_in[knum][is][ind[i][0]])
+                               * evec_in[knum][is][ind[i][1]]
                                * evec_in[jk][js][ind[i][2]]
                                * std::conj(evec_in[jk][js][ind[i][3]]);
                     }
@@ -1383,9 +1383,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
                 if (tune_type == 0) {
                     for (j = 0; j < fcs_group_v4[i].size(); ++j) {
-                        auto phase = -xk_scph[knum][0] * relvec_v4[i][j].vecs[0][0]
-                                     - xk_scph[knum][1] * relvec_v4[i][j].vecs[0][1]
-                                     - xk_scph[knum][2] * relvec_v4[i][j].vecs[0][2]
+                        auto phase = xk_scph[knum][0] * relvec_v4[i][j].vecs[0][0]
+                                     + xk_scph[knum][1] * relvec_v4[i][j].vecs[0][1]
+                                     + xk_scph[knum][2] * relvec_v4[i][j].vecs[0][2]
                                      + xk_scph[jk_now][0] * (relvec_v4[i][j].vecs[1][0] - relvec_v4[i][j].vecs[2][0])
                                      + xk_scph[jk_now][1] * (relvec_v4[i][j].vecs[1][1] - relvec_v4[i][j].vecs[2][1])
                                      + xk_scph[jk_now][2] * (relvec_v4[i][j].vecs[1][2] - relvec_v4[i][j].vecs[2][2]);
@@ -1398,7 +1398,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                     for (j = 0; j < fcs_group_v4[i].size(); ++j) {
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            phase3[k] = -xk_scph[knum][k] * relvec_v4[i][j].vecs[0][k]
+                            phase3[k] =  xk_scph[knum][k] * relvec_v4[i][j].vecs[0][k]
                                         + xk_scph[jk_now][k] * (relvec_v4[i][j].vecs[1][k]
                                                                 - relvec_v4[i][j].vecs[2][k]);
                             loc3[k] = nint(phase3[k] * dnk[k] * inv2pi) % nk_grid[k] + nk_grid[k] - 1;
@@ -1428,8 +1428,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             for (i = 0; i < ngroup_v4; ++i) {
 
                 ret += v4_array_at_kpair[i]
-                       * evec_in[knum][is_now][ind[i][0]]
-                       * std::conj(evec_in[knum][js_now][ind[i][1]])
+                       * std::conj(evec_in[knum][is_now][ind[i][0]])
+                       * evec_in[knum][js_now][ind[i][1]]
                        * evec_in[jk_now][ks][ind[i][2]]
                        * std::conj(evec_in[jk_now][ls][ind[i][3]]);
             }
