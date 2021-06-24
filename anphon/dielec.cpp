@@ -43,6 +43,9 @@ void Dielec::set_default_variables()
     calc_dielectric_constant = 0;
     dielec = nullptr;
     omega_grid = nullptr;
+    emin = 0.0; emax=1.0;
+    delta_e = 1.0;
+    nomega = 1;
 }
 
 void Dielec::deallocate_variables()
@@ -74,8 +77,10 @@ void Dielec::init()
 
     if (calc_dielectric_constant) {
 
-        if (dynamical->file_born == "") {
-            error->exitall("Dielec::init()", "BORNINFO must be set when DIELEC = 1.");
+        if (mympi->my_rank == 0) {
+            if (dynamical->file_born == "") {
+                error->exitall("Dielec::init()", "BORNINFO must be set when DIELEC = 1.");
+            }
         }
 
         memory->allocate(omega_grid, nomega);
