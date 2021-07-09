@@ -147,7 +147,7 @@ namespace PHON_NS {
         // void exec_scph_relax_main(std::complex<double> ****);
 
         // test / temporary functions
-        void exec_scph_main_check_renormalize(std::complex<double> ****);
+        void exec_scph_main_check_SCP_force(std::complex<double> ****);
         void read_initial_q0(double *);
         void print_force(std::complex<double> *);
 
@@ -186,6 +186,13 @@ namespace PHON_NS {
                                 std::complex<double> ***, 
                                 std::complex<double> ***, 
                                 double *);
+
+        void compute_anharmonic_v1_array(std::complex<double> *, 
+                                         std::complex<double> ***, 
+                                         std::complex<double> ***, 
+                                         double ** , 
+                                         const double ,
+                                         std::complex<double> *);
 
         void calc_new_dymat_with_evec(std::complex<double> ***,
                                       double **,

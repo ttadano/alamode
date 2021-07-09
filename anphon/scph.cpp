@@ -218,7 +218,7 @@ void Scph::exec_scph()
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
         // if(!relax_coordinate){
-            exec_scph_main_check_renormalize(delta_dymat_scph);
+            exec_scph_main_check_SCP_force(delta_dymat_scph);
             //exec_scph_main(delta_dymat_scph);
         // }
         // else{
@@ -876,7 +876,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
 
 // test renormalization of IFC
-void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anharm)
+void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm)
 {
     int ik, is;
     int ik1, is1, is2;
@@ -890,9 +890,13 @@ void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anhar
     double ***omega2_anharm;
     std::complex<double> **delta_v2_array_renormalize;
     std::complex<double> ***evec_anharm_tmp;
+    // original and renormalized IFC
     std::complex<double> *v1_array_original, *v1_array_renormalized;
     std::complex<double> ***v3_array_original, ***v3_array_renormalized;
     std::complex<double> ***v4_array_original, ***v4_array_renormalized;
+
+    // generalized force dF/dq^{(0)}_{\lambda}
+    std::complex<double> *v1_array_SCP;
 
     // internal coordinate
     double *q0;
@@ -902,6 +906,8 @@ void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anhar
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
     // Compute matrix element of 4-phonon interaction
+
+    memory->allocate(v1_array_SCP, ns);
 
     memory->allocate(omega2_anharm, NT, nk, ns);
     memory->allocate(evec_anharm_tmp, nk, ns, ns);
@@ -993,28 +999,13 @@ void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anhar
                 renormalize_v1_array(v1_array_renormalized, v1_array_original, v3_array_original, v4_array_original, q0);
                 renormalize_v2_array(delta_v2_array_renormalize, v3_array_original, v4_array_original, q0);
                 renormalize_v3_array(v3_array_renormalized, v3_array_original, v4_array_original, q0);
-
-                // print force(for test)
-                print_force(v1_array_renormalized);
                 // renormalize_v4_array : no renormalization for quartic IFC in the current implementation
 
+                // print force(for test)
+                // print_force(v1_array_renormalized);
+
                 // solve SCP equation
-
-                // calculate force
-
-                // change structure
-            //}
-
-            // make v4 zero to compute harmonic dispersion(for test)
-            for(ik1 =0; ik1 < nk_irred_interpolate * nk_scph; ik1++){
-                for(is1 = 0; is1 < ns * ns; is1++){
-                    for(is2 = 0; is2 < ns * ns; is2++){
-                        v4_array_renormalized[ik1][is1][is2] = 0.0;
-                    }
-                }
-            }
-            
-            compute_anharmonic_frequency(v4_array_renormalized,
+                compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -1024,9 +1015,15 @@ void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anhar
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
 
-            calc_new_dymat_with_evec(dymat_anharm[iT],
-                                     omega2_anharm[iT],
-                                     evec_anharm_tmp);
+                calc_new_dymat_with_evec(dymat_anharm[iT],
+                                        omega2_anharm[iT],
+                                        evec_anharm_tmp);
+
+                // calculate SCP force
+                compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
+
+                // change structure
+            //}
 
             if (!warmstart_scph) converged_prev = false;
         }
@@ -1040,11 +1037,13 @@ void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anhar
     memory->deallocate(omega2_anharm);
     memory->deallocate(v1_array_original);
     memory->deallocate(v1_array_renormalized);
+    memory->deallocate(delta_v2_array_renormalize);
     memory->deallocate(v4_array_original);
     memory->deallocate(v4_array_renormalized);
     memory->deallocate(v3_array_original);
     memory->deallocate(v3_array_renormalized);
     memory->deallocate(evec_anharm_tmp);
+    memory->deallocate(v1_array_SCP);
 }
 
 
@@ -2066,6 +2065,55 @@ void Scph::renormalize_v3_array(std::complex<double> ***v3_array_renormalized,
                             v4_array_original[ik_irred0*nk_scph+ik][js*ns+is1][is2*ns+is3] * q0[js];
                     }
                 }
+            }
+        }
+    }
+
+}
+
+void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormalized, 
+                            std::complex<double> ***v3_array_renormalized, 
+                            std::complex<double> ***cmat_convert, 
+                            double ** omega2_anharm_T, 
+                            const double T_in,
+                            std::complex<double> *v1_array_SCP)
+{
+    using namespace Eigen;
+
+    int is, js, js1, js2, ik; 
+    double n1, omega1_tmp;
+    std::complex<double> Qtmp;
+    const auto ns = dynamical->neval;
+    // std::complex<double> **v3_array_tmp;
+    MatrixXcd Cmat(ns, ns);
+    MatrixXcd v3mat_original_mode(ns, ns), v3mat_tmp(ns, ns);
+
+    
+    // memory->allocate(v3_array_tmp, ns, ns);
+
+    // get gradient of the BO surface
+    for(is = 0; is < ns; is++){
+        v1_array_SCP[is] = v1_array_renormalized[is];
+    }
+
+    // calculate SCP renormalization
+    for(is = 0; is < ns; is++){
+        for(ik = 0; ik < nk_scph; ik++){
+            // unitary transform phi3 to SCP mode
+            for(js1 = 0; js1 < ns; js1++){
+                for(js2 = 0; js2 < ns; js2++){
+                    Cmat(js2, js1) = cmat_convert[ik][js1][js2]; // transpose
+                    v3mat_original_mode(js1, js2) = v3_array_renormalized[ik][is][js1*ns+js2];
+                }
+            }
+            v3mat_tmp = Cmat * v3mat_original_mode * Cmat.adjoint();
+            
+            // update v1_array_SCP
+            for(js = 0; js < ns; js++){
+                omega1_tmp = std::sqrt(omega2_anharm_T[ik][js]);
+                n1 = thermodynamics->fB(std::sqrt(omega1_tmp), T_in);
+                Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                v1_array_SCP[is] += 2.0 * v3mat_tmp(js, js) * Qtmp;
             }
         }
     }
