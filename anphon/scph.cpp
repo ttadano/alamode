@@ -930,19 +930,6 @@ void Scph::exec_scph_main_check_renormalize(std::complex<double> ****dymat_anhar
                                             relax_coordinate);
     }
     
-    // debug output
-    std::cout << "calculate_v4_array" << std::endl;
-    for(is = 0; is < ns; is++){
-        for(ik = 0; ik < ns; ik++){
-            std::cout << "(js1, js2) =" << is << "," << ik << std::endl;
-            for(is1 = 0; is1 < ns; is1++){
-                for(is2 = 0; is2 < ns; is2++){
-                    std::cout << v4_array_original[0][is1*ns+is2][is*ns+ik] << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        }
-    }
-
     //if (relax_coordinate) { relax_coordinate is always 1
     memory->allocate(v3_array_original, nk, ns, ns * ns);
     memory->allocate(v3_array_renormalized, nk, ns, ns * ns);
@@ -1157,12 +1144,6 @@ void Scph::print_force(std::complex<double> *v1_array_renormalized)
     auto ns = dynamical->neval;
     int is, iatm, ixyz;
     double force[3] = {0.0, 0.0, 0.0};
-
-    // print v1_array_renormalized
-    std::cout << "v1_array_renormalized:" << std::endl;
-    for(is = 0; is < ns; is++){
-        std::cout << v1_array_renormalized[is].real() << " " << v1_array_renormalized[is].imag() << std::endl;
-    }
 
     fout_force.open("force.out");
 
@@ -2003,12 +1984,6 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
         knum_interpolate = kp_irred_interpolate[ik][0].knum;
         knum = kmap_interpolate_to_scph[knum_interpolate];
 
-        // debug output
-        if(ik == 0){
-            std::cout << "knum_interpolate: " << knum_interpolate << std::endl;
-            std::cout << "knum : " << knum << std::endl;
-        }
-
         // calculate renormalization
         for(is1 = 0; is1 < ns; is1++){
             for(is2 = 0; is2 < ns; is2++){
@@ -2026,43 +2001,6 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
             }
         }
 
-        // debug output
-        if(ik == 0){
-            std::cout << "v4_array_original: " << std::endl;
-            for(js1 = 0; js1 < ns; js1++){
-                for(js2 = 0; js2 < ns; js2++){
-                    std::cout << "(js1, js2) = " << js1 << ", " << js2 << std::endl;
-                    for(is1 = 0; is1 < ns; is1++){
-                        for(is2 = 0; is2 < ns; is2++){
-                            std::cout << v4_array_original[ik*nk_scph][is1*ns+is2][js1*ns+js2]  << " ";
-                        }std::cout << std::endl;
-                    }std::cout << std::endl;
-                }
-            }
-        }
-
-        std::cout << "v3_array" << std::endl;
-        if(ik == 0){
-            for(js1 = 0; js1 < ns; js1++){
-                std::cout << "js1 = " << js1 << std::endl;
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        std::cout << v3_array_original[knum][js1][is2*ns+is1] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }
-        }
-
-        //if(ik == 0){
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "Dymat before symmetrize" << std::endl;
-            for(is1 = 0; is1 < ns; is1++){
-                for(is2 = 0; is2 < ns; is2++){
-                    std::cout << Dymat(is1, is2) << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        //}
-
         // unitary transform Dymat
         for(is1 = 0; is1 < ns; is1++){
             for(is2 = 0; is2 < ns; is2++){
@@ -2070,32 +2008,9 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
             }
         }
         Dymat = evec_tmp * Dymat * evec_tmp.adjoint();
-
-        // debug output
-        // if(ik == 0){
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "Dymat before symmetrize" << std::endl;
-            for(is1 = 0; is1 < ns; is1++){
-                for(is2 = 0; is2 < ns; is2++){
-                    std::cout << Dymat(is1, is2) << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        // }
-
         
         // symmetrize dynamical matrix
         symmetrize_dynamical_matrix(ik, Dymat);
-
-        // debug output
-        // if(ik == 0){
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "Dymat after symmetrize" << std::endl;
-            for(is1 = 0; is1 < ns; is1++){
-                for(is2 = 0; is2 < ns; is2++){
-                    std::cout << Dymat(is1, is2) << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        // }
         
         // store to dymat_q
         for(is1 = 0; is1 < ns; is1++){
@@ -2125,15 +2040,6 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
                 delta_v2_array_renormalize[ik][is1*ns+is2] = Dymat(is1, is2);
             }
         }
-        // debug output
-        std::cout << "ik = " << ik << std::endl;
-            std::cout << "Dymat after replicate" << std::endl;
-            for(is1 = 0; is1 < ns; is1++){
-                for(is2 = 0; is2 < ns; is2++){
-                    std::cout << Dymat(is1, is2) << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-
     }
 
     memory->deallocate(dymat_q);
