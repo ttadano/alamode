@@ -146,6 +146,11 @@ namespace PHON_NS {
 
         // void exec_scph_relax_main(std::complex<double> ****);
 
+        // test / temporary functions
+        void exec_scph_main_check_renormalize(std::complex<double> ****);
+        void read_initial_q0(double *);
+        void print_force(std::complex<double> *);
+
         void postprocess(std::complex<double> ****delta_dymat_scph,
                          std::complex<double> ****delta_dymat_scph_plus_bubble);
 
@@ -193,6 +198,7 @@ namespace PHON_NS {
                                           bool &,
                                           std::complex<double> ***,
                                           bool,
+                                          std::complex<double> **,
                                           const unsigned int verbosity);
 
         void exec_interpolation(const unsigned int [3],
