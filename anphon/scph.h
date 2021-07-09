@@ -144,6 +144,8 @@ namespace PHON_NS {
 
         void exec_scph_main(std::complex<double> ****);
 
+        // void exec_scph_relax_main(std::complex<double> ****);
+
         void postprocess(std::complex<double> ****delta_dymat_scph,
                          std::complex<double> ****delta_dymat_scph_plus_bubble);
 
@@ -163,6 +165,22 @@ namespace PHON_NS {
         void zerofill_elements_acoustic_at_gamma(double **,
                                                  std::complex<double> ***,
                                                  const int) const;
+
+        void renormalize_v1_array(std::complex<double> *, 
+                                std::complex<double> *, 
+                                std::complex<double> ***, 
+                                std::complex<double> ***,
+                                double *);
+
+        void renormalize_v2_array(std::complex<double> **, 
+                                std::complex<double> ***, 
+                                std::complex<double> ***,  
+                                double *);
+
+        void renormalize_v3_array(std::complex<double> ***,
+                                std::complex<double> ***, 
+                                std::complex<double> ***, 
+                                double *);
 
         void calc_new_dymat_with_evec(std::complex<double> ***,
                                       double **,
