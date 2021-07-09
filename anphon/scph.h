@@ -142,17 +142,24 @@ namespace PHON_NS {
 
         void store_scph_dymat_to_file(std::complex<double> ****);
 
+        void zerofill_harmonic_dymat_renormalize(std::complex<double> ****, 
+                                               unsigned int);
+
         void exec_scph_main(std::complex<double> ****);
 
         // void exec_scph_relax_main(std::complex<double> ****);
 
         // test / temporary functions
-        void exec_scph_main_check_SCP_force(std::complex<double> ****);
+        void exec_scph_main_check_SCP_force(std::complex<double> ****,
+                                            std::complex<double> ****);
         void read_initial_q0(double *);
         void print_force(std::complex<double> *);
 
-        void postprocess(std::complex<double> ****delta_dymat_scph,
-                         std::complex<double> ****delta_dymat_scph_plus_bubble);
+        // void postprocess(std::complex<double> ****delta_dymat_scph,
+        //                  std::complex<double> ****delta_dymat_scph_plus_bubble);
+        void postprocess(std::complex<double> ****,
+                         std::complex<double> ****,
+                         std::complex<double> ****);
 
         void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
                                                  std::complex<double> ***,
@@ -188,6 +195,7 @@ namespace PHON_NS {
                                 double *);
 
         void compute_anharmonic_v1_array(std::complex<double> *, 
+                                         std::complex<double> ***, 
                                          std::complex<double> ***, 
                                          std::complex<double> ***, 
                                          double ** , 

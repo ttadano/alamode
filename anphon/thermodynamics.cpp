@@ -752,14 +752,20 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
 
 double Thermodynamics::FE_scph_correction(unsigned int iT,
                                           double **eval,
-                                          std::complex<double> ***evec) const
-{
+                                          std::complex<double> ***evec,
+                                          double **eval_harm_renormalized,
+                                          std::complex<double> ***evec_harm_renormalized) const
+{   
+    using namespace Eigen;
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
     const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
     const auto N = nk * ns;
 
     double ret = 0.0;
+
+    MatrixXcd Cmat(ns, ns);
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
 
 #pragma omp parallel for reduction(+ : ret)
     for (int i = 0; i < N; ++i) {
@@ -768,8 +774,49 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         const auto omega = eval[ik][is];
         if (std::abs(omega) < eps6) continue;
 
+        // calculate Cmat
+        //if(is == 0){ // is == 0 can be skipped because it contains acoustic mode at ik = 0
+            for(int js = 0; js < ns; js++){
+                for(int ks = 0; ks < ns; ks++){
+                    Cmat(js, ks) = 0.0;
+                    for(int ls = 0; ls < ns; ls++){
+                        Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls]) 
+                                        * evec[ik][ks][ls];
+                    }
+                }
+            }
+        //}
+
         auto tmp_c = std::complex<double>(0.0, 0.0);
 
+        for(int js = 0; js < ns; js++){
+            tmp_c += std::conj(Cmat(js, is)) * std::pow(eval_harm_renormalized[ik][js], 2) * Cmat(js, is);
+        }
+
+        // debug
+        if(iT == 0 && ik <3 && is == 0){
+            std::cout << "ik = " << ik << std::endl;
+            std::cout << "harmonic freq: " << std::endl;
+            for(int js = 0; js < ns; js++){
+                std::cout << eval_harm_renormalized[ik][js] << " " << dynamical->eval_phonon[ik][js] << std::endl;
+            }
+            std::cout << "harmonic evec original: " << std::endl;
+            for(int js = 0; js < ns; js++){
+                for(int ks = 0; ks < ns; ks++){
+                    std::cout << dynamical->evec_phonon[ik][js][ks] << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+
+            std::cout << "harmonic evec renormalized: " << std::endl;
+            for(int js = 0; js < ns; js++){
+                for(int ks = 0; ks < ns; ks++){
+                    std::cout << evec_harm_renormalized[ik][js][ks] << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }
+
+        // debug
+        auto tmp_c2 = std::complex<double>(0.0, 0.0);
         for (int js = 0; js < ns; ++js) {
             auto omega2_harm = dynamical->eval_phonon[ik][js];
             if (omega2_harm >= 0.0) {
@@ -777,16 +824,22 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
             } else {
                 omega2_harm = -std::pow(omega2_harm, 2);
             }
-
+        
             for (int ks = 0; ks < ns; ++ks) {
                 for (int ls = 0; ls < ns; ++ls) {
-                    tmp_c += omega2_harm
+                    tmp_c2 += omega2_harm
                              * dynamical->evec_phonon[ik][js][ks]
                              * std::conj(dynamical->evec_phonon[ik][js][ls])
                              * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
                 }
             }
         }
+        if(iT == 0 && ik <3){
+            std::cout << "ik, is = " << ik << " " << is << std::endl;
+            std::cout << "tmp_c = " << tmp_c << " " << "tmp_c2 " << tmp_c2 << std::endl;
+        }
+
+
 
         if (thermodynamics->classical) {
             ret += (tmp_c.real() - omega * omega) * thermodynamics->fC(omega, temp) / (4.0 * omega);
