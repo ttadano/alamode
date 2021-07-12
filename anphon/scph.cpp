@@ -1093,13 +1093,7 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
                                         evec_anharm_tmp);
 
                 // calculate SCP force
-                compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, evec_anharm_tmp, omega2_anharm[iT], temp, v1_array_SCP);
-
-                // debug
-                std::cout << "v1_array_SCP" << std::endl;
-                for(is = 0; is < ns; is++){
-                    std::cout << v1_array_original[is] << " ";
-                }std::cout << std::endl;
+                compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
 
                 // check force
                 dFdq_q = 0.0;
@@ -2192,24 +2186,6 @@ void Scph::renormalize_v3_array(std::complex<double> ***v3_array_renormalized,
                 }
             }
         }
-        // debug
-        if(ik < 2){
-            for(is1 = 0; is1 < ns; is1++){
-                std::cout << "is1 = " << is1 << std::endl;
-                std::cout << "v3_array_original" << std::endl;
-                for(int is2 = 0; is2 < ns; is2++){
-                    for(int is3 = 0; is3 < ns; is3++){
-                        std::cout << v3_array_original[ik][is1][is2*ns+is3] << " ";
-                    }
-                }
-                std::cout << "v3_array_renormalized" << std::endl;
-                for(int is2 = 0; is2 < ns; is2++){
-                    for(int is3 = 0; is3 < ns; is3++){
-                        std::cout << v3_array_renormalized[ik][is1][is2*ns+is3] << " ";
-                    }
-                }
-            }
-        }
     }
 
 }
@@ -2217,7 +2193,6 @@ void Scph::renormalize_v3_array(std::complex<double> ***v3_array_renormalized,
 void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormalized, 
                             std::complex<double> ***v3_array_renormalized, 
                             std::complex<double> ***cmat_convert, 
-                            std::complex<double> ***evec_anharm_tmp,
                             double ** omega2_anharm_T, 
                             const double T_in,
                             std::complex<double> *v1_array_SCP)
@@ -2232,12 +2207,9 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormaliz
     MatrixXcd Cmat(ns, ns);
     MatrixXcd v3mat_original_mode(ns, ns), v3mat_tmp(ns, ns);
 
-    
-    // memory->allocate(v3_array_tmp, ns, ns);
-
     // get gradient of the BO surface
     for(is = 0; is < ns; is++){
-        //1_array_SCP[is] = v1_array_renormalized[is];
+        // v1_array_SCP[is] = v1_array_renormalized[is];
         v1_array_SCP[is] = 0.0; // for test
     }
 
@@ -2247,37 +2219,16 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormaliz
             // unitary transform phi3 to SCP mode
             for(js1 = 0; js1 < ns; js1++){
                 for(js2 = 0; js2 < ns; js2++){
-                    //Cmat(js2, js1) = cmat_convert[ik][js1][js2]; // transpose
-                    Cmat(js2, js1) = 0.0;
-                    for(int js3 = 0; js3 < ns; js3++){
-                        Cmat(js2, js1) += std::conj(evec_harmonic[ik][js1][js3]) * evec_anharm_tmp[ik][js2][js3];
-                    }
+                    Cmat(js2, js1) = cmat_convert[ik][js1][js2]; // transpose
                     v3mat_original_mode(js1, js2) = v3_array_renormalized[ik][is][js1*ns+js2];
                 }
             }
             v3mat_tmp = Cmat * v3mat_original_mode * Cmat.adjoint();
-
-            // debug
-            if(ik < 2){
-                std::cout << "is = " << is << std::endl;
-                std::cout << "Cmat:" << std::endl;
-                for(js1 = 0; js1 < ns; js1++){
-                    for(js2 = 0; js2 < ns; js2++){
-                        std::cout << Cmat(js2, js1) << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-                std::cout << "cmat_convert:" << std::endl;
-                for(js1 = 0; js1 < ns; js1++){
-                    for(js2 = 0; js2 < ns; js2++){
-                        std::cout << cmat_convert[ik][js1][js2] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }
             
             // update v1_array_SCP
             for(js = 0; js < ns; js++){
-                omega1_tmp = std::sqrt(omega2_anharm_T[ik][js]);
-                if (std::abs(omega1_tmp) < eps6) {
+                omega1_tmp = std::sqrt(std::fabs(omega2_anharm_T[ik][js]));
+                if (std::abs(omega1_tmp) < eps8) {
                     Qtmp = 0.0;
                 }
                 else{

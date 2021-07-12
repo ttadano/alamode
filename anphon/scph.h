@@ -197,7 +197,6 @@ namespace PHON_NS {
         void compute_anharmonic_v1_array(std::complex<double> *, 
                                          std::complex<double> ***, 
                                          std::complex<double> ***, 
-                                         std::complex<double> ***, 
                                          double ** , 
                                          const double ,
                                          std::complex<double> *);

@@ -793,54 +793,6 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
             tmp_c += std::conj(Cmat(js, is)) * std::pow(eval_harm_renormalized[ik][js], 2) * Cmat(js, is);
         }
 
-        // debug
-        if(iT == 0 && ik <3 && is == 0){
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "harmonic freq: " << std::endl;
-            for(int js = 0; js < ns; js++){
-                std::cout << eval_harm_renormalized[ik][js] << " " << dynamical->eval_phonon[ik][js] << std::endl;
-            }
-            std::cout << "harmonic evec original: " << std::endl;
-            for(int js = 0; js < ns; js++){
-                for(int ks = 0; ks < ns; ks++){
-                    std::cout << dynamical->evec_phonon[ik][js][ks] << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-
-            std::cout << "harmonic evec renormalized: " << std::endl;
-            for(int js = 0; js < ns; js++){
-                for(int ks = 0; ks < ns; ks++){
-                    std::cout << evec_harm_renormalized[ik][js][ks] << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        }
-
-        // debug
-        auto tmp_c2 = std::complex<double>(0.0, 0.0);
-        for (int js = 0; js < ns; ++js) {
-            auto omega2_harm = dynamical->eval_phonon[ik][js];
-            if (omega2_harm >= 0.0) {
-                omega2_harm = std::pow(omega2_harm, 2);
-            } else {
-                omega2_harm = -std::pow(omega2_harm, 2);
-            }
-        
-            for (int ks = 0; ks < ns; ++ks) {
-                for (int ls = 0; ls < ns; ++ls) {
-                    tmp_c2 += omega2_harm
-                             * dynamical->evec_phonon[ik][js][ks]
-                             * std::conj(dynamical->evec_phonon[ik][js][ls])
-                             * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
-                }
-            }
-        }
-        if(iT == 0 && ik <3){
-            std::cout << "ik, is = " << ik << " " << is << std::endl;
-            std::cout << "tmp_c = " << tmp_c << " " << "tmp_c2 " << tmp_c2 << std::endl;
-        }
-
-
-
         if (thermodynamics->classical) {
             ret += (tmp_c.real() - omega * omega) * thermodynamics->fC(omega, temp) / (4.0 * omega);
         } else {
