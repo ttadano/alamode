@@ -920,7 +920,9 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                           std::complex<double> ****delta_harmonic_dymat_renormalize)
 {
-    int ik, is;
+    using namespace Eigen;
+
+    int ik, is, js;
     int ik1, is1, is2;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
@@ -947,14 +949,19 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
     // structure optimization
     int i_str_loop;
-    double dq0, dq0_tmp;
+    double dq0;
+    MatrixXcd Cmat(ns, ns), v2_mat_full(ns, ns);
+    MatrixXcd v2_mat_optical(ns-3, ns-3);
+    VectorXcd dq0_vec(ns-3), v1_vec_SCP(ns-3);
     // structure optimization(to be read from input file)
+    int str_opt_algo = 1; // 0: steepest gradient, 1: iterative solution of linear equation
     int max_str_loop = 100;
     double alpha_steepest_decent = 1.0e4;
+    double mixing_beta = 0.7;
     double dq0_threashold = 0.001;
 
     // internal coordinate
-    double *q0;
+    double *q0, *delta_q0;
 
     std::vector<double> vec_temp;
 
@@ -976,6 +983,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     memory->allocate(delta_v2_array_renormalize, nk, ns*ns);
 
     memory->allocate(q0, ns);
+    memory->allocate(delta_q0, ns);
 
     memory->allocate(v4_array_original, nk_irred_interpolate * nk_scph,
                      ns * ns, ns * ns);
@@ -1113,29 +1121,89 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // fout_SCP_force << temp << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
 
                 // change structure(is = 0,1,2 are TA modes)
-                dq0 = 0.0;
                 for(is = 0; is < ns; is++){
-                    // skip acoustic mode
-                    if(std::fabs(omega2_anharm[iT][0][is]) < eps8){
-                        continue;
-                    }
-                    dq0_tmp = - alpha_steepest_decent * v1_array_SCP[is].real();
-                    q0[is] += dq0_tmp;
-                    dq0 += dq0_tmp * dq0_tmp;
+                    delta_q0[is] = 0.0;
                 }
-                dq0 = std::sqrt(dq0);
+                if(str_opt_algo == 0){ // steepest decent
+                    dq0 = 0.0;
+                    for(is = 0; is < ns; is++){
+                        // skip acoustic mode
+                        if(std::fabs(omega2_anharm[iT][0][is]) < eps8){
+                            continue;
+                        }
+                        delta_q0[is] = - alpha_steepest_decent * v1_array_SCP[is].real();
+                        q0[is] += delta_q0[is];
+                    }
+                   
+                }
+                else if(str_opt_algo == 1){ // iterative solution of linear equation
 
-                // debug
+                    // prepare harmonic IFC matrix
+                    for(is = 0; is < ns; is++){
+                        for(js = 0; js < ns; js++){
+                            Cmat(js, is) = cmat_convert[0][is][js]; // transpose
+                            v2_mat_full(is, js) = 0.0;
+                        }
+                        v2_mat_full(is, is) = omega2_anharm[iT][0][is];
+                    }
+                    v2_mat_full = Cmat.adjoint() * v2_mat_full * Cmat;
+
+                    for(is = 0; is < ns-3; is++){
+                        for(js = 0; js < ns-3; js++){
+                            v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
+                        }
+                    }
+                    // solve linear equation
+                    for(is = 0; is < ns-3; is++){
+                        v1_vec_SCP(is) = v1_array_SCP[is+3];
+                    }
+                    // debug
+                    std::cout << "v1_vec_SCP" << std::endl;
+                    for(is = 0; is < ns-3; is++){
+                        std::cout << v1_vec_SCP(is) << " ";
+                    }std::cout << std::endl << std::endl;
+                    
+                    dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_SCP);
+
+                    // update q0
+                    dq0 = 0.0;
+                    for(is = 0; is < ns-3; is++){
+                        delta_q0[is+3] = - mixing_beta * dq0_vec(is).real();
+                        q0[is+3] += delta_q0[is+3];
+                    }
+
+                    // debug
+                    std::cout << "v2_mat_full" << std::endl;
+                    for(is = 0; is < ns; is++){
+                        for(js = 0; js < ns; js++){
+                            std::cout << v2_mat_full(is, js) << " ";
+                        }std::cout << std::endl;
+                    }std::cout << std::endl;
+                    // debug
+                    std::cout << "dq0_vec" << std::endl;
+                    for(is = 0; is < ns-3; is++){
+                        std::cout << dq0_vec(is) << " ";
+                    }std::cout << std::endl;
+                }
+
+                // print q0
                 fout_q0 << i_str_loop << " ";
                 for(is = 0; is < ns; is++){
                     fout_q0 << q0[is] << " ";
                 }fout_q0 << std::endl;
+
+                // check convergence
+                dq0 = 0.0;
+                for(is = 0; is < ns; is++){
+                    dq0 += delta_q0[is] * delta_q0[is];
+                }dq0 = std::sqrt(dq0);
 
                 if(dq0 < dq0_threashold){
                     std::cout << "structure optimization converged in " << i_str_loop << "-th loop." << std::endl;
                     std::cout << "break from the structure loop." << std::endl;
                     break;
                 }
+                
             }
 
             if (!warmstart_scph) converged_prev = false;
