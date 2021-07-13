@@ -1134,9 +1134,73 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
 
+            // debug
+            for(ik = 0; ik < 3; ik++){
+                std::cout << "ik = " << ik << std::endl;
+                std::cout << "frequency: ";
+                for(is = 0; is < ns; is++){
+                    std::cout << omega2_harm_renormalize[iT][ik][is] << " ";
+                }std::cout << std::endl;
+                std::cout << "evec: " << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns; is2++){
+                        std::cout << evec_harm_renormalize_tmp[ik][is1][is2];
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+
+            // debug
             calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
                                     omega2_harm_renormalize[iT],
                                     evec_harm_renormalize_tmp);
+            
+            // debug
+            for(ik = 0; ik < 3; ik++){
+                std::cout << "ik = " << ik << std::endl;
+                std::cout << "Dymat: " << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns; is2++){
+                        std::cout << delta_harmonic_dymat_renormalize[iT][is1][is2][ik] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+
+            compute_renormalized_harmonic_frequency(omega2_harm_renormalize[iT],
+                                        evec_harm_renormalize_tmp,
+                                        delta_v2_array_renormalize,
+                                        writes->getVerbosity());
+
+            // debug
+            for(ik = 0; ik < 3; ik++){
+                std::cout << "ik = " << ik << std::endl;
+                std::cout << "frequency: ";
+                for(is = 0; is < ns; is++){
+                    std::cout << omega2_harm_renormalize[iT][ik][is] << " ";
+                }std::cout << std::endl;
+                std::cout << "evec: " << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns; is2++){
+                        std::cout << evec_harm_renormalize_tmp[ik][is1][is2];
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+
+
+            calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
+                                    omega2_harm_renormalize[iT],
+                                    evec_harm_renormalize_tmp);
+            
+            // debug
+            for(ik = 0; ik < 3; ik++){
+                std::cout << "ik = " << ik << std::endl;
+                std::cout << "Dymat: " << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns; is2++){
+                        std::cout << delta_harmonic_dymat_renormalize[iT][is1][is2][ik] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+
 
         }
 
@@ -3500,6 +3564,17 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
             }
 
+            // debug
+            if(ik < 2 && iloop == 1){
+                std::cout << "ik = " << ik << std::endl;
+                std::cout << "Fmat: " << std::endl;
+                for(is = 0; is < ns; is++){
+                    for(js = 0; js < ns; js++){
+                        std::cout << Fmat(is, js) << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+            }
+
             saes.compute(Fmat);
             eval_tmp = saes.eigenvalues();
 
@@ -3554,6 +3629,17 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             // New eigenvector matrix E_{new}= E_{old} * C
             mat_tmp = evec_tmp.transpose() * saes.eigenvectors();
             Dymat = mat_tmp * Dymat * mat_tmp.adjoint();
+
+            // debug
+            if(ik < 2 && iloop == 1){
+                std::cout << "ik = " << ik << std::endl;
+                std::cout << "Dymat: " << std::endl;
+                for(is = 0; is < ns; is++){
+                    for(js = 0; js < ns; js++){
+                        std::cout << Dymat(is, js) << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+            }
 
 #ifdef _DEBUG2
             Dymat_sym = Dymat;
@@ -3784,6 +3870,181 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     memory->deallocate(Fmat0);
 }
 
+
+void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
+                                        std::complex<double> ***evec_harm_renormalized,
+                                        std::complex<double> **delta_v2_array_renormalize,
+                                        const unsigned int verbosity)
+{
+    using namespace Eigen;
+
+    int ik, jk;
+    int is, js;
+    const auto nk = nk_scph;
+    const auto ns = dynamical->neval;
+    unsigned int knum, knum_interpolate;
+    const auto nk_irred_interpolate = kp_irred_interpolate.size();
+    const auto nk1 = kmesh_interpolate[0];
+    const auto nk2 = kmesh_interpolate[1];
+    const auto nk3 = kmesh_interpolate[2];
+
+    //MatrixXd omega_now(nk, ns), omega_old(nk, ns);
+    //MatrixXd omega2_HA(nk, ns);
+    MatrixXcd evec_tmp(ns, ns);
+
+    MatrixXcd Dymat(ns, ns);
+    MatrixXcd Fmat(ns, ns);
+
+    double diff;
+    double conv_tol = tolerance_scph;
+    double alpha = mixalpha;
+
+    double **eval_interpolate;
+    double re_tmp, im_tmp;
+    bool has_negative;
+
+    // std::complex<double> ctmp;
+    // std::complex<double> ***mat_omega2_harmonic;
+    // std::complex<double> ***evec_initial;
+    // std::complex<double> ***dmat_convert;
+    // std::complex<double> ***dmat_convert_old;
+    // std::complex<double> ***evec_new;
+    std::complex<double> ***dymat_new, ***dymat_harmonic_without_renormalize;
+    std::complex<double> ***dymat_q;
+    // std::complex<double> ***Fmat0;
+
+    const auto complex_one = std::complex<double>(1.0, 0.0);
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    SelfAdjointEigenSolver <MatrixXcd> saes;
+
+    // memory->allocate(mat_omega2_harmonic, nk_interpolate, ns, ns);
+    memory->allocate(eval_interpolate, nk, ns);
+    // memory->allocate(evec_initial, nk, ns, ns);
+    // memory->allocate(evec_new, nk, ns, ns);
+    // memory->allocate(dmat_convert, nk, ns, ns);
+    // memory->allocate(dmat_convert_old, nk, ns, ns);
+    memory->allocate(dymat_new, ns, ns, nk_interpolate);
+    memory->allocate(dymat_q, ns, ns, nk_interpolate);
+    memory->allocate(dymat_harmonic_without_renormalize, nk_interpolate, ns, ns);
+    // memory->allocate(Fmat0, nk_irred_interpolate, ns, ns);
+
+    // Set initial harmonic dymat without IFC renormalization
+
+    for (ik = 0; ik < nk_interpolate; ++ik) {
+        
+        dynamical->calc_analytic_k(xk_interpolate[ik],
+                                   fcs_phonon->fc2_ext,
+                                   dymat_harmonic_without_renormalize[ik]);
+    }
+    
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+        knum_interpolate = kp_irred_interpolate[ik][0].knum;
+        knum = kmap_interpolate_to_scph[knum_interpolate];
+
+        // calculate Fmat
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                if (is == js) {
+                    Fmat(is, js) = omega2_harmonic[knum][is];
+                } else {
+                    Fmat(is, js) = complex_zero;
+                }
+                Fmat(is, js) += delta_v2_array_renormalize[knum_interpolate][is*ns+js];
+            }
+        }
+
+        // debug
+        if(ik < 2){
+            std::cout << "ik = " << ik << std::endl;
+            std::cout << "Fmat: " << std::endl;
+            for(is = 0; is < ns; is++){
+                for(js = 0; js < ns; js++){
+                    std::cout << Fmat(is, js) << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }
+
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                evec_tmp(is, js) = evec_harmonic[knum][js][is]; // transpose
+            }
+        }
+
+        Dymat = evec_tmp * Fmat * evec_tmp.adjoint();
+
+        // debug
+        if(ik < 2){
+            std::cout << "ik = " << ik << std::endl;
+            std::cout << "Dymat: " << std::endl;
+            for(is = 0; is < ns; is++){
+                for(js = 0; js < ns; js++){
+                    std::cout << Dymat(is, js) << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }
+
+        symmetrize_dynamical_matrix(ik, Dymat);
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                dymat_q[is][js][knum_interpolate] = Dymat(is, js);
+            }
+        }
+    }
+
+    replicate_dymat_for_all_kpoints(dymat_q);
+
+    // Subtract harmonic contribution to the dynamical matrix
+    for (ik = 0; ik < nk_interpolate; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                dymat_q[is][js][ik] -= dymat_harmonic_without_renormalize[ik][is][js];
+            }
+        }
+    }
+
+    for (is = 0; is < ns; ++is) {
+        for (js = 0; js < ns; ++js) {
+            fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
+                                                reinterpret_cast<fftw_complex *>(dymat_q[is][js]),
+                                                reinterpret_cast<fftw_complex *>(dymat_new[is][js]),
+                                                FFTW_FORWARD, FFTW_ESTIMATE);
+            fftw_execute(plan);
+            fftw_destroy_plan(plan);
+
+            for (ik = 0; ik < nk_interpolate; ++ik)
+                dymat_new[is][js][ik] /= static_cast<double>(nk_interpolate);
+        }
+    }
+
+    exec_interpolation(kmesh_interpolate,
+                        dymat_new,
+                        nk,
+                        xk_scph,
+                        kvec_na_scph,
+                        eval_interpolate, evec_harm_renormalized);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            if (eval_interpolate[ik][is] < 0.0) {
+                if (std::abs(eval_interpolate[ik][is]) <= eps10) {
+                    omega2_out[ik][is] = 0.0;
+                } else {
+                    omega2_out[ik][is] = -std::pow(eval_interpolate[ik][is], 2.0);
+                }
+            } else {
+                omega2_out[ik][is] = std::pow(eval_interpolate[ik][is], 2.0);
+            }
+        }
+    }
+
+
+    memory->deallocate(dymat_q);
+    memory->deallocate(dymat_new);
+
+
+}
 
 void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                                            std::complex<double> ****delta_dymat_scph)

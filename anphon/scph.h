@@ -215,6 +215,11 @@ namespace PHON_NS {
                                           std::complex<double> **,
                                           const unsigned int verbosity);
 
+        void compute_renormalized_harmonic_frequency(double **,
+                                        std::complex<double> ***,
+                                        std::complex<double> **,
+                                        const unsigned int );
+
         void exec_interpolation(const unsigned int [3],
                                 std::complex<double> ***,
                                 unsigned int,
