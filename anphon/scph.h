@@ -147,11 +147,9 @@ namespace PHON_NS {
 
         void exec_scph_main(std::complex<double> ****);
 
-        // void exec_scph_relax_main(std::complex<double> ****);
+        void exec_scph_relax_main(std::complex<double> ****,
+                                  std::complex<double> ****);
 
-        // test / temporary functions
-        void exec_scph_main_check_SCP_force(std::complex<double> ****,
-                                            std::complex<double> ****);
         void read_initial_q0(double *);
         void print_force(std::complex<double> *);
 

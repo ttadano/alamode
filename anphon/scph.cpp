@@ -224,14 +224,13 @@ void Scph::exec_scph()
                         "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
-        // if(!relax_coordinate){
-            exec_scph_main_check_SCP_force(delta_dymat_scph, delta_harmonic_dymat_renormalize);
-            //exec_scph_main(delta_dymat_scph);
-        // }
-        // else{
-            // write exec_relax_main
-            //exec_scph_relax_main(delta_dymat_scph);
-        // }
+        if(!relax_coordinate){
+            //exec_scph_main_check_SCP_force(delta_dymat_scph, delta_harmonic_dymat_renormalize);
+            exec_scph_main(delta_dymat_scph);
+        }
+        else{
+            exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
+        }
 
         if (mympi->my_rank == 0) {
             store_scph_dymat_to_file(delta_dymat_scph);
@@ -918,7 +917,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 }
 
 // test renormalization of IFC
-void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
+void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                           std::complex<double> ****delta_harmonic_dymat_renormalize)
 {
     int ik, is;
@@ -945,6 +944,14 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
 
     // generalized force dF/dq^{(0)}_{\lambda}
     std::complex<double> *v1_array_SCP;
+
+    // structure optimization
+    int i_str_loop;
+    double dq0, dq0_tmp;
+    // structure optimization(to be read from input file)
+    int max_str_loop = 100;
+    double alpha_steepest_decent = 1.0e4;
+    double dq0_threashold = 0.001;
 
     // internal coordinate
     double *q0;
@@ -1020,9 +1027,11 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
         auto converged_prev = false;
 
         // this is for test
-        std::ofstream fout_SCP_force;
-        fout_SCP_force.open("SCP_force.out");
-        std::complex<double> dFdq_q;
+        // std::ofstream fout_SCP_force;
+        // fout_SCP_force.open("SCP_force.out");
+        // std::complex<double> dFdq_q;
+        std::ofstream fout_q0;
+        fout_q0.open("q0.txt");
 
         for (double temp : vec_temp) {
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
@@ -1056,7 +1065,12 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
             read_initial_q0(q0);
 
             // structure loop
-            // for(){
+            std::cout << "temperature : " << temp << " K" << std::endl;
+            std::cout << "start structural optimization";
+            for(i_str_loop = 0; i_str_loop < max_str_loop; i_str_loop++){
+
+                std::cout << "i_str_loop = " << i_str_loop << std::endl;
+
                 //renormalize IFC
                 renormalize_v1_array(v1_array_renormalized, v1_array_original, v3_array_original, v4_array_original, q0);
                 renormalize_v2_array(delta_v2_array_renormalize, v3_array_original, v4_array_original, q0);
@@ -1092,14 +1106,37 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
                 compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
 
                 // check force
-                dFdq_q = 0.0;
-                for(is = 0; is < ns; is++){
-                    dFdq_q += q0[is] * v1_array_SCP[is];
-                }
-                fout_SCP_force << temp << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
+                // dFdq_q = 0.0;
+                // for(is = 0; is < ns; is++){
+                //     dFdq_q += q0[is] * v1_array_SCP[is];
+                // }
+                // fout_SCP_force << temp << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
 
-                // change structure
-            //}
+                // change structure(is = 0,1,2 are TA modes)
+                dq0 = 0.0;
+                for(is = 0; is < ns; is++){
+                    // skip acoustic mode
+                    if(std::fabs(omega2_anharm[iT][0][is]) < eps8){
+                        continue;
+                    }
+                    dq0_tmp = - alpha_steepest_decent * v1_array_SCP[is].real();
+                    q0[is] += dq0_tmp;
+                    dq0 += dq0_tmp * dq0_tmp;
+                }
+                dq0 = std::sqrt(dq0);
+
+                // debug
+                fout_q0 << i_str_loop << " ";
+                for(is = 0; is < ns; is++){
+                    fout_q0 << q0[is] << " ";
+                }fout_q0 << std::endl;
+
+                if(dq0 < dq0_threashold){
+                    std::cout << "structure optimization converged in " << i_str_loop << "-th loop." << std::endl;
+                    std::cout << "break from the structure loop." << std::endl;
+                    break;
+                }
+            }
 
             if (!warmstart_scph) converged_prev = false;
 
@@ -1131,7 +1168,8 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
         }
 
         // this is for test
-        fout_SCP_force.close();
+        //fout_SCP_force.close();
+        fout_q0.close();
 
         memory->deallocate(cmat_convert);
 
