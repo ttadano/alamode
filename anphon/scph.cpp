@@ -1004,9 +1004,6 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
 
         std::complex<double> ***cmat_convert;
         memory->allocate(cmat_convert, nk, ns, ns);
-        // for renormalization of harmonic dymat 
-        std::complex<double> ***cmat_convert_harm_renormalize;
-        memory->allocate(cmat_convert_harm_renormalize, nk, ns, ns);
 
         vec_temp.clear();
 
@@ -1021,7 +1018,6 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
         }
 
         auto converged_prev = false;
-        auto converged_prev_harm_renormalize = false;
 
         // this is for test
         std::ofstream fout_SCP_force;
@@ -1123,92 +1119,21 @@ void Scph::exec_scph_main_check_SCP_force(std::complex<double> ****dymat_anharm,
                     }
                 }
             }
-            converged_prev_harm_renormalize = false;
-            compute_anharmonic_frequency(v4_array_renormalized,
-                                         omega2_harm_renormalize[iT],
-                                         evec_harm_renormalize_tmp,
-                                         temp,
-                                         converged_prev_harm_renormalize,
-                                         cmat_convert_harm_renormalize,
-                                         selfenergy_offdiagonal,
-                                         delta_v2_array_renormalize, 
-                                         writes->getVerbosity());
-
-            // debug
-            for(ik = 0; ik < 3; ik++){
-                std::cout << "ik = " << ik << std::endl;
-                std::cout << "frequency: ";
-                for(is = 0; is < ns; is++){
-                    std::cout << omega2_harm_renormalize[iT][ik][is] << " ";
-                }std::cout << std::endl;
-                std::cout << "evec: " << std::endl;
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        std::cout << evec_harm_renormalize_tmp[ik][is1][is2];
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-
-            // debug
-            calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
-                                    omega2_harm_renormalize[iT],
-                                    evec_harm_renormalize_tmp);
-            
-            // debug
-            for(ik = 0; ik < 3; ik++){
-                std::cout << "ik = " << ik << std::endl;
-                std::cout << "Dymat: " << std::endl;
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        std::cout << delta_harmonic_dymat_renormalize[iT][is1][is2][ik] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }std::cout << std::endl;
 
             compute_renormalized_harmonic_frequency(omega2_harm_renormalize[iT],
                                         evec_harm_renormalize_tmp,
                                         delta_v2_array_renormalize,
                                         writes->getVerbosity());
 
-            // debug
-            for(ik = 0; ik < 3; ik++){
-                std::cout << "ik = " << ik << std::endl;
-                std::cout << "frequency: ";
-                for(is = 0; is < ns; is++){
-                    std::cout << omega2_harm_renormalize[iT][ik][is] << " ";
-                }std::cout << std::endl;
-                std::cout << "evec: " << std::endl;
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        std::cout << evec_harm_renormalize_tmp[ik][is1][is2];
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-
-
             calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
                                     omega2_harm_renormalize[iT],
                                     evec_harm_renormalize_tmp);
-            
-            // debug
-            for(ik = 0; ik < 3; ik++){
-                std::cout << "ik = " << ik << std::endl;
-                std::cout << "Dymat: " << std::endl;
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        std::cout << delta_harmonic_dymat_renormalize[iT][is1][is2][ik] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-
-
         }
 
         // this is for test
         fout_SCP_force.close();
 
         memory->deallocate(cmat_convert);
-        memory->deallocate(cmat_convert_harm_renormalize);
 
     }
 
@@ -2273,8 +2198,8 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormaliz
 
     // get gradient of the BO surface
     for(is = 0; is < ns; is++){
-        // v1_array_SCP[is] = v1_array_renormalized[is];
-        v1_array_SCP[is] = 0.0; // for test
+        v1_array_SCP[is] = v1_array_renormalized[is];
+        // v1_array_SCP[is] = 0.0; // for test
     }
 
     // calculate SCP renormalization
@@ -3564,17 +3489,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
             }
 
-            // debug
-            if(ik < 2 && iloop == 1){
-                std::cout << "ik = " << ik << std::endl;
-                std::cout << "Fmat: " << std::endl;
-                for(is = 0; is < ns; is++){
-                    for(js = 0; js < ns; js++){
-                        std::cout << Fmat(is, js) << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }
-
             saes.compute(Fmat);
             eval_tmp = saes.eigenvalues();
 
@@ -3629,17 +3543,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             // New eigenvector matrix E_{new}= E_{old} * C
             mat_tmp = evec_tmp.transpose() * saes.eigenvectors();
             Dymat = mat_tmp * Dymat * mat_tmp.adjoint();
-
-            // debug
-            if(ik < 2 && iloop == 1){
-                std::cout << "ik = " << ik << std::endl;
-                std::cout << "Dymat: " << std::endl;
-                for(is = 0; is < ns; is++){
-                    for(js = 0; js < ns; js++){
-                        std::cout << Dymat(is, js) << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }
 
 #ifdef _DEBUG2
             Dymat_sym = Dymat;
@@ -3955,17 +3858,6 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
             }
         }
 
-        // debug
-        if(ik < 2){
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "Fmat: " << std::endl;
-            for(is = 0; is < ns; is++){
-                for(js = 0; js < ns; js++){
-                    std::cout << Fmat(is, js) << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        }
-
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
                 evec_tmp(is, js) = evec_harmonic[knum][js][is]; // transpose
@@ -3973,17 +3865,6 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
         }
 
         Dymat = evec_tmp * Fmat * evec_tmp.adjoint();
-
-        // debug
-        if(ik < 2){
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "Dymat: " << std::endl;
-            for(is = 0; is < ns; is++){
-                for(js = 0; js < ns; js++){
-                    std::cout << Dymat(is, js) << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
-        }
 
         symmetrize_dynamical_matrix(ik, Dymat);
         for (is = 0; is < ns; ++is) {
