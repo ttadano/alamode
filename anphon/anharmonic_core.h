@@ -11,11 +11,34 @@ or http://opensource.org/licenses/mit-license.php for information.
 #pragma once
 
 #include "pointers.h"
+#include "kpoint.h"
 #include <complex>
 #include <vector>
 #include "fcs_phonon.h"
 
 namespace PHON_NS {
+
+    struct QuartS {
+        // for an (k,s)
+        // we store for a single k quartic pair and {s1,s2,s3}, with the smearing result,
+        // only for smearing method
+        
+        int s1,s2,s3;
+
+        double delta1;
+        double delta2;
+
+        QuartS();
+        QuartS(int in1, int in2, int in3):
+                s1(in1), s2(in2), s3(in3) { }
+
+        QuartS(int in1, int in2, int in3,
+               double d1, double d2):
+                s1(in1), s2(in2), s3(in3), 
+                delta1(d1),
+                delta2(d2) { }
+    };
+
     class KsListMode {
     public:
         double xk[3]{};
@@ -107,6 +130,24 @@ namespace PHON_NS {
                                       unsigned int,
                                       double *);
 
+        void calc_damping4_smearing(unsigned int,
+                                   double *,
+                                   double,
+                                   unsigned int,
+                                   unsigned int,
+                                   double *);
+
+        void calc_damping4_smearing_new(unsigned int,
+                                   double *,
+                                   double,
+                                   unsigned int,
+                                   unsigned int,
+                                   double *);
+        // a wrapper to return v3
+        //std::complex<double> get_v3(const unsigned int [3],
+        //                        double **,
+        //                        std::complex<double> ***);
+
         int quartic_mode;
         bool use_tuned_ver;
         bool use_triplet_symmetry;
@@ -142,10 +183,6 @@ namespace PHON_NS {
                                      int,
                                      double **,
                                      std::complex<double> ***) const;
-
-        void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                     unsigned int,
-                                     double ***) const;
 
         void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                      unsigned int,
@@ -201,6 +238,12 @@ namespace PHON_NS {
         void setup_cubic();
 
         void setup_quartic();
+
+        std::vector<std::vector<QuartS>> reduce_pair(const int, const int, const double, 
+                                                     const int, std::vector<KsListGroup> &);
+
+        void reduce_pair_simple(const int, const int, const double, 
+                                                     const int, std::vector<KsListGroup> &);
 
         void store_exponential_for_acceleration(const int nk_in[3],
                                                 int &,

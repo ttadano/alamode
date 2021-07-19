@@ -15,6 +15,9 @@
 #include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
+#include "phonon_velocity.h"
+#include "dynamical.h"
+#include "anharmonic_core.h"
 #include <iomanip>
 #include <vector>
 #include <algorithm>
@@ -36,9 +39,12 @@ void Integration::set_default_variables()
 {
     use_tetrahedron = true;
     ismear = -1;
+    ismear_4ph = 1;
     epsilon = 0.0;
     ntetra = 0;
     tetras = nullptr;
+    vel = nullptr;
+    dq = nullptr;
 }
 
 void Integration::deallocate_variables()
@@ -46,12 +52,15 @@ void Integration::deallocate_variables()
     if (tetras) {
         memory->deallocate(tetras);
     }
+    if (ismear == 2 || ismear_4ph == 2) {
+    }
 }
 
 
 void Integration::setup_integration()
 {
     MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ismear_4ph, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     const auto nk = kpoint->nk;
     const auto nkx = kpoint->nkx;
@@ -68,22 +77,128 @@ void Integration::setup_integration()
         } else if (ismear == 1) {
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+        } else if (ismear == 2) {
+            std::cout << " ISMEAR = 2: adaptive method will be used." << std::endl;
         } else {
-            error->exit("setup_relaxation", "Invalid ksum_mode");
+            error->exit("setup_relaxation", "Invalid ismear");
         }
         std::cout << std::endl;
+
+        if (anharmonic_core->quartic_mode) {
+
+            std::cout << " -- QUARTIC > 0: 4ph scattering will calculated with flag ISMEAR_4PH --" << std::endl;
+            if (ismear_4ph == -1) {
+                std::cout << "Tetrahedron method is not implemented, changed to adaptive smearing !" << std::endl;
+                ismear_4ph = 2;
+            } else if (ismear_4ph == 0) {
+                std::cout << " ISMEAR_4PH = 0: Lorentzian broadening with epsilon = "
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+            } else if (ismear_4ph == 1) {
+                std::cout << " ISMEAR_4PH = 1: Gaussian broadening with epsilon = "
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+            } else if (ismear_4ph == 2) {
+                std::cout << " ISMEAR_4PH = 2: Adaptive smearing method will be used " << std::endl;
+            } else {
+                error->exit("setup_relaxation", "Invalid ismear_4ph");
+            }
+        
+            std::cout << std::endl;
+        }
     }
 
     if (ismear == -1) {
         ntetra = 6 * nk;
         memory->allocate(tetras, ntetra, 4);
         prepare_tetrahedron(nkx, nky, nkz);
+    } 
+    if (ismear == 2 || ismear_4ph == 2) {
+        prepare_adaptivesmearing();
     }
 
     epsilon *= time_ry / Hz_to_kayser;
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
+void Integration::prepare_adaptivesmearing()
+{
+    auto nk = kpoint->nk;
+    auto ns = dynamical->neval;
+
+    memory->allocate(vel,nk,ns,3);
+    phonon_velocity->calc_phonon_vel_mesh(vel);  //this will gather to rank0 process
+
+    MPI_Bcast(&vel[0][0][0], nk * ns * 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    int nka[3];
+
+    nka[0] = kpoint->nkx;
+    nka[1] = kpoint->nky;
+    nka[2] = kpoint->nkz;
+
+    memory->allocate(dq,3,3);
+
+    for (auto u = 0; u < 3; u++) {
+        for (auto a = 0; a < 3; a++) {
+            dq[u][a] = system->rlavec_p[u][a] / nka[u];
+        }
+    }
+}
+
+void Integration::adaptive_smearing(const int k1, const int s1,
+                                    const int k2, const int s2,
+                                    double *smear)
+{
+    double vel_diff;
+    double parts[2];
+    double tmp[2];
+    int i;
+
+    for (i = 0; i < 2; ++i) parts[i] = 0;
+
+    for (auto u = 0; u < 3; ++u) {
+
+        for (i = 0; i < 2; ++i) tmp[i] = 0;
+
+        for (auto a = 0; a < 3; ++a) {
+            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * dq[u][a];
+            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * dq[u][a];
+        }
+
+        for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
+    }
+    
+    smear[0] = std::max( 2.0e-5, std::sqrt( (parts[0]) / 12) ); // for (w1 - w2 - w3)
+    smear[1] = std::max( 2.0e-5, std::sqrt( (parts[1]) / 12) ); // for (w1 + w3 - w3)
+    // 2.0e-5 ry ~ 3 cm^-1
+}
+
+void Integration::adaptive_smearing(const int k2, const int s2,
+                                    const int k3, const int s3,
+                                    const int k4, const int s4,
+                                    double *smear)
+{
+    double vel_diff;
+    double parts[3];
+    double tmp[3];
+    int i;
+    for (i = 0; i < 3; ++i) parts[i] = 0;
+
+    for (auto u = 0; u < 3; ++u) {
+
+        for (i = 0; i < 3; ++i) tmp[i] = 0;
+
+        for (auto a = 0; a < 3; ++a) {
+            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * dq[u][a];
+            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * dq[u][a];
+            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * dq[u][a];
+        }
+
+        for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
+    }
+    
+    smear[0] = std::max( 2.0e-5, std::sqrt( (parts[0]+parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
+    smear[1] = std::max( 2.0e-5, std::sqrt( (parts[2]+parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
+}
 
 void Integration::prepare_tetrahedron(const int nk1,
                                       const int nk2,

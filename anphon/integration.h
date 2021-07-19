@@ -46,6 +46,7 @@ namespace PHON_NS {
 
         bool use_tetrahedron;
         int ismear;
+        int ismear_4ph;
         double epsilon;
 
         void setup_integration();
@@ -77,6 +78,13 @@ namespace PHON_NS {
                                   double,
                                   int) const;
 
+        // overload for 3ph or 4ph
+        void adaptive_smearing( int,int,int,int,
+                                double *);
+
+        void adaptive_smearing( int,int,int,int,
+                                int,int,double *);
+
     private:
         void set_default_variables();
 
@@ -84,10 +92,15 @@ namespace PHON_NS {
 
         unsigned int ntetra;
         int **tetras;
+        // for adaptive smearing
+        double ***vel;
+        double **dq;
 
         void prepare_tetrahedron(int,
                                  int,
                                  int) const;
+
+        void prepare_adaptivesmearing();
 
         inline double fij(double,
                           double,

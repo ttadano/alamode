@@ -37,7 +37,16 @@ namespace PHON_NS {
 
         void write_selfenergy_isotope() const;
 
+
+
+
+
         bool print_zmode;
+
+
+
+
+
 
         double in_kayser(const double) const;
 
@@ -79,8 +88,8 @@ namespace PHON_NS {
         bool getPrintUcorr() const;
         std::array<int, 3> getShiftUcorr() const;
 
-        std::fstream fs_result;
-        std::string file_result;
+        std::fstream fs_result, fs_result4;
+        std::string file_result, file_result4;
         int nbands;
 
     private:

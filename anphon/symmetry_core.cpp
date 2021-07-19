@@ -121,7 +121,7 @@ void Symmetry::setup_symmetry_operation(int N,
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-                    ofs_sym << std::setprecision(15) << std::setw(20) << p.tran[i];
+                    ofs_sym << std::setprecision(10) << std::setw(20) << p.tran[i];
                 }
                 ofs_sym << std::endl;
             }

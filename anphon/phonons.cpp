@@ -30,6 +30,7 @@
 #include "anharmonic_core.h"
 #include "mode_analysis.h"
 #include "conductivity.h"
+#include "iterativebte.h"
 #include "isotope.h"
 #include "selfenergy.h"
 #include "version.h"
@@ -132,6 +133,7 @@ void PHON::create_pointers()
     scph = new Scph(this);
     ewald = new Ewald(this);
     dielec = new Dielec(this);
+    iterativebte = new Iterativebte(this);
 }
 
 void PHON::destroy_pointers() const
@@ -158,6 +160,7 @@ void PHON::destroy_pointers() const
     delete scph;
     delete ewald;
     delete dielec;
+    delete iterativebte;
 }
 
 void PHON::setup_base() const
@@ -269,15 +272,28 @@ void PHON::execute_RTA() const
     mode_analysis->setup_mode_analysis();
     selfenergy->setup_selfenergy();
 
+    MPI_Bcast(&iterativebte->do_iterative, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&conductivity->fph_rta, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     if (mode_analysis->ks_analyze_mode) {
         mode_analysis->run_mode_analysis();
+    } else if (iterativebte->do_iterative) {
+        iterativebte->setup_iterative();
+        iterativebte->do_iterativebte();
+        iterativebte->write_kappa();
     } else {
         writes->setup_result_io();
         conductivity->setup_kappa();
         conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
-        conductivity->compute_kappa();
-        writes->write_kappa();
+        if (conductivity->fph_rta < 2) {
+            conductivity->compute_kappa();
+            writes->write_kappa();
+        } else {
+            if (mympi->my_rank == 0) {
+                std::cout << " [fph_RTA == 2], only 4ph scattering is calculated, kappa is not calculated !" << std::endl;
+            }
+        }
         writes->write_selfenergy_isotope();
     }
 }

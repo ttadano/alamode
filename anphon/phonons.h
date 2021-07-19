@@ -61,6 +61,8 @@ namespace PHON_NS {
 
         class Conductivity *conductivity;
 
+        class Iterativebte *iterativebte;
+
         class Writes *writes;
 
         class Dos *dos;

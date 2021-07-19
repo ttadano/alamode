@@ -10,6 +10,7 @@
 
 #include "parsephon.h"
 #include "conductivity.h"
+#include "iterativebte.h"
 #include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
@@ -110,10 +111,11 @@ void Input::parse_general_vars()
     const std::vector<std::string> input_list{
             "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
             "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+            "ISMEAR", "ISMEAR_4PH", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
             "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
             "VERBOSITY"
     };
+    // added ismear_4ph to include separate choose of 3ph and 4ph
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
     std::vector<std::string> kdname_v, masskd_v;
@@ -141,6 +143,7 @@ void Input::parse_general_vars()
     const auto prefix = general_var_dict["PREFIX"];
     auto mode = general_var_dict["MODE"];
     auto file_result = prefix + ".result";
+    auto file_result4 = prefix + ".4ph.result";
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
 
@@ -200,12 +203,14 @@ void Input::parse_general_vars()
     // if file_result exists in the current directory, 
     // restart mode will be automatically turned on.
     auto restart = stat(file_result.c_str(), &st) == 0;
+    restart = stat(file_result4.c_str(), &st) == 0;
 
     auto nbands = -1;
     std::string borninfo;
     std::string fc2info;
 
     auto ismear = -1;
+    auto ismear_4ph =  1; // default for guassian smearing
     auto epsilon = 10.0;
     auto na_sigma = 0.1;
 
@@ -232,6 +237,7 @@ void Input::parse_general_vars()
     assign_val(fc2info, "FC2XML", general_var_dict);
 
     assign_val(ismear, "ISMEAR", general_var_dict);
+    assign_val(ismear_4ph, "ISMEAR_4PH", general_var_dict);
     assign_val(epsilon, "EPSILON", general_var_dict);
     assign_val(na_sigma, "NA_SIGMA", general_var_dict);
     assign_val(classical, "CLASSICAL", general_var_dict);
@@ -278,6 +284,7 @@ void Input::parse_general_vars()
 
     job_title = prefix;
     writes->file_result = file_result;
+    writes->file_result4 = file_result4;
     phon->mode = mode;
     phon->restart_flag = restart;
     symmetry->nsym = nsym;
@@ -325,6 +332,7 @@ void Input::parse_general_vars()
     fcs_phonon->update_fc2 = !fc2info.empty();
     thermodynamics->classical = classical;
     integration->ismear = ismear;
+    integration->ismear_4ph = ismear_4ph;
     anharmonic_core->use_triplet_symmetry = use_triplet_symmetry;
 
     general_var_dict.clear();
@@ -472,9 +480,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
             "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
             "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
             "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-        "KAPPA_COHERENT",
-        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
-    };
+            "KAPPA_COHERENT",
+            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES",
+            "ITERATIVE", "MAX_CYCLE", "ITER_THRESHOLD", "FPH_RTA"};
 
 #ifdef _FE_BUBBLE
     input_list.push_back("FE_BUBBLE");
@@ -533,6 +541,12 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     auto do_projection = false;
 
+    auto iterative = false;
+    auto max_cycle = 20;
+    auto iter_threshold = 0.005; // wh
+
+    auto fph_rta = 0; 
+
     // Assign values to variables
 
     if (!use_default_values) {
@@ -561,6 +575,12 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(calc_coherent, "KAPPA_COHERENT", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
         assign_val(calc_selfenergy, "SELF_ENERGY", analysis_var_dict);
+
+        assign_val(iterative, "ITERATIVE", analysis_var_dict);
+        assign_val(max_cycle, "MAX_CYCLE", analysis_var_dict);
+        assign_val(iter_threshold, "ITER_THRESHOLD", analysis_var_dict); // wh
+
+        assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -714,9 +734,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     dynamical->participation_ratio = participation_ratio;
-//    writes->print_xsf = print_xsf;
-//    writes->print_anime = print_anime;
-//    writes->print_ucorr = print_ucorr;
+    //    writes->print_xsf = print_xsf;
+    //    writes->print_anime = print_anime;
+    //    writes->print_ucorr = print_ucorr;
 
     writes->setWriteOptions(print_msd,
                             print_xsf,
@@ -729,20 +749,27 @@ void Input::parse_analysis_vars(const bool use_default_values)
                             shift_ucorr,
                             print_zmode);
 
-//    if (print_anime) {
-//        for (i = 0; i < 3; ++i) {
-//            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-//            writes->anime_cellsize[i] = cellsize[i];
-//        }
-//        writes->anime_format = anime_format;
-//    }
-//
-//    writes->print_msd = print_msd;
+    //    if (print_anime) {
+    //        for (i = 0; i < 3; ++i) {
+    //            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
+    //            writes->anime_cellsize[i] = cellsize[i];
+    //        }
+    //        writes->anime_format = anime_format;
+    //    }
+    //
+    //    writes->print_msd = print_msd;
 
     dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
+
+    iterativebte->do_iterative = iterative;
+    iterativebte->max_cycle = max_cycle;
+    iterativebte->convergence_criteria = iter_threshold; // wh
+
+    conductivity->fph_rta = fph_rta; // 4ph
+    if (fph_rta > 0) quartic_mode = 1;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;

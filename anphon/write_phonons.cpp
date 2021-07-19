@@ -10,6 +10,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 #include "mpi_common.h"
 #include <iomanip>
+#include <sys/stat.h>
 #include "constants.h"
 #include "conductivity.h"
 #include "dielec.h"
@@ -59,6 +60,7 @@ Writes::Writes(PHON *phon) : Pointers(phon)
     anime_frames = 20;
 
     file_result = "";
+    file_result4 = "";
     anime_format = "xyz";
     verbosity = 1;
 };
@@ -223,6 +225,14 @@ void Writes::write_input_vars()
 
 void Writes::setup_result_io()
 {
+    // this function opens the result file in the following way:
+    // if restart
+    //    fph_rta < 2 : open file_result  -> fs_result
+    //    fph_rta > 1 : open file_result4 -> fs_result4
+    // else
+    //    fph_rta < 2 : open file_result  -> fs_result  -> write initial io
+    //    fph_rta > 1 : open file_result4 -> fs_result4 -> write initial io
+    
     if (mympi->my_rank == 0) {
 
         if (phon->restart_flag) {
@@ -231,194 +241,388 @@ void Writes::setup_result_io()
             std::cout << "               Phonon lifetimes will be load from file " << file_result << std::endl;
             std::cout << "               and check the consistency of the computational settings." << std::endl;
 
+            if (conductivity->fph_rta < 2) {
             // Restart
-            fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
-            if (!fs_result) {
-                error->exit("setup_result_io",
-                            "Could not open file_result");
-            }
+                fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
+                if (!fs_result) {
+                    error->exit("setup_result_io",
+                                "Could not open file_result");
+                }
 
-            // Check the consistency
+                // Check the consistency
 
-            std::string line_tmp, str_tmp;
-            int natmin_tmp, nkd_tmp;
-            int nk_tmp[3], nksym_tmp;
-            int ismear, is_classical;
-            double epsilon_tmp, T1, T2, delta_T;
+                std::string line_tmp, str_tmp;
+                int natmin_tmp, nkd_tmp;
+                int nk_tmp[3], nksym_tmp;
+                int ismear, is_classical;
+                double epsilon_tmp, T1, T2, delta_T;
 
 
-            bool found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#SYSTEM") {
-                    found_tag = true;
-                    break;
+                bool found_tag = false;
+                while (fs_result >> line_tmp) {
+                    if (line_tmp == "#SYSTEM") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #SYSTEM tag");
+
+                fs_result >> natmin_tmp >> nkd_tmp;
+
+                if (!(natmin_tmp == system->natmin && nkd_tmp == system->nkd)) {
+                    error->exit("setup_result_io",
+                                "SYSTEM information is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result >> line_tmp) {
+                    if (line_tmp == "#KPOINT") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #KPOINT tag");
+
+                fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
+                fs_result >> nksym_tmp;
+
+                if (!(kpoint->nkx == nk_tmp[0] &&
+                    kpoint->nky == nk_tmp[1] &&
+                    kpoint->nkz == nk_tmp[2] &&
+                    kpoint->nk_irred == nksym_tmp)) {
+                    error->exit("setup_result_io",
+                                "KPOINT information is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result >> line_tmp) {
+                    if (line_tmp == "#CLASSICAL") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag) {
+                    std::cout << " Could not find the #CLASSICAL tag in the restart file." << std::endl;
+                    std::cout << " CLASSIACAL = 0 is assumed." << std::endl;
+                    is_classical = 0;
+                } else {
+                    fs_result >> is_classical;
+                }
+                if (static_cast<bool>(is_classical) != thermodynamics->classical) {
+                    error->warn("setup_result_io",
+                                "CLASSICAL val is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result >> line_tmp) {
+                    if (line_tmp == "#FCSXML") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #FCSXML tag");
+
+                fs_result >> str_tmp;
+                if (str_tmp != fcs_phonon->file_fcs) {
+                    error->warn("setup_result_io",
+                                "FCSXML is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result >> line_tmp) {
+                    if (line_tmp == "#SMEARING") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #SMEARING tag");
+
+                fs_result >> ismear;
+                fs_result >> epsilon_tmp;
+
+                if (ismear != integration->ismear) {
+                    error->warn("setup_result_io",
+                                "Smearing method is not consistent");
+                }
+                if (ismear != -1 && std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4) {
+                    std::cout << "epsilon from file : " << std::setw(15)
+                            << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << std::endl;
+                    std::cout << "epsilon from input: " << std::setw(15)
+                            << std::setprecision(10) << integration->epsilon * Ry_to_kayser << std::endl;
+                    error->warn("setup_result_io",
+                                "Smearing width is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result >> line_tmp) {
+                    if (line_tmp == "#TEMPERATURE") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #TEMPERATURE tag");
+
+                fs_result >> T1 >> T2 >> delta_T;
+
+                if (!(T1 == system->Tmin &&
+                    T2 == system->Tmax &&
+                    delta_T == system->dT)) {
+                    error->exit("setup_result_io",
+                                "Temperature information is not consistent");
                 }
             }
-            if (!found_tag)
-                error->exit("setup_result_io",
-                            "Could not find #SYSTEM tag");
-
-            fs_result >> natmin_tmp >> nkd_tmp;
-
-            if (!(natmin_tmp == system->natmin && nkd_tmp == system->nkd)) {
-                error->exit("setup_result_io",
-                            "SYSTEM information is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#KPOINT") {
-                    found_tag = true;
-                    break;
+            if (conductivity->fph_rta > 0) {
+                // Restart
+                fs_result4.open(file_result4.c_str(), std::ios::in | std::ios::out);
+                if (!fs_result4) {
+                    error->exit("setup_result_io",
+                                "Could not open file_result");
                 }
-            }
-            if (!found_tag)
-                error->exit("setup_result_io",
-                            "Could not find #KPOINT tag");
 
-            fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
-            fs_result >> nksym_tmp;
+                // Check the consistency
 
-            if (!(kpoint->nkx == nk_tmp[0] &&
-                  kpoint->nky == nk_tmp[1] &&
-                  kpoint->nkz == nk_tmp[2] &&
-                  kpoint->nk_irred == nksym_tmp)) {
-                error->exit("setup_result_io",
-                            "KPOINT information is not consistent");
-            }
+                std::string line_tmp, str_tmp;
+                int natmin_tmp, nkd_tmp;
+                int nk_tmp[3], nksym_tmp;
+                int ismear, is_classical;
+                double epsilon_tmp, T1, T2, delta_T;
 
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#CLASSICAL") {
-                    found_tag = true;
-                    break;
+
+                bool found_tag = false;
+                while (fs_result4 >> line_tmp) {
+                    if (line_tmp == "#SYSTEM") {
+                        found_tag = true;
+                        break;
+                    }
                 }
-            }
-            if (!found_tag) {
-                std::cout << " Could not find the #CLASSICAL tag in the restart file." << std::endl;
-                std::cout << " CLASSIACAL = 0 is assumed." << std::endl;
-                is_classical = 0;
-            } else {
-                fs_result >> is_classical;
-            }
-            if (static_cast<bool>(is_classical) != thermodynamics->classical) {
-                error->warn("setup_result_io",
-                            "CLASSICAL val is not consistent");
-            }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #SYSTEM tag");
 
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#FCSXML") {
-                    found_tag = true;
-                    break;
+                fs_result4 >> natmin_tmp >> nkd_tmp;
+
+                if (!(natmin_tmp == system->natmin && nkd_tmp == system->nkd)) {
+                    error->exit("setup_result_io",
+                                "SYSTEM information is not consistent");
                 }
-            }
-            if (!found_tag)
-                error->exit("setup_result_io",
-                            "Could not find #FCSXML tag");
 
-            fs_result >> str_tmp;
-            if (str_tmp != fcs_phonon->file_fcs) {
-                error->warn("setup_result_io",
-                            "FCSXML is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#SMEARING") {
-                    found_tag = true;
-                    break;
+                found_tag = false;
+                while (fs_result4 >> line_tmp) {
+                    if (line_tmp == "#KPOINT") {
+                        found_tag = true;
+                        break;
+                    }
                 }
-            }
-            if (!found_tag)
-                error->exit("setup_result_io",
-                            "Could not find #SMEARING tag");
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #KPOINT tag");
 
-            fs_result >> ismear;
-            fs_result >> epsilon_tmp;
+                fs_result4 >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
+                fs_result4 >> nksym_tmp;
 
-            if (ismear != integration->ismear) {
-                error->warn("setup_result_io",
-                            "Smearing method is not consistent");
-            }
-            if (ismear != -1 && std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4) {
-                std::cout << "epsilon from file : " << std::setw(15)
-                          << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << std::endl;
-                std::cout << "epsilon from input: " << std::setw(15)
-                          << std::setprecision(10) << integration->epsilon * Ry_to_kayser << std::endl;
-                error->warn("setup_result_io",
-                            "Smearing width is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#TEMPERATURE") {
-                    found_tag = true;
-                    break;
+                if (!(kpoint->nkx == nk_tmp[0] &&
+                    kpoint->nky == nk_tmp[1] &&
+                    kpoint->nkz == nk_tmp[2] &&
+                    kpoint->nk_irred == nksym_tmp)) {
+                    error->exit("setup_result_io",
+                                "KPOINT information is not consistent");
                 }
-            }
-            if (!found_tag)
-                error->exit("setup_result_io",
-                            "Could not find #TEMPERATURE tag");
 
-            fs_result >> T1 >> T2 >> delta_T;
+                found_tag = false;
+                while (fs_result4 >> line_tmp) {
+                    if (line_tmp == "#CLASSICAL") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag) {
+                    std::cout << " Could not find the #CLASSICAL tag in the restart file." << std::endl;
+                    std::cout << " CLASSIACAL = 0 is assumed." << std::endl;
+                    is_classical = 0;
+                } else {
+                    fs_result4 >> is_classical;
+                }
+                if (static_cast<bool>(is_classical) != thermodynamics->classical) {
+                    error->warn("setup_result_io",
+                                "CLASSICAL val is not consistent");
+                }
 
-            if (!(T1 == system->Tmin &&
-                  T2 == system->Tmax &&
-                  delta_T == system->dT)) {
-                error->exit("setup_result_io",
-                            "Temperature information is not consistent");
+                found_tag = false;
+                while (fs_result4 >> line_tmp) {
+                    if (line_tmp == "#FCSXML") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #FCSXML tag");
+
+                fs_result4 >> str_tmp;
+                if (str_tmp != fcs_phonon->file_fcs) {
+                    error->warn("setup_result_io",
+                                "FCSXML is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result4 >> line_tmp) {
+                    if (line_tmp == "#SMEARING") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #SMEARING tag");
+
+                fs_result4 >> ismear;
+                fs_result4 >> epsilon_tmp;
+
+                if (ismear != integration->ismear) {
+                    error->warn("setup_result_io",
+                                "Smearing method is not consistent");
+                }
+                if (ismear != -1 && std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4) {
+                    std::cout << "epsilon from file : " << std::setw(15)
+                            << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << std::endl;
+                    std::cout << "epsilon from input: " << std::setw(15)
+                            << std::setprecision(10) << integration->epsilon * Ry_to_kayser << std::endl;
+                    error->warn("setup_result_io",
+                                "Smearing width is not consistent");
+                }
+
+                found_tag = false;
+                while (fs_result4 >> line_tmp) {
+                    if (line_tmp == "#TEMPERATURE") {
+                        found_tag = true;
+                        break;
+                    }
+                }
+                if (!found_tag)
+                    error->exit("setup_result_io",
+                                "Could not find #TEMPERATURE tag");
+
+                fs_result4 >> T1 >> T2 >> delta_T;
+
+                if (!(T1 == system->Tmin &&
+                    T2 == system->Tmax &&
+                    delta_T == system->dT)) {
+                    error->exit("setup_result_io",
+                                "Temperature information is not consistent");
+                }
             }
 
         } else {
             // From scratch
-            fs_result.open(file_result.c_str(), std::ios::out);
-            if (!fs_result) {
-                error->exit("setup_result_io",
-                            "Could not open file_result");
-            }
-
-            fs_result << "## General information" << std::endl;
-            fs_result << "#SYSTEM" << std::endl;
-            fs_result << system->natmin << " " << system->nkd << std::endl;
-            fs_result << system->volume_p << std::endl;
-            fs_result << "#END SYSTEM" << std::endl;
-
-            fs_result << "#KPOINT" << std::endl;
-            fs_result << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
-            fs_result << kpoint->nk_irred << std::endl;
-
-            for (int i = 0; i < kpoint->nk_irred; ++i) {
-                fs_result << std::setw(6) << i + 1 << ":";
-                for (int j = 0; j < 3; ++j) {
-                    fs_result << std::setw(15)
-                              << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
+            if (conductivity->fph_rta < 2) {
+                fs_result.open(file_result.c_str(), std::ios::out);
+                if (!fs_result) {
+                    error->exit("setup_result_io",
+                                "Could not open file_result");
                 }
-                fs_result << std::setw(12)
-                          << std::fixed << kpoint->weight_k[i] << std::endl;
+
+                fs_result << "## General information" << std::endl;
+                fs_result << "#SYSTEM" << std::endl;
+                fs_result << system->natmin << " " << system->nkd << std::endl;
+                fs_result << system->volume_p << std::endl;
+                fs_result << "#END SYSTEM" << std::endl;
+
+                fs_result << "#KPOINT" << std::endl;
+                fs_result << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
+                fs_result << kpoint->nk_irred << std::endl;
+
+                for (int i = 0; i < kpoint->nk_irred; ++i) {
+                    fs_result << std::setw(6) << i + 1 << ":";
+                    for (int j = 0; j < 3; ++j) {
+                        fs_result << std::setw(15)
+                                << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
+                    }
+                    fs_result << std::setw(12)
+                            << std::fixed << kpoint->weight_k[i] << std::endl;
+                }
+                fs_result.unsetf(std::ios::fixed);
+
+                fs_result << "#END KPOINT" << std::endl;
+
+                fs_result << "#CLASSICAL" << std::endl;
+                fs_result << thermodynamics->classical << std::endl;
+                fs_result << "#END CLASSICAL" << std::endl;
+
+                fs_result << "#FCSXML" << std::endl;
+                fs_result << fcs_phonon->file_fcs << std::endl;
+                fs_result << "#END  FCSXML" << std::endl;
+
+                fs_result << "#SMEARING" << std::endl;
+                fs_result << integration->ismear << std::endl;
+                fs_result << integration->epsilon * Ry_to_kayser << std::endl;
+                fs_result << "#END SMEARING" << std::endl;
+
+                fs_result << "#TEMPERATURE" << std::endl;
+                fs_result << system->Tmin << " " << system->Tmax << " " << system->dT << std::endl;
+                fs_result << "#END TEMPERATURE" << std::endl;
+
+                fs_result << "##END General information" << std::endl;
+            } 
+             
+            if (conductivity->fph_rta > 0) {
+                fs_result4.open(file_result4.c_str(), std::ios::out);
+                if (!fs_result4) {
+                    error->exit("setup_result_io",
+                                "Could not open file_result");
+                }
+
+                fs_result4 << "## General information" << std::endl;
+                fs_result4 << "#SYSTEM" << std::endl;
+                fs_result4 << system->natmin << " " << system->nkd << std::endl;
+                fs_result4 << system->volume_p << std::endl;
+                fs_result4 << "#END SYSTEM" << std::endl;
+
+                fs_result4 << "#KPOINT" << std::endl;
+                fs_result4 << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
+                fs_result4 << kpoint->nk_irred << std::endl;
+
+                for (int i = 0; i < kpoint->nk_irred; ++i) {
+                    fs_result4 << std::setw(6) << i + 1 << ":";
+                    for (int j = 0; j < 3; ++j) {
+                        fs_result4 << std::setw(15)
+                                << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
+                    }
+                    fs_result4 << std::setw(12)
+                            << std::fixed << kpoint->weight_k[i] << std::endl;
+                }
+                fs_result4.unsetf(std::ios::fixed);
+
+                fs_result4 << "#END KPOINT" << std::endl;
+
+                fs_result4 << "#CLASSICAL" << std::endl;
+                fs_result4 << thermodynamics->classical << std::endl;
+                fs_result4 << "#END CLASSICAL" << std::endl;
+
+                fs_result4 << "#FCSXML" << std::endl;
+                fs_result4 << fcs_phonon->file_fcs << std::endl;
+                fs_result4 << "#END  FCSXML" << std::endl;
+
+                fs_result4 << "#SMEARING" << std::endl;
+                fs_result4 << integration->ismear << std::endl;
+                fs_result4 << integration->epsilon * Ry_to_kayser << std::endl;
+                fs_result4 << "#END SMEARING" << std::endl;
+
+                fs_result4 << "#TEMPERATURE" << std::endl;
+                fs_result4 << system->Tmin << " " << system->Tmax << " " << system->dT << std::endl;
+                fs_result4 << "#END TEMPERATURE" << std::endl;
+
+                fs_result4 << "##END General information" << std::endl;
             }
-            fs_result.unsetf(std::ios::fixed);
-
-            fs_result << "#END KPOINT" << std::endl;
-
-            fs_result << "#CLASSICAL" << std::endl;
-            fs_result << thermodynamics->classical << std::endl;
-            fs_result << "#END CLASSICAL" << std::endl;
-
-            fs_result << "#FCSXML" << std::endl;
-            fs_result << fcs_phonon->file_fcs << std::endl;
-            fs_result << "#END  FCSXML" << std::endl;
-
-            fs_result << "#SMEARING" << std::endl;
-            fs_result << integration->ismear << std::endl;
-            fs_result << integration->epsilon * Ry_to_kayser << std::endl;
-            fs_result << "#END SMEARING" << std::endl;
-
-            fs_result << "#TEMPERATURE" << std::endl;
-            fs_result << system->Tmin << " " << system->Tmax << " " << system->dT << std::endl;
-            fs_result << "#END TEMPERATURE" << std::endl;
-
-            fs_result << "##END General information" << std::endl;
         }
     }
 }

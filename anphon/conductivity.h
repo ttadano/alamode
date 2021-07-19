@@ -33,11 +33,13 @@ namespace PHON_NS {
         int calc_kappa_spec;
         unsigned int ntemp;
         double **damping3;
+        double **damping4;
         double ***kappa;
         double ***kappa_spec;
         double ***kappa_coherent;
         double *Temperature;
         int calc_coherent;
+        int fph_rta;
 
     private:
         void set_default_variables();
@@ -47,14 +49,31 @@ namespace PHON_NS {
         double ***vel;
         std::complex<double> ****velmat;
         unsigned int nk, ns;
-        int nshift_restart;
-        std::vector<int> vks, vks_l, vks_done;
-        std::set<int> vks_job;
+        int nshift_restart, nshift_restart4;
+        std::vector<int> vks_l, vks_done, vks_done4;
+        std::set<int> vks_job, vks_job4;
         std::string file_coherent_elems;
+
+        void calc_anharmonic_imagself3();
+        void calc_anharmonic_imagself4();
+        void calc_anharmonic_combined();
 
         void write_result_gamma(unsigned int,
                                 unsigned int,
                                 double ***,
+                                double **) const;
+
+        
+        void write_result_gamma(unsigned int,
+                                unsigned int,
+                                double ***,
+                                double **,
+                                int) const;
+
+        void write_result_gamma34(unsigned int,
+                                unsigned int,
+                                double ***,
+                                double **,
                                 double **) const;
 
         void average_self_energy_at_degenerate_point(int,
