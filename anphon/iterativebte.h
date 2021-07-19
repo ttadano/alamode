@@ -48,6 +48,7 @@ namespace PHON_NS {
         void write_kappa();
 
         bool do_iterative;
+        bool stable_version;
         double *Temperature;
         unsigned int ntemp;
         

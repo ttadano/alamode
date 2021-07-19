@@ -56,7 +56,6 @@ namespace PHON_NS {
 
         void calc_anharmonic_imagself3();
         void calc_anharmonic_imagself4();
-        void calc_anharmonic_combined();
 
         void write_result_gamma(unsigned int,
                                 unsigned int,
@@ -69,12 +68,6 @@ namespace PHON_NS {
                                 double ***,
                                 double **,
                                 int) const;
-
-        void write_result_gamma34(unsigned int,
-                                unsigned int,
-                                double ***,
-                                double **,
-                                double **) const;
 
         void average_self_energy_at_degenerate_point(int,
                                                      int,

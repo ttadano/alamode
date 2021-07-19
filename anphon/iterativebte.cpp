@@ -50,6 +50,7 @@ void Iterativebte::set_default_variables()
     convergence_criteria = 0.005; 
     use_triplet_symmetry = true;
     sym_permutation = true;
+    stable_version = true;
 
     Temperature = nullptr;
     kappa = nullptr;
@@ -875,7 +876,6 @@ bool Iterativebte::check_convergence(double** &k_old, double** &k_new)
         return false;
     }
 }
-
 
 void Iterativebte::write_kappa()
 {

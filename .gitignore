@@ -1,3 +1,7 @@
 anphon/Makefile
 anphon/*.o
 anphon/anphon
+alm/Makefile
+alm/*.o
+alm/alm
+tests

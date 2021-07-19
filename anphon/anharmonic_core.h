@@ -137,12 +137,6 @@ namespace PHON_NS {
                                    unsigned int,
                                    double *);
 
-        void calc_damping4_smearing_new(unsigned int,
-                                   double *,
-                                   double,
-                                   unsigned int,
-                                   unsigned int,
-                                   double *);
         // a wrapper to return v3
         //std::complex<double> get_v3(const unsigned int [3],
         //                        double **,

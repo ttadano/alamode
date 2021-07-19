@@ -552,124 +552,6 @@ void Conductivity::calc_anharmonic_imagself4()
     memory->deallocate(damping4_loc);
 }
 
-void Conductivity::calc_anharmonic_combined() 
-{
-    unsigned int i;
-    unsigned int *nks_thread;
-    double *damping3_loc;
-    double *damping4_loc;
-
-    // Distribute (k,s) to individual MPI threads
-
-    const auto nks_g = vks_job.size();
-    vks_l.clear();
-
-    unsigned int icount = 0;
-
-    for (const auto &it : vks_job) {
-        if (icount % mympi->nprocs == mympi->my_rank) {
-            vks_l.push_back(it);
-        }
-        ++icount;
-    }
-
-    if (mympi->my_rank == 0) {
-        memory->allocate(nks_thread, mympi->nprocs);
-    }
-
-    auto nks_tmp = vks_l.size();
-    MPI_Gather(&nks_tmp, 1, MPI_UNSIGNED, &nks_thread[mympi->my_rank],
-               1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " Start calculating anharmonic phonon self-energies ... " << std::endl;
-        std::cout << " Including 4 ph scattering " << std::endl;
-        std::cout << " Total Number of phonon modes to be calculated : " << nks_g << std::endl;
-        std::cout << " All modes are distributed to MPI threads as the following :" << std::endl;
-        for (i = 0; i < mympi->nprocs; ++i) {
-            std::cout << " RANK: " << std::setw(5) << i + 1;
-            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << std::endl;
-        }
-        std::cout << std::endl << std::flush;
-
-        memory->deallocate(nks_thread);
-    }
-
-    unsigned int nk_tmp;
-
-    if (nks_g % mympi->nprocs != 0) {
-        nk_tmp = nks_g / mympi->nprocs + 1;
-    } else {
-        nk_tmp = nks_g / mympi->nprocs;
-    }
-
-    if (vks_l.size() < nk_tmp) {
-        vks_l.push_back(-1);
-    }
-
-    memory->allocate(damping3_loc, ntemp);
-    memory->allocate(damping4_loc, ntemp);
-
-    for (i = 0; i < nk_tmp; ++i) {
-
-        const auto iks = vks_l[i];
-
-        if (iks == -1) {
-
-            for (unsigned int j = 0; j < ntemp; ++j) {
-                damping3_loc[j] = eps; // do nothing
-                damping4_loc[j] = eps; // do nothing
-            }
-
-        } else {
-
-            const auto knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
-            const auto snum = iks % ns;
-
-            const auto omega = dynamical->eval_phonon[knum][snum];
-            // treat damping 3 first
-            if (integration->ismear >= 0) {
-                anharmonic_core->calc_damping_smearing(ntemp,
-                                                       Temperature,
-                                                       omega,
-                                                       iks / ns,
-                                                       snum,
-                                                       damping3_loc);
-            } else if (integration->ismear == -1) {
-                anharmonic_core->calc_damping_tetrahedron(ntemp,
-                                                          Temperature,
-                                                          omega,
-                                                          iks / ns,
-                                                          snum,
-                                                          damping3_loc);
-            }
-            // treat damping 4 separatly
-            anharmonic_core->calc_damping4_smearing(ntemp,
-                                                    Temperature,
-                                                    omega,
-                                                    iks / ns,
-                                                    snum, 
-                                                    damping4_loc);
-        }
-
-        MPI_Gather(&damping3_loc[0], ntemp, MPI_DOUBLE,
-                   damping3[nshift_restart + i * mympi->nprocs], ntemp,
-                   MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-        MPI_Gather(&damping4_loc[0], ntemp, MPI_DOUBLE,
-                   damping4[nshift_restart + i * mympi->nprocs], ntemp,
-                   MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-        if (mympi->my_rank == 0) {
-            write_result_gamma34(i, nshift_restart, vel, damping3, damping4);
-            std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
-        }
-    }
-    memory->deallocate(damping3_loc);
-    memory->deallocate(damping4_loc);
-}
-
 void Conductivity::calc_anharmonic_imagself()
 {
     if (fph_rta < 2) {
@@ -678,42 +560,6 @@ void Conductivity::calc_anharmonic_imagself()
     
     if (fph_rta > 0) {
         calc_anharmonic_imagself4();
-    }
-}
-
-void Conductivity::write_result_gamma34(const unsigned int ik,
-                                      const unsigned int nshift,
-                                      double ***vel_in,
-                                      double **damp_in3,
-                                      double **damp_in4) const
-{
-    const unsigned int np = mympi->nprocs;
-    unsigned int k;
-
-    for (unsigned int j = 0; j < np; ++j) {
-
-        const auto iks_g = ik * np + j + nshift;
-
-        if (iks_g >= kpoint->nk_irred * ns) break;
-
-        writes->fs_result << "#GAMMA_EACH" << std::endl;
-        writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
-
-        const auto nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
-
-        writes->fs_result << nk_equiv << std::endl;
-        for (k = 0; k < nk_equiv; ++k) {
-            const auto ktmp = kpoint->kpoint_irred_all[iks_g / ns][k].knum;
-            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
-            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
-            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
-        }
-
-        for (k = 0; k < ntemp; ++k) {
-            writes->fs_result << std::setw(15) << damp_in3[iks_g][k] * Hz_to_kayser / time_ry 
-                              << std::setw(15) << damp_in4[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
-        }
-        writes->fs_result << "#END GAMMA_EACH" << std::endl;
     }
 }
 
@@ -892,18 +738,7 @@ void Conductivity::compute_kappa()
                 }
             }
         }
-        /*
-        if (mympi->my_rank == 0) {
-            std::cout << "here" << std::endl;
-            for (auto ik = 0; ik < kpoint->nk; ++ik) {
-                for (auto is = 0; is < dynamical->neval; ++is) {
-                    const auto omega = dynamical->eval_phonon[ik][is];
-                    const auto omega2 = omega / 1.0;
-                    std::cout << std::setw(8) << omega2 << " ";
-                }
-                std::cout << std::endl;
-            } 
-        } */
+        
         memory->allocate(kappa, ntemp, 3, 3);
         compute_kappa_intraband(kappa, lifetime);
         memory->deallocate(lifetime);
