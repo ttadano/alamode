@@ -11,19 +11,26 @@
 
 /*
 implementation of the iterative bte
-we can add additional parameter
-    max_cycle
-    convergence_criteria
+additional parameter:
+    ITERATIVE = 1 -> do iterative calculation
+    MAX_CYCLE = 20 (default)
+    ITER_THRESHOLD = 0.005 (default)
+    
 we need to calculate and store: 
-    Phi1, phi2, phi3 <- calculate once?
-    phi2 should have the same size as V123 (q1,v1,q2,v2,v3) which is quite large
-    maybe phi2, phi3 can be calculated for each iteration?
-    v123 <- ? is it too big to store?
+- k points in the irreducible BZ are divided amoung processors.
+- we calculate L absorb and L emitt, the transition probability of absorption and emission process
+- we go through each temperature, for each temperature, we calculate Q, W is calculated for each iteration
+- for each temperature, we check for convergence
 
-    => let's at least try it on silicon which is manageable to store
+Improvement:
+- how to implement a restart? 
+    iterative part is fast, the time consuming part is the calculation of L
+    so for restart, we should write down L, this means we should change the for so that L contains 
+    the iteration of ik and s1, which we then write out at each iteration.
+    we also need to implement the read and write part.
+    
+- add the direct solution method
 
-1) we need to calculate and store V3, phi2 and phi3, as well as the three phonon relaxation
-   time
 */
 
 #pragma once
@@ -48,7 +55,7 @@ namespace PHON_NS {
         void write_kappa();
 
         bool do_iterative;
-        bool stable_version;
+        bool direct_solution;
         double *Temperature;
         unsigned int ntemp;
         
@@ -65,55 +72,56 @@ namespace PHON_NS {
 
         void deallocate_variables();
 
-        int kplength;
+        int kplength_emitt;
+        int kplength_absorb;
         int nktot, nklocal, ns, ns2;
 
         // calculated at equilibrium
-        double ***v3;
+        double ***L_absorb; // L q0 + q1 -> q2
+        double ***L_emitt;  // L q0 -> q1 + q2
         double ***vel;
-
-        double ***delta1;
-        double ***delta2;
-        double ***delta3;
 
         // linear response to deltaT
         double ***dFold;
         double ***dFnew;
 
-        std::vector<KsListGroup> localnk_triplets;
+        std::vector<std::vector<KsListGroup>> localnk_triplets_emitt;
+        std::vector<std::vector<KsListGroup>> localnk_triplets_absorb;
 
-        std::vector<int> num_unipair;
-        std::vector<int> start_unipair;
         std::vector<int> nk_l, nk_job;
 
+        //std::vector<std::vector<int>> ikp_emitt;
+        //std::vector<std::vector<int>> ikp_absorb;
+
         void iterative_solver(); // calculate kappa iteratively
+        void direct_solver(); // calculate kappa iteratively
+
+        //void setup_kpindex();
 
         void calc_kappa(int, double*** &, double** &);   // calculate kappa with off equilibrium part
 
-        //void calc_phi_smear(int, double*** &, double*** &, double*** &);
-        
-        void calc_delta_smear(double*** &, double*** &, double*** &);
-
-        void calc_delta_tetra(double*** &, double*** &, double*** &);
-
         void get_triplets();        // set up all triplets
 
-        void setup_v3();            // calculate and store the scattering matrix elements
-        
-        void calc_Q_from_phi1(double** &, double** &);  // calculate Q
+        void setup_L();
+        void setup_L_smear();
+        void setup_L_tetra();  
+
+        void calc_Q_from_L(double** &, double** &);  // calculate Q
+
+        void calc_Q_directly(double** &, double** &);
 
         void average_Q(double** &);
+
+        void average_dF(double*** &);
+
+        void average_W_at_k(int, double** &);
 
         void calc_boson(int, double** &, double** &);
 
         bool check_convergence(double** &, double** &); // check if convergence cirteria is meet
 
-        void average_W_at_k(int, double** &);
         //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
-
-        //void average_self_energy_at_degenerate_point(int, int, double **) const;
         void write_result();
         void write_Q_dF(int , double** &, double*** &);
-
     };
 }
