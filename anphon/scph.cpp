@@ -953,6 +953,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     MatrixXcd Cmat(ns, ns), v2_mat_full(ns, ns);
     MatrixXcd v2_mat_optical(ns-3, ns-3);
     VectorXcd dq0_vec(ns-3), v1_vec_SCP(ns-3);
+    std::vector<int> harm_optical_modes(ns-3);
     // structure optimization(to be read from input file)
     int str_opt_algo = 1; // 0: steepest gradient, 1: iterative solution of linear equation
     int max_str_loop = 100;
@@ -960,8 +961,8 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     double mixing_beta = 0.7;
     double dq0_threashold = 0.001;
 
-    // internal coordinate
-    double *q0, *delta_q0;
+    // coordinate
+    double *q0, *delta_q0, *u0;
 
     std::vector<double> vec_temp;
 
@@ -984,6 +985,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
     memory->allocate(q0, ns);
     memory->allocate(delta_q0, ns);
+    memory->allocate(u0, ns);
 
     memory->allocate(v4_array_original, nk_irred_interpolate * nk_scph,
                      ns * ns, ns * ns);
@@ -1015,6 +1017,20 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         v1_array_original[is] = 0.0;
     }
 
+    // get indices of optical modes
+    js = 0;
+    for(is = 0; is < ns; is++){
+        if(std::fabs(omega2_harmonic[0][is]) < eps8){
+            continue;
+        }
+        harm_optical_modes[js] = is;
+        js++;
+    }
+    std::cout << "mode indices of optical modes: " << std::endl;
+    for(is = 0; is < ns-3; is++){
+        std::cout << harm_optical_modes[is] << " ";
+    }std::cout << std::endl;
+
     if (mympi->my_rank == 0) {
 
         std::complex<double> ***cmat_convert;
@@ -1035,11 +1051,12 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         auto converged_prev = false;
 
         // this is for test
-        // std::ofstream fout_SCP_force;
-        // fout_SCP_force.open("SCP_force.out");
-        // std::complex<double> dFdq_q;
+        std::ofstream fout_q0_tmp;
+        fout_q0_tmp.open("q0_tmp.txt");
         std::ofstream fout_q0;
         fout_q0.open("q0.txt");
+        std::ofstream fout_u0;
+        fout_u0.open("u0.txt");
 
         for (double temp : vec_temp) {
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
@@ -1071,9 +1088,24 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
             // set initial value of q0
             read_initial_q0(q0);
+            calculate_u0(q0, u0);
+
+            // start from warm start
+            converged_prev = false;
 
             // structure loop
             std::cout << "temperature : " << temp << " K" << std::endl;
+            fout_q0_tmp << "temperature : " << temp << " K" << std::endl;
+
+            std::cout << "initial q0 : " << std::endl;
+            for(is = 0; is < ns; is++){
+                std::cout << q0[is] << " ";
+            }std::cout << std::endl;
+            std::cout << "initial displacement in real space [Bohr] : " << std::endl;
+            for(is = 0; is < ns; is++){
+                std::cout << u0[is] << " ";
+            }std::cout << std::endl;
+
             std::cout << "start structural optimization";
             for(i_str_loop = 0; i_str_loop < max_str_loop; i_str_loop++){
 
@@ -1128,7 +1160,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     dq0 = 0.0;
                     for(is = 0; is < ns; is++){
                         // skip acoustic mode
-                        if(std::fabs(omega2_anharm[iT][0][is]) < eps8){
+                        if(std::fabs(omega2_harmonic[0][is]) < eps8){
                             continue;
                         }
                         delta_q0[is] = - alpha_steepest_decent * v1_array_SCP[is].real();
@@ -1150,12 +1182,13 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
                     for(is = 0; is < ns-3; is++){
                         for(js = 0; js < ns-3; js++){
-                            v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
+                            //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
+                            v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
                     }
                     // solve linear equation
                     for(is = 0; is < ns-3; is++){
-                        v1_vec_SCP(is) = v1_array_SCP[is+3];
+                        v1_vec_SCP(is) = v1_array_SCP[harm_optical_modes[is]];
                     }
                     // debug
                     std::cout << "v1_vec_SCP" << std::endl;
@@ -1168,29 +1201,17 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     // update q0
                     dq0 = 0.0;
                     for(is = 0; is < ns-3; is++){
-                        delta_q0[is+3] = - mixing_beta * dq0_vec(is).real();
-                        q0[is+3] += delta_q0[is+3];
+                        delta_q0[harm_optical_modes[is]] = - mixing_beta * dq0_vec(is).real();
+                        q0[harm_optical_modes[is]] += delta_q0[is+3];
                     }
 
-                    // debug
-                    std::cout << "v2_mat_full" << std::endl;
-                    for(is = 0; is < ns; is++){
-                        for(js = 0; js < ns; js++){
-                            std::cout << v2_mat_full(is, js) << " ";
-                        }std::cout << std::endl;
-                    }std::cout << std::endl;
-                    // debug
-                    std::cout << "dq0_vec" << std::endl;
-                    for(is = 0; is < ns-3; is++){
-                        std::cout << dq0_vec(is) << " ";
-                    }std::cout << std::endl;
                 }
 
                 // print q0
-                fout_q0 << i_str_loop << " ";
+                fout_q0_tmp << i_str_loop << " ";
                 for(is = 0; is < ns; is++){
-                    fout_q0 << q0[is] << " ";
-                }fout_q0 << std::endl;
+                    fout_q0_tmp << q0[is] << " ";
+                }fout_q0_tmp << std::endl;
 
                 // check convergence
                 dq0 = 0.0;
@@ -1204,7 +1225,19 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     break;
                 }
                 
-            }
+            }// close structure loop
+
+            // print obtained structure
+            calculate_u0(q0, u0);
+            fout_q0 << temp << " ";
+            for(is = 0; is < ns; is++){
+                fout_q0 << q0[is] << " ";
+            }fout_q0 << std::endl;
+
+            fout_u0 << temp << " ";
+            for(is = 0; is < ns; is++){
+                fout_u0 << u0[is] << " ";
+            }fout_u0 << std::endl;
 
             if (!warmstart_scph) converged_prev = false;
 
@@ -1237,7 +1270,9 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
         // this is for test
         //fout_SCP_force.close();
+        fout_q0_tmp.close();
         fout_q0.close();
+        fout_u0.close();
 
         memory->deallocate(cmat_convert);
 
@@ -1258,6 +1293,10 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     memory->deallocate(evec_anharm_tmp);
     memory->deallocate(evec_harm_renormalize_tmp);
     memory->deallocate(v1_array_SCP);
+
+    memory->deallocate(q0);
+    memory->deallocate(delta_q0);
+    memory->deallocate(u0);
 }
 
 
@@ -1340,7 +1379,6 @@ void Scph::read_initial_q0(double *q0)
         }
     }
 
-    
     std::cout << "initial q0: " << std::endl;
     for(is = 0; is < ns; is++){
         std::cout << q0[is] << " ";
@@ -1348,6 +1386,29 @@ void Scph::read_initial_q0(double *q0)
     
     fin_displace.close();
     return ;
+}
+
+void Scph::calculate_u0(double *q0, double *u0){
+    int natmin = system->natmin;
+    int is, is2, i_atm, ixyz;
+    auto ns = dynamical->neval;
+
+    for(i_atm = 0; i_atm < natmin; i_atm++){
+        for(ixyz = 0; ixyz < 3; ixyz++){
+            is = i_atm*3 + ixyz;
+            u0[is] = 0.0;
+            for(is2 = 0; is2 < ns; is2++){
+                // skip acoustic mode
+                if(std::fabs(omega2_harmonic[0][is2]) < eps8){
+                    continue;
+                }
+                u0[is] += evec_harmonic[0][is2][is].real() * q0[is2];
+            }
+            u0[is] /= std::sqrt(system->mass[system->map_p2s[i_atm][0]]);
+        }
+    }
+
+    return;
 }
 
 void Scph::print_force(std::complex<double> *v1_array_renormalized)
