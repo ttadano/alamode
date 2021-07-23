@@ -429,14 +429,19 @@ void Selfenergy::selfenergy_c_mod(const unsigned int N,
 
     std::vector<KsListGroup> quartet;
 
-    kpoint->get_unique_quartet_k(knum,
+    auto ik_irred = kpoint->kmap_to_irreducible[knum];
+
+    kpoint->get_unique_quartet_k(ik_irred,
                                  true,
                                  true,
                                  quartet);
 
-    const int npair_uniq = quartet.size();
+    const size_t npair_uniq = quartet.size();
 
-    arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
+    auto knum_sym = kpoint->kpoint_irred_all[ik_irred][0].knum;
+    arr_quartic[0] = ns * kpoint->knum_minus[knum_sym] + snum;
+
+    std::cout << "knum = " << knum << " knum_sym = " << knum_sym << '\n';
 
     for (unsigned int ik = mympi->my_rank; ik < npair_uniq; ik += mympi->nprocs) {
 
