@@ -52,6 +52,13 @@ namespace PHON_NS {
                           const unsigned int,
                           std::complex<double> *) const;
 
+        void selfenergy_c_mod(const unsigned int,
+                          double *,
+                          const double,
+                          const unsigned int,
+                          const unsigned int,
+                          std::complex<double> *) const;
+
         void selfenergy_d(const unsigned int,
                           double *,
                           const double,

@@ -400,6 +400,112 @@ void Selfenergy::selfenergy_c(const unsigned int N,
     memory->deallocate(ret_mpi);
 }
 
+void Selfenergy::selfenergy_c_mod(const unsigned int N,
+                                  double *T,
+                                  const double omega,
+                                  const unsigned int knum,
+                                  const unsigned int snum,
+                                  std::complex<double> *ret) const
+{
+    /*
+
+    Diagram (c)
+    Matrix elements that appear : V4^2
+    Computational cost          : O(N_k^2 * N^3) <-- about N_k * N times that of Diagram (a)
+
+    */
+
+    unsigned int i;
+    unsigned int arr_quartic[4];
+
+    std::complex<double> omega_sum[4];
+    std::complex<double> *ret_mpi;
+
+    memory->allocate(ret_mpi, N);
+
+    std::complex<double> omega_shift = omega + im * epsilon;
+
+    for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
+
+    std::vector<KsListGroup> quartet;
+
+    kpoint->get_unique_quartet_k(knum,
+                                 true,
+                                 true,
+                                 quartet);
+
+    const int npair_uniq = quartet.size();
+
+    arr_quartic[0] = ns * kpoint->knum_minus[knum] + snum;
+
+    for (unsigned int ik = mympi->my_rank; ik < npair_uniq; ik += mympi->nprocs) {
+
+        unsigned int ik1 = quartet[ik].group[0].ks[0];
+        unsigned int ik2 = quartet[ik].group[0].ks[1];
+        unsigned int ik3 = quartet[ik].group[0].ks[2];
+
+        double multi = static_cast<double>(quartet[ik].group.size());
+
+        for (unsigned int is1 = 0; is1 < ns; ++is1) {
+
+            arr_quartic[1] = ns * ik1 + is1;
+            double omega1 = dynamical->eval_phonon[ik1][is1];
+
+            for (unsigned int is2 = 0; is2 < ns; ++is2) {
+
+                arr_quartic[2] = ns * ik2 + is2;
+                double omega2 = dynamical->eval_phonon[ik2][is2];
+
+                for (unsigned int is3 = 0; is3 < ns; ++is3) {
+
+                    arr_quartic[3] = ns * ik3 + is3;
+                    double omega3 = dynamical->eval_phonon[ik3][is3];
+
+                    double v4_tmp = std::norm(anharmonic_core->V4(arr_quartic)) * multi;
+
+                    omega_sum[0]
+                            = 1.0 / (omega_shift - omega1 - omega2 - omega3)
+                              - 1.0 / (omega_shift + omega1 + omega2 + omega3);
+                    omega_sum[1]
+                            = 1.0 / (omega_shift - omega1 - omega2 + omega3)
+                              - 1.0 / (omega_shift + omega1 + omega2 - omega3);
+                    omega_sum[2]
+                            = 1.0 / (omega_shift + omega1 - omega2 - omega3)
+                              - 1.0 / (omega_shift - omega1 + omega2 + omega3);
+                    omega_sum[3]
+                            = 1.0 / (omega_shift - omega1 + omega2 - omega3)
+                              - 1.0 / (omega_shift + omega1 - omega2 + omega3);
+
+                    for (i = 0; i < N; ++i) {
+                        double T_tmp = T[i];
+
+                        double n1 = thermodynamics->fB(omega1, T_tmp);
+                        double n2 = thermodynamics->fB(omega2, T_tmp);
+                        double n3 = thermodynamics->fB(omega3, T_tmp);
+
+                        double n12 = n1 * n2;
+                        double n23 = n2 * n3;
+                        double n31 = n3 * n1;
+
+                        ret_mpi[i] += v4_tmp
+                                      * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
+                                         + (n31 + n23 + n3 - n12) * omega_sum[1]
+                                         + (n12 + n31 + n1 - n23) * omega_sum[2]
+                                         + (n23 + n12 + n2 - n31) * omega_sum[3]);
+                    }
+                }
+            }
+        }
+    }
+
+    double factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 5) * 3.0);
+    for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+    mpi_reduce_complex(N, ret_mpi, ret);
+
+    memory->deallocate(ret_mpi);
+}
+
 
 void Selfenergy::selfenergy_d(const unsigned int N,
                               double *T,
