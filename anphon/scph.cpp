@@ -3142,7 +3142,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
 
         std::cout << "  To avoid possible faults associated with insufficient memory,\n"
                      "  please reduce the number of MPI processes per node and/or\n"
-                     "  the number of temperagure grids.\n\n";
+                     "  the number of temperature grids.\n\n";
     }
 
     memory->allocate(thermodynamics->FE_bubble, NT);
