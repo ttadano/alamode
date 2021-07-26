@@ -958,7 +958,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     int str_opt_algo = 1; // 0: steepest gradient, 1: iterative solution of linear equation
     int max_str_loop = 100;
     double alpha_steepest_decent = 1.0e4;
-    double mixing_beta = 0.7;
+    double mixing_beta = 0.4;
     double dq0_threashold = 0.001;
 
     // coordinate
@@ -1026,10 +1026,13 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         harm_optical_modes[js] = is;
         js++;
     }
-    std::cout << "mode indices of optical modes: " << std::endl;
-    for(is = 0; is < ns-3; is++){
-        std::cout << harm_optical_modes[is] << " ";
-    }std::cout << std::endl;
+    
+    if(mympi->my_rank == 0){
+        std::cout << "mode indices of optical modes: " << std::endl;
+        for(is = 0; is < ns-3; is++){
+            std::cout << harm_optical_modes[is] << " ";
+        }std::cout << std::endl;
+    }
 
     if (mympi->my_rank == 0) {
 
@@ -1053,6 +1056,8 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         // this is for test
         std::ofstream fout_q0_tmp;
         fout_q0_tmp.open("q0_tmp.txt");
+        std::ofstream fout_u0_tmp;
+        fout_u0_tmp.open("u0_tmp.txt");
         std::ofstream fout_q0;
         fout_q0.open("q0.txt");
         std::ofstream fout_u0;
@@ -1202,7 +1207,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     dq0 = 0.0;
                     for(is = 0; is < ns-3; is++){
                         delta_q0[harm_optical_modes[is]] = - mixing_beta * dq0_vec(is).real();
-                        q0[harm_optical_modes[is]] += delta_q0[is+3];
+                        q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
                     }
 
                 }
@@ -1212,6 +1217,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 for(is = 0; is < ns; is++){
                     fout_q0_tmp << q0[is] << " ";
                 }fout_q0_tmp << std::endl;
+                calculate_u0(q0, u0);
+                fout_u0_tmp << i_str_loop << " ";
+                for(is = 0; is < ns; is++){
+                    fout_u0_tmp << u0[is] << " ";
+                }fout_u0_tmp << std::endl;
 
                 // check convergence
                 dq0 = 0.0;
@@ -1271,6 +1281,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         // this is for test
         //fout_SCP_force.close();
         fout_q0_tmp.close();
+        fout_u0_tmp.close();
         fout_q0.close();
         fout_u0.close();
 
