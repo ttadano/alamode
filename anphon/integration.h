@@ -79,6 +79,8 @@ namespace PHON_NS {
                                   int) const;
 
         // overload for 3ph or 4ph
+        void adaptive_smearing( int, int, double &);
+
         void adaptive_smearing( int,int,int,int,
                                 double *);
 

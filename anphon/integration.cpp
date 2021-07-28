@@ -145,10 +145,32 @@ void Integration::prepare_adaptivesmearing()
 }
 
 void Integration::adaptive_smearing(const int k1, const int s1,
+                                    double &smear)
+{
+    double parts;
+    double tmp;
+    int i;
+
+    parts = 0;
+
+    for (auto u = 0; u < 3; ++u) {
+        
+        tmp = 0;
+        for (auto a = 0; a < 3; ++a) {
+            tmp += vel[k1][s1][a] * dq[u][a];
+        }
+
+        parts += std::pow(tmp, 2);
+    }
+    
+    smear = std::max( 2.0e-5, std::sqrt( parts / 12) ); // for (w1 - w2)
+}
+
+void Integration::adaptive_smearing(const int k1, const int s1,
                                     const int k2, const int s2,
                                     double *smear)
 {
-    double vel_diff;
+
     double parts[2];
     double tmp[2];
     int i;
