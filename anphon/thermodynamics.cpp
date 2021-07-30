@@ -763,6 +763,7 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     const auto N = nk * ns;
 
     double ret = 0.0;
+    // double omega2_harm;
 
     MatrixXcd Cmat(ns, ns);
     const auto complex_zero = std::complex<double>(0.0, 0.0);
@@ -788,9 +789,16 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         //}
 
         auto tmp_c = std::complex<double>(0.0, 0.0);
+        double omega2_harm;
 
         for(int js = 0; js < ns; js++){
-            tmp_c += std::conj(Cmat(js, is)) * std::pow(eval_harm_renormalized[ik][js], 2) * Cmat(js, is);
+            if(eval_harm_renormalized[ik][js] < 0.0){
+                omega2_harm = -std::pow(eval_harm_renormalized[ik][js], 2);
+            }
+            else{
+                omega2_harm = std::pow(eval_harm_renormalized[ik][js], 2);
+            }
+            tmp_c += std::conj(Cmat(js, is)) * omega2_harm * Cmat(js, is);
         }
 
         if (thermodynamics->classical) {

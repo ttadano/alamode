@@ -151,9 +151,17 @@ namespace PHON_NS {
                                   std::complex<double> ****);
 
         void read_initial_q0(double *);
+
+        void read_str_opt_input(int &str_opt_algo, 
+                                    int &max_str_loop, 
+                                    double &alpha_steepest_decent, 
+                                    double &mixing_beta, 
+                                    double &dq0_threashold);
+
         void calculate_u0(double *, double *);
 
-        void print_force(std::complex<double> *);
+        // void print_force(std::complex<double> *);
+        void calculate_force_in_real_space(std::complex<double> *, double *);
 
         // void postprocess(std::complex<double> ****delta_dymat_scph,
         //                  std::complex<double> ****delta_dymat_scph_plus_bubble);

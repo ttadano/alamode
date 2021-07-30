@@ -959,14 +959,35 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     int max_str_loop = 100;
     double alpha_steepest_decent = 1.0e4;
     double mixing_beta = 0.4;
-    double dq0_threashold = 0.001;
+    double dq0_threashold = 0.005;
 
     // coordinate
     double *q0, *delta_q0, *u0;
+    double *force_array;
+    
+    // check
+    std::complex<double> dFdq_q;
 
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    if(mympi->my_rank == 0){
+        // read input about the structure optimization process
+        read_str_opt_input(str_opt_algo, max_str_loop, alpha_steepest_decent, mixing_beta, dq0_threashold);
+        // debug
+        std::cout << "str_opt_algo = " << str_opt_algo << std::endl;
+        std::cout << "max_str_loop = " << max_str_loop << std::endl;
+        if(str_opt_algo == 0){
+            std::cout << "alpha_steepest_decent = " << alpha_steepest_decent << std::endl;
+        }
+        else if(str_opt_algo == 1){
+            std::cout << "mixing_beta = " << mixing_beta << std::endl;
+        }
+        std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
+    }
+    
+    
 
     // Compute matrix element of 4-phonon interaction
 
@@ -986,6 +1007,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     memory->allocate(q0, ns);
     memory->allocate(delta_q0, ns);
     memory->allocate(u0, ns);
+    memory->allocate(force_array, ns);
 
     memory->allocate(v4_array_original, nk_irred_interpolate * nk_scph,
                      ns * ns, ns * ns);
@@ -1062,6 +1084,12 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         fout_q0.open("q0.txt");
         std::ofstream fout_u0;
         fout_u0.open("u0.txt");
+        std::ofstream fout_force;
+        fout_force.open("SCP_force.txt");
+        std::ofstream fout_dFdq_q;
+        fout_dFdq_q.open("dFdq_q.txt");
+        std::ofstream fout_dFdq_q_total;
+        fout_dFdq_q_total.open("dFdq_q_total.txt");
 
         for (double temp : vec_temp) {
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
@@ -1101,6 +1129,8 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             // structure loop
             std::cout << "temperature : " << temp << " K" << std::endl;
             fout_q0_tmp << "temperature : " << temp << " K" << std::endl;
+            fout_u0_tmp << "temperature : " << temp << " K" << std::endl;
+            fout_force << "temperature : " << temp << " K" << std::endl;
 
             std::cout << "initial q0 : " << std::endl;
             for(is = 0; is < ns; is++){
@@ -1120,6 +1150,16 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 renormalize_v1_array(v1_array_renormalized, v1_array_original, v3_array_original, v4_array_original, q0);
                 renormalize_v2_array(delta_v2_array_renormalize, v3_array_original, v4_array_original, q0);
                 renormalize_v3_array(v3_array_renormalized, v3_array_original, v4_array_original, q0);
+
+                // calculate PES force
+                calculate_force_in_real_space(v1_array_renormalized, force_array);
+
+                // print PES force
+                std::cout << "PES force" << std::endl;
+                std::cout << "temperature = " << temp << " K, i_str_loop = " << i_str_loop << std::endl;
+                for(is = 0; is < ns; is++){
+                    std::cout << force_array[is] << " ";
+                }std::cout << std::endl;
                 // copy v4_array_original to v4_array_renormalized
                 for(ik = 0; ik < nk_irred_interpolate * nk_scph; ik++){
                     for(is1 = 0; is1 < ns*ns; is1++){
@@ -1151,11 +1191,18 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
 
                 // check force
-                // dFdq_q = 0.0;
-                // for(is = 0; is < ns; is++){
-                //     dFdq_q += q0[is] * v1_array_SCP[is];
-                // }
-                // fout_SCP_force << temp << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
+                dFdq_q = 0.0;
+                for(is = 0; is < ns; is++){
+                    dFdq_q += q0[is] * (v1_array_SCP[is] - v1_array_renormalized[is]);
+                }
+                fout_dFdq_q << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
+
+                // check force
+                dFdq_q = 0.0;
+                for(is = 0; is < ns; is++){
+                    dFdq_q += q0[is] * v1_array_SCP[is];
+                }
+                fout_dFdq_q_total << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
 
                 // change structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -1196,10 +1243,10 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                         v1_vec_SCP(is) = v1_array_SCP[harm_optical_modes[is]];
                     }
                     // debug
-                    std::cout << "v1_vec_SCP" << std::endl;
-                    for(is = 0; is < ns-3; is++){
-                        std::cout << v1_vec_SCP(is) << " ";
-                    }std::cout << std::endl << std::endl;
+                    // std::cout << "v1_vec_SCP" << std::endl;
+                    // for(is = 0; is < ns-3; is++){
+                    //     std::cout << v1_vec_SCP(is) << " ";
+                    // }std::cout << std::endl << std::endl;
                     
                     dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_SCP);
 
@@ -1211,6 +1258,14 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     }
 
                 }
+                // calculate SCP force
+                calculate_force_in_real_space(v1_array_SCP, force_array);
+
+                // print SCP force
+                fout_force << temp << " " << i_str_loop << " ";
+                for(is = 0; is < ns; is++){
+                    fout_force << force_array[is] << " ";
+                }fout_force << std::endl;
 
                 // print q0
                 fout_q0_tmp << i_str_loop << " ";
@@ -1279,11 +1334,13 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         }
 
         // this is for test
-        //fout_SCP_force.close();
+        fout_dFdq_q.close();
+        fout_dFdq_q_total.close();
         fout_q0_tmp.close();
         fout_u0_tmp.close();
         fout_q0.close();
         fout_u0.close();
+        fout_force.close();
 
         memory->deallocate(cmat_convert);
 
@@ -1308,6 +1365,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     memory->deallocate(q0);
     memory->deallocate(delta_q0);
     memory->deallocate(u0);
+    memory->deallocate(force_array);
 }
 
 
@@ -1363,12 +1421,13 @@ void Scph::read_initial_q0(double *q0)
         std::cout << system->mass[system->map_p2s[i_atm][0]] << " ";
     }std::cout << std::endl;
     std::cout << "evec : " << std::endl;
-    for(is = 0; is < ns; is++){
-        std::cout << "mode " << is << std::endl;
-        for(is2 = 0;  is2 < ns; is2++){
-            std::cout << evec_harmonic[0][is][is2].real() << " " << evec_harmonic[0][is][is2].imag() << std::endl;
-        }
-    }
+    // debug
+    // for(is = 0; is < ns; is++){
+    //     std::cout << "mode " << is << std::endl;
+    //     for(is2 = 0;  is2 < ns; is2++){
+    //         std::cout << evec_harmonic[0][is][is2].real() << " " << evec_harmonic[0][is][is2].imag() << std::endl;
+    //     }
+    // }
     std::cout << "u_fractional" << std::endl;
 
     for(i_atm = 0; i_atm < natmin; i_atm++){
@@ -1399,6 +1458,46 @@ void Scph::read_initial_q0(double *q0)
     return ;
 }
 
+void Scph::read_str_opt_input(int &str_opt_algo, 
+                              int &max_str_loop, 
+                              double &alpha_steepest_decent, 
+                              double &mixing_beta, 
+                              double &dq0_threashold)
+{
+    std::fstream fin_str_opt;
+    std::string str_tmp;
+    fin_str_opt.open("str_opt.in");
+
+    int itmp;
+    double dtmp;
+    
+    fin_str_opt >> itmp;// >> str_tmp;
+    str_opt_algo = itmp;
+    std::cout << "itmp = " << itmp << std::endl; // debug
+
+    fin_str_opt >> itmp;//  >> str_tmp;
+    max_str_loop = itmp;
+    std::cout << "itmp = " << itmp << std::endl; // debug
+
+    if(str_opt_algo == 0){
+        fin_str_opt >> dtmp;// >> str_tmp;
+        alpha_steepest_decent = dtmp;
+        std::cout << "dtmp = " << dtmp << std::endl; // debug
+    }
+    else if(str_opt_algo == 1){
+        fin_str_opt >> dtmp;// >> str_tmp;
+        mixing_beta = dtmp;
+        std::cout << "dtmp = " << dtmp << std::endl; // debug
+    }
+    fin_str_opt >> dtmp;// >> str_tmp;
+    dq0_threashold = dtmp;
+    std::cout << "dtmp = " << dtmp << std::endl; // debug
+
+    fin_str_opt.close();
+
+    return;
+}
+
 void Scph::calculate_u0(double *q0, double *u0){
     int natmin = system->natmin;
     int is, is2, i_atm, ixyz;
@@ -1422,7 +1521,7 @@ void Scph::calculate_u0(double *q0, double *u0){
     return;
 }
 
-void Scph::print_force(std::complex<double> *v1_array_renormalized)
+void Scph::calculate_force_in_real_space(std::complex<double> *v1_array_renormalized, double *force_array)
 {   
     std::ofstream fout_force;
     int natmin = system->natmin;
@@ -1430,7 +1529,7 @@ void Scph::print_force(std::complex<double> *v1_array_renormalized)
     int is, iatm, ixyz;
     double force[3] = {0.0, 0.0, 0.0};
 
-    fout_force.open("force.out");
+    // fout_force.open("force.out");
 
     for(iatm = 0; iatm < natmin; iatm++){
         for(ixyz = 0; ixyz < 3; ixyz++){
@@ -1438,8 +1537,9 @@ void Scph::print_force(std::complex<double> *v1_array_renormalized)
             for(is = 0; is < ns; is++){
                 force[ixyz] -= evec_harmonic[0][is][iatm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[iatm][0]]) * v1_array_renormalized[is].real();
             }
+            force_array[iatm*3 + ixyz] = force[ixyz];
         }
-        fout_force << force[0] << " " << force[1] << " " << force[2] << std::endl;
+        // fout_force << force[0] << " " << force[1] << " " << force[2] << std::endl;
     }
 }
 
@@ -2232,7 +2332,7 @@ void Scph::renormalize_v1_array(std::complex<double> *v1_array_renormalized,
             for(is2 = 0; is2 < ns; is2++){
                 for(is3 = 0; is3 < ns; is3++){
                     
-                    v1_array_original[is] += factor2 * v4_array_original[ik_irred0*nk_scph][is*ns+is1][is2*ns+is3] 
+                    v1_array_renormalized[is] += factor2 * v4_array_original[ik_irred0*nk_scph][is*ns+is1][is2*ns+is3] 
                                              * q0[is1] * q0[is2] * q0[is3]; 
                     // the factor 4.0 appears due to the definition of v4_array = 1.0/(4.0*N_scph) Phi_4
                 }
@@ -2340,6 +2440,9 @@ void Scph::renormalize_v3_array(std::complex<double> ***v3_array_renormalized,
     int is1, is2, is3, js;
     const auto ns = dynamical->neval;
     int ik_irred0 = kpoint_map_symmetry[0].knum_irred_orig;
+
+    // debug
+    std::cout << "ik_irred0 = " << ik_irred0 << std::endl;
 
     for(ik = 0; ik < nk_scph; ik++){
         for(is1 = 0; is1 < ns; is1++){
