@@ -131,6 +131,30 @@ namespace PHON_NS {
         KsListGroup(const std::vector<KsList> &a) : group(a) {};
     };
 
+    class KpointUniformGrid {
+    public:
+
+        KpointUniformGrid();
+
+        KpointUniformGrid(const size_t nkx, const size_t nky, const size_t nkz) {
+            kgrid[0] = nkx; kgrid[1] = nky; kgrid[2] = nkz;
+        }
+
+    private:
+        size_t kgrid[3];
+        size_t nk, nk_irred;
+        std::vector<size_t> knum_minus;
+
+        std::vector<std::vector<double>> xk; // fractional coordinate
+        std::vector<std::vector<double>> kvec_na; // normalized vector used for nonanalytic correction
+        std::vector<double> weight_k; // weight of k points used in integration
+
+        std::map<int, int> kmap_to_irreducible;
+        std::vector<std::vector<int>> small_group_of_k;
+
+
+    };
+
     class Kpoint : protected Pointers {
     public:
         Kpoint(class PHON *);
