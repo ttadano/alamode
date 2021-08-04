@@ -85,6 +85,10 @@ namespace PHON_NS {
         double ***dFold;
         double ***dFnew;
 
+
+        double ***damping4; // four phonon selfenergy
+        void calc_anharmonic_imagself4();
+
         std::vector<std::vector<KsListGroup>> localnk_triplets_emitt;
         std::vector<std::vector<KsListGroup>> localnk_triplets_absorb;
 

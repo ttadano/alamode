@@ -62,6 +62,7 @@ void Iterativebte::set_default_variables()
     dFnew = nullptr;
     L_absorb = nullptr;
     L_emitt = nullptr;
+    damping4 = nullptr;
 }
 
 void Iterativebte::deallocate_variables()
@@ -73,6 +74,7 @@ void Iterativebte::deallocate_variables()
     if (dFnew) {memory->deallocate(dFnew);}  
     if (L_absorb) {memory->deallocate(L_absorb);}
     if (L_emitt) {memory->deallocate(L_emitt);}
+    if (damping4) {memory->deallocate(damping4);}
 }
 
 
@@ -625,6 +627,41 @@ void Iterativebte::calc_Q_from_L(double** &n, double** &q1)
     memory->deallocate(Qabsorb);
 }
 
+void Iterativebte::calc_anharmonic_imagself4()
+{
+    unsigned int i;
+    unsigned int *nks_thread;
+
+    // Distribute (k,s) to individual MPI threads
+    memory->allocate(damping4, ntemp, nklocal, ns);
+
+    double *damping4_loc;
+    memory->allocate(damping4_loc, ntemp);
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl;
+        std::cout << " Computing 4-phonon scattering amplitude ... " << std::endl;
+        std::cout << " WARNING: This is very expensive!! Please be patient." << std::endl;
+    }
+
+    for (auto ik = 0; ik < nklocal; ++ik) {
+        auto tmpk = nk_l[ik];
+        auto k1 = kpoint->kpoint_irred_all[tmpk][0].knum;
+        for (auto s1 = 0; s1 < ns; ++s1) {
+            auto omega = dynamical->eval_phonon[k1][s1];
+
+            anharmonic_core->calc_damping4_smearing(ntemp, Temperature, omega, 
+                                                    tmpk, s1, damping4_loc);
+
+            for (auto itemp = 0; itemp < ntemp; ++ itemp) {
+                damping4[itemp][ik][s1] = damping4_loc[itemp];
+            }
+
+        }
+    }
+
+    memory->deallocate(damping4_loc);
+}
 
 void Iterativebte::iterative_solver()
 {
@@ -674,6 +711,10 @@ void Iterativebte::iterative_solver()
         }
 
         memory->deallocate(isotope_damping); 
+    }
+
+    if (conductivity->fph_rta > 0) {
+        calc_anharmonic_imagself4();
     }
      
     if (mympi->my_rank == 0) {
@@ -850,6 +891,10 @@ void Iterativebte::iterative_solver()
                         double Q_final = Q[ik][s1];
                         if (isotope->include_isotope) {
                             Q_final += fb[k1][s1] * (fb[k1][s1] + 1.0) * 2.0 * isotope_damping_loc[ik][s1];
+                        }
+
+                        if (conductivity->fph_rta > 0) {
+                            Q_final += fb[k1][s1] * (fb[k1][s1] + 1.0) * 2.0 * damping4[itemp][ik][s1];
                         }
 
                         if (Q_final < 1.0e-50 || dynamical->eval_phonon[k1][s1] < eps8) {
