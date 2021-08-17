@@ -5,3 +5,4 @@ alm/Makefile
 alm/*.o
 alm/alm
 tests
+.DS_Store
