@@ -68,6 +68,9 @@ void System::deallocate_variables()
     if (xr_s) {
         memory->deallocate(xr_s);
     }
+    if(xr_s_no_displace){
+        memory->deallocate(xr_s_no_displace);
+    }
     if (xc) {
         memory->deallocate(xc);
     }
@@ -133,6 +136,10 @@ void System::setup()
         }
     }
     load_system_info_from_XML();
+
+    // read the structure without displacement for mindist_list
+    // in the SCP + structure relaxation
+    load_xr_s_no_displace_from_XML();
 
     recips(lavec_s, rlavec_s);
     recips(lavec_s_anharm, rlavec_s_anharm);
@@ -729,6 +736,60 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&map_s2p[0], nat * sizeof map_s2p[0], MPI_BYTE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof map_s2p_anharm[0], MPI_BYTE, 0, MPI_COMM_WORLD);
     if (lspin) MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+}
+
+void System::load_xr_s_no_displace_from_XML()
+{
+    if (mympi->my_rank == 0) {
+
+        int i;
+        using namespace boost::property_tree;
+        ptree pt;
+
+        // std::map<std::string, int> dict_atomic_kind;
+
+        try {
+            read_xml("no_displace.xml", pt);
+        }
+        catch (std::exception &e) {
+            std::string str_error = "Cannot open file no_displace.xml";
+            error->exit("load_xr_s_no_displace_from_XML",
+                        str_error.c_str());
+        }
+
+        // Parse atomic elements and coordinates
+        std::stringstream ss;
+
+        memory->allocate(xr_s_no_displace, nat, 3);
+        unsigned int index;
+
+        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
+                        const auto &child = child_.second;
+                        const auto str_index = child.get<std::string>("<xmlattr>.index");
+                        const auto str_element = child.get<std::string>("<xmlattr>.element");
+
+                        ss.str("");
+                        ss.clear();
+                        ss << child.data();
+
+                        index = boost::lexical_cast<unsigned int>(str_index) - 1;
+
+                        if (index >= nat)
+                            error->exit("load_system_info_xml",
+                                        "index is out of range");
+
+                        // kd[index] = dict_atomic_kind[str_element];
+                        ss >> xr_s_no_displace[index][0] >> xr_s_no_displace[index][1] >> xr_s_no_displace[index][2];
+                    }
+
+
+    }
+
+    if (mympi->my_rank > 0) {
+        memory->allocate(xr_s_no_displace, nat, 3);
+    }
+
+    MPI_Bcast(&xr_s_no_displace[0][0], 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 

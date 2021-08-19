@@ -986,6 +986,28 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         }
         std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
     }
+
+    // debug 
+    if(mympi->my_rank == 0){
+        std::cout << "atomic masses : " << std::endl;
+        for(int i_atm = 0; i_atm < system->natmin; i_atm++){
+            std::cout << system->mass[system->map_p2s[i_atm][0]] << " ";
+        }std::cout << std::endl;
+
+        std::cout << "mindist_list_scph : " << std::endl;
+        for(is = 0; is < ns/3; is++){
+            for(js = 0; js < ns/3; js++){
+                for(ik = 0; ik < nk_interpolate; ik++){
+                    std::cout << is << " " << js << " " << ik << " " << mindist_list_scph[is][js][ik].shift.size() << " " << mindist_list_scph[is][js][ik].dist << std::endl;
+                }
+            }
+        }
+    }    
+    // std::cout << "atomic masses : " << std::endl;
+    // for(int i_atm = 0; i_atm < system->natmin; i_atm++){
+    //     std::cout << system->mass[system->map_p2s[i_atm][0]] << " ";
+    // }std::cout << std::endl;
+
     
     
 
@@ -1173,7 +1195,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // print_force(v1_array_renormalized);
 
                 // solve SCP equation
-                compute_anharmonic_frequency(v4_array_renormalized,
+                /*compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -1181,7 +1203,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                          cmat_convert,
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
-                                         writes->getVerbosity());
+                                         writes->getVerbosity());*/
+                compute_renormalized_harmonic_frequency(omega2_anharm[iT],
+                                        evec_anharm_tmp,
+                                        delta_v2_array_renormalize,
+                                        writes->getVerbosity()); // test of IFC renormalization
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -3050,7 +3076,8 @@ void Scph::setup_transform_ifc()
     }
 
     for (i = 0; i < nat; ++i) {
-        rotvec(xf_p[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xf_p[i], system->xr_s_no_displace[system->map_p2s[i][0]], system->lavec_s);
+        // rotvec(xf_p[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
         rotvec(xf_p[i], xf_p[i], system->rlavec_p);
         for (j = 0; j < 3; ++j) xf_p[i][j] /= 2.0 * pi;
     }
