@@ -152,6 +152,8 @@ namespace PHON_NS {
 
         void read_initial_q0(double *);
 
+        void read_Tdep_initial_q0_from_u(double *, int);
+
         void read_str_opt_input(int &str_opt_algo, 
                                     int &max_str_loop, 
                                     double &alpha_steepest_decent, 
@@ -201,6 +203,13 @@ namespace PHON_NS {
                                 std::complex<double> ***, 
                                 std::complex<double> ***, 
                                 double *);
+
+        void renormalize_v0(double &,
+                          double ,
+                          std::complex<double> *,
+                          std::complex<double> ***,
+                          std::complex<double> ***,
+                          double *);
 
         void compute_anharmonic_v1_array(std::complex<double> *, 
                                          std::complex<double> ***, 

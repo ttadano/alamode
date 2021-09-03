@@ -943,12 +943,14 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     std::complex<double> *v1_array_original, *v1_array_renormalized;
     std::complex<double> ***v3_array_original, ***v3_array_renormalized;
     std::complex<double> ***v4_array_original, ***v4_array_renormalized;
+    double v0_original, v0_renormalized;
+    v0_original = 0.0;
 
     // generalized force dF/dq^{(0)}_{\lambda}
     std::complex<double> *v1_array_SCP;
 
     // structure optimization
-    int i_str_loop;
+    int i_str_loop, i_temp_loop;
     double dq0;
     MatrixXcd Cmat(ns, ns), v2_mat_full(ns, ns);
     MatrixXcd v2_mat_optical(ns-3, ns-3);
@@ -1110,8 +1112,13 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         fout_dFdq_q.open("dFdq_q.txt");
         std::ofstream fout_dFdq_q_total;
         fout_dFdq_q_total.open("dFdq_q_total.txt");
+        std::ofstream fout_v0;
+        fout_v0.open("v0.txt");
+
+        i_temp_loop = -1;
 
         for (double temp : vec_temp) {
+            i_temp_loop++;
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
             // Initialize phonon eigenvectors with harmonic values
@@ -1139,9 +1146,19 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 }
             }
 
+            // set T-dependent initial value of q0
+            // read_Tdep_initial_q0_from_u(q0, i_temp_loop);
+            // calculate_u0(q0, u0);
+            // std::cout << "initial u0: " << std::endl;
+            // for(is = 0; is < ns; is++){
+            //     std::cout << u0[is] << " ";
+            // }std::cout << std::endl;
+
             // set initial value of q0 at each T
             read_initial_q0(q0);
             calculate_u0(q0, u0);
+            // start from warm start
+            converged_prev = false; // comment out when we start from the previous structure
 
             // read only at the beginning of the calculation
             // if(lower_temp){
@@ -1158,8 +1175,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             //     }
             // }
 
-            // start from warm start
-            converged_prev = false; // comment out when we start from the previous structure
+            
 
             // structure loop
             std::cout << "temperature : " << temp << " K" << std::endl;
@@ -1185,6 +1201,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 renormalize_v1_array(v1_array_renormalized, v1_array_original, v3_array_original, v4_array_original, q0);
                 renormalize_v2_array(delta_v2_array_renormalize, v3_array_original, v4_array_original, q0);
                 renormalize_v3_array(v3_array_renormalized, v3_array_original, v4_array_original, q0);
+                renormalize_v0(v0_renormalized, v0_original, v1_array_original, v3_array_original, v4_array_original, q0);
 
                 // calculate PES force
                 calculate_force_in_real_space(v1_array_renormalized, force_array);
@@ -1208,7 +1225,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // print_force(v1_array_renormalized);
 
                 // solve SCP equation
-                compute_anharmonic_frequency(v4_array_renormalized,
+                /*compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -1216,11 +1233,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                          cmat_convert,
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
-                                         writes->getVerbosity());
-                // compute_renormalized_harmonic_frequency(omega2_anharm[iT],
-                //                         evec_anharm_tmp,
-                //                         delta_v2_array_renormalize,
-                //                         writes->getVerbosity()); // test of IFC renormalization
+                                         writes->getVerbosity());*/
+                compute_renormalized_harmonic_frequency(omega2_anharm[iT],
+                                        evec_anharm_tmp,
+                                        delta_v2_array_renormalize,
+                                        writes->getVerbosity()); // test of IFC renormalization
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -1239,7 +1256,9 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // check force
                 dFdq_q = 0.0;
                 for(is = 0; is < ns; is++){
-                    dFdq_q += q0[is] * v1_array_SCP[is];
+                    // dFdq_q += q0[is] * v1_array_SCP[is];
+                    dFdq_q += q0[is] * v1_array_renormalized[is];
+                    
                 }
                 fout_dFdq_q_total << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
 
@@ -1342,6 +1361,8 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             for(is = 0; is < ns; is++){
                 fout_u0 << u0[is] << " ";
             }fout_u0 << std::endl;
+
+            fout_v0 << temp << " " << v0_renormalized << std::endl;
 
             if (!warmstart_scph) converged_prev = false;
 
@@ -1488,6 +1509,61 @@ void Scph::read_initial_q0(double *q0)
         }
     }
 
+    std::cout << "initial q0: " << std::endl;
+    for(is = 0; is < ns; is++){
+        std::cout << q0[is] << " ";
+    }std::cout << std::endl;
+    
+    fin_displace.close();
+    return ;
+}
+
+void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
+{
+    std::fstream fin_displace;
+    std::string str_tmp;
+    int natmin = system->natmin;
+    int is, i_atm, ixyz, i;
+    auto ns = dynamical->neval;
+    //double unit;
+    double a[3][3];
+    double d_tmp, temp_tmp;
+    //double u_fractional[3], u_xyz[3];
+
+    std::vector<double> u_xyz;
+
+    // initialize q0
+    for(is = 0; is < ns; is++){
+        q0[is] = 0.0;
+    }
+
+    fin_displace.open("u0.in");
+
+    if(!fin_displace){
+        std::cout << "Warning in Scph::read_Tdep_initial_q0_from_u: file u0.in could not open." << std::endl;
+        std::cout << "all q0 is set 0." << std::endl;
+        return ;
+    }
+
+    // read unnecessary lines
+    for(i = 0; i < i_temp_loop; i++){
+        std::getline(fin_displace, str_tmp); 
+    }
+    fin_displace >> temp_tmp;
+    for(is = 0; is < ns; is++){
+        fin_displace >> d_tmp;
+        u_xyz.push_back(d_tmp);
+    }
+
+    for(is = 0; is < ns; is++){
+        for(i_atm = 0; i_atm < natmin; i_atm++){
+            for(ixyz = 0; ixyz < 3; ixyz++){
+                q0[is] += evec_harmonic[0][is][i_atm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[i_atm][0]]) * u_xyz[i_atm*3+ixyz]; 
+            }
+        }
+    }
+
+    std::cout << "temperature = " << temp_tmp << std::endl;
     std::cout << "initial q0: " << std::endl;
     for(is = 0; is < ns; is++){
         std::cout << q0[is] << " ";
@@ -2499,6 +2575,47 @@ void Scph::renormalize_v3_array(std::complex<double> ***v3_array_renormalized,
 
 }
 
+void Scph::renormalize_v0(double &v0_renormalized,
+                          double v0_original,
+                          std::complex<double> *v1_array_original,
+                          std::complex<double> ***v3_array_original,
+                          std::complex<double> ***v4_array_original,
+                          double *q0)
+{
+    int is1, is2, is3, is4;
+    const auto ns = dynamical->neval;
+    double factor2 = 1.0/2.0;
+    double factor3 = 1.0/6.0 * 4.0 * nk_scph;;
+    double factor4 = 1.0/24.0 * 4.0 * nk_scph;;
+
+    std::complex<double> v0_renormalized_tmp;
+
+    v0_renormalized_tmp = v0_original;
+    // renormalize from the 1st order, harmonic IFC
+    for(is1 = 0; is1 < ns; is1++){
+        v0_renormalized_tmp += v1_array_original[is1] * q0[is1];
+        v0_renormalized_tmp += factor2 * omega2_harmonic[0][is1] * q0[is1] * q0[is1]; // original v2 is assumed to be diagonal
+    }
+    // renormalize from the cubic, quartic IFC
+    for(is1 = 0; is1 < ns; is1++){
+        for(is2 = 0; is2 < ns; is2++){
+            for(is3 = 0; is3 < ns; is3++){
+                v0_renormalized_tmp += factor3 * v3_array_original[0][is1][is2*ns+is3] * q0[is1] * q0[is2] * q0[is3];
+                for(is4 = 0; is4 < ns; is4++){
+                    v0_renormalized_tmp += factor4 * v4_array_original[0][is2*ns+is1][is3*ns+is4] * q0[is1] * q0[is2] * q0[is3] * q0[is4];
+                }
+            }
+        }
+    } 
+
+    v0_renormalized = v0_renormalized_tmp.real();
+
+    // debug
+    std::cout << "v0_renormalized_tmp = " << v0_renormalized_tmp << std::endl;
+
+
+}
+                    
 void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormalized, 
                             std::complex<double> ***v3_array_renormalized, 
                             std::complex<double> ***cmat_convert, 
