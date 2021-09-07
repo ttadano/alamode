@@ -132,6 +132,14 @@ namespace PHON_NS {
         KsListGroup(const std::vector<KsList> &a) : group(a) {};
     };
 
+    class KpointGeneral {
+     public:
+      KpointGeneral() {};
+      unsigned int nk;
+      std::vector<std::vector<double>> xk;
+      std::vector<std::vector<double>> kvec_na;
+    };
+
     class KpointMeshUniform {
      public:
       KpointMeshUniform() {};
@@ -156,6 +164,16 @@ namespace PHON_NS {
       std::vector<std::vector<int>> small_group_of_k;
       std::vector<unsigned int> kindex_minus_xk;
 
+    };
+
+    class KpointBandStructure {
+     public:
+      KpointBandStructure() {};
+
+      unsigned int nk;
+      std::vector<std::vector<double>> xk;
+      std::vector<std::vector<double>> kvec_na;
+      std::vector<double> kaxis;
     };
 
     class Kpoint : protected Pointers {
@@ -188,6 +206,9 @@ namespace PHON_NS {
         std::vector<int> *small_group_of_k;
 
         KpointMeshUniform kmesh_dos;
+        KpointBandStructure kpoint_bs;
+        KpointGeneral kpoint_general;
+
 
         int get_knum(double,
                      double,
@@ -269,12 +290,20 @@ namespace PHON_NS {
                                bool,
                                std::vector<std::vector<KpointList>> &) const;
 
+        void setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
+                                const double rlavec_p[3][3],
+                                KpointGeneral &kpoint_out);
+
+        void setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
+                               const double rlavec_p[3][3],
+                               KpointBandStructure &kpoint_band_out);
+
         void setup_kpoint_mesh_uniform(const unsigned int nk1,
                                        const unsigned int nk2,
                                        const unsigned int nk3,
                                        const std::vector<SymmetryOperation> &symmlist,
                                        const double rlavec_p[3][3],
-                                       KpointMeshUniform &kmesh);
+                                       KpointMeshUniform &kmesh_out);
 
         void setup_kpoint_plane(const std::vector<KpointInp> &,
                                 unsigned int &,

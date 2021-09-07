@@ -99,6 +99,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             setup_kpoint_given(kpInp, nk, xk, kvec_na);
+            setup_kpoint_given(kpInp, system->rlavec_p, kpoint_general);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of k points : " << nk << std::endl << std::endl;
@@ -122,7 +123,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             setup_kpoint_band(kpInp, nk, xk, kvec_na, kaxis);
-
+            setup_kpoint_band(kpInp, system->rlavec_p, kpoint_bs);
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
                 std::cout << "  List of k paths : " << std::endl;
@@ -146,7 +147,7 @@ void Kpoint::kpoint_setups(const std::string mode)
                     std::cout << std::setw(4) << kpInp[i].kpelem[8] << std::endl;
                 }
                 std::cout << std::endl;
-                std::cout << "  Number of k points : " << nk << std::endl << std::endl;
+                std::cout << "  Number of k points : " << kpoint_bs.nk << std::endl << std::endl;
 
             }
 
@@ -296,6 +297,57 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
     MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
+
+void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
+                                const double rlavec_p[3][3],
+                                KpointGeneral &kpoint_out)
+{
+    int i;
+    double **k, **kdirec;
+    unsigned int n = kpinfo.size();
+
+    MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    memory->allocate(k, n, 3);
+    memory->allocate(kdirec, n, 3);
+
+    if (mympi->my_rank == 0) {
+        int j = 0;
+        for (const auto &it: kpinfo) {
+            for (i = 0; i < 3; ++i) {
+                k[j][i] = std::atof(it.kpelem[i].c_str());
+            }
+
+            rotvec(kdirec[j], k[j], rlavec_p, 'T');
+
+            const auto norm = kdirec[j][0] * kdirec[j][0]
+                  + kdirec[j][1] * kdirec[j][1]
+                  + kdirec[j][2] * kdirec[j][2];
+
+            if (norm > eps) {
+                for (i = 0; i < 3; ++i) kdirec[j][i] /= std::sqrt(norm);
+            }
+
+            ++j;
+        }
+    }
+
+    MPI_Bcast(&k[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    kpoint_out.nk = n;
+    kpoint_out.xk.resize(n, std::vector<double>(3));
+    kpoint_out.kvec_na.resize(n, std::vector<double>(3));
+    for (i = 0; i < n; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            kpoint_out.xk[i][j] = k[i][j];
+            kpoint_out.kvec_na[i][j] = kdirec[i][j];
+        }
+    }
+
+    memory->deallocate(k);
+    memory->deallocate(kdirec);
+}
+
 void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
                                unsigned int &n,
                                double **&xk,
@@ -397,6 +449,131 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 
     MPI_Bcast(&xk[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+}
+
+void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
+                               const double rlavec_p[3][3],
+                               KpointBandStructure &kpoint_band_out)
+{
+    int j, k;
+
+    double **xk_tmp;
+    double **kdirec_tmp;
+    double *axis_tmp;
+    unsigned int n  = 0;
+
+    if (mympi->my_rank == 0) {
+
+        std::string **kp_symbol;
+        unsigned int *nk_path;
+        double **k_start, **k_end;
+
+        const auto npath = kpinfo.size();
+
+        memory->allocate(kp_symbol, npath, 2);
+        memory->allocate(k_start, npath, 3);
+        memory->allocate(k_end, npath, 3);
+        memory->allocate(nk_path, npath);
+
+        n = 0;
+        int i = 0;
+
+        for (const auto &it: kpinfo) {
+            kp_symbol[i][0] = it.kpelem[0];
+            kp_symbol[i][1] = it.kpelem[4];
+
+            for (j = 0; j < 3; ++j) {
+                k_start[i][j] = std::atof(it.kpelem[j + 1].c_str());
+                k_end[i][j] = std::atof(it.kpelem[j + 5].c_str());
+
+            }
+            nk_path[i] = std::atoi(it.kpelem[8].c_str());
+            n += nk_path[i];
+            ++i;
+        }
+
+        memory->allocate(xk_tmp, n, 3);
+        memory->allocate(kdirec_tmp, n, 3);
+        memory->allocate(axis_tmp, n);
+
+        unsigned int ik = 0;
+        double direc_tmp[3], tmp[3];
+
+        for (i = 0; i < npath; ++i) {
+            for (j = 0; j < 3; ++j) {
+                direc_tmp[j] = k_end[i][j] - k_start[i][j];
+            }
+
+            rotvec(direc_tmp, direc_tmp, rlavec_p, 'T');
+            auto norm = std::pow(direc_tmp[0], 2)
+                  + std::pow(direc_tmp[1], 2)
+                  + std::pow(direc_tmp[2], 2);
+            norm = std::sqrt(norm);
+
+            if (norm > eps) {
+                for (j = 0; j < 3; ++j) direc_tmp[j] /= norm;
+            }
+
+            for (j = 0; j < nk_path[i]; ++j) {
+                for (k = 0; k < 3; ++k) {
+                    xk_tmp[ik][k] = k_start[i][k]
+                          + (k_end[i][k] - k_start[i][k])
+                                * static_cast<double>(j) / static_cast<double>(nk_path[i] - 1);
+
+                    kdirec_tmp[ik][k] = direc_tmp[k];
+                }
+
+                if (ik == 0) {
+                    axis_tmp[ik] = 0.0;
+                } else {
+                    if (j == 0) {
+                        axis_tmp[ik] = axis_tmp[ik - 1];
+                    } else {
+                        for (k = 0; k < 3; ++k) tmp[k] = xk_tmp[ik][k] - xk_tmp[ik - 1][k];
+                        rotvec(tmp, tmp, rlavec_p, 'T');
+                        axis_tmp[ik] = axis_tmp[ik - 1]
+                              + std::sqrt(tmp[0] * tmp[0]
+                                                + tmp[1] * tmp[1]
+                                                + tmp[2] * tmp[2]);
+                    }
+                }
+                ++ik;
+            }
+        }
+        memory->deallocate(nk_path);
+        memory->deallocate(k_start);
+        memory->deallocate(k_end);
+        memory->deallocate(kp_symbol);
+    }
+
+    MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    if (mympi->my_rank > 0) {
+        memory->allocate(xk_tmp, n, 3);
+        memory->allocate(kdirec_tmp, n, 3);
+        memory->allocate(axis_tmp, n);
+    }
+
+    MPI_Bcast(&xk_tmp[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&kdirec_tmp[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&axis_tmp[0], n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    kpoint_band_out.nk = n;
+    kpoint_band_out.xk.resize(n, std::vector<double>(3));
+    kpoint_band_out.kvec_na.resize(n, std::vector<double>(3));
+    kpoint_band_out.kaxis.resize(n);
+
+    for (auto i = 0; i < n; ++i) {
+        for (j = 0; j < 3; ++j) {
+            kpoint_band_out.xk[i][j] = xk_tmp[i][j];
+            kpoint_band_out.kvec_na[i][j] = kdirec_tmp[i][j];
+        }
+        kpoint_band_out.kaxis[i] = axis_tmp[i];
+    }
+
+    memory->deallocate(xk_tmp);
+    memory->deallocate(kdirec_tmp);
+    memory->deallocate(axis_tmp);
 }
 
 void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,

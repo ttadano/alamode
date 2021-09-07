@@ -98,7 +98,6 @@ void Input::parce_input(int narg,
     }
 }
 
-
 void Input::parse_general_vars()
 {
     // Read input parameters in the &general-field.
@@ -130,7 +129,7 @@ void Input::parse_general_vars()
 
     get_var_dict(input_list, general_var_dict);
 
-    for (auto &no_default : no_defaults) {
+    for (auto &no_default: no_defaults) {
         if (general_var_dict.find(no_default) == general_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
@@ -197,7 +196,7 @@ void Input::parse_general_vars()
 
     auto prec_ewald = 1.0e-12;
 
-    // if file_result exists in the current directory, 
+    // if file_result exists in the current directory,
     // restart mode will be automatically turned on.
     auto restart = stat(file_result.c_str(), &st) == 0;
 
@@ -308,7 +307,6 @@ void Input::parse_general_vars()
         memory->deallocate(masskd);
     }
 
-
     dos->emax = emax;
     dos->emin = emin;
     dos->delta_e = delta_e;
@@ -352,7 +350,7 @@ void Input::parse_scph_vars()
 
     get_var_dict(input_list, scph_var_dict);
 
-    for (auto &no_default : no_defaults) {
+    for (auto &no_default: no_defaults) {
         if (scph_var_dict.find(no_default) == scph_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &scph input region: ",
@@ -373,7 +371,7 @@ void Input::parse_scph_vars()
     auto warm_start = true;
     unsigned int bubble = 0;
 
-    // if file_dymat exists in the current directory, 
+    // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
 
     auto restart_scph = stat(file_dymat.c_str(), &st) == 0;
@@ -459,7 +457,6 @@ void Input::parse_scph_vars()
     scph_var_dict.clear();
 }
 
-
 void Input::parse_analysis_vars(const bool use_default_values)
 {
     // Read input parameters in the &analysis field.
@@ -472,8 +469,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
             "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
             "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
             "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-        "KAPPA_COHERENT",
-        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
+            "KAPPA_COHERENT",
+            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
 
 #ifdef _FE_BUBBLE
@@ -696,7 +693,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 for (auto j = 0; j < 3; ++j) {
                     try {
                         direction[j] = boost::lexical_cast<double>(str_vec[j]);
-                    } catch (std::exception &e) {
+                    }
+                    catch (std::exception &e) {
                         std::cout << e.what() << std::endl;
                         error->exit("parse_analysis_vars",
                                     "subset of PROJECTION_AXES must be an array of doubles.");
@@ -882,7 +880,6 @@ void Input::parse_cell_parameter()
     }
 }
 
-
 void Input::parse_kpoints()
 {
     // Read the settings in the &kpoint field.
@@ -941,7 +938,7 @@ void Input::parse_kpoints()
         split(kpelem, line, boost::is_any_of("\t "), boost::token_compress_on);
 
         if (i == 0) {
-            // kpmode 
+            // kpmode
             if (kpelem.size() == 1) {
                 try {
                     kpmode = boost::lexical_cast<int>(kpelem[0]);
@@ -952,7 +949,7 @@ void Input::parse_kpoints()
                                 "KPMODE must be an integer. [0, 1, or 2]");
                 }
 
-                if (!(kpmode >= 0 && kpmode <= 3)) {
+                if (!(kpmode >= 0 && kpmode <= 4)) {
                     error->exit("parse_kpoints",
                                 "KPMODE must be 0, 1, or 2.");
                 }
@@ -988,7 +985,6 @@ void Input::parse_kpoints()
 
     kpoint->kpoint_mode = kpmode;
 }
-
 
 int Input::locate_tag(const std::string &key)
 {
@@ -1048,7 +1044,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
     std::vector<std::string> str_entry, str_varval;
     std::set<std::string> keyword_set;
 
-    for (const auto &it : input_list) {
+    for (const auto &it: input_list) {
         keyword_set.insert(it);
     }
 
@@ -1081,7 +1077,6 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-
 
             for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
 
@@ -1156,7 +1151,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-            for (auto &it : str_entry) {
+            for (auto &it: str_entry) {
 
                 // Split the input entry by '='
 
@@ -1212,7 +1207,6 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
     keyword_set.clear();
 }
 
-
 bool Input::is_endof_entry(const std::string &str) const
 {
     return str[0] == '/';
@@ -1256,7 +1250,6 @@ void Input::assign_val(T &val,
         }
     }
 }
-
 
 template<typename T_to, typename T_from>
 T_to Input::my_cast(T_from const &x)
