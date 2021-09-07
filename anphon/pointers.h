@@ -17,7 +17,6 @@ namespace PHON_NS {
     public:
         Pointers(PHON *ptr) :
                 phon(ptr),
-                memory(ptr->memory),
                 error(ptr->error),
                 input(ptr->input),
                 system(ptr->system),
@@ -46,7 +45,6 @@ namespace PHON_NS {
 
     protected:
         PHON *phon;
-        Memory *&memory;
         Error *&error;
         Input *&input;
         System *&system;

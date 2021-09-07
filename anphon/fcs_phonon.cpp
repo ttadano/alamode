@@ -52,10 +52,10 @@ void Fcs_phonon::set_default_variables()
 void Fcs_phonon::deallocate_variables()
 {
     if (force_constant) {
-        memory->deallocate(force_constant);
+        deallocate(force_constant);
     }
     if (force_constant_with_cell) {
-        memory->deallocate(force_constant_with_cell);
+        deallocate(force_constant_with_cell);
     }
 }
 
@@ -109,7 +109,7 @@ void Fcs_phonon::setup(std::string mode)
         anharmonic_core->quartic_mode = 1;
     }
 
-    memory->allocate(force_constant_with_cell, maxorder);
+    allocate(force_constant_with_cell, maxorder);
 
     if (mympi->my_rank == 0) {
         double *maxdev;
@@ -127,7 +127,7 @@ void Fcs_phonon::setup(std::string mode)
         }
         std::cout << std::endl;
 
-        memory->allocate(maxdev, maxorder);
+        allocate(maxdev, maxorder);
         examine_translational_invariance(maxorder,
                                          system->nat_anharm,
                                          system->natmin,
@@ -141,7 +141,7 @@ void Fcs_phonon::setup(std::string mode)
                       << std::scientific << maxdev[i] << std::endl;
         }
         std::cout << std::endl;
-        memory->deallocate(maxdev);
+        deallocate(maxdev);
     }
 
     MPI_Bcast_fc2_ext();
@@ -326,8 +326,8 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N) const
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        memory->allocate(fcs_tmp, len);
-        memory->allocate(ind, len, nelem, 3);
+        allocate(fcs_tmp, len);
+        allocate(ind, len, nelem, 3);
 
         if (mympi->my_rank == 0) {
             for (j = 0; j < len; ++j) {
@@ -361,8 +361,8 @@ void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N) const
             }
         }
 
-        memory->deallocate(fcs_tmp);
-        memory->deallocate(ind);
+        deallocate(fcs_tmp);
+        deallocate(ind);
     }
 }
 
@@ -376,8 +376,8 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
     auto nfcs = fc2_ext.size();
     MPI_Bcast(&nfcs, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    memory->allocate(fcs_tmp, nfcs);
-    memory->allocate(ind, nfcs, 5);
+    allocate(fcs_tmp, nfcs);
+    allocate(ind, nfcs, 5);
 
     if (mympi->my_rank == 0) {
         for (i = 0; i < nfcs; ++i) {
@@ -403,8 +403,8 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
             fc2_ext.push_back(fcext_tmp);
         }
     }
-    memory->deallocate(fcs_tmp);
-    memory->deallocate(ind);
+    deallocate(fcs_tmp);
+    deallocate(ind);
 }
 
 
@@ -431,7 +431,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
     for (i = 0; i < n; ++i) {
 
         if (i == 0) {
-            memory->allocate(sum2, 3 * natmin, 3);
+            allocate(sum2, 3 * natmin, 3);
 
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3; ++k) {
@@ -483,11 +483,11 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                     if (ret[i] < dev) ret[i] = dev;
                 }
             }
-            memory->deallocate(sum2);
+            deallocate(sum2);
 
         } else if (i == 1) {
 
-            memory->allocate(sum3, 3 * natmin, 3 * nat, 3);
+            allocate(sum3, 3 * natmin, 3 * nat, 3);
 
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3 * nat; ++k) {
@@ -512,11 +512,11 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                 }
             }
 
-            memory->deallocate(sum3);
+            deallocate(sum3);
 
         } else if (i == 2) {
 
-            memory->allocate(sum4, 3 * natmin, 3 * nat, 3 * nat, 3);
+            allocate(sum4, 3 * natmin, 3 * nat, 3 * nat, 3);
 
             for (j = 0; j < 3 * natmin; ++j) {
                 for (k = 0; k < 3 * nat; ++k) {
@@ -551,7 +551,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                 }
             }
 
-            memory->deallocate(sum4);
+            deallocate(sum4);
 
         }
 
@@ -575,8 +575,8 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        memory->allocate(fcs_tmp, len);
-        memory->allocate(ind, len, nelem, 3);
+        allocate(fcs_tmp, len);
+        allocate(ind, len, nelem, 3);
 
         if (mympi->my_rank == 0) {
             for (j = 0; j < len; ++j) {
@@ -611,7 +611,7 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
             }
         }
 
-        memory->deallocate(fcs_tmp);
-        memory->deallocate(ind);
+        deallocate(fcs_tmp);
+        deallocate(ind);
     }
 }

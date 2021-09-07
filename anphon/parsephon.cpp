@@ -152,7 +152,7 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars",
                     "The number of entries for KD is inconsistent with NKD");
     } else {
-        memory->allocate(kdname, nkd);
+        allocate(kdname, nkd);
         for (i = 0; i < nkd; ++i) {
             kdname[i] = kdname_v[i];
         }
@@ -165,7 +165,7 @@ void Input::parse_general_vars()
             error->exit("parse_general_vars",
                         "The number of entries for MASS is inconsistent with NKD");
         } else {
-            memory->allocate(masskd, nkd);
+            allocate(masskd, nkd);
             for (i = 0; i < nkd; ++i) {
                 masskd[i] = my_cast<double>(masskd_v[i]);
             }
@@ -289,22 +289,22 @@ void Input::parse_general_vars()
     system->dT = dT;
     system->nkd = nkd;
 
-    memory->allocate(system->symbol_kd, nkd);
+    allocate(system->symbol_kd, nkd);
     for (i = 0; i < nkd; ++i) {
         system->symbol_kd[i] = kdname[i];
     }
     if (kdname) {
-        memory->deallocate(kdname);
+        deallocate(kdname);
     }
 
     if (!general_var_dict["MASS"].empty()) {
-        memory->allocate(system->mass_kd, nkd);
+        allocate(system->mass_kd, nkd);
         for (i = 0; i < nkd; ++i) {
             system->mass_kd[i] = masskd[i];
         }
     }
     if (masskd) {
-        memory->deallocate(masskd);
+        deallocate(masskd);
     }
 
     dos->emax = emax;
@@ -590,7 +590,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 error->exit("parse_analysis_vars",
                             "The number of entries for ISOFACT is inconsistent with NKD");
             } else {
-                memory->allocate(isotope_factor, system->nkd);
+                allocate(isotope_factor, system->nkd);
                 for (i = 0; i < system->nkd; ++i) {
                     isotope_factor[i] = my_cast<double>(isofact_v[i]);
                 }
@@ -766,14 +766,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     if (include_isotope) {
         if (!analysis_var_dict["ISOFACT"].empty()) {
-            memory->allocate(isotope->isotope_factor, system->nkd);
+            allocate(isotope->isotope_factor, system->nkd);
             for (i = 0; i < system->nkd; ++i) {
                 isotope->isotope_factor[i] = isotope_factor[i];
             }
         }
     }
     if (isotope_factor) {
-        memory->deallocate(isotope_factor);
+        deallocate(isotope_factor);
     }
 
     if (phon->mode == "SCPH") {

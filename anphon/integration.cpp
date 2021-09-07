@@ -44,7 +44,7 @@ void Integration::set_default_variables()
 void Integration::deallocate_variables()
 {
     if (tetras) {
-        memory->deallocate(tetras);
+        deallocate(tetras);
     }
 }
 
@@ -76,7 +76,7 @@ void Integration::setup_integration()
 
     if (ismear == -1) {
         ntetra = 6 * nk;
-        memory->allocate(tetras, ntetra, 4);
+        allocate(tetras, ntetra, 4);
         prepare_tetrahedron(nkx, nky, nkz);
     }
 

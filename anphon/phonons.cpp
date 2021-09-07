@@ -110,7 +110,6 @@ PHON::~PHON()
 
 void PHON::create_pointers()
 {
-    memory = new Memory(this);
     timer = new Timer(this);
     error = new Error(this);
     system = new System(this);
@@ -136,7 +135,6 @@ void PHON::create_pointers()
 
 void PHON::destroy_pointers() const
 {
-    delete memory;
     delete timer;
     delete error;
     delete system;

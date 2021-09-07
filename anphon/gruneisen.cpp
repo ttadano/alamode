@@ -54,10 +54,10 @@ void Gruneisen::set_default_variables()
 void Gruneisen::deallocate_variables()
 {
     if (gruneisen) {
-        memory->deallocate(gruneisen);
+        deallocate(gruneisen);
     }
     if (xshift_s) {
-        memory->deallocate(xshift_s);
+        deallocate(xshift_s);
     }
     delta_fc2.clear();
     delta_fc3.clear();
@@ -69,7 +69,7 @@ void Gruneisen::setup()
     MPI_Bcast(&delta_a, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&print_newfcs, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
-    memory->allocate(xshift_s, 27, 3);
+    allocate(xshift_s, 27, 3);
 
     for (int i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
 
@@ -97,7 +97,7 @@ void Gruneisen::setup()
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3);
     }
     if (print_gruneisen) {
-        memory->allocate(gruneisen, kpoint->nk, dynamical->neval);
+        allocate(gruneisen, kpoint->nk, dynamical->neval);
     }
 
     if (mympi->my_rank == 0) {
@@ -122,7 +122,7 @@ void Gruneisen::calc_gruneisen()
     const auto nk = kpoint->nk;
     std::complex<double> **dfc2_reciprocal;
 
-    memory->allocate(dfc2_reciprocal, ns, ns);
+    allocate(dfc2_reciprocal, ns, ns);
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -157,7 +157,7 @@ void Gruneisen::calc_gruneisen()
             }
         }
     }
-    memory->deallocate(dfc2_reciprocal);
+    deallocate(dfc2_reciprocal);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -535,8 +535,8 @@ std::string Gruneisen::double2string(const double d) const
 //     unsigned int itran;
 //     unsigned int norder = fcs_in[0].pairs.size();
 // 
-//     memory->allocate(vec, norder, 3);
-//     memory->allocate(pos, norder, 3);
+//     allocate(vec, norder, 3);
+//     allocate(pos, norder, 3);
 // 
 //     for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
 // 
@@ -558,8 +558,8 @@ std::string Gruneisen::double2string(const double d) const
 //             * (vec[1][(*it).pairs[1].index % 3] - pos[0][(*it).pairs[1].index % 3]);
 //     }
 // 
-//     memory->deallocate(vec);
-//     memory->deallocate(pos);
+//     deallocate(vec);
+//     deallocate(pos);
 //     return ret;
 // }
 // 
@@ -573,8 +573,8 @@ std::string Gruneisen::double2string(const double d) const
 //     unsigned int norder = fcs_in[0].pairs.size();
 //     unsigned int crd[4];
 // 
-//     memory->allocate(vec, norder, 3);
-//     memory->allocate(pos, norder, 3);
+//     allocate(vec, norder, 3);
+//     allocate(pos, norder, 3);
 // 
 //     for (i = 0; i < 3; ++i) {
 //         for (j = 0; j < 3; ++j) {
@@ -615,8 +615,8 @@ std::string Gruneisen::double2string(const double d) const
 //         }
 //     }
 // 
-//     memory->deallocate(vec);
-//     memory->deallocate(pos);
+//     deallocate(vec);
+//     deallocate(pos);
 // 
 //     for (i = 0; i < 3; ++i) {
 //         for (j = 0; j < 3; ++j) {
@@ -638,8 +638,8 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //     double ****A, ****C;
 // 
-//     memory->allocate(A, 3, 3, 3, 3);
-//     memory->allocate(C, 3, 3, 3, 3);
+//     allocate(A, 3, 3, 3, 3);
+//     allocate(C, 3, 3, 3, 3);
 // 
 //     calc_stress_energy3(fcs_phonon->force_constant_with_cell[0], A);
 // 
@@ -685,6 +685,6 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //     std::cout << "Bulk Modulus [GPa] = " << (C[0][0][0][0] + 2.0 * C[0][0][1][1]) / 3.0 << std::endl;
 // 
-//     memory->deallocate(A);
-//     memory->deallocate(C);
+//     deallocate(A);
+//     deallocate(C);
 // }

@@ -46,8 +46,8 @@ void Symmetry::setup_symmetry()
     double **xtmp;
     unsigned int *kdtmp;
 
-    memory->allocate(xtmp, natmin, 3);
-    memory->allocate(kdtmp, natmin);
+    allocate(xtmp, natmin, 3);
+    allocate(kdtmp, natmin);
 
     for (auto i = 0; i < natmin; ++i) {
         rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
@@ -79,8 +79,8 @@ void Symmetry::setup_symmetry()
                   << nsym << std::endl << std::endl;
         gensym_withmap(xtmp, kdtmp);
     }
-    memory->deallocate(xtmp);
-    memory->deallocate(kdtmp);
+    deallocate(xtmp);
+    deallocate(kdtmp);
 }
 
 void Symmetry::setup_symmetry_operation(int N,
@@ -494,7 +494,7 @@ void Symmetry::gensym_withmap(double **x,
 
     SymmListWithMap.clear();
 
-    memory->allocate(map_tmp, natmin);
+    allocate(map_tmp, natmin);
 
     for (const auto &isym : SymmList) {
 
@@ -581,8 +581,8 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
     if (mympi->my_rank == 0) n = sym.size();
     MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    memory->allocate(rot_tmp, n, 3, 3);
-    memory->allocate(tran_tmp, n, 3);
+    allocate(rot_tmp, n, 3, 3);
+    allocate(tran_tmp, n, 3);
 
     if (mympi->my_rank == 0) {
         for (i = 0; i < n; ++i) {
@@ -609,8 +609,8 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
         }
     }
 
-    memory->deallocate(rot_tmp);
-    memory->deallocate(tran_tmp);
+    deallocate(rot_tmp);
+    deallocate(tran_tmp);
 }
 
 bool Symmetry::is_proper(double rot[3][3]) const

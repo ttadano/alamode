@@ -56,13 +56,13 @@ void Ewald::set_default_variables()
 void Ewald::deallocate_variables()
 {
     if (multiplicity) {
-        memory->deallocate(multiplicity);
+        deallocate(multiplicity);
     }
     if (Born_charge) {
-        memory->deallocate(Born_charge);
+        deallocate(Born_charge);
     }
     if (distall_ewald) {
-        memory->deallocate(distall_ewald);
+        deallocate(distall_ewald);
     }
 }
 
@@ -76,9 +76,9 @@ void Ewald::init()
     if (is_longrange) {
         int nsize[3] = {1, 1, 1};
 
-        memory->allocate(multiplicity, system->nat, system->nat);
-        memory->allocate(Born_charge, system->natmin, 3, 3);
-        memory->allocate(distall_ewald, system->nat, system->nat);
+        allocate(multiplicity, system->nat, system->nat);
+        allocate(Born_charge, system->natmin, 3, 3);
+        allocate(distall_ewald, system->nat, system->nat);
 
         get_pairs_of_minimum_distance(system->nat, nsize, system->xr_s);
 
@@ -307,7 +307,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
 
     int ncell = (2 * nsize[0] + 1) * (2 * nsize[1] + 1) * (2 * nsize[2] + 1);
 
-    memory->allocate(xcrd, ncell, nat, 3);
+    allocate(xcrd, ncell, nat, 3);
 
     for (iat = 0; iat < nat; ++iat) {
         for (int icrd = 0; icrd < 3; ++icrd) {
@@ -358,7 +358,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
 
         }
     }
-    memory->deallocate(xcrd);
+    deallocate(xcrd);
 }
 
 void Ewald::compute_ewald_fcs()
@@ -378,9 +378,9 @@ void Ewald::compute_ewald_fcs()
         std::cout << " Calculating long-range (dipole-dipole) FCs in the supercell ...";
     }
 
-    memory->allocate(fcs_ewald, 3 * natmin, 3 * nat);
-    memory->allocate(fc_ewald_short, 3, 3);
-    memory->allocate(fc_ewald_long, 3, 3);
+    allocate(fcs_ewald, 3 * natmin, 3 * nat);
+    allocate(fc_ewald_short, 3, 3);
+    allocate(fc_ewald_long, 3, 3);
 
     for (iat = 0; iat < natmin; ++iat) {
         atm_s = system->map_p2s[iat][0];
@@ -397,12 +397,12 @@ void Ewald::compute_ewald_fcs()
         }
     }
 
-    memory->deallocate(fc_ewald_short);
-    memory->deallocate(fc_ewald_long);
+    deallocate(fc_ewald_short);
+    deallocate(fc_ewald_long);
 
 
-    memory->allocate(fcs_total, 3 * natmin, 3 * nat);
-    memory->allocate(fcs_other, 3 * natmin, 3 * nat);
+    allocate(fcs_total, 3 * natmin, 3 * nat);
+    allocate(fcs_other, 3 * natmin, 3 * nat);
 
     for (i = 0; i < 3 * natmin; ++i) {
         for (j = 0; j < 3 * nat; ++j) {
@@ -481,9 +481,9 @@ void Ewald::compute_ewald_fcs()
         }
     }
 
-    memory->deallocate(fcs_ewald);
-    memory->deallocate(fcs_total);
-    memory->deallocate(fcs_other);
+    deallocate(fcs_ewald);
+    deallocate(fcs_total);
+    deallocate(fcs_other);
 
     if (mympi->my_rank == 0) {
         std::cout << " done." << std::endl;
@@ -517,9 +517,9 @@ void Ewald::compute_ewald_fcs2()
                                      system->lavec_p,
                                      k_commensurate);
 
-    memory->allocate(fcs_ewald, 3 * natmin, 3 * nat);
-    memory->allocate(fc_ewald_short, 3, 3);
-    memory->allocate(fc_ewald_long, 3, 3);
+    allocate(fcs_ewald, 3 * natmin, 3 * nat);
+    allocate(fc_ewald_short, 3, 3);
+    allocate(fc_ewald_long, 3, 3);
 
     for (iat = 0; iat < natmin; ++iat) {
         atm_s = system->map_p2s[iat][0];
@@ -536,12 +536,12 @@ void Ewald::compute_ewald_fcs2()
         }
     }
 
-    memory->deallocate(fc_ewald_short);
-    memory->deallocate(fc_ewald_long);
+    deallocate(fc_ewald_short);
+    deallocate(fc_ewald_long);
 
 
-    memory->allocate(fcs_total, 3 * natmin, 3 * nat);
-    memory->allocate(fcs_other, 3 * natmin, 3 * nat);
+    allocate(fcs_total, 3 * natmin, 3 * nat);
+    allocate(fcs_other, 3 * natmin, 3 * nat);
 
     for (i = 0; i < 3 * natmin; ++i) {
         for (j = 0; j < 3 * nat; ++j) {
@@ -620,9 +620,9 @@ void Ewald::compute_ewald_fcs2()
         }
     }
 
-    memory->deallocate(fcs_ewald);
-    memory->deallocate(fcs_total);
-    memory->deallocate(fcs_other);
+    deallocate(fcs_ewald);
+    deallocate(fcs_total);
+    deallocate(fcs_other);
 
     if (mympi->my_rank == 0) {
         std::cout << " done." << std::endl;
@@ -920,8 +920,8 @@ void Ewald::add_longrange_matrix(double *xk_in,
     std::complex<double> tmat;
     std::complex<double> **dymat_tmp_l, **dymat_tmp_g;
 
-    memory->allocate(dymat_tmp_l, 3, 3);
-    memory->allocate(dymat_tmp_g, 3, 3);
+    allocate(dymat_tmp_l, 3, 3);
+    allocate(dymat_tmp_g, 3, 3);
 
     rotvec(xk, xk_in, system->rlavec_p, 'T');
 
@@ -944,8 +944,8 @@ void Ewald::add_longrange_matrix(double *xk_in,
 
         }
     }
-    memory->deallocate(dymat_tmp_l);
-    memory->deallocate(dymat_tmp_g);
+    deallocate(dymat_tmp_l);
+    deallocate(dymat_tmp_g);
 
 
 //    for (iat = 0; iat < natmin; ++iat) {
@@ -1325,7 +1325,7 @@ void Ewald::calc_realspace_sum(const int iat,
     double tmp;
     double **hmat_tmp;
     const double lambda3 = std::pow(lambda_in, 3.0);
-    memory->allocate(hmat_tmp, 3, 3);
+    allocate(hmat_tmp, 3, 3);
 
     calc_anisotropic_hmat(lambda_in, xdist, hmat_tmp);
 
@@ -1351,7 +1351,7 @@ void Ewald::calc_realspace_sum(const int iat,
             ret[icrd][jcrd] = 2.0 * tmp * lambda3;
         }
     }
-    memory->deallocate(hmat_tmp);
+    deallocate(hmat_tmp);
 }
 
 void Ewald::calc_anisotropic_hmat(const double lambda_in,

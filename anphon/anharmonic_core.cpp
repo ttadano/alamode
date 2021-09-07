@@ -67,40 +67,40 @@ void AnharmonicCore::set_default_variables()
 void AnharmonicCore::deallocate_variables()
 {
     if (relvec_v3) {
-        memory->deallocate(relvec_v3);
+        deallocate(relvec_v3);
     }
     if (relvec_v4) {
-        memory->deallocate(relvec_v4);
+        deallocate(relvec_v4);
     }
     if (invmass_v3) {
-        memory->deallocate(invmass_v3);
+        deallocate(invmass_v3);
     }
     if (invmass_v4) {
-        memory->deallocate(invmass_v4);
+        deallocate(invmass_v4);
     }
     if (evec_index_v3) {
-        memory->deallocate(evec_index_v3);
+        deallocate(evec_index_v3);
     }
     if (evec_index_v4) {
-        memory->deallocate(evec_index_v4);
+        deallocate(evec_index_v4);
     }
     if (fcs_group_v3) {
-        memory->deallocate(fcs_group_v3);
+        deallocate(fcs_group_v3);
     }
     if (fcs_group_v4) {
-        memory->deallocate(fcs_group_v4);
+        deallocate(fcs_group_v4);
     }
     if (exp_phase) {
-        memory->deallocate(exp_phase);
+        deallocate(exp_phase);
     }
     if (exp_phase3) {
-        memory->deallocate(exp_phase3);
+        deallocate(exp_phase3);
     }
     if (phi3_reciprocal) {
-        memory->deallocate(phi3_reciprocal);
+        deallocate(phi3_reciprocal);
     }
     if (phi4_reciprocal) {
-        memory->deallocate(phi4_reciprocal);
+        deallocate(phi4_reciprocal);
     }
 }
 
@@ -150,7 +150,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         }
     }
 
-    memory->allocate(xshift_s, 27, 3);
+    allocate(xshift_s, 27, 3);
 
     for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
 
@@ -205,7 +205,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         }
         ++icount;
     }
-    memory->deallocate(xshift_s);
+    deallocate(xshift_s);
 }
 
 void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
@@ -233,7 +233,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         }
     }
 
-    memory->allocate(xshift_s, 27, 3);
+    allocate(xshift_s, 27, 3);
 
     for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
 
@@ -289,7 +289,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         }
     }
 
-    memory->deallocate(xshift_s);
+    deallocate(xshift_s);
 }
 
 
@@ -326,7 +326,7 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
         }
     }
 
-    memory->allocate(fcs_group_out, number_of_groups);
+    allocate(fcs_group_out, number_of_groups);
 
     int igroup = -1;
 
@@ -854,8 +854,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
 
     const int npair_uniq = triplet.size();
 
-    memory->allocate(v3_arr, npair_uniq, ns * ns);
-    memory->allocate(delta_arr, npair_uniq, ns * ns, 2);
+    allocate(v3_arr, npair_uniq, ns * ns);
+    allocate(delta_arr, npair_uniq, ns * ns, 2);
 
     const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
     const int knum_minus = kpoint->knum_minus[knum];
@@ -960,8 +960,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
         ret[i] = ret_tmp;
     }
 
-    memory->deallocate(v3_arr);
-    memory->deallocate(delta_arr);
+    deallocate(v3_arr);
+    deallocate(delta_arr);
     triplet.clear();
 
     for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
@@ -1019,13 +1019,13 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
     const auto npair_uniq = triplet.size();
 
-    memory->allocate(v3_arr, npair_uniq, ns2);
-    memory->allocate(delta_arr, npair_uniq, ns2, 2);
+    allocate(v3_arr, npair_uniq, ns2);
+    allocate(delta_arr, npair_uniq, ns2, 2);
 
     const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
     const int knum_minus = kpoint->knum_minus[knum];
 
-    memory->allocate(kmap_identity, nk);
+    allocate(kmap_identity, nk);
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
@@ -1034,8 +1034,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 #pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, arr)
 #endif
     {
-        memory->allocate(energy_tmp, 3, nk);
-        memory->allocate(weight_tetra, 3, nk);
+        allocate(energy_tmp, 3, nk);
+        allocate(weight_tetra, 3, nk);
 
 #ifdef _OPENMP
 #pragma omp for
@@ -1072,8 +1072,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
             }
         }
 
-        memory->deallocate(energy_tmp);
-        memory->deallocate(weight_tetra);
+        deallocate(energy_tmp);
+        deallocate(weight_tetra);
     }
 
     for (ik = 0; ik < npair_uniq; ++ik) {
@@ -1145,9 +1145,9 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
         ret[i] = ret_tmp;
     }
 
-    memory->deallocate(v3_arr);
-    memory->deallocate(delta_arr);
-    memory->deallocate(kmap_identity);
+    deallocate(v3_arr);
+    deallocate(delta_arr);
+    deallocate(kmap_identity);
 
     for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4);
 }
@@ -1165,10 +1165,10 @@ void AnharmonicCore::setup_cubic()
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1],
                                      3, ngroup_v3, fcs_group_v3);
 
-    memory->allocate(invmass_v3, ngroup_v3);
-    memory->allocate(evec_index_v3, ngroup_v3, 3);
-    memory->allocate(relvec_v3, ngroup_v3);
-    memory->allocate(phi3_reciprocal, ngroup_v3);
+    allocate(invmass_v3, ngroup_v3);
+    allocate(evec_index_v3, ngroup_v3, 3);
+    allocate(relvec_v3, ngroup_v3);
+    allocate(phi3_reciprocal, ngroup_v3);
 
     prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
                             3,
@@ -1176,7 +1176,7 @@ void AnharmonicCore::setup_cubic()
                             fcs_group_v3,
                             relvec_v3);
 
-    memory->allocate(invsqrt_mass_p, system->natmin);
+    allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->natmin; ++i) {
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
@@ -1194,7 +1194,7 @@ void AnharmonicCore::setup_cubic()
         k += fcs_group_v3[i].size();
     }
 
-    memory->deallocate(invsqrt_mass_p);
+    deallocate(invsqrt_mass_p);
 }
 
 void AnharmonicCore::setup_quartic()
@@ -1206,10 +1206,10 @@ void AnharmonicCore::setup_quartic()
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2],
                                      4, ngroup_v4, fcs_group_v4);
 
-    memory->allocate(invmass_v4, ngroup_v4);
-    memory->allocate(evec_index_v4, ngroup_v4, 4);
-    memory->allocate(relvec_v4, ngroup_v4);
-    memory->allocate(phi4_reciprocal, ngroup_v4);
+    allocate(invmass_v4, ngroup_v4);
+    allocate(evec_index_v4, ngroup_v4, 4);
+    allocate(relvec_v4, ngroup_v4);
+    allocate(phi4_reciprocal, ngroup_v4);
 
     prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
                             4,
@@ -1217,7 +1217,7 @@ void AnharmonicCore::setup_quartic()
                             fcs_group_v4,
                             relvec_v4);
 
-    memory->allocate(invsqrt_mass_p, system->natmin);
+    allocate(invsqrt_mass_p, system->natmin);
 
     for (i = 0; i < system->natmin; ++i) {
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
@@ -1236,7 +1236,7 @@ void AnharmonicCore::setup_quartic()
         k += fcs_group_v4[i].size();
     }
 
-    memory->deallocate(invsqrt_mass_p);
+    deallocate(invsqrt_mass_p);
 }
 
 void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
@@ -1294,7 +1294,7 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
 
             double phase;
 
-            memory->allocate(exp_phase, 2 * nkrep_out - 1);
+            allocate(exp_phase, 2 * nkrep_out - 1);
 #ifdef _OPENMP
 #pragma omp parallel for private(phase)
 #endif
@@ -1308,7 +1308,7 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
 
             double phase[3];
 
-            memory->allocate(exp_phase3,
+            allocate(exp_phase3,
                              2 * nk_grid[0] - 1,
                              2 * nk_grid[1] - 1,
                              2 * nk_grid[2] - 1);
@@ -1385,8 +1385,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
         error->exit("calc_self3omega_tetrahedron", "Something is wrong.");
     }
 
-    memory->allocate(kpairs, nk, 2);
-    memory->allocate(kmap_identity, nk);
+    allocate(kpairs, nk, 2);
+    allocate(kmap_identity, nk);
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
@@ -1415,8 +1415,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
         vk_l.push_back(-1);
     }
 
-    memory->allocate(v3_arr_loc, ns2);
-    memory->allocate(v3_arr, nk_tmp * mympi->nprocs, ns2);
+    allocate(v3_arr_loc, ns2);
+    allocate(v3_arr, nk_tmp * mympi->nprocs, ns2);
 
     for (ik = 0; ik < nk_tmp; ++ik) {
 
@@ -1448,7 +1448,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                    v3_arr[ik * mympi->nprocs], ns2,
                    MPI_DOUBLE, 0, MPI_COMM_WORLD);
     }
-    memory->deallocate(v3_arr_loc);
+    deallocate(v3_arr_loc);
 
     if (mympi->my_rank == 0) {
 
@@ -1458,8 +1458,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                              omega_inner, f1, f2, n1, n2)
 #endif
         {
-            memory->allocate(energy_tmp, 2, nk);
-            memory->allocate(weight_tetra, 2, nk);
+            allocate(energy_tmp, 2, nk);
+            allocate(weight_tetra, 2, nk);
 #ifdef _OPENMP
             const int nthreads = omp_get_num_threads();
             const int ithread = omp_get_thread_num();
@@ -1472,7 +1472,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
 #pragma omp single
 #endif
             {
-                memory->allocate(ret_private, nthreads * nomega);
+                allocate(ret_private, nthreads * nomega);
                 for (i = 0; i < nthreads * nomega; ++i) ret_private[i] = 0.0;
             }
 #ifdef _OPENMP
@@ -1531,8 +1531,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                     ret[iomega] += ret_private[nomega * t + iomega];
                 }
             }
-            memory->deallocate(energy_tmp);
-            memory->deallocate(weight_tetra);
+            deallocate(energy_tmp);
+            deallocate(weight_tetra);
         }
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -1540,10 +1540,10 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
         for (iomega = 0; iomega < nomega; ++iomega) {
             ret[iomega] *= pi * std::pow(0.5, 4);
         }
-        memory->deallocate(ret_private);
+        deallocate(ret_private);
     }
 
-    memory->deallocate(v3_arr);
-    memory->deallocate(kmap_identity);
-    memory->deallocate(kpairs);
+    deallocate(v3_arr);
+    deallocate(kmap_identity);
+    deallocate(kpairs);
 }

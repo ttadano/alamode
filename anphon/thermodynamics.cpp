@@ -33,7 +33,7 @@ Thermodynamics::Thermodynamics(PHON *phon) : Pointers(phon)
 Thermodynamics::~Thermodynamics()
 {
     if (FE_bubble) {
-        memory->deallocate(FE_bubble);
+        deallocate(FE_bubble);
     }
 };
 
@@ -464,7 +464,7 @@ void Thermodynamics::compute_free_energy_bubble()
         std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
     }
 
-    memory->allocate(FE_bubble, NT);
+    allocate(FE_bubble, NT);
 
     compute_FE_bubble(dynamical->eval_phonon,
                       dynamical->evec_phonon,
@@ -497,8 +497,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
     double *FE_local;
     double *FE_tmp;
 
-    memory->allocate(FE_local, NT);
-    memory->allocate(FE_tmp, NT);
+    allocate(FE_local, NT);
+    allocate(FE_tmp, NT);
     std::vector <KsListGroup> triplet;
 
     std::vector<int> vks_l;
@@ -603,8 +603,8 @@ void Thermodynamics::compute_FE_bubble(double **eval,
         FE_bubble[iT] *= factor;
     }
 
-    memory->deallocate(FE_local);
-    memory->deallocate(FE_tmp);
+    deallocate(FE_local);
+    deallocate(FE_tmp);
 }
 
 
@@ -633,8 +633,8 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
     double *FE_local;
     double *FE_tmp;
 
-    memory->allocate(FE_local, NT);
-    memory->allocate(FE_tmp, NT);
+    allocate(FE_local, NT);
+    allocate(FE_tmp, NT);
     std::vector <KsListGroup> triplet;
 
     std::vector<int> vks_l;
@@ -745,8 +745,8 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
         FE_bubble[iT] *= factor;
     }
 
-    memory->deallocate(FE_local);
-    memory->deallocate(FE_tmp);
+    deallocate(FE_local);
+    deallocate(FE_tmp);
 }
 
 

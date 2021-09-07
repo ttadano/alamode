@@ -72,28 +72,28 @@ void Dynamical::set_default_variables()
 void Dynamical::deallocate_variables()
 {
     if (eval_phonon) {
-        memory->deallocate(eval_phonon);
+        deallocate(eval_phonon);
     }
     if (evec_phonon) {
-        memory->deallocate(evec_phonon);
+        deallocate(evec_phonon);
     }
     if (index_bconnect) {
-        memory->deallocate(index_bconnect);
+        deallocate(index_bconnect);
     }
     if (borncharge) {
-        memory->deallocate(borncharge);
+        deallocate(borncharge);
     }
     if (is_imaginary) {
-        memory->deallocate(is_imaginary);
+        deallocate(is_imaginary);
     }
     if (xshift_s) {
-        memory->deallocate(xshift_s);
+        deallocate(xshift_s);
     }
     if (dymat) {
-        memory->deallocate(dymat);
+        deallocate(dymat);
     }
     if (mindist_list) {
-        memory->deallocate(mindist_list);
+        deallocate(mindist_list);
     }
 }
 
@@ -129,7 +129,7 @@ void Dynamical::setup_dynamical()
         }
     }
 
-    memory->allocate(xshift_s, 27, 3);
+    allocate(xshift_s, 27, 3);
 
     for (auto i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
     auto icell = 0;
@@ -180,7 +180,7 @@ void Dynamical::setup_dynamical()
 
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-        memory->allocate(mindist_list, system->natmin, system->nat);
+        allocate(mindist_list, system->natmin, system->nat);
         prepare_mindist_list(mindist_list);
     }
 
@@ -204,8 +204,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     std::vector <DistWithCell> **distall;
 
-    memory->allocate(distall, natmin, nat);
-    memory->allocate(xcrd, nneib, nat, 3);
+    allocate(distall, natmin, nat);
+    allocate(xcrd, nneib, nat, 3);
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -263,8 +263,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
         }
     }
 
-    memory->deallocate(distall);
-    memory->deallocate(xcrd);
+    deallocate(distall);
+    deallocate(xcrd);
 }
 
 double Dynamical::distance(double *x1,
@@ -287,7 +287,7 @@ void Dynamical::eval_k(double *xk_in,
     unsigned int i, j;
     std::complex<double> **dymat_k;
 
-    memory->allocate(dymat_k, neval, neval);
+    allocate(dymat_k, neval, neval);
 
     calc_analytic_k(xk_in, fc2_ext, dymat_k);
 
@@ -297,7 +297,7 @@ void Dynamical::eval_k(double *xk_in,
 
         std::complex<double> **dymat_na_k;
 
-        memory->allocate(dymat_na_k, neval, neval);
+        allocate(dymat_na_k, neval, neval);
 
         if (nonanalytic == 1) {
             calc_nonanalytic_k(xk_in, kvec_in, dymat_na_k);
@@ -310,7 +310,7 @@ void Dynamical::eval_k(double *xk_in,
                 dymat_k[i][j] += dymat_na_k[i][j];
             }
         }
-        memory->deallocate(dymat_na_k);
+        deallocate(dymat_na_k);
     }
 
     // Force the dynamical matrix be real when k point is
@@ -333,11 +333,11 @@ void Dynamical::eval_k(double *xk_in,
     std::complex<double> *WORK;
 
     int LWORK = (2 * neval - 1) * 10;
-    memory->allocate(RWORK, 3 * neval - 2);
-    memory->allocate(WORK, LWORK);
+    allocate(RWORK, 3 * neval - 2);
+    allocate(WORK, LWORK);
 
     std::complex<double> *amat;
-    memory->allocate(amat, neval * neval);
+    allocate(amat, neval * neval);
 
     unsigned int k = 0;
     int n = dynamical->neval;
@@ -348,7 +348,7 @@ void Dynamical::eval_k(double *xk_in,
         }
     }
 
-    memory->deallocate(dymat_k);
+    deallocate(dymat_k);
 
     if (require_evec) {
         JOBZ = 'V';
@@ -370,9 +370,9 @@ void Dynamical::eval_k(double *xk_in,
         }
     }
 
-    memory->deallocate(RWORK);
-    memory->deallocate(WORK);
-    memory->deallocate(amat);
+    deallocate(RWORK);
+    deallocate(WORK);
+    deallocate(amat);
 }
 
 void Dynamical::eval_k_ewald(double *xk_in,
@@ -390,8 +390,8 @@ void Dynamical::eval_k_ewald(double *xk_in,
     int icrd, jcrd;
     std::complex<double> **dymat_k, **mat_longrange;
 
-    memory->allocate(dymat_k, neval, neval);
-    memory->allocate(mat_longrange, neval, neval);
+    allocate(dymat_k, neval, neval);
+    allocate(mat_longrange, neval, neval);
 
     calc_analytic_k(xk_in, fc2_in, dymat_k);
 
@@ -437,11 +437,11 @@ void Dynamical::eval_k_ewald(double *xk_in,
     std::complex<double> *WORK;
 
     int LWORK = (2 * neval - 1) * 10;
-    memory->allocate(RWORK, 3 * neval - 2);
-    memory->allocate(WORK, LWORK);
+    allocate(RWORK, 3 * neval - 2);
+    allocate(WORK, LWORK);
 
     std::complex<double> *amat;
-    memory->allocate(amat, neval * neval);
+    allocate(amat, neval * neval);
 
     unsigned int k = 0;
     int n = dynamical->neval;
@@ -451,7 +451,7 @@ void Dynamical::eval_k_ewald(double *xk_in,
         }
     }
 
-    memory->deallocate(dymat_k);
+    deallocate(dymat_k);
 
     if (require_evec) {
         JOBZ = 'V';
@@ -473,9 +473,9 @@ void Dynamical::eval_k_ewald(double *xk_in,
         }
     }
 
-    memory->deallocate(RWORK);
-    memory->deallocate(WORK);
-    memory->deallocate(amat);
+    deallocate(RWORK);
+    deallocate(WORK);
+    deallocate(amat);
 }
 
 
@@ -491,7 +491,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
     const std::complex<double> im(0.0, 1.0);
     std::complex<double> **ctmp;
 
-    memory->allocate(ctmp, nmode, nmode);
+    allocate(ctmp, nmode, nmode);
     for (i = 0; i < nmode; ++i) {
         for (auto j = 0; j < nmode; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);
@@ -733,13 +733,13 @@ void Dynamical::diagonalize_dynamical_all()
         std::cout << std::endl << " Diagonalizing dynamical matrices for all k points ... ";
     }
 
-    memory->allocate(eval_phonon, nk, neval);
+    allocate(eval_phonon, nk, neval);
     if (eigenvectors) {
         require_evec = true;
-        memory->allocate(evec_phonon, nk, neval, neval);
+        allocate(evec_phonon, nk, neval, neval);
     } else {
         require_evec = false;
-        memory->allocate(evec_phonon, nk, 1, 1);
+        allocate(evec_phonon, nk, 1, 1);
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
@@ -769,7 +769,7 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     if (band_connection > 0 && kpoint->kpoint_mode == 1) {
-        memory->allocate(index_bconnect, nk, neval);
+        allocate(index_bconnect, nk, neval);
         connect_band_by_eigen_similarity(evec_phonon, index_bconnect);
     }
 
@@ -821,8 +821,8 @@ void Dynamical::modify_eigenvectors() const
            std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
        }*/
 
-    memory->allocate(flag_done, nk);
-    memory->allocate(evec_tmp, ns);
+    allocate(flag_done, nk);
+    allocate(evec_tmp, ns);
 
     for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
 
@@ -847,8 +847,8 @@ void Dynamical::modify_eigenvectors() const
         }
     }
 
-    memory->deallocate(flag_done);
-    memory->deallocate(evec_tmp);
+    deallocate(flag_done);
+    deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
     //if (mympi->my_rank == 0) {
@@ -894,7 +894,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
 
     std::complex<double> **dymat_tmp;
 
-    memory->allocate(dymat_tmp, ns, ns);
+    allocate(dymat_tmp, ns, ns);
 
     calc_analytic_k(xk_in, fcs_phonon->fc2_ext, dymat_tmp);
 
@@ -914,7 +914,7 @@ void Dynamical::project_degenerate_eigenvectors(double *xk_in,
             dymat(i, j) = dymat_tmp[i][j];
         }
     }
-    memory->deallocate(dymat_tmp);
+    deallocate(dymat_tmp);
 
     saes.compute(dymat);
 
@@ -1082,8 +1082,8 @@ int Dynamical::transform_eigenvectors(double *xk_in,
 //    }
 //    std::cout << std::endl;
 
-    memory->allocate(dymat_dq, ns, ns);
-    memory->allocate(dymat_dq_minus, ns, ns);
+    allocate(dymat_dq, ns, ns);
+    allocate(dymat_dq_minus, ns, ns);
     calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
     calc_analytic_k(xk_shift_minus, fcs_phonon->fc2_ext, dymat_dq_minus);
 
@@ -1094,8 +1094,8 @@ int Dynamical::transform_eigenvectors(double *xk_in,
             ddymat(is, js) = (dymat_dq[is][js] + dymat_dq_minus[is][js]) / (2.0 * dk);
         }
     }
-    memory->deallocate(dymat_dq);
-    memory->deallocate(dymat_dq_minus);
+    deallocate(dymat_dq);
+    deallocate(dymat_dq_minus);
 
 
     // The perturbation matrix (the size is ndeg x ndeg)
@@ -1155,9 +1155,9 @@ int Dynamical::transform_eigenvectors(double *xk_in,
 
 void Dynamical::setup_dielectric(const unsigned int verbosity)
 {
-    if (borncharge) memory->deallocate(borncharge);
+    if (borncharge) deallocate(borncharge);
 
-    memory->allocate(borncharge, system->natmin, 3, 3);
+    allocate(borncharge, system->natmin, 3, 3);
     if (mympi->my_rank == 0) load_born(symmetrize_borncharge, verbosity);
 
     MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -1263,7 +1263,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         double ***born_sym;
         double rot[3][3];
 
-        memory->allocate(born_sym, system->natmin, 3, 3);
+        allocate(born_sym, system->natmin, 3, 3);
 
         for (iat = 0; iat < system->natmin; ++iat) {
             for (i = 0; i < 3; ++i) {
@@ -1326,7 +1326,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 }
             }
         }
-        memory->deallocate(born_sym);
+        deallocate(born_sym);
 
         if (verbosity > 0) {
             if (diff_sym > eps8 || res > eps10) {
@@ -1376,7 +1376,7 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
 
     double *atomic_pr;
 
-    memory->allocate(atomic_pr, natmin);
+    allocate(atomic_pr, natmin);
 
     for (auto ik = 0; ik < nk; ++ik) {
         for (auto is = 0; is < ns; ++is) {
@@ -1393,7 +1393,7 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
         }
     }
 
-    memory->deallocate(atomic_pr);
+    deallocate(atomic_pr);
 }
 
 void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
@@ -1431,7 +1431,7 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
     std::complex<double> dprod;
     std::vector<int> found;
 
-    memory->allocate(evec_tmp, ns, ns);
+    allocate(evec_tmp, ns, ns);
 
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
@@ -1502,7 +1502,7 @@ void Dynamical::connect_band_by_eigen_similarity(std::complex<double> ***evec,
         }
 
     }
-    memory->deallocate(evec_tmp);
+    deallocate(evec_tmp);
 }
 
 
@@ -1518,7 +1518,7 @@ void Dynamical::detect_imaginary_branches(double **eval)
     auto is_anyof_imaginary = false;
     if (mympi->my_rank == 0) {
 
-        memory->allocate(is_imaginary, kpoint->nk_irred, ns);
+        allocate(is_imaginary, kpoint->nk_irred, ns);
 
         for (ik = 0; ik < kpoint->nk_irred; ++ik) {
             for (is = 0; is < ns; ++is) {

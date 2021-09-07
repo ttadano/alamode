@@ -42,10 +42,10 @@ void Isotope::set_default_variables()
 void Isotope::deallocate_variables()
 {
     if (isotope_factor) {
-        memory->deallocate(isotope_factor);
+        deallocate(isotope_factor);
     }
     if (gamma_isotope) {
-        memory->deallocate(gamma_isotope);
+        deallocate(gamma_isotope);
     }
 }
 
@@ -60,7 +60,7 @@ void Isotope::setup_isotope_scattering()
 
         if (mympi->my_rank == 0) {
             if (!isotope_factor) {
-                memory->allocate(isotope_factor, nkd);
+                allocate(isotope_factor, nkd);
                 set_isotope_factor_from_database(nkd,
                                                  system->symbol_kd,
                                                  isotope_factor);
@@ -68,7 +68,7 @@ void Isotope::setup_isotope_scattering()
         }
 
         if (mympi->my_rank > 0) {
-            memory->allocate(isotope_factor, nkd);
+            allocate(isotope_factor, nkd);
         }
         MPI_Bcast(&isotope_factor[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -82,7 +82,7 @@ void Isotope::setup_isotope_scattering()
             }
             std::cout << std::endl;
 
-            memory->allocate(gamma_isotope, kpoint->nk_irred, dynamical->neval);
+            allocate(gamma_isotope, kpoint->nk_irred, dynamical->neval);
         }
     }
 }
@@ -151,8 +151,8 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
     double *eval;
     double *weight;
 
-    memory->allocate(eval, nk);
-    memory->allocate(weight, nk);
+    allocate(eval, nk);
+    allocate(weight, nk);
 
     for (is = 0; is < ns; ++is) {
         for (ik = 0; ik < nk; ++ik) {
@@ -177,8 +177,8 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
 
     ret *= pi * omega * 0.25;
 
-    memory->deallocate(eval);
-    memory->deallocate(weight);
+    deallocate(eval);
+    deallocate(weight);
 }
 
 
@@ -198,11 +198,11 @@ void Isotope::calc_isotope_selfenergy_all() const
         }
 
         if (mympi->my_rank == 0) {
-            memory->allocate(gamma_tmp, nks);
+            allocate(gamma_tmp, nks);
         } else {
-            memory->allocate(gamma_tmp, 1);
+            allocate(gamma_tmp, 1);
         }
-        memory->allocate(gamma_loc, nks);
+        allocate(gamma_loc, nks);
 
         for (i = 0; i < nks; ++i) gamma_loc[i] = 0.0;
 
@@ -229,8 +229,8 @@ void Isotope::calc_isotope_selfenergy_all() const
             }
         }
 
-        memory->deallocate(gamma_tmp);
-        memory->deallocate(gamma_loc);
+        deallocate(gamma_tmp);
+        deallocate(gamma_loc);
 
         if (mympi->my_rank == 0) {
             std::cout << "done!" << std::endl;

@@ -63,55 +63,55 @@ void System::set_default_variables()
 void System::deallocate_variables()
 {
     if (xr_p) {
-        memory->deallocate(xr_p);
+        deallocate(xr_p);
     }
     if (xr_s) {
-        memory->deallocate(xr_s);
+        deallocate(xr_s);
     }
     if (xc) {
-        memory->deallocate(xc);
+        deallocate(xc);
     }
     if (xr_s_anharm) {
-        memory->deallocate(xr_s_anharm);
+        deallocate(xr_s_anharm);
     }
     if (kd) {
-        memory->deallocate(kd);
+        deallocate(kd);
     }
     if (kd_anharm) {
-        memory->deallocate(kd_anharm);
+        deallocate(kd_anharm);
     }
     if (mass_kd) {
-        memory->deallocate(mass_kd);
+        deallocate(mass_kd);
     }
     if (mass) {
-        memory->deallocate(mass);
+        deallocate(mass);
     }
     if (mass_anharm) {
-        memory->deallocate(mass_anharm);
+        deallocate(mass_anharm);
     }
     if (symbol_kd) {
-        memory->deallocate(symbol_kd);
+        deallocate(symbol_kd);
     }
     if (map_p2s) {
-        memory->deallocate(map_p2s);
+        deallocate(map_p2s);
     }
     if (map_p2s_anharm) {
-        memory->deallocate(map_p2s_anharm);
+        deallocate(map_p2s_anharm);
     }
     if (map_s2p) {
-        memory->deallocate(map_s2p);
+        deallocate(map_s2p);
     }
     if (map_s2p_anharm) {
-        memory->deallocate(map_s2p_anharm);
+        deallocate(map_s2p_anharm);
     }
     if (magmom) {
-        memory->deallocate(magmom);
+        deallocate(magmom);
     }
     if (map_p2s_anharm_orig) {
-        memory->deallocate(map_p2s_anharm_orig);
+        deallocate(map_p2s_anharm_orig);
     }
     if (atomlist_class) {
-        memory->deallocate(atomlist_class);
+        deallocate(atomlist_class);
     }
 }
 
@@ -128,7 +128,7 @@ void System::setup()
     if (mympi->my_rank == 0) {
 
         if (!mass_kd) {
-            memory->allocate(mass_kd, nkd);
+            allocate(mass_kd, nkd);
             set_mass_elem_from_database(nkd, symbol_kd, mass_kd);
         }
     }
@@ -138,8 +138,8 @@ void System::setup()
     recips(lavec_s_anharm, rlavec_s_anharm);
     recips(lavec_p, rlavec_p);
 
-    memory->allocate(xr_p, nat, 3);
-    memory->allocate(xc, nat, 3);
+    allocate(xr_p, nat, 3);
+    allocate(xc, nat, 3);
 
     for (i = 0; i < nat; ++i) {
         rotvec(xc[i], xr_s[i], lavec_s);
@@ -284,7 +284,7 @@ void System::setup()
             cout << endl;
         }
 
-        memory->allocate(xtmp, natmin, 3);
+        allocate(xtmp, natmin, 3);
 
         for (i = 0; i < natmin; ++i) {
             rotvec(xtmp[i], xr_s[map_p2s[i][0]], lavec_s);
@@ -302,7 +302,7 @@ void System::setup()
         }
         cout << endl;
 
-        memory->deallocate(xtmp);
+        deallocate(xtmp);
 
         if (lspin) {
             cout << "  MagneticMoments entry found in the XML file. " << endl;
@@ -340,13 +340,13 @@ void System::setup()
     // Check the consistency of FCSXML and FC2XML
     MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     if (fcs_phonon->update_fc2) {
-        memory->allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
+        allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
         check_consistency_primitive_lattice();
     }
     // Atomic masses in Rydberg unit
 
-    memory->allocate(mass, nat);
-    memory->allocate(mass_anharm, nat_anharm);
+    allocate(mass, nat);
+    allocate(mass_anharm, nat_anharm);
     for (i = 0; i < nat; ++i) {
         mass[i] = mass_kd[kd[i]] * amu_ry;
     }
@@ -358,21 +358,21 @@ void System::setup()
     MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    memory->allocate(kd_prim, natmin);
+    allocate(kd_prim, natmin);
 
     for (i = 0; i < natmin; ++i) {
         kd_prim[i] = kd[map_p2s[i][0]];
     }
     MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     if (mympi->my_rank > 0) {
-        memory->allocate(magmom, natmin, 3);
+        allocate(magmom, natmin, 3);
     }
     MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     setup_atomic_class(natmin, kd_prim, magmom);
 
-    memory->deallocate(kd_prim);
+    deallocate(kd_prim);
 }
 
 void System::load_system_info_from_XML()
@@ -429,8 +429,8 @@ void System::load_system_info_from_XML()
 
         // Parse atomic elements and coordinates
 
-        memory->allocate(xr_s, nat, 3);
-        memory->allocate(kd, nat);
+        allocate(xr_s, nat, 3);
+        allocate(kd, nat);
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
                         const auto &child = child_.second;
@@ -463,8 +463,8 @@ void System::load_system_info_from_XML()
 
         // Parse mapping information
 
-        memory->allocate(map_p2s, natmin, ntran);
-        memory->allocate(map_s2p, nat);
+        allocate(map_p2s, natmin, ntran);
+        allocate(map_s2p, nat);
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
                         const auto &child = child_.second;
@@ -488,8 +488,8 @@ void System::load_system_info_from_XML()
         // Parse magnetic moments
 
         double **magmom_tmp;
-        memory->allocate(magmom_tmp, nat, 3);
-        memory->allocate(magmom, natmin, 3);
+        allocate(magmom_tmp, nat, 3);
+        allocate(magmom, natmin, 3);
 
         lspin = true;
         try {
@@ -552,17 +552,17 @@ void System::load_system_info_from_XML()
             noncollinear = 0;
             symmetry->trev_sym_mag = true;
         }
-        memory->deallocate(magmom_tmp);
+        deallocate(magmom_tmp);
 
         // Now, replicate the information for anharmonic terms.
 
         int j;
         nat_anharm = nat;
         ntran_anharm = ntran;
-        memory->allocate(xr_s_anharm, nat_anharm, 3);
-        memory->allocate(kd_anharm, nat_anharm);
-        memory->allocate(map_p2s_anharm, natmin, ntran_anharm);
-        memory->allocate(map_s2p_anharm, nat_anharm);
+        allocate(xr_s_anharm, nat_anharm, 3);
+        allocate(kd_anharm, nat_anharm);
+        allocate(map_p2s_anharm, natmin, ntran_anharm);
+        allocate(map_s2p_anharm, nat_anharm);
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) lavec_s_anharm[i][j] = lavec_s[i][j];
@@ -615,10 +615,10 @@ void System::load_system_info_from_XML()
                 error->exit("load_system_info_from_XML",
                             "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
 
-            memory->deallocate(xr_s);
-            memory->deallocate(kd);
-            memory->deallocate(map_p2s);
-            memory->deallocate(map_s2p);
+            deallocate(xr_s);
+            deallocate(kd);
+            deallocate(map_p2s);
+            deallocate(map_s2p);
 
 
             // Parse lattice vectors
@@ -636,8 +636,8 @@ void System::load_system_info_from_XML()
 
             // Parse atomic elements and coordinates
 
-            memory->allocate(xr_s, nat, 3);
-            memory->allocate(kd, nat);
+            allocate(xr_s, nat, 3);
+            allocate(kd, nat);
 
             BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
                             const auto &child = child_.second;
@@ -668,8 +668,8 @@ void System::load_system_info_from_XML()
 
             // Parse mapping information
 
-            memory->allocate(map_p2s, natmin, ntran);
-            memory->allocate(map_s2p, nat);
+            allocate(map_p2s, natmin, ntran);
+            allocate(map_s2p, nat);
 
             BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
                             const auto &child = child_.second;
@@ -705,17 +705,17 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0) {
-        memory->allocate(mass_kd, nkd);
-        memory->allocate(xr_s, nat, 3);
-        memory->allocate(xr_s_anharm, nat_anharm, 3);
-        memory->allocate(kd, nat);
-        memory->allocate(kd_anharm, nat_anharm);
-        memory->allocate(map_p2s, natmin, ntran);
-        memory->allocate(map_p2s_anharm, natmin, ntran_anharm);
-        memory->allocate(map_s2p, nat);
-        memory->allocate(map_s2p_anharm, nat_anharm);
+        allocate(mass_kd, nkd);
+        allocate(xr_s, nat, 3);
+        allocate(xr_s_anharm, nat_anharm, 3);
+        allocate(kd, nat);
+        allocate(kd_anharm, nat_anharm);
+        allocate(map_p2s, natmin, ntran);
+        allocate(map_p2s_anharm, natmin, ntran_anharm);
+        allocate(map_s2p, nat);
+        allocate(map_s2p_anharm, nat_anharm);
         if (lspin) {
-            memory->allocate(magmom, natmin, 3);
+            allocate(magmom, natmin, 3);
         }
     }
 
@@ -802,7 +802,7 @@ void System::setup_atomic_class(const unsigned int N,
 
     nclassatom = set_type.size();
 
-    memory->allocate(atomlist_class, nclassatom);
+    allocate(atomlist_class, nclassatom);
 
     for (i = 0; i < N; ++i) {
         int count = 0;
@@ -835,8 +835,8 @@ void System::check_consistency_primitive_lattice() const
     double xdiff[3];
     double **x_harm, **x_anharm;
 
-    memory->allocate(x_harm, natmin, 3);
-    memory->allocate(x_anharm, natmin, 3);
+    allocate(x_harm, natmin, 3);
+    allocate(x_anharm, natmin, 3);
 
     std::vector<int> map_anh2harm;
     map_anh2harm.resize(natmin);
@@ -879,14 +879,14 @@ void System::check_consistency_primitive_lattice() const
         map_anh2harm[i] = iloc;
     }
 
-    memory->deallocate(x_harm);
-    memory->deallocate(x_anharm);
+    deallocate(x_harm);
+    deallocate(x_anharm);
 
     // Rebuild the mapping information for anharmonic terms.
 
     unsigned int **map_p2s_tmp;
 
-    memory->allocate(map_p2s_tmp, natmin, ntran_anharm);
+    allocate(map_p2s_tmp, natmin, ntran_anharm);
 
     for (i = 0; i < natmin; ++i) {
         for (j = 0; j < ntran_anharm; ++j) {
@@ -914,7 +914,7 @@ void System::check_consistency_primitive_lattice() const
         }
     }
 
-    memory->deallocate(map_p2s_tmp);
+    deallocate(map_p2s_tmp);
     map_anh2harm.clear();
 }
 

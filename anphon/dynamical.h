@@ -1,7 +1,7 @@
 /*
  dynamical.h
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014-2021 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -12,6 +12,7 @@
 
 #include "pointers.h"
 #include "fcs_phonon.h"
+#include "memory.h"
 #include <vector>
 #include <complex>
 #include <string>
@@ -34,6 +35,39 @@ namespace PHON_NS {
     {
         return a.dist < b.dist;
     }
+
+    class DymatEigenValue {
+     public:
+      DymatEigenValue() {
+          is_stored_eigvec = true;
+          is_irreducible_only = false;
+          eval = nullptr;
+          evec = nullptr;
+      };
+      DymatEigenValue(const bool stored_eigvec_,
+                      const bool store_irreducible_only_,
+                      const unsigned int nk_in,
+                      const unsigned int ns_in)
+                      {
+          is_stored_eigvec = stored_eigvec_;
+          is_irreducible_only = store_irreducible_only_;
+
+          if (eval) deallocate(eval);
+          if (evec) deallocate(evec);
+
+          allocate(eval, nk_in, ns_in);
+          if (is_stored_eigvec) {
+              allocate(evec, nk_in, ns_in, ns_in);
+          }
+      };
+     private:
+      bool is_stored_eigvec = true;
+      bool is_irreducible_only = false;
+
+      double **eval = nullptr;
+      std::complex<double> ***evec = nullptr;
+
+    };
 
     class Dynamical : protected Pointers {
     public:
@@ -101,10 +135,6 @@ namespace PHON_NS {
         void calc_nonanalytic_k2(const double *,
                                  double *,
                                  std::complex<double> **) const;
-
-        void calc_analytic_k_ewald(double *,
-                                   std::vector <FcsClassExtent>,
-                                   std::complex<double> **);
 
         void project_degenerate_eigenvectors(double *xk_in,
                                              const std::vector <std::vector<double>> &project_directions,

@@ -153,8 +153,8 @@ void ModeAnalysis::setup_mode_analysis()
         nlist = kslist_fstate_k.size();
         MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-        memory->allocate(vec_tmp, nlist, 3);
-        memory->allocate(mode_tmp, nlist);
+        allocate(vec_tmp, nlist, 3);
+        allocate(mode_tmp, nlist);
 
         if (mympi->my_rank == 0) {
             for (i = 0; i < nlist; ++i) {
@@ -176,8 +176,8 @@ void ModeAnalysis::setup_mode_analysis()
             }
         }
 
-        memory->deallocate(vec_tmp);
-        memory->deallocate(mode_tmp);
+        deallocate(vec_tmp);
+        deallocate(mode_tmp);
 
     } else {
 
@@ -187,7 +187,7 @@ void ModeAnalysis::setup_mode_analysis()
         // Broadcast kslist
 
         MPI_Bcast(&nlist, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-        memory->allocate(kslist_arr, nlist);
+        allocate(kslist_arr, nlist);
 
         if (mympi->my_rank == 0) {
             for (i = 0; i < nlist; ++i) kslist_arr[i] = kslist[i];
@@ -198,7 +198,7 @@ void ModeAnalysis::setup_mode_analysis()
             kslist.clear();
             for (i = 0; i < nlist; ++i) kslist.push_back(kslist_arr[i]);
         }
-        memory->deallocate(kslist_arr);
+        deallocate(kslist_arr);
     }
 
 
@@ -269,7 +269,7 @@ void ModeAnalysis::run_mode_analysis()
     double *T_arr;
 
     unsigned int NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    memory->allocate(T_arr, NT);
+    allocate(T_arr, NT);
     for (unsigned int i = 0; i < NT; ++i) T_arr[i] = Tmin + static_cast<double>(i) * dT;
 
     const auto epsilon = integration->epsilon;
@@ -301,7 +301,7 @@ void ModeAnalysis::run_mode_analysis()
 
     }
 
-    memory->deallocate(T_arr);
+    deallocate(T_arr);
 }
 
 
@@ -353,20 +353,20 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
         }
     }
 
-    memory->allocate(damping_a, NT);
-    memory->allocate(self_a, NT);
-    memory->allocate(self_b, NT);
-    memory->allocate(self_tadpole, NT);
+    allocate(damping_a, NT);
+    allocate(self_a, NT);
+    allocate(self_b, NT);
+    allocate(self_tadpole, NT);
 
     if (anharmonic_core->quartic_mode == 2) {
-        memory->allocate(self_c, NT);
-        memory->allocate(self_d, NT);
-        memory->allocate(self_e, NT);
-        memory->allocate(self_f, NT);
-        memory->allocate(self_g, NT);
-        memory->allocate(self_h, NT);
-        memory->allocate(self_i, NT);
-        memory->allocate(self_j, NT);
+        allocate(self_c, NT);
+        allocate(self_d, NT);
+        allocate(self_e, NT);
+        allocate(self_f, NT);
+        allocate(self_g, NT);
+        allocate(self_h, NT);
+        allocate(self_i, NT);
+        allocate(self_j, NT);
     }
 
     for (int i = 0; i < kslist.size(); ++i) {
@@ -502,40 +502,40 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
     }
 
     if (damping_a) {
-        memory->deallocate(damping_a);
+        deallocate(damping_a);
     }
     if (self_tadpole) {
-        memory->deallocate(self_tadpole);
+        deallocate(self_tadpole);
     }
     if (self_a) {
-        memory->deallocate(self_a);
+        deallocate(self_a);
     }
     if (self_b) {
-        memory->deallocate(self_b);
+        deallocate(self_b);
     }
     if (self_c) {
-        memory->deallocate(self_c);
+        deallocate(self_c);
     }
     if (self_d) {
-        memory->deallocate(self_d);
+        deallocate(self_d);
     }
     if (self_e) {
-        memory->deallocate(self_e);
+        deallocate(self_e);
     }
     if (self_f) {
-        memory->deallocate(self_f);
+        deallocate(self_f);
     }
     if (self_g) {
-        memory->deallocate(self_g);
+        deallocate(self_g);
     }
     if (self_h) {
-        memory->deallocate(self_h);
+        deallocate(self_h);
     }
     if (self_i) {
-        memory->deallocate(self_i);
+        deallocate(self_i);
     }
     if (self_j) {
-        memory->deallocate(self_j);
+        deallocate(self_j);
     }
 }
 
@@ -549,8 +549,8 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
     std::ofstream ofs_omega;
     const auto ns = dynamical->neval;
 
-    memory->allocate(gamma_final, NT, dos->n_energy, 2);
-    memory->allocate(freq_array, dos->n_energy);
+    allocate(gamma_final, NT, dos->n_energy, 2);
+    allocate(freq_array, dos->n_energy);
 
     for (i = 0; i < dos->n_energy; ++i) {
         freq_array[i] = dos->energy_dos[i] * time_ry / Hz_to_kayser;
@@ -644,8 +644,8 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
         }
     }
 
-    memory->deallocate(freq_array);
-    memory->deallocate(gamma_final);
+    deallocate(freq_array);
+    deallocate(gamma_final);
 }
 
 
@@ -677,7 +677,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
                                  anharmonic_core->use_triplet_symmetry,
                                  false,
                                  triplet);
-    memory->allocate(ret_mpi, N, M, 2);
+    allocate(ret_mpi, N, M, 2);
 
     for (i = 0; i < N; ++i) {
         for (j = 0; j < M; ++j) {
@@ -766,7 +766,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
 
     MPI_Reduce(&ret_mpi[0][0][0], &ret[0][0][0], 2 * N * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    memory->deallocate(ret_mpi);
+    deallocate(ret_mpi);
     triplet.clear();
 }
 
@@ -822,13 +822,13 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
 
     const auto npair_uniq = triplet.size();
 
-    memory->allocate(v3_arr, npair_uniq, ns2);
-    memory->allocate(delta_arr, npair_uniq, ns2, 2);
+    allocate(v3_arr, npair_uniq, ns2);
+    allocate(delta_arr, npair_uniq, ns2, 2);
 
     const auto knum = kpoint->kpoint_irred_all[ik_in][0].knum;
     const auto knum_minus = kpoint->knum_minus[knum];
 
-    memory->allocate(kmap_identity, nk);
+    allocate(kmap_identity, nk);
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
@@ -837,8 +837,8 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
 #pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, arr)
 #endif
     {
-        memory->allocate(energy_tmp, 3, nk);
-        memory->allocate(weight_tetra, 3, nk);
+        allocate(energy_tmp, 3, nk);
+        allocate(weight_tetra, 3, nk);
 
 #ifdef _OPENMP
 #pragma omp for
@@ -894,8 +894,8 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
             }
         }
 
-        memory->deallocate(energy_tmp);
-        memory->deallocate(weight_tetra);
+        deallocate(energy_tmp);
+        deallocate(weight_tetra);
     }
 
 
@@ -951,9 +951,9 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
         }
     }
 
-    memory->deallocate(v3_arr);
-    memory->deallocate(delta_arr);
-    memory->deallocate(kmap_identity);
+    deallocate(v3_arr);
+    deallocate(delta_arr);
+    deallocate(kmap_identity);
 
     triplet.clear();
 }
@@ -1016,8 +1016,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
     double norm1, dprod;
     double theta;
 
-    memory->allocate(kplist_conserved, ns, ns, 2);
-    memory->allocate(kplist_for_target_mode, ns, ns, kslist_fstate_k.size());
+    allocate(kplist_conserved, ns, ns, 2);
+    allocate(kplist_for_target_mode, ns, ns, kslist_fstate_k.size());
 
     double theta_ref = 0.0;
 
@@ -1049,13 +1049,13 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                                         + xk_norm[1] * xk_norm[1]
                                         + xk_norm[2] * xk_norm[2]);
 
-        memory->allocate(xk_plane, nk_plane, 3);
-        memory->allocate(xk_plane2, nk_plane, 3);
-        memory->allocate(kvec_plane, nk_plane, 3);
-        memory->allocate(eval, nk_plane, ns);
-        memory->allocate(eval2, nk_plane, ns);
-        memory->allocate(eval_tmp, ns);
-        memory->allocate(evec, 1, 1, 1);
+        allocate(xk_plane, nk_plane, 3);
+        allocate(xk_plane2, nk_plane, 3);
+        allocate(kvec_plane, nk_plane, 3);
+        allocate(eval, nk_plane, ns);
+        allocate(eval2, nk_plane, ns);
+        allocate(eval_tmp, ns);
+        allocate(evec, 1, 1, 1);
 
         // Constructing xk's for the plane
         int m = 0;
@@ -1312,13 +1312,13 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             }
         }
 
-        memory->deallocate(xk_plane);
-        memory->deallocate(xk_plane2);
-        memory->deallocate(kvec_plane);
-        memory->deallocate(eval);
-        memory->deallocate(eval2);
-        memory->deallocate(eval_tmp);
-        memory->deallocate(evec);
+        deallocate(xk_plane);
+        deallocate(xk_plane2);
+        deallocate(kvec_plane);
+        deallocate(eval);
+        deallocate(eval2);
+        deallocate(eval_tmp);
+        deallocate(evec);
 
         rotvec(xk_vec1, xk_vec1, system->rlavec_p, 'T');
         rotvec(xk_vec2, xk_vec2, system->rlavec_p, 'T');
@@ -1336,7 +1336,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         theta_ref += theta;
     }
 
-    memory->deallocate(kplist_conserved);
+    deallocate(kplist_conserved);
 
 
     std::vector<std::vector<double>> **final_state_xy;
@@ -1352,11 +1352,11 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
     double srot_inv[3][3], srot_inv_t[3][3];
     double ***symop_k;
 
-    memory->allocate(symop_k, symmetry->nsym, 3, 3);
-    memory->allocate(final_state_xy, kslist_fstate_k.size(), NT);
+    allocate(symop_k, symmetry->nsym, 3, 3);
+    allocate(final_state_xy, kslist_fstate_k.size(), NT);
 
-    memory->allocate(eval, 3, ns);
-    memory->allocate(evec, 3, ns, ns);
+    allocate(eval, 3, ns);
+    allocate(evec, 3, ns, ns);
 
     for (i = 0; i < kslist_fstate_k.size(); ++i) {
         for (j = 0; j < 3; ++j) xk1[j] = -kslist_fstate_k[i].xk[j];
@@ -1437,7 +1437,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                 if (nklist == 0) continue;
 
-                memory->allocate(gamma_k, nklist, NT);
+                allocate(gamma_k, nklist, NT);
 
                 for (k = 0; k < nklist; ++k) {
                     for (l = 0; l < NT; ++l) {
@@ -1516,7 +1516,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                         final_state_xy[i][iT].push_back(triplet_xyG);
                     }
                 }
-                memory->deallocate(gamma_k);
+                deallocate(gamma_k);
             }
         }
 
@@ -1548,11 +1548,11 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         }
     }
 
-    memory->deallocate(kplist_for_target_mode);
-    memory->deallocate(final_state_xy);
-    memory->deallocate(symop_k);
-    memory->deallocate(eval);
-    memory->deallocate(evec);
+    deallocate(kplist_for_target_mode);
+    deallocate(final_state_xy);
+    deallocate(symop_k);
+    deallocate(eval);
+    deallocate(evec);
 }
 
 void ModeAnalysis::print_V3_elements() const
@@ -1763,8 +1763,8 @@ void ModeAnalysis::calc_V3norm2(const unsigned int ik_in,
     double **ret_loc = nullptr;
     double **ret_sum = nullptr;
 
-    memory->allocate(ret_loc, ntriplet, ns2);
-    memory->allocate(ret_sum, ntriplet, ns2);
+    allocate(ret_loc, ntriplet, ns2);
+    allocate(ret_sum, ntriplet, ns2);
 
     for (size_t ik = 0; ik < ntriplet; ++ik) {
         for (size_t ib = 0; ib < ns2; ++ib) {
@@ -1801,8 +1801,8 @@ void ModeAnalysis::calc_V3norm2(const unsigned int ik_in,
         }
     }
 
-    memory->deallocate(ret_loc);
-    memory->deallocate(ret_sum);
+    deallocate(ret_loc);
+    deallocate(ret_sum);
 }
 
 void ModeAnalysis::calc_V4norm2(const unsigned int knum,
@@ -1824,8 +1824,8 @@ void ModeAnalysis::calc_V4norm2(const unsigned int knum,
     double **ret_loc = nullptr;
     double **ret_sum = nullptr;
 
-    memory->allocate(ret_loc, nquartet, ns3);
-    memory->allocate(ret_sum, nquartet, ns3);
+    allocate(ret_loc, nquartet, ns3);
+    allocate(ret_sum, nquartet, ns3);
 
     for (size_t ik = 0; ik < nquartet; ++ik) {
         for (size_t ib = 0; ib < ns3; ++ib) {
@@ -1867,8 +1867,8 @@ void ModeAnalysis::calc_V4norm2(const unsigned int knum,
         }
     }
 
-    memory->deallocate(ret_loc);
-    memory->deallocate(ret_sum);
+    deallocate(ret_loc);
+    deallocate(ret_sum);
 }
 
 
@@ -2081,8 +2081,8 @@ void ModeAnalysis::calc_Phi3(const unsigned int knum,
     std::complex<double> **ret_loc = nullptr;
     std::complex<double> **ret_sum = nullptr;
 
-    memory->allocate(ret_loc, ntriplet, ns2);
-    memory->allocate(ret_sum, ntriplet, ns2);
+    allocate(ret_loc, ntriplet, ns2);
+    allocate(ret_sum, ntriplet, ns2);
 
     for (size_t ik = 0; ik < ntriplet; ++ik) {
         for (size_t ib = 0; ib < ns2; ++ib) {
@@ -2121,8 +2121,8 @@ void ModeAnalysis::calc_Phi3(const unsigned int knum,
         }
     }
 
-    memory->deallocate(ret_loc);
-    memory->deallocate(ret_sum);
+    deallocate(ret_loc);
+    deallocate(ret_sum);
 }
 
 
@@ -2145,8 +2145,8 @@ void ModeAnalysis::calc_Phi4(const unsigned int knum,
     std::complex<double> **ret_loc = nullptr;
     std::complex<double> **ret_sum = nullptr;
 
-    memory->allocate(ret_loc, nquartet, ns3);
-    memory->allocate(ret_sum, nquartet, ns3);
+    allocate(ret_loc, nquartet, ns3);
+    allocate(ret_sum, nquartet, ns3);
 
     for (size_t ik = 0; ik < nquartet; ++ik) {
         for (size_t ib = 0; ib < ns3; ++ib) {
@@ -2186,8 +2186,8 @@ void ModeAnalysis::calc_Phi4(const unsigned int knum,
         }
     }
 
-    memory->deallocate(ret_loc);
-    memory->deallocate(ret_sum);
+    deallocate(ret_loc);
+    deallocate(ret_sum);
 }
 
 void ModeAnalysis::print_spectral_function(const unsigned int NT,
@@ -2206,9 +2206,9 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
 
     const auto nomega = static_cast<unsigned int>((Omega_max - Omega_min) / delta_omega) + 1;
 
-    memory->allocate(omega_array, nomega);
-    memory->allocate(self3_imag, NT, nomega);
-    memory->allocate(self3_real, NT, nomega);
+    allocate(omega_array, nomega);
+    allocate(self3_imag, NT, nomega);
+    allocate(self3_real, NT, nomega);
 
     for (i = 0; i < nomega; ++i) {
         omega_array[i] = Omega_min + delta_omega * static_cast<double>(i);
@@ -2292,9 +2292,9 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
         if (mympi->my_rank == 0) ofs_self.close();
     }
 
-    memory->deallocate(omega_array);
-    memory->deallocate(self3_imag);
-    memory->deallocate(self3_real);
+    deallocate(omega_array);
+    deallocate(self3_imag);
+    deallocate(self3_real);
 }
 
 

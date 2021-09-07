@@ -838,7 +838,7 @@ void Writes::write_phonon_dos() const
     ofs_dos << "#";
 
     unsigned int *nat_each_kd;
-    memory->allocate(nat_each_kd, system->nkd);
+    allocate(nat_each_kd, system->nkd);
     for (i = 0; i < system->nkd; ++i) nat_each_kd[i] = 0;
     for (i = 0; i < system->natmin; ++i) {
         ++nat_each_kd[system->kd[system->map_p2s[i][0]]];
@@ -847,7 +847,7 @@ void Writes::write_phonon_dos() const
         ofs_dos << std::setw(5) << nat_each_kd[i];
     }
     ofs_dos << std::endl;
-    memory->deallocate(nat_each_kd);
+    deallocate(nat_each_kd);
 
     if (dos->compute_dos) {
         ofs_dos << "# Energy [cm^-1], TOTAL-DOS";
@@ -1023,8 +1023,8 @@ void Writes::write_normal_mode_direction() const
     double **xmod;
     std::string *kd_tmp;
 
-    memory->allocate(xmod, natmin, 3);
-    memory->allocate(kd_tmp, natmin);
+    allocate(xmod, natmin, 3);
+    allocate(kd_tmp, natmin);
 
     ofs_anime << "ANIMSTEPS " << nbands * nk << std::endl;
     ofs_anime << "CRYSTAL" << std::endl;
@@ -1085,8 +1085,8 @@ void Writes::write_normal_mode_direction() const
         }
     }
 
-    memory->deallocate(xmod);
-    memory->deallocate(kd_tmp);
+    deallocate(xmod);
+    deallocate(kd_tmp);
 
     ofs_anime.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_anime;
@@ -1136,7 +1136,7 @@ void Writes::write_eigenvectors() const
     ofs_evec << "# Eigenvalues and eigenvectors for each phonon modes below:" << std::endl << std::endl;
 
     unsigned int **index_bconnect_tmp;
-    memory->allocate(index_bconnect_tmp, nk, nbands);
+    allocate(index_bconnect_tmp, nk, nbands);
 
     if (dynamical->index_bconnect) {
         for (i = 0; i < nk; ++i) {
@@ -1182,7 +1182,7 @@ void Writes::write_eigenvectors() const
     }
     ofs_evec.close();
 
-    memory->deallocate(index_bconnect_tmp);
+    deallocate(index_bconnect_tmp);
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_evec;
     std::cout << " : Eigenvector of all k points" << std::endl;
@@ -1298,7 +1298,7 @@ void Writes::write_eigenvectors_HDF5() const
 
     unsigned int **index_bconnect_tmp;
     int band_index_reordered = 0;
-    memory->allocate(index_bconnect_tmp, nk, nbands);
+    allocate(index_bconnect_tmp, nk, nbands);
 
     if (dynamical->index_bconnect) {
         band_index_reordered = 1;
@@ -1327,8 +1327,8 @@ void Writes::write_eigenvectors_HDF5() const
 
     double **freq_kayser;
     double ****evec_tmp;
-    memory->allocate(freq_kayser, nk, nbands);
-    memory->allocate(evec_tmp, nk, nbands, neval, 2);
+    allocate(freq_kayser, nk, nbands);
+    allocate(evec_tmp, nk, nbands, neval, 2);
 
     for (i = 0; i < nk; ++i) {
         for (j = 0; j < nbands; ++j) {
@@ -1361,7 +1361,7 @@ void Writes::write_eigenvectors_HDF5() const
     myatt_in.close();
     dataset->close();
     dataspace->close();
-    memory->deallocate(freq_kayser);
+    deallocate(freq_kayser);
 
     dataspace = new DataSpace(4, dims_evec);
     dataset = new DataSet(group_band.createDataSet("polarization_vectors",
@@ -1371,7 +1371,7 @@ void Writes::write_eigenvectors_HDF5() const
     dataset->close();
     dataspace->close();
 
-    memory->deallocate(evec_tmp);
+    deallocate(evec_tmp);
 
     group_cell.close();
     group_band.close();
@@ -2007,15 +2007,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     // Allocation
 
-    memory->allocate(eval, ns);
-    memory->allocate(evec, ns, ns);
-    memory->allocate(evec_mag, ns, ns);
-    memory->allocate(evec_theta, ns, ns);
-    memory->allocate(disp_mag, ns, ns);
-    memory->allocate(xmod, nsuper, natmin, 3);
-    memory->allocate(kd_tmp, natmin);
-    memory->allocate(mass, natmin);
-    memory->allocate(phase_cell, nsuper);
+    allocate(eval, ns);
+    allocate(evec, ns, ns);
+    allocate(evec_mag, ns, ns);
+    allocate(evec_theta, ns, ns);
+    allocate(disp_mag, ns, ns);
+    allocate(xmod, nsuper, natmin, 3);
+    allocate(kd_tmp, natmin);
+    allocate(mass, natmin);
+    allocate(phase_cell, nsuper);
 
     // Get eigenvalues and eigenvectors at xk
 
@@ -2030,7 +2030,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     // Get fractional coordinates of atoms in a primitive cell
 
-    memory->allocate(xtmp, natmin, 3);
+    allocate(xtmp, natmin, 3);
 
     for (i = 0; i < natmin; ++i) {
         rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
@@ -2059,7 +2059,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
         }
     }
 
-    memory->deallocate(xtmp);
+    deallocate(xtmp);
 
     // Prepare atomic symbols and masses
 
@@ -2226,15 +2226,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
         }
     }
 
-    memory->deallocate(xmod);
-    memory->deallocate(kd_tmp);
-    memory->deallocate(eval);
-    memory->deallocate(evec);
-    memory->deallocate(phase_cell);
-    memory->deallocate(evec_mag);
-    memory->deallocate(evec_theta);
-    memory->deallocate(disp_mag);
-    memory->deallocate(mass);
+    deallocate(xmod);
+    deallocate(kd_tmp);
+    deallocate(eval);
+    deallocate(evec);
+    deallocate(phase_cell);
+    deallocate(evec_mag);
+    deallocate(evec_theta);
+    deallocate(disp_mag);
+    deallocate(mass);
 }
 
 void Writes::print_normalmode_borncharge() const
@@ -2300,8 +2300,8 @@ void Writes::write_participation_ratio() const
 
     ofs_apr.setf(std::ios::scientific);
 
-    memory->allocate(participation_ratio, nk, neval);
-    memory->allocate(atomic_participation_ratio, nk, neval, natmin);
+    allocate(participation_ratio, nk, neval);
+    allocate(atomic_participation_ratio, nk, neval, natmin);
 
     dynamical->calc_participation_ratio_all(dynamical->evec_phonon,
                                             participation_ratio,
@@ -2406,8 +2406,8 @@ void Writes::write_participation_ratio() const
     }
 
 
-    memory->deallocate(participation_ratio);
-    memory->deallocate(atomic_participation_ratio);
+    deallocate(participation_ratio);
+    deallocate(atomic_participation_ratio);
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_pr;
     std::cout << " : Participation ratio for all k points" << std::endl;

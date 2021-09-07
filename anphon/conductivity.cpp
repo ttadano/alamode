@@ -60,25 +60,25 @@ void Conductivity::set_default_variables()
 void Conductivity::deallocate_variables()
 {
     if (damping3) {
-        memory->deallocate(damping3);
+        deallocate(damping3);
     }
     if (kappa) {
-        memory->deallocate(kappa);
+        deallocate(kappa);
     }
     if (kappa_spec) {
-        memory->deallocate(kappa_spec);
+        deallocate(kappa_spec);
     }
     if (kappa_coherent) {
-        memory->deallocate(kappa_coherent);
+        deallocate(kappa_coherent);
     }
     if (Temperature) {
-        memory->deallocate(Temperature);
+        deallocate(Temperature);
     }
     if (vel) {
-        memory->deallocate(vel);
+        deallocate(vel);
     }
     if (velmat) {
-        memory->deallocate(velmat);
+        deallocate(velmat);
     }
 }
 
@@ -93,7 +93,7 @@ void Conductivity::setup_kappa()
     ns = dynamical->neval;
 
     ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
-    memory->allocate(Temperature, ntemp);
+    allocate(Temperature, ntemp);
 
     for (i = 0; i < ntemp; ++i) {
         Temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
@@ -104,22 +104,22 @@ void Conductivity::setup_kappa()
     const auto nrem = nks_total - nks_each_thread * mympi->nprocs;
 
     if (nrem > 0) {
-        memory->allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, ntemp);
+        allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, ntemp);
     } else {
-        memory->allocate(damping3, nks_total, ntemp);
+        allocate(damping3, nks_total, ntemp);
     }
 
     const auto factor = Bohr_in_Angstrom * 1.0e-10 / time_ry;
 
     if (mympi->my_rank == 0) {
-        memory->allocate(vel, nk, ns, 3);
+        allocate(vel, nk, ns, 3);
         if (calc_coherent) {
-            memory->allocate(velmat, nk, ns, ns, 3);
+            allocate(velmat, nk, ns, ns, 3);
         }
     } else {
-        memory->allocate(vel, 1, 1, 1);
+        allocate(vel, 1, 1, 1);
         if (calc_coherent) {
-            memory->allocate(velmat, 1, 1, 1, 3);
+            allocate(velmat, 1, 1, 1, 3);
         }
     }
 
@@ -220,7 +220,7 @@ void Conductivity::prepare_restart()
     nshift_restart = nks_done;
 
     if (nks_done > 0) {
-        memory->allocate(arr_done, nks_done);
+        allocate(arr_done, nks_done);
 
         if (mympi->my_rank == 0) {
             for (i = 0; i < nks_done; ++i) {
@@ -243,7 +243,7 @@ void Conductivity::prepare_restart()
                 vks_job.erase(it_set);
             }
         }
-        memory->deallocate(arr_done);
+        deallocate(arr_done);
     }
     vks_done.clear();
 }
@@ -270,7 +270,7 @@ void Conductivity::calc_anharmonic_imagself()
     }
 
     if (mympi->my_rank == 0) {
-        memory->allocate(nks_thread, mympi->nprocs);
+        allocate(nks_thread, mympi->nprocs);
     }
 
     auto nks_tmp = vks_l.size();
@@ -288,7 +288,7 @@ void Conductivity::calc_anharmonic_imagself()
         }
         std::cout << std::endl << std::flush;
 
-        memory->deallocate(nks_thread);
+        deallocate(nks_thread);
     }
 
     unsigned int nk_tmp;
@@ -303,7 +303,7 @@ void Conductivity::calc_anharmonic_imagself()
         vks_l.push_back(-1);
     }
 
-    memory->allocate(damping3_loc, ntemp);
+    allocate(damping3_loc, ntemp);
 
 
     for (i = 0; i < nk_tmp; ++i) {
@@ -347,7 +347,7 @@ void Conductivity::calc_anharmonic_imagself()
             std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
         }
     }
-    memory->deallocate(damping3_loc);
+    deallocate(damping3_loc);
 }
 
 void Conductivity::write_result_gamma(const unsigned int ik,
@@ -400,8 +400,8 @@ void Conductivity::compute_kappa()
         double **lifetime;
         double **gamma_total;
 
-        memory->allocate(lifetime, kpoint->nk_irred * ns, ntemp);
-        memory->allocate(gamma_total, kpoint->nk_irred * ns, ntemp);
+        allocate(lifetime, kpoint->nk_irred * ns, ntemp);
+        allocate(gamma_total, kpoint->nk_irred * ns, ntemp);
 
         average_self_energy_at_degenerate_point(kpoint->nk_irred * ns,
                                                 ntemp,
@@ -450,16 +450,16 @@ void Conductivity::compute_kappa()
             }
         }
 
-        memory->allocate(kappa, ntemp, 3, 3);
+        allocate(kappa, ntemp, 3, 3);
         compute_kappa_intraband(kappa, lifetime);
-        memory->deallocate(lifetime);
+        deallocate(lifetime);
 
         if (calc_coherent) {
-            memory->allocate(kappa_coherent, ntemp, 3, 3);
+            allocate(kappa_coherent, ntemp, 3, 3);
             compute_kappa_coherent(kappa_coherent, gamma_total);
         }
 
-        memory->deallocate(gamma_total);
+        deallocate(gamma_total);
     }
 }
 
@@ -476,11 +476,11 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
 
     std::vector<int> degeneracy_at_k;
 
-    memory->allocate(eval_tmp, ns);
+    allocate(eval_tmp, ns);
 
     double *damping_sum;
 
-    memory->allocate(damping_sum, m);
+    allocate(damping_sum, m);
 
     for (auto i = 0; i < nkr; ++i) {
         const int ik = kpoint->kpoint_irred_all[i][0].knum;
@@ -529,7 +529,7 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
             is += ideg;
         }
     }
-    memory->deallocate(damping_sum);
+    deallocate(damping_sum);
 }
 
 
@@ -540,7 +540,7 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
     double ****kappa_mode;
     const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
 
-    memory->allocate(kappa_mode, ntemp, 9, ns, kpoint->nk_irred);
+    allocate(kappa_mode, ntemp, 9, ns, kpoint->nk_irred);
 
 
     for (i = 0; i < ntemp; ++i) {
@@ -604,7 +604,7 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
                                          integration->ismear);
     }
 
-    memory->deallocate(kappa_mode);
+    deallocate(kappa_mode);
 }
 
 
@@ -628,7 +628,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
         if (!ofs) error->exit("compute_kappa_coherent", "cannot open file_kc");
         ofs << "# Temperature [K], 1st and 2nd xyz components, ibranch, jbranch, ik_irred, "
                "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
-        memory->allocate(kappa_save, ns2, kpoint->nk_irred);
+        allocate(kappa_save, ns2, kpoint->nk_irred);
     }
 
     for (auto i = 0; i < ntemp; ++i) {
@@ -718,7 +718,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
 
     if (calc_coherent == 2) {
         ofs.close();
-        memory->deallocate(kappa_save);
+        deallocate(kappa_save);
     }
 }
 
@@ -734,9 +734,9 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
     std::cout << std::endl;
     std::cout << " KAPPA_SPEC = 1 : Calculating thermal conductivity spectra ... ";
 
-    memory->allocate(kappa_spec, dos->n_energy, ntemp, 3);
-    memory->allocate(kmap_identity, nk);
-    memory->allocate(eval, ns, nk);
+    allocate(kappa_spec, dos->n_energy, ntemp, 3);
+    allocate(kmap_identity, nk);
+    allocate(eval, ns, nk);
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
 
@@ -754,7 +754,7 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
         int k;
         int knum;
         double *weight;
-        memory->allocate(weight, nk);
+        allocate(weight, nk);
 
 #ifdef _OPENMP
 #pragma omp for
@@ -787,11 +787,11 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
                 }
             }
         }
-        memory->deallocate(weight);
+        deallocate(weight);
     }
 
-    memory->deallocate(kmap_identity);
-    memory->deallocate(eval);
+    deallocate(kmap_identity);
+    deallocate(eval);
 
     std::cout << " done!" << std::endl;
 }

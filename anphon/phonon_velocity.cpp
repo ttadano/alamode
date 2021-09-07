@@ -40,7 +40,7 @@ void Phonon_velocity::set_default_variables()
     phvel_xyz = nullptr;
     velmat = nullptr;
 
-    memory->allocate(xshift_s, 27, 3);
+    allocate(xshift_s, 27, 3);
 
     for (auto i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
     auto icell = 0;
@@ -62,16 +62,16 @@ void Phonon_velocity::set_default_variables()
 void Phonon_velocity::deallocate_variables()
 {
     if (phvel) {
-        memory->deallocate(phvel);
+        deallocate(phvel);
     }
     if (phvel_xyz) {
-        memory->deallocate(phvel_xyz);
+        deallocate(phvel_xyz);
     }
     if (xshift_s) {
-        memory->deallocate(xshift_s);
+        deallocate(xshift_s);
     }
     if (velmat) {
-        memory->deallocate(velmat);
+        deallocate(velmat);
     }
 }
 
@@ -86,7 +86,7 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
         const auto nk = kpoint->nk;
         const auto ns = dynamical->neval;
 
-        memory->allocate(phvel, nk, ns);
+        allocate(phvel, nk, ns);
 
         if (kpmode == 1) {
 
@@ -94,7 +94,7 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
 
         } else if (kpmode == 2) {
             print_velocity_xyz = true;
-            memory->allocate(phvel_xyz, nk, ns, 3);
+            allocate(phvel_xyz, nk, ns, 3);
             calc_phonon_vel_mesh(phvel_xyz);
 
             for (auto ik = 0; ik < nk; ++ik) {
@@ -122,18 +122,18 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
 
     std::complex<double> **evec_tmp;
 
-    memory->allocate(evec_tmp, 1, 1);
+    allocate(evec_tmp, 1, 1);
 
     if (mympi->my_rank == 0) {
         std::cout << " Calculating group velocities of phonon along given k path ... ";
     }
 
     const unsigned int ndiff = 2;
-    memory->allocate(xk_shift, ndiff, 3);
-    memory->allocate(omega_shift, ndiff, n);
-    memory->allocate(omega_tmp, ndiff);
+    allocate(xk_shift, ndiff, 3);
+    allocate(omega_shift, ndiff, n);
+    allocate(omega_tmp, ndiff);
 
-    memory->allocate(xk_tmp, 3);
+    allocate(xk_tmp, 3);
 
 
     for (unsigned int ik = 0; ik < nk; ++ik) {
@@ -175,12 +175,12 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
             phvel_out[ik][i] = diff(omega_tmp, ndiff, h);
         }
     }
-    memory->deallocate(omega_tmp);
-    memory->deallocate(omega_shift);
-    memory->deallocate(xk_shift);
-    memory->deallocate(xk_tmp);
+    deallocate(omega_tmp);
+    deallocate(omega_shift);
+    deallocate(xk_shift);
+    deallocate(xk_tmp);
 
-    memory->deallocate(evec_tmp);
+    deallocate(evec_tmp);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -204,8 +204,8 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
         std::cout << " Calculating group velocities of phonons on uniform grid ... ";
     }
 
-    memory->allocate(sendcount, mympi->nprocs);
-    memory->allocate(recvcount, mympi->nprocs);
+    allocate(sendcount, mympi->nprocs);
+    allocate(recvcount, mympi->nprocs);
     nk_proc.resize(mympi->nprocs);
 
     auto nk_loc = nk / mympi->nprocs;
@@ -219,7 +219,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
     }
 
     if (mympi->my_rank == 0) {
-        memory->allocate(displs, mympi->nprocs);
+        allocate(displs, mympi->nprocs);
         displs[0] = 0;
         for (auto i = 1; i < mympi->nprocs; ++i) {
             displs[i] = displs[i - 1] + recvcount[i - 1];
@@ -242,8 +242,8 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
 
     nk_loc = klist_proc.size();
 
-    memory->allocate(phvel3_loc, nk_loc, ns, 3);
-    memory->allocate(vel, ns, 3);
+    allocate(phvel3_loc, nk_loc, ns, 3);
+    allocate(vel, ns, 3);
 
     for (unsigned int i = 0; i < nk_loc; ++i) {
         phonon_vel_k(kpoint->xk[klist_proc[i]], vel);
@@ -261,15 +261,15 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
         }
     }
 
-    memory->deallocate(vel);
+    deallocate(vel);
 
     MPI_Gatherv(&phvel3_loc[0][0][0], sendcount[mympi->my_rank], MPI_DOUBLE,
                 &phvel3_out[0][0][0], &recvcount[0], &displs[0], MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    memory->deallocate(phvel3_loc);
-    memory->deallocate(sendcount);
-    memory->deallocate(recvcount);
-    if (displs) memory->deallocate(displs);
+    deallocate(phvel3_loc);
+    deallocate(sendcount);
+    deallocate(recvcount);
+    if (displs) deallocate(displs);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -295,8 +295,8 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
         std::cout << " Calculating group velocity matrix of phonons on uniform grid ... ";
     }
 
-    memory->allocate(sendcount, mympi->nprocs);
-    memory->allocate(recvcount, mympi->nprocs);
+    allocate(sendcount, mympi->nprocs);
+    allocate(recvcount, mympi->nprocs);
     nk_proc.resize(mympi->nprocs);
 
     auto nk_loc = nk / mympi->nprocs;
@@ -310,7 +310,7 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
     }
 
     if (mympi->my_rank == 0) {
-        memory->allocate(displs, mympi->nprocs);
+        allocate(displs, mympi->nprocs);
         displs[0] = 0;
         for (auto i = 1; i < mympi->nprocs; ++i) {
             displs[i] = displs[i - 1] + recvcount[i - 1];
@@ -333,7 +333,7 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
 
     nk_loc = klist_proc.size();
 
-    memory->allocate(velmat_loc, nk_loc, ns, ns, 3);
+    allocate(velmat_loc, nk_loc, ns, ns, 3);
 
     for (auto i = 0; i < nk_loc; ++i) {
         auto knum = klist_proc[i];
@@ -385,10 +385,10 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
     MPI_Gatherv(&velmat_loc[0][0][0][0], sendcount[mympi->my_rank], MPI_COMPLEX16,
                 &velmat_out[0][0][0][0], &recvcount[0], &displs[0], MPI_COMPLEX16, 0, MPI_COMM_WORLD);
 
-    memory->deallocate(velmat_loc);
-    memory->deallocate(sendcount);
-    memory->deallocate(recvcount);
-    if (displs) memory->deallocate(displs);
+    deallocate(velmat_loc);
+    deallocate(sendcount);
+    deallocate(recvcount);
+    if (displs) deallocate(displs);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -409,11 +409,11 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
 
     const unsigned int ndiff = 2;
 
-    memory->allocate(omega_shift, ndiff, n);
-    memory->allocate(xk_shift, ndiff, 3);
-    memory->allocate(omega_tmp, ndiff);
-    memory->allocate(evec_tmp, 1, 1);
-    memory->allocate(kvec_na_tmp, 2, 3);
+    allocate(omega_shift, ndiff, n);
+    allocate(xk_shift, ndiff, 3);
+    allocate(omega_tmp, ndiff);
+    allocate(evec_tmp, 1, 1);
+    allocate(kvec_na_tmp, 2, 3);
 
     for (unsigned int i = 0; i < 3; ++i) {
 
@@ -467,11 +467,11 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
         }
     }
 
-    memory->deallocate(xk_shift);
-    memory->deallocate(omega_shift);
-    memory->deallocate(omega_tmp);
-    memory->deallocate(evec_tmp);
-    memory->deallocate(kvec_na_tmp);
+    deallocate(xk_shift);
+    deallocate(omega_shift);
+    deallocate(omega_tmp);
+    deallocate(evec_tmp);
+    deallocate(kvec_na_tmp);
 }
 
 double Phonon_velocity::diff(const double *f,
@@ -513,8 +513,8 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
             group velocity is not supported for NONANALYTIC>0.");
     }
 
-    memory->allocate(ddyn, 3, nmode, nmode);
-    memory->allocate(vel_tmp, 3, nmode);
+    allocate(ddyn, 3, nmode, nmode);
+    allocate(vel_tmp, 3, nmode);
     calc_derivative_dynmat_k(xk_in, fcs_phonon->fc2_ext, ddyn);
 
     const auto do_diagonalize = false;
@@ -573,8 +573,8 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
                 // we have to construct a MxM matrix and diagonalize it to obtain 
                 // group velocities.
 
-                memory->allocate(mat_tmp, 3, ideg, ideg);
-                memory->allocate(eval_tmp, 3, ideg);
+                allocate(mat_tmp, 3, ideg, ideg);
+                allocate(eval_tmp, 3, ideg);
 
                 for (icrd = 0; icrd < 3; ++icrd) {
 
@@ -600,8 +600,8 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
                     }
                 }
 
-                memory->deallocate(mat_tmp);
-                memory->deallocate(eval_tmp);
+                deallocate(mat_tmp);
+                deallocate(eval_tmp);
 
             } else {
                 error->exit("phonon_vel_k2", "This cannot happen.");
@@ -639,10 +639,10 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
 
 
     if (ddyn) {
-        memory->deallocate(ddyn);
+        deallocate(ddyn);
     }
     if (vel_tmp) {
-        memory->deallocate(vel_tmp);
+        deallocate(vel_tmp);
     }
 
     double symmetrizer_k[3][3];
@@ -735,9 +735,9 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
     char UPLO = 'U';
     int n_ = n;
 
-    memory->allocate(mat_1D, n * n);
-    memory->allocate(RWORK, 3 * n - 2);
-    memory->allocate(WORK, LWORK);
+    allocate(mat_1D, n * n);
+    allocate(RWORK, 3 * n - 2);
+    allocate(WORK, LWORK);
 
     int k = 0;
     for (int j = 0; j < n; ++j) {
@@ -748,9 +748,9 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
 
     zheev_(&JOBZ, &UPLO, &n_, mat_1D, &n_, eval_out, WORK, &LWORK, RWORK, &INFO);
 
-    memory->deallocate(RWORK);
-    memory->deallocate(WORK);
-    memory->deallocate(mat_1D);
+    deallocate(RWORK);
+    deallocate(WORK);
+    deallocate(mat_1D);
 }
 
 void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
@@ -771,7 +771,7 @@ void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
     const std::complex<double> im(0.0, 1.0);
     std::complex<double> ***ddymat;
 
-    memory->allocate(ddymat, nmode, nmode, 3);
+    allocate(ddymat, nmode, nmode, 3);
 
     for (i = 0; i < nmode; ++i) {
         for (j = 0; j < nmode; ++j) {

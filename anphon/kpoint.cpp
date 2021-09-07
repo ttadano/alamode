@@ -55,25 +55,25 @@ void Kpoint::set_default_variables()
 void Kpoint::deallocate_variables()
 {
     if (xk) {
-        memory->deallocate(xk);
+        deallocate(xk);
     }
     if (kaxis) {
-        memory->deallocate(kaxis);
+        deallocate(kaxis);
     }
     if (kvec_na) {
-        memory->deallocate(kvec_na);
+        deallocate(kvec_na);
     }
     if (knum_minus) {
-        memory->deallocate(knum_minus);
+        deallocate(knum_minus);
     }
     if (kp_planes) {
-        memory->deallocate(kp_planes);
+        deallocate(kp_planes);
     }
     if (kp_planes_tri) {
-        memory->deallocate(kp_planes_tri);
+        deallocate(kp_planes_tri);
     }
     if (small_group_of_k) {
-        memory->deallocate(small_group_of_k);
+        deallocate(small_group_of_k);
     }
 }
 
@@ -194,7 +194,7 @@ void Kpoint::kpoint_setups(const std::string mode)
                 std::cout << std::endl;
             }
 
-            memory->allocate(knum_minus, nk);
+            allocate(knum_minus, nk);
             gen_nkminus(nk, knum_minus, xk);
 
             for (i = 0; i < nk_irred; ++i) {
@@ -203,7 +203,7 @@ void Kpoint::kpoint_setups(const std::string mode)
                 }
             }
             // Compute small group of every irreducible k points for later use
-            memory->allocate(small_group_of_k, nk_irred);
+            allocate(small_group_of_k, nk_irred);
             calc_small_groups_k_irred(small_group_of_k);
 
             break;
@@ -269,8 +269,8 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
     n = kpinfo.size();
     MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    memory->allocate(k, n, 3);
-    memory->allocate(kdirec, n, 3);
+    allocate(k, n, 3);
+    allocate(kdirec, n, 3);
 
     if (mympi->my_rank == 0) {
         int j = 0;
@@ -307,8 +307,8 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
     unsigned int n = kpinfo.size();
 
     MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    memory->allocate(k, n, 3);
-    memory->allocate(kdirec, n, 3);
+    allocate(k, n, 3);
+    allocate(kdirec, n, 3);
 
     if (mympi->my_rank == 0) {
         int j = 0;
@@ -344,8 +344,8 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
         }
     }
 
-    memory->deallocate(k);
-    memory->deallocate(kdirec);
+    deallocate(k);
+    deallocate(kdirec);
 }
 
 void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
@@ -364,10 +364,10 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 
         const auto npath = kpinfo.size();
 
-        memory->allocate(kp_symbol, npath, 2);
-        memory->allocate(k_start, npath, 3);
-        memory->allocate(k_end, npath, 3);
-        memory->allocate(nk_path, npath);
+        allocate(kp_symbol, npath, 2);
+        allocate(k_start, npath, 3);
+        allocate(k_end, npath, 3);
+        allocate(nk_path, npath);
 
         n = 0;
         int i = 0;
@@ -386,9 +386,9 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
             ++i;
         }
 
-        memory->allocate(xk, n, 3);
-        memory->allocate(kdirec, n, 3);
-        memory->allocate(axis, n);
+        allocate(xk, n, 3);
+        allocate(kdirec, n, 3);
+        allocate(axis, n);
 
         unsigned int ik = 0;
         double direc_tmp[3], tmp[3];
@@ -434,17 +434,17 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
                 ++ik;
             }
         }
-        memory->deallocate(nk_path);
-        memory->deallocate(k_start);
-        memory->deallocate(k_end);
-        memory->deallocate(kp_symbol);
+        deallocate(nk_path);
+        deallocate(k_start);
+        deallocate(k_end);
+        deallocate(kp_symbol);
     }
 
     MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0) {
-        memory->allocate(xk, n, 3);
-        memory->allocate(kdirec, n, 3);
+        allocate(xk, n, 3);
+        allocate(kdirec, n, 3);
     }
 
     MPI_Bcast(&xk[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -470,10 +470,10 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 
         const auto npath = kpinfo.size();
 
-        memory->allocate(kp_symbol, npath, 2);
-        memory->allocate(k_start, npath, 3);
-        memory->allocate(k_end, npath, 3);
-        memory->allocate(nk_path, npath);
+        allocate(kp_symbol, npath, 2);
+        allocate(k_start, npath, 3);
+        allocate(k_end, npath, 3);
+        allocate(nk_path, npath);
 
         n = 0;
         int i = 0;
@@ -492,9 +492,9 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
             ++i;
         }
 
-        memory->allocate(xk_tmp, n, 3);
-        memory->allocate(kdirec_tmp, n, 3);
-        memory->allocate(axis_tmp, n);
+        allocate(xk_tmp, n, 3);
+        allocate(kdirec_tmp, n, 3);
+        allocate(axis_tmp, n);
 
         unsigned int ik = 0;
         double direc_tmp[3], tmp[3];
@@ -540,18 +540,18 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
                 ++ik;
             }
         }
-        memory->deallocate(nk_path);
-        memory->deallocate(k_start);
-        memory->deallocate(k_end);
-        memory->deallocate(kp_symbol);
+        deallocate(nk_path);
+        deallocate(k_start);
+        deallocate(k_end);
+        deallocate(kp_symbol);
     }
 
     MPI_Bcast(&n, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0) {
-        memory->allocate(xk_tmp, n, 3);
-        memory->allocate(kdirec_tmp, n, 3);
-        memory->allocate(axis_tmp, n);
+        allocate(xk_tmp, n, 3);
+        allocate(kdirec_tmp, n, 3);
+        allocate(axis_tmp, n);
     }
 
     MPI_Bcast(&xk_tmp[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -571,9 +571,9 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
         kpoint_band_out.kaxis[i] = axis_tmp[i];
     }
 
-    memory->deallocate(xk_tmp);
-    memory->deallocate(kdirec_tmp);
-    memory->deallocate(axis_tmp);
+    deallocate(xk_tmp);
+    deallocate(kdirec_tmp);
+    deallocate(axis_tmp);
 }
 
 void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,
@@ -597,8 +597,8 @@ void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,
 
         nk = nkx * nky * nkz;
 
-        memory->allocate(xk, nk, 3);
-        memory->allocate(kdirec, nk, 3);
+        allocate(xk, nk, 3);
+        allocate(kdirec, nk, 3);
 
         nk_tmp[0] = nkx;
         nk_tmp[1] = nky;
@@ -626,8 +626,8 @@ void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,
     MPI_Bcast(&nkz, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0) {
-        memory->allocate(xk, nk, 3);
-        memory->allocate(kdirec, nk, 3);
+        allocate(xk, nk, 3);
+        allocate(kdirec, nk, 3);
     }
 
     MPI_Bcast(&xk[0][0], 3 * nk, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -684,7 +684,7 @@ void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
               / static_cast<double>(kmesh.nk);
     }
     kmesh.kindex_minus_xk.resize(kmesh.nk);
-    //memory->allocate(knum_minus, nk);
+    //allocate(knum_minus, nk);
     gen_nkminus(kmesh.nk, kmesh.nk_i, kmesh.kindex_minus_xk, kmesh.xk);
 
     for (auto i = 0; i < kmesh.nk_irred; ++i) {
@@ -693,7 +693,7 @@ void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
         }
     }
     // Compute small group of every irreducible k points for later use
-//   memory->allocate(small_group_of_k, nk_irred);
+//   allocate(small_group_of_k, nk_irred);
     kmesh.small_group_of_k.resize(kmesh.nk_irred);
     set_small_groups_k_irred(kmesh, symmetry->SymmList);
 
@@ -717,9 +717,9 @@ void Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &k
     auto nk_irred = kp_irreducible.size();
     MPI_Bcast(&nk_irred, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    memory->allocate(xk_tmp, nk, 3);
-    memory->allocate(knum_tmp, nk);
-    memory->allocate(kequiv_tmp, nk_irred);
+    allocate(xk_tmp, nk, 3);
+    allocate(knum_tmp, nk);
+    allocate(kequiv_tmp, nk_irred);
 
     if (mympi->my_rank == 0) {
         ik = 0;
@@ -761,9 +761,9 @@ void Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &k
         }
     }
 
-    memory->deallocate(xk_tmp);
-    memory->deallocate(knum_tmp);
-    memory->deallocate(kequiv_tmp);
+    deallocate(xk_tmp);
+    deallocate(knum_tmp);
+    deallocate(kequiv_tmp);
 }
 
 void Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane,
@@ -778,8 +778,8 @@ void Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane,
 
         MPI_Bcast(&nkp, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        memory->allocate(naxis, nkp, 2);
-        memory->allocate(xk_plane, nkp, 3);
+        allocate(naxis, nkp, 2);
+        allocate(xk_plane, nkp, 3);
 
         if (mympi->my_rank == 0) {
             for (j = 0; j < nkp; ++j) {
@@ -799,8 +799,8 @@ void Kpoint::mpi_broadcast_kplane_vector(const unsigned int nplane,
                 kp_plane[i].emplace_back(xk_plane[j], naxis[j]);
             }
         }
-        memory->deallocate(naxis);
-        memory->deallocate(xk_plane);
+        deallocate(naxis);
+        deallocate(xk_plane);
     }
 }
 
@@ -811,8 +811,8 @@ void Kpoint::setup_kpoint_plane(const std::vector<KpointInp> &kpinfo,
     nplane = kpinfo.size();
     MPI_Bcast(&nplane, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    memory->allocate(kp_plane, nplane);
-    memory->allocate(kp_planes_tri, nplane);
+    allocate(kp_plane, nplane);
+    allocate(kp_planes_tri, nplane);
 
     if (mympi->my_rank == 0) {
         gen_kpoints_plane(kpinfo, kp_plane, kp_planes_tri);
@@ -832,7 +832,7 @@ void Kpoint::gen_kmesh(const bool usesym,
     const auto nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
     int nsym;
 
-    memory->allocate(xkr, nk_tot, 3);
+    allocate(xkr, nk_tot, 3);
 
     for (unsigned int ix = 0; ix < nk_in[0]; ++ix) {
         for (unsigned int iy = 0; iy < nk_in[1]; ++iy) {
@@ -858,7 +858,7 @@ void Kpoint::gen_kmesh(const bool usesym,
         }
     }
 
-    memory->deallocate(xkr);
+    deallocate(xkr);
 }
 
 void Kpoint::gen_kmesh(const bool usesym,
@@ -872,7 +872,7 @@ void Kpoint::gen_kmesh(const bool usesym,
     const auto nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
     int nsym;
 
-    memory->allocate(xkr, nk_tot, 3);
+    allocate(xkr, nk_tot, 3);
 
     for (unsigned int ix = 0; ix < nk_in[0]; ++ix) {
         for (unsigned int iy = 0; iy < nk_in[1]; ++iy) {
@@ -898,7 +898,7 @@ void Kpoint::gen_kmesh(const bool usesym,
         }
     }
 
-    memory->deallocate(xkr);
+    deallocate(xkr);
 }
 
 void Kpoint::reduce_kpoints(const unsigned int nsym,
@@ -921,7 +921,7 @@ void Kpoint::reduce_kpoints(const unsigned int nsym,
 
     double ***symop_k;
 
-    memory->allocate(symop_k, nsym, 3, 3);
+    allocate(symop_k, nsym, 3, 3);
 
     for (isym = 0; isym < nsym; ++isym) {
 
@@ -944,7 +944,7 @@ void Kpoint::reduce_kpoints(const unsigned int nsym,
     kplist_out.clear();
 
     const auto nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
-    memory->allocate(k_found, nk_tot);
+    allocate(k_found, nk_tot);
 
     for (ik = 0; ik < nk_tot; ++ik) k_found[ik] = false;
 
@@ -1011,8 +1011,8 @@ void Kpoint::reduce_kpoints(const unsigned int nsym,
         kplist_out.push_back(k_group);
     }
 
-    memory->deallocate(k_found);
-    memory->deallocate(symop_k);
+    deallocate(k_found);
+    deallocate(symop_k);
 }
 
 void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
@@ -1079,7 +1079,7 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
             }
         }
 
-        memory->allocate(xk, N1 * N2, 3);
+        allocate(xk, N1 * N2, 3);
 
         int m = 0;
         for (ik1 = 0; ik1 < N1; ++ik1) {
@@ -1096,7 +1096,7 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
         const auto number_of_tiles = (N1 - 1) * (N2 - 1);
         const auto number_of_triangle_tiles = 2 * number_of_tiles;
 
-        memory->allocate(triangle, number_of_triangle_tiles, 3);
+        allocate(triangle, number_of_triangle_tiles, 3);
 
         for (ik1 = 0; ik1 < N1 - 1; ++ik1) {
             for (ik2 = 0; ik2 < N2 - 1; ++ik2) {
@@ -1135,8 +1135,8 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
             }
         }
 
-        memory->deallocate(xk);
-        memory->deallocate(triangle);
+        deallocate(xk);
+        deallocate(triangle);
     }
 }
 
@@ -1632,7 +1632,7 @@ void Kpoint::get_unique_triplet_k(const int ik,
     std::vector<KsList> kslist;
     double xk[3], xk1[3], xk2[3];
 
-    memory->allocate(flag_found, nk);
+    allocate(flag_found, nk);
 
     if (use_triplet_symmetry) {
         num_group_k = small_group_of_k[ik].size();
@@ -1688,7 +1688,7 @@ void Kpoint::get_unique_triplet_k(const int ik,
         }
     }
 
-    memory->deallocate(flag_found);
+    deallocate(flag_found);
 }
 
 void Kpoint::get_unique_quartet_k(const int ik,
@@ -1710,7 +1710,7 @@ void Kpoint::get_unique_quartet_k(const int ik,
     std::vector<KsList> kslist;
     double xk[3], xk1[3], xk2[3], xk3[3];
 
-    memory->allocate(flag_found, nk, nk);
+    allocate(flag_found, nk, nk);
 
     if (use_quartet_symmetry) {
         num_group_k = small_group_of_k[ik].size();
@@ -1778,5 +1778,5 @@ void Kpoint::get_unique_quartet_k(const int ik,
 
     }
 
-    memory->deallocate(flag_found);
+    deallocate(flag_found);
 }
