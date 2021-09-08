@@ -172,24 +172,37 @@ void Kpoint::kpoint_setups(const std::string mode)
                 weight_k.push_back(static_cast<double>(kpoint_irred_all[i].size()) / static_cast<double>(nk));
             }
 
+            unsigned int nk1, nk2, nk3;
+            nk1 = 0; nk2 = 0; nk3 = 0;
+            if (mympi->my_rank == 0) {
+                nk1 = std::atoi(kpInp[0].kpelem[0].c_str());
+                nk2 = std::atoi(kpInp[0].kpelem[1].c_str());
+                nk3 = std::atoi(kpInp[0].kpelem[2].c_str());
+            }
+
+            setup_kpoint_mesh_uniform(nk1, nk2, nk3,
+                                      symmetry->SymmList,
+                                      system->rlavec_p,
+                                      kmesh_dos);
+
             if (mympi->my_rank == 0) {
                 std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
-                std::cout << "  nk1:" << std::setw(4) << nkx << std::endl;
-                std::cout << "  nk2:" << std::setw(4) << nky << std::endl;
-                std::cout << "  nk3:" << std::setw(4) << nkz << std::endl;
+                std::cout << "  nk1:" << std::setw(4) << kmesh_dos.nk_i[0] << std::endl;
+                std::cout << "  nk2:" << std::setw(4) << kmesh_dos.nk_i[1] << std::endl;
+                std::cout << "  nk3:" << std::setw(4) << kmesh_dos.nk_i[2] << std::endl;
                 std::cout << std::endl;
-                std::cout << "  Number of k points : " << nk << std::endl;
-                std::cout << "  Number of irreducible k points : " << kpoint_irred_all.size() << std::endl << std::endl;
+                std::cout << "  Number of k points : " << kmesh_dos.nk << std::endl;
+                std::cout << "  Number of irreducible k points : " << kmesh_dos.nk_irred << std::endl << std::endl;
                 std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
 
-                for (i = 0; i < kpoint_irred_all.size(); ++i) {
+                for (i = 0; i < kmesh_dos.nk_irred; ++i) {
                     std::cout << "  " << std::setw(5) << i + 1 << ":";
                     for (j = 0; j < 3; ++j) {
                         std::cout << std::setprecision(5) << std::setw(14)
-                                  << std::scientific << kpoint_irred_all[i][0].kval[j];
+                                  << std::scientific << kmesh_dos.kpoint_irred_all[i][0].kval[j];
                     }
                     std::cout << std::setprecision(6) << std::setw(11)
-                              << std::fixed << weight_k[i] << std::endl;
+                              << std::fixed << kmesh_dos.weight_k[i] << std::endl;
                 }
                 std::cout << std::endl;
             }
@@ -231,8 +244,6 @@ void Kpoint::kpoint_setups(const std::string mode)
             if (mympi->my_rank == 0) {
                 std::cout << "  KPMODE = 4: Uniform grid class" << std::endl;
             }
-
-            unsigned int nk1, nk2, nk3;
             if (mympi->my_rank == 0) {
                 nk1 = std::atoi(kpInp[0].kpelem[0].c_str());
                 nk2 = std::atoi(kpInp[0].kpelem[1].c_str());
@@ -672,10 +683,6 @@ void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
         }
     }
 
-    std::cout << kmesh.xk.size();
-    std::cout << kmesh.kpoint_irred_all.size();
-    std::cout << "kmesh.nk = " << kmesh.nk << '\n';
-
     kmesh.nk_irred = kmesh.kpoint_irred_all.size();
     kmesh.weight_k.resize(kmesh.nk_irred);
     for (auto i = 0; i < kmesh.nk_irred; ++i) {
@@ -684,7 +691,6 @@ void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
               / static_cast<double>(kmesh.nk);
     }
     kmesh.kindex_minus_xk.resize(kmesh.nk);
-    //allocate(knum_minus, nk);
     gen_nkminus(kmesh.nk, kmesh.nk_i, kmesh.kindex_minus_xk, kmesh.xk);
 
     for (auto i = 0; i < kmesh.nk_irred; ++i) {
@@ -693,13 +699,8 @@ void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
         }
     }
     // Compute small group of every irreducible k points for later use
-//   allocate(small_group_of_k, nk_irred);
     kmesh.small_group_of_k.resize(kmesh.nk_irred);
     set_small_groups_k_irred(kmesh, symmetry->SymmList);
-
-    std::cout << kmesh.small_group_of_k.size() << '\n';
-    MPI_Barrier(MPI_COMM_WORLD);
-    error->exitall("hoge", "Hoge");
 }
 
 void Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &kp_irreducible) const

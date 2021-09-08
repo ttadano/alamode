@@ -282,7 +282,9 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     std::vector<double> vecs(3);
 
     if (!dynamical->get_projection_directions().empty()) {
-        dynamical->project_degenerate_eigenvectors(&xk[0],
+        dynamical->project_degenerate_eigenvectors(system->lavec_p,
+                                                   fcs_phonon->fc2_ext,
+                                                   &xk[0],
                                                    dynamical->get_projection_directions(),
                                                    evec);
     } else {

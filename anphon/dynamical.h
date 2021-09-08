@@ -12,6 +12,7 @@
 
 #include "pointers.h"
 #include "fcs_phonon.h"
+#include "kpoint.h"
 #include "memory.h"
 #include <vector>
 #include <complex>
@@ -38,17 +39,15 @@ namespace PHON_NS {
 
     class DymatEigenValue {
      public:
-      DymatEigenValue() {
-          is_stored_eigvec = true;
-          is_irreducible_only = false;
-          eval = nullptr;
-          evec = nullptr;
-      };
+      DymatEigenValue() : nk(0), ns(0), evec(nullptr), eval(nullptr),
+      is_stored_eigvec(true), is_irreducible_only(false) {};
+
       DymatEigenValue(const bool stored_eigvec_,
                       const bool store_irreducible_only_,
                       const unsigned int nk_in,
                       const unsigned int ns_in)
                       {
+          nk = nk_in; ns = ns_in;
           is_stored_eigvec = stored_eigvec_;
           is_irreducible_only = store_irreducible_only_;
 
@@ -60,10 +59,28 @@ namespace PHON_NS {
               allocate(evec, nk_in, ns_in, ns_in);
           }
       };
+      ~DymatEigenValue() {
+          if (eval) deallocate(eval);
+          if (evec) deallocate(evec);
+      };
+
+      void set_eigenvalues(const unsigned int n,
+                           double **eval_in);
+
+      void set_eigenvectors(const unsigned int n,
+                            std::complex<double> ***evec_in);
+
+      void set_eigenvals_and_eigenvecs(const unsigned int n,
+                                       double **eval_in,
+                                       std::complex<double> ***evec_in);
+
+      double **get_eigenvalues();
+      std::complex<double> ***get_eigenvectors();
+
      private:
       bool is_stored_eigvec = true;
       bool is_irreducible_only = false;
-
+      unsigned int nk, ns;
       double **eval = nullptr;
       std::complex<double> ***evec = nullptr;
 
@@ -93,6 +110,8 @@ namespace PHON_NS {
         double ***borncharge{};
 
         bool **is_imaginary{};
+
+        DymatEigenValue *dymat_dos, *dymat_band, *dymat_general;
 
         void diagonalize_dynamical_all();
 
@@ -136,7 +155,9 @@ namespace PHON_NS {
                                  double *,
                                  std::complex<double> **) const;
 
-        void project_degenerate_eigenvectors(double *xk_in,
+        void project_degenerate_eigenvectors(const double lavec_p[3][3],
+                                             const std::vector<FcsClassExtent> &fc2_ext_in,
+                                             double *xk_in,
                                              const std::vector <std::vector<double>> &project_directions,
                                              std::complex<double> **evec_out) const;
 
@@ -160,10 +181,21 @@ namespace PHON_NS {
         double distance(double *,
                         double *) const;
 
-        void connect_band_by_eigen_similarity(std::complex<double> ***,
-                                              int **) const;
+        void connect_band_by_eigen_similarity(const unsigned int nk_in,
+                                              std::complex<double> ***evec,
+                                              int **index_sorted) const;
 
-        void detect_imaginary_branches(double **);
+        void detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
+                                       double **eval_in);
+
+        void get_eigenvalues_dymat(const unsigned int nk_in,
+                               std::vector<std::vector<double>> &xk_in,
+                               std::vector<std::vector<double>> &kvec_na_in,
+                               const std::vector<FcsClassExtent> &fc2_ext_in,
+                               const std::vector<FcsClassExtent> &fc2_without_dipole_in,
+                               const bool require_evec,
+                               double **eval_ret,
+                               std::complex<double> ***evec_ret);
 
         std::vector <std::vector<double>> projection_directions;
 
