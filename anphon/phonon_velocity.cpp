@@ -23,17 +23,17 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 using namespace PHON_NS;
 
-Phonon_velocity::Phonon_velocity(PHON *phon) : Pointers(phon)
+PhononVelocity::PhononVelocity(PHON *phon) : Pointers(phon)
 {
     set_default_variables();
 }
 
-Phonon_velocity::~Phonon_velocity()
+PhononVelocity::~PhononVelocity()
 {
     deallocate_variables();
 }
 
-void Phonon_velocity::set_default_variables()
+void PhononVelocity::set_default_variables()
 {
     print_velocity = false;
     phvel = nullptr;
@@ -59,7 +59,7 @@ void Phonon_velocity::set_default_variables()
     }
 }
 
-void Phonon_velocity::deallocate_variables()
+void PhononVelocity::deallocate_variables()
 {
     if (phvel) {
         deallocate(phvel);
@@ -76,7 +76,7 @@ void Phonon_velocity::deallocate_variables()
 }
 
 
-void Phonon_velocity::calc_group_velocity(const int kpmode)
+void PhononVelocity::calc_group_velocity(const int kpmode)
 {
     MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     print_velocity_xyz = false;
@@ -90,7 +90,7 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
 
         if (kpmode == 1) {
 
-            calc_phonon_vel_band(phvel);
+            get_phonon_group_velocity_bandstructure(phvel);
 
         } else if (kpmode == 2) {
             print_velocity_xyz = true;
@@ -108,7 +108,7 @@ void Phonon_velocity::calc_group_velocity(const int kpmode)
     }
 }
 
-void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
+void PhononVelocity::get_phonon_group_velocity_bandstructure(double **phvel_out) const
 {
     unsigned int i;
     unsigned int idiff;
@@ -151,7 +151,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
             }
 
         } else {
-            error->exit("calc_phonon_vel_band",
+            error->exit("get_phonon_group_velocity_bandstructure",
                         "ndiff > 2 is not supported yet.");
         }
 
@@ -187,7 +187,7 @@ void Phonon_velocity::calc_phonon_vel_band(double **phvel_out) const
     }
 }
 
-void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
+void PhononVelocity::calc_phonon_vel_mesh(double ***phvel3_out) const
 {
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
@@ -276,7 +276,7 @@ void Phonon_velocity::calc_phonon_vel_mesh(double ***phvel3_out) const
     }
 }
 
-void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const
+void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const
 {
     const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
@@ -395,8 +395,8 @@ void Phonon_velocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_ou
     }
 }
 
-void Phonon_velocity::phonon_vel_k(const double *xk_in,
-                                   double **vel_out) const
+void PhononVelocity::phonon_vel_k(const double *xk_in,
+                                  double **vel_out) const
 {
     unsigned int j;
     unsigned int idiff;
@@ -474,9 +474,9 @@ void Phonon_velocity::phonon_vel_k(const double *xk_in,
     deallocate(kvec_na_tmp);
 }
 
-double Phonon_velocity::diff(const double *f,
-                             const unsigned int n,
-                             const double h) const
+double PhononVelocity::diff(const double *f,
+                            const unsigned int n,
+                            const double h) const
 {
     auto df = 0.0;
 
@@ -490,10 +490,10 @@ double Phonon_velocity::diff(const double *f,
     return df;
 }
 
-void Phonon_velocity::phonon_vel_k2(const double *xk_in,
-                                    const double *omega_in,
-                                    std::complex<double> **evec_in,
-                                    double **vel_out) const
+void PhononVelocity::phonon_vel_k2(const double *xk_in,
+                                   const double *omega_in,
+                                   std::complex<double> **evec_in,
+                                   double **vel_out) const
 {
     unsigned int i, j, l, m;
     unsigned int icrd;
@@ -664,9 +664,9 @@ void Phonon_velocity::phonon_vel_k2(const double *xk_in,
 }
 
 
-void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
-                                               const std::vector<FcsClassExtent> &fc2_in,
-                                               std::complex<double> ***ddyn_out) const
+void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
+                                              const std::vector<FcsClassExtent> &fc2_in,
+                                              std::complex<double> ***ddyn_out) const
 {
     unsigned int i, j, k;
 
@@ -722,9 +722,9 @@ void Phonon_velocity::calc_derivative_dynmat_k(const double *xk_in,
 }
 
 
-void Phonon_velocity::diagonalize_hermite_mat(const int n,
-                                              std::complex<double> **mat_in,
-                                              double *eval_out) const
+void PhononVelocity::diagonalize_hermite_mat(const int n,
+                                             std::complex<double> **mat_in,
+                                             double *eval_out) const
 {
     std::complex<double> *mat_1D;
     int LWORK = (2 * n - 1) * 10;
@@ -753,11 +753,11 @@ void Phonon_velocity::diagonalize_hermite_mat(const int n,
     deallocate(mat_1D);
 }
 
-void Phonon_velocity::velocity_matrix_analytic(const double *xk_in,
-                                               const std::vector<FcsClassExtent> &fc2_in,
-                                               const double *omega_in,
-                                               std::complex<double> **evec_in,
-                                               std::complex<double> ***velmat_out) const
+void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
+                                              const std::vector<FcsClassExtent> &fc2_in,
+                                              const double *omega_in,
+                                              std::complex<double> **evec_in,
+                                              std::complex<double> ***velmat_out) const
 {
     // Use Allen's definition
     // Only the analytic part of the dynamical matrix will be considered.

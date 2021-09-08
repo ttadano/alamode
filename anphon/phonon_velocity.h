@@ -16,11 +16,11 @@
 #include <complex>
 
 namespace PHON_NS {
-    class Phonon_velocity : protected Pointers {
+    class PhononVelocity : protected Pointers {
     public:
-        Phonon_velocity(class PHON *);
+        PhononVelocity(class PHON *);
 
-        ~Phonon_velocity();
+        ~PhononVelocity();
 
         void calc_group_velocity(int);
 
@@ -59,7 +59,7 @@ namespace PHON_NS {
 
         void deallocate_variables();
 
-        void calc_phonon_vel_band(double **) const;
+        void get_phonon_group_velocity_bandstructure(double **) const;
 
         // void phonon_vel_k2(const double *,
         //                    const double *,

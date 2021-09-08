@@ -118,7 +118,7 @@ void PHON::create_pointers()
     fcs_phonon = new Fcs_phonon(this);
     dynamical = new Dynamical(this);
     integration = new Integration(this);
-    phonon_velocity = new Phonon_velocity(this);
+    phonon_velocity = new PhononVelocity(this);
     thermodynamics = new Thermodynamics(this);
     anharmonic_core = new AnharmonicCore(this);
     mode_analysis = new ModeAnalysis(this);
