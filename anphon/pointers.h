@@ -53,7 +53,7 @@ namespace PHON_NS {
         Integration *&integration;
         Fcs_phonon *&fcs_phonon;
         Dynamical *&dynamical;
-        Phonon_velocity *&phonon_velocity;
+        PhononVelocity *&phonon_velocity;
         Thermodynamics *&thermodynamics;
         AnharmonicCore *&anharmonic_core;
         ModeAnalysis *&mode_analysis;

@@ -49,7 +49,7 @@ namespace PHON_NS {
 
         class Dynamical *dynamical;
 
-        class Phonon_velocity *phonon_velocity;
+        class PhononVelocity *phonon_velocity;
 
         class Thermodynamics *thermodynamics;
 
