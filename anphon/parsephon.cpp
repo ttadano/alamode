@@ -949,7 +949,7 @@ void Input::parse_kpoints()
                                 "KPMODE must be an integer. [0, 1, or 2]");
                 }
 
-                if (!(kpmode >= 0 && kpmode <= 4)) {
+                if (!(kpmode >= 0 && kpmode <= 3)) {
                     error->exit("parse_kpoints",
                                 "KPMODE must be 0, 1, or 2.");
                 }

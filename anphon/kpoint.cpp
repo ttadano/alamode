@@ -239,32 +239,6 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             break;
-        case 4:
-
-            if (mympi->my_rank == 0) {
-                std::cout << "  KPMODE = 4: Uniform grid class" << std::endl;
-            }
-            if (mympi->my_rank == 0) {
-                nk1 = std::atoi(kpInp[0].kpelem[0].c_str());
-                nk2 = std::atoi(kpInp[0].kpelem[1].c_str());
-                nk3 = std::atoi(kpInp[0].kpelem[2].c_str());
-            }
-
-            std::cout << "ok0\n";
-
-            //KpointMeshUniform kmesh_tmp(nk1, nk2, nk3);
-
-            setup_kpoint_mesh_uniform(nk1, nk2, nk3,
-                                      symmetry->SymmList,
-                                      system->rlavec_p,
-                                      kmesh_dos);
-
-//        setup_kpoint_mesh(kpInp, nk, nkx, nky, nkz,
-//                          xk,
-//                          kvec_na,
-//                          symmetry->symmetry_flag,
-//                          kpoint_irred_all);
-            break;
 
         default:error->exit("setup_kpoints", "This cannot happen.");
     }
