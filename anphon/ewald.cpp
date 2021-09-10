@@ -909,8 +909,8 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
 }
 
 
-void Ewald::add_longrange_matrix(double *xk_in,
-                                 double *kvec_in,
+void Ewald::add_longrange_matrix(const double *xk_in,
+                                 const double *kvec_in,
                                  std::complex<double> **dymat_k_out)
 {
     int icrd, jcrd, iat, jat;
@@ -934,7 +934,7 @@ void Ewald::add_longrange_matrix(double *xk_in,
     for (iat = 0; iat < natmin; ++iat) {
         for (jat = 0; jat < natmin; ++jat) {
             calc_short_term_dynamical_matrix(iat, jat, xk, dymat_tmp_l);
-            calc_long_term_dynamical_matrix(iat, jat, xk, dymat_tmp_g, kvec_in);
+            calc_long_term_dynamical_matrix(iat, jat, xk, kvec_in, dymat_tmp_g);
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     dymat_k_out[3 * iat + icrd][3 * jat + jcrd] = dymat_tmp_l[icrd][jcrd]
@@ -1156,9 +1156,9 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
 
 void Ewald::calc_long_term_dynamical_matrix(const int iat,
                                             const int jat,
-                                            double *xk_in,
-                                            std::complex<double> **mat_out,
-                                            double *kvec_in)
+                                            const double *xk_in,
+                                            const double *kvec_in,
+                                            std::complex<double> **mat_out)
 {
     // Real lattice sum part for a dynamical matrix
 

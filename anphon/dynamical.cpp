@@ -369,12 +369,12 @@ double Dynamical::distance(double *x1,
                      + std::pow(x1[2] - x2[2], 2));
 }
 
-void Dynamical::eval_k(double *xk_in,
-                       double *kvec_in,
+void Dynamical::eval_k(const double *xk_in,
+                       const double *kvec_in,
                        const std::vector <FcsClassExtent> &fc2_ext,
                        double *eval_out,
                        std::complex<double> **evec_out,
-                       bool require_evec) const
+                       const bool require_evec) const
 {
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -469,8 +469,8 @@ void Dynamical::eval_k(double *xk_in,
     deallocate(amat);
 }
 
-void Dynamical::eval_k_ewald(double *xk_in,
-                             double *kvec_in,
+void Dynamical::eval_k_ewald(const double *xk_in,
+                             const double *kvec_in,
                              const std::vector <FcsClassExtent> &fc2_in,
                              double *eval_out,
                              std::complex<double> **evec_out,
@@ -619,8 +619,8 @@ void Dynamical::calc_analytic_k(const double *xk_in,
 }
 
 
-void Dynamical::calc_nonanalytic_k(double *xk_in,
-                                   double *kvec_na_in,
+void Dynamical::calc_nonanalytic_k(const double *xk_in,
+                                   const double *kvec_na_in,
                                    std::complex<double> **dymat_na_out) const
 {
     // Calculate the non-analytic part of dynamical matrices 
@@ -720,7 +720,7 @@ void Dynamical::calc_nonanalytic_k(double *xk_in,
 }
 
 void Dynamical::calc_nonanalytic_k2(const double *xk_in,
-                                    double *kvec_na_in,
+                                    const double *kvec_na_in,
                                     std::complex<double> **dymat_na_out) const
 {
     // Calculate the non-analytic part of dynamical matrices 

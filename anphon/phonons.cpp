@@ -165,6 +165,7 @@ void PHON::setup_base() const
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
+    phonon_velocity->setup_velocity();
     dos->setup();
     thermodynamics->setup();
     ewald->init();
@@ -200,7 +201,6 @@ void PHON::execute_phonons() const
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
-    phonon_velocity->calc_group_velocity(kpoint->kpoint_mode);
 
     if (dos->flag_dos) {
         integration->setup_integration();
@@ -219,16 +219,12 @@ void PHON::execute_phonons() const
         thermodynamics->compute_free_energy_bubble();
     }
 
-
     if (mympi->my_rank == 0) {
-
         writes->print_phonon_energy();
         writes->write_phonon_info();
-
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
         }
-
     }
 }
 

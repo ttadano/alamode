@@ -119,21 +119,21 @@ namespace PHON_NS {
 
         void setup_dielectric(const unsigned int verbosity = 1);
 
-        void eval_k(double *,
-                    double *,
+        void eval_k(const double *,
+                    const double *,
                     const std::vector<FcsClassExtent> &,
                     double *,
                     std::complex<double> **,
-                    bool) const;
+                    const bool) const;
 
         void modify_eigenvectors() const;
 
-        void eval_k_ewald(double *,
-                          double *,
+        void eval_k_ewald(const double *,
+                          const double *,
                           const std::vector<FcsClassExtent> &,
                           double *,
                           std::complex<double> **,
-                          bool) const;
+                          const bool) const;
 
         double fold(const double) const;
 
@@ -147,12 +147,12 @@ namespace PHON_NS {
                              const std::vector<FcsClassExtent> &,
                              std::complex<double> **) const;
 
-        void calc_nonanalytic_k(double *,
-                                double *,
+        void calc_nonanalytic_k(const double *,
+                                const double *,
                                 std::complex<double> **) const;
 
         void calc_nonanalytic_k2(const double *,
-                                 double *,
+                                 const double *,
                                  std::complex<double> **) const;
 
         void project_degenerate_eigenvectors(const double lavec_p[3][3],
