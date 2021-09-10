@@ -667,9 +667,10 @@ void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
     kmesh.kindex_minus_xk.resize(kmesh.nk);
     gen_nkminus(kmesh.nk, kmesh.nk_i, kmesh.kindex_minus_xk, kmesh.xk);
 
+    kmesh.kmap_to_irreducible.resize(kmesh.nk);
     for (auto i = 0; i < kmesh.nk_irred; ++i) {
         for (auto j = 0; j < kmesh.kpoint_irred_all[i].size(); ++j) {
-            kmesh.kmap_to_irreducible.insert(std::map<int, int>::value_type(kmesh.kpoint_irred_all[i][j].knum, i));
+            kmesh.kmap_to_irreducible[kmesh.kpoint_irred_all[i][j].knum] = i;
         }
     }
     // Compute small group of every irreducible k points for later use
@@ -1247,7 +1248,7 @@ bool Kpoint::in_first_BZ(const double *xk_in) const
     return iloc == 0;
 }
 
-void Kpoint::generate_irreducible_kmap(int *kequiv,
+void Kpoint::generate_irreducible_kmap(unsigned int *kequiv,
                                        unsigned int &nk_irreducible,
                                        std::vector<int> &k_irreducible,
                                        const unsigned int n1,

@@ -731,7 +731,7 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
                                                     const int smearing_method)
 {
     int i, j;
-    int *kmap_identity;
+    unsigned int *kmap_identity;
     double **eval;
 
     std::cout << std::endl;
@@ -775,9 +775,9 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
                     integration->calc_weight_tetrahedron(nk, kmap_identity, weight,
                                                          eval[is], dos->energy_dos[i]);
                 } else {
-                    integration->calc_weight_smearing(nk, nk, kmap_identity, weight,
+                    integration->calc_weight_smearing(nk, nk, kmap_identity,
                                                       eval[is], dos->energy_dos[i],
-                                                      smearing_method);
+                                                      smearing_method, weight);
                 }
 
                 for (j = 0; j < ntemp; ++j) {

@@ -51,55 +51,52 @@ namespace PHON_NS {
 
         void deallocate_variables();
 
-        unsigned int nk_irreducible;
-        int *kmap_irreducible;
-        std::vector<int> k_irreducible;
+        void calc_dos(const unsigned int nk,
+                      const unsigned int nk_irreducible,
+                      const unsigned int *map_k,
+                      const double * const *eval,
+                      const unsigned int n,
+                      const double *energy,
+                      double *ret,
+                      const unsigned int neval,
+                      const int smearing_method) const;
 
-        void calc_dos(unsigned int,
-                      int *,
-                      double **,
-                      unsigned int,
-                      double *,
-                      double *,
-                      unsigned int,
-                      int,
-                      std::vector<std::vector<KpointList>> &) const;
+        void calc_atom_projected_dos(const unsigned int nk,
+                                     double * const * eval,
+                                     const unsigned int n,
+                                     const double *energy,
+                                     double **ret,
+                                     const unsigned int neval,
+                                     const unsigned int natmin,
+                                     const int smearing_method,
+                                     std::complex<double> ***evec) const;
 
-        void calc_atom_projected_dos(unsigned int,
-                                     double **,
-                                     unsigned int,
-                                     double *,
-                                     double **,
-                                     unsigned int,
-                                     unsigned int,
-                                     int,
-                                     std::complex<double> ***) const;
+        void calc_two_phonon_dos(const KpointMeshUniform &kmesh_in,
+                                 double * const *eval,
+                                 const unsigned int n,
+                                 const double *energy,
+                                 const int smearing_method,
+                                 double ***ret) const;
 
-        void calc_two_phonon_dos(unsigned int,
-                                 double *,
-                                 double ***,
-                                 int,
-                                 const std::vector<std::vector<KpointList>> &) const;
+        void calc_total_scattering_phase_space(const KpointMeshUniform &kmesh_in,
+                                               double * const * eval_in,
+                                               const int smearing_method,
+                                               double ***ret_mode,
+                                               double &ret) const;
 
-        void calc_total_scattering_phase_space(double **,
-                                               int,
-                                               const std::vector<std::vector<KpointList>> &,
-                                               double ***,
-                                               double &) const;
+        void calc_scattering_phase_space_with_Bose(const KpointMeshUniform &kmesh_in,
+                                                   const double * const * eval_in,
+                                                   const int smearing_method,
+                                                   double ****ret) const;
 
-        void calc_scattering_phase_space_with_Bose(double **,
-                                                   int,
-                                                   const std::vector<std::vector<KpointList>> &,
-                                                   double ****) const;
-
-        void calc_scattering_phase_space_with_Bose_mode(unsigned int,
-                                                        unsigned int,
-                                                        unsigned int,
-                                                        double,
-                                                        double **,
-                                                        const double *,
-                                                        const unsigned int *,
-                                                        int,
-                                                        double **) const;
+        void calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
+                                                        const unsigned int ns,
+                                                        const unsigned int N,
+                                                        const double omega,
+                                                        const double * const * eval,
+                                                        const double *temperature,
+                                                        const unsigned int *k_pair,
+                                                        const int smearing_method,
+                                                        double **ret) const;
     };
 }

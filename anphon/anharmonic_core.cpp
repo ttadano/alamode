@@ -1002,7 +1002,7 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
     double ret_tmp;
 
-    int *kmap_identity;
+    unsigned int *kmap_identity;
     double **energy_tmp;
     double **weight_tetra;
     double **v3_arr;
@@ -1361,7 +1361,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     double f1, f2;
     double omega_inner[2];
 
-    int *kmap_identity, **kpairs;
+    unsigned int *kmap_identity;
+    int **kpairs;
     double **energy_tmp;
     double **weight_tetra;
     double **v3_arr, *v3_arr_loc;

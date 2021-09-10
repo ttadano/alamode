@@ -13,6 +13,7 @@
 #include "pointers.h"
 #include "constants.h"
 #include "kpoint.h"
+#include "memory.h"
 #include <vector>
 
 namespace PHON_NS {
@@ -38,15 +39,41 @@ namespace PHON_NS {
         return a.e < b.e;
     }
 
+    class TetraNodes {
+     public:
+        TetraNodes() {
+            nk1 = 0; nk2 = 0; nk3 = 0;
+            ntetra = 0;
+            tetras = nullptr;
+        };
+        TetraNodes(unsigned int nk1_in,
+                   unsigned int nk2_in,
+                   unsigned int nk3_in) {
+            nk1 = nk1_in; nk2 = nk2_in; nk3 = nk3_in;
+            ntetra = 6 * nk1 * nk2 * nk3;
+            allocate(tetras, ntetra, 4);
+        };
+        ~TetraNodes() {
+            deallocate(tetras);
+        }
+
+        void setup();
+
+     private:
+        unsigned int nk1, nk2, nk3;
+        unsigned int ntetra;
+        unsigned int **tetras;
+    };
+
     class Integration : protected Pointers {
     public:
         Integration(class PHON *);
 
         ~Integration();
 
-        bool use_tetrahedron;
-        int ismear;
+        int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
         double epsilon;
+        TetraNodes *tetra_nodes_dos; // Is it better to move this to phonon_dos?
 
         void setup_integration();
 
@@ -54,28 +81,30 @@ namespace PHON_NS {
                               const double *,
                               double);
 
-        double dos_integration(double *,
-                               double);
+//        double dos_integration(double *,
+//                               double);
 
-        void calc_weight_tetrahedron(int,
-                                     const int *,
+        void calc_weight_tetrahedron(const unsigned int,
+                                     const unsigned int *,
                                      double *,
                                      const double *,
                                      double);
 
-        void calc_weight_smearing(const std::vector<std::vector<KpointList>> &,
-                                  double *,
-                                  double *,
-                                  double,
-                                  int) const;
+    void calc_weight_tetrahedron(const unsigned int nk_irreducible,
+                                 const unsigned int *map_to_irreducible_k,
+                                 const double *energy,
+                                 const double e_ref,
+                                 const unsigned int ntetra,
+                                 const unsigned int **tetras,
+                                 double *weight) const;
 
-        void calc_weight_smearing(int,
-                                  int,
-                                  const int *,
-                                  double *,
-                                  double *,
-                                  double,
-                                  int) const;
+       void calc_weight_smearing(const unsigned int nk,
+                                 const unsigned int nk_irreducible,
+                                 const unsigned int *map_to_irreducible_k,
+                                 const double *energy,
+                                 const double e_ref,
+                                 const int smearing_method,
+                                 double *weight) const;
 
     private:
         void set_default_variables();
@@ -93,11 +122,11 @@ namespace PHON_NS {
                           double,
                           double) const;
 
-        inline double volume(const int *) const;
+       // inline double volume(const int *) const;
 
         std::vector<tetra_pair> tetra_data;
 
-        inline double refold(double) const;
+       // inline double refold(double) const;
 
         void insertion_sort(double *,
                             int *,

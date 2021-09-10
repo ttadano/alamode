@@ -159,7 +159,7 @@ namespace PHON_NS {
       std::vector<std::vector<double>> xk;
       std::vector<std::vector<double>> kvec_na;
       std::vector<double> weight_k;
-      std::map<int, int> kmap_to_irreducible;
+      std::vector<unsigned int> kmap_to_irreducible;
       std::vector<std::vector<KpointList>> kpoint_irred_all;
       std::vector<std::vector<int>> small_group_of_k;
       std::vector<unsigned int> kindex_minus_xk;
@@ -217,7 +217,7 @@ namespace PHON_NS {
         int get_knum(const double [3],
                      const unsigned int [3]) const;
 
-        void generate_irreducible_kmap(int *,
+        void generate_irreducible_kmap(unsigned int *,
                                        unsigned int &,
                                        std::vector<int> &,
                                        unsigned int,

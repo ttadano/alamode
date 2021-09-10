@@ -797,7 +797,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
     const auto ns = dynamical->neval;
     const auto ns2 = ns * ns;
 
-    int *kmap_identity;
+    unsigned int *kmap_identity;
     double **energy_tmp;
     double **weight_tetra;
     double **v3_arr;
