@@ -51,6 +51,8 @@ void Kpoint::set_default_variables()
     kp_planes = nullptr;
     kp_planes_tri = nullptr;
     small_group_of_k = nullptr;
+    kpoint_bs = nullptr;
+    kpoint_general = nullptr;
 }
 
 void Kpoint::deallocate_variables()
@@ -76,6 +78,8 @@ void Kpoint::deallocate_variables()
     if (small_group_of_k) {
         deallocate(small_group_of_k);
     }
+    if (kpoint_bs) delete kpoint_bs;
+    if (kpoint_general) delete kpoint_general;
 }
 
 void Kpoint::kpoint_setups(const std::string mode)
@@ -100,7 +104,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             setup_kpoint_given(kpInp, nk, xk, kvec_na);
-            setup_kpoint_given(kpInp, system->rlavec_p, kpoint_general);
+            setup_kpoint_given(kpInp, system->rlavec_p);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of k points : " << nk << std::endl << std::endl;
@@ -124,7 +128,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             setup_kpoint_band(kpInp, nk, xk, kvec_na, kaxis);
-            setup_kpoint_band(kpInp, system->rlavec_p, kpoint_bs);
+            setup_kpoint_band(kpInp, system->rlavec_p);
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
                 std::cout << "  List of k paths : " << std::endl;
@@ -148,7 +152,7 @@ void Kpoint::kpoint_setups(const std::string mode)
                     std::cout << std::setw(4) << kpInp[i].kpelem[8] << std::endl;
                 }
                 std::cout << std::endl;
-                std::cout << "  Number of k points : " << kpoint_bs.nk << std::endl << std::endl;
+                std::cout << "  Number of k points : " << kpoint_bs->nk << std::endl << std::endl;
 
             }
 
@@ -286,8 +290,7 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
 
 
 void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
-                                const double rlavec_p[3][3],
-                                KpointGeneral &kpoint_out)
+                                const double rlavec_p[3][3])
 {
     int i;
     double **k, **kdirec;
@@ -321,15 +324,16 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
     MPI_Bcast(&k[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    kpoint_out.nk = n;
-    kpoint_out.xk.resize(n, std::vector<double>(3));
-    kpoint_out.kvec_na.resize(n, std::vector<double>(3));
-    for (i = 0; i < n; ++i) {
-        for (auto j = 0; j < 3; ++j) {
-            kpoint_out.xk[i][j] = k[i][j];
-            kpoint_out.kvec_na[i][j] = kdirec[i][j];
-        }
-    }
+    kpoint_general = new KpointGeneral(n, k, kdirec);
+//    kpoint_out.nk = n;
+//    kpoint_out.xk.resize(n, std::vector<double>(3));
+//    kpoint_out.kvec_na.resize(n, std::vector<double>(3));
+//    for (i = 0; i < n; ++i) {
+//        for (auto j = 0; j < 3; ++j) {
+//            kpoint_out.xk[i][j] = k[i][j];
+//            kpoint_out.kvec_na[i][j] = kdirec[i][j];
+//        }
+//    }
 
     deallocate(k);
     deallocate(kdirec);
@@ -439,8 +443,7 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 }
 
 void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
-                               const double rlavec_p[3][3],
-                               KpointBandStructure &kpoint_band_out)
+                               const double rlavec_p[3][3])
 {
     int j, k;
 
@@ -545,18 +548,19 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
     MPI_Bcast(&kdirec_tmp[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&axis_tmp[0], n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    kpoint_band_out.nk = n;
-    kpoint_band_out.xk.resize(n, std::vector<double>(3));
-    kpoint_band_out.kvec_na.resize(n, std::vector<double>(3));
-    kpoint_band_out.kaxis.resize(n);
-
-    for (auto i = 0; i < n; ++i) {
-        for (j = 0; j < 3; ++j) {
-            kpoint_band_out.xk[i][j] = xk_tmp[i][j];
-            kpoint_band_out.kvec_na[i][j] = kdirec_tmp[i][j];
-        }
-        kpoint_band_out.kaxis[i] = axis_tmp[i];
-    }
+    kpoint_bs = new KpointBandStructure(n, xk_tmp, kdirec_tmp, axis_tmp);
+//    kpoint_band_out.nk = n;
+//    kpoint_band_out.xk.resize(n, std::vector<double>(3));
+//    kpoint_band_out.kvec_na.resize(n, std::vector<double>(3));
+//    kpoint_band_out.kaxis.resize(n);
+//
+//    for (auto i = 0; i < n; ++i) {
+//        for (j = 0; j < 3; ++j) {
+//            kpoint_band_out.xk[i][j] = xk_tmp[i][j];
+//            kpoint_band_out.kvec_na[i][j] = kdirec_tmp[i][j];
+//        }
+//        kpoint_band_out.kaxis[i] = axis_tmp[i];
+//    }
 
     deallocate(xk_tmp);
     deallocate(kdirec_tmp);
@@ -629,8 +633,8 @@ void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
 {
     const bool usesym = true;
 
-    xk.resize(nk, std::vector<double>(3));
-    kvec_na.resize(nk, std::vector<double>(3));
+    //xk.resize(nk, std::vector<double>(3));
+    //kvec_na.resize(nk, std::vector<double>(3));
 
     gen_kmesh(symmlist, usesym, time_reversal_symmetry);
 

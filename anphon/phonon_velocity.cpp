@@ -73,7 +73,7 @@ void PhononVelocity::setup_velocity()
     MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
 }
 
-void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStructure &kpoint_bs_in,
+void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
                                                              const double lavec_p[3][3],
                                                              const double rlavec_p[3][3],
                                                              const std::vector<FcsClassExtent> &fc2_ext_in,
@@ -81,7 +81,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
 {
     unsigned int i;
     unsigned int idiff;
-    const auto nk = kpoint_bs_in.nk;
+    const auto nk = kpoint_bs_in->nk;
     const auto n = dynamical->neval;
     double **xk_shift;
     double *xk_tmp;
@@ -108,15 +108,15 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
     for (unsigned int ik = 0; ik < nk; ++ik) {
 
         // Represent the given kpoint in Cartesian coordinate
-        rotvec(xk_tmp, &kpoint_bs_in.xk[ik][0], rlavec_p, 'T');
+        rotvec(xk_tmp, kpoint_bs_in->xk[ik], rlavec_p, 'T');
 
 //        if (ndiff == 2) {
             // central difference
             // f'(x) =~ f(x+h)-f(x-h)/2h
 
             for (i = 0; i < 3; ++i) {
-                xk_shift[0][i] = xk_tmp[i] - h * kpoint_bs_in.kvec_na[ik][i];
-                xk_shift[1][i] = xk_tmp[i] + h * kpoint_bs_in.kvec_na[ik][i];
+                xk_shift[0][i] = xk_tmp[i] - h * kpoint_bs_in->kvec_na[ik][i];
+                xk_shift[1][i] = xk_tmp[i] + h * kpoint_bs_in->kvec_na[ik][i];
             }
 
 //        } else {
@@ -132,7 +132,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
             for (i = 0; i < 3; ++i) xk_shift[idiff][i] /= 2.0 * pi;
 
             dynamical->eval_k(xk_shift[idiff],
-                              &kpoint_bs_in.kvec_na[ik][0],
+                              kpoint_bs_in->kvec_na[ik],
                               fc2_ext_in,
                               omega_shift[idiff],
                               evec_tmp, false);

@@ -81,8 +81,8 @@ double Thermodynamics::Cv_tot(const double temp_in,
                               const unsigned int nk_irred,
                               const unsigned int ns,
                               const std::vector <std::vector<KpointList>> &kp_irred,
-                              double *weight_k_irred,
-                              double **eval_in) const
+                              const double *weight_k_irred,
+                              const double * const * eval_in) const
 {
     int i;
     unsigned int ik, is;
@@ -127,9 +127,9 @@ double Thermodynamics::Cv_anharm_correction(const double temp_in,
                                             const unsigned int nk_irred,
                                             const unsigned int ns,
                                             const std::vector <std::vector<KpointList>> &kp_irred,
-                                            double *weight_k_irred,
-                                            double **eval_in,
-                                            double **del_eval_in) const
+                                            const double *weight_k_irred,
+                                            const double * const * eval_in,
+                                            const double * const * del_eval_in) const
 {
     int i;
     unsigned int ik, is;
@@ -177,8 +177,8 @@ double Thermodynamics::internal_energy(const double temp_in,
                                        const unsigned int nk_irred,
                                        const unsigned int ns,
                                        const std::vector <std::vector<KpointList>> &kp_irred,
-                                       double *weight_k_irred,
-                                       double **eval_in) const
+                                       const double *weight_k_irred,
+                                       const double * const * eval_in) const
 {
     int i;
     unsigned int ik, is;
@@ -223,8 +223,8 @@ double Thermodynamics::vibrational_entropy(const double temp_in,
                                            const unsigned int nk_irred,
                                            const unsigned int ns,
                                            const std::vector <std::vector<KpointList>> &kp_irred,
-                                           double *weight_k_irred,
-                                           double **eval_in) const
+                                           const double *weight_k_irred,
+                                           const double * const * eval_in) const
 {
     int i;
     unsigned int ik, is;
@@ -269,8 +269,8 @@ double Thermodynamics::free_energy_QHA(const double temp_in,
                                        const unsigned int nk_irred,
                                        const unsigned int ns,
                                        const std::vector <std::vector<KpointList>> &kp_irred,
-                                       double *weight_k_irred,
-                                       double **eval_in) const
+                                       const double *weight_k_irred,
+                                       const double * const * eval_in) const
 {
     int i;
     unsigned int ik, is;
@@ -321,57 +321,18 @@ double Thermodynamics::free_energy_QHA(const double temp_in,
     return temp_in * T_to_Ryd * ret;
 }
 
-double Thermodynamics::disp2_avg(const double T,
-                                 const unsigned int ns1,
-                                 const unsigned int ns2) const
+double Thermodynamics::disp2_avg(const double T_in,
+                                 const unsigned int ncrd1,
+                                 const unsigned int ncrd2,
+                                 const unsigned int nk,
+                                 const unsigned int ns,
+                                 const double * const * xk_in,
+                                 const double * const * eval_in,
+                                 std::complex<double> ***evec_in) const
 {
-    int i;
-    double ret = 0.0;
-    unsigned int ik, is;
-    const auto nk = kpoint->nk;
-    const auto ns = dynamical->neval;
-    double omega;
-
-    int N = nk * ns;
-
-    if (classical) {
-#pragma omp parallel for private(ik, is, omega), reduction(+:ret)
-        for (i = 0; i < N; ++i) {
-            ik = i / ns;
-            is = i % ns;
-            omega = dynamical->eval_phonon[ik][is];
-
-            // Skip when omega is almost zero. 
-            // (neglect divergent contributions from acoustic modes at gamma point)
-            if (omega < eps8) continue;
-
-            ret += real(dynamical->evec_phonon[ik][is][ns1]
-                        * std::conj(dynamical->evec_phonon[ik][is][ns2]))
-                   * T * T_to_Ryd / (omega * omega);
-        }
-    } else {
-#pragma omp parallel for private(ik, is, omega), reduction(+:ret)
-        for (i = 0; i < N; ++i) {
-            ik = i / ns;
-            is = i % ns;
-            omega = dynamical->eval_phonon[ik][is];
-
-            // Skip when omega is almost zero. 
-            // (neglect divergent contributions from acoustic modes at gamma point)
-            if (omega < eps8) continue;
-
-            ret += real(dynamical->evec_phonon[ik][is][ns1]
-                        * std::conj(dynamical->evec_phonon[ik][is][ns2]))
-                   * (fB(omega, T) + 0.5) / omega;
-        }
-    }
-
-
-    ret *= 1.0 / (static_cast<double>(nk)
-                  * std::sqrt(system->mass[system->map_p2s[ns1 / 3][0]]
-                              * system->mass[system->map_p2s[ns2 / 3][0]]));
-
-    return ret;
+    const double cell_shift[3]{0, 0, 0};
+    return disp_corrfunc(T_in, ncrd1, ncrd2, cell_shift,
+                         nk, ns, xk_in, eval_in, evec_in);
 }
 
 double Thermodynamics::disp_corrfunc(const double T_in,
@@ -380,8 +341,8 @@ double Thermodynamics::disp_corrfunc(const double T_in,
                                      const double cell_shift[3],
                                      const unsigned int nk,
                                      const unsigned int ns,
-                                     double **xk_in,
-                                     double **eval_in,
+                                     const double * const * xk_in,
+                                     const double * const * eval_in,
                                      std::complex<double> ***evec_in) const
 {
     int i;
@@ -478,7 +439,7 @@ void Thermodynamics::compute_free_energy_bubble()
 
 void Thermodynamics::compute_FE_bubble(double **eval,
                                        std::complex<double> ***evec,
-                                       double *FE_bubble) const
+                                       double *FE_bubble_out) const
 {
     // This function calculates the free energy of the bubble diagram
     int i;
@@ -597,10 +558,10 @@ void Thermodynamics::compute_FE_bubble(double **eval,
         }
     }
 
-    MPI_Allreduce(&FE_local[0], &FE_bubble[0], NT, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&FE_local[0], &FE_bubble_out[0], NT, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     for (iT = 0; iT < NT; ++iT) {
-        FE_bubble[iT] *= factor;
+        FE_bubble_out[iT] *= factor;
     }
 
     deallocate(FE_local);

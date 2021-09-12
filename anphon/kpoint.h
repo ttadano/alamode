@@ -11,6 +11,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #pragma once
 
 #include "pointers.h"
+#include "memory.h"
 #include "symmetry_core.h"
 #include <string>
 #include <vector>
@@ -134,10 +135,40 @@ namespace PHON_NS {
 
     class KpointGeneral {
      public:
-      KpointGeneral() {};
+      KpointGeneral() {
+          nk = 0;
+          xk = nullptr;
+          kvec_na = nullptr;
+      };
+      KpointGeneral(const unsigned int nk_in,
+                    const double * const *xk_in,
+                    const double * const *kvec_na_in) {
+          nk = nk_in;
+          if (xk) deallocate(xk);
+          if (kvec_na) deallocate(kvec_na);
+          allocate(xk, nk, 3);
+          allocate(kvec_na, nk, 3);
+
+          for (auto i = 0; i < nk; ++i) {
+              for (auto j = 0; j < 3; ++j) {
+                  xk[i][j] = xk_in[i][j];
+                  kvec_na[i][j] = kvec_na_in[i][j];
+              }
+          }
+      };
+      ~KpointGeneral() {
+          if (xk) {
+              deallocate(xk);
+              xk = nullptr;
+          }
+          if (kvec_na) {
+              deallocate(kvec_na);
+              kvec_na = nullptr;
+          }
+      }
       unsigned int nk;
-      std::vector<std::vector<double>> xk;
-      std::vector<std::vector<double>> kvec_na;
+      double **xk;
+      double **kvec_na;
     };
 
     class KpointMeshUniform {
@@ -148,15 +179,28 @@ namespace PHON_NS {
               nk_i[i] = nk_in[i];
           }
           nk = nk_i[0] * nk_i[1] * nk_i[2];
+          if (xk) deallocate(xk);
+          if (kvec_na) deallocate(kvec_na);
+          allocate(xk, nk, 3);
+          allocate(kvec_na, nk, 3);
       };
 
-      ~KpointMeshUniform() {};
+      ~KpointMeshUniform() {
+          if (xk) {
+              deallocate(xk);
+              xk = nullptr;
+          }
+          if (kvec_na) {
+              deallocate(kvec_na);
+              kvec_na = nullptr;
+          }
+      };
 
       unsigned int nk_i[3];
       unsigned int nk, nk_irred;
 
-      std::vector<std::vector<double>> xk;
-      std::vector<std::vector<double>> kvec_na;
+      double **xk = nullptr;
+      double **kvec_na = nullptr;
       std::vector<double> weight_k;
       std::vector<unsigned int> kmap_to_irreducible;
       std::vector<std::vector<KpointList>> kpoint_irred_all;
@@ -195,12 +239,52 @@ namespace PHON_NS {
 
     class KpointBandStructure {
      public:
-      KpointBandStructure() {};
+      KpointBandStructure() {
+          nk = 0;
+          xk = nullptr;
+          kvec_na = nullptr;
+          kaxis = nullptr;
+      };
+      KpointBandStructure(const unsigned int nk_in,
+                          const double * const * xk_in,
+                          const double * const * kvec_na_in,
+                          const double *kaxis_in) {
+          nk = nk_in;
+          if (xk) deallocate(xk);
+          if (kvec_na) deallocate(kvec_na);
+          if (kaxis) deallocate(kaxis);
+
+          allocate(xk, nk, 3);
+          allocate(kvec_na, nk, 3);
+          allocate(kaxis, nk);
+
+          for (auto i = 0; i < nk; ++i) {
+              for (auto j = 0; j < 3; ++j) {
+                  xk[i][j] = xk_in[i][j];
+                  kvec_na[i][j] = kvec_na_in[i][j];
+              }
+              kaxis[i] = kaxis_in[i];
+          }
+      } ;
+      ~KpointBandStructure() {
+          if (xk) {
+              deallocate(xk);
+              xk = nullptr;
+          }
+          if (kvec_na) {
+              deallocate(kvec_na);
+              kvec_na = nullptr;
+          }
+          if (kaxis) {
+              deallocate(kaxis);
+              kaxis = nullptr;
+          }
+      }
 
       unsigned int nk;
-      std::vector<std::vector<double>> xk;
-      std::vector<std::vector<double>> kvec_na;
-      std::vector<double> kaxis;
+      double **xk = nullptr;
+      double **kvec_na = nullptr;
+      double *kaxis = nullptr;
     };
 
     class Kpoint : protected Pointers {
@@ -232,8 +316,8 @@ namespace PHON_NS {
         std::map<int, int> kmap_to_irreducible;
         std::vector<int> *small_group_of_k;
 
-        KpointBandStructure kpoint_bs;
-        KpointGeneral kpoint_general;
+        KpointBandStructure *kpoint_bs;
+        KpointGeneral *kpoint_general;
 
 
         int get_knum(double,
@@ -298,12 +382,10 @@ namespace PHON_NS {
                                std::vector<std::vector<KpointList>> &) const;
 
         void setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
-                                const double rlavec_p[3][3],
-                                KpointGeneral &kpoint_out);
+                                const double rlavec_p[3][3]);
 
         void setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
-                               const double rlavec_p[3][3],
-                               KpointBandStructure &kpoint_band_out);
+                               const double rlavec_p[3][3]);
 
         void setup_kpoint_plane(const std::vector<KpointInp> &,
                                 unsigned int &,

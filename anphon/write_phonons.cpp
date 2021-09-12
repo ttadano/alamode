@@ -477,8 +477,8 @@ void Writes::print_phonon_energy() const
 
     if (kpoint->kpoint_mode == 0) {
 
-        auto nk_now = kpoint->kpoint_general.nk;
-        auto xk_now = kpoint->kpoint_general.xk;
+        auto nk_now = kpoint->kpoint_general->nk;
+        auto xk_now = kpoint->kpoint_general->xk;
         auto eval_now = dynamical->dymat_general->get_eigenvalues();
 
         for (ik = 0; ik < nk_now; ++ik) {
@@ -514,7 +514,7 @@ void Writes::print_phonon_energy() const
 
         for (i = 0; i < 3; ++i) {
             std::cout << std::fixed << std::setprecision(4)
-            << std::setw(8) << kpoint->kpoint_bs.xk[ik][i];
+            << std::setw(8) << kpoint->kpoint_bs->xk[ik][i];
             if (i < 2) std::cout << ",";
         }
         std::cout << ")" << std::endl;
@@ -587,10 +587,10 @@ void Writes::write_phonon_info()
     }
 
     if (phonon_velocity->print_velocity) {
-        if (kpoint->kpoint_bs.nk > 0) {
+        if (kpoint->kpoint_bs) {
             write_phonon_vel();
         }
-        if (dos->kmesh_dos->nk > 0) {
+        if (dos->kmesh_dos) {
             write_phonon_vel_all();
         }
     }
@@ -667,8 +667,8 @@ void Writes::write_phonon_bands() const
                     "cannot open file_bands");
 
     unsigned int i, j;
-    const auto nk = kpoint->kpoint_bs.nk;
-    const auto kaxis = kpoint->kpoint_bs.kaxis;
+    const auto nk = kpoint->kpoint_bs->nk;
+    const auto kaxis = kpoint->kpoint_bs->kaxis;
     const auto eval = dynamical->dymat_band->get_eigenvalues();
 
     auto kcount = 0;
@@ -760,8 +760,8 @@ void Writes::write_phonon_vel() const
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if (!ofs_vel) error->exit("write_phonon_vel", "cannot open file_vel");
 
-    const auto nk = kpoint->kpoint_bs.nk;
-    const auto kaxis = kpoint->kpoint_bs.kaxis;
+    const auto nk = kpoint->kpoint_bs->nk;
+    const auto kaxis = kpoint->kpoint_bs->kaxis;
     const auto Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
 
     double **phvel_bs;
@@ -1654,6 +1654,10 @@ void Writes::write_msd() const
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
+    const auto nk = dos->kmesh_dos->nk;
+    const auto xk = dos->kmesh_dos->xk;
+    const auto eval = dos->dymat_dos->get_eigenvalues();
+    const auto evec = dos->dymat_dos->get_eigenvectors();
 
     ofs_rmsd.open(file_rmsd.c_str(), std::ios::out);
     if (!ofs_rmsd) error->exit("write_rmsd", "Could not open file_rmsd");
@@ -1670,7 +1674,7 @@ void Writes::write_msd() const
         ofs_rmsd << std::setw(15) << T;
 
         for (unsigned int j = 0; j < ns; ++j) {
-            const auto d2_tmp = thermodynamics->disp2_avg(T, j, j);
+            const auto d2_tmp = thermodynamics->disp2_avg(T, j, j, nk, ns, xk, eval, evec);
             ofs_rmsd << std::setw(15) << d2_tmp * std::pow(Bohr_in_Angstrom, 2.0);
         }
         ofs_rmsd << std::endl;

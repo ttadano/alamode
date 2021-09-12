@@ -46,7 +46,7 @@ class PhononVelocity : protected Pointers {
 
     void calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const;
 
-    void get_phonon_group_velocity_bandstructure(const KpointBandStructure &kpoint_bs_in,
+    void get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
                                                  const double lavec_p[3][3],
                                                  const double rlavec_p[3][3],
                                                  const std::vector<FcsClassExtent> &fc2_ext_in,

@@ -1,7 +1,7 @@
 /*
 phonon_dos.cpp
 
-Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+Copyright (c) 2014-2021 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory 
@@ -92,14 +92,7 @@ void Dos::setup()
     MPI_Bcast(&two_phonon_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&scattering_phase_space, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    if (kmesh_dos->nk > 0) {
-        dymat_dos = new DymatEigenValue(dynamical->eigenvectors,
-                                        false,
-                                        kmesh_dos->nk,
-                                        dynamical->neval);
-    }
-
-    if (kmesh_dos->nk > 0) {
+    if (kmesh_dos) {
         flag_dos = true;
     } else {
         flag_dos = false;
@@ -108,9 +101,14 @@ void Dos::setup()
     if (flag_dos && delta_e < eps12)
         error->exit("Dos::setup()", "Too small delta_e");
 
-    if (flag_dos) {
+     if (flag_dos) {
 
         set_dos_energy_grid();
+
+         dymat_dos = new DymatEigenValue(dynamical->eigenvectors,
+                                         false,
+                                         kmesh_dos->nk,
+                                         dynamical->neval);
 
         if (integration->ismear == -1) {
             tetra_nodes_dos = new TetraNodes(kmesh_dos->nk_i[0],
@@ -242,8 +240,6 @@ void Dos::calc_dos(const unsigned int nk,
                                                          eval[k], energy[i],
                                                          ntetra, tetras,
                                                          weight);
-//                    integration->calc_weight_tetrahedron(nk_irreducible, map_k,
-//                                                         weight, eval[k], energy[i]);
                 } else {
                     integration->calc_weight_smearing(nk, nk_irreducible, map_k,
                                                       eval[k], energy[i], smearing_method,
@@ -312,8 +308,6 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
 
                 for (unsigned int k = 0; k < neval; ++k) {
                     if (smearing_method == -1) {
-//                        integration->calc_weight_tetrahedron(nk, kmap_identity,
-//                                                             weight, eval[k], energy[i]);
                         integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                              eval[k], energy[i],
                                                              tetra_nodes_dos->get_ntetra(),
@@ -418,8 +412,6 @@ void Dos::calc_two_phonon_dos(double * const * eval_in,
 #pragma omp parallel for private(k)
 #endif
                     for (i = 0; i < n; ++i) {
-//                        integration->calc_weight_tetrahedron(nk, kmap_identity,
-//                                                             weight[i], e_tmp[j], energy[i]);
                         integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                              e_tmp[j], energy[i],
                                                              tetra_nodes_dos->get_ntetra(),
@@ -529,10 +521,6 @@ void Dos::calc_total_scattering_phase_space(double * const * eval_in,
                     }
 
                     if (smearing_method == -1) {
-
-//                        integration->calc_weight_tetrahedron(nk, kmap_identity,
-//                                                             weight, e_tmp[0], omega0);
-
                         integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                              e_tmp[0], omega0,
                                                              tetra_nodes_dos->get_ntetra(),
@@ -540,8 +528,6 @@ void Dos::calc_total_scattering_phase_space(double * const * eval_in,
                                                              weight);
 
                         for (j = 0; j < nk; ++j) sps_tmp1 += weight[j];
-//                        integration->calc_weight_tetrahedron(nk, kmap_identity,
-//                                                             weight, e_tmp[1], omega0);
 
                         integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                              e_tmp[1], omega0,
@@ -821,8 +807,6 @@ void Dos::calc_scattering_phase_space_with_Bose_mode(const unsigned int nk,
 
             if (smearing_method == -1) {
                 for (i = 0; i < 2; ++i) {
-//                    integration->calc_weight_tetrahedron(nk, kmap_identity,
-//                                                         weight[i], energy_tmp[i], omega0);
                     integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                          energy_tmp[i], omega0,
                                                          tetra_nodes_dos->get_ntetra(),

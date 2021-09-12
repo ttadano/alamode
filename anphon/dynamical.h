@@ -74,8 +74,8 @@ namespace PHON_NS {
                                        double **eval_in,
                                        std::complex<double> ***evec_in);
 
-      double **get_eigenvalues();
-      std::complex<double> ***get_eigenvectors();
+      double **get_eigenvalues() const;
+      std::complex<double> ***get_eigenvectors() const;
 
      private:
       bool is_stored_eigvec = true;
@@ -189,8 +189,8 @@ namespace PHON_NS {
                                        double **eval_in);
 
         void get_eigenvalues_dymat(const unsigned int nk_in,
-                               std::vector<std::vector<double>> &xk_in,
-                               std::vector<std::vector<double>> &kvec_na_in,
+                               const double * const *xk_in,
+                               const double * const *kvec_na_in,
                                const std::vector<FcsClassExtent> &fc2_ext_in,
                                const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                const bool require_evec,

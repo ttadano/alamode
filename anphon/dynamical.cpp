@@ -151,10 +151,10 @@ if (this->is_stored_eigvec) {
 }
 }
 
-double **DymatEigenValue::get_eigenvalues() {
+double **DymatEigenValue::get_eigenvalues() const {
     return this->eval;
 }
-std::complex<double> ***DymatEigenValue::get_eigenvectors() {
+std::complex<double> ***DymatEigenValue::get_eigenvectors() const {
     return this->evec;
 }
 
@@ -228,16 +228,17 @@ void Dynamical::setup_dynamical()
     MPI_Bcast(&nonanalytic, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&band_connection, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    if (kpoint->kpoint_bs.nk > 0) {
+    if (kpoint->kpoint_bs) {
         dymat_band = new DymatEigenValue(eigenvectors,
                                          false,
-                                         kpoint->kpoint_bs.nk,
+                                         kpoint->kpoint_bs->nk,
                                          neval);
     }
-    if (kpoint->kpoint_general.nk > 0) {
+
+    if (kpoint->kpoint_general) {
         dymat_general = new DymatEigenValue(eigenvectors,
                                             false,
-                                            kpoint->kpoint_general.nk,
+                                            kpoint->kpoint_general->nk,
                                             neval);
     }
 
@@ -824,9 +825,9 @@ void Dynamical::diagonalize_dynamical_all()
     double **eval_tmp;
     std::complex<double> ***evec_tmp;
     // k points for general mode (manual entry)
-    nk = kpoint->kpoint_general.nk;
 
-    if (nk > 0) {
+    if (kpoint->kpoint_general) {
+        nk = kpoint->kpoint_general->nk;
         allocate(eval_tmp, nk, neval);
         if (eigenvectors) {
             allocate(evec_tmp, nk, neval, neval);
@@ -835,8 +836,8 @@ void Dynamical::diagonalize_dynamical_all()
         }
 
         get_eigenvalues_dymat(nk,
-                              kpoint->kpoint_general.xk,
-                              kpoint->kpoint_general.kvec_na,
+                              kpoint->kpoint_general->xk,
+                              kpoint->kpoint_general->kvec_na,
                               fcs_phonon->fc2_ext,
                               ewald->fc2_without_dipole,
                               eigenvectors,
@@ -849,7 +850,7 @@ void Dynamical::diagonalize_dynamical_all()
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->lavec_p,
                                                     fcs_phonon->fc2_ext,
-                                                    &kpoint->kpoint_general.xk[ik][0],
+                                                    kpoint->kpoint_general->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
                 }
@@ -868,8 +869,8 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // k points for band structure
-    nk = kpoint->kpoint_bs.nk;
-    if (nk > 0) {
+    if (kpoint->kpoint_bs) {
+        nk = kpoint->kpoint_bs->nk;
         allocate(eval_tmp, nk, neval);
         if (eigenvectors) {
             allocate(evec_tmp, nk, neval, neval);
@@ -877,8 +878,8 @@ void Dynamical::diagonalize_dynamical_all()
             allocate(evec_tmp, nk, 1, 1);
         }
         get_eigenvalues_dymat(nk,
-                              kpoint->kpoint_bs.xk,
-                              kpoint->kpoint_bs.kvec_na,
+                              kpoint->kpoint_bs->xk,
+                              kpoint->kpoint_bs->kvec_na,
                               fcs_phonon->fc2_ext,
                               ewald->fc2_without_dipole,
                               eigenvectors,
@@ -890,7 +891,7 @@ void Dynamical::diagonalize_dynamical_all()
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->lavec_p,
                                                     fcs_phonon->fc2_ext,
-                                                    &kpoint->kpoint_bs.xk[ik][0],
+                                                    kpoint->kpoint_bs->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
                 }
@@ -909,8 +910,8 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // k points for dos
-    nk = dos->kmesh_dos->nk;
-    if (nk > 0) {
+    if (dos->kmesh_dos) {
+        nk = dos->kmesh_dos->nk;
         allocate(eval_tmp, nk, neval);
         if (eigenvectors) {
             allocate(evec_tmp, nk, neval, neval);
@@ -931,7 +932,7 @@ void Dynamical::diagonalize_dynamical_all()
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->lavec_p,
                                                     fcs_phonon->fc2_ext,
-                                                    &dos->kmesh_dos->xk[ik][0],
+                                                    dos->kmesh_dos->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
                 }
@@ -986,9 +987,9 @@ void Dynamical::diagonalize_dynamical_all()
         }
     }
 
-    if (band_connection > 0 && kpoint->kpoint_bs.nk > 0) {
-        allocate(index_bconnect, kpoint->kpoint_bs.nk, neval);
-        connect_band_by_eigen_similarity(kpoint->kpoint_bs.nk,
+    if (band_connection > 0 && kpoint->kpoint_bs) {
+        allocate(index_bconnect, kpoint->kpoint_bs->nk, neval);
+        connect_band_by_eigen_similarity(kpoint->kpoint_bs->nk,
                                          dymat_band->get_eigenvectors(),
                                          index_bconnect);
     }
@@ -997,15 +998,17 @@ void Dynamical::diagonalize_dynamical_all()
         std::cout << "done!" << std::endl;
     }
 
-    if (dos->kmesh_dos->nk > 0 && phon->mode == "RTA") {
+    if (dos->kmesh_dos && phon->mode == "RTA") {
         detect_imaginary_branches(*dos->kmesh_dos,
                                   dos->dymat_dos->get_eigenvalues());
     }
+
+    std::cout << "RANK = " << mympi->my_rank << " OK" << std::endl;
 }
 
 void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
-                                  std::vector<std::vector<double>> &xk_in,
-                                  std::vector<std::vector<double>> &kvec_na_in,
+                                  const double * const *xk_in,
+                                  const double * const *kvec_na_in,
                                   const std::vector<FcsClassExtent> &fc2_ext_in,
                                   const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                   const bool require_evec,
