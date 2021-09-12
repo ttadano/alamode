@@ -16,6 +16,7 @@
 #include "integration.h"
 #include "kpoint.h"
 #include "memory.h"
+#include "phonon_dos.h"
 #include "system.h"
 #include <iomanip>
 #include <complex>
@@ -172,7 +173,10 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
             weight[ik] = prod * dynamical->eval_phonon[ik][is];
             eval[ik] = dynamical->eval_phonon[ik][is];
         }
-        ret += integration->do_tetrahedron(eval, weight, omega);
+        ret += integration->do_tetrahedron(eval, weight,
+                                           dos->tetra_nodes_dos->get_ntetra(),
+                                           dos->tetra_nodes_dos->get_tetras(),
+                                           omega);
     }
 
     ret *= pi * omega * 0.25;
