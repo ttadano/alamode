@@ -11,6 +11,8 @@
 #pragma once
 
 #include "pointers.h"
+#include "dynamical.h"
+#include "integration.h"
 #include "kpoint.h"
 #include <vector>
 #include <complex>
@@ -40,6 +42,9 @@ namespace PHON_NS {
         double total_sps3, ***sps3_mode;
         double ****sps3_with_bose;
 
+        TetraNodes *tetra_nodes_dos;
+        KpointMeshUniform *kmesh_dos;
+        DymatEigenValue *dymat_dos;
 
         void calc_dos_from_given_frequency(double **,
                                            double *) const;
@@ -71,21 +76,18 @@ namespace PHON_NS {
                                      const int smearing_method,
                                      std::complex<double> ***evec) const;
 
-        void calc_two_phonon_dos(const KpointMeshUniform &kmesh_in,
-                                 double * const *eval,
+        void calc_two_phonon_dos(double * const *eval,
                                  const unsigned int n,
                                  const double *energy,
                                  const int smearing_method,
                                  double ***ret) const;
 
-        void calc_total_scattering_phase_space(const KpointMeshUniform &kmesh_in,
-                                               double * const * eval_in,
+        void calc_total_scattering_phase_space(double * const * eval_in,
                                                const int smearing_method,
                                                double ***ret_mode,
                                                double &ret) const;
 
-        void calc_scattering_phase_space_with_Bose(const KpointMeshUniform &kmesh_in,
-                                                   const double * const * eval_in,
+        void calc_scattering_phase_space_with_Bose(const double * const * eval_in,
                                                    const int smearing_method,
                                                    double ****ret) const;
 

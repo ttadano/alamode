@@ -13,6 +13,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "constants.h"
 #include "memory.h"
 #include "error.h"
+#include "phonon_dos.h"
 #include "system.h"
 #include "symmetry_core.h"
 #include "timer.h"
@@ -173,36 +174,37 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             unsigned int nk1, nk2, nk3;
-            nk1 = 0; nk2 = 0; nk3 = 0;
+            unsigned int nk_tmp[3];
+            nk_tmp[0] = 0; nk_tmp[1] = 0; nk_tmp[2] = 0;
             if (mympi->my_rank == 0) {
-                nk1 = std::atoi(kpInp[0].kpelem[0].c_str());
-                nk2 = std::atoi(kpInp[0].kpelem[1].c_str());
-                nk3 = std::atoi(kpInp[0].kpelem[2].c_str());
+                for (i = 0; i < 3; ++i) {
+                    nk_tmp[i] = std::atoi(kpInp[0].kpelem[i].c_str());
+                }
             }
-
-            setup_kpoint_mesh_uniform(nk1, nk2, nk3,
-                                      symmetry->SymmList,
-                                      system->rlavec_p,
-                                      kmesh_dos);
+            MPI_Bcast(&nk_tmp[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+            dos->kmesh_dos = new KpointMeshUniform(nk_tmp);
+            dos->kmesh_dos->setup(symmetry->SymmList,
+                                  system->rlavec_p);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
-                std::cout << "  nk1:" << std::setw(4) << kmesh_dos.nk_i[0] << std::endl;
-                std::cout << "  nk2:" << std::setw(4) << kmesh_dos.nk_i[1] << std::endl;
-                std::cout << "  nk3:" << std::setw(4) << kmesh_dos.nk_i[2] << std::endl;
+                std::cout << "  nk1:" << std::setw(4) << dos->kmesh_dos->nk_i[0] << std::endl;
+                std::cout << "  nk2:" << std::setw(4) << dos->kmesh_dos->nk_i[1] << std::endl;
+                std::cout << "  nk3:" << std::setw(4) << dos->kmesh_dos->nk_i[2] << std::endl;
                 std::cout << std::endl;
-                std::cout << "  Number of k points : " << kmesh_dos.nk << std::endl;
-                std::cout << "  Number of irreducible k points : " << kmesh_dos.nk_irred << std::endl << std::endl;
+                std::cout << "  Number of k points : " << dos->kmesh_dos->nk << std::endl;
+                std::cout << "  Number of irreducible k points : " << dos->kmesh_dos->nk_irred << std::endl <<
+                std::endl;
                 std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
 
-                for (i = 0; i < kmesh_dos.nk_irred; ++i) {
+                for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                     std::cout << "  " << std::setw(5) << i + 1 << ":";
                     for (j = 0; j < 3; ++j) {
                         std::cout << std::setprecision(5) << std::setw(14)
-                                  << std::scientific << kmesh_dos.kpoint_irred_all[i][0].kval[j];
+                                  << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
                     }
                     std::cout << std::setprecision(6) << std::setw(11)
-                              << std::fixed << kmesh_dos.weight_k[i] << std::endl;
+                              << std::fixed << dos->kmesh_dos->weight_k[i] << std::endl;
                 }
                 std::cout << std::endl;
             }
@@ -621,61 +623,303 @@ void Kpoint::setup_kpoint_mesh(const std::vector<KpointInp> &kpinfo,
     mpi_broadcast_kpoint_vector(kp_irreducible);
 }
 
-void Kpoint::setup_kpoint_mesh_uniform(const unsigned int nk1,
-                                       const unsigned int nk2,
-                                       const unsigned int nk3,
-                                       const std::vector<SymmetryOperation> &symmlist,
-                                       const double rlavec_p[3][3],
-                                       KpointMeshUniform &kmesh)
+void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
+                              const double rlavec_p[3][3],
+                              const bool time_reversal_symmetry)
 {
-    unsigned int nk_tmp[3];
+    const bool usesym = true;
 
-    nk_tmp[0] = nk1;
-    nk_tmp[1] = nk2;
-    nk_tmp[2] = nk3;
+    xk.resize(nk, std::vector<double>(3));
+    kvec_na.resize(nk, std::vector<double>(3));
 
-    MPI_Bcast(&nk_tmp[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    gen_kmesh(symmlist, usesym, time_reversal_symmetry);
 
-    for (auto i = 0; i < 3; ++i) kmesh.nk_i[i] = nk_tmp[i];
-    kmesh.nk = nk_tmp[0] * nk_tmp[1] * nk_tmp[2];
-    kmesh.xk.resize(kmesh.nk, std::vector<double>(3));
-    kmesh.kvec_na.resize(kmesh.nk, std::vector<double>(3));
+    for (auto i = 0; i < nk; ++i) {
+        for (auto j = 0; j < 3; ++j) kvec_na[i][j] = xk[i][j];
 
-    gen_kmesh(true, nk_tmp, kmesh.xk,
-              kmesh.kpoint_irred_all);
-
-    for (auto i = 0; i < kmesh.nk; ++i) {
-        for (auto j = 0; j < 3; ++j) kmesh.kvec_na[i][j] = kmesh.xk[i][j];
-
-        rotvec(&kmesh.kvec_na[i][0], &kmesh.kvec_na[i][0], rlavec_p, 'T');
-        const auto norm = kmesh.kvec_na[i][0] * kmesh.kvec_na[i][0]
-              + kmesh.kvec_na[i][1] * kmesh.kvec_na[i][1]
-              + kmesh.kvec_na[i][2] * kmesh.kvec_na[i][2];
+        rotvec(&kvec_na[i][0], &kvec_na[i][0], rlavec_p, 'T');
+        const auto norm = kvec_na[i][0] * kvec_na[i][0]
+              + kvec_na[i][1] * kvec_na[i][1]
+              + kvec_na[i][2] * kvec_na[i][2];
 
         if (norm > eps) {
-            for (auto j = 0; j < 3; ++j) kmesh.kvec_na[i][j] /= std::sqrt(norm);
+            for (auto j = 0; j < 3; ++j) kvec_na[i][j] /= std::sqrt(norm);
         }
     }
 
-    kmesh.nk_irred = kmesh.kpoint_irred_all.size();
-    kmesh.weight_k.resize(kmesh.nk_irred);
-    for (auto i = 0; i < kmesh.nk_irred; ++i) {
-        kmesh.weight_k[i]
-              = static_cast<double>(kmesh.kpoint_irred_all[i].size())
-              / static_cast<double>(kmesh.nk);
+    nk_irred = kpoint_irred_all.size();
+    weight_k.resize(nk_irred);
+    for (auto i = 0; i < nk_irred; ++i) {
+        weight_k[i]
+              = static_cast<double>(kpoint_irred_all[i].size())
+              / static_cast<double>(nk);
     }
-    kmesh.kindex_minus_xk.resize(kmesh.nk);
-    gen_nkminus(kmesh.nk, kmesh.nk_i, kmesh.kindex_minus_xk, kmesh.xk);
+    gen_nkminus();
 
-    kmesh.kmap_to_irreducible.resize(kmesh.nk);
-    for (auto i = 0; i < kmesh.nk_irred; ++i) {
-        for (auto j = 0; j < kmesh.kpoint_irred_all[i].size(); ++j) {
-            kmesh.kmap_to_irreducible[kmesh.kpoint_irred_all[i][j].knum] = i;
+    kmap_to_irreducible.resize(nk);
+    for (auto i = 0; i < nk_irred; ++i) {
+        for (auto j = 0; j < kpoint_irred_all[i].size(); ++j) {
+            kmap_to_irreducible[kpoint_irred_all[i][j].knum] = i;
         }
     }
     // Compute small group of every irreducible k points for later use
-    kmesh.small_group_of_k.resize(kmesh.nk_irred);
-    set_small_groups_k_irred(kmesh, symmetry->SymmList);
+    small_group_of_k.resize(nk_irred);
+    set_small_groups_k_irred(usesym, symmlist);
+}
+
+void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                                  const bool usesym,
+                                  const bool time_reversal_symmetry)
+{
+    unsigned int ik;
+    double **xkr;
+    unsigned int nsym;
+
+    allocate(xkr, nk, 3);
+
+    for (unsigned int ix = 0; ix < nk_i[0]; ++ix) {
+        for (unsigned int iy = 0; iy < nk_i[1]; ++iy) {
+            for (unsigned int iz = 0; iz < nk_i[2]; ++iz) {
+                ik = iz + iy * nk_i[2] + ix * nk_i[2] * nk_i[1];
+                xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_i[0]);
+                xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_i[1]);
+                xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_i[2]);
+            }
+        }
+    }
+    if (usesym) {
+        nsym = symmlist.size();
+    } else {
+        nsym = 1;
+    }
+    reduce_kpoints(nsym, symmlist, time_reversal_symmetry, xkr);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (unsigned int i = 0; i < 3; ++i) {
+            xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+        }
+    }
+
+    deallocate(xkr);
+}
+
+void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
+                                       const std::vector<SymmetryOperation> &symmlist,
+                                       const bool time_reversal_symmetry,
+                                       double **xkr)
+{
+    unsigned int ik;
+    unsigned int i, j;
+    int isym;
+
+    bool *k_found;
+
+    std::vector<KpointList> k_group;
+    std::vector<double> ktmp;
+
+    double srot[3][3];
+    double xk_sym[3], xk_orig[3];
+    double srot_inv[3][3], srot_inv_t[3][3];
+
+    double ***symop_k;
+
+    allocate(symop_k, nsym, 3, 3);
+
+    for (isym = 0; isym < nsym; ++isym) {
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                srot[i][j] = static_cast<double>(symmlist[isym].rot[i][j]);
+            }
+        }
+
+        invmat3(srot_inv, srot);
+        transpose3(srot_inv_t, srot_inv);
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                symop_k[isym][i][j] = srot_inv_t[i][j];
+            }
+        }
+    }
+
+    kpoint_irred_all.clear();
+
+    allocate(k_found, nk);
+
+    for (ik = 0; ik < nk; ++ik) k_found[ik] = false;
+
+    for (ik = 0; ik < nk; ++ik) {
+
+        if (k_found[ik]) continue;
+
+        k_group.clear();
+
+        for (i = 0; i < 3; ++i) xk_orig[i] = xkr[ik][i];
+
+        for (isym = 0; isym < nsym; ++isym) {
+
+            rotvec(xk_sym, xk_orig, symop_k[isym]);
+
+            for (i = 0; i < 3; ++i) xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+
+            int nloc = get_knum(xk_sym);
+
+            if (nloc == -1) {
+
+           //     error->exit("reduce_kpoints", "Cannot find the kpoint");
+
+            } else {
+
+                if (!k_found[nloc]) {
+                    k_found[nloc] = true;
+                    ktmp.clear();
+                    ktmp.push_back(xk_sym[0]);
+                    ktmp.push_back(xk_sym[1]);
+                    ktmp.push_back(xk_sym[2]);
+
+                    k_group.emplace_back(nloc, ktmp);
+                }
+
+            }
+
+            // Time-reversal symmetry
+
+            if (time_reversal_symmetry) {
+
+                for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0;
+
+                nloc = get_knum(xk_sym);
+
+                if (nloc == -1) {
+
+               //     error->exit("reduce_kpoints", "Cannot find the kpoint");
+
+                } else {
+
+                    if (!k_found[nloc]) {
+                        k_found[nloc] = true;
+                        ktmp.clear();
+                        ktmp.push_back(xk_sym[0]);
+                        ktmp.push_back(xk_sym[1]);
+                        ktmp.push_back(xk_sym[2]);
+
+                        k_group.emplace_back(nloc, ktmp);
+                    }
+                }
+            }
+        }
+        kpoint_irred_all.push_back(k_group);
+    }
+
+    deallocate(k_found);
+    deallocate(symop_k);
+}
+
+void KpointMeshUniform::gen_nkminus()
+{
+    kindex_minus_xk.resize(nk);
+    double minus_xk[3];
+
+    for (unsigned int ik = 0; ik < nk; ++ik) {
+
+        for (auto i = 0; i < 3; ++i) minus_xk[i] = -xk[ik][i];
+
+        const auto ik_minus = get_knum(minus_xk);
+
+        if (ik_minus == -1)
+        //    error->exit("gen_nkminus",
+        //                "-xk doesn't exist on the mesh point.");
+        if (ik_minus < ik) continue;
+
+        kindex_minus_xk[ik] = ik_minus;
+        kindex_minus_xk[ik_minus] = ik;
+    }
+}
+
+void KpointMeshUniform::set_small_groups_k_irred(const bool usesym,
+                                                 const std::vector<SymmetryOperation> &symmlist)
+{
+    small_group_of_k.resize(nk_irred);
+    for (auto ik = 0; ik < nk_irred; ++ik) {
+        small_group_of_k[ik]
+              = get_small_group_of_k(kpoint_irred_all[ik][0].knum,
+                                     usesym,
+                                     symmlist);
+    }
+}
+
+std::vector<int> KpointMeshUniform::get_small_group_of_k(const unsigned int ik,
+                                                         const bool usesym,
+                                                         const std::vector<SymmetryOperation> &symmlist) const
+{
+    std::vector<int> small_group;
+    small_group.clear();
+    unsigned int nsym;
+    if (usesym) {
+        nsym = symmlist.size();
+    } else {
+        nsym = 1;
+    }
+    for (auto isym = 0; isym < nsym; ++isym) {
+        const auto ksym = knum_sym(ik, symmlist[isym].rot);
+        if (ksym == ik) {
+            small_group.push_back(isym);
+        }
+    }
+    return small_group;
+}
+
+int KpointMeshUniform::knum_sym(const unsigned int ik,
+                                const int rot[3][3]) const
+{
+    // Returns kpoint index of S(symop_num)*xk[ik_in]
+    // Works only for gamma-centered mesh calculations
+    int i;
+
+    double srot[3][3];
+    double srot_inv[3][3], srot_inv_t[3][3];
+    double xk_orig[3], xk_sym[3];
+
+    for (i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            srot[i][j] = static_cast<double>(rot[i][j]);
+        }
+    }
+
+    invmat3(srot_inv, srot);
+    transpose3(srot_inv_t, srot_inv);
+
+    for (i = 0; i < 3; ++i) xk_orig[i] = xk[ik][i];
+
+    rotvec(xk_sym, xk_orig, srot_inv_t);
+    for (i = 0; i < 3; ++i) {
+        xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
+    }
+
+    return get_knum(xk_sym);
+}
+
+int KpointMeshUniform::get_knum(const double xk[3]) const
+{
+    int i;
+    double diff[3];
+    double dnk[3];
+
+    for (i = 0; i < 3; ++i) dnk[i] = static_cast<double>(nk_i[i]);
+    for (i = 0; i < 3; ++i) diff[i] = static_cast<double>(nint(xk[i] * dnk[i])) - xk[i] * dnk[i];
+
+    const auto norm = std::sqrt(diff[0] * diff[0]
+                                      + diff[1] * diff[1]
+                                      + diff[2] * diff[2]);
+
+    if (norm >= eps12) return -1;
+
+    const int iloc = nint(xk[0] * dnk[0] + 2.0 * dnk[0]) % nk_i[0];
+    const int jloc = nint(xk[1] * dnk[1] + 2.0 * dnk[1]) % nk_i[1];
+    const int kloc = nint(xk[2] * dnk[2] + 2.0 * dnk[2]) % nk_i[2];
+
+    return kloc + nk_i[2] * jloc + nk_i[1] * nk_i[2] * iloc;
 }
 
 void Kpoint::mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &kp_irreducible) const
@@ -837,45 +1081,6 @@ void Kpoint::gen_kmesh(const bool usesym,
     deallocate(xkr);
 }
 
-void Kpoint::gen_kmesh(const bool usesym,
-                       const unsigned int nk_in[3],
-                       std::vector<std::vector<double>> &xk_out,
-                       std::vector<std::vector<KpointList>> &kplist_out) const
-{
-    unsigned int ik;
-    double **xkr;
-
-    const auto nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
-    int nsym;
-
-    allocate(xkr, nk_tot, 3);
-
-    for (unsigned int ix = 0; ix < nk_in[0]; ++ix) {
-        for (unsigned int iy = 0; iy < nk_in[1]; ++iy) {
-            for (unsigned int iz = 0; iz < nk_in[2]; ++iz) {
-                ik = iz + iy * nk_in[2] + ix * nk_in[2] * nk_in[1];
-                xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_in[0]);
-                xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_in[1]);
-                xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_in[2]);
-            }
-        }
-    }
-
-    //if (usesym) {
-    nsym = symmetry->SymmList.size();
-    // } else {
-    // nsym = 1;
-    //}
-    reduce_kpoints(nsym, xkr, nk_in, kplist_out);
-
-    for (ik = 0; ik < nk_tot; ++ik) {
-        for (unsigned int i = 0; i < 3; ++i) {
-            xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
-        }
-    }
-
-    deallocate(xkr);
-}
 
 void Kpoint::reduce_kpoints(const unsigned int nsym,
                             double **xkr,
@@ -1134,29 +1339,6 @@ void Kpoint::gen_nkminus(const unsigned int nk,
     }
 }
 
-void Kpoint::gen_nkminus(const unsigned int nk,
-                         const unsigned int nk_i[3],
-                         std::vector<unsigned int> &minus_k,
-                         const std::vector<std::vector<double>> &xk_in)
-{
-    double minus_xk[3];
-
-    for (unsigned int ik = 0; ik < nk; ++ik) {
-
-        for (auto i = 0; i < 3; ++i) minus_xk[i] = -xk_in[ik][i];
-
-        const auto ik_minus = get_knum(minus_xk, nk_i);
-
-        if (ik_minus == -1)
-            error->exit("gen_nkminus",
-                        "-xk doesn't exist on the mesh point.");
-        if (ik_minus < ik) continue;
-
-        minus_k[ik] = ik_minus;
-        minus_k[ik_minus] = ik;
-    }
-}
-
 int Kpoint::get_knum(const double kx,
                      const double ky,
                      const double kz) const
@@ -1248,85 +1430,10 @@ bool Kpoint::in_first_BZ(const double *xk_in) const
     return iloc == 0;
 }
 
-void Kpoint::generate_irreducible_kmap(unsigned int *kequiv,
-                                       unsigned int &nk_irreducible,
-                                       std::vector<int> &k_irreducible,
-                                       const unsigned int n1,
-                                       const unsigned int n2,
-                                       const unsigned int n3,
-                                       double **xk_in,
-                                       const int nsymop,
-                                       int ***symrot) const
-{
-    int i, j;
-    const int nktot = n1 * n2 * n3;
-
-    double xk_orig[3], xk_sym[3];
-    double srot[3][3], srot_inv[3][3], srot_inv_t[3][3];
-
-    for (i = 0; i < nktot; ++i) kequiv[i] = i;
-
-    for (i = 0; i < nktot; ++i) {
-
-        if (kequiv[i] < i) continue;
-
-        for (j = 0; j < 3; ++j) xk_orig[j] = xk_in[i][j];
-
-        for (int isym = 0; isym < nsymop; ++isym) {
-
-            for (j = 0; j < 3; ++j) {
-                for (int k = 0; k < 3; ++k) {
-                    srot[j][k] = symrot[isym][j][k];
-                }
-            }
-
-            invmat3(srot_inv, srot);
-            transpose3(srot_inv_t, srot_inv);
-
-            rotvec(xk_sym, xk_orig, srot_inv_t);
-
-            const auto ksym = get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
-
-            if (ksym > kequiv[i]) {
-                kequiv[ksym] = i;
-            }
-        }
-    }
-
-    nk_irreducible = 0;
-    k_irreducible.clear();
-
-    std::map<int, int> map_to_irreducible_index;
-
-    for (i = 0; i < nktot; ++i) {
-        if (kequiv[i] == i) {
-            map_to_irreducible_index.insert(std::map<int, int>::value_type(i, nk_irreducible));
-            ++nk_irreducible;
-            k_irreducible.push_back(i);
-        }
-    }
-
-    for (i = 0; i < nktot; ++i) {
-        kequiv[i] = map_to_irreducible_index[kequiv[i]];
-    }
-
-    map_to_irreducible_index.clear();
-}
-
 void Kpoint::calc_small_groups_k_irred(std::vector<int> *small_group)
 {
     for (int ik = 0; ik < nk_irred; ++ik) {
         small_group[ik] = get_small_group_of_k(kpoint_irred_all[ik][0].knum);
-    }
-}
-
-void Kpoint::set_small_groups_k_irred(KpointMeshUniform &kmesh_in,
-                                      const std::vector<SymmetryOperation> &symmlist)
-{
-    kmesh_in.small_group_of_k.resize(kmesh_in.nk_irred);
-    for (auto ik = 0; ik < kmesh_in.nk_irred; ++ik) {
-        kmesh_in.small_group_of_k[ik]
-        = get_small_group_of_k(kmesh_in.kpoint_irred_all[ik][0].knum, kmesh_in, symmlist);
     }
 }
 
@@ -1336,21 +1443,6 @@ std::vector<int> Kpoint::get_small_group_of_k(const int ik) const
     small_group.clear();
     for (auto isym = 0; isym < symmetry->nsym; ++isym) {
         const auto ksym = knum_sym(ik, isym);
-        if (ksym == ik) {
-            small_group.push_back(isym);
-        }
-    }
-    return small_group;
-}
-
-std::vector<int> Kpoint::get_small_group_of_k(const int ik,
-                                              const KpointMeshUniform &kmesh_in,
-                                              const std::vector<SymmetryOperation> &symmlist) const
-{
-    std::vector<int> small_group;
-    small_group.clear();
-    for (auto isym = 0; isym < symmlist.size(); ++isym) {
-        const auto ksym = knum_sym(symmlist[isym].rot, kmesh_in.xk[ik], kmesh_in.nk_i);
         if (ksym == ik) {
             small_group.push_back(isym);
         }
@@ -1447,37 +1539,6 @@ int Kpoint::knum_sym(const int ik_in,
     }
 
     return get_knum(xk_sym[0], xk_sym[1], xk_sym[2]);
-}
-
-int Kpoint::knum_sym(const int rot[3][3],
-                     const std::vector<double> &xk_in,
-                     const unsigned int nki_in[3]) const
-{
-    // Returns kpoint index of S(symop_num)*xk[ik_in]
-    // Works only for gamma-centered mesh calculations
-    int i;
-
-    double srot[3][3];
-    double srot_inv[3][3], srot_inv_t[3][3];
-    double xk_orig[3], xk_sym[3];
-
-    for (i = 0; i < 3; ++i) {
-        for (auto j = 0; j < 3; ++j) {
-            srot[i][j] = static_cast<double>(rot[i][j]);
-        }
-    }
-
-    invmat3(srot_inv, srot);
-    transpose3(srot_inv_t, srot_inv);
-
-    for (i = 0; i < 3; ++i) xk_orig[i] = xk_in[i];
-
-    rotvec(xk_sym, xk_orig, srot_inv_t);
-    for (i = 0; i < 3; ++i) {
-        xk_sym[i] = xk_sym[i] - nint(xk_sym[i]);
-    }
-
-    return get_knum(xk_sym, nki_in);
 }
 
 void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],

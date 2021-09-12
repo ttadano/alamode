@@ -111,7 +111,7 @@ namespace PHON_NS {
 
         bool **is_imaginary{};
 
-        DymatEigenValue *dymat_dos, *dymat_band, *dymat_general;
+        DymatEigenValue *dymat_band, *dymat_general;
 
         void diagonalize_dynamical_all();
 

@@ -38,7 +38,7 @@ void Integration::set_default_variables()
     epsilon = 0.0;
     ntetra = 0;
     tetras = nullptr;
-    tetra_nodes_dos = nullptr;
+    //tetra_nodes_dos = nullptr;
 }
 
 void Integration::deallocate_variables()
@@ -46,7 +46,7 @@ void Integration::deallocate_variables()
     if (tetras) {
         deallocate(tetras);
     }
-    if (tetra_nodes_dos) delete tetra_nodes_dos;
+    //if (tetra_nodes_dos) delete tetra_nodes_dos;
 }
 
 
@@ -79,10 +79,6 @@ void Integration::setup_integration()
         ntetra = 6 * nk;
         allocate(tetras, ntetra, 4);
         prepare_tetrahedron(nkx, nky, nkz);
-        tetra_nodes_dos = new TetraNodes(kpoint->kmesh_dos.nk_i[0],
-                                         kpoint->kmesh_dos.nk_i[1],
-                                         kpoint->kmesh_dos.nk_i[2]);
-        tetra_nodes_dos->setup();
     }
 
     epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.

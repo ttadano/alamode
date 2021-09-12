@@ -143,15 +143,14 @@ namespace PHON_NS {
     class KpointMeshUniform {
      public:
       KpointMeshUniform() {};
-//      KpointMeshUniform(const unsigned int nkx_,
-//                        const unsigned int nky_,
-//                        const unsigned int nkz_) {
-//        nkx = nkx_;
-//        nky = nky_;
-//        nkz = nkz_;
-//      };
-//
-//      ~KpointMeshUniform();
+      KpointMeshUniform(const unsigned int nk_in[3]) {
+          for (auto i = 0; i < 3; ++i) {
+              nk_i[i] = nk_in[i];
+          }
+          nk = nk_i[0] * nk_i[1] * nk_i[2];
+      };
+
+      ~KpointMeshUniform() {};
 
       unsigned int nk_i[3];
       unsigned int nk, nk_irred;
@@ -163,6 +162,34 @@ namespace PHON_NS {
       std::vector<std::vector<KpointList>> kpoint_irred_all;
       std::vector<std::vector<int>> small_group_of_k;
       std::vector<unsigned int> kindex_minus_xk;
+
+      void setup(const std::vector<SymmetryOperation> &symmlist,
+                 const double rlavec_p[3][3],
+                 const bool time_reversal_symmetry = true);
+
+      int get_knum(const double xk[3]) const;
+      int knum_sym(const unsigned int ik, const int rot[3][3]) const;
+
+     private:
+
+        void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                       const bool usesym,
+                       const bool time_reversal_symmetry);
+
+        void reduce_kpoints(const unsigned int nsym,
+                            const std::vector<SymmetryOperation> &symmlist,
+                            const bool time_reversal_symmetry,
+                            double **xkr);
+
+        void gen_nkminus();
+        void set_small_groups_k_irred(const bool usesym,
+                                      const std::vector<SymmetryOperation> &symmlist);
+
+        std::vector<int> get_small_group_of_k(const unsigned int ik,
+                                              const bool usesym,
+                                              const std::vector<SymmetryOperation> &symmlist) const;
+
+
 
     };
 
@@ -205,7 +232,6 @@ namespace PHON_NS {
         std::map<int, int> kmap_to_irreducible;
         std::vector<int> *small_group_of_k;
 
-        KpointMeshUniform kmesh_dos;
         KpointBandStructure kpoint_bs;
         KpointGeneral kpoint_general;
 
@@ -217,25 +243,10 @@ namespace PHON_NS {
         int get_knum(const double [3],
                      const unsigned int [3]) const;
 
-        void generate_irreducible_kmap(unsigned int *,
-                                       unsigned int &,
-                                       std::vector<int> &,
-                                       unsigned int,
-                                       unsigned int,
-                                       unsigned int,
-                                       double **,
-                                       int,
-                                       int ***) const;
-
         void gen_kmesh(bool,
                        const unsigned int [3],
                        double **,
                        std::vector<std::vector<KpointList>> &) const;
-
-        void gen_kmesh(const bool usesym,
-                       const unsigned int nk_in[3],
-                       std::vector<std::vector<double>> &xk_out,
-                       std::vector<std::vector<KpointList>> &kplist_out) const;
 
         void get_small_group_k(const double *,
                                std::vector<int> &,
@@ -243,10 +254,6 @@ namespace PHON_NS {
 
         int knum_sym(int,
                      int) const;
-
-      int knum_sym(const int rot[3][3],
-                   const std::vector<double> &xk_in,
-                   const unsigned int nki_in[3]) const;
 
         void get_commensurate_kpoints(const double [3][3],
                                       const double [3][3],
@@ -298,13 +305,6 @@ namespace PHON_NS {
                                const double rlavec_p[3][3],
                                KpointBandStructure &kpoint_band_out);
 
-        void setup_kpoint_mesh_uniform(const unsigned int nk1,
-                                       const unsigned int nk2,
-                                       const unsigned int nk3,
-                                       const std::vector<SymmetryOperation> &symmlist,
-                                       const double rlavec_p[3][3],
-                                       KpointMeshUniform &kmesh_out);
-
         void setup_kpoint_plane(const std::vector<KpointInp> &,
                                 unsigned int &,
                                 std::vector<KpointPlane> *&);
@@ -318,11 +318,6 @@ namespace PHON_NS {
                          unsigned int *,
                          double **) const;
 
-        void gen_nkminus(const unsigned int nk,
-                               const unsigned int nk_i[3],
-                               std::vector<unsigned int> &minus_k,
-                               const std::vector<std::vector<double>> &xk_in);
-
         void gen_kpoints_plane(const std::vector<KpointInp> &,
                                std::vector<KpointPlane> *,
                                std::vector<KpointPlaneTriangle> *);
@@ -335,13 +330,7 @@ namespace PHON_NS {
                                          std::vector<KpointPlane> *&) const;
 
         void calc_small_groups_k_irred(std::vector<int> *);
-        void set_small_groups_k_irred(KpointMeshUniform &kmesh_in,
-                                      const std::vector<SymmetryOperation> &symmlist);
-
 
         std::vector<int> get_small_group_of_k(int) const;
-        std::vector<int> get_small_group_of_k(const int ik,
-                                              const KpointMeshUniform &kmesh_in,
-                                              const std::vector<SymmetryOperation> &symmlist) const;
     };
 }

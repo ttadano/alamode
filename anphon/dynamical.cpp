@@ -16,6 +16,7 @@
 #include "system.h"
 #include "memory.h"
 #include "kpoint.h"
+#include "phonon_dos.h"
 #include "timer.h"
 #include "symmetry_core.h"
 #include "mathfunctions.h"
@@ -67,7 +68,6 @@ void Dynamical::set_default_variables()
     xshift_s = nullptr;
     dymat = nullptr;
     mindist_list = nullptr;
-    dymat_dos = nullptr;
     dymat_band = nullptr;
     dymat_general = nullptr;
 }
@@ -99,7 +99,6 @@ void Dynamical::deallocate_variables()
         deallocate(mindist_list);
     }
 
-    if (dymat_dos) delete dymat_dos;
     if (dymat_band) delete dymat_band;
     if (dymat_general) delete dymat_general;
 }
@@ -229,12 +228,6 @@ void Dynamical::setup_dynamical()
     MPI_Bcast(&nonanalytic, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&band_connection, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    if (kpoint->kmesh_dos.nk > 0) {
-        dymat_dos = new DymatEigenValue(eigenvectors,
-                                        false,
-                                        kpoint->kmesh_dos.nk,
-                                        neval);
-    }
     if (kpoint->kpoint_bs.nk > 0) {
         dymat_band = new DymatEigenValue(eigenvectors,
                                          false,
@@ -916,7 +909,7 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     // k points for dos
-    nk = kpoint->kmesh_dos.nk;
+    nk = dos->kmesh_dos->nk;
     if (nk > 0) {
         allocate(eval_tmp, nk, neval);
         if (eigenvectors) {
@@ -925,8 +918,8 @@ void Dynamical::diagonalize_dynamical_all()
             allocate(evec_tmp, nk, 1, 1);
         }
         get_eigenvalues_dymat(nk,
-                              kpoint->kmesh_dos.xk,
-                              kpoint->kmesh_dos.kvec_na,
+                              dos->kmesh_dos->xk,
+                              dos->kmesh_dos->kvec_na,
                               fcs_phonon->fc2_ext,
                               ewald->fc2_without_dipole,
                               eigenvectors,
@@ -938,7 +931,7 @@ void Dynamical::diagonalize_dynamical_all()
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->lavec_p,
                                                     fcs_phonon->fc2_ext,
-                                                    &kpoint->kmesh_dos.xk[ik][0],
+                                                    &dos->kmesh_dos->xk[ik][0],
                                                     projection_directions,
                                                     evec_tmp[ik]);
                 }
@@ -949,9 +942,9 @@ void Dynamical::diagonalize_dynamical_all()
                       MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
         }
 
-        dymat_dos->set_eigenvals_and_eigenvecs(nk,
-                                               eval_tmp,
-                                               evec_tmp);
+        dos->dymat_dos->set_eigenvals_and_eigenvecs(nk,
+                                                    eval_tmp,
+                                                    evec_tmp);
         deallocate(eval_tmp);
         deallocate(evec_tmp);
     }
@@ -1004,11 +997,10 @@ void Dynamical::diagonalize_dynamical_all()
         std::cout << "done!" << std::endl;
     }
 
-    if (kpoint->kmesh_dos.nk > 0 && phon->mode == "RTA") {
-        detect_imaginary_branches(kpoint->kmesh_dos,
-                                  dynamical->dymat_dos->get_eigenvalues());
+    if (dos->kmesh_dos->nk > 0 && phon->mode == "RTA") {
+        detect_imaginary_branches(*dos->kmesh_dos,
+                                  dos->dymat_dos->get_eigenvalues());
     }
-
 }
 
 void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,

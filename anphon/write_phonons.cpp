@@ -514,7 +514,7 @@ void Writes::print_phonon_energy() const
 
         for (i = 0; i < 3; ++i) {
             std::cout << std::fixed << std::setprecision(4)
-            << std::setw(8) << kpoint->xk[ik][i];
+            << std::setw(8) << kpoint->kpoint_bs.xk[ik][i];
             if (i < 2) std::cout << ",";
         }
         std::cout << ")" << std::endl;
@@ -524,10 +524,10 @@ void Writes::print_phonon_energy() const
         for (is = 0; is < ns; ++is) {
             std::cout << std::setw(7) << is + 1;
             std::cout << std::fixed << std::setprecision(4) << std::setw(12)
-            << in_kayser(dynamical->eval_phonon[ik][is]);
+            << in_kayser(dynamical->dymat_band->get_eigenvalues()[ik][is]);
             std::cout << " cm^-1  (";
             std::cout << std::fixed << std::setprecision(4) << std::setw(12)
-            << kayser_to_THz * in_kayser(dynamical->eval_phonon[ik][is]);
+            << kayser_to_THz * in_kayser(dynamical->dymat_band->get_eigenvalues()[ik][is]);
             std::cout << " THz )" << std::endl;
         }
         std::cout << std::endl;
@@ -535,29 +535,29 @@ void Writes::print_phonon_energy() const
 
     } else if (kpoint->kpoint_mode == 2) {
 
-        for (ik = 0; ik < kpoint->kpoint_irred_all.size(); ++ik) {
+        for (ik = 0; ik < dos->kmesh_dos->kpoint_irred_all.size(); ++ik) {
 
             std::cout << " # Irred. k point" << std::setw(5) << ik + 1;
             std::cout << " : (";
 
             for (i = 0; i < 3; ++i) {
                 std::cout << std::fixed << std::setprecision(4) << std::setw(8)
-                          << kpoint->kpoint_irred_all[ik][0].kval[i];
+                          << dos->kmesh_dos->kpoint_irred_all[ik][0].kval[i];
                 if (i < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
 
             std::cout << "   Mode, Frequency " << std::endl;
 
-            const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
+            const auto knum = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
 
             for (is = 0; is < ns; ++is) {
                 std::cout << std::setw(7) << is + 1;
                 std::cout << std::fixed << std::setprecision(4) << std::setw(12)
-                          << in_kayser(dynamical->eval_phonon[knum][is]);
+                          << in_kayser(dos->dymat_dos->get_eigenvalues()[knum][is]);
                 std::cout << " cm^-1  (";
                 std::cout << std::fixed << std::setprecision(4) << std::setw(12)
-                          << kayser_to_THz * in_kayser(dynamical->eval_phonon[knum][is]);
+                          << kayser_to_THz * in_kayser(dos->dymat_dos->get_eigenvalues()[knum][is]);
                 std::cout << " THz )" << std::endl;
             }
             std::cout << std::endl;
@@ -590,7 +590,7 @@ void Writes::write_phonon_info()
         if (kpoint->kpoint_bs.nk > 0) {
             write_phonon_vel();
         }
-        if (kpoint->kmesh_dos.nk > 0) {
+        if (dos->kmesh_dos->nk > 0) {
             write_phonon_vel_all();
         }
     }
@@ -667,9 +667,9 @@ void Writes::write_phonon_bands() const
                     "cannot open file_bands");
 
     unsigned int i, j;
-    const auto nk = kpoint->nk;
-    const auto kaxis = kpoint->kaxis;
-    const auto eval = dynamical->eval_phonon;
+    const auto nk = kpoint->kpoint_bs.nk;
+    const auto kaxis = kpoint->kpoint_bs.kaxis;
+    const auto eval = dynamical->dymat_band->get_eigenvalues();
 
     auto kcount = 0;
 
@@ -693,7 +693,7 @@ void Writes::write_phonon_bands() const
             str_kpath += " " + str_tmp;
 
             std::ostringstream ss;
-            ss << std::fixed << std::setprecision(6) << kpoint->kaxis[kcount - 1];
+            ss << std::fixed << std::setprecision(6) << kaxis[kcount - 1];
             str_kval += " " + ss.str();
         }
     }
@@ -812,11 +812,11 @@ void Writes::write_phonon_vel_all() const
     ofs_vel.open(file_vel.c_str(), std::ios::out);
     if (!ofs_vel) error->exit("write_phonon_vel_all", "cannot open file_vel_all");
 
-    const auto nk = kpoint->kmesh_dos.nk;
-    const auto nk_irred = kpoint->kmesh_dos.nk_irred;
+    const auto nk = dos->kmesh_dos->nk;
+    const auto nk_irred = dos->kmesh_dos->nk_irred;
     const auto ns = dynamical->neval;
     const auto Ry_to_SI_vel = Bohr_in_Angstrom * 1.0e-10 / time_ry;
-    const auto eval = dynamical->dymat_dos->get_eigenvalues();
+    const auto eval = dos->dymat_dos->get_eigenvalues();
 
     double ***phvel_xyz;
     double **phvel;
@@ -824,7 +824,7 @@ void Writes::write_phonon_vel_all() const
     allocate(phvel, nk, ns);
     allocate(phvel_xyz, nk, ns, 3);
 
-    phonon_velocity->get_phonon_group_velocity_mesh(kpoint->kmesh_dos,
+    phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos,
                                                     system->lavec_p,
                                                     fcs_phonon->fc2_ext,
                                                     false,
@@ -848,15 +848,15 @@ void Writes::write_phonon_vel_all() const
 
     for (unsigned int i = 0; i < nk_irred; ++i) {
         ofs_vel << "# Irreducible k point  : " << std::setw(8) << i + 1;
-        ofs_vel << " (" << std::setw(4) << kpoint->kmesh_dos.kpoint_irred_all[i].size() << ")" << std::endl;
+        ofs_vel << " (" << std::setw(4) << dos->kmesh_dos->kpoint_irred_all[i].size() << ")" << std::endl;
 
-        for (unsigned int j = 0; j < kpoint->kmesh_dos.kpoint_irred_all[i].size(); ++j) {
-            const auto knum = kpoint->kmesh_dos.kpoint_irred_all[i][j].knum;
+        for (unsigned int j = 0; j < dos->kmesh_dos->kpoint_irred_all[i].size(); ++j) {
+            const auto knum = dos->kmesh_dos->kpoint_irred_all[i][j].knum;
 
             ofs_vel << "## xk =    ";
             for (auto k = 0; k < 3; ++k)
                 ofs_vel << std::setw(15) << std::fixed
-                        << std::setprecision(10) << kpoint->kmesh_dos.xk[knum][k];
+                        << std::setprecision(10) << dos->kmesh_dos->xk[knum][k];
             ofs_vel << std::endl;
 
             for (auto k = 0; k < ns; ++k) {
