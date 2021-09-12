@@ -46,8 +46,11 @@ namespace PHON_NS {
         KpointMeshUniform *kmesh_dos;
         DymatEigenValue *dymat_dos;
 
-        void calc_dos_from_given_frequency(double **,
-                                           double *) const;
+        void calc_dos_from_given_frequency(const KpointMeshUniform *kmesh_in,
+                                           const double * const * eval_in,
+                                           const unsigned int ntetra_in,
+                                           const unsigned int * const * tetras_in,
+                                           double *dos_out) const;
 
         void set_dos_energy_grid();
 
@@ -62,9 +65,11 @@ namespace PHON_NS {
                       const double * const *eval,
                       const unsigned int n,
                       const double *energy,
-                      double *ret,
                       const unsigned int neval,
-                      const int smearing_method) const;
+                      const int smearing_method,
+                      const unsigned int ntetra,
+                      const unsigned int * const * tetras,
+                      double *ret) const;
 
         void calc_atom_projected_dos(const unsigned int nk,
                                      double * const * eval,

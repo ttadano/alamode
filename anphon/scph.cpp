@@ -328,7 +328,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             if (kpoint->kpoint_mode == 2) {
 
                 if (dos->compute_dos) {
-                    dos->calc_dos_from_given_frequency(eval_anharm[iT],
+                    dos->calc_dos_from_given_frequency(dos->kmesh_dos,
+                                                       eval_anharm[iT],
+                                                       dos->tetra_nodes_dos->get_ntetra(),
+                                                       dos->tetra_nodes_dos->get_tetras(),
                                                        dos_scph[iT]);
                 }
 
@@ -484,7 +487,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 if (kpoint->kpoint_mode == 2) {
 
                     if (dos->compute_dos) {
-                        dos->calc_dos_from_given_frequency(eval_anharm[iT],
+                        dos->calc_dos_from_given_frequency(dos->kmesh_dos,
+                                                           eval_anharm[iT],
+                                                           dos->tetra_nodes_dos->get_ntetra(),
+                                                           dos->tetra_nodes_dos->get_tetras(),
                                                            dos_scph[iT]);
                     }
 

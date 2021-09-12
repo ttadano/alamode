@@ -860,11 +860,17 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
             }
 
             for (i = 0; i < 3; ++i) {
-                integration->calc_weight_tetrahedron(nk,
-                                                     kmap_identity,
-                                                     weight_tetra[i],
-                                                     energy_tmp[i],
-                                                     omega0);
+//                integration->calc_weight_tetrahedron(nk,
+//                                                     kmap_identity,
+//                                                     weight_tetra[i],
+//                                                     energy_tmp[i],
+//                                                     omega0);
+
+                integration->calc_weight_tetrahedron(nk, kmap_identity,
+                                                     energy_tmp[i], omega0,
+                                                     dos->tetra_nodes_dos->get_ntetra(),
+                                                     dos->tetra_nodes_dos->get_tetras(),
+                                                     weight_tetra[i]);
             }
 
             // Loop for irreducible k points

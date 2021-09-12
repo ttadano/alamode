@@ -38,7 +38,6 @@ void Integration::set_default_variables()
     epsilon = 0.0;
     ntetra = 0;
     tetras = nullptr;
-    //tetra_nodes_dos = nullptr;
 }
 
 void Integration::deallocate_variables()
@@ -46,7 +45,6 @@ void Integration::deallocate_variables()
     if (tetras) {
         deallocate(tetras);
     }
-    //if (tetra_nodes_dos) delete tetra_nodes_dos;
 }
 
 
@@ -223,6 +221,15 @@ void TetraNodes::setup()
     }
 }
 
+unsigned int TetraNodes::get_ntetra() const
+{
+    return this->ntetra;
+}
+
+unsigned int **TetraNodes::get_tetras() const
+{
+    return this->tetras;
+}
 
 double Integration::do_tetrahedron(const double *energy,
                                    const double *f,
@@ -422,7 +429,7 @@ void Integration::calc_weight_tetrahedron(const unsigned int nk_irreducible,
                                           const double *energy,
                                           const double e_ref,
                                           const unsigned int ntetra,
-                                          const unsigned int **tetras,
+                                          const unsigned int * const * tetras,
                                           double *weight) const
 {
     int i;

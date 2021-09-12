@@ -19,6 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "memory.h"
 #include "mode_analysis.h"
+#include "phonon_dos.h"
 #include "system.h"
 #include "thermodynamics.h"
 #include <boost/lexical_cast.hpp>
@@ -1058,11 +1059,16 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
             }
 
             for (i = 0; i < 3; ++i) {
-                integration->calc_weight_tetrahedron(nk,
-                                                     kmap_identity,
-                                                     weight_tetra[i],
-                                                     energy_tmp[i],
-                                                     omega);
+//                integration->calc_weight_tetrahedron(nk,
+//                                                     kmap_identity,
+//                                                     weight_tetra[i],
+//                                                     energy_tmp[i],
+//                                                     omega);
+                integration->calc_weight_tetrahedron(nk, kmap_identity,
+                                                     energy_tmp[i], omega,
+                                                     dos->tetra_nodes_dos->get_ntetra(),
+                                                     dos->tetra_nodes_dos->get_tetras(),
+                                                     weight_tetra[i]);
             }
 
             for (ik = 0; ik < npair_uniq; ++ik) {
@@ -1493,11 +1499,16 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                 }
                 for (iomega = 0; iomega < nomega; ++iomega) {
                     for (i = 0; i < 2; ++i) {
-                        integration->calc_weight_tetrahedron(nk,
-                                                             kmap_identity,
-                                                             weight_tetra[i],
-                                                             energy_tmp[i],
-                                                             omega[iomega]);
+//                        integration->calc_weight_tetrahedron(nk,
+//                                                             kmap_identity,
+//                                                             weight_tetra[i],
+//                                                             energy_tmp[i],
+//                                                             omega[iomega]);
+                        integration->calc_weight_tetrahedron(nk, kmap_identity,
+                                                             energy_tmp[i], omega[iomega],
+                                                             dos->tetra_nodes_dos->get_ntetra(),
+                                                             dos->tetra_nodes_dos->get_tetras(),
+                                                             weight_tetra[i]);
                     }
 
                     for (ik = 0; ik < nk; ++ik) {

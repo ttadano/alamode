@@ -166,6 +166,7 @@ void PHON::setup_base() const
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
     phonon_velocity->setup_velocity();
+    integration->setup_integration();
     dos->setup();
     thermodynamics->setup();
     ewald->init();
@@ -203,7 +204,6 @@ void PHON::execute_phonons() const
     dynamical->diagonalize_dynamical_all();
 
     if (dos->flag_dos) {
-        integration->setup_integration();
         dos->calc_dos_all();
     }
 
@@ -254,9 +254,9 @@ void PHON::execute_RTA() const
     if (kpoint->kpoint_mode < 3) {
         dynamical->diagonalize_dynamical_all();
     }
-    if (kpoint->kpoint_mode == 2) {
-        integration->setup_integration();
-    }
+//    if (kpoint->kpoint_mode == 2) {
+//        integration->setup_integration();
+//    }
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
@@ -291,9 +291,9 @@ void PHON::execute_self_consistent_phonon() const
 
     dynamical->diagonalize_dynamical_all();
 
-    if (kpoint->kpoint_mode == 2) {
-        integration->setup_integration();
-    }
+//    if (kpoint->kpoint_mode == 2) {
+//        integration->setup_integration();
+//    }
 
     scph->setup_scph();
     scph->exec_scph();

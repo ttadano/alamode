@@ -54,10 +54,12 @@ namespace PHON_NS {
             allocate(tetras, ntetra, 4);
         };
         ~TetraNodes() {
-            deallocate(tetras);
+            if (tetras) deallocate(tetras);
         }
 
         void setup();
+        unsigned int get_ntetra() const;
+        unsigned int **get_tetras() const;
 
      private:
         unsigned int nk1, nk2, nk3;
@@ -73,16 +75,12 @@ namespace PHON_NS {
 
         int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
         double epsilon;
-        TetraNodes *tetra_nodes_dos; // Is it better to move this to phonon_dos?
 
         void setup_integration();
 
         double do_tetrahedron(const double *,
                               const double *,
                               double);
-
-//        double dos_integration(double *,
-//                               double);
 
         void calc_weight_tetrahedron(const unsigned int,
                                      const unsigned int *,
@@ -95,7 +93,7 @@ namespace PHON_NS {
                                  const double *energy,
                                  const double e_ref,
                                  const unsigned int ntetra,
-                                 const unsigned int **tetras,
+                                 const unsigned int * const * tetras,
                                  double *weight) const;
 
        void calc_weight_smearing(const unsigned int nk,
