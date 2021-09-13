@@ -466,7 +466,6 @@ void Writes::print_phonon_energy() const
 {
     unsigned int i;
     unsigned int ik, is;
-    const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
 
     const auto kayser_to_THz = 0.0299792458;
@@ -506,7 +505,9 @@ void Writes::print_phonon_energy() const
             std::cout << std::endl;
         }
 
-    } else if (kpoint->kpoint_mode == 1) {
+    } else if (kpoint->kpoint_bs) {
+
+        auto nk = kpoint->kpoint_bs->nk;
 
     for (ik = 0; ik < nk; ++ik) {
         std::cout << " # k point " << std::setw(5) << ik + 1;
@@ -1566,7 +1567,7 @@ void Writes::write_thermodynamics() const
 
 void Writes::write_gruneisen()
 {
-    if (kpoint->kpoint_mode == 1) {
+    if (kpoint->kpoint_bs && gruneisen->gruneisen_bs) {
         if (nbands < 0 || nbands > 3 * system->natmin) {
             nbands = 3 * system->natmin;
         }
@@ -1577,8 +1578,8 @@ void Writes::write_gruneisen()
         ofs_gruneisen.open(file_gru.c_str(), std::ios::out);
         if (!ofs_gruneisen) error->exit("write_gruneisen", "cannot open file_vel");
 
-        const auto nk = kpoint->nk;
-        const auto kaxis = kpoint->kaxis;
+        const auto nk = kpoint->kpoint_bs->nk;
+        const auto kaxis = kpoint->kpoint_bs->kaxis;
 
         ofs_gruneisen << "# k-axis, gamma" << std::endl;
         ofs_gruneisen.setf(std::ios::fixed);
@@ -1587,7 +1588,7 @@ void Writes::write_gruneisen()
             for (unsigned int i = 0; i < nk; ++i) {
                 ofs_gruneisen << std::setw(8) << kaxis[i];
                 for (unsigned int j = 0; j < nbands; ++j) {
-                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen[i][j].real();
+                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen_bs[i][j].real();
                 }
                 ofs_gruneisen << std::endl;
             }
@@ -1595,7 +1596,7 @@ void Writes::write_gruneisen()
             for (unsigned int i = 0; i < nk; ++i) {
                 ofs_gruneisen << std::setw(8) << kaxis[i];
                 for (unsigned int j = 0; j < nbands; ++j) {
-                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen[i][dynamical->index_bconnect[i][j]].real();
+                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen_bs[i][dynamical->index_bconnect[i][j]].real();
                 }
                 ofs_gruneisen << std::endl;
             }
@@ -1606,36 +1607,38 @@ void Writes::write_gruneisen()
         std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_gru;
         std::cout << " : Gruneisen parameters along given k-path" << std::endl;
 
-    } else {
+    }
+
+    if (dos->kmesh_dos && gruneisen->gruneisen_dos) {
 
         std::ofstream ofs_gruall;
         auto file_gruall = input->job_title + ".gru_all";
         ofs_gruall.open(file_gruall.c_str(), std::ios::out);
         if (!ofs_gruall) error->exit("write_gruneisen", "cannot open file_gruall");
 
-        const auto nk = kpoint->nk;
+        const auto nk = dos->kmesh_dos->nk;
         const auto ns = dynamical->neval;
+        const auto xk = dos->kmesh_dos->xk;
+        const auto eval = dos->dymat_dos->get_eigenvalues();
 
         ofs_gruall << "# knum, snum, omega [cm^-1], gruneisen parameter" << std::endl;
 
         for (unsigned int i = 0; i < nk; ++i) {
             ofs_gruall << "# knum = " << i;
             for (unsigned int k = 0; k < 3; ++k) {
-                ofs_gruall << std::setw(15) << kpoint->xk[i][k];
+                ofs_gruall << std::setw(15) << xk[i][k];
             }
             ofs_gruall << std::endl;
 
             for (unsigned int j = 0; j < ns; ++j) {
                 ofs_gruall << std::setw(5) << i;
                 ofs_gruall << std::setw(5) << j;
-                ofs_gruall << std::setw(15) << in_kayser(dynamical->eval_phonon[i][j]);
-                ofs_gruall << std::setw(15) << gruneisen->gruneisen[i][j].real();
+                ofs_gruall << std::setw(15) << in_kayser(eval[i][j]);
+                ofs_gruall << std::setw(15) << gruneisen->gruneisen_dos[i][j].real();
                 ofs_gruall << std::endl;
             }
         }
-
         ofs_gruall.close();
-
 
         std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_gruall;
         std::cout << " : Gruneisen parameters at all k points" << std::endl;
@@ -1737,6 +1740,8 @@ void Writes::write_scph_msd(double **msd_scph, const int bubble) const
 
 void Writes::write_disp_correlation() const
 {
+    if (!dos->kmesh_dos) return;
+
     auto file_ucorr = input->job_title + ".ucorr";
     std::ofstream ofs;
 
@@ -1770,11 +1775,11 @@ void Writes::write_disp_correlation() const
 
                 const auto ucorr = thermodynamics->disp_corrfunc(T, j, k,
                                                                  shift,
-                                                                 kpoint->nk,
+                                                                 dos->kmesh_dos->nk,
                                                                  ns,
                                                                  kpoint->xk,
-                                                                 dynamical->eval_phonon,
-                                                                 dynamical->evec_phonon);
+                                                                 dos->dymat_dos->get_eigenvalues(),
+                                                                 dos->dymat_dos->get_eigenvectors());
 
                 ofs << std::setw(17) << T;
                 ofs << std::setw(11) << j / 3 + 1;

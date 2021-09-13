@@ -18,6 +18,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "memory.h"
 #include "parsephon.h"
+#include "phonon_dos.h"
 #include "pointers.h"
 #include "system.h"
 #include "anharmonic_core.h"
@@ -47,14 +48,18 @@ void Gruneisen::set_default_variables()
     delta_a = 0.01;
     print_gruneisen = false;
     print_newfcs = false;
-    gruneisen = nullptr;
+    gruneisen_bs = nullptr;
+    gruneisen_dos = nullptr;
     xshift_s = nullptr;
 }
 
 void Gruneisen::deallocate_variables()
 {
-    if (gruneisen) {
-        deallocate(gruneisen);
+    if (gruneisen_bs) {
+        deallocate(gruneisen_bs);
+    }
+    if (gruneisen_dos) {
+        deallocate(gruneisen_dos);
     }
     if (xshift_s) {
         deallocate(xshift_s);
@@ -97,7 +102,12 @@ void Gruneisen::setup()
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3);
     }
     if (print_gruneisen) {
-        allocate(gruneisen, kpoint->nk, dynamical->neval);
+        if (kpoint->kpoint_bs) {
+            allocate(gruneisen_bs, kpoint->kpoint_bs->nk, dynamical->neval);
+        }
+        if (dos->kmesh_dos) {
+            allocate(gruneisen_dos, dos->kmesh_dos->nk, dynamical->neval);
+        }
     }
 
     if (mympi->my_rank == 0) {
@@ -119,7 +129,6 @@ void Gruneisen::setup()
 void Gruneisen::calc_gruneisen()
 {
     const auto ns = dynamical->neval;
-    const auto nk = kpoint->nk;
     std::complex<double> **dfc2_reciprocal;
 
     allocate(dfc2_reciprocal, ns, ns);
@@ -129,34 +138,78 @@ void Gruneisen::calc_gruneisen()
         std::cout << " GRUNEISEN = 1 : Calculating Gruneisen parameters ... ";
     }
 
-    for (auto ik = 0; ik < nk; ++ik) {
+    if (kpoint->kpoint_bs) {
+        const auto nk = kpoint->kpoint_bs->nk;
+        const auto xk = kpoint->kpoint_bs->xk;
+        const auto eval = dynamical->dymat_band->get_eigenvalues();
+        const auto evec = dynamical->dymat_band->get_eigenvectors();
 
-        calc_dfc2_reciprocal(dfc2_reciprocal, kpoint->xk[ik]);
+        for (auto ik = 0; ik < nk; ++ik) {
 
-        for (auto is = 0; is < ns; ++is) {
+            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
 
-            gruneisen[ik][is] = std::complex<double>(0.0, 0.0);
+            for (auto is = 0; is < ns; ++is) {
 
-            for (unsigned int i = 0; i < ns; ++i) {
-                for (unsigned int j = 0; j < ns; ++j) {
-                    gruneisen[ik][is] += std::conj(dynamical->evec_phonon[ik][is][i])
-                                         * dfc2_reciprocal[i][j]
-                                         * dynamical->evec_phonon[ik][is][j];
+                gruneisen_bs[ik][is] = std::complex<double>(0.0, 0.0);
+
+                for (unsigned int i = 0; i < ns; ++i) {
+                    for (unsigned int j = 0; j < ns; ++j) {
+                        gruneisen_bs[ik][is] += std::conj(evec[ik][is][i])
+                              * dfc2_reciprocal[i][j]
+                              * evec[ik][is][j];
+                    }
                 }
-            }
 
-            const auto gamma_imag = gruneisen[ik][is].imag();
-            if (std::abs(gamma_imag) > eps10) {
-                error->warn("calc_gruneisen", "Gruneisen parameter is not real");
-            }
+                const auto gamma_imag = gruneisen_bs[ik][is].imag();
+                if (std::abs(gamma_imag) > eps10) {
+                    error->warn("calc_gruneisen", "Gruneisen parameter is not real");
+                }
 
-            if (std::abs(dynamical->eval_phonon[ik][is]) < eps8) {
-                gruneisen[ik][is] = 0.0;
-            } else {
-                gruneisen[ik][is] /= -6.0 * std::pow(dynamical->eval_phonon[ik][is], 2);
+                if (std::abs(eval[ik][is]) < eps8) {
+                    gruneisen_bs[ik][is] = 0.0;
+                } else {
+                    gruneisen_bs[ik][is] /= -6.0 * std::pow(eval[ik][is], 2);
+                }
             }
         }
     }
+
+    if (dos->kmesh_dos) {
+        const auto nk = dos->kmesh_dos->nk;
+        const auto xk = dos->kmesh_dos->xk;
+        const auto eval = dos->dymat_dos->get_eigenvalues();
+        const auto evec = dos->dymat_dos->get_eigenvectors();
+
+        for (auto ik = 0; ik < nk; ++ik) {
+
+            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
+
+            for (auto is = 0; is < ns; ++is) {
+
+                gruneisen_dos[ik][is] = std::complex<double>(0.0, 0.0);
+
+                for (unsigned int i = 0; i < ns; ++i) {
+                    for (unsigned int j = 0; j < ns; ++j) {
+                        gruneisen_dos[ik][is] += std::conj(evec[ik][is][i])
+                              * dfc2_reciprocal[i][j]
+                              * evec[ik][is][j];
+                    }
+                }
+
+                const auto gamma_imag = gruneisen_dos[ik][is].imag();
+                if (std::abs(gamma_imag) > eps10) {
+                    error->warn("calc_gruneisen", "Gruneisen parameter is not real");
+                }
+
+                if (std::abs(eval[ik][is]) < eps8) {
+                    gruneisen_dos[ik][is] = 0.0;
+                } else {
+                    gruneisen_dos[ik][is] /= -6.0 * std::pow(eval[ik][is], 2);
+                }
+            }
+        }
+    }
+
     deallocate(dfc2_reciprocal);
 
     if (mympi->my_rank == 0) {

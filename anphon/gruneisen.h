@@ -97,10 +97,10 @@ namespace PHON_NS {
 
         void setup();
 
-        std::complex<double> **gruneisen;
+        std::complex<double> **gruneisen_bs;
+        std::complex<double> **gruneisen_dos;
 
         void calc_gruneisen();
-
         void write_new_fcsxml_all();
 
     private:
