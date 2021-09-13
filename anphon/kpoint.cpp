@@ -84,7 +84,7 @@ void Kpoint::deallocate_variables()
 
 void Kpoint::kpoint_setups(const std::string mode)
 {
-    symmetry->symmetry_flag = true;
+   // symmetry->symmetry_flag = true;
 
     unsigned int i, j;
     std::string str_tmp;
@@ -229,24 +229,24 @@ void Kpoint::kpoint_setups(const std::string mode)
 
             break;
 
-        case 3:
-
-            if (mympi->my_rank == 0) {
-                std::cout << "  KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
-            }
-
-            setup_kpoint_plane(kpInp, nplanes, kp_planes);
-
-            if (mympi->my_rank == 0) {
-                std::cout << "  Number of planes : " << nplanes << std::endl;
-                for (i = 0; i < nplanes; ++i) {
-                    std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :";
-                    std::cout << std::setw(8) << kp_planes[i].size() << std::endl;
-                }
-                std::cout << std::endl;
-            }
-
-            break;
+//        case 3:
+//
+//            if (mympi->my_rank == 0) {
+//                std::cout << "  KPMODE = 3: Momentum-resolved final state amplitude" << std::endl;
+//            }
+//
+//            setup_kpoint_plane(kpInp, nplanes, kp_planes);
+//
+//            if (mympi->my_rank == 0) {
+//                std::cout << "  Number of planes : " << nplanes << std::endl;
+//                for (i = 0; i < nplanes; ++i) {
+//                    std::cout << "  The number of k points in plane " << std::setw(3) << i + 1 << " :";
+//                    std::cout << std::setw(8) << kp_planes[i].size() << std::endl;
+//                }
+//                std::cout << std::endl;
+//            }
+//
+//            break;
 
         default:
             error->exit("setup_kpoints", "This cannot happen.");

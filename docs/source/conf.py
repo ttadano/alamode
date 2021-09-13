@@ -199,7 +199,7 @@ latex_elements = {
     # Additional stuff for the LaTeX preamble.
     'preamble': '''
 
-\usepackage{bm}
+\\usepackage{bm}
 ''',
 }
 
