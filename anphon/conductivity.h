@@ -36,7 +36,7 @@ namespace PHON_NS {
         double ***kappa;
         double ***kappa_spec;
         double ***kappa_coherent;
-        double *Temperature;
+        double *temperature;
         int calc_coherent;
 
     private:

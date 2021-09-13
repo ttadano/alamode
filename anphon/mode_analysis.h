@@ -48,23 +48,29 @@ namespace PHON_NS {
 
         std::vector<KsListMode> kslist_fstate_k;
 
-        void calc_frequency_resolved_final_state(const unsigned int,
-                                                 double *,
-                                                 const double,
-                                                 const unsigned int,
-                                                 const double *,
-                                                 const unsigned int,
-                                                 const unsigned int,
-                                                 double ***) const;
+        void calc_frequency_resolved_final_state(const unsigned int ntemp,
+                                                 const double *temperature,
+                                                 const double omega0,
+                                                 const unsigned int nomegas,
+                                                 const double *omega,
+                                                 const unsigned int ik_in,
+                                                 const unsigned int is_in,
+                                                 const KpointMeshUniform *kmesh_in,
+                                                 const double * const *eval_in,
+                                                 const std::complex<double> * const * const *evec_in,
+                                                 double ***ret) const;
 
-        void calc_frequency_resolved_final_state_tetrahedron(const unsigned int,
-                                                             double *,
-                                                             const double,
-                                                             const unsigned int,
-                                                             const double *,
-                                                             const unsigned int,
-                                                             const unsigned int,
-                                                             double ***) const;
+        void calc_frequency_resolved_final_state_tetrahedron(const unsigned int ntemp,
+                                                             double *temperature,
+                                                             const double omega0,
+                                                             const unsigned int nomegas,
+                                                             const double *omega,
+                                                             const unsigned int ik_in,
+                                                             const unsigned int is_in,
+                                                             const KpointMeshUniform *kmesh_in,
+                                                             const double * const * eval_in,
+                                                             const std::complex<double> * const * const * evec_in,
+                                                             double ***ret) const;
 
         void print_momentum_resolved_final_state(const unsigned int,
                                                  double *,

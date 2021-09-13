@@ -14,6 +14,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <complex>
 #include <vector>
 #include "fcs_phonon.h"
+#include "kpoint.h"
 
 namespace PHON_NS {
     class KsListMode {
@@ -93,19 +94,25 @@ namespace PHON_NS {
 
         void setup();
 
-        void calc_damping_smearing(unsigned int,
-                                   double *,
-                                   double,
-                                   unsigned int,
-                                   unsigned int,
-                                   double *);
+        void calc_damping_smearing(const unsigned int ntemp,
+                                     const double *temp_in,
+                                     const double omega_in,
+                                     const unsigned int ik_in,
+                                     const unsigned int is_in,
+                                     const KpointMeshUniform *kmesh_in,
+                                     const double * const * eval_in,
+                                     const std::complex<double> * const * const *evec_in,
+                                     double *ret);
 
-        void calc_damping_tetrahedron(unsigned int,
-                                      double *,
-                                      double,
-                                      unsigned int,
-                                      unsigned int,
-                                      double *);
+        void calc_damping_tetrahedron(const unsigned int ntemp,
+                                      const double *temp_in,
+                                      const double omega_in,
+                                      const unsigned int ik_in,
+                                      const unsigned int is_in,
+                                      const KpointMeshUniform *kmesh_in,
+                                      const double * const * eval_in,
+                                      const std::complex<double> * const * const *evec_in,
+                                      double *ret);
 
         int quartic_mode;
         bool use_tuned_ver;
@@ -117,15 +124,16 @@ namespace PHON_NS {
         std::complex<double> V4(const unsigned int [4]);
 
         std::complex<double> Phi3(const unsigned int [3]);
+
         std::complex<double> Phi4(const unsigned int [4]);
 
         std::complex<double> V3(const unsigned int [3],
-                                double **,
-                                std::complex<double> ***);
+                                const double *const *,
+                                const std::complex<double> *const *const *);
 
         std::complex<double> V4(const unsigned int [4],
-                                double **,
-                                std::complex<double> ***);
+                                const double *const *,
+                                const std::complex<double> *const *const *);
 
         std::complex<double> Phi3(const unsigned int [3],
                                   double **,
@@ -136,8 +144,8 @@ namespace PHON_NS {
                                   std::complex<double> ***);
 
         std::complex<double> V3_mode(int,
-                                     double *,
-                                     double *,
+                                     const double *,
+                                     const double *,
                                      int,
                                      int,
                                      double **,
@@ -159,14 +167,15 @@ namespace PHON_NS {
                                               std::vector<double> *&) const;
 
 
-        void calc_self3omega_tetrahedron(double,
-                                         double **,
-                                         std::complex<double> ***,
-                                         unsigned int,
-                                         unsigned int,
-                                         unsigned int,
-                                         double *,
-                                         double *);
+        void calc_self3omega_tetrahedron(const double Temp,
+                                         const KpointMeshUniform *kmesh_in,
+                                         const double *const *eval,
+                                         const std::complex<double> *const *const *evec,
+                                         const unsigned int ik_in,
+                                         const unsigned int snum,
+                                         const unsigned int nomega,
+                                         const double *omega,
+                                         double *ret);
 
 
     private:

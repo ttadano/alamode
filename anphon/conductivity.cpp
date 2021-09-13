@@ -50,7 +50,7 @@ void Conductivity::set_default_variables()
     kappa = nullptr;
     kappa_spec = nullptr;
     kappa_coherent = nullptr;
-    Temperature = nullptr;
+    temperature = nullptr;
     vel = nullptr;
     velmat = nullptr;
     calc_coherent = 0;
@@ -71,8 +71,8 @@ void Conductivity::deallocate_variables()
     if (kappa_coherent) {
         deallocate(kappa_coherent);
     }
-    if (Temperature) {
-        deallocate(Temperature);
+    if (temperature) {
+        deallocate(temperature);
     }
     if (vel) {
         deallocate(vel);
@@ -93,10 +93,10 @@ void Conductivity::setup_kappa()
     ns = dynamical->neval;
 
     ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
-    allocate(Temperature, ntemp);
+    allocate(temperature, ntemp);
 
     for (i = 0; i < ntemp; ++i) {
-        Temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
+        temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
     }
 
     const auto nks_total = dos->kmesh_dos->nk_irred * ns;
@@ -326,17 +326,23 @@ void Conductivity::calc_anharmonic_imagself()
 
             if (integration->ismear == 0 || integration->ismear == 1) {
                 anharmonic_core->calc_damping_smearing(ntemp,
-                                                       Temperature,
+                                                       temperature,
                                                        omega,
                                                        iks / ns,
                                                        snum,
+                                                       dos->kmesh_dos,
+                                                       dos->dymat_dos->get_eigenvalues(),
+                                                       dos->dymat_dos->get_eigenvectors(),
                                                        damping3_loc);
             } else if (integration->ismear == -1) {
                 anharmonic_core->calc_damping_tetrahedron(ntemp,
-                                                          Temperature,
+                                                          temperature,
                                                           omega,
                                                           iks / ns,
                                                           snum,
+                                                          dos->kmesh_dos,
+                                                          dos->dymat_dos->get_eigenvalues(),
+                                                          dos->dymat_dos->get_eigenvectors(),
                                                           damping3_loc);
             }
         }
@@ -550,7 +556,7 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
         for (unsigned int j = 0; j < 3; ++j) {
             for (unsigned int k = 0; k < 3; ++k) {
 
-                if (Temperature[i] < eps) {
+                if (temperature[i] < eps) {
                     // Set kappa as zero when T = 0.
                     for (is = 0; is < ns; ++is) {
                         for (ik = 0; ik < kpoint->nk_irred; ++ik) {
@@ -573,11 +579,11 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                        = thermodynamics->Cv_classical(omega, Temperature[i])
+                                        = thermodynamics->Cv_classical(omega, temperature[i])
                                           * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                        = thermodynamics->Cv(omega, Temperature[i])
+                                        = thermodynamics->Cv(omega, temperature[i])
                                           * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
@@ -640,7 +646,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
 
                 kappa_coherent[i][j][k] = 0.0;
 
-                if (Temperature[i] > eps) {
+                if (temperature[i] > eps) {
 #pragma omp parallel for
                     for (ib = 0; ib < ns2; ++ib) {
                         kappa_tmp[ib] = czero;
@@ -664,8 +670,8 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                              * (thermodynamics->Cv(omega1, Temperature[i]) / omega1
-                                                 + thermodynamics->Cv(omega2, Temperature[i]) / omega2)
+                                              * (thermodynamics->Cv(omega1, temperature[i]) / omega1
+                                                 + thermodynamics->Cv(omega2, temperature[i]) / omega2)
                                               * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
                                               / (4.0 * std::pow(omega1 - omega2, 2.0)
                                                  + 4.0 * std::pow(gamma_total[ik * ns + is][i]
@@ -696,7 +702,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                             for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
                                 if (is == js) kappa_save[ib][ik] = czero;
 
-                                ofs << std::setw(5) << Temperature[i];
+                                ofs << std::setw(5) << temperature[i];
                                 ofs << std::setw(3) << j + 1 << std::setw(3) << k + 1;
                                 ofs << std::setw(4) << is + 1;
                                 ofs << std::setw(4) << js + 1;

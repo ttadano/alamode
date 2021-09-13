@@ -392,7 +392,11 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
         const auto ik_irred = kpoint->kmap_to_irreducible[knum];
 
         if (integration->ismear == -1) {
-            anharmonic_core->calc_damping_tetrahedron(NT, T_arr, omega, ik_irred, snum, damping_a);
+            anharmonic_core->calc_damping_tetrahedron(NT, T_arr, omega, ik_irred, snum,
+                                                      dos->kmesh_dos,
+                                                      dos->dymat_dos->get_eigenvalues(),
+                                                      dos->dymat_dos->get_eigenvectors(),
+                                                      damping_a);
         } else {
             selfenergy->selfenergy_a(NT, T_arr, omega, knum, snum, self_a);
             for (j = 0; j < NT; ++j) damping_a[j] = self_a[j].imag();
@@ -566,14 +570,14 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
         const auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
 
-        const auto omega0 = dynamical->eval_phonon[knum][snum];
+        const auto omega0 = dos->dymat_dos->get_eigenvalues()[knum][snum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -590,6 +594,9 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
                                                             freq_array,
                                                             kpoint->kmap_to_irreducible[knum],
                                                             snum,
+                                                            dos->kmesh_dos,
+                                                            dos->dymat_dos->get_eigenvalues(),
+                                                            dos->dymat_dos->get_eigenvectors(),
                                                             gamma_final);
         } else {
             calc_frequency_resolved_final_state(NT,
@@ -599,6 +606,9 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
                                                 freq_array,
                                                 kpoint->kmap_to_irreducible[knum],
                                                 snum,
+                                                dos->kmesh_dos,
+                                                dos->dymat_dos->get_eigenvalues(),
+                                                dos->dymat_dos->get_eigenvectors(),
                                                 gamma_final);
         }
 
@@ -613,7 +623,7 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
             ofs_omega << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_omega << std::setw(15) << kpoint->xk[knum][j];
+                ofs_omega << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_omega << std::endl;
             ofs_omega << "# mode = " << snum << std::endl;
@@ -649,13 +659,16 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
 }
 
 
-void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
-                                                       double *T,
+void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int ntemp,
+                                                       const double *temperature,
                                                        const double omega0,
-                                                       const unsigned int M,
+                                                       const unsigned int nomegas,
                                                        const double *omega,
                                                        const unsigned int ik_in,
-                                                       const unsigned int snum,
+                                                       const unsigned int is_in,
+                                                       const KpointMeshUniform *kmesh_in,
+                                                       const double * const *eval_in,
+                                                       const std::complex<double> * const * const *evec_in,
                                                        double ***ret) const
 {
     int i, j;
@@ -666,21 +679,23 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
     double f1, f2;
     double prod_tmp[2];
     double ***ret_mpi;
-    const auto nk = kpoint->nk;
+    const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
 
     const auto epsilon = integration->epsilon;
 
     std::vector<KsListGroup> triplet;
 
-    kpoint->get_unique_triplet_k(ik_in,
+    kmesh_in->get_unique_triplet_k(ik_in,
+                                 symmetry->SymmList,
                                  anharmonic_core->use_triplet_symmetry,
                                  false,
                                  triplet);
-    allocate(ret_mpi, N, M, 2);
 
-    for (i = 0; i < N; ++i) {
-        for (j = 0; j < M; ++j) {
+    allocate(ret_mpi, ntemp, nomegas, 2);
+
+    for (i = 0; i < ntemp; ++i) {
+        for (j = 0; j < nomegas; ++j) {
             ret_mpi[i][j][0] = 0.0;
             ret_mpi[i][j][1] = 0.0;
         }
@@ -688,10 +703,10 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
 
     for (int ik = mympi->my_rank; ik < triplet.size(); ik += mympi->nprocs) {
         const auto multi = static_cast<double>(triplet[ik].group.size());
-        const auto knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-        const auto knum_minus = kpoint->knum_minus[knum];
+        const auto knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+        const auto knum_minus = kmesh_in->kindex_minus_xk[knum];
 
-        arr[0] = ns * knum_minus + snum;
+        arr[0] = ns * knum_minus + is_in;
         const auto k1 = triplet[ik].group[0].ks[0];
         const auto k2 = triplet[ik].group[0].ks[1];
 
@@ -700,13 +715,13 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
                 arr[1] = ns * k1 + is;
                 arr[2] = ns * k2 + js;
 
-                omega_inner[0] = dynamical->eval_phonon[k1][is];
-                omega_inner[1] = dynamical->eval_phonon[k2][js];
+                omega_inner[0] = eval_in[k1][is];
+                omega_inner[1] = eval_in[k2][js];
 
                 const auto v3_tmp = std::norm(anharmonic_core->V3(arr));
 
-                for (i = 0; i < N; ++i) {
-                    const auto T_tmp = T[i];
+                for (i = 0; i < ntemp; ++i) {
+                    const auto T_tmp = temperature[i];
 
                     if (thermodynamics->classical) {
                         f1 = thermodynamics->fC(omega_inner[0], T_tmp);
@@ -728,7 +743,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
                                       * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1], epsilon)
                                          - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
-                        for (j = 0; j < M; ++j) {
+                        for (j = 0; j < nomegas; ++j) {
                             ret_mpi[i][j][0] += v3_tmp * multi
                                                 * delta_lorentz(omega[j] - omega_inner[0], epsilon)
                                                 * prod_tmp[0];
@@ -744,7 +759,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
                                       * (delta_gauss(omega0 + omega_inner[0] - omega_inner[1], epsilon)
                                          - delta_gauss(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
-                        for (j = 0; j < M; ++j) {
+                        for (j = 0; j < nomegas; ++j) {
                             ret_mpi[i][j][0] += v3_tmp * multi
                                                 * delta_gauss(omega[j] - omega_inner[0], epsilon)
                                                 * prod_tmp[0];
@@ -757,27 +772,30 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int N,
             }
         }
     }
-    for (i = 0; i < N; ++i) {
-        for (j = 0; j < M; ++j) {
+    for (i = 0; i < ntemp; ++i) {
+        for (j = 0; j < nomegas; ++j) {
             ret_mpi[i][j][0] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
             ret_mpi[i][j][1] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
         }
     }
 
-    MPI_Reduce(&ret_mpi[0][0][0], &ret[0][0][0], 2 * N * M, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ret_mpi[0][0][0], &ret[0][0][0], 2 * ntemp * nomegas, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     deallocate(ret_mpi);
     triplet.clear();
 }
 
 
-void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigned int N,
-                                                                   double *T,
+void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigned int ntemp,
+                                                                   double *temperature,
                                                                    const double omega0,
-                                                                   const unsigned int M,
+                                                                   const unsigned int nomegas,
                                                                    const double *omega,
                                                                    const unsigned int ik_in,
-                                                                   const unsigned int snum,
+                                                                   const unsigned int is_in,
+                                                                   const KpointMeshUniform *kmesh_in,
+                                                                   const double * const * eval_in,
+                                                                   const std::complex<double> * const * const * evec_in,
                                                                    double ***ret) const
 {
     int i, j;
@@ -793,7 +811,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
     double f1, f2;
     double xk_tmp[3];
     double v3_tmp;
-    const auto nk = kpoint->nk;
+    const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
     const auto ns2 = ns * ns;
 
@@ -806,15 +824,18 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
 
     const auto epsilon = integration->epsilon;
 
+    const auto xk = kmesh_in->xk;
+
     std::vector<KsListGroup> triplet;
 
-    kpoint->get_unique_triplet_k(ik_in,
+    kmesh_in->get_unique_triplet_k(ik_in,
+                                 symmetry->SymmList,
                                  anharmonic_core->use_triplet_symmetry,
                                  false,
                                  triplet);
 
-    for (i = 0; i < N; ++i) {
-        for (j = 0; j < M; ++j) {
+    for (i = 0; i < ntemp; ++i) {
+        for (j = 0; j < nomegas; ++j) {
             ret[i][j][0] = 0.0;
             ret[i][j][1] = 0.0;
         }
@@ -825,8 +846,8 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
     allocate(v3_arr, npair_uniq, ns2);
     allocate(delta_arr, npair_uniq, ns2, 2);
 
-    const auto knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    const auto knum_minus = kpoint->knum_minus[knum];
+    const auto knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const auto knum_minus = kmesh_in->kindex_minus_xk[knum];
 
     allocate(kmap_identity, nk);
 
@@ -850,12 +871,12 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
             for (k1 = 0; k1 < nk; ++k1) {
                 // Prepare two-phonon frequency for the tetrahedron method
 
-                for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] - kpoint->xk[k1][i];
+                for (i = 0; i < 3; ++i) xk_tmp[i] = xk[knum][i] - xk[k1][i];
 
-                k2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+                k2 = kmesh_in->get_knum(xk_tmp);
 
-                energy_tmp[0][k1] = dynamical->eval_phonon[k1][is] + dynamical->eval_phonon[k2][js];
-                energy_tmp[1][k1] = dynamical->eval_phonon[k1][is] - dynamical->eval_phonon[k2][js];
+                energy_tmp[0][k1] = eval_in[k1][is] + eval_in[k2][js];
+                energy_tmp[1][k1] = eval_in[k1][is] - eval_in[k2][js];
                 energy_tmp[2][k1] = -energy_tmp[1][k1];
             }
 
@@ -889,7 +910,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
                     k1 = triplet[ik].group[0].ks[0];
                     k2 = triplet[ik].group[0].ks[1];
 
-                    arr[0] = ns * knum_minus + snum;
+                    arr[0] = ns * knum_minus + is_in;
                     arr[1] = ns * k1 + is;
                     arr[2] = ns * k2 + js;
 
@@ -913,22 +934,22 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
                 if (v3_tmp > eps) {
                     k1 = triplet[ik].group[0].ks[0];
                     k2 = triplet[ik].group[0].ks[1];
-                    omega_inner[0] = dynamical->eval_phonon[k1][is];
-                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+                    omega_inner[0] = eval_in[k1][is];
+                    omega_inner[1] = eval_in[k2][js];
 
 #ifdef _OPENMP
 #pragma omp parallel for private(f1, f2, n1, n2, prod_tmp, j)
 #endif
-                    for (i = 0; i < N; ++i) {
+                    for (i = 0; i < ntemp; ++i) {
                         if (thermodynamics->classical) {
-                            f1 = thermodynamics->fC(omega_inner[0], T[i]);
-                            f2 = thermodynamics->fC(omega_inner[1], T[i]);
+                            f1 = thermodynamics->fC(omega_inner[0], temperature[i]);
+                            f2 = thermodynamics->fC(omega_inner[1], temperature[i]);
 
                             n1 = f1 + f2;
                             n2 = f1 - f2;
                         } else {
-                            f1 = thermodynamics->fB(omega_inner[0], T[i]);
-                            f2 = thermodynamics->fB(omega_inner[1], T[i]);
+                            f1 = thermodynamics->fB(omega_inner[0], temperature[i]);
+                            f2 = thermodynamics->fB(omega_inner[1], temperature[i]);
 
                             n1 = f1 + f2 + 1.0;
                             n2 = f1 - f2;
@@ -937,7 +958,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
                         prod_tmp[0] = v3_tmp * n1 * delta_arr[ik][ns * is + js][0];
                         prod_tmp[1] = -v3_tmp * n2 * delta_arr[ik][ns * is + js][1];
 
-                        for (j = 0; j < M; ++j) {
+                        for (j = 0; j < nomegas; ++j) {
                             ret[i][j][0] += prod_tmp[0] * delta_gauss(omega[j] - omega_inner[0], epsilon);
                             ret[i][j][1] += prod_tmp[1] * delta_gauss(omega[j] - omega_inner[0], epsilon);
                         }
@@ -947,11 +968,11 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
         }
     }
 
-    for (i = 0; i < N; ++i) {
+    for (i = 0; i < ntemp; ++i) {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-        for (j = 0; j < M; ++j) {
+        for (j = 0; j < nomegas; ++j) {
             ret[i][j][0] *= pi * std::pow(0.5, 4);
             ret[i][j][1] *= pi * std::pow(0.5, 4);
         }
@@ -1568,19 +1589,20 @@ void ModeAnalysis::print_V3_elements() const
     std::ofstream ofs_V3;
 
     std::vector<KsListGroup> triplet;
+    const auto eval_tmp = dos->dymat_dos->get_eigenvalues();
 
     for (auto i = 0; i < kslist.size(); ++i) {
         const auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
 
-        const auto omega = dynamical->eval_phonon[knum][snum];
+        const auto omega = eval_tmp[knum][snum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -1589,9 +1611,10 @@ void ModeAnalysis::print_V3_elements() const
                       << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
-        const auto ik_irred = kpoint->kmap_to_irreducible[knum];
+        const auto ik_irred = dos->kmesh_dos->kmap_to_irreducible[knum];
 
-        kpoint->get_unique_triplet_k(ik_irred,
+        dos->kmesh_dos->get_unique_triplet_k(ik_irred,
+                                     symmetry->SymmList,
                                      anharmonic_core->use_triplet_symmetry,
                                      true,
                                      triplet);
@@ -1612,7 +1635,7 @@ void ModeAnalysis::print_V3_elements() const
             ofs_V3 << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_V3 << std::setw(15) << kpoint->xk[knum][j];
+                ofs_V3 << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_V3 << std::endl;
             ofs_V3 << "# mode = " << snum + 1 << std::endl;
@@ -1632,10 +1655,10 @@ void ModeAnalysis::print_V3_elements() const
                     for (unsigned int js = 0; js < ns; ++js) {
                         ofs_V3 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
                         ofs_V3 << std::setw(15)
-                               << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                               << writes->in_kayser(eval_tmp[k1][is]);
                         ofs_V3 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
                         ofs_V3 << std::setw(15)
-                               << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                               << writes->in_kayser(eval_tmp[k2][js]);
                         ofs_V3 << std::setw(15) << v3norm[j][ib];
                         ofs_V3 << std::setw(5) << multi;
                         ofs_V3 << std::endl;
@@ -1659,12 +1682,13 @@ void ModeAnalysis::print_V4_elements() const
     std::ofstream ofs_V4;
 
     std::vector<KsListGroup> quartet;
+    const auto eval_tmp = dos->dymat_dos->get_eigenvalues();
 
     for (int i = 0; i < kslist.size(); ++i) {
         const auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
 
-        double omega = dynamical->eval_phonon[knum][snum];
+        double omega = eval_tmp[knum][snum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
@@ -1680,9 +1704,10 @@ void ModeAnalysis::print_V4_elements() const
                       << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
-        int ik_irred = kpoint->kmap_to_irreducible[knum];
+        int ik_irred = dos->kmesh_dos->kmap_to_irreducible[knum];
 
-        kpoint->get_unique_quartet_k(ik_irred,
+        dos->kmesh_dos->get_unique_quartet_k(ik_irred,
+                                     symmetry->SymmList,
                                      anharmonic_core->use_quartet_symmetry,
                                      true,
                                      quartet);
@@ -1703,7 +1728,7 @@ void ModeAnalysis::print_V4_elements() const
             ofs_V4 << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_V4 << std::setw(15) << kpoint->xk[knum][j];
+                ofs_V4 << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_V4 << std::endl;
             ofs_V4 << "# mode = " << snum + 1 << std::endl;
@@ -1727,13 +1752,13 @@ void ModeAnalysis::print_V4_elements() const
                         for (unsigned int ks = 0; ks < ns; ++ks) {
                             ofs_V4 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
                             ofs_V4 << std::setw(15)
-                                   << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                                   << writes->in_kayser(eval_tmp[k1][is]);
                             ofs_V4 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
                             ofs_V4 << std::setw(15)
-                                   << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                                   << writes->in_kayser(eval_tmp[k2][js]);
                             ofs_V4 << std::setw(5) << k3 + 1 << std::setw(5) << ks + 1;
                             ofs_V4 << std::setw(15)
-                                   << writes->in_kayser(dynamical->eval_phonon[k3][ks]);
+                                   << writes->in_kayser(eval_tmp[k3][ks]);
                             ofs_V4 << std::setw(15) << v4norm[j][ib];
                             ofs_V4 << std::setw(5) << multi;
                             ofs_V4 << std::endl;
@@ -1885,19 +1910,20 @@ void ModeAnalysis::print_Phi3_elements() const
     std::ofstream ofs_V3;
 
     std::vector<KsListGroup> triplet;
+    const auto eval_tmp = dos->dymat_dos->get_eigenvalues();
 
     for (auto i = 0; i < kslist.size(); ++i) {
         const auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
 
-        const auto omega = dynamical->eval_phonon[knum][snum];
+        const auto omega = eval_tmp[knum][snum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -1906,12 +1932,13 @@ void ModeAnalysis::print_Phi3_elements() const
                       << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
-        const auto ik_irred = kpoint->kmap_to_irreducible[knum];
+        const auto ik_irred = dos->kmesh_dos->kmap_to_irreducible[knum];
 
-        kpoint->get_unique_triplet_k(ik_irred,
-                                     anharmonic_core->use_triplet_symmetry,
-                                     true,
-                                     triplet, 1);
+        dos->kmesh_dos->get_unique_triplet_k(ik_irred,
+                                             symmetry->SymmList,
+                                             anharmonic_core->use_triplet_symmetry,
+                                             true,
+                                             triplet, 1);
         const auto nk_size = triplet.size();
         std::vector<std::vector<std::complex<double>>> phi3(nk_size,
                                                             std::vector<std::complex<double>>(ns * ns));
@@ -1928,7 +1955,7 @@ void ModeAnalysis::print_Phi3_elements() const
             ofs_V3 << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_V3 << std::setw(15) << kpoint->xk[knum][j];
+                ofs_V3 << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_V3 << std::endl;
             ofs_V3 << "# mode = " << snum + 1 << std::endl;
@@ -1938,7 +1965,7 @@ void ModeAnalysis::print_Phi3_elements() const
             ofs_V3 << "Phi3(qj,q'j',q''j'') (Ry/(u^{1/2}Bohr)^{3}), multiplicity" << std::endl;
 
             for (j = 0; j < nk_size; ++j) {
-                const int multi = triplet[j].group.size();
+                const auto multi = triplet[j].group.size();
                 const unsigned int k1 = triplet[j].group[0].ks[0];
                 const unsigned int k2 = triplet[j].group[0].ks[1];
 
@@ -1948,10 +1975,10 @@ void ModeAnalysis::print_Phi3_elements() const
                     for (unsigned int js = 0; js < ns; ++js) {
                         ofs_V3 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
                         ofs_V3 << std::setw(15)
-                               << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                               << writes->in_kayser(eval_tmp[k1][is]);
                         ofs_V3 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
                         ofs_V3 << std::setw(15)
-                               << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                               << writes->in_kayser(eval_tmp[k2][js]);
                         ofs_V3 << std::setw(15) << phi3[j][ib].real();
                         ofs_V3 << std::setw(15) << phi3[j][ib].imag();
                         ofs_V3 << std::setw(5) << multi;
@@ -1974,14 +2001,14 @@ void ModeAnalysis::print_Phi4_elements() const
     int j;
     auto ns = dynamical->neval;
     std::ofstream ofs_V4;
-
     std::vector<KsListGroup> quartet;
+    const auto eval_tmp = dos->dymat_dos->get_eigenvalues();
 
     for (int i = 0; i < kslist.size(); ++i) {
         const auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
 
-        double omega = dynamical->eval_phonon[knum][snum];
+        const auto omega = eval_tmp[knum][snum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
@@ -1997,12 +2024,13 @@ void ModeAnalysis::print_Phi4_elements() const
                       << std::setw(15) << writes->in_kayser(omega) << std::endl;
         }
 
-        int ik_irred = kpoint->kmap_to_irreducible[knum];
+        int ik_irred = dos->kmesh_dos->kmap_to_irreducible[knum];
 
-        kpoint->get_unique_quartet_k(ik_irred,
-                                     anharmonic_core->use_quartet_symmetry,
-                                     true,
-                                     quartet, 1);
+        dos->kmesh_dos->get_unique_quartet_k(ik_irred,
+                                             symmetry->SymmList,
+                                             anharmonic_core->use_quartet_symmetry,
+                                             true,
+                                             quartet, 1);
         unsigned int nk_size = quartet.size();
 
         std::vector<std::vector<std::complex<double>>> phi4(nk_size,
@@ -2019,7 +2047,7 @@ void ModeAnalysis::print_Phi4_elements() const
             ofs_V4 << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_V4 << std::setw(15) << kpoint->xk[knum][j];
+                ofs_V4 << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_V4 << std::endl;
             ofs_V4 << "# mode = " << snum + 1 << std::endl;
@@ -2032,7 +2060,7 @@ void ModeAnalysis::print_Phi4_elements() const
                       "multiplicity" << std::endl;
 
             for (j = 0; j < nk_size; ++j) {
-                int multi = quartet[j].group.size();
+                const auto multi = quartet[j].group.size();
                 unsigned int k1 = quartet[j].group[0].ks[0];
                 unsigned int k2 = quartet[j].group[0].ks[1];
                 unsigned int k3 = quartet[j].group[0].ks[2];
@@ -2044,13 +2072,13 @@ void ModeAnalysis::print_Phi4_elements() const
                         for (unsigned int ks = 0; ks < ns; ++ks) {
                             ofs_V4 << std::setw(5) << k1 + 1 << std::setw(5) << is + 1;
                             ofs_V4 << std::setw(15)
-                                   << writes->in_kayser(dynamical->eval_phonon[k1][is]);
+                                   << writes->in_kayser(eval_tmp[k1][is]);
                             ofs_V4 << std::setw(5) << k2 + 1 << std::setw(5) << js + 1;
                             ofs_V4 << std::setw(15)
-                                   << writes->in_kayser(dynamical->eval_phonon[k2][js]);
+                                   << writes->in_kayser(eval_tmp[k2][js]);
                             ofs_V4 << std::setw(5) << k3 + 1 << std::setw(5) << ks + 1;
                             ofs_V4 << std::setw(15)
-                                   << writes->in_kayser(dynamical->eval_phonon[k3][ks]);
+                                   << writes->in_kayser(eval_tmp[k3][ks]);
                             ofs_V4 << std::setw(15) << phi4[j][ib].real();
                             ofs_V4 << std::setw(15) << phi4[j][ib].imag();
                             ofs_V4 << std::setw(5) << multi;
@@ -2224,7 +2252,7 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
     for (i = 0; i < kslist.size(); ++i) {
         auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
-        const auto ik_irred = kpoint->kmap_to_irreducible[knum];
+        const auto ik_irred = dos->kmesh_dos->kmap_to_irreducible[knum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
@@ -2257,7 +2285,7 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
 
         for (int iT = 0; iT < NT; ++iT) {
             const auto T_now = T_arr[iT];
-            const auto omega = dynamical->eval_phonon[knum][snum];
+            const auto omega = dos->dymat_dos->get_eigenvalues()[knum][snum];
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Temperature (K) : " << std::setw(15) << T_now << std::endl;
@@ -2265,8 +2293,9 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
             }
 
             anharmonic_core->calc_self3omega_tetrahedron(T_now,
-                                                         dynamical->eval_phonon,
-                                                         dynamical->evec_phonon,
+                                                         dos->kmesh_dos,
+                                                         dos->dymat_dos->get_eigenvalues(),
+                                                         dos->dymat_dos->get_eigenvectors(),
                                                          ik_irred,
                                                          snum,
                                                          nomega,

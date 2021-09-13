@@ -224,6 +224,20 @@ namespace PHON_NS {
 
         int knum_sym(const unsigned int ik, const int rot[3][3]) const;
 
+        void get_unique_triplet_k(const int ik,
+                                  const std::vector<SymmetryOperation> &symmlist,
+                                  const bool use_triplet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &triplet,
+                                  const int sign = -1) const;
+
+        void get_unique_quartet_k(const int ik,
+                                  const std::vector<SymmetryOperation> &symmlist,
+                                  const bool use_quartet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &quartet,
+                                  const int sign = -1) const;
+
     private:
 
         void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
@@ -357,18 +371,6 @@ namespace PHON_NS {
         void get_commensurate_kpoints(const double [3][3],
                                       const double [3][3],
                                       std::vector<std::vector<double>> &) const;
-
-        void get_unique_triplet_k(const int,
-                                  const bool,
-                                  const bool,
-                                  std::vector<KsListGroup> &,
-                                  const int sign = -1) const;
-
-        void get_unique_quartet_k(const int ik,
-                                  const bool use_quartet_symmetry,
-                                  const bool use_permutation_symmetry,
-                                  std::vector<KsListGroup> &quartet,
-                                  const int sign = -1) const;
 
     private:
         void set_default_variables();

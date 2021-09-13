@@ -16,6 +16,7 @@
 #include "kpoint.h"
 #include "mathfunctions.h"
 #include "memory.h"
+#include "phonon_dos.h"
 #include "pointers.h"
 #include "system.h"
 #include <iostream>
@@ -445,12 +446,12 @@ void Thermodynamics::compute_FE_bubble(double **eval,
     int i;
     double omega_sum[2];
     double nsum[2];
-    const auto nk = kpoint->nk;
-    const auto nk_reduced = kpoint->kpoint_irred_all.size();
+    const auto nk = dos->kmesh_dos->nk;
+    const auto nk_irred = dos->kmesh_dos->nk_irred;
     const auto ns = dynamical->neval;
     unsigned int i0, iT;
     unsigned int arr_cubic[3];
-    const int nks0 = nk_reduced * ns;
+    const auto nks0 = nk_irred * ns;
     const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
     const auto factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
 
@@ -488,10 +489,11 @@ void Thermodynamics::compute_FE_bubble(double **eval,
 
         if (vks_l[i0] != -1) {
 
-            const auto ik0 = kpoint->kpoint_irred_all[vks_l[i0] / ns][0].knum;
+            const auto ik0 = dos->kmesh_dos->kpoint_irred_all[vks_l[i0] / ns][0].knum;
             const auto is0 = vks_l[i0] % ns;
 
-            kpoint->get_unique_triplet_k(vks_l[i0] / ns,
+            dos->kmesh_dos->get_unique_triplet_k(vks_l[i0] / ns,
+                                         symmetry->SymmList,
                                          anharmonic_core->use_triplet_symmetry,
                                          true,
                                          triplet, 1);
@@ -553,7 +555,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
                     }
                 }
             }
-            const auto weight = static_cast<double>(kpoint->kpoint_irred_all[vks_l[i0] / ns].size());
+            const auto weight = static_cast<double>(dos->kmesh_dos->kpoint_irred_all[vks_l[i0] / ns].size());
             for (iT = 0; iT < NT; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
         }
     }
@@ -580,13 +582,13 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
     int multi;
     double omega0, omega1, omega2, omega_sum[2];
     double n0, n1, n2, nsum[2];
-    unsigned int nk = kpoint->nk;
-    unsigned int nk_reduced = kpoint->kpoint_irred_all.size();
-    unsigned int ns = dynamical->neval;
+    const auto nk = dos->kmesh_dos->nk;
+    const auto nk_reduced = dos->kmesh_dos->nk_irred;
+    const auto ns = dynamical->neval;
     double v3_tmp;
     unsigned int ik0, ik1, ik2, is0, is1, is2, i0, iT;
     unsigned int arr_cubic[3];
-    int nks0 = nk_reduced * ns;
+    const auto nks0 = nk_reduced * ns;
     unsigned int NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
     double temp;
     double factor = -1.0 / (static_cast<double>(nk * nk) * 48.0);
@@ -628,10 +630,11 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
 
         if (vks_l[i0] != -1) {
 
-            ik0 = kpoint->kpoint_irred_all[vks_l[i0] / ns][0].knum;
+            ik0 = dos->kmesh_dos->kpoint_irred_all[vks_l[i0] / ns][0].knum;
             is0 = vks_l[i0] % ns;
 
-            kpoint->get_unique_triplet_k(vks_l[i0] / ns,
+            dos->kmesh_dos->get_unique_triplet_k(vks_l[i0] / ns,
+                                         symmetry->SymmList,
                                          anharmonic_core->use_triplet_symmetry,
                                          true,
                                          triplet, 1);
@@ -695,7 +698,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
                     }
                 }
             }
-            double weight = static_cast<double>(kpoint->kpoint_irred_all[vks_l[i0] / ns].size());
+            double weight = static_cast<double>(dos->kmesh_dos->kpoint_irred_all[vks_l[i0] / ns].size());
             for (iT = 0; iT < NT; ++iT) FE_local[iT] += FE_tmp[iT] * weight;
         }
     }
@@ -715,10 +718,13 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
                                           double **eval,
                                           std::complex<double> ***evec) const
 {
-    const auto nk = kpoint->nk;
+    const auto nk = dos->kmesh_dos->nk;
     const auto ns = dynamical->neval;
     const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
     const auto N = nk * ns;
+
+    const auto eval_harm = dos->dymat_dos->get_eigenvalues();
+    const auto evec_harm = dos->dymat_dos->get_eigenvectors();
 
     double ret = 0.0;
 
@@ -732,7 +738,7 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         auto tmp_c = std::complex<double>(0.0, 0.0);
 
         for (int js = 0; js < ns; ++js) {
-            auto omega2_harm = dynamical->eval_phonon[ik][js];
+            auto omega2_harm = eval_harm[ik][js];
             if (omega2_harm >= 0.0) {
                 omega2_harm = std::pow(omega2_harm, 2);
             } else {
@@ -742,8 +748,8 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
             for (int ks = 0; ks < ns; ++ks) {
                 for (int ls = 0; ls < ns; ++ls) {
                     tmp_c += omega2_harm
-                             * dynamical->evec_phonon[ik][js][ks]
-                             * std::conj(dynamical->evec_phonon[ik][js][ls])
+                             * evec_harm[ik][js][ks]
+                             * std::conj(evec_harm[ik][js][ls])
                              * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
                 }
             }

@@ -358,35 +358,35 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
 {
     return V3(ks,
-              dynamical->eval_phonon,
-              dynamical->evec_phonon);
+              dos->dymat_dos->get_eigenvalues(),
+              dos->dymat_dos->get_eigenvectors());
 }
 
 std::complex<double> AnharmonicCore::V4(const unsigned int ks[4])
 {
     return V4(ks,
-              dynamical->eval_phonon,
-              dynamical->evec_phonon);
+              dos->dymat_dos->get_eigenvalues(),
+              dos->dymat_dos->get_eigenvectors());
 }
 
 std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3])
 {
     return Phi3(ks,
-                dynamical->eval_phonon,
-                dynamical->evec_phonon);
+                dos->dymat_dos->get_eigenvalues(),
+                dos->dymat_dos->get_eigenvectors());
 }
 
 std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4])
 {
     return Phi4(ks,
-                dynamical->eval_phonon,
-                dynamical->evec_phonon);
+                dos->dymat_dos->get_eigenvalues(),
+                dos->dymat_dos->get_eigenvectors());
 }
 
 
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
-                                        double **eval_phonon,
-                                        std::complex<double> ***evec_phonon)
+                                        const double *const *eval_phonon,
+                                        const std::complex<double> *const *const *evec_phonon)
 {
     int i;
     unsigned int kn[3], sn[3];
@@ -562,8 +562,8 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
 
 
 std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
-                                        double **eval_phonon,
-                                        std::complex<double> ***evec_phonon)
+                                        const double *const *eval_phonon,
+                                        const std::complex<double> *const *const *evec_phonon)
 {
     int i;
     const int ns = dynamical->neval;
@@ -613,8 +613,8 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
 }
 
 std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
-                                        double **eval_phonon,
-                                        std::complex<double> ***evec_phonon)
+                                          double **eval_phonon,
+                                          std::complex<double> ***evec_phonon)
 {
     int i;
     int ns = dynamical->neval;
@@ -763,8 +763,8 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
 
 
 std::complex<double> AnharmonicCore::V3_mode(int mode,
-                                             double *xk2,
-                                             double *xk3,
+                                             const double *xk2,
+                                             const double *xk3,
                                              int is,
                                              int js,
                                              double **eval,
@@ -808,20 +808,23 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
 }
 
 
-void AnharmonicCore::calc_damping_smearing(const unsigned int N,
-                                           double *T,
-                                           const double omega,
+void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
+                                           const double *temp_in,
+                                           const double omega_in,
                                            const unsigned int ik_in,
-                                           const unsigned int snum,
+                                           const unsigned int is_in,
+                                           const KpointMeshUniform *kmesh_in,
+                                           const double * const * eval_in,
+                                           const std::complex<double> * const * const *evec_in,
                                            double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
-    // for the given frequency omega.
+    // for the given frequency omega_in.
     // Lorentzian or Gaussian smearing will be used.
     // This version employs the crystal symmetry to reduce the computational cost
 
-    const int nk = kpoint->nk;
-    const int ns = dynamical->neval;
+    const auto nk = kmesh_in->nk;
+    const auto ns = dynamical->neval;
     const auto ns2 = ns * ns;
     unsigned int i;
     int ik;
@@ -836,7 +839,7 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
 
     double multi;
 
-    for (i = 0; i < N; ++i) ret[i] = 0.0;
+    for (i = 0; i < ntemp; ++i) ret[i] = 0.0;
 
     double **v3_arr;
     double ***delta_arr;
@@ -848,51 +851,52 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
 
     std::vector<KsListGroup> triplet;
 
-    kpoint->get_unique_triplet_k(ik_in,
-                                 use_triplet_symmetry,
-                                 sym_permutation,
-                                 triplet);
+    kmesh_in->get_unique_triplet_k(ik_in,
+                                   symmetry->SymmList,
+                                   false,
+                                   false,
+                                   triplet);
 
-    const int npair_uniq = triplet.size();
+    const auto npair_uniq = triplet.size();
 
     allocate(v3_arr, npair_uniq, ns * ns);
     allocate(delta_arr, npair_uniq, ns * ns, 2);
 
-    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    const int knum_minus = kpoint->knum_minus[knum];
+    const auto knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const auto knum_minus = kmesh_in->kindex_minus_xk[knum];
 #ifdef _OPENMP
 #pragma omp parallel for private(multi, arr, k1, k2, is, js, omega_inner)
 #endif
     for (ik = 0; ik < npair_uniq; ++ik) {
         multi = static_cast<double>(triplet[ik].group.size());
 
-        arr[0] = ns * knum_minus + snum;
+        arr[0] = ns * knum_minus + is_in;
 
         k1 = triplet[ik].group[0].ks[0];
         k2 = triplet[ik].group[0].ks[1];
 
         for (is = 0; is < ns; ++is) {
             arr[1] = ns * k1 + is;
-            omega_inner[0] = dynamical->eval_phonon[k1][is];
+            omega_inner[0] = eval_in[k1][is];
 
             for (js = 0; js < ns; ++js) {
                 arr[2] = ns * k2 + js;
-                omega_inner[1] = dynamical->eval_phonon[k2][js];
+                omega_inner[1] = eval_in[k2][js];
 
                 if (integration->ismear == 0) {
                     delta_arr[ik][ns * is + js][0]
-                            = delta_lorentz(omega - omega_inner[0] - omega_inner[1], epsilon)
-                              - delta_lorentz(omega + omega_inner[0] + omega_inner[1], epsilon);
+                            = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                              - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                            = delta_lorentz(omega - omega_inner[0] + omega_inner[1], epsilon)
-                              - delta_lorentz(omega + omega_inner[0] - omega_inner[1], epsilon);
+                            = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                              - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 1) {
                     delta_arr[ik][ns * is + js][0]
-                            = delta_gauss(omega - omega_inner[0] - omega_inner[1], epsilon)
-                              - delta_gauss(omega + omega_inner[0] + omega_inner[1], epsilon);
+                            = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                              - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                            = delta_gauss(omega - omega_inner[0] + omega_inner[1], epsilon)
-                              - delta_gauss(omega + omega_inner[0] - omega_inner[1], epsilon);
+                            = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                              - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 }
             }
         }
@@ -909,18 +913,18 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
             is = ib / ns;
             js = ib % ns;
 
-            arr[0] = ns * knum_minus + snum;
+            arr[0] = ns * knum_minus + is_in;
             arr[1] = ns * k1 + is;
             arr[2] = ns * k2 + js;
 
             v3_arr[ik][ib] = std::norm(V3(arr,
-                                          dynamical->eval_phonon,
-                                          dynamical->evec_phonon)) * multi;
+                                          eval_in,
+                                          evec_in)) * multi;
         }
     }
 
-    for (i = 0; i < N; ++i) {
-        T_tmp = T[i];
+    for (i = 0; i < ntemp; ++i) {
+        T_tmp = temp_in[i];
         ret_tmp = 0.0;
 #ifdef _OPENMP
 #pragma omp parallel for private(k1, k2, is, js, omega_inner, n1, n2, f1, f2), reduction(+:ret_tmp)
@@ -932,11 +936,11 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
 
             for (is = 0; is < ns; ++is) {
 
-                omega_inner[0] = dynamical->eval_phonon[k1][is];
+                omega_inner[0] = eval_in[k1][is];
 
                 for (js = 0; js < ns; ++js) {
 
-                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+                    omega_inner[1] = eval_in[k2][js];
 
                     if (thermodynamics->classical) {
                         f1 = thermodynamics->fC(omega_inner[0], T_tmp);
@@ -965,23 +969,26 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int N,
     deallocate(delta_arr);
     triplet.clear();
 
-    for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
+    for (i = 0; i < ntemp; ++i) ret[i] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
 }
 
 
-void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
-                                              double *T,
-                                              const double omega,
+void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
+                                              const double *temp_in,
+                                              const double omega_in,
                                               const unsigned int ik_in,
-                                              const unsigned int snum,
+                                              const unsigned int is_in,
+                                              const KpointMeshUniform *kmesh_in,
+                                              const double * const * eval_in,
+                                              const std::complex<double> * const * const *evec_in,
                                               double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
-    // for the given frequency omega.
+    // for the given frequency omega_in.
     // Tetrahedron method will be used.
     // This version employs the crystal symmetry to reduce the computational cost
 
-    const int nk = kpoint->nk;
+    const int nk = kmesh_in->nk;
     const int ns = dynamical->neval;
 
     int ik, ib;
@@ -1011,9 +1018,10 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
     std::vector<KsListGroup> triplet;
 
-    for (i = 0; i < N; ++i) ret[i] = 0.0;
+    for (i = 0; i < ntemp; ++i) ret[i] = 0.0;
 
-    kpoint->get_unique_triplet_k(ik_in,
+    kmesh_in->get_unique_triplet_k(ik_in,
+                                 symmetry->SymmList,
                                  use_triplet_symmetry,
                                  sym_permutation,
                                  triplet);
@@ -1023,8 +1031,9 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
     allocate(v3_arr, npair_uniq, ns2);
     allocate(delta_arr, npair_uniq, ns2, 2);
 
-    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    const int knum_minus = kpoint->knum_minus[knum];
+    const auto knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const auto knum_minus = kmesh_in->kindex_minus_xk[knum];
+    const auto xk = kmesh_in->xk;
 
     allocate(kmap_identity, nk);
 
@@ -1049,12 +1058,12 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
                 // Prepare two-phonon frequency for the tetrahedron method
 
-                for (i = 0; i < 3; ++i) xk_tmp[i] = kpoint->xk[knum][i] - kpoint->xk[k1][i];
+                for (i = 0; i < 3; ++i) xk_tmp[i] = xk[knum][i] - xk[k1][i];
 
-                k2 = kpoint->get_knum(xk_tmp[0], xk_tmp[1], xk_tmp[2]);
+                k2 = kmesh_in->get_knum(xk_tmp);
 
-                energy_tmp[0][k1] = dynamical->eval_phonon[k1][is] + dynamical->eval_phonon[k2][js];
-                energy_tmp[1][k1] = dynamical->eval_phonon[k1][is] - dynamical->eval_phonon[k2][js];
+                energy_tmp[0][k1] = eval_in[k1][is] + eval_in[k2][js];
+                energy_tmp[1][k1] = eval_in[k1][is] - eval_in[k2][js];
                 energy_tmp[2][k1] = -energy_tmp[1][k1];
             }
 
@@ -1063,9 +1072,9 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 //                                                     kmap_identity,
 //                                                     weight_tetra[i],
 //                                                     energy_tmp[i],
-//                                                     omega);
+//                                                     omega_in);
                 integration->calc_weight_tetrahedron(nk, kmap_identity,
-                                                     energy_tmp[i], omega,
+                                                     energy_tmp[i], omega_in,
                                                      dos->tetra_nodes_dos->get_ntetra(),
                                                      dos->tetra_nodes_dos->get_tetras(),
                                                      weight_tetra[i]);
@@ -1095,13 +1104,13 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
             if (delta_arr[ik][ib][0] > 0.0 || std::abs(delta_arr[ik][ib][1]) > 0.0) {
 
-                arr[0] = ns * knum_minus + snum;
+                arr[0] = ns * knum_minus + is_in;
                 arr[1] = ns * k1 + is;
                 arr[2] = ns * k2 + js;
 
                 v3_arr[ik][ib] = std::norm(V3(arr,
-                                              dynamical->eval_phonon,
-                                              dynamical->evec_phonon)) * multi;
+                                              eval_in,
+                                              evec_in)) * multi;
 
             } else {
                 v3_arr[ik][ib] = 0.0;
@@ -1109,8 +1118,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
         }
     }
 
-    for (i = 0; i < N; ++i) {
-        T_tmp = T[i];
+    for (i = 0; i < ntemp; ++i) {
+        T_tmp = temp_in[i];
         ret_tmp = 0.0;
 #ifdef _OPENMP
 #pragma omp parallel for private(k1, k2, is, js, omega_inner, n1, n2, f1, f2), reduction(+:ret_tmp)
@@ -1122,11 +1131,11 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
 
             for (is = 0; is < ns; ++is) {
 
-                omega_inner[0] = dynamical->eval_phonon[k1][is];
+                omega_inner[0] = eval_in[k1][is];
 
                 for (js = 0; js < ns; ++js) {
 
-                    omega_inner[1] = dynamical->eval_phonon[k2][js];
+                    omega_inner[1] = eval_in[k2][js];
 
                     if (thermodynamics->classical) {
                         f1 = thermodynamics->fC(omega_inner[0], T_tmp);
@@ -1155,7 +1164,7 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int N,
     deallocate(delta_arr);
     deallocate(kmap_identity);
 
-    for (i = 0; i < N; ++i) ret[i] *= pi * std::pow(0.5, 4);
+    for (i = 0; i < ntemp; ++i) ret[i] *= pi * std::pow(0.5, 4);
 }
 
 
@@ -1315,9 +1324,9 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
             double phase[3];
 
             allocate(exp_phase3,
-                             2 * nk_grid[0] - 1,
-                             2 * nk_grid[1] - 1,
-                             2 * nk_grid[2] - 1);
+                     2 * nk_grid[0] - 1,
+                     2 * nk_grid[1] - 1,
+                     2 * nk_grid[2] - 1);
 #ifdef _OPENMP
 #pragma omp parallel for private(phase, jj, kk)
 #endif
@@ -1337,12 +1346,13 @@ void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
 
 
 void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
-                                                 double **eval,
-                                                 std::complex<double> ***evec,
+                                                 const KpointMeshUniform *kmesh_in,
+                                                 const double *const *eval_in,
+                                                 const std::complex<double> *const *const *evec_in,
                                                  const unsigned int ik_in,
                                                  const unsigned int snum,
                                                  const unsigned int nomega,
-                                                 double *omega,
+                                                 const double *omega,
                                                  double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
@@ -1351,7 +1361,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     // This version employs the crystal symmetry to reduce the computational cost
     // In addition, both MPI and OpenMP parallelization are used in a hybrid way inside this function.
 
-    const int nk = kpoint->nk;
+    const auto nk = kmesh_in->nk;
     const int ns = dynamical->neval;
 
     int ik, ib, iomega;
@@ -1377,14 +1387,19 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     std::vector<KsListGroup> triplet;
     std::vector<int> vk_l;
 
-    const int knum = kpoint->kpoint_irred_all[ik_in][0].knum;
-    const int knum_minus = kpoint->knum_minus[knum];
-    double omega0 = eval[knum_minus][snum];
+    const int knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kmesh_in->kindex_minus_xk[knum];
+    double omega0 = eval_in[knum_minus][snum];
 
-    kpoint->get_unique_triplet_k(ik_in,
-                                 false,
-                                 false,
-                                 triplet);
+    kmesh_in->get_unique_triplet_k(ik_in,
+                                   symmetry->SymmList,
+                                   false,
+                                   false,
+                                   triplet);
+//    kpoint->get_unique_triplet_k(ik_in,
+//                                 false,
+//                                 false,
+//                                 triplet);
 
     const auto npair_uniq = triplet.size();
 
@@ -1447,8 +1462,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                 arr[2] = ns * kpairs[ik_now][1] + js;
 
                 v3_arr_loc[ib] = std::norm(V3(arr,
-                                              dynamical->eval_phonon,
-                                              dynamical->evec_phonon));
+                                              eval_in,
+                                              evec_in));
             }
         }
         MPI_Gather(&v3_arr_loc[0], ns2, MPI_DOUBLE,
@@ -1494,8 +1509,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                     k1 = kpairs[ik][0];
                     k2 = kpairs[ik][1];
 
-                    energy_tmp[0][ik] = eval[k1][is] + eval[k2][js];
-                    energy_tmp[1][ik] = eval[k1][is] - eval[k2][js];
+                    energy_tmp[0][ik] = eval_in[k1][is] + eval_in[k2][js];
+                    energy_tmp[1][ik] = eval_in[k1][is] - eval_in[k2][js];
                 }
                 for (iomega = 0; iomega < nomega; ++iomega) {
                     for (i = 0; i < 2; ++i) {
@@ -1515,8 +1530,8 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                         k1 = kpairs[ik][0];
                         k2 = kpairs[ik][1];
 
-                        omega_inner[0] = eval[k1][is];
-                        omega_inner[1] = eval[k2][js];
+                        omega_inner[0] = eval_in[k1][is];
+                        omega_inner[1] = eval_in[k2][js];
                         if (thermodynamics->classical) {
                             f1 = thermodynamics->fC(omega_inner[0], Temp);
                             f2 = thermodynamics->fC(omega_inner[1], Temp);

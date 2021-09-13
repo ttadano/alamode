@@ -1650,11 +1650,12 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
     }
 }
 
-void Kpoint::get_unique_triplet_k(const int ik,
-                                  const bool use_triplet_symmetry,
-                                  const bool use_permutation_symmetry,
-                                  std::vector<KsListGroup> &triplet,
-                                  const int sign) const
+void KpointMeshUniform::get_unique_triplet_k(const int ik,
+                                             const std::vector<SymmetryOperation> &symmlist,
+                                             const bool use_triplet_symmetry,
+                                             const bool use_permutation_symmetry,
+                                             std::vector<KsListGroup> &triplet,
+                                             const int sign) const
 {
     // This function returns the irreducible set of (k2, k3) satisfying the momentum conservation.
     // When sign = -1 (default), pairs satisfying - k1 + k2 + k3 = G are returned.
@@ -1662,12 +1663,12 @@ void Kpoint::get_unique_triplet_k(const int ik,
     //
 
     int i;
-    int num_group_k;
+    unsigned int num_group_k;
     int ks_in[2];
-    const int knum = kpoint_irred_all[ik][0].knum;
+    const auto knum = kpoint_irred_all[ik][0].knum;
     bool *flag_found;
     std::vector<KsList> kslist;
-    double xk[3], xk1[3], xk2[3];
+    double xk0[3], xk1[3], xk2[3];
 
     allocate(flag_found, nk);
 
@@ -1677,24 +1678,24 @@ void Kpoint::get_unique_triplet_k(const int ik,
         num_group_k = 1;
     }
 
-    for (i = 0; i < 3; ++i) xk[i] = this->xk[knum][i];
+    for (i = 0; i < 3; ++i) xk0[i] = xk[knum][i];
     for (i = 0; i < nk; ++i) flag_found[i] = false;
 
     triplet.clear();
 
     for (auto ik1 = 0; ik1 < nk; ++ik1) {
 
-        for (i = 0; i < 3; ++i) xk1[i] = this->xk[ik1][i];
+        for (i = 0; i < 3; ++i) xk1[i] = xk[ik1][i];
 
         if (sign == -1) {
-            for (i = 0; i < 3; ++i) xk2[i] = xk[i] - xk1[i];
+            for (i = 0; i < 3; ++i) xk2[i] = xk0[i] - xk1[i];
         } else if (sign == 1) {
-            for (i = 0; i < 3; ++i) xk2[i] = -xk[i] - xk1[i];
+            for (i = 0; i < 3; ++i) xk2[i] = -xk0[i] - xk1[i];
         } else {
-            error->exit("get_unituq_triplet_k", "Invalid sign");
+            //error->exit("get_unituq_triplet_k", "Invalid sign");
         }
 
-        const auto ik2 = get_knum(xk2[0], xk2[1], xk2[2]);
+        const auto ik2 = get_knum(xk2);
 
         kslist.clear();
 
@@ -1703,8 +1704,8 @@ void Kpoint::get_unique_triplet_k(const int ik,
         // Add symmety-connected triplets to kslist
         for (auto isym = 0; isym < num_group_k; ++isym) {
 
-            ks_in[0] = knum_sym(ik1, small_group_of_k[ik][isym]);
-            ks_in[1] = knum_sym(ik2, small_group_of_k[ik][isym]);
+            ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rot);
+            ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rot);
 
             if (!flag_found[ks_in[0]]) {
                 kslist.emplace_back(2, ks_in, small_group_of_k[ik][isym]);
@@ -1728,11 +1729,12 @@ void Kpoint::get_unique_triplet_k(const int ik,
     deallocate(flag_found);
 }
 
-void Kpoint::get_unique_quartet_k(const int ik,
-                                  const bool use_quartet_symmetry,
-                                  const bool use_permutation_symmetry,
-                                  std::vector<KsListGroup> &quartet,
-                                  const int sign) const
+void KpointMeshUniform::get_unique_quartet_k(const int ik,
+                                             const std::vector<SymmetryOperation> &symmlist,
+                                             const bool use_quartet_symmetry,
+                                             const bool use_permutation_symmetry,
+                                             std::vector<KsListGroup> &quartet,
+                                             const int sign) const
 {
     // This function returns the irreducible set of (k2, k3, k4) satisfying the momentum conservation.
     // When sign = -1 (default), pairs satisfying - k1 + k2 + k3 + k4 = G are returned.
@@ -1740,12 +1742,12 @@ void Kpoint::get_unique_quartet_k(const int ik,
     //
 
     int i;
-    int num_group_k;
+    unsigned int num_group_k;
     std::vector<int> ks_in(3);
-    int knum = kpoint_irred_all[ik][0].knum;
+    const auto knum = kpoint_irred_all[ik][0].knum;
     bool **flag_found;
     std::vector<KsList> kslist;
-    double xk[3], xk1[3], xk2[3], xk3[3];
+    double xk0[3], xk1[3], xk2[3], xk3[3];
 
     allocate(flag_found, nk, nk);
 
@@ -1755,7 +1757,7 @@ void Kpoint::get_unique_quartet_k(const int ik,
         num_group_k = 1;
     }
 
-    for (i = 0; i < 3; ++i) xk[i] = this->xk[knum][i];
+    for (i = 0; i < 3; ++i) xk0[i] = xk[knum][i];
     for (i = 0; i < nk; ++i) {
         for (int j = 0; j < nk; ++j) {
             flag_found[i][j] = false;
@@ -1766,7 +1768,7 @@ void Kpoint::get_unique_quartet_k(const int ik,
 
     for (int ik1 = 0; ik1 < nk; ++ik1) {
 
-        for (i = 0; i < 3; ++i) xk1[i] = this->xk[ik1][i];
+        for (i = 0; i < 3; ++i) xk1[i] = xk[ik1][i];
 
         int ik2_start = 0;
         if (use_permutation_symmetry) ik2_start = ik1;
@@ -1775,12 +1777,12 @@ void Kpoint::get_unique_quartet_k(const int ik,
             for (i = 0; i < 3; ++i) xk2[i] = this->xk[ik2][i];
 
             if (sign == -1) {
-                for (i = 0; i < 3; ++i) xk3[i] = xk[i] - xk1[i] - xk2[i];
+                for (i = 0; i < 3; ++i) xk3[i] = xk0[i] - xk1[i] - xk2[i];
             } else {
-                for (i = 0; i < 3; ++i) xk3[i] = -xk[i] - xk1[i] - xk2[i];
+                for (i = 0; i < 3; ++i) xk3[i] = -xk0[i] - xk1[i] - xk2[i];
             }
 
-            int ik3 = get_knum(xk3[0], xk3[1], xk3[2]);
+            int ik3 = get_knum(xk3);
 
             kslist.clear();
 
@@ -1788,9 +1790,9 @@ void Kpoint::get_unique_quartet_k(const int ik,
 
             for (int isym = 0; isym < num_group_k; ++isym) {
 
-                ks_in[0] = knum_sym(ik1, small_group_of_k[ik][isym]);
-                ks_in[1] = knum_sym(ik2, small_group_of_k[ik][isym]);
-                ks_in[2] = knum_sym(ik3, small_group_of_k[ik][isym]);
+                ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rot);
+                ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rot);
+                ks_in[2] = knum_sym(ik3, symmlist[small_group_of_k[ik][isym]].rot);
 
                 if (!flag_found[ks_in[0]][ks_in[1]]) {
                     kslist.emplace_back(3, &ks_in[0], small_group_of_k[ik][isym]);
@@ -1812,7 +1814,6 @@ void Kpoint::get_unique_quartet_k(const int ik,
                 quartet.emplace_back(kslist);
             }
         }
-
     }
 
     deallocate(flag_found);
