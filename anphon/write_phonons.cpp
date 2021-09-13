@@ -279,10 +279,10 @@ void Writes::setup_result_io()
             fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
             fs_result >> nksym_tmp;
 
-            if (!(kpoint->nkx == nk_tmp[0] &&
-                  kpoint->nky == nk_tmp[1] &&
-                  kpoint->nkz == nk_tmp[2] &&
-                  kpoint->nk_irred == nksym_tmp)) {
+            if (!(dos->kmesh_dos->nk_i[0] == nk_tmp[0] &&
+                  dos->kmesh_dos->nk_i[1] == nk_tmp[1] &&
+                  dos->kmesh_dos->nk_i[2] == nk_tmp[2] &&
+                  dos->kmesh_dos->nk_irred == nksym_tmp)) {
                 error->exit("setup_result_io",
                             "KPOINT information is not consistent");
             }
@@ -385,17 +385,19 @@ void Writes::setup_result_io()
             fs_result << "#END SYSTEM" << std::endl;
 
             fs_result << "#KPOINT" << std::endl;
-            fs_result << kpoint->nkx << " " << kpoint->nky << " " << kpoint->nkz << std::endl;
-            fs_result << kpoint->nk_irred << std::endl;
+            fs_result <<dos->kmesh_dos->nk_i[0] << " "
+            << dos->kmesh_dos->nk_i[1] << " "
+            << dos->kmesh_dos->nk_i[2] << std::endl;
+            fs_result << dos->kmesh_dos->nk_irred << std::endl;
 
-            for (int i = 0; i < kpoint->nk_irred; ++i) {
+            for (int i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                 fs_result << std::setw(6) << i + 1 << ":";
                 for (int j = 0; j < 3; ++j) {
                     fs_result << std::setw(15)
-                              << std::scientific << kpoint->kpoint_irred_all[i][0].kval[j];
+                              << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
                 }
                 fs_result << std::setw(12)
-                          << std::fixed << kpoint->weight_k[i] << std::endl;
+                          << std::fixed << dos->kmesh_dos->weight_k[i] << std::endl;
             }
             fs_result.unsetf(std::ios::fixed);
 
@@ -687,7 +689,7 @@ void Writes::write_phonon_bands() const
             str_kpath += " " + str_tmp;
 
             std::ostringstream ss;
-            ss << std::fixed << std::setprecision(6) << kpoint->kaxis[kcount];
+            ss << std::fixed << std::setprecision(6) << kaxis[kcount];
             str_kval += " " + ss.str();
         }
         kcount += std::atoi(kpoint->kpInp[i].kpelem[8].c_str());
@@ -968,7 +970,7 @@ void Writes::write_two_phonon_dos() const
 
     const auto n = dos->n_energy;
 
-    for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
+    for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
 
         ofs_tdos << "# Irred. kpoint : " << std::setw(5) << ik + 1 << std::endl;
         for (auto i = 0; i < n; ++i) {
@@ -998,13 +1000,13 @@ void Writes::write_scattering_phase_space() const
     ofs_sps << "# Mode decomposed scattering phase space are printed below." << std::endl;
     ofs_sps << "# Irred. k, mode, omega (cm^-1), P+ (absorption) (cm), P- (emission) (cm)" << std::endl;
 
-    for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
-        const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
+    for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
+        const auto knum = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
 
         for (auto is = 0; is < dynamical->neval; ++is) {
             ofs_sps << std::setw(5) << ik + 1;
             ofs_sps << std::setw(5) << is + 1;
-            ofs_sps << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][is]);
+            ofs_sps << std::setw(15) << in_kayser(dos->dymat_dos->get_eigenvalues()[knum][is]);
             ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is][1];
             ofs_sps << std::setw(15) << std::scientific << dos->sps3_mode[ik][is][0];
             ofs_sps << std::endl;
@@ -1037,24 +1039,24 @@ void Writes::write_scattering_amplitude() const
 
     ofs_w << "# Scattering phase space with the Bose-Einstein distribution function" << std::endl;
     ofs_w << "# Irreducible kpoints " << std::endl;
-    for (i = 0; i < kpoint->kpoint_irred_all.size(); ++i) {
+    for (i = 0; i < dos->kmesh_dos->kpoint_irred_all.size(); ++i) {
         ofs_w << "#" << std::setw(5) << i + 1;
 
-        knum = kpoint->kpoint_irred_all[i][0].knum;
-        for (j = 0; j < 3; ++j) ofs_w << std::setw(15) << kpoint->xk[knum][j];
+        knum = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
+        for (j = 0; j < 3; ++j) ofs_w << std::setw(15) << dos->kmesh_dos->xk[knum][j];
         ofs_w << std::endl;
     }
     ofs_w << std::endl;
     ofs_w << "# k, mode, frequency (cm^-1), temperature, W+ (absorption) (cm), W- (emission) (cm)"
           << std::endl << std::endl;
 
-    for (i = 0; i < kpoint->kpoint_irred_all.size(); ++i) {
+    for (i = 0; i < dos->kmesh_dos->kpoint_irred_all.size(); ++i) {
 
-        knum = kpoint->kpoint_irred_all[i][0].knum;
+        knum = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
 
         for (unsigned int is = 0; is < ns; ++is) {
 
-            const auto omega = in_kayser(dynamical->eval_phonon[knum][is]);
+            const auto omega = in_kayser(dos->dymat_dos->get_eigenvalues()[knum][is]);
 
             for (j = 0; j < NT; ++j) {
                 ofs_w << std::setw(5) << i + 1 << std::setw(5) << is + 1 << std::setw(15) << omega;
@@ -1622,29 +1624,32 @@ void Writes::write_thermodynamics() const
         const auto T = Tmin + dT * static_cast<double>(i);
 
         const auto heat_capacity = thermodynamics->Cv_tot(T,
-                                                          kpoint->nk_irred,
+                                                          dos->kmesh_dos->nk_irred,
                                                           dynamical->neval,
-                                                          kpoint->kpoint_irred_all,
-                                                          &kpoint->weight_k[0],
-                                                          dynamical->eval_phonon);
+                                                          dos->kmesh_dos->kpoint_irred_all,
+                                                          &dos->kmesh_dos->weight_k[0],
+                                                          dos->dymat_dos->get_eigenvalues());
 
-        const auto Svib = thermodynamics->vibrational_entropy(T, kpoint->nk_irred, dynamical->neval,
-                                                              kpoint->kpoint_irred_all,
-                                                              &kpoint->weight_k[0], dynamical->eval_phonon);
+        const auto Svib = thermodynamics->vibrational_entropy(T,
+                                                              dos->kmesh_dos->nk_irred,
+                                                              dynamical->neval,
+                                                              dos->kmesh_dos->kpoint_irred_all,
+                                                              &dos->kmesh_dos->weight_k[0],
+                                                              dos->dymat_dos->get_eigenvalues());
 
         const auto Uvib = thermodynamics->internal_energy(T,
-                                                          kpoint->nk_irred,
+                                                          dos->kmesh_dos->nk_irred,
                                                           dynamical->neval,
-                                                          kpoint->kpoint_irred_all,
-                                                          &kpoint->weight_k[0],
-                                                          dynamical->eval_phonon);
+                                                          dos->kmesh_dos->kpoint_irred_all,
+                                                          &dos->kmesh_dos->weight_k[0],
+                                                          dos->dymat_dos->get_eigenvalues());
 
         const auto FE_QHA = thermodynamics->free_energy_QHA(T,
-                                                            kpoint->nk_irred,
+                                                            dos->kmesh_dos->nk_irred,
                                                             dynamical->neval,
-                                                            kpoint->kpoint_irred_all,
-                                                            &kpoint->weight_k[0],
-                                                            dynamical->eval_phonon);
+                                                            dos->kmesh_dos->kpoint_irred_all,
+                                                            &dos->kmesh_dos->weight_k[0],
+                                                            dos->dymat_dos->get_eigenvalues());
 
         ofs_thermo << std::setw(16) << std::fixed << T;
         ofs_thermo << std::setw(18) << std::scientific << heat_capacity / k_Boltzmann;
@@ -2093,14 +2098,14 @@ void Writes::write_selfenergy_isotope() const
             endl;
             ofs_iso << "# Irred. knum, mode num, frequency [cm^-1], Gamma_iso [cm^-1]" << std::endl << std::endl;
 
-            for (unsigned int i = 0; i < kpoint->nk_irred; ++i) {
+            for (unsigned int i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                 ofs_iso << "# Irreducible k point  : " << std::setw(8) << i + 1;
-                ofs_iso << " (" << std::setw(4) << kpoint->kpoint_irred_all[i].size() << ")" << std::endl;
+                ofs_iso << " (" << std::setw(4) << dos->kmesh_dos->kpoint_irred_all[i].size() << ")" << std::endl;
 
-                const auto knum = kpoint->kpoint_irred_all[i][0].knum;
+                const auto knum = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
 
                 ofs_iso << "## xk = " << std::setw(3);
-                for (k = 0; k < 3; ++k) ofs_iso << std::setw(15) << kpoint->xk[knum][k];
+                for (k = 0; k < 3; ++k) ofs_iso << std::setw(15) << dos->kmesh_dos->xk[knum][k];
                 ofs_iso << std::endl;
 
                 for (k = 0; k < ns; ++k) {
@@ -2781,7 +2786,7 @@ void Writes::write_scph_bands(const unsigned int nk_in,
             str_kpath += " " + str_tmp;
 
             std::ostringstream ss;
-            ss << std::fixed << std::setprecision(6) << kpoint->kaxis[kcount];
+            ss << std::fixed << std::setprecision(6) << kaxis_in[kcount];
             str_kval += " " + ss.str();
         }
         kcount += std::atoi(kpoint->kpInp[i].kpelem[8].c_str());
@@ -2791,7 +2796,7 @@ void Writes::write_scph_bands(const unsigned int nk_in,
             str_kpath += " " + str_tmp;
 
             std::ostringstream ss;
-            ss << std::fixed << std::setprecision(6) << kpoint->kaxis[kcount - 1];
+            ss << std::fixed << std::setprecision(6) << kaxis_in[kcount - 1];
             str_kval += " " + ss.str();
         }
     }

@@ -83,21 +83,24 @@ void Isotope::setup_isotope_scattering()
             }
             std::cout << std::endl;
 
-            allocate(gamma_isotope, kpoint->nk_irred, dynamical->neval);
+            allocate(gamma_isotope, dos->kmesh_dos->nk_irred, dynamical->neval);
         }
     }
 }
 
-void Isotope::calc_isotope_selfenergy(const int knum,
-                                      const int snum,
+void Isotope::calc_isotope_selfenergy(const unsigned int knum,
+                                      const unsigned int snum,
                                       const double omega,
+                                      const KpointMeshUniform *kmesh_in,
+                                      const double * const * eval_in,
+                                      const std::complex<double> * const * const * evec_in,
                                       double &ret) const
 {
     // Compute phonon selfenergy of phonon (knum, snum) 
     // due to phonon-isotope scatterings.
     // Delta functions are replaced by smearing functions with width EPSILON.
 
-    const auto nk = kpoint->nk;
+    const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
     const auto natmin = system->natmin;
     const auto epsilon = integration->epsilon;
@@ -113,13 +116,13 @@ void Isotope::calc_isotope_selfenergy(const int knum,
 
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
-                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
-                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                    dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
+                             * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
 
-            const auto omega1 = dynamical->eval_phonon[ik][is];
+            const auto omega1 = eval_in[ik][is];
 
             if (integration->ismear == 0) {
                 ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
@@ -133,9 +136,12 @@ void Isotope::calc_isotope_selfenergy(const int knum,
 }
 
 
-void Isotope::calc_isotope_selfenergy_tetra(const int knum,
-                                            const int snum,
+void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
+                                            const unsigned int snum,
                                             const double omega,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double * const * eval_in,
+                                            const std::complex<double> * const * const * evec_in,
                                             double &ret) const
 {
     // Compute phonon selfenergy of phonon (knum, snum) 
@@ -143,7 +149,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
     // This version employs the tetrahedron method.
 
     int ik, is;
-    const auto nk = kpoint->nk;
+    const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
     const auto natmin = system->natmin;
 
@@ -164,14 +170,14 @@ void Isotope::calc_isotope_selfenergy_tetra(const int knum,
 
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
-                    dprod += std::conj(dynamical->evec_phonon[ik][is][3 * iat + icrd])
-                             * dynamical->evec_phonon[knum][snum][3 * iat + icrd];
+                    dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
+                             * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
 
-            weight[ik] = prod * dynamical->eval_phonon[ik][is];
-            eval[ik] = dynamical->eval_phonon[ik][is];
+            weight[ik] = prod * eval_in[ik][is];
+            eval[ik] = eval_in[ik][is];
         }
         ret += integration->do_tetrahedron(eval, weight,
                                            dos->tetra_nodes_dos->get_ntetra(),
@@ -190,7 +196,7 @@ void Isotope::calc_isotope_selfenergy_all() const
 {
     int i;
     const auto ns = dynamical->neval;
-    const auto nks = kpoint->nk_irred * ns;
+    const auto nks = dos->kmesh_dos->nk_irred * ns;
     double tmp;
     double *gamma_tmp = nullptr;
     double *gamma_loc = nullptr;
@@ -211,13 +217,25 @@ void Isotope::calc_isotope_selfenergy_all() const
         for (i = 0; i < nks; ++i) gamma_loc[i] = 0.0;
 
         for (i = mympi->my_rank; i < nks; i += mympi->nprocs) {
-            const auto knum = kpoint->kpoint_irred_all[i / ns][0].knum;
+            const auto knum = dos->kmesh_dos->kpoint_irred_all[i / ns][0].knum;
             const auto snum = i % ns;
-            const auto omega = dynamical->eval_phonon[knum][snum];
+            const auto omega = dos->dymat_dos->get_eigenvalues()[knum][snum];
             if (integration->ismear == -1) {
-                calc_isotope_selfenergy_tetra(knum, snum, omega, tmp);
+                calc_isotope_selfenergy_tetra(knum,
+                                              snum,
+                                              omega,
+                                              dos->kmesh_dos,
+                                              dos->dymat_dos->get_eigenvalues(),
+                                              dos->dymat_dos->get_eigenvectors(),
+                                              tmp);
             } else {
-                calc_isotope_selfenergy(knum, snum, omega, tmp);
+                calc_isotope_selfenergy(knum,
+                                        snum,
+                                        omega,
+                                        dos->kmesh_dos,
+                                        dos->dymat_dos->get_eigenvalues(),
+                                        dos->dymat_dos->get_eigenvectors(),
+                                        tmp);
             }
             gamma_loc[i] = tmp;
         }
@@ -226,7 +244,7 @@ void Isotope::calc_isotope_selfenergy_all() const
                    MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank == 0) {
-            for (i = 0; i < kpoint->nk_irred; ++i) {
+            for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                 for (int j = 0; j < ns; ++j) {
                     gamma_isotope[i][j] = gamma_tmp[ns * i + j];
                 }

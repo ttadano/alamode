@@ -11,6 +11,7 @@
 #pragma once
 
 #include "pointers.h"
+#include "kpoint.h"
 #include <vector>
 #include <set>
 #include <complex>
@@ -57,16 +58,28 @@ namespace PHON_NS {
                                 double ***,
                                 double **) const;
 
-        void average_self_energy_at_degenerate_point(int,
-                                                     int,
-                                                     double **) const;
+        void average_self_energy_at_degenerate_point(const int n,
+                                                     const int m,
+                                                     const KpointMeshUniform *kmesh_in,
+                                                     const double * const * eval_in,
+                                                     double **damping) const;
 
-        void compute_frequency_resolved_kappa(int,
-                                              double ****,
-                                              int);
+        void compute_frequency_resolved_kappa(const int ntemp,
+                                              const int smearing_method,
+                                              const KpointMeshUniform *kmesh_in,
+                                              const double * const * eval_in,
+                                              const double * const * const * const *kappa_mode,
+                                              double ***kappa_spec_out) const;
 
-        void compute_kappa_intraband(double ***kappa_intra, double **lifetime);
+        void compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
+                                     const double * const * eval_in,
+                                     const double * const * lifetime,
+                                     double ***kappa_intra,
+                                     double ***kappa_spec_out) const;
 
-        void compute_kappa_coherent(double ***kappa_coherent, double **gamma_total) const;
+        void compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
+                                    const double * const *eval_in,
+                                    const double * const *gamma_total,
+                                    double ***kappa_coherent_out) const;
     };
 }

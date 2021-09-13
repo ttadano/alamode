@@ -114,12 +114,8 @@ void AnharmonicCore::setup()
     sym_permutation = true;
     use_tuned_ver = true;
 
-    if (!mode_analysis->calc_fstate_k && kpoint->kpoint_mode == 2) {
-        int nk_tmp[3];
-        nk_tmp[0] = kpoint->nkx;
-        nk_tmp[1] = kpoint->nky;
-        nk_tmp[2] = kpoint->nkz;
-        store_exponential_for_acceleration(nk_tmp,
+    if (!mode_analysis->calc_fstate_k && dos->kmesh_dos) {
+        store_exponential_for_acceleration(dos->kmesh_dos->nk_i,
                                            nk_represent,
                                            exp_phase,
                                            exp_phase3);
@@ -1254,7 +1250,7 @@ void AnharmonicCore::setup_quartic()
     deallocate(invsqrt_mass_p);
 }
 
-void AnharmonicCore::store_exponential_for_acceleration(const int nk_in[3],
+void AnharmonicCore::store_exponential_for_acceleration(const unsigned nk_in[3],
                                                         int &nkrep_out,
                                                         std::complex<double> *exp_out,
                                                         std::complex<double> ***exp3_out)

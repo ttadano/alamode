@@ -211,7 +211,7 @@ namespace PHON_NS {
 
         void setup_quartic();
 
-        void store_exponential_for_acceleration(const int nk_in[3],
+        void store_exponential_for_acceleration(const unsigned int nk_in[3],
                                                 int &,
                                                 std::complex<double> *,
                                                 std::complex<double> ***);

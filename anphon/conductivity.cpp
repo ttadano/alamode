@@ -319,10 +319,10 @@ void Conductivity::calc_anharmonic_imagself()
 
         } else {
 
-            const auto knum = kpoint->kpoint_irred_all[iks / ns][0].knum;
+            const auto knum = dos->kmesh_dos->kpoint_irred_all[iks / ns][0].knum;
             const auto snum = iks % ns;
 
-            const auto omega = dynamical->eval_phonon[knum][snum];
+            const auto omega = dos->dymat_dos->get_eigenvalues()[knum][snum];
 
             if (integration->ismear == 0 || integration->ismear == 1) {
                 anharmonic_core->calc_damping_smearing(ntemp,
@@ -371,16 +371,16 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
         const auto iks_g = ik * np + j + nshift;
 
-        if (iks_g >= kpoint->nk_irred * ns) break;
+        if (iks_g >= dos->kmesh_dos->nk_irred * ns) break;
 
         writes->fs_result << "#GAMMA_EACH" << std::endl;
         writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
 
-        const auto nk_equiv = kpoint->kpoint_irred_all[iks_g / ns].size();
+        const auto nk_equiv = dos->kmesh_dos->kpoint_irred_all[iks_g / ns].size();
 
         writes->fs_result << nk_equiv << std::endl;
         for (k = 0; k < nk_equiv; ++k) {
-            const auto ktmp = kpoint->kpoint_irred_all[iks_g / ns][k].knum;
+            const auto ktmp =  dos->kmesh_dos->kpoint_irred_all[iks_g / ns][k].knum;
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
@@ -409,15 +409,17 @@ void Conductivity::compute_kappa()
         double **lifetime;
         double **gamma_total;
 
-        allocate(lifetime, kpoint->nk_irred * ns, ntemp);
-        allocate(gamma_total, kpoint->nk_irred * ns, ntemp);
+        allocate(lifetime, dos->kmesh_dos->nk_irred * ns, ntemp);
+        allocate(gamma_total, dos->kmesh_dos->nk_irred * ns, ntemp);
 
-        average_self_energy_at_degenerate_point(kpoint->nk_irred * ns,
+        average_self_energy_at_degenerate_point(dos->kmesh_dos->nk_irred * ns,
                                                 ntemp,
+                                                dos->kmesh_dos,
+                                                dos->dymat_dos->get_eigenvalues(),
                                                 damping3);
 
         if (isotope->include_isotope) {
-            for (iks = 0; iks < kpoint->nk_irred * ns; ++iks) {
+            for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
                 const auto snum = iks % ns;
                 if (dynamical->is_imaginary[iks / ns][snum]) {
                     for (i = 0; i < ntemp; ++i) {
@@ -437,7 +439,7 @@ void Conductivity::compute_kappa()
                 }
             }
         } else {
-            for (iks = 0; iks < kpoint->nk_irred * ns; ++iks) {
+            for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
 
                 if (dynamical->is_imaginary[iks / ns][iks % ns]) {
                     for (i = 0; i < ntemp; ++i) {
@@ -460,12 +462,24 @@ void Conductivity::compute_kappa()
         }
 
         allocate(kappa, ntemp, 3, 3);
-        compute_kappa_intraband(kappa, lifetime);
+
+        if (calc_kappa_spec) {
+            allocate(kappa_spec, dos->n_energy, ntemp, 3);
+        }
+
+        compute_kappa_intraband(dos->kmesh_dos,
+                                dos->dymat_dos->get_eigenvalues(),
+                                lifetime,
+                                kappa,
+                                kappa_spec);
         deallocate(lifetime);
 
         if (calc_coherent) {
             allocate(kappa_coherent, ntemp, 3, 3);
-            compute_kappa_coherent(kappa_coherent, gamma_total);
+            compute_kappa_coherent(dos->kmesh_dos,
+                                   dos->dymat_dos->get_eigenvalues(),
+                   gamma_total,
+                                   kappa_coherent);
         }
 
         deallocate(gamma_total);
@@ -475,10 +489,12 @@ void Conductivity::compute_kappa()
 
 void Conductivity::average_self_energy_at_degenerate_point(const int n,
                                                            const int m,
+                                                           const KpointMeshUniform *kmesh_in,
+                                                           const double * const * eval_in,
                                                            double **damping) const
 {
     int j, k, l;
-    const auto nkr = kpoint->nk_irred;
+    const auto nkr = kmesh_in->nk_irred;
 
     double *eval_tmp;
     const auto tol_omega = 1.0e-7; // Approximately equal to 0.01 cm^{-1}
@@ -492,9 +508,9 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
     allocate(damping_sum, m);
 
     for (auto i = 0; i < nkr; ++i) {
-        const int ik = kpoint->kpoint_irred_all[i][0].knum;
+        const auto ik = kmesh_in->kpoint_irred_all[i][0].knum;
 
-        for (j = 0; j < ns; ++j) eval_tmp[j] = dynamical->eval_phonon[ik][j];
+        for (j = 0; j < ns; ++j) eval_tmp[j] = eval_in[ik][j];
 
         degeneracy_at_k.clear();
 
@@ -542,15 +558,18 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
 }
 
 
-void Conductivity::compute_kappa_intraband(double ***kappa_intra,
-                                           double **lifetime)
+void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
+                                           const double * const * eval_in,
+                                           const double * const * lifetime,
+                                           double ***kappa_intra,
+                                           double ***kappa_spec_out) const
 {
     int i, is, ik;
     double ****kappa_mode;
     const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
 
-    allocate(kappa_mode, ntemp, 9, ns, kpoint->nk_irred);
-
+    const auto nk_irred = kmesh_in->nk_irred;
+    allocate(kappa_mode, ntemp, 9, ns, nk_irred);
 
     for (i = 0; i < ntemp; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
@@ -559,21 +578,21 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
                 if (temperature[i] < eps) {
                     // Set kappa as zero when T = 0.
                     for (is = 0; is < ns; ++is) {
-                        for (ik = 0; ik < kpoint->nk_irred; ++ik) {
+                        for (ik = 0; ik < nk_irred; ++ik) {
                             kappa_mode[i][3 * j + k][is][ik] = 0.0;
                         }
                     }
                 } else {
                     for (is = 0; is < ns; ++is) {
-                        for (ik = 0; ik < kpoint->nk_irred; ++ik) {
-                            const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-                            const auto omega = dynamical->eval_phonon[knum][is];
+                        for (ik = 0; ik < nk_irred; ++ik) {
+                            const auto knum = kmesh_in->kpoint_irred_all[ik][0].knum;
+                            const auto omega = eval_in[knum][is];
                             auto vv_tmp = 0.0;
-                            const auto nk_equiv = kpoint->kpoint_irred_all[ik].size();
+                            const auto nk_equiv = kmesh_in->kpoint_irred_all[ik].size();
 
                             // Accumulate group velocity (diad product) for the reducible k points
                             for (auto ieq = 0; ieq < nk_equiv; ++ieq) {
-                                const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
+                                const auto ktmp = kmesh_in->kpoint_irred_all[ik][ieq].knum;
                                 vv_tmp += vel[ktmp][is][j] * vel[ktmp][is][k];
                             }
 
@@ -597,7 +616,7 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
                 kappa_intra[i][j][k] = 0.0;
 
                 for (is = 0; is < ns; ++is) {
-                    for (ik = 0; ik < kpoint->nk_irred; ++ik) {
+                    for (ik = 0; ik < nk_irred; ++ik) {
                         kappa_intra[i][j][k] += kappa_mode[i][3 * j + k][is][ik];
                     }
                 }
@@ -608,17 +627,23 @@ void Conductivity::compute_kappa_intraband(double ***kappa_intra,
     }
 
     if (calc_kappa_spec) {
+        //allocate(kappa_spec_out, dos->n_energy, ntemp, 3);
         compute_frequency_resolved_kappa(ntemp,
+                                         integration->ismear,
+                                         dos->kmesh_dos,
+                                         dos->dymat_dos->get_eigenvalues(),
                                          kappa_mode,
-                                         integration->ismear);
+                                         kappa_spec_out);
     }
 
     deallocate(kappa_mode);
 }
 
 
-void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
-                                          double **gamma_total) const
+void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
+                                          const double * const *eval_in,
+                                          const double * const *gamma_total,
+                                          double ***kappa_coherent_out) const
 {
     // Compute the coherent part of thermal conductivity
     // based on the Michelle's paper.
@@ -631,20 +656,22 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
     std::vector<std::complex<double>> kappa_tmp(ns2, czero);
     std::complex<double> **kappa_save = nullptr;
 
+    const auto nk_irred = kmesh_in->nk_irred;
+
     std::ofstream ofs;
     if (calc_coherent == 2) {
         ofs.open(file_coherent_elems.c_str(), std::ios::out);
         if (!ofs) error->exit("compute_kappa_coherent", "cannot open file_kc");
         ofs << "# Temperature [K], 1st and 2nd xyz components, ibranch, jbranch, ik_irred, "
                "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
-        allocate(kappa_save, ns2, kpoint->nk_irred);
+        allocate(kappa_save, ns2, nk_irred);
     }
 
     for (auto i = 0; i < ntemp; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
             for (unsigned int k = 0; k < 3; ++k) {
 
-                kappa_coherent[i][j][k] = 0.0;
+                kappa_coherent_out[i][j][k] = 0.0;
 
                 if (temperature[i] > eps) {
 #pragma omp parallel for
@@ -655,18 +682,18 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
 
                         if (js == is) continue; // skip the diagonal component
 
-                        for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
-                            const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-                            const auto omega1 = dynamical->eval_phonon[knum][is];
-                            const auto omega2 = dynamical->eval_phonon[knum][js];
+                        for (auto ik = 0; ik < nk_irred; ++ik) {
+                            const auto knum = kmesh_in->kpoint_irred_all[ik][0].knum;
+                            const auto omega1 = eval_in[knum][is];
+                            const auto omega2 = eval_in[knum][js];
 
                             if (omega1 < eps8 || omega2 < eps8) continue;
                             auto vv_tmp = czero;
-                            const auto nk_equiv = kpoint->kpoint_irred_all[ik].size();
+                            const auto nk_equiv = kmesh_in->kpoint_irred_all[ik].size();
 
                             // Accumulate group velocity (diad product) for the reducible k points
                             for (auto ieq = 0; ieq < nk_equiv; ++ieq) {
-                                const auto ktmp = kpoint->kpoint_irred_all[ik][ieq].knum;
+                                const auto ktmp = kmesh_in->kpoint_irred_all[ik][ieq].knum;
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
@@ -688,9 +715,9 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                     for (ib = 0; ib < ns2; ++ib) {
                         if (std::abs(kappa_tmp[ib].imag()) > eps10) {
                             error->warn("compute_kappa_coherent",
-                                        "The kappa_coherent has imaginary component.");
+                                        "The kappa_coherent_out has imaginary component.");
                         }
-                        kappa_coherent[i][j][k] += kappa_tmp[ib].real();
+                        kappa_coherent_out[i][j][k] += kappa_tmp[ib].real();
                     }
 
                     if (calc_coherent == 2 && j == k) {
@@ -699,7 +726,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                             const int is = ib / ns;
                             const int js = ib % ns;
 
-                            for (auto ik = 0; ik < kpoint->nk_irred; ++ik) {
+                            for (auto ik = 0; ik < nk_irred; ++ik) {
                                 if (is == js) kappa_save[ib][ik] = czero;
 
                                 ofs << std::setw(5) << temperature[i];
@@ -707,9 +734,9 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                                 ofs << std::setw(4) << is + 1;
                                 ofs << std::setw(4) << js + 1;
                                 ofs << std::setw(6) << ik + 1;
-                                const auto knum = kpoint->kpoint_irred_all[ik][0].knum;
-                                const auto omega1 = dynamical->eval_phonon[knum][is];
-                                const auto omega2 = dynamical->eval_phonon[knum][js];
+                                const auto knum = kmesh_in->kpoint_irred_all[ik][0].knum;
+                                const auto omega1 = eval_in[knum][is];
+                                const auto omega2 = eval_in[knum][js];
                                 ofs << std::setw(15) << writes->in_kayser(omega1);
                                 ofs << std::setw(15) << writes->in_kayser(omega2);
                                 ofs << std::setw(15) << kappa_save[ib][ik].real();
@@ -720,7 +747,7 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
                         ofs << '\n';
                     }
                 }
-                kappa_coherent[i][j][k] *= common_factor;
+                kappa_coherent_out[i][j][k] *= common_factor;
             }
         }
     }
@@ -733,8 +760,11 @@ void Conductivity::compute_kappa_coherent(double ***kappa_coherent,
 
 
 void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
-                                                    double ****kappa_mode,
-                                                    const int smearing_method)
+                                                    const int smearing_method,
+                                                    const KpointMeshUniform *kmesh_in,
+                                                    const double * const * eval_in,
+                                                    const double * const * const * const *kappa_mode,
+                                                    double ***kappa_spec_out) const
 {
     int i, j;
     unsigned int *kmap_identity;
@@ -743,7 +773,6 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
     std::cout << std::endl;
     std::cout << " KAPPA_SPEC = 1 : Calculating thermal conductivity spectra ... ";
 
-    allocate(kappa_spec, dos->n_energy, ntemp, 3);
     allocate(kmap_identity, nk);
     allocate(eval, ns, nk);
 
@@ -751,7 +780,7 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
 
     for (i = 0; i < nk; ++i) {
         for (j = 0; j < ns; ++j) {
-            eval[j][i] = writes->in_kayser(dynamical->eval_phonon[i][j]);
+            eval[j][i] = writes->in_kayser(eval_in[i][j]);
         }
     }
 
@@ -772,14 +801,12 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
 
             for (j = 0; j < ntemp; ++j) {
                 for (k = 0; k < 3; ++k) {
-                    kappa_spec[i][j][k] = 0.0;
+                    kappa_spec_out[i][j][k] = 0.0;
                 }
             }
 
             for (int is = 0; is < ns; ++is) {
                 if (smearing_method == -1) {
-//                    integration->calc_weight_tetrahedron(nk, kmap_identity, weight,
-//                                                         eval[is], dos->energy_dos[i]);
                     integration->calc_weight_tetrahedron(nk, kmap_identity,
                                                          eval[is], dos->energy_dos[i],
                                                          dos->tetra_nodes_dos->get_ntetra(),
@@ -793,9 +820,9 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
 
                 for (j = 0; j < ntemp; ++j) {
                     for (k = 0; k < 3; ++k) {
-                        for (int ik = 0; ik < kpoint->nk_irred; ++ik) {
-                            knum = kpoint->kpoint_irred_all[ik][0].knum;
-                            kappa_spec[i][j][k] += kappa_mode[j][3 * k + k][is][ik] * weight[knum];
+                        for (int ik = 0; ik < kmesh_in->nk_irred; ++ik) {
+                            knum = kmesh_in->kpoint_irred_all[ik][0].knum;
+                            kappa_spec_out[i][j][k] += kappa_mode[j][3 * k + k][is][ik] * weight[knum];
                         }
                     }
                 }

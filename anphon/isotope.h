@@ -9,7 +9,9 @@
 */
 
 #include "pointers.h"
+#include "kpoint.h"
 #include <vector>
+#include <complex>
 
 namespace PHON_NS {
     class Isotope : protected Pointers {
@@ -32,15 +34,21 @@ namespace PHON_NS {
 
         void deallocate_variables();
 
-        void calc_isotope_selfenergy(int,
-                                     int,
-                                     double,
-                                     double &) const;
+        void calc_isotope_selfenergy(const unsigned int knum,
+                                     const unsigned int snum,
+                                     const double omega,
+                                     const KpointMeshUniform *kmesh_in,
+                                     const double * const * eval_in,
+                                     const std::complex<double> * const * const * evec_in,
+                                     double &ret) const;
 
-        void calc_isotope_selfenergy_tetra(int,
-                                           int,
-                                           double,
-                                           double &) const;
+        void calc_isotope_selfenergy_tetra(const unsigned int knum,
+                                           const unsigned int snum,
+                                           const double omega,
+                                           const KpointMeshUniform *kmesh_in,
+                                           const double * const * eval_in,
+                                           const std::complex<double> * const * const * evec_in,
+                                           double &ret) const;
 
         void set_isotope_factor_from_database(const int,
                                               const std::string *,
