@@ -17,6 +17,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "kpoint.h"
 #include "mathfunctions.h"
 #include "memory.h"
+#include "phonon_dos.h"
 #include "system.h"
 #include <complex>
 #include <iomanip>
@@ -298,7 +299,7 @@ void PhononVelocity::get_phonon_group_velocity_mesh_mpi(const KpointMeshUniform 
 
 void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const
 {
-    const auto nk = kpoint->nk;
+    const auto nk = dos->kmesh_dos->nk;
     const auto ns = dynamical->neval;
 
     double **vel;
@@ -357,15 +358,17 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
 
     for (auto i = 0; i < nk_loc; ++i) {
         auto knum = klist_proc[i];
-        velocity_matrix_analytic(kpoint->xk[knum],
+        velocity_matrix_analytic(dos->kmesh_dos->xk[knum],
                                  fcs_phonon->fc2_ext,
-                                 dynamical->eval_phonon[knum],
-                                 dynamical->evec_phonon[knum],
+                                 dos->dymat_dos->get_eigenvalues()[knum],
+                                 dos->dymat_dos->get_eigenvectors()[knum],
                                  velmat_loc[i]);
 
         double symmetrizer_k[3][3];
         std::vector<int> smallgroup_k;
-        kpoint->get_small_group_k(kpoint->xk[knum], smallgroup_k, symmetrizer_k);
+        kpoint->get_symmetrization_matrix_at_k(dos->kmesh_dos->xk[knum],
+                                               smallgroup_k,
+                                               symmetrizer_k);
 
         for (auto j = 0; j < ns; ++j) {
             for (auto k = 0; k < ns; ++k) {
@@ -667,7 +670,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 
     double symmetrizer_k[3][3];
 
-    kpoint->get_small_group_k(xk_in, smallgroup_k, symmetrizer_k);
+    kpoint->get_symmetrization_matrix_at_k(xk_in, smallgroup_k, symmetrizer_k);
 
     // std::cout << "symmetrizer_k" << std::endl;
     // for (i = 0; i < 3; ++i) {

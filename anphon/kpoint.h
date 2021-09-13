@@ -134,87 +134,97 @@ namespace PHON_NS {
     };
 
     class KpointGeneral {
-     public:
-      KpointGeneral() {
-          nk = 0;
-          xk = nullptr;
-          kvec_na = nullptr;
-      };
-      KpointGeneral(const unsigned int nk_in,
-                    const double * const *xk_in,
-                    const double * const *kvec_na_in) {
-          nk = nk_in;
-          if (xk) deallocate(xk);
-          if (kvec_na) deallocate(kvec_na);
-          allocate(xk, nk, 3);
-          allocate(kvec_na, nk, 3);
+    public:
+        KpointGeneral()
+        {
+            nk = 0;
+            xk = nullptr;
+            kvec_na = nullptr;
+        };
 
-          for (auto i = 0; i < nk; ++i) {
-              for (auto j = 0; j < 3; ++j) {
-                  xk[i][j] = xk_in[i][j];
-                  kvec_na[i][j] = kvec_na_in[i][j];
-              }
-          }
-      };
-      ~KpointGeneral() {
-          if (xk) {
-              deallocate(xk);
-              xk = nullptr;
-          }
-          if (kvec_na) {
-              deallocate(kvec_na);
-              kvec_na = nullptr;
-          }
-      }
-      unsigned int nk;
-      double **xk;
-      double **kvec_na;
+        KpointGeneral(const unsigned int nk_in,
+                      const double *const *xk_in,
+                      const double *const *kvec_na_in)
+        {
+            nk = nk_in;
+            if (xk) deallocate(xk);
+            if (kvec_na) deallocate(kvec_na);
+            allocate(xk, nk, 3);
+            allocate(kvec_na, nk, 3);
+
+            for (auto i = 0; i < nk; ++i) {
+                for (auto j = 0; j < 3; ++j) {
+                    xk[i][j] = xk_in[i][j];
+                    kvec_na[i][j] = kvec_na_in[i][j];
+                }
+            }
+        };
+
+        ~KpointGeneral()
+        {
+            if (xk) {
+                deallocate(xk);
+                xk = nullptr;
+            }
+            if (kvec_na) {
+                deallocate(kvec_na);
+                kvec_na = nullptr;
+            }
+        }
+
+        unsigned int nk;
+        double **xk = nullptr;
+        double **kvec_na = nullptr;
     };
 
     class KpointMeshUniform {
-     public:
-      KpointMeshUniform() {};
-      KpointMeshUniform(const unsigned int nk_in[3]) {
-          for (auto i = 0; i < 3; ++i) {
-              nk_i[i] = nk_in[i];
-          }
-          nk = nk_i[0] * nk_i[1] * nk_i[2];
-          if (xk) deallocate(xk);
-          if (kvec_na) deallocate(kvec_na);
-          allocate(xk, nk, 3);
-          allocate(kvec_na, nk, 3);
-      };
+    public:
+        KpointMeshUniform() {};
 
-      ~KpointMeshUniform() {
-          if (xk) {
-              deallocate(xk);
-              xk = nullptr;
-          }
-          if (kvec_na) {
-              deallocate(kvec_na);
-              kvec_na = nullptr;
-          }
-      };
+        KpointMeshUniform(const unsigned int nk_in[3])
+        {
+            for (auto i = 0; i < 3; ++i) {
+                nk_i[i] = nk_in[i];
+            }
+            nk = nk_i[0] * nk_i[1] * nk_i[2];
+            if (xk) deallocate(xk);
+            if (kvec_na) deallocate(kvec_na);
+            allocate(xk, nk, 3);
+            allocate(kvec_na, nk, 3);
+        };
 
-      unsigned int nk_i[3];
-      unsigned int nk, nk_irred;
+        ~KpointMeshUniform()
+        {
+            if (xk) {
+                deallocate(xk);
+                xk = nullptr;
+            }
+            if (kvec_na) {
+                deallocate(kvec_na);
+                kvec_na = nullptr;
+            }
+        };
 
-      double **xk = nullptr;
-      double **kvec_na = nullptr;
-      std::vector<double> weight_k;
-      std::vector<unsigned int> kmap_to_irreducible;
-      std::vector<std::vector<KpointList>> kpoint_irred_all;
-      std::vector<std::vector<int>> small_group_of_k;
-      std::vector<unsigned int> kindex_minus_xk;
+        unsigned int nk_i[3];
+        unsigned int nk, nk_irred;
 
-      void setup(const std::vector<SymmetryOperation> &symmlist,
-                 const double rlavec_p[3][3],
-                 const bool time_reversal_symmetry = true);
+        double **xk = nullptr;
+        double **kvec_na = nullptr;
+        std::vector<double> weight_k;
+        std::vector<unsigned int> kmap_to_irreducible;
+        std::vector<std::vector<KpointList>> kpoint_irred_all;
+        std::vector<std::vector<int>> small_group_of_k;
+        std::vector<unsigned int> kindex_minus_xk;
 
-      int get_knum(const double xk[3]) const;
-      int knum_sym(const unsigned int ik, const int rot[3][3]) const;
+        void setup(const std::vector<SymmetryOperation> &symmlist,
+                   const double rlavec_p[3][3],
+                   const bool time_reversal_symmetry = true);
 
-     private:
+        int get_knum(const double xk[3]) const;
+
+        int knum_sym(const unsigned int ik, const int rot[3][3]) const;
+
+    private:
 
         void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
                        const bool usesym,
@@ -226,6 +236,7 @@ namespace PHON_NS {
                             double **xkr);
 
         void gen_nkminus();
+
         void set_small_groups_k_irred(const bool usesym,
                                       const std::vector<SymmetryOperation> &symmlist);
 
@@ -234,57 +245,61 @@ namespace PHON_NS {
                                               const std::vector<SymmetryOperation> &symmlist) const;
 
 
-
     };
 
     class KpointBandStructure {
-     public:
-      KpointBandStructure() {
-          nk = 0;
-          xk = nullptr;
-          kvec_na = nullptr;
-          kaxis = nullptr;
-      };
-      KpointBandStructure(const unsigned int nk_in,
-                          const double * const * xk_in,
-                          const double * const * kvec_na_in,
-                          const double *kaxis_in) {
-          nk = nk_in;
-          if (xk) deallocate(xk);
-          if (kvec_na) deallocate(kvec_na);
-          if (kaxis) deallocate(kaxis);
+    public:
+        KpointBandStructure()
+        {
+            nk = 0;
+            xk = nullptr;
+            kvec_na = nullptr;
+            kaxis = nullptr;
+        };
 
-          allocate(xk, nk, 3);
-          allocate(kvec_na, nk, 3);
-          allocate(kaxis, nk);
+        KpointBandStructure(const unsigned int nk_in,
+                            const double *const *xk_in,
+                            const double *const *kvec_na_in,
+                            const double *kaxis_in)
+        {
+            nk = nk_in;
+            if (xk) deallocate(xk);
+            if (kvec_na) deallocate(kvec_na);
+            if (kaxis) deallocate(kaxis);
 
-          for (auto i = 0; i < nk; ++i) {
-              for (auto j = 0; j < 3; ++j) {
-                  xk[i][j] = xk_in[i][j];
-                  kvec_na[i][j] = kvec_na_in[i][j];
-              }
-              kaxis[i] = kaxis_in[i];
-          }
-      } ;
-      ~KpointBandStructure() {
-          if (xk) {
-              deallocate(xk);
-              xk = nullptr;
-          }
-          if (kvec_na) {
-              deallocate(kvec_na);
-              kvec_na = nullptr;
-          }
-          if (kaxis) {
-              deallocate(kaxis);
-              kaxis = nullptr;
-          }
-      }
+            allocate(xk, nk, 3);
+            allocate(kvec_na, nk, 3);
+            allocate(kaxis, nk);
 
-      unsigned int nk;
-      double **xk = nullptr;
-      double **kvec_na = nullptr;
-      double *kaxis = nullptr;
+            for (auto i = 0; i < nk; ++i) {
+                for (auto j = 0; j < 3; ++j) {
+                    xk[i][j] = xk_in[i][j];
+                    kvec_na[i][j] = kvec_na_in[i][j];
+                }
+                kaxis[i] = kaxis_in[i];
+            }
+        };
+
+        ~KpointBandStructure()
+        {
+            if (xk) {
+                deallocate(xk);
+                xk = nullptr;
+            }
+            if (kvec_na) {
+                deallocate(kvec_na);
+                kvec_na = nullptr;
+            }
+            if (kaxis) {
+                deallocate(kaxis);
+                kaxis = nullptr;
+            }
+        }
+
+        unsigned int nk;
+        double **xk = nullptr;
+        double **kvec_na = nullptr;
+        double *kaxis = nullptr;
     };
 
     class Kpoint : protected Pointers {
@@ -332,9 +347,9 @@ namespace PHON_NS {
                        double **,
                        std::vector<std::vector<KpointList>> &) const;
 
-        void get_small_group_k(const double *,
-                               std::vector<int> &,
-                               double [3][3]) const;
+        void get_symmetrization_matrix_at_k(const double *xk_in,
+                                            std::vector<int> &sym_list,
+                                            double S_avg[3][3]) const;
 
         int knum_sym(int,
                      int) const;

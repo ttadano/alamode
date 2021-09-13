@@ -89,7 +89,7 @@ void Conductivity::setup_kappa()
 
     unsigned int i, j, k;
 
-    nk = kpoint->nk;
+    nk = dos->kmesh_dos->nk;
     ns = dynamical->neval;
 
     ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
@@ -99,7 +99,7 @@ void Conductivity::setup_kappa()
         Temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
     }
 
-    const auto nks_total = kpoint->nk_irred * ns;
+    const auto nks_total = dos->kmesh_dos->nk_irred * ns;
     const auto nks_each_thread = nks_total / mympi->nprocs;
     const auto nrem = nks_total - nks_each_thread * mympi->nprocs;
 
@@ -144,7 +144,7 @@ void Conductivity::setup_kappa()
 
     vks_job.clear();
 
-    for (i = 0; i < kpoint->nk_irred; ++i) {
+    for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
         for (j = 0; j < ns; ++j) {
             vks_job.insert(i * ns + j);
         }
@@ -174,11 +174,11 @@ void Conductivity::prepare_restart()
             writes->fs_result << "##Phonon Frequency" << std::endl;
             writes->fs_result << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
 
-            for (i = 0; i < kpoint->nk_irred; ++i) {
-                const int ik = kpoint->kpoint_irred_all[i][0].knum;
+            for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
+                const auto ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
                 for (auto is = 0; is < dynamical->neval; ++is) {
                     writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                    writes->fs_result << std::setw(15) << writes->in_kayser(dynamical->eval_phonon[ik][is]) << std::
+                    writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is]) << std::
                     endl;
                 }
             }

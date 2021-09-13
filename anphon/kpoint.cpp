@@ -107,12 +107,12 @@ void Kpoint::kpoint_setups(const std::string mode)
             setup_kpoint_given(kpInp, system->rlavec_p);
 
             if (mympi->my_rank == 0) {
-                std::cout << "  Number of k points : " << nk << std::endl << std::endl;
+                std::cout << "  Number of k points : " << kpoint->kpoint_general->nk << std::endl << std::endl;
                 std::cout << "  List of k points : " << std::endl;
-                for (i = 0; i < nk; ++i) {
+                for (i = 0; i < kpoint->kpoint_general->nk; ++i) {
                     std::cout << std::setw(5) << i + 1 << ":";
                     for (j = 0; j < 3; ++j) {
-                        std::cout << std::setw(15) << xk[i][j];
+                        std::cout << std::setw(15) << kpoint->kpoint_general->xk[i][j];
                     }
                     std::cout << std::endl;
                 }
@@ -325,15 +325,6 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
     MPI_Bcast(&kdirec[0][0], 3 * n, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     kpoint_general = new KpointGeneral(n, k, kdirec);
-//    kpoint_out.nk = n;
-//    kpoint_out.xk.resize(n, std::vector<double>(3));
-//    kpoint_out.kvec_na.resize(n, std::vector<double>(3));
-//    for (i = 0; i < n; ++i) {
-//        for (auto j = 0; j < 3; ++j) {
-//            kpoint_out.xk[i][j] = k[i][j];
-//            kpoint_out.kvec_na[i][j] = kdirec[i][j];
-//        }
-//    }
 
     deallocate(k);
     deallocate(kdirec);
@@ -1454,9 +1445,9 @@ std::vector<int> Kpoint::get_small_group_of_k(const int ik) const
     return small_group;
 }
 
-void Kpoint::get_small_group_k(const double *xk_in,
-                               std::vector<int> &sym_list,
-                               double S_avg[3][3]) const
+void Kpoint::get_symmetrization_matrix_at_k(const double *xk_in,
+                                            std::vector<int> &sym_list,
+                                            double S_avg[3][3]) const
 {
     int i, j;
     double srot[3][3];

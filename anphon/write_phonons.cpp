@@ -449,15 +449,18 @@ void Writes::setWriteOptions(const bool print_msd_,
     }
 }
 
-bool Writes::getPrintMSD() const {
+bool Writes::getPrintMSD() const
+{
     return print_msd;
 }
 
-bool Writes::getPrintUcorr() const {
+bool Writes::getPrintUcorr() const
+{
     return print_ucorr;
 }
 
-std::array<int, 3> Writes::getShiftUcorr() const {
+std::array<int, 3> Writes::getShiftUcorr() const
+{
     return {shift_ucorr[0], shift_ucorr[1], shift_ucorr[2]};
 }
 
@@ -509,30 +512,30 @@ void Writes::print_phonon_energy() const
 
         auto nk = kpoint->kpoint_bs->nk;
 
-    for (ik = 0; ik < nk; ++ik) {
-        std::cout << " # k point " << std::setw(5) << ik + 1;
-        std::cout << " : (";
+        for (ik = 0; ik < nk; ++ik) {
+            std::cout << " # k point " << std::setw(5) << ik + 1;
+            std::cout << " : (";
 
-        for (i = 0; i < 3; ++i) {
-            std::cout << std::fixed << std::setprecision(4)
-            << std::setw(8) << kpoint->kpoint_bs->xk[ik][i];
-            if (i < 2) std::cout << ",";
+            for (i = 0; i < 3; ++i) {
+                std::cout << std::fixed << std::setprecision(4)
+                          << std::setw(8) << kpoint->kpoint_bs->xk[ik][i];
+                if (i < 2) std::cout << ",";
+            }
+            std::cout << ")" << std::endl;
+
+            std::cout << "   Mode, Frequency " << std::endl;
+
+            for (is = 0; is < ns; ++is) {
+                std::cout << std::setw(7) << is + 1;
+                std::cout << std::fixed << std::setprecision(4) << std::setw(12)
+                          << in_kayser(dynamical->dymat_band->get_eigenvalues()[ik][is]);
+                std::cout << " cm^-1  (";
+                std::cout << std::fixed << std::setprecision(4) << std::setw(12)
+                          << kayser_to_THz * in_kayser(dynamical->dymat_band->get_eigenvalues()[ik][is]);
+                std::cout << " THz )" << std::endl;
+            }
+            std::cout << std::endl;
         }
-        std::cout << ")" << std::endl;
-
-        std::cout << "   Mode, Frequency " << std::endl;
-
-        for (is = 0; is < ns; ++is) {
-            std::cout << std::setw(7) << is + 1;
-            std::cout << std::fixed << std::setprecision(4) << std::setw(12)
-            << in_kayser(dynamical->dymat_band->get_eigenvalues()[ik][is]);
-            std::cout << " cm^-1  (";
-            std::cout << std::fixed << std::setprecision(4) << std::setw(12)
-            << kayser_to_THz * in_kayser(dynamical->dymat_band->get_eigenvalues()[ik][is]);
-            std::cout << " THz )" << std::endl;
-        }
-        std::cout << std::endl;
-    }
 
     } else if (kpoint->kpoint_mode == 2) {
 
@@ -837,8 +840,8 @@ void Writes::write_phonon_vel_all() const
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
             phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
-                                            + std::pow(phvel_xyz[ik][is][1], 2)
-                                            + std::pow(phvel_xyz[ik][is][2], 2));
+                                      + std::pow(phvel_xyz[ik][is][1], 2)
+                                      + std::pow(phvel_xyz[ik][is][2], 2));
         }
     }
 
@@ -1074,18 +1077,44 @@ void Writes::write_scattering_amplitude() const
 
 void Writes::write_normal_mode_direction() const
 {
-    std::ofstream ofs_anime;
-    auto file_anime = input->job_title + ".axsf";
+    std::string fname_axsf;
 
-    ofs_anime.open(file_anime.c_str(), std::ios::out);
-    if (!ofs_anime) error->exit("write_mode_anime", "cannot open file_anime");
+    if (kpoint->kpoint_general && dynamical->dymat_general) {
+        fname_axsf = input->job_title + ".axsf";
+        write_normal_mode_direction_each(fname_axsf,
+                                         kpoint->kpoint_general->nk,
+                                         dynamical->dymat_general->get_eigenvectors());
+    }
+
+    if (kpoint->kpoint_bs && dynamical->dymat_band) {
+        fname_axsf = input->job_title + ".band.axsf";
+        write_normal_mode_direction_each(fname_axsf,
+                                         kpoint->kpoint_bs->nk,
+                                         dynamical->dymat_band->get_eigenvectors());
+    }
+
+    if (dos->kmesh_dos && dos->dymat_dos) {
+        fname_axsf = input->job_title + ".mesh.axsf";
+        write_normal_mode_direction_each(fname_axsf,
+                                         dos->kmesh_dos->nk,
+                                         dos->dymat_dos->get_eigenvectors());
+    }
+
+}
+
+void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
+                                              const unsigned int nk_in,
+                                              const std::complex<double> *const *const *evec_in) const
+{
+    std::ofstream ofs_anime;
+
+    ofs_anime.open(fname_axsf.c_str(), std::ios::out);
+    if (!ofs_anime) error->exit("write_mode_anime", "cannot open fname_axsf");
 
     ofs_anime.setf(std::ios::scientific);
 
     unsigned int i, j, k;
     const auto natmin = system->natmin;
-    const auto nk = kpoint->nk;
-
     const auto force_factor = 100.0;
 
     double **xmod;
@@ -1094,7 +1123,7 @@ void Writes::write_normal_mode_direction() const
     allocate(xmod, natmin, 3);
     allocate(kd_tmp, natmin);
 
-    ofs_anime << "ANIMSTEPS " << nbands * nk << std::endl;
+    ofs_anime << "ANIMSTEPS " << nbands * nk_in << std::endl;
     ofs_anime << "CRYSTAL" << std::endl;
     ofs_anime << "PRIMVEC" << std::endl;
 
@@ -1119,14 +1148,14 @@ void Writes::write_normal_mode_direction() const
 
     i = 0;
 
-    for (unsigned int ik = 0; ik < nk; ++ik) {
+    for (unsigned int ik = 0; ik < nk_in; ++ik) {
         for (unsigned int imode = 0; imode < nbands; ++imode) {
             ofs_anime << "PRIMCOORD " << std::setw(10) << i + 1 << std::endl;
             ofs_anime << std::setw(10) << natmin << std::setw(10) << 1 << std::endl;
             auto norm = 0.0;
 
             for (j = 0; j < 3 * natmin; ++j) {
-                auto evec_tmp = dynamical->evec_phonon[ik][imode][j];
+                auto evec_tmp = evec_in[ik][imode][j];
                 norm += std::pow(evec_tmp.real(), 2) + std::pow(evec_tmp.imag(), 2);
             }
 
@@ -1143,7 +1172,7 @@ void Writes::write_normal_mode_direction() const
                 }
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
-                              << dynamical->evec_phonon[ik][imode][3 * j + k].real()
+                              << evec_in[ik][imode][3 * j + k].real()
                                  / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
@@ -1157,19 +1186,55 @@ void Writes::write_normal_mode_direction() const
     deallocate(kd_tmp);
 
     ofs_anime.close();
-    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_anime;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << fname_axsf;
     std::cout << " : XcrysDen AXSF file to visualize phonon mode directions" << std::endl;
 }
 
 void Writes::write_eigenvectors() const
 {
+    std::string fname_evec;
+
+
+    if (kpoint->kpoint_general && dynamical->dymat_general) {
+        fname_evec = input->job_title + ".evec";
+        write_eigenvectors_each(fname_evec,
+                                kpoint->kpoint_general->nk,
+                                kpoint->kpoint_general->xk,
+                                dynamical->dymat_general->get_eigenvalues(),
+                                dynamical->dymat_general->get_eigenvectors());
+    }
+
+    if (kpoint->kpoint_bs && dynamical->dymat_band) {
+        fname_evec = input->job_title + ".band.evec";
+        write_eigenvectors_each(fname_evec,
+                                kpoint->kpoint_bs->nk,
+                                kpoint->kpoint_bs->xk,
+                                dynamical->dymat_band->get_eigenvalues(),
+                                dynamical->dymat_band->get_eigenvectors());
+    }
+
+    if (dos->kmesh_dos && dos->dymat_dos) {
+        fname_evec = input->job_title + ".mesh.evec";
+        write_eigenvectors_each(fname_evec,
+                                dos->kmesh_dos->nk,
+                                dos->kmesh_dos->xk,
+                                dos->dymat_dos->get_eigenvalues(),
+                                dos->dymat_dos->get_eigenvectors());
+    }
+}
+
+
+void Writes::write_eigenvectors_each(const std::string &fname_evec,
+                                     const unsigned int nk_in,
+                                     const double *const *xk_in,
+                                     const double *const *eval_in,
+                                     const std::complex<double> *const *const *evec_in) const
+{
     unsigned int i, j, k;
-    const auto nk = kpoint->nk;
     const auto neval = dynamical->neval;
     std::ofstream ofs_evec;
-    auto file_evec = input->job_title + ".evec";
 
-    ofs_evec.open(file_evec.c_str(), std::ios::out);
+    ofs_evec.open(fname_evec.c_str(), std::ios::out);
     if (!ofs_evec) error->exit("write_eigenvectors", "cannot open file_evec");
     ofs_evec.setf(std::ios::scientific);
 
@@ -1194,7 +1259,7 @@ void Writes::write_eigenvectors() const
 
     ofs_evec << std::endl;
     ofs_evec << "# Number of phonon modes: " << std::setw(10) << nbands << std::endl;
-    ofs_evec << "# Number of k points : " << std::setw(10) << nk << std::endl;
+    ofs_evec << "# Number of k points : " << std::setw(10) << nk_in << std::endl;
     ofs_evec << "# Number of atomic kinds : " << std::setw(4) << system->nkd << '\n';
     ofs_evec << "# Atomic masses :";
     for (i = 0; i < system->nkd; ++i) {
@@ -1204,33 +1269,33 @@ void Writes::write_eigenvectors() const
     ofs_evec << "# Eigenvalues and eigenvectors for each phonon modes below:" << std::endl << std::endl;
 
     unsigned int **index_bconnect_tmp;
-    allocate(index_bconnect_tmp, nk, nbands);
+    allocate(index_bconnect_tmp, nk_in, nbands);
 
     if (dynamical->index_bconnect) {
-        for (i = 0; i < nk; ++i) {
+        for (i = 0; i < nk_in; ++i) {
             for (j = 0; j < nbands; ++j) {
                 index_bconnect_tmp[i][j] = dynamical->index_bconnect[i][j];
             }
         }
     } else {
-        for (i = 0; i < nk; ++i) {
+        for (i = 0; i < nk_in; ++i) {
             for (j = 0; j < nbands; ++j) {
                 index_bconnect_tmp[i][j] = j;
             }
         }
     }
 
-    for (i = 0; i < nk; ++i) {
+    for (i = 0; i < nk_in; ++i) {
         ofs_evec << "## kpoint " << std::setw(7) << i + 1 << " : ";
         for (j = 0; j < 3; ++j) {
-            ofs_evec << std::setw(15) << kpoint->xk[i][j];
+            ofs_evec << std::setw(15) << xk_in[i][j];
         }
         ofs_evec << std::endl;
         for (j = 0; j < nbands; ++j) {
 
             k = index_bconnect_tmp[i][j];
 
-            auto omega2 = dynamical->eval_phonon[i][k];
+            auto omega2 = eval_in[i][k];
             if (omega2 >= 0.0) {
                 omega2 = omega2 * omega2;
             } else {
@@ -1241,8 +1306,8 @@ void Writes::write_eigenvectors() const
             ofs_evec << std::setw(15) << omega2 << std::endl;
 
             for (unsigned int m = 0; m < neval; ++m) {
-                ofs_evec << std::setw(15) << real(dynamical->evec_phonon[i][k][m]);
-                ofs_evec << std::setw(15) << imag(dynamical->evec_phonon[i][k][m]) << std::endl;
+                ofs_evec << std::setw(15) << real(evec_in[i][k][m]);
+                ofs_evec << std::setw(15) << imag(evec_in[i][k][m]) << std::endl;
             }
             ofs_evec << std::endl;
         }
@@ -1252,22 +1317,58 @@ void Writes::write_eigenvectors() const
 
     deallocate(index_bconnect_tmp);
 
-    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_evec;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << fname_evec;
     std::cout << " : Eigenvector of all k points" << std::endl;
 }
 
 #ifdef _HDF5
 void Writes::write_eigenvectors_HDF5() const
 {
+    std::string fname_evec;
+
+
+    if (kpoint->kpoint_general && dynamical->dymat_general) {
+        fname_evec = input->job_title + ".evec.hdf5";
+        write_eigenvectors_each_HDF5(fname_evec,
+                                     kpoint->kpoint_general->nk,
+                                     kpoint->kpoint_general->xk,
+                                     dynamical->dymat_general->get_eigenvalues(),
+                                     dynamical->dymat_general->get_eigenvectors(), 0);
+    }
+
+    if (kpoint->kpoint_bs && dynamical->dymat_band) {
+        fname_evec = input->job_title + ".band.evec.hdf5";
+        write_eigenvectors_each_HDF5(fname_evec,
+                                     kpoint->kpoint_bs->nk,
+                                     kpoint->kpoint_bs->xk,
+                                     dynamical->dymat_band->get_eigenvalues(),
+                                     dynamical->dymat_band->get_eigenvectors(), 1);
+    }
+
+    if (dos->kmesh_dos && dos->dymat_dos) {
+        fname_evec = input->job_title + ".mesh.evec.hdf5";
+        write_eigenvectors_each_HDF5(fname_evec,
+                                     dos->kmesh_dos->nk,
+                                     dos->kmesh_dos->xk,
+                                     dos->dymat_dos->get_eigenvalues(),
+                                     dos->dymat_dos->get_eigenvectors(), 2);
+    }
+}
+
+void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
+                                          const unsigned int nk_in,
+                                          const double *const *xk_in,
+                                          const double *const *eval_in,
+                                          const std::complex<double> *const *const *evec_in,
+                                          const unsigned int kpmode_in) const
+{
     using namespace H5;
 
     unsigned int i, j, k;
-    const auto nk = kpoint->nk;
     const auto neval = dynamical->neval;
     std::ofstream ofs_evec;
-    auto file_evec = input->job_title + ".evec.hdf5";
 
-    H5File file(file_evec, H5F_ACC_TRUNC);
+    H5File file(fname_evec, H5F_ACC_TRUNC);
     Group group_cell(file.createGroup("/PrimitiveCell"));
     Group group_band(file.createGroup("/Eigenvalues"));
     Group group_kpoint(file.createGroup("/Kpoints"));
@@ -1282,8 +1383,8 @@ void Writes::write_eigenvectors_HDF5() const
     hsize_t str_dim[1]{arr_c_str.size()};
     DataSpace *dataspace = new DataSpace(1, str_dim);
     DataSet *dataset = new DataSet(group_cell.createDataSet("elements",
-                                                               str_datatype,
-                                                               *dataspace));
+                                                            str_datatype,
+                                                            *dataspace));
     dataset->write(&arr_c_str[0], str_datatype);
     dataset->close();
     dataspace->close();
@@ -1294,8 +1395,8 @@ void Writes::write_eigenvectors_HDF5() const
     }
     dataspace = new DataSpace(1, str_dim);
     dataset = new DataSet(group_cell.createDataSet("masses",
-                                                      PredType::NATIVE_DOUBLE,
-                                                      *dataspace));
+                                                   PredType::NATIVE_DOUBLE,
+                                                   *dataspace));
     dataset->write(&mass_tmp[0], PredType::NATIVE_DOUBLE);
     dataset->close();
     dataspace->close();
@@ -1318,8 +1419,8 @@ void Writes::write_eigenvectors_HDF5() const
     dataset->write(lavec_tmp, PredType::NATIVE_DOUBLE);
     DataSpace attr_dataspace_str(H5S_SCALAR);
     Attribute myatt_in = dataset->createAttribute("unit",
-                                        str_datatype,
-                                        attr_dataspace_str);
+                                                  str_datatype,
+                                                  attr_dataspace_str);
     myatt_in.write(str_datatype, std::string("bohr"));
     myatt_in.close();
     dataset->close();
@@ -1366,17 +1467,17 @@ void Writes::write_eigenvectors_HDF5() const
 
     unsigned int **index_bconnect_tmp;
     int band_index_reordered = 0;
-    allocate(index_bconnect_tmp, nk, nbands);
+    allocate(index_bconnect_tmp, nk_in, nbands);
 
     if (dynamical->index_bconnect) {
         band_index_reordered = 1;
-        for (i = 0; i < nk; ++i) {
+        for (i = 0; i < nk_in; ++i) {
             for (j = 0; j < nbands; ++j) {
                 index_bconnect_tmp[i][j] = dynamical->index_bconnect[i][j];
             }
         }
     } else {
-        for (i = 0; i < nk; ++i) {
+        for (i = 0; i < nk_in; ++i) {
             for (j = 0; j < nbands; ++j) {
                 index_bconnect_tmp[i][j] = j;
             }
@@ -1384,28 +1485,28 @@ void Writes::write_eigenvectors_HDF5() const
     }
 
     // Write band structure information
-    dims[0] = nk;
+    dims[0] = nk_in;
     dims[1] = nbands;
 
     hsize_t dims_evec[4];
-    dims_evec[0] = nk;
+    dims_evec[0] = nk_in;
     dims_evec[1] = nbands;
     dims_evec[2] = neval;
     dims_evec[3] = 2;
 
     double **freq_kayser;
     double ****evec_tmp;
-    allocate(freq_kayser, nk, nbands);
-    allocate(evec_tmp, nk, nbands, neval, 2);
+    allocate(freq_kayser, nk_in, nbands);
+    allocate(evec_tmp, nk_in, nbands, neval, 2);
 
-    for (i = 0; i < nk; ++i) {
+    for (i = 0; i < nk_in; ++i) {
         for (j = 0; j < nbands; ++j) {
             k = index_bconnect_tmp[i][j];
-            freq_kayser[i][j] = in_kayser(dynamical->eval_phonon[i][k]);
+            freq_kayser[i][j] = in_kayser(eval_in[i][k]);
 
             for (unsigned int m = 0; m < neval; ++m) {
-                evec_tmp[i][j][m][0] = dynamical->evec_phonon[i][k][m].real();
-                evec_tmp[i][j][m][1] = dynamical->evec_phonon[i][k][m].imag();
+                evec_tmp[i][j][m][0] = evec_in[i][k][m].real();
+                evec_tmp[i][j][m][1] = evec_in[i][k][m].imag();
             }
         }
     }
@@ -1417,8 +1518,8 @@ void Writes::write_eigenvectors_HDF5() const
     IntType int_type(PredType::NATIVE_INT);
     DataSpace attr_dataspace_int(H5S_SCALAR);
     myatt_in = dataset->createAttribute("band_index_reordered",
-                                                  int_type,
-                                                  attr_dataspace_int);
+                                        int_type,
+                                        attr_dataspace_int);
     myatt_in.write(int_type, &band_index_reordered);
     myatt_in = dataset->createAttribute("unit",
                                         str_datatype,
@@ -1445,38 +1546,36 @@ void Writes::write_eigenvectors_HDF5() const
     group_band.close();
 
 
-    const auto kaxis = kpoint->kaxis;
-    auto kpmode = kpoint->kpoint_mode;
-
-    dims[0] = nk;
+    dims[0] = nk_in;
     dims[1] = 3;
     std::vector<double> xk_1D(dims[0] * dims[1]);
     counter = 0;
 
-    for (i = 0; i < nk; ++i) {
+    for (i = 0; i < nk_in; ++i) {
         for (j = 0; j < 3; ++j) {
-            xk_1D[counter++] = kpoint->xk[i][j];
+            xk_1D[counter++] = xk_in[i][j];
         }
     }
     dataspace = new DataSpace(2, dims);
     dataset = new DataSet(group_kpoint.createDataSet("kpoint_coordinates",
-                                                   PredType::NATIVE_DOUBLE,
-                                                   *dataspace));
+                                                     PredType::NATIVE_DOUBLE,
+                                                     *dataspace));
 
     myatt_in = dataset->createAttribute("kpoint_mode",
                                         int_type,
                                         attr_dataspace_int);
-    myatt_in.write(int_type, &kpmode);
+    myatt_in.write(int_type, &kpmode_in);
     dataset->write(&xk_1D[0], PredType::NATIVE_DOUBLE);
     myatt_in.close();
     dataset->close();
     dataspace->close();
 
-    if (kpmode == 1 && kaxis) {
-        dims2[0] = nk;
+    if (kpmode_in == 1 && kpoint->kpoint_bs) {
+        const auto kaxis = kpoint->kpoint_bs->kaxis;
+        dims2[0] = nk_in;
         dataspace = new DataSpace(1, dims2);
         dataset = new DataSet(group_kpoint.createDataSet("bandstructure_xaxis",
-                PredType::NATIVE_DOUBLE, *dataspace));
+                                                         PredType::NATIVE_DOUBLE, *dataspace));
         dataset->write(&kaxis[0], PredType::NATIVE_DOUBLE);
         dataset->close();
         dataspace->close();
@@ -1596,7 +1695,8 @@ void Writes::write_gruneisen()
             for (unsigned int i = 0; i < nk; ++i) {
                 ofs_gruneisen << std::setw(8) << kaxis[i];
                 for (unsigned int j = 0; j < nbands; ++j) {
-                    ofs_gruneisen << std::setw(15) << gruneisen->gruneisen_bs[i][dynamical->index_bconnect[i][j]].real();
+                    ofs_gruneisen << std::setw(15)
+                                  << gruneisen->gruneisen_bs[i][dynamical->index_bconnect[i][j]].real();
                 }
                 ofs_gruneisen << std::endl;
             }
@@ -2349,145 +2449,216 @@ void Writes::print_normalmode_borncharge() const
 
 void Writes::write_participation_ratio() const
 {
+    std::string fname_pr, fname_apr;
+
+    if (kpoint->kpoint_general && dynamical->dymat_general) {
+        fname_pr = input->job_title + ".pr";
+        fname_apr = input->job_title + ".apr";
+        write_participation_ratio_each(fname_pr, fname_apr,
+                                       kpoint->kpoint_general->nk,
+                                       kpoint->kpoint_general->xk,
+                                       dynamical->dymat_general->get_eigenvalues(),
+                                       dynamical->dymat_general->get_eigenvectors());
+    }
+
+    if (kpoint->kpoint_bs && dynamical->dymat_band) {
+        fname_pr = input->job_title + ".band.pr";
+        fname_apr = input->job_title + ".band.apr";
+        write_participation_ratio_each(fname_pr, fname_apr,
+                                       kpoint->kpoint_bs->nk,
+                                       kpoint->kpoint_bs->xk,
+                                       dynamical->dymat_band->get_eigenvalues(),
+                                       dynamical->dymat_band->get_eigenvectors());
+    }
+
+    if (dos->kmesh_dos && dos->dymat_dos) {
+        fname_pr = input->job_title + ".mesh.pr";
+        fname_apr = input->job_title + ".mesh.apr";
+        write_participation_ratio_mesh(fname_pr, fname_apr,
+                                       dos->kmesh_dos,
+                                       dos->dymat_dos->get_eigenvalues(),
+                                       dos->dymat_dos->get_eigenvectors());
+    }
+}
+
+void Writes::write_participation_ratio_each(const std::string &fname_pr,
+                                            const std::string &fname_apr,
+                                            const unsigned int nk_in,
+                                            const double *const *xk_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in) const
+{
     unsigned int i, j, k;
     unsigned int knum;
-    const auto nk = kpoint->nk;
     const auto neval = dynamical->neval;
     const auto natmin = system->natmin;
 
-    double **participation_ratio;
-    double ***atomic_participation_ratio;
+    double **participation_ratio = nullptr;
+    double ***atomic_participation_ratio = nullptr;
 
     std::ofstream ofs_pr, ofs_apr;
-    auto file_pr = input->job_title + ".pr";
-    auto file_apr = input->job_title + ".apr";
 
-    ofs_pr.open(file_pr.c_str(), std::ios::out);
+    ofs_pr.open(fname_pr.c_str(), std::ios::out);
     if (!ofs_pr)
         error->exit("write_participation_ratio",
                     "cannot open file_pr");
-
     ofs_pr.setf(std::ios::scientific);
 
-    ofs_apr.open(file_apr.c_str(), std::ios::out);
+    ofs_apr.open(fname_apr.c_str(), std::ios::out);
     if (!ofs_apr)
         error->exit("write_participation_ratio",
                     "cannot open file_apr");
+    ofs_apr.setf(std::ios::scientific);
 
+    allocate(participation_ratio, nk_in, neval);
+    allocate(atomic_participation_ratio, nk_in, neval, natmin);
+
+    dynamical->calc_participation_ratio_all(nk_in, evec_in,
+                                            participation_ratio,
+                                            atomic_participation_ratio);
+
+    ofs_pr << "# Participation ratio of each phonon modes at k points" << std::endl;
+    ofs_pr << "# kpoint, mode, PR[kpoint][mode]" << std::endl;
+
+    for (i = 0; i < nk_in; ++i) {
+        ofs_pr << "#" << std::setw(8) << i + 1;
+        ofs_pr << " xk = ";
+        for (j = 0; j < 3; ++j) {
+            ofs_pr << std::setw(15) << xk_in[i][j];
+        }
+        ofs_pr << std::endl;
+        for (j = 0; j < nbands; ++j) {
+            ofs_pr << std::setw(8) << i + 1;
+            ofs_pr << std::setw(5) << j + 1;
+            ofs_pr << std::setw(15) << participation_ratio[i][j];
+            ofs_pr << std::endl;
+        }
+        ofs_pr << std::endl;
+    }
+    ofs_pr.close();
+
+    ofs_apr << "# Atomic participation ratio of each phonon modes at k points" << std::endl;
+    ofs_apr << "# kpoint, mode, atom, APR[kpoint][mode][atom]" << std::endl;
+
+    for (i = 0; i < nk_in; ++i) {
+        ofs_apr << "#" << std::setw(8) << i + 1;
+        ofs_apr << " xk = ";
+        for (j = 0; j < 3; ++j) {
+            ofs_apr << std::setw(15) << xk_in[i][j];
+        }
+        ofs_apr << std::endl;
+        for (j = 0; j < nbands; ++j) {
+            for (k = 0; k < natmin; ++k) {
+                ofs_apr << std::setw(8) << i + 1;
+                ofs_apr << std::setw(5) << j + 1;
+                ofs_apr << std::setw(5) << k + 1;
+                ofs_apr << std::setw(15) << atomic_participation_ratio[i][j][k];
+                ofs_apr << std::endl;
+            }
+        }
+        ofs_apr << std::endl;
+    }
+    ofs_apr.close();
+
+    deallocate(participation_ratio);
+    deallocate(atomic_participation_ratio);
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << fname_pr;
+    std::cout << " : Participation ratio for all k points" << std::endl;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << fname_apr;
+    std::cout << " : Atomic participation ratio for all k points" << std::endl;
+}
+
+void Writes::write_participation_ratio_mesh(const std::string &fname_pr,
+                                            const std::string &fname_apr,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in) const
+{
+    unsigned int i, j, k;
+    unsigned int knum;
+    const auto neval = dynamical->neval;
+    const auto natmin = system->natmin;
+    const auto nk = kmesh_in->nk;
+
+    double **participation_ratio = nullptr;
+    double ***atomic_participation_ratio = nullptr;
+
+    std::ofstream ofs_pr, ofs_apr;
+
+    ofs_pr.open(fname_pr.c_str(), std::ios::out);
+    if (!ofs_pr)
+        error->exit("write_participation_ratio",
+                    "cannot open file_pr");
+    ofs_pr.setf(std::ios::scientific);
+
+    ofs_apr.open(fname_apr.c_str(), std::ios::out);
+    if (!ofs_apr)
+        error->exit("write_participation_ratio",
+                    "cannot open file_apr");
     ofs_apr.setf(std::ios::scientific);
 
     allocate(participation_ratio, nk, neval);
     allocate(atomic_participation_ratio, nk, neval, natmin);
 
-    dynamical->calc_participation_ratio_all(dynamical->evec_phonon,
+    dynamical->calc_participation_ratio_all(nk, evec_in,
                                             participation_ratio,
                                             atomic_participation_ratio);
 
     ofs_pr << "# Participation ratio of each phonon modes at k points" << std::endl;
+    ofs_pr << "# irred. kpoint, mode, frequency[kpoint][mode] (cm^-1), PR[kpoint][mode]" << std::endl;
 
-    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
-
-        ofs_pr << "# kpoint, mode, PR[kpoint][mode]" << std::endl;
-
-        for (i = 0; i < nk; ++i) {
-            ofs_pr << "#" << std::setw(8) << i + 1;
-            ofs_pr << " xk = ";
-            for (j = 0; j < 3; ++j) {
-                ofs_pr << std::setw(15) << kpoint->xk[i][j];
-            }
-            ofs_pr << std::endl;
-            for (j = 0; j < nbands; ++j) {
-                ofs_pr << std::setw(8) << i + 1;
-                ofs_pr << std::setw(5) << j + 1;
-                ofs_pr << std::setw(15) << participation_ratio[i][j];
-                ofs_pr << std::endl;
-            }
+    for (i = 0; i < kmesh_in->nk_irred; ++i) {
+        knum = kmesh_in->kpoint_irred_all[i][0].knum;
+        ofs_pr << "#" << std::setw(8) << i + 1;
+        ofs_pr << " xk = ";
+        for (j = 0; j < 3; ++j) {
+            ofs_pr << std::setw(15) << kmesh_in->xk[knum][j];
+        }
+        ofs_pr << std::endl;
+        for (j = 0; j < nbands; ++j) {
+            ofs_pr << std::setw(8) << i + 1;
+            ofs_pr << std::setw(5) << j + 1;
+            ofs_pr << std::setw(15) << in_kayser(eval_in[knum][j]);
+            ofs_pr << std::setw(15) << participation_ratio[knum][j];
             ofs_pr << std::endl;
         }
-
-    } else if (kpoint->kpoint_mode == 2) {
-
-        ofs_pr << "# irred. kpoint, mode, frequency[kpoint][mode] (cm^-1), PR[kpoint][mode]" << std::endl;
-
-        for (i = 0; i < kpoint->nk_irred; ++i) {
-            knum = kpoint->kpoint_irred_all[i][0].knum;
-            ofs_pr << "#" << std::setw(8) << i + 1;
-            ofs_pr << " xk = ";
-            for (j = 0; j < 3; ++j) {
-                ofs_pr << std::setw(15) << kpoint->xk[knum][j];
-            }
-            ofs_pr << std::endl;
-            for (j = 0; j < nbands; ++j) {
-                ofs_pr << std::setw(8) << i + 1;
-                ofs_pr << std::setw(5) << j + 1;
-                ofs_pr << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][j]);
-                ofs_pr << std::setw(15) << participation_ratio[knum][j];
-                ofs_pr << std::endl;
-            }
-            ofs_pr << std::endl;
-        }
+        ofs_pr << std::endl;
     }
-
     ofs_pr.close();
 
     ofs_apr << "# Atomic participation ratio of each phonon modes at k points" << std::endl;
+    ofs_apr << "# irred. kpoint, mode, atom, frequency[kpoint][mode] (cm^-1), APR[kpoint][mode][atom]" << std::endl;
 
-    if (kpoint->kpoint_mode == 0 || kpoint->kpoint_mode == 1) {
+    for (i = 0; i < kmesh_in->nk_irred; ++i) {
+        knum = kmesh_in->kpoint_irred_all[i][0].knum;
 
-        ofs_apr << "# kpoint, mode, atom, APR[kpoint][mode][atom]" << std::endl;
-
-        for (i = 0; i < nk; ++i) {
-            ofs_apr << "#" << std::setw(8) << i + 1;
-            ofs_apr << " xk = ";
-            for (j = 0; j < 3; ++j) {
-                ofs_apr << std::setw(15) << kpoint->xk[i][j];
-            }
-            ofs_apr << std::endl;
-            for (j = 0; j < nbands; ++j) {
-                for (k = 0; k < natmin; ++k) {
-                    ofs_apr << std::setw(8) << i + 1;
-                    ofs_apr << std::setw(5) << j + 1;
-                    ofs_apr << std::setw(5) << k + 1;
-                    ofs_apr << std::setw(15) << atomic_participation_ratio[i][j][k];
-                    ofs_apr << std::endl;
-                }
-            }
-            ofs_apr << std::endl;
+        ofs_apr << "#" << std::setw(8) << i + 1;
+        ofs_apr << " xk = ";
+        for (j = 0; j < 3; ++j) {
+            ofs_apr << std::setw(15) << kmesh_in->xk[knum][j];
         }
-    } else if (kpoint->kpoint_mode == 2) {
-
-        ofs_apr << "# irred. kpoint, mode, atom, frequency[kpoint][mode] (cm^-1), APR[kpoint][mode][atom]" << std::endl;
-
-        for (i = 0; i < kpoint->nk_irred; ++i) {
-            knum = kpoint->kpoint_irred_all[i][0].knum;
-
-            ofs_apr << "#" << std::setw(8) << i + 1;
-            ofs_apr << " xk = ";
-            for (j = 0; j < 3; ++j) {
-                ofs_apr << std::setw(15) << kpoint->xk[knum][j];
+        ofs_apr << std::endl;
+        for (j = 0; j < nbands; ++j) {
+            for (k = 0; k < natmin; ++k) {
+                ofs_apr << std::setw(8) << i + 1;
+                ofs_apr << std::setw(5) << j + 1;
+                ofs_apr << std::setw(5) << k + 1;
+                ofs_apr << std::setw(15) << in_kayser(eval_in[knum][j]);
+                ofs_apr << std::setw(15) << atomic_participation_ratio[knum][j][k];
+                ofs_apr << std::endl;
             }
-            ofs_apr << std::endl;
-            for (j = 0; j < nbands; ++j) {
-                for (k = 0; k < natmin; ++k) {
-                    ofs_apr << std::setw(8) << i + 1;
-                    ofs_apr << std::setw(5) << j + 1;
-                    ofs_apr << std::setw(5) << k + 1;
-                    ofs_apr << std::setw(15) << in_kayser(dynamical->eval_phonon[knum][j]);
-                    ofs_apr << std::setw(15) << atomic_participation_ratio[knum][j][k];
-                    ofs_apr << std::endl;
-                }
-            }
-            ofs_apr << std::endl;
         }
+        ofs_apr << std::endl;
     }
-
+    ofs_apr.close();
 
     deallocate(participation_ratio);
     deallocate(atomic_participation_ratio);
 
-    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_pr;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << fname_pr;
     std::cout << " : Participation ratio for all k points" << std::endl;
-    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_apr;
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << fname_apr;
     std::cout << " : Atomic participation ratio for all k points" << std::endl;
 }
 
@@ -2525,9 +2696,10 @@ void Writes::write_dielectric_function() const
     std::cout << " : Frequency-dependent dielectric function" << std::endl;
 }
 
-void Writes::write_scph_energy(double ***eval, const int bubble) const
+void Writes::write_scph_energy(const unsigned int nk_in,
+                               const double *const *const *eval_in,
+                               const int bubble) const
 {
-    const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
@@ -2551,7 +2723,7 @@ void Writes::write_scph_energy(double ***eval, const int bubble) const
     ofs_energy << "# K point, mode, Temperature [K], Eigenvalues [cm^-1]" << std::endl;
 
 
-    for (unsigned int ik = 0; ik < nk; ++ik) {
+    for (unsigned int ik = 0; ik < nk_in; ++ik) {
         for (unsigned int is = 0; is < ns; ++is) {
             for (unsigned int iT = 0; iT < NT; ++iT) {
                 const auto temp = Tmin + static_cast<double>(iT) * dT;
@@ -2559,7 +2731,7 @@ void Writes::write_scph_energy(double ***eval, const int bubble) const
                 ofs_energy << std::setw(5) << ik + 1;
                 ofs_energy << std::setw(5) << is + 1;
                 ofs_energy << std::setw(8) << temp;
-                ofs_energy << std::setw(15) << writes->in_kayser(eval[iT][ik][is]);
+                ofs_energy << std::setw(15) << writes->in_kayser(eval_in[iT][ik][is]);
                 ofs_energy << std::endl;
             }
             ofs_energy << std::endl;
@@ -2570,7 +2742,10 @@ void Writes::write_scph_energy(double ***eval, const int bubble) const
     ofs_energy.close();
 }
 
-void Writes::write_scph_bands(double ***eval, const int bubble) const
+void Writes::write_scph_bands(const unsigned int nk_in,
+                              const double *kaxis_in,
+                              const double *const *const *eval,
+                              const int bubble) const
 {
     std::ofstream ofs_bands;
     std::string file_bands;
@@ -2589,9 +2764,6 @@ void Writes::write_scph_bands(double ***eval, const int bubble) const
     if (!ofs_bands) error->exit("write_scph_bands", "cannot open file_bands");
 
     unsigned int i;
-    const auto nk = kpoint->nk;
-
-    const auto kaxis = kpoint->kaxis;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
@@ -2631,9 +2803,9 @@ void Writes::write_scph_bands(double ***eval, const int bubble) const
     for (unsigned int iT = 0; iT < NT; ++iT) {
         const auto temp = Tmin + static_cast<double>(iT) * dT;
 
-        for (i = 0; i < nk; ++i) {
+        for (i = 0; i < nk_in; ++i) {
             ofs_bands << std::setw(15) << std::fixed << temp;
-            ofs_bands << std::setw(15) << std::fixed << kaxis[i];
+            ofs_bands << std::setw(15) << std::fixed << kaxis_in[i];
             for (unsigned int j = 0; j < ns; ++j) {
                 ofs_bands << std::setw(15) << std::scientific << writes->in_kayser(eval[iT][i][j]);
             }
@@ -2741,7 +2913,6 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     if (thermodynamics->classical) {
         ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
     }
-
 
 
     for (unsigned int iT = 0; iT < NT; ++iT) {

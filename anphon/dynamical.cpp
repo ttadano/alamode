@@ -821,7 +821,6 @@ void Dynamical::diagonalize_dynamical_all()
         std::cout << std::endl
         << " Diagonalizing dynamical matrices for all k points ... ";
     }
-
     double **eval_tmp;
     std::complex<double> ***evec_tmp;
     // k points for general mode (manual entry)
@@ -905,6 +904,7 @@ void Dynamical::diagonalize_dynamical_all()
         dymat_band->set_eigenvals_and_eigenvecs(nk,
                                                 eval_tmp,
                                                 evec_tmp);
+
         deallocate(eval_tmp);
         deallocate(evec_tmp);
     }
@@ -1002,8 +1002,6 @@ void Dynamical::diagonalize_dynamical_all()
         detect_imaginary_branches(*dos->kmesh_dos,
                                   dos->dymat_dos->get_eigenvalues());
     }
-
-    std::cout << "RANK = " << mympi->my_rank << " OK" << std::endl;
 }
 
 void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
@@ -1051,10 +1049,10 @@ void Dynamical::modify_eigenvectors() const
 {
     bool *flag_done;
     unsigned int ik;
-    unsigned int js;
-    std::complex<double> *evec_tmp;
+    unsigned int is, js;
+    std::complex<double> ***evec_tmp;
 
-    const auto nk = kpoint->nk;
+    const auto nk = dos->kmesh_dos->nk;
     const auto ns = neval;
 
     /*   if (mympi->my_rank == 0) {
@@ -1065,7 +1063,16 @@ void Dynamical::modify_eigenvectors() const
        }*/
 
     allocate(flag_done, nk);
-    allocate(evec_tmp, ns);
+    allocate(evec_tmp, nk, ns, ns);
+
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                evec_tmp[ik][is][js] = dos->dymat_dos->get_eigenvectors()[ik][is][js];
+            }
+        }
+    }
 
     for (ik = 0; ik < nk; ++ik) flag_done[ik] = false;
 
@@ -1073,15 +1080,11 @@ void Dynamical::modify_eigenvectors() const
 
         if (!flag_done[ik]) {
 
-            const auto nk_inv = kpoint->knum_minus[ik];
+            const auto nk_inv = dos->kmesh_dos->kindex_minus_xk[ik];
 
-            for (unsigned int is = 0; is < ns; ++is) {
+            for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
-                    evec_tmp[js] = evec_phonon[ik][is][js];
-                }
-
-                for (js = 0; js < ns; ++js) {
-                    evec_phonon[nk_inv][is][js] = std::conj(evec_tmp[js]);
+                    evec_tmp[nk_inv][is][js] = std::conj(evec_tmp[ik][is][js]);
                 }
             }
 
@@ -1092,6 +1095,8 @@ void Dynamical::modify_eigenvectors() const
 
     deallocate(flag_done);
     deallocate(evec_tmp);
+
+    dos->dymat_dos->set_eigenvectors(nk, evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
     //if (mympi->my_rank == 0) {
@@ -1606,11 +1611,11 @@ double Dynamical::freq(const double x) const
 }
 
 
-void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
+void Dynamical::calc_participation_ratio_all(const unsigned int nk_in,
+                                             const std::complex<double> * const * const *evec_in,
                                              double **ret,
                                              double ***ret_all) const
 {
-    const auto nk = kpoint->nk;
     const auto ns = dynamical->neval;
     const auto natmin = system->natmin;
 
@@ -1618,9 +1623,9 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
 
     allocate(atomic_pr, natmin);
 
-    for (auto ik = 0; ik < nk; ++ik) {
+    for (auto ik = 0; ik < nk_in; ++ik) {
         for (auto is = 0; is < ns; ++is) {
-            calc_atomic_participation_ratio(evec[ik][is], atomic_pr);
+            calc_atomic_participation_ratio(evec_in[ik][is], atomic_pr);
 
             auto sum = 0.0;
 
@@ -1636,7 +1641,7 @@ void Dynamical::calc_participation_ratio_all(std::complex<double> ***evec,
     deallocate(atomic_pr);
 }
 
-void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
+void Dynamical::calc_atomic_participation_ratio(const std::complex<double> *evec_in,
                                                 double *ret) const
 {
     unsigned int iat;
@@ -1645,9 +1650,9 @@ void Dynamical::calc_atomic_participation_ratio(std::complex<double> *evec,
     for (iat = 0; iat < natmin; ++iat) ret[iat] = 0.0;
 
     for (iat = 0; iat < natmin; ++iat) {
-        ret[iat] = (std::norm(evec[3 * iat])
-                    + std::norm(evec[3 * iat + 1])
-                    + std::norm(evec[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
+        ret[iat] = (std::norm(evec_in[3 * iat])
+                    + std::norm(evec_in[3 * iat + 1])
+                    + std::norm(evec_in[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
     }
 
     auto sum = 0.0;

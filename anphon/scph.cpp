@@ -445,9 +445,12 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         }
 
         if (kpoint->kpoint_mode == 0) {
-            writes->write_scph_energy(eval_anharm);
+            writes->write_scph_energy(kpoint->kpoint_general->nk,
+                                      eval_anharm);
         } else if (kpoint->kpoint_mode == 1) {
-            writes->write_scph_bands(eval_anharm);
+            writes->write_scph_bands(kpoint->kpoint_bs->nk,
+                                     kpoint->kpoint_bs->kaxis,
+                                     eval_anharm);
         } else if (kpoint->kpoint_mode == 2) {
             if (dos->compute_dos) {
                 writes->write_scph_dos(dos_scph);
@@ -541,9 +544,12 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             std::cout << "\n\n";
 
             if (kpoint->kpoint_mode == 0) {
-                writes->write_scph_energy(eval_anharm, bubble);
+                writes->write_scph_energy(kpoint->kpoint_general->nk,
+                                          eval_anharm, bubble);
             } else if (kpoint->kpoint_mode == 1) {
-                writes->write_scph_bands(eval_anharm, bubble);
+                writes->write_scph_bands(kpoint->kpoint_bs->nk,
+                                         kpoint->kpoint_bs->kaxis,
+                                         eval_anharm, bubble);
             } else if (kpoint->kpoint_mode == 2) {
                 if (dos->compute_dos) {
                     writes->write_scph_dos(dos_scph, bubble);

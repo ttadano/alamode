@@ -139,9 +139,10 @@ namespace PHON_NS {
 
         double freq(const double) const;
 
-        void calc_participation_ratio_all(std::complex<double> ***,
-                                          double **,
-                                          double ***) const;
+        void calc_participation_ratio_all(const unsigned int nk_in,
+                                          const std::complex<double> * const * const *evec_in,
+                                          double **ret,
+                                          double ***ret_all) const;
 
         void calc_analytic_k(const double *,
                              const std::vector<FcsClassExtent> &,
@@ -175,8 +176,8 @@ namespace PHON_NS {
 
         void prepare_mindist_list(std::vector<int> **) const;
 
-        void calc_atomic_participation_ratio(std::complex<double> *,
-                                             double *) const;
+        void calc_atomic_participation_ratio(const std::complex<double> *evec_in,
+                                             double *ret) const;
 
         double distance(double *,
                         double *) const;
