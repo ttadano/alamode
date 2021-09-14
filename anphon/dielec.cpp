@@ -43,7 +43,8 @@ void Dielec::set_default_variables()
     calc_dielectric_constant = 0;
     dielec = nullptr;
     omega_grid = nullptr;
-    emin = 0.0; emax=1.0;
+    emin = 0.0;
+    emax = 1.0;
     delta_e = 1.0;
     nomega = 1;
 }
@@ -51,10 +52,10 @@ void Dielec::set_default_variables()
 void Dielec::deallocate_variables()
 {
     if (dielec) {
-        memory->deallocate(dielec);
+        deallocate(dielec);
     }
     if (omega_grid) {
-        memory->deallocate(omega_grid);
+        deallocate(omega_grid);
     }
 }
 
@@ -83,7 +84,7 @@ void Dielec::init()
             }
         }
 
-        memory->allocate(omega_grid, nomega);
+        allocate(omega_grid, nomega);
 
         for (auto i = 0; i < nomega; ++i) {
             omega_grid[i] = emin + delta_e * static_cast<double>(i);
@@ -115,10 +116,10 @@ void Dielec::run_dielec_calculation()
     std::complex<double> **evec;
     const auto ns = dynamical->neval;
 
-    memory->allocate(xk, 3);
-    memory->allocate(eval, ns);
-    memory->allocate(evec, ns, ns);
-    memory->allocate(dielec, nomega, 3, 3);
+    allocate(xk, 3);
+    allocate(eval, ns);
+    allocate(evec, ns, ns);
+    allocate(dielec, nomega, 3, 3);
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
 
@@ -127,9 +128,9 @@ void Dielec::run_dielec_calculation()
     compute_dielectric_function(nomega, omega_grid,
                                 eval, evec, dielec);
 
-    memory->deallocate(xk);
-    memory->deallocate(eval);
-    memory->deallocate(evec);
+    deallocate(xk);
+    deallocate(eval);
+    deallocate(evec);
 }
 
 void Dielec::compute_dielectric_function(const unsigned int nomega_in,
@@ -174,8 +175,8 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
     double ***s_born;
     double **zstar_u;
 
-    memory->allocate(zstar_u, 3, ns);
-    memory->allocate(s_born, 3, 3, ns);
+    allocate(zstar_u, 3, ns);
+    allocate(s_born, 3, 3, ns);
 
     for (auto i = 0; i < 3; ++i) {
         for (auto is = 0; is < ns; ++is) {
@@ -186,7 +187,6 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
             }
         }
     }
-
 
 #ifdef _DEBUG
     std::cout << "Zstar_u:\n";
@@ -237,10 +237,9 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
         }
     }
 
-    memory->deallocate(zstar_u);
-    memory->deallocate(s_born);
+    deallocate(zstar_u);
+    deallocate(s_born);
 }
-
 
 std::vector<std::vector<double>> Dielec::get_zstar_mode() const
 {
@@ -272,8 +271,8 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     const auto ns = dynamical->neval;
     const auto zstar_atom = dynamical->borncharge;
 
-    memory->allocate(eval, ns);
-    memory->allocate(evec, ns, ns);
+    allocate(eval, ns);
+    allocate(evec, ns, ns);
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
 
@@ -282,7 +281,9 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     std::vector<double> vecs(3);
 
     if (!dynamical->get_projection_directions().empty()) {
-        dynamical->project_degenerate_eigenvectors(&xk[0],
+        dynamical->project_degenerate_eigenvectors(system->lavec_p,
+                                                   fcs_phonon->fc2_ext,
+                                                   &xk[0],
                                                    dynamical->get_projection_directions(),
                                                    evec);
     } else {
@@ -312,6 +313,6 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
         }
     }
 
-    memory->deallocate(eval);
-    memory->deallocate(evec);
+    deallocate(eval);
+    deallocate(evec);
 }

@@ -98,7 +98,6 @@ void Input::parce_input(int narg,
     }
 }
 
-
 void Input::parse_general_vars()
 {
     // Read input parameters in the &general-field.
@@ -108,11 +107,11 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
-            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-            "VERBOSITY"
+          "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+          "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+          "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+          "VERBOSITY"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -130,7 +129,7 @@ void Input::parse_general_vars()
 
     get_var_dict(input_list, general_var_dict);
 
-    for (auto &no_default : no_defaults) {
+    for (auto &no_default: no_defaults) {
         if (general_var_dict.find(no_default) == general_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
@@ -153,7 +152,7 @@ void Input::parse_general_vars()
         error->exit("parse_general_vars",
                     "The number of entries for KD is inconsistent with NKD");
     } else {
-        memory->allocate(kdname, nkd);
+        allocate(kdname, nkd);
         for (i = 0; i < nkd; ++i) {
             kdname[i] = kdname_v[i];
         }
@@ -166,7 +165,7 @@ void Input::parse_general_vars()
             error->exit("parse_general_vars",
                         "The number of entries for MASS is inconsistent with NKD");
         } else {
-            memory->allocate(masskd, nkd);
+            allocate(masskd, nkd);
             for (i = 0; i < nkd; ++i) {
                 masskd[i] = my_cast<double>(masskd_v[i]);
             }
@@ -197,7 +196,7 @@ void Input::parse_general_vars()
 
     auto prec_ewald = 1.0e-12;
 
-    // if file_result exists in the current directory, 
+    // if file_result exists in the current directory,
     // restart mode will be automatically turned on.
     auto restart = stat(file_result.c_str(), &st) == 0;
 
@@ -290,24 +289,23 @@ void Input::parse_general_vars()
     system->dT = dT;
     system->nkd = nkd;
 
-    memory->allocate(system->symbol_kd, nkd);
+    allocate(system->symbol_kd, nkd);
     for (i = 0; i < nkd; ++i) {
         system->symbol_kd[i] = kdname[i];
     }
     if (kdname) {
-        memory->deallocate(kdname);
+        deallocate(kdname);
     }
 
     if (!general_var_dict["MASS"].empty()) {
-        memory->allocate(system->mass_kd, nkd);
+        allocate(system->mass_kd, nkd);
         for (i = 0; i < nkd; ++i) {
             system->mass_kd[i] = masskd[i];
         }
     }
     if (masskd) {
-        memory->deallocate(masskd);
+        deallocate(masskd);
     }
-
 
     dos->emax = emax;
     dos->emin = emin;
@@ -336,9 +334,9 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-            "LOWER_TEMP", "WARMSTART", "BUBBLE"
+          "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+          "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+          "LOWER_TEMP", "WARMSTART", "BUBBLE"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -352,7 +350,7 @@ void Input::parse_scph_vars()
 
     get_var_dict(input_list, scph_var_dict);
 
-    for (auto &no_default : no_defaults) {
+    for (auto &no_default: no_defaults) {
         if (scph_var_dict.find(no_default) == scph_var_dict.end()) {
             error->exit("parse_general_vars",
                         "The following variable is not found in &scph input region: ",
@@ -373,7 +371,7 @@ void Input::parse_scph_vars()
     auto warm_start = true;
     unsigned int bubble = 0;
 
-    // if file_dymat exists in the current directory, 
+    // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
 
     auto restart_scph = stat(file_dymat.c_str(), &st) == 0;
@@ -459,21 +457,20 @@ void Input::parse_scph_vars()
     scph_var_dict.clear();
 }
 
-
 void Input::parse_analysis_vars(const bool use_default_values)
 {
     // Read input parameters in the &analysis field.
     int i;
 
     std::vector<std::string> input_list{
-            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-            "REALPART", "ISOTOPE", "ISOFACT",
-            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-            "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
-            "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-        "KAPPA_COHERENT",
-        "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
+          "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+          "REALPART", "ISOTOPE", "ISOFACT",
+          "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+          "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+          "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
+          "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+          "KAPPA_COHERENT",
+          "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
 
 #ifdef _FE_BUBBLE
@@ -593,7 +590,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 error->exit("parse_analysis_vars",
                             "The number of entries for ISOFACT is inconsistent with NKD");
             } else {
-                memory->allocate(isotope_factor, system->nkd);
+                allocate(isotope_factor, system->nkd);
                 for (i = 0; i < system->nkd; ++i) {
                     isotope_factor[i] = my_cast<double>(isofact_v[i]);
                 }
@@ -696,7 +693,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 for (auto j = 0; j < 3; ++j) {
                     try {
                         direction[j] = boost::lexical_cast<double>(str_vec[j]);
-                    } catch (std::exception &e) {
+                    }
+                    catch (std::exception &e) {
                         std::cout << e.what() << std::endl;
                         error->exit("parse_analysis_vars",
                                     "subset of PROJECTION_AXES must be an array of doubles.");
@@ -768,14 +766,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     if (include_isotope) {
         if (!analysis_var_dict["ISOFACT"].empty()) {
-            memory->allocate(isotope->isotope_factor, system->nkd);
+            allocate(isotope->isotope_factor, system->nkd);
             for (i = 0; i < system->nkd; ++i) {
                 isotope->isotope_factor[i] = isotope_factor[i];
             }
         }
     }
     if (isotope_factor) {
-        memory->deallocate(isotope_factor);
+        deallocate(isotope_factor);
     }
 
     if (phon->mode == "SCPH") {
@@ -882,7 +880,6 @@ void Input::parse_cell_parameter()
     }
 }
 
-
 void Input::parse_kpoints()
 {
     // Read the settings in the &kpoint field.
@@ -941,7 +938,7 @@ void Input::parse_kpoints()
         split(kpelem, line, boost::is_any_of("\t "), boost::token_compress_on);
 
         if (i == 0) {
-            // kpmode 
+            // kpmode
             if (kpelem.size() == 1) {
                 try {
                     kpmode = boost::lexical_cast<int>(kpelem[0]);
@@ -988,7 +985,6 @@ void Input::parse_kpoints()
 
     kpoint->kpoint_mode = kpmode;
 }
-
 
 int Input::locate_tag(const std::string &key)
 {
@@ -1048,7 +1044,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
     std::vector<std::string> str_entry, str_varval;
     std::set<std::string> keyword_set;
 
-    for (const auto &it : input_list) {
+    for (const auto &it: input_list) {
         keyword_set.insert(it);
     }
 
@@ -1081,7 +1077,6 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-
 
             for (auto it = str_entry.begin(); it != str_entry.end(); ++it) {
 
@@ -1156,7 +1151,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #else
             str_entry = my_split(line_wo_comment, ';');
 #endif
-            for (auto &it : str_entry) {
+            for (auto &it: str_entry) {
 
                 // Split the input entry by '='
 
@@ -1212,7 +1207,6 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
     keyword_set.clear();
 }
 
-
 bool Input::is_endof_entry(const std::string &str) const
 {
     return str[0] == '/';
@@ -1256,7 +1250,6 @@ void Input::assign_val(T &val,
         }
     }
 }
-
 
 template<typename T_to, typename T_from>
 T_to Input::my_cast(T_from const &x)

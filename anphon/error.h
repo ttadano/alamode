@@ -13,27 +13,27 @@
 #include "pointers.h"
 
 namespace PHON_NS {
-    class Error : protected Pointers {
-    public:
-        Error(class PHON *);
+class Error : protected Pointers {
+ public:
+    Error(class PHON *);
 
-        ~Error();
+    ~Error();
 
-        void warn(const char *,
-                  const char *) const;
+    void warn(const char *,
+              const char *) const;
 
-        void exit(const char *,
-                  const char *) const;
+    void exit(const char *,
+              const char *) const;
 
-        void exit(const char *,
-                  const char *,
-                  int) const;
+    void exit(const char *,
+              const char *,
+              int) const;
 
-        void exitall(const char *,
-                     const char *) const;
+    void exitall(const char *,
+                 const char *) const;
 
-        void exit(const char *,
-                  const char *,
-                  const char *) const;
-    };
+    void exit(const char *,
+              const char *,
+              const char *) const;
+};
 }
