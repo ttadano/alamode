@@ -82,7 +82,6 @@ void Conductivity::deallocate_variables()
     }
 }
 
-
 void Conductivity::setup_kappa()
 {
     MPI_Bcast(&calc_coherent, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -178,8 +177,9 @@ void Conductivity::prepare_restart()
                 const auto ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
                 for (auto is = 0; is < dynamical->neval; ++is) {
                     writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                    writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is]) << std::
-                    endl;
+                    writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
+                                      << std::
+                                      endl;
                 }
             }
 
@@ -251,7 +251,6 @@ void Conductivity::prepare_restart()
     vks_done.clear();
 }
 
-
 void Conductivity::calc_anharmonic_imagself()
 {
     unsigned int i;
@@ -265,7 +264,7 @@ void Conductivity::calc_anharmonic_imagself()
 
     unsigned int icount = 0;
 
-    for (const auto &it : vks_job) {
+    for (const auto &it: vks_job) {
         if (icount % mympi->nprocs == mympi->my_rank) {
             vks_l.push_back(it);
         }
@@ -307,7 +306,6 @@ void Conductivity::calc_anharmonic_imagself()
     }
 
     allocate(damping3_loc, ntemp);
-
 
     for (i = 0; i < nk_tmp; ++i) {
 
@@ -380,7 +378,7 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
         writes->fs_result << nk_equiv << std::endl;
         for (k = 0; k < nk_equiv; ++k) {
-            const auto ktmp =  dos->kmesh_dos->kpoint_irred_all[iks_g / ns][k].knum;
+            const auto ktmp = dos->kmesh_dos->kpoint_irred_all[iks_g / ns][k].knum;
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
@@ -398,7 +396,6 @@ void Conductivity::compute_kappa()
 {
     unsigned int i;
     unsigned int iks;
-
 
     if (mympi->my_rank == 0) {
 
@@ -478,7 +475,7 @@ void Conductivity::compute_kappa()
             allocate(kappa_coherent, ntemp, 3, 3);
             compute_kappa_coherent(dos->kmesh_dos,
                                    dos->dymat_dos->get_eigenvalues(),
-                   gamma_total,
+                                   gamma_total,
                                    kappa_coherent);
         }
 
@@ -486,11 +483,10 @@ void Conductivity::compute_kappa()
     }
 }
 
-
 void Conductivity::average_self_energy_at_degenerate_point(const int n,
                                                            const int m,
                                                            const KpointMeshUniform *kmesh_in,
-                                                           const double * const * eval_in,
+                                                           const double *const *eval_in,
                                                            double **damping) const
 {
     int j, k, l;
@@ -557,10 +553,9 @@ void Conductivity::average_self_energy_at_degenerate_point(const int n,
     deallocate(damping_sum);
 }
 
-
 void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
-                                           const double * const * eval_in,
-                                           const double * const * lifetime,
+                                           const double *const *eval_in,
+                                           const double *const *lifetime,
                                            double ***kappa_intra,
                                            double ***kappa_spec_out) const
 {
@@ -598,12 +593,12 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                        = thermodynamics->Cv_classical(omega, temperature[i])
-                                          * vv_tmp * lifetime[ns * ik + is][i];
+                                      = thermodynamics->Cv_classical(omega, temperature[i])
+                                      * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                        = thermodynamics->Cv(omega, temperature[i])
-                                          * vv_tmp * lifetime[ns * ik + is][i];
+                                      = thermodynamics->Cv(omega, temperature[i])
+                                      * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
                             // Convert to SI unit
@@ -639,10 +634,9 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
     deallocate(kappa_mode);
 }
 
-
 void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
-                                          const double * const *eval_in,
-                                          const double * const *gamma_total,
+                                          const double *const *eval_in,
+                                          const double *const *gamma_total,
                                           double ***kappa_coherent_out) const
 {
     // Compute the coherent part of thermal conductivity
@@ -697,13 +691,13 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                              * (thermodynamics->Cv(omega1, temperature[i]) / omega1
-                                                 + thermodynamics->Cv(omega2, temperature[i]) / omega2)
-                                              * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                              / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                                 + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                                  + gamma_total[ik * ns + js][i], 2.0))
-                                              * vv_tmp;
+                                  * (thermodynamics->Cv(omega1, temperature[i]) / omega1
+                                        + thermodynamics->Cv(omega2, temperature[i]) / omega2)
+                                  * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                  / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                               + gamma_total[ik * ns + js][i], 2.0))
+                                  * vv_tmp;
                             kappa_tmp[ib] += kcelem_tmp;
 
                             if (calc_coherent == 2 && j == k) {
@@ -758,12 +752,11 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
     }
 }
 
-
 void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
                                                     const int smearing_method,
                                                     const KpointMeshUniform *kmesh_in,
-                                                    const double * const * eval_in,
-                                                    const double * const * const * const *kappa_mode,
+                                                    const double *const *eval_in,
+                                                    const double *const *const *const *kappa_mode,
                                                     double ***kappa_spec_out) const
 {
     int i, j;
@@ -783,7 +776,6 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
             eval[j][i] = writes->in_kayser(eval_in[i][j]);
         }
     }
-
 
 #ifdef _OPENMP
 #pragma omp parallel private (j)

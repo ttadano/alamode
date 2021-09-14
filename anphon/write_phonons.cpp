@@ -246,7 +246,6 @@ void Writes::setup_result_io()
             int ismear, is_classical;
             double epsilon_tmp, T1, T2, delta_T;
 
-
             bool found_tag = false;
             while (fs_result >> line_tmp) {
                 if (line_tmp == "#SYSTEM") {
@@ -385,9 +384,9 @@ void Writes::setup_result_io()
             fs_result << "#END SYSTEM" << std::endl;
 
             fs_result << "#KPOINT" << std::endl;
-            fs_result <<dos->kmesh_dos->nk_i[0] << " "
-            << dos->kmesh_dos->nk_i[1] << " "
-            << dos->kmesh_dos->nk_i[2] << std::endl;
+            fs_result << dos->kmesh_dos->nk_i[0] << " "
+                      << dos->kmesh_dos->nk_i[1] << " "
+                      << dos->kmesh_dos->nk_i[2] << std::endl;
             fs_result << dos->kmesh_dos->nk_irred << std::endl;
 
             for (int i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
@@ -465,7 +464,6 @@ std::array<int, 3> Writes::getShiftUcorr() const
 {
     return {shift_ucorr[0], shift_ucorr[1], shift_ucorr[2]};
 }
-
 
 void Writes::print_phonon_energy() const
 {
@@ -578,7 +576,6 @@ void Writes::write_phonon_info()
         nbands = 3 * system->natmin;
     }
 
-
     if (print_anime) {
         write_normal_mode_animation(anime_kpoint, anime_cellsize);
     }
@@ -586,7 +583,6 @@ void Writes::write_phonon_info()
     std::cout << std::endl;
     std::cout << " -----------------------------------------------------------------" << std::endl << std::endl;
     std::cout << " The following files are created: " << std::endl;
-
 
     if (kpoint->kpoint_mode == 1) {
         write_phonon_bands();
@@ -842,8 +838,8 @@ void Writes::write_phonon_vel_all() const
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
             phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
-                                      + std::pow(phvel_xyz[ik][is][1], 2)
-                                      + std::pow(phvel_xyz[ik][is][2], 2));
+                                            + std::pow(phvel_xyz[ik][is][1], 2)
+                                            + std::pow(phvel_xyz[ik][is][2], 2));
         }
     }
 
@@ -947,7 +943,6 @@ void Writes::write_phonon_dos() const
     }
     ofs_dos.close();
 
-
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
 
     if (dos->projected_dos & dos->compute_dos) {
@@ -1019,7 +1014,6 @@ void Writes::write_scattering_phase_space() const
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_sps;
     std::cout << " : Three-phonon scattering phase space" << std::endl;
 }
-
 
 void Writes::write_scattering_amplitude() const
 {
@@ -1175,7 +1169,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
                               << evec_in[ik][imode][3 * j + k].real()
-                                 / (std::sqrt(system->mass[m]) * norm);
+                                    / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -1195,7 +1189,6 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
 void Writes::write_eigenvectors() const
 {
     std::string fname_evec;
-
 
     if (kpoint->kpoint_general && dynamical->dymat_general) {
         fname_evec = input->job_title + ".evec";
@@ -1224,7 +1217,6 @@ void Writes::write_eigenvectors() const
                                 dos->dymat_dos->get_eigenvectors());
     }
 }
-
 
 void Writes::write_eigenvectors_each(const std::string &fname_evec,
                                      const unsigned int nk_in,
@@ -1327,7 +1319,6 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 void Writes::write_eigenvectors_HDF5() const
 {
     std::string fname_evec;
-
 
     if (kpoint->kpoint_general && dynamical->dymat_general) {
         fname_evec = input->job_title + ".evec.hdf5";
@@ -1547,7 +1538,6 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     group_cell.close();
     group_band.close();
 
-
     dims[0] = nk_in;
     dims[1] = 3;
     std::vector<double> xk_1D(dims[0] * dims[1]);
@@ -1586,7 +1576,6 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     group_kpoint.close();
 }
 #endif
-
 
 double Writes::in_kayser(const double x) const
 {
@@ -1793,7 +1782,6 @@ void Writes::write_msd() const
     std::cout << " : Mean-square-displacement (MSD)" << std::endl;
 }
 
-
 void Writes::write_scph_msd(double **msd_scph, const int bubble) const
 {
     const auto ns = dynamical->neval;
@@ -1842,7 +1830,6 @@ void Writes::write_scph_msd(double **msd_scph, const int bubble) const
     }
 }
 
-
 void Writes::write_disp_correlation() const
 {
     if (!dos->kmesh_dos) return;
@@ -1882,7 +1869,7 @@ void Writes::write_disp_correlation() const
                                                                  shift,
                                                                  dos->kmesh_dos->nk,
                                                                  ns,
-                                                                 kpoint->xk,
+                                                                 dos->kmesh_dos->xk,
                                                                  dos->dymat_dos->get_eigenvalues(),
                                                                  dos->dymat_dos->get_eigenvectors());
 
@@ -1906,7 +1893,6 @@ void Writes::write_disp_correlation() const
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_ucorr;
     std::cout << " : displacement correlation functions" << std::endl;
 }
-
 
 void Writes::write_scph_ucorr(double ***ucorr_scph,
                               const int bubble) const
@@ -1978,7 +1964,6 @@ void Writes::write_scph_ucorr(double ***ucorr_scph,
     }
 }
 
-
 void Writes::write_kappa() const
 {
     // Write lattice thermal conductivity
@@ -2013,7 +1998,6 @@ void Writes::write_kappa() const
             ofs_kl << std::endl;
         }
         ofs_kl.close();
-
 
         if (conductivity->calc_kappa_spec) {
 
@@ -2082,7 +2066,7 @@ void Writes::write_selfenergy_isotope() const
 {
     unsigned int k;
     const auto ns = dynamical->neval;
-    const auto eval = dynamical->eval_phonon;
+    const auto eval = dos->dymat_dos->get_eigenvalues();
     const auto gamma_iso = isotope->gamma_isotope;
 
     if (mympi->my_rank == 0) {
@@ -2117,7 +2101,6 @@ void Writes::write_selfenergy_isotope() const
                 }
                 ofs_iso << std::endl;
             }
-
 
             std::cout << std::endl;
             std::cout << " ISOTOPE = 2: Phonon selfenergy due to phonon-isotope " << std::endl;
@@ -2156,7 +2139,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     std::ostringstream ss;
     std::string file_anime;
     std::string *kd_tmp;
-
 
     for (i = 0; i < 3; ++i) {
         xk[i] = xk_in[i];
@@ -2227,8 +2209,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             for (unsigned int iz = 0; iz < ncell[2]; ++iz) {
 
                 phase_cell[icell] = 2.0 * pi * (xk_in[0] * static_cast<double>(ix)
-                                                + xk_in[1] * static_cast<double>(iy)
-                                                + xk_in[2] * static_cast<double>(iz));
+                      + xk_in[1] * static_cast<double>(iy)
+                      + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
                     xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
@@ -2294,7 +2276,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
         ntmp /= 10;
     }
 
-
     if (anime_format == "XSF" || anime_format == "AXSF") {
 
         // Save animation to AXSF (XcrysDen) files
@@ -2342,8 +2323,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                         + disp_mag[iband][3 * j + k]
-                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                            + disp_mag[iband][3 * j + k]
+                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2396,8 +2377,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                         + disp_mag[iband][3 * j + k]
-                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                            + disp_mag[iband][3 * j + k]
+                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2450,7 +2431,6 @@ void Writes::print_normalmode_borncharge() const
         ofs_zstar.close();
     }
 }
-
 
 void Writes::write_participation_ratio() const
 {
@@ -2727,7 +2707,6 @@ void Writes::write_scph_energy(const unsigned int nk_in,
 
     ofs_energy << "# K point, mode, Temperature [K], Eigenvalues [cm^-1]" << std::endl;
 
-
     for (unsigned int ik = 0; ik < nk_in; ++ik) {
         for (unsigned int is = 0; is < ns; ++is) {
             for (unsigned int iT = 0; iT < NT; ++iT) {
@@ -2918,7 +2897,6 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     if (thermodynamics->classical) {
         ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
     }
-
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
 

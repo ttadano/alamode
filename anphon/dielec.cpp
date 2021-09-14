@@ -43,7 +43,8 @@ void Dielec::set_default_variables()
     calc_dielectric_constant = 0;
     dielec = nullptr;
     omega_grid = nullptr;
-    emin = 0.0; emax=1.0;
+    emin = 0.0;
+    emax = 1.0;
     delta_e = 1.0;
     nomega = 1;
 }
@@ -187,7 +188,6 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
         }
     }
 
-
 #ifdef _DEBUG
     std::cout << "Zstar_u:\n";
     for (auto is = 0; is < ns; ++is) {
@@ -240,7 +240,6 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
     deallocate(zstar_u);
     deallocate(s_born);
 }
-
 
 std::vector<std::vector<double>> Dielec::get_zstar_mode() const
 {

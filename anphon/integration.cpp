@@ -47,7 +47,6 @@ void Integration::deallocate_variables()
 //    }
 }
 
-
 void Integration::setup_integration()
 {
     MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -71,7 +70,6 @@ void Integration::setup_integration()
     epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
-
 
 void TetraNodes::setup()
 {
@@ -154,7 +152,7 @@ unsigned int **TetraNodes::get_tetras() const
 double Integration::do_tetrahedron(const double *energy,
                                    const double *f,
                                    const unsigned int ntetra,
-                                   const unsigned int * const * tetras,
+                                   const unsigned int *const *tetras,
                                    const double e_ref)
 {
     /*
@@ -208,15 +206,15 @@ double Integration::do_tetrahedron(const double *energy,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                                                      * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
-                ((e3 - e1) * (e4 - e1));
+                  * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                  ((e3 - e1) * (e4 - e1));
 
             I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 -
-                                                                                                                  e1);
+                  e1);
             I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
             I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
             I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 -
-                                                                                                                  e1);
+                  e1);
 
             ret += I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4;
 
@@ -241,7 +239,7 @@ void Integration::calc_weight_tetrahedron(const unsigned int nk_irreducible,
                                           const double *energy,
                                           const double e_ref,
                                           const unsigned int ntetra,
-                                          const unsigned int * const * tetras,
+                                          const unsigned int *const *tetras,
                                           double *weight) const
 {
     int i;

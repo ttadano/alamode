@@ -107,11 +107,11 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
-            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-            "VERBOSITY"
+          "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+          "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+          "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+          "VERBOSITY"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -334,9 +334,9 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-            "LOWER_TEMP", "WARMSTART", "BUBBLE"
+          "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+          "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+          "LOWER_TEMP", "WARMSTART", "BUBBLE"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -463,14 +463,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::vector<std::string> input_list{
-            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-            "REALPART", "ISOTOPE", "ISOFACT",
-            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-            "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
-            "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-            "KAPPA_COHERENT",
-            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
+          "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+          "REALPART", "ISOTOPE", "ISOFACT",
+          "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+          "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+          "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
+          "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+          "KAPPA_COHERENT",
+          "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
 
 #ifdef _FE_BUBBLE

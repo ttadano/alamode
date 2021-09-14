@@ -106,7 +106,7 @@ void ModeAnalysis::setup_mode_analysis()
                 kslist.clear();
                 for (i = 0; i < nlist; ++i) {
                     ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
-                    const auto knum_tmp = kpoint->get_knum(ktmp[0], ktmp[1], ktmp[2]);
+                    const auto knum_tmp = dos->kmesh_dos->get_knum(ktmp);
 
                     if (knum_tmp == -1)
                         error->exit("setup_mode_analysis",
@@ -369,14 +369,14 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
         const auto knum = kslist[i] / ns;
         const auto snum = kslist[i] % ns;
 
-        const auto omega = dynamical->eval_phonon[knum][snum];
+        const auto omega = dos->dymat_dos->get_eigenvalues()[knum][snum];
 
         if (mympi->my_rank == 0) {
             std::cout << std::endl;
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -454,7 +454,7 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
             ofs_linewidth << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_linewidth << std::setw(15) << kpoint->xk[knum][j];
+                ofs_linewidth << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_linewidth << std::endl;
             ofs_linewidth << "# mode = " << snum + 1 << std::endl;
@@ -512,7 +512,7 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
                 ofs_shift << "# xk = ";
 
                 for (j = 0; j < 3; ++j) {
-                    ofs_shift << std::setw(15) << kpoint->xk[knum][j];
+                    ofs_shift << std::setw(15) << dos->kmesh_dos->xk[knum][j];
                 }
                 ofs_shift << std::endl;
                 ofs_shift << "# mode = " << snum + 1 << std::endl;
@@ -1721,7 +1721,7 @@ void ModeAnalysis::print_V4_elements() const
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -2039,7 +2039,7 @@ void ModeAnalysis::print_Phi4_elements() const
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -2284,7 +2284,7 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
             std::cout << " Number : " << std::setw(5) << i + 1 << std::endl;
             std::cout << "  Phonon at k = (";
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(10) << std::fixed << kpoint->xk[knum][j];
+                std::cout << std::setw(10) << std::fixed << dos->kmesh_dos->xk[knum][j];
                 if (j < 2) std::cout << ",";
             }
             std::cout << ")" << std::endl;
@@ -2297,7 +2297,7 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
             ofs_self << "# xk = ";
 
             for (j = 0; j < 3; ++j) {
-                ofs_self << std::setw(15) << kpoint->xk[knum][j];
+                ofs_self << std::setw(15) << dos->kmesh_dos->xk[knum][j];
             }
             ofs_self << std::endl;
             ofs_self << "# mode = " << snum + 1 << std::endl;

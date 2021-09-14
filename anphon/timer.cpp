@@ -56,7 +56,6 @@ void Timer::print_elapsed() const
     std::cout << std::endl << " Time Elapsed: " << elapsed() << " sec." << std::endl << std::endl;
 }
 
-
 std::string Timer::DateAndTime() const
 {
     time_t current;

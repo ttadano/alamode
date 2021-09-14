@@ -34,10 +34,10 @@ class PhononVelocity : protected Pointers {
                        double **) const;
 
     void get_phonon_group_velocity_mesh(const KpointMeshUniform &kmesh_in,
-                                            const double lavec_p[3][3],
-                                            const std::vector<FcsClassExtent> &fc2_ext_in,
-                                            const bool irreducible_only,
-                                            double ***phvel3_out) const;
+                                        const double lavec_p[3][3],
+                                        const std::vector<FcsClassExtent> &fc2_ext_in,
+                                        const bool irreducible_only,
+                                        double ***phvel3_out) const;
 
     void get_phonon_group_velocity_mesh_mpi(const KpointMeshUniform &kmesh_in,
                                             const double lavec_p[3][3],

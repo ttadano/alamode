@@ -78,7 +78,6 @@ PHON::PHON(int narg,
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
     mympi->MPI_Bcast_string(mode, 0, MPI_COMM_WORLD);
 
-
     if (mode == "PHONONS") {
 
         execute_phonons();

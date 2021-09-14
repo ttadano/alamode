@@ -105,7 +105,6 @@ void AnharmonicCore::deallocate_variables()
     }
 }
 
-
 void AnharmonicCore::setup()
 {
     if (fcs_phonon->maxorder >= 2) setup_cubic();
@@ -121,7 +120,6 @@ void AnharmonicCore::setup()
                                            exp_phase3);
     }
 }
-
 
 void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
                                              const unsigned int N,
@@ -169,7 +167,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     unsigned int icount = 0;
 
-    for (const auto &it : fcs_in) {
+    for (const auto &it: fcs_in) {
 
         atm_super.clear();
         atm_prim.clear();
@@ -186,12 +184,11 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
             cells.push_back(it.pairs[i].cell_s);
         }
 
-
         for (i = 0; i < N - 1; ++i) {
 
             for (j = 0; j < 3; ++j) {
                 vec[j] = system->xr_s_anharm[atm_super[i + 1]][j] + xshift_s[cells[i + 1]][j]
-                         - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][j];
+                      - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][j];
             }
 
             rotvec(vec, vec, mat_convert);
@@ -272,7 +269,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
                     vecs[i][k] = system->xr_s_anharm[atm_super[i + 1]][k] + xshift_s[cells[i + 1]][k]
-                                 - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
+                          - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }
@@ -288,7 +285,6 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     deallocate(xshift_s);
 }
-
 
 void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
                                                       const unsigned int N,
@@ -307,7 +303,7 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
         arr_old.push_back(-1);
     }
 
-    for (const auto &it : fcs_in) {
+    for (const auto &it: fcs_in) {
 
         arr_tmp.clear();
 
@@ -332,7 +328,7 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
         arr_old.push_back(-1);
     }
 
-    for (const auto &it : fcs_in) {
+    for (const auto &it: fcs_in) {
 
         arr_tmp.clear();
 
@@ -379,7 +375,6 @@ std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4])
                 dos->dymat_dos->get_eigenvectors());
 }
 
-
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
                                         const double *const *eval_phonon,
                                         const std::complex<double> *const *const *evec_phonon)
@@ -420,7 +415,7 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     }
 
     return std::complex<double>(ret_re, ret_im)
-           / std::sqrt(omega[0] * omega[1] * omega[2]);
+          / std::sqrt(omega[0] * omega[1] * omega[2]);
 }
 
 std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
@@ -462,7 +457,6 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
     return std::complex<double>(ret_re, ret_im);
 }
 
-
 void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
                                           const unsigned int ik2,
                                           std::complex<double> *ret)
@@ -488,12 +482,12 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
 
                 for (j = 0; j < nsize_group; ++j) {
 
-                    phase = relvec_v3[i][j].vecs[0][0] * kpoint->xk[ik1][0]
-                            + relvec_v3[i][j].vecs[0][1] * kpoint->xk[ik1][1]
-                            + relvec_v3[i][j].vecs[0][2] * kpoint->xk[ik1][2]
-                            + relvec_v3[i][j].vecs[1][0] * kpoint->xk[ik2][0]
-                            + relvec_v3[i][j].vecs[1][1] * kpoint->xk[ik2][1]
-                            + relvec_v3[i][j].vecs[1][2] * kpoint->xk[ik2][2];
+                    phase = relvec_v3[i][j].vecs[0][0] * dos->kmesh_dos->xk[ik1][0]
+                          + relvec_v3[i][j].vecs[0][1] * dos->kmesh_dos->xk[ik1][1]
+                          + relvec_v3[i][j].vecs[0][2] * dos->kmesh_dos->xk[ik1][2]
+                          + relvec_v3[i][j].vecs[1][0] * dos->kmesh_dos->xk[ik2][0]
+                          + relvec_v3[i][j].vecs[1][1] * dos->kmesh_dos->xk[ik2][1]
+                          + relvec_v3[i][j].vecs[1][2] * dos->kmesh_dos->xk[ik2][2];
 
                     unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
                     ret_in += fcs_group_v3[i][j] * exp_phase[iloc];
@@ -519,8 +513,8 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
 
                     for (auto ii = 0; ii < 3; ++ii) {
                         phase3[ii]
-                                = relvec_v3[i][j].vecs[0][ii] * kpoint->xk[ik1][ii]
-                                  + relvec_v3[i][j].vecs[1][ii] * kpoint->xk[ik2][ii];
+                              = relvec_v3[i][j].vecs[0][ii] * dos->kmesh_dos->xk[ik1][ii]
+                              + relvec_v3[i][j].vecs[1][ii] * dos->kmesh_dos->xk[ik2][ii];
 
                         loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
@@ -542,12 +536,12 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
             for (j = 0; j < nsize_group; ++j) {
 
                 phase
-                        = relvec_v3[i][j].vecs[0][0] * kpoint->xk[ik1][0]
-                          + relvec_v3[i][j].vecs[0][1] * kpoint->xk[ik1][1]
-                          + relvec_v3[i][j].vecs[0][2] * kpoint->xk[ik1][2]
-                          + relvec_v3[i][j].vecs[1][0] * kpoint->xk[ik2][0]
-                          + relvec_v3[i][j].vecs[1][1] * kpoint->xk[ik2][1]
-                          + relvec_v3[i][j].vecs[1][2] * kpoint->xk[ik2][2];
+                      = relvec_v3[i][j].vecs[0][0] * dos->kmesh_dos->xk[ik1][0]
+                      + relvec_v3[i][j].vecs[0][1] * dos->kmesh_dos->xk[ik1][1]
+                      + relvec_v3[i][j].vecs[0][2] * dos->kmesh_dos->xk[ik1][2]
+                      + relvec_v3[i][j].vecs[1][0] * dos->kmesh_dos->xk[ik2][0]
+                      + relvec_v3[i][j].vecs[1][1] * dos->kmesh_dos->xk[ik2][1]
+                      + relvec_v3[i][j].vecs[1][2] * dos->kmesh_dos->xk[ik2][2];
 
                 ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
             }
@@ -555,7 +549,6 @@ void AnharmonicCore::calc_phi3_reciprocal(const unsigned int ik1,
         }
     }
 }
-
 
 std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
                                         const double *const *eval_phonon,
@@ -578,8 +571,8 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8 || omega[3] < eps8) return 0.0;
 
     if (kn[1] != kindex_phi4_stored[0]
-        || kn[2] != kindex_phi4_stored[1]
-        || kn[3] != kindex_phi4_stored[2]) {
+          || kn[2] != kindex_phi4_stored[1]
+          || kn[3] != kindex_phi4_stored[2]) {
 
         calc_phi4_reciprocal(kn[1],
                              kn[2],
@@ -605,7 +598,7 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
     }
 
     return std::complex<double>(ret_re, ret_im)
-           / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
+          / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
 }
 
 std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
@@ -627,8 +620,8 @@ std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
     }
 
     if (kn[1] != kindex_phi4_stored[0]
-        || kn[2] != kindex_phi4_stored[1]
-        || kn[3] != kindex_phi4_stored[2]) {
+          || kn[2] != kindex_phi4_stored[1]
+          || kn[3] != kindex_phi4_stored[2]) {
 
         calc_phi4_reciprocal(kn[1],
                              kn[2],
@@ -682,15 +675,15 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
 
                 for (j = 0; j < nsize_group; ++j) {
 
-                    phase = relvec_v4[i][j].vecs[0][0] * kpoint->xk[ik1][0]
-                            + relvec_v4[i][j].vecs[0][1] * kpoint->xk[ik1][1]
-                            + relvec_v4[i][j].vecs[0][2] * kpoint->xk[ik1][2]
-                            + relvec_v4[i][j].vecs[1][0] * kpoint->xk[ik2][0]
-                            + relvec_v4[i][j].vecs[1][1] * kpoint->xk[ik2][1]
-                            + relvec_v4[i][j].vecs[1][2] * kpoint->xk[ik2][2]
-                            + relvec_v4[i][j].vecs[2][0] * kpoint->xk[ik3][0]
-                            + relvec_v4[i][j].vecs[2][1] * kpoint->xk[ik3][1]
-                            + relvec_v4[i][j].vecs[2][2] * kpoint->xk[ik3][2];
+                    phase = relvec_v4[i][j].vecs[0][0] * dos->kmesh_dos->xk[ik1][0]
+                          + relvec_v4[i][j].vecs[0][1] * dos->kmesh_dos->xk[ik1][1]
+                          + relvec_v4[i][j].vecs[0][2] * dos->kmesh_dos->xk[ik1][2]
+                          + relvec_v4[i][j].vecs[1][0] * dos->kmesh_dos->xk[ik2][0]
+                          + relvec_v4[i][j].vecs[1][1] * dos->kmesh_dos->xk[ik2][1]
+                          + relvec_v4[i][j].vecs[1][2] * dos->kmesh_dos->xk[ik2][2]
+                          + relvec_v4[i][j].vecs[2][0] * dos->kmesh_dos->xk[ik3][0]
+                          + relvec_v4[i][j].vecs[2][1] * dos->kmesh_dos->xk[ik3][1]
+                          + relvec_v4[i][j].vecs[2][2] * dos->kmesh_dos->xk[ik3][2];
 
                     unsigned int iloc = nint(phase * dnk_represent) % nk_represent + nk_represent - 1;
                     ret_in += fcs_group_v4[i][j] * exp_phase[iloc];
@@ -716,9 +709,9 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
 
                     for (auto ii = 0; ii < 3; ++ii) {
                         phase3[ii]
-                                = relvec_v4[i][j].vecs[0][ii] * kpoint->xk[ik1][ii]
-                                  + relvec_v4[i][j].vecs[1][ii] * kpoint->xk[ik2][ii]
-                                  + relvec_v4[i][j].vecs[2][ii] * kpoint->xk[ik3][ii];
+                              = relvec_v4[i][j].vecs[0][ii] * dos->kmesh_dos->xk[ik1][ii]
+                              + relvec_v4[i][j].vecs[1][ii] * dos->kmesh_dos->xk[ik2][ii]
+                              + relvec_v4[i][j].vecs[2][ii] * dos->kmesh_dos->xk[ik3][ii];
 
                         loc[ii] = nint(phase3[ii] * dnk[ii] * inv2pi) % nk_grid[ii] + nk_grid[ii] - 1;
                     }
@@ -740,15 +733,15 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
             for (j = 0; j < nsize_group; ++j) {
 
                 phase
-                        = relvec_v4[i][j].vecs[0][0] * kpoint->xk[ik1][0]
-                          + relvec_v4[i][j].vecs[0][1] * kpoint->xk[ik1][1]
-                          + relvec_v4[i][j].vecs[0][2] * kpoint->xk[ik1][2]
-                          + relvec_v4[i][j].vecs[1][0] * kpoint->xk[ik2][0]
-                          + relvec_v4[i][j].vecs[1][1] * kpoint->xk[ik2][1]
-                          + relvec_v4[i][j].vecs[1][2] * kpoint->xk[ik2][2]
-                          + relvec_v4[i][j].vecs[2][0] * kpoint->xk[ik3][0]
-                          + relvec_v4[i][j].vecs[2][1] * kpoint->xk[ik3][1]
-                          + relvec_v4[i][j].vecs[2][2] * kpoint->xk[ik3][2];
+                      = relvec_v4[i][j].vecs[0][0] * dos->kmesh_dos->xk[ik1][0]
+                      + relvec_v4[i][j].vecs[0][1] * dos->kmesh_dos->xk[ik1][1]
+                      + relvec_v4[i][j].vecs[0][2] * dos->kmesh_dos->xk[ik1][2]
+                      + relvec_v4[i][j].vecs[1][0] * dos->kmesh_dos->xk[ik2][0]
+                      + relvec_v4[i][j].vecs[1][1] * dos->kmesh_dos->xk[ik2][1]
+                      + relvec_v4[i][j].vecs[1][2] * dos->kmesh_dos->xk[ik2][2]
+                      + relvec_v4[i][j].vecs[2][0] * dos->kmesh_dos->xk[ik3][0]
+                      + relvec_v4[i][j].vecs[2][1] * dos->kmesh_dos->xk[ik3][1]
+                      + relvec_v4[i][j].vecs[2][2] * dos->kmesh_dos->xk[ik3][2];
 
                 ret_in += fcs_group_v4[i][j] * std::exp(im * phase);
             }
@@ -756,7 +749,6 @@ void AnharmonicCore::calc_phi4_reciprocal(const unsigned int ik1,
         }
     }
 }
-
 
 std::complex<double> AnharmonicCore::V3_mode(int mode,
                                              const double *xk2,
@@ -776,9 +768,9 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     for (int i = 0; i < ngroup_v3; ++i) {
 
         auto vec_tmp = evec[0][mode][evec_index_v3[i][0]]
-                       * evec[1][is][evec_index_v3[i][1]]
-                       * evec[2][js][evec_index_v3[i][2]]
-                       * invmass_v3[i];
+              * evec[1][is][evec_index_v3[i][1]]
+              * evec[2][js][evec_index_v3[i][2]]
+              * invmass_v3[i];
 
         auto ret_in = std::complex<double>(0.0, 0.0);
 
@@ -787,11 +779,11 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
         for (auto j = 0; j < nsize_group; ++j) {
 
             auto phase = relvec_v3[i][j].vecs[0][0] * xk2[0]
-                         + relvec_v3[i][j].vecs[0][1] * xk2[1]
-                         + relvec_v3[i][j].vecs[0][2] * xk2[2]
-                         + relvec_v3[i][j].vecs[1][0] * xk3[0]
-                         + relvec_v3[i][j].vecs[1][1] * xk3[1]
-                         + relvec_v3[i][j].vecs[1][2] * xk3[2];
+                  + relvec_v3[i][j].vecs[0][1] * xk2[1]
+                  + relvec_v3[i][j].vecs[0][2] * xk2[2]
+                  + relvec_v3[i][j].vecs[1][0] * xk3[0]
+                  + relvec_v3[i][j].vecs[1][1] * xk3[1]
+                  + relvec_v3[i][j].vecs[1][2] * xk3[2];
 
             ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
 
@@ -803,15 +795,14 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     return ctmp / std::sqrt(eval[0][mode] * eval[1][is] * eval[2][js]);
 }
 
-
 void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
                                            const double *temp_in,
                                            const double omega_in,
                                            const unsigned int ik_in,
                                            const unsigned int is_in,
                                            const KpointMeshUniform *kmesh_in,
-                                           const double * const * eval_in,
-                                           const std::complex<double> * const * const *evec_in,
+                                           const double *const *eval_in,
+                                           const std::complex<double> *const *const *evec_in,
                                            double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
@@ -881,18 +872,18 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
 
                 if (integration->ismear == 0) {
                     delta_arr[ik][ns * is + js][0]
-                            = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
-                              - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
+                          = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                          - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                            = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
-                              - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                          = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                          - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 1) {
                     delta_arr[ik][ns * is + js][0]
-                            = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
-                              - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
+                          = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                          - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                            = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
-                              - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                          = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                          - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 }
             }
         }
@@ -953,8 +944,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
                     }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
-                               * (n1 * delta_arr[ik][ns * is + js][0]
-                                  - n2 * delta_arr[ik][ns * is + js][1]);
+                          * (n1 * delta_arr[ik][ns * is + js][0]
+                                - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -968,15 +959,14 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
     for (i = 0; i < ntemp; ++i) ret[i] *= pi * std::pow(0.5, 4) / static_cast<double>(nk);
 }
 
-
 void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
                                               const double *temp_in,
                                               const double omega_in,
                                               const unsigned int ik_in,
                                               const unsigned int is_in,
                                               const KpointMeshUniform *kmesh_in,
-                                              const double * const * eval_in,
-                                              const std::complex<double> * const * const *evec_in,
+                                              const double *const *eval_in,
+                                              const std::complex<double> *const *const *evec_in,
                                               double *ret)
 {
     // This function returns the imaginary part of phonon self-energy 
@@ -1017,10 +1007,10 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
     for (i = 0; i < ntemp; ++i) ret[i] = 0.0;
 
     kmesh_in->get_unique_triplet_k(ik_in,
-                                 symmetry->SymmList,
-                                 use_triplet_symmetry,
-                                 sym_permutation,
-                                 triplet);
+                                   symmetry->SymmList,
+                                   use_triplet_symmetry,
+                                   sym_permutation,
+                                   triplet);
 
     const auto npair_uniq = triplet.size();
 
@@ -1034,7 +1024,6 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
     allocate(kmap_identity, nk);
 
     for (i = 0; i < nk; ++i) kmap_identity[i] = i;
-
 
 #ifdef _OPENMP
 #pragma omp parallel private(is, js, k1, k2, xk_tmp, energy_tmp, i, weight_tetra, ik, jk, arr)
@@ -1148,8 +1137,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
                     }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
-                               * (n1 * delta_arr[ik][ns * is + js][0]
-                                  - n2 * delta_arr[ik][ns * is + js][1]);
+                          * (n1 * delta_arr[ik][ns * is + js][0]
+                                - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -1162,7 +1151,6 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
 
     for (i = 0; i < ntemp; ++i) ret[i] *= pi * std::pow(0.5, 4);
 }
-
 
 void AnharmonicCore::setup_cubic()
 {
@@ -1199,9 +1187,9 @@ void AnharmonicCore::setup_cubic()
             evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
         invmass_v3[i]
-                = invsqrt_mass_p[evec_index_v3[i][0] / 3]
-                  * invsqrt_mass_p[evec_index_v3[i][1] / 3]
-                  * invsqrt_mass_p[evec_index_v3[i][2] / 3];
+              = invsqrt_mass_p[evec_index_v3[i][0] / 3]
+              * invsqrt_mass_p[evec_index_v3[i][1] / 3]
+              * invsqrt_mass_p[evec_index_v3[i][2] / 3];
         k += fcs_group_v3[i].size();
     }
 
@@ -1240,10 +1228,10 @@ void AnharmonicCore::setup_quartic()
             evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
         invmass_v4[i]
-                = invsqrt_mass_p[evec_index_v4[i][0] / 3]
-                  * invsqrt_mass_p[evec_index_v4[i][1] / 3]
-                  * invsqrt_mass_p[evec_index_v4[i][2] / 3]
-                  * invsqrt_mass_p[evec_index_v4[i][3] / 3];
+              = invsqrt_mass_p[evec_index_v4[i][0] / 3]
+              * invsqrt_mass_p[evec_index_v4[i][1] / 3]
+              * invsqrt_mass_p[evec_index_v4[i][2] / 3]
+              * invsqrt_mass_p[evec_index_v4[i][3] / 3];
         k += fcs_group_v4[i].size();
     }
 
@@ -1311,7 +1299,7 @@ void AnharmonicCore::store_exponential_for_acceleration(const unsigned nk_in[3],
 #endif
             for (ii = 0; ii < 2 * nkrep_out - 1; ++ii) {
                 phase = 2.0 * pi * static_cast<double>(ii - nkrep_out + 1)
-                        / static_cast<double>(nkrep_out);
+                      / static_cast<double>(nkrep_out);
                 exp_phase[ii] = std::exp(im * phase);
             }
 
@@ -1339,7 +1327,6 @@ void AnharmonicCore::store_exponential_for_acceleration(const unsigned nk_in[3],
         }
     }
 }
-
 
 void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
                                                  const KpointMeshUniform *kmesh_in,
@@ -1542,7 +1529,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
 
                         //#pragma omp critical
                         ret_private[nomega * ithread + iomega]
-                                += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);
+                              += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);
                     }
                 }
             }

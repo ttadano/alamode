@@ -50,7 +50,6 @@ void Isotope::deallocate_variables()
     }
 }
 
-
 void Isotope::setup_isotope_scattering()
 {
     const int nkd = system->nkd;
@@ -92,8 +91,8 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                                       const unsigned int snum,
                                       const double omega,
                                       const KpointMeshUniform *kmesh_in,
-                                      const double * const * eval_in,
-                                      const std::complex<double> * const * const * evec_in,
+                                      const double *const *eval_in,
+                                      const std::complex<double> *const *const *evec_in,
                                       double &ret) const
 {
     // Compute phonon selfenergy of phonon (knum, snum) 
@@ -117,7 +116,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
-                             * evec_in[knum][snum][3 * iat + icrd];
+                          * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
@@ -135,13 +134,12 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
     ret *= pi * omega * 0.25 / static_cast<double>(nk);
 }
 
-
 void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                                             const unsigned int snum,
                                             const double omega,
                                             const KpointMeshUniform *kmesh_in,
-                                            const double * const * eval_in,
-                                            const std::complex<double> * const * const * evec_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in,
                                             double &ret) const
 {
     // Compute phonon selfenergy of phonon (knum, snum) 
@@ -171,7 +169,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
-                             * evec_in[knum][snum][3 * iat + icrd];
+                          * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
@@ -190,7 +188,6 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
     deallocate(eval);
     deallocate(weight);
 }
-
 
 void Isotope::calc_isotope_selfenergy_all() const
 {

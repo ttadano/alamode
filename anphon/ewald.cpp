@@ -26,7 +26,6 @@
 #include <complex>
 #include <boost/math/special_functions/erf.hpp>
 
-
 using namespace PHON_NS;
 
 Ewald::Ewald(PHON *phon) : Pointers(phon)
@@ -52,7 +51,6 @@ void Ewald::set_default_variables()
     force_permutation_sym = true;
 }
 
-
 void Ewald::deallocate_variables()
 {
     if (multiplicity) {
@@ -65,7 +63,6 @@ void Ewald::deallocate_variables()
         deallocate(distall_ewald);
     }
 }
-
 
 void Ewald::init()
 {
@@ -96,7 +93,6 @@ void Ewald::init()
     }
 }
 
-
 void Ewald::prepare_Ewald(const double dielectric[3][3])
 {
     int icrd;
@@ -124,23 +120,23 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     // For calculating Coulombic (dipole-dipole) FCs
     for (icrd = 0; icrd < 3; ++icrd) {
         lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_s[icrd][0], 2.0)
-                                     + std::pow(system->lavec_s[icrd][1], 2.0)
-                                     + std::pow(system->lavec_s[icrd][2], 2.0));
+                                           + std::pow(system->lavec_s[icrd][1], 2.0)
+                                           + std::pow(system->lavec_s[icrd][2], 2.0));
 
         rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_s[icrd][0], 2.0)
-                                      + std::pow(system->rlavec_s[icrd][1], 2.0)
-                                      + std::pow(system->rlavec_s[icrd][2], 2.0));
+                                            + std::pow(system->rlavec_s[icrd][1], 2.0)
+                                            + std::pow(system->rlavec_s[icrd][2], 2.0));
 
         rotvec(e_lavec, system->lavec_s[icrd], epsilon_inv);
         rotvec(e_rlavec, system->rlavec_s[icrd], epsilon);
 
         lavec_enorm = std::sqrt(system->lavec_s[icrd][0] * e_lavec[0]
-                                + system->lavec_s[icrd][1] * e_lavec[1]
-                                + system->lavec_s[icrd][2] * e_lavec[2]);
+                                      + system->lavec_s[icrd][1] * e_lavec[1]
+                                      + system->lavec_s[icrd][2] * e_lavec[2]);
 
         rlavec_enorm = std::sqrt(system->rlavec_s[icrd][0] * e_rlavec[0]
-                                 + system->rlavec_s[icrd][1] * e_rlavec[1]
-                                 + system->rlavec_s[icrd][2] * e_rlavec[2]);
+                                       + system->rlavec_s[icrd][1] * e_rlavec[1]
+                                       + system->rlavec_s[icrd][2] * e_rlavec[2]);
 
         if (lavec_enorm < lavec_min[0] || icrd == 0) {
             lavec_min[0] = lavec_enorm;
@@ -167,22 +163,22 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     // For calculating Coulombic (dipole-dipole) dynamical matrix
     for (icrd = 0; icrd < 3; ++icrd) {
         lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_p[icrd][0], 2.0)
-                                     + std::pow(system->lavec_p[icrd][1], 2.0)
-                                     + std::pow(system->lavec_p[icrd][2], 2.0));
+                                           + std::pow(system->lavec_p[icrd][1], 2.0)
+                                           + std::pow(system->lavec_p[icrd][2], 2.0));
 
         rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_p[icrd][0], 2.0)
-                                      + std::pow(system->rlavec_p[icrd][1], 2.0)
-                                      + std::pow(system->rlavec_p[icrd][2], 2.0));
+                                            + std::pow(system->rlavec_p[icrd][1], 2.0)
+                                            + std::pow(system->rlavec_p[icrd][2], 2.0));
 
         rotvec(e_lavec, system->lavec_p[icrd], epsilon_inv);
         lavec_enorm = std::sqrt(system->lavec_p[icrd][0] * e_lavec[0]
-                                + system->lavec_p[icrd][1] * e_lavec[1]
-                                + system->lavec_p[icrd][2] * e_lavec[2]);
+                                      + system->lavec_p[icrd][1] * e_lavec[1]
+                                      + system->lavec_p[icrd][2] * e_lavec[2]);
 
         rotvec(e_rlavec, system->rlavec_p[icrd], epsilon);
         rlavec_enorm = std::sqrt(system->rlavec_p[icrd][0] * e_rlavec[0]
-                                 + system->rlavec_p[icrd][1] * e_rlavec[1]
-                                 + system->rlavec_p[icrd][2] * e_rlavec[2]);
+                                       + system->rlavec_p[icrd][1] * e_rlavec[1]
+                                       + system->rlavec_p[icrd][2] * e_rlavec[2]);
 
         if (lavec_enorm < lavec_min[0] || icrd == 0) {
             lavec_min[0] = lavec_enorm;
@@ -206,8 +202,8 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     num_g = (2 * ng[0] + 1) * (2 * ng[1] + 1) * (2 * ng[2] + 1);
 
     det_epsilon = epsilon[0][0] * (epsilon[1][1] * epsilon[2][2] - epsilon[1][2] * epsilon[2][1])
-                  - epsilon[0][1] * (epsilon[1][0] * epsilon[2][2] - epsilon[1][2] * epsilon[2][0])
-                  + epsilon[0][2] * (epsilon[1][0] * epsilon[2][1] - epsilon[1][1] * epsilon[2][0]);
+          - epsilon[0][1] * (epsilon[1][0] * epsilon[2][2] - epsilon[1][2] * epsilon[2][0])
+          + epsilon[0][2] * (epsilon[1][0] * epsilon[2][1] - epsilon[1][1] * epsilon[2][0]);
 
     if (mympi->my_rank == 0) {
 
@@ -248,7 +244,6 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
         std::cout << std::endl;
     }
 }
-
 
 void Ewald::prepare_G()
 {
@@ -293,7 +288,6 @@ void Ewald::prepare_G()
     }
 }
 
-
 void Ewald::get_pairs_of_minimum_distance(const int nat,
                                           const int nsize[3],
                                           double **xf) const
@@ -336,8 +330,8 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
         for (jat = 0; jat < nat; ++jat) {
             for (icell = 0; icell < ncell; ++icell) {
                 dist_tmp = std::sqrt(std::pow(xcrd[0][iat][0] - xcrd[icell][jat][0], 2.0)
-                                     + std::pow(xcrd[0][iat][1] - xcrd[icell][jat][1], 2.0)
-                                     + std::pow(xcrd[0][iat][2] - xcrd[icell][jat][2], 2.0));
+                                           + std::pow(xcrd[0][iat][1] - xcrd[icell][jat][1], 2.0)
+                                           + std::pow(xcrd[0][iat][2] - xcrd[icell][jat][2], 2.0));
 
                 distall_ewald[iat][jat].emplace_back(icell, dist_tmp);
             }
@@ -391,7 +385,7 @@ void Ewald::compute_ewald_fcs()
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     fcs_ewald[3 * iat + icrd][3 * jat + jcrd]
-                            = fc_ewald_short[icrd][jcrd] + fc_ewald_long[icrd][jcrd];
+                          = fc_ewald_short[icrd][jcrd] + fc_ewald_long[icrd][jcrd];
                 }
             }
         }
@@ -399,7 +393,6 @@ void Ewald::compute_ewald_fcs()
 
     deallocate(fc_ewald_short);
     deallocate(fc_ewald_long);
-
 
     allocate(fcs_total, 3 * natmin, 3 * nat);
     allocate(fcs_other, 3 * natmin, 3 * nat);
@@ -410,7 +403,7 @@ void Ewald::compute_ewald_fcs()
         }
     }
 
-    for (const auto &it : fcs_phonon->fc2_ext) {
+    for (const auto &it: fcs_phonon->fc2_ext) {
         fcs_total[3 * it.atm1 + it.xyz1][3 * it.atm2 + it.xyz2] += it.fcs_val;
     }
 
@@ -447,7 +440,6 @@ void Ewald::compute_ewald_fcs()
             }
         }
     }
-
 
     if (mympi->my_rank == 0) {
         if (print_fc2_ewald) {
@@ -512,7 +504,7 @@ void Ewald::compute_ewald_fcs2()
         std::cout << " Calculating long-range (dipole-dipole) FCs in the supercell ...";
     }
 
-    std::vector <std::vector<double>> k_commensurate;
+    std::vector<std::vector<double>> k_commensurate;
     kpoint->get_commensurate_kpoints(system->lavec_s,
                                      system->lavec_p,
                                      k_commensurate);
@@ -530,7 +522,7 @@ void Ewald::compute_ewald_fcs2()
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     fcs_ewald[3 * iat + icrd][3 * jat + jcrd]
-                            = fc_ewald_short[icrd][jcrd] + fc_ewald_long[icrd][jcrd];
+                          = fc_ewald_short[icrd][jcrd] + fc_ewald_long[icrd][jcrd];
                 }
             }
         }
@@ -538,7 +530,6 @@ void Ewald::compute_ewald_fcs2()
 
     deallocate(fc_ewald_short);
     deallocate(fc_ewald_long);
-
 
     allocate(fcs_total, 3 * natmin, 3 * nat);
     allocate(fcs_other, 3 * natmin, 3 * nat);
@@ -549,7 +540,7 @@ void Ewald::compute_ewald_fcs2()
         }
     }
 
-    for (const auto &it : fcs_phonon->fc2_ext) {
+    for (const auto &it: fcs_phonon->fc2_ext) {
         fcs_total[3 * it.atm1 + it.xyz1][3 * it.atm2 + it.xyz2] += it.fcs_val;
     }
 
@@ -586,7 +577,6 @@ void Ewald::compute_ewald_fcs2()
             }
         }
     }
-
 
     if (mympi->my_rank == 0) {
         if (print_fc2_ewald) {
@@ -634,7 +624,6 @@ void Ewald::compute_ewald_fcs2()
     }
 }
 
-
 void Ewald::calc_short_term_ewald_fcs(const int iat,
                                       const int jat,
                                       double **fc_l_out)
@@ -650,7 +639,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
     int kat, kkd;
     double xnorm, tmp;
     double x_tmp[3], trans[3];
-    std::vector <std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
+    std::vector<std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
 
     for (icrd = 0; icrd < 3; ++icrd) {
         for (jcrd = 0; jcrd < 3; ++jcrd) {
@@ -678,8 +667,8 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                             }
                             rotvec(x_tmp, x_tmp, system->lavec_s);
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                              + x_tmp[1] * x_tmp[1]
-                                              + x_tmp[2] * x_tmp[2]);
+                                                    + x_tmp[1] * x_tmp[1]
+                                                    + x_tmp[2] * x_tmp[2]);
 
                             if (xnorm < Lmax_sub) {
 
@@ -689,7 +678,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                                     for (icrd = 0; icrd < 3; ++icrd) {
                                         for (jcrd = 0; jcrd < 3; ++jcrd) {
                                             fc_l_out[icrd][jcrd] += 0.5 * (func_L[icrd][jcrd]
-                                                                           + func_L[jcrd][icrd]);
+                                                  + func_L[jcrd][icrd]);
                                         }
                                     }
                                 } else {
@@ -720,8 +709,8 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                                 x_tmp[i] -= trans[i];
                             }
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                              + x_tmp[1] * x_tmp[1]
-                                              + x_tmp[2] * x_tmp[2]);
+                                                    + x_tmp[1] * x_tmp[1]
+                                                    + x_tmp[2] * x_tmp[2]);
 
                             if (xnorm < Lmax_sub) {
                                 calc_realspace_sum(iat, kat, x_tmp, lambda_sub, func_L);
@@ -730,7 +719,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                                     for (icrd = 0; icrd < 3; ++icrd) {
                                         for (jcrd = 0; jcrd < 3; ++jcrd) {
                                             fc_l_out[icrd][jcrd] += 0.5 * (func_L[icrd][jcrd]
-                                                                           + func_L[jcrd][icrd]);
+                                                  + func_L[jcrd][icrd]);
                                         }
                                     }
                                 } else {
@@ -751,8 +740,8 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                             x_tmp[i] -= trans[i];
                         }
                         xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                + x_tmp[1] * x_tmp[1]
-                                + x_tmp[2] * x_tmp[2]);
+                                                + x_tmp[1] * x_tmp[1]
+                                                + x_tmp[2] * x_tmp[2]);
 
                         if (xnorm < Lmax_sub) {
                             calc_realspace_sum(iat, jat, x_tmp, lambda_sub, func_L);
@@ -786,8 +775,8 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                     }
                     rotvec(x_tmp, x_tmp, system->lavec_s);
                     xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                      + x_tmp[1] * x_tmp[1]
-                                      + x_tmp[2] * x_tmp[2]);
+                                            + x_tmp[1] * x_tmp[1]
+                                            + x_tmp[2] * x_tmp[2]);
 
                     if (xnorm < Lmax_sub) {
                         calc_realspace_sum(iat, jat, x_tmp, lambda_sub, func_L);
@@ -805,7 +794,6 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
 
     }
 }
-
 
 void Ewald::calc_long_term_ewald_fcs(const int iat,
                                      const int jat,
@@ -836,12 +824,12 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
 
     if (iat == jat) {
 
-        for (const auto &it : G_vector_sub) {
+        for (const auto &it: G_vector_sub) {
             for (i = 0; i < 3; ++i) g_tmp[i] = it.vec[i];
             rotvec(epsilon_gvector, g_tmp, epsilon);
             gnorm2 = g_tmp[0] * epsilon_gvector[0]
-                     + g_tmp[1] * epsilon_gvector[1]
-                     + g_tmp[2] * epsilon_gvector[2];
+                  + g_tmp[1] * epsilon_gvector[1]
+                  + g_tmp[2] * epsilon_gvector[2];
 
             for (int kat = 0; kat < system->nat; ++kat) {
                 int kkd = system->map_s2p[kat].atom_num;
@@ -852,9 +840,9 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                 rotvec(x_tmp, x_tmp, system->lavec_s);
 
                 common_tmp = factor * std::exp(-0.25 * gnorm2 / std::pow(lambda_sub, 2.0)) / gnorm2
-                             * std::cos(g_tmp[0] * x_tmp[0]
-                                        + g_tmp[1] * x_tmp[1]
-                                        + g_tmp[2] * x_tmp[2]);
+                      * std::cos(g_tmp[0] * x_tmp[0]
+                                       + g_tmp[1] * x_tmp[1]
+                                       + g_tmp[2] * x_tmp[2]);
 
                 for (icrd = 0; icrd < 3; ++icrd) {
                     for (jcrd = 0; jcrd < 3; ++jcrd) {
@@ -862,15 +850,15 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                             for (bcrd = 0; bcrd < 3; ++bcrd) {
                                 if (force_permutation_sym) {
                                     fc_g_out[icrd][jcrd] -= g_tmp[acrd] * g_tmp[bcrd] * common_tmp
-                                                            *
-                                                            (Born_charge[ikd][acrd][icrd] * Born_charge[kkd][bcrd][jcrd]
-                                                             +
-                                                             Born_charge[jkd][acrd][jcrd] *
-                                                             Born_charge[kkd][bcrd][icrd]);
+                                          *
+                                                (Born_charge[ikd][acrd][icrd] * Born_charge[kkd][bcrd][jcrd]
+                                                      +
+                                                            Born_charge[jkd][acrd][jcrd] *
+                                                                  Born_charge[kkd][bcrd][icrd]);
                                 } else {
                                     fc_g_out[icrd][jcrd] -= g_tmp[acrd] * g_tmp[bcrd] * common_tmp * 2.0
-                                                            * (Born_charge[ikd][acrd][icrd] *
-                                                               Born_charge[kkd][bcrd][jcrd]);
+                                          * (Born_charge[ikd][acrd][icrd] *
+                                                Born_charge[kkd][bcrd][jcrd]);
                                 }
                             }
                         }
@@ -880,12 +868,12 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
         }
     }
 
-    for (const auto &it : G_vector_sub) {
+    for (const auto &it: G_vector_sub) {
         for (i = 0; i < 3; ++i) g_tmp[i] = it.vec[i];
         rotvec(epsilon_gvector, g_tmp, epsilon);
         gnorm2 = g_tmp[0] * epsilon_gvector[0]
-                 + g_tmp[1] * epsilon_gvector[1]
-                 + g_tmp[2] * epsilon_gvector[2];
+              + g_tmp[1] * epsilon_gvector[1]
+              + g_tmp[2] * epsilon_gvector[2];
 
         for (i = 0; i < 3; ++i) {
             x_tmp[i] = system->xr_s[iat][i] - system->xr_s[jat][i];
@@ -893,21 +881,20 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
         rotvec(x_tmp, x_tmp, system->lavec_s);
 
         common_tmp = 2.0 * factor * std::exp(-0.25 * gnorm2 / std::pow(lambda_sub, 2.0)) / gnorm2
-                     * std::cos(g_tmp[0] * x_tmp[0] + g_tmp[1] * x_tmp[1] + g_tmp[2] * x_tmp[2]);
+              * std::cos(g_tmp[0] * x_tmp[0] + g_tmp[1] * x_tmp[1] + g_tmp[2] * x_tmp[2]);
 
         for (icrd = 0; icrd < 3; ++icrd) {
             for (jcrd = 0; jcrd < 3; ++jcrd) {
                 for (acrd = 0; acrd < 3; ++acrd) {
                     for (bcrd = 0; bcrd < 3; ++bcrd) {
                         fc_g_out[icrd][jcrd] += g_tmp[acrd] * g_tmp[bcrd] * common_tmp
-                                                * Born_charge[ikd][acrd][icrd] * Born_charge[jkd][bcrd][jcrd];
+                              * Born_charge[ikd][acrd][icrd] * Born_charge[jkd][bcrd][jcrd];
                     }
                 }
             }
         }
     }
 }
-
 
 void Ewald::add_longrange_matrix(const double *xk_in,
                                  const double *kvec_in,
@@ -938,7 +925,7 @@ void Ewald::add_longrange_matrix(const double *xk_in,
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     dymat_k_out[3 * iat + icrd][3 * jat + jcrd] = dymat_tmp_l[icrd][jcrd]
-                                                                  + dymat_tmp_g[icrd][jcrd];
+                          + dymat_tmp_g[icrd][jcrd];
                 }
             }
 
@@ -967,7 +954,6 @@ void Ewald::add_longrange_matrix(const double *xk_in,
 //    }
 }
 
-
 void Ewald::calc_short_term_dynamical_matrix(const int iat,
                                              const int jat,
                                              double *xk_in,
@@ -985,7 +971,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
     double x_tmp[3], trans[3];
     std::complex<double> im(0.0, 1.0);
     double tmp;
-    std::vector <std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
+    std::vector<std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
 
     // Substitute quantities into variables
     int atm_s1 = system->map_p2s[iat][0];
@@ -1021,8 +1007,8 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                             }
                             rotvec(x_tmp, x_tmp, system->lavec_s);
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                              + x_tmp[1] * x_tmp[1]
-                                              + x_tmp[2] * x_tmp[2]);
+                                                    + x_tmp[1] * x_tmp[1]
+                                                    + x_tmp[2] * x_tmp[2]);
 
                             if (xnorm < Lmax) {
                                 calc_realspace_sum(atm_s1, atm_s3, x_tmp, lambda, func_L);
@@ -1031,7 +1017,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                                     for (icrd = 0; icrd < 3; ++icrd) {
                                         for (jcrd = 0; jcrd < 3; ++jcrd) {
                                             mat_out[icrd][jcrd] += 0.5 * (func_L[icrd][jcrd]
-                                                                          + func_L[jcrd][icrd]);
+                                                  + func_L[jcrd][icrd]);
                                         }
                                     }
                                 } else {
@@ -1056,8 +1042,8 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                                 x_tmp[i] -= trans[i];
                             }
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                              + x_tmp[1] * x_tmp[1]
-                                              + x_tmp[2] * x_tmp[2]);
+                                                    + x_tmp[1] * x_tmp[1]
+                                                    + x_tmp[2] * x_tmp[2]);
 
                             if (xnorm < Lmax) {
 
@@ -1067,7 +1053,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                                     for (icrd = 0; icrd < 3; ++icrd) {
                                         for (jcrd = 0; jcrd < 3; ++jcrd) {
                                             mat_out[icrd][jcrd] += 0.5 * (func_L[icrd][jcrd]
-                                                                          + func_L[jcrd][icrd]);
+                                                  + func_L[jcrd][icrd]);
                                         }
                                     }
                                 } else {
@@ -1088,8 +1074,8 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                             x_tmp[i] -= trans[i];
                         }
                         xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                + x_tmp[1] * x_tmp[1]
-                                + x_tmp[2] * x_tmp[2]);
+                                                + x_tmp[1] * x_tmp[1]
+                                                + x_tmp[2] * x_tmp[2]);
 
                         if (xnorm < Lmax) {
                             calc_realspace_sum(atm_s1, atm_s2, x_tmp, lambda, func_L);
@@ -1125,8 +1111,8 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                         x_tmp[i] -= trans[i];
                     }
                     xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
-                                      + x_tmp[1] * x_tmp[1]
-                                      + x_tmp[2] * x_tmp[2]);
+                                            + x_tmp[1] * x_tmp[1]
+                                            + x_tmp[2] * x_tmp[2]);
 
                     if (xnorm < Lmax) {
                         calc_realspace_sum(atm_s1, atm_s2, x_tmp, lambda, func_L);
@@ -1152,7 +1138,6 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
         }
     }
 }
-
 
 void Ewald::calc_long_term_dynamical_matrix(const int iat,
                                             const int jat,
@@ -1200,11 +1185,11 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                 for (acrd = 0; acrd < 3; ++acrd) {
                     for (bcrd = 0; bcrd < 3; ++bcrd) {
                         tmp += xk_in[acrd] * xk_in[bcrd]
-                               * Born_charge[iat][acrd][icrd] * Born_charge[jat][bcrd][jcrd];
+                              * Born_charge[iat][acrd][icrd] * Born_charge[jat][bcrd][jcrd];
                     }
                 }
                 mat_out[icrd][jcrd] += 2.0 * tmp / kd * exp_phase
-                                       * std::exp(-0.25 * kd / std::pow(lambda, 2.0));
+                      * std::exp(-0.25 * kd / std::pow(lambda, 2.0));
             }
         }
 
@@ -1225,7 +1210,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                     for (acrd = 0; acrd < 3; ++acrd) {
                         for (bcrd = 0; bcrd < 3; ++bcrd) {
                             tmp += kdirec[acrd] * kdirec[bcrd]
-                                   * Born_charge[iat][acrd][icrd] * Born_charge[jat][bcrd][jcrd];
+                                  * Born_charge[iat][acrd][icrd] * Born_charge[jat][bcrd][jcrd];
                         }
                     }
                     mat_out[icrd][jcrd] += 2.0 * tmp / norm * exp_phase;
@@ -1234,12 +1219,11 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
         }
     }
 
-
     double g[3], gk[3], vecl[3], g_tmp[3], gk_tmp[3];
     double common;
     std::complex<double> g_test;
 
-    for (auto &it : G_vector) {
+    for (auto &it: G_vector) {
         for (int l = 0; l < 3; ++l) {
             g[l] = it.vec[l];
             gk[l] = g[l] + xk_in[l];
@@ -1269,11 +1253,11 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                             for (bcrd = 0; bcrd < 3; ++bcrd) {
                                 if (force_permutation_sym) {
                                     tmp += g[acrd] * g[bcrd]
-                                           * (Born_charge[iat][acrd][icrd] * Born_charge[kat][bcrd][jcrd]
-                                              + Born_charge[jat][acrd][jcrd] * Born_charge[kat][bcrd][icrd]);
+                                          * (Born_charge[iat][acrd][icrd] * Born_charge[kat][bcrd][jcrd]
+                                                + Born_charge[jat][acrd][jcrd] * Born_charge[kat][bcrd][icrd]);
                                 } else {
                                     tmp += g[acrd] * g[bcrd] * 2.0
-                                           * (Born_charge[iat][acrd][icrd] * Born_charge[kat][bcrd][jcrd]);
+                                          * (Born_charge[iat][acrd][icrd] * Born_charge[kat][bcrd][jcrd]);
                                 }
                             }
                         }
@@ -1297,7 +1281,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                 for (acrd = 0; acrd < 3; ++acrd) {
                     for (bcrd = 0; bcrd < 3; ++bcrd) {
                         tmp += gk[acrd] * gk[bcrd]
-                               * Born_charge[iat][acrd][icrd] * Born_charge[jat][bcrd][jcrd];
+                              * Born_charge[iat][acrd][icrd] * Born_charge[jat][bcrd][jcrd];
                     }
                 }
                 mat_out[icrd][jcrd] += tmp * common * exp_phase;
@@ -1316,7 +1300,7 @@ void Ewald::calc_realspace_sum(const int iat,
                                const int jat,
                                const double xdist[3],
                                const double lambda_in,
-                               std::vector <std::vector<double>> &ret)
+                               std::vector<std::vector<double>> &ret)
 {
     // iat : atom index in the supercell
     // jat : atom index in the supercell
@@ -1344,8 +1328,8 @@ void Ewald::calc_realspace_sum(const int iat,
             for (acrd = 0; acrd < 3; ++acrd) {
                 for (bcrd = 0; bcrd < 3; ++bcrd) {
                     tmp += hmat_tmp[acrd][bcrd]
-                           * Born_charge[ikd][acrd][icrd]
-                           * Born_charge[jkd][bcrd][jcrd];
+                          * Born_charge[ikd][acrd][icrd]
+                          * Born_charge[jkd][bcrd][jcrd];
                 }
             }
             ret[icrd][jcrd] = 2.0 * tmp * lambda3;
@@ -1387,13 +1371,13 @@ void Ewald::calc_anisotropic_hmat(const double lambda_in,
     double two_over_sqrtpi = 2.0 / std::sqrt(pi);
 
     common_tmp[0] = (3.0 * yd_inv * yd2_inv * erfc_y + two_over_sqrtpi * (3.0 * yd2_inv + 2.0) * exp_y2)
-                    * yd2_inv / std::sqrt(det_epsilon);
+          * yd2_inv / std::sqrt(det_epsilon);
     common_tmp[1] = (yd_inv * yd2_inv * erfc_y + two_over_sqrtpi * yd2_inv * exp_y2) / std::sqrt(det_epsilon);
 
     for (icrd = 0; icrd < 3; ++icrd) {
         for (jcrd = 0; jcrd < 3; ++jcrd) {
             hmat_out[icrd][jcrd] = x_tmp[icrd] * x_tmp[jcrd] * common_tmp[0]
-                                   - epsilon_inv[icrd][jcrd] * common_tmp[1];
+                  - epsilon_inv[icrd][jcrd] * common_tmp[1];
         }
     }
 }

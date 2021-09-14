@@ -59,7 +59,6 @@ void Fcs_phonon::deallocate_variables()
     }
 }
 
-
 void Fcs_phonon::setup(std::string mode)
 {
     unsigned int i;
@@ -148,7 +147,6 @@ void Fcs_phonon::setup(std::string mode)
     MPI_Bcast_fcs_array(maxorder);
 }
 
-
 void Fcs_phonon::load_fc2_xml()
 {
     using namespace boost::property_tree;
@@ -220,7 +218,6 @@ void Fcs_phonon::load_fcs_xml() const
 
     AtomCellSuper ivec_tmp{};
     std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
-
 
     std::cout << "  Reading force constants from the XML file ... ";
 
@@ -407,7 +404,6 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
     deallocate(ind);
 }
 
-
 void Fcs_phonon::examine_translational_invariance(const int n,
                                                   const unsigned int nat,
                                                   const unsigned int natmin,
@@ -425,7 +421,6 @@ void Fcs_phonon::examine_translational_invariance(const int n,
     const auto force_asr = false;
     FcsClassExtent fc2_tmp;
 
-
     for (i = 0; i < n; ++i) ret[i] = 0.0;
 
     for (i = 0; i < n; ++i) {
@@ -438,7 +433,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                     sum2[j][k] = 0.0;
                 }
             }
-            for (const auto &it : fc2) {
+            for (const auto &it: fc2) {
                 sum2[3 * it.atm1 + it.xyz1][it.xyz2] += it.fcs_val;
             }
 
@@ -472,7 +467,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                     }
                 }
 
-                for (const auto &it : fc2) {
+                for (const auto &it: fc2) {
                     sum2[3 * it.atm1 + it.xyz1][it.xyz2] += it.fcs_val;
                 }
             }
@@ -497,7 +492,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                 }
             }
 
-            for (const auto &it : fcs[i]) {
+            for (const auto &it: fcs[i]) {
                 j = it.pairs[0].index;
                 k = 3 * (natmin * it.pairs[1].tran + it.pairs[1].index / 3) + it.pairs[1].index % 3;
                 l = it.pairs[2].index % 3;
@@ -528,12 +523,12 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                 }
             }
 
-            for (const auto &it : fcs[i]) {
+            for (const auto &it: fcs[i]) {
                 j = it.pairs[0].index;
                 k = 3 * system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]
-                    + it.pairs[1].index % 3;
+                      + it.pairs[1].index % 3;
                 l = 3 * system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]
-                    + it.pairs[2].index % 3;
+                      + it.pairs[2].index % 3;
                 m = it.pairs[3].index % 3;
 
                 sum4[j][k][l][m] += it.fcs_val;
@@ -557,7 +552,6 @@ void Fcs_phonon::examine_translational_invariance(const int n,
 
     }
 }
-
 
 void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
 {
