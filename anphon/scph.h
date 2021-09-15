@@ -68,10 +68,8 @@ class Scph : protected Pointers {
     bool lower_temp;
     double tolerance_scph;
 
-    double **xk_scph, **kvec_na_scph;
-    double **xk_interpolate;
-    std::vector<std::vector<KpointList>> kp_irred_scph;
-    std::vector<std::vector<KpointList>> kp_irred_interpolate;
+    //double **xk_scph, **kvec_na_scph;
+    //double **xk_interpolate;
 
     void exec_scph();
 
@@ -85,28 +83,34 @@ class Scph : protected Pointers {
 
  private:
 
+    // kmesh class
+    KpointMeshUniform *kmesh_coarse, *kmesh_dense;
+
+    // Phase shift
+    PhaseFactorStorage *phase_factor_scph;
+
     // Information of kmesh for SCPH calculation
-    unsigned int nk_scph;
-    unsigned int nk_interpolate;
+    //unsigned int nk_scph;
+    //unsigned int nk_interpolate;
     int *kmap_interpolate_to_scph;
 
     // Information for calculating the ph-ph interaction coefficients
-    double *invmass_v3;
-    double *invmass_v4;
-    int **evec_index_v3;
-    int **evec_index_v4;
-    int ngroup_v3, ngroup_v4;
-    std::vector<RelativeVector> *relvec_v3, *relvec_v4;
-    std::complex<double> *phi3_reciprocal;
-    int kindex_phi3_stored[2] = {-1, -1};
+//    double *invmass_v3;
+//    double *invmass_v4;
+//    int **evec_index_v3;
+//    int **evec_index_v4;
+//    int ngroup_v3, ngroup_v4;
+    //std::vector<RelativeVector> *relvec_v3, *relvec_v4;
+    std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
+    //int kindex_phi3_stored[2] = {-1, -1};
 
-    std::vector<double> *fcs_group_v3;
-    std::vector<double> *fcs_group_v4;
-    std::complex<double> *exp_phase, ***exp_phase3;
-    int nk_grid[3];
-    int nk_represent;
-    unsigned int tune_type;
-    double dnk[3];
+//    std::vector<double> *fcs_group_v3;
+//    std::vector<double> *fcs_group_v4;
+//    std::complex<double> *exp_phase, ***exp_phase3;
+//    int nk_grid[3];
+//    int nk_represent;
+//    unsigned int tune_type;
+//    double dnk[3];
 
     // Information of harmonic dynamical matrix
     //std::complex<double> im;
@@ -116,7 +120,7 @@ class Scph : protected Pointers {
 
     // Local variables for handling symmetry of dynamical matrix
     std::complex<double> ****mat_transform_sym;
-    std::vector<int> *small_group_at_k;
+    //std::vector<int> *small_group_at_k;
     std::vector<int> *symop_minus_at_k;
     KpointSymmetry *kpoint_map_symmetry;
 
@@ -138,7 +142,7 @@ class Scph : protected Pointers {
 
     void load_scph_dymat_from_file(std::complex<double> ****);
 
-    void store_scph_dymat_to_file(std::complex<double> ****);
+    void store_scph_dymat_to_file(const std::complex<double> *const* const* const*dymat_in);
 
     void exec_scph_main(std::complex<double> ****);
 
@@ -154,9 +158,9 @@ class Scph : protected Pointers {
                                            std::complex<double> ***,
                                            bool);
 
-    void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***,
-                                             std::complex<double> ***,
-                                             bool);
+    void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
+                                             const std::complex<double> * const * const *evec_in,
+                                             const bool self_offdiag);
 
     void zerofill_elements_acoustic_at_gamma(double **,
                                              std::complex<double> ***,
@@ -232,20 +236,18 @@ class Scph : protected Pointers {
     void bubble_correction(std::complex<double> ****,
                            std::complex<double> ****);
 
-    std::complex<double> V3_this(const unsigned int ks[3],
-                                 double **eval,
-                                 std::complex<double> ***evec);
+//    std::complex<double> V3_this(const unsigned int ks[3],
+//                                 double **eval,
+//                                 std::complex<double> ***evec);
 
-    void calc_phi3_reciprocal_this(const unsigned int ik1,
-                                   const unsigned int ik2,
-                                   std::complex<double> *ret);
+//    void calc_phi3_reciprocal_this(const unsigned int ik1,
+//                                   const unsigned int ik2,
+//                                   std::complex<double> *ret);
 
-    std::vector<std::complex<double>> get_bubble_selfenergy(const unsigned int nk_in,
+    std::vector<std::complex<double>> get_bubble_selfenergy(const KpointMeshUniform *kmesh_in,
                                                             const unsigned int ns_in,
-                                                            const unsigned int kmesh_in[3],
-                                                            double **xk_in,
-                                                            double **eval_in,
-                                                            std::complex<double> ***evec_in,
+                                                            const double * const *eval_in,
+                                                            const std::complex<double> * const * const *evec_in,
                                                             const unsigned int knum,
                                                             const unsigned int snum,
                                                             const double temp_in,

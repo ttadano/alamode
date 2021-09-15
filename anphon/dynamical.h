@@ -39,7 +39,7 @@ inline bool operator<(const DistWithCell a,
 
 class DymatEigenValue {
  public:
-    DymatEigenValue() : nk(0), ns(0), evec(nullptr), eval(nullptr),
+    DymatEigenValue() : nk(0), ns(0), eval(nullptr), evec(nullptr),
                         is_stored_eigvec(true), is_irreducible_only(false) {};
 
     DymatEigenValue(const bool stored_eigvec_,

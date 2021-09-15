@@ -51,7 +51,8 @@ class RelativeVector {
 class PhaseFactorStorage {
  public:
     PhaseFactorStorage() {};
-    PhaseFactorStorage(const unsigned int nk_grid_in[3]) {
+    PhaseFactorStorage(const unsigned int nk_grid_in[3])
+    {
         for (auto i = 0; i < 3; ++i) {
             nk_grid[i] = static_cast<int>(nk_grid_in[i]);
         }
@@ -59,17 +60,17 @@ class PhaseFactorStorage {
         if (exp_phase) deallocate(exp_phase);
         if (exp_phase3) deallocate(exp_phase3);
     };
-    ~PhaseFactorStorage() {
+    ~PhaseFactorStorage()
+    {
         if (exp_phase) deallocate(exp_phase);
         if (exp_phase3) deallocate(exp_phase3);
     };
 
-    void store_exponential_for_acceleration(const bool use_tuned_ver,
-                                            const bool switch_to_type2 = false);
+    void create(const bool use_tuned_ver,
+                const bool switch_to_type2 = false);
     unsigned int get_tune_type() const;
     std::complex<double> get_exp_type1(const double phase_in) const;
     std::complex<double> get_exp_type2(const double phase3_in[3]) const;
-
 
  private:
     int nk_represent, nk_grid[3]; // This type must NOT be changed to unsigned int
@@ -78,10 +79,9 @@ class PhaseFactorStorage {
     unsigned int tune_type;
     double dnk_represent;
     double dnk[3];
-    std::complex<double> *exp_phase=nullptr;
-    std::complex<double> ***exp_phase3=nullptr;
+    std::complex<double> *exp_phase = nullptr;
+    std::complex<double> ***exp_phase3 = nullptr;
 };
-
 
 class AnharmonicCore : protected Pointers {
  public:
@@ -124,21 +124,34 @@ class AnharmonicCore : protected Pointers {
 
     std::complex<double> Phi4(const unsigned int [4]);
 
-    std::complex<double> V3(const unsigned int [3],
-                            const double *const *,
-                            const std::complex<double> *const *const *);
+    std::complex<double> V3(const unsigned int ks[3],
+                            const double *const *xk_in,
+                            const double *const *eval_in,
+                            const std::complex<double> *const *const *evec_in);
 
-    std::complex<double> V4(const unsigned int [4],
-                            const double *const *,
-                            const std::complex<double> *const *const *);
+    std::complex<double> V3(const unsigned int ks[3],
+                            const double *const *xk_in,
+                            const double *const *eval_in,
+                            const std::complex<double> *const *const *evec_in,
+                            const PhaseFactorStorage *phase_storage_in);
 
-    std::complex<double> Phi3(const unsigned int [3],
-                              double **,
-                              std::complex<double> ***);
+    std::complex<double> V4(const unsigned int ks[4],
+                            const double *const *xk_in,
+                            const double *const *eval_in,
+                            const std::complex<double> *const *const *evec_in,
+                            const PhaseFactorStorage *phase_storage_in);
 
-    std::complex<double> Phi4(const unsigned int [4],
-                              double **,
-                              std::complex<double> ***);
+    std::complex<double> Phi3(const unsigned int ks[3],
+                              const double *const *xk_in,
+                              const double *const *eval_in,
+                              const std::complex<double> *const *const *evec_in,
+                              const PhaseFactorStorage *phase_storage_in);
+
+    std::complex<double> Phi4(const unsigned int ks[4],
+                              const double *const *xk_in,
+                              const double *const *eval_in,
+                              const std::complex<double> *const *const *evec_in,
+                              const PhaseFactorStorage *phase_storage_in);
 
     std::complex<double> V3_mode(int,
                                  const double *,
@@ -169,6 +182,24 @@ class AnharmonicCore : protected Pointers {
                                      const double *omega,
                                      double *ret);
 
+    void calc_phi3_reciprocal(const double *xk1,
+                              const double *xk2,
+                              const PhaseFactorStorage *phase_storage_in,
+                              std::complex<double> *ret);
+
+    void calc_phi4_reciprocal(const double *xk1,
+                              const double *xk2,
+                              const double *xk3,
+                              const PhaseFactorStorage *phase_storage_in,
+                              std::complex<double> *ret);
+
+    int get_ngroup_fcs(const unsigned int order) const;
+    std::vector<double> *get_fcs_group(const unsigned int order) const;
+
+    double *get_invmass_factor(const unsigned int order) const;
+    int **get_evec_index(const unsigned int order) const;
+
+
  private:
     void set_default_variables();
 
@@ -195,14 +226,5 @@ class AnharmonicCore : protected Pointers {
     void setup_cubic();
 
     void setup_quartic();
-
-    void calc_phi3_reciprocal(unsigned int,
-                              unsigned int,
-                              std::complex<double> *);
-
-    void calc_phi4_reciprocal(unsigned int,
-                              unsigned int,
-                              unsigned int,
-                              std::complex<double> *);
 };
 }
