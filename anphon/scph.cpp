@@ -59,7 +59,7 @@ Scph::~Scph()
 
 void Scph::set_default_variables()
 {
-    im = std::complex<double>(0.0, 1.0);
+    //im = std::complex<double>(0.0, 1.0);
     restart_scph = false;
     warmstart_scph = false;
     lower_temp = true;

@@ -109,7 +109,7 @@ class Scph : protected Pointers {
     double dnk[3];
 
     // Information of harmonic dynamical matrix
-    std::complex<double> im;
+    //std::complex<double> im;
     double **omega2_harmonic;
     std::complex<double> ***evec_harmonic;
     MinimumDistList ***mindist_list_scph;

@@ -17,43 +17,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "kpoint.h"
 
 namespace PHON_NS {
-class KsListMode {
- public:
-    double xk[3]{};
-    int nmode;
-
-    KsListMode();
-
-    KsListMode(double xk_in[3],
-               const int n)
-    {
-        for (int i = 0; i < 3; ++i) xk[i] = xk_in[i];
-        nmode = n;
-    }
-};
-
-class KpointListWithCoordinate {
- public:
-    double xk[3];
-    double x, y;
-    int plane;
-    int selection_type;
-
-    KpointListWithCoordinate();
-
-    KpointListWithCoordinate(const std::vector<double> &a,
-                             const double x_in,
-                             const double y_in,
-                             const int plane_in,
-                             const int selection_type_in)
-    {
-        for (int i = 0; i < 3; ++i) xk[i] = a[i];
-        x = x_in;
-        y = y_in;
-        plane = plane_in;
-        selection_type = selection_type_in;
-    }
-};
 
 class RelativeVector {
  public:
@@ -84,6 +47,41 @@ class RelativeVector {
         }
     }
 };
+
+class PhaseFactorStorage {
+ public:
+    PhaseFactorStorage() {};
+    PhaseFactorStorage(const unsigned int nk_grid_in[3]) {
+        for (auto i = 0; i < 3; ++i) {
+            nk_grid[i] = static_cast<int>(nk_grid_in[i]);
+        }
+
+        if (exp_phase) deallocate(exp_phase);
+        if (exp_phase3) deallocate(exp_phase3);
+    };
+    ~PhaseFactorStorage() {
+        if (exp_phase) deallocate(exp_phase);
+        if (exp_phase3) deallocate(exp_phase3);
+    };
+
+    void store_exponential_for_acceleration(const bool use_tuned_ver,
+                                            const bool switch_to_type2 = false);
+    unsigned int get_tune_type() const;
+    std::complex<double> get_exp_type1(const double phase_in) const;
+    std::complex<double> get_exp_type2(const double phase3_in[3]) const;
+
+
+ private:
+    int nk_represent, nk_grid[3]; // This type must NOT be changed to unsigned int
+    // because these variables are used as a divisor of modulo.
+    // If the type is unsigned int, the phase factor returned by get_exp_type[1,2] becomes incorrect.
+    unsigned int tune_type;
+    double dnk_represent;
+    double dnk[3];
+    std::complex<double> *exp_phase=nullptr;
+    std::complex<double> ***exp_phase3=nullptr;
+};
+
 
 class AnharmonicCore : protected Pointers {
  public:
@@ -152,10 +150,6 @@ class AnharmonicCore : protected Pointers {
 
     void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
                                  unsigned int,
-                                 double ***) const;
-
-    void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                 unsigned int,
                                  int,
                                  std::vector<double> *,
                                  std::vector<RelativeVector> *&) const;
@@ -180,8 +174,6 @@ class AnharmonicCore : protected Pointers {
 
     void deallocate_variables();
 
-    std::complex<double> im;
-
     double *invmass_v3;
     double *invmass_v4;
     int **evec_index_v3;
@@ -190,14 +182,10 @@ class AnharmonicCore : protected Pointers {
     int ngroup_v4;
     std::vector<double> *fcs_group_v3;
     std::vector<double> *fcs_group_v4;
-    std::complex<double> *exp_phase, ***exp_phase3;
     std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
     std::vector<RelativeVector> *relvec_v3, *relvec_v4;
 
-    int nk_grid[3];
-    int nk_represent;
-    unsigned int tune_type;
-    double dnk[3];
+    PhaseFactorStorage *phase_storage_dos;
 
     bool sym_permutation;
 
@@ -207,11 +195,6 @@ class AnharmonicCore : protected Pointers {
     void setup_cubic();
 
     void setup_quartic();
-
-    void store_exponential_for_acceleration(const unsigned int nk_in[3],
-                                            int &,
-                                            std::complex<double> *,
-                                            std::complex<double> ***);
 
     void calc_phi3_reciprocal(unsigned int,
                               unsigned int,

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_CXX_FLAGS_RELEASE "-O2") 
+set(CMAKE_CXX_FLAGS_RELEASE "-O3") 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -O0 -D_DEBUG")
 
 project(anphon)
