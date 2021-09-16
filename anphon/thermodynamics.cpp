@@ -40,7 +40,7 @@ Thermodynamics::~Thermodynamics()
 
 void Thermodynamics::setup()
 {
-    MPI_Bcast(&classical, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&classical, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 }
 
 double Thermodynamics::Cv(const double omega,

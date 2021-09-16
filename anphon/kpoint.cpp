@@ -689,45 +689,45 @@ void Kpoint::setup_kpoint_plane(const std::vector<KpointInp> &kpinfo,
     mpi_broadcast_kplane_vector(nplane, kp_plane);
 }
 
-void Kpoint::gen_kmesh(const bool usesym,
-                       const unsigned int nk_in[3],
-                       double **xk_out,
-                       std::vector<std::vector<KpointList>> &kplist_out) const
-{
-    unsigned int ik;
-    double **xkr;
-
-    const auto nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
-    int nsym;
-
-    allocate(xkr, nk_tot, 3);
-
-    for (unsigned int ix = 0; ix < nk_in[0]; ++ix) {
-        for (unsigned int iy = 0; iy < nk_in[1]; ++iy) {
-            for (unsigned int iz = 0; iz < nk_in[2]; ++iz) {
-                ik = iz + iy * nk_in[2] + ix * nk_in[2] * nk_in[1];
-                xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_in[0]);
-                xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_in[1]);
-                xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_in[2]);
-            }
-        }
-    }
-
-    if (usesym) {
-        nsym = symmetry->SymmList.size();
-    } else {
-        nsym = 1;
-    }
-    reduce_kpoints(nsym, xkr, nk_in, kplist_out);
-
-    for (ik = 0; ik < nk_tot; ++ik) {
-        for (unsigned int i = 0; i < 3; ++i) {
-            xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
-        }
-    }
-
-    deallocate(xkr);
-}
+//void Kpoint::gen_kmesh(const bool usesym,
+//                       const unsigned int nk_in[3],
+//                       double **xk_out,
+//                       std::vector<std::vector<KpointList>> &kplist_out) const
+//{
+//    unsigned int ik;
+//    double **xkr;
+//
+//    const auto nk_tot = nk_in[0] * nk_in[1] * nk_in[2];
+//    int nsym;
+//
+//    allocate(xkr, nk_tot, 3);
+//
+//    for (unsigned int ix = 0; ix < nk_in[0]; ++ix) {
+//        for (unsigned int iy = 0; iy < nk_in[1]; ++iy) {
+//            for (unsigned int iz = 0; iz < nk_in[2]; ++iz) {
+//                ik = iz + iy * nk_in[2] + ix * nk_in[2] * nk_in[1];
+//                xkr[ik][0] = static_cast<double>(ix) / static_cast<double>(nk_in[0]);
+//                xkr[ik][1] = static_cast<double>(iy) / static_cast<double>(nk_in[1]);
+//                xkr[ik][2] = static_cast<double>(iz) / static_cast<double>(nk_in[2]);
+//            }
+//        }
+//    }
+//
+//    if (usesym) {
+//        nsym = symmetry->SymmList.size();
+//    } else {
+//        nsym = 1;
+//    }
+//    reduce_kpoints(nsym, xkr, nk_in, kplist_out);
+//
+//    for (ik = 0; ik < nk_tot; ++ik) {
+//        for (unsigned int i = 0; i < 3; ++i) {
+//            xk_out[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+//        }
+//    }
+//
+//    deallocate(xkr);
+//}
 
 void Kpoint::reduce_kpoints(const unsigned int nsym,
                             double **xkr,

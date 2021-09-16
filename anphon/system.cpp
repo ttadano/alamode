@@ -336,7 +336,7 @@ void System::setup()
     }
 
     // Check the consistency of FCSXML and FC2XML
-    MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     if (fcs_phonon->update_fc2) {
         allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
         check_consistency_primitive_lattice();
@@ -361,7 +361,7 @@ void System::setup()
     for (i = 0; i < natmin; ++i) {
         kd_prim[i] = kd[map_p2s[i][0]];
     }
-    MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&lspin, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     if (mympi->my_rank > 0) {
         allocate(magmom, natmin, 3);
     }
@@ -700,7 +700,7 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&lspin, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&lspin, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0) {
         allocate(mass_kd, nkd);

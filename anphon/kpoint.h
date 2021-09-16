@@ -179,7 +179,7 @@ class KpointGeneral {
 
 class KpointMeshUniform {
  public:
-    KpointMeshUniform() {};
+    KpointMeshUniform() = default;;
 
     KpointMeshUniform(const unsigned int nk_in[3])
     {
@@ -205,8 +205,8 @@ class KpointMeshUniform {
         }
     };
 
-    unsigned int nk_i[3];
-    unsigned int nk, nk_irred;
+    unsigned int nk_i[3]{};
+    unsigned int nk{}, nk_irred{};
 
     double **xk = nullptr;
     double **kvec_na = nullptr;
@@ -337,10 +337,10 @@ class Kpoint : protected Pointers {
     int get_knum(const double [3],
                  const unsigned int [3]) const;
 
-    void gen_kmesh(bool,
-                   const unsigned int [3],
-                   double **,
-                   std::vector<std::vector<KpointList>> &) const;
+//    void gen_kmesh(bool,
+//                   const unsigned int [3],
+//                   double **,
+//                   std::vector<std::vector<KpointList>> &) const;
 
     void get_symmetrization_matrix_at_k(const double *xk_in,
                                         std::vector<int> &sym_list,

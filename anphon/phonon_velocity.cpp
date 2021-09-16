@@ -70,7 +70,7 @@ void PhononVelocity::deallocate_variables()
 
 void PhononVelocity::setup_velocity()
 {
-    MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&print_velocity, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 }
 
 void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,

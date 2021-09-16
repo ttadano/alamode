@@ -71,7 +71,7 @@ void Gruneisen::deallocate_variables()
 void Gruneisen::setup()
 {
     MPI_Bcast(&delta_a, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&print_newfcs, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&print_newfcs, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
     allocate(xshift_s, 27, 3);
 

@@ -66,7 +66,7 @@ void Ewald::deallocate_variables()
 
 void Ewald::init()
 {
-    MPI_Bcast(&is_longrange, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&is_longrange, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&prec_ewald, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&rate_ab, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
