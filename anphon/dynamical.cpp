@@ -562,14 +562,9 @@ void Dynamical::calc_analytic_k(const double *xk_in,
                                 std::complex<double> **dymat_out) const
 {
     int i;
-
     const auto nmode = 3 * system->natmin;
-
     double vec[3];
-    const std::complex<double> im(0.0, 1.0);
-    std::complex<double> **ctmp;
 
-    allocate(ctmp, nmode, nmode);
     for (i = 0; i < nmode; ++i) {
         for (auto j = 0; j < nmode; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);
@@ -616,7 +611,6 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
     double kz1[3], kz2[3];
     double born_tmp[3][3];
     double xk_tmp[3], xdiff[3];
-    const std::complex<double> im(0.0, 1.0);
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -713,7 +707,6 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     double kz1[3], kz2[3];
     double born_tmp[3][3];
     double vec[3];
-    std::complex<double> im(0.0, 1.0);
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
