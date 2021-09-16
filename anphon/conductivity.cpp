@@ -593,12 +593,12 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                      = thermodynamics->Cv_classical(omega, temperature[i])
-                                      * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv_classical(omega, temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                      = thermodynamics->Cv(omega, temperature[i])
-                                      * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv(omega, temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
                             // Convert to SI unit
@@ -691,13 +691,13 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                  * (thermodynamics->Cv(omega1, temperature[i]) / omega1
-                                        + thermodynamics->Cv(omega2, temperature[i]) / omega2)
-                                  * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                  / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                               + gamma_total[ik * ns + js][i], 2.0))
-                                  * vv_tmp;
+                                              * (thermodynamics->Cv(omega1, temperature[i]) / omega1
+                                                 + thermodynamics->Cv(omega2, temperature[i]) / omega2)
+                                              * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                              / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                                 + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                                  + gamma_total[ik * ns + js][i], 2.0))
+                                              * vv_tmp;
                             kappa_tmp[ib] += kcelem_tmp;
 
                             if (calc_coherent == 2 && j == k) {

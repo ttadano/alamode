@@ -153,8 +153,8 @@ void Gruneisen::calc_gruneisen()
                 for (unsigned int i = 0; i < ns; ++i) {
                     for (unsigned int j = 0; j < ns; ++j) {
                         gruneisen_bs[ik][is] += std::conj(evec[ik][is][i])
-                              * dfc2_reciprocal[i][j]
-                              * evec[ik][is][j];
+                                                * dfc2_reciprocal[i][j]
+                                                * evec[ik][is][j];
                     }
                 }
 
@@ -189,8 +189,8 @@ void Gruneisen::calc_gruneisen()
                 for (unsigned int i = 0; i < ns; ++i) {
                     for (unsigned int j = 0; j < ns; ++j) {
                         gruneisen_dos[ik][is] += std::conj(evec[ik][is][i])
-                              * dfc2_reciprocal[i][j]
-                              * evec[ik][is][j];
+                                                 * dfc2_reciprocal[i][j]
+                                                 * evec[ik][is][j];
                     }
                 }
 
@@ -246,7 +246,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[cell_s][i]
-                  - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
+                     - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
@@ -255,8 +255,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
-              += it.fcs_val * std::exp(im * phase)
-              / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+                += it.fcs_val * std::exp(im * phase)
+                   / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
 
     }
 }
@@ -348,10 +348,10 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                  1].tran]]
-            [i]
-                  - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                  + xshift_s[it.pairs[norder - 1].cell_s][i];
+                                                                                                         1].tran]]
+                     [i]
+                     - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                     + xshift_s[it.pairs[norder - 1].cell_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
@@ -482,11 +482,11 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 
         child.put("<xmlattr>.pair1",
                   std::to_string(it.pairs[0].index / 3 + 1)
-                        + " " + std::to_string(it.pairs[0].index % 3 + 1));
+                  + " " + std::to_string(it.pairs[0].index % 3 + 1));
         child.put("<xmlattr>.pair2",
                   std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
-                        + " " + std::to_string(it.pairs[1].index % 3 + 1)
-                        + " " + std::to_string(it.pairs[1].cell_s + 1));
+                  + " " + std::to_string(it.pairs[1].index % 3 + 1)
+                  + " " + std::to_string(it.pairs[1].cell_s + 1));
     }
 
     for (const auto &it: delta_fc2) {
@@ -498,11 +498,11 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 
         child.put("<xmlattr>.pair1",
                   std::to_string(it.pairs[0].index / 3 + 1)
-                        + " " + std::to_string(it.pairs[0].index % 3 + 1));
+                  + " " + std::to_string(it.pairs[0].index % 3 + 1));
         child.put("<xmlattr>.pair2",
                   std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
-                        + " " + std::to_string(it.pairs[1].index % 3 + 1)
-                        + " " + std::to_string(it.pairs[1].cell_s + 1));
+                  + " " + std::to_string(it.pairs[1].index % 3 + 1)
+                  + " " + std::to_string(it.pairs[1].cell_s + 1));
     }
 
     if (anharmonic_core->quartic_mode) {
@@ -515,15 +515,15 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 
             child.put("<xmlattr>.pair1",
                       std::to_string(it.pairs[0].index / 3 + 1)
-                            + " " + std::to_string(it.pairs[0].index % 3 + 1));
+                      + " " + std::to_string(it.pairs[0].index % 3 + 1));
             child.put("<xmlattr>.pair2",
                       std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
-                            + " " + std::to_string(it.pairs[1].index % 3 + 1)
-                            + " " + std::to_string(it.pairs[1].cell_s + 1));
+                      + " " + std::to_string(it.pairs[1].index % 3 + 1)
+                      + " " + std::to_string(it.pairs[1].cell_s + 1));
             child.put("<xmlattr>.pair3",
                       std::to_string(system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran] + 1)
-                            + " " + std::to_string(it.pairs[2].index % 3 + 1)
-                            + " " + std::to_string(it.pairs[2].cell_s + 1));
+                      + " " + std::to_string(it.pairs[2].index % 3 + 1)
+                      + " " + std::to_string(it.pairs[2].cell_s + 1));
         }
 
         for (const auto &it: delta_fc3) {
@@ -537,15 +537,15 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 
             child.put("<xmlattr>.pair1",
                       std::to_string(it.pairs[0].index / 3 + 1)
-                            + " " + std::to_string(it.pairs[0].index % 3 + 1));
+                      + " " + std::to_string(it.pairs[0].index % 3 + 1));
             child.put("<xmlattr>.pair2",
                       std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
-                            + " " + std::to_string(it.pairs[1].index % 3 + 1)
-                            + " " + std::to_string(it.pairs[1].cell_s + 1));
+                      + " " + std::to_string(it.pairs[1].index % 3 + 1)
+                      + " " + std::to_string(it.pairs[1].cell_s + 1));
             child.put("<xmlattr>.pair3",
                       std::to_string(system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran] + 1)
-                            + " " + std::to_string(it.pairs[2].index % 3 + 1)
-                            + " " + std::to_string(it.pairs[2].cell_s + 1));
+                      + " " + std::to_string(it.pairs[2].index % 3 + 1)
+                      + " " + std::to_string(it.pairs[2].cell_s + 1));
         }
     }
 

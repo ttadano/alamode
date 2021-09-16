@@ -18,127 +18,127 @@
 #include "fcs_phonon.h"
 
 namespace PHON_NS {
-class Gvecs {
- public:
-    double vec[3];
+    class Gvecs {
+    public:
+        double vec[3];
 
-    Gvecs();
+        Gvecs();
 
-    Gvecs(const double *arr)
-    {
-        for (unsigned int i = 0; i < 3; ++i) {
-            vec[i] = arr[i];
+        Gvecs(const double *arr)
+        {
+            for (unsigned int i = 0; i < 3; ++i) {
+                vec[i] = arr[i];
+            }
+        };
+    };
+
+    class DistInfo {
+    public:
+        int cell;
+        double dist;
+
+        DistInfo();
+
+        DistInfo(const int n,
+                 const double d) : cell(n), dist(d) {};
+
+        DistInfo(const DistInfo &obj) : cell(obj.cell), dist(obj.dist) {};
+
+        bool operator<(const DistInfo &obj) const
+        {
+            return dist < obj.dist;
         }
     };
-};
 
-class DistInfo {
- public:
-    int cell;
-    double dist;
+    class Ewald : protected Pointers {
+    public:
+        Ewald(class PHON *);
 
-    DistInfo();
+        ~Ewald();
 
-    DistInfo(const int n,
-             const double d) : cell(n), dist(d) {};
+        bool is_longrange, print_fc2_ewald;
+        std::string file_longrange;
+        double prec_ewald;
+        double rate_ab;
 
-    DistInfo(const DistInfo &obj) : cell(obj.cell), dist(obj.dist) {};
+        int **multiplicity;
+        double epsilon[3][3], epsilon_inv[3][3];
+        double det_epsilon;
+        double ***Born_charge;
 
-    bool operator<(const DistInfo &obj) const
-    {
-        return dist < obj.dist;
-    }
-};
+        std::vector<FcsClassExtent> fc2_without_dipole;
 
-class Ewald : protected Pointers {
- public:
-    Ewald(class PHON *);
+        void init();
 
-    ~Ewald();
+        void add_longrange_matrix(const double *,
+                                  const double *,
+                                  std::complex<double> **);
 
-    bool is_longrange, print_fc2_ewald;
-    std::string file_longrange;
-    double prec_ewald;
-    double rate_ab;
+    private:
 
-    int **multiplicity;
-    double epsilon[3][3], epsilon_inv[3][3];
-    double det_epsilon;
-    double ***Born_charge;
+        std::vector<Gvecs> G_vector_sub;
+        double lambda_sub;
+        double Gmax_sub, Lmax_sub;
+        int nl_sub[3], ng_sub[3], num_l_sub, num_g_sub;
 
-    std::vector<FcsClassExtent> fc2_without_dipole;
+        std::vector<Gvecs> G_vector;
+        double lambda;
+        double Gmax, Lmax;
+        int nl[3], ng[3], num_l, num_g;
+        bool force_permutation_sym;
 
-    void init();
+        std::vector<DistInfo> **distall_ewald;
 
-    void add_longrange_matrix(const double *,
-                              const double *,
-                              std::complex<double> **);
+        void set_default_variables();
 
- private:
+        void deallocate_variables();
 
-    std::vector<Gvecs> G_vector_sub;
-    double lambda_sub;
-    double Gmax_sub, Lmax_sub;
-    int nl_sub[3], ng_sub[3], num_l_sub, num_g_sub;
+        void prepare_Ewald(const double [3][3]);
 
-    std::vector<Gvecs> G_vector;
-    double lambda;
-    double Gmax, Lmax;
-    int nl[3], ng[3], num_l, num_g;
-    bool force_permutation_sym;
+        void prepare_G();
 
-    std::vector<DistInfo> **distall_ewald;
+        void compute_ewald_fcs();
 
-    void set_default_variables();
+        void compute_ewald_fcs2();
 
-    void deallocate_variables();
+        void get_pairs_of_minimum_distance(int,
+                                           const int [3],
+                                           double **) const;
 
-    void prepare_Ewald(const double [3][3]);
+        void calc_longrange_fcs(int,
+                                int,
+                                int,
+                                int,
+                                int,
+                                double *);
 
-    void prepare_G();
+        void calc_short_term_ewald_fcs(int,
+                                       int,
+                                       double **);
 
-    void compute_ewald_fcs();
+        void calc_long_term_ewald_fcs(int,
+                                      int,
+                                      double **);
 
-    void compute_ewald_fcs2();
+        void calc_short_term_dynamical_matrix(int,
+                                              int,
+                                              double *,
+                                              std::complex<double> **);
 
-    void get_pairs_of_minimum_distance(int,
-                                       const int [3],
-                                       double **) const;
+        void calc_long_term_dynamical_matrix(const int iat,
+                                             const int jat,
+                                             const double *xk_in,
+                                             const double *kvec_in,
+                                             std::complex<double> **mat_out);
 
-    void calc_longrange_fcs(int,
-                            int,
-                            int,
-                            int,
-                            int,
-                            double *);
+        void calc_realspace_sum(const int iat,
+                                const int jat,
+                                const double xdist[3],
+                                const double lambda_in,
+                                std::vector<std::vector<double>> &ret);
 
-    void calc_short_term_ewald_fcs(int,
-                                   int,
+        void calc_anisotropic_hmat(double,
+                                   const double *,
                                    double **);
-
-    void calc_long_term_ewald_fcs(int,
-                                  int,
-                                  double **);
-
-    void calc_short_term_dynamical_matrix(int,
-                                          int,
-                                          double *,
-                                          std::complex<double> **);
-
-    void calc_long_term_dynamical_matrix(const int iat,
-                                         const int jat,
-                                         const double *xk_in,
-                                         const double *kvec_in,
-                                         std::complex<double> **mat_out);
-
-    void calc_realspace_sum(const int iat,
-                            const int jat,
-                            const double xdist[3],
-                            const double lambda_in,
-                            std::vector<std::vector<double>> &ret);
-
-    void calc_anisotropic_hmat(double,
-                               const double *,
-                               double **);
-};
+    };
 }
