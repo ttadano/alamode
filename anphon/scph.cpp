@@ -3008,9 +3008,6 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
         std::cout << '\n';
     }
 
-    epsilon *= time_ry / Hz_to_kayser;
-    MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
     allocate(eval, nk_scph, ns);
     allocate(evec, nk_scph, ns, ns);
 
@@ -3176,7 +3173,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                 }
                 if (mympi->my_rank == 0) {
                     std::cout << "   branch : " << std::setw(5) << snum + 1;
-                    std::cout << " omega = " << std::setw(15) << writes->in_kayser(eval[knum][snum]) << " (cm^-1); ";
+                    std::cout << " omega (SC1) = " << std::setw(15) << writes->in_kayser(eval[knum][snum]) << " (cm^-1); ";
                     std::cout << " Re[Self] = " << std::setw(15) << writes->in_kayser(real_self[snum]) << " (cm^-1)\n";
                 }
             }
@@ -3307,6 +3304,7 @@ std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const KpointMeshUn
     for (auto iomega = 0; iomega < nomega; ++iomega) {
         ret_mpi[iomega] *= factor;
     }
+
     MPI_Reduce(&ret_mpi[0], &ret_sum[0], nomega, MPI_COMPLEX16, MPI_SUM, 0, MPI_COMM_WORLD);
 
     for (auto iomega = 0; iomega < nomega; ++iomega) {
