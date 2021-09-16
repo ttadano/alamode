@@ -116,7 +116,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
-                          * evec_in[knum][snum][3 * iat + icrd];
+                             * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
@@ -169,7 +169,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
-                          * evec_in[knum][snum][3 * iat + icrd];
+                             * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
@@ -264,13 +264,13 @@ void Isotope::set_isotope_factor_from_database(const int nkd,
     for (int i = 0; i < nkd; ++i) {
         const auto atom_number = system->get_atomic_number_by_name(symbol_in[i]);
         if (atom_number >= isotope_factors.size() || atom_number == -1) {
-            error->exit("set_isotope_factor_from_database",
+            exit("set_isotope_factor_from_database",
                         "The isotope factor for the given element doesn't exist in the database.\n"
                         "Therefore, please input ISOFACT manually.");
         }
         const auto isofact_tmp = isotope_factors[atom_number];
         if (isofact_tmp < -0.5) {
-            error->exit("set_isotope_factor_from_database",
+            exit("set_isotope_factor_from_database",
                         "One of the elements in the KD-tag is unstable. "
                         "Therefore, please input ISOFACT manually.");
         }

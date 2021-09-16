@@ -17,209 +17,221 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "kpoint.h"
 
 namespace PHON_NS {
-class KsListMode {
- public:
-    double xk[3]{};
-    int nmode;
 
-    KsListMode();
+    class RelativeVector {
+    public:
+        double vecs[3][3];
 
-    KsListMode(double xk_in[3],
-               const int n)
-    {
-        for (int i = 0; i < 3; ++i) xk[i] = xk_in[i];
-        nmode = n;
-    }
-};
+        RelativeVector();
 
-class KpointListWithCoordinate {
- public:
-    double xk[3];
-    double x, y;
-    int plane;
-    int selection_type;
-
-    KpointListWithCoordinate();
-
-    KpointListWithCoordinate(const std::vector<double> &a,
-                             const double x_in,
-                             const double y_in,
-                             const int plane_in,
-                             const int selection_type_in)
-    {
-        for (int i = 0; i < 3; ++i) xk[i] = a[i];
-        x = x_in;
-        y = y_in;
-        plane = plane_in;
-        selection_type = selection_type_in;
-    }
-};
-
-class RelativeVector {
- public:
-    double vecs[3][3];
-
-    RelativeVector();
-
-    // Constructor for cubic term
-    RelativeVector(const double vec1[3],
-                   const double vec2[3])
-    {
-        for (int i = 0; i < 3; ++i) {
-            vecs[0][i] = vec1[i];
-            vecs[1][i] = vec2[i];
-            vecs[2][i] = 0.0;
+        // Constructor for cubic term
+        RelativeVector(const double vec1[3],
+                       const double vec2[3])
+        {
+            for (int i = 0; i < 3; ++i) {
+                vecs[0][i] = vec1[i];
+                vecs[1][i] = vec2[i];
+                vecs[2][i] = 0.0;
+            }
         }
-    }
 
-    // Constructor for quartic term
-    RelativeVector(const double vec1[3],
-                   const double vec2[3],
-                   const double vec3[3])
-    {
-        for (int i = 0; i < 3; ++i) {
-            vecs[0][i] = vec1[i];
-            vecs[1][i] = vec2[i];
-            vecs[2][i] = vec3[i];
+        // Constructor for quartic term
+        RelativeVector(const double vec1[3],
+                       const double vec2[3],
+                       const double vec3[3])
+        {
+            for (int i = 0; i < 3; ++i) {
+                vecs[0][i] = vec1[i];
+                vecs[1][i] = vec2[i];
+                vecs[2][i] = vec3[i];
+            }
         }
-    }
-};
+    };
 
-class AnharmonicCore : protected Pointers {
- public:
-    AnharmonicCore(class PHON *);
+    class PhaseFactorStorage {
+    public:
+        PhaseFactorStorage() {};
 
-    ~AnharmonicCore();
+        PhaseFactorStorage(const unsigned int nk_grid_in[3])
+        {
+            for (auto i = 0; i < 3; ++i) {
+                nk_grid[i] = static_cast<int>(nk_grid_in[i]);
+            }
 
-    void setup();
+            if (exp_phase) deallocate(exp_phase);
+            if (exp_phase3) deallocate(exp_phase3);
+        };
 
-    void calc_damping_smearing(const unsigned int ntemp,
-                               const double *temp_in,
-                               const double omega_in,
-                               const unsigned int ik_in,
-                               const unsigned int is_in,
-                               const KpointMeshUniform *kmesh_in,
-                               const double *const *eval_in,
-                               const std::complex<double> *const *const *evec_in,
-                               double *ret);
+        ~PhaseFactorStorage()
+        {
+            if (exp_phase) deallocate(exp_phase);
+            if (exp_phase3) deallocate(exp_phase3);
+        };
 
-    void calc_damping_tetrahedron(const unsigned int ntemp,
-                                  const double *temp_in,
-                                  const double omega_in,
-                                  const unsigned int ik_in,
-                                  const unsigned int is_in,
-                                  const KpointMeshUniform *kmesh_in,
+        void create(const bool use_tuned_ver,
+                    const bool switch_to_type2 = false);
+
+        unsigned int get_tune_type() const;
+
+        std::complex<double> get_exp_type1(const double phase_in) const;
+
+        std::complex<double> get_exp_type2(const double phase3_in[3]) const;
+
+    private:
+        int nk_represent, nk_grid[3]; // This type must NOT be changed to unsigned int
+        // because these variables are used as a divisor of modulo.
+        // If the type is unsigned int, the phase factor returned by get_exp_type[1,2] becomes incorrect.
+        unsigned int tune_type;
+        double dnk_represent;
+        double dnk[3];
+        std::complex<double> *exp_phase = nullptr;
+        std::complex<double> ***exp_phase3 = nullptr;
+    };
+
+    class AnharmonicCore : protected Pointers {
+    public:
+        AnharmonicCore(class PHON *);
+
+        ~AnharmonicCore();
+
+        void setup();
+
+        void calc_damping_smearing(const unsigned int ntemp,
+                                   const double *temp_in,
+                                   const double omega_in,
+                                   const unsigned int ik_in,
+                                   const unsigned int is_in,
+                                   const KpointMeshUniform *kmesh_in,
+                                   const double *const *eval_in,
+                                   const std::complex<double> *const *const *evec_in,
+                                   double *ret);
+
+        void calc_damping_tetrahedron(const unsigned int ntemp,
+                                      const double *temp_in,
+                                      const double omega_in,
+                                      const unsigned int ik_in,
+                                      const unsigned int is_in,
+                                      const KpointMeshUniform *kmesh_in,
+                                      const double *const *eval_in,
+                                      const std::complex<double> *const *const *evec_in,
+                                      double *ret);
+
+        int quartic_mode;
+        bool use_tuned_ver;
+        bool use_triplet_symmetry;
+        bool use_quartet_symmetry;
+
+        std::complex<double> V3(const unsigned int [3]);
+
+        std::complex<double> V4(const unsigned int [4]);
+
+        std::complex<double> Phi3(const unsigned int [3]);
+
+        std::complex<double> Phi4(const unsigned int [4]);
+
+        std::complex<double> V3(const unsigned int ks[3],
+                                const double *const *xk_in,
+                                const double *const *eval_in,
+                                const std::complex<double> *const *const *evec_in);
+
+        std::complex<double> V3(const unsigned int ks[3],
+                                const double *const *xk_in,
+                                const double *const *eval_in,
+                                const std::complex<double> *const *const *evec_in,
+                                const PhaseFactorStorage *phase_storage_in);
+
+        std::complex<double> V4(const unsigned int ks[4],
+                                const double *const *xk_in,
+                                const double *const *eval_in,
+                                const std::complex<double> *const *const *evec_in,
+                                const PhaseFactorStorage *phase_storage_in);
+
+        std::complex<double> Phi3(const unsigned int ks[3],
+                                  const double *const *xk_in,
                                   const double *const *eval_in,
                                   const std::complex<double> *const *const *evec_in,
-                                  double *ret);
+                                  const PhaseFactorStorage *phase_storage_in);
 
-    int quartic_mode;
-    bool use_tuned_ver;
-    bool use_triplet_symmetry;
-    bool use_quartet_symmetry;
+        std::complex<double> Phi4(const unsigned int ks[4],
+                                  const double *const *xk_in,
+                                  const double *const *eval_in,
+                                  const std::complex<double> *const *const *evec_in,
+                                  const PhaseFactorStorage *phase_storage_in);
 
-    std::complex<double> V3(const unsigned int [3]);
+        std::complex<double> V3_mode(int,
+                                     const double *,
+                                     const double *,
+                                     int,
+                                     int,
+                                     double **,
+                                     std::complex<double> ***) const;
 
-    std::complex<double> V4(const unsigned int [4]);
+        void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
+                                     unsigned int,
+                                     int,
+                                     std::vector<double> *,
+                                     std::vector<RelativeVector> *&) const;
 
-    std::complex<double> Phi3(const unsigned int [3]);
+        void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
+                                              unsigned int,
+                                              int &,
+                                              std::vector<double> *&) const;
 
-    std::complex<double> Phi4(const unsigned int [4]);
+        void calc_self3omega_tetrahedron(const double Temp,
+                                         const KpointMeshUniform *kmesh_in,
+                                         const double *const *eval,
+                                         const std::complex<double> *const *const *evec,
+                                         const unsigned int ik_in,
+                                         const unsigned int snum,
+                                         const unsigned int nomega,
+                                         const double *omega,
+                                         double *ret);
 
-    std::complex<double> V3(const unsigned int [3],
-                            const double *const *,
-                            const std::complex<double> *const *const *);
+        void calc_phi3_reciprocal(const double *xk1,
+                                  const double *xk2,
+                                  const PhaseFactorStorage *phase_storage_in,
+                                  std::complex<double> *ret);
 
-    std::complex<double> V4(const unsigned int [4],
-                            const double *const *,
-                            const std::complex<double> *const *const *);
+        void calc_phi4_reciprocal(const double *xk1,
+                                  const double *xk2,
+                                  const double *xk3,
+                                  const PhaseFactorStorage *phase_storage_in,
+                                  std::complex<double> *ret);
 
-    std::complex<double> Phi3(const unsigned int [3],
-                              double **,
-                              std::complex<double> ***);
+        int get_ngroup_fcs(const unsigned int order) const;
 
-    std::complex<double> Phi4(const unsigned int [4],
-                              double **,
-                              std::complex<double> ***);
+        std::vector<double> *get_fcs_group(const unsigned int order) const;
 
-    std::complex<double> V3_mode(int,
-                                 const double *,
-                                 const double *,
-                                 int,
-                                 int,
-                                 double **,
-                                 std::complex<double> ***) const;
+        double *get_invmass_factor(const unsigned int order) const;
 
-    void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                 unsigned int,
-                                 double ***) const;
+        int **get_evec_index(const unsigned int order) const;
 
-    void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                 unsigned int,
-                                 int,
-                                 std::vector<double> *,
-                                 std::vector<RelativeVector> *&) const;
 
-    void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
-                                          unsigned int,
-                                          int &,
-                                          std::vector<double> *&) const;
+    private:
+        void set_default_variables();
 
-    void calc_self3omega_tetrahedron(const double Temp,
-                                     const KpointMeshUniform *kmesh_in,
-                                     const double *const *eval,
-                                     const std::complex<double> *const *const *evec,
-                                     const unsigned int ik_in,
-                                     const unsigned int snum,
-                                     const unsigned int nomega,
-                                     const double *omega,
-                                     double *ret);
+        void deallocate_variables();
 
- private:
-    void set_default_variables();
+        double *invmass_v3;
+        double *invmass_v4;
+        int **evec_index_v3;
+        int **evec_index_v4;
+        int ngroup_v3;
+        int ngroup_v4;
+        std::vector<double> *fcs_group_v3;
+        std::vector<double> *fcs_group_v4;
+        std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
+        std::vector<RelativeVector> *relvec_v3, *relvec_v4;
 
-    void deallocate_variables();
+        PhaseFactorStorage *phase_storage_dos;
 
-    std::complex<double> im;
+        bool sym_permutation;
 
-    double *invmass_v3;
-    double *invmass_v4;
-    int **evec_index_v3;
-    int **evec_index_v4;
-    int ngroup_v3;
-    int ngroup_v4;
-    std::vector<double> *fcs_group_v3;
-    std::vector<double> *fcs_group_v4;
-    std::complex<double> *exp_phase, ***exp_phase3;
-    std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
-    std::vector<RelativeVector> *relvec_v3, *relvec_v4;
+        int kindex_phi3_stored[2] = {-1, -1};
+        int kindex_phi4_stored[3] = {-1, -1, -1};
 
-    int nk_grid[3];
-    int nk_represent;
-    unsigned int tune_type;
-    double dnk[3];
+        void setup_cubic();
 
-    bool sym_permutation;
-
-    int kindex_phi3_stored[2] = {-1, -1};
-    int kindex_phi4_stored[3] = {-1, -1, -1};
-
-    void setup_cubic();
-
-    void setup_quartic();
-
-    void store_exponential_for_acceleration(const unsigned int nk_in[3],
-                                            int &,
-                                            std::complex<double> *,
-                                            std::complex<double> ***);
-
-    void calc_phi3_reciprocal(unsigned int,
-                              unsigned int,
-                              std::complex<double> *);
-
-    void calc_phi4_reciprocal(unsigned int,
-                              unsigned int,
-                              unsigned int,
-                              std::complex<double> *);
-};
+        void setup_quartic();
+    };
 }

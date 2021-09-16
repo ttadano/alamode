@@ -69,8 +69,8 @@ void Fcs_phonon::setup(std::string mode)
     }
 
     MPI_Bcast(&anharmonic_core->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&thermodynamics->calc_FE_bubble, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&gruneisen->print_gruneisen, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&thermodynamics->calc_FE_bubble, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
     if (mode == "PHONONS") {
         require_cubic = false;
@@ -162,7 +162,7 @@ void Fcs_phonon::load_fc2_xml()
         }
         catch (std::exception &e) {
             auto str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
-            error->exit("load_fc2_xml", str_error.c_str());
+            exit("load_fc2_xml", str_error.c_str());
         }
     } else {
         try {
@@ -170,7 +170,7 @@ void Fcs_phonon::load_fc2_xml()
         }
         catch (std::exception &e) {
             auto str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
-            error->exit("load_fc2_xml", str_error.c_str());
+            exit("load_fc2_xml", str_error.c_str());
         }
     }
 
@@ -226,7 +226,7 @@ void Fcs_phonon::load_fcs_xml() const
     }
     catch (std::exception &e) {
         auto str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
-        error->exit("load_fcs_xml", str_error.c_str());
+        exit("load_fcs_xml", str_error.c_str());
     }
 
     for (unsigned int order = 0; order < maxorder; ++order) {
@@ -241,7 +241,7 @@ void Fcs_phonon::load_fcs_xml() const
 
         if (!child_) {
             auto str_tmp = str_tag + " flag not found in the XML file";
-            error->exit("load_fcs_xml", str_tmp.c_str());
+            exit("load_fcs_xml", str_tmp.c_str());
         }
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child(str_tag)) {
@@ -454,7 +454,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                                 if (it_target != fc2.end()) {
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
-                                    error->exit("examine_translational_invariance",
+                                    exit("examine_translational_invariance",
                                                 "Corresponding IFC not found.");
                                 }
                             }
@@ -526,9 +526,9 @@ void Fcs_phonon::examine_translational_invariance(const int n,
             for (const auto &it: fcs[i]) {
                 j = it.pairs[0].index;
                 k = 3 * system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]
-                      + it.pairs[1].index % 3;
+                    + it.pairs[1].index % 3;
                 l = 3 * system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]
-                      + it.pairs[2].index % 3;
+                    + it.pairs[2].index % 3;
                 m = it.pairs[3].index % 3;
 
                 sum4[j][k][l][m] += it.fcs_val;

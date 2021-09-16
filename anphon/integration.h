@@ -17,138 +17,129 @@
 #include <vector>
 
 namespace PHON_NS {
-struct tetra_pair {
-  double e;
-  double f;
-};
-
-inline bool operator<(const tetra_pair &a,
-                      const tetra_pair &b)
-{
-    return a.e < b.e;
-}
-
-struct TetraWithKnum {
-  double e;
-  int knum;
-};
-
-inline bool operator<(const TetraWithKnum &a,
-                      const TetraWithKnum &b)
-{
-    return a.e < b.e;
-}
-
-class TetraNodes {
- public:
-    TetraNodes()
-    {
-        nk1 = 0;
-        nk2 = 0;
-        nk3 = 0;
-        ntetra = 0;
-        tetras = nullptr;
+    struct tetra_pair {
+        double e;
+        double f;
     };
-    TetraNodes(unsigned int nk1_in,
-               unsigned int nk2_in,
-               unsigned int nk3_in)
+
+    inline bool operator<(const tetra_pair &a,
+                          const tetra_pair &b)
     {
-        nk1 = nk1_in;
-        nk2 = nk2_in;
-        nk3 = nk3_in;
-        ntetra = 6 * nk1 * nk2 * nk3;
-        allocate(tetras, ntetra, 4);
-    };
-    ~TetraNodes()
-    {
-        if (tetras) deallocate(tetras);
+        return a.e < b.e;
     }
 
-    void setup();
-    unsigned int get_ntetra() const;
-    unsigned int **get_tetras() const;
+    struct TetraWithKnum {
+        double e;
+        int knum;
+    };
 
- private:
-    unsigned int nk1, nk2, nk3;
-    unsigned int ntetra;
-    unsigned int **tetras;
-};
+    inline bool operator<(const TetraWithKnum &a,
+                          const TetraWithKnum &b)
+    {
+        return a.e < b.e;
+    }
 
-class Integration : protected Pointers {
- public:
-    Integration(class PHON *);
+    class TetraNodes {
+    public:
+        TetraNodes()
+        {
+            nk1 = 0;
+            nk2 = 0;
+            nk3 = 0;
+            ntetra = 0;
+            tetras = nullptr;
+        };
 
-    ~Integration();
+        TetraNodes(unsigned int nk1_in,
+                   unsigned int nk2_in,
+                   unsigned int nk3_in)
+        {
+            nk1 = nk1_in;
+            nk2 = nk2_in;
+            nk3 = nk3_in;
+            ntetra = 6 * nk1 * nk2 * nk3;
+            allocate(tetras, ntetra, 4);
+        };
 
-    int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
-    double epsilon;
+        ~TetraNodes()
+        {
+            if (tetras) deallocate(tetras);
+        }
 
-    void setup_integration();
+        void setup();
 
-    double do_tetrahedron(const double *energy,
-                          const double *f,
-                          const unsigned int ntetra,
-                          const unsigned int *const *tetras,
-                          const double e_ref);
+        unsigned int get_ntetra() const;
 
-//        void calc_weight_tetrahedron(const unsigned int,
-//                                     const unsigned int *,
-//                                     double *,
-//                                     const double *,
-//                                     double);
+        unsigned int **get_tetras() const;
 
-    void calc_weight_tetrahedron(const unsigned int nk_irreducible,
-                                 const unsigned int *map_to_irreducible_k,
-                                 const double *energy,
-                                 const double e_ref,
-                                 const unsigned int ntetra,
-                                 const unsigned int *const *tetras,
-                                 double *weight) const;
+    private:
+        unsigned int nk1, nk2, nk3;
+        unsigned int ntetra;
+        unsigned int **tetras;
+    };
 
-    void calc_weight_smearing(const unsigned int nk,
-                              const unsigned int nk_irreducible,
-                              const unsigned int *map_to_irreducible_k,
-                              const double *energy,
-                              const double e_ref,
-                              const int smearing_method,
-                              double *weight) const;
+    class Integration : protected Pointers {
+    public:
+        Integration(class PHON *);
 
- private:
-    void set_default_variables();
+        ~Integration();
 
-    void deallocate_variables();
+        int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
+        double epsilon;
 
-//        unsigned int ntetra;
-//        int **tetras;
+        void setup_integration();
 
-//        void prepare_tetrahedron(int,
-//                                 int,
-//                                 int) const;
+        double do_tetrahedron(const double *energy,
+                              const double *f,
+                              const unsigned int ntetra,
+                              const unsigned int *const *tetras,
+                              const double e_ref);
 
-    inline double fij(double,
-                      double,
-                      double) const;
+        void calc_weight_tetrahedron(const unsigned int nk_irreducible,
+                                     const unsigned int *map_to_irreducible_k,
+                                     const double *energy,
+                                     const double e_ref,
+                                     const unsigned int ntetra,
+                                     const unsigned int *const *tetras,
+                                     double *weight) const;
 
-    // inline double volume(const int *) const;
+        void calc_weight_smearing(const unsigned int nk,
+                                  const unsigned int nk_irreducible,
+                                  const unsigned int *map_to_irreducible_k,
+                                  const double *energy,
+                                  const double e_ref,
+                                  const int smearing_method,
+                                  double *weight) const;
 
-    std::vector<tetra_pair> tetra_data;
+    private:
+        void set_default_variables();
 
-    // inline double refold(double) const;
+        void deallocate_variables();
 
-    void insertion_sort(double *,
-                        int *,
-                        int) const;
-};
+        inline double fij(double,
+                          double,
+                          double) const;
 
-inline double delta_lorentz(const double omega,
-                            const double epsilon)
-{
-    return inverse_pi * epsilon / (omega * omega + epsilon * epsilon);
-}
+        // inline double volume(const int *) const;
 
-inline double delta_gauss(const double omega,
-                          const double epsilon)
-{
-    return std::exp(-omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
-}
+        std::vector<tetra_pair> tetra_data;
+
+        // inline double refold(double) const;
+
+        void insertion_sort(double *,
+                            int *,
+                            int) const;
+    };
+
+    inline double delta_lorentz(const double omega,
+                                const double epsilon)
+    {
+        return inverse_pi * epsilon / (omega * omega + epsilon * epsilon);
+    }
+
+    inline double delta_gauss(const double omega,
+                              const double epsilon)
+    {
+        return std::exp(-omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
+    }
 }

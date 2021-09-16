@@ -17,7 +17,6 @@ class Pointers {
  public:
     Pointers(PHON *ptr) :
           phon(ptr),
-          error(ptr->error),
           input(ptr->input),
           system(ptr->system),
           symmetry(ptr->symmetry),
@@ -45,7 +44,6 @@ class Pointers {
 
  protected:
     PHON *phon;
-    Error *&error;
     Input *&input;
     System *&system;
     Symmetry *&symmetry;

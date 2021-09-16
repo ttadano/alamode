@@ -1,7 +1,7 @@
 /*
  conductivity.cpp
 
- Copyright (c) 2014, 2015, 2016 Terumasa Tadano
+ Copyright (c) 2014 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -241,7 +241,7 @@ void Conductivity::prepare_restart()
             if (it_set == vks_job.end()) {
                 std::cout << " rank = " << mympi->my_rank
                           << " arr_done = " << arr_done[i] << std::endl;
-                error->exit("prepare_restart", "This cannot happen");
+                exit("prepare_restart", "This cannot happen");
             } else {
                 vks_job.erase(it_set);
             }
@@ -593,12 +593,12 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                      = thermodynamics->Cv_classical(omega, temperature[i])
-                                      * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv_classical(omega, temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                      = thermodynamics->Cv(omega, temperature[i])
-                                      * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv(omega, temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
                             // Convert to SI unit
@@ -655,7 +655,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
     std::ofstream ofs;
     if (calc_coherent == 2) {
         ofs.open(file_coherent_elems.c_str(), std::ios::out);
-        if (!ofs) error->exit("compute_kappa_coherent", "cannot open file_kc");
+        if (!ofs) exit("compute_kappa_coherent", "cannot open file_kc");
         ofs << "# Temperature [K], 1st and 2nd xyz components, ibranch, jbranch, ik_irred, "
                "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
         allocate(kappa_save, ns2, nk_irred);
@@ -691,13 +691,13 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                  * (thermodynamics->Cv(omega1, temperature[i]) / omega1
-                                        + thermodynamics->Cv(omega2, temperature[i]) / omega2)
-                                  * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                  / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                               + gamma_total[ik * ns + js][i], 2.0))
-                                  * vv_tmp;
+                                              * (thermodynamics->Cv(omega1, temperature[i]) / omega1
+                                                 + thermodynamics->Cv(omega2, temperature[i]) / omega2)
+                                              * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                              / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                                 + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                                  + gamma_total[ik * ns + js][i], 2.0))
+                                              * vv_tmp;
                             kappa_tmp[ib] += kcelem_tmp;
 
                             if (calc_coherent == 2 && j == k) {
@@ -708,7 +708,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
 
                     for (ib = 0; ib < ns2; ++ib) {
                         if (std::abs(kappa_tmp[ib].imag()) > eps10) {
-                            error->warn("compute_kappa_coherent",
+                            warn("compute_kappa_coherent",
                                         "The kappa_coherent_out has imaginary component.");
                         }
                         kappa_coherent_out[i][j][k] += kappa_tmp[ib].real();

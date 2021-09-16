@@ -91,7 +91,7 @@ PHON::PHON(int narg,
         execute_self_consistent_phonon();
 
     } else {
-        error->exit("phonons", "invalid mode: ", mode.c_str());
+        exit("phonons", "invalid mode: ", mode.c_str());
     }
 
     if (mympi->my_rank == 0) {
@@ -110,7 +110,6 @@ PHON::~PHON()
 void PHON::create_pointers()
 {
     timer = new Timer(this);
-    error = new Error(this);
     system = new System(this);
     symmetry = new Symmetry(this);
     kpoint = new Kpoint(this);
@@ -135,7 +134,6 @@ void PHON::create_pointers()
 void PHON::destroy_pointers() const
 {
     delete timer;
-    delete error;
     delete system;
     delete symmetry;
     delete kpoint;
@@ -253,9 +251,7 @@ void PHON::execute_RTA() const
     if (kpoint->kpoint_mode < 3) {
         dynamical->diagonalize_dynamical_all();
     }
-//    if (kpoint->kpoint_mode == 2) {
-//        integration->setup_integration();
-//    }
+
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
@@ -289,10 +285,6 @@ void PHON::execute_self_consistent_phonon() const
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
-
-//    if (kpoint->kpoint_mode == 2) {
-//        integration->setup_integration();
-//    }
 
     scph->setup_scph();
     scph->exec_scph();

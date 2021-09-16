@@ -17,42 +17,42 @@
 #include "fcs_phonon.h"
 
 namespace PHON_NS {
-class FcsAlignedForGruneisen {
- public:
-    std::vector<AtomCellSuper> pairs;
-    double fcs_val;
+    class FcsAlignedForGruneisen {
+    public:
+        std::vector<AtomCellSuper> pairs;
+        double fcs_val;
 
-    FcsAlignedForGruneisen() {};
+        FcsAlignedForGruneisen() {};
 
-    FcsAlignedForGruneisen(const double fcs_in,
-                           const std::vector<AtomCellSuper> &pairs_in)
-          : pairs(pairs_in), fcs_val(fcs_in) {};
+        FcsAlignedForGruneisen(const double fcs_in,
+                               const std::vector<AtomCellSuper> &pairs_in)
+                : pairs(pairs_in), fcs_val(fcs_in) {};
 
-    bool operator<(const FcsAlignedForGruneisen &obj) const
-    {
-        std::vector<unsigned int> array_a, array_b;
-        array_a.clear();
-        array_b.clear();
-        int len = pairs.size();
-        for (int i = 0; i < len - 1; ++i) {
-            array_a.push_back(pairs[i].index);
-            array_a.push_back(pairs[i].tran);
-            array_b.push_back(obj.pairs[i].index);
-            array_b.push_back(obj.pairs[i].tran);
+        bool operator<(const FcsAlignedForGruneisen &obj) const
+        {
+            std::vector<unsigned int> array_a, array_b;
+            array_a.clear();
+            array_b.clear();
+            int len = pairs.size();
+            for (int i = 0; i < len - 1; ++i) {
+                array_a.push_back(pairs[i].index);
+                array_a.push_back(pairs[i].tran);
+                array_b.push_back(obj.pairs[i].index);
+                array_b.push_back(obj.pairs[i].tran);
+            }
+            for (int i = 0; i < len - 1; ++i) {
+                array_a.push_back(pairs[i].cell_s);
+                array_b.push_back(obj.pairs[i].cell_s);
+            }
+
+            array_a.push_back(pairs[len - 1].index);
+            array_a.push_back(pairs[len - 1].tran);
+            array_b.push_back(obj.pairs[len - 1].index);
+            array_b.push_back(obj.pairs[len - 1].tran);
+            return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                                array_b.begin(), array_b.end());
         }
-        for (int i = 0; i < len - 1; ++i) {
-            array_a.push_back(pairs[i].cell_s);
-            array_b.push_back(obj.pairs[i].cell_s);
-        }
-
-        array_a.push_back(pairs[len - 1].index);
-        array_a.push_back(pairs[len - 1].tran);
-        array_b.push_back(obj.pairs[len - 1].index);
-        array_b.push_back(obj.pairs[len - 1].tran);
-        return std::lexicographical_compare(array_a.begin(), array_a.end(),
-                                            array_b.begin(), array_b.end());
-    }
-};
+    };
 
 //inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b)
 //{
@@ -85,47 +85,48 @@ class FcsAlignedForGruneisen {
 //                                        array_b.begin(), array_b.end());
 //}
 
-class Gruneisen : protected Pointers {
- public:
-    Gruneisen(class PHON *);
+    class Gruneisen : protected Pointers {
+    public:
+        Gruneisen(class PHON *);
 
-    ~Gruneisen();
+        ~Gruneisen();
 
-    double delta_a;
-    bool print_gruneisen;
-    bool print_newfcs;
+        double delta_a;
+        bool print_gruneisen;
+        bool print_newfcs;
 
-    void setup();
+        void setup();
 
-    std::complex<double> **gruneisen_bs;
-    std::complex<double> **gruneisen_dos;
+        std::complex<double> **gruneisen_bs;
+        std::complex<double> **gruneisen_dos;
 
-    void calc_gruneisen();
-    void write_new_fcsxml_all();
+        void calc_gruneisen();
 
- private:
-    void set_default_variables();
+        void write_new_fcsxml_all();
 
-    void deallocate_variables();
+    private:
+        void set_default_variables();
 
-    double **xshift_s;
-    std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
+        void deallocate_variables();
 
-    void prepare_delta_fcs(const std::vector<FcsArrayWithCell> &,
-                           std::vector<FcsArrayWithCell> &) const;
+        double **xshift_s;
+        std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
 
-    void calc_dfc2_reciprocal(std::complex<double> **,
-                              const double *);
+        void prepare_delta_fcs(const std::vector<FcsArrayWithCell> &,
+                               std::vector<FcsArrayWithCell> &) const;
 
-    void write_new_fcsxml(const std::string &,
-                          double);
+        void calc_dfc2_reciprocal(std::complex<double> **,
+                                  const double *);
 
-    std::string double2string(double) const;
+        void write_new_fcsxml(const std::string &,
+                              double);
 
-    //  double calc_stress_energy2(const std::vector<FcsArrayWithCell>);
-    void calc_stress_energy3(std::vector<FcsArrayWithCell>,
-                             double ****);
+        std::string double2string(double) const;
 
-    void print_stress_energy();
-};
+        //  double calc_stress_energy2(const std::vector<FcsArrayWithCell>);
+        void calc_stress_energy3(std::vector<FcsArrayWithCell>,
+                                 double ****);
+
+        void print_stress_energy();
+    };
 }

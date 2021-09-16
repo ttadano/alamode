@@ -70,7 +70,7 @@ void PhononVelocity::deallocate_variables()
 
 void PhononVelocity::setup_velocity()
 {
-    MPI_Bcast(&print_velocity, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&print_velocity, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 }
 
 void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
@@ -119,7 +119,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
         }
 
 //        } else {
-//            error->exit("get_phonon_group_velocity_bandstructure",
+//            exit("get_phonon_group_velocity_bandstructure",
 //                        "ndiff > 2 is not supported yet.");
 //        }
 
@@ -503,7 +503,7 @@ double PhononVelocity::diff(const double *f,
     if (n == 2) {
         df = (f[1] - f[0]) / (2.0 * h);
     } else {
-        error->exit("diff",
+        exit("diff",
                     "Numerical differentiation of n > 2 is not supported yet.");
     }
 
@@ -528,7 +528,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
     double **eval_tmp;
 
     if (dynamical->nonanalytic) {
-        error->exit("phonon_vel_k2",
+        exit("phonon_vel_k2",
                     "Sorry. Analytic calculation of \
             group velocity is not supported for NONANALYTIC>0.");
     }
@@ -623,7 +623,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
                 deallocate(eval_tmp);
 
             } else {
-                error->exit("phonon_vel_k2", "This cannot happen.");
+                exit("phonon_vel_k2", "This cannot happen.");
             }
 
             is += ideg;

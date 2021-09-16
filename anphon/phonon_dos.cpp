@@ -86,9 +86,9 @@ void Dos::setup()
     MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&compute_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&projected_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&two_phonon_dos, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&compute_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&projected_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&two_phonon_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&scattering_phase_space, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (kmesh_dos) {
@@ -98,7 +98,7 @@ void Dos::setup()
     }
 
     if (flag_dos && delta_e < eps12)
-        error->exit("Dos::setup()", "Too small delta_e");
+        exit("Dos::setup()", "Too small delta_e");
 
     if (flag_dos) {
 

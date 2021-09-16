@@ -68,17 +68,17 @@ void Input::parce_input(int narg,
         ifs_input.open(arg[1], std::ios::in);
         if (!ifs_input) {
             std::cout << "No such file or directory: " << arg[1] << std::endl;
-            exit(EXIT_FAILURE);
+            exit("parse_input", "could not open the file");
         }
     }
 
     if (!locate_tag("&general"))
-        error->exit("parse_input",
+        exit("parse_input",
                     "&general entry not found in the input file");
     parse_general_vars();
 
     if (!locate_tag("&cell"))
-        error->exit("parse_input",
+        exit("parse_input",
                     "&cell entry not found in the input file");
     parse_cell_parameter();
 
@@ -86,13 +86,13 @@ void Input::parce_input(int narg,
     parse_analysis_vars(use_defaults_for_analysis);
 
     if (!locate_tag("&kpoint"))
-        error->exit("parse_input",
+        exit("parse_input",
                     "&kpoint entry not found in the input file");
     parse_kpoints();
 
     if (phon->mode == "SCPH") {
         if (!locate_tag("&scph"))
-            error->exit("parse_input",
+            exit("parse_input",
                         "&scph entry not found in the input file");
         parse_scph_vars();
     }
@@ -131,7 +131,7 @@ void Input::parse_general_vars()
 
     for (auto &no_default: no_defaults) {
         if (general_var_dict.find(no_default) == general_var_dict.end()) {
-            error->exit("parse_general_vars",
+            exit("parse_general_vars",
                         "The following variable is not found in &general input region: ",
                         no_default.c_str());
         }
@@ -149,7 +149,7 @@ void Input::parse_general_vars()
     split_str_by_space(general_var_dict["KD"], kdname_v);
 
     if (kdname_v.size() != nkd) {
-        error->exit("parse_general_vars",
+        exit("parse_general_vars",
                     "The number of entries for KD is inconsistent with NKD");
     } else {
         allocate(kdname, nkd);
@@ -162,7 +162,7 @@ void Input::parse_general_vars()
         split_str_by_space(general_var_dict["MASS"], masskd_v);
 
         if (masskd_v.size() != nkd) {
-            error->exit("parse_general_vars",
+            exit("parse_general_vars",
                         "The number of entries for MASS is inconsistent with NKD");
         } else {
             allocate(masskd, nkd);
@@ -240,13 +240,13 @@ void Input::parse_general_vars()
     assign_val(verbosity, "VERBOSITY", general_var_dict);
 
     if (band_connection > 2) {
-        error->exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
+        exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
     }
 
     if (nonanalytic == 3) {
         assign_val(prec_ewald, "PREC_EWALD", general_var_dict);
         if (prec_ewald <= 0.0 || prec_ewald >= 1.0) {
-            error->exit("parse_general_vars",
+            exit("parse_general_vars",
                         "PREC_EWALD should be a small positive value.");
         }
         ewald->is_longrange = true;
@@ -259,16 +259,16 @@ void Input::parse_general_vars()
     }
 
     if (nonanalytic > 3) {
-        error->exit("parse_general_vars",
+        exit("parse_general_vars",
                     "NONANALYTIC-tag can take 0, 1, 2, or 3.");
     }
     if (nonanalytic && borninfo == "") {
-        error->exit("parse_general_vars",
+        exit("parse_general_vars",
                     "BORNINFO must be specified when NONANALYTIC > 0.");
     }
     // if (nonanalytic == 3) {
     //     if (mode == "SCPH") {
-    //         error->exit("parse_general_vars",
+    //         exit("parse_general_vars",
     //                     "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
     //     }
     // }
@@ -352,7 +352,7 @@ void Input::parse_scph_vars()
 
     for (auto &no_default: no_defaults) {
         if (scph_var_dict.find(no_default) == scph_var_dict.end()) {
-            error->exit("parse_general_vars",
+            exit("parse_general_vars",
                         "The following variable is not found in &scph input region: ",
                         no_default.c_str());
         }
@@ -404,11 +404,11 @@ void Input::parse_scph_vars()
         }
 
         if (kmesh_v.size() != 3) {
-            error->exit("parse_general_vars",
+            exit("parse_general_vars",
                         "The number of entries for KMESH_SCPH has to be 3.");
         }
     } else {
-        error->exit("parse_general_vars",
+        exit("parse_general_vars",
                     "Please specify KMESH_SCPH for mode = SCPH");
     }
 
@@ -427,11 +427,11 @@ void Input::parse_scph_vars()
         }
 
         if (kmesh_interpolate_v.size() != 3) {
-            error->exit("parse_general_vars",
+            exit("parse_general_vars",
                         "The number of entries for KMESH_INTERPOLATE has to be 3.");
         }
     } else {
-        error->exit("parse_general_vars",
+        exit("parse_general_vars",
                     "Please specify KMESH_INTERPOLATE for mode = SCPH");
     }
 
@@ -587,7 +587,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
             split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
 
             if (isofact_v.size() != system->nkd) {
-                error->exit("parse_analysis_vars",
+                exit("parse_analysis_vars",
                             "The number of entries for ISOFACT is inconsistent with NKD");
             } else {
                 allocate(isotope_factor, system->nkd);
@@ -603,7 +603,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         split_str_by_space(analysis_var_dict["ANIME"], anime_kpoint);
 
         if (anime_kpoint.size() != 3) {
-            error->exit("parse_analysis_vars",
+            exit("parse_analysis_vars",
                         "The number of entries for ANIME should be 3.");
         }
         for (i = 0; i < 3; ++i) {
@@ -613,7 +613,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         split_str_by_space(analysis_var_dict["ANIME_CELLSIZE"], anime_cellsize);
 
         if (anime_cellsize.size() != 3) {
-            error->exit("parse_analysis_vars",
+            exit("parse_analysis_vars",
                         "The number of entries for ANIME_CELLSIZE should be 3.");
         }
 
@@ -623,11 +623,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
             }
             catch (std::exception &e) {
                 std::cout << e.what() << std::endl;
-                error->exit("parse_analysis_vars",
+                exit("parse_analysis_vars",
                             "ANIME_CELLSIZE must be a set of positive integers.");
             }
             if (cellsize[i] < 1) {
-                error->exit("parse_analysis_vars",
+                exit("parse_analysis_vars",
                             "Please give positive integers for ANIME_CELLSIZE.");
             }
         }
@@ -639,7 +639,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (anime_format.empty()) anime_format = "XYZ";
 
         if (anime_format != "XSF" && anime_format != "AXSF" && anime_format != "XYZ") {
-            error->exit("parse_analysis_vars", "Invalid ANIME_FORMAT");
+            exit("parse_analysis_vars", "Invalid ANIME_FORMAT");
         }
 
         assign_val(anime_frames, "ANIME_FRAMES", analysis_var_dict);
@@ -653,7 +653,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         if (!str_shift_ucorr.empty()) {
             split_str_by_space(str_shift_ucorr, list_shift_ucorr);
             if (list_shift_ucorr.size() != 3) {
-                error->exit("parse_analysis_vars",
+                exit("parse_analysis_vars",
                             "The number of entries for SHIFT_UCORR must be 3.");
             }
 
@@ -663,7 +663,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 }
                 catch (std::exception &e) {
                     std::cout << e.what() << std::endl;
-                    error->exit("parse_analysis_vars",
+                    exit("parse_analysis_vars",
                                 "SHIFT_UCORR must be an array of integers.");
                 }
             }
@@ -680,14 +680,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
             boost::split(str_projection_each, str_projection_axes, boost::is_any_of(","));
 
             if (str_projection_each.size() > 2) {
-                error->warn("parse_analysis_vars",
+                warn("parse_analysis_vars",
                             "Too many entries for PROJECTION_AXES. Only the first two will be used.");
             }
 
             for (i = 0; i < str_projection_each.size(); ++i) {
                 split_str_by_space(str_projection_each[i], str_vec);
                 if (str_vec.size() != 3) {
-                    error->exit("parse_analysis_vars",
+                    exit("parse_analysis_vars",
                                 "The number of entries for each vector in PROJECTION_AXES must be 3.");
                 }
                 for (auto j = 0; j < 3; ++j) {
@@ -696,7 +696,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                     }
                     catch (std::exception &e) {
                         std::cout << e.what() << std::endl;
-                        error->exit("parse_analysis_vars",
+                        exit("parse_analysis_vars",
                                     "subset of PROJECTION_AXES must be an array of doubles.");
                     }
                 }
@@ -840,7 +840,7 @@ void Input::parse_cell_parameter()
     }
 
     if (line_vec.size() != 4) {
-        error->exit("parse_cell_parameter",
+        exit("parse_cell_parameter",
                     "Too few or too much lines for the &cell field.\n \
                                             The number of valid lines for the &cell field should be 4.");
     }
@@ -856,7 +856,7 @@ void Input::parse_cell_parameter()
             if (line_split.size() == 1) {
                 a = boost::lexical_cast<double>(line_split[0]);
             } else {
-                error->exit("parse_cell_parameter",
+                exit("parse_cell_parameter",
                             "Unacceptable format for &cell field.");
             }
 
@@ -867,7 +867,7 @@ void Input::parse_cell_parameter()
                     lavec_tmp[j][i - 1] = boost::lexical_cast<double>(line_split[j]);
                 }
             } else {
-                error->exit("parse_cell_parameter",
+                exit("parse_cell_parameter",
                             "Unacceptable format for &cell field.");
             }
         }
@@ -945,17 +945,17 @@ void Input::parse_kpoints()
                 }
                 catch (std::exception &e) {
                     std::cout << e.what() << std::endl;
-                    error->exit("parse_kpoints",
+                    exit("parse_kpoints",
                                 "KPMODE must be an integer. [0, 1, or 2]");
                 }
 
                 if (!(kpmode >= 0 && kpmode <= 3)) {
-                    error->exit("parse_kpoints",
+                    exit("parse_kpoints",
                                 "KPMODE must be 0, 1, or 2.");
                 }
 
             } else {
-                error->exit("parse_kpoints",
+                exit("parse_kpoints",
                             "Unacceptable format for the &kpoint field.");
             }
 
@@ -963,19 +963,19 @@ void Input::parse_kpoints()
             // Read each entry of kpoint
 
             if (kpmode == 0 && kpelem.size() != 3) {
-                error->exit("parse_kpoints",
+                exit("parse_kpoints",
                             "The number of columns must be 3 when KPMODE = 0");
             }
             if (kpmode == 1 && kpelem.size() != 9) {
-                error->exit("parse_kpoints",
+                exit("parse_kpoints",
                             "The number of columns must be 9 when KPMODE = 1");
             }
             if (kpmode == 2 && kpelem.size() != 3) {
-                error->exit("parse_kpoints",
+                exit("parse_kpoints",
                             "The number of columns must be 3 when KPMODE = 2");
             }
             if (kpmode == 3 && kpelem.size() != 8) {
-                error->exit("parse_kpoints",
+                exit("parse_kpoints",
                             "The number of columns must be 8 when KPMODE = 3");
             }
 
@@ -1093,7 +1093,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
                     str_varval = my_split(str_tmp, '=');
 #endif
                     if (str_varval.size() != 2) {
-                        error->exit("get_var_dict",
+                        exit("get_var_dict",
                                     "Unacceptable format");
                     }
 #ifdef _USE_BOOST
@@ -1106,14 +1106,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #endif
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable " << key << std::endl;
-                        error->exit("get_var_dict",
+                        exit("get_var_dict",
                                     "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
                                   << " appears twice in the input file." << std::endl;
-                        error->exit("get_var_dict",
+                        exit("get_var_dict",
                                     "Redundant input parameter");
                     }
 
@@ -1168,7 +1168,7 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #endif
 
                     if (str_varval.size() != 2) {
-                        error->exit("get_var_dict",
+                        exit("get_var_dict",
                                     "Unacceptable format");
                     }
 
@@ -1184,14 +1184,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
                                   << key << std::endl;
-                        error->exit("get_var_dict",
+                        exit("get_var_dict",
                                     "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
                                   << " appears twice in the input file." << std::endl;
-                        error->exit("get_var_dict",
+                        exit("get_var_dict",
                                     "Redundant input parameter");
                     }
 
@@ -1246,7 +1246,7 @@ void Input::assign_val(T &val,
             std::cout << e.what() << std::endl;
             std::string str_tmp = "Invalid entry for the " + key + " tag.\n";
             str_tmp += " Please check the input value.";
-            error->exit("assign_val", str_tmp.c_str());
+            exit("assign_val", str_tmp.c_str());
         }
     }
 }

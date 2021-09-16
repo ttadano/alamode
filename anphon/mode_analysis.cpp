@@ -74,7 +74,7 @@ void ModeAnalysis::setup_mode_analysis()
             std::ifstream ifs_ks;
             ifs_ks.open(ks_input.c_str(), std::ios::in);
             if (!ifs_ks)
-                error->exit("setup_mode_analysis",
+                exit("setup_mode_analysis",
                             "Cannot open file KS_INPUT");
 
             unsigned int nlist;
@@ -84,7 +84,7 @@ void ModeAnalysis::setup_mode_analysis()
             ifs_ks >> nlist;
 
             if (nlist <= 0)
-                error->exit("setup_mode_analysis",
+                exit("setup_mode_analysis",
                             "First line in KS_INPUT files should be a positive integer.");
 
             if (calc_fstate_k) {
@@ -94,7 +94,7 @@ void ModeAnalysis::setup_mode_analysis()
                     ifs_ks >> ktmp[0] >> ktmp[1] >> ktmp[2] >> snum_tmp;
 
                     if (snum_tmp <= 0 || snum_tmp > dynamical->neval) {
-                        error->exit("setup_mode_analysis",
+                        exit("setup_mode_analysis",
                                     "Mode index out of range.");
                     }
 
@@ -109,10 +109,10 @@ void ModeAnalysis::setup_mode_analysis()
                     const auto knum_tmp = dos->kmesh_dos->get_knum(ktmp);
 
                     if (knum_tmp == -1)
-                        error->exit("setup_mode_analysis",
+                        exit("setup_mode_analysis",
                                     "Given kpoint does not exist in given k-point grid.");
                     if (snum_tmp <= 0 || snum_tmp > dynamical->neval) {
-                        error->exit("setup_mode_analysis", "Mode index out of range.");
+                        exit("setup_mode_analysis", "Mode index out of range.");
                     }
                     kslist.push_back(knum_tmp * dynamical->neval + snum_tmp - 1);
                 }
@@ -125,22 +125,22 @@ void ModeAnalysis::setup_mode_analysis()
         }
     }
 
-    MPI_Bcast(&ks_analyze_mode, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&calc_realpart, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&calc_fstate_omega, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&calc_fstate_k, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ks_analyze_mode, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&calc_realpart, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&calc_fstate_k, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&calc_fstate_omega, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&calc_fstate_k, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&print_V3, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&print_V4, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&calc_selfenergy, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&spectral_func, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&spectral_func, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
     unsigned int nlist;
 
     if (kpoint->kpoint_mode == 3) {
 
         if (!ks_analyze_mode) {
-            error->exit("setup_mode_analysis", "KPMODE = 3 must be used with FSTATE_K = 1");
+            exit("setup_mode_analysis", "KPMODE = 3 must be used with FSTATE_K = 1");
         }
         double **vec_tmp;
         unsigned int *mode_tmp;
@@ -231,26 +231,26 @@ void ModeAnalysis::setup_mode_analysis()
         }
 
         if (calc_realpart && integration->ismear != 0) {
-            error->exit("setup_mode_analysis",
+            exit("setup_mode_analysis",
                         "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
         }
 
         if (spectral_func && integration->ismear != -1) {
-            error->exit("setup_mode_analysis",
+            exit("setup_mode_analysis",
                         "Sorry. SELF_W = 1 can be used only with the tetrahedron method (ISMEAR = -1).");
         }
 
         if (calc_fstate_k && kpoint->kpoint_mode != 3) {
-            error->exit("setup_mode_analysis",
+            exit("setup_mode_analysis",
                         "KPMODE should be 3 when FSTATE_K = 1.");
         }
         if (!calc_fstate_k && kpoint->kpoint_mode == 3) {
-            error->exit("setup_mode_analysis",
+            exit("setup_mode_analysis",
                         "KPMODE = 3 works only when FSTATE_K = 1");
         }
 
         if (calc_fstate_k && (calc_fstate_omega || (print_V3 > 0) || spectral_func || calc_realpart)) {
-            error->warn("setup_mode_analysis",
+            warn("setup_mode_analysis",
                         "FSTATE_K = 1 shouldn't be set with the followings: PRINTV3=1, REALPART=1, FSTATE_W=1, SELF_W=1");
         }
 
@@ -448,7 +448,7 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
             auto file_linewidth = input->job_title + ".Gamma." + std::to_string(i + 1);
             ofs_linewidth.open(file_linewidth.c_str(), std::ios::out);
             if (!ofs_linewidth)
-                error->exit("print_selfenergy",
+                exit("print_selfenergy",
                             "Cannot open file file_linewidth");
 
             ofs_linewidth << "# xk = ";
@@ -506,7 +506,7 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
                 auto file_shift = input->job_title + ".Shift." + std::to_string(i + 1);
                 ofs_shift.open(file_shift.c_str(), std::ios::out);
                 if (!ofs_shift)
-                    error->exit("print_selfenergy",
+                    exit("print_selfenergy",
                                 "Cannot open file file_shift");
 
                 ofs_shift << "# xk = ";
@@ -653,7 +653,7 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
             std::string file_omega = input->job_title + ".fw." + std::to_string(i + 1);
             ofs_omega.open(file_omega.c_str(), std::ios::out);
             if (!ofs_omega)
-                error->exit("print_frequency_resolved_final_state",
+                exit("print_frequency_resolved_final_state",
                             "Cannot open file file_omega");
 
             ofs_omega << "# xk = ";
@@ -1042,7 +1042,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         if (integration->ismear == -1) {
             std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
             std::cout << " Sorry. Currently, ISMEAR = -1 cannot be used with FSTATE_K = 1.";
-            error->exit("calc_momentum_resolved_final_state", "exit.");
+            exit("calc_momentum_resolved_final_state", "exit.");
         } else if (integration->ismear == 0) {
             std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
@@ -1050,7 +1050,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else {
-            error->exit("print_momentum_resolved_final_state", "Invalid ISMEAR");
+            exit("print_momentum_resolved_final_state", "Invalid ISMEAR");
         }
 
         std::cout << std::endl;
@@ -1578,7 +1578,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             auto file_mode_tau = input->job_title + ".fk." + std::to_string(i + 1);
             ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
             if (!ofs_mode_tau)
-                error->exit("compute_mode_tau",
+                exit("compute_mode_tau",
                             "Cannot open file file_mode_tau");
 
             ofs_mode_tau << "## Momentum-resolved final state amplitude" << std::endl;
@@ -1656,7 +1656,7 @@ void ModeAnalysis::print_V3_elements() const
             auto file_V3 = input->job_title + ".V3." + std::to_string(i + 1);
             ofs_V3.open(file_V3.c_str(), std::ios::out);
             if (!ofs_V3)
-                error->exit("run_mode_analysis",
+                exit("run_mode_analysis",
                             "Cannot open file file_V3");
 
             ofs_V3 << "# xk = ";
@@ -1748,7 +1748,7 @@ void ModeAnalysis::print_V4_elements() const
             std::string file_V4 = input->job_title + ".V4." + std::to_string(i + 1);
             ofs_V4.open(file_V4.c_str(), std::ios::out);
             if (!ofs_V4)
-                error->exit("run_mode_analysis",
+                exit("run_mode_analysis",
                             "Cannot open file file_V4");
 
             ofs_V4 << "# xk = ";
@@ -1974,7 +1974,7 @@ void ModeAnalysis::print_Phi3_elements() const
             auto file_V3 = input->job_title + ".Phi3." + std::to_string(i + 1);
             ofs_V3.open(file_V3.c_str(), std::ios::out);
             if (!ofs_V3)
-                error->exit("print_phi3_element",
+                exit("print_phi3_element",
                             "Cannot open file file_V3");
 
             ofs_V3 << "# xk = ";
@@ -2065,7 +2065,7 @@ void ModeAnalysis::print_Phi4_elements() const
             std::string file_V4 = input->job_title + ".Phi4." + std::to_string(i + 1);
             ofs_V4.open(file_V4.c_str(), std::ios::out);
             if (!ofs_V4)
-                error->exit("print_phi4_element",
+                exit("print_phi4_element",
                             "Cannot open file file_V3");
 
             ofs_V4 << "# xk = ";
@@ -2292,7 +2292,7 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
 
             std::string file_self = input->job_title + ".Self." + std::to_string(i + 1);
             ofs_self.open(file_self.c_str(), std::ios::out);
-            if (!ofs_self) error->exit("run_mode_analysis", "Cannot open file file_shift");
+            if (!ofs_self) exit("run_mode_analysis", "Cannot open file file_shift");
 
             ofs_self << "# xk = ";
 
