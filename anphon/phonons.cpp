@@ -253,9 +253,7 @@ void PHON::execute_RTA() const
     if (kpoint->kpoint_mode < 3) {
         dynamical->diagonalize_dynamical_all();
     }
-//    if (kpoint->kpoint_mode == 2) {
-//        integration->setup_integration();
-//    }
+
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
@@ -289,10 +287,6 @@ void PHON::execute_self_consistent_phonon() const
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
-
-//    if (kpoint->kpoint_mode == 2) {
-//        integration->setup_integration();
-//    }
 
     scph->setup_scph();
     scph->exec_scph();

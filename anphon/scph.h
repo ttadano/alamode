@@ -68,9 +68,6 @@ class Scph : protected Pointers {
     bool lower_temp;
     double tolerance_scph;
 
-    //double **xk_scph, **kvec_na_scph;
-    //double **xk_interpolate;
-
     void exec_scph();
 
     void setup_scph();
@@ -83,44 +80,24 @@ class Scph : protected Pointers {
 
  private:
 
-    // kmesh class
-    KpointMeshUniform *kmesh_coarse, *kmesh_dense;
+    // Information of kmesh for SCPH calculation
+    KpointMeshUniform *kmesh_coarse = nullptr;
+    KpointMeshUniform *kmesh_dense = nullptr;
+    int *kmap_interpolate_to_scph = nullptr;
+
+    // Information for calculating the ph-ph interaction coefficients
+    std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
 
     // Phase shift
     PhaseFactorStorage *phase_factor_scph;
 
-    // Information of kmesh for SCPH calculation
-    //unsigned int nk_scph;
-    //unsigned int nk_interpolate;
-    int *kmap_interpolate_to_scph;
-
-    // Information for calculating the ph-ph interaction coefficients
-//    double *invmass_v3;
-//    double *invmass_v4;
-//    int **evec_index_v3;
-//    int **evec_index_v4;
-//    int ngroup_v3, ngroup_v4;
-    //std::vector<RelativeVector> *relvec_v3, *relvec_v4;
-    std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
-    //int kindex_phi3_stored[2] = {-1, -1};
-
-//    std::vector<double> *fcs_group_v3;
-//    std::vector<double> *fcs_group_v4;
-//    std::complex<double> *exp_phase, ***exp_phase3;
-//    int nk_grid[3];
-//    int nk_represent;
-//    unsigned int tune_type;
-//    double dnk[3];
-
     // Information of harmonic dynamical matrix
-    //std::complex<double> im;
     double **omega2_harmonic;
     std::complex<double> ***evec_harmonic;
     MinimumDistList ***mindist_list_scph;
 
     // Local variables for handling symmetry of dynamical matrix
     std::complex<double> ****mat_transform_sym;
-    //std::vector<int> *small_group_at_k;
     std::vector<int> *symop_minus_at_k;
     KpointSymmetry *kpoint_map_symmetry;
 

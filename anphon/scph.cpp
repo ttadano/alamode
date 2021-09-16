@@ -69,26 +69,12 @@ void Scph::set_default_variables()
     selfenergy_offdiagonal = true;
     relax_coordinate = false;
 
-//    xk_scph = nullptr;
-//    kvec_na_scph = nullptr;
-//    xk_interpolate = nullptr;
-//    relvec_v3 = nullptr;
-//    relvec_v4 = nullptr;
-//    invmass_v3 = nullptr;
-//    invmass_v4 = nullptr;
-//    evec_index_v3 = nullptr;
-//    evec_index_v4 = nullptr;
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
-//    fcs_group_v3 = nullptr;
-//    fcs_group_v4 = nullptr;
     omega2_harmonic = nullptr;
     mat_transform_sym = nullptr;
-//    small_group_at_k = nullptr;
     symop_minus_at_k = nullptr;
     kpoint_map_symmetry = nullptr;
-//    exp_phase = nullptr;
-//    exp_phase3 = nullptr;
     mindist_list_scph = nullptr;
 
     bubble = 0;
@@ -104,15 +90,6 @@ void Scph::set_default_variables()
 
 void Scph::deallocate_variables()
 {
-//    if (xk_scph) {
-//        deallocate(xk_scph);
-//    }
-//    if (kvec_na_scph) {
-//        deallocate(kvec_na_scph);
-//    }
-//    if (xk_interpolate) {
-//        deallocate(xk_interpolate);
-//    }
     if (kmap_interpolate_to_scph) {
         deallocate(kmap_interpolate_to_scph);
     }
@@ -125,42 +102,9 @@ void Scph::deallocate_variables()
     if (omega2_harmonic) {
         deallocate(omega2_harmonic);
     }
-//    if (relvec_v3) {
-//        deallocate(relvec_v3);
-//    }
-//    if (relvec_v4) {
-//        deallocate(relvec_v4);
-//    }
-//    if (invmass_v3) {
-//        deallocate(invmass_v3);
-//    }
-//    if (invmass_v4) {
-//        deallocate(invmass_v4);
-//    }
-//    if (evec_index_v3) {
-//        deallocate(evec_index_v3);
-//    }
-//    if (evec_index_v4) {
-//        deallocate(evec_index_v4);
-//    }
-//    if (fcs_group_v3) {
-//        deallocate(fcs_group_v3);
-//    }
-//    if (fcs_group_v4) {
-//        deallocate(fcs_group_v4);
-//    }
-//    if (exp_phase) {
-//        deallocate(exp_phase);
-//    }
-//    if (exp_phase3) {
-//        deallocate(exp_phase3);
-//    }
     if (mat_transform_sym) {
         deallocate(mat_transform_sym);
     }
-//    if (small_group_at_k) {
-//        deallocate(small_group_at_k);
-//    }
     if (symop_minus_at_k) {
         deallocate(symop_minus_at_k);
     }
@@ -191,6 +135,15 @@ void Scph::setup_scph()
     setup_transform_ifc();
     setup_pp_interaction();
     setup_transform_symmetry();
+
+    std::cout << "rank = " << mympi->my_rank << " nk (dense), setup_scph  = " << &kmesh_dense->nk << std::endl;
+    std::cout << "rank = " << mympi->my_rank << " nk (coarse), setup_scph = " << &kmesh_coarse->nk << std::endl;
+    std::cout << "rank = " << mympi->my_rank << " nk_irred (dense), setup_scph  = " << &kmesh_dense->nk_irred <<
+    std::endl;
+    std::cout << "rank = " << mympi->my_rank << " nk_irred (coarse), setup_scph = " << &kmesh_coarse->nk_irred <<
+    std::endl;
+    std::cout << "rank = " << mympi->my_rank << " kmesh_coarse, setup_scph = " << kmesh_coarse <<
+    std::endl;
 }
 
 void Scph::exec_scph()
@@ -211,6 +164,17 @@ void Scph::exec_scph()
     MPI_Bcast(&ialgo, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
+
+    std::cout << "RANK = " << mympi->my_rank << " OK1\n";
+
+    std::cout << "rank = " << mympi->my_rank << " nk (dense), exec_scph  = " << &kmesh_dense->nk << std::endl;
+    std::cout << "rank = " << mympi->my_rank << " nk (coarse), exec_scph = " << &kmesh_coarse->nk << std::endl;
+    std::cout << "rank = " << mympi->my_rank << " nk_irred (dense), exec_scph  = " << &kmesh_dense->nk_irred <<
+    std::endl;
+    std::cout << "rank = " << mympi->my_rank << " nk_irred (coarse), exec_scph = " << &kmesh_coarse->nk_irred <<
+    std::endl;
+    std::cout << "rank = " << mympi->my_rank << " kmesh_coarse, exec_scph = " << kmesh_coarse << std::endl;
+
 
     if (restart_scph) {
 
@@ -831,12 +795,22 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout << "RANK = " << mympi->my_rank << " OK2\n";
+    std::cout << "RANK = " << mympi->my_rank << " nk = " << nk << '\n';
+    std::cout << "RANK = " << mympi->my_rank << " NT = " << NT << '\n';
+    std::cout << "RANK = " << mympi->my_rank << " nk_irred_interpolate =" << nk_irred_interpolate << '\n';
+
     // Compute matrix element of 4-phonon interaction
 
     allocate(omega2_anharm, NT, nk, ns);
     allocate(evec_anharm_tmp, nk, ns, ns);
-    allocate(v4_array_all, nk_irred_interpolate * kmesh_dense->nk,
+    allocate(v4_array_all, nk_irred_interpolate * nk,
              ns * ns, ns * ns);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout << "RANK = " << mympi->my_rank << " OK3\n";
+
 
     // Calculate v4 array. 
     // This operation is the most expensive part of the calculation.
@@ -1632,6 +1606,11 @@ void Scph::setup_kmesh()
     kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p);
     kmesh_dense->setup(symmetry->SymmList, system->rlavec_p);
 
+    std::cout << "nk (dense), setup_kmesh  = " << kmesh_dense->nk << std::endl;
+    std::cout << "nk (coarse), setup_kmesh = " << kmesh_coarse->nk << std::endl;
+    std::cout << "nk_irred (dense), setup_kmesh  = " << kmesh_dense->nk_irred << std::endl;
+    std::cout << "nk_irred (coarse), setup_kmesh = " << kmesh_coarse->nk_irred << std::endl;
+
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {
         std::cout << " Setting up the SCPH calculations ..." << std::endl << std::endl;
@@ -1683,6 +1662,8 @@ void Scph::setup_transform_symmetry()
     std::complex<double> im(0.0, 1.0);
     std::complex<double> **gamma_tmp;
     bool *flag;
+
+    std::cout << "rank = " << mympi->my_rank << "HERE1\n";
 
     const auto natmin = system->natmin;
     const auto ns = dynamical->neval;
@@ -1784,6 +1765,16 @@ void Scph::setup_transform_symmetry()
 
     deallocate(gamma_tmp);
     deallocate(flag);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout << "rank = " << mympi->my_rank << "HERE2\n";
+
+    std::cout << "nk (dense)  = " << kmesh_dense->nk << std::endl;
+    std::cout << "nk (coarse) = " << kmesh_coarse->nk << std::endl;
+
+    std::cout << "nk_irred (dense)  = " << kmesh_dense->nk_irred << std::endl;
+    std::cout << "nk_irred (coarse) = " << kmesh_coarse->nk_irred << std::endl;
+
 }
 
 void Scph::symmetrize_dynamical_matrix(const unsigned int ik,
@@ -1947,9 +1938,9 @@ void Scph::setup_transform_ifc()
     double **xf_p;
     double ****x_all;
 
-    const int nkx = static_cast<int>(kmesh_interpolate[0]); // This should be int (must not be unsigned int).
-    const int nky = static_cast<int>(kmesh_interpolate[1]); // same as above
-    const int nkz = static_cast<int>(kmesh_interpolate[2]); // same as above
+    const int nkx = static_cast<int>(kmesh_coarse->nk_i[0]); // This should be int (must not be unsigned int).
+    const int nky = static_cast<int>(kmesh_coarse->nk_i[1]); // same as above
+    const int nkz = static_cast<int>(kmesh_coarse->nk_i[2]); // same as above
 
     const auto ncell = nk;
     const auto ncell_s = 27;
