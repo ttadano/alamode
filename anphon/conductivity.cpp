@@ -254,8 +254,8 @@ void Conductivity::prepare_restart()
 void Conductivity::calc_anharmonic_imagself()
 {
     unsigned int i;
-    unsigned int *nks_thread;
-    double *damping3_loc;
+    unsigned int *nks_thread = nullptr;
+    double *damping3_loc = nullptr;
 
     // Distribute (k,s) to individual MPI threads
 

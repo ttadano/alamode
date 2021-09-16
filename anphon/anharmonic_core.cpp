@@ -420,7 +420,6 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
     double phase;
     std::complex<double> ret_in;
     unsigned int nsize_group;
-    unsigned int ielem = 0;
 
     const auto tune_type_now = phase_storage_in->get_tune_type();
 
@@ -605,8 +604,6 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
     double phase;
     std::complex<double> ret_in;
     unsigned int nsize_group;
-
-    unsigned int ielem = 0;
 
     const auto tune_type_now = phase_storage_in->get_tune_type();
 
@@ -1319,7 +1316,6 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
 
     const int knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
     const int knum_minus = kmesh_in->kindex_minus_xk[knum];
-    double omega0 = eval_in[knum_minus][snum];
 
     kmesh_in->get_unique_triplet_k(ik_in,
                                    symmetry->SymmList,

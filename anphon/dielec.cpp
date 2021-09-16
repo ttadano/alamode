@@ -111,7 +111,7 @@ double ***Dielec::get_dielectric_func() const
 
 void Dielec::run_dielec_calculation()
 {
-    double *xk, *kdirec;
+    double *xk;
     double *eval;
     std::complex<double> **evec;
     const auto ns = dynamical->neval;

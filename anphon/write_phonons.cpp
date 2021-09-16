@@ -2474,7 +2474,6 @@ void Writes::write_participation_ratio_each(const std::string &fname_pr,
                                             const std::complex<double> *const *const *evec_in) const
 {
     unsigned int i, j, k;
-    unsigned int knum;
     const auto neval = dynamical->neval;
     const auto natmin = system->natmin;
 
@@ -2936,7 +2935,6 @@ void Writes::write_scph_dielec(double ****dielec_scph) const
 
     unsigned int nomega;
     auto omega_grid = dielec->get_omega_grid(nomega);
-    auto dielecfunc = dielec->get_dielectric_func();
 
     ofs_dielec << "# Real part of dielectric function (phonon part only)\n";
     ofs_dielec << "# Temperature (K), Frequency (cm^-1), xx, yy, zz\n";

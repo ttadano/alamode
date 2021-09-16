@@ -633,11 +633,10 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
     // jat : atom index in the supercell
 
     int i;
-    int acrd, bcrd;
     int icrd, jcrd;
     int icell, jcell, kcell;
     int kat, kkd;
-    double xnorm, tmp;
+    double xnorm;
     double x_tmp[3], trans[3];
     std::vector<std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
 
@@ -904,7 +903,6 @@ void Ewald::add_longrange_matrix(const double *xk_in,
     int natmin = system->natmin;
     int neval = 3 * system->natmin;
     double xk[3];
-    std::complex<double> tmat;
     std::complex<double> **dymat_tmp_l, **dymat_tmp_g;
 
     allocate(dymat_tmp_l, 3, 3);
@@ -964,13 +962,12 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
     // jat : atom index in the primitive cell
 
     int i;
-    int icrd, jcrd, kat, acrd, bcrd;
+    int icrd, jcrd, kat;
     int atm_s3;
     int icell, jcell, kcell;
     double xnorm, phase;
     double x_tmp[3], trans[3];
     std::complex<double> im(0.0, 1.0);
-    double tmp;
     std::vector<std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
 
     // Substitute quantities into variables
@@ -1221,7 +1218,6 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
 
     double g[3], gk[3], vecl[3], g_tmp[3], gk_tmp[3];
     double common;
-    std::complex<double> g_test;
 
     for (auto &it: G_vector) {
         for (int l = 0; l < 3; ++l) {

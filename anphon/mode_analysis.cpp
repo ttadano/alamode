@@ -1873,7 +1873,6 @@ void ModeAnalysis::calc_V4norm2(const unsigned int knum,
     const auto ns = dynamical->neval;
     const size_t ns2 = ns * ns;
     const size_t ns3 = ns2 * ns;
-    double omega[3];
 
     const double factor = std::pow(0.5, 4) * std::pow(Hz_to_kayser / time_ry, 2);
     const auto nquartet = quartet.size();
@@ -2130,7 +2129,6 @@ void ModeAnalysis::calc_Phi3(const unsigned int knum,
     unsigned int arr[3];
     const auto ns = dynamical->neval;
     const size_t ns2 = ns * ns;
-    double omega[3];
 
     const auto factor = std::pow(amu_ry, 1.5);
     const auto ntriplet = triplet.size();
@@ -2193,7 +2191,6 @@ void ModeAnalysis::calc_Phi4(const unsigned int knum,
     const auto ns = dynamical->neval;
     const size_t ns2 = ns * ns;
     const size_t ns3 = ns2 * ns;
-    double omega[3];
 
     double factor = std::pow(amu_ry, 2.0);
     const auto nquartet = quartet.size();

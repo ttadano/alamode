@@ -794,7 +794,6 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 void Dynamical::diagonalize_dynamical_all()
 {
     unsigned int nk;
-    bool require_evec;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl

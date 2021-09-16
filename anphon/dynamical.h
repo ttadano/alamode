@@ -45,13 +45,9 @@ namespace PHON_NS {
         DymatEigenValue(const bool stored_eigvec_,
                         const bool store_irreducible_only_,
                         const unsigned int nk_in,
-                        const unsigned int ns_in)
+                        const unsigned int ns_in) : nk(nk_in), ns(ns_in),
+                        is_stored_eigvec(stored_eigvec_), is_irreducible_only(store_irreducible_only_)
         {
-            nk = nk_in;
-            ns = ns_in;
-            is_stored_eigvec = stored_eigvec_;
-            is_irreducible_only = store_irreducible_only_;
-
             if (eval) deallocate(eval);
             if (evec) deallocate(evec);
 
@@ -82,12 +78,11 @@ namespace PHON_NS {
         std::complex<double> ***get_eigenvectors() const;
 
     private:
-        bool is_stored_eigvec = true;
-        bool is_irreducible_only = false;
         unsigned int nk, ns;
         double **eval = nullptr;
         std::complex<double> ***evec = nullptr;
-
+        bool is_stored_eigvec = true;
+        bool is_irreducible_only = false;
     };
 
     class Dynamical : protected Pointers {

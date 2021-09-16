@@ -138,7 +138,6 @@ void Kpoint::kpoint_setups(const std::string mode)
                 std::cout << "  KPMODE = 2: Uniform grid" << std::endl;
             }
 
-            unsigned int nk1, nk2, nk3;
             unsigned int nk_tmp[3];
             nk_tmp[0] = 0;
             nk_tmp[1] = 0;

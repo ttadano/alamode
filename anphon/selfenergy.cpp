@@ -24,7 +24,6 @@ using namespace PHON_NS;
 
 Selfenergy::Selfenergy(PHON *phon) : Pointers(phon)
 {
-    im = std::complex<double>(0.0, 1.0);
 }
 
 Selfenergy::~Selfenergy()
@@ -250,7 +249,6 @@ void Selfenergy::selfenergy_b(const unsigned int N,
 
     double n1;
     const auto nk = kmesh_in->nk;
-    const auto xk = kmesh_in->xk;
 
     std::complex<double> *ret_mpi;
 
@@ -1524,7 +1522,6 @@ void Selfenergy::selfenergy_j(const unsigned int N,
     unsigned int is2;
     unsigned int arr_quartic1[4], arr_quartic2[4];
     const auto nk = kmesh_in->nk;
-    const auto xk = kmesh_in->xk;
 
     double T_tmp;
     double n1, n2;

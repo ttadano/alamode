@@ -81,6 +81,5 @@ class PhononVelocity : protected Pointers {
                                  std::complex<double> **,
                                  double *) const;
 
-    bool print_velocity_xyz;
 };
 }

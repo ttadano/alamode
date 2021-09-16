@@ -353,7 +353,6 @@ void Dos::calc_two_phonon_dos(double *const *eval_in,
 
     double **e_tmp;
     double **weight;
-    auto emax2 = 2.0 * emax;
 
     double xk_tmp[3];
 
@@ -614,10 +613,8 @@ void Dos::calc_scattering_phase_space_with_Bose(const double *const *eval_in,
     const auto nk_irred = kmesh_dos->nk_irred;
     const auto nk = kmesh_dos->nk;
     const auto ns = dynamical->neval;
-    const auto xk = kmesh_dos->xk;
     unsigned int imode;
     unsigned int *k2_arr;
-    auto ns2 = ns * ns;
     double **recv_buf;
     const auto omega_max = emax;
     const auto omega_min = emin;

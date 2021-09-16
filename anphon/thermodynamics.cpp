@@ -439,7 +439,6 @@ void Thermodynamics::compute_FE_bubble(double **eval,
                                        double *FE_bubble_out) const
 {
     // This function calculates the free energy of the bubble diagram
-    int i;
     double omega_sum[2];
     double nsum[2];
     const auto nk = dos->kmesh_dos->nk;
@@ -571,7 +570,6 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
 {
     // This function calculates the free energy from the bubble diagram
     // at the given temperature and lattice dynamics wavefunction
-    int i;
     int ik;
     int multi;
     double omega0, omega1, omega2, omega_sum[2];

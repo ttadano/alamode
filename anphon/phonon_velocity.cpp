@@ -299,7 +299,6 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
     const auto nk = dos->kmesh_dos->nk;
     const auto ns = dynamical->neval;
 
-    double **vel;
     std::complex<double> ****velmat_loc = nullptr;
     int *displs = nullptr;
     int *sendcount = nullptr;

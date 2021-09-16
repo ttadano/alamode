@@ -136,7 +136,6 @@ class Selfenergy : protected Pointers {
                       std::complex<double> *ret) const;
 
  private:
-    std::complex<double> im;
     unsigned int ns;
     double epsilon;
 
