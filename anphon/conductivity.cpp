@@ -241,7 +241,7 @@ void Conductivity::prepare_restart()
             if (it_set == vks_job.end()) {
                 std::cout << " rank = " << mympi->my_rank
                           << " arr_done = " << arr_done[i] << std::endl;
-                error->exit("prepare_restart", "This cannot happen");
+                exit("prepare_restart", "This cannot happen");
             } else {
                 vks_job.erase(it_set);
             }
@@ -655,7 +655,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
     std::ofstream ofs;
     if (calc_coherent == 2) {
         ofs.open(file_coherent_elems.c_str(), std::ios::out);
-        if (!ofs) error->exit("compute_kappa_coherent", "cannot open file_kc");
+        if (!ofs) exit("compute_kappa_coherent", "cannot open file_kc");
         ofs << "# Temperature [K], 1st and 2nd xyz components, ibranch, jbranch, ik_irred, "
                "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
         allocate(kappa_save, ns2, nk_irred);
@@ -708,7 +708,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
 
                     for (ib = 0; ib < ns2; ++ib) {
                         if (std::abs(kappa_tmp[ib].imag()) > eps10) {
-                            error->warn("compute_kappa_coherent",
+                            warn("compute_kappa_coherent",
                                         "The kappa_coherent_out has imaginary component.");
                         }
                         kappa_coherent_out[i][j][k] += kappa_tmp[ib].real();

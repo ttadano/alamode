@@ -91,7 +91,7 @@ PHON::PHON(int narg,
         execute_self_consistent_phonon();
 
     } else {
-        error->exit("phonons", "invalid mode: ", mode.c_str());
+        exit("phonons", "invalid mode: ", mode.c_str());
     }
 
     if (mympi->my_rank == 0) {
@@ -110,7 +110,6 @@ PHON::~PHON()
 void PHON::create_pointers()
 {
     timer = new Timer(this);
-    error = new Error(this);
     system = new System(this);
     symmetry = new Symmetry(this);
     kpoint = new Kpoint(this);
@@ -135,7 +134,6 @@ void PHON::create_pointers()
 void PHON::destroy_pointers() const
 {
     delete timer;
-    delete error;
     delete system;
     delete symmetry;
     delete kpoint;

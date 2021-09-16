@@ -160,7 +160,7 @@ void Gruneisen::calc_gruneisen()
 
                 const auto gamma_imag = gruneisen_bs[ik][is].imag();
                 if (std::abs(gamma_imag) > eps10) {
-                    error->warn("calc_gruneisen", "Gruneisen parameter is not real");
+                    warn("calc_gruneisen", "Gruneisen parameter is not real");
                 }
 
                 if (std::abs(eval[ik][is]) < eps8) {
@@ -196,7 +196,7 @@ void Gruneisen::calc_gruneisen()
 
                 const auto gamma_imag = gruneisen_dos[ik][is].imag();
                 if (std::abs(gamma_imag) > eps10) {
-                    error->warn("calc_gruneisen", "Gruneisen parameter is not real");
+                    warn("calc_gruneisen", "Gruneisen parameter is not real");
                 }
 
                 if (std::abs(eval[ik][is]) < eps8) {
@@ -390,7 +390,7 @@ void Gruneisen::write_new_fcsxml_all()
     std::cout << std::endl;
 
     if (fcs_phonon->update_fc2) {
-        error->warn("write_new_fcsxml_all",
+        warn("write_new_fcsxml_all",
                     "NEWFCS = 1 cannot be combined with the FC2XML.");
     } else {
         std::cout << " NEWFCS = 1 : Following XML files are created. " << std::endl;

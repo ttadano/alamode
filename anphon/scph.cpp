@@ -163,7 +163,7 @@ void Scph::exec_scph()
     } else {
 
         if (dynamical->nonanalytic == 3) {
-            error->exit("exec_scph",
+            exit("exec_scph",
                         "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
@@ -628,7 +628,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         ifs_dymat.open(file_dymat.c_str(), std::ios::in);
 
         if (!ifs_dymat) {
-            error->exit("load_scph_dymat_from_file",
+            exit("load_scph_dymat_from_file",
                         "Cannot open scph_dymat file");
         }
 
@@ -641,21 +641,21 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         if (nk_interpolate_ref[0] != kmesh_interpolate[0] ||
             nk_interpolate_ref[1] != kmesh_interpolate[1] ||
             nk_interpolate_ref[2] != kmesh_interpolate[2]) {
-            error->exit("load_scph_dymat_from_file",
+            exit("load_scph_dymat_from_file",
                         "The number of KMESH_INTERPOLATE is not consistent");
         }
         if (nk_scph_tmp[0] != kmesh_scph[0] ||
             nk_scph_tmp[1] != kmesh_scph[1] ||
             nk_scph_tmp[2] != kmesh_scph[2]) {
-            error->exit("load_scph_dymat_from_file",
+            exit("load_scph_dymat_from_file",
                         "The number of KMESH_SCPH is not consistent");
         }
         if (nonanalytic_tmp != dynamical->nonanalytic) {
-            error->warn("load_scph_dymat_from_file",
+            warn("load_scph_dymat_from_file",
                         "The NONANALYTIC tag is not consistent");
         }
         if (consider_offdiag_tmp != consider_offdiagonal) {
-            error->exit("load_scph_dymat_from_file",
+            exit("load_scph_dymat_from_file",
                         "The SELF_OFFDIAG tag is not consistent");
         }
 
@@ -695,7 +695,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         ifs_dymat.close();
 
         if (icount != NT) {
-            error->exit("load_scph_dymat_from_file",
+            exit("load_scph_dymat_from_file",
                         "The temperature information is not consistent");
         }
         std::cout << " done." << std::endl;
@@ -719,7 +719,7 @@ void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *co
     ofs_dymat.open(file_dymat.c_str(), std::ios::out);
 
     if (!ofs_dymat) {
-        error->exit("store_scph_dymat_to_file",
+        exit("store_scph_dymat_to_file",
                     "Cannot open scph_dymat file");
     }
     for (i = 0; i < 3; ++i) {
@@ -1266,7 +1266,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk\n";
             std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... \n";
         } else {
-            error->exit("compute_V4_elements_mpi_over_kpoint",
+            exit("compute_V4_elements_mpi_over_kpoint",
                         "This function can be used only when SELF_OFFDIAG = 1");
         }
     }
@@ -1477,7 +1477,7 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
     if (!(fc_order == 3 || fc_order == 4)) {
-        error->exit("zerofill_elements_acoustic_at_gamma",
+        exit("zerofill_elements_acoustic_at_gamma",
                     "The fc_order must be either 3 or 4.");
     }
 
@@ -1492,7 +1492,7 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
             }
         }
         if (nacoustic > 3) {
-            error->exit("zerofill_elements_acoustic_at_gamma",
+            exit("zerofill_elements_acoustic_at_gamma",
                         "Could not assign acoustic modes at Gamma.");
         }
         threshould *= 2.0;
@@ -1606,7 +1606,7 @@ void Scph::setup_kmesh()
         const auto loc = kmesh_dense->get_knum(xtmp);
 
         if (loc == -1)
-            error->exit("setup_kmesh",
+            exit("setup_kmesh",
                         "KMESH_INTERPOLATE should be a integral multiple of KMESH_SCPH");
         kmap_interpolate_to_scph[ik] = loc;
     }
@@ -1673,7 +1673,7 @@ void Scph::setup_transform_symmetry()
 
             const auto knum_sym = kmesh_coarse->get_knum(Sk);
             if (knum_sym == -1)
-                error->exit("setup_transform_symmetry",
+                exit("setup_transform_symmetry",
                             "kpoint not found");
 
             if (knum_sym == knum_minus) symop_minus_at_k[ik].push_back(isym);
@@ -1857,7 +1857,7 @@ void Scph::setup_pp_interaction()
     }
 
     if (anharmonic_core->quartic_mode != 1) {
-        error->exit("setup_pp_interaction",
+        exit("setup_pp_interaction",
                     "quartic_mode should be 1 for SCPH");
     }
 
@@ -3135,7 +3135,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
                             }
 
                             if (count_root == 0) {
-                                error->warn("bubble_correction",
+                                warn("bubble_correction",
                                             "Could not find a root in the nonlinear equation at this temperature. "
                                             "Use the w=0 component.");
 
@@ -3143,7 +3143,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
 
                             } else {
                                 if (count_root > 1) {
-                                    error->warn("bubble_correction",
+                                    warn("bubble_correction",
                                                 "Multiple roots were found in the nonlinear equation at this temperature. "
                                                 "Use the lowest-frequency solution");
                                     std::cout << "   solution found at the following frequencies:\n";
@@ -3392,7 +3392,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
     ofs_fc2.open(file_fc2.c_str(), std::ios::out);
     if (!ofs_fc2)
-        error->exit("write_anharmonic_correction_fc2",
+        exit("write_anharmonic_correction_fc2",
                     "Cannot open file_fc2");
 
     const auto ncell = kmesh_interpolate[0] * kmesh_interpolate[1] * kmesh_interpolate[2];

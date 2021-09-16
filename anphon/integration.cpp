@@ -62,7 +62,7 @@ void Integration::setup_integration()
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
         } else {
-            error->exit("setup_relaxation", "Invalid ksum_mode");
+            exit("setup_relaxation", "Invalid ksum_mode");
         }
         std::cout << std::endl;
     }

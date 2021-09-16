@@ -179,7 +179,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             break;
 
         default:
-            error->exit("setup_kpoints", "This cannot happen.");
+            exit("setup_kpoints", "This cannot happen.");
     }
 }
 
@@ -478,7 +478,7 @@ void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
 
             if (nloc == -1) {
 
-                //     error->exit("reduce_kpoints", "Cannot find the kpoint");
+                //     exit("reduce_kpoints", "Cannot find the kpoint");
 
             } else {
 
@@ -504,7 +504,7 @@ void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
 
                 if (nloc == -1) {
 
-                    //     error->exit("reduce_kpoints", "Cannot find the kpoint");
+                    //     exit("reduce_kpoints", "Cannot find the kpoint");
 
                 } else {
 
@@ -539,7 +539,7 @@ void KpointMeshUniform::gen_nkminus()
         const auto ik_minus = get_knum(minus_xk);
 
         if (ik_minus == -1) {
-//            error->exit("gen_nkminus",
+//            exit("gen_nkminus",
 //                        "-xk doesn't exist on the mesh point.");
         }
 
@@ -795,7 +795,7 @@ void Kpoint::reduce_kpoints(const unsigned int nsym,
 
             if (nloc == -1) {
 
-                error->exit("reduce_kpoints", "Cannot find the kpoint");
+                exit("reduce_kpoints", "Cannot find the kpoint");
 
             } else {
 
@@ -821,7 +821,7 @@ void Kpoint::reduce_kpoints(const unsigned int nsym,
 
                 if (nloc == -1) {
 
-                    error->exit("reduce_kpoints", "Cannot find the kpoint");
+                    exit("reduce_kpoints", "Cannot find the kpoint");
 
                 } else {
 
@@ -887,7 +887,7 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
         }
         const auto costheta = dprod / std::sqrt(norm1 * norm2);
         if (std::abs(std::abs(costheta) - 1.0) < eps12) {
-            error->exit("gen_kpoints_plane",
+            exit("gen_kpoints_plane",
                         "Two vectors have to be linearly independent with each other.");
         }
 
@@ -1132,7 +1132,7 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
                     const auto sign = (0.0 < convmat[i][j]) - (convmat[i][j] < 0.0);
                     convmat[i][j] = static_cast<double>(sign) / static_cast<double>(k);
                 } else {
-                    error->exit("get_commensurate_kpoints",
+                    exit("get_commensurate_kpoints",
                                 "The denominator of the conversion matrix > 10000");
                 }
             }
@@ -1242,7 +1242,7 @@ void KpointMeshUniform::get_unique_triplet_k(const int ik,
         } else if (sign == 1) {
             for (i = 0; i < 3; ++i) xk2[i] = -xk0[i] - xk1[i];
         } else {
-            //error->exit("get_unituq_triplet_k", "Invalid sign");
+            //exit("get_unituq_triplet_k", "Invalid sign");
         }
 
         const auto ik2 = get_knum(xk2);

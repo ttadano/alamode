@@ -508,7 +508,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
 
                     if (std::abs(check) > eps8) {
                         std::cout << "(" << 3 * i + icrd << "," << jcrd << "): " << check << std::endl;
-                        error->warn("ewald->eval_k_ewald", "Acoustic sum rule is broken.");
+                        warn("ewald->eval_k_ewald", "Acoustic sum rule is broken.");
                     }
                 }
             }
@@ -968,7 +968,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
                                       std::complex<double> ***evec_ret)
 {
     if (nk_in <= 0) {
-        error->exit("get_eigenvalues_dymat",
+        exit("get_eigenvalues_dymat",
                     "The number of k points must be larger than 0.");
     }
 
@@ -1242,7 +1242,7 @@ void Dynamical::project_degenerate_eigenvectors(const double lavec_p[3][3],
 
         } else {
             std::cout << iset << '\n';
-            error->exitall("project_degenerate_eigenvectors",
+            exitall("project_degenerate_eigenvectors",
                            "This should not happen.");
         }
 
@@ -1372,7 +1372,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
     std::ifstream ifs_born;
 
     ifs_born.open(file_born.c_str(), std::ios::in);
-    if (!ifs_born) error->exit("load_born", "cannot open file_born");
+    if (!ifs_born) exit("load_born", "cannot open file_born");
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -1692,7 +1692,7 @@ void Dynamical::connect_band_by_eigen_similarity(const unsigned int nk_in,
         }
 
         if (std::any_of(found.begin(), found.end(), [](int i1) { return i1 == 0; })) {
-            error->exit("connect_band_by_eigen_similarity",
+            exit("connect_band_by_eigen_similarity",
                         "Could not identify the connection.");
         }
 

@@ -89,7 +89,6 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/conductivity.cpp
             ${PROJECT_SOURCE_DIR}/dielec.cpp
             ${PROJECT_SOURCE_DIR}/dynamical.cpp
-            ${PROJECT_SOURCE_DIR}/error.cpp
             ${PROJECT_SOURCE_DIR}/ewald.cpp
             ${PROJECT_SOURCE_DIR}/fcs_phonon.cpp
             ${PROJECT_SOURCE_DIR}/gruneisen.cpp

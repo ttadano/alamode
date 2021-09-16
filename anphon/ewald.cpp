@@ -447,7 +447,7 @@ void Ewald::compute_ewald_fcs()
             std::ofstream ofs_fcs_ewald;
 
             ofs_fcs_ewald.open(file_fcs_ewald.c_str(), std::ios::out);
-            if (!ofs_fcs_ewald) error->exit("compute_ewald_fcs", "cannot open file PREFIX.fcs_ewald");
+            if (!ofs_fcs_ewald) exit("compute_ewald_fcs", "cannot open file PREFIX.fcs_ewald");
 
             ofs_fcs_ewald << "# Harmonic force constants" << std::endl;
             ofs_fcs_ewald << "# atom1, xyz1, atom2, xyz2, fc2 original, fc2 dipole-dipole, fc2_orig - fc2_dipole" << std
@@ -584,7 +584,7 @@ void Ewald::compute_ewald_fcs2()
             std::ofstream ofs_fcs_ewald;
 
             ofs_fcs_ewald.open(file_fcs_ewald.c_str(), std::ios::out);
-            if (!ofs_fcs_ewald) error->exit("compute_ewald_fcs", "cannot open file PREFIX.fcs_ewald");
+            if (!ofs_fcs_ewald) exit("compute_ewald_fcs", "cannot open file PREFIX.fcs_ewald");
 
             ofs_fcs_ewald << "# Harmonic force constants" << std::endl;
             ofs_fcs_ewald << "# atom1, xyz1, atom2, xyz2, fc2 original, fc2 dipole-dipole, fc2_orig - fc2_dipole" << std
@@ -945,7 +945,7 @@ void Ewald::add_longrange_matrix(const double *xk_in,
 //                                                 - std::conj(dymat_k_out[3 * jat + jcrd][3 * iat + icrd]);
 //                    if (std::abs(check) > eps10) {
 //                        std::cout << std::endl;
-//                        error->exit("add_longrange_matrix",
+//                        exit("add_longrange_matrix",
 //                                    "Hermiticity of Dynamical matrix is broken.");
 //                    }
 //                }
@@ -1361,7 +1361,7 @@ void Ewald::calc_anisotropic_hmat(const double lambda_in,
 
     double yd = std::sqrt(x_tmp[0] * y_tmp[0] + x_tmp[1] * y_tmp[1] + x_tmp[2] * y_tmp[2]);
     if (yd == 0.0) {
-        error->exit("ewald->calc_anisotropic_hmat", "components of hmat diverge.");
+        exit("ewald->calc_anisotropic_hmat", "components of hmat diverge.");
     }
     double yd_inv = 1.0 / yd;
     double yd2 = std::pow(yd, 2.0);

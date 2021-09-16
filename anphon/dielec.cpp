@@ -80,7 +80,7 @@ void Dielec::init()
 
         if (mympi->my_rank == 0) {
             if (dynamical->file_born == "") {
-                error->exitall("Dielec::init()", "BORNINFO must be set when DIELEC = 1.");
+                exitall("Dielec::init()", "BORNINFO must be set when DIELEC = 1.");
             }
         }
 
@@ -255,7 +255,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     // Compute the effective charges of normal coordinate at q = 0.
 
     if (dynamical->file_born.empty()) {
-        error->exitall("Dielec::compute_mode_effective_charge()",
+        exitall("Dielec::compute_mode_effective_charge()",
                        "BORNINFO must be set when DIELEC = 1.");
     }
 

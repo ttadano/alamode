@@ -1330,7 +1330,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
     const auto npair_uniq = triplet.size();
 
     if (npair_uniq != nk) {
-        error->exit("calc_self3omega_tetrahedron", "Something is wrong.");
+        exit("calc_self3omega_tetrahedron", "Something is wrong.");
     }
 
     allocate(kpairs, nk, 2);

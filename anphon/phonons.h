@@ -31,8 +31,6 @@ class PHON {
 
     class Memory *memory;
 
-    class Error *error;
-
     class Timer *timer;
 
     class Input *input;

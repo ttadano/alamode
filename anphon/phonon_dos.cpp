@@ -98,7 +98,7 @@ void Dos::setup()
     }
 
     if (flag_dos && delta_e < eps12)
-        error->exit("Dos::setup()", "Too small delta_e");
+        exit("Dos::setup()", "Too small delta_e");
 
     if (flag_dos) {
 

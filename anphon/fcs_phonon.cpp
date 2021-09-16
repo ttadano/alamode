@@ -162,7 +162,7 @@ void Fcs_phonon::load_fc2_xml()
         }
         catch (std::exception &e) {
             auto str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
-            error->exit("load_fc2_xml", str_error.c_str());
+            exit("load_fc2_xml", str_error.c_str());
         }
     } else {
         try {
@@ -170,7 +170,7 @@ void Fcs_phonon::load_fc2_xml()
         }
         catch (std::exception &e) {
             auto str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
-            error->exit("load_fc2_xml", str_error.c_str());
+            exit("load_fc2_xml", str_error.c_str());
         }
     }
 
@@ -226,7 +226,7 @@ void Fcs_phonon::load_fcs_xml() const
     }
     catch (std::exception &e) {
         auto str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
-        error->exit("load_fcs_xml", str_error.c_str());
+        exit("load_fcs_xml", str_error.c_str());
     }
 
     for (unsigned int order = 0; order < maxorder; ++order) {
@@ -241,7 +241,7 @@ void Fcs_phonon::load_fcs_xml() const
 
         if (!child_) {
             auto str_tmp = str_tag + " flag not found in the XML file";
-            error->exit("load_fcs_xml", str_tmp.c_str());
+            exit("load_fcs_xml", str_tmp.c_str());
         }
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child(str_tag)) {
@@ -454,7 +454,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                                 if (it_target != fc2.end()) {
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
-                                    error->exit("examine_translational_invariance",
+                                    exit("examine_translational_invariance",
                                                 "Corresponding IFC not found.");
                                 }
                             }

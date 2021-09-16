@@ -389,7 +389,7 @@ void System::load_system_info_from_XML()
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FCSXML ( "
                   + fcs_phonon->file_fcs + " )";
-            error->exit("load_system_info_from_XML",
+            exit("load_system_info_from_XML",
                         str_error.c_str());
         }
 
@@ -403,7 +403,7 @@ void System::load_system_info_from_XML()
                                  "Data.Structure.NumberOfElements"));
 
         if (nkd != nkd_tmp)
-            error->exit("load_system_info_from_XML",
+            exit("load_system_info_from_XML",
                         "NKD in the FCSXML file is not consistent with that given in the input file.");
 
         ntran = boost::lexical_cast<unsigned int>(
@@ -450,7 +450,7 @@ void System::load_system_info_from_XML()
                         index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
                         if (index >= nat)
-                            error->exit("load_system_info_xml",
+                            exit("load_system_info_xml",
                                         "index is out of range");
 
                         kd[index] = dict_atomic_kind[str_element];
@@ -474,7 +474,7 @@ void System::load_system_info_from_XML()
                         const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
                         if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                            error->exit("load_system_info_xml",
+                            exit("load_system_info_xml",
                                         "index is out of range");
                         }
 
@@ -503,7 +503,7 @@ void System::load_system_info_from_XML()
                                 index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
                                 if (index >= nat)
-                                    error->exit("load_system_info_xml",
+                                    exit("load_system_info_xml",
                                                 "index is out of range");
 
                                 ss >> magmom_tmp[index][0]
@@ -586,7 +586,7 @@ void System::load_system_info_from_XML()
             catch (std::exception &e) {
                 auto str_error = "Cannot open file FC2XML ( "
                       + fcs_phonon->file_fc2 + " )";
-                error->exit("load_system_info_from_XML",
+                exit("load_system_info_from_XML",
                             str_error.c_str());
             }
 
@@ -600,7 +600,7 @@ void System::load_system_info_from_XML()
                                      "Data.Structure.NumberOfElements"));
 
             if (nkd != nkd_tmp)
-                error->exit("load_system_info_from_XML",
+                exit("load_system_info_from_XML",
                             "NKD in the FC2XML file is not consistent with that given in the input file.");
 
             ntran = boost::lexical_cast<unsigned int>(
@@ -610,7 +610,7 @@ void System::load_system_info_from_XML()
             const int natmin_tmp = nat / ntran;
 
             if (natmin_tmp != natmin)
-                error->exit("load_system_info_from_XML",
+                exit("load_system_info_from_XML",
                             "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
 
             deallocate(xr_s);
@@ -655,7 +655,7 @@ void System::load_system_info_from_XML()
                             auto index_kd = boost::lexical_cast<unsigned int>(str_index) - 1;
 
                             if (index_kd >= nat)
-                                error->exit("load_system_info_xml",
+                                exit("load_system_info_xml",
                                             "index is out of range");
 
                             kd[index_kd] = dict_atomic_kind[str_element];
@@ -679,7 +679,7 @@ void System::load_system_info_from_XML()
                             const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
 
                             if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                                error->exit("load_system_info_xml", "index is out of range");
+                                exit("load_system_info_xml", "index is out of range");
                             }
 
                             map_p2s[atom_p][tran] = atom_s;
@@ -740,7 +740,7 @@ void System::recips(double vec[3][3],
           - vec[1][0] * vec[0][1] * vec[2][2];
 
     if (std::abs(det) < eps12) {
-        error->exit("recips", "Lattice Vector is singular");
+        exit("recips", "Lattice Vector is singular");
     }
 
     const auto factor = 2.0 * pi / det;
@@ -868,7 +868,7 @@ void System::check_consistency_primitive_lattice() const
         }
 
         if (iloc == -1) {
-            error->exit("check_consistency_primitive",
+            exit("check_consistency_primitive",
                         "Could not find equivalent atom. Probably, the crystal structure is different.");
         }
 
@@ -937,12 +937,12 @@ void System::set_mass_elem_from_database(const int nkd,
     for (int i = 0; i < nkd; ++i) {
         const auto atom_number = get_atomic_number_by_name(symbol_in[i]);
         if (atom_number >= element_names.size() || atom_number == -1) {
-            error->exit("set_mass_elem_from_database",
+            exit("set_mass_elem_from_database",
                         "Atomic mass for the given element doesn't exist in the database.\nTherefore, please input MASS manually.");
         }
         const auto mass_tmp = atomic_masses[atom_number];
         if (mass_tmp < 0.0) {
-            error->exit("set_mass_elem_from_database",
+            exit("set_mass_elem_from_database",
                         "One of the elements in the KD-tag is unstable. \nTherefore, please input MASS manually.");
         }
         mass_kd_out[i] = mass_tmp;

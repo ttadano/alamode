@@ -164,7 +164,7 @@ void Symmetry::setup_symmetry_operation(int N,
         ifs_sym >> nsym2;
 
         if (nsym != nsym2)
-            error->exit("setup_symmetry_operation",
+            exit("setup_symmetry_operation",
                         "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
@@ -315,7 +315,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
     }
 
     if (LatticeSymmList.size() > 48) {
-        error->exit("find_lattice_symmetry", "Number of lattice symmetry is larger than 48.");
+        exit("find_lattice_symmetry", "Number of lattice symmetry is larger than 48.");
     }
 }
 
@@ -547,7 +547,7 @@ void Symmetry::gensym_withmap(double **x,
             }
 
             if (num_mapped == -1) {
-                error->exit("gensym_withmap", "cannot find a equivalent atom");
+                exit("gensym_withmap", "cannot find a equivalent atom");
             }
             map_tmp[i] = num_mapped;
         }
