@@ -95,12 +95,6 @@ namespace PHON_NS {
                               const unsigned int *const *tetras,
                               const double e_ref);
 
-//        void calc_weight_tetrahedron(const unsigned int,
-//                                     const unsigned int *,
-//                                     double *,
-//                                     const double *,
-//                                     double);
-
         void calc_weight_tetrahedron(const unsigned int nk_irreducible,
                                      const unsigned int *map_to_irreducible_k,
                                      const double *energy,
@@ -121,13 +115,6 @@ namespace PHON_NS {
         void set_default_variables();
 
         void deallocate_variables();
-
-//        unsigned int ntetra;
-//        int **tetras;
-
-//        void prepare_tetrahedron(int,
-//                                 int,
-//                                 int) const;
 
         inline double fij(double,
                           double,

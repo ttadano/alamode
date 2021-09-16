@@ -105,10 +105,8 @@ void DymatEigenValue::set_eigenvalues(const unsigned int n,
             }
         }
     } else {
-        std::cout << "ERROR in set_eigenvalues.\n"
-                     "  MESSAGE: the number of kpoint is larger than the one"
-                     "  used in the constructor.\n";
-        std::exit(EXIT_FAILURE);
+        exit("set_eigenvalues", "the number of kpoint is larger than the one"
+                                "used in the constructor.");
     }
 }
 
@@ -116,15 +114,12 @@ void DymatEigenValue::set_eigenvectors(const unsigned int n,
                                        std::complex<double> ***evec_in)
 {
     if (!this->is_stored_eigvec) {
-        std::cout << "ERROR in set_eigenvectors.\n"
-                     " MESSAGE: the array for the eigenvector is not allocated.\n";
-        std::exit(EXIT_FAILURE);
+        exit("set_eigenvectors",
+             "the array for the eigenvector is not allocated.");
     }
     if (n > this->nk) {
-        std::cout << "ERROR in set_eigenvectors.\n"
-                     "  MESSAGE: the number of kpoint is larger than the one"
-                     "  used in the constructor.\n";
-        std::exit(EXIT_FAILURE);
+        exit("set_eigenvectors", "the number of kpoint is larger than "
+                                 "the one used in the constructor.");
     }
     for (unsigned int i = 0; i < n; ++i) {
         for (unsigned int j = 0; j < ns; ++j) {

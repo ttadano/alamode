@@ -35,16 +35,11 @@ Integration::~Integration()
 void Integration::set_default_variables()
 {
     ismear = -1;
-    epsilon = 0.0;
-//    ntetra = 0;
-//    tetras = nullptr;
+    epsilon = 10.0;
 }
 
 void Integration::deallocate_variables()
 {
-//    if (tetras) {
-//        deallocate(tetras);
-//    }
 }
 
 void Integration::setup_integration()

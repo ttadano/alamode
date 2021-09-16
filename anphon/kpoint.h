@@ -337,11 +337,6 @@ namespace PHON_NS {
         int get_knum(const double [3],
                      const unsigned int [3]) const;
 
-//    void gen_kmesh(bool,
-//                   const unsigned int [3],
-//                   double **,
-//                   std::vector<std::vector<KpointList>> &) const;
-
         void get_symmetrization_matrix_at_k(const double *xk_in,
                                             std::vector<int> &sym_list,
                                             double S_avg[3][3]) const;
@@ -364,11 +359,6 @@ namespace PHON_NS {
         void setup_kpoint_plane(const std::vector<KpointInp> &,
                                 unsigned int &,
                                 std::vector<KpointPlane> *&);
-
-        void reduce_kpoints(unsigned int,
-                            double **,
-                            const unsigned int [3],
-                            std::vector<std::vector<KpointList>> &) const;
 
         void gen_kpoints_plane(const std::vector<KpointInp> &,
                                std::vector<KpointPlane> *,
