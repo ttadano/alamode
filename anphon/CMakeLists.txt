@@ -119,6 +119,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/fcs_phonon.h
             ${PROJECT_SOURCE_DIR}/gruneisen.h
             ${PROJECT_SOURCE_DIR}/integration.h
+            ${PROJECT_SOURCE_DIR}/interpolation.h
             ${PROJECT_SOURCE_DIR}/isotope.h
             ${PROJECT_SOURCE_DIR}/kpoint.h
             ${PROJECT_SOURCE_DIR}/memory.h
