@@ -765,7 +765,6 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     double ret = 0.0;
     // double omega2_harm;
 
-    MatrixXcd Cmat(ns, ns);
     const auto complex_zero = std::complex<double>(0.0, 0.0);
 
 #pragma omp parallel for reduction(+ : ret)
@@ -774,6 +773,8 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         int is = i % ns;
         const auto omega = eval[ik][is];
         if (std::abs(omega) < eps6) continue;
+
+        MatrixXcd Cmat(ns, ns);
 
         // calculate Cmat
         //if(is == 0){ // is == 0 can be skipped because it contains acoustic mode at ik = 0

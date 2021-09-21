@@ -230,6 +230,7 @@ void Scph::exec_scph()
         }
         else{
             exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
+            // return;
         }
 
         if (mympi->my_rank == 0) {
@@ -1147,16 +1148,16 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             }
 
             // set T-dependent initial value of q0
-            // read_Tdep_initial_q0_from_u(q0, i_temp_loop);
-            // calculate_u0(q0, u0);
-            // std::cout << "initial u0: " << std::endl;
-            // for(is = 0; is < ns; is++){
-            //     std::cout << u0[is] << " ";
-            // }std::cout << std::endl;
+            read_Tdep_initial_q0_from_u(q0, i_temp_loop);
+            calculate_u0(q0, u0);
+            std::cout << "initial u0: " << std::endl;
+            for(is = 0; is < ns; is++){
+                std::cout << u0[is] << " ";
+            }std::cout << std::endl;
 
             // set initial value of q0 at each T
-            read_initial_q0(q0);
-            calculate_u0(q0, u0);
+            // read_initial_q0(q0);
+            // calculate_u0(q0, u0);
             // start from warm start
             converged_prev = false; // comment out when we start from the previous structure
 
@@ -1225,7 +1226,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // print_force(v1_array_renormalized);
 
                 // solve SCP equation
-                /*compute_anharmonic_frequency(v4_array_renormalized,
+                compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -1233,11 +1234,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                          cmat_convert,
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
-                                         writes->getVerbosity());*/
-                compute_renormalized_harmonic_frequency(omega2_anharm[iT],
-                                        evec_anharm_tmp,
-                                        delta_v2_array_renormalize,
-                                        writes->getVerbosity()); // test of IFC renormalization
+                                         writes->getVerbosity());
+                // compute_renormalized_harmonic_frequency(omega2_anharm[iT],
+                //                         evec_anharm_tmp,
+                //                         delta_v2_array_renormalize,
+                //                         writes->getVerbosity()); // test of IFC renormalization
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -1256,8 +1257,8 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // check force
                 dFdq_q = 0.0;
                 for(is = 0; is < ns; is++){
-                    // dFdq_q += q0[is] * v1_array_SCP[is];
-                    dFdq_q += q0[is] * v1_array_renormalized[is];
+                    dFdq_q += q0[is] * v1_array_SCP[is];
+                    // dFdq_q += q0[is] * v1_array_renormalized[is];
                     
                 }
                 fout_dFdq_q_total << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
@@ -1401,6 +1402,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         fout_q0.close();
         fout_u0.close();
         fout_force.close();
+        fout_v0.close();
 
         memory->deallocate(cmat_convert);
 
@@ -1638,7 +1640,7 @@ void Scph::calculate_u0(double *q0, double *u0){
 
 void Scph::calculate_force_in_real_space(std::complex<double> *v1_array_renormalized, double *force_array)
 {   
-    std::ofstream fout_force;
+    // std::ofstream fout_force;
     int natmin = system->natmin;
     auto ns = dynamical->neval;
     int is, iatm, ixyz;
@@ -4466,6 +4468,9 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
 
     memory->deallocate(dymat_q);
     memory->deallocate(dymat_new);
+
+    memory->deallocate(eval_interpolate);
+    memory->deallocate(dymat_harmonic_without_renormalize);
 
     // debug
     // deallocate debug variables
