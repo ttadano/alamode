@@ -111,7 +111,8 @@ void Input::parse_general_vars()
           "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
           "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
           "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-          "VERBOSITY"
+          "VERBOSITY",
+          "KMESH_COARSE" // this should be moved to &kappa class in future
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
@@ -266,6 +267,33 @@ void Input::parse_general_vars()
         exit("parse_general_vars",
                     "BORNINFO must be specified when NONANALYTIC > 0.");
     }
+
+    str_tmp = general_var_dict["KMESH_COARSE"];
+    std::vector<unsigned int> kmesh_v;
+
+    kmesh_v.clear();
+    if (!str_tmp.empty()) {
+
+        std::istringstream is(str_tmp);
+
+        while (true) {
+            str_tmp.clear();
+            is >> str_tmp;
+            if (str_tmp.empty()) {
+                break;
+            }
+            kmesh_v.push_back(my_cast<unsigned int>(str_tmp));
+        }
+
+        if (kmesh_v.size() != 3) {
+            exit("parse_general_vars",
+                 "The number of entries for KMESH_COARSE has to be 3.");
+        }
+    }  else {
+        kmesh_v.resize(3);
+        for (auto i = 0; i < 3; ++i) kmesh_v[i] = 0;
+    }
+
     // if (nonanalytic == 3) {
     //     if (mode == "SCPH") {
     //         exit("parse_general_vars",
@@ -324,7 +352,7 @@ void Input::parse_general_vars()
     thermodynamics->classical = classical;
     integration->ismear = ismear;
     anharmonic_core->use_triplet_symmetry = use_triplet_symmetry;
-
+    conductivity->set_kmesh_coarse(&kmesh_v[0]);
     general_var_dict.clear();
 }
 

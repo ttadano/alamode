@@ -153,6 +153,15 @@ namespace PHON_NS {
                                  const double *,
                                  std::complex<double> **) const;
 
+        void get_eigenvalues_dymat(const unsigned int nk_in,
+                                   const double *const *xk_in,
+                                   const double *const *kvec_na_in,
+                                   const std::vector<FcsClassExtent> &fc2_ext_in,
+                                   const std::vector<FcsClassExtent> &fc2_without_dipole_in,
+                                   const bool require_evec,
+                                   double **eval_ret,
+                                   std::complex<double> ***evec_ret);
+
         void project_degenerate_eigenvectors(const double lavec_p[3][3],
                                              const std::vector<FcsClassExtent> &fc2_ext_in,
                                              double *xk_in,
@@ -186,14 +195,7 @@ namespace PHON_NS {
         void detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
                                        double **eval_in);
 
-        void get_eigenvalues_dymat(const unsigned int nk_in,
-                                   const double *const *xk_in,
-                                   const double *const *kvec_na_in,
-                                   const std::vector<FcsClassExtent> &fc2_ext_in,
-                                   const std::vector<FcsClassExtent> &fc2_without_dipole_in,
-                                   const bool require_evec,
-                                   double **eval_ret,
-                                   std::complex<double> ***evec_ret);
+
 
         std::vector<std::vector<double>> projection_directions;
 

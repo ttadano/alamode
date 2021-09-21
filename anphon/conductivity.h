@@ -11,7 +11,9 @@
 #pragma once
 
 #include "pointers.h"
+#include "anharmonic_core.h"
 #include "kpoint.h"
+#include "dynamical.h"
 #include <vector>
 #include <set>
 #include <complex>
@@ -41,6 +43,8 @@ namespace PHON_NS {
         double *temperature;
         int calc_coherent;
 
+        void set_kmesh_coarse(const unsigned int nk_in[3]);
+
     private:
         void set_default_variables();
 
@@ -53,6 +57,11 @@ namespace PHON_NS {
         std::vector<int> vks_l, vks_done;
         std::set<int> vks_job, vks_job4;
         std::string file_coherent_elems;
+
+        unsigned int nk_coarse[3] = {};
+        KpointMeshUniform *kmesh_4ph = nullptr;
+        DymatEigenValue *dymat_4ph = nullptr;
+        PhaseFactorStorage *phase_storage_4ph = nullptr;
 
         void calc_anharmonic_imagself3();
         void calc_anharmonic_imagself4();

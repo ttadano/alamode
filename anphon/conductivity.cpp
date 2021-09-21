@@ -13,6 +13,7 @@
 #include "constants.h"
 #include "dynamical.h"
 #include "error.h"
+#include "ewald.h"
 #include "integration.h"
 #include "parsephon.h"
 #include "isotope.h"
@@ -58,6 +59,9 @@ void Conductivity::set_default_variables()
     file_coherent_elems = "";
     nshift_restart = 0;
     nshift_restart4 = 0;
+    kmesh_4ph = nullptr;
+    dymat_4ph = nullptr;
+    phase_storage_4ph = nullptr;
 }
 
 void Conductivity::deallocate_variables()
@@ -86,11 +90,21 @@ void Conductivity::deallocate_variables()
     if (velmat) {
         deallocate(velmat);
     }
+    if (kmesh_4ph) {
+        delete kmesh_4ph;
+    }
+    if (dymat_4ph) {
+        delete dymat_4ph;
+    }
+    if (phase_storage_4ph) {
+        delete phase_storage_4ph;
+    }
 }
 
 void Conductivity::setup_kappa()
 {
     MPI_Bcast(&calc_coherent, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nk_coarse[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     unsigned int i, j, k;
 
@@ -115,11 +129,112 @@ void Conductivity::setup_kappa()
     }
 
     if (anharmonic_core->quartic_mode) {
+
+        if (mympi->my_rank == 0) {
+            std::cout << " QUARTIC = 1: Four-phonon scattering rate will be calculated.\n";
+
+            std::cout << "  KMESH for 4-ph:\n";
+            std::cout << "   nk1 : " << std::setw(5) << nk_coarse[0] << '\n';
+            std::cout << "   nk2 : " << std::setw(5) << nk_coarse[1] << '\n';
+            std::cout << "   nk3 : " << std::setw(5) << nk_coarse[2] << '\n';
+
+        }
         if (nrem > 0) {
             allocate(damping4, (nks_each_thread + 1) * mympi->nprocs, ntemp);
         } else {
             allocate(damping4, nks_total, ntemp);
         }
+
+        double **eval_tmp;
+        std::complex<double> ***evec_tmp;
+
+        if (nk_coarse[0] * nk_coarse[1] * nk_coarse[2] > 0) {
+            const auto neval = dynamical->neval;
+
+            kmesh_4ph = new KpointMeshUniform(nk_coarse);
+            kmesh_4ph->setup(symmetry->SymmList, system->rlavec_p);
+            auto nk_4ph = kmesh_4ph->nk;
+            dymat_4ph = new DymatEigenValue(true, false, nk_4ph, neval);
+
+            allocate(eval_tmp, nk_4ph, neval);
+            allocate(evec_tmp, nk_4ph, neval, neval);
+
+            dynamical->get_eigenvalues_dymat(nk_4ph,
+                                             kmesh_4ph->xk,
+                                             kmesh_4ph->kvec_na,
+                                             fcs_phonon->fc2_ext,
+                                             ewald->fc2_without_dipole,
+                                             true,
+                                             eval_tmp,
+                                             evec_tmp);
+
+            if (!dynamical->get_projection_directions().empty()) {
+                if (mympi->my_rank == 0) {
+                    for (auto ik = 0; ik < nk_4ph; ++ik) {
+                        dynamical->project_degenerate_eigenvectors(system->lavec_p,
+                                                                   fcs_phonon->fc2_ext,
+                                                                   kmesh_4ph->xk[ik],
+                                                                   dynamical->get_projection_directions(),
+                                                                   evec_tmp[ik]);
+                    }
+                }
+
+                MPI_Bcast(&evec_tmp[0][0][0],
+                          nk_4ph * neval * neval,
+                          MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+            }
+
+            dymat_4ph->set_eigenvals_and_eigenvecs(nk_4ph,
+                                                   eval_tmp,
+                                                   evec_tmp);
+            deallocate(eval_tmp);
+            deallocate(evec_tmp);
+
+
+        } else {
+            const auto neval = dynamical->neval;
+            kmesh_4ph = new KpointMeshUniform(dos->kmesh_dos->nk_i);
+            kmesh_4ph->setup(symmetry->SymmList, system->rlavec_p);
+            auto nk_4ph = kmesh_4ph->nk;
+            dymat_4ph = new DymatEigenValue(true, false, nk_4ph, neval);
+
+            allocate(eval_tmp, nk_4ph, neval);
+            allocate(evec_tmp, nk_4ph, neval, neval);
+
+            dynamical->get_eigenvalues_dymat(nk_4ph,
+                                             kmesh_4ph->xk,
+                                             kmesh_4ph->kvec_na,
+                                             fcs_phonon->fc2_ext,
+                                             ewald->fc2_without_dipole,
+                                             true,
+                                             eval_tmp,
+                                             evec_tmp);
+
+            if (!dynamical->get_projection_directions().empty()) {
+                if (mympi->my_rank == 0) {
+                    for (auto ik = 0; ik < nk_4ph; ++ik) {
+                        dynamical->project_degenerate_eigenvectors(system->lavec_p,
+                                                                   fcs_phonon->fc2_ext,
+                                                                   kmesh_4ph->xk[ik],
+                                                                   dynamical->get_projection_directions(),
+                                                                   evec_tmp[ik]);
+                    }
+                }
+
+                MPI_Bcast(&evec_tmp[0][0][0],
+                          nk_4ph * neval * neval,
+                          MPI_CXX_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+            }
+
+            dymat_4ph->set_eigenvals_and_eigenvecs(nk_4ph,
+                                                   eval_tmp,
+                                                   evec_tmp);
+            deallocate(eval_tmp);
+            deallocate(evec_tmp);
+        }
+
+        phase_storage_4ph = new PhaseFactorStorage(kmesh_4ph->nk_i);
+        phase_storage_4ph->create(true);
     }
 
     const auto factor = Bohr_in_Angstrom * 1.0e-10 / time_ry;
@@ -161,6 +276,11 @@ void Conductivity::setup_kappa()
     for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
         for (j = 0; j < ns; ++j) {
             vks_job.insert(i * ns + j);
+        }
+    }
+
+    for (i = 0; i < kmesh_4ph->nk_irred; ++i) {
+        for (j = 0; j < ns; ++j) {
             vks_job4.insert(i * ns + j);
         }
     }
@@ -195,7 +315,7 @@ void Conductivity::prepare_restart()
                     writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
                     writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
                                       << std::
-                    endl;
+                                      endl;
                 }
             }
 
@@ -386,7 +506,7 @@ void Conductivity::calc_anharmonic_imagself4()
 
     unsigned int icount = 0;
 
-    for (const auto &it : vks_job4) {
+    for (const auto &it: vks_job4) {
         if (icount % mympi->nprocs == mympi->my_rank) {
             vks_l.push_back(it);
         }
@@ -442,23 +562,24 @@ void Conductivity::calc_anharmonic_imagself4()
 
         } else {
 
-            const auto knum = dos->kmesh_dos->kpoint_irred_all[iks / ns][0].knum;
+            const auto knum = kmesh_4ph->kpoint_irred_all[iks / ns][0].knum;
             const auto snum = iks % ns;
 
-            const auto omega = dos->dymat_dos->get_eigenvalues()[knum][snum];
+            const auto omega = dymat_4ph->get_eigenvalues()[knum][snum];
 
-            if (integration->ismear == 0 || integration->ismear == 1) {
+            if (integration->ismear_4ph == 0 || integration->ismear_4ph == 1) {
                 anharmonic_core->calc_damping4_smearing(ntemp,
                                                         temperature,
                                                         omega,
                                                         iks / ns,
                                                         snum,
-                                                        dos->kmesh_dos,
-                                                        dos->dymat_dos->get_eigenvalues(),
-                                                        dos->dymat_dos->get_eigenvectors(),
+                                                        kmesh_4ph,
+                                                        dymat_4ph->get_eigenvalues(),
+                                                        dymat_4ph->get_eigenvectors(),
+                                                        phase_storage_4ph,
                                                         damping4_loc);
 
-            } else if (integration->ismear == -1) {
+            } else if (integration->ismear_4ph == -1) {
 //                anharmonic_core->calc_damping_tetrahedron(ntemp,
 //                                                          Temperature,
 //                                                          omega,
@@ -475,10 +596,10 @@ void Conductivity::calc_anharmonic_imagself4()
         if (mympi->my_rank == 0) {
             //write_result_gamma(i, nshift_restart, vel, damping4);
 
-//            for (auto j = 0; j < ntemp; ++j) {
-//                std::cout << std::scientific << std::setprecision(15)
-//                << damping4[nshift_restart4 + i * mympi->nprocs][j] << std::endl;
-//            }
+            for (auto j = 0; j < ntemp; ++j) {
+                std::cout << std::scientific << std::setprecision(15)
+                << damping4[nshift_restart4 + i * mympi->nprocs][j] << std::endl;
+            }
             std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
         }
 
@@ -731,12 +852,12 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                        = thermodynamics->Cv_classical(omega, temperature[i])
-                                          * vv_tmp * lifetime[ns * ik + is][i];
+                                      = thermodynamics->Cv_classical(omega, temperature[i])
+                                      * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                        = thermodynamics->Cv(omega, temperature[i])
-                                          * vv_tmp * lifetime[ns * ik + is][i];
+                                      = thermodynamics->Cv(omega, temperature[i])
+                                      * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
                             // Convert to SI unit
@@ -829,13 +950,13 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                              * (thermodynamics->Cv(omega1, temperature[i]) / omega1
-                                                 + thermodynamics->Cv(omega2, temperature[i]) / omega2)
-                                              * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                              / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                                 + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                                  + gamma_total[ik * ns + js][i], 2.0))
-                                              * vv_tmp;
+                                  * (thermodynamics->Cv(omega1, temperature[i]) / omega1
+                                        + thermodynamics->Cv(omega2, temperature[i]) / omega2)
+                                  * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                  / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                               + gamma_total[ik * ns + js][i], 2.0))
+                                  * vv_tmp;
                             kappa_tmp[ib] += kcelem_tmp;
 
                             if (calc_coherent == 2 && j == k) {
@@ -847,7 +968,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                     for (ib = 0; ib < ns2; ++ib) {
                         if (std::abs(kappa_tmp[ib].imag()) > eps10) {
                             warn("compute_kappa_coherent",
-                                        "The kappa_coherent_out has imaginary component.");
+                                 "The kappa_coherent_out has imaginary component.");
                         }
                         kappa_coherent_out[i][j][k] += kappa_tmp[ib].real();
                     }
@@ -965,4 +1086,9 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
     deallocate(eval);
 
     std::cout << " done!" << std::endl;
+}
+
+void Conductivity::set_kmesh_coarse(const unsigned int *nk_in)
+{
+    for (auto i = 0; i < 3; ++i) nk_coarse[i] = nk_in[i];
 }

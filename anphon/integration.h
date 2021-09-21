@@ -85,7 +85,9 @@ namespace PHON_NS {
         ~Integration();
 
         int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
+        int ismear_4ph;
         double epsilon;
+        double epsilon_4ph;
 
         void setup_integration();
 

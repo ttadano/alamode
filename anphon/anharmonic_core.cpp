@@ -1081,6 +1081,7 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
     for (i = 0; i < ntemp; ++i) ret[i] *= pi * std::pow(0.5, 4);
 }
 
+
 void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                                             const double *temp_in,
                                             const double omega_in,
@@ -1089,6 +1090,35 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                                             const KpointMeshUniform *kmesh_in,
                                             const double *const *eval_in,
                                             const std::complex<double> *const *const *evec_in,
+                                            double *ret)
+{
+    // This function returns the imaginary part of phonon self-energy
+    // for the given frequency omega.
+    // Lorentzian or Gaussian smearing will be used.
+    // This version employs the crystal symmetry to reduce the computational cost
+
+    this->calc_damping4_smearing(ntemp,
+                                 temp_in,
+                                 omega_in,
+                                 ik_in,
+                                 is_in,
+                                 kmesh_in,
+                                 eval_in,
+                                 evec_in,
+                                 phase_storage_dos,
+                                 ret);
+}
+
+
+void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
+                                            const double *temp_in,
+                                            const double omega_in,
+                                            const unsigned int ik_in,
+                                            const unsigned int is_in,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            const PhaseFactorStorage *phase_storage_in,
                                             double *ret)
 {
     // This function returns the imaginary part of phonon self-energy
@@ -1121,7 +1151,7 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
 
     double f1, f2, f3;
 
-    const auto epsilon = integration->epsilon;
+    const auto epsilon = integration->epsilon_4ph;
 
     std::vector<KsListGroup> quartet;
 
@@ -1165,13 +1195,13 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
 
                     const auto jb = ns2 * is + ns * js + ks;
 
-                    if (integration->ismear == 0) {
+                    if (integration->ismear_4ph == 0) {
                         delta_arr[ik][jb][0]
                                 = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
                         delta_arr[ik][jb][1]
                                 = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
                                   - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
-                    } else if (integration->ismear == 1) {
+                    } else if (integration->ismear_4ph == 1) {
                         delta_arr[ik][jb][0] = 0.0;
                         delta_arr[ik][jb][1] = 0.0;
                         const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
@@ -1221,7 +1251,7 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                                               kmesh_in->xk,
                                               eval_in,
                                               evec_in,
-                                              phase_storage_dos)) * multi;
+                                              phase_storage_in)) * multi;
             } else {
                 v4_arr[ik][ib] = 0.0;
             }
