@@ -17,13 +17,13 @@
 #include "mathfunctions.h"
 
 namespace PHON_NS {
-class TrilinearInterpolation {
+class TriLinearInterpolator {
  public:
-    TrilinearInterpolation()
+    TriLinearInterpolator()
     = default;
 
-    TrilinearInterpolation(const unsigned int ngrid_coarse_in[3],
-                           const unsigned int ngrid_dense_in[3])
+    TriLinearInterpolator(const unsigned int ngrid_coarse_in[3],
+                          const unsigned int ngrid_dense_in[3])
     {
         for (auto i = 0; i < 3; ++i) {
             grid_c[i] = ngrid_coarse_in[i];
@@ -69,17 +69,17 @@ class TrilinearInterpolation {
                 ty = static_cast<T>(xf[i][1] - xc[cubes[i][0]][1]) * invdel_y;
                 tz = static_cast<T>(xf[i][2] - xc[cubes[i][0]][2]) * invdel_z;
 
-                const auto c0 = BilinearInterpolation(tx, ty,
+                const auto c0 = BiLinearInterpolation(tx, ty,
                                                       v_cubes[0], v_cubes[1],
                                                       v_cubes[2], v_cubes[3]);
-                const auto c1 = BilinearInterpolation(tx, ty,
+                const auto c1 = BiLinearInterpolation(tx, ty,
                                                       v_cubes[4], v_cubes[5],
                                                       v_cubes[6], v_cubes[7]);
                 val_f[i] = (c1 - c0) * tz + c0;
             }
         }
     }
-    ~TrilinearInterpolation()
+    ~TriLinearInterpolator()
     {
         if (cubes) deallocate(cubes);
         if (xf) deallocate(xf);
@@ -159,7 +159,7 @@ class TrilinearInterpolation {
     };
 
     template<typename T>
-    T BilinearInterpolation(const T tx, const T ty,
+    T BiLinearInterpolation(const T tx, const T ty,
                             const T c00, const T c10,
                             const T c01, const T c11)
     {
