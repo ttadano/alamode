@@ -311,7 +311,7 @@ To build Makefiles with CMake, please issue the following commands::
 
 .. note::
 
-    If cmake cannot find Boost, Eigen3, or FFTW automatically, you need to tell where these libraries are installed by
+    If cmake cannot find Boost, Eigen3, or FFTW automatically, you need to tell where these libraries 
     are installed by using ``-DBOOST_INCLUDE``, ``-DEIGEN3_INCLUDE``, and ``-DFFTW3_ROOT`` options.
     For example, if the directory structure of Step 2 is used, the cmake option will be::
     

@@ -28,7 +28,7 @@ class AlamodeDisplace(object):
         self._pattern = []
         self._primitive_lattice_vector = None
         self._inverse_primitive_lattice_vector = None
-        self._elements = None
+        self._primitive_kd = None
         self._nat_primitive = 0
         self._xp_fractional = None
         self._counter = 1
@@ -65,6 +65,7 @@ class AlamodeDisplace(object):
             self._inverse_primitive_lattice_vector = primitive_cell._inverse_lattice_vector
             self._xp_fractional = primitive_cell.x_fractional
             self._nat_primitive = primitive_cell.nat
+            self._primitive_kd = primitive_cell._kd
             self._find_commensurate_q()
             self._generate_mapping_s2p()
 

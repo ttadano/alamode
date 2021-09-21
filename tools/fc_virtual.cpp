@@ -26,7 +26,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     std::string file_xml1, file_xml2;
-    double alpha;
+    double alpha = 1.0;
     int maxorder;
 
     if (argc == 1) {
@@ -318,7 +318,7 @@ void mix_structure(const StructureProperty &Structure1,
     Structure_out.natmin = Structure1.natmin;
     for (auto i = 0; i < 3; ++i) Structure_out.is_periodic[i] = Structure1.is_periodic[i];
 
-    for (const auto it : Structure1.kd_symbol) {
+    for (const auto &it : Structure1.kd_symbol) {
         Structure_out.kd_symbol.push_back(it);
     }
 
