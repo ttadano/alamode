@@ -45,7 +45,8 @@ namespace PHON_NS {
 
         void deallocate_variables();
 
-        void compute_mode_effective_charge(std::vector<std::vector<double>> &zstar_mode, const bool do_normalize = false) const;
+        void compute_mode_effective_charge(std::vector<std::vector<double>> &zstar_mode,
+                                           const bool do_normalize = false) const;
 
         double *omega_grid;
         double ***dielec;

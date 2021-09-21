@@ -326,7 +326,7 @@ void InputParser::parse_general_vars(ALM *alm)
         boost::to_lower(basis_force_constant);
 
         if (basis_force_constant[0] != 'c' && basis_force_constant[0] != 'l') {
-            exit("parse_general_vars", "Invalid FC_BASIS.",
+            exit("parse_general_vars", "Invalid FCSYM_BASIS.",
                  basis_force_constant.c_str());
         }
     }

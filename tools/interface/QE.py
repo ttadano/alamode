@@ -44,7 +44,7 @@ class QEParser(object):
         self._list_K_POINTS = []
         self._list_CELL_PARAMETERS = []
         self._list_OCCUPATIONS = []
-        self._celldm = [[] * 6]
+        self._celldm = [None] * 6
         self._BOHR_TO_ANGSTROM = 0.5291772108
         self._RYDBERG_TO_EV = 13.60569253
 

@@ -78,7 +78,6 @@ PHON::PHON(int narg,
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
     mympi->MPI_Bcast_string(mode, 0, MPI_COMM_WORLD);
 
-
     if (mode == "PHONONS") {
 
         execute_phonons();
@@ -92,7 +91,7 @@ PHON::PHON(int narg,
         execute_self_consistent_phonon();
 
     } else {
-        error->exit("phonons", "invalid mode: ", mode.c_str());
+        exit("phonons", "invalid mode: ", mode.c_str());
     }
 
     if (mympi->my_rank == 0) {
@@ -110,16 +109,14 @@ PHON::~PHON()
 
 void PHON::create_pointers()
 {
-    memory = new Memory(this);
     timer = new Timer(this);
-    error = new Error(this);
     system = new System(this);
     symmetry = new Symmetry(this);
     kpoint = new Kpoint(this);
     fcs_phonon = new Fcs_phonon(this);
     dynamical = new Dynamical(this);
     integration = new Integration(this);
-    phonon_velocity = new Phonon_velocity(this);
+    phonon_velocity = new PhononVelocity(this);
     thermodynamics = new Thermodynamics(this);
     anharmonic_core = new AnharmonicCore(this);
     mode_analysis = new ModeAnalysis(this);
@@ -136,9 +133,7 @@ void PHON::create_pointers()
 
 void PHON::destroy_pointers() const
 {
-    delete memory;
     delete timer;
-    delete error;
     delete system;
     delete symmetry;
     delete kpoint;
@@ -167,6 +162,8 @@ void PHON::setup_base() const
     kpoint->kpoint_setups(mode);
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
+    phonon_velocity->setup_velocity();
+    integration->setup_integration();
     dos->setup();
     thermodynamics->setup();
     ewald->init();
@@ -202,10 +199,8 @@ void PHON::execute_phonons() const
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
-    phonon_velocity->calc_group_velocity(kpoint->kpoint_mode);
 
     if (dos->flag_dos) {
-        integration->setup_integration();
         dos->calc_dos_all();
     }
 
@@ -221,16 +216,12 @@ void PHON::execute_phonons() const
         thermodynamics->compute_free_energy_bubble();
     }
 
-
     if (mympi->my_rank == 0) {
-
         writes->print_phonon_energy();
         writes->write_phonon_info();
-
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
         }
-
     }
 }
 
@@ -260,9 +251,7 @@ void PHON::execute_RTA() const
     if (kpoint->kpoint_mode < 3) {
         dynamical->diagonalize_dynamical_all();
     }
-    if (kpoint->kpoint_mode == 2) {
-        integration->setup_integration();
-    }
+
     isotope->setup_isotope_scattering();
     isotope->calc_isotope_selfenergy_all();
 
@@ -296,10 +285,6 @@ void PHON::execute_self_consistent_phonon() const
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
-
-    if (kpoint->kpoint_mode == 2) {
-        integration->setup_integration();
-    }
 
     scph->setup_scph();
     scph->exec_scph();

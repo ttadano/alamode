@@ -1,7 +1,7 @@
 /*
 kpoint.h
 
-Copyright (c) 2014 Terumasa Tadano
+Copyright (c) 2014-2021 Terumasa Tadano
 
 This file is distributed under the terms of the MIT license.
 Please see the file 'LICENCE.txt' in the root directory
@@ -11,6 +11,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #pragma once
 
 #include "pointers.h"
+#include "memory.h"
+#include "symmetry_core.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -131,6 +133,188 @@ namespace PHON_NS {
         KsListGroup(const std::vector<KsList> &a) : group(a) {};
     };
 
+    class KpointGeneral {
+    public:
+        KpointGeneral()
+        {
+            nk = 0;
+            xk = nullptr;
+            kvec_na = nullptr;
+        };
+
+        KpointGeneral(const unsigned int nk_in,
+                      const double *const *xk_in,
+                      const double *const *kvec_na_in)
+        {
+            nk = nk_in;
+            if (xk) deallocate(xk);
+            if (kvec_na) deallocate(kvec_na);
+            allocate(xk, nk, 3);
+            allocate(kvec_na, nk, 3);
+
+            for (auto i = 0; i < nk; ++i) {
+                for (auto j = 0; j < 3; ++j) {
+                    xk[i][j] = xk_in[i][j];
+                    kvec_na[i][j] = kvec_na_in[i][j];
+                }
+            }
+        };
+
+        ~KpointGeneral()
+        {
+            if (xk) {
+                deallocate(xk);
+                xk = nullptr;
+            }
+            if (kvec_na) {
+                deallocate(kvec_na);
+                kvec_na = nullptr;
+            }
+        }
+
+        unsigned int nk;
+        double **xk = nullptr;
+        double **kvec_na = nullptr;
+    };
+
+    class KpointMeshUniform {
+    public:
+        KpointMeshUniform() = default;;
+
+        KpointMeshUniform(const unsigned int nk_in[3])
+        {
+            for (auto i = 0; i < 3; ++i) {
+                nk_i[i] = nk_in[i];
+            }
+            nk = nk_i[0] * nk_i[1] * nk_i[2];
+            if (xk) deallocate(xk);
+            if (kvec_na) deallocate(kvec_na);
+            allocate(xk, nk, 3);
+            allocate(kvec_na, nk, 3);
+        };
+
+        ~KpointMeshUniform()
+        {
+            if (xk) {
+                deallocate(xk);
+                xk = nullptr;
+            }
+            if (kvec_na) {
+                deallocate(kvec_na);
+                kvec_na = nullptr;
+            }
+        };
+
+        unsigned int nk_i[3]{};
+        unsigned int nk{}, nk_irred{};
+
+        double **xk = nullptr;
+        double **kvec_na = nullptr;
+        std::vector<double> weight_k;
+        std::vector<unsigned int> kmap_to_irreducible;
+        std::vector<std::vector<KpointList>> kpoint_irred_all;
+        std::vector<std::vector<int>> small_group_of_k;
+        std::vector<unsigned int> kindex_minus_xk;
+
+        void setup(const std::vector<SymmetryOperation> &symmlist,
+                   const double rlavec_p[3][3],
+                   const bool time_reversal_symmetry = true);
+
+        int get_knum(const double xk[3]) const;
+
+        int knum_sym(const unsigned int ik, const int rot[3][3]) const;
+
+        void get_unique_triplet_k(const int ik,
+                                  const std::vector<SymmetryOperation> &symmlist,
+                                  const bool use_triplet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &triplet,
+                                  const int sign = -1) const;
+
+        void get_unique_quartet_k(const int ik,
+                                  const std::vector<SymmetryOperation> &symmlist,
+                                  const bool use_quartet_symmetry,
+                                  const bool use_permutation_symmetry,
+                                  std::vector<KsListGroup> &quartet,
+                                  const int sign = -1) const;
+
+    private:
+
+        void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                       const bool usesym,
+                       const bool time_reversal_symmetry);
+
+        void reduce_kpoints(const unsigned int nsym,
+                            const std::vector<SymmetryOperation> &symmlist,
+                            const bool time_reversal_symmetry,
+                            double **xkr);
+
+        void gen_nkminus();
+
+        void set_small_groups_k_irred(const bool usesym,
+                                      const std::vector<SymmetryOperation> &symmlist);
+
+        std::vector<int> get_small_group_of_k(const unsigned int ik,
+                                              const bool usesym,
+                                              const std::vector<SymmetryOperation> &symmlist) const;
+
+    };
+
+    class KpointBandStructure {
+    public:
+        KpointBandStructure()
+        {
+            nk = 0;
+            xk = nullptr;
+            kvec_na = nullptr;
+            kaxis = nullptr;
+        };
+
+        KpointBandStructure(const unsigned int nk_in,
+                            const double *const *xk_in,
+                            const double *const *kvec_na_in,
+                            const double *kaxis_in)
+        {
+            nk = nk_in;
+            if (xk) deallocate(xk);
+            if (kvec_na) deallocate(kvec_na);
+            if (kaxis) deallocate(kaxis);
+
+            allocate(xk, nk, 3);
+            allocate(kvec_na, nk, 3);
+            allocate(kaxis, nk);
+
+            for (auto i = 0; i < nk; ++i) {
+                for (auto j = 0; j < 3; ++j) {
+                    xk[i][j] = xk_in[i][j];
+                    kvec_na[i][j] = kvec_na_in[i][j];
+                }
+                kaxis[i] = kaxis_in[i];
+            }
+        };
+
+        ~KpointBandStructure()
+        {
+            if (xk) {
+                deallocate(xk);
+                xk = nullptr;
+            }
+            if (kvec_na) {
+                deallocate(kvec_na);
+                kvec_na = nullptr;
+            }
+            if (kaxis) {
+                deallocate(kaxis);
+                kaxis = nullptr;
+            }
+        }
+
+        unsigned int nk;
+        double **xk = nullptr;
+        double **kvec_na = nullptr;
+        double *kaxis = nullptr;
+    };
+
     class Kpoint : protected Pointers {
     public:
         Kpoint(class PHON *);
@@ -140,110 +324,41 @@ namespace PHON_NS {
         void kpoint_setups(std::string);
 
         int kpoint_mode;
-        unsigned int nkx, nky, nkz;
-        unsigned int nk;
-        unsigned int *knum_minus;
-
-        double **xk;
-        double *kaxis;
-        double **kvec_na;
 
         std::vector<KpointInp> kpInp;
-        std::vector<double> weight_k; // Weight of each kpoint used for integration
-        std::vector<std::vector<KpointList>> kpoint_irred_all;
 
-        unsigned int nplanes;
         std::vector<KpointPlane> *kp_planes;
         std::vector<KpointPlaneGeometry> kp_plane_geometry;
         std::vector<KpointPlaneTriangle> *kp_planes_tri;
-        unsigned int nk_irred; // Number of irreducible k points
-        std::map<int, int> kmap_to_irreducible;
-        std::vector<int> *small_group_of_k;
 
-
-        int get_knum(double,
-                     double,
-                     double) const;
+        KpointBandStructure *kpoint_bs;
+        KpointGeneral *kpoint_general;
 
         int get_knum(const double [3],
                      const unsigned int [3]) const;
 
-        void generate_irreducible_kmap(int *,
-                                       unsigned int &,
-                                       std::vector<int> &,
-                                       unsigned int,
-                                       unsigned int,
-                                       unsigned int,
-                                       double **,
-                                       int,
-                                       int ***) const;
-
-        void gen_kmesh(bool,
-                       const unsigned int [3],
-                       double **,
-                       std::vector<std::vector<KpointList>> &) const;
-
-        void get_small_group_k(const double *,
-                               std::vector<int> &,
-                               double [3][3]) const;
-
-        int knum_sym(int,
-                     int) const;
+        void get_symmetrization_matrix_at_k(const double *xk_in,
+                                            std::vector<int> &sym_list,
+                                            double S_avg[3][3]) const;
 
         void get_commensurate_kpoints(const double [3][3],
                                       const double [3][3],
                                       std::vector<std::vector<double>> &) const;
-
-        void get_unique_triplet_k(const int,
-                                  const bool,
-                                  const bool,
-                                  std::vector<KsListGroup> &,
-                                  const int sign = -1) const;
-
-        void get_unique_quartet_k(const int ik,
-                                  const bool use_quartet_symmetry,
-                                  const bool use_permutation_symmetry,
-                                  std::vector<KsListGroup> &quartet,
-                                  const int sign = -1) const;
 
     private:
         void set_default_variables();
 
         void deallocate_variables();
 
-        void setup_kpoint_given(const std::vector<KpointInp> &,
-                                unsigned int &,
-                                double **&,
-                                double **&) const;
+        void setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
+                                const double rlavec_p[3][3]);
 
-        void setup_kpoint_band(const std::vector<KpointInp> &,
-                               unsigned int &,
-                               double **&,
-                               double **&,
-                               double *&) const;
-
-        void setup_kpoint_mesh(const std::vector<KpointInp> &,
-                               unsigned int &,
-                               unsigned int &,
-                               unsigned int &,
-                               unsigned int &,
-                               double **&,
-                               double **&,
-                               bool,
-                               std::vector<std::vector<KpointList>> &) const;
+        void setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
+                               const double rlavec_p[3][3]);
 
         void setup_kpoint_plane(const std::vector<KpointInp> &,
                                 unsigned int &,
                                 std::vector<KpointPlane> *&);
-
-        void reduce_kpoints(unsigned int,
-                            double **,
-                            const unsigned int [3],
-                            std::vector<std::vector<KpointList>> &) const;
-
-        void gen_nkminus(unsigned int,
-                         unsigned int *,
-                         double **) const;
 
         void gen_kpoints_plane(const std::vector<KpointInp> &,
                                std::vector<KpointPlane> *,
@@ -251,13 +366,8 @@ namespace PHON_NS {
 
         bool in_first_BZ(const double *) const;
 
-        void mpi_broadcast_kpoint_vector(std::vector<std::vector<KpointList>> &) const;
-
         void mpi_broadcast_kplane_vector(unsigned int,
                                          std::vector<KpointPlane> *&) const;
 
-        void calc_small_groups_k_irred(std::vector<int> *);
-
-        std::vector<int> get_small_group_of_k(int) const;
     };
 }
