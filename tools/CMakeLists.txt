@@ -82,3 +82,8 @@ add_executable(fc_virtual
         ${PROJECT_SOURCE_DIR}/fc_virtual.cpp
         ${PROJECT_SOURCE_DIR}/fc_virtual.h)
 target_link_libraries(qe2alm ${Boost_LIBRARIES})
+
+add_executable(parse_fcsxml
+        ${PROJECT_SOURCE_DIR}/parse_fcsxml.cpp
+        ${PROJECT_SOURCE_DIR}/parse_fcsxml.h)
+target_link_libraries(parse_fcsxml ${Boost_LIBRARIES})

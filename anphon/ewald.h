@@ -17,7 +17,6 @@
 #include "system.h"
 #include "fcs_phonon.h"
 
-
 namespace PHON_NS {
     class Gvecs {
     public:
@@ -51,7 +50,6 @@ namespace PHON_NS {
         }
     };
 
-
     class Ewald : protected Pointers {
     public:
         Ewald(class PHON *);
@@ -72,8 +70,8 @@ namespace PHON_NS {
 
         void init();
 
-        void add_longrange_matrix(double *,
-                                  double *,
+        void add_longrange_matrix(const double *,
+                                  const double *,
                                   std::complex<double> **);
 
     private:
@@ -127,11 +125,11 @@ namespace PHON_NS {
                                               double *,
                                               std::complex<double> **);
 
-        void calc_long_term_dynamical_matrix(int,
-                                             int,
-                                             double *,
-                                             std::complex<double> **,
-                                             double *);
+        void calc_long_term_dynamical_matrix(const int iat,
+                                             const int jat,
+                                             const double *xk_in,
+                                             const double *kvec_in,
+                                             std::complex<double> **mat_out);
 
         void calc_realspace_sum(const int iat,
                                 const int jat,

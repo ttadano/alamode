@@ -12,6 +12,7 @@
 
 #include <cfloat>
 #include <cmath>
+#include <complex>
 
 static const double pi = 4.0*atan(1.0);
 static const double amu = 1.660538782e-27;
@@ -24,6 +25,7 @@ static const double time_ry = h_planck / (2.0 * pi) / Ryd;
 static const double Hz_to_kayser = 1.0e-2 / (2.0 * pi * c_light);
 static const double Bohr_in_Angstrom = 0.52917721092;
 static const double k_Boltzmann = 1.3806488e-23; // J/K
+constexpr std::complex<double> im = std::complex<double>(0.0, 1.0);
 static const double eps = DBL_EPSILON;
 static const double eps15 = 1.0e-15;
 static const double eps12 = 1.0e-12;

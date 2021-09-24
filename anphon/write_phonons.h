@@ -14,6 +14,7 @@
 #include "pointers.h"
 #include <string>
 #include <fstream>
+#include <complex>
 
 namespace PHON_NS {
     class Writes : protected Pointers {
@@ -58,20 +59,23 @@ namespace PHON_NS {
                               const unsigned int anime_cellsize_[3],
                               const double anime_kpoint_[3],
                               const bool print_ucorr_,
-                              const int shift_ucorr_[3],
-                              const bool print_zmode_);
+                         const int shift_ucorr_[3],
+                         const bool print_zmode_);
 
-        void write_scph_energy(double ***,
+    void write_scph_energy(const unsigned int nk_in,
+                           const double *const *const *eval_in,
                                const int bubble = 0) const;
 
-        void write_scph_bands(double ***,
+    void write_scph_bands(const unsigned int nk_in,
+                          const double *kaxis_in,
+                          const double *const *const *eval_in,
                               const int bubble = 0) const;
 
         void write_scph_dos(double **,
                             const int bubble = 0) const;
 
         void write_scph_thermodynamics(double *heat_capacity,
-                                       double *heat_capacity_correction,
+                                   double *heat_capacity_correction,
                                        double *FE_QHA,
                                        double *dFE_scph) const;
 
@@ -82,10 +86,13 @@ namespace PHON_NS {
         void write_scph_dielec(double ****dielec_scph) const;
 
         unsigned int getVerbosity() const;
+
         void setVerbosity(unsigned int verbosity_in);
 
         bool getPrintMSD() const;
+
         bool getPrintUcorr() const;
+
         std::array<int, 3> getShiftUcorr() const;
 
         std::fstream fs_result, fs_result4;
@@ -110,16 +117,32 @@ namespace PHON_NS {
 
         void write_normal_mode_direction() const;
 
+    void write_normal_mode_direction_each(const std::string &fname_axsf,
+                                          const unsigned int nk_in,
+                                          const std::complex<double> *const *const *evec_in) const;
+
         void write_normal_mode_animation(const double [3],
                                          const unsigned int [3]) const;
 
         void write_eigenvectors() const;
 
-        void print_normalmode_borncharge() const;
+    void write_eigenvectors_each(const std::string &fname_evec,
+                                 const unsigned int nk_in,
+                                 const double *const *xk_in,
+                                 const double *const *eval_in,
+                                 const std::complex<double> *const *const *evec_in) const;
 
+        void print_normalmode_borncharge() const;
 
 #ifdef _HDF5
         void write_eigenvectors_HDF5() const;
+
+    void write_eigenvectors_each_HDF5(const std::string &fname_evec,
+                                      const unsigned int nk_in,
+                                      const double *const *xk_in,
+                                      const double *const *eval_in,
+                                      const std::complex<double> *const *const *evec_in,
+                                      const unsigned int kpmode_in) const;
 #endif
 
         void write_thermodynamics() const;
@@ -129,6 +152,19 @@ namespace PHON_NS {
         void write_disp_correlation() const;
 
         void write_participation_ratio() const;
+
+    void write_participation_ratio_each(const std::string &fname_pr,
+                                        const std::string &fname_apr,
+                                        const unsigned int nk_in,
+                                        const double *const *xk_in,
+                                        const double *const *eval_in,
+                                        const std::complex<double> *const *const *evec_in) const;
+
+    void write_participation_ratio_mesh(const std::string &fname_pr,
+                                        const std::string &fname_apr,
+                                        const KpointMeshUniform *kmesh_in,
+                                        const double *const *eval_in,
+                                        const std::complex<double> *const *const *evec_in) const;
 
         void write_dielectric_function() const;
 
@@ -147,7 +183,6 @@ namespace PHON_NS {
         int shift_ucorr[3];
 
         std::string anime_format;
-
 
     public:
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3") 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -O0 -D_DEBUG")
 
 project(anphon)
@@ -89,15 +89,14 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/conductivity.cpp
             ${PROJECT_SOURCE_DIR}/dielec.cpp
             ${PROJECT_SOURCE_DIR}/dynamical.cpp
-            ${PROJECT_SOURCE_DIR}/error.cpp
             ${PROJECT_SOURCE_DIR}/ewald.cpp
             ${PROJECT_SOURCE_DIR}/fcs_phonon.cpp
             ${PROJECT_SOURCE_DIR}/gruneisen.cpp
             ${PROJECT_SOURCE_DIR}/integration.cpp
             ${PROJECT_SOURCE_DIR}/isotope.cpp
+            ${PROJECT_SOURCE_DIR}/iterativebte.cpp
             ${PROJECT_SOURCE_DIR}/kpoint.cpp
             ${PROJECT_SOURCE_DIR}/main.cpp
-            ${PROJECT_SOURCE_DIR}/memory.cpp
             ${PROJECT_SOURCE_DIR}/mode_analysis.cpp
             ${PROJECT_SOURCE_DIR}/mpi_common.cpp
             ${PROJECT_SOURCE_DIR}/parsephon.cpp
@@ -121,7 +120,9 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/fcs_phonon.h
             ${PROJECT_SOURCE_DIR}/gruneisen.h
             ${PROJECT_SOURCE_DIR}/integration.h
+            ${PROJECT_SOURCE_DIR}/interpolation.h
             ${PROJECT_SOURCE_DIR}/isotope.h
+            ${PROJECT_SOURCE_DIR}/iterativebte.h
             ${PROJECT_SOURCE_DIR}/kpoint.h
             ${PROJECT_SOURCE_DIR}/memory.h
             ${PROJECT_SOURCE_DIR}/mode_analysis.h

@@ -1,7 +1,7 @@
 /*
  integration.cpp
 
- Copyright (c) 2014 Terumasa Tadano
+ Copyright (c) 2014-2021 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory 
@@ -15,6 +15,7 @@
 #include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
+#include "phonon_dos.h"
 #include "phonon_velocity.h"
 #include "dynamical.h"
 #include "anharmonic_core.h"
@@ -37,35 +38,22 @@ Integration::~Integration()
 
 void Integration::set_default_variables()
 {
-    use_tetrahedron = true;
-    ismear = -1;
-    ismear_4ph = 1;
-    epsilon = 0.0;
-    ntetra = 0;
-    tetras = nullptr;
+    ismear = -1; // for 3ph scattering
+    ismear_4ph = 1; // for 4ph scattering
+    epsilon = 10.0;
+    epsilon_4ph = 10.0;
     vel = nullptr;
     dq = nullptr;
 }
 
 void Integration::deallocate_variables()
 {
-    if (tetras) {
-        memory->deallocate(tetras);
-    }
-    if (ismear == 2 || ismear_4ph == 2) {
-    }
 }
-
 
 void Integration::setup_integration()
 {
     MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ismear_4ph, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    const auto nk = kpoint->nk;
-    const auto nkx = kpoint->nkx;
-    const auto nky = kpoint->nky;
-    const auto nkz = kpoint->nkz;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -80,7 +68,7 @@ void Integration::setup_integration()
         } else if (ismear == 2) {
             std::cout << " ISMEAR = 2: adaptive method will be used." << std::endl;
         } else {
-            error->exit("setup_relaxation", "Invalid ismear");
+            exit("setup_relaxation", "Invalid ismear");
         }
         std::cout << std::endl;
 
@@ -99,47 +87,48 @@ void Integration::setup_integration()
             } else if (ismear_4ph == 2) {
                 std::cout << " ISMEAR_4PH = 2: Adaptive smearing method will be used " << std::endl;
             } else {
-                error->exit("setup_relaxation", "Invalid ismear_4ph");
+                exit("setup_relaxation", "Invalid ismear_4ph");
             }
         
             std::cout << std::endl;
         }
     }
 
-    if (ismear == -1) {
-        ntetra = 6 * nk;
-        memory->allocate(tetras, ntetra, 4);
-        prepare_tetrahedron(nkx, nky, nkz);
-    } 
+    epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
+
     if (ismear == 2 || ismear_4ph == 2) {
         prepare_adaptivesmearing();
     }
 
-    epsilon *= time_ry / Hz_to_kayser;
+    epsilon_4ph *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&epsilon_4ph, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void Integration::prepare_adaptivesmearing()
 {
-    auto nk = kpoint->nk;
+    auto nk = dos->kmesh_dos->nk;
     auto ns = dynamical->neval;
 
-    memory->allocate(vel,nk,ns,3);
-    phonon_velocity->calc_phonon_vel_mesh(vel);  //this will gather to rank0 process
+    allocate(vel,nk,ns,3);
+    phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
+                                                        system->lavec_p,
+                                                        fcs_phonon->fc2_ext,
+                                                        vel);  //this will gather to rank0 process
 
     MPI_Bcast(&vel[0][0][0], nk * ns * 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    int nka[3];
+//    int nka[3];
+//
+//    nka[0] = kpoint->nkx;
+//    nka[1] = kpoint->nky;
+//    nka[2] = kpoint->nkz;
 
-    nka[0] = kpoint->nkx;
-    nka[1] = kpoint->nky;
-    nka[2] = kpoint->nkz;
-
-    memory->allocate(dq,3,3);
+    allocate(dq,3,3);
 
     for (auto u = 0; u < 3; u++) {
         for (auto a = 0; a < 3; a++) {
-            dq[u][a] = system->rlavec_p[u][a] / nka[u];
+            dq[u][a] = system->rlavec_p[u][a] / static_cast<double>(dos->kmesh_dos->nk_i[u]);
         }
     }
 }
@@ -222,10 +211,13 @@ void Integration::adaptive_smearing(const int k2, const int s2,
     smear[1] = std::max( 2.0e-5, std::sqrt( (parts[2]+parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
 }
 
-void Integration::prepare_tetrahedron(const int nk1,
-                                      const int nk2,
-                                      const int nk3) const
+
+
+
+void TetraNodes::setup()
 {
+    // This menber function creates node information of the tetrahedra.
+
     const auto nk23 = nk2 * nk3;
 
     for (int i = 0; i < nk1; ++i) {
@@ -291,8 +283,20 @@ void Integration::prepare_tetrahedron(const int nk1,
     }
 }
 
+unsigned int TetraNodes::get_ntetra() const
+{
+    return this->ntetra;
+}
+
+unsigned int **TetraNodes::get_tetras() const
+{
+    return this->tetras;
+}
+
 double Integration::do_tetrahedron(const double *energy,
                                    const double *f,
+                                   const unsigned int ntetra,
+                                   const unsigned int *const *tetras,
                                    const double e_ref)
 {
     /*
@@ -309,7 +313,7 @@ double Integration::do_tetrahedron(const double *energy,
     const auto frac3 = 1.0 / 3.0;
     double g;
 
-    tetra_pair pair;
+    tetra_pair pair{};
 
     for (unsigned int i = 0; i < ntetra; ++i) {
 
@@ -369,53 +373,18 @@ double Integration::do_tetrahedron(const double *energy,
             ret += g * (I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4);
 
         }
-
     }
 
     return ret / static_cast<double>(ntetra);
 }
 
-double Integration::dos_integration(double *energy,
-                                    const double e_ref)
-{
-    auto dos_ret = 0.0;
-    std::vector<double> e_tetra;
-
-    auto vol_tot = 0.0;
-
-    for (auto i = 0; i < ntetra; ++i) {
-        e_tetra.clear();
-        for (auto j = 0; j < 4; ++j) {
-            e_tetra.push_back(energy[tetras[i][j]]);
-        }
-        std::sort(e_tetra.begin(), e_tetra.end());
-
-        const auto e1 = e_tetra[0];
-        const auto e2 = e_tetra[1];
-        const auto e3 = e_tetra[2];
-        const auto e4 = e_tetra[3];
-
-
-        if (e3 <= e_ref && e_ref < e4) {
-            dos_ret += 3.0 * std::pow(e4 - e_ref, 2) / ((e4 - e1) * (e4 - e2) * (e4 - e3));
-        } else if (e2 <= e_ref && e_ref < e3) {
-            dos_ret += 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                                                             * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
-                       ((e3 - e1) * (e4 - e1));
-        } else if (e1 <= e_ref && e_ref < e2) {
-            dos_ret += 3.0 * std::pow(e_ref - e1, 2) / ((e2 - e1) * (e3 - e1) * (e4 - e1));
-        }
-    }
-
-    return dos_ret / static_cast<double>(ntetra);
-}
-
-
-void Integration::calc_weight_tetrahedron(const int nk_irreducible,
-                                          const int *map_to_irreducible_k,
-                                          double *weight,
+void Integration::calc_weight_tetrahedron(const unsigned int nk_irreducible,
+                                          const unsigned int *map_to_irreducible_k,
                                           const double *energy,
-                                          const double e_ref)
+                                          const double e_ref,
+                                          const unsigned int ntetra,
+                                          const unsigned int *const *tetras,
+                                          double *weight) const
 {
     int i;
 
@@ -484,78 +453,32 @@ void Integration::calc_weight_tetrahedron(const int nk_irreducible,
     for (i = 0; i < nk_irreducible; ++i) weight[i] *= factor;
 }
 
-void Integration::calc_weight_smearing(const std::vector<std::vector<KpointList>> &kpinfo,
-                                       double *weight,
-                                       double *energy,
+void Integration::calc_weight_smearing(const unsigned int nk,
+                                       const unsigned int nk_irreducible,
+                                       const unsigned int *map_to_irreducible_k,
+                                       const double *energy,
                                        const double e_ref,
-                                       const int smearing_method) const
-{
-    unsigned int i;
-    unsigned int knum;
-
-    const auto epsilon = this->epsilon * Hz_to_kayser / time_ry;
-
-    if (smearing_method == 0) {
-        for (i = 0; i < kpinfo.size(); ++i) {
-            knum = kpinfo[i][0].knum;
-            weight[i] = kpoint->weight_k[i] * delta_lorentz(e_ref - energy[knum], epsilon);
-        }
-    } else if (smearing_method == 1) {
-        for (i = 0; i < kpinfo.size(); ++i) {
-            knum = kpinfo[i][0].knum;
-            weight[i] = kpoint->weight_k[i] * delta_gauss(e_ref - energy[knum], epsilon);
-        }
-    }
-}
-
-void Integration::calc_weight_smearing(const int nk,
-                                       const int nk_irreducible,
-                                       const int *map_to_irreducible_k,
-                                       double *weight,
-                                       double *energy,
-                                       const double e_ref,
-                                       const int smearing_method) const
+                                       const int smearing_method,
+                                       double *weight) const
 {
     int i;
 
-    const auto epsilon = this->epsilon * Hz_to_kayser / time_ry;
+    const auto epsilon_kayser = this->epsilon * Hz_to_kayser / time_ry;
     const auto invnk = 1.0 / static_cast<double>(nk);
 
     for (i = 0; i < nk_irreducible; ++i) weight[i] = 0.0;
 
     if (smearing_method == 0) {
         for (i = 0; i < nk; ++i) {
-            weight[map_to_irreducible_k[i]] += delta_lorentz(e_ref - energy[i], epsilon);
+            weight[map_to_irreducible_k[i]] += delta_lorentz(e_ref - energy[i], epsilon_kayser);
         }
     } else if (smearing_method == 1) {
         for (i = 0; i < nk; ++i) {
-            weight[map_to_irreducible_k[i]] += delta_gauss(e_ref - energy[i], epsilon);
+            weight[map_to_irreducible_k[i]] += delta_gauss(e_ref - energy[i], epsilon_kayser);
         }
     }
 
     for (i = 0; i < nk_irreducible; ++i) weight[i] *= invnk;
-}
-
-
-double Integration::volume(const int *klist) const
-{
-    double k1[3], k2[3], k3[3];
-
-    for (int i = 0; i < 3; ++i) {
-        k1[i] = refold(kpoint->xk[klist[1]][i] - kpoint->xk[klist[0]][i]);
-        k2[i] = refold(kpoint->xk[klist[2]][i] - kpoint->xk[klist[0]][i]);
-        k3[i] = refold(kpoint->xk[klist[3]][i] - kpoint->xk[klist[0]][i]);
-    }
-
-    rotvec(k1, k1, system->rlavec_p, 'T');
-    rotvec(k2, k2, system->rlavec_p, 'T');
-    rotvec(k3, k3, system->rlavec_p, 'T');
-
-    const auto vol = std::abs(k1[0] * (k2[1] * k3[2] - k2[2] * k3[1])
-                              + k1[1] * (k2[2] * k3[0] - k2[0] * k3[2])
-                              + k1[2] * (k2[0] * k3[1] - k2[1] * k3[0]));
-
-    return vol;
 }
 
 double Integration::fij(const double ei,
@@ -565,16 +488,6 @@ double Integration::fij(const double ei,
     return (e - ej) / (ei - ej);
 }
 
-double Integration::refold(double x) const
-{
-    if (std::abs(x) > 0.5) {
-        if (x < 0.0) {
-            return x + 1.0;
-        }
-        return x - 1.0;
-    }
-    return x;
-}
 
 void Integration::insertion_sort(double *a,
                                  int *ind,

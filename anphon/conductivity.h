@@ -11,6 +11,9 @@
 #pragma once
 
 #include "pointers.h"
+#include "anharmonic_core.h"
+#include "kpoint.h"
+#include "dynamical.h"
 #include <vector>
 #include <set>
 #include <complex>
@@ -37,9 +40,12 @@ namespace PHON_NS {
         double ***kappa;
         double ***kappa_spec;
         double ***kappa_coherent;
-        double *Temperature;
+        double *temperature;
         int calc_coherent;
+
         int fph_rta;
+        void set_kmesh_coarse(const unsigned int nk_in[3]);
+        KpointMeshUniform *get_kmesh_coarse() const;
 
     private:
         void set_default_variables();
@@ -53,6 +59,11 @@ namespace PHON_NS {
         std::vector<int> vks_l, vks_done, vks_done4;
         std::set<int> vks_job, vks_job4;
         std::string file_coherent_elems;
+
+        unsigned int nk_coarse[3] = {};
+        KpointMeshUniform *kmesh_4ph = nullptr;
+        DymatEigenValue *dymat_4ph = nullptr;
+        PhaseFactorStorage *phase_storage_4ph = nullptr;
 
         void calc_anharmonic_imagself3();
         void calc_anharmonic_imagself4();
@@ -69,16 +80,28 @@ namespace PHON_NS {
                                 double **,
                                 int) const;
 
-        void average_self_energy_at_degenerate_point(int,
-                                                     int,
-                                                     double **) const;
+        void average_self_energy_at_degenerate_point(const int n,
+                                                     const int m,
+                                                     const KpointMeshUniform *kmesh_in,
+                                                     const double *const *eval_in,
+                                                     double **damping) const;
 
-        void compute_frequency_resolved_kappa(int,
-                                              double ****,
-                                              int);
+        void compute_frequency_resolved_kappa(const int ntemp,
+                                              const int smearing_method,
+                                              const KpointMeshUniform *kmesh_in,
+                                              const double *const *eval_in,
+                                              const double *const *const *const *kappa_mode,
+                                              double ***kappa_spec_out) const;
 
-        void compute_kappa_intraband(double ***kappa_intra, double **lifetime);
+        void compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
+                                     const double *const *eval_in,
+                                     const double *const *lifetime,
+                                     double ***kappa_intra,
+                                     double ***kappa_spec_out) const;
 
-        void compute_kappa_coherent(double ***kappa_coherent, double **gamma_total) const;
+        void compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
+                                    const double *const *eval_in,
+                                    const double *const *gamma_total,
+                                    double ***kappa_coherent_out) const;
     };
 }

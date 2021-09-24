@@ -21,77 +21,75 @@
 #include <string>
 
 namespace PHON_NS {
-    class PHON {
-    public:
-        PHON(int,
-             char **,
-             MPI_Comm);
+class PHON {
+ public:
+    PHON(int,
+         char **,
+         MPI_Comm);
 
-        virtual ~PHON();
+    virtual ~PHON();
 
-        class Memory *memory;
+    class Memory *memory;
 
-        class Error *error;
+    class Timer *timer;
 
-        class Timer *timer;
+    class Input *input;
 
-        class Input *input;
+    class System *system;
 
-        class System *system;
+    class Symmetry *symmetry;
 
-        class Symmetry *symmetry;
+    class Kpoint *kpoint;
 
-        class Kpoint *kpoint;
+    class Integration *integration;
 
-        class Integration *integration;
+    class Fcs_phonon *fcs_phonon;
 
-        class Fcs_phonon *fcs_phonon;
+    class Dynamical *dynamical;
 
-        class Dynamical *dynamical;
+    class PhononVelocity *phonon_velocity;
 
-        class Phonon_velocity *phonon_velocity;
+    class Thermodynamics *thermodynamics;
 
-        class Thermodynamics *thermodynamics;
+    class AnharmonicCore *anharmonic_core;
 
-        class AnharmonicCore *anharmonic_core;
+    class ModeAnalysis *mode_analysis;
 
-        class ModeAnalysis *mode_analysis;
+    class Selfenergy *selfenergy;
+    class Conductivity *conductivity;
 
-        class Selfenergy *selfenergy;
 
-        class Conductivity *conductivity;
+    class Writes *writes;
 
-        class Iterativebte *iterativebte;
+    class Dos *dos;
+    
+    class Iterativebte *iterativebte;
 
-        class Writes *writes;
+    class Gruneisen *gruneisen;
 
-        class Dos *dos;
+    class MyMPI *mympi;
 
-        class Gruneisen *gruneisen;
+    class Isotope *isotope;
 
-        class MyMPI *mympi;
+    class Scph *scph;
 
-        class Isotope *isotope;
+    class Ewald *ewald;
 
-        class Scph *scph;
+    class Dielec *dielec;
 
-        class Ewald *ewald;
+    void create_pointers();
+    void destroy_pointers() const;
 
-        class Dielec *dielec;
 
-        void create_pointers();
+    std::string mode;
+    bool restart_flag;
 
-        void destroy_pointers() const;
+    void execute_phonons() const;
 
-        std::string mode;
-        bool restart_flag;
+    void execute_RTA() const;
+    void execute_self_consistent_phonon() const;
 
-        void execute_phonons() const;
 
-        void execute_RTA() const;
-
-        void execute_self_consistent_phonon() const;
-
-        void setup_base() const;
-    };
+    void setup_base() const;
+};
 }
