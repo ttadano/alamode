@@ -30,7 +30,7 @@ class Pointers {
           mode_analysis(ptr->mode_analysis),
           selfenergy(ptr->selfenergy),
           conductivity(ptr->conductivity),
-                iterativebte(ptr->iterativebte),
+          iterativebte(ptr->iterativebte),
           writes(ptr->writes),
           dos(ptr->dos),
           gruneisen(ptr->gruneisen),
@@ -58,7 +58,7 @@ class Pointers {
     ModeAnalysis *&mode_analysis;
     Selfenergy *&selfenergy;
     Conductivity *&conductivity;
-        Iterativebte *&iterativebte;
+    Iterativebte *&iterativebte;
     Writes *&writes;
     Dos *&dos;
     Gruneisen *&gruneisen;

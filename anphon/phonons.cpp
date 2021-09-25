@@ -280,7 +280,8 @@ void PHON::execute_RTA() const
             writes->write_kappa();
         } else {
             if (mympi->my_rank == 0) {
-                std::cout << " [fph_RTA == 2], only 4ph scattering is calculated, kappa is not calculated !" << std::endl;
+                std::cout << " [fph_RTA == 2], only 4ph scattering is calculated, kappa is not calculated !"
+                          << std::endl;
             }
         }
         writes->write_selfenergy_isotope();

@@ -80,16 +80,16 @@ void Integration::setup_integration()
                 ismear_4ph = 2;
             } else if (ismear_4ph == 0) {
                 std::cout << " ISMEAR_4PH = 0: Lorentzian broadening with epsilon = "
-                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
             } else if (ismear_4ph == 1) {
                 std::cout << " ISMEAR_4PH = 1: Gaussian broadening with epsilon = "
-                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
             } else if (ismear_4ph == 2) {
                 std::cout << " ISMEAR_4PH = 2: Adaptive smearing method will be used " << std::endl;
             } else {
                 exit("setup_relaxation", "Invalid ismear_4ph");
             }
-        
+
             std::cout << std::endl;
         }
     }
@@ -110,7 +110,7 @@ void Integration::prepare_adaptivesmearing()
     auto nk = dos->kmesh_dos->nk;
     auto ns = dynamical->neval;
 
-    allocate(vel,nk,ns,3);
+    allocate(vel, nk, ns, 3);
     phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
                                                         system->lavec_p,
                                                         fcs_phonon->fc2_ext,
@@ -124,7 +124,7 @@ void Integration::prepare_adaptivesmearing()
 //    nka[1] = kpoint->nky;
 //    nka[2] = kpoint->nkz;
 
-    allocate(dq,3,3);
+    allocate(dq, 3, 3);
 
     for (auto u = 0; u < 3; u++) {
         for (auto a = 0; a < 3; a++) {
@@ -143,7 +143,7 @@ void Integration::adaptive_smearing(const int k1, const int s1,
     parts = 0;
 
     for (auto u = 0; u < 3; ++u) {
-        
+
         tmp = 0;
         for (auto a = 0; a < 3; ++a) {
             tmp += vel[k1][s1][a] * dq[u][a];
@@ -151,8 +151,8 @@ void Integration::adaptive_smearing(const int k1, const int s1,
 
         parts += std::pow(tmp, 2);
     }
-    
-    smear = std::max( 2.0e-5, std::sqrt( parts / 12) ); // for (w1 - w2)
+
+    smear = std::max(2.0e-5, std::sqrt(parts / 12)); // for (w1 - w2)
 }
 
 void Integration::adaptive_smearing(const int k1, const int s1,
@@ -177,9 +177,9 @@ void Integration::adaptive_smearing(const int k1, const int s1,
 
         for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
     }
-    
-    smear[0] = std::max( 2.0e-5, std::sqrt( (parts[0]) / 12) ); // for (w1 - w2 - w3)
-    smear[1] = std::max( 2.0e-5, std::sqrt( (parts[1]) / 12) ); // for (w1 + w3 - w3)
+
+    smear[0] = std::max(2.0e-5, std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
+    smear[1] = std::max(2.0e-5, std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
     // 2.0e-5 ry ~ 3 cm^-1
 }
 
@@ -206,13 +206,11 @@ void Integration::adaptive_smearing(const int k2, const int s2,
 
         for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
     }
-    
-    smear[0] = std::max( 2.0e-5, std::sqrt( (parts[0]+parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
-    smear[1] = std::max( 2.0e-5, std::sqrt( (parts[2]+parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
+
+    smear[0] = std::max(2.0e-5, std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
+    smear[1] = std::max(2.0e-5,
+                        std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
 }
-
-
-
 
 void TetraNodes::setup()
 {
@@ -350,15 +348,15 @@ double Integration::do_tetrahedron(const double *energy,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                                                      * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
-                ((e3 - e1) * (e4 - e1));
+                  * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                  ((e3 - e1) * (e4 - e1));
 
             I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 -
-                                                                                                                  e1);
+                  e1);
             I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
             I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
             I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 -
-                                                                                                                  e1);
+                  e1);
 
             ret += I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4;
 
@@ -427,8 +425,8 @@ void Integration::calc_weight_tetrahedron(const unsigned int nk_irreducible,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                                                * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
-                ((e3 - e1) * (e4 - e1));
+                  * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                  ((e3 - e1) * (e4 - e1));
 
             I1 = g * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
             I2 = g * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
@@ -487,7 +485,6 @@ double Integration::fij(const double ei,
 {
     return (e - ej) / (ei - ej);
 }
-
 
 void Integration::insertion_sort(double *a,
                                  int *ind,

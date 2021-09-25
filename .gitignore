@@ -1,4 +1,8 @@
 anphon/Makefile
+*.o
+CMakeFiles
+CMakeCache.txt
+.vscode/
 anphon/*.o
 anphon/anphon
 alm/Makefile

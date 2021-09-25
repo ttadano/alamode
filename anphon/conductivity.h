@@ -19,89 +19,88 @@
 #include <complex>
 
 namespace PHON_NS {
-    class Conductivity : protected Pointers {
-    public:
-        Conductivity(class PHON *);
+class Conductivity : protected Pointers {
+ public:
+    Conductivity(class PHON *);
 
-        ~Conductivity();
+    ~Conductivity();
 
-        void setup_kappa();
+    void setup_kappa();
 
-        void prepare_restart();
+    void prepare_restart();
 
-        void calc_anharmonic_imagself();
+    void calc_anharmonic_imagself();
 
-        void compute_kappa();
+    void compute_kappa();
 
-        int calc_kappa_spec;
-        unsigned int ntemp;
-        double **damping3;
-        double **damping4;
-        double ***kappa;
-        double ***kappa_spec;
-        double ***kappa_coherent;
-        double *temperature;
-        int calc_coherent;
+    int calc_kappa_spec;
+    unsigned int ntemp;
+    double **damping3;
+    double **damping4;
+    double ***kappa;
+    double ***kappa_spec;
+    double ***kappa_coherent;
+    double *temperature;
+    int calc_coherent;
 
-        int fph_rta;
-        void set_kmesh_coarse(const unsigned int nk_in[3]);
-        KpointMeshUniform *get_kmesh_coarse() const;
+    int fph_rta;
+    void set_kmesh_coarse(const unsigned int nk_in[3]);
+    KpointMeshUniform *get_kmesh_coarse() const;
 
-    private:
-        void set_default_variables();
+ private:
+    void set_default_variables();
 
-        void deallocate_variables();
+    void deallocate_variables();
 
-        double ***vel;
-        std::complex<double> ****velmat;
-        unsigned int nk, ns;
-        int nshift_restart, nshift_restart4;
-        std::vector<int> vks_l, vks_done, vks_done4;
-        std::set<int> vks_job, vks_job4;
-        std::string file_coherent_elems;
+    double ***vel;
+    std::complex<double> ****velmat;
+    unsigned int nk, ns;
+    int nshift_restart, nshift_restart4;
+    std::vector<int> vks_l, vks_done, vks_done4;
+    std::set<int> vks_job, vks_job4;
+    std::string file_coherent_elems;
 
-        unsigned int nk_coarse[3] = {};
-        KpointMeshUniform *kmesh_4ph = nullptr;
-        DymatEigenValue *dymat_4ph = nullptr;
-        PhaseFactorStorage *phase_storage_4ph = nullptr;
+    unsigned int nk_coarse[3] = {};
+    KpointMeshUniform *kmesh_4ph = nullptr;
+    DymatEigenValue *dymat_4ph = nullptr;
+    PhaseFactorStorage *phase_storage_4ph = nullptr;
 
-        void calc_anharmonic_imagself3();
-        void calc_anharmonic_imagself4();
+    void calc_anharmonic_imagself3();
+    void calc_anharmonic_imagself4();
 
-        void write_result_gamma(unsigned int,
-                                unsigned int,
-                                double ***,
-                                double **) const;
+    void write_result_gamma(unsigned int,
+                            unsigned int,
+                            double ***,
+                            double **) const;
 
-        
-        void write_result_gamma(unsigned int,
-                                unsigned int,
-                                double ***,
-                                double **,
-                                int) const;
+    void write_result_gamma(unsigned int,
+                            unsigned int,
+                            double ***,
+                            double **,
+                            int) const;
 
-        void average_self_energy_at_degenerate_point(const int n,
-                                                     const int m,
-                                                     const KpointMeshUniform *kmesh_in,
-                                                     const double *const *eval_in,
-                                                     double **damping) const;
+    void average_self_energy_at_degenerate_point(const int n,
+                                                 const int m,
+                                                 const KpointMeshUniform *kmesh_in,
+                                                 const double *const *eval_in,
+                                                 double **damping) const;
 
-        void compute_frequency_resolved_kappa(const int ntemp,
-                                              const int smearing_method,
-                                              const KpointMeshUniform *kmesh_in,
-                                              const double *const *eval_in,
-                                              const double *const *const *const *kappa_mode,
-                                              double ***kappa_spec_out) const;
+    void compute_frequency_resolved_kappa(const int ntemp,
+                                          const int smearing_method,
+                                          const KpointMeshUniform *kmesh_in,
+                                          const double *const *eval_in,
+                                          const double *const *const *const *kappa_mode,
+                                          double ***kappa_spec_out) const;
 
-        void compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
-                                     const double *const *eval_in,
-                                     const double *const *lifetime,
-                                     double ***kappa_intra,
-                                     double ***kappa_spec_out) const;
+    void compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
+                                 const double *const *eval_in,
+                                 const double *const *lifetime,
+                                 double ***kappa_intra,
+                                 double ***kappa_spec_out) const;
 
-        void compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
-                                    const double *const *eval_in,
-                                    const double *const *gamma_total,
-                                    double ***kappa_coherent_out) const;
-    };
+    void compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
+                                const double *const *eval_in,
+                                const double *const *gamma_total,
+                                double ***kappa_coherent_out) const;
+};
 }

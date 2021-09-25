@@ -58,11 +58,10 @@ class PHON {
     class Selfenergy *selfenergy;
     class Conductivity *conductivity;
 
-
     class Writes *writes;
 
     class Dos *dos;
-    
+
     class Iterativebte *iterativebte;
 
     class Gruneisen *gruneisen;
@@ -80,7 +79,6 @@ class PHON {
     void create_pointers();
     void destroy_pointers() const;
 
-
     std::string mode;
     bool restart_flag;
 
@@ -88,7 +86,6 @@ class PHON {
 
     void execute_RTA() const;
     void execute_self_consistent_phonon() const;
-
 
     void setup_base() const;
 };

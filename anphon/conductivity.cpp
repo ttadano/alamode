@@ -128,7 +128,7 @@ void Conductivity::setup_kappa()
     const auto nrem = nks_total - nks_each_thread * mympi->nprocs;
 
 
-   // if (fph_rta < 2) {
+    // if (fph_rta < 2) {
     if (nrem > 0) {
         allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, ntemp);
     } else {
@@ -197,7 +197,6 @@ void Conductivity::setup_kappa()
                                                    evec_tmp);
             deallocate(eval_tmp);
             deallocate(evec_tmp);
-
 
         } else {
             const auto neval = dynamical->neval;
@@ -322,9 +321,10 @@ void Conductivity::prepare_restart()
                     const auto ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
                     for (auto is = 0; is < dynamical->neval; ++is) {
                         writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                        writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
-                        << std::
-                        endl;
+                        writes->fs_result << std::setw(15)
+                                          << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
+                                          << std::
+                                          endl;
                     }
 
                     writes->fs_result << "##END Phonon Frequency" << std::endl << std::endl;
@@ -338,8 +338,9 @@ void Conductivity::prepare_restart()
                         const int ik = kmesh_4ph->kpoint_irred_all[i][0].knum;
                         for (auto is = 0; is < dynamical->neval; ++is) {
                             writes->fs_result4 << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                            writes->fs_result4 << std::setw(15) << writes->in_kayser(dymat_4ph->get_eigenvalues()[ik][is]) << std::
-                            endl;
+                            writes->fs_result4 << std::setw(15)
+                                               << writes->in_kayser(dymat_4ph->get_eigenvalues()[ik][is]) << std::
+                                               endl;
                         }
                     }
 
@@ -431,7 +432,7 @@ void Conductivity::prepare_restart()
 
                     if (it_set == vks_job.end()) {
                         std::cout << " rank = " << mympi->my_rank
-                        << " arr_done = " << arr_done[i] << std::endl;
+                                  << " arr_done = " << arr_done[i] << std::endl;
                         exit("prepare_restart", "This cannot happen");
                     } else {
                         vks_job.erase(it_set);
@@ -467,7 +468,7 @@ void Conductivity::prepare_restart()
 
                     if (it_set == vks_job4.end()) {
                         std::cout << " rank = " << mympi->my_rank
-                        << " arr_done = " << arr_done[i] << std::endl;
+                                  << " arr_done = " << arr_done[i] << std::endl;
                         exit("prepare_restart", "This cannot happen");
                     } else {
                         vks_job4.erase(it_set);
@@ -706,7 +707,7 @@ void Conductivity::calc_anharmonic_imagself()
     if (fph_rta < 2) {
         calc_anharmonic_imagself3();
     }
-    
+
     if (fph_rta > 0) {
         calc_anharmonic_imagself4();
     }
@@ -744,11 +745,11 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
             for (k = 0; k < ntemp; ++k) {
                 writes->fs_result << std::setw(15)
-                                << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+                                  << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
             }
             writes->fs_result << "#END GAMMA_EACH" << std::endl;
         }
-    } else if (mode == -1 ) {
+    } else if (mode == -1) {
         // damping 4
         for (unsigned int j = 0; j < np; ++j) {
 
@@ -771,7 +772,7 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
             for (k = 0; k < ntemp; ++k) {
                 writes->fs_result4 << std::setw(15)
-                                << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+                                   << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
             }
             writes->fs_result4 << "#END GAMMA_EACH" << std::endl;
         }
@@ -836,16 +837,16 @@ void Conductivity::compute_kappa()
                 gamma_total[iks][i] = damping3[iks][i];
                 if (fph_rta == 1) {
                     gamma_total[iks][i] += damping4[iks][i];
-                       }
+                }
             }
         }
-         average_self_energy_at_degenerate_point(dos->kmesh_dos->nk_irred * ns,
+        average_self_energy_at_degenerate_point(dos->kmesh_dos->nk_irred * ns,
                                                 ntemp,
                                                 dos->kmesh_dos,
                                                 dos->dymat_dos->get_eigenvalues(),
                                                 damping3);
 
-               if (isotope->include_isotope) {
+        if (isotope->include_isotope) {
             for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
                 const auto snum = iks % ns;
                 if (dynamical->is_imaginary[iks / ns][snum]) {

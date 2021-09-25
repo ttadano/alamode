@@ -75,7 +75,7 @@ void ModeAnalysis::setup_mode_analysis()
             ifs_ks.open(ks_input.c_str(), std::ios::in);
             if (!ifs_ks)
                 exit("setup_mode_analysis",
-                            "Cannot open file KS_INPUT");
+                     "Cannot open file KS_INPUT");
 
             unsigned int nlist;
             double ktmp[3];
@@ -85,7 +85,7 @@ void ModeAnalysis::setup_mode_analysis()
 
             if (nlist <= 0)
                 exit("setup_mode_analysis",
-                            "First line in KS_INPUT files should be a positive integer.");
+                     "First line in KS_INPUT files should be a positive integer.");
 
             if (calc_fstate_k) {
                 kslist_fstate_k.clear();
@@ -95,7 +95,7 @@ void ModeAnalysis::setup_mode_analysis()
 
                     if (snum_tmp <= 0 || snum_tmp > dynamical->neval) {
                         exit("setup_mode_analysis",
-                                    "Mode index out of range.");
+                             "Mode index out of range.");
                     }
 
                     kslist_fstate_k.emplace_back(ktmp, snum_tmp - 1);
@@ -110,7 +110,7 @@ void ModeAnalysis::setup_mode_analysis()
 
                     if (knum_tmp == -1)
                         exit("setup_mode_analysis",
-                                    "Given kpoint does not exist in given k-point grid.");
+                             "Given kpoint does not exist in given k-point grid.");
                     if (snum_tmp <= 0 || snum_tmp > dynamical->neval) {
                         exit("setup_mode_analysis", "Mode index out of range.");
                     }
@@ -232,26 +232,26 @@ void ModeAnalysis::setup_mode_analysis()
 
         if (calc_realpart && integration->ismear != 0) {
             exit("setup_mode_analysis",
-                        "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
+                 "Sorry. REALPART = 1 can be used only with ISMEAR = 0");
         }
 
         if (spectral_func && integration->ismear != -1) {
             exit("setup_mode_analysis",
-                        "Sorry. SELF_W = 1 can be used only with the tetrahedron method (ISMEAR = -1).");
+                 "Sorry. SELF_W = 1 can be used only with the tetrahedron method (ISMEAR = -1).");
         }
 
         if (calc_fstate_k && kpoint->kpoint_mode != 3) {
             exit("setup_mode_analysis",
-                        "KPMODE should be 3 when FSTATE_K = 1.");
+                 "KPMODE should be 3 when FSTATE_K = 1.");
         }
         if (!calc_fstate_k && kpoint->kpoint_mode == 3) {
             exit("setup_mode_analysis",
-                        "KPMODE = 3 works only when FSTATE_K = 1");
+                 "KPMODE = 3 works only when FSTATE_K = 1");
         }
 
         if (calc_fstate_k && (calc_fstate_omega || (print_V3 > 0) || spectral_func || calc_realpart)) {
             warn("setup_mode_analysis",
-                        "FSTATE_K = 1 shouldn't be set with the followings: PRINTV3=1, REALPART=1, FSTATE_W=1, SELF_W=1");
+                 "FSTATE_K = 1 shouldn't be set with the followings: PRINTV3=1, REALPART=1, FSTATE_W=1, SELF_W=1");
         }
 
         dynamical->modify_eigenvectors();
@@ -449,7 +449,7 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
             ofs_linewidth.open(file_linewidth.c_str(), std::ios::out);
             if (!ofs_linewidth)
                 exit("print_selfenergy",
-                            "Cannot open file file_linewidth");
+                     "Cannot open file file_linewidth");
 
             ofs_linewidth << "# xk = ";
 
@@ -507,7 +507,7 @@ void ModeAnalysis::print_selfenergy(const unsigned int NT,
                 ofs_shift.open(file_shift.c_str(), std::ios::out);
                 if (!ofs_shift)
                     exit("print_selfenergy",
-                                "Cannot open file file_shift");
+                         "Cannot open file file_shift");
 
                 ofs_shift << "# xk = ";
 
@@ -654,7 +654,7 @@ void ModeAnalysis::print_frequency_resolved_final_state(const unsigned int NT,
             ofs_omega.open(file_omega.c_str(), std::ios::out);
             if (!ofs_omega)
                 exit("print_frequency_resolved_final_state",
-                            "Cannot open file file_omega");
+                     "Cannot open file file_omega");
 
             ofs_omega << "# xk = ";
 
@@ -1579,7 +1579,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             ofs_mode_tau.open(file_mode_tau.c_str(), std::ios::out);
             if (!ofs_mode_tau)
                 exit("compute_mode_tau",
-                            "Cannot open file file_mode_tau");
+                     "Cannot open file file_mode_tau");
 
             ofs_mode_tau << "## Momentum-resolved final state amplitude" << std::endl;
 
@@ -1657,7 +1657,7 @@ void ModeAnalysis::print_V3_elements() const
             ofs_V3.open(file_V3.c_str(), std::ios::out);
             if (!ofs_V3)
                 exit("run_mode_analysis",
-                            "Cannot open file file_V3");
+                     "Cannot open file file_V3");
 
             ofs_V3 << "# xk = ";
 
@@ -1749,7 +1749,7 @@ void ModeAnalysis::print_V4_elements() const
             ofs_V4.open(file_V4.c_str(), std::ios::out);
             if (!ofs_V4)
                 exit("run_mode_analysis",
-                            "Cannot open file file_V4");
+                     "Cannot open file file_V4");
 
             ofs_V4 << "# xk = ";
 
@@ -1974,7 +1974,7 @@ void ModeAnalysis::print_Phi3_elements() const
             ofs_V3.open(file_V3.c_str(), std::ios::out);
             if (!ofs_V3)
                 exit("print_phi3_element",
-                            "Cannot open file file_V3");
+                     "Cannot open file file_V3");
 
             ofs_V3 << "# xk = ";
 
@@ -2065,7 +2065,7 @@ void ModeAnalysis::print_Phi4_elements() const
             ofs_V4.open(file_V4.c_str(), std::ios::out);
             if (!ofs_V4)
                 exit("print_phi4_element",
-                            "Cannot open file file_V3");
+                     "Cannot open file file_V3");
 
             ofs_V4 << "# xk = ";
 

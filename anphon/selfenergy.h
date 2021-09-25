@@ -17,13 +17,13 @@
 #include <string>
 
 namespace PHON_NS {
-    class Selfenergy : protected Pointers {
-    public:
-        Selfenergy(class PHON *phon);
+class Selfenergy : protected Pointers {
+ public:
+    Selfenergy(class PHON *phon);
 
-        ~Selfenergy();
+    ~Selfenergy();
 
-        void setup_selfenergy();
+    void setup_selfenergy();
 
     void selfenergy_tadpole(const unsigned int N,
                             const double *T,
@@ -145,12 +145,12 @@ namespace PHON_NS {
                       const std::complex<double> *const *const *evec_in,
                       std::complex<double> *ret) const;
 
-    private:
+ private:
     unsigned int ns;
-        double epsilon;
+    double epsilon;
 
-        void mpi_reduce_complex(unsigned int,
-                                std::complex<double> *,
-                                std::complex<double> *) const;
-    };
+    void mpi_reduce_complex(unsigned int,
+                            std::complex<double> *,
+                            std::complex<double> *) const;
+};
 }

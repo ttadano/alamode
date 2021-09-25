@@ -503,7 +503,7 @@ double PhononVelocity::diff(const double *f,
         df = (f[1] - f[0]) / (2.0 * h);
     } else {
         exit("diff",
-                    "Numerical differentiation of n > 2 is not supported yet.");
+             "Numerical differentiation of n > 2 is not supported yet.");
     }
 
     return df;
@@ -528,7 +528,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 
     if (dynamical->nonanalytic) {
         exit("phonon_vel_k2",
-                    "Sorry. Analytic calculation of \
+             "Sorry. Analytic calculation of \
             group velocity is not supported for NONANALYTIC>0.");
     }
 

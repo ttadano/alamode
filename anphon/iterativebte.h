@@ -42,90 +42,89 @@ Improvement:
 #include <complex>
 
 namespace PHON_NS {
-    class Iterativebte : protected Pointers {
-    public:
-        Iterativebte(class PHON *);
+class Iterativebte : protected Pointers {
+ public:
+    Iterativebte(class PHON *);
 
-        ~Iterativebte();
+    ~Iterativebte();
 
-        void setup_iterative();  // initialize variables
+    void setup_iterative();  // initialize variables
 
-        void do_iterativebte();  // wrapper
+    void do_iterativebte();  // wrapper
 
-        void write_kappa();
+    void write_kappa();
 
-        bool do_iterative;
-        bool direct_solution;
-        double *Temperature;
-        unsigned int ntemp;
-        
-        int max_cycle;
-        double convergence_criteria;  // dF(i+1) - dF(i) < cc
-        
-        double ***kappa;
-        bool use_triplet_symmetry;
-        bool sym_permutation;
+    bool do_iterative;
+    bool direct_solution;
+    double *Temperature;
+    unsigned int ntemp;
 
-    private:
+    int max_cycle;
+    double convergence_criteria;  // dF(i+1) - dF(i) < cc
 
-        void set_default_variables();
+    double ***kappa;
+    bool use_triplet_symmetry;
+    bool sym_permutation;
 
-        void deallocate_variables();
+ private:
 
-        int kplength_emitt;
-        int kplength_absorb;
-        int nktot, nklocal, ns, ns2;
+    void set_default_variables();
 
-        // calculated at equilibrium
-        double ***L_absorb; // L q0 + q1 -> q2
-        double ***L_emitt;  // L q0 -> q1 + q2
-        double ***vel;
+    void deallocate_variables();
 
-        // linear response to deltaT
-        double ***dFold;
-        double ***dFnew;
+    int kplength_emitt;
+    int kplength_absorb;
+    int nktot, nklocal, ns, ns2;
 
+    // calculated at equilibrium
+    double ***L_absorb; // L q0 + q1 -> q2
+    double ***L_emitt;  // L q0 -> q1 + q2
+    double ***vel;
 
-        double ***damping4; // four phonon selfenergy
-        void calc_anharmonic_imagself4();
+    // linear response to deltaT
+    double ***dFold;
+    double ***dFnew;
 
-        std::vector<std::vector<KsListGroup>> localnk_triplets_emitt;
-        std::vector<std::vector<KsListGroup>> localnk_triplets_absorb;
+    double ***damping4; // four phonon selfenergy
+    void calc_anharmonic_imagself4();
 
-        std::vector<int> nk_l, nk_job;
+    std::vector<std::vector<KsListGroup>> localnk_triplets_emitt;
+    std::vector<std::vector<KsListGroup>> localnk_triplets_absorb;
 
-        //std::vector<std::vector<int>> ikp_emitt;
-        //std::vector<std::vector<int>> ikp_absorb;
+    std::vector<int> nk_l, nk_job;
 
-        void iterative_solver(); // calculate kappa iteratively
-        void direct_solver(); // calculate kappa iteratively
+    //std::vector<std::vector<int>> ikp_emitt;
+    //std::vector<std::vector<int>> ikp_absorb;
 
-        //void setup_kpindex();
+    void iterative_solver(); // calculate kappa iteratively
+    void direct_solver(); // calculate kappa iteratively
 
-        void calc_kappa(int, double*** &, double** &);   // calculate kappa with off equilibrium part
+    //void setup_kpindex();
 
-        void get_triplets();        // set up all triplets
+    void calc_kappa(int, double ***&, double **&);   // calculate kappa with off equilibrium part
 
-        void setup_L();
-        void setup_L_smear();
-        void setup_L_tetra();  
+    void get_triplets();        // set up all triplets
 
-        void calc_Q_from_L(double** &, double** &);  // calculate Q
+    void setup_L();
+    void setup_L_smear();
+    void setup_L_tetra();
 
-        void calc_Q_directly(double** &, double** &);
+    void calc_Q_from_L(double **&, double **&);  // calculate Q
 
-        void average_Q(double** &);
+    void calc_Q_directly(double **&, double **&);
 
-        void average_dF(double*** &);
+    void average_Q(double **&);
 
-        void average_W_at_k(int, double** &);
+    void average_dF(double ***&);
 
-        void calc_boson(int, double** &, double** &);
+    void average_W_at_k(int, double **&);
 
-        bool check_convergence(double** &, double** &); // check if convergence cirteria is meet
+    void calc_boson(int, double **&, double **&);
 
-        //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
-        void write_result();
-        void write_Q_dF(int , double** &, double*** &);
-    };
+    bool check_convergence(double **&, double **&); // check if convergence cirteria is meet
+
+    //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
+    void write_result();
+    void write_Q_dF(int, double **&, double ***&);
+};
 }

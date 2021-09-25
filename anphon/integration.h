@@ -17,146 +17,146 @@
 #include <vector>
 
 namespace PHON_NS {
-    struct tetra_pair {
-        double e;
-        double f;
+struct tetra_pair {
+  double e;
+  double f;
+};
+
+inline bool operator<(const tetra_pair &a,
+                      const tetra_pair &b)
+{
+    return a.e < b.e;
+}
+
+struct TetraWithKnum {
+  double e;
+  int knum;
+};
+
+inline bool operator<(const TetraWithKnum &a,
+                      const TetraWithKnum &b)
+{
+    return a.e < b.e;
+}
+
+class TetraNodes {
+ public:
+    TetraNodes()
+    {
+        nk1 = 0;
+        nk2 = 0;
+        nk3 = 0;
+        ntetra = 0;
+        tetras = nullptr;
     };
 
-    inline bool operator<(const tetra_pair &a,
-                          const tetra_pair &b)
+    TetraNodes(unsigned int nk1_in,
+               unsigned int nk2_in,
+               unsigned int nk3_in)
     {
-        return a.e < b.e;
-    }
-
-    struct TetraWithKnum {
-        double e;
-        int knum;
+        nk1 = nk1_in;
+        nk2 = nk2_in;
+        nk3 = nk3_in;
+        ntetra = 6 * nk1 * nk2 * nk3;
+        allocate(tetras, ntetra, 4);
     };
 
-    inline bool operator<(const TetraWithKnum &a,
-                          const TetraWithKnum &b)
+    ~TetraNodes()
     {
-        return a.e < b.e;
+        if (tetras) deallocate(tetras);
     }
 
-    class TetraNodes {
-    public:
-        TetraNodes()
-        {
-            nk1 = 0;
-            nk2 = 0;
-            nk3 = 0;
-            ntetra = 0;
-            tetras = nullptr;
-        };
+    void setup();
 
-        TetraNodes(unsigned int nk1_in,
-                   unsigned int nk2_in,
-                   unsigned int nk3_in)
-        {
-            nk1 = nk1_in;
-            nk2 = nk2_in;
-            nk3 = nk3_in;
-            ntetra = 6 * nk1 * nk2 * nk3;
-            allocate(tetras, ntetra, 4);
-        };
+    unsigned int get_ntetra() const;
 
-        ~TetraNodes()
-        {
-            if (tetras) deallocate(tetras);
-        }
+    unsigned int **get_tetras() const;
 
-        void setup();
+ private:
+    unsigned int nk1, nk2, nk3;
+    unsigned int ntetra;
+    unsigned int **tetras;
+};
 
-        unsigned int get_ntetra() const;
+class Integration : protected Pointers {
+ public:
+    Integration(class PHON *);
 
-        unsigned int **get_tetras() const;
+    ~Integration();
 
-    private:
-        unsigned int nk1, nk2, nk3;
-        unsigned int ntetra;
-        unsigned int **tetras;
-    };
+    int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
+    int ismear_4ph;
+    double epsilon;
+    double epsilon_4ph;
 
-    class Integration : protected Pointers {
-    public:
-        Integration(class PHON *);
+    void setup_integration();
 
-        ~Integration();
+    double do_tetrahedron(const double *energy,
+                          const double *f,
+                          const unsigned int ntetra,
+                          const unsigned int *const *tetras,
+                          const double e_ref);
 
-        int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
-        int ismear_4ph;
-        double epsilon;
-        double epsilon_4ph;
+    void calc_weight_tetrahedron(const unsigned int nk_irreducible,
+                                 const unsigned int *map_to_irreducible_k,
+                                 const double *energy,
+                                 const double e_ref,
+                                 const unsigned int ntetra,
+                                 const unsigned int *const *tetras,
+                                 double *weight) const;
 
-        void setup_integration();
+    void calc_weight_smearing(const unsigned int nk,
+                              const unsigned int nk_irreducible,
+                              const unsigned int *map_to_irreducible_k,
+                              const double *energy,
+                              const double e_ref,
+                              const int smearing_method,
+                              double *weight) const;
 
-        double do_tetrahedron(const double *energy,
-                              const double *f,
-                              const unsigned int ntetra,
-                              const unsigned int *const *tetras,
-                              const double e_ref);
+    // overload for 3ph or 4ph
+    void adaptive_smearing(int, int, double &);
 
-        void calc_weight_tetrahedron(const unsigned int nk_irreducible,
-                                     const unsigned int *map_to_irreducible_k,
-                                     const double *energy,
-                                     const double e_ref,
-                                     const unsigned int ntetra,
-                                     const unsigned int *const *tetras,
-                                     double *weight) const;
+    void adaptive_smearing(int, int, int, int,
+                           double *);
 
-        void calc_weight_smearing(const unsigned int nk,
-                                  const unsigned int nk_irreducible,
-                                  const unsigned int *map_to_irreducible_k,
-                                  const double *energy,
-                                  const double e_ref,
-                                  const int smearing_method,
-                                  double *weight) const;
+    void adaptive_smearing(int, int, int, int,
+                           int, int, double *);
 
-        // overload for 3ph or 4ph
-        void adaptive_smearing( int, int, double &);
+ private:
+    void set_default_variables();
 
-        void adaptive_smearing( int,int,int,int,
-                                double *);
+    void deallocate_variables();
 
-        void adaptive_smearing( int,int,int,int,
-                                int,int,double *);
+    // for adaptive smearing
+    double ***vel;
+    double **dq;
 
-    private:
-        void set_default_variables();
+    void prepare_adaptivesmearing();
 
-        void deallocate_variables();
+    inline double fij(double,
+                      double,
+                      double) const;
 
-        // for adaptive smearing
-        double ***vel;
-        double **dq;
+    // inline double volume(const int *) const;
 
-        void prepare_adaptivesmearing();
+    std::vector<tetra_pair> tetra_data;
 
-        inline double fij(double,
-                          double,
-                          double) const;
+    // inline double refold(double) const;
 
-        // inline double volume(const int *) const;
+    void insertion_sort(double *,
+                        int *,
+                        int) const;
+};
 
-        std::vector<tetra_pair> tetra_data;
+inline double delta_lorentz(const double omega,
+                            const double epsilon)
+{
+    return inverse_pi * epsilon / (omega * omega + epsilon * epsilon);
+}
 
-        // inline double refold(double) const;
-
-        void insertion_sort(double *,
-                            int *,
-                            int) const;
-    };
-
-    inline double delta_lorentz(const double omega,
-                                const double epsilon)
-    {
-        return inverse_pi * epsilon / (omega * omega + epsilon * epsilon);
-    }
-
-    inline double delta_gauss(const double omega,
-                              const double epsilon)
-    {
-        return std::exp(-omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
-    }
+inline double delta_gauss(const double omega,
+                          const double epsilon)
+{
+    return std::exp(-omega * omega / (epsilon * epsilon)) / (epsilon * std::sqrt(pi));
+}
 }

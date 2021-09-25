@@ -96,7 +96,7 @@ class TriLinearInterpolator {
 
 
     static void set_grid(const unsigned int ngrid_in[3],
-                  double **x_out)
+                         double **x_out)
     {
         size_t ik;
         double invn[3];

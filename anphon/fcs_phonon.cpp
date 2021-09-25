@@ -455,7 +455,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
                                     exit("examine_translational_invariance",
-                                                "Corresponding IFC not found.");
+                                         "Corresponding IFC not found.");
                                 }
                             }
                         }
@@ -526,9 +526,9 @@ void Fcs_phonon::examine_translational_invariance(const int n,
             for (const auto &it: fcs[i]) {
                 j = it.pairs[0].index;
                 k = 3 * system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]
-                    + it.pairs[1].index % 3;
+                      + it.pairs[1].index % 3;
                 l = 3 * system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]
-                    + it.pairs[2].index % 3;
+                      + it.pairs[2].index % 3;
                 m = it.pairs[3].index % 3;
 
                 sum4[j][k][l][m] += it.fcs_val;

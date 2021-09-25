@@ -350,8 +350,8 @@ double Dynamical::distance(double *x1,
                            double *x2) const
 {
     return std::sqrt(std::pow(x1[0] - x2[0], 2)
-                     + std::pow(x1[1] - x2[1], 2)
-                     + std::pow(x1[2] - x2[2], 2));
+                           + std::pow(x1[1] - x2[1], 2)
+                           + std::pow(x1[2] - x2[2], 2));
 }
 
 void Dynamical::eval_k(const double *xk_in,
@@ -396,8 +396,8 @@ void Dynamical::eval_k(const double *xk_in,
     // zone-center or zone-boundaries.
 
     if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0)
-                  + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
-                  + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
+                        + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
+                        + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
         for (i = 0; i < 3 * system->natmin; ++i) {
             for (j = 0; j < 3 * system->natmin; ++j) {
@@ -584,7 +584,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
+                  - system->xr_s[system->map_p2s[atm2_p][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -593,7 +593,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+              += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
     }
 }
 
@@ -620,8 +620,8 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     rotvec(kepsilon, kvec_na_in, dielec);
     const auto denom = kvec_na_in[0] * kepsilon[0]
-                       + kvec_na_in[1] * kepsilon[1]
-                       + kvec_na_in[2] * kepsilon[2];
+          + kvec_na_in[1] * kepsilon[1]
+          + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -651,7 +651,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
                     for (j = 0; j < 3; ++j) {
 
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
+                              = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]));
 
                     }
                 }
@@ -677,7 +677,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
             for (i = 0; i < 3; ++i) {
                 xdiff[i] = system->xr_s[system->map_p2s[iat][0]][i]
-                           - system->xr_s[system->map_p2s[jat][0]][i];
+                      - system->xr_s[system->map_p2s[jat][0]][i];
             }
 
             rotvec(xdiff, xdiff, system->lavec_s);
@@ -716,8 +716,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
     rotvec(kepsilon, kvec_na_in, dielec);
     double denom = kvec_na_in[0] * kepsilon[0]
-                   + kvec_na_in[1] * kepsilon[1]
-                   + kvec_na_in[2] * kepsilon[2];
+          + kvec_na_in[1] * kepsilon[1]
+          + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -757,7 +757,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
                         for (unsigned int k = 0; k < 3; ++k) {
                             vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
-                                     - system->xr_s[atm_p2][k];
+                                  - system->xr_s[atm_p2][k];
                         }
 
                         rotvec(vec, vec, system->lavec_s);
@@ -774,8 +774,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]))
-                                  * exp_phase;
+                              = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass[atm_p1] * system->mass[atm_p2]))
+                              * exp_phase;
                     }
                 }
             }
@@ -956,7 +956,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
 {
     if (nk_in <= 0) {
         exit("get_eigenvalues_dymat",
-                    "The number of k points must be larger than 0.");
+             "The number of k points must be larger than 0.");
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
@@ -1089,8 +1089,8 @@ void Dynamical::project_degenerate_eigenvectors(const double lavec_p[3][3],
     calc_analytic_k(xk_in, fc2_ext_in, dymat_tmp);
 
     if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0)
-                  + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
-                  + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
+                        + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
+                        + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
         for (i = 0; i < 3 * system->natmin; ++i) {
             for (j = 0; j < 3 * system->natmin; ++j) {
@@ -1230,7 +1230,7 @@ void Dynamical::project_degenerate_eigenvectors(const double lavec_p[3][3],
         } else {
             std::cout << iset << '\n';
             exitall("project_degenerate_eigenvectors",
-                           "This should not happen.");
+                    "This should not happen.");
         }
 
         ishift += iset;
@@ -1589,8 +1589,8 @@ void Dynamical::calc_atomic_participation_ratio(const std::complex<double> *evec
 
     for (iat = 0; iat < natmin; ++iat) {
         ret[iat] = (std::norm(evec_in[3 * iat])
-                    + std::norm(evec_in[3 * iat + 1])
-                    + std::norm(evec_in[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
+              + std::norm(evec_in[3 * iat + 1])
+              + std::norm(evec_in[3 * iat + 2])) / system->mass[system->map_p2s[iat][0]];
     }
 
     auto sum = 0.0;
@@ -1666,7 +1666,7 @@ void Dynamical::connect_band_by_eigen_similarity(const unsigned int nk_in,
             std::sort(index.begin(), index.end(),
                       [&abs_similarity, is](int i1,
                                             int i2) {
-                          return abs_similarity[is][i1] > abs_similarity[is][i2];
+                        return abs_similarity[is][i1] > abs_similarity[is][i2];
                       });
 
             int loc = index[0];
@@ -1680,7 +1680,7 @@ void Dynamical::connect_band_by_eigen_similarity(const unsigned int nk_in,
 
         if (std::any_of(found.begin(), found.end(), [](int i1) { return i1 == 0; })) {
             exit("connect_band_by_eigen_similarity",
-                        "Could not identify the connection.");
+                 "Could not identify the connection.");
         }
 
     }
