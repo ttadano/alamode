@@ -1,0 +1,5 @@
+*.o
+CMakeFiles
+CMakeCache.txt
+.vscode/
+.DS_Store
