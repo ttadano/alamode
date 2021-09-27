@@ -825,7 +825,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
                           - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 2) {
                     //double epsilon2[2];
-                    integration->adaptive_smearing(k1, is, k2, js, epsilon2);
+                    integration->adaptive_sigma->get_sigma(k1, is, k2, js, epsilon2);
+                    //integration->adaptive_smearing(k1, is, k2, js, epsilon2);
                     //sum_smear += epsilon2[0] + epsilon2[1];
                     delta_arr[ik][ns * is + js][0]
                           = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon2[0])
@@ -1249,7 +1250,8 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                     } else if (integration->ismear_4ph == 2) {
                         // add adaptive smearing
                         double epsilon2[2];
-                        integration->adaptive_smearing(k1, is, k2, js, k3, ks, epsilon2);
+                        integration->adaptive_sigma4->get_sigma(k1, is, k2, js, k3, ks, epsilon2);
+                        //integration->adaptive_smearing(k1, is, k2, js, k3, ks, epsilon2);
                         delta_arr[ik][jb][0] = 0.0;
                         delta_arr[ik][jb][1] = 0.0;
                         const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
@@ -1442,7 +1444,8 @@ std::vector<std::vector<QuartS>> AnharmonicCore::reduce_pair(const int k_in,
                             d2 -= delta_gauss(sum3, epsilon);
                         }
                     } else if (ismear == 2) {
-                        integration->adaptive_smearing(k1, s1, k2, s2, k3, s3, epsilon2);
+                        integration->adaptive_sigma4->get_sigma(k1, s1, k2, s2, k3, s3, epsilon2);
+                        //integration->adaptive_smearing(k1, s1, k2, s2, k3, s3, epsilon2);
                         const auto sum1 = omega - omega1 - omega2 - omega3;
                         const auto sum2 = omega - omega1 - omega2 + omega3;
                         const auto sum3 = omega + omega1 + omega2 - omega3;

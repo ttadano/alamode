@@ -129,7 +129,8 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                 ret += omega1 * delta_gauss(omega - omega1, epsilon) * prod;
             } else if (integration->ismear == 2) {
                 double eps;
-                integration->adaptive_smearing(ik, is, eps);
+                integration->adaptive_sigma->get_sigma(ik, is, eps);
+                //integration->adaptive_smearing(ik, is, eps);
                 //std::cout << eps << std::endl;
                 ret += omega1 * delta_gauss(omega - omega1, eps) * prod;
             }

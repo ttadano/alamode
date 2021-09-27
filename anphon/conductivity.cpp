@@ -322,6 +322,18 @@ void Conductivity::setup_kappa()
 
     setup_result_io();
     prepare_restart();
+
+    if (fph_rta > 0) {
+        if (!integration->adaptive_sigma4) {
+            integration->adaptive_sigma4 = new AdaptiveSmearingSigma(kmesh_4ph->nk,
+                                                                     ns);
+            integration->adaptive_sigma4->setup(phonon_velocity,
+                                                kmesh_4ph,
+                                                system->lavec_p,
+                                                system->rlavec_p,
+                                                fcs_phonon->fc2_ext);
+        }
+    }
 }
 
 void Conductivity::prepare_restart()

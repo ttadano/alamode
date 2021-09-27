@@ -283,7 +283,8 @@ void Iterativebte::setup_L_smear()
                         delta = delta_gauss(omega1 - omega2 - omega3, epsilon);
                     } else if (integration->ismear == 2) {
                         double epsilon2[2];
-                        integration->adaptive_smearing(k2, s2, k3, s3, epsilon2);
+                        integration->adaptive_sigma->get_sigma(k2, s2, k3, s3, epsilon2);
+                        //integration->adaptive_smearing(k2, s2, k3, s3, epsilon2);
                         //sum_smear += epsilon2[0] + epsilon2[1];
                         delta = delta_gauss(omega1 - omega2 - omega3, epsilon2[0]);
                     }
@@ -339,7 +340,8 @@ void Iterativebte::setup_L_smear()
                         delta = delta_gauss(omega1 + omega2 - omega3, epsilon);
                     } else if (integration->ismear == 2) {
                         double epsilon2[2];
-                        integration->adaptive_smearing(k2, s2, k3, s3, epsilon2);
+                        integration->adaptive_sigma->get_sigma(k2, s2, k3, s3, epsilon2);
+                        //integration->adaptive_smearing(k2, s2, k3, s3, epsilon2);
                         //sum_smear += epsilon2[0] + epsilon2[1];
                         delta = delta_gauss(omega1 + omega2 - omega3, epsilon2[1]);
                     }

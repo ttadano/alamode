@@ -166,8 +166,8 @@ void PHON::setup_base() const
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
     phonon_velocity->setup_velocity();
-    integration->setup_integration();
     dos->setup();
+    integration->setup_integration();
     thermodynamics->setup();
     ewald->init();
     anharmonic_core->setup();

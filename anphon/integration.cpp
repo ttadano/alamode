@@ -19,6 +19,7 @@
 #include "phonon_velocity.h"
 #include "dynamical.h"
 #include "anharmonic_core.h"
+#include "fcs_phonon.h"
 #include <iomanip>
 #include <vector>
 #include <algorithm>
@@ -42,12 +43,14 @@ void Integration::set_default_variables()
     ismear_4ph = 1; // for 4ph scattering
     epsilon = 10.0;
     epsilon_4ph = 10.0;
-    vel = nullptr;
-    dq = nullptr;
+    adaptive_sigma = nullptr;
+    adaptive_sigma4 = nullptr;
 }
 
 void Integration::deallocate_variables()
 {
+    delete adaptive_sigma;
+    delete adaptive_sigma4;
 }
 
 void Integration::setup_integration()
@@ -94,9 +97,7 @@ void Integration::setup_integration()
         }
     }
 
-    if (ismear == 2 || ismear_4ph == 2) {
-        prepare_adaptivesmearing();
-    }
+    prepare_adaptivesmearing();
 
     epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
     epsilon_4ph *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
@@ -106,16 +107,23 @@ void Integration::setup_integration()
 
 void Integration::prepare_adaptivesmearing()
 {
-    auto nk = dos->kmesh_dos->nk;
-    auto ns = dynamical->neval;
+    if (ismear == 2) {
+        adaptive_sigma = new AdaptiveSmearingSigma(dos->kmesh_dos->nk,
+                                                   dynamical->neval);
+        adaptive_sigma->setup(phonon_velocity,
+                              dos->kmesh_dos,
+                              system->lavec_p,
+                              system->rlavec_p,
+                              fcs_phonon->fc2_ext);
+    }
 
-    allocate(vel, nk, ns, 3);
-    phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
-                                                        system->lavec_p,
-                                                        fcs_phonon->fc2_ext,
-                                                        vel);  //this will gather to rank0 process
-
-    MPI_Bcast(&vel[0][0][0], nk * ns * 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    allocate(vel, nk, ns, 3);
+//    phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
+//                                                        system->lavec_p,
+//                                                        fcs_phonon->fc2_ext,
+//                                                        vel);  //this will gather to rank0 process
+//
+//    MPI_Bcast(&vel[0][0][0], nk * ns * 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 //    int nka[3];
 //
@@ -123,93 +131,94 @@ void Integration::prepare_adaptivesmearing()
 //    nka[1] = kpoint->nky;
 //    nka[2] = kpoint->nkz;
 
-    allocate(dq, 3, 3);
-
-    for (auto u = 0; u < 3; u++) {
-        for (auto a = 0; a < 3; a++) {
-            dq[u][a] = system->rlavec_p[u][a] / static_cast<double>(dos->kmesh_dos->nk_i[u]);
-        }
-    }
+//    allocate(dq, 3, 3);
+//
+//    for (auto u = 0; u < 3; u++) {
+//        for (auto a = 0; a < 3; a++) {
+//            dq[u][a] = system->rlavec_p[u][a] / static_cast<double>(dos->kmesh_dos->nk_i[u]);
+//        }
+//    }
 }
 
-void Integration::adaptive_smearing(const int k1, const int s1,
-                                    double &smear)
-{
-    double parts;
-    double tmp;
-    int i;
+//
+//void Integration::adaptive_smearing(const int k1, const int s1,
+//                                    double &smear)
+//{
+//    double parts;
+//    double tmp;
+//    int i;
+//
+//    parts = 0;
+//
+//    for (auto u = 0; u < 3; ++u) {
+//
+//        tmp = 0;
+//        for (auto a = 0; a < 3; ++a) {
+//            tmp += vel[k1][s1][a] * dq[u][a];
+//        }
+//
+//        parts += std::pow(tmp, 2);
+//    }
+//
+//    smear = std::max(2.0e-5, std::sqrt(parts / 12)); // for (w1 - w2)
+//}
 
-    parts = 0;
+//void Integration::adaptive_smearing(const int k1, const int s1,
+//                                    const int k2, const int s2,
+//                                    double *smear)
+//{
+//
+//    double parts[2];
+//    double tmp[2];
+//    int i;
+//
+//    for (i = 0; i < 2; ++i) parts[i] = 0;
+//
+//    for (auto u = 0; u < 3; ++u) {
+//
+//        for (i = 0; i < 2; ++i) tmp[i] = 0;
+//
+//        for (auto a = 0; a < 3; ++a) {
+//            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * dq[u][a];
+//            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * dq[u][a];
+//        }
+//
+//        for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
+//    }
+//
+//    smear[0] = std::max(2.0e-5, std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
+//    smear[1] = std::max(2.0e-5, std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
+//    // 2.0e-5 ry ~ 3 cm^-1
+//}
 
-    for (auto u = 0; u < 3; ++u) {
-
-        tmp = 0;
-        for (auto a = 0; a < 3; ++a) {
-            tmp += vel[k1][s1][a] * dq[u][a];
-        }
-
-        parts += std::pow(tmp, 2);
-    }
-
-    smear = std::max(2.0e-5, std::sqrt(parts / 12)); // for (w1 - w2)
-}
-
-void Integration::adaptive_smearing(const int k1, const int s1,
-                                    const int k2, const int s2,
-                                    double *smear)
-{
-
-    double parts[2];
-    double tmp[2];
-    int i;
-
-    for (i = 0; i < 2; ++i) parts[i] = 0;
-
-    for (auto u = 0; u < 3; ++u) {
-
-        for (i = 0; i < 2; ++i) tmp[i] = 0;
-
-        for (auto a = 0; a < 3; ++a) {
-            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * dq[u][a];
-            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * dq[u][a];
-        }
-
-        for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
-    }
-
-    smear[0] = std::max(2.0e-5, std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
-    smear[1] = std::max(2.0e-5, std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
-    // 2.0e-5 ry ~ 3 cm^-1
-}
-
-void Integration::adaptive_smearing(const int k2, const int s2,
-                                    const int k3, const int s3,
-                                    const int k4, const int s4,
-                                    double *smear)
-{
-    double vel_diff;
-    double parts[3];
-    double tmp[3];
-    int i;
-    for (i = 0; i < 3; ++i) parts[i] = 0;
-
-    for (auto u = 0; u < 3; ++u) {
-
-        for (i = 0; i < 3; ++i) tmp[i] = 0;
-
-        for (auto a = 0; a < 3; ++a) {
-            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * dq[u][a];
-            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * dq[u][a];
-            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * dq[u][a];
-        }
-
-        for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
-    }
-
-    smear[0] = std::max(2.0e-5, std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
-    smear[1] = std::max(2.0e-5,
-                        std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
-}
+//void Integration::adaptive_smearing(const int k2, const int s2,
+//                                    const int k3, const int s3,
+//                                    const int k4, const int s4,
+//                                    double *smear)
+//{
+//    double vel_diff;
+//    double parts[3];
+//    double tmp[3];
+//    int i;
+//    for (i = 0; i < 3; ++i) parts[i] = 0;
+//
+//    for (auto u = 0; u < 3; ++u) {
+//
+//        for (i = 0; i < 3; ++i) tmp[i] = 0;
+//
+//        for (auto a = 0; a < 3; ++a) {
+//            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * dq[u][a];
+//            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * dq[u][a];
+//            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * dq[u][a];
+//        }
+//
+//        for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
+//    }
+//
+//    smear[0] = std::max(2.0e-5, std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
+//    smear[1] = std::max(2.0e-5,
+//                        std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
+//}
 
 void TetraNodes::setup()
 {
@@ -505,4 +514,105 @@ void Integration::insertion_sort(double *a,
         a[j] = tmp;
         ind[j] = i;
     }
+}
+void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class,
+                                  const KpointMeshUniform *kmesh_in,
+                                  const double lavec_p_in[3][3],
+                                  const double rlavec_p_in[3][3],
+                                  const std::vector<FcsClassExtent> &fc2_ext_in)
+{
+    phvel_class->get_phonon_group_velocity_mesh(*kmesh_in,
+                                                lavec_p_in,
+                                                fc2_ext_in,
+                                                false,
+                                                vel);
+
+    for (auto u = 0; u < 3; u++) {
+        for (auto a = 0; a < 3; a++) {
+            dq[u][a] = rlavec_p_in[u][a] / static_cast<double>(kmesh_in->nk_i[u]);
+        }
+    }
+}
+
+void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
+                                      const unsigned int s1,
+                                      double &sigma_out)
+{
+    double parts;
+    double tmp;
+
+    parts = 0;
+
+    for (auto u = 0; u < 3; ++u) {
+
+        tmp = 0;
+        for (auto a = 0; a < 3; ++a) {
+            tmp += vel[k1][s1][a] * dq[u][a];
+        }
+
+        parts += std::pow(tmp, 2);
+    }
+
+    sigma_out = std::max(2.0e-5, std::sqrt(parts / 12)); // for (w1 - w2)
+}
+
+void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
+                                      const unsigned int s1,
+                                      const unsigned int k2,
+                                      const unsigned int s2,
+                                      double sigma_out[2])
+{
+    double parts[2];
+    double tmp[2];
+    int i;
+
+    for (i = 0; i < 2; ++i) parts[i] = 0;
+
+    for (auto u = 0; u < 3; ++u) {
+
+        for (i = 0; i < 2; ++i) tmp[i] = 0;
+
+        for (auto a = 0; a < 3; ++a) {
+            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * dq[u][a];
+            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * dq[u][a];
+        }
+
+        for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
+    }
+
+    sigma_out[0] = std::max(2.0e-5, std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
+    sigma_out[1] = std::max(2.0e-5, std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
+    // 2.0e-5 ry ~ 3 cm^-1
+}
+
+void AdaptiveSmearingSigma::get_sigma(const unsigned int k2,
+                                      const unsigned int s2,
+                                      const unsigned int k3,
+                                      const unsigned int s3,
+                                      const unsigned int k4,
+                                      const unsigned int s4,
+                                      double sigma_out[2])
+{
+    double vel_diff;
+    double parts[3];
+    double tmp[3];
+    int i;
+    for (i = 0; i < 3; ++i) parts[i] = 0;
+
+    for (auto u = 0; u < 3; ++u) {
+
+        for (i = 0; i < 3; ++i) tmp[i] = 0;
+
+        for (auto a = 0; a < 3; ++a) {
+            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * dq[u][a];
+            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * dq[u][a];
+            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * dq[u][a];
+        }
+
+        for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
+    }
+
+    sigma_out[0] = std::max(2.0e-5, std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
+    sigma_out[1] = std::max(2.0e-5,
+                        std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
 }
