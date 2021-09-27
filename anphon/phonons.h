@@ -80,7 +80,7 @@ class PHON {
     void destroy_pointers() const;
 
     std::string mode;
-    bool restart_flag;
+    //bool restart_flag;
 
     void execute_phonons() const;
 

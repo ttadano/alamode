@@ -1018,7 +1018,7 @@ void Iterativebte::iterative_solver()
         //deallocate(isotope_damping);
     }
     if (mympi->my_rank == 0) {
-        writes->fs_result.close();
+        fs_result.close();
     }
 }
 
@@ -1285,73 +1285,73 @@ void Iterativebte::write_result()
     if (mympi->my_rank == 0) {
         std::cout << " Writing Q and W to file ..." << std::endl;
 
-        writes->fs_result.open(writes->file_result.c_str(), std::ios::out);
+        fs_result.open(conductivity->get_filename_results(3).c_str(), std::ios::out);
 
-        if (!writes->fs_result) {
+        if (!fs_result) {
             exit("setup_result_io",
-                 "Could not open file_result");
+                 "Could not open file_result3");
         }
 
-        writes->fs_result << "## General information" << std::endl;
-        writes->fs_result << "#SYSTEM" << std::endl;
-        writes->fs_result << system->natmin << " " << system->nkd << std::endl;
-        writes->fs_result << system->volume_p << std::endl;
-        writes->fs_result << "#END SYSTEM" << std::endl;
+        fs_result << "## General information" << std::endl;
+        fs_result << "#SYSTEM" << std::endl;
+        fs_result << system->natmin << " " << system->nkd << std::endl;
+        fs_result << system->volume_p << std::endl;
+        fs_result << "#END SYSTEM" << std::endl;
 
-        writes->fs_result << "#KPOINT" << std::endl;
-        writes->fs_result << dos->kmesh_dos->nk_i[0] << " " << dos->kmesh_dos->nk_i[1] << " " << dos->kmesh_dos->nk_i[2]
+        fs_result << "#KPOINT" << std::endl;
+        fs_result << dos->kmesh_dos->nk_i[0] << " " << dos->kmesh_dos->nk_i[1] << " " << dos->kmesh_dos->nk_i[2]
                           << std::endl;
-        writes->fs_result << dos->kmesh_dos->nk_irred << std::endl;
+        fs_result << dos->kmesh_dos->nk_irred << std::endl;
 
         for (int i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
-            writes->fs_result << std::setw(6) << i + 1 << ":";
+            fs_result << std::setw(6) << i + 1 << ":";
             for (int j = 0; j < 3; ++j) {
-                writes->fs_result << std::setw(15)
+                fs_result << std::setw(15)
                                   << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
             }
-            writes->fs_result << std::setw(12)
+            fs_result << std::setw(12)
                               << std::fixed << dos->kmesh_dos->weight_k[i] << std::endl;
         }
-        writes->fs_result.unsetf(std::ios::fixed);
+        fs_result.unsetf(std::ios::fixed);
 
-        writes->fs_result << "#END KPOINT" << std::endl;
+        fs_result << "#END KPOINT" << std::endl;
 
-        writes->fs_result << "#CLASSICAL" << std::endl;
-        writes->fs_result << thermodynamics->classical << std::endl;
-        writes->fs_result << "#END CLASSICAL" << std::endl;
+        fs_result << "#CLASSICAL" << std::endl;
+        fs_result << thermodynamics->classical << std::endl;
+        fs_result << "#END CLASSICAL" << std::endl;
 
-        writes->fs_result << "#FCSXML" << std::endl;
-        writes->fs_result << fcs_phonon->file_fcs << std::endl;
-        writes->fs_result << "#END  FCSXML" << std::endl;
+        fs_result << "#FCSXML" << std::endl;
+        fs_result << fcs_phonon->file_fcs << std::endl;
+        fs_result << "#END  FCSXML" << std::endl;
 
-        writes->fs_result << "#SMEARING" << std::endl;
-        writes->fs_result << integration->ismear << std::endl;
-        writes->fs_result << integration->epsilon * Ry_to_kayser << std::endl;
-        writes->fs_result << "#END SMEARING" << std::endl;
+        fs_result << "#SMEARING" << std::endl;
+        fs_result << integration->ismear << std::endl;
+        fs_result << integration->epsilon * Ry_to_kayser << std::endl;
+        fs_result << "#END SMEARING" << std::endl;
 
-        writes->fs_result << "#TEMPERATURE" << std::endl;
-        writes->fs_result << system->Tmin << " " << system->Tmax << " " << system->dT << std::endl;
-        writes->fs_result << "#END TEMPERATURE" << std::endl;
+        fs_result << "#TEMPERATURE" << std::endl;
+        fs_result << system->Tmin << " " << system->Tmax << " " << system->dT << std::endl;
+        fs_result << "#END TEMPERATURE" << std::endl;
 
-        writes->fs_result << "##END General information" << std::endl;
+        fs_result << "##END General information" << std::endl;
 
-        writes->fs_result << "##Phonon Frequency" << std::endl;
-        writes->fs_result << "#K-point (irreducible), Branch, Omega (cm^-1), Group velocity (m/s)" << std::endl;
+        fs_result << "##Phonon Frequency" << std::endl;
+        fs_result << "#K-point (irreducible), Branch, Omega (cm^-1), Group velocity (m/s)" << std::endl;
 
         double factor = Bohr_in_Angstrom * 1.0e-10 / time_ry;
         for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
             const int ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
             for (auto is = 0; is < dynamical->neval; ++is) {
-                writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is]);
-                writes->fs_result << std::setw(15) << vel[ik][is][0] * factor
+                fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
+                fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is]);
+                fs_result << std::setw(15) << vel[ik][is][0] * factor
                                   << std::setw(15) << vel[ik][is][1] * factor
                                   << std::setw(15) << vel[ik][is][2] * factor << std::endl;
             }
         }
 
-        writes->fs_result << "##END Phonon Frequency" << std::endl << std::endl;
-        writes->fs_result << "##Q and W at each temperature" << std::endl;
+        fs_result << "##END Phonon Frequency" << std::endl << std::endl;
+        fs_result << "##Q and W at each temperature" << std::endl;
     }
 }
 
@@ -1382,20 +1382,20 @@ void Iterativebte::write_Q_dF(int itemp, double **&q, double ***&df)
 
     // now we have Q
     if (mympi->my_rank == 0) {
-        writes->fs_result << std::setw(10) << etemp << std::endl;
+        fs_result << std::setw(10) << etemp << std::endl;
 
         for (auto ik = 0; ik < nk_ir; ++ik) {
             for (auto is = 0; is < ns; ++is) {
                 auto k1 = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
-                writes->fs_result << std::setw(6) << ik + 1 << std::setw(6) << is + 1 << std::endl;
-                writes->fs_result
+                fs_result << std::setw(6) << ik + 1 << std::setw(6) << is + 1 << std::endl;
+                fs_result
                       << std::setw(15) << std::scientific << std::setprecision(5) << Q_all[ik][is]
                       << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][0]
                       << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][1]
                       << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][2] << std::endl;
             }
         }
-        writes->fs_result << std::endl;
+        fs_result << std::endl;
     }
     deallocate(Q_all);
 }

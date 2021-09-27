@@ -17,6 +17,7 @@
 #include <vector>
 #include <set>
 #include <complex>
+#include <fstream>
 
 namespace PHON_NS {
 class Conductivity : protected Pointers {
@@ -43,18 +44,26 @@ class Conductivity : protected Pointers {
     double *temperature;
     int calc_coherent;
 
+
     int fph_rta;
     void set_kmesh_coarse(const unsigned int nk_in[3]);
     KpointMeshUniform *get_kmesh_coarse() const;
+
+    void set_conductivity_params(const std::string &file_result3_in,
+                                 const std::string &file_result4_in,
+                                 const bool restart_3ph_in,
+                                 const bool restart_4ph_in);
+    bool get_restart_conductivity(const int order) const;
+    std::string get_filename_results(const int order) const;
 
  private:
     void set_default_variables();
 
     void deallocate_variables();
 
-    double ***vel;
+    double ***vel, ***vel_4ph;
     std::complex<double> ****velmat;
-    unsigned int nk, ns;
+    unsigned int nk_3ph, ns;
     int nshift_restart, nshift_restart4;
     std::vector<int> vks_l, vks_done, vks_done4;
     std::set<int> vks_job, vks_job4;
@@ -65,19 +74,54 @@ class Conductivity : protected Pointers {
     DymatEigenValue *dymat_4ph = nullptr;
     PhaseFactorStorage *phase_storage_4ph = nullptr;
 
+    std::fstream fs_result3, fs_result4;
+    std::string file_result3, file_result4;
+    bool restart_flag_3ph;
+    bool restart_flag_4ph;
+
+    void setup_result_io();
+
+    void check_consistency_restart(std::fstream &fs_result,
+                                   const std::string& file_result_in,
+                                   const unsigned int nk_in[3],
+                                   const unsigned int nk_irred_in,
+                                   const unsigned int natmin_in,
+                                   const unsigned int nkd_in,
+                                   const bool classical_in,
+                                   const int ismear_in,
+                                   const double epsilon_in,
+                                   const double tmin_in,
+                                   const double tmax_in,
+                                   const double delta_t_in,
+                                   const std::string &file_fcs_in);
+
+    void write_header_result(std::fstream &fs_result,
+                             const std::string &file_result,
+                             const KpointMeshUniform *kmesh_in,
+                             const unsigned int natmin_in,
+                             const unsigned int nkd_in,
+                             const double volume_prim_in,
+                             const bool classical_in,
+                             const int ismear_in,
+                             const double epsilon_in,
+                             const double tmin_in,
+                             const double tmax_in,
+                             const double delta_t_in,
+                             const std::string &file_fcs_in);
+
     void calc_anharmonic_imagself3();
     void calc_anharmonic_imagself4();
 
     void write_result_gamma(unsigned int,
                             unsigned int,
                             double ***,
-                            double **) const;
+                            double **);
 
     void write_result_gamma(unsigned int,
                             unsigned int,
                             double ***,
                             double **,
-                            int) const;
+                            int);
 
     void average_self_energy_at_degenerate_point(const int n,
                                                  const int m,

@@ -857,7 +857,7 @@ void Selfenergy::selfenergy_e(const unsigned int N,
     }
 
     double factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
-    //	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
+    //	factor = -1.0 / (std::pow(static_cast<double>(nk_3ph), 2) * std::pow(2.0, 7));
     for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
     mpi_reduce_complex(N, ret_mpi, ret);

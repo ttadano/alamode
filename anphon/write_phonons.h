@@ -30,8 +30,6 @@ class Writes : protected Pointers {
 
     void write_gruneisen();
 
-    void setup_result_io();
-
     void write_input_vars();
 
     void write_kappa() const;
@@ -86,8 +84,6 @@ class Writes : protected Pointers {
 
     std::array<int, 3> getShiftUcorr() const;
 
-    std::fstream fs_result, fs_result4;
-    std::string file_result, file_result4;
     int nbands;
 
  private:

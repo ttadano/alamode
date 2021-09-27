@@ -97,6 +97,8 @@ void Input::parce_input(int narg,
                  "&scph entry not found in the input file");
         parse_scph_vars();
     }
+    // TODO: Implement mode = "kappa" and the associated &kappa field
+    // TODO: for thermal conductivity calculations.
 }
 
 void Input::parse_general_vars()
@@ -110,10 +112,11 @@ void Input::parse_general_vars()
     const std::vector<std::string> input_list{
           "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
           "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-          "ISMEAR", "ISMEAR_4PH", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
           "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-          "VERBOSITY"
-          "KMESH_COARSE" // this should be moved to &kappa class in future
+          "VERBOSITY",
+          "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH" // this should be moved to &kappa field in near
+          // future
     };
     // added ismear_4ph to include separate choose of 3ph and 4ph
 
@@ -200,10 +203,10 @@ void Input::parse_general_vars()
 
     auto prec_ewald = 1.0e-12;
 
-    // if file_result exists in the current directory,
+    // if file_result3 exists in the current directory,
     // restart mode will be automatically turned on.
     auto restart = stat(file_result.c_str(), &st) == 0;
-    restart = stat(file_result4.c_str(), &st) == 0;
+    auto restart_4ph = stat(file_result4.c_str(), &st) == 0;
 
     auto nbands = -1;
     std::string borninfo;
@@ -212,6 +215,7 @@ void Input::parse_general_vars()
     auto ismear = -1;
     auto ismear_4ph = 1; // default for guassian smearing
     auto epsilon = 10.0;
+    auto epsilon_4ph = 10.0;
     auto na_sigma = 0.1;
 
     // Assign given values
@@ -231,6 +235,7 @@ void Input::parse_general_vars()
 
     assign_val(nonanalytic, "NONANALYTIC", general_var_dict);
     assign_val(restart, "RESTART", general_var_dict);
+    assign_val(restart_4ph, "RESTART_4PH", general_var_dict);
 
     assign_val(nbands, "NBANDS", general_var_dict);
     assign_val(borninfo, "BORNINFO", general_var_dict);
@@ -239,6 +244,7 @@ void Input::parse_general_vars()
     assign_val(ismear, "ISMEAR", general_var_dict);
     assign_val(ismear_4ph, "ISMEAR_4PH", general_var_dict);
     assign_val(epsilon, "EPSILON", general_var_dict);
+    assign_val(epsilon_4ph, "EPSILON_4PH", general_var_dict);
     assign_val(na_sigma, "NA_SIGMA", general_var_dict);
     assign_val(classical, "CLASSICAL", general_var_dict);
     assign_val(band_connection, "BCONNECT", general_var_dict);
@@ -310,10 +316,11 @@ void Input::parse_general_vars()
     // Copy the values to appropriate classes.
 
     job_title = prefix;
-    writes->file_result = file_result;
-    writes->file_result4 = file_result4;
     phon->mode = mode;
-    phon->restart_flag = restart;
+    conductivity->set_conductivity_params(file_result,
+                                          file_result4,
+                                          restart,
+                                          restart_4ph);
     symmetry->nsym = nsym;
     symmetry->tolerance = tolerance;
     symmetry->printsymmetry = printsymmetry;
@@ -353,6 +360,7 @@ void Input::parse_general_vars()
     dynamical->file_born = borninfo;
     dynamical->band_connection = band_connection;
     integration->epsilon = epsilon;
+    integration->epsilon_4ph = epsilon_4ph;
     fcs_phonon->file_fcs = fcsinfo;
     fcs_phonon->file_fc2 = fc2info;
     fcs_phonon->update_fc2 = !fc2info.empty();

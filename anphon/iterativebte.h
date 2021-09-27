@@ -66,6 +66,8 @@ class Iterativebte : protected Pointers {
     bool use_triplet_symmetry;
     bool sym_permutation;
 
+    std::fstream fs_result;
+
  private:
 
     void set_default_variables();

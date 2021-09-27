@@ -238,15 +238,15 @@ void PHON::execute_RTA() const
         std::cout << "      (relaxation time approximation).                       " << std::endl;
         std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
         std::cout << std::endl;
-
-        if (restart_flag) {
-            std::cout << std::endl;
-            std::cout << "      Restart mode is switched on!                                  " << std::endl;
-            std::cout << "      The calculation will be restart from the existing result file." << std::endl;
-            std::cout << "      If you want to start a calculation from scratch,              " << std::endl;
-            std::cout << "      please set RESTART = 0 in the input file                      " << std::endl;
-            std::cout << std::endl;
-        }
+//
+//        if (restart_flag) {
+//            std::cout << std::endl;
+//            std::cout << "      Restart mode is switched on!                                  " << std::endl;
+//            std::cout << "      The calculation will be restart from the existing result file." << std::endl;
+//            std::cout << "      If you want to start a calculation from scratch,              " << std::endl;
+//            std::cout << "      please set RESTART = 0 in the input file                      " << std::endl;
+//            std::cout << std::endl;
+//        }
     }
 
     setup_base();
@@ -271,9 +271,8 @@ void PHON::execute_RTA() const
         iterativebte->do_iterativebte();
         iterativebte->write_kappa();
     } else {
-        writes->setup_result_io();
+        //writes->setup_result_io();
         conductivity->setup_kappa();
-        conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
         if (conductivity->fph_rta < 2) {
             conductivity->compute_kappa();

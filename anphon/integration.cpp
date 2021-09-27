@@ -94,12 +94,11 @@ void Integration::setup_integration()
         }
     }
 
-    epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
-
     if (ismear == 2 || ismear_4ph == 2) {
         prepare_adaptivesmearing();
     }
 
+    epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
     epsilon_4ph *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&epsilon_4ph, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
