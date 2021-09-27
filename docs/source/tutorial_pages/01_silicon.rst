@@ -69,22 +69,22 @@ Using the script :red:`displace.py` in the tools/ directory, you can generate th
     **QE**
     ::
 
-        $ python displace.py --QE=si222.pw.in --mag=0.01 si222.pattern_HARMONIC
+        $ python displace.py --QE=si222.pw.in --mag=0.01 -pf si222.pattern_HARMONIC
 
     **VASP**
     ::
 
-        $ python displace.py --VASP=POSCAR.orig --mag=0.01 si222.pattern_HARMONIC
+        $ python displace.py --VASP=POSCAR.orig --mag=0.01 -pf si222.pattern_HARMONIC
 
     **xTAPP**
     ::
 
-        $ python displace.py --xTAPP=si222.cg --mag=0.01 si222.pattern_HARMONIC
+        $ python displace.py --xTAPP=si222.cg --mag=0.01 -pf si222.pattern_HARMONIC
 
     **OpenMX**
     ::
 
-        $ python displace.py --OpenMX=si222.dat --mag=0.01 si222.pattern_HARMONIC
+        $ python displace.py --OpenMX=si222.dat --mag=0.01 -pf si222.pattern_HARMONIC
 
 The ``--mag`` option specifies the displacement length in units of Angstrom. 
 You need to specify an input file with equilibrium atomic positions either by the ``--QE``, ``--VASP``, ``--xTAPP``, ``--OpenMX`` or ``--LAMMPS``.
