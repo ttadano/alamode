@@ -72,6 +72,7 @@ void Conductivity::set_default_variables()
     restart_flag_4ph = false;
     file_result3 = "";
     file_result4 = "";
+    interpolator = "linear";
 }
 
 void Conductivity::deallocate_variables()
@@ -973,43 +974,22 @@ void Conductivity::compute_kappa()
                                                     dymat_4ph->get_eigenvalues(),
                                                     damping4);
 
-            double ***damping4_coarse = nullptr;
-            double ***damping4_interpolated = nullptr;
+            double **damping4_dense = nullptr;
 
-            auto interpolator = new TriLinearInterpolator(kmesh_4ph->nk_i,
-                                                          dos->kmesh_dos->nk_i);
-            interpolator->setup();
+            allocate(damping4_dense, dos->kmesh_dos->nk_irred * ns, ntemp);
 
-            allocate(damping4_interpolated, ns, ntemp, dos->kmesh_dos->nk);
-            allocate(damping4_coarse, ns, ntemp, kmesh_4ph->nk);
-
-            for (auto ik = 0; ik < kmesh_4ph->nk; ++ik) {
-                for (auto is = 0; is < ns; ++is) {
-                    for (auto itemp = 0; itemp < ntemp; ++itemp) {
-                        damping4_coarse[is][itemp][ik]
-                        = damping4[kmesh_4ph->kmap_to_irreducible[ik] * ns + is][itemp];
-                    }
-                }
-            }
-
-            for (auto is = 0; is < ns; ++is) {
-                for (auto itemp = 0; itemp < ntemp; ++itemp) {
-                    interpolator->interpolate(damping4_coarse[is][itemp],
-                                              damping4_interpolated[is][itemp]);
-                }
-            }
+            interpolate_data(kmesh_4ph,
+                             dos->kmesh_dos,
+                             damping4,
+                             damping4_dense);
 
             for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
-                auto knum = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
                 for (auto is = 0; is < ns; ++is) {
                     for (auto itemp = 0; itemp < ntemp; ++itemp) {
-                        gamma_total[ik * ns + is][itemp] += damping4_interpolated[is][itemp][knum];
+                        gamma_total[ik * ns + is][itemp] += damping4_dense[ik * ns + is][itemp];
                     }
                 }
             }
-            deallocate(damping4_coarse);
-            deallocate(damping4_interpolated);
-            delete interpolator;
         }
 
         if (isotope->include_isotope) {
@@ -1685,5 +1665,81 @@ void Conductivity::write_header_result(std::fstream &fs_result,
     fs_result << "#END TEMPERATURE" << std::endl;
 
     fs_result << "##END General information" << std::endl;
+}
+
+void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
+                                    const KpointMeshUniform *kmesh_dense_in,
+                                    const double *const *val_coarse_in,
+                                    double **val_dense_out) const
+{
+    double ***damping4_coarse = nullptr;
+    double ***damping4_interpolated = nullptr;
+    allocate(damping4_interpolated, ns, ntemp, kmesh_dense_in->nk);
+    allocate(damping4_coarse, ns, ntemp, kmesh_coarse_in->nk);
+
+    auto interpol = new TriLinearInterpolator(kmesh_coarse_in->nk_i,
+                                              kmesh_dense_in->nk_i);
+    interpol->setup();
+
+    if (interpolator == "linear") {
+
+        for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    damping4_coarse[is][itemp][ik]
+                          = val_coarse_in[kmesh_coarse_in->kmap_to_irreducible[ik] * ns + is][itemp];
+                }
+            }
+        }
+
+        for (auto is = 0; is < ns; ++is) {
+            for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                interpol->interpolate(damping4_coarse[is][itemp],
+                                      damping4_interpolated[is][itemp]);
+            }
+        }
+
+        for (auto ik = 0; ik < kmesh_dense_in->nk_irred; ++ik) {
+            auto knum = kmesh_dense_in->kpoint_irred_all[ik][0].knum;
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    val_dense_out[ik * ns + is][itemp] = damping4_interpolated[is][itemp][knum];
+                }
+            }
+        }
+
+    } else if (interpolator == "log-linear") {
+
+        double val_tmp;
+        for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    val_tmp = val_coarse_in[kmesh_coarse_in->kmap_to_irreducible[ik] * ns + is][itemp];
+                    if (val_tmp < eps) val_tmp = eps; // TODO: reconsider appropriate cutoff value here.
+                    damping4_coarse[is][itemp][ik] = std::log(val_tmp);
+                }
+            }
+        }
+
+        for (auto is = 0; is < ns; ++is) {
+            for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                interpol->interpolate(damping4_coarse[is][itemp],
+                                      damping4_interpolated[is][itemp]);
+            }
+        }
+
+        for (auto ik = 0; ik < kmesh_dense_in->nk_irred; ++ik) {
+            auto knum = kmesh_dense_in->kpoint_irred_all[ik][0].knum;
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    val_dense_out[ik * ns + is][itemp] = std::exp(damping4_interpolated[is][itemp][knum]);
+                }
+            }
+        }
+    }
+
+    deallocate(damping4_coarse);
+    deallocate(damping4_interpolated);
+    delete interpol;
 }
 

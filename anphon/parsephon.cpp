@@ -115,7 +115,9 @@ void Input::parse_general_vars()
           "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
           "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
           "VERBOSITY",
-          "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH" // this should be moved to &kappa field in near
+          "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
+          "INTERPOLATOR" // this should be moved to &kappa
+          // field in near
           // future
     };
     // added ismear_4ph to include separate choose of 3ph and 4ph
@@ -218,6 +220,8 @@ void Input::parse_general_vars()
     auto epsilon_4ph = 10.0;
     auto na_sigma = 0.1;
 
+    std::string interpolator = "linear";
+
     // Assign given values
 
     assign_val(Tmin, "TMIN", general_var_dict);
@@ -251,6 +255,8 @@ void Input::parse_general_vars()
     assign_val(use_triplet_symmetry, "TRISYM", general_var_dict);
     assign_val(bornsym, "BORNSYM", general_var_dict);
     assign_val(verbosity, "VERBOSITY", general_var_dict);
+
+    assign_val(interpolator, "INTERPOLATOR", general_var_dict);
 
     if (band_connection > 2) {
         exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
@@ -306,6 +312,12 @@ void Input::parse_general_vars()
         for (auto i = 0; i < 3; ++i) kmesh_v[i] = 0;
     }
 
+    boost::to_lower(interpolator);
+    if (interpolator != "linear" and interpolator != "log-linear") {
+        exit("parse_general_vars",
+             "INTERPOLATOR should be either linear or log-linear.");
+    }
+
     // if (nonanalytic == 3) {
     //     if (mode == "SCPH") {
     //         exit("parse_general_vars",
@@ -321,6 +333,7 @@ void Input::parse_general_vars()
                                           file_result4,
                                           restart,
                                           restart_4ph);
+    conductivity->set_interpolator(interpolator);
     symmetry->nsym = nsym;
     symmetry->tolerance = tolerance;
     symmetry->printsymmetry = printsymmetry;

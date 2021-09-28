@@ -44,7 +44,6 @@ class Conductivity : protected Pointers {
     double *temperature;
     int calc_coherent;
 
-
     int fph_rta;
     void set_kmesh_coarse(const unsigned int nk_in[3]);
     KpointMeshUniform *get_kmesh_coarse() const;
@@ -55,6 +54,11 @@ class Conductivity : protected Pointers {
                                  const bool restart_4ph_in);
     bool get_restart_conductivity(const int order) const;
     std::string get_filename_results(const int order) const;
+
+    void set_interpolator(const std::string interpolator_in)
+    {
+        interpolator = interpolator_in;
+    };
 
  private:
     void set_default_variables();
@@ -79,10 +83,12 @@ class Conductivity : protected Pointers {
     bool restart_flag_3ph;
     bool restart_flag_4ph;
 
+    std::string interpolator{};
+
     void setup_result_io();
 
     void check_consistency_restart(std::fstream &fs_result,
-                                   const std::string& file_result_in,
+                                   const std::string &file_result_in,
                                    const unsigned int nk_in[3],
                                    const unsigned int nk_irred_in,
                                    const unsigned int natmin_in,
@@ -146,5 +152,10 @@ class Conductivity : protected Pointers {
                                 const double *const *eval_in,
                                 const double *const *gamma_total,
                                 double ***kappa_coherent_out) const;
+
+    void interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
+                          const KpointMeshUniform *kmesh_dense_in,
+                          const double *const *val_coarse_in,
+                          double **val_dense_out) const;
 };
 }
