@@ -124,7 +124,7 @@ class TriLinearInterpolator {
 
         for (auto i = 0; i < 3; ++i) {
             dn_c[i] = static_cast<double>(grid_c[i]);
-            igird[i] = static_cast<int>(grid_c[i]);
+            igrid[i] = static_cast<int>(grid_c[i]);
         }
 
         for (auto i = 0; i < ngrid_f; ++i) {

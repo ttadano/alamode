@@ -15,6 +15,7 @@
 #include "error.h"
 #include "ewald.h"
 #include "integration.h"
+#include "interpolation.h"
 #include "parsephon.h"
 #include "isotope.h"
 #include "kpoint.h"
@@ -120,15 +121,13 @@ void Conductivity::setup_kappa()
         fph_rta = 0;
     }
 
-    unsigned int i, j, k;
-
     nk_3ph = dos->kmesh_dos->nk;
     ns = dynamical->neval;
 
     ntemp = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
     allocate(temperature, ntemp);
 
-    for (i = 0; i < ntemp; ++i) {
+    for (auto i = 0; i < ntemp; ++i) {
         temperature[i] = system->Tmin + static_cast<double>(i) * system->dT;
     }
 
@@ -282,15 +281,15 @@ void Conductivity::setup_kappa()
     }
 
     if (mympi->my_rank == 0) {
-        for (i = 0; i < nk_3ph; ++i) {
-            for (j = 0; j < ns; ++j) {
-                for (k = 0; k < 3; ++k) vel[i][j][k] *= factor;
+        for (auto i = 0; i < nk_3ph; ++i) {
+            for (auto j = 0; j < ns; ++j) {
+                for (auto k = 0; k < 3; ++k) vel[i][j][k] *= factor;
             }
         }
         if (fph_rta > 0) {
-            for (i = 0; i < kmesh_4ph->nk; ++i) {
-                for (j = 0; j < ns; ++j) {
-                    for (k = 0; k < 3; ++k) vel_4ph[i][j][k] *= factor;
+            for (auto i = 0; i < kmesh_4ph->nk; ++i) {
+                for (auto j = 0; j < ns; ++j) {
+                    for (auto k = 0; k < 3; ++k) vel_4ph[i][j][k] *= factor;
                 }
             }
         }
@@ -306,15 +305,15 @@ void Conductivity::setup_kappa()
     vks_job.clear();
     vks_job4.clear();
 
-    for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
-        for (j = 0; j < ns; ++j) {
+    for (auto i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
+        for (auto j = 0; j < ns; ++j) {
             vks_job.insert(i * ns + j);
         }
     }
 
     if (fph_rta > 0) {
-        for (i = 0; i < kmesh_4ph->nk_irred; ++i) {
-            for (j = 0; j < ns; ++j) {
+        for (auto i = 0; i < kmesh_4ph->nk_irred; ++i) {
+            for (auto j = 0; j < ns; ++j) {
                 vks_job4.insert(i * ns + j);
             }
         }
@@ -369,9 +368,9 @@ void Conductivity::prepare_restart()
                                << std::
                                endl;
                 }
-                fs_result3 << "##END Phonon Frequency" << std::endl << std::endl;
-                fs_result3 << "##Phonon Relaxation Time" << std::endl;
             }
+            fs_result3 << "##END Phonon Frequency" << std::endl << std::endl;
+            fs_result3 << "##Phonon Relaxation Time" << std::endl;
         } else {
             while (fs_result3 >> line_tmp) {
 
@@ -786,7 +785,7 @@ void Conductivity::calc_anharmonic_imagself4()
 
             const auto omega = dymat_4ph->get_eigenvalues()[knum][snum];
 
-            if (integration->ismear_4ph == 0 || integration->ismear_4ph == 1) {
+            if (integration->ismear_4ph == 0 || integration->ismear_4ph == 1 || integration->ismear_4ph == 2) {
                 anharmonic_core->calc_damping4_smearing(ntemp,
                                                         temperature,
                                                         omega,
@@ -799,6 +798,7 @@ void Conductivity::calc_anharmonic_imagself4()
                                                         damping4_loc);
 
             } else if (integration->ismear_4ph == -1) {
+                // TODO: Implement tetrahedron method for 4ph scattering
 //                anharmonic_core->calc_damping_tetrahedron(ntemp,
 //                                                          Temperature,
 //                                                          omega,
@@ -815,10 +815,10 @@ void Conductivity::calc_anharmonic_imagself4()
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart4, vel_4ph, damping4, -1);
 
-            //for (auto j = 0; j < ntemp; ++j) {
-            //    std::cout << std::scientific << std::setprecision(15)
-            //    << damping4[nshift_restart4 + i * mympi->nprocs][j] << std::endl;
-            //}
+//            for (auto j = 0; j < ntemp; ++j) {
+//                std::cout << std::scientific << std::setprecision(15)
+//                << damping4[nshift_restart4 + i * mympi->nprocs][j] << std::endl;
+//            }
             std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
         }
 
@@ -953,19 +953,64 @@ void Conductivity::compute_kappa()
         allocate(lifetime, dos->kmesh_dos->nk_irred * ns, ntemp);
         allocate(gamma_total, dos->kmesh_dos->nk_irred * ns, ntemp);
 
-        for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
-            for (i = 0; i < ntemp; ++i) {
-                gamma_total[iks][i] = damping3[iks][i];
-                if (fph_rta == 1) {
-                    gamma_total[iks][i] += damping4[iks][i];
-                }
-            }
-        }
         average_self_energy_at_degenerate_point(dos->kmesh_dos->nk_irred * ns,
                                                 ntemp,
                                                 dos->kmesh_dos,
                                                 dos->dymat_dos->get_eigenvalues(),
                                                 damping3);
+
+        for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
+            for (i = 0; i < ntemp; ++i) {
+                gamma_total[iks][i] = damping3[iks][i];
+            }
+        }
+
+        if (fph_rta > 0) {
+
+            average_self_energy_at_degenerate_point(kmesh_4ph->nk_irred * ns,
+                                                    ntemp,
+                                                    kmesh_4ph,
+                                                    dymat_4ph->get_eigenvalues(),
+                                                    damping4);
+
+            double ***damping4_coarse = nullptr;
+            double ***damping4_interpolated = nullptr;
+
+            auto interpolator = new TriLinearInterpolator(kmesh_4ph->nk_i,
+                                                          dos->kmesh_dos->nk_i);
+            interpolator->setup();
+
+            allocate(damping4_interpolated, ns, ntemp, dos->kmesh_dos->nk);
+            allocate(damping4_coarse, ns, ntemp, kmesh_4ph->nk);
+
+            for (auto ik = 0; ik < kmesh_4ph->nk; ++ik) {
+                for (auto is = 0; is < ns; ++is) {
+                    for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                        damping4_coarse[is][itemp][ik]
+                        = damping4[kmesh_4ph->kmap_to_irreducible[ik] * ns + is][itemp];
+                    }
+                }
+            }
+
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    interpolator->interpolate(damping4_coarse[is][itemp],
+                                              damping4_interpolated[is][itemp]);
+                }
+            }
+
+            for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
+                auto knum = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
+                for (auto is = 0; is < ns; ++is) {
+                    for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                        gamma_total[ik * ns + is][itemp] += damping4_interpolated[is][itemp][knum];
+                    }
+                }
+            }
+            deallocate(damping4_coarse);
+            deallocate(damping4_interpolated);
+            delete interpolator;
+        }
 
         if (isotope->include_isotope) {
             for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
