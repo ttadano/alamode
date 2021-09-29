@@ -69,7 +69,7 @@ void System::deallocate_variables()
         deallocate(xr_s);
     }
     if(xr_s_no_displace){
-        memory->deallocate(xr_s_no_displace);
+        deallocate(xr_s_no_displace);
     }
     if (xc) {
         deallocate(xc);
@@ -751,14 +751,14 @@ void System::load_xr_s_no_displace_from_XML()
         }
         catch (std::exception &e) {
             std::string str_error = "Cannot open file no_displace.xml";
-            error->exit("load_xr_s_no_displace_from_XML",
+            exit("load_xr_s_no_displace_from_XML",
                         str_error.c_str());
         }
 
         // Parse atomic elements and coordinates
         std::stringstream ss;
 
-        memory->allocate(xr_s_no_displace, nat, 3);
+        allocate(xr_s_no_displace, nat, 3);
         unsigned int index;
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
@@ -773,7 +773,7 @@ void System::load_xr_s_no_displace_from_XML()
                         index = boost::lexical_cast<unsigned int>(str_index) - 1;
 
                         if (index >= nat)
-                            error->exit("load_system_info_xml",
+                            exit("load_system_info_xml",
                                         "index is out of range");
 
                         // kd[index] = dict_atomic_kind[str_element];
@@ -784,7 +784,7 @@ void System::load_xr_s_no_displace_from_XML()
     }
 
     if (mympi->my_rank > 0) {
-        memory->allocate(xr_s_no_displace, nat, 3);
+        allocate(xr_s_no_displace, nat, 3);
     }
 
     MPI_Bcast(&xr_s_no_displace[0][0], 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);

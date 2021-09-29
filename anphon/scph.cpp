@@ -159,8 +159,8 @@ void Scph::exec_scph()
     MPI_Bcast(&selfenergy_offdiagonal, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ialgo, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
-    memory->allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
-    memory->allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
+    allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
+    allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
 
     // if(!relax_coordinate){
         zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
@@ -179,12 +179,11 @@ void Scph::exec_scph()
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
         if(!relax_coordinate){
-            //exec_scph_main_check_SCP_force(delta_dymat_scph, delta_harmonic_dymat_renormalize);
             exec_scph_main(delta_dymat_scph);
         }
+        // Calculate SCPH + structural optimization and obtain the correction to the dynamical matrix
         else{
             exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
-            // return;
         }
 
         if (mympi->my_rank == 0) {
@@ -214,6 +213,7 @@ void Scph::exec_scph()
                 delta_dymat_scph_plus_bubble);
 
     deallocate(delta_dymat_scph);
+    deallocate(delta_harmonic_dymat_renormalize);
     if (delta_dymat_scph_plus_bubble) deallocate(delta_dymat_scph_plus_bubble);
 
 }
@@ -224,7 +224,6 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 {
     double ***eval_anharm = nullptr;
     double ***eval_harm_renormalized = nullptr;
-    const auto nk_ref = kpoint->nk; // should be changed
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
@@ -241,14 +240,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         std::cout << "   ";
 
         std::complex<double> ***evec_tmp = nullptr;
+        std::complex<double> ***evec_harm_renormalized_tmp = nullptr;
         double **eval_gam = nullptr;
         std::complex<double> ***evec_gam = nullptr;
         double **xk_gam = nullptr;
-
-        // for IFC renormalization of harmonic dymat
-        std::complex<double> ***evec_harm_renormalized_tmp = nullptr;
-        memory->allocate(eval_harm_renormalized, NT, nk_ref, ns);
-        memory->allocate(evec_harm_renormalized_tmp, nk_ref, ns, ns);
 
         double **dos_scph = nullptr;
         double ***pdos_scph = nullptr;
@@ -265,6 +260,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         if (dos->kmesh_dos) {
             allocate(eval_anharm, NT, dos->kmesh_dos->nk, ns);
             allocate(evec_tmp, dos->kmesh_dos->nk, ns, ns);
+            allocate(eval_harm_renormalized, NT, dos->kmesh_dos->nk, ns);
+            allocate(evec_harm_renormalized_tmp, dos->kmesh_dos->nk, ns, ns);
 
             if (dos->compute_dos) {
                 allocate(dos_scph, NT, dos->n_energy);
@@ -297,15 +294,21 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             for (auto iT = 0; iT < NT; ++iT) {
                 auto temperature = Tmin + dT * static_cast<double>(iT);
 
-            exec_interpolation(kmesh_interpolate,
-                               delta_harmonic_dymat_renormalize[iT],
-                               nk_ref,
-                               kpoint->xk,
-                               kpoint->kvec_na,
-                               eval_harm_renormalized[iT],
-                               evec_harm_renormalized_tmp);
+                exec_interpolation(kmesh_interpolate,
+                                   delta_dymat_scph[iT],
+                                   dos->kmesh_dos->nk,
+                                   dos->kmesh_dos->xk,
+                                   dos->kmesh_dos->kvec_na,
+                                   eval_anharm[iT],
+                                   evec_tmp);
 
-            if (kpoint->kpoint_mode == 2) {
+                exec_interpolation(kmesh_interpolate,
+                                   delta_harmonic_dymat_renormalize[iT],
+                                   dos->kmesh_dos->nk,
+                                   dos->kmesh_dos->xk,
+                                   dos->kmesh_dos->kvec_na,
+                                   eval_harm_renormalized[iT],
+                                   evec_harm_renormalized_tmp);
 
                 if (dos->compute_dos) {
                     dos->calc_dos_from_given_frequency(dos->kmesh_dos,
@@ -797,7 +800,7 @@ void Scph::zerofill_harmonic_dymat_renormalize(std::complex<double> ****delta_ha
     for(iT = 0; iT < NT; iT++){
         for(is1 = 0; is1 < ns; is1++){
             for(is2 = 0; is2 < ns; is2++){
-                for(ik = 0; ik < nk_interpolate; ik++){
+                for(ik = 0; ik < kmesh_coarse->nk; ik++){
                     delta_harmonic_dymat_renormalize[iT][is1][is2][ik] = complex_zero;
                 }
             }
@@ -832,15 +835,13 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     allocate(v4_array_all, nk_irred_interpolate * nk,
              ns * ns, ns * ns);
 
-    // delta_v2_array_renormalize is not used when structure ralaxation
-    // is not performed.
-    memory->allocate(delta_v2_array_renormalize, nk, ns*ns);
+    // delta_v2_array_renormalize is zero when structural optimization is not performed
+    allocate(delta_v2_array_renormalize, nk, ns*ns);
     for(ik = 0; ik < nk; ik++){
         for(is = 0; is < ns*ns; is++){
             delta_v2_array_renormalize[ik][is] = 0.0;
         }
     }
-
 
     // Calculate v4 array. 
     // This operation is the most expensive part of the calculation.
@@ -935,6 +936,10 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     deallocate(omega2_anharm);
     deallocate(v4_array_all);
     deallocate(evec_anharm_tmp);
+    deallocate(delta_v2_array_renormalize);
+    if(relax_coordinate){
+        deallocate(v3_array_all);
+    }
 }
 
 // test renormalization of IFC
@@ -947,25 +952,24 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     int ik1, is1, is2;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
-    const auto nk = nk_scph;
+    const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
-    const auto nk_reduced_scph = kp_irred_scph.size();
-    const auto nk_irred_interpolate = kp_irred_interpolate.size();
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     double ***omega2_anharm;
     std::complex<double> **delta_v2_array_renormalize;
     std::complex<double> ***evec_anharm_tmp;
-    // variables for calculating renormalization of harmonic dymat
+    // IFC-renormalized harmonic phonon
     double ***omega2_harm_renormalize;
     std::complex<double> ***evec_harm_renormalize_tmp;
-    // original and renormalized IFC
+    // original and renormalized IFCs
     std::complex<double> *v1_array_original, *v1_array_renormalized;
     std::complex<double> ***v3_array_original, ***v3_array_renormalized;
     std::complex<double> ***v4_array_original, ***v4_array_renormalized;
     double v0_original, v0_renormalized;
-    v0_original = 0.0;
+    v0_original = 0.0; // set original ground state energy as zero
 
     // generalized force dF/dq^{(0)}_{\lambda}
     std::complex<double> *v1_array_SCP;
@@ -1020,7 +1024,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         std::cout << "mindist_list_scph : " << std::endl;
         for(is = 0; is < ns/3; is++){
             for(js = 0; js < ns/3; js++){
-                for(ik = 0; ik < nk_interpolate; ik++){
+                for(ik = 0; ik < kmesh_coarse->nk; ik++){
                     std::cout << is << " " << js << " " << ik << " " << mindist_list_scph[is][js][ik].shift.size() << " " << mindist_list_scph[is][js][ik].dist << std::endl;
                 }
             }
@@ -1034,27 +1038,27 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
     // Compute matrix element of 4-phonon interaction
 
-    memory->allocate(v1_array_SCP, ns);
+    allocate(v1_array_SCP, ns);
 
-    memory->allocate(omega2_anharm, NT, nk, ns);
-    memory->allocate(evec_anharm_tmp, nk, ns, ns);
+    allocate(omega2_anharm, NT, nk, ns);
+    allocate(evec_anharm_tmp, nk, ns, ns);
 
-    // for calculating renormalization of harmonic dymat
-    memory->allocate(omega2_harm_renormalize, NT, nk, ns);
-    memory->allocate(evec_harm_renormalize_tmp, nk, ns, ns);
+    allocate(v1_array_original, ns);
+    allocate(v1_array_renormalized, ns);
 
-    memory->allocate(v1_array_original, ns);
-    memory->allocate(v1_array_renormalized, ns);
-    memory->allocate(delta_v2_array_renormalize, nk, ns*ns);
+    // IFC-renormalization of harmonic dynamical matrix
+    allocate(omega2_harm_renormalize, NT, nk, ns);
+    allocate(evec_harm_renormalize_tmp, nk, ns, ns);   
+    allocate(delta_v2_array_renormalize, nk, ns*ns);
 
-    memory->allocate(q0, ns);
-    memory->allocate(delta_q0, ns);
-    memory->allocate(u0, ns);
-    memory->allocate(force_array, ns);
+    allocate(q0, ns);
+    allocate(delta_q0, ns);
+    allocate(u0, ns);
+    allocate(force_array, ns);
 
-    memory->allocate(v4_array_original, nk_irred_interpolate * nk_scph,
+    allocate(v4_array_original, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
-    memory->allocate(v4_array_renormalized, nk_irred_interpolate * nk_scph,
+    allocate(v4_array_renormalized, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
 
     // Calculate v4 array. 
@@ -1070,19 +1074,18 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                             relax_coordinate);
     }
     
-    //if (relax_coordinate) { relax_coordinate is always 1
-    memory->allocate(v3_array_original, nk, ns, ns * ns);
-    memory->allocate(v3_array_renormalized, nk, ns, ns * ns);
+    allocate(v3_array_original, nk, ns, ns * ns);
+    allocate(v3_array_renormalized, nk, ns, ns * ns);
     compute_V3_elements_mpi_over_kpoint(v3_array_original,
                                         evec_harmonic,
                                         selfenergy_offdiagonal);
 
-    // initialize v1_array
+    // assume that the atomic forces are zero at initial structure
     for(is = 0; is < ns; is++){
         v1_array_original[is] = 0.0;
     }
 
-    // get indices of optical modes
+    // get indices of optical modes at Gamma point
     js = 0;
     for(is = 0; is < ns; is++){
         if(std::fabs(omega2_harmonic[0][is]) < eps8){
@@ -1102,7 +1105,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     if (mympi->my_rank == 0) {
 
         std::complex<double> ***cmat_convert;
-        memory->allocate(cmat_convert, nk, ns, ns);
+        allocate(cmat_convert, nk, ns, ns);
 
         vec_temp.clear();
 
@@ -1168,33 +1171,33 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             }
 
             // set T-dependent initial value of q0
-            read_Tdep_initial_q0_from_u(q0, i_temp_loop);
-            calculate_u0(q0, u0);
-            std::cout << "initial u0: " << std::endl;
-            for(is = 0; is < ns; is++){
-                std::cout << u0[is] << " ";
-            }std::cout << std::endl;
+            // read_Tdep_initial_q0_from_u(q0, i_temp_loop);
+            // calculate_u0(q0, u0);
+            // std::cout << "initial u0: " << std::endl;
+            // for(is = 0; is < ns; is++){
+            //     std::cout << u0[is] << " ";
+            // }std::cout << std::endl;
 
             // set initial value of q0 at each T
             // read_initial_q0(q0);
             // calculate_u0(q0, u0);
             // start from warm start
-            converged_prev = false; // comment out when we start from the previous structure
+            // converged_prev = false; // comment out when we start from the previous structure
 
             // read only at the beginning of the calculation
-            // if(lower_temp){
-            //     if(fabs(temp - Tmax) < eps15){
-            //         read_initial_q0(q0);
-            //         calculate_u0(q0, u0);
-            //     }
-            // }
-            // if(!lower_temp){
-            //     if(fabs(temp - Tmin) < eps15){
-            //         read_initial_q0(q0);
-            //         calculate_u0(q0, u0);
-            // 
-            //     }
-            // }
+            if(lower_temp){
+                if(fabs(temp - Tmax) < eps15){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                }
+            }
+            if(!lower_temp){
+                if(fabs(temp - Tmin) < eps15){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+            
+                }
+            }
 
             
 
@@ -1234,16 +1237,13 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     std::cout << force_array[is] << " ";
                 }std::cout << std::endl;
                 // copy v4_array_original to v4_array_renormalized
-                for(ik = 0; ik < nk_irred_interpolate * nk_scph; ik++){
+                for(ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++){
                     for(is1 = 0; is1 < ns*ns; is1++){
                         for(is2 = 0; is2 < ns*ns; is2++){
                             v4_array_renormalized[ik][is1][is2] = v4_array_original[ik][is1][is2];
                         }
                     }
                 }
-
-                // print force(for test)
-                // print_force(v1_array_renormalized);
 
                 // solve SCP equation
                 compute_anharmonic_frequency(v4_array_renormalized,
@@ -1255,10 +1255,6 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
-                // compute_renormalized_harmonic_frequency(omega2_anharm[iT],
-                //                         evec_anharm_tmp,
-                //                         delta_v2_array_renormalize,
-                //                         writes->getVerbosity()); // test of IFC renormalization
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -1321,11 +1317,6 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     for(is = 0; is < ns-3; is++){
                         v1_vec_SCP(is) = v1_array_SCP[harm_optical_modes[is]];
                     }
-                    // debug
-                    // std::cout << "v1_vec_SCP" << std::endl;
-                    // for(is = 0; is < ns-3; is++){
-                    //     std::cout << v1_vec_SCP(is) << " ";
-                    // }std::cout << std::endl << std::endl;
                     
                     dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_SCP);
 
@@ -1388,7 +1379,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             if (!warmstart_scph) converged_prev = false;
 
             // get renormalization of harmonic dymat 
-            for(ik = 0; ik < nk_irred_interpolate * nk_scph; ik++){
+            for(ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++){
                     for(is1 = 0; is1 < ns*ns; is1++){
                         for(is2 = 0; is2 < ns*ns; is2++){
                             v4_array_renormalized[ik][is1][is2] = complex_zero;
@@ -1424,30 +1415,30 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
         fout_force.close();
         fout_v0.close();
 
-        memory->deallocate(cmat_convert);
+        deallocate(cmat_convert);
 
     }
 
-    mpi_bcast_complex(dymat_anharm, NT, nk_interpolate, ns);
-    mpi_bcast_complex(delta_harmonic_dymat_renormalize, NT, nk_interpolate, ns);
+    mpi_bcast_complex(dymat_anharm, NT, kmesh_coarse->nk, ns);
+    mpi_bcast_complex(delta_harmonic_dymat_renormalize, NT, kmesh_coarse->nk, ns);
 
-    memory->deallocate(omega2_anharm);
-    memory->deallocate(omega2_harm_renormalize);
-    memory->deallocate(v1_array_original);
-    memory->deallocate(v1_array_renormalized);
-    memory->deallocate(delta_v2_array_renormalize);
-    memory->deallocate(v4_array_original);
-    memory->deallocate(v4_array_renormalized);
-    memory->deallocate(v3_array_original);
-    memory->deallocate(v3_array_renormalized);
-    memory->deallocate(evec_anharm_tmp);
-    memory->deallocate(evec_harm_renormalize_tmp);
-    memory->deallocate(v1_array_SCP);
+    deallocate(omega2_anharm);
+    deallocate(omega2_harm_renormalize);
+    deallocate(v1_array_original);
+    deallocate(v1_array_renormalized);
+    deallocate(delta_v2_array_renormalize);
+    deallocate(v4_array_original);
+    deallocate(v4_array_renormalized);
+    deallocate(v3_array_original);
+    deallocate(v3_array_renormalized);
+    deallocate(evec_anharm_tmp);
+    deallocate(evec_harm_renormalize_tmp);
+    deallocate(v1_array_SCP);
 
-    memory->deallocate(q0);
-    memory->deallocate(delta_q0);
-    memory->deallocate(u0);
-    memory->deallocate(force_array);
+    deallocate(q0);
+    deallocate(delta_q0);
+    deallocate(u0);
+    deallocate(force_array);
 }
 
 
@@ -2375,8 +2366,8 @@ void Scph::renormalize_v1_array(std::complex<double> *v1_array_renormalized,
     int is, is1, is2, is3;
     int ik_irred0 = kpoint_map_symmetry[0].knum_irred_orig;
     const auto ns = dynamical->neval;
-    double factor = 0.5 * 4.0 * nk_scph;
-    double factor2 = 1.0/6.0 * 4.0 * nk_scph;
+    double factor = 0.5 * 4.0 * kmesh_dense->nk;
+    double factor2 = 1.0/6.0 * 4.0 * kmesh_dense->nk;
     
     // renormalize v1 array
     for(is = 0; is < ns; is++){
@@ -2394,7 +2385,7 @@ void Scph::renormalize_v1_array(std::complex<double> *v1_array_renormalized,
             for(is2 = 0; is2 < ns; is2++){
                 for(is3 = 0; is3 < ns; is3++){
                     
-                    v1_array_renormalized[is] += factor2 * v4_array_original[ik_irred0*nk_scph][is*ns+is1][is2*ns+is3] 
+                    v1_array_renormalized[is] += factor2 * v4_array_original[ik_irred0*kmesh_dense->nk][is*ns+is1][is2*ns+is3] 
                                              * q0[is1] * q0[is2] * q0[is3]; 
                     // the factor 4.0 appears due to the definition of v4_array = 1.0/(4.0*N_scph) Phi_4
                 }
@@ -2414,21 +2405,23 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
     int ik;
     int is1, is2, js1, js2;
     int knum, knum_interpolate;
+    int nk_scph = kmesh_dense->nk;
+    int nk_interpolate = kmesh_coarse->nk;
     double factor = 4.0 * nk_scph;
     double factor2 = 4.0 * nk_scph * 0.5;
 
     const auto complex_zero = std::complex<double>(0.0, 0.0);
     
     const auto ns = dynamical->neval;
-    const auto nk_irred_interpolate = kp_irred_interpolate.size();
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
     std::complex<double> ***dymat_q;
     MatrixXcd Dymat(ns, ns);
     MatrixXcd evec_tmp(ns, ns);
-    memory->allocate(dymat_q, ns, ns, nk_interpolate);
+    allocate(dymat_q, ns, ns, nk_interpolate);
 
     for(ik = 0; ik < nk_irred_interpolate; ik++){
 
-        knum_interpolate = kp_irred_interpolate[ik][0].knum;
+        knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;//kp_irred_interpolate[ik][0].knum;
         knum = kmap_interpolate_to_scph[knum_interpolate];
 
         // calculate renormalization
@@ -2489,7 +2482,7 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
         }
     }
 
-    memory->deallocate(dymat_q);
+    deallocate(dymat_q);
     
 }
 
@@ -2502,6 +2495,7 @@ void Scph::renormalize_v3_array(std::complex<double> ***v3_array_renormalized,
     int is1, is2, is3, js;
     const auto ns = dynamical->neval;
     int ik_irred0 = kpoint_map_symmetry[0].knum_irred_orig;
+    int nk_scph = kmesh_dense->nk;
 
     // debug
     std::cout << "ik_irred0 = " << ik_irred0 << std::endl;
@@ -2531,6 +2525,7 @@ void Scph::renormalize_v0(double &v0_renormalized,
 {
     int is1, is2, is3, is4;
     const auto ns = dynamical->neval;
+    int nk_scph = kmesh_dense->nk;
     double factor2 = 1.0/2.0;
     double factor3 = 1.0/6.0 * 4.0 * nk_scph;;
     double factor4 = 1.0/24.0 * 4.0 * nk_scph;;
@@ -2576,7 +2571,8 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormaliz
     double n1, omega1_tmp;
     std::complex<double> Qtmp;
     const auto ns = dynamical->neval;
-    // std::complex<double> **v3_array_tmp;
+    int nk_scph = kmesh_dense->nk;
+
     MatrixXcd Cmat(ns, ns);
     MatrixXcd v3mat_original_mode(ns, ns), v3mat_tmp(ns, ns);
 
@@ -4006,67 +4002,53 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
 
     int ik, jk;
     int is, js;
-    const auto nk = nk_scph;
+    const auto nk = kmesh_dense->nk;
+    const auto nk_interpolate = kmesh_coarse->nk;
     const auto ns = dynamical->neval;
     unsigned int knum, knum_interpolate;
-    const auto nk_irred_interpolate = kp_irred_interpolate.size();
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
     const auto nk1 = kmesh_interpolate[0];
     const auto nk2 = kmesh_interpolate[1];
     const auto nk3 = kmesh_interpolate[2];
 
-    //MatrixXd omega_now(nk, ns), omega_old(nk, ns);
-    //MatrixXd omega2_HA(nk, ns);
     MatrixXcd evec_tmp(ns, ns);
 
     MatrixXcd Dymat(ns, ns);
     MatrixXcd Fmat(ns, ns);
 
-    double diff;
-    double conv_tol = tolerance_scph;
-    double alpha = mixalpha;
+    // double diff;
+    // double conv_tol = tolerance_scph;
+    // double alpha = mixalpha;
 
     double **eval_interpolate;
     double re_tmp, im_tmp;
     bool has_negative;
 
-    // std::complex<double> ctmp;
-    // std::complex<double> ***mat_omega2_harmonic;
-    // std::complex<double> ***evec_initial;
-    // std::complex<double> ***dmat_convert;
-    // std::complex<double> ***dmat_convert_old;
-    // std::complex<double> ***evec_new;
     std::complex<double> ***dymat_new, ***dymat_harmonic_without_renormalize;
     std::complex<double> ***dymat_q;
-    // std::complex<double> ***Fmat0;
 
     const auto complex_one = std::complex<double>(1.0, 0.0);
     const auto complex_zero = std::complex<double>(0.0, 0.0);
 
     SelfAdjointEigenSolver <MatrixXcd> saes;
 
-    // memory->allocate(mat_omega2_harmonic, nk_interpolate, ns, ns);
-    memory->allocate(eval_interpolate, nk, ns);
-    // memory->allocate(evec_initial, nk, ns, ns);
-    // memory->allocate(evec_new, nk, ns, ns);
-    // memory->allocate(dmat_convert, nk, ns, ns);
-    // memory->allocate(dmat_convert_old, nk, ns, ns);
-    memory->allocate(dymat_new, ns, ns, nk_interpolate);
-    memory->allocate(dymat_q, ns, ns, nk_interpolate);
-    memory->allocate(dymat_harmonic_without_renormalize, nk_interpolate, ns, ns);
-    // memory->allocate(Fmat0, nk_irred_interpolate, ns, ns);
+    allocate(eval_interpolate, nk, ns);
+    allocate(dymat_new, ns, ns, nk_interpolate);
+    allocate(dymat_q, ns, ns, nk_interpolate);
+    allocate(dymat_harmonic_without_renormalize, nk_interpolate, ns, ns);
 
     // Set initial harmonic dymat without IFC renormalization
 
     for (ik = 0; ik < nk_interpolate; ++ik) {
         
-        dynamical->calc_analytic_k(xk_interpolate[ik],
+        dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
                                    fcs_phonon->fc2_ext,
                                    dymat_harmonic_without_renormalize[ik]);
     }
     
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
 
-        knum_interpolate = kp_irred_interpolate[ik][0].knum;
+        knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
         knum = kmap_interpolate_to_scph[knum_interpolate];
 
         // calculate Fmat
@@ -4099,33 +4081,14 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
 
     replicate_dymat_for_all_kpoints(dymat_q);
 
-    std::cout << "define debug variables" << std::endl << std::flush;
-
-    // debug variables
-    // int i_rev_cell, ik1_tmp, ik2_tmp, ik3_tmp;
-    // std::complex<double> ***dymat_q_total, ***dymat_q_harmonic_without_renormalize;
-    // memory->allocate(dymat_q_total, ns, ns, nk_interpolate);
-    // memory->allocate(dymat_q_harmonic_without_renormalize, ns, ns, nk_interpolate);
-    // std::complex<double> ***dymat_new_total, ***dymat_new_harmonic_without_renormalize;
-    // memory->allocate(dymat_new_total, ns, ns, nk_interpolate);
-    // memory->allocate(dymat_new_harmonic_without_renormalize, ns, ns, nk_interpolate);
-
-    std::cout << "allocating debug variables done." << std::endl << std::flush; // debug
-
     // Subtract harmonic contribution to the dynamical matrix
     for (ik = 0; ik < nk_interpolate; ++ik) {
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
                 dymat_q[is][js][ik] -= dymat_harmonic_without_renormalize[ik][is][js];
-
-                // dymat_q_total[is][js][ik] = dymat_q[is][js][ik] + dymat_harmonic_without_renormalize[ik][is][js]; // debug 
-                // dymat_q_harmonic_without_renormalize[is][js][ik] = dymat_harmonic_without_renormalize[ik][is][js]; // debug
             }
         }
     }
-
-    // debug
-    std::cout << "the calculation of dymat_q is done." << std::endl << std::flush;
 
     for (is = 0; is < ns; ++is) {
         for (js = 0; js < ns; ++js) {
@@ -4141,88 +4104,11 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
         }
     }
 
-    // Fourier transform debug variables
-    // for (is = 0; is < ns; ++is) {
-    //     for (js = 0; js < ns; ++js) {
-    //         fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
-    //                                             reinterpret_cast<fftw_complex *>(dymat_q_total[is][js]),
-    //                                             reinterpret_cast<fftw_complex *>(dymat_new_total[is][js]),
-    //                                             FFTW_FORWARD, FFTW_ESTIMATE);
-    //         fftw_execute(plan);
-    //         fftw_destroy_plan(plan);
-    // 
-    //         for (ik = 0; ik < nk_interpolate; ++ik)
-    //             dymat_new_total[is][js][ik] /= static_cast<double>(nk_interpolate);
-    //     }
-    // }
-    // for (is = 0; is < ns; ++is) {
-    //     for (js = 0; js < ns; ++js) {
-    //         fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
-    //                                             reinterpret_cast<fftw_complex *>(dymat_q_harmonic_without_renormalize[is][js]),
-    //                                             reinterpret_cast<fftw_complex *>(dymat_new_harmonic_without_renormalize[is][js]),
-    //                                             FFTW_FORWARD, FFTW_ESTIMATE);
-    //         fftw_execute(plan);
-    //         fftw_destroy_plan(plan);
-    // 
-    //         for (ik = 0; ik < nk_interpolate; ++ik)
-    //             dymat_new_harmonic_without_renormalize[is][js][ik] /= static_cast<double>(nk_interpolate);
-    //     }
-    // }
-
-    // print real space information // debug
-    // std::cout << "dymat_new(renormalized part)" << std::endl << std::flush;
-    // for(is = 0; is < ns; is++){
-    //     for(js = 0; js < ns; js++){
-    //         for(ik = 0; ik < nk_interpolate; ik++){
-    //             std::cout << is << " " << js << " " << ik << " " << mindist_list_scph[is/3][js/3][ik].dist << " " << mindist_list_scph[is/3][js/3][ik].shift.size() << " " << dymat_new[is][js][ik].real() << " " << dymat_new[is][js][ik].imag() << std::endl;
-    //         }
-    //     }
-    // }std::cout << std::endl;
-// 
-    // std::cout << "dymat_new_total (original harmonic + renormalized part)" << std::endl;
-    // for(is = 0; is < ns; is++){
-    //     for(js = 0; js < ns; js++){
-    //         for(ik = 0; ik < nk_interpolate; ik++){
-    //             std::cout << is << " " << js << " " << ik << " " << mindist_list_scph[is/3][js/3][ik].dist << " " << mindist_list_scph[is/3][js/3][ik].shift.size() << " " << dymat_new_total[is][js][ik].real() << " " << dymat_new_total[is][js][ik].imag() << std::endl;
-    //         }
-    //     }
-    // }std::cout << std::endl;
-// 
-    // std::cout << "dymat_new_harmonic_without_renormalize (original harmonic part)" << std::endl;
-    // for(is = 0; is < ns; is++){
-    //     for(js = 0; js < ns; js++){
-    //         for(ik = 0; ik < nk_interpolate; ik++){
-    //             std::cout << is << " " << js << " " << ik << " " << mindist_list_scph[is/3][js/3][ik].dist << " " << mindist_list_scph[is/3][js/3][ik].shift.size() << " " << dymat_new_harmonic_without_renormalize[is][js][ik].real() << " " << dymat_new_harmonic_without_renormalize[is][js][ik].imag() << std::endl;
-    //         }
-    //     }
-    // }std::cout << std::endl;
-// 
-    // std::cout << "check permutation symmetry " << std::endl;
-    // for(is = 0; is < ns; is++){
-    //     for(js = 0; js < ns; js++){
-    //         for(ik = 0; ik < nk_interpolate; ik++){
-// 
-    //             std::cout << is << " " << js << " " << ik << " " << mindist_list_scph[is/3][js/3][ik].dist << " " << mindist_list_scph[is/3][js/3][ik].shift.size() << " " << dymat_new[is][js][ik].real() << " " << dymat_new[is][js][ik].imag() << " ";
-    //             // current cell
-    //             ik1_tmp = ik/(nk2*nk3);
-    //             ik2_tmp = (ik-ik1_tmp*nk2*nk3)/nk3;
-    //             ik3_tmp = ik%nk3;
-    //             // reverse cell
-    //             ik1_tmp = (nk1-ik1_tmp)%nk1;
-    //             ik2_tmp = (nk2-ik2_tmp)%nk2;
-    //             ik3_tmp = (nk3-ik3_tmp)%nk3;
-    //             i_rev_cell = ik1_tmp * nk2*nk3 + ik2_tmp * nk3 + ik3_tmp;
-// 
-    //             std::cout << js << " " << is << " " << i_rev_cell << " " << mindist_list_scph[js/3][is/3][i_rev_cell].dist << " " << mindist_list_scph[js/3][is/3][i_rev_cell].shift.size() << " " << dymat_new[js][is][i_rev_cell].real() << " " << dymat_new[js][is][i_rev_cell].imag() << std::endl;
-    //         }
-    //     }
-    // }
-
     exec_interpolation(kmesh_interpolate,
                         dymat_new,
                         nk,
-                        xk_scph,
-                        kvec_na_scph,
+                        kmesh_dense->xk,
+                        kmesh_dense->kvec_na,
                         eval_interpolate, evec_harm_renormalized);
 
     for (ik = 0; ik < nk; ++ik) {
@@ -4240,19 +4126,11 @@ void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
     }
 
 
-    memory->deallocate(dymat_q);
-    memory->deallocate(dymat_new);
+    deallocate(dymat_q);
+    deallocate(dymat_new);
 
-    memory->deallocate(eval_interpolate);
-    memory->deallocate(dymat_harmonic_without_renormalize);
-
-    // debug
-    // deallocate debug variables
-    // memory->deallocate(dymat_q_total);
-    // memory->deallocate(dymat_q_harmonic_without_renormalize);
-    // memory->deallocate(dymat_new_total);
-    // memory->deallocate(dymat_new_harmonic_without_renormalize);
-
+    deallocate(eval_interpolate);
+    deallocate(dymat_harmonic_without_renormalize);
 }
 
 void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],

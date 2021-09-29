@@ -109,12 +109,9 @@ class Thermodynamics : protected Pointers {
                                 std::complex<double> ****evec_in,
                                 double *FE_bubble);
 
-    // double FE_scph_correction(unsigned int,
-    //                           double **,
-    //                           std::complex<double> ***) const;
     double FE_scph_correction(unsigned int ,
-                                        double **,
-                                        std::complex<double> ***,
-                                        double **,
-                                        std::complex<double> ***) const;};
+                              double **,
+                              std::complex<double> ***,
+                              double **,
+                              std::complex<double> ***) const;};
 }

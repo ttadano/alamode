@@ -721,7 +721,6 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     const auto evec_harm = dos->dymat_dos->get_eigenvectors();
 
     double ret = 0.0;
-    // double omega2_harm;
 
     const auto complex_zero = std::complex<double>(0.0, 0.0);
 
@@ -730,22 +729,20 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         int ik = i / ns;
         int is = i % ns;
         const auto omega = eval[ik][is];
-        if (std::abs(omega) < eps6) continue;
+        if (std::abs(omega) < eps8) continue;
 
         MatrixXcd Cmat(ns, ns);
 
         // calculate Cmat
-        //if(is == 0){ // is == 0 can be skipped because it contains acoustic mode at ik = 0
-            for(int js = 0; js < ns; js++){
-                for(int ks = 0; ks < ns; ks++){
-                    Cmat(js, ks) = 0.0;
-                    for(int ls = 0; ls < ns; ls++){
-                        Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls]) 
-                                        * evec[ik][ks][ls];
-                    }
+        for(int js = 0; js < ns; js++){
+            for(int ks = 0; ks < ns; ks++){
+                Cmat(js, ks) = 0.0;
+                for(int ls = 0; ls < ns; ls++){
+                    Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls]) 
+                                    * evec[ik][ks][ls];
                 }
             }
-        //}
+        }
 
         auto tmp_c = std::complex<double>(0.0, 0.0);
         double omega2_harm;
