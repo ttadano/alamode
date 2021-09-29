@@ -317,7 +317,7 @@ void System::setup()
                 cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << endl;
             } else if (noncollinear == 1) {
                 cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << endl;
-                if (symmetry->trev_sym_mag) {
+                if (symmetry->time_reversal_sym_from_alm) {
                     cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
                 } else {
                     cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" <<
@@ -534,12 +534,12 @@ void System::load_system_info_from_XML()
             }
 
             try {
-                symmetry->trev_sym_mag = boost::lexical_cast<int>(
+                symmetry->time_reversal_sym_from_alm = boost::lexical_cast<int>(
                       get_value_from_xml(pt,
                                          "Data.MagneticMoments.TimeReversalSymmetry"));
             }
             catch (...) {
-                symmetry->trev_sym_mag = true;
+                symmetry->time_reversal_sym_from_alm = true;
             }
         } else {
             for (i = 0; i < natmin; ++i) {
@@ -548,7 +548,7 @@ void System::load_system_info_from_XML()
                 }
             }
             noncollinear = 0;
-            symmetry->trev_sym_mag = true;
+            symmetry->time_reversal_sym_from_alm = true;
         }
         deallocate(magmom_tmp);
 

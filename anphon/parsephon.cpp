@@ -109,7 +109,7 @@ void Input::parse_general_vars()
     const std::vector<std::string> input_list{
           "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
           "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART", "TREVSYM",
+          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
           "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
           "VERBOSITY"
     };
@@ -187,7 +187,7 @@ void Input::parse_general_vars()
     auto nsym = 0;
     auto tolerance = 1.0e-6;
     auto printsymmetry = false;
-    auto sym_time_reversal = false;
+    //auto sym_time_reversal = false;
     auto use_triplet_symmetry = true;
     auto classical = false;
     unsigned int band_connection = 0;
@@ -219,7 +219,7 @@ void Input::parse_general_vars()
     assign_val(delta_e, "DELTA_E", general_var_dict);
 
     assign_val(nsym, "NSYM", general_var_dict);
-    assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
+    //assign_val(sym_time_reversal, "TREVSYM", general_var_dict);
     assign_val(tolerance, "TOLERANCE", general_var_dict);
     assign_val(printsymmetry, "PRINTSYM", general_var_dict);
 
@@ -282,7 +282,7 @@ void Input::parse_general_vars()
     symmetry->nsym = nsym;
     symmetry->tolerance = tolerance;
     symmetry->printsymmetry = printsymmetry;
-    symmetry->time_reversal_sym = sym_time_reversal;
+    //symmetry->time_reversal_sym = sym_time_reversal;
 
     system->Tmin = Tmin;
     system->Tmax = Tmax;

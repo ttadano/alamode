@@ -60,8 +60,6 @@ void Kpoint::deallocate_variables()
 
 void Kpoint::kpoint_setups(const std::string mode)
 {
-    // symmetry->symmetry_flag = true;
-
     unsigned int i, j;
     std::string str_tmp;
 
@@ -150,7 +148,8 @@ void Kpoint::kpoint_setups(const std::string mode)
             MPI_Bcast(&nk_tmp[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
             dos->kmesh_dos = new KpointMeshUniform(nk_tmp);
             dos->kmesh_dos->setup(symmetry->SymmList,
-                                  system->rlavec_p);
+                                  system->rlavec_p,
+                                  symmetry->time_reversal_sym);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
