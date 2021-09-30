@@ -54,6 +54,7 @@ void Conductivity::set_default_variables()
     damping3 = nullptr;
     damping4 = nullptr;
     kappa = nullptr;
+    kappa_3only = nullptr;
     kappa_spec = nullptr;
     kappa_coherent = nullptr;
     temperature = nullptr;
@@ -85,6 +86,9 @@ void Conductivity::deallocate_variables()
     }
     if (kappa) {
         deallocate(kappa);
+    }
+    if (kappa_3only) {
+        deallocate(kappa_3only);
     }
     if (kappa_spec) {
         deallocate(kappa_spec);
@@ -966,7 +970,28 @@ void Conductivity::compute_kappa()
             }
         }
 
+        if (isotope->include_isotope) {
+            for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
+                const auto snum = iks % ns;
+                gamma_total[iks][i] += isotope->gamma_isotope[iks / ns][snum];
+            }
+        }
+
         if (fph_rta > 0) {
+
+            // calculate kappa_3ph
+            double **lifetime_3only;
+            allocate(lifetime_3only, dos->kmesh_dos->nk_irred * ns, ntemp);
+            lifetime_from_gamma(gamma_total, lifetime_3only);
+
+            allocate(kappa_3only, ntemp, 3, 3);
+            compute_kappa_intraband(dos->kmesh_dos,
+                                    dos->dymat_dos->get_eigenvalues(),
+                                    lifetime_3only,
+                                    kappa_3only,
+                                    kappa_spec);
+
+            deallocate(lifetime_3only);
 
             average_self_energy_at_degenerate_point(kmesh_4ph->nk_irred * ns,
                                                     ntemp,
@@ -992,49 +1017,7 @@ void Conductivity::compute_kappa()
             }
         }
 
-        if (isotope->include_isotope) {
-            for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
-                const auto snum = iks % ns;
-                if (dynamical->is_imaginary[iks / ns][snum]) {
-                    for (i = 0; i < ntemp; ++i) {
-                        lifetime[iks][i] = 0.0;
-                        gamma_total[iks][i] = 1.0e+100; // very big number
-                    }
-                } else {
-                    for (i = 0; i < ntemp; ++i) {
-                        //damp_tmp = damping3[iks][i] + isotope->gamma_isotope[iks / ns][snum];
-                        gamma_total[iks][i] += isotope->gamma_isotope[iks / ns][snum];
-                        damp_tmp = gamma_total[iks][i];
-                        if (damp_tmp > 1.0e-100) {
-                            lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
-                        } else {
-                            lifetime[iks][i] = 0.0;
-                        }
-                    }
-                }
-            }
-        } else {
-            for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
-
-                if (dynamical->is_imaginary[iks / ns][iks % ns]) {
-                    for (i = 0; i < ntemp; ++i) {
-                        lifetime[iks][i] = 0.0;
-                        gamma_total[iks][i] = 1.0e+100; // very big number
-                    }
-                } else {
-                    for (i = 0; i < ntemp; ++i) {
-                        //damp_tmp = damping3[iks][i];
-                        damp_tmp = gamma_total[iks][i];
-                        if (damp_tmp > 1.0e-100) {
-                            lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
-                        } else {
-                            lifetime[iks][i] = 0.0;
-                            gamma_total[iks][i] = 1.0e+100;
-                        }
-                    }
-                }
-            }
-        }
+        lifetime_from_gamma(gamma_total, lifetime);
 
         allocate(kappa, ntemp, 3, 3);
 
@@ -1060,6 +1043,8 @@ void Conductivity::compute_kappa()
         deallocate(gamma_total);
     }
 }
+
+
 
 void Conductivity::average_self_energy_at_degenerate_point(const int n,
                                                            const int m,
@@ -1743,3 +1728,30 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
     delete interpol;
 }
 
+void Conductivity::lifetime_from_gamma(double **&gamma, double **&lifetime) 
+{
+    unsigned int i;
+    double damp_tmp;
+
+    for (unsigned int iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
+
+        if (dynamical->is_imaginary[iks / ns][iks % ns]) {
+            for (i = 0; i < ntemp; ++i) {
+                lifetime[iks][i] = 0.0;
+                gamma[iks][i] = 1.0e+100; // very big number
+            }
+        } else {
+            for (i = 0; i < ntemp; ++i) {
+                //damp_tmp = damping3[iks][i];
+                damp_tmp = gamma[iks][i];
+                if (damp_tmp > 1.0e-100) {
+                    lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
+                } else {
+                    lifetime[iks][i] = 0.0;
+                    gamma[iks][i] = 1.0e+100;
+                }
+            }
+        }
+    }
+
+}

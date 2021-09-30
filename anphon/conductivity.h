@@ -39,6 +39,7 @@ class Conductivity : protected Pointers {
     double **damping3;
     double **damping4;
     double ***kappa;
+    double ***kappa_3only;
     double ***kappa_spec;
     double ***kappa_coherent;
     double *temperature;
@@ -117,6 +118,8 @@ class Conductivity : protected Pointers {
 
     void calc_anharmonic_imagself3();
     void calc_anharmonic_imagself4();
+
+    void lifetime_from_gamma(double **&, double **&);
 
     void write_result_gamma(unsigned int,
                             unsigned int,
