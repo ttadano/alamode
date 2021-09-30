@@ -375,30 +375,32 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
                 }
             }
         }
-        /*
+
         std::cout << "k = " << i << std::endl;
-        std::cout << kpoint->xk[i][0] << "  " << kpoint->xk[i][1] << " " << kpoint->xk[i][2] << std::endl;
+        std::cout << dos->kmesh_dos->xk[i][0]
+        << "  " << dos->kmesh_dos->xk[i][1]
+        << " " << dos->kmesh_dos->xk[i][2] << std::endl;
         for (auto mu = 0; mu < 3; ++mu) {
             std::cout << "mu = " << mu << std::endl;
 
             std::cout << "Diagonal:\n";
 
-            for (j = 0; j < ns; ++j) {
-                std::cout << std::setw(20) << vel[i][j][mu] << std::endl;
+            for (auto j = 0; j < ns; ++j) {
+                std::cout << std::setw(20) << velmat_loc[i][j][mu] << std::endl;
             }
 
             std::cout << "Full:\n";
-            for (j = 0; j < ns; ++j) {
-                for (k = 0; k < ns; ++k) {
-                    std::cout << std::setw(20) << velmat[i][j][k][mu].real() 
-                                << std::setw(15) << velmat[i][j][k][mu].imag();
+            for (auto j = 0; j < ns; ++j) {
+                for ( auto k = 0; k < ns; ++k) {
+                    std::cout << std::setw(20) << velmat_loc[i][j][k][mu].real()
+                                << std::setw(15) << velmat_loc[i][j][k][mu].imag();
                 }
                 std::cout << std::endl;
             }
             std::cout << std::endl;
         }
         std::cout << std::endl;
-        */
+
     }
 
     MPI_Gatherv(&velmat_loc[0][0][0][0], sendcount[mympi->my_rank], MPI_COMPLEX16,
