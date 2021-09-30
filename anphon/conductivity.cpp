@@ -144,7 +144,7 @@ void Conductivity::setup_kappa()
 
     if (fph_rta > 0) {
         if (mympi->my_rank == 0) {
-            std::cout << " FPH_RTA = 1: Four-phonon scattering rate will be calculated additionally.\n";
+            std::cout << "Four-phonon scattering rate will be calculated additionally.\n"; // fph_rta is not a input parameter, therefore removed from IO
 
             std::cout << "  KMESH for 4-ph:\n";
             std::cout << "   nk1 : " << std::setw(5) << nk_coarse[0] << '\n';

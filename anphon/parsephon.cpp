@@ -591,7 +591,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     auto max_cycle = 20;
     auto iter_threshold = 0.005; // wh
 
-    auto fph_rta = 0;
+    //auto fph_rta = 0;
 
     // Assign values to variables
 
@@ -626,7 +626,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(max_cycle, "MAX_CYCLE", analysis_var_dict);
         assign_val(iter_threshold, "ITER_THRESHOLD", analysis_var_dict); // wh
 
-        assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
+        //assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -815,8 +815,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     iterativebte->max_cycle = max_cycle;
     iterativebte->convergence_criteria = iter_threshold; // wh
 
-    conductivity->fph_rta = fph_rta; // 4ph
-    if (fph_rta > 0) quartic_mode = 1;
+    //conductivity->fph_rta = fph_rta; // 4ph
+    //if (fph_rta > 0) quartic_mode = 1;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;
