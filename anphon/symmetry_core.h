@@ -119,8 +119,8 @@ class Symmetry : protected Pointers {
     ~Symmetry();
 
     unsigned int nsym;
-    bool symmetry_flag, time_reversal_sym;
-    int trev_sym_mag;
+    bool time_reversal_sym;
+    int time_reversal_sym_from_alm;
     bool printsymmetry;
     double tolerance;
     std::vector<SymmetryOperation> SymmList;

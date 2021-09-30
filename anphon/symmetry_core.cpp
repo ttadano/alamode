@@ -33,7 +33,6 @@ void Symmetry::set_default_variables()
     file_sym = "SYMM_INFO_PRIM";
     time_reversal_sym = true;
     nsym = 0;
-    symmetry_flag = true;
     printsymmetry = false;
     tolerance = 1.0e-3;
 }
@@ -43,6 +42,9 @@ void Symmetry::setup_symmetry()
     const auto natmin = system->natmin;
     double **xtmp;
     unsigned int *kdtmp;
+
+    MPI_Bcast(&time_reversal_sym_from_alm, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    time_reversal_sym = time_reversal_sym_from_alm;
 
     allocate(xtmp, natmin, 3);
     allocate(kdtmp, natmin);
@@ -459,7 +461,7 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
                 if (!mag_sym1 && !mag_sym2) {
                     isok = false;
-                } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
+                } else if (!mag_sym1 && mag_sym2 && !time_reversal_sym) {
                     isok = false;
                 }
             }
