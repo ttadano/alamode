@@ -210,7 +210,7 @@ void Fcs::generate_force_constant_table(const int order,
 
     std::unordered_set<IntList> list_found;
 
-    for (const auto &pair : pairs) {
+    for (const auto &pair: pairs) {
 
         for (i = 0; i < order + 2; ++i) atmn[i] = pair.iarray[i];
 
@@ -416,7 +416,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     // Generate temporary list of parameters
     list_found.clear();
-    for (const auto &p : fc_table_in) {
+    for (const auto &p: fc_table_in) {
         for (i = 0; i < order + 2; ++i) index_tmp[i] = p.elems[i];
         list_found.insert(FcProperty(order + 2, p.sign,
                                      index_tmp, p.mother));
@@ -510,7 +510,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
 #pragma omp critical
         {
-            for (const auto &it : constraint_list_omp) {
+            for (const auto &it: constraint_list_omp) {
                 constraint_all.emplace_back(it);
             }
         }
@@ -532,10 +532,10 @@ void Fcs::get_constraint_symmetry(const size_t nat,
     int counter;
     const_out.clear();
 
-    for (const auto &it : constraint_all) {
+    for (const auto &it: constraint_all) {
         const_tmp2.clear();
         counter = 0;
-        for (const auto &it2 : it) {
+        for (const auto &it2: it) {
             if (counter == 0) {
                 division_factor = 1.0 / it2.val;
             }
@@ -613,7 +613,7 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
     // Generate temporary list of parameters
     list_found.clear();
-    for (const auto &p : fc_table_in) {
+    for (const auto &p: fc_table_in) {
         for (i = 0; i < order + 2; ++i) index_tmp[i] = p.elems[i];
         list_found.insert(FcProperty(order + 2, p.sign,
                                      index_tmp, p.mother));
@@ -705,7 +705,7 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
 #pragma omp critical
         {
-            for (const auto &it : constraint_list_omp) {
+            for (const auto &it: constraint_list_omp) {
                 constraint_all.emplace_back(it);
             }
         }
@@ -727,10 +727,10 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
     int counter;
     const_out.clear();
 
-    for (const auto &it : constraint_all) {
+    for (const auto &it: constraint_all) {
         const_tmp2.clear();
         counter = 0;
-        for (const auto &it2 : it) {
+        for (const auto &it2: it) {
             if (counter == 0) {
                 division_factor = 1.0 / it2.val;
             }
@@ -826,7 +826,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
         auto icount = 0;
 
         fc_table_copy.clear();
-        for (const auto &it : fc_table[i]) {
+        for (const auto &it: fc_table[i]) {
             elems_permutation = it.elems;
             do {
                 fc_table_copy.emplace_back(nelems,
@@ -846,7 +846,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
         fc_list_grp.clear();
         atoms_grp.clear();
 
-        for (const auto &it : fc_table_copy) {
+        for (const auto &it: fc_table_copy) {
 
             for (j = 0; j < nelems; ++j) {
                 atoms_now[j] = it.elems[j] / 3;
@@ -915,7 +915,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
 
 #pragma omp critical
             {
-                for (const auto &it : fc_cart_omp) {
+                for (const auto &it: fc_cart_omp) {
                     fc_cart[i].emplace_back(it);
                 }
             }

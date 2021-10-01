@@ -333,7 +333,7 @@ int ALM::get_displacement_patterns(int *atom_indices,
 
     auto i_atom = 0;
     auto i_disp = 0;
-    for (const auto &displacements : displace->get_pattern_all(order)) {
+    for (const auto &displacements: displace->get_pattern_all(order)) {
         for (size_t j = 0; j < displacements.atoms.size(); ++j) {
             atom_indices[i_atom] = displacements.atoms[j];
             ++i_atom;
@@ -438,7 +438,7 @@ void ALM::get_fc_origin(double *fc_values,
     auto id = 0;
 
     if (permutation) {
-        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+        for (const auto &it: fcs->get_fc_cart()[fc_order - 1]) {
             fc_values[id] = it.fc_value;
             for (auto i = 0; i < fc_order + 1; ++i) {
                 elem_indices[id * (fc_order + 1) + i] = it.flattenarray[i];
@@ -446,7 +446,7 @@ void ALM::get_fc_origin(double *fc_values,
             ++id;
         }
     } else {
-        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+        for (const auto &it: fcs->get_fc_cart()[fc_order - 1]) {
             if (it.is_ascending_order) {
                 fc_values[id] = it.fc_value;
                 for (auto i = 0; i < fc_order + 1; ++i) {
@@ -496,7 +496,7 @@ void ALM::get_fc_irreducible(double *fc_values,
         if (constraint->get_index_bimap(order).empty()) { continue; }
 
         if (order == fc_order - 1) {
-            for (const auto &it : constraint->get_index_bimap(order)) {
+            for (const auto &it: constraint->get_index_bimap(order)) {
                 inew = it.left;
                 iold = it.right + ishift;
 
@@ -535,7 +535,7 @@ void ALM::get_fc_all(double *fc_values,
     size_t id = 0;
 
     if (permutation) {
-        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+        for (const auto &it: fcs->get_fc_cart()[fc_order - 1]) {
 
             for (size_t itran = 0; itran < ntran; ++itran) {
                 for (i = 0; i < fc_order + 1; ++i) {
@@ -549,7 +549,7 @@ void ALM::get_fc_all(double *fc_values,
             }
         }
     } else {
-        for (const auto &it : fcs->get_fc_cart()[fc_order - 1]) {
+        for (const auto &it: fcs->get_fc_cart()[fc_order - 1]) {
             if (it.is_ascending_order) {
                 for (size_t itran = 0; itran < ntran; ++itran) {
                     for (i = 0; i < fc_order + 1; ++i) {
@@ -597,11 +597,11 @@ void ALM::get_matrix_elements(double *amat,
                                                        constraint);
     // This may be inefficient.
     auto i = 0;
-    for (const auto it : amat_vec) {
+    for (const auto it: amat_vec) {
         amat[i++] = it;
     }
     i = 0;
-    for (const auto it : bvec_vec) {
+    for (const auto it: bvec_vec) {
         bvec[i++] = it;
     }
     //amat = amat_vec.data();
