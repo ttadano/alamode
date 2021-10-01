@@ -2600,7 +2600,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                     re_tmp = 0.0;
                     im_tmp = 0.0;
 
-#pragma omp parallel for private(jk, kk, ks), reduction(+:re_tmp, im_tmp)
+#pragma omp parallel for private(jk, kk, ks, ctmp), reduction(+:re_tmp, im_tmp)
                     for (jk = 0; jk < nk; ++jk) {
 
                         kk = nk * ik + jk;
@@ -2626,7 +2626,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                         re_tmp = 0.0;
                         im_tmp = 0.0;
 
-#pragma omp parallel for private(jk, kk, ks), reduction(+:re_tmp, im_tmp)
+#pragma omp parallel for private(jk, kk, ks, ctmp), reduction(+:re_tmp, im_tmp)
                         for (jk = 0; jk < nk; ++jk) {
 
                             kk = nk * ik + jk;
