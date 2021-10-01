@@ -3,7 +3,7 @@
 [![License][license-image]][license-url]
 [![Doc status][docs-image]][docs-url]
 
-### Version 1.2.0
+### Version 1.3.0
 ![alt ALAMODE](./docs/img/alamode.png)
 
 
@@ -89,7 +89,7 @@ http://alamode.readthedocs.io
 
 
 ## License
-Copyright (c) 2014--2019 Terumasa Tadano
+Copyright (c) 2014--2021 Terumasa Tadano
 This software is released under the MIT license. 
 For license rights and limitations, see LICENSE.txt file.
 
