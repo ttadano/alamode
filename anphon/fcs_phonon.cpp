@@ -455,7 +455,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
                                     exit("examine_translational_invariance",
-                                                "Corresponding IFC not found.");
+                                         "Corresponding IFC not found.");
                                 }
                             }
                         }

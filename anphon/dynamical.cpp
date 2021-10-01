@@ -956,7 +956,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
 {
     if (nk_in <= 0) {
         exit("get_eigenvalues_dymat",
-                    "The number of k points must be larger than 0.");
+             "The number of k points must be larger than 0.");
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
@@ -1230,7 +1230,7 @@ void Dynamical::project_degenerate_eigenvectors(const double lavec_p[3][3],
         } else {
             std::cout << iset << '\n';
             exitall("project_degenerate_eigenvectors",
-                           "This should not happen.");
+                    "This should not happen.");
         }
 
         ishift += iset;
@@ -1680,7 +1680,7 @@ void Dynamical::connect_band_by_eigen_similarity(const unsigned int nk_in,
 
         if (std::any_of(found.begin(), found.end(), [](int i1) { return i1 == 0; })) {
             exit("connect_band_by_eigen_similarity",
-                        "Could not identify the connection.");
+                 "Could not identify the connection.");
         }
 
     }

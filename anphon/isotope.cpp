@@ -265,14 +265,14 @@ void Isotope::set_isotope_factor_from_database(const int nkd,
         const auto atom_number = system->get_atomic_number_by_name(symbol_in[i]);
         if (atom_number >= isotope_factors.size() || atom_number == -1) {
             exit("set_isotope_factor_from_database",
-                        "The isotope factor for the given element doesn't exist in the database.\n"
-                        "Therefore, please input ISOFACT manually.");
+                 "The isotope factor for the given element doesn't exist in the database.\n"
+                 "Therefore, please input ISOFACT manually.");
         }
         const auto isofact_tmp = isotope_factors[atom_number];
         if (isofact_tmp < -0.5) {
             exit("set_isotope_factor_from_database",
-                        "One of the elements in the KD-tag is unstable. "
-                        "Therefore, please input ISOFACT manually.");
+                 "One of the elements in the KD-tag is unstable. "
+                 "Therefore, please input ISOFACT manually.");
         }
         isofact_out[i] = isofact_tmp;
     }

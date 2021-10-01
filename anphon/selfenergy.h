@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class Selfenergy : protected Pointers {
- public:
+public:
     Selfenergy(class PHON *phon);
 
     ~Selfenergy();
@@ -135,7 +135,7 @@ class Selfenergy : protected Pointers {
                       const std::complex<double> *const *const *evec_in,
                       std::complex<double> *ret) const;
 
- private:
+private:
     unsigned int ns;
     double epsilon;
 
