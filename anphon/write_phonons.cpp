@@ -1767,11 +1767,50 @@ void Writes::write_kappa() const
     if (mympi->my_rank == 0) {
         int i, j, k;
 
-        auto file_kappa = input->job_title + ".kl";
+        std::string file_kappa;
+        std::string file_kappa_3only;
+
+        if (conductivity->fph_rta > 0) {
+            file_kappa_3only = input->job_title + ".kl3";
+            file_kappa = input->job_title + ".kl4";
+        } else {
+            file_kappa = input->job_title + ".kl";
+        }
+        
         auto file_kappa2 = input->job_title + ".kl_spec";
         auto file_kappa_coherent = input->job_title + ".kl_coherent";
 
         std::ofstream ofs_kl;
+
+        if (conductivity->fph_rta > 0) {
+            ofs_kl.open(file_kappa_3only.c_str(), std::ios::out);
+            if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
+
+            ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+            ofs_kl << "# three phonon part";
+
+            if (isotope->include_isotope) {
+                ofs_kl << "# Isotope effects are included." << std::endl;
+            }
+
+            if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
+                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+            }
+
+            for (i = 0; i < conductivity->ntemp; ++i) {
+                ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                    << conductivity->temperature[i];
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        ofs_kl << std::setw(15) << std::fixed
+                            << std::setprecision(4) << conductivity->kappa_3only[i][j][k];
+                    }
+                }
+                ofs_kl << std::endl;
+            }
+            ofs_kl.close();
+        }
 
         ofs_kl.open(file_kappa.c_str(), std::ios::out);
         if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
@@ -1780,6 +1819,11 @@ void Writes::write_kappa() const
 
         if (isotope->include_isotope) {
             ofs_kl << "# Isotope effects are included." << std::endl;
+        }
+
+        if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
+                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
         }
 
         for (i = 0; i < conductivity->ntemp; ++i) {
@@ -1827,7 +1871,7 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK * cm]" <<
                    std::endl;
 
             if (isotope->include_isotope) {
@@ -1838,8 +1882,10 @@ void Writes::write_kappa() const
                 ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
                        << conductivity->temperature[i];
                 for (j = 0; j < 3; ++j) {
-                    ofs_kl << std::setw(15) << std::fixed
-                           << std::setprecision(4) << conductivity->kappa_coherent[i][j][j];
+                    for (k = 0; k < 3; ++k) {
+                        ofs_kl << std::setw(15) << std::fixed
+                            << std::setprecision(4) << conductivity->kappa_coherent[i][j][k];
+                    }
                 }
                 ofs_kl << std::endl;
             }

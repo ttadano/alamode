@@ -39,12 +39,15 @@ class Conductivity : protected Pointers {
     double **damping3;
     double **damping4;
     double ***kappa;
+    double ***kappa_3only;
     double ***kappa_spec;
     double ***kappa_coherent;
     double *temperature;
     int calc_coherent;
 
     int fph_rta;
+    double len_boundary;
+
     void set_kmesh_coarse(const unsigned int nk_in[3]);
     KpointMeshUniform *get_kmesh_coarse() const;
 
@@ -117,6 +120,8 @@ class Conductivity : protected Pointers {
 
     void calc_anharmonic_imagself3();
     void calc_anharmonic_imagself4();
+
+    void lifetime_from_gamma(double **&, double **&);
 
     void write_result_gamma(unsigned int,
                             unsigned int,
