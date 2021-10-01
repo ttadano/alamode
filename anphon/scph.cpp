@@ -67,9 +67,15 @@ void Scph::set_default_variables()
     maxiter = 100;
     print_self_consistent_fc2 = false;
     selfenergy_offdiagonal = true;
-    //relax_coordinate = false;
-    // test of IFC renormalization
-    relax_coordinate = true;
+
+    // variables related to the structural optimization
+    relax_coordinate = false;
+    relax_algo = 2;
+    max_str_iter = 100;
+    str_conv_tol = 0.001;
+    set_init_str = 0;
+    mixing_beta = 0.5;
+    alpha_steepest_decent = 1.0e4; 
 
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
@@ -128,9 +134,6 @@ void Scph::deallocate_variables()
 
 void Scph::setup_scph()
 {
-    //relax_coordinate = false;
-    // test of IFC renormalization
-    relax_coordinate = true;
     MPI_Bcast(&relax_coordinate, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&bubble, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
@@ -169,7 +172,8 @@ void Scph::exec_scph()
     if (restart_scph) {
 
         // Read anharmonic correction to the dynamical matrix from the existing file
-        load_scph_dymat_from_file(delta_dymat_scph);
+        load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+        load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
 
     } else {
 
@@ -187,7 +191,9 @@ void Scph::exec_scph()
         }
 
         if (mympi->my_rank == 0) {
-            store_scph_dymat_to_file(delta_dymat_scph);
+            // write dymat for file
+            store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+            store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
             write_anharmonic_correction_fc2(delta_dymat_scph, NT);
         }
     }
@@ -629,7 +635,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
     }
 }
 
-void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
+void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
+                                     std::string filename_dymat)
 {
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
@@ -647,7 +654,8 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
         const auto consider_offdiagonal = selfenergy_offdiagonal;
         double temp;
         std::ifstream ifs_dymat;
-        auto file_dymat = input->job_title + ".scph_dymat";
+        // auto file_dymat = input->job_title + ".scph_dymat";
+        auto file_dymat = filename_dymat;
         bool consider_offdiag_tmp;
         unsigned int nk_interpolate_ref[3];
         unsigned int nk_scph_tmp[3];
@@ -738,7 +746,8 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out)
     mpi_bcast_complex(dymat_out, NT, kmesh_coarse->nk, ns);
 }
 
-void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in)
+void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
+                                    std::string filename_dymat)
 {
     int i;
     const auto ns = dynamical->neval;
@@ -746,7 +755,8 @@ void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *co
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
     std::ofstream ofs_dymat;
-    auto file_dymat = input->job_title + ".scph_dymat";
+    // auto file_dymat = input->job_title + ".scph_dymat";
+    auto file_dymat = filename_dymat;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
@@ -982,11 +992,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     VectorXcd dq0_vec(ns-3), v1_vec_SCP(ns-3);
     std::vector<int> harm_optical_modes(ns-3);
     // structure optimization(to be read from input file)
-    int str_opt_algo = 1; // 0: steepest gradient, 1: iterative solution of linear equation
-    int max_str_loop = 100;
-    double alpha_steepest_decent = 1.0e4;
-    double mixing_beta = 0.4;
-    double dq0_threashold = 0.005;
+    // int str_opt_algo = 1; 
+    // nt max_str_loop = max_str_iter;
+    // double alpha_steepest_decent = 1.0e4;
+    // double mixing_beta = 0.4;
+    double dq0_threashold = str_conv_tol;
 
     // coordinate
     double *q0, *delta_q0, *u0;
@@ -999,20 +1009,20 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-    if(mympi->my_rank == 0){
-        // read input about the structure optimization process
-        read_str_opt_input(str_opt_algo, max_str_loop, alpha_steepest_decent, mixing_beta, dq0_threashold);
-        // debug
-        std::cout << "str_opt_algo = " << str_opt_algo << std::endl;
-        std::cout << "max_str_loop = " << max_str_loop << std::endl;
-        if(str_opt_algo == 0){
-            std::cout << "alpha_steepest_decent = " << alpha_steepest_decent << std::endl;
-        }
-        else if(str_opt_algo == 1){
-            std::cout << "mixing_beta = " << mixing_beta << std::endl;
-        }
-        std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
-    }
+    // if(mympi->my_rank == 0){
+    //     // read input about the structure optimization process
+    //     read_str_opt_input(str_opt_algo, max_str_loop, alpha_steepest_decent, mixing_beta, dq0_threashold);
+    //     // debug
+    //     std::cout << "str_opt_algo = " << str_opt_algo << std::endl;
+    //     std::cout << "max_str_loop = " << max_str_loop << std::endl;
+    //     if(str_opt_algo == 0){
+    //         std::cout << "alpha_steepest_decent = " << alpha_steepest_decent << std::endl;
+    //     }
+    //     else if(str_opt_algo == 1){
+    //         std::cout << "mixing_beta = " << mixing_beta << std::endl;
+    //     }
+    //     std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
+    // }
 
     // debug 
     if(mympi->my_rank == 0){
@@ -1170,36 +1180,28 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 }
             }
 
-            // set T-dependent initial value of q0
-            // read_Tdep_initial_q0_from_u(q0, i_temp_loop);
-            // calculate_u0(q0, u0);
-            // std::cout << "initial u0: " << std::endl;
-            // for(is = 0; is < ns; is++){
-            //     std::cout << u0[is] << " ";
-            // }std::cout << std::endl;
-
-            // set initial value of q0 at each T
-            // read_initial_q0(q0);
-            // calculate_u0(q0, u0);
-            // start from warm start
-            // converged_prev = false; // comment out when we start from the previous structure
-
-            // read only at the beginning of the calculation
-            if(lower_temp){
-                if(fabs(temp - Tmax) < eps15){
+            if(set_init_str == 1){
+                // read displace.in
+                read_initial_q0(q0);
+                calculate_u0(q0, u0);
+                converged_prev = false;
+            }
+            else if(set_init_str == 2){
+                // read displace.in at initial temperature
+                if(i_temp_loop == 0){
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                 }
             }
-            if(!lower_temp){
-                if(fabs(temp - Tmin) < eps15){
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-            
-                }
+            else if(set_init_str == 3){
+                // read T-dependent initial structure from u0.in
+                read_Tdep_initial_q0_from_u(q0, i_temp_loop);
+                calculate_u0(q0, u0);
+                std::cout << "initial u0: " << std::endl;
+                for(is = 0; is < ns; is++){
+                    std::cout << u0[is] << " ";
+                }std::cout << std::endl;
             }
-
-            
 
             // structure loop
             std::cout << "temperature : " << temp << " K" << std::endl;
@@ -1217,7 +1219,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             }std::cout << std::endl;
 
             std::cout << "start structural optimization";
-            for(i_str_loop = 0; i_str_loop < max_str_loop; i_str_loop++){
+            for(i_str_loop = 0; i_str_loop < max_str_iter; i_str_loop++){
 
                 std::cout << "i_str_loop = " << i_str_loop << std::endl;
 
@@ -1283,7 +1285,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 for(is = 0; is < ns; is++){
                     delta_q0[is] = 0.0;
                 }
-                if(str_opt_algo == 0){ // steepest decent
+                if(relax_algo == 1){ // steepest decent
                     dq0 = 0.0;
                     for(is = 0; is < ns; is++){
                         // skip acoustic mode
@@ -1295,7 +1297,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     }
                    
                 }
-                else if(str_opt_algo == 1){ // iterative solution of linear equation
+                else if(relax_algo == 2){ // iterative solution of linear equation
 
                     // prepare harmonic IFC matrix
                     for(is = 0; is < ns; is++){
@@ -1586,45 +1588,45 @@ void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
     return ;
 }
 
-void Scph::read_str_opt_input(int &str_opt_algo, 
-                              int &max_str_loop, 
-                              double &alpha_steepest_decent, 
-                              double &mixing_beta, 
-                              double &dq0_threashold)
-{
-    std::fstream fin_str_opt;
-    std::string str_tmp;
-    fin_str_opt.open("str_opt.in");
-
-    int itmp;
-    double dtmp;
-    
-    fin_str_opt >> itmp;// >> str_tmp;
-    str_opt_algo = itmp;
-    std::cout << "itmp = " << itmp << std::endl; // debug
-
-    fin_str_opt >> itmp;//  >> str_tmp;
-    max_str_loop = itmp;
-    std::cout << "itmp = " << itmp << std::endl; // debug
-
-    if(str_opt_algo == 0){
-        fin_str_opt >> dtmp;// >> str_tmp;
-        alpha_steepest_decent = dtmp;
-        std::cout << "dtmp = " << dtmp << std::endl; // debug
-    }
-    else if(str_opt_algo == 1){
-        fin_str_opt >> dtmp;// >> str_tmp;
-        mixing_beta = dtmp;
-        std::cout << "dtmp = " << dtmp << std::endl; // debug
-    }
-    fin_str_opt >> dtmp;// >> str_tmp;
-    dq0_threashold = dtmp;
-    std::cout << "dtmp = " << dtmp << std::endl; // debug
-
-    fin_str_opt.close();
-
-    return;
-}
+// void Scph::read_str_opt_input(int &str_opt_algo, 
+//                               int &max_str_loop, 
+//                               double &alpha_steepest_decent, 
+//                               double &mixing_beta, 
+//                               double &dq0_threashold)
+// {
+//     std::fstream fin_str_opt;
+//     std::string str_tmp;
+//     fin_str_opt.open("str_opt.in");
+// 
+//     int itmp;
+//     double dtmp;
+//     
+//     fin_str_opt >> itmp;// >> str_tmp;
+//     str_opt_algo = itmp;
+//     std::cout << "itmp = " << itmp << std::endl; // debug
+// 
+//     fin_str_opt >> itmp;//  >> str_tmp;
+//     max_str_loop = itmp;
+//     std::cout << "itmp = " << itmp << std::endl; // debug
+// 
+//     if(str_opt_algo == 0){
+//         fin_str_opt >> dtmp;// >> str_tmp;
+//         alpha_steepest_decent = dtmp;
+//         std::cout << "dtmp = " << dtmp << std::endl; // debug
+//     }
+//     else if(str_opt_algo == 1){
+//         fin_str_opt >> dtmp;// >> str_tmp;
+//         mixing_beta = dtmp;
+//         std::cout << "dtmp = " << dtmp << std::endl; // debug
+//     }
+//     fin_str_opt >> dtmp;// >> str_tmp;
+//     dq0_threashold = dtmp;
+//     std::cout << "dtmp = " << dtmp << std::endl; // debug
+// 
+//     fin_str_opt.close();
+// 
+//     return;
+// }
 
 void Scph::calculate_u0(double *q0, double *u0){
     int natmin = system->natmin;

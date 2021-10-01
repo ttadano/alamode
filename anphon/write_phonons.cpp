@@ -146,6 +146,22 @@ void Writes::write_input_vars()
         std::cout << "  TOL_SCPH = " << scph->tolerance_scph << std::endl;
         std::cout << "  MAXITER = " << scph->maxiter << std::endl;
         std::cout << "  MIXALPHA = " << scph->mixalpha << std::endl;
+
+        // variables related to structural optimization
+        std::cout << std::endl;
+        std::cout << "  RELAX_COORDINATE = " << scph->relax_coordinate << std::endl;
+        if(scph->relax_coordinate){
+            std::cout << "  RELAX_ALGO = " << scph->relax_algo << std::endl;
+            std::cout << "  MAX_STR_ITER = " << scph->max_str_iter << std::endl;
+            std::cout << "  STR_CONV_TOL = " << scph->str_conv_tol << std::endl;
+            std::cout << "  SET_INIT_STR = " << scph->set_init_str << std::endl;
+            if(scph->relax_algo == 1){
+                std::cout << "  ALPHA_STEEPEST_DECENT = " << scph->alpha_steepest_decent << std::endl;
+            }
+            else if(scph->relax_algo == 2){
+                std::cout << "  MIXING_BETA = " << scph->mixing_beta << std::endl;
+            }
+        }
     }
     std::cout << std::endl;
 

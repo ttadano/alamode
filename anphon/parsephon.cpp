@@ -336,7 +336,9 @@ void Input::parse_scph_vars()
     const std::vector<std::string> input_list{
           "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
           "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-          "LOWER_TEMP", "WARMSTART", "BUBBLE"
+          "LOWER_TEMP", "WARMSTART", "BUBBLE",
+          "RELAX_COORDINATE", "RELAX_ALGO", "MAX_STR_ITER", "STR_CONV_TOL", "SET_INIT_STR",
+          "MIXING_BETA", "ALPHA_STEEPEST_DECENT"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -371,6 +373,15 @@ void Input::parse_scph_vars()
     auto warm_start = true;
     unsigned int bubble = 0;
 
+    // structural optimization
+    bool relax_coordinate = false;
+    int relax_algo = 2;
+    int max_str_iter = 100;
+    double str_conv_tol = 0.001;
+    int set_init_str = 0;
+    double mixing_beta = 0.5;
+    double alpha_steepest_decent = 1.0e4; 
+
     // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
 
@@ -387,6 +398,18 @@ void Input::parse_scph_vars()
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
     assign_val(bubble, "BUBBLE", scph_var_dict);
+
+    assign_val(relax_coordinate, "RELAX_COORDINATE", scph_var_dict);
+    assign_val(relax_algo, "RELAX_ALGO", scph_var_dict);
+    assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
+    assign_val(str_conv_tol, "STR_CONV_TOL", scph_var_dict);
+    assign_val(set_init_str, "SET_INIT_STR", scph_var_dict);
+    if(relax_algo == 1){
+        assign_val(alpha_steepest_decent, "ALPHA_STEEPEST_DECENT", scph_var_dict);
+    }
+    else if(relax_algo == 2){
+        assign_val(mixing_beta, "MIXING_BETA", scph_var_dict);
+    }
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -450,6 +473,14 @@ void Input::parse_scph_vars()
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
     scph->bubble = bubble;
+
+    scph->relax_coordinate = relax_coordinate;
+    scph->relax_algo = relax_algo;
+    scph->max_str_iter = max_str_iter;
+    scph->str_conv_tol = str_conv_tol;
+    scph->set_init_str = set_init_str;
+    scph->mixing_beta = mixing_beta;
+    scph->alpha_steepest_decent = alpha_steepest_decent;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();

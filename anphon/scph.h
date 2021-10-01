@@ -78,6 +78,14 @@ namespace PHON_NS {
         bool selfenergy_offdiagonal;
         bool relax_coordinate;
 
+        // variables related to structural optimization
+        int relax_algo;
+        int max_str_iter;
+        double str_conv_tol;
+        int set_init_str;
+        double mixing_beta;
+        double alpha_steepest_decent;
+
     private:
 
         // Information of kmesh for SCPH calculation
@@ -117,9 +125,11 @@ namespace PHON_NS {
 
         void setup_transform_symmetry();
 
-        void load_scph_dymat_from_file(std::complex<double> ****);
+        void load_scph_dymat_from_file(std::complex<double> ****,
+                                       std::string);
 
-        void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in);
+        void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
+                                      std::string);
 
         void zerofill_harmonic_dymat_renormalize(std::complex<double> ****, 
                                                unsigned int);
@@ -133,11 +143,11 @@ namespace PHON_NS {
 
         void read_Tdep_initial_q0_from_u(double *, int);
 
-        void read_str_opt_input(int &str_opt_algo, 
-                                    int &max_str_loop, 
-                                    double &alpha_steepest_decent, 
-                                    double &mixing_beta, 
-                                    double &dq0_threashold);
+        // void read_str_opt_input(int &str_opt_algo, 
+        //                             int &max_str_loop, 
+        //                             double &alpha_steepest_decent, 
+        //                             double &mixing_beta, 
+        //                             double &dq0_threashold);
 
         void calculate_u0(double *, double *);
 
