@@ -74,7 +74,7 @@ void Conductivity::set_default_variables()
     file_result3 = "";
     file_result4 = "";
     interpolator = "linear";
-    len_boundary = 0;
+    len_boundary = 0.0;
 }
 
 void Conductivity::deallocate_variables()
@@ -149,7 +149,7 @@ void Conductivity::setup_kappa()
 
     if (len_boundary > eps) {
         if (mympi->my_rank == 0) {
-            std::cout << "Bounday scattering length > 0, will be included.\n" << std::endl;
+            std::cout << "\n Bounday scattering length > 0, will be included.\n" << std::endl;
         }
     }
 
@@ -983,10 +983,15 @@ void Conductivity::compute_kappa()
                 vel_norm = 0.0;
                 auto knum = dos->kmesh_dos->kpoint_irred_all[iks/ns][0].knum;
                 auto snum = iks % ns; 
-                for (i = 0; i < 3; ++i) {
-                    vel_norm += vel[knum][snum][i];
+                for (auto j = 0; j < 3; ++j) {
+                    vel_norm += vel[knum][snum][j] * vel[knum][snum][j];
                 }
-                gamma_total[iks][i] += (vel_norm / len_boundary) / time_ry ; // same unit as gamma
+                vel_norm = std::sqrt(vel_norm);
+                
+                for (i=0; i < ntemp; ++i) {
+                    gamma_total[iks][i] += (vel_norm / len_boundary) * time_ry ; // same unit as gamma
+                }
+                
             }
         }
 

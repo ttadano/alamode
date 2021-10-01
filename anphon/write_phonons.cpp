@@ -1793,6 +1793,11 @@ void Writes::write_kappa() const
                 ofs_kl << "# Isotope effects are included." << std::endl;
             }
 
+            if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
+                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+            }
+
             for (i = 0; i < conductivity->ntemp; ++i) {
                 ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
                     << conductivity->temperature[i];
@@ -1814,6 +1819,11 @@ void Writes::write_kappa() const
 
         if (isotope->include_isotope) {
             ofs_kl << "# Isotope effects are included." << std::endl;
+        }
+
+        if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
+                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
         }
 
         for (i = 0; i < conductivity->ntemp; ++i) {
@@ -1861,7 +1871,7 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK * cm]" <<
                    std::endl;
 
             if (isotope->include_isotope) {
@@ -1874,7 +1884,7 @@ void Writes::write_kappa() const
                 for (j = 0; j < 3; ++j) {
                     for (k = 0; k < 3; ++k) {
                         ofs_kl << std::setw(15) << std::fixed
-                            << std::setprecision(4) << conductivity->kappa_coherent[i][j][j];
+                            << std::setprecision(4) << conductivity->kappa_coherent[i][j][k];
                     }
                 }
                 ofs_kl << std::endl;

@@ -8,5 +8,7 @@ anphon/anphon
 alm/Makefile
 alm/*.o
 alm/alm
-tests
+tests/*
+tools/analyze_phonons
+tools/Makefile
 .DS_Store
