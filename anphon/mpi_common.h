@@ -23,7 +23,7 @@
 
 namespace PHON_NS {
 class MyMPI : protected Pointers {
- public:
+public:
     MyMPI(class PHON *,
           MPI_Comm);
 

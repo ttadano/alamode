@@ -23,7 +23,7 @@
 
 namespace PHON_NS {
 class Input : protected Pointers {
- public:
+public:
     Input(class PHON *);
 
     ~Input();
@@ -33,7 +33,7 @@ class Input : protected Pointers {
 
     std::string job_title;
 
- private:
+private:
     std::ifstream ifs_input;
     bool from_stdin;
 

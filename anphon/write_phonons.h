@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class Writes : protected Pointers {
- public:
+public:
 
     Writes(class PHON *);
 
@@ -90,7 +90,7 @@ class Writes : protected Pointers {
     std::string file_result;
     int nbands;
 
- private:
+private:
 
     void write_phonon_bands() const;
 
@@ -175,7 +175,7 @@ class Writes : protected Pointers {
 
     std::string anime_format;
 
- public:
+public:
 
 };
 }
