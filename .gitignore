@@ -10,5 +10,4 @@ alm/*.o
 alm/alm
 tests/*
 tools/analyze_phonons
-tools/Makefile
 .DS_Store
