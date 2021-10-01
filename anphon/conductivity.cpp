@@ -74,6 +74,7 @@ void Conductivity::set_default_variables()
     file_result3 = "";
     file_result4 = "";
     interpolator = "linear";
+    len_boundary = 0;
 }
 
 void Conductivity::deallocate_variables()
@@ -144,6 +145,12 @@ void Conductivity::setup_kappa()
         allocate(damping3, (nks_each_thread + 1) * mympi->nprocs, ntemp);
     } else {
         allocate(damping3, nks_total, ntemp);
+    }
+
+    if (len_boundary > eps) {
+        if (mympi->my_rank == 0) {
+            std::cout << "Bounday scattering length > 0, will be included.\n" << std::endl;
+        }
     }
 
     if (fph_rta > 0) {
@@ -967,6 +974,19 @@ void Conductivity::compute_kappa()
         for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
             for (i = 0; i < ntemp; ++i) {
                 gamma_total[iks][i] = damping3[iks][i];
+            }
+        }
+
+        double vel_norm;
+        if (len_boundary > eps) {
+            for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
+                vel_norm = 0.0;
+                auto knum = dos->kmesh_dos->kpoint_irred_all[iks/ns][0].knum;
+                auto snum = iks % ns; 
+                for (i = 0; i < 3; ++i) {
+                    vel_norm += vel[knum][snum][i];
+                }
+                gamma_total[iks][i] += (vel_norm / len_boundary) / time_ry ; // same unit as gamma
             }
         }
 

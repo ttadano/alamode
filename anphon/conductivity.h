@@ -46,6 +46,8 @@ class Conductivity : protected Pointers {
     int calc_coherent;
 
     int fph_rta;
+    double len_boundary;
+
     void set_kmesh_coarse(const unsigned int nk_in[3]);
     KpointMeshUniform *get_kmesh_coarse() const;
 

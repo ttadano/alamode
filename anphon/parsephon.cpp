@@ -116,7 +116,7 @@ void Input::parse_general_vars()
           "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
           "VERBOSITY",
           "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
-          "INTERPOLATOR" // this should be moved to &kappa
+          "INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
           // field in near
           // future
     };
@@ -222,6 +222,8 @@ void Input::parse_general_vars()
 
     std::string interpolator = "linear";
 
+    double len_boundary = 0.0;
+
     // Assign given values
 
     assign_val(Tmin, "TMIN", general_var_dict);
@@ -257,6 +259,7 @@ void Input::parse_general_vars()
     assign_val(verbosity, "VERBOSITY", general_var_dict);
 
     assign_val(interpolator, "INTERPOLATOR", general_var_dict);
+    assign_val(len_boundary, "LEN_BOUNDARY", general_var_dict);
 
     if (band_connection > 2) {
         exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
@@ -334,6 +337,9 @@ void Input::parse_general_vars()
                                           restart,
                                           restart_4ph);
     conductivity->set_interpolator(interpolator);
+
+    conductivity->len_boundary = len_boundary; // m
+
     symmetry->nsym = nsym;
     symmetry->tolerance = tolerance;
     symmetry->printsymmetry = printsymmetry;
