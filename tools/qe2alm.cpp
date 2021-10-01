@@ -714,7 +714,7 @@ string double2string(const double d)
 
 
 void get_pairs_of_minimum_distance(const int natmin, const int nat, int **map_p2s,
-                                   double **xf, std::vector <DistInfo> **mindist_pairs)
+                                   double **xf, std::vector<DistInfo> **mindist_pairs)
 {
     int icell = 0;
     int i, j, k;
@@ -722,7 +722,7 @@ void get_pairs_of_minimum_distance(const int natmin, const int nat, int **map_p2
     int iat;
     double dist_tmp;
     double vec[3];
-    std::vector <DistInfo> **distall;
+    std::vector<DistInfo> **distall;
     int nneib = 27;
 
     double ***xcrd;

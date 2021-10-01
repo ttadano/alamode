@@ -46,7 +46,7 @@ VMD may be more useful to make an animation, but it may be replaced by any other
 Install using conda (recommended for non-experts)
 -------------------------------------------------
 
-.. highlight:: bash
+..highlight:: bash
 
 This option is recommended for all users who want to build working binaries. 
 If you want to build highly-optimized binaries using the Intel compiler and other optimized libraries, 
@@ -59,7 +59,7 @@ Step 1. Preparing build tools by conda
 At first, it is recommended `to prepare a conda environment
 <https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands>`_ by::
 
-   % conda create --name alamode -c conda-forge python=3.7
+   % conda create --name alamode -c conda-forge python=3
    % conda activate alamode
 
 Here the name of the conda environment is chosen ``alamode``. The detailed
@@ -311,7 +311,7 @@ To build Makefiles with CMake, please issue the following commands::
 
 .. note::
 
-    If cmake cannot find Boost, Eigen3, or FFTW automatically, you need to tell where these libraries are installed by
+    If cmake cannot find Boost, Eigen3, or FFTW automatically, you need to tell where these libraries 
     are installed by using ``-DBOOST_INCLUDE``, ``-DEIGEN3_INCLUDE``, and ``-DFFTW3_ROOT`` options.
     For example, if the directory structure of Step 2 is used, the cmake option will be::
     

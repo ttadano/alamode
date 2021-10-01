@@ -157,7 +157,7 @@ Description of input variables
 
  :Default: Lattice
  :type: String
- :Description: The calculation results should not depend on the choice of ``FCSYM_BASIS`` when ``LMODEL = ols``. For other regression methods (enet, adaptive LASSO), an optical value of the ``L1_ALPHA`` changes when you change the ``FCSYM_BASIS`` option.  
+ :Description: The calculation results should not depend on the choice of ``FCSYM_BASIS`` when ``LMODEL = ols``. For other regression methods (enet, adaptive LASSO), an optimal value of the ``L1_ALPHA`` changes when you change the ``FCSYM_BASIS`` option.  
  
     In some cases, ``FCSYM_BASIS = Lattice`` is more stable and efficient. In particular, we recommend setting ``FCSYM_BASIS = Lattice`` for hexagonal systems. If a calculation with ``FCSYM_BASIS = Lattice`` is slow, please switch to ``FCSYM_BASIS = Cartesian``.
     

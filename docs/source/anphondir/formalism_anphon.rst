@@ -235,7 +235,7 @@ is calculated by
 
 .. math::
 
-    \gamma_{\boldsymbol{q}j}= -\frac{(\boldsymbol{e}_{\boldsymbol{q}j}^{*})^{\mathrm{T}} \delta D(\boldsymbol{q})\boldsymbol{e}_{\boldsymbol{q}j}}{6\omega_{\boldsymbol{q}j}},
+    \gamma_{\boldsymbol{q}j}= -\frac{(\boldsymbol{e}_{\boldsymbol{q}j}^{*})^{\mathrm{T}} \delta D(\boldsymbol{q})\boldsymbol{e}_{\boldsymbol{q}j}}{6\omega_{\boldsymbol{q}j}^{2}},
 
 where :math:`\delta D(\boldsymbol{q})` is a change in the dynamical matrix due to a volume change :math:`\delta V`, 
 which is given by

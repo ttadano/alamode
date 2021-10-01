@@ -401,7 +401,7 @@ int Optimize::compressive_sensing(const std::string job_prefix,
 
             for (auto i = 0; i < maxorder; ++i) {
                 nzero_cs[i] = 0;
-                for (const auto &it : constraint->get_index_bimap(i)) {
+                for (const auto &it: constraint->get_index_bimap(i)) {
                     const auto inew = it.left + iparam;
                     if (std::abs(param_tmp[inew]) < eps) ++nzero_cs[i];
                 }
@@ -866,7 +866,7 @@ double Optimize::run_auto_cv(const std::string job_prefix,
 
             if (ialpha == optcontrol.num_l1_alpha - 1) {
                 warn("run_auto_cv", "The minimum validation score occurs at CV_MINALPHA.\n"
-                                      " Please use a smaller CV_MINALPHA to suppress this message.");
+                                    " Please use a smaller CV_MINALPHA to suppress this message.");
             }
             std::cout << "  ---------------------------------------------------\n";
         }
@@ -1375,7 +1375,7 @@ void Optimize::get_number_of_zero_coefs(const int maxorder,
     nzeros.resize(maxorder);
     for (auto i = 0; i < maxorder; ++i) {
         nzeros[i] = 0;
-        for (const auto &it : constraint->get_index_bimap(i)) {
+        for (const auto &it: constraint->get_index_bimap(i)) {
             const auto inew = it.left + iparam;
             if (std::abs(x[inew]) < eps) ++nzeros[i];
 
@@ -2065,7 +2065,7 @@ void Optimize::get_matrix_elements(const int maxorder,
 
                 mm = 0;
 
-                for (const auto &iter : fcs->get_nequiv()[order]) {
+                for (const auto &iter: fcs->get_nequiv()[order]) {
                     for (i = 0; i < iter; ++i) {
                         ind[0] = fcs->get_fc_table()[order][mm].elems[0];
                         k = inprim_index(ind[0], symmetry);
@@ -2210,7 +2210,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
 
                 mm = 0;
 
-                for (const auto &iter : fcs->get_nequiv()[order]) {
+                for (const auto &iter: fcs->get_nequiv()[order]) {
                     for (i = 0; i < iter; ++i) {
                         ind[0] = fcs->get_fc_table()[order][mm].elems[0];
                         k = inprim_index(ind[0], symmetry);
@@ -2255,7 +2255,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                     }
                 }
 
-                for (const auto &it : constraint->get_index_bimap(order)) {
+                for (const auto &it: constraint->get_index_bimap(order)) {
                     inew = it.left + iparam;
                     iold = it.right + ishift;
 
@@ -2408,7 +2408,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
 
                 mm = 0;
 
-                for (const auto &iter : fcs->get_nequiv()[order]) {
+                for (const auto &iter: fcs->get_nequiv()[order]) {
                     for (i = 0; i < iter; ++i) {
                         ind[0] = fcs->get_fc_table()[order][mm].elems[0];
                         k = inprim_index(ind[0], symmetry);
@@ -2453,7 +2453,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
                     }
                 }
 
-                for (const auto &it : constraint->get_index_bimap(order)) {
+                for (const auto &it: constraint->get_index_bimap(order)) {
                     inew = it.left + iparam;
                     iold = it.right + ishift;
 
@@ -2498,7 +2498,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
 
 #pragma omp critical
         {
-            for (const auto &it : nonzero_omp) {
+            for (const auto &it: nonzero_omp) {
                 nonzero_entries.emplace_back(it);
             }
         }
@@ -2541,7 +2541,7 @@ void Optimize::recover_original_forceconstants(const int maxorder,
                     = constraint->get_const_fix(i)[j].val_to_fix;
         }
 
-        for (const auto &it : constraint->get_index_bimap(i)) {
+        for (const auto &it: constraint->get_index_bimap(i)) {
             inew = it.left + iparam;
             iold = it.right + ishift;
 

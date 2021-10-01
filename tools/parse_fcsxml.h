@@ -1,7 +1,7 @@
 /*
- fc_virtual.h
+ parse_fcsxml.h
 
- Copyright (c) 2018 Terumasa Tadano
+ Copyright (c) 2021 Terumasa Tadano
 
  This file is distributed under the terms of the MIT license.
  Please see the file 'LICENCE.txt' in the root directory
@@ -123,19 +123,13 @@ void load_fcs_xml(const std::string, const int,
                   StructureProperty &,
                   std::vector<FcsArrayWithCell> *);
 
-void write_new_xml(const std::string, const std::string, const std::string,
-                   const int, const double,
-                   const StructureProperty &,
-                   std::vector<FcsArrayWithCell> *);
+void write_fcs_to_file(const std::string fname_fc,
+                       const int order,
+                       const StructureProperty &structure,
+                       double ***x_image,
+                       int **map_p2s,
+                       const std::vector<FcsArrayWithCell> &fc_in);
 
-void mix_structure(const StructureProperty &,
-                   const StructureProperty &,
-                   StructureProperty &, const double);
-
-void mix_forceconstant(std::vector<FcsArrayWithCell> *,
-                       std::vector<FcsArrayWithCell> *,
-                       std::vector<FcsArrayWithCell> *,
-                       const double, const int);
-
-std::string double2string(const double, const int nprec = 15);
-
+void frac2cart(double **xf,
+               const int nat,
+               const double lattice_vector[3][3]);

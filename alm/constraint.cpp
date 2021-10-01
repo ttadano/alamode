@@ -465,9 +465,9 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
         const auto nelems = nequiv[order].size();
 
         if (const_fix[order].empty()) {
-            for (auto &p : const_self[order]) {
+            for (auto &p: const_self[order]) {
                 for (i = 0; i < nparams; ++i) arr_tmp[i] = 0.0;
-                for (const auto &it : p) {
+                for (const auto &it: p) {
                     arr_tmp[nshift + it.first] = it.second;
                 }
                 const_total.emplace_back(nparams, arr_tmp);
@@ -484,9 +484,9 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
     for (order = 0; order < maxorder; ++order) {
         if (order > 0) {
             if (const_fix[order - 1].empty() && const_fix[order].empty()) {
-                for (auto &p : const_rotation_cross[order]) {
+                for (auto &p: const_rotation_cross[order]) {
                     for (i = 0; i < nparams; ++i) arr_tmp[i] = 0.0;
-                    for (const auto &it : p) {
+                    for (const auto &it: p) {
                         arr_tmp[nshift2 + it.first] = it.second;
                     }
                     const_total.emplace_back(nparams, arr_tmp);
@@ -519,7 +519,7 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
 
     if (fix_harmonic) {
 
-        for (const auto &p : const_fix[0]) {
+        for (const auto &p: const_fix[0]) {
             i = p.p_index_target;
             const_mat[i][i] = 1.0;
             const_rhs[i] = p.val_to_fix;
@@ -534,7 +534,7 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
 
         const auto ishift2 = nequiv[0].size();
 
-        for (const auto &p : const_fix[1]) {
+        for (const auto &p: const_fix[1]) {
             i = p.p_index_target;
             const_mat[i + ishift][i + ishift2] = 1.0;
             const_rhs[i + ishift] = p.val_to_fix;
@@ -544,7 +544,7 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
         icol += const_fix[1].size();
     }
 
-    for (auto &p : const_total) {
+    for (auto &p: const_total) {
         for (i = 0; i < nparams; ++i) {
             const_mat[irow][i] = p.w_const[i];
         }
@@ -587,7 +587,7 @@ void Constraint::get_mapping_constraint(const int nmax,
 #ifndef _USE_MAP_FOR_CONSTRAINT
                 ConstVec.clear();
                 ConstVec.reserve((*p).size());
-                for (const auto &p2 : (*p)) {
+                for (const auto &p2: (*p)) {
                     ConstVec.emplace_back(p2.first, p2.second);
                 }
                 std::sort(ConstVec.begin(), ConstVec.end());
@@ -959,7 +959,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 
     list_found.clear();
 
-    for (const auto &p : fc_table) {
+    for (const auto &p: fc_table) {
         for (i = 0; i < order + 2; ++i) {
             ind[i] = p.elems[i];
         }
@@ -1149,7 +1149,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
                 // Merge vectors
 #pragma omp critical
                 {
-                    for (const auto &it : constraint_list_omp) {
+                    for (const auto &it: constraint_list_omp) {
                         constraint_all.emplace_back(it);
                     }
                 }
@@ -1174,10 +1174,10 @@ void Constraint::get_constraint_translation(const Cell &supercell,
     int counter;
     const_out.clear();
 
-    for (const auto &it : constraint_all) {
+    for (const auto &it: constraint_all) {
         const_tmp2.clear();
         counter = 0;
-        for (const auto &it2 : it) {
+        for (const auto &it2: it) {
             if (counter == 0) {
                 division_factor = 1.0 / it2.val;
             }
@@ -1334,7 +1334,7 @@ void Constraint::generate_rotational_constraint(const System *system,
 
                             for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
-                            for (auto &iter_list : interaction_list_now) {
+                            for (auto &iter_list: interaction_list_now) {
 
                                 jat = iter_list;
                                 interaction_index[1] = 3 * jat + mu;
@@ -1458,7 +1458,7 @@ void Constraint::generate_rotational_constraint(const System *system,
                                         for (j = 0; j < nparam_sub; ++j) arr_constraint[j] = 0.0;
 
                                         // Loop for m_{N+1}, a_{N+1}
-                                        for (auto &iter_list : interaction_list) {
+                                        for (auto &iter_list: interaction_list) {
                                             jat = iter_list;
 
                                             interaction_atom[order + 1] = jat;
@@ -1752,10 +1752,10 @@ void Constraint::generate_rotational_constraint(const System *system,
                                      const_cross_vec[order].end());
 
         // Copy to the return variable
-        for (const auto &it : const_self_vec[order]) {
+        for (const auto &it: const_self_vec[order]) {
             const_copy.clear();
             counter = 0;
-            for (const auto &it2 : it) {
+            for (const auto &it2: it) {
                 if (counter == 0) {
                     division_factor = 1.0 / it2.val;
                 }
@@ -1766,10 +1766,10 @@ void Constraint::generate_rotational_constraint(const System *system,
         }
         const_self_vec[order].clear();
 
-        for (const auto &it : const_cross_vec[order]) {
+        for (const auto &it: const_cross_vec[order]) {
             const_copy.clear();
             counter = 0;
-            for (const auto &it2 : it) {
+            for (const auto &it2: it) {
                 if (counter == 0) {
                     division_factor = 1.0 / it2.val;
                 }
@@ -1970,7 +1970,7 @@ void Constraint::fix_forceconstants_to_file(const int order,
 
     list_found.clear();
 
-    for (auto &list_tmp : fcs->get_fc_table()[order]) {
+    for (auto &list_tmp: fcs->get_fc_table()[order]) {
         list_found.insert(FcProperty(list_tmp));
     }
 
@@ -2052,7 +2052,7 @@ void Constraint::remove_redundant_rows(const size_t n,
 
         i = 0;
 
-        for (auto &p : Constraint_vec) {
+        for (auto &p: Constraint_vec) {
             for (j = 0; j < nparam; ++j) {
                 mat_tmp[i][j] = p.w_const[j];
             }
@@ -2096,9 +2096,9 @@ void Constraint::print_constraint(const ConstraintSparseForm &const_in) const
     auto counter = 0;
     std::cout << std::endl;
     std::cout << "TOTAL CONST SIZE :" << std::setw(6) << nconst << std::endl;
-    for (const auto &it : const_in) {
+    for (const auto &it: const_in) {
         std::cout << "CONST : " << std::setw(5) << counter + 1 << std::endl;
-        for (const auto &it2 : it) {
+        for (const auto &it2: it) {
             std::cout << std::setw(5) << it2.first + 1;
             std::cout << std::setw(15) << it2.second << std::endl;
         }

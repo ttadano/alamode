@@ -23,26 +23,26 @@
 #endif
 
 namespace PHON_NS {
-    class Timer : protected Pointers {
-    public:
-        Timer(class PHON *);
+class Timer : protected Pointers {
+public:
+    Timer(class PHON *);
 
-        ~Timer();
+    ~Timer();
 
-        void reset();
+    void reset();
 
-        double elapsed() const;
+    double elapsed() const;
 
-        void print_elapsed() const;
+    void print_elapsed() const;
 
-        std::string DateAndTime() const;
+    std::string DateAndTime() const;
 
-    private:
+private:
 #if defined(WIN32) || defined(_WIN32)
-        LARGE_INTEGER time_ref;
-        LARGE_INTEGER frequency;
+    LARGE_INTEGER time_ref;
+    LARGE_INTEGER frequency;
 #else
-        timeval time_ref;
+    timeval time_ref;
 #endif
-    };
+};
 }

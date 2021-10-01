@@ -28,17 +28,14 @@ Symmetry::Symmetry(PHON *phon) : Pointers(phon)
 
 Symmetry::~Symmetry() {}
 
-
 void Symmetry::set_default_variables()
 {
     file_sym = "SYMM_INFO_PRIM";
     time_reversal_sym = true;
     nsym = 0;
-    symmetry_flag = true;
     printsymmetry = false;
     tolerance = 1.0e-3;
 }
-
 
 void Symmetry::setup_symmetry()
 {
@@ -46,8 +43,11 @@ void Symmetry::setup_symmetry()
     double **xtmp;
     unsigned int *kdtmp;
 
-    memory->allocate(xtmp, natmin, 3);
-    memory->allocate(kdtmp, natmin);
+    MPI_Bcast(&time_reversal_sym_from_alm, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    time_reversal_sym = time_reversal_sym_from_alm;
+
+    allocate(xtmp, natmin, 3);
+    allocate(kdtmp, natmin);
 
     for (auto i = 0; i < natmin; ++i) {
         rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
@@ -79,8 +79,8 @@ void Symmetry::setup_symmetry()
                   << nsym << std::endl << std::endl;
         gensym_withmap(xtmp, kdtmp);
     }
-    memory->deallocate(xtmp);
-    memory->deallocate(kdtmp);
+    deallocate(xtmp);
+    deallocate(kdtmp);
 }
 
 void Symmetry::setup_symmetry_operation(int N,
@@ -113,7 +113,7 @@ void Symmetry::setup_symmetry_operation(int N,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (const auto &p : SymmList) {
+            for (const auto &p: SymmList) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << p.rot[i][j];
@@ -166,8 +166,8 @@ void Symmetry::setup_symmetry_operation(int N,
         ifs_sym >> nsym2;
 
         if (nsym != nsym2)
-            error->exit("setup_symmetry_operation",
-                        "nsym in the given file and the input file are not consistent.");
+            exit("setup_symmetry_operation",
+                 "nsym in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym
@@ -181,7 +181,6 @@ void Symmetry::setup_symmetry_operation(int N,
         ifs_sym.close();
     }
 }
-
 
 void Symmetry::findsym(int N,
                        double aa[3][3],
@@ -222,7 +221,6 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
 
     double metric_tensor[3][3];
     double metric_tensor_rot[3][3];
-
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -319,7 +317,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
     }
 
     if (LatticeSymmList.size() > 48) {
-        error->exit("find_lattice_symmetry", "Number of lattice symmetry is larger than 48.");
+        exit("find_lattice_symmetry", "Number of lattice symmetry is larger than 48.");
     }
 }
 
@@ -361,7 +359,7 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
     CrystalSymmList.emplace_back(rot_int, tran);
 
-    for (const auto &it_latsym : LatticeSymmList) {
+    for (const auto &it_latsym: LatticeSymmList) {
 
         unsigned int iat = atomclass[0][0];
 
@@ -463,11 +461,10 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
                 if (!mag_sym1 && !mag_sym2) {
                     isok = false;
-                } else if (!mag_sym1 && mag_sym2 && !trev_sym_mag) {
+                } else if (!mag_sym1 && mag_sym2 && !time_reversal_sym) {
                     isok = false;
                 }
             }
-
 
             if (isok) {
 #ifdef _OPENMP
@@ -479,7 +476,6 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
     }
 }
-
 
 void Symmetry::gensym_withmap(double **x,
                               const unsigned int *kd)
@@ -494,9 +490,9 @@ void Symmetry::gensym_withmap(double **x,
 
     SymmListWithMap.clear();
 
-    memory->allocate(map_tmp, natmin);
+    allocate(map_tmp, natmin);
 
-    for (const auto &isym : SymmList) {
+    for (const auto &isym: SymmList) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -553,7 +549,7 @@ void Symmetry::gensym_withmap(double **x,
             }
 
             if (num_mapped == -1) {
-                error->exit("gensym_withmap", "cannot find a equivalent atom");
+                exit("gensym_withmap", "cannot find a equivalent atom");
             }
             map_tmp[i] = num_mapped;
         }
@@ -569,7 +565,6 @@ void Symmetry::gensym_withmap(double **x,
     }
 }
 
-
 void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
 {
     int i, j, k;
@@ -581,8 +576,8 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
     if (mympi->my_rank == 0) n = sym.size();
     MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    memory->allocate(rot_tmp, n, 3, 3);
-    memory->allocate(tran_tmp, n, 3);
+    allocate(rot_tmp, n, 3, 3);
+    allocate(tran_tmp, n, 3);
 
     if (mympi->my_rank == 0) {
         for (i = 0; i < n; ++i) {
@@ -609,8 +604,8 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
         }
     }
 
-    memory->deallocate(rot_tmp);
-    memory->deallocate(tran_tmp);
+    deallocate(rot_tmp);
+    deallocate(tran_tmp);
 }
 
 bool Symmetry::is_proper(double rot[3][3]) const

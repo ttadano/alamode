@@ -18,6 +18,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "memory.h"
 #include "parsephon.h"
+#include "phonon_dos.h"
 #include "pointers.h"
 #include "system.h"
 #include "anharmonic_core.h"
@@ -47,29 +48,32 @@ void Gruneisen::set_default_variables()
     delta_a = 0.01;
     print_gruneisen = false;
     print_newfcs = false;
-    gruneisen = nullptr;
+    gruneisen_bs = nullptr;
+    gruneisen_dos = nullptr;
     xshift_s = nullptr;
 }
 
 void Gruneisen::deallocate_variables()
 {
-    if (gruneisen) {
-        memory->deallocate(gruneisen);
+    if (gruneisen_bs) {
+        deallocate(gruneisen_bs);
+    }
+    if (gruneisen_dos) {
+        deallocate(gruneisen_dos);
     }
     if (xshift_s) {
-        memory->deallocate(xshift_s);
+        deallocate(xshift_s);
     }
     delta_fc2.clear();
     delta_fc3.clear();
 }
 
-
 void Gruneisen::setup()
 {
     MPI_Bcast(&delta_a, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&print_newfcs, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&print_newfcs, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
-    memory->allocate(xshift_s, 27, 3);
+    allocate(xshift_s, 27, 3);
 
     for (int i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
 
@@ -97,7 +101,12 @@ void Gruneisen::setup()
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3);
     }
     if (print_gruneisen) {
-        memory->allocate(gruneisen, kpoint->nk, dynamical->neval);
+        if (kpoint->kpoint_bs) {
+            allocate(gruneisen_bs, kpoint->kpoint_bs->nk, dynamical->neval);
+        }
+        if (dos->kmesh_dos) {
+            allocate(gruneisen_dos, dos->kmesh_dos->nk, dynamical->neval);
+        }
     }
 
     if (mympi->my_rank == 0) {
@@ -115,49 +124,91 @@ void Gruneisen::setup()
     //   print_stress_energy();
 }
 
-
 void Gruneisen::calc_gruneisen()
 {
     const auto ns = dynamical->neval;
-    const auto nk = kpoint->nk;
     std::complex<double> **dfc2_reciprocal;
 
-    memory->allocate(dfc2_reciprocal, ns, ns);
+    allocate(dfc2_reciprocal, ns, ns);
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << " GRUNEISEN = 1 : Calculating Gruneisen parameters ... ";
     }
 
-    for (auto ik = 0; ik < nk; ++ik) {
+    if (kpoint->kpoint_bs) {
+        const auto nk = kpoint->kpoint_bs->nk;
+        const auto xk = kpoint->kpoint_bs->xk;
+        const auto eval = dynamical->dymat_band->get_eigenvalues();
+        const auto evec = dynamical->dymat_band->get_eigenvectors();
 
-        calc_dfc2_reciprocal(dfc2_reciprocal, kpoint->xk[ik]);
+        for (auto ik = 0; ik < nk; ++ik) {
 
-        for (auto is = 0; is < ns; ++is) {
+            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
 
-            gruneisen[ik][is] = std::complex<double>(0.0, 0.0);
+            for (auto is = 0; is < ns; ++is) {
 
-            for (unsigned int i = 0; i < ns; ++i) {
-                for (unsigned int j = 0; j < ns; ++j) {
-                    gruneisen[ik][is] += std::conj(dynamical->evec_phonon[ik][is][i])
-                                         * dfc2_reciprocal[i][j]
-                                         * dynamical->evec_phonon[ik][is][j];
+                gruneisen_bs[ik][is] = std::complex<double>(0.0, 0.0);
+
+                for (unsigned int i = 0; i < ns; ++i) {
+                    for (unsigned int j = 0; j < ns; ++j) {
+                        gruneisen_bs[ik][is] += std::conj(evec[ik][is][i])
+                                                * dfc2_reciprocal[i][j]
+                                                * evec[ik][is][j];
+                    }
                 }
-            }
 
-            const auto gamma_imag = gruneisen[ik][is].imag();
-            if (std::abs(gamma_imag) > eps10) {
-                error->warn("calc_gruneisen", "Gruneisen parameter is not real");
-            }
+                const auto gamma_imag = gruneisen_bs[ik][is].imag();
+                if (std::abs(gamma_imag) > eps10) {
+                    warn("calc_gruneisen", "Gruneisen parameter is not real");
+                }
 
-            if (std::abs(dynamical->eval_phonon[ik][is]) < eps8) {
-                gruneisen[ik][is] = 0.0;
-            } else {
-                gruneisen[ik][is] /= -6.0 * std::pow(dynamical->eval_phonon[ik][is], 2);
+                if (std::abs(eval[ik][is]) < eps8) {
+                    gruneisen_bs[ik][is] = 0.0;
+                } else {
+                    gruneisen_bs[ik][is] /= -6.0 * std::pow(eval[ik][is], 2);
+                }
             }
         }
     }
-    memory->deallocate(dfc2_reciprocal);
+
+    if (dos->kmesh_dos) {
+        const auto nk = dos->kmesh_dos->nk;
+        const auto xk = dos->kmesh_dos->xk;
+        const auto eval = dos->dymat_dos->get_eigenvalues();
+        const auto evec = dos->dymat_dos->get_eigenvectors();
+
+        for (auto ik = 0; ik < nk; ++ik) {
+
+            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
+
+            for (auto is = 0; is < ns; ++is) {
+
+                gruneisen_dos[ik][is] = std::complex<double>(0.0, 0.0);
+
+                for (unsigned int i = 0; i < ns; ++i) {
+                    for (unsigned int j = 0; j < ns; ++j) {
+                        gruneisen_dos[ik][is] += std::conj(evec[ik][is][i])
+                                                 * dfc2_reciprocal[i][j]
+                                                 * evec[ik][is][j];
+                    }
+                }
+
+                const auto gamma_imag = gruneisen_dos[ik][is].imag();
+                if (std::abs(gamma_imag) > eps10) {
+                    warn("calc_gruneisen", "Gruneisen parameter is not real");
+                }
+
+                if (std::abs(eval[ik][is]) < eps8) {
+                    gruneisen_dos[ik][is] = 0.0;
+                } else {
+                    gruneisen_dos[ik][is] /= -6.0 * std::pow(eval[ik][is], 2);
+                }
+            }
+        }
+    }
+
+    deallocate(dfc2_reciprocal);
 
     if (mympi->my_rank == 0) {
         std::cout << "done!" << std::endl;
@@ -174,14 +225,13 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
     const std::complex<double> im(0.0, 1.0);
 
-
     for (i = 0; i < ns; ++i) {
         for (unsigned int j = 0; j < ns; ++j) {
             dphi2[i][j] = std::complex<double>(0.0, 0.0);
         }
     }
 
-    for (const auto &it : delta_fc2) {
+    for (const auto &it: delta_fc2) {
 
         const auto atm1 = it.pairs[0].index / 3;
         const auto xyz1 = it.pairs[0].index % 3;
@@ -193,7 +243,6 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
         const auto atm1_s = system->map_p2s_anharm[atm1][0];
         const auto atm2_s = system->map_p2s_anharm[atm2][tran];
-
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[cell_s][i]
@@ -211,7 +260,6 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
     }
 }
-
 
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                                   std::vector<FcsArrayWithCell> &delta_fcs) const
@@ -233,7 +281,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     delta_fcs.clear();
     fcs_aligned.clear();
 
-    for (const auto &it : fcs_in) {
+    for (const auto &it: fcs_in) {
         fcs_aligned.emplace_back(it.fcs_val, it.pairs);
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
@@ -245,7 +293,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     index_with_cell.clear();
     set_index_uniq.clear();
 
-    for (const auto &it : fcs_aligned) {
+    for (const auto &it: fcs_aligned) {
 
         index_now.clear();
         index_with_cell.clear();
@@ -270,7 +318,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                 fcs_tmp /= static_cast<double>(nmulti);
 
                 if (std::abs(fcs_tmp) > eps15) {
-                    for (const auto &it2 : set_index_uniq) {
+                    for (const auto &it2: set_index_uniq) {
 
                         pairs_vec.clear();
 
@@ -315,7 +363,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     fcs_tmp /= static_cast<double>(nmulti);
 
     if (std::abs(fcs_tmp) > eps15) {
-        for (const auto &it2 : set_index_uniq) {
+        for (const auto &it2: set_index_uniq) {
 
             pairs_vec.clear();
 
@@ -342,8 +390,8 @@ void Gruneisen::write_new_fcsxml_all()
     std::cout << std::endl;
 
     if (fcs_phonon->update_fc2) {
-        error->warn("write_new_fcsxml_all",
-                    "NEWFCS = 1 cannot be combined with the FC2XML.");
+        warn("write_new_fcsxml_all",
+             "NEWFCS = 1 cannot be combined with the FC2XML.");
     } else {
         std::cout << " NEWFCS = 1 : Following XML files are created. " << std::endl;
 
@@ -428,7 +476,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    for (const auto &it : fcs_phonon->force_constant_with_cell[0]) {
+    for (const auto &it: fcs_phonon->force_constant_with_cell[0]) {
 
         auto &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string(it.fcs_val));
 
@@ -441,7 +489,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
                   + " " + std::to_string(it.pairs[1].cell_s + 1));
     }
 
-    for (const auto &it : delta_fc2) {
+    for (const auto &it: delta_fc2) {
 
         if (std::abs(it.fcs_val) < eps12) continue;
 
@@ -458,7 +506,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     }
 
     if (anharmonic_core->quartic_mode) {
-        for (const auto &it : fcs_phonon->force_constant_with_cell[1]) {
+        for (const auto &it: fcs_phonon->force_constant_with_cell[1]) {
 
             if (it.pairs[1].index > it.pairs[2].index) continue;
 
@@ -478,7 +526,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
                       + " " + std::to_string(it.pairs[2].cell_s + 1));
         }
 
-        for (const auto &it : delta_fc3) {
+        for (const auto &it: delta_fc3) {
 
             if (std::abs(it.fcs_val) < eps12) continue;
 
@@ -513,7 +561,6 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 #endif
 }
 
-
 std::string Gruneisen::double2string(const double d) const
 {
     std::string rt;
@@ -535,8 +582,8 @@ std::string Gruneisen::double2string(const double d) const
 //     unsigned int itran;
 //     unsigned int norder = fcs_in[0].pairs.size();
 // 
-//     memory->allocate(vec, norder, 3);
-//     memory->allocate(pos, norder, 3);
+//     allocate(vec, norder, 3);
+//     allocate(pos, norder, 3);
 // 
 //     for (std::vector<FcsArrayWithCell>::const_iterator it = fcs_in.begin(); it != fcs_in.end(); ++it) {
 // 
@@ -558,8 +605,8 @@ std::string Gruneisen::double2string(const double d) const
 //             * (vec[1][(*it).pairs[1].index % 3] - pos[0][(*it).pairs[1].index % 3]);
 //     }
 // 
-//     memory->deallocate(vec);
-//     memory->deallocate(pos);
+//     deallocate(vec);
+//     deallocate(pos);
 //     return ret;
 // }
 // 
@@ -573,8 +620,8 @@ std::string Gruneisen::double2string(const double d) const
 //     unsigned int norder = fcs_in[0].pairs.size();
 //     unsigned int crd[4];
 // 
-//     memory->allocate(vec, norder, 3);
-//     memory->allocate(pos, norder, 3);
+//     allocate(vec, norder, 3);
+//     allocate(pos, norder, 3);
 // 
 //     for (i = 0; i < 3; ++i) {
 //         for (j = 0; j < 3; ++j) {
@@ -615,8 +662,8 @@ std::string Gruneisen::double2string(const double d) const
 //         }
 //     }
 // 
-//     memory->deallocate(vec);
-//     memory->deallocate(pos);
+//     deallocate(vec);
+//     deallocate(pos);
 // 
 //     for (i = 0; i < 3; ++i) {
 //         for (j = 0; j < 3; ++j) {
@@ -638,8 +685,8 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //     double ****A, ****C;
 // 
-//     memory->allocate(A, 3, 3, 3, 3);
-//     memory->allocate(C, 3, 3, 3, 3);
+//     allocate(A, 3, 3, 3, 3);
+//     allocate(C, 3, 3, 3, 3);
 // 
 //     calc_stress_energy3(fcs_phonon->force_constant_with_cell[0], A);
 // 
@@ -685,6 +732,6 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //     std::cout << "Bulk Modulus [GPa] = " << (C[0][0][0][0] + 2.0 * C[0][0][1][1]) / 3.0 << std::endl;
 // 
-//     memory->deallocate(A);
-//     memory->deallocate(C);
+//     deallocate(A);
+//     deallocate(C);
 // }

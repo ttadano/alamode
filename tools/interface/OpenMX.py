@@ -20,12 +20,15 @@ class OpenmxParser(object):
         self._prefix = None
         self._lattice_vector = None
         self._inverse_lattice_vector = None
-        self._kd = None
+        self._atomic_kinds = None
+        self._element_list = []
+        self._element_dict = {}
         self._initial_charges = None
         self._common_settings = None
         self._nat = 0
         self._x_fractional = None
         self._counter = 1
+        self._kmesh = None
         self._nzerofills = 0
         self._disp_conversion_factor = 1.0
         self._energy_conversion_factor = 1.0
@@ -41,9 +44,14 @@ class OpenmxParser(object):
     def load_initial_structure(self, file_original):
 
         search_target = [
-            "atoms.number", "atoms.speciesandcoordinates.unit",
-            "<atoms.speciesandcoordinates", "<atoms.unitvectors",
-            "atoms.speciesandcoordinates>"
+            "atoms.number",
+            "atoms.speciesandcoordinates.unit",
+            "<atoms.speciesandcoordinates",
+            "atoms.speciesandcoordinates>",
+            "atoms.unitvectors.unit",
+            "<atoms.unitvectors",
+            "atoms.unitvectors>",
+            "scf.kgrid"
         ]
 
         nat = None
@@ -52,8 +60,9 @@ class OpenmxParser(object):
         kd = []
         x_frac0 = []
         initial_charges = []
+        kgrid = []
 
-        # read original file and pull out some information
+        # read original dat file and pull out some information
 
         with open(file_original, 'r') as f:
             lines = f.read().splitlines()
@@ -69,11 +78,20 @@ class OpenmxParser(object):
                 elif search_target[2] in line.lower():
                     ipos_coord = i + 1
 
-                elif search_target[4] in line.lower():
+                elif search_target[3] in line.lower():
                     fpos_coord = i
 
-                elif search_target[3] in line.lower():
+                elif search_target[4] in line.lower():
+                    lavec_unit = line.strip().split()[1].lower()
+
+                elif search_target[5] in line.lower():
                     ipos_lavec = i + 1
+
+                elif search_target[6] in line.lower():
+                    fpos_lavec = i
+
+                elif search_target[7] in line.lower():
+                    kgrid.extend([int(t) for t in line.strip().split()[1:]])
 
             if nat is None:
                 raise RuntimeError("Failed to extract the Atoms.Number value from the file.")
@@ -88,28 +106,55 @@ class OpenmxParser(object):
                 x_frac0.append([float(t) for t in line_split[2:5]])
                 initial_charges.append([float(t) for t in line_split[5:7]])
 
-            for line in lines[ipos_lavec:ipos_lavec + 3]:
+            for line in lines[ipos_lavec:fpos_lavec]:
                 lavec.append([float(t) for t in line.strip().split()])
 
-            common_settings.append(lines[:ipos_coord])
-            common_settings.append(lines[fpos_coord:])
+            if ipos_lavec > ipos_coord:
+                common_settings.extend(lines[:ipos_coord-1])
+                common_settings.extend(lines[fpos_coord+1:ipos_lavec-1])
+                common_settings.extend(lines[fpos_lavec+1:])
+            else:
+                common_settings.extend(lines[:ipos_lavec-1])
+                common_settings.extend(lines[fpos_lavec+1:ipos_coord-1])
+                common_settings.extend(lines[fpos_coord+1:])
 
         x_frac0 = np.array(x_frac0)
         lavec = np.array(lavec).transpose()
         lavec_inv = np.linalg.inv(lavec)
         initial_charges = np.array(initial_charges)
+        kgrid = np.array(kgrid)
 
-        # convert to frac
+        # convert the unit of lattice vectors to angstrom if necessary
+        if lavec_unit == "au":
+            lavec *= self._BOHR_TO_ANGSTROM
+            lavec_inv = np.linalg.inv(lavec)
+
+        # convert to frac coordinate
         if coord_unit == "ang":
             for i in range(nat):
                 x_frac0[i] = np.dot(x_frac0[i], lavec_inv)
 
+        elif coord_unit == "au":
+            for i in range(nat):
+                x_frac0[i] = np.dot(x_frac0[i], lavec_inv) * self._BOHR_TO_ANGSTROM
+
+        kd_uniq = []
+        for entry in kd:
+            if entry not in kd_uniq:
+                kd_uniq.append(entry)
+
+        self._element_list = kd_uniq
+        counter = 0
+        for entry in kd_uniq:
+            self._element_dict[entry] = counter
+            counter += 1
         self._lattice_vector = lavec
-        self._inverse_lattice_vector = np.linalg.inv(lavec)
+        self._inverse_lattice_vector = lavec_inv
         self._nat = nat
         self._x_fractional = x_frac0
-        self._kd = kd
+        self._atomic_kinds = [self._element_dict[elem] for elem in kd]
         self._initial_charges = initial_charges
+        self._kmesh = kgrid
         self._common_settings = common_settings
         self._initial_structure_loaded = True
 
@@ -117,6 +162,11 @@ class OpenmxParser(object):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
+        self._counter = 1
+
+        if len(self._initial_charges) < self._nat:
+            raise RuntimeError("The length of initial_charges is not nat. "
+                               "It should be updated as well.")
 
         for header, disp in zip(header_list, disp_list):
             self._generate_input(header, disp)
@@ -143,22 +193,39 @@ class OpenmxParser(object):
         filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".dat"
 
         with open(filename, 'w') as f:
-            for line in self._common_settings[0]:
-                if "atoms.speciesandcoordinates.unit" in line.lower():
-                    f.write("Atoms.SpeciesAndCoordinates.Unit frac\n")
+            for line in self._common_settings:
+
+                if "atoms.number" in line.lower():
+                    f.write("Atoms.Number %d\n" % self._nat)
+
+                elif "scf.kgrid" in line.lower():
+                    f.write("scf.Kgrid %d %d %d\n" % (self._kmesh[0], self._kmesh[1], self._kmesh[2]))
+
+                elif "atoms.speciesandcoordinates.unit" in line.lower():
+                    f.write("Atoms.SpeciesAndCoordinates.Unit Ang\n")
+                    f.write("<Atoms.SpeciesAndCoordinates\n")
+
+                    for i in range(self._nat):
+                        f.write("%4d %3s" % (i + 1, self._element_list[self._atomic_kinds[i]]))
+                        x_cartesian_disp = np.dot(self._x_fractional[i, :] + disp[i, :],
+                                                  self._lattice_vector.transpose())
+                        for j in range(3):
+                            f.write("%21.16f" % x_cartesian_disp[j])
+                        for j in range(2):
+                            f.write("%6.2f" % (self._initial_charges[i, j]))
+                        f.write('\n')
+                    f.write("Atoms.SpeciesAndCoordinates>\n")
+
+                elif "atoms.unitvectors.unit" in line.lower():
+                    f.write("Atoms.UnitVectors.Unit Ang\n")
+                    f.write("<Atoms.UnitVectors\n")
+                    for i in range(3):
+                        for j in range(3):
+                            f.write("%21.16f" % (self._lattice_vector[j, i]))
+                        f.write('\n')
+                    f.write("Atoms.UnitVectors>\n")
                 else:
                     f.write("%s\n" % line)
-
-            for i in range(self._nat):
-                f.write("%4d %3s" % (i + 1, self._kd[i]))
-                for j in range(3):
-                    f.write("%20.16f" % (self._x_fractional[i, j] + disp[i, j]))
-                for j in range(2):
-                    f.write("%6.2f" % (self._initial_charges[i, j]))
-                f.write('\n')
-
-            for line in self._common_settings[1]:
-                f.write("%s\n" % line)
 
         self._counter += 1
 
@@ -305,6 +372,10 @@ class OpenmxParser(object):
     def nat(self):
         return self._nat
 
+    @nat.setter
+    def nat(self, nat):
+        self._nat = nat
+
     @property
     def lattice_vector(self):
         return self._lattice_vector
@@ -313,13 +384,46 @@ class OpenmxParser(object):
     def inverse_lattice_vector(self):
         return self._inverse_lattice_vector
 
+    @lattice_vector.setter
+    def lattice_vector(self, lattice_vector):
+        self._lattice_vector = lattice_vector
+        self._inverse_lattice_vector = np.linalg.inv(lattice_vector)
+
+    @property
+    def kmesh(self):
+        return self._kmesh
+
+    @kmesh.setter
+    def kmesh(self, kmesh):
+        self._kmesh = kmesh
+
     @property
     def atomic_kinds(self):
-        return self._kd
+        return self._atomic_kinds
+
+    @property
+    def atomic_kinds_in_str(self):
+        return [self._element_list[i] for i in self._atomic_kinds]
+
+    @atomic_kinds.setter
+    def atomic_kinds(self, kd):
+        self._atomic_kinds = [self._element_dict[elem] for elem in kd]
 
     @property
     def x_fractional(self):
         return self._x_fractional
+
+    @x_fractional.setter
+    def x_fractional(self, x_fractional):
+        self._x_fractional = x_fractional
+
+    @property
+    def initial_charges(self):
+        return self._initial_charges
+
+    @initial_charges.setter
+    def initial_charges(self, initial_charges):
+        self._initial_charges = initial_charges
 
     def _get_coordinate_and_force_outfile(self, out_file):
         """

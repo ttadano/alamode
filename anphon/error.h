@@ -10,30 +10,47 @@
 
 #pragma once
 
-#include "pointers.h"
+#include <iostream>
+#include <cstdlib>
 
 namespace PHON_NS {
-    class Error : protected Pointers {
-    public:
-        Error(class PHON *);
-
-        ~Error();
-
-        void warn(const char *,
-                  const char *) const;
-
-        void exit(const char *,
-                  const char *) const;
-
-        void exit(const char *,
-                  const char *,
-                  int) const;
-
-        void exitall(const char *,
-                     const char *) const;
-
-        void exit(const char *,
-                  const char *,
-                  const char *) const;
-    };
+inline void warn(const char *file,
+                 const char *message)
+{
+    std::cout << " WARNING in " << file << "  MESSAGE: " << message << std::endl;
 }
+
+
+inline void exit(const char *file,
+                 const char *message)
+{
+    std::cout << " ERROR in " << file << "  MESSAGE: " << message << std::endl;
+    std::exit(EXIT_FAILURE);
+}
+
+template<typename T>
+void exit(const char *file,
+          const char *message,
+          const T info)
+{
+    std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::exit(EXIT_FAILURE);
+}
+
+inline void exit(const char *file,
+                 const char *message,
+                 const char *info)
+{
+    std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::exit(EXIT_FAILURE);
+}
+
+inline void exitall(const char *file,
+                    const char *message)
+{
+    MPI_Finalize();
+    std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
+    std::exit(EXIT_FAILURE);
+}
+}
+
