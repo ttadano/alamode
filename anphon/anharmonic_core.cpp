@@ -1181,16 +1181,16 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                                    sym_permutation,
                                    quartet);
 
-    if (mympi->my_rank == 1) std::cout << quartet.size() << std::endl;
+    //if (mympi->my_rank == 1) std::cout << quartet.size() << std::endl;
 
     reduce_pair_simple(ik_in, is_in, omega_in, integration->ismear_4ph,
                        kmesh_in, eval_in,
                        quartet);
 
-    if (mympi->my_rank == 1) {
-        std::cout << quartet.size() << std::endl;
-        //error->exit("exit","exit");
-    }
+    //if (mympi->my_rank == 1) {
+    //    std::cout << quartet.size() << std::endl;
+    //    error->exit("exit","exit");
+    //}
 
     const int npair_uniq = quartet.size();
 
