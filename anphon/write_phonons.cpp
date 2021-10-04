@@ -154,6 +154,32 @@ void Writes::write_input_vars()
     std::cout << std::endl;
     std::cout << std::endl;
 
+    if (phon->mode == "RTA") {
+        std::cout << " Kappa:" << std::endl;
+        std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
+        if (isotope->include_isotope) {
+            std::cout << "  ISOFACT = ";
+            if (isotope->isotope_factor) {
+                for (i = 0; i < system->nkd; ++i) {
+                    std::cout << std::scientific
+                              << std::setw(13) << isotope->isotope_factor[i];
+                }
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
+        std::cout << "  KAPPA_COHERENT = " << conductivity->calc_coherent << std::endl;
+        std::cout << "  LEN_BOUNDARY = " << conductivity->len_boundary << std::endl;
+        std::cout << "  ISMEAR_4PH = " << integration->ismear_4ph << std::endl;
+        std::cout << "  EPSILON_4PH = " << integration->epsilon_4ph << std::endl;
+        //std::cout << "  KMESH_COARSE = " ;
+        //for (i = 0; i < 3; ++i) std::cout << conductivity->nk_coarse[i] << " ";
+        //std::cout << std::endl;
+        //std::cout << "  INTERPOLATION = " << conductivity->interpolator << std::endl;
+        std::cout << std::endl;
+    }
+
     std::cout << " Analysis:" << std::endl;
     if (phon->mode == "PHONONS") {
         std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << std::endl;
@@ -188,19 +214,19 @@ void Writes::write_input_vars()
         std::cout << std::endl;
 
     } else if (phon->mode == "RTA") {
-        std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
-        if (isotope->include_isotope) {
-            std::cout << "  ISOFACT = ";
-            if (isotope->isotope_factor) {
-                for (i = 0; i < system->nkd; ++i) {
-                    std::cout << std::scientific
-                              << std::setw(13) << isotope->isotope_factor[i];
-                }
-            }
-            std::cout << std::endl;
-        }
+    //    std::cout << "  ISOTOPE = " << isotope->include_isotope << std::endl;
+    //    if (isotope->include_isotope) {
+    //        std::cout << "  ISOFACT = ";
+    //        if (isotope->isotope_factor) {
+    //            for (i = 0; i < system->nkd; ++i) {
+    //                std::cout << std::scientific
+    //                          << std::setw(13) << isotope->isotope_factor[i];
+    //            }
+    //        }
+    //        std::cout << std::endl;
+    //    }
 
-        std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
+    //    std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
 
         //        std::cout << "  KS_INPUT = " << anharmonic_core->ks_input << std::endl;
         //        std::cout << "  QUARTIC = " << anharmonic_core->quartic_mode << std::endl;
