@@ -20,6 +20,7 @@ inline void warn(const char *file,
     std::cout << " WARNING in " << file << "  MESSAGE: " << message << std::endl;
 }
 
+
 inline void exit(const char *file,
                  const char *message)
 {

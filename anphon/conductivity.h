@@ -49,7 +49,7 @@ private:
     std::complex<double> ****velmat;
     unsigned int nk, ns;
     int nshift_restart;
-    std::vector<int> vks, vks_l, vks_done;
+    std::vector<int> vks_l, vks_done;
     std::set<int> vks_job;
     std::string file_coherent_elems;
 

@@ -26,9 +26,7 @@ LIBS = ${LAPACK} -lomp
 
 PROG = alm
 
-CXXSRC= alm.cpp alm_cui.cpp input_parser.cpp input_setter.cpp constraint.cpp fcs.cpp files.cpp \
-	optimize.cpp cluster.cpp main.cpp rref.cpp \
-	patterndisp.cpp symmetry.cpp system.cpp timer.cpp writer.cpp 
+CXXSRC= $(wildcard *.cpp)
 
 OBJS= ${CXXSRC:.cpp=.o}
 

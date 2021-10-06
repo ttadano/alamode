@@ -45,11 +45,11 @@ public:
 class StructureProperty {
 public:
     double lattice_vector[3][3];
-    std::vector <AtomProperty> atoms;
+    std::vector<AtomProperty> atoms;
     int nat, natmin, ntran;
     int nspecies;
     int is_periodic[3];
-    std::vector <std::string> kd_symbol;
+    std::vector<std::string> kd_symbol;
 
     StructureProperty() {};
 };
@@ -68,13 +68,13 @@ inline bool operator<(const AtomCellSuper &a,
 
 class FcsArrayWithCell {
 public:
-    std::vector <AtomCellSuper> pairs;
+    std::vector<AtomCellSuper> pairs;
     double fcs_val;
 
     FcsArrayWithCell() {};
 
     FcsArrayWithCell(const double fcs_in,
-                     const std::vector <AtomCellSuper> &pairs_in)
+                     const std::vector<AtomCellSuper> &pairs_in)
             : pairs(pairs_in), fcs_val(fcs_in) {};
 
     bool operator==(const FcsArrayWithCell &obj) const
@@ -121,14 +121,14 @@ public:
 
 void load_fcs_xml(const std::string, const int,
                   StructureProperty &,
-                  std::vector <FcsArrayWithCell> *);
+                  std::vector<FcsArrayWithCell> *);
 
 void write_fcs_to_file(const std::string fname_fc,
                        const int order,
                        const StructureProperty &structure,
                        double ***x_image,
                        int **map_p2s,
-                       const std::vector <FcsArrayWithCell> &fc_in);
+                       const std::vector<FcsArrayWithCell> &fc_in);
 
 void frac2cart(double **xf,
                const int nat,

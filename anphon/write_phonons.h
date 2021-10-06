@@ -126,6 +126,7 @@ private:
     void print_normalmode_borncharge() const;
 
 #ifdef _HDF5
+
     void write_eigenvectors_HDF5() const;
 
     void write_eigenvectors_each_HDF5(const std::string &fname_evec,
@@ -134,6 +135,7 @@ private:
                                       const double *const *eval_in,
                                       const std::complex<double> *const *const *evec_in,
                                       const unsigned int kpmode_in) const;
+
 #endif
 
     void write_thermodynamics() const;

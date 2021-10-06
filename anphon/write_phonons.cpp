@@ -33,7 +33,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "scph.h"
 
 #ifdef _HDF5
+
 #include "H5Cpp.h"
+
 #endif
 
 using namespace PHON_NS;
@@ -1316,6 +1318,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 }
 
 #ifdef _HDF5
+
 void Writes::write_eigenvectors_HDF5() const
 {
     std::string fname_evec;
@@ -1575,6 +1578,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
 
     group_kpoint.close();
 }
+
 #endif
 
 double Writes::in_kayser(const double x) const
@@ -2031,7 +2035,7 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK]" <<
                    std::endl;
 
             if (isotope->include_isotope) {
@@ -2324,7 +2328,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
                                          + disp_mag[iband][3 * j + k]
-                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                                                       + phase_time);
                         }
                         ofs_anime << std::endl;
@@ -2379,7 +2383,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
                                          + disp_mag[iband][3 * j + k]
-                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                                                       + phase_time);
                         }
                         ofs_anime << std::endl;
