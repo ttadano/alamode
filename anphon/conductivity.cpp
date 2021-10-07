@@ -1737,7 +1737,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
         for (auto is = 0; is < ns; ++is) {
             for (auto itemp = 0; itemp < ntemp; ++itemp) {
                 if (use_improved_loglinear){
-                    interpol->improved_interpolate(damping4_coarse[is][itemp],
+                    interpol->interpolate_avoidgamma(damping4_coarse[is][itemp],
                                         damping4_interpolated[is][itemp], is);
                 } else {
                     interpol->interpolate(damping4_coarse[is][itemp],
