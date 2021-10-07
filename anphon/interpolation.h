@@ -45,7 +45,7 @@ class TriLinearInterpolator {
     {
         set_grid(grid_c, xc);
         set_grid(grid_f, xf);
-        set_cubes();
+        // set_cubes(); we can get cubes on the go
     };
 
     template<typename T>
@@ -81,21 +81,31 @@ class TriLinearInterpolator {
     }
 
     template<typename T>
-    void interpolate_test(const T *val_c, T *val_f, const bool regular_grid = true)
+    void interpolate_new(const T *val_c, T *val_f, const bool regular_grid = true)
     {
 
         T v_cubes[8];
-        T tx, ty, tz;
-        T invdel_x, invdel_y, invdel_z;
+        int corner_index[8];
+        double **corner_coord;
+
+        allocate(corner_coord, 8, 3);
 
         if (regular_grid) {
 
             for (auto i = 0; i < ngrid_f; ++i) {
 
-                val_f[i] = TriLinearInterpolation(i, cubes[i], val_c);
+                get_corners(xf[i], corner_index, corner_coord)
+
+                for (auto j = 0; j < 8; ++j) {
+                    v_cubes[j] = val_c[corner_index[j]];
+                }
+
+                val_f[i] = TriLinearInterpolation(xf[i], corner_coord, v_cubes);
 
             }
         }
+
+        deallocate(corner_coord);
     }
 
     template<typename T>
@@ -131,6 +141,8 @@ class TriLinearInterpolator {
                     int counter = 0;
 
                     int neighbor_corners[8];
+                    double **neighbor_coord;
+                    allocate(neighbor_coord, 8, 3);
 
                     for (auto j = 0; j < 8; ++j) {
                         if (cubes[i][j] == 0) continue;
@@ -148,17 +160,25 @@ class TriLinearInterpolator {
                             }
                         }
 
-                        get_corners(tmp_coord, neighbor_corners);
+                        get_corners(tmp_coord, neighbor_corners, neighbor_coord);
 
-                        val_sum += TriLinearInterpolation(i, neighbor_corners, val_c);
+                        val_sum += TriLinearInterpolation(i, neighbor_corners,  neighbor_coord, val_c);
                         counter += 1;
                     }
+
+                    deallocate(neighbor_coord);
 
                     val_f[i] = val_sum / static_cast<T>(counter);
 
                 } else {
+                    int neighbor_corners[8];
+                    double **neighbor_coord;
+                    allocate(neighbor_coord, 8, 3);
+                    
+                    get_corners(xf[i], neighbor_corners, neighbor_coord);
 
-                    val_f[i] = TriLinearInterpolation(i, cubes[i], val_c);
+                    val_f[i] = TriLinearInterpolation(i, neighbor_corners, neighbor_coord, val_c);
+                    deallocate(neighbor_coord);
 
                 }
             }
@@ -207,54 +227,25 @@ class TriLinearInterpolator {
 
     void set_cubes()
     {
-        for (auto i = 0; i < ngrid_f; ++i) get_corners(i, cubes[i]);
+        double **tmp;
+        allocate(tmp, 8, 3);
+        for (auto i = 0; i < ngrid_f; ++i) {
+
+        }
+        
+        get_cornerindex(i, cubes[i]);
     };
 
-    void get_corners(unsigned i_f, int* corners) 
+    void get_cornerindex(unsigned i_f, int* corners) 
     {
-    
-        int iloc[2], jloc[2], kloc[2];
-        double dn_c[3];
-        double tmp[3];
-        int n23 = static_cast<int>(grid_c[1] * grid_c[2]);
-        int igrid[3];
-
-        for (auto i = 0; i < 3; ++i) {
-            dn_c[i] = static_cast<double>(grid_c[i]);
-            igrid[i] = static_cast<int>(grid_c[i]);
-        }
-
-        for (auto j = 0; j < 3; ++j) tmp[j] = xf[i_f][j] * dn_c[j];
-        iloc[0] = nint(std::floor(tmp[0]));
-        iloc[1] = nint(std::ceil(tmp[0]));
-        jloc[0] = nint(std::floor(tmp[1]));
-        jloc[1] = nint(std::ceil(tmp[1]));
-        kloc[0] = nint(std::floor(tmp[2]));
-        kloc[1] = nint(std::ceil(tmp[2]));
-
-        if (iloc[1] == iloc[0]) ++iloc[1];
-        if (jloc[1] == jloc[0]) ++jloc[1];
-        if (kloc[1] == kloc[0]) ++kloc[1];
-
-        iloc[0] = iloc[0] % igrid[0];
-        iloc[1] = iloc[1] % igrid[0];
-        jloc[0] = jloc[0] % igrid[1];
-        jloc[1] = jloc[1] % igrid[1];
-        kloc[0] = kloc[0] % igrid[2];
-        kloc[1] = kloc[1] % igrid[2];
-
-        corners[0] = kloc[0] + jloc[0] * igrid[2] + iloc[0] * n23; // index of c000
-        corners[1] = kloc[0] + jloc[0] * igrid[2] + iloc[1] * n23; // index of c100
-        corners[2] = kloc[0] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c010
-        corners[3] = kloc[0] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c110
-        corners[4] = kloc[1] + jloc[0] * igrid[2] + iloc[0] * n23; // index of c001
-        corners[5] = kloc[1] + jloc[0] * igrid[2] + iloc[1] * n23; // index of c101
-        corners[6] = kloc[1] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c011
-        corners[7] = kloc[1] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c111
-        
+        // wrap around get_corners
+        double **tmp;
+        allocate(tmp, 8, 3);
+        get_corners(xf[i_f], corners, tmp);
+        deallocate(tmp);
     }
 
-    void get_corners(double* xk_i, int* corners) {
+    void get_corners(double* xk_i, int* corner_index, double** corner_coord) {
         
         int iloc[2], jloc[2], kloc[2];
         double dn_c[3];
@@ -279,6 +270,38 @@ class TriLinearInterpolator {
         if (jloc[1] == jloc[0]) ++jloc[1];
         if (kloc[1] == kloc[0]) ++kloc[1];
 
+        corner_coord[0][0] = static_cast<double>(iloc[0]) / dn_c[0];
+        corner_coord[0][1] = static_cast<double>(jloc[0]) / dn_c[1];
+        corner_coord[0][2] = static_cast<double>(kloc[0]) / dn_c[2];
+
+        corner_coord[1][0] = static_cast<double>(iloc[1]) / dn_c[0];
+        corner_coord[1][1] = static_cast<double>(jloc[0]) / dn_c[1];
+        corner_coord[1][2] = static_cast<double>(kloc[0]) / dn_c[2];
+
+        corner_coord[2][0] = static_cast<double>(iloc[0]) / dn_c[0];
+        corner_coord[2][1] = static_cast<double>(jloc[1]) / dn_c[1];
+        corner_coord[2][2] = static_cast<double>(kloc[0]) / dn_c[2];
+
+        corner_coord[3][0] = static_cast<double>(iloc[1]) / dn_c[0];
+        corner_coord[3][1] = static_cast<double>(jloc[1]) / dn_c[1];
+        corner_coord[3][2] = static_cast<double>(kloc[0]) / dn_c[2];
+
+        corner_coord[4][0] = static_cast<double>(iloc[0]) / dn_c[0];
+        corner_coord[4][1] = static_cast<double>(jloc[0]) / dn_c[1];
+        corner_coord[4][2] = static_cast<double>(kloc[1]) / dn_c[2];
+        
+        corner_coord[5][0] = static_cast<double>(iloc[1]) / dn_c[0];
+        corner_coord[5][1] = static_cast<double>(jloc[0]) / dn_c[1];
+        corner_coord[5][2] = static_cast<double>(kloc[1]) / dn_c[2];
+        
+        corner_coord[6][0] = static_cast<double>(iloc[0]) / dn_c[0];
+        corner_coord[6][1] = static_cast<double>(jloc[1]) / dn_c[1];
+        corner_coord[6][2] = static_cast<double>(kloc[1]) / dn_c[2];
+        
+        corner_coord[7][0] = static_cast<double>(iloc[1]) / dn_c[0];
+        corner_coord[7][1] = static_cast<double>(jloc[1]) / dn_c[1];
+        corner_coord[7][2] = static_cast<double>(kloc[1]) / dn_c[2];
+
         iloc[0] = iloc[0] % igrid[0];
         iloc[1] = iloc[1] % igrid[0];
         jloc[0] = jloc[0] % igrid[1];
@@ -286,24 +309,15 @@ class TriLinearInterpolator {
         kloc[0] = kloc[0] % igrid[2];
         kloc[1] = kloc[1] % igrid[2];
 
-        corners[0] = kloc[0] + jloc[0] * igrid[2] + iloc[0] * n23; // index of c000
-        corners[1] = kloc[0] + jloc[0] * igrid[2] + iloc[1] * n23; // index of c100
-        corners[2] = kloc[0] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c010
-        corners[3] = kloc[0] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c110
-        corners[4] = kloc[1] + jloc[0] * igrid[2] + iloc[0] * n23; // index of c001
-        corners[5] = kloc[1] + jloc[0] * igrid[2] + iloc[1] * n23; // index of c101
-        corners[6] = kloc[1] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c011
-        corners[7] = kloc[1] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c111
+        corner_index[0] = kloc[0] + jloc[0] * igrid[2] + iloc[0] * n23; // index of c000
+        corner_index[1] = kloc[0] + jloc[0] * igrid[2] + iloc[1] * n23; // index of c100
+        corner_index[2] = kloc[0] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c010
+        corner_index[3] = kloc[0] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c110
+        corner_index[4] = kloc[1] + jloc[0] * igrid[2] + iloc[0] * n23; // index of c001
+        corner_index[5] = kloc[1] + jloc[0] * igrid[2] + iloc[1] * n23; // index of c101
+        corner_index[6] = kloc[1] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c011
+        corner_index[7] = kloc[1] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c111
 
-    }
-
-    template<typename T>
-    T BiLinearInterpolation(const T tx, const T ty,
-                            const T c00, const T c10,
-                            const T c01, const T c11)
-    {
-        return c00 + (c10 - c00) * tx + (c01 - c00) * ty
-              + (c11 - c01 - c10 + c00) * tx * ty;
     }
 
     template<typename T>
@@ -324,6 +338,51 @@ class TriLinearInterpolator {
                                               v_cubes[4], v_cubes[5],
                                               v_cubes[6], v_cubes[7]);
         return (c1 - c0) * tz + c0;
+    }
+
+    template<typename T>
+    T TriLinearInterpolation(int i, int *corners, double **corners_coord, const T *val_c) 
+    {
+        T v_cubes[8];
+        for (auto j = 0; j < 8; ++j) {
+            v_cubes[j] = val_c[corners[j]];
+        }
+        T tx = static_cast<T>(xf[i][0] - corners_coord[0][0]) * static_cast<T>(grid_c[0]);
+        T ty = static_cast<T>(xf[i][1] - corners_coord[0][1]) * static_cast<T>(grid_c[1]);
+        T tz = static_cast<T>(xf[i][2] - corners_coord[0][2]) * static_cast<T>(grid_c[2]);
+
+        const auto c0 = BiLinearInterpolation(tx, ty,
+                                              v_cubes[0], v_cubes[1],
+                                              v_cubes[2], v_cubes[3]);
+        const auto c1 = BiLinearInterpolation(tx, ty,
+                                              v_cubes[4], v_cubes[5],
+                                              v_cubes[6], v_cubes[7]);
+        return (c1 - c0) * tz + c0;
+    }
+
+    template<typename T>
+    T TriLinearInterpolation(double *center, double **corners_coord, const T *val_corner) 
+    {
+        T tx = static_cast<T>(center[0] - corners_coord[0][0]) * static_cast<T>(grid_c[0]);
+        T ty = static_cast<T>(center[1] - corners_coord[0][1]) * static_cast<T>(grid_c[1]);
+        T tz = static_cast<T>(center[2] - corners_coord[0][2]) * static_cast<T>(grid_c[2]);
+
+        const auto c0 = BiLinearInterpolation(tx, ty,
+                                              val_corner[0], val_corner[1],
+                                              val_corner[2], val_corner[3]);
+        const auto c1 = BiLinearInterpolation(tx, ty,
+                                              val_corner[4], val_corner[5],
+                                              val_corner[6], val_corner[7]);
+        return (c1 - c0) * tz + c0;
+    }
+
+    template<typename T>
+    T BiLinearInterpolation(const T tx, const T ty,
+                            const T c00, const T c10,
+                            const T c01, const T c11)
+    {
+        return c00 + (c10 - c00) * tx + (c01 - c00) * ty
+              + (c11 - c01 - c10 + c00) * tx * ty;
     }
 
 };
