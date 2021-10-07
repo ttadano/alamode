@@ -81,18 +81,15 @@ class TriLinearInterpolator {
     }
 
     template<typename T>
-    void improved_interpolate(const T *val_c, T *val_f, unsigned is, const bool regular_grid = true)
+    void improved_interpolate(const T *val_c, T *val_f, const unsigned is, const bool regular_grid = true)
     {
         // take branch number as input
+
         T v_cubes[8];
         T tx, ty, tz;
-        //T invdel_x, invdel_y, invdel_z;
         bool contain_gamma;
 
         if (regular_grid) {
-            //invdel_x = static_cast<T>(grid_c[0]);
-            //invdel_y = static_cast<T>(grid_c[1]);
-            //invdel_z = static_cast<T>(grid_c[2]);
 
             for (auto i = 0; i < ngrid_f; ++i) {
                 
@@ -104,26 +101,32 @@ class TriLinearInterpolator {
                 }
 
                 if (contain_gamma && is < 3) {
-                    // contain acoustic branch at q=0, Gamma not defined
 
-                    T val_sum{}; // zero initialization
-                    unsigned count = 0;
+                    T val_sum{}; 
+                    int counter = 0;
+
+                    int * neighbor_corners;
+                    allocate(neighbor_corners, 8);
 
                     for (auto j = 0; j < 8; ++j) {
                         if (cubes[i][j] == 0) continue;
 
                         double tmp_coord[3];
+                        //int neighbor_corners[8];
+                        
                         for (auto k = 0; k < 3; ++k) {
                             tmp_coord[k] = xf[i][k] + xc[cubes[i][j]][k];
                         }
 
-                        int corners[8];
-                        get_corners(tmp_coord, corners);
-                        val_sum += TriLinearInterpolation(i, corners, val_c);
-                        count += 1;
+                        get_corners(tmp_coord, neighbor_corners);
+
+                        val_sum += TriLinearInterpolation(i, neighbor_corners, val_c);
+                        counter += 1;
                     }
 
-                    val_f[i] = val_sum / static_cast<T>(count);
+                    deallocate(neighbor_corners);
+
+                    val_f[i] = val_sum / static_cast<T>(counter);
 
                 } else {
 
@@ -131,7 +134,8 @@ class TriLinearInterpolator {
 
                 }
             }
-        }
+
+        } // regular grid
     }
     
     
@@ -220,7 +224,7 @@ class TriLinearInterpolator {
         corners[6] = kloc[1] + jloc[1] * igrid[2] + iloc[0] * n23; // index of c011
         corners[7] = kloc[1] + jloc[1] * igrid[2] + iloc[1] * n23; // index of c111
         
-    };
+    }
 
     void get_corners(double* xk_i, int* corners) {
         
@@ -275,7 +279,7 @@ class TriLinearInterpolator {
     }
 
     template<typename T>
-    T TriLinearInterpolation(const int i, const int *corners, const double *val_c) 
+    T TriLinearInterpolation(int i, int *corners, const T *val_c) 
     {
         T v_cubes[8];
         for (auto j = 0; j < 8; ++j) {

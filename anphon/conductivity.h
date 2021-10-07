@@ -44,6 +44,7 @@ class Conductivity : protected Pointers {
     double ***kappa_coherent;
     double *temperature;
     int calc_coherent;
+    int write_interpolation;
 
     int fph_rta;
     double len_boundary;

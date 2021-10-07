@@ -75,6 +75,7 @@ void Conductivity::set_default_variables()
     file_result4 = "";
     interpolator = "linear";
     len_boundary = 0.0;
+    write_interpolation = 0;
 }
 
 void Conductivity::deallocate_variables()
@@ -1691,6 +1692,8 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
                                               kmesh_dense_in->nk_i);
     interpol->setup();
 
+    bool use_improved_loglinear = true;
+
     if (interpolator == "linear") {
 
         for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
@@ -1725,7 +1728,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
             for (auto is = 0; is < ns; ++is) {
                 for (auto itemp = 0; itemp < ntemp; ++itemp) {
                     val_tmp = val_coarse_in[kmesh_coarse_in->kmap_to_irreducible[ik] * ns + is][itemp];
-                    if (val_tmp < eps) val_tmp = eps; // TODO: reconsider appropriate cutoff value here.
+                    if ( (! use_improved_loglinear) && val_tmp < eps) val_tmp = eps; // TODO: reconsider appropriate cutoff value here.
                     damping4_coarse[is][itemp][ik] = std::log(val_tmp);
                 }
             }
@@ -1733,8 +1736,13 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
 
         for (auto is = 0; is < ns; ++is) {
             for (auto itemp = 0; itemp < ntemp; ++itemp) {
-                interpol->interpolate(damping4_coarse[is][itemp],
-                                      damping4_interpolated[is][itemp]);
+                if (use_improved_loglinear){
+                    interpol->improved_interpolate(damping4_coarse[is][itemp],
+                                        damping4_interpolated[is][itemp], is);
+                } else {
+                    interpol->interpolate(damping4_coarse[is][itemp],
+                                        damping4_interpolated[is][itemp]);
+                }
             }
         }
 
@@ -1747,6 +1755,38 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
             }
         }
     }
+
+    auto file_interpolate = input->job_title + ".interpolated_gamma";
+
+    std::ofstream ofs_itp;
+
+    ofs_itp.open(file_interpolate.c_str(), std::ios::out);
+
+    if (!ofs_itp) exit("interpolation", "Could not open file_interpolate");
+
+    ofs_itp << "# Result of interpolated gamma." << std::endl;
+    ofs_itp << "# Frequency (cm^-1), Gamma at each temperature " << std::endl;
+
+
+    for (auto is = 0; is < ns; ++ is) {
+        for (auto ik = 0; ik < kmesh_dense_in->nk_irred; ++ik) {
+            auto knum = kmesh_dense_in->kpoint_irred_all[ik][0].knum;
+            ofs_itp << std::setw(10) << std::setprecision(2) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[knum][is]);
+
+            for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                ofs_itp << std::setw(15) << std::scientific << std::setprecision(4);
+                if (interpolator == "linear") {
+                    ofs_itp << damping4_interpolated[is][itemp][knum] * Hz_to_kayser / time_ry;
+                } else if (interpolator == "log-linear") {
+                    ofs_itp << std::exp(damping4_interpolated[is][itemp][knum]) * Hz_to_kayser / time_ry;
+                }
+            }
+
+            ofs_itp << std::endl;
+        }
+    }
+
+    ofs_itp.close();
 
     deallocate(damping4_coarse);
     deallocate(damping4_interpolated);
