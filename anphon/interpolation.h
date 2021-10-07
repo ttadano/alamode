@@ -81,6 +81,24 @@ class TriLinearInterpolator {
     }
 
     template<typename T>
+    void interpolate_test(const T *val_c, T *val_f, const bool regular_grid = true)
+    {
+
+        T v_cubes[8];
+        T tx, ty, tz;
+        T invdel_x, invdel_y, invdel_z;
+
+        if (regular_grid) {
+
+            for (auto i = 0; i < ngrid_f; ++i) {
+
+                val_f[i] = TriLinearInterpolation(i, cubes[i], val_c);
+
+            }
+        }
+    }
+
+    template<typename T>
     void improved_interpolate(const T *val_c, T *val_f, const unsigned is, const bool regular_grid = true)
     {
         // take branch number as input
@@ -92,7 +110,14 @@ class TriLinearInterpolator {
         if (regular_grid) {
 
             for (auto i = 0; i < ngrid_f; ++i) {
+
+                if (i == 0 && is < 3) {
+                    val_f[i] = eps;
+                    continue;
+                }
                 
+                contain_gamma = false;
+
                 for (auto j = 0; j < 8; ++j) {
                     if (cubes[i][j] == 0) {
                         contain_gamma = true;
@@ -105,17 +130,22 @@ class TriLinearInterpolator {
                     T val_sum{}; 
                     int counter = 0;
 
-                    int * neighbor_corners;
-                    allocate(neighbor_corners, 8);
+                    int neighbor_corners[8];
 
                     for (auto j = 0; j < 8; ++j) {
                         if (cubes[i][j] == 0) continue;
 
+                        // we find the 7 neighboring cubes
+                        // and averaged the interpolated value
+
                         double tmp_coord[3];
-                        //int neighbor_corners[8];
-                        
+
                         for (auto k = 0; k < 3; ++k) {
-                            tmp_coord[k] = xf[i][k] + xc[cubes[i][j]][k];
+                            if (xc[cubes[i][j]][k] < 0.5) {
+                                tmp_coord[k] = xf[i][k] + xc[cubes[i][j]][k];
+                            } else {
+                                tmp_coord[k] = xf[i][k] - (1.0 - xc[cubes[i][j]][k]);
+                            }
                         }
 
                         get_corners(tmp_coord, neighbor_corners);
@@ -123,8 +153,6 @@ class TriLinearInterpolator {
                         val_sum += TriLinearInterpolation(i, neighbor_corners, val_c);
                         counter += 1;
                     }
-
-                    deallocate(neighbor_corners);
 
                     val_f[i] = val_sum / static_cast<T>(counter);
 
@@ -285,9 +313,9 @@ class TriLinearInterpolator {
         for (auto j = 0; j < 8; ++j) {
             v_cubes[j] = val_c[corners[j]];
         }
-        T tx = static_cast<T>(xf[i][0] - xc[cubes[i][0]][0]) * static_cast<T>(grid_c[0]);
-        T ty = static_cast<T>(xf[i][1] - xc[cubes[i][0]][1]) * static_cast<T>(grid_c[0]);
-        T tz = static_cast<T>(xf[i][2] - xc[cubes[i][0]][2]) * static_cast<T>(grid_c[0]);
+        T tx = static_cast<T>(xf[i][0] - xc[corners[0]][0]) * static_cast<T>(grid_c[0]);
+        T ty = static_cast<T>(xf[i][1] - xc[corners[0]][1]) * static_cast<T>(grid_c[1]);
+        T tz = static_cast<T>(xf[i][2] - xc[corners[0]][2]) * static_cast<T>(grid_c[2]);
 
         const auto c0 = BiLinearInterpolation(tx, ty,
                                               v_cubes[0], v_cubes[1],
