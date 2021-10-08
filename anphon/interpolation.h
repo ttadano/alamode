@@ -57,19 +57,20 @@ class TriLinearInterpolator {
 
         allocate(corner_coord, 8, 3);
 
-        if (regular_grid) {
+        for (auto i = 0; i < ngrid_f; ++i) {
+            
+            if (regular_grid) {
 
-            for (auto i = 0; i < ngrid_f; ++i) {
-
-                get_corners(xf[i], corner_index, corner_coord);
-
-                for (auto j = 0; j < 8; ++j) {
-                    v_cubes[j] = val_c[corner_index[j]];
-                }
-
-                val_f[i] = TriLinearInterpolation(xf[i], corner_coord, v_cubes);
-
+                get_corners_regular(xf[i], corner_index, corner_coord);
+            
             }
+
+            for (auto j = 0; j < 8; ++j) {
+                v_cubes[j] = val_c[corner_index[j]];
+            }
+
+            val_f[i] = TriLinearInterpolation(xf[i], corner_coord, v_cubes);
+        
         }
 
         deallocate(corner_coord);
@@ -83,102 +84,99 @@ class TriLinearInterpolator {
         int corner_index[8];
         double **corner_coord;
 
+        double limit = -100;  // only for at acoustic branch at gamma
+
         allocate(corner_coord, 8, 3);
 
         const double sign[2] = {-1.0, 1.0};
 
-        if (regular_grid) {
+        for (auto i = 0; i < ngrid_f; ++i) {
 
-            for (auto i = 0; i < ngrid_f; ++i) {
-
-                if (i == 0 && is < 3) {
-                    val_f[i] = eps;
-                    continue;
-                }
+            if (i == 0 && is < 3) {
+                val_f[i] = static_cast<T>(limit);
+                continue;
+            }
                 
-                contain_gamma = false;
-                get_corners(xf[i], corner_index, corner_coord);
+            contain_gamma = false;
+
+            if (regular_grid) get_corners_regular(xf[i], corner_index, corner_coord);
                 
-                for (auto j = 0; j < 8; ++j) {
-                    if (corner_index[j] == 0) {
-                        contain_gamma = true;
-                        break;
-                    }
-                }
-
-                if (contain_gamma && is < 3) {
-
-                    // find the closest corner
-                    double closest[3];
-                    double dist = 1e10;
-                    for (auto j = 0; j < 8; ++j) {
-                        if (corner_index[j] == 0) continue;
-
-                        double tmp = 0.0;
-                        for (auto k = 0; k < 3; ++k) {
-                            tmp += std::pow(xf[i][k] - corner_coord[j][k], 2);
-                        }
-                        if (tmp < dist) {
-                            dist = tmp;
-                            for (auto k = 0; k < 3; ++k) closest[k] = corner_coord[j][k];
-                        }
-                    }
-
-                    T val_sum{};
-                    int counter = 0;
-                    
-                    int neigh_corner_index[8];
-                    double **neigh_corner_coord;
-                    allocate(neigh_corner_coord, 8, 3);
-
-                    for (auto tmpi = 0; tmpi < 2; ++tmpi) {
-                        for (auto tmpj = 0; tmpj < 2; ++tmpj) {
-                            for (auto tmpk = 0; tmpk < 2; ++tmpk) {
-
-                                double shifted_center[3];
-                                shifted_center[0] = closest[0] + sign[tmpi] * ( xf[i][0] - closest[0] ); 
-                                shifted_center[1] = closest[1] + sign[tmpj] * ( xf[i][1] - closest[1] ); 
-                                shifted_center[2] = closest[2] + sign[tmpk] * ( xf[i][2] - closest[2] ); 
-
-                                get_corners( shifted_center , neigh_corner_index, neigh_corner_coord);
-                                
-                                bool still_contain_gamma = false;
-                                for (auto j = 0; j < 8; ++j) {
-                                    if (neigh_corner_index[j] == 0) {
-                                        still_contain_gamma = true;
-                                        break;
-                                    }
-                                }
-
-                                if ( ! still_contain_gamma ) {
-
-                                    for (auto j = 0; j < 8; ++j) {
-                                        v_cubes[j] = val_c[neigh_corner_index[j]];
-                                    }
-
-                                    val_sum += TriLinearInterpolation(xf[i], neigh_corner_coord, v_cubes);
-                                    counter += 1;
-                                }
-
-                            } // tmpk
-                        } // tmpj
-                     } // tmpi
-
-                    val_f[i] = val_sum / static_cast<T>(counter);
-                    deallocate(neigh_corner_coord);
-
-                } else {
-
-                    for (auto j = 0; j < 8; ++j) {
-                        v_cubes[j] = val_c[corner_index[j]];
-                    }
-
-                    val_f[i] = TriLinearInterpolation(xf[i], corner_coord, v_cubes);
-
+            for (auto j = 0; j < 8; ++j) {
+                if (corner_index[j] == 0) {
+                    contain_gamma = true;
+                    break;
                 }
             }
 
-        } // regular grid
+            if (contain_gamma && is < 3) {
+
+                // find the closest corner
+                double closest[3];
+                double dist = 1e10;
+                for (auto j = 0; j < 8; ++j) {
+                    if (corner_index[j] == 0) continue;
+
+                    double tmp = 0.0;
+                    for (auto k = 0; k < 3; ++k) {
+                        tmp += std::pow(xf[i][k] - corner_coord[j][k], 2);
+                    }
+                    if (tmp < dist) {
+                        dist = tmp;
+                        for (auto k = 0; k < 3; ++k) closest[k] = corner_coord[j][k];
+                    }
+                }
+
+                T val_sum{};
+                int counter = 0;
+                
+                int neigh_corner_index[8];
+                double **neigh_corner_coord;
+                allocate(neigh_corner_coord, 8, 3);
+
+                for (auto tmpi = 0; tmpi < 2; ++tmpi) {
+                    for (auto tmpj = 0; tmpj < 2; ++tmpj) {
+                        for (auto tmpk = 0; tmpk < 2; ++tmpk) {
+                            double shifted_center[3];
+                            shifted_center[0] = closest[0] + sign[tmpi] * ( xf[i][0] - closest[0] ); 
+                            shifted_center[1] = closest[1] + sign[tmpj] * ( xf[i][1] - closest[1] ); 
+                            shifted_center[2] = closest[2] + sign[tmpk] * ( xf[i][2] - closest[2] ); 
+
+                            if (regular_grid) get_corners_regular( shifted_center , neigh_corner_index, neigh_corner_coord);
+                                
+                            bool still_contain_gamma = false;
+                            for (auto j = 0; j < 8; ++j) {
+                                if (neigh_corner_index[j] == 0) {
+                                    still_contain_gamma = true;
+                                    break;
+                                }
+                            }
+
+                            if ( ! still_contain_gamma ) {
+
+                                for (auto j = 0; j < 8; ++j) {
+                                    v_cubes[j] = val_c[neigh_corner_index[j]];
+                                }
+                                val_sum += TriLinearInterpolation(xf[i], neigh_corner_coord, v_cubes);
+                                counter += 1;
+                            }
+
+                        } // tmpk
+                    } // tmpj
+                } // tmpi
+
+                val_f[i] = val_sum / static_cast<T>(counter);
+                deallocate(neigh_corner_coord);
+
+            } else {
+
+                for (auto j = 0; j < 8; ++j) {
+                    v_cubes[j] = val_c[corner_index[j]];
+                }
+
+                val_f[i] = TriLinearInterpolation(xf[i], corner_coord, v_cubes);
+
+            }
+        }
         deallocate(corner_coord);
     }
     
@@ -218,7 +216,7 @@ class TriLinearInterpolator {
     }
 
 
-    void get_corners(double* xk_i, int* corner_index, double** corner_coord) 
+    void get_corners_regular(double* xk_i, int* corner_index, double** corner_coord) 
     {
         // get the index of the corner, as well as coordinates[8][3]
         int iloc[2], jloc[2], kloc[2];
