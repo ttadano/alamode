@@ -2329,7 +2329,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                                       << xmod[i][j][k]
                                          + disp_mag[iband][3 * j + k]
                                            * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
-                                                      + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2384,7 +2383,6 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                                       << xmod[i][j][k]
                                          + disp_mag[iband][3 * j + k]
                                            * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
-                                                      + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
