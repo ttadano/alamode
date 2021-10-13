@@ -1093,6 +1093,11 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
                     str_varval = my_split(str_tmp, '=');
 #endif
                     if (str_varval.size() != 2) {
+                        std::cout << " Failed to parse : ";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict",
                              "Unacceptable format");
                     }
@@ -1168,6 +1173,11 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #endif
 
                     if (str_varval.size() != 2) {
+                        std::cout << " Failed to parse : ";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict",
                              "Unacceptable format");
                     }

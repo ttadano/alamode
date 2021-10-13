@@ -1217,6 +1217,11 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     boost::split(str_varval, str_tmp, boost::is_any_of("="));
 
                     if (str_varval.size() != 2) {
+                        std::cout << "Failed to parse :";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict", "Unacceptable format");
                     }
 
@@ -1273,6 +1278,11 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     boost::split(str_varval, str_tmp, boost::is_any_of("="));
 
                     if (str_varval.size() != 2) {
+                        std::cout << " Failed to parse : ";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict", "Unacceptable format");
                     }
 
@@ -1280,13 +1290,13 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     val = boost::trim_copy(str_varval[1]);
 
                     if (keyword_set.find(key) == keyword_set.end()) {
-                        std::cout << "Could not recognize the variable "
+                        std::cout << " Could not recognize the variable "
                                   << key << std::endl;
                         exit("get_var_dict", "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
-                        std::cout << "Variable " << key
+                        std::cout << " Variable " << key
                                   << " appears twice in the input file." << std::endl;
                         exit("get_var_dict", "Redundant input parameter");
                     }
