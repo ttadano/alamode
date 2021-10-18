@@ -264,8 +264,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                                   std::vector<FcsArrayWithCell> &delta_fcs) const
 {
-    unsigned int i;
-    double vec[3];
+    unsigned int i, j;
+    double vec[3], vec_origin[3];
     double fcs_tmp = 0.0;
 
     std::vector<FcsAlignedForGruneisen> fcs_aligned;
@@ -346,11 +346,21 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 
         set_index_uniq.insert(index_with_cell);
 
+        for(i = 0; i < 3; i++){
+            vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+            for(j = 1; j < norder-1; j++){
+                vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                                 + xshift_s[it.pairs[j].cell_s][i];
+            }
+            vec_origin[i] /= (norder-1);
+        }
+
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                          1].tran]]
                      [i]
                      - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                     // - vec_origin[i]
                      + xshift_s[it.pairs[norder - 1].cell_s][i];
         }
 
