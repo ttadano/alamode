@@ -1034,9 +1034,9 @@ void Dynamical::modify_eigenvectors() const
     }
 
     deallocate(flag_done);
-    deallocate(evec_tmp);
-
     dos->dymat_dos->set_eigenvectors(nk, evec_tmp);
+
+    deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
     //if (mympi->my_rank == 0) {
