@@ -595,6 +595,31 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
                 += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
     }
+    // debug
+    std::cout << "dymat_out in calc_analytic_k: " << std::endl;
+    int is, js;
+    for(is = 0; is < nmode; is++){
+        for(js = 0; js < nmode; js++){
+            std::cout << dymat_out[is][js] << " ";
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+
+    // check Hermiticity
+    int ns = nmode;
+    std::cout << "check Hermiticity" << std::endl;
+    for(is = 0; is < ns; is++){
+        for(js = 0; js < ns; js++){
+            std::cout << dymat_out[is][js] - std::conj(dymat_out[js][is]) << " ";
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+
+    for(is = 0; is < ns; is++){
+        for(js = 0; js < ns; js++){
+            if(std::abs(dymat_out[is][js] - std::conj(dymat_out[js][is])) > 1.0e-10){
+                std::cout << "Warning: Hermiticity is broken" << std::endl;
+            }
+        }
+    }
 }
 
 void Dynamical::calc_nonanalytic_k(const double *xk_in,
