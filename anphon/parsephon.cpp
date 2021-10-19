@@ -92,9 +92,10 @@ void Input::parce_input(int narg,
     parse_kpoints();
 
     if (phon->mode == "RTA") {
-        if (!locate_tag("&kappa"))
-            exit("parse_input",
-                 "&kappa entry not found in the input file");
+        // not really essential information to read
+        //if (!locate_tag("&kappa"))
+        //    exit("parse_input",
+        //         "&kappa entry not found in the input file");
         parse_kappa_vars();
     }
 
