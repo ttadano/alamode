@@ -95,6 +95,8 @@ void Gruneisen::setup()
 
     if (print_gruneisen || print_newfcs) {
         prepare_delta_fcs(fcs_phonon->force_constant_with_cell[1], delta_fc2);
+
+        // impose_ASR_on_harmonic_IFC(delta_fc2, 0);
     }
 
     if (print_newfcs && anharmonic_core->quartic_mode > 0) {
@@ -394,6 +396,56 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     fcs_aligned.clear();
     set_index_uniq.clear();
 }
+
+// only mode == 0 is implemented
+// This process breaks the permutation symmetry of the IFC.
+// Therefore, the calculated harmonic frequencies of acoustic modes at the Gamma point deviate from zero.
+void Gruneisen::impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &delta_fcs,
+                           int mode)
+{
+    // should check if delta_fcs consists of harmonic IFCs?
+
+    // change self-interaction
+    if(mode == 0){
+
+        int nat = system->nat;
+
+        int i_ind1, i_tran1, i_ind2, i_tran2, iat1, xyz1, xyz2;
+        double **phi;
+        allocate(phi, nat, 9);
+
+        // calculate correction
+        for(auto &it: delta_fcs){
+            i_ind1 = it.pairs[0].index;
+            i_tran1 = it.pairs[0].tran;
+            i_ind2 = it.pairs[1].index;
+            iat1 = system->map_p2s_anharm[i_ind1/3][i_tran1];
+            xyz1 = i_ind1%3;
+            xyz2 = i_ind2%3;
+
+            phi[iat1][xyz1*3 + xyz2] += it.fcs_val;
+        }
+
+        // apply correction
+        for(auto &it: delta_fcs){
+            // if self-interaction
+            if((it.pairs[0].index/3 == it.pairs[1].index/3) && 
+               (it.pairs[0].tran == it.pairs[1].tran))
+            {
+                i_ind1 = it.pairs[0].index;
+                i_tran1 = it.pairs[0].tran;
+                iat1 = system->map_p2s_anharm[i_ind1/3][i_tran1];
+                xyz1 = i_ind1%3;
+                xyz2 = i_ind2%3;
+                it.fcs_val -= phi[iat1][xyz1*3 + xyz2];
+            }
+        }
+
+    }
+
+    return;
+}
+
 
 void Gruneisen::write_new_fcsxml_all()
 {

@@ -115,6 +115,9 @@ namespace PHON_NS {
         void prepare_delta_fcs(const std::vector<FcsArrayWithCell> &,
                                std::vector<FcsArrayWithCell> &) const;
 
+        void impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &,
+                           int);
+
         void calc_dfc2_reciprocal(std::complex<double> **,
                                   const double *);
 
