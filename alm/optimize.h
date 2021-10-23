@@ -47,6 +47,9 @@ namespace ALM_NS {
         double l1_ratio; // l1_ratio = 1 for LASSO; 0 < l1_ratio < 1 for Elastic net
         int save_solution_path;
 
+        // convention to assign IFCs to mirror images
+        int mirror_image_conv;
+
         OptimizerControl()
         {
             linear_model = 1;
@@ -65,6 +68,7 @@ namespace ALM_NS {
             l1_ratio = 1.0;
             num_l1_alpha = 50;
             save_solution_path = 0;
+            mirror_image_conv = 1;
         }
 
         ~OptimizerControl() = default;

@@ -664,7 +664,8 @@ void InputParser::parse_optimize_vars(ALM *alm)
             "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
             "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
             "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
-            "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
+            "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS",
+            "MIRROR_IMAGE_CONV"
     };
 
     std::map<std::string, std::string> optimize_var_dict;
@@ -755,6 +756,9 @@ void InputParser::parse_optimize_vars(ALM *alm)
     }
     if (!optimize_var_dict["L1_RATIO"].empty()) {
         optcontrol.l1_ratio = boost::lexical_cast<double>(optimize_var_dict["L1_RATIO"]);
+    }
+    if(!optimize_var_dict["MIRROR_IMAGE_CONV"].empty()){
+        optcontrol.mirror_image_conv = boost::lexical_cast<int>(optimize_var_dict["MIRROR_IMAGE_CONV"]);
     }
 
 

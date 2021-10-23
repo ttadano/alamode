@@ -384,6 +384,7 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
+                          get_optimizer_control().mirror_image_conv,
                           verbosity,
                           timer);
         ready_to_fit = true;
@@ -483,6 +484,7 @@ void ALM::get_fc_irreducible(double *fc_values,
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
+                          get_optimizer_control().mirror_image_conv,
                           verbosity,
                           timer);
         ready_to_fit = true;
@@ -620,6 +622,7 @@ int ALM::run_optimize()
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
+                          get_optimizer_control().mirror_image_conv,
                           verbosity,
                           timer);
         ready_to_fit = true;
@@ -667,6 +670,7 @@ void ALM::init_fc_table()
     // Build cluster & force constant table
     cluster->init(system,
                   symmetry,
+                  get_optimizer_control().mirror_image_conv,
                   verbosity,
                   timer);
     fcs->init(cluster,
