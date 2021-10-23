@@ -93,10 +93,12 @@ void Input::parce_input(int narg,
 
     if (phon->mode == "RTA") {
         // not really essential information to read
+        const auto use_defaults_for_kappa = !locate_tag("&kappa");
         //if (!locate_tag("&kappa"))
         //    exit("parse_input",
         //         "&kappa entry not found in the input file");
-        parse_kappa_vars();
+        
+        parse_kappa_vars(use_defaults_for_kappa);
     }
 
     if (phon->mode == "SCPH") {
@@ -400,7 +402,7 @@ void Input::parse_general_vars()
 }
 
 
-void Input::parse_kappa_vars()
+void Input::parse_kappa_vars(const bool use_default_values)
 {
     std::string str_tmp;
     const std::vector<std::string> input_list{
@@ -431,35 +433,25 @@ void Input::parse_kappa_vars()
     auto calculate_kappa_spec = 0;
 
     // Assign given values
-    assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
-    assign_val(epsilon_4ph, "EPSILON_4PH", kappa_var_dict);
-    assign_val(interpolator, "INTERPOLATOR", kappa_var_dict);
-    assign_val(len_boundary, "LEN_BOUNDARY", kappa_var_dict);
-    assign_val(calc_coherent, "KAPPA_COHERENT", kappa_var_dict);
-    assign_val(include_isotope, "ISOTOPE", kappa_var_dict);
-    assign_val(calculate_kappa_spec, "KAPPA_SPEC", kappa_var_dict);
-        
-    if (include_isotope) {
-
-        if (!kappa_var_dict["ISOFACT"].empty()) {
-            split_str_by_space(kappa_var_dict["ISOFACT"], isofact_v);
-
-            if (isofact_v.size() != system->nkd) {
-                exit("parse_kappa_vars",
-                     "The number of entries for ISOFACT is inconsistent with NKD");
-            } else {
-                allocate(isotope_factor, system->nkd);
-                for (auto i = 0; i < system->nkd; ++i) {
-                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
-                }
-            }
-        }
-
+    if (! use_default_values) {
+        assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
+        assign_val(epsilon_4ph, "EPSILON_4PH", kappa_var_dict);
+        assign_val(interpolator, "INTERPOLATOR", kappa_var_dict);
+        assign_val(len_boundary, "LEN_BOUNDARY", kappa_var_dict);
+        assign_val(calc_coherent, "KAPPA_COHERENT", kappa_var_dict);
+        assign_val(include_isotope, "ISOTOPE", kappa_var_dict);
+        assign_val(calculate_kappa_spec, "KAPPA_SPEC", kappa_var_dict);
+        str_tmp = kappa_var_dict["KMESH_COARSE"];
     }
 
-    str_tmp = kappa_var_dict["KMESH_COARSE"];
-    std::vector<unsigned int> kmesh_v;
+    integration->epsilon_4ph = epsilon_4ph;
+    integration->ismear_4ph = ismear_4ph;
+    conductivity->len_boundary = len_boundary; // m
+    conductivity->calc_kappa_spec = calculate_kappa_spec;
+    conductivity->calc_coherent = calc_coherent;
 
+    // set 4ph mesh
+    std::vector<unsigned int> kmesh_v;
     kmesh_v.clear();
     if (!str_tmp.empty()) {
 
@@ -488,6 +480,26 @@ void Input::parse_kappa_vars()
         exit("parse_general_vars",
              "INTERPOLATOR should be either linear or log-linear.");
     }
+    
+    conductivity->set_interpolator(interpolator);
+    conductivity->set_kmesh_coarse(&kmesh_v[0]);
+
+    // set isotope
+    if (include_isotope) {
+        if (!kappa_var_dict["ISOFACT"].empty()) {
+            split_str_by_space(kappa_var_dict["ISOFACT"], isofact_v);
+
+            if (isofact_v.size() != system->nkd) {
+                exit("parse_kappa_vars",
+                     "The number of entries for ISOFACT is inconsistent with NKD");
+            } else {
+                allocate(isotope_factor, system->nkd);
+                for (auto i = 0; i < system->nkd; ++i) {
+                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
+                }
+            }
+        }
+    }
 
     if (include_isotope) {
         if (!kappa_var_dict["ISOFACT"].empty()) {
@@ -500,15 +512,6 @@ void Input::parse_kappa_vars()
     if (isotope_factor) {
         deallocate(isotope_factor);
     }
-
-    conductivity->set_interpolator(interpolator);
-    conductivity->set_kmesh_coarse(&kmesh_v[0]);
-    conductivity->calc_coherent = calc_coherent;
-    conductivity->calc_kappa_spec = calculate_kappa_spec;
-    conductivity->len_boundary = len_boundary; // m
-
-    integration->epsilon_4ph = epsilon_4ph;
-    integration->ismear_4ph = ismear_4ph;
     
     isotope->include_isotope = include_isotope;
 
