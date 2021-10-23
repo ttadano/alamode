@@ -84,9 +84,11 @@ class AdaptiveSmearingSigma {
     AdaptiveSmearingSigma(){};
 
     AdaptiveSmearingSigma(const unsigned int nk_in,
-                          const unsigned int ns_in) {
+                          const unsigned int ns_in,
+                          const double factor) {
 
         allocate(vel, nk_in, ns_in, 3);
+        adaptive_factor = factor;
     };
 
     ~AdaptiveSmearingSigma() {
@@ -119,6 +121,7 @@ class AdaptiveSmearingSigma {
                    double sigma_out[2]);
 
  private:
+    double adaptive_factor;
     double ***vel = nullptr;
     double dq[3][3];
 };
@@ -133,6 +136,7 @@ class Integration : protected Pointers {
     int ismear_4ph;
     double epsilon;
     double epsilon_4ph;
+    double adaptive_factor;
 
     AdaptiveSmearingSigma *adaptive_sigma = nullptr;
     AdaptiveSmearingSigma *adaptive_sigma4 = nullptr;

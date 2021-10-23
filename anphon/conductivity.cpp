@@ -337,7 +337,7 @@ void Conductivity::setup_kappa()
     if (fph_rta > 0) {
         if (!integration->adaptive_sigma4) {
             integration->adaptive_sigma4 = new AdaptiveSmearingSigma(kmesh_4ph->nk,
-                                                                     ns);
+                                                                     ns, integration->adaptive_factor);
             integration->adaptive_sigma4->setup(phonon_velocity,
                                                 kmesh_4ph,
                                                 system->lavec_p,

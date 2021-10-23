@@ -408,7 +408,8 @@ void Input::parse_kappa_vars(const bool use_default_values)
     const std::vector<std::string> input_list{
           "KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", 
           "INTERPOLATOR", "LEN_BOUNDARY",
-          "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC"
+          "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC",
+          "ADAPTIVE_FACTOR"
     };
     
     double *isotope_factor = nullptr;
@@ -432,6 +433,8 @@ void Input::parse_kappa_vars(const bool use_default_values)
     auto calc_coherent = 0;
     auto calculate_kappa_spec = 0;
 
+    double adaptive_factor = 1.0;
+
     // Assign given values
     if (! use_default_values) {
         assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
@@ -442,10 +445,12 @@ void Input::parse_kappa_vars(const bool use_default_values)
         assign_val(include_isotope, "ISOTOPE", kappa_var_dict);
         assign_val(calculate_kappa_spec, "KAPPA_SPEC", kappa_var_dict);
         str_tmp = kappa_var_dict["KMESH_COARSE"];
+        assign_val(adaptive_factor, "ADAPTIVE_FACTOR", kappa_var_dict);
     }
 
     integration->epsilon_4ph = epsilon_4ph;
     integration->ismear_4ph = ismear_4ph;
+    integration->adaptive_factor = adaptive_factor;
     conductivity->len_boundary = len_boundary; // m
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;

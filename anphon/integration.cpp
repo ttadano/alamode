@@ -45,6 +45,7 @@ void Integration::set_default_variables()
     epsilon_4ph = 10.0;
     adaptive_sigma = nullptr;
     adaptive_sigma4 = nullptr;
+    adaptive_factor = 1.0;
 }
 
 void Integration::deallocate_variables()
@@ -109,7 +110,8 @@ void Integration::prepare_adaptivesmearing()
 {
     if (ismear == 2) {
         adaptive_sigma = new AdaptiveSmearingSigma(dos->kmesh_dos->nk,
-                                                   dynamical->neval);
+                                                   dynamical->neval,
+                                                   adaptive_factor);
         adaptive_sigma->setup(phonon_velocity,
                               dos->kmesh_dos,
                               system->lavec_p,
@@ -413,6 +415,7 @@ void Integration::insertion_sort(double *a,
         ind[j] = i;
     }
 }
+
 void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class,
                                   const KpointMeshUniform *kmesh_in,
                                   const double lavec_p_in[3][3],
@@ -451,7 +454,7 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
         parts += std::pow(tmp, 2);
     }
 
-    sigma_out = std::max(2.0e-5, std::sqrt(parts / 12)); // for (w1 - w2)
+    sigma_out = std::max(2.0e-5, adaptive_factor * std::sqrt(parts / 12)); // for (w1 - w2)
 }
 
 void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
@@ -478,8 +481,8 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
         for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
     }
 
-    sigma_out[0] = std::max(2.0e-5, std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
-    sigma_out[1] = std::max(2.0e-5, std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
+    sigma_out[0] = std::max(2.0e-5, adaptive_factor * std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
+    sigma_out[1] = std::max(2.0e-5, adaptive_factor * std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
     // 2.0e-5 ry ~ 3 cm^-1
 }
 
@@ -510,7 +513,7 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k2,
         for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
     }
 
-    sigma_out[0] = std::max(2.0e-5, std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
+    sigma_out[0] = std::max(2.0e-5, adaptive_factor * std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
     sigma_out[1] = std::max(2.0e-5,
-                        std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
+                       adaptive_factor *  std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
 }
