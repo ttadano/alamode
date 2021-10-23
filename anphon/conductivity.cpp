@@ -798,7 +798,7 @@ void Conductivity::calc_anharmonic_imagself4()
             const auto omega = dymat_4ph->get_eigenvalues()[knum][snum];
 
             if (integration->ismear_4ph == 0 || integration->ismear_4ph == 1 || integration->ismear_4ph == 2) {
-                anharmonic_core->calc_damping4_smearing(ntemp,
+                anharmonic_core->calc_damping4_smearing_batch(ntemp,
                                                         temperature,
                                                         omega,
                                                         iks / ns,
