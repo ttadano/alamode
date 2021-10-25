@@ -118,21 +118,23 @@ void Cluster::init(const System *system,
                    cluster_list);
 
     // check permutation symmetry of anharmonic IFC
-    std::cout << "check permutation symmetry of the clusters." << std::endl;
-    std::cout << "(if no message is printed out, the permutation symmetry is satisfied.)" << std::endl;
-    for (auto order = 1; order < maxorder; ++order) {
-        if(order == 1){
-            std::cout << "  CUBIC ..." << std::endl;
+    if(mirror_image_conv > 0){
+        std::cout << "check permutation symmetry of the clusters." << std::endl;
+        std::cout << "(if no message is printed out, the permutation symmetry is satisfied.)" << std::endl;
+        for (auto order = 1; order < maxorder; ++order) {
+            if(order == 1){
+                std::cout << "  CUBIC ..." << std::endl;
+            }
+            else if(order == 2){
+                std::cout << "  QUARTIC ..." << std::endl;
+            }
+            else{
+                std::cout << "" << order+2 << "-th ORDER ..." << std::endl;
+            }
+            check_permutation_symmetry(system, symmetry, order);
         }
-        else if(order == 2){
-            std::cout << "  QUARTIC ..." << std::endl;
-        }
-        else{
-            std::cout << "" << order+2 << "-th ORDER ..." << std::endl;
-        }
-        check_permutation_symmetry(system, symmetry, order);
+        std::cout << "done." << std::endl << std::endl;
     }
-    std::cout << "done." << std::endl << std::endl;
 
 
     if (verbosity > 0) {
@@ -251,24 +253,16 @@ void Cluster::check_permutation_symmetry(const System *system,
     std::vector<int> symnum_tran_to_prim(nat);
     make_symnum_tran_to_prim(system, symmetry, symnum_tran_to_prim);
 
-    // debug
-    // std::cout << "symnum_tran_to_prim : " << std::endl;
-    // for(auto itmp : symnum_tran_to_prim){
-    //     std::cout << itmp << " ";
-    // }std::cout << std::endl;
-
     // check permutation symmetry
     int i_ifc = 0;
     for(iat_prim = 0; iat_prim < natmin; iat_prim++){
         for(auto &cluster_tmp : interaction_cluster[order][iat_prim]){
 
             i_ifc++;
-            // std::cout << std::endl;
-            // std::cout << "i_ifc = " << i_ifc << std::endl;
 
             for(j = 0; j < order+1; j++){
                 
-                // bring (j+1)-th atom of the cluster to the primitive cell
+                // bring j-th atom of the cluster to the primitive cell
                 jat = cluster_tmp.atom[j];
                 isym_tran = symnum_tran_to_prim[jat];
                 isym = symmetry->get_symnum_tran()[isym_tran];
@@ -276,49 +270,23 @@ void Cluster::check_permutation_symmetry(const System *system,
                 jat_translated = symmetry->get_map_sym()[jat][isym];
                 jat_prim = symmetry->get_map_s2p()[jat].atom_num;
 
-                // debug
-                // std::cout << "jat = " << jat << " jat_translated = " << jat_translated << " jat_prim = " << jat_prim << " isym = " << isym << std::endl;
-
                 data_now.clear();
                 // original center
                 iat = symmetry->get_map_p2s()[iat_prim][0];
                 iat_translated = symmetry->get_map_sym()[iat][isym];
                 data_now.push_back(iat_translated);
 
-                // debug
-                // std::cout << "original relative vector: " << std::endl;
-                // for(jtmp = 0; jtmp < order+1; jtmp++){
-                //     jattmp = cluster_tmp.atom[jtmp];
-                //     for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                //         std::cout << system->get_supercell().x_fractional[jattmp][xyztmp] - system->get_supercell().x_fractional[iat][xyztmp] << " ";
-                //     }std::cout << std::endl;
-                // }
-                // std::cout << "translated relative vector: " << std::endl;
-
                 // other atoms
                 for(j2 = 0; j2 < order+1; j2++){
-                    // if(j2 == j){
-                    //     continue;
-                    // }
                     j2at = cluster_tmp.atom[j2];
                     j2at_translated = symmetry->get_map_sym()[j2at][isym];
-                    // debug
-                    // for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                    //     std::cout << system->get_supercell().x_fractional[j2at_translated][xyztmp] - system->get_supercell().x_fractional[iat_translated][xyztmp] << " ";
-                    // }std::cout << std::endl;
 
                     if(j2 == j){
                         continue;
                     }
                     data_now.push_back(j2at_translated);
                 }
-                //insort(order + 2, data_now);
                 std::sort(data_now.begin(), data_now.end());
-                // debug
-                // std::cout << "sorted data_now = ";
-                // for(auto itmp : data_now){
-                //     std::cout << itmp << " ";
-                // }std::cout << std::endl;
 
                 // search for the corresponding cluster
                 auto cluster_tmp2 = interaction_cluster[order][jat_prim].find(InteractionCluster(data_now, cell_dummy));
@@ -338,31 +306,6 @@ void Cluster::check_permutation_symmetry(const System *system,
                     std::cout << "permutation of center atom and atom " << jat << " is considered." << std::endl;
                     continue;
                 }
-                // std::cout << "atom in corresponding cluster : ";
-                // for(auto itmp : (*cluster_tmp2).atom){
-                //     std::cout << itmp << " ";
-                // }std::cout << std::endl;
-
-                // compare position of the center atom
-                // std::cout << "center atom in current cluster(fractional) : ";
-                // for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                //     std::cout << system->get_supercell().x_fractional[jat][xyztmp] << " ";
-                // }std::cout << std::endl;
-                // std::cout << "center atom in current cluster(cartesian) : ";
-                // for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                //     std::cout << system->get_supercell().x_cartesian[jat][xyztmp] << " ";
-                // }std::cout << std::endl;
-
-                // std::cout << "center atom in translated cluster(fractional) : ";
-                // for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                //     jattmp = symmetry->get_map_p2s()[jat_prim][0];
-                //     std::cout << system->get_supercell().x_fractional[jattmp][xyztmp] << " ";
-                // }std::cout << std::endl;
-                // std::cout << "center atom in translated cartesian(fractional) : ";
-                // for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                //     jattmp = symmetry->get_map_p2s()[jat_prim][0];
-                //     std::cout << system->get_supercell().x_cartesian[jattmp][xyztmp] << " ";
-                // }std::cout << std::endl;
 
                 // prepare relative vector for comparison
                 relvecs1.clear();
@@ -532,9 +475,6 @@ void Cluster::check_permutation_symmetry(const System *system,
 
         }
     }
-    // herehere
-
-
 
 }
 
@@ -553,26 +493,16 @@ void Cluster::make_symnum_tran_to_prim(const System *system,
     for(isym_tran = 0; isym_tran < symmetry->get_symnum_tran().size(); isym_tran++){
 
         isym = symmetry->get_symnum_tran()[isym_tran];
-        // debug
-        // std::cout << "isym, isym_tran = " << isym << " " << isym_tran << std::endl;
 
         for(iat = 0; iat < nat; iat++){
             jat = symmetry->get_map_sym()[iat][isym];
-            // std::cout << "iat, jat = " << iat << " " << jat << std::endl;
 
             // if jat is in the primitive cell
             if(is_inprim(jat, natmin, symmetry->get_map_p2s())){
-                // std::cout << "jat = " << jat << " is in the primitive cell" << std::endl;
                 symnum_tran_to_prim[iat] = isym_tran;
             }
         }
     }
-
-    // debug
-    // std::cout << "symnum_tran_to_prim : " << std::endl;
-    // for(auto itmp : symnum_tran_to_prim){
-    //     std::cout << itmp << " ";
-    // }std::cout << std::endl;
 }
 
 bool Cluster::is_inprim(const int iat, // atom index in supercell
@@ -683,17 +613,6 @@ void Cluster::get_pairs_of_minimum_distance(const size_t nat,
             }
         }
     }
-
-    // debug
-    // std::cout << "mindist_pairs: " << std::endl;
-    // for(i = 0; i < nat; i++){
-    //     for(j = 0; j < nat; j++){
-    //         std::cout << "i = " << i << "j = " << j << std::endl;
-    //         for(auto k : mindist_pairs[i][j]){
-    //             std::cout << "(" << k.cell << ", " << k.dist << "), ";
-    //         }std::cout << std::endl;
-    //     }
-    // }
 }
 
 void Cluster::print_neighborlist(const size_t nat,
@@ -1300,34 +1219,7 @@ void Cluster::set_interaction_cluster(const int order,
 
                         std::sort(distance_list.begin(), distance_list.end(),
                                 MinDistList::compare_max_distance);
-                        
-                        // debug from here
-                        // double sum_dist;
-                        // std::cout << "iat = " << iat << std::endl;
-                        // std::cout << "data_now" << std::endl;
-                        // for(auto i : data_now){
-                        //     std::cout << i << " ";
-                        // }std::cout << std::endl;
-                        // for (j = 0; j < distance_list.size(); ++j) {
-                        //     sum_dist = 0.0;
-                        //     
-                        //     for (k = 0; k < distance_list[j].dist.size(); ++k) {
-                        //         sum_dist += distance_list[j].dist[k];
-                        //     }
-                        //     std::cout << "cell = ";
-                        //     for(auto hoge : distance_list[j].cell){
-                        //         std::cout << hoge << " ";
-                        //     }std::cout << std::endl;
-                        //     std::cout << "sum_dist = " << sum_dist << std::endl;
-                        // }
-                        // std::cout << "comb_cell_atom_center" << std::endl;
-                        // for(auto hoge1 : comb_cell_atom_center){
-                        //     for(auto hoge2 :hoge1){
-                        //         std::cout << hoge2 << " ";
-                        //     }std::cout << std::endl;
-                        // }
-                        
-                        // debug to here
+                   
                         distmax = *std::max_element(distance_list[0].dist.begin(),
                                                     distance_list[0].dist.end());
                         interaction_cluster_out[i].insert(InteractionCluster(data_now,
@@ -1346,13 +1238,6 @@ void Cluster::set_interaction_cluster(const int order,
                         std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
                         comb_cell_min.clear();
 
-                        // debug
-                        // std::cout << "data_now" << std::endl;
-                        // for(auto i : data_now){
-                        //     std::cout << i << " ";
-                        // }std::cout << std::endl;
-
-                        
                         double sum_dist_min = 0.0;
                         for (j = 0; j < distance_list[0].dist.size(); ++j) {
                             sum_dist_min += distance_list[0].dist[j];
@@ -1365,15 +1250,12 @@ void Cluster::set_interaction_cluster(const int order,
                             for (k = 0; k < distance_list[j].dist.size(); ++k) {
                                 sum_dist += distance_list[j].dist[k];
                             }
-
-                            // std::cout << "sum_dist = " << sum_dist << std::endl;
                     
                             // In the following, only pairs having minimum sum of distances
                             // are stored.
                             if (std::abs(sum_dist - sum_dist_min) < eps6) {
                             // if (sum_dist < sum_dist_min*1.2+eps6) { // This version is not used.
                                 comb_cell_min.push_back(distance_list[j].cell);
-                                // std::cout << "sum_dist = sum_dist_min" << std::endl;
                             } else {
                                 // break;
                             }

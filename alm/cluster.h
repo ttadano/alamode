@@ -70,16 +70,8 @@ namespace ALM_NS {
         RelativeVectors() = default;
 
         RelativeVectors(int order_in){
-            // int i;
             relvecs_cartesian.clear();
-            // std::vector<double> dvec_tmp;
-
             order = order_in;
-
-            // for(i = 0; i < order+2; i++){
-            //     relvecs_cartesian.push_back(dvec_tmp);
-            //     relvecs_fractional.push_back(dvec_tmp);
-            // }
         }
 
         void clear_relvecs(){
@@ -91,17 +83,14 @@ namespace ALM_NS {
         }
 
         void make_fractional_from_cartesian(const double reciprocal_lat[3][3]){
-            // double vec_fractional[3], vec_cartesian[3];
+
             int i, j, xyz, xyz2;
             std::vector<double> vectmp;
 
             relvecs_fractional.clear();
 
             for(i = 0; i < order+1; i++){
-                // for(xyz = 0; xyz < 3; xyz++){
-                //     vec_cartesian[xyz] = relvecs_cartesian[i][xyz];
-                // }
-                //rotvec(vec_fractional, vec_cartesian, reciprocal_lat);
+
                 vectmp.clear();
                 for(xyz = 0; xyz < 3; xyz++){
                     vectmp.push_back(0.0);
@@ -110,11 +99,6 @@ namespace ALM_NS {
                     }
                 }
 
-                // vectmp.clear();
-                // for(xyz = 0; xyz < 3; xyz++){
-                //     vec_fractional[xyz] /= 2.0 * pi;
-                //     vectmp.push_back(vec_fractional[xyz]);
-                // }
                 relvecs_fractional.push_back(vectmp);
             }
         }

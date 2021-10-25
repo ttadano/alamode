@@ -1234,15 +1234,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     // generate combinations of mirror images
     int i_mirror_images, i_tmp, j_tmp, i_tmp2;
     int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
-    // std::vector<std::vector<int> > mirror_images(n_mirror_images);
-    // for(i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++){
-    //     i_tmp = i_mirror_images;
-    //     for(i = 0; i < order; i++){
-    //         mirror_images[i_mirror_images].push_back(i_tmp%27);
-    //         i_tmp = i_tmp / 27;
-    //     }
-    // }
-
 
     unsigned int isize;
 
