@@ -19,7 +19,7 @@
 
 namespace PHON_NS {
 class Dos : protected Pointers {
- public:
+public:
     Dos(class PHON *);
 
     ~Dos();
@@ -54,7 +54,7 @@ class Dos : protected Pointers {
 
     void set_dos_energy_grid();
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();

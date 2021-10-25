@@ -188,7 +188,7 @@ void rref_sparse(const size_t ncols,
         }
 
         division_factor = 1.0 / it_elem->second;
-        for (auto &it : sp_constraint[irow]) {
+        for (auto &it: sp_constraint[irow]) {
             it.second *= division_factor;
         }
 
@@ -200,7 +200,7 @@ void rref_sparse(const size_t ncols,
             scaling_factor = it_elem->second;
 
             // Subtract irow elements from jrow
-            for (const auto &it_now : sp_constraint[irow]) {
+            for (const auto &it_now: sp_constraint[irow]) {
                 // This part might be accelerated by using std::map::lower_bound
                 // when the datatype of sp_constraint[irow] is std::map.
                 if (it_now.first < icol) {

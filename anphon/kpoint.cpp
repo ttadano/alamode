@@ -732,7 +732,7 @@ void Kpoint::gen_kpoints_plane(const std::vector<KpointInp> &kplist,
         const auto costheta = dprod / std::sqrt(norm1 * norm2);
         if (std::abs(std::abs(costheta) - 1.0) < eps12) {
             exit("gen_kpoints_plane",
-                        "Two vectors have to be linearly independent with each other.");
+                 "Two vectors have to be linearly independent with each other.");
         }
 
         kp_plane_geometry.emplace_back(xk0, xk1, xk2, n_in);
@@ -977,7 +977,7 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
                     convmat[i][j] = static_cast<double>(sign) / static_cast<double>(k);
                 } else {
                     exit("get_commensurate_kpoints",
-                                "The denominator of the conversion matrix > 10000");
+                         "The denominator of the conversion matrix > 10000");
                 }
             }
         }

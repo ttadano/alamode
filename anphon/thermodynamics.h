@@ -17,7 +17,7 @@
 
 namespace PHON_NS {
 class Thermodynamics : protected Pointers {
- public:
+public:
     Thermodynamics(class PHON *);
 
     ~Thermodynamics();

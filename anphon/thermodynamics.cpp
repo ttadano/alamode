@@ -363,13 +363,13 @@ double Thermodynamics::disp_corrfunc(const double T_in,
             if (omega < eps8) continue;
 
             phase = 2.0 * pi * (xk_in[ik][0] * cell_shift[0]
-                  + xk_in[ik][1] * cell_shift[1]
-                  + xk_in[ik][2] * cell_shift[2]);
+                                + xk_in[ik][1] * cell_shift[1]
+                                + xk_in[ik][2] * cell_shift[2]);
 
             ret += real(std::conj(evec_in[ik][is][ncrd1])
-                              * evec_in[ik][is][ncrd2]
-                              * std::exp(phase))
-                  * T_in * T_to_Ryd / (omega * omega);
+                        * evec_in[ik][is][ncrd2]
+                        * std::exp(phase))
+                   * T_in * T_to_Ryd / (omega * omega);
 
         }
 
@@ -383,19 +383,19 @@ double Thermodynamics::disp_corrfunc(const double T_in,
             if (omega < eps8) continue;
 
             phase = 2.0 * pi * (xk_in[ik][0] * cell_shift[0]
-                  + xk_in[ik][1] * cell_shift[1]
-                  + xk_in[ik][2] * cell_shift[2]);
+                                + xk_in[ik][1] * cell_shift[1]
+                                + xk_in[ik][2] * cell_shift[2]);
 
             ret += real(std::conj(evec_in[ik][is][ncrd1])
-                              * evec_in[ik][is][ncrd2]
-                              * std::exp(im * phase))
-                  * (fB(omega, T_in) + 0.5) / omega;
+                        * evec_in[ik][is][ncrd2]
+                        * std::exp(im * phase))
+                   * (fB(omega, T_in) + 0.5) / omega;
         }
     }
 
     ret *= 1.0 / (static_cast<double>(nk)
-          * std::sqrt(system->mass[system->map_p2s[ncrd1 / 3][0]]
-                            * system->mass[system->map_p2s[ncrd2 / 3][0]]));
+                  * std::sqrt(system->mass[system->map_p2s[ncrd1 / 3][0]]
+                              * system->mass[system->map_p2s[ncrd2 / 3][0]]));
 
     return ret;
 }
@@ -523,7 +523,7 @@ void Thermodynamics::compute_FE_bubble(double **eval,
                         omega_sum[1] = 1.0 / (-omega0 + omega1 + omega2);
 
                         const auto v3_tmp = std::norm(anharmonic_core->V3(arr_cubic))
-                              * static_cast<double>(multi);
+                                            * static_cast<double>(multi);
 
                         for (iT = 0; iT < NT; ++iT) {
                             const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;

@@ -1,3 +1,16 @@
+# Ver. 1.3.0 (2021-10-01)
+
+## Changes
+
+- For OpenMX, displace.py now generates atomic positions in Cartesian coordinate instead of the fractional coordinate.
+- Refactor the codes for future major release (This release does not change the user interface.)
+
+## Fixes
+
+- Fix a few bugs in the SCP class. The stability of the phonon frequency interpolation has been improved.
+- Fix other minor bugs and typos in documentation and header parts of output files.
+
+
 # Ver. 1.2.0 (2021-04-02)
 
 ## New features

@@ -33,7 +33,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "scph.h"
 
 #ifdef _HDF5
+
 #include "H5Cpp.h"
+
 #endif
 
 using namespace PHON_NS;
@@ -251,7 +253,7 @@ void Writes::setup_result_io()
             fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
             if (!fs_result) {
                 exit("setup_result_io",
-                            "Could not open file_result");
+                     "Could not open file_result");
             }
 
             // Check the consistency
@@ -271,13 +273,13 @@ void Writes::setup_result_io()
             }
             if (!found_tag)
                 exit("setup_result_io",
-                            "Could not find #SYSTEM tag");
+                     "Could not find #SYSTEM tag");
 
             fs_result >> natmin_tmp >> nkd_tmp;
 
             if (!(natmin_tmp == system->natmin && nkd_tmp == system->nkd)) {
                 exit("setup_result_io",
-                            "SYSTEM information is not consistent");
+                     "SYSTEM information is not consistent");
             }
 
             found_tag = false;
@@ -289,7 +291,7 @@ void Writes::setup_result_io()
             }
             if (!found_tag)
                 exit("setup_result_io",
-                            "Could not find #KPOINT tag");
+                     "Could not find #KPOINT tag");
 
             fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
             fs_result >> nksym_tmp;
@@ -299,7 +301,7 @@ void Writes::setup_result_io()
                   dos->kmesh_dos->nk_i[2] == nk_tmp[2] &&
                   dos->kmesh_dos->nk_irred == nksym_tmp)) {
                 exit("setup_result_io",
-                            "KPOINT information is not consistent");
+                     "KPOINT information is not consistent");
             }
 
             found_tag = false;
@@ -318,7 +320,7 @@ void Writes::setup_result_io()
             }
             if (static_cast<bool>(is_classical) != thermodynamics->classical) {
                 warn("setup_result_io",
-                            "CLASSICAL val is not consistent");
+                     "CLASSICAL val is not consistent");
             }
 
             found_tag = false;
@@ -330,12 +332,12 @@ void Writes::setup_result_io()
             }
             if (!found_tag)
                 exit("setup_result_io",
-                            "Could not find #FCSXML tag");
+                     "Could not find #FCSXML tag");
 
             fs_result >> str_tmp;
             if (str_tmp != fcs_phonon->file_fcs) {
                 warn("setup_result_io",
-                            "FCSXML is not consistent");
+                     "FCSXML is not consistent");
             }
 
             found_tag = false;
@@ -347,14 +349,14 @@ void Writes::setup_result_io()
             }
             if (!found_tag)
                 exit("setup_result_io",
-                            "Could not find #SMEARING tag");
+                     "Could not find #SMEARING tag");
 
             fs_result >> ismear;
             fs_result >> epsilon_tmp;
 
             if (ismear != integration->ismear) {
                 warn("setup_result_io",
-                            "Smearing method is not consistent");
+                     "Smearing method is not consistent");
             }
             if (ismear != -1 && std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4) {
                 std::cout << "epsilon from file : " << std::setw(15)
@@ -362,7 +364,7 @@ void Writes::setup_result_io()
                 std::cout << "epsilon from input: " << std::setw(15)
                           << std::setprecision(10) << integration->epsilon * Ry_to_kayser << std::endl;
                 warn("setup_result_io",
-                            "Smearing width is not consistent");
+                     "Smearing width is not consistent");
             }
 
             found_tag = false;
@@ -374,7 +376,7 @@ void Writes::setup_result_io()
             }
             if (!found_tag)
                 exit("setup_result_io",
-                            "Could not find #TEMPERATURE tag");
+                     "Could not find #TEMPERATURE tag");
 
             fs_result >> T1 >> T2 >> delta_T;
 
@@ -382,7 +384,7 @@ void Writes::setup_result_io()
                   T2 == system->Tmax &&
                   delta_T == system->dT)) {
                 exit("setup_result_io",
-                            "Temperature information is not consistent");
+                     "Temperature information is not consistent");
             }
 
         } else {
@@ -390,7 +392,7 @@ void Writes::setup_result_io()
             fs_result.open(file_result.c_str(), std::ios::out);
             if (!fs_result) {
                 exit("setup_result_io",
-                            "Could not open file_result");
+                     "Could not open file_result");
             }
 
             fs_result << "## General information" << std::endl;
@@ -682,7 +684,7 @@ void Writes::write_phonon_bands() const
     ofs_bands.open(file_bands.c_str(), std::ios::out);
     if (!ofs_bands)
         exit("write_phonon_bands",
-                    "cannot open file_bands");
+             "cannot open file_bands");
 
     unsigned int i, j;
     const auto nk = kpoint->kpoint_bs->nk;
@@ -751,7 +753,7 @@ void Writes::write_phonon_bands() const
         ofs_connect.open(file_connect.c_str(), std::ios::out);
         if (!ofs_connect)
             exit("write_phonon_bands",
-                        "cannot open file_connect");
+                 "cannot open file_connect");
 
         ofs_connect << "# " << str_kpath << std::endl;
         ofs_connect << "#" << str_kval << std::endl;
@@ -854,8 +856,8 @@ void Writes::write_phonon_vel_all() const
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
             phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
-                                            + std::pow(phvel_xyz[ik][is][1], 2)
-                                            + std::pow(phvel_xyz[ik][is][2], 2));
+                                      + std::pow(phvel_xyz[ik][is][1], 2)
+                                      + std::pow(phvel_xyz[ik][is][2], 2));
         }
     }
 
@@ -1185,7 +1187,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
                               << evec_in[ik][imode][3 * j + k].real()
-                                    / (std::sqrt(system->mass[m]) * norm);
+                                 / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -1332,6 +1334,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 }
 
 #ifdef _HDF5
+
 void Writes::write_eigenvectors_HDF5() const
 {
     std::string fname_evec;
@@ -1591,6 +1594,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
 
     group_kpoint.close();
 }
+
 #endif
 
 double Writes::in_kayser(const double x) const
@@ -2047,7 +2051,7 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK]" <<
                    std::endl;
 
             if (isotope->include_isotope) {
@@ -2175,7 +2179,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     if (std::sqrt(dmod[0] * dmod[0] + dmod[1] * dmod[1] + dmod[2] * dmod[2]) > eps12) {
         warn("write_normal_mode_animation",
-                    "The supercell size is not commensurate with given k point.");
+             "The supercell size is not commensurate with given k point.");
     }
 
     rotvec(kvec, xk, system->rlavec_p, 'T');
@@ -2225,8 +2229,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             for (unsigned int iz = 0; iz < ncell[2]; ++iz) {
 
                 phase_cell[icell] = 2.0 * pi * (xk_in[0] * static_cast<double>(ix)
-                      + xk_in[1] * static_cast<double>(iy)
-                      + xk_in[2] * static_cast<double>(iz));
+                                                + xk_in[1] * static_cast<double>(iy)
+                                                + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
                     xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
@@ -2309,7 +2313,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             ofs_anime.open(file_anime.c_str(), std::ios::out);
             if (!ofs_anime)
                 exit("write_normal_mode_animation",
-                            "cannot open file_anime");
+                     "cannot open file_anime");
 
             ofs_anime.setf(std::ios::scientific);
 
@@ -2339,8 +2343,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                            + disp_mag[iband][3 * j + k]
-                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                         + disp_mag[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2367,7 +2371,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             ofs_anime.open(file_anime.c_str(), std::ios::out);
             if (!ofs_anime)
                 exit("write_normal_mode_animation",
-                            "cannot open file_anime");
+                     "cannot open file_anime");
 
             ofs_anime.setf(std::ios::scientific);
 
@@ -2393,8 +2397,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                            + disp_mag[iband][3 * j + k]
-                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                         + disp_mag[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2429,7 +2433,7 @@ void Writes::print_normalmode_borncharge() const
         ofs_zstar.open(file_zstar.c_str(), std::ios::out);
         if (!ofs_zstar)
             exit("print_normalmode_borncharge",
-                        "Cannot open file file_zstar");
+                 "Cannot open file file_zstar");
 
         ofs_zstar << "# Born effective charges of each phonon mode at q = (0, 0, 0). Unit is (amu)^{-1/2}\n";
         for (auto is = 0; is < ns; ++is) {
@@ -2501,13 +2505,13 @@ void Writes::write_participation_ratio_each(const std::string &fname_pr,
     ofs_pr.open(fname_pr.c_str(), std::ios::out);
     if (!ofs_pr)
         exit("write_participation_ratio",
-                    "cannot open file_pr");
+             "cannot open file_pr");
     ofs_pr.setf(std::ios::scientific);
 
     ofs_apr.open(fname_apr.c_str(), std::ios::out);
     if (!ofs_apr)
         exit("write_participation_ratio",
-                    "cannot open file_apr");
+             "cannot open file_apr");
     ofs_apr.setf(std::ios::scientific);
 
     allocate(participation_ratio, nk_in, neval);
@@ -2589,13 +2593,13 @@ void Writes::write_participation_ratio_mesh(const std::string &fname_pr,
     ofs_pr.open(fname_pr.c_str(), std::ios::out);
     if (!ofs_pr)
         exit("write_participation_ratio",
-                    "cannot open file_pr");
+             "cannot open file_pr");
     ofs_pr.setf(std::ios::scientific);
 
     ofs_apr.open(fname_apr.c_str(), std::ios::out);
     if (!ofs_apr)
         exit("write_participation_ratio",
-                    "cannot open file_apr");
+             "cannot open file_apr");
     ofs_apr.setf(std::ios::scientific);
 
     allocate(participation_ratio, nk, neval);
@@ -2897,7 +2901,7 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     ofs_thermo.open(file_thermo.c_str(), std::ios::out);
     if (!ofs_thermo)
         exit("write_scph_thermodynamics",
-                    "cannot open file_thermo");
+             "cannot open file_thermo");
 
     if (thermodynamics->calc_FE_bubble) {
         ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;

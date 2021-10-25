@@ -183,7 +183,7 @@ void Cluster::generate_pairs(const size_t natmin,
 
             const auto iat = map_p2s[i][0];
 
-            for (const auto &it : interaction_cluster[order][i]) {
+            for (const auto &it: interaction_cluster[order][i]) {
 
                 pair_tmp[0] = iat;
                 for (auto j = 0; j < order + 1; ++j) {
@@ -562,7 +562,7 @@ void Cluster::print_interaction_information(const size_t natmin,
             const auto iat = map_p2s[i][0];
 
             intlist.clear();
-            for (auto &it : interaction_list[order][i]) {
+            for (auto &it: interaction_list[order][i]) {
                 intlist.push_back(it);
             }
             std::sort(intlist.begin(), intlist.end());
@@ -725,7 +725,7 @@ void Cluster::set_interaction_cluster(const int order,
 
             // Harmonic term
 
-            for (auto ielem : intlist) {
+            for (auto ielem: intlist) {
 
                 jat = ielem;
                 list_now[1] = jat;
@@ -807,7 +807,7 @@ void Cluster::set_interaction_cluster(const int order,
                     // as a candidate for the cluster.
                     // The mirror images whose distance is larger than the minimum value
                     // of the distance(iat, jat) can be added to the cell_vector list.
-                    for (const auto &it : distall[iat][jat]) {
+                    for (const auto &it: distall[iat][jat]) {
                         if (exist[it.cell]) {
                             if (rc_tmp < 0.0 || it.dist <= rc_tmp) {
                                 cell_vector.push_back(it.cell);
@@ -915,7 +915,7 @@ void Cluster::cell_combination(const std::vector<std::vector<int>> &array,
         comb.push_back(accum);
     } else {
         auto row = array[i];
-        for (auto j : row) {
+        for (auto j: row) {
             auto tmp(accum);
             tmp.push_back(j);
             cell_combination(array, i + 1, tmp, comb);
