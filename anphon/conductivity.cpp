@@ -709,7 +709,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                     for (ib = 0; ib < ns2; ++ib) {
                         if (std::abs(kappa_tmp[ib].imag()) > eps10) {
                             warn("compute_kappa_coherent",
-                                        "The kappa_coherent_out has imaginary component.");
+                                 "The kappa_coherent_out has imaginary component.");
                         }
                         kappa_coherent_out[i][j][k] += kappa_tmp[ib].real();
                     }

@@ -440,7 +440,7 @@ void Dynamical::eval_k(const double *xk_in,
 
     if (eigenvectors && require_evec) {
         k = 0;
-        // Here we transpose the matrix evec_out so that 
+        // Here we transpose the matrix evec_out so that
         // evec_out[i] becomes phonon eigenvector of i-th mode.
         for (j = 0; j < neval; ++j) {
             for (i = 0; i < neval; ++i) {
@@ -474,7 +474,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
 
     calc_analytic_k(xk_in, fc2_in, dymat_k);
 
-    // Calculate Coulombic contributions including long-range interactions 
+    // Calculate Coulombic contributions including long-range interactions
     ewald->add_longrange_matrix(xk_in, kvec_in, mat_longrange);
 
     // Add calculated dynamical matrix of Coulomb parts
@@ -543,7 +543,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
 
     if (eigenvectors && require_evec) {
         k = 0;
-        // Here we transpose the matrix evec_out so that 
+        // Here we transpose the matrix evec_out so that
         // evec_out[i] becomes phonon eigenvector of i-th mode.
         for (j = 0; j < neval; ++j) {
             for (i = 0; i < neval; ++i) {
@@ -626,7 +626,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
                                    const double *kvec_na_in,
                                    std::complex<double> **dymat_na_out) const
 {
-    // Calculate the non-analytic part of dynamical matrices 
+    // Calculate the non-analytic part of dynamical matrices
     // by Parlinski's method.
 
     unsigned int i, j;
@@ -723,7 +723,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                                     const double *kvec_na_in,
                                     std::complex<double> **dymat_na_out) const
 {
-    // Calculate the non-analytic part of dynamical matrices 
+    // Calculate the non-analytic part of dynamical matrices
     // by the mixed-space approach.
 
     unsigned int i, j;
@@ -981,7 +981,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
 {
     if (nk_in <= 0) {
         exit("get_eigenvalues_dymat",
-                    "The number of k points must be larger than 0.");
+             "The number of k points must be larger than 0.");
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
@@ -1059,9 +1059,9 @@ void Dynamical::modify_eigenvectors() const
     }
 
     deallocate(flag_done);
-    deallocate(evec_tmp);
-
     dos->dymat_dos->set_eigenvectors(nk, evec_tmp);
+
+    deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
     //if (mympi->my_rank == 0) {
@@ -1255,7 +1255,7 @@ void Dynamical::project_degenerate_eigenvectors(const double lavec_p[3][3],
         } else {
             std::cout << iset << '\n';
             exitall("project_degenerate_eigenvectors",
-                           "This should not happen.");
+                    "This should not happen.");
         }
 
         ishift += iset;
@@ -1465,7 +1465,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
     if (flag_symmborn) {
 
-        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
+        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR
         // particularly for NONANALYTIC=3 (Ewald summation).
 
         int iat;
@@ -1705,7 +1705,7 @@ void Dynamical::connect_band_by_eigen_similarity(const unsigned int nk_in,
 
         if (std::any_of(found.begin(), found.end(), [](int i1) { return i1 == 0; })) {
             exit("connect_band_by_eigen_similarity",
-                        "Could not identify the connection.");
+                 "Could not identify the connection.");
         }
 
     }

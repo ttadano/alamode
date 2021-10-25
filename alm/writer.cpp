@@ -317,7 +317,7 @@ void Writer::write_displacement_pattern(ALM *alm) const
 
         ofs_pattern << "Basis : " << alm->displace->get_disp_basis()[0] << std::endl;
 
-        for (auto entry : alm->displace->get_pattern_all(order)) {
+        for (auto entry: alm->displace->get_pattern_all(order)) {
             ++counter;
 
             ofs_pattern << std::setw(5) << counter << ":"
@@ -536,7 +536,7 @@ void Writer::write_misc_xml(ALM *alm) const
     std::sort(fc_cart_harmonic.begin(),
               fc_cart_harmonic.end());
 
-    for (const auto &it : fc_cart_harmonic) {
+    for (const auto &it: fc_cart_harmonic) {
 
         for (k = 0; k < 2; ++k) {
             pair_tmp[k] = it.atoms[k];
@@ -587,7 +587,7 @@ void Writer::write_misc_xml(ALM *alm) const
         std::sort(fc_cart_anharm.begin(),
                   fc_cart_anharm.end());
 
-        for (const auto &it : fc_cart_anharm) {
+        for (const auto &it: fc_cart_anharm) {
 
             // Print force constants only when the coefficient is nonzero
             // and the last (order + 1) elements are sorted in ascending order.
@@ -678,7 +678,7 @@ void Writer::write_hessian(ALM *alm) const
         }
     }
 
-    for (const auto &it : alm->fcs->get_fc_cart()[0]) {
+    for (const auto &it: alm->fcs->get_fc_cart()[0]) {
 
         for (i = 0; i < 2; ++i) pair_tmp[i] = it.atoms[i];
 
@@ -740,7 +740,7 @@ void Writer::write_in_QEformat(ALM *alm) const
             hessian[i][j] = 0.0;
         }
     }
-    for (const auto &it : alm->fcs->get_fc_cart()[0]) {
+    for (const auto &it: alm->fcs->get_fc_cart()[0]) {
 
         for (i = 0; i < 2; ++i) pair_tmp[i] = it.atoms[i];
         for (size_t itran = 0; itran < alm->symmetry->get_ntran(); ++itran) {
@@ -818,7 +818,7 @@ void Writer::write_fc3_thirdorderpy_format(ALM *alm) const
 
     const auto ishift = alm->fcs->get_nequiv()[0].size();
 
-    for (const auto &it : alm->fcs->get_fc_cart()[1]) {
+    for (const auto &it: alm->fcs->get_fc_cart()[1]) {
 
         if (!it.is_ascending_order) continue;
 

@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class Writes : protected Pointers {
- public:
+public:
 
     Writes(class PHON *);
 
@@ -90,7 +90,7 @@ class Writes : protected Pointers {
     std::string file_result;
     int nbands;
 
- private:
+private:
 
     void write_phonon_bands() const;
 
@@ -126,6 +126,7 @@ class Writes : protected Pointers {
     void print_normalmode_borncharge() const;
 
 #ifdef _HDF5
+
     void write_eigenvectors_HDF5() const;
 
     void write_eigenvectors_each_HDF5(const std::string &fname_evec,
@@ -134,6 +135,7 @@ class Writes : protected Pointers {
                                       const double *const *eval_in,
                                       const std::complex<double> *const *const *evec_in,
                                       const unsigned int kpmode_in) const;
+
 #endif
 
     void write_thermodynamics() const;
@@ -175,7 +177,7 @@ class Writes : protected Pointers {
 
     std::string anime_format;
 
- public:
+public:
 
 };
 }

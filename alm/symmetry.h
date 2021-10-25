@@ -16,190 +16,190 @@
 #include "timer.h"
 
 namespace ALM_NS {
-    class SymmetryOperation {
-    public:
-        int rotation[3][3];         // in lattice basis
-        double tran[3];             // in Cartesian basis
-        double rotation_cart[3][3]; // in Cartesian basis
-        bool compatible_with_lattice;
-        bool compatible_with_cartesian;
-        bool is_translation;
+class SymmetryOperation {
+public:
+    int rotation[3][3];         // in lattice basis
+    double tran[3];             // in Cartesian basis
+    double rotation_cart[3][3]; // in Cartesian basis
+    bool compatible_with_lattice;
+    bool compatible_with_cartesian;
+    bool is_translation;
 
-        SymmetryOperation();
+    SymmetryOperation();
 
-        SymmetryOperation(const int rot_in[3][3],
-                          const double tran_in[3],
-                          const double rot_cart_in[3][3],
-                          const bool compatibility_lat,
-                          const bool compatibility_cart,
-                          const bool is_trans_in)
-        {
-            for (auto i = 0; i < 3; ++i) {
-                for (auto j = 0; j < 3; ++j) {
-                    rotation[i][j] = rot_in[i][j];
-                    rotation_cart[i][j] = rot_cart_in[i][j];
-                }
-            }
-            for (auto i = 0; i < 3; ++i) {
-                tran[i] = tran_in[i];
-            }
-            compatible_with_lattice = compatibility_lat;
-            compatible_with_cartesian = compatibility_cart;
-            is_translation = is_trans_in;
-        }
-
-        // Operator definition to sort
-        bool operator<(const SymmetryOperation &a) const
-        {
-            std::vector<double> v1, v2;
-            for (auto i = 0; i < 3; ++i) {
-                for (auto j = 0; j < 3; ++j) {
-                    v1.push_back(static_cast<double>(rotation[i][j]));
-                    v2.push_back(static_cast<double>(a.rotation[i][j]));
-                }
-            }
-            for (auto i = 0; i < 3; ++i) {
-                if (tran[i] < 0.0) {
-                    v1.push_back(1.0 + tran[i]);
-                } else {
-                    v1.push_back(tran[i]);
-                }
-                if (a.tran[i] < 0.0) {
-                    v2.push_back(1.0 + a.tran[i]);
-                } else {
-                    v2.push_back(a.tran[i]);
-                }
-            }
-            return std::lexicographical_compare(v1.begin(), v1.end(),
-                                                v2.begin(), v2.end());
-        }
-    };
-
-    class RotationMatrix {
-    public:
-        int mat[3][3];
-
-        RotationMatrix();
-
-        RotationMatrix(const int rot[3][3])
-        {
-            for (auto i = 0; i < 3; ++i) {
-                for (auto j = 0; j < 3; ++j) {
-                    mat[i][j] = rot[i][j];
-                }
+    SymmetryOperation(const int rot_in[3][3],
+                      const double tran_in[3],
+                      const double rot_cart_in[3][3],
+                      const bool compatibility_lat,
+                      const bool compatibility_cart,
+                      const bool is_trans_in)
+    {
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                rotation[i][j] = rot_in[i][j];
+                rotation_cart[i][j] = rot_cart_in[i][j];
             }
         }
-    };
+        for (auto i = 0; i < 3; ++i) {
+            tran[i] = tran_in[i];
+        }
+        compatible_with_lattice = compatibility_lat;
+        compatible_with_cartesian = compatibility_cart;
+        is_translation = is_trans_in;
+    }
 
-    class Maps {
-    public:
-        int atom_num;
-        int tran_num;
-    };
+    // Operator definition to sort
+    bool operator<(const SymmetryOperation &a) const
+    {
+        std::vector<double> v1, v2;
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                v1.push_back(static_cast<double>(rotation[i][j]));
+                v2.push_back(static_cast<double>(a.rotation[i][j]));
+            }
+        }
+        for (auto i = 0; i < 3; ++i) {
+            if (tran[i] < 0.0) {
+                v1.push_back(1.0 + tran[i]);
+            } else {
+                v1.push_back(tran[i]);
+            }
+            if (a.tran[i] < 0.0) {
+                v2.push_back(1.0 + a.tran[i]);
+            } else {
+                v2.push_back(a.tran[i]);
+            }
+        }
+        return std::lexicographical_compare(v1.begin(), v1.end(),
+                                            v2.begin(), v2.end());
+    }
+};
 
-    class Symmetry {
-    public:
-        Symmetry();
+class RotationMatrix {
+public:
+    int mat[3][3];
 
-        ~Symmetry();
+    RotationMatrix();
 
-        void init(const System *system,
-                  const int verbosity,
-                  Timer *timer);
+    RotationMatrix(const int rot[3][3])
+    {
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                mat[i][j] = rot[i][j];
+            }
+        }
+    }
+};
 
-        double get_tolerance() const;
+class Maps {
+public:
+    int atom_num;
+    int tran_num;
+};
 
-        void set_tolerance(const double);
+class Symmetry {
+public:
+    Symmetry();
 
-        int get_print_symmetry() const;
+    ~Symmetry();
 
-        void set_print_symmetry(const int);
+    void init(const System *system,
+              const int verbosity,
+              Timer *timer);
 
-        const std::vector<Maps> &get_map_s2p() const;
+    double get_tolerance() const;
 
-        const std::vector<std::vector<int>> &get_map_p2s() const;
+    void set_tolerance(const double);
 
-        const std::vector<SymmetryOperation> &get_SymmData() const;
+    int get_print_symmetry() const;
 
-        const std::vector<std::vector<int>> &get_map_sym() const;
+    void set_print_symmetry(const int);
 
-        const std::vector<int> &get_symnum_tran() const;
+    const std::vector<Maps> &get_map_s2p() const;
 
-        size_t get_nsym() const;
+    const std::vector<std::vector<int>> &get_map_p2s() const;
 
-        size_t get_ntran() const;
+    const std::vector<SymmetryOperation> &get_SymmData() const;
 
-        size_t get_nat_prim() const;
+    const std::vector<std::vector<int>> &get_map_sym() const;
 
-    private:
-        size_t nsym, ntran, nat_prim;
-        std::vector<std::vector<int>> map_sym;   // [nat, nsym]
-        std::vector<std::vector<int>> map_p2s;   // [nat_prim, ntran]
-        std::vector<Maps> map_s2p;               // [nat]
-        std::vector<SymmetryOperation> SymmData; // [nsym]
-        std::vector<int> symnum_tran;            // [ntran]
+    const std::vector<int> &get_symnum_tran() const;
 
-        double tolerance;
-        bool use_internal_symm_finder;
-        int printsymmetry;
+    size_t get_nsym() const;
 
-        void set_default_variables();
+    size_t get_ntran() const;
 
-        void deallocate_variables();
+    size_t get_nat_prim() const;
 
-        void setup_symmetry_operation(const Cell &,
-                                      const int [3],
-                                      const std::vector<std::vector<unsigned int>> &,
-                                      const Spin &,
-                                      const int);
+private:
+    size_t nsym, ntran, nat_prim;
+    std::vector<std::vector<int>> map_sym;   // [nat, nsym]
+    std::vector<std::vector<int>> map_p2s;   // [nat_prim, ntran]
+    std::vector<Maps> map_s2p;               // [nat]
+    std::vector<SymmetryOperation> SymmData; // [nsym]
+    std::vector<int> symnum_tran;            // [ntran]
 
-        void gen_mapping_information(const Cell &,
-                                     const std::vector<std::vector<unsigned int>> &);
+    double tolerance;
+    bool use_internal_symm_finder;
+    int printsymmetry;
 
-        void findsym_alm(const Cell &,
-                         const int [3],
-                         const std::vector<std::vector<unsigned int>> &,
-                         const Spin &);
+    void set_default_variables();
 
-        int findsym_spglib(const Cell &,
-                           const std::vector<std::vector<unsigned int>> &,
-                           const Spin &,
-                           std::string &);
+    void deallocate_variables();
 
-        bool is_translation(const int [3][3]) const;
+    void setup_symmetry_operation(const Cell &,
+                                  const int [3],
+                                  const std::vector<std::vector<unsigned int>> &,
+                                  const Spin &,
+                                  const int);
 
-        bool is_proper(const double [3][3]) const;
+    void gen_mapping_information(const Cell &,
+                                 const std::vector<std::vector<unsigned int>> &);
 
-        void symop_in_cart(double [3][3],
-                           const int [3][3],
-                           const double [3][3],
-                           const double [3][3]) const;
+    void findsym_alm(const Cell &,
+                     const int [3],
+                     const std::vector<std::vector<unsigned int>> &,
+                     const Spin &);
 
-        void print_symminfo_stdout() const;
+    int findsym_spglib(const Cell &,
+                       const std::vector<std::vector<unsigned int>> &,
+                       const Spin &,
+                       std::string &);
 
-        template<typename T>
-        bool is_compatible(const T [3][3],
-                           double tolerance_zero = 1.0e-5);
+    bool is_translation(const int [3][3]) const;
 
-        void find_lattice_symmetry(const double [3][3],
-                                   std::vector<RotationMatrix> &) const;
+    bool is_proper(const double [3][3]) const;
 
-        void find_crystal_symmetry(const Cell &,
-                                   const std::vector<std::vector<unsigned int>> &,
-                                   const int [3],
-                                   const Spin &,
-                                   const std::vector<RotationMatrix> &);
+    void symop_in_cart(double [3][3],
+                       const int [3][3],
+                       const double [3][3],
+                       const double [3][3]) const;
 
-        void set_primitive_lattice(const double aa[3][3],
-                                   const size_t nat,
-                                   const int *kd,
-                                   double **x,
-                                   double aa_prim[3][3],
-                                   size_t &nat_prim,
-                                   int *kd_prim,
-                                   double **x_prim,
-                                   const double symprec) const;
+    void print_symminfo_stdout() const;
 
-        std::string file_sym;
-    };
+    template<typename T>
+    bool is_compatible(const T [3][3],
+                       double tolerance_zero = 1.0e-5);
+
+    void find_lattice_symmetry(const double [3][3],
+                               std::vector<RotationMatrix> &) const;
+
+    void find_crystal_symmetry(const Cell &,
+                               const std::vector<std::vector<unsigned int>> &,
+                               const int [3],
+                               const Spin &,
+                               const std::vector<RotationMatrix> &);
+
+    void set_primitive_lattice(const double aa[3][3],
+                               const size_t nat,
+                               const int *kd,
+                               double **x,
+                               double aa_prim[3][3],
+                               size_t &nat_prim,
+                               int *kd_prim,
+                               double **x_prim,
+                               const double symprec) const;
+
+    std::string file_sym;
+};
 }

@@ -45,15 +45,11 @@ void Fcs_phonon::set_default_variables()
     file_fcs = "";
     file_fc2 = "";
     update_fc2 = false;
-    force_constant = nullptr;
     force_constant_with_cell = nullptr;
 }
 
 void Fcs_phonon::deallocate_variables()
 {
-    if (force_constant) {
-        deallocate(force_constant);
-    }
     if (force_constant_with_cell) {
         deallocate(force_constant_with_cell);
     }
@@ -307,62 +303,6 @@ void Fcs_phonon::load_fcs_xml() const
     std::cout << "done !" << std::endl;
 }
 
-void Fcs_phonon::MPI_Bcast_fc_class(const unsigned int N) const
-{
-    int j, k;
-    double *fcs_tmp;
-    unsigned int ***ind;
-
-    Triplet tri_tmp;
-    std::vector<Triplet> tri_vec;
-
-    for (unsigned int i = 0; i < N; ++i) {
-
-        int len = force_constant[i].size();
-        int nelem = i + 2;
-
-        MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-        allocate(fcs_tmp, len);
-        allocate(ind, len, nelem, 3);
-
-        if (mympi->my_rank == 0) {
-            for (j = 0; j < len; ++j) {
-                fcs_tmp[j] = force_constant[i][j].fcs_val;
-                for (k = 0; k < nelem; ++k) {
-                    ind[j][k][0] = force_constant[i][j].elems[k].atom;
-                    ind[j][k][1] = force_constant[i][j].elems[k].cell;
-                    ind[j][k][2] = force_constant[i][j].elems[k].xyz;
-                }
-            }
-        }
-
-        MPI_Bcast(&fcs_tmp[0], len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&ind[0][0][0], 3 * nelem * len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-        if (mympi->my_rank > 0) {
-            force_constant[i].clear();
-
-            for (j = 0; j < len; ++j) {
-
-                tri_vec.clear();
-
-                for (k = 0; k < nelem; ++k) {
-                    tri_tmp.atom = ind[j][k][0];
-                    tri_tmp.cell = ind[j][k][1];
-                    tri_tmp.xyz = ind[j][k][2];
-
-                    tri_vec.push_back(tri_tmp);
-                }
-                force_constant[i].emplace_back(fcs_tmp[j], tri_vec);
-            }
-        }
-
-        deallocate(fcs_tmp);
-        deallocate(ind);
-    }
-}
-
 void Fcs_phonon::MPI_Bcast_fc2_ext()
 {
     unsigned int i;
@@ -455,7 +395,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                                     fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
                                 } else {
                                     exit("examine_translational_invariance",
-                                                "Corresponding IFC not found.");
+                                         "Corresponding IFC not found.");
                                 }
                             }
                         }

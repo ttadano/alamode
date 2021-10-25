@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class PhononVelocity : protected Pointers {
- public:
+public:
     PhononVelocity(class PHON *);
 
     ~PhononVelocity();
@@ -61,7 +61,7 @@ class PhononVelocity : protected Pointers {
     bool print_velocity;
     std::complex<double> ***velmat;
 
- private:
+private:
 
     double **xshift_s;
 

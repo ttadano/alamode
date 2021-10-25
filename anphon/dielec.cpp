@@ -256,7 +256,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
 
     if (dynamical->file_born.empty()) {
         exitall("Dielec::compute_mode_effective_charge()",
-                       "BORNINFO must be set when DIELEC = 1.");
+                "BORNINFO must be set when DIELEC = 1.");
     }
 
     // If borncharge in dynamical class is not initialized, do it here.

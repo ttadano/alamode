@@ -209,7 +209,7 @@ void Symmetry::setup_symmetry_operation(const Cell &cell,
         ofs_sym.open(file_sym.c_str(), std::ios::out);
         ofs_sym << nsym << std::endl;
 
-        for (auto &p : SymmData) {
+        for (auto &p: SymmData) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     ofs_sym << std::setw(4) << p.rotation[i][j];
@@ -439,7 +439,7 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
                           is_compatible(rot_cart),
                           is_translation(rot_int));
 
-    for (auto &it_latsym : LatticeSymmList) {
+    for (auto &it_latsym: LatticeSymmList) {
 
         iat = atomtype_group[0][0];
 

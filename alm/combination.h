@@ -15,59 +15,59 @@
 #include "../external/combination.hpp"
 
 namespace ALM_NS {
-    template<class TYPE>
-    class CombinationWithRepetition {
-        std::vector<TYPE> vec;
-        unsigned int ndim;
+template<class TYPE>
+class CombinationWithRepetition {
+    std::vector<TYPE> vec;
+    unsigned int ndim;
 
 
-    public:
-        CombinationWithRepetition() {};
+public:
+    CombinationWithRepetition() {};
 
-        template<class InputIter>
-        CombinationWithRepetition(InputIter begin,
-                                  InputIter end,
-                                  const unsigned int n)
-        {
-            ndim = n;
+    template<class InputIter>
+    CombinationWithRepetition(InputIter begin,
+                              InputIter end,
+                              const unsigned int n)
+    {
+        ndim = n;
 
-            // remove redundunt elements
-            std::set<TYPE> set_tmp;
-            for (InputIter iter = begin; iter != end; ++iter) set_tmp.insert(*iter);
+        // remove redundunt elements
+        std::set<TYPE> set_tmp;
+        for (InputIter iter = begin; iter != end; ++iter) set_tmp.insert(*iter);
 
-            vec.clear();
+        vec.clear();
 
-            for (auto iter = set_tmp.begin(); iter != set_tmp.end(); ++iter) {
-                for (unsigned int i = 0; i < ndim; i++) {
-                    vec.push_back(*iter);
-                }
+        for (auto iter = set_tmp.begin(); iter != set_tmp.end(); ++iter) {
+            for (unsigned int i = 0; i < ndim; i++) {
+                vec.push_back(*iter);
             }
         }
+    }
 
-        bool next()
-        {
-            return boost::next_combination(vec.begin(), vec.begin() + ndim, vec.end());
-        }
+    bool next()
+    {
+        return boost::next_combination(vec.begin(), vec.begin() + ndim, vec.end());
+    }
 
-        std::vector<TYPE> now() const
-        {
-            return std::vector<TYPE>(vec.begin(), vec.begin() + ndim);
-        }
+    std::vector<TYPE> now() const
+    {
+        return std::vector<TYPE>(vec.begin(), vec.begin() + ndim);
+    }
 
-        unsigned int size() const
-        {
-            const unsigned int n = vec.size() / ndim;
-            const auto r = ndim;
-            return factorial(n + r - 1, n - 1) / factorial(r);
-        }
+    unsigned int size() const
+    {
+        const unsigned int n = vec.size() / ndim;
+        const auto r = ndim;
+        return factorial(n + r - 1, n - 1) / factorial(r);
+    }
 
-    private:
-        unsigned int factorial(const unsigned int max,
-                               const unsigned int min = 1) const
-        {
-            unsigned int result = 1;
-            for (auto i = min + 1; i <= max; ++i) result *= i;
-            return result;
-        }
-    };
+private:
+    unsigned int factorial(const unsigned int max,
+                           const unsigned int min = 1) const
+    {
+        unsigned int result = 1;
+        for (auto i = min + 1; i <= max; ++i) result *= i;
+        return result;
+    }
+};
 }
