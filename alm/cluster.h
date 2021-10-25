@@ -306,44 +306,6 @@ private:
 
     void set_default_variables();
 
-<<<<<<< HEAD
-        void calc_interaction_clusters(const size_t natmin,
-                                       const std::vector<int> &kd,
-                                       const std::vector<std::vector<int>> &map_p2s,
-                                       const double *const *const *x_image,
-                                       const int *exist,
-                                       const int) const;
-
-        void set_interaction_cluster(const int order,
-                                     const size_t natmin,
-                                     const std::vector<int> &kd,
-                                     const std::vector<std::vector<int>> &map_p2s,
-                                     const std::vector<int> *interaction_pair_in,
-                                     const double *const *const *x_image,
-                                     const int *exist,
-                                     const int mirror_image_conv,
-                                     std::set<InteractionCluster> *interaction_cluster_out) const;
-
-        void cell_combination(const std::vector<std::vector<int>> &,
-                              const size_t,
-                              const std::vector<int> &,
-                              std::vector<std::vector<int>> &) const;
-
-        void generate_pairs(const size_t natmin,
-                            const std::vector<std::vector<int>> &map_p2s,
-                            std::set<IntList> *pair_out) const;
-
-        void check_permutation_symmetry(const System *system,
-                                        const Symmetry *symmetry,
-                                        int order);
-        void make_symnum_tran_to_prim(const System *system,
-                                      const Symmetry *symmetry,
-                                      std::vector<int> &symnum_tran_to_prim);
-        bool is_inprim(const int iat,
-                    const size_t natmin,
-                    const std::vector<std::vector<int>> &map_p2s) const;
-    };
-=======
     void deallocate_variables();
 
     // can be made const function, but mindist_pairs is modified
@@ -386,7 +348,8 @@ private:
                                    const std::vector<int> &kd,
                                    const std::vector<std::vector<int>> &map_p2s,
                                    const double *const *const *x_image,
-                                   const int *exist) const;
+                                   const int *exist,
+                                   const int mirror_image_conv) const;
 
     void set_interaction_cluster(const int order,
                                  const size_t natmin,
@@ -395,6 +358,7 @@ private:
                                  const std::vector<int> *interaction_pair_in,
                                  const double *const *const *x_image,
                                  const int *exist,
+                                 const int mirror_image_conv,
                                  std::set<InteractionCluster> *interaction_cluster_out) const;
 
     void cell_combination(const std::vector<std::vector<int>> &,
@@ -405,8 +369,19 @@ private:
     void generate_pairs(const size_t natmin,
                         const std::vector<std::vector<int>> &map_p2s,
                         std::set<IntList> *pair_out) const;
+
+    void check_permutation_symmetry(const System *system,
+                                    const Symmetry *symmetry,
+                                    int order);
+                
+    void make_symnum_tran_to_prim(const System *system,
+                                const Symmetry *symmetry,
+                                std::vector<int> &symnum_tran_to_prim);
+
+    bool is_inprim(const int iat, // atom index in supercell
+                    const size_t natmin,
+                    const std::vector<std::vector<int>> &map_p2s) const;
 };
->>>>>>> develop
 }
 
 namespace std {

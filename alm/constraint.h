@@ -304,30 +304,9 @@ private:
 
     void deallocate_variables();
 
-<<<<<<< HEAD
-        void get_constraint_translation_for_mirror_images(const Cell &supercell,
-                                            const Symmetry *symmetry,
-                                            const Cluster *cluster,
-                                            const Fcs *fcs,
-                                            const int order,
-                                            const std::vector<FcProperty> &fc_table,
-                                            const size_t nparams,
-                                            ConstraintSparseForm &const_out,
-                                            const bool do_rref) const;
-
-
-        // const_translation is updated.
-        void generate_translational_constraint(const Cell &,
-                                               const Symmetry *,
-                                               const Cluster *,
-                                               const Fcs *,
-                                               const int,
-                                               const int) const;
-=======
     int levi_civita(const int,
                     const int,
                     const int) const;
->>>>>>> develop
 
     void generate_rotational_constraint(const System *,
                                         const Symmetry *,
@@ -378,12 +357,23 @@ private:
                                     const size_t nparams,
                                     ConstraintSparseForm &const_out,
                                     const bool do_rref = false) const;
+                        
+    void get_constraint_translation_for_mirror_images(const Cell &supercell,
+                                    const Symmetry *symmetry,
+                                    const Cluster *cluster,
+                                    const Fcs *fcs,
+                                    const int order,
+                                    const std::vector<FcProperty> &fc_table,
+                                    const size_t nparams,
+                                    ConstraintSparseForm &const_out,
+                                    const bool do_rref) const;
 
     // const_translation is updated.
     void generate_translational_constraint(const Cell &,
                                            const Symmetry *,
                                            const Cluster *,
                                            const Fcs *,
+                                           const int,
                                            const int) const;
 
     void fix_forceconstants_to_file(const int,
