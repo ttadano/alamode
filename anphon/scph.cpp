@@ -1603,23 +1603,23 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(del_v2_strain_from_cubic, 9, nk_interpolate, ns*ns);
     compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
 
-    allocate(del_v2_strain_from_quartic, 81, nk_interpolate, ns*ns);
+    allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
 
-    int ixyz1, ixyz2;
-    std::cout << "compute_del_v2_strain_from_cubic is done. " << std::endl;
-    std::cout << "ixyz1 = " << ixyz1 << " ixyz2 = " << ixyz2 << " is done" << std::endl;
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            for(ik = 0; ik < 5; ik++){
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        std::cout << del_v2_strain_from_cubic[ixyz1*3 + ixyz2][ik][is1*ns+is2] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-            }
-        }
-    }
+    // int ixyz1, ixyz2;
+    // std::cout << "compute_del_v2_strain_from_cubic is done. " << std::endl;
+    // std::cout << "ixyz1 = " << ixyz1 << " ixyz2 = " << ixyz2 << " is done" << std::endl;
+    // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+    //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+    //         for(ik = 0; ik < 5; ik++){
+    //             for(is1 = 0; is1 < ns; is1++){
+    //                 for(is2 = 0; is2 < ns; is2++){
+    //                     std::cout << del_v2_strain_from_cubic[ixyz1*3 + ixyz2][ik][is1*ns+is2] << " ";
+    //                 }std::cout << std::endl;
+    //             }std::cout << std::endl;
+    //         }
+    //     }
+    // }
 
 
 
@@ -1765,7 +1765,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 renormalize_v3_array(v3_array_renormalized, v3_array_original, v4_array_original, q0);
                 renormalize_v0(v0_renormalized, v0_original, v1_array_original, v3_array_original, v4_array_original, q0);
 
-                renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, u_tensor);
+                renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
 
                 int ik_tmp1, istmp1, istmp2;
                 for(ik_tmp1 = 0; ik_tmp1 < 4; ik_tmp1++){
@@ -1994,6 +1994,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(v1_array_SCP);
 
     deallocate(del_v2_strain_from_cubic);
+    deallocate(del_v2_strain_from_quartic);
 
     deallocate(q0);
     deallocate(delta_q0);
@@ -3028,6 +3029,76 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
     deallocate(mat_tmp);
 }
 
+void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_strain_from_quartic,
+                                            std::complex<double> ***evec_harmonic)
+{
+    using namespace Eigen;
+
+    const auto ns = dynamical->neval;
+    const auto nk = kmesh_dense->nk;
+    const auto nk_interpolate = kmesh_coarse->nk;
+    int ixyz11, ixyz12, ixyz21, ixyz22, ixyz, itmp;
+    int is1, is2, ik, knum;
+
+    std::vector<FcsArrayWithCell> delta_fcs;
+    std::vector<FcsClassExtent> delta_fcs2;
+    FcsClassExtent fc_extent_tmp;
+
+    std::complex<double> **mat_tmp;
+    allocate(mat_tmp, ns, ns);
+
+    MatrixXcd Dymat(ns, ns);
+    MatrixXcd evec_tmp(ns, ns);
+    
+    for(ixyz = 0; ixyz < 81; ixyz++){
+        itmp = ixyz;
+        ixyz22 = itmp % 3;
+        itmp /= 3;
+        ixyz21 = itmp % 3;
+        itmp /= 3;
+        ixyz12 = itmp % 3;
+        ixyz11 = itmp / 3;
+        std::cout << "ixyz = " << ixyz << std::endl << std::flush;
+        // calculate renormalization in real space
+        compute_del_v_strain_in_real_space2(fcs_phonon->force_constant_with_cell[2],
+                                                        delta_fcs, ixyz11, ixyz12, ixyz21, ixyz22, 1);
+
+        std::cout << "renormalization from quartic to harmonic IFCs in real space is done." << std::endl;
+
+        // change format of harmonic IFCs.
+        delta_fcs2.clear();
+
+        for (const auto &it: delta_fcs){
+            fc_extent_tmp = from_FcsArrayWithCell_to_FcsClassExtent(it);
+            delta_fcs2.emplace_back(fc_extent_tmp);
+        }
+        
+        for(ik = 0; ik < nk_interpolate; ik++){
+            dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
+                                    delta_fcs2,
+                                    mat_tmp);
+            // Unitary transformation
+            knum = kmap_interpolate_to_scph[ik];
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    Dymat(is1, is2) = mat_tmp[is1][is2];
+                    evec_tmp(is1, is2) = evec_harmonic[knum][is2][is1]; // transpose
+                }
+            }
+            Dymat = evec_tmp.adjoint() * Dymat * evec_tmp;
+
+            // copy result to del_v2_strain_from_cubic
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    del_v2_strain_from_quartic[ixyz][ik][is1*ns+is2] = Dymat(is1, is2);
+                }
+            }
+        }
+    }
+
+    deallocate(mat_tmp);
+}
+
 void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &fcs_in,
                                                std::vector<FcsArrayWithCell> &delta_fcs,
                                                const int ixyz1,
@@ -3313,6 +3384,301 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
     set_index_uniq.clear();
 }
 
+// mirror_image_mode = 1 in default.
+// mirror_image_mode = 0 has not been thoroughly tested.
+void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCell> &fcs_in,
+                                               std::vector<FcsArrayWithCell> &delta_fcs,
+                                               const int ixyz11,
+                                               const int ixyz12,
+                                               const int ixyz21,
+                                               const int ixyz22,
+                                               const int mirror_image_mode)
+{
+    unsigned int i, j;
+    double vec1[3], vec2[3], vec_origin[3];
+    double fcs_tmp = 0.0;
+
+    std::vector<FcsAlignedForGruneisen2> fcs_aligned;
+    std::vector<AtomCellSuper> pairs_vec;
+    std::vector<int> index_old, index_now;
+    std::vector<int> index_with_cell, index_with_cell_old;
+    std::set<std::vector<int>> set_index_uniq;
+    AtomCellSuper pairs_tmp;
+
+    const auto norder = fcs_in[0].pairs.size();
+    unsigned int nmulti;
+
+    delta_fcs.clear();
+    fcs_aligned.clear();
+
+    for (const auto &it: fcs_in) {
+        fcs_aligned.emplace_back(it.fcs_val, it.pairs);
+    }
+    std::sort(fcs_aligned.begin(), fcs_aligned.end());
+
+    // prepare supercell shift
+    double **xshift_s;
+    const auto ncell_s = 27;
+
+    allocate(xshift_s, ncell_s, 3);
+
+    unsigned int icell = 0;
+    int ix, iy, iz;
+    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                xshift_s[icell][0] = ix*1.0;
+                xshift_s[icell][1] = iy*1.0;
+                xshift_s[icell][2] = iz*1.0;
+
+                ++icell;
+            }
+        }
+    }
+
+    if(mirror_image_mode == 0){
+        // original implementation
+        // calculate IFC renormalization for the same atomic combination in the supercell
+        // but with different mirror images at once and assign the average value for each
+        // mirror images.
+        index_old.clear();
+        const auto nelems = 2 * (norder - 3) + 1;
+        for (i = 0; i < nelems; ++i) index_old.push_back(-1);
+
+        index_with_cell.clear();
+        set_index_uniq.clear();
+
+        for (const auto &it: fcs_aligned) {
+
+            // if the xyz does not match the considering coponent
+            if(it.pairs[norder - 2].index % 3 != ixyz11 || it.pairs[norder-1].index % 3 != ixyz21){
+                continue;
+            }
+
+            index_now.clear();
+            index_with_cell.clear();
+
+            index_now.push_back(it.pairs[0].index);
+            index_with_cell.push_back(it.pairs[0].index);
+
+            for (i = 1; i < norder - 2; ++i) {
+                index_now.push_back(it.pairs[i].index);
+                index_now.push_back(it.pairs[i].tran);
+
+                index_with_cell.push_back(it.pairs[i].index);
+                index_with_cell.push_back(it.pairs[i].tran);
+                index_with_cell.push_back(it.pairs[i].cell_s);
+            }
+
+            if (index_now != index_old) {
+
+                if (index_old[0] != -1) {
+
+                    nmulti = set_index_uniq.size();
+                    fcs_tmp /= static_cast<double>(nmulti);
+
+                    if (std::abs(fcs_tmp) > eps15) {
+                        for (const auto &it2: set_index_uniq) {
+
+                            pairs_vec.clear();
+
+                            pairs_tmp.index = it2[0];
+                            pairs_tmp.tran = 0;
+                            pairs_tmp.cell_s = 0;
+                            pairs_vec.push_back(pairs_tmp);
+                            for (i = 1; i < norder - 2; ++i) {
+                                pairs_tmp.index = it2[3 * i - 2];
+                                pairs_tmp.tran = it2[3 * i - 1];
+                                pairs_tmp.cell_s = it2[3 * i];
+                                pairs_vec.push_back(pairs_tmp);
+                            }
+                            delta_fcs.emplace_back(fcs_tmp, pairs_vec);
+                        }
+                    }
+                    set_index_uniq.clear();
+                }
+
+                fcs_tmp = 0.0;
+                index_old.clear();
+                index_old.reserve(index_now.size());
+                std::copy(index_now.begin(), index_now.end(), std::back_inserter(index_old));
+            }
+
+            set_index_uniq.insert(index_with_cell);
+
+            for(i = 0; i < 3; i++){
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                for(j = 1; j < norder-2; j++){
+                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                                    + xshift_s[it.pairs[j].cell_s][i];
+                }
+                vec_origin[i] /= (norder-2);
+            }
+
+            for (i = 0; i < 3; ++i) {
+                vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
+                                                                                                            2].tran]]
+                        [i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                        - vec_origin[i]
+                        + xshift_s[it.pairs[norder - 2].cell_s][i];
+                vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                            1].tran]]
+                        [i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                        - vec_origin[i]
+                        + xshift_s[it.pairs[norder - 1].cell_s][i];
+            }
+
+            rotvec(vec1, vec1, system->lavec_s_anharm);
+            rotvec(vec2, vec2, system->lavec_s_anharm);
+
+            fcs_tmp += it.fcs_val * vec1[ixyz12] * vec2[ixyz22];
+            // xyz component of the IFC has already been checked
+        }
+
+        nmulti = set_index_uniq.size();
+        fcs_tmp /= static_cast<double>(nmulti);
+
+        if (std::abs(fcs_tmp) > eps15) {
+            for (const auto &it2: set_index_uniq) {
+
+                pairs_vec.clear();
+
+                pairs_tmp.index = it2[0];
+                pairs_tmp.tran = 0;
+                pairs_tmp.cell_s = 0;
+                pairs_vec.push_back(pairs_tmp);
+                for (i = 1; i < norder - 2; ++i) {
+                    pairs_tmp.index = it2[3 * i - 2];
+                    pairs_tmp.tran = it2[3 * i - 1];
+                    pairs_tmp.cell_s = it2[3 * i];
+                    pairs_vec.push_back(pairs_tmp);
+                }
+                delta_fcs.emplace_back(fcs_tmp, pairs_vec);
+            }
+        }
+    }
+    else{ // if(mirror_image_mode != 0)
+        // new implementation
+        // calculate IFC renormalization separately for each mirror image combinations.
+        index_with_cell_old.clear();
+        const auto nelems = 3 * (norder - 3) + 1;
+        for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
+
+        index_with_cell.clear();
+
+        for (const auto &it: fcs_aligned) {
+
+            // std::cout << "FCS" << std::endl;
+            // std::cout << "index ";
+            // for(auto ittmp: it.pairs){
+            //     std::cout << ittmp.index << " ";
+            // }std::cout << std::endl;
+
+            // if the xyz does not match the considering coponent
+            if(it.pairs[norder - 2].index % 3 != ixyz11 || it.pairs[norder-1].index % 3 != ixyz21){
+                continue;
+            }
+
+            index_with_cell.clear();
+
+            index_with_cell.push_back(it.pairs[0].index);
+
+            for (i = 1; i < norder - 2; ++i) {
+                index_with_cell.push_back(it.pairs[i].index);
+                index_with_cell.push_back(it.pairs[i].tran);
+                index_with_cell.push_back(it.pairs[i].cell_s);
+            }
+
+            if (index_with_cell != index_with_cell_old) {
+
+                if (index_with_cell_old[0] != -1) {
+
+                    if (std::abs(fcs_tmp) > eps15) {
+
+                        pairs_vec.clear();
+
+                        pairs_tmp.index = index_with_cell_old[0];
+                        pairs_tmp.tran = 0;
+                        pairs_tmp.cell_s = 0;
+                        pairs_vec.push_back(pairs_tmp);
+                        for (i = 1; i < norder - 2; ++i) {
+                            pairs_tmp.index = index_with_cell_old[3 * i - 2];
+                            pairs_tmp.tran = index_with_cell_old[3 * i - 1];
+                            pairs_tmp.cell_s = index_with_cell_old[3 * i];
+                            pairs_vec.push_back(pairs_tmp);
+                        }
+                        delta_fcs.emplace_back(fcs_tmp, pairs_vec);
+                    }
+                }
+
+                fcs_tmp = 0.0;
+                index_with_cell_old.clear();
+                index_with_cell_old.reserve(index_with_cell.size());
+                std::copy(index_with_cell.begin(), index_with_cell.end(), std::back_inserter(index_with_cell_old));
+            }
+
+            for(i = 0; i < 3; i++){
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                for(j = 1; j < norder-2; j++){
+                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                                    + xshift_s[it.pairs[j].cell_s][i];
+                }
+                vec_origin[i] /= (norder-2);
+            }
+
+            for (i = 0; i < 3; ++i) {
+                vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
+                                                                                                            2].tran]]
+                        [i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                        - vec_origin[i]
+                        + xshift_s[it.pairs[norder - 2].cell_s][i];
+                vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                            1].tran]]
+                        [i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                        - vec_origin[i]
+                        + xshift_s[it.pairs[norder - 1].cell_s][i];
+            }
+
+            rotvec(vec1, vec1, system->lavec_s_anharm);
+            rotvec(vec2, vec2, system->lavec_s_anharm);
+
+            fcs_tmp += it.fcs_val * vec1[ixyz12] * vec2[ixyz22];
+            // xyz components of IFC have been checked
+        }
+
+        if (std::abs(fcs_tmp) > eps15) {
+
+            pairs_vec.clear();
+
+            pairs_tmp.index = index_with_cell[0];
+            pairs_tmp.tran = 0;
+            pairs_tmp.cell_s = 0;
+            pairs_vec.push_back(pairs_tmp);
+            for (i = 1; i < norder - 2; ++i) {
+                pairs_tmp.index = index_with_cell[3 * i - 2];
+                pairs_tmp.tran = index_with_cell[3 * i - 1];
+                pairs_tmp.cell_s = index_with_cell[3 * i];
+                pairs_vec.push_back(pairs_tmp);
+            }
+            delta_fcs.emplace_back(fcs_tmp, pairs_vec);
+        }
+        // std::cout << "done." << std::endl;
+    }
+
+    deallocate(xshift_s);
+
+    fcs_aligned.clear();
+    set_index_uniq.clear();
+}
+
 FcsClassExtent Scph::from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &fc_in){
 
     FcsClassExtent fc_out;
@@ -3537,6 +3903,7 @@ void Scph::renormalize_v0(double &v0_renormalized,
 
 void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_array_renormalize, 
                                             std::complex<double> ***del_v2_strain_from_cubic, 
+                                            std::complex<double> ***del_v2_strain_from_quartic,
                                             double **u_tensor)
 {
     const auto nk = kmesh_dense->nk;
@@ -3545,6 +3912,7 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
     int ik;
     int is1, is2;
     int ixyz1, ixyz2;
+    int ixyz, ixyz11, ixyz12, ixyz21, ixyz22, itmp;
 
     // initialize delta_v2_array_renormalize
     for(ik = 0; ik < nk_interpolate; ik++){
@@ -3555,6 +3923,8 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
         }
     }
     // calculate delta_v2_array_renormalize
+
+    // renormalization from cubic IFCs
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             for(ik = 0; ik < nk_interpolate; ik++){
@@ -3567,6 +3937,28 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
             }
         }
     }
+
+    // renormalization from quartic IFCs
+    for(ixyz = 0; ixyz < 81; ixyz++){
+        itmp = ixyz;
+        ixyz22 = itmp % 3;
+        itmp /= 3;
+        ixyz21 = itmp % 3;
+        itmp /= 3;
+        ixyz12 = itmp % 3;
+        ixyz11 = itmp / 3;
+
+        for(ik = 0; ik < nk_interpolate; ik++){
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    delta_v2_array_renormalize[ik][is1*ns+is2] += 
+                        0.5 * del_v2_strain_from_quartic[ixyz][ik][is1*ns+is2] * u_tensor[ixyz11][ixyz12] * u_tensor[ixyz21][ixyz22];
+                }
+            }
+        }
+    }
+
+
 
     std::cout << "delta_v2_array_renormalize" << std::endl;
     for(ik = 0; ik < 5; ik++){

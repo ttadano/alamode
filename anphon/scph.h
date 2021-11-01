@@ -192,9 +192,20 @@ private:
 
     void compute_del_v2_strain_from_cubic(std::complex<double> ***,
                                           std::complex<double> ***);
+    
+    void compute_del_v2_strain_from_quartic(std::complex<double> ***,
+                                            std::complex<double> ***);
 
     void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
                                                std::vector<FcsArrayWithCell> &,
+                                               const int,
+                                               const int,
+                                               const int);
+    
+    void compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCell> &,
+                                               std::vector<FcsArrayWithCell> &,
+                                               const int,
+                                               const int,
                                                const int,
                                                const int,
                                                const int);
@@ -203,6 +214,7 @@ private:
 
     void renormalize_v2_array_from_strain(std::complex<double> **, 
                                             std::complex<double> ***, 
+                                            std::complex<double> ***,
                                             double **);
 
     void renormalize_v1_array(std::complex<double> *, 

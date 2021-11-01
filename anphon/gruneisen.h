@@ -54,6 +54,48 @@ public:
     }
 };
 
+class FcsAlignedForGruneisen2 {
+public:
+    std::vector<AtomCellSuper> pairs;
+    double fcs_val;
+
+    FcsAlignedForGruneisen2() {};
+
+    FcsAlignedForGruneisen2(const double fcs_in,
+                           const std::vector<AtomCellSuper> &pairs_in)
+            : pairs(pairs_in), fcs_val(fcs_in) {};
+
+    bool operator<(const FcsAlignedForGruneisen2 &obj) const
+    {
+        std::vector<unsigned int> array_a, array_b;
+        array_a.clear();
+        array_b.clear();
+        int len = pairs.size();
+        for (int i = 0; i < len - 2; ++i) {
+            array_a.push_back(pairs[i].index);
+            array_a.push_back(pairs[i].tran);
+            array_b.push_back(obj.pairs[i].index);
+            array_b.push_back(obj.pairs[i].tran);
+        }
+        for (int i = 0; i < len - 2; ++i) {
+            array_a.push_back(pairs[i].cell_s);
+            array_b.push_back(obj.pairs[i].cell_s);
+        }
+
+        array_a.push_back(pairs[len - 2].index);
+        array_a.push_back(pairs[len - 2].tran);
+        array_b.push_back(obj.pairs[len - 2].index);
+        array_b.push_back(obj.pairs[len - 2].tran);
+
+        array_a.push_back(pairs[len - 1].index);
+        array_a.push_back(pairs[len - 1].tran);
+        array_b.push_back(obj.pairs[len - 1].index);
+        array_b.push_back(obj.pairs[len - 1].tran);
+        return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                            array_b.begin(), array_b.end());
+    }
+};
+
 //inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b)
 //{
 //    std::vector<unsigned int> array_a, array_b;
