@@ -13,6 +13,7 @@
 #include "pointers.h"
 #include "kpoint.h"
 #include "anharmonic_core.h"
+#include "gruneisen.h"
 #include <complex>
 #include <Eigen/Dense>
 
@@ -142,7 +143,12 @@ private:
     void exec_scph_relax_main(std::complex<double> ****,
                                 std::complex<double> ****);
 
+    void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
+                                          std::complex<double> ****);
+
     void read_initial_q0(double *);
+
+    void read_initial_strain(double **);
 
     void read_Tdep_initial_q0_from_u(double *, int);
 
@@ -183,6 +189,21 @@ private:
     void calc_new_dymat_with_evec(std::complex<double> ***,
                                   double **,
                                   std::complex<double> ***);
+
+    void compute_del_v2_strain_from_cubic(std::complex<double> ***,
+                                          std::complex<double> ***);
+
+    void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
+                                               std::vector<FcsArrayWithCell> &,
+                                               const int,
+                                               const int,
+                                               const int);
+
+    FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
+
+    void renormalize_v2_array_from_strain(std::complex<double> **, 
+                                            std::complex<double> ***, 
+                                            double **);
 
     void renormalize_v1_array(std::complex<double> *, 
                             std::complex<double> *, 
