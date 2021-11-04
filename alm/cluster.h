@@ -61,82 +61,86 @@ public:
     }
 };
 
-    class RelativeVectors {
-        public:
-        int order;
-        std::vector<std::vector<double>> relvecs_cartesian;
-        std::vector<std::vector<double>> relvecs_fractional;
+class RelativeVectors {
+public:
+    int order;
+    std::vector<std::vector<double>> relvecs_cartesian;
+    std::vector<std::vector<double>> relvecs_fractional;
 
-        RelativeVectors() = default;
+    RelativeVectors() = default;
 
-        RelativeVectors(int order_in){
-            relvecs_cartesian.clear();
-            order = order_in;
+    RelativeVectors(int order_in)
+    {
+        relvecs_cartesian.clear();
+        order = order_in;
+    }
+
+    void clear_relvecs()
+    {
+        int i;
+        for (i = 0; i < order + 2; i++) {
+            relvecs_fractional[i].clear();
+            relvecs_cartesian[i].clear();
         }
+    }
 
-        void clear_relvecs(){
-            int i;
-            for(i = 0; i < order+2; i++){
-                relvecs_fractional[i].clear();
-                relvecs_cartesian[i].clear();
-            }
-        }
+    void make_fractional_from_cartesian(const double reciprocal_lat[3][3])
+    {
 
-        void make_fractional_from_cartesian(const double reciprocal_lat[3][3]){
+        int i, j, xyz, xyz2;
+        std::vector<double> vectmp;
 
-            int i, j, xyz, xyz2;
-            std::vector<double> vectmp;
+        relvecs_fractional.clear();
 
-            relvecs_fractional.clear();
+        for (i = 0; i < order + 1; i++) {
 
-            for(i = 0; i < order+1; i++){
-
-                vectmp.clear();
-                for(xyz = 0; xyz < 3; xyz++){
-                    vectmp.push_back(0.0);
-                    for(xyz2 = 0; xyz2 < 3; xyz2++){
-                        vectmp[xyz] += reciprocal_lat[xyz][xyz2]/(2.0*pi) * relvecs_cartesian[i][xyz2];
-                    }
+            vectmp.clear();
+            for (xyz = 0; xyz < 3; xyz++) {
+                vectmp.push_back(0.0);
+                for (xyz2 = 0; xyz2 < 3; xyz2++) {
+                    vectmp[xyz] += reciprocal_lat[xyz][xyz2] / (2.0 * pi) * relvecs_cartesian[i][xyz2];
                 }
-
-                relvecs_fractional.push_back(vectmp);
             }
+
+            relvecs_fractional.push_back(vectmp);
         }
+    }
 
-        bool is_equal(RelativeVectors &another, double threshold){
-            std::vector<int> is_checked(order+1);
-            int is_found = 0;
-            int is_equal_flg;
+    bool is_equal(RelativeVectors &another, double threshold)
+    {
+        std::vector<int> is_checked(order + 1);
+        int is_found = 0;
+        int is_equal_flg;
 
-            int i, j, xyz;
-            for(i = 0; i < order+1; i++){
-                is_found = 0;
-                // find corresponding relative vector
-                for(j = 0; j < order+1; j++){
-                    if(is_checked[j] == 1){
-                        continue;
-                    }
-                    is_equal_flg = 1;
-                    for(xyz = 0; xyz < 3; xyz++){
-                        if(std::fabs(relvecs_cartesian[i][xyz] - another.relvecs_cartesian[j][xyz]) > threshold){
-                            is_equal_flg = 0;
-                            break;
-                        }
-                    }
-                    if(is_equal_flg == 1){
-                        is_found = 1;
-                        is_checked[j] = 1;
+        int i, j, xyz;
+        for (i = 0; i < order + 1; i++) {
+            is_found = 0;
+            // find corresponding relative vector
+            for (j = 0; j < order + 1; j++) {
+                if (is_checked[j] == 1) {
+                    continue;
+                }
+                is_equal_flg = 1;
+                for (xyz = 0; xyz < 3; xyz++) {
+                    if (std::fabs(relvecs_cartesian[i][xyz] - another.relvecs_cartesian[j][xyz]) > threshold) {
+                        is_equal_flg = 0;
                         break;
                     }
                 }
-                // if not found
-                if(is_found == 0){
-                    return false;
+                if (is_equal_flg == 1) {
+                    is_found = 1;
+                    is_checked[j] = 1;
+                    break;
                 }
             }
-            return true;
+            // if not found
+            if (is_found == 0) {
+                return false;
+            }
         }
-    };
+        return true;
+    }
+};
 
 class DistInfo {
 public:
@@ -373,14 +377,14 @@ private:
     void check_permutation_symmetry(const System *system,
                                     const Symmetry *symmetry,
                                     int order);
-                
+
     void make_symnum_tran_to_prim(const System *system,
-                                const Symmetry *symmetry,
-                                std::vector<int> &symnum_tran_to_prim);
+                                  const Symmetry *symmetry,
+                                  std::vector<int> &symnum_tran_to_prim);
 
     bool is_inprim(const int iat, // atom index in supercell
-                    const size_t natmin,
-                    const std::vector<std::vector<int>> &map_p2s) const;
+                   const size_t natmin,
+                   const std::vector<std::vector<int>> &map_p2s) const;
 };
 }
 

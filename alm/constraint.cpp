@@ -897,27 +897,27 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             continue;
         }
 
-        if(mirror_image_conv > 0 || order == 0){
+        if (mirror_image_conv > 0 || order == 0) {
             get_constraint_translation(supercell,
-                                    symmetry,
-                                    cluster,
-                                    fcs,
-                                    order,
-                                    fcs->get_fc_table()[order],
-                                    fcs->get_nequiv()[order].size(),
-                                    const_translation[order], true);
+                                       symmetry,
+                                       cluster,
+                                       fcs,
+                                       order,
+                                       fcs->get_fc_table()[order],
+                                       fcs->get_nequiv()[order].size(),
+                                       const_translation[order], true);
         }
-        // make translation constraint for each mirror image combinations
-        // if mirror_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
+            // make translation constraint for each mirror image combinations
+            // if mirror_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
         else { // if(mirror_image_conv > 0 && order > 0)
             get_constraint_translation_for_mirror_images(supercell,
-                                                symmetry,
-                                                cluster,
-                                                fcs,
-                                                order,
-                                                fcs->get_fc_table()[order],
-                                                fcs->get_nequiv()[order].size(),
-                                                const_translation[order], true);
+                                                         symmetry,
+                                                         cluster,
+                                                         fcs,
+                                                         order,
+                                                         fcs->get_fc_table()[order],
+                                                         fcs->get_nequiv()[order].size(),
+                                                         const_translation[order], true);
         }
 
         if (verbosity > 0) std::cout << " done." << std::endl;
@@ -1208,14 +1208,14 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 }
 
 void Constraint::get_constraint_translation_for_mirror_images(const Cell &supercell,
-                                            const Symmetry *symmetry,
-                                            const Cluster *cluster,
-                                            const Fcs *fcs,
-                                            const int order,
-                                            const std::vector<FcProperty> &fc_table,
-                                            const size_t nparams,
-                                            ConstraintSparseForm &const_out,
-                                            const bool do_rref) const
+                                                              const Symmetry *symmetry,
+                                                              const Cluster *cluster,
+                                                              const Fcs *fcs,
+                                                              const int order,
+                                                              const std::vector<FcProperty> &fc_table,
+                                                              const size_t nparams,
+                                                              ConstraintSparseForm &const_out,
+                                                              const bool do_rref) const
 {
     // Generate equality constraint for the acoustic sum rule.
 
@@ -1260,7 +1260,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
     list_found.clear();
 
-    for (const auto &p : fc_table) {
+    for (const auto &p: fc_table) {
         for (i = 0; i < order + 2; ++i) {
             ind[i] = p.elems[i];
         }
@@ -1369,8 +1369,8 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
                             // Reset the temporary array for another constraint
                             //for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
-                            for(i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++){
-                                for(j = 0; j < nparams; j++){
+                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
+                                for (j = 0; j < nparams; j++) {
                                     consts_now_omp[i_mirror_images][j] = 0.0;
                                 }
                             }
@@ -1379,15 +1379,15 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                             for (jat = 0; jat < 3 * nat; jat += 3) {
                                 intarr_omp[order + 1] = jat / 3;
                                 atom_tmp = data_omp;
-                                atom_tmp.push_back(jat/3);
+                                atom_tmp.push_back(jat / 3);
                                 // sort atom_tmp and get corresponding sort_table
                                 sort_table_tmp.resize(atom_tmp.size());
-                                for(i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++){
+                                for (i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++) {
                                     sort_table_tmp[i_tmp] = i_tmp;
                                 }
-                                for(i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++){
-                                    for(j_tmp = i_tmp+1; j_tmp < atom_tmp.size(); j_tmp++){
-                                        if(atom_tmp[i_tmp] > atom_tmp[j_tmp]){
+                                for (i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++) {
+                                    for (j_tmp = i_tmp + 1; j_tmp < atom_tmp.size(); j_tmp++) {
+                                        if (atom_tmp[i_tmp] > atom_tmp[j_tmp]) {
                                             // swap atom numbers
                                             i_tmp2 = atom_tmp[i_tmp];
                                             atom_tmp[i_tmp] = atom_tmp[j_tmp];
@@ -1401,7 +1401,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                 }
                                 // make sort table
                                 sort_table.resize(atom_tmp.size());
-                                for(i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++){
+                                for (i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++) {
                                     sort_table[sort_table_tmp[i_tmp]] = i_tmp;
                                 }
 
@@ -1417,27 +1417,28 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                                                             intarr_copy_omp, 1));
 
                                     auto cluster_found = cluster->get_interaction_cluster(order, i).find(
-                                        InteractionCluster(atom_tmp, cell_dummy));
+                                            InteractionCluster(atom_tmp, cell_dummy));
 
                                     if (iter_found != list_found.end()) {
-                                        if(cluster_found == cluster->get_interaction_cluster(order, i).end()){
-                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found." << std::endl;
-                                        }
-                                        else{
+                                        if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
+                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found."
+                                                      << std::endl;
+                                        } else {
                                             // std::cout << "cluster corresponding to the IFC is found." << std::endl;
 
                                             // get weight
-                                            weight = 1.0/static_cast<double>((cluster_found->cell).size());
-                                            for(auto cellvec : cluster_found->cell){
+                                            weight = 1.0 / static_cast<double>((cluster_found->cell).size());
+                                            for (auto cellvec: cluster_found->cell) {
                                                 // get number of the combination of the cell
                                                 i_mirror_images = 0;
 
-                                                for(i_tmp = 0; i_tmp < order; i_tmp++){
+                                                for (i_tmp = 0; i_tmp < order; i_tmp++) {
                                                     i_mirror_images *= 27;
                                                     i_mirror_images += cellvec[sort_table[i_tmp]];
                                                 }
                                                 // add to the constraint
-                                                consts_now_omp[i_mirror_images][(*iter_found).mother] += weight * (*iter_found).sign;
+                                                consts_now_omp[i_mirror_images][(*iter_found).mother] +=
+                                                        weight * (*iter_found).sign;
                                             }
                                         }
                                     }
@@ -1446,7 +1447,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                             } // close loop jat
 
                             // Add the constraint to the private array
-                            for(i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++){
+                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
                                 if (!is_allzero(consts_now_omp[i_mirror_images], eps8, loc_nonzero, 0)) {
                                     if (consts_now_omp[i_mirror_images][loc_nonzero] < 0) {
                                         for (j = 0; j < nparams; ++j) consts_now_omp[i_mirror_images][j] *= -1.0;
@@ -1475,7 +1476,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 // Merge vectors
 #pragma omp critical
                 {
-                    for (const auto &it : constraint_list_omp) {
+                    for (const auto &it: constraint_list_omp) {
                         constraint_all.emplace_back(it);
                     }
                 }
@@ -1500,10 +1501,10 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     int counter;
     const_out.clear();
 
-    for (const auto &it : constraint_all) {
+    for (const auto &it: constraint_all) {
         const_tmp2.clear();
         counter = 0;
-        for (const auto &it2 : it) {
+        for (const auto &it2: it) {
             if (counter == 0) {
                 division_factor = 1.0 / it2.val;
             }

@@ -757,7 +757,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
     if (!optimize_var_dict["L1_RATIO"].empty()) {
         optcontrol.l1_ratio = boost::lexical_cast<double>(optimize_var_dict["L1_RATIO"]);
     }
-    if(!optimize_var_dict["MIRROR_IMAGE_CONV"].empty()){
+    if (!optimize_var_dict["MIRROR_IMAGE_CONV"].empty()) {
         optcontrol.mirror_image_conv = boost::lexical_cast<int>(optimize_var_dict["MIRROR_IMAGE_CONV"]);
     }
 

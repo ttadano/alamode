@@ -118,18 +118,16 @@ void Cluster::init(const System *system,
                    cluster_list);
 
     // check permutation symmetry of anharmonic IFC
-    if(mirror_image_conv > 0){
+    if (mirror_image_conv > 0) {
         std::cout << "check permutation symmetry of the clusters." << std::endl;
         std::cout << "(if no message is printed out, the permutation symmetry is satisfied.)" << std::endl;
         for (auto order = 1; order < maxorder; ++order) {
-            if(order == 1){
+            if (order == 1) {
                 std::cout << "  CUBIC ..." << std::endl;
-            }
-            else if(order == 2){
+            } else if (order == 2) {
                 std::cout << "  QUARTIC ..." << std::endl;
-            }
-            else{
-                std::cout << "" << order+2 << "-th ORDER ..." << std::endl;
+            } else {
+                std::cout << "" << order + 2 << "-th ORDER ..." << std::endl;
             }
             check_permutation_symmetry(system, symmetry, order);
         }
@@ -224,7 +222,7 @@ void Cluster::generate_pairs(const size_t natmin,
 void Cluster::check_permutation_symmetry(const System *system,
                                          const Symmetry *symmetry,
                                          int order)
-{   
+{
     const auto nat = system->get_supercell().number_of_atoms;
     int natmin = symmetry->get_nat_prim();
     int nsym_tran = symmetry->get_symnum_tran().size();
@@ -245,7 +243,7 @@ void Cluster::check_permutation_symmetry(const System *system,
     int is_found;
     std::vector<int> is_checked;
 
-    int itmp, jtmp,xyztmp,jattmp, itmp2;
+    int itmp, jtmp, xyztmp, jattmp, itmp2;
     double dtmp1;
     std::vector<double> relvec_tmp;
 
@@ -255,13 +253,13 @@ void Cluster::check_permutation_symmetry(const System *system,
 
     // check permutation symmetry
     int i_ifc = 0;
-    for(iat_prim = 0; iat_prim < natmin; iat_prim++){
-        for(auto &cluster_tmp : interaction_cluster[order][iat_prim]){
+    for (iat_prim = 0; iat_prim < natmin; iat_prim++) {
+        for (auto &cluster_tmp: interaction_cluster[order][iat_prim]) {
 
             i_ifc++;
 
-            for(j = 0; j < order+1; j++){
-                
+            for (j = 0; j < order + 1; j++) {
+
                 // bring j-th atom of the cluster to the primitive cell
                 jat = cluster_tmp.atom[j];
                 isym_tran = symnum_tran_to_prim[jat];
@@ -277,11 +275,11 @@ void Cluster::check_permutation_symmetry(const System *system,
                 data_now.push_back(iat_translated);
 
                 // other atoms
-                for(j2 = 0; j2 < order+1; j2++){
+                for (j2 = 0; j2 < order + 1; j2++) {
                     j2at = cluster_tmp.atom[j2];
                     j2at_translated = symmetry->get_map_sym()[j2at][isym];
 
-                    if(j2 == j){
+                    if (j2 == j) {
                         continue;
                     }
                     data_now.push_back(j2at_translated);
@@ -290,16 +288,16 @@ void Cluster::check_permutation_symmetry(const System *system,
 
                 // search for the corresponding cluster
                 auto cluster_tmp2 = interaction_cluster[order][jat_prim].find(InteractionCluster(data_now, cell_dummy));
-                if(cluster_tmp2 == interaction_cluster[order][jat_prim].end()){
+                if (cluster_tmp2 == interaction_cluster[order][jat_prim].end()) {
                     std::cout << "permutation symmetry is NOT satisfied: ";
                     std::cout << "corresponding cluster does not exist" << std::endl;
 
                     std::cout << "information on current cluster: " << std::endl;
                     std::cout << "center atom(in primitive cell) = " << iat_prim;
                     std::cout << "other atoms = ";
-                    for(itmp2 = 0; itmp2 < order+1; itmp2++){
+                    for (itmp2 = 0; itmp2 < order + 1; itmp2++) {
                         std::cout << cluster_tmp.atom[itmp2];
-                        if(itmp2 < order){
+                        if (itmp2 < order) {
                             std::cout << ", ";
                         }
                     }
@@ -309,61 +307,66 @@ void Cluster::check_permutation_symmetry(const System *system,
 
                 // prepare relative vector for comparison
                 relvecs1.clear();
-                for(i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++){
+                for (i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++) {
                     relvecs1.emplace_back(RelativeVectors(order));
                     // first relative vector
                     relvec_tmp.clear();
-                    for(xyztmp = 0; xyztmp < 3; xyztmp++){
-                        dtmp1 = system->get_x_image()[0][iat][xyztmp] - system->get_x_image()[cluster_tmp.cell[i_mirror][j]][jat][xyztmp];
-                        relvec_tmp.push_back(dtmp1);                        
+                    for (xyztmp = 0; xyztmp < 3; xyztmp++) {
+                        dtmp1 = system->get_x_image()[0][iat][xyztmp] -
+                                system->get_x_image()[cluster_tmp.cell[i_mirror][j]][jat][xyztmp];
+                        relvec_tmp.push_back(dtmp1);
                     }
                     relvecs1[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
 
                     // other relative vectors
-                    for(j2 = 0; j2 < order+1; j2++){
-                        if(j2 == j){
+                    for (j2 = 0; j2 < order + 1; j2++) {
+                        if (j2 == j) {
                             continue;
                         }
                         relvec_tmp.clear();
-                        for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                        for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = cluster_tmp.atom[j2];
-                            dtmp1 = system->get_x_image()[cluster_tmp.cell[i_mirror][j2]][j2at][xyztmp] - system->get_x_image()[cluster_tmp.cell[i_mirror][j]][jat][xyztmp];
+                            dtmp1 = system->get_x_image()[cluster_tmp.cell[i_mirror][j2]][j2at][xyztmp] -
+                                    system->get_x_image()[cluster_tmp.cell[i_mirror][j]][jat][xyztmp];
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs1[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
                     }
 
-                    relvecs1[i_mirror].make_fractional_from_cartesian(system->get_supercell().reciprocal_lattice_vector);
+                    relvecs1[i_mirror].make_fractional_from_cartesian(
+                            system->get_supercell().reciprocal_lattice_vector);
                 }
 
                 relvecs2.clear();
-                for(i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++){
+                for (i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++) {
                     relvecs2.emplace_back(RelativeVectors(order));
-                    
-                    for(j2 = 0; j2 < order+1; j2++){
+
+                    for (j2 = 0; j2 < order + 1; j2++) {
                         relvec_tmp.clear();
-                        for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                        for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = (*cluster_tmp2).atom[j2];
-                            dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]][j2at][xyztmp] - system->get_x_image()[0][symmetry->get_map_p2s()[jat_prim][0]][xyztmp];
+                            dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]][j2at][xyztmp] -
+                                    system->get_x_image()[0][symmetry->get_map_p2s()[jat_prim][0]][xyztmp];
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs2[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
                     }
 
-                    relvecs2[i_mirror].make_fractional_from_cartesian(system->get_supercell().reciprocal_lattice_vector);
+                    relvecs2[i_mirror].make_fractional_from_cartesian(
+                            system->get_supercell().reciprocal_lattice_vector);
                 }
 
-                if(relvecs1.size() != relvecs2.size()){
+                if (relvecs1.size() != relvecs2.size()) {
                     std::cout << "permutation symmetry is NOT satisfied: ";
                     std::cout << "multiplicity of mirror image is different" << std::endl;
-                    
+
 
                     std::cout << "information on current cluster: " << std::endl;
                     std::cout << "center atom(in primitive cell) = " << iat_prim;
                     std::cout << "other atoms = ";
-                    for(itmp2 = 0; itmp2 < order+1; itmp2++){
+                    for (itmp2 = 0; itmp2 < order + 1; itmp2++) {
                         std::cout << cluster_tmp.atom[itmp2];
-                        if(itmp2 < order){
+                        if (itmp2 < order) {
                             std::cout << ", ";
                         }
                     }
@@ -374,61 +377,65 @@ void Cluster::check_permutation_symmetry(const System *system,
 
                     // print relative vectors
                     std::cout << "relative vectors in current cluster (fractional, cartesian): " << std::endl;
-                    for(i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++){
+                    for (i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++) {
                         std::cout << "mirror image pattern: " << i_mirror << std::endl;
-                        for(itmp = 0; itmp < order+1; itmp++){
-                            for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                        for (itmp = 0; itmp < order + 1; itmp++) {
+                            for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs1[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
-                            }std::cout << ", ";
-                            for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                            }
+                            std::cout << ", ";
+                            for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs1[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
-                            }std::cout << std::endl;
+                            }
+                            std::cout << std::endl;
                         }
                     }
 
                     std::cout << "relative vectors in corresponding cluster (fractional, cartesian): " << std::endl;
-                    for(i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++){
+                    for (i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++) {
                         std::cout << "mirror image pattern: " << i_mirror << std::endl;
-                        for(itmp = 0; itmp < order+1; itmp++){
-                            for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                        for (itmp = 0; itmp < order + 1; itmp++) {
+                            for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs2[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
-                            }std::cout << ", ";
-                            for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                            }
+                            std::cout << ", ";
+                            for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs2[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
-                            }std::cout << std::endl;
+                            }
+                            std::cout << std::endl;
                         }
                     }
                     continue;
                 }
 
-                
+
 
                 // compare relative vector
                 is_checked.clear();
                 is_checked.resize(relvecs1.size());
-                
-                for(itmp = 0; itmp < relvecs1.size(); itmp++){
+
+                for (itmp = 0; itmp < relvecs1.size(); itmp++) {
                     is_found = 0;
-                    for(jtmp = 0; jtmp < relvecs2.size(); jtmp++){
-                        if(is_checked[jtmp] == 1){
+                    for (jtmp = 0; jtmp < relvecs2.size(); jtmp++) {
+                        if (is_checked[jtmp] == 1) {
                             continue;
                         }
-                        if(relvecs1[itmp].is_equal(relvecs2[jtmp], eps6)){
+                        if (relvecs1[itmp].is_equal(relvecs2[jtmp], eps6)) {
                             is_found = 1;
                             is_checked[jtmp] = 1;
                             break;
                         }
                     }
-                    if(is_found == 0){
+                    if (is_found == 0) {
                         std::cout << "permutation symmetry is not satisfied: ";
                         std::cout << "mirror image is different." << std::endl;
 
                         std::cout << "information on current cluster: " << std::endl;
                         std::cout << "center atom(in primitive cell) = " << iat_prim;
                         std::cout << "other atoms = ";
-                        for(itmp2 = 0; itmp2 < order+1; itmp2++){
+                        for (itmp2 = 0; itmp2 < order + 1; itmp2++) {
                             std::cout << cluster_tmp.atom[itmp2];
-                            if(itmp2 < order){
+                            if (itmp2 < order) {
                                 std::cout << ", ";
                             }
                         }
@@ -439,38 +446,42 @@ void Cluster::check_permutation_symmetry(const System *system,
 
                         // print relative vectors
                         std::cout << "relative vectors in current cluster (fractional, cartesian): " << std::endl;
-                        for(i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++){
+                        for (i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++) {
                             std::cout << "mirror image pattern: " << i_mirror << std::endl;
-                            for(itmp = 0; itmp < order+1; itmp++){
-                                for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                            for (itmp = 0; itmp < order + 1; itmp++) {
+                                for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs1[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
-                                }std::cout << ", ";
-                                for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                                }
+                                std::cout << ", ";
+                                for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs1[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
-                                }std::cout << std::endl;
+                                }
+                                std::cout << std::endl;
                             }
                         }
 
                         std::cout << "relative vectors in corresponding cluster (fractional, cartesian): " << std::endl;
-                        for(i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++){
+                        for (i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++) {
                             std::cout << "mirror image pattern: " << i_mirror << std::endl;
-                            for(itmp = 0; itmp < order+1; itmp++){
-                                for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                            for (itmp = 0; itmp < order + 1; itmp++) {
+                                for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs2[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
-                                }std::cout << ", ";
-                                for(xyztmp = 0; xyztmp < 3; xyztmp++){
+                                }
+                                std::cout << ", ";
+                                for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs2[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
-                                }std::cout << std::endl;
+                                }
+                                std::cout << std::endl;
                             }
                         }
-                        std::cout << "corresponding mirror image does not exist for " << itmp << "-th mirror image in current cluster" << std::endl;
-                    }
-                    else{
+                        std::cout << "corresponding mirror image does not exist for " << itmp
+                                  << "-th mirror image in current cluster" << std::endl;
+                    } else {
                         // std::cout << "corresponding mirror image is found for " << itmp << "-th mirror image in current cluster" << std::endl;
                     }
                 }
 
-                
+
             }
 
         }
@@ -480,7 +491,8 @@ void Cluster::check_permutation_symmetry(const System *system,
 
 void Cluster::make_symnum_tran_to_prim(const System *system,
                                        const Symmetry *symmetry,
-                                       std::vector<int> &symnum_tran_to_prim){
+                                       std::vector<int> &symnum_tran_to_prim)
+{
 
     const auto nat = system->get_supercell().number_of_atoms;
     int natmin = symmetry->get_nat_prim();
@@ -490,15 +502,15 @@ void Cluster::make_symnum_tran_to_prim(const System *system,
     int isym_tran, isym;
     int iat, jat;
 
-    for(isym_tran = 0; isym_tran < symmetry->get_symnum_tran().size(); isym_tran++){
+    for (isym_tran = 0; isym_tran < symmetry->get_symnum_tran().size(); isym_tran++) {
 
         isym = symmetry->get_symnum_tran()[isym_tran];
 
-        for(iat = 0; iat < nat; iat++){
+        for (iat = 0; iat < nat; iat++) {
             jat = symmetry->get_map_sym()[iat][isym];
 
             // if jat is in the primitive cell
-            if(is_inprim(jat, natmin, symmetry->get_map_p2s())){
+            if (is_inprim(jat, natmin, symmetry->get_map_p2s())) {
                 symnum_tran_to_prim[iat] = isym_tran;
             }
         }
@@ -506,16 +518,17 @@ void Cluster::make_symnum_tran_to_prim(const System *system,
 }
 
 bool Cluster::is_inprim(const int iat, // atom index in supercell
-                    const size_t natmin,
-                    const std::vector<std::vector<int>> &map_p2s) const
+                        const size_t natmin,
+                        const std::vector<std::vector<int>> &map_p2s) const
 {
-    
+
     for (size_t i = 0; i < natmin; ++i) {
         if (map_p2s[i][0] == iat) return true;
     }
 
     return false;
 }
+
 void Cluster::set_default_variables()
 {
     maxorder = 0;
@@ -1184,13 +1197,13 @@ void Cluster::set_interaction_cluster(const int order,
                     // If the distance_list is not empty, there is a set of mirror images
                     // that satisfies the condition of the cluster.
 
-                    if(mirror_image_conv == 0){
+                    if (mirror_image_conv == 0) {
                         // assign IFCs to mirror images in which the center atom and each of the other atoms
                         // are nearest.
                         // The distance between non-center atoms are not considered.
                         // The IFCs in this convention automatically satisfies the ASR without additional constraint, 
                         // but does not satisfy the permutation symmetry.
-                        
+
                         pairs_icell.clear();
                         for (j = 0; j < intpair_uniq.size(); ++j) {
                             jat = intpair_uniq[j];
@@ -1218,23 +1231,22 @@ void Cluster::set_interaction_cluster(const int order,
                         }
 
                         std::sort(distance_list.begin(), distance_list.end(),
-                                MinDistList::compare_max_distance);
-                   
+                                  MinDistList::compare_max_distance);
+
                         distmax = *std::max_element(distance_list[0].dist.begin(),
                                                     distance_list[0].dist.end());
                         interaction_cluster_out[i].insert(InteractionCluster(data_now,
-                                                                            comb_cell_atom_center,
-                                                                            distmax));
-                        
-                    }                                                  
-                    else/* if(mirror_image_conv == 1)*/{
-                        
+                                                                             comb_cell_atom_center,
+                                                                             distmax));
+
+                    } else/* if(mirror_image_conv == 1)*/{
+
                         // assign IFCs to mirror images in which the sum of the distances between the atom pairs 
                         // is the smallest.
                         // The IFCs made in this convention satisfies the permutation symmetry.
                         // Additional constraints are imposed in constraint.cpp to make the IFCs satisfy ASR 
                         // after assigning IFCs to the mirror images.
-                    
+
                         std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
                         comb_cell_min.clear();
 
@@ -1246,15 +1258,15 @@ void Cluster::set_interaction_cluster(const int order,
                         double sum_dist;
                         for (j = 0; j < distance_list.size(); ++j) {
                             sum_dist = 0.0;
-                            
+
                             for (k = 0; k < distance_list[j].dist.size(); ++k) {
                                 sum_dist += distance_list[j].dist[k];
                             }
-                    
+
                             // In the following, only pairs having minimum sum of distances
                             // are stored.
                             if (std::abs(sum_dist - sum_dist_min) < eps6) {
-                            // if (sum_dist < sum_dist_min*1.2+eps6) { // This version is not used.
+                                // if (sum_dist < sum_dist_min*1.2+eps6) { // This version is not used.
                                 comb_cell_min.push_back(distance_list[j].cell);
                             } else {
                                 // break;
@@ -1262,11 +1274,11 @@ void Cluster::set_interaction_cluster(const int order,
                         }
 
                         interaction_cluster_out[i].insert(InteractionCluster(data_now,
-                                                                            comb_cell_min,
-                                                                            sum_dist_min));
+                                                                             comb_cell_min,
+                                                                             sum_dist_min));
 
-                    
-                    }                                                    
+
+                    }
                 }
             }
         }

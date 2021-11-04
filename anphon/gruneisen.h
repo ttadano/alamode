@@ -116,11 +116,11 @@ private:
                            std::vector<FcsArrayWithCell> &,
                            const int) const;
 
-        // void impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &,
-        //                    int);
+    // void impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &,
+    //                    int);
 
-        void calc_dfc2_reciprocal(std::complex<double> **,
-                                  const double *);
+    void calc_dfc2_reciprocal(std::complex<double> **,
+                              const double *);
 
     void write_new_fcsxml(const std::string &,
                           double);
