@@ -298,6 +298,8 @@ private:
     static void duplicate_xk_boundary(double *,
                                         std::vector<std::vector<double>> &);
 
+    void print_distance_harmonic_IFC();
+
     void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                             const unsigned int NT,
                                             const int type = 0);

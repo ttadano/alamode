@@ -27,6 +27,7 @@
 #include "parsephon.h"
 #include "phonon_dos.h"
 #include "symmetry_core.h"
+#include "fcs_phonon.h"
 #include <iostream>
 #include <iomanip>
 #include <complex>
@@ -183,7 +184,7 @@ void Scph::exec_scph()
                  "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
-        if(!relax_coordinate){
+/*        if(!relax_coordinate){
             exec_scph_main(delta_dymat_scph);
         }
         // Calculate SCPH + structural optimization and obtain the correction to the dynamical matrix
@@ -191,6 +192,9 @@ void Scph::exec_scph()
             // exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
             exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
+*/
+        print_distance_harmonic_IFC();
+        return;
 
         if (mympi->my_rank == 0) {
             // write dymat for file
@@ -6001,6 +6005,105 @@ void Scph::duplicate_xk_boundary(double *xk_in,
             }
         }
     }
+}
+
+void Scph::print_distance_harmonic_IFC()
+{
+    const auto nat = system->nat;
+    const auto natmin = system->natmin;
+
+    double ***harmonic_IFCs;
+    allocate(harmonic_IFCs, natmin, nat, 9);
+
+    int i1, i2, ixyz;
+
+    // initialize harmonic_IFCs
+    for(i1 = 0; i1 < natmin; i1++){
+        for(i2 = 0; i2 < nat; i2++){
+            for(ixyz = 0; ixyz < 9; ixyz++){
+                harmonic_IFCs[i1][i2][ixyz] = 0.0;
+            }
+        }
+    }
+    
+    for(auto &it : fcs_phonon->fc2_ext){
+        ixyz = it.xyz1 * 3 + it.xyz2;
+        harmonic_IFCs[it.atm1][it.atm2][ixyz] += it.fcs_val;
+    }
+
+    // get minimum distance for pairs
+    unsigned int i, j;
+    const unsigned int nneib = 27;
+
+    double ***xcrd;
+
+    std::vector<DistWithCell> **distall;
+    double **min_dist_tmp;
+
+    allocate(distall, natmin, nat);
+    allocate(xcrd, nneib, nat, 3);
+    allocate(min_dist_tmp, natmin, nat);
+
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            xcrd[0][i][j] = system->xr_s_no_displace[i][j];
+            // xcrd[0][i][j] = system->xr_s[i][j];
+        }
+    }
+    auto icell = 0;
+    for (auto isize = -1; isize <= 1; ++isize) {
+        for (auto jsize = -1; jsize <= 1; ++jsize) {
+            for (auto ksize = -1; ksize <= 1; ++ksize) {
+
+                if (isize == 0 && jsize == 0 && ksize == 0) continue;
+
+                ++icell;
+                for (i = 0; i < nat; ++i) {
+                    xcrd[icell][i][0] = system->xr_s_no_displace[i][0] + static_cast<double>(isize);
+                    xcrd[icell][i][1] = system->xr_s_no_displace[i][1] + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = system->xr_s_no_displace[i][2] + static_cast<double>(ksize);
+                    // xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
+                    // xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
+                    // xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
+                }
+            }
+        }
+    }
+
+    for (icell = 0; icell < nneib; ++icell) {
+        for (i = 0; i < nat; ++i) {
+            rotvec(xcrd[icell][i], xcrd[icell][i], system->lavec_s);
+        }
+    }
+
+    for (i = 0; i < natmin; ++i) {
+        const auto iat = system->map_p2s[i][0];
+        for (j = 0; j < nat; ++j) {
+            distall[i][j].clear();
+            for (icell = 0; icell < nneib; ++icell) {
+
+                double dist_tmp = distance(xcrd[0][iat], xcrd[icell][j]);
+                distall[i][j].emplace_back(icell, dist_tmp);
+            }
+            std::sort(distall[i][j].begin(), distall[i][j].end());
+            min_dist_tmp[i][j] = distall[i][j][0].dist;
+        }
+    }
+
+    // print result
+
+    std::ofstream fin_harmonic_IFCs;
+
+    fin_harmonic_IFCs.open("harmonic_IFCs.txt");
+    for(i1 = 0; i1 < natmin; i1++){
+        for(i2 = 0; i2 < nat; i2++){
+            for(ixyz = 0; ixyz < 9; ixyz++){
+                fin_harmonic_IFCs << min_dist_tmp[i1][i2] << " " << harmonic_IFCs[i1][i2][ixyz] << std::endl;
+            }
+        }
+    }
+
+    return;
 }
 
 void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
