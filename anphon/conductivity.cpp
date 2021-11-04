@@ -121,6 +121,7 @@ void Conductivity::setup_kappa()
     MPI_Bcast(&restart_flag_3ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&restart_flag_4ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
+    // quartic_mode is boardcasted in fcs_phonon->setup
     if (anharmonic_core->quartic_mode > 0) {
         fph_rta = 1;
     } else {

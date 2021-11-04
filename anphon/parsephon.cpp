@@ -409,7 +409,8 @@ void Input::parse_kappa_vars(const bool use_default_values)
           "KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", 
           "INTERPOLATOR", "LEN_BOUNDARY",
           "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC",
-          "ADAPTIVE_FACTOR"
+          "ADAPTIVE_FACTOR", 
+          "ITERATIVE", "MAX_CYCLE", "ITER_THRESHOLD"
     };
     
     double *isotope_factor = nullptr;
@@ -435,6 +436,10 @@ void Input::parse_kappa_vars(const bool use_default_values)
 
     double adaptive_factor = 1.0;
 
+    auto iterative = false;
+    auto max_cycle = 20;
+    auto iter_threshold = 0.005; 
+
     // Assign given values
     if (! use_default_values) {
         assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
@@ -446,6 +451,9 @@ void Input::parse_kappa_vars(const bool use_default_values)
         assign_val(calculate_kappa_spec, "KAPPA_SPEC", kappa_var_dict);
         str_tmp = kappa_var_dict["KMESH_COARSE"];
         assign_val(adaptive_factor, "ADAPTIVE_FACTOR", kappa_var_dict);
+        assign_val(iterative, "ITERATIVE", kappa_var_dict);
+        assign_val(max_cycle, "MAX_CYCLE", kappa_var_dict);
+        assign_val(iter_threshold, "ITER_THRESHOLD", kappa_var_dict); 
     }
 
     integration->epsilon_4ph = epsilon_4ph;
@@ -454,6 +462,10 @@ void Input::parse_kappa_vars(const bool use_default_values)
     conductivity->len_boundary = len_boundary; // m
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;
+
+    iterativebte->do_iterative = iterative;
+    iterativebte->max_cycle = max_cycle;
+    iterativebte->convergence_criteria = iter_threshold; // wh
 
     // set 4ph mesh
     std::vector<unsigned int> kmesh_v;
@@ -726,10 +738,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     auto do_projection = false;
 
-    auto iterative = false;
-    auto max_cycle = 20;
-    auto iter_threshold = 0.005; // wh
-
     //auto fph_rta = 0;
 
     // Assign values to variables
@@ -760,10 +768,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         //assign_val(calc_coherent, "KAPPA_COHERENT", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
         assign_val(calc_selfenergy, "SELF_ENERGY", analysis_var_dict);
-
-        assign_val(iterative, "ITERATIVE", analysis_var_dict);
-        assign_val(max_cycle, "MAX_CYCLE", analysis_var_dict);
-        assign_val(iter_threshold, "ITER_THRESHOLD", analysis_var_dict); // wh
 
         //assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
 
@@ -950,9 +954,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
 
-    iterativebte->do_iterative = iterative;
-    iterativebte->max_cycle = max_cycle;
-    iterativebte->convergence_criteria = iter_threshold; // wh
 
     //conductivity->fph_rta = fph_rta; // 4ph
     //if (fph_rta > 0) quartic_mode = 1;

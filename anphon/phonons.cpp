@@ -266,23 +266,27 @@ void PHON::execute_RTA() const
 
     if (mode_analysis->ks_analyze_mode) {
         mode_analysis->run_mode_analysis();
+
     } else if (iterativebte->do_iterative) {
+        
         iterativebte->setup_iterative();
         iterativebte->do_iterativebte();
         iterativebte->write_kappa();
+
     } else {
         //writes->setup_result_io();
         conductivity->setup_kappa();
         conductivity->calc_anharmonic_imagself();
-        if (conductivity->fph_rta < 2) {
-            conductivity->compute_kappa();
-            writes->write_kappa();
-        } else {
-            if (mympi->my_rank == 0) {
-                std::cout << " [fph_RTA == 2], only 4ph scattering is calculated, kappa is not calculated !"
-                          << std::endl;
-            }
-        }
+        // if (conductivity->fph_rta < 2) {
+        conductivity->compute_kappa();
+        writes->write_kappa();
+        // this can be deleted
+        //} else {
+        //    if (mympi->my_rank == 0) {
+        //        std::cout << " [fph_RTA == 2], only 4ph scattering is calculated, kappa is not calculated !"
+        //                  << std::endl;
+        //    }
+        //}
         writes->write_selfenergy_isotope();
     }
 }
