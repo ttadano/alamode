@@ -1294,6 +1294,10 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
             // there is no new translational invariance
             continue;
 
+        } else if(order > 2){
+            // we assume that the cutoff radius is enough small
+            // for 5th or higher-order IFCs
+            continue;
         } else {
 
             // Anharmonic cases
