@@ -100,7 +100,8 @@ void Writer::write_input_vars(const ALM *alm, const std::string run_mode) const
         std::cout << "  SPARSE = " << optctrl.use_sparse_solver << '\n';
         std::cout << "  SPARSESOLVER = " << optctrl.sparsesolver << '\n';
         std::cout << "  CONV_TOL = " << optctrl.tolerance_iteration << '\n';
-        std::cout << "  MAXITER = " << optctrl.maxnum_iteration << "\n\n";
+        std::cout << "  MAXITER = " << optctrl.maxnum_iteration << "\n";
+        std::cout << "  MIRROR_IMAGE_CONV = " << optctrl.mirror_image_conv << "\n\n";
         if (optctrl.linear_model == 2) {
             std::cout << " Elastic-net related variables:\n";
             std::cout << "  CV = " << std::setw(5) << optctrl.cross_validation << '\n';

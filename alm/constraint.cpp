@@ -96,6 +96,7 @@ void Constraint::setup(const System *system,
                        const Cluster *cluster,
                        const Symmetry *symmetry,
                        const int linear_model,
+                       const int mirror_image_conv,
                        const int verbosity,
                        Timer *timer)
 {
@@ -247,6 +248,7 @@ void Constraint::setup(const System *system,
                                           symmetry,
                                           cluster,
                                           fcs,
+                                          mirror_image_conv,
                                           verbosity);
     }
 
@@ -874,6 +876,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
                                                    const Symmetry *symmetry,
                                                    const Cluster *cluster,
                                                    const Fcs *fcs,
+                                                   const int mirror_image_conv,
                                                    const int verbosity) const
 {
     // Create constraint matrix for the translational invariance (aka acoustic sum rule).
@@ -894,14 +897,28 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             continue;
         }
 
-        get_constraint_translation(supercell,
-                                   symmetry,
-                                   cluster,
-                                   fcs,
-                                   order,
-                                   fcs->get_fc_table()[order],
-                                   fcs->get_nequiv()[order].size(),
-                                   const_translation[order], true);
+        if(mirror_image_conv > 0 || order == 0){
+            get_constraint_translation(supercell,
+                                    symmetry,
+                                    cluster,
+                                    fcs,
+                                    order,
+                                    fcs->get_fc_table()[order],
+                                    fcs->get_nequiv()[order].size(),
+                                    const_translation[order], true);
+        }
+        // make translation constraint for each mirror image combinations
+        // if mirror_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
+        else { // if(mirror_image_conv > 0 && order > 0)
+            get_constraint_translation_for_mirror_images(supercell,
+                                                symmetry,
+                                                cluster,
+                                                fcs,
+                                                order,
+                                                fcs->get_fc_table()[order],
+                                                fcs->get_nequiv()[order].size(),
+                                                const_translation[order], true);
+        }
 
         if (verbosity > 0) std::cout << " done." << std::endl;
     }
@@ -1178,6 +1195,315 @@ void Constraint::get_constraint_translation(const Cell &supercell,
         const_tmp2.clear();
         counter = 0;
         for (const auto &it2: it) {
+            if (counter == 0) {
+                division_factor = 1.0 / it2.val;
+            }
+            const_tmp2[it2.col] = it2.val * division_factor;
+            ++counter;
+        }
+        const_out.emplace_back(const_tmp2);
+    }
+    constraint_all.clear();
+    if (do_rref) rref_sparse(nparams, const_out, eps8);
+}
+
+void Constraint::get_constraint_translation_for_mirror_images(const Cell &supercell,
+                                            const Symmetry *symmetry,
+                                            const Cluster *cluster,
+                                            const Fcs *fcs,
+                                            const int order,
+                                            const std::vector<FcProperty> &fc_table,
+                                            const size_t nparams,
+                                            ConstraintSparseForm &const_out,
+                                            const bool do_rref) const
+{
+    // Generate equality constraint for the acoustic sum rule.
+
+    int i, j;
+    int iat, jat, icrd, jcrd;
+    int idata;
+    int loc_nonzero;
+
+    int *ind;
+    int *intarr, *intarr_copy;
+    int **xyzcomponent;
+
+    int ixyz;
+    const auto natmin = symmetry->get_nat_prim();
+    const auto nat = supercell.number_of_atoms;
+
+    // generate combinations of mirror images
+    long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
+    long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
+
+    unsigned int isize;
+
+    std::vector<int> data;
+    std::unordered_set<FcProperty> list_found;
+    std::unordered_set<FcProperty>::iterator iter_found;
+    std::vector<std::vector<int>> data_vec;
+    std::vector<FcProperty> list_vec;
+    std::vector<double> const_now;
+
+    typedef std::vector<ConstraintDoubleElement> ConstEntry;
+    std::vector<ConstEntry> constraint_all;
+
+    ConstEntry const_tmp;
+
+    if (order < 0) return;
+
+    if (nparams == 0) return;
+
+    allocate(ind, order + 2);
+
+    // Create force constant table for search
+
+    list_found.clear();
+
+    for (const auto &p : fc_table) {
+        for (i = 0; i < order + 2; ++i) {
+            ind[i] = p.elems[i];
+        }
+        if (list_found.find(FcProperty(order + 2, p.sign,
+                                       ind, p.mother)) != list_found.end()) {
+            exit("get_constraint_translation", "Duplicate interaction list found");
+        }
+        list_found.insert(FcProperty(order + 2, p.sign,
+                                     ind, p.mother));
+    }
+
+    deallocate(ind);
+
+    // Generate xyz component for each order
+
+    const auto nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 1));
+    allocate(xyzcomponent, nxyz, order + 1);
+    fcs->get_xyzcomponent(order + 1, xyzcomponent);
+
+    allocate(intarr, order + 2);
+    allocate(intarr_copy, order + 2);
+
+    const_now.resize(nparams);
+
+    for (i = 0; i < natmin; ++i) {
+
+        iat = symmetry->get_map_p2s()[i][0];
+
+        // Generate atom pairs for each order
+
+        if (order == 0) {
+            // there is no new translational invariance
+            continue;
+
+        } else {
+
+            // Anharmonic cases
+
+            auto intlist(cluster->get_interaction_pair(order, i));
+            std::sort(intlist.begin(), intlist.end());
+
+            data_vec.clear();
+            // Generate data_vec that contains possible interacting clusters.
+            // Each cluster contains (order + 1) atoms, and the last atom index
+            // will be treated seperately below.
+            CombinationWithRepetition<int> g2(intlist.begin(), intlist.end(), order);
+            do {
+                data = g2.now();
+
+                intarr[0] = iat;
+
+                for (isize = 0; isize < data.size(); ++isize) {
+                    intarr[isize + 1] = data[isize];
+                }
+
+                if (cluster->satisfy_nbody_rule(order + 1, intarr, order)) {
+                    if (cluster->is_incutoff(order + 1, intarr, order, supercell.kind)) {
+                        // Add to list if the atoms interact with each other.
+                        data_vec.push_back(data);
+                    }
+                }
+
+            } while (g2.next());
+
+            const auto ndata = data_vec.size();
+
+            // Use openmp for acceleration if possible
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+            {
+                int *intarr_omp, *intarr_copy_omp;
+
+                double weight;
+                std::vector<std::vector<int>> cell_dummy;
+
+                allocate(intarr_omp, order + 2);
+                allocate(intarr_copy_omp, order + 2);
+
+                std::vector<int> data_omp;
+                std::vector<int> atom_tmp;
+                std::vector<int> sort_table, sort_table_tmp;
+                // std::vector<int> const_now_omp;
+                std::vector<std::vector<double> > consts_now_omp;
+
+                ConstEntry const_tmp_omp;
+                std::vector<ConstEntry> constraint_list_omp;
+
+                consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
+#ifdef _OPENMP
+#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero, i_mirror_images), schedule(guided), nowait
+#endif
+                for (idata = 0; idata < ndata; ++idata) {
+
+                    data_omp = data_vec[idata];
+
+                    intarr_omp[0] = iat;
+                    for (isize = 0; isize < data_omp.size(); ++isize) {
+                        intarr_omp[isize + 1] = data_omp[isize];
+                    }
+
+                    // Loop for xyz component
+                    for (ixyz = 0; ixyz < nxyz; ++ixyz) {
+                        // Loop for the xyz index of the last atom
+                        for (jcrd = 0; jcrd < 3; ++jcrd) {
+
+                            // Reset the temporary array for another constraint
+                            //for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
+                            for(i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++){
+                                for(j = 0; j < nparams; j++){
+                                    consts_now_omp[i_mirror_images][j] = 0.0;
+                                }
+                            }
+
+                            // Loop for the last atom index
+                            for (jat = 0; jat < 3 * nat; jat += 3) {
+                                intarr_omp[order + 1] = jat / 3;
+                                atom_tmp = data_omp;
+                                atom_tmp.push_back(jat/3);
+                                // sort atom_tmp and get corresponding sort_table
+                                sort_table_tmp.resize(atom_tmp.size());
+                                for(i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++){
+                                    sort_table_tmp[i_tmp] = i_tmp;
+                                }
+                                for(i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++){
+                                    for(j_tmp = i_tmp+1; j_tmp < atom_tmp.size(); j_tmp++){
+                                        if(atom_tmp[i_tmp] > atom_tmp[j_tmp]){
+                                            // swap atom numbers
+                                            i_tmp2 = atom_tmp[i_tmp];
+                                            atom_tmp[i_tmp] = atom_tmp[j_tmp];
+                                            atom_tmp[j_tmp] = i_tmp2;
+                                            // write on sort table
+                                            i_tmp2 = sort_table_tmp[i_tmp];
+                                            sort_table_tmp[i_tmp] = sort_table_tmp[j_tmp];
+                                            sort_table_tmp[j_tmp] = i_tmp2;
+                                        }
+                                    }
+                                }
+                                // make sort table
+                                sort_table.resize(atom_tmp.size());
+                                for(i_tmp = 0; i_tmp < atom_tmp.size(); i_tmp++){
+                                    sort_table[sort_table_tmp[i_tmp]] = i_tmp;
+                                }
+
+                                if (cluster->satisfy_nbody_rule(order + 2, intarr_omp, order)) {
+                                    for (j = 0; j < order + 1; ++j) {
+                                        intarr_copy_omp[j] = 3 * intarr_omp[j] + xyzcomponent[ixyz][j];
+                                    }
+                                    intarr_copy_omp[order + 1] = jat + jcrd;
+
+                                    sort_tail(order + 2, intarr_copy_omp);
+
+                                    iter_found = list_found.find(FcProperty(order + 2, 1.0,
+                                                                            intarr_copy_omp, 1));
+
+                                    auto cluster_found = cluster->get_interaction_cluster(order, i).find(
+                                        InteractionCluster(atom_tmp, cell_dummy));
+
+                                    if (iter_found != list_found.end()) {
+                                        if(cluster_found == cluster->get_interaction_cluster(order, i).end()){
+                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found." << std::endl;
+                                        }
+                                        else{
+                                            // std::cout << "cluster corresponding to the IFC is found." << std::endl;
+
+                                            // get weight
+                                            weight = 1.0/static_cast<double>((cluster_found->cell).size());
+                                            for(auto cellvec : cluster_found->cell){
+                                                // get number of the combination of the cell
+                                                i_mirror_images = 0;
+
+                                                for(i_tmp = 0; i_tmp < order; i_tmp++){
+                                                    i_mirror_images *= 27;
+                                                    i_mirror_images += cellvec[sort_table[i_tmp]];
+                                                }
+                                                // add to the constraint
+                                                consts_now_omp[i_mirror_images][(*iter_found).mother] += weight * (*iter_found).sign;
+                                            }
+                                        }
+                                    }
+
+                                }
+                            } // close loop jat
+
+                            // Add the constraint to the private array
+                            for(i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++){
+                                if (!is_allzero(consts_now_omp[i_mirror_images], eps8, loc_nonzero, 0)) {
+                                    if (consts_now_omp[i_mirror_images][loc_nonzero] < 0) {
+                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mirror_images][j] *= -1.0;
+                                    }
+
+                                    const_tmp_omp.clear();
+                                    for (j = 0; j < nparams; ++j) {
+                                        if (std::abs(consts_now_omp[i_mirror_images][j]) > 0) {
+                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mirror_images][j]);
+                                        }
+                                    }
+                                    if (const_tmp_omp.empty()) {
+                                        std::cout << "This cannot happen" << std::endl;
+                                    }
+                                    constraint_list_omp.emplace_back(const_tmp_omp);
+                                }
+                            }
+                        }
+                    }
+
+                } // close idata (openmp main loop)
+
+                deallocate(intarr_omp);
+                deallocate(intarr_copy_omp);
+
+                // Merge vectors
+#pragma omp critical
+                {
+                    for (const auto &it : constraint_list_omp) {
+                        constraint_all.emplace_back(it);
+                    }
+                }
+                constraint_list_omp.clear();
+            } // close openmp
+
+            intlist.clear();
+        } // close if
+    }     // close loop i
+
+    deallocate(xyzcomponent);
+    deallocate(intarr);
+    deallocate(intarr_copy);
+
+    std::sort(constraint_all.begin(), constraint_all.end());
+    constraint_all.erase(std::unique(constraint_all.begin(),
+                                     constraint_all.end()),
+                         constraint_all.end());
+
+    MapConstraintElement const_tmp2;
+    auto division_factor = 1.0;
+    int counter;
+    const_out.clear();
+
+    for (const auto &it : constraint_all) {
+        const_tmp2.clear();
+        counter = 0;
+        for (const auto &it2 : it) {
             if (counter == 0) {
                 division_factor = 1.0 / it2.val;
             }
