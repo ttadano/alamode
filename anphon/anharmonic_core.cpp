@@ -1178,7 +1178,9 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
                                    sym_permutation,
                                    quartet);
 
-    unsigned int batchsize = 10000;
+    unsigned int batchsize = 1e9 / (ns3 * 16); 
+    // 1e9 B ~ 1GB, the batch size will be choosen so that delta_arr will be approximately 1 GB
+    // batchsize * ns3 * 2 * 8B ~ 1GB
 
     const unsigned int npair_uniq = quartet.size();
 
@@ -1369,7 +1371,7 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
     // std::pow(0.5, 5)
     for (i = 0; i < ntemp; ++i)
         ret[i] *= pi * std::pow(0.5, 5)
-              / (3.0 * static_cast<double>(nk * nk)); // should we have 1/6
+              / (3.0 * static_cast<double>(nk * nk)); 
 }
 
 void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
