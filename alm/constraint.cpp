@@ -897,18 +897,19 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             continue;
         }
 
-        get_constraint_translation(supercell,
-                                   symmetry,
-                                   cluster,
-                                   fcs,
-                                   order,
-                                   fcs->get_fc_table()[order],
-                                   fcs->get_nequiv()[order].size(),
-                                   const_translation[order], true);
-
+        if(mirror_image_conv > 0 || order == 0){
+            get_constraint_translation(supercell,
+                                    symmetry,
+                                    cluster,
+                                    fcs,
+                                    order,
+                                    fcs->get_fc_table()[order],
+                                    fcs->get_nequiv()[order].size(),
+                                    const_translation[order], true);
+        }
         // make translation constraint for each mirror image combinations
-        // if mirror_image_conv == 0, there is no need to impose additional ASR constraints.
-        if(mirror_image_conv > 0){
+        // if mirror_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
+        else { // if(mirror_image_conv > 0 && order > 0)
             get_constraint_translation_for_mirror_images(supercell,
                                                 symmetry,
                                                 cluster,
@@ -1232,8 +1233,8 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     const auto nat = supercell.number_of_atoms;
 
     // generate combinations of mirror images
-    int i_mirror_images, i_tmp, j_tmp, i_tmp2;
-    int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
+    long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
+    long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
 
     unsigned int isize;
 
@@ -1394,7 +1395,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                             // write on sort table
                                             i_tmp2 = sort_table_tmp[i_tmp];
                                             sort_table_tmp[i_tmp] = sort_table_tmp[j_tmp];
-                                            sort_table_tmp[j_tmp] = i_tmp2;//herehere
+                                            sort_table_tmp[j_tmp] = i_tmp2;
                                         }
                                     }
                                 }
@@ -1424,9 +1425,10 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                         }
                                         else{
                                             // std::cout << "cluster corresponding to the IFC is found." << std::endl;
+
+                                            // get weight
+                                            weight = 1.0/static_cast<double>((cluster_found->cell).size());
                                             for(auto cellvec : cluster_found->cell){
-                                                // get weight
-                                                weight = 1.0/(cluster_found->cell).size();
                                                 // get number of the combination of the cell
                                                 i_mirror_images = 0;
 

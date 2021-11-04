@@ -64,8 +64,8 @@ public:
     class RelativeVectors {
         public:
         int order;
-        std::vector<std::vector<double> > relvecs_cartesian;
-        std::vector<std::vector<double> > relvecs_fractional;
+        std::vector<std::vector<double>> relvecs_cartesian;
+        std::vector<std::vector<double>> relvecs_fractional;
 
         RelativeVectors() = default;
 
