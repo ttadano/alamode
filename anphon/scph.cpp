@@ -1577,7 +1577,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     // Calculate v4 array. 
     // This operation is the most expensive part of the calculation.
-    if (selfenergy_offdiagonal & (ialgo == 1)) {
+/*    if (selfenergy_offdiagonal & (ialgo == 1)) {
         compute_V4_elements_mpi_over_band(v4_array_original,
                                           evec_harmonic,
                                           selfenergy_offdiagonal);
@@ -1587,24 +1587,35 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             selfenergy_offdiagonal,
                                             relax_coordinate);
     }
-    
+*/  
     allocate(v3_array_original, nk, ns, ns * ns);
     allocate(v3_array_renormalized, nk, ns, ns * ns);
-    compute_V3_elements_mpi_over_kpoint(v3_array_original,
+/*    compute_V3_elements_mpi_over_kpoint(v3_array_original,
                                         evec_harmonic,
                                         selfenergy_offdiagonal);
-
+*/
     // assume that the atomic forces are zero at initial structure
     for(is = 0; is < ns; is++){
         v1_array_original[is] = 0.0;
     }
 
     // compute IFC renormalization by lattice relaxation
+    std::cout << "start del_v2_strain_from_cubic" << std::endl << std::flush;
     allocate(del_v2_strain_from_cubic, 9, nk_interpolate, ns*ns);
     compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
 
+    std::cout << "start del_v2_strain_from_quartic" << std::endl << std::flush;
     allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
+    std::cout << "done." << std::endl;
+
+    // for(int itmp1 = 0; itmp1 < 81; itmp1++){
+    //     for(int itmp2 = 0; itmp2 < nk; itmp2++){
+    //         for(int itmp3 = 0; itmp3 < ns*ns; itmp3++){
+    //             del_v2_strain_from_quartic[itmp1][itmp2][itmp3] = 0.0;
+    //         }
+    //     }
+    // }
 
     // int ixyz1, ixyz2;
     // std::cout << "compute_del_v2_strain_from_cubic is done. " << std::endl;
@@ -1767,14 +1778,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
 
-                int ik_tmp1, istmp1, istmp2;
-                for(ik_tmp1 = 0; ik_tmp1 < 4; ik_tmp1++){
-                    for(istmp1 = 0; istmp1 < ns; istmp1++){
-                        for(istmp2 = 0; istmp2 < ns; istmp2++){
-                            std::cout << delta_v2_array_renormalize[ik_tmp1][istmp1*ns + istmp2] << " ";
-                        }std::cout << std::endl;
-                    }std::cout << std::endl;
-                }
+                // int ik_tmp1, istmp1, istmp2;
+                // for(ik_tmp1 = 0; ik_tmp1 < 4; ik_tmp1++){
+                //     for(istmp1 = 0; istmp1 < ns; istmp1++){
+                //         for(istmp2 = 0; istmp2 < ns; istmp2++){
+                //             std::cout << delta_v2_array_renormalize[ik_tmp1][istmp1*ns + istmp2] << " ";
+                //         }std::cout << std::endl;
+                //     }std::cout << std::endl;
+                // }
 
                 // calculate PES force
                 calculate_force_in_real_space(v1_array_renormalized, force_array);
@@ -1804,7 +1815,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
 
                 // solve SCP equation
-                compute_anharmonic_frequency(v4_array_renormalized,
+/*                compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -1813,6 +1824,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
+*/
+                compute_renormalized_harmonic_frequency(omega2_anharm[iT],
+                                        evec_anharm_tmp,
+                                        delta_v2_array_renormalize,
+                                        writes->getVerbosity());
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -3040,6 +3056,8 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
     int ixyz11, ixyz12, ixyz21, ixyz22, ixyz, itmp;
     int is1, is2, ik, knum;
 
+#pragma omp parallel private(ixyz, itmp, ixyz11, ixyz12, ixyz21, ixyz22, is1, is2, ik, knum)
+{
     std::vector<FcsArrayWithCell> delta_fcs;
     std::vector<FcsClassExtent> delta_fcs2;
     FcsClassExtent fc_extent_tmp;
@@ -3049,7 +3067,7 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
 
     MatrixXcd Dymat(ns, ns);
     MatrixXcd evec_tmp(ns, ns);
-    
+#pragma omp for
     for(ixyz = 0; ixyz < 81; ixyz++){
         itmp = ixyz;
         ixyz22 = itmp % 3;
@@ -3058,12 +3076,12 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
         itmp /= 3;
         ixyz12 = itmp % 3;
         ixyz11 = itmp / 3;
-        std::cout << "ixyz = " << ixyz << std::endl << std::flush;
+        // std::cout << "ixyz = " << ixyz << std::endl << std::flush;
         // calculate renormalization in real space
         compute_del_v_strain_in_real_space2(fcs_phonon->force_constant_with_cell[2],
                                                         delta_fcs, ixyz11, ixyz12, ixyz21, ixyz22, 1);
 
-        std::cout << "renormalization from quartic to harmonic IFCs in real space is done." << std::endl;
+        // std::cout << "renormalization from quartic to harmonic IFCs in real space is done." << std::endl;
 
         // change format of harmonic IFCs.
         delta_fcs2.clear();
@@ -3097,6 +3115,8 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
     }
 
     deallocate(mat_tmp);
+}
+
 }
 
 void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &fcs_in,
@@ -3960,14 +3980,14 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
 
 
 
-    std::cout << "delta_v2_array_renormalize" << std::endl;
-    for(ik = 0; ik < 5; ik++){
-        for(is1 = 0; is1 < ns; is1++){
-            for(is2 = 0; is2 < ns; is2++){
-                std::cout << delta_v2_array_renormalize[ik][is1*ns+is2] << " ";
-            }std::cout << std::endl;
-        }std::cout << std::endl;
-    }
+    // std::cout << "delta_v2_array_renormalize" << std::endl;
+    // for(ik = 0; ik < 5; ik++){
+    //     for(is1 = 0; is1 < ns; is1++){
+    //         for(is2 = 0; is2 < ns; is2++){
+    //             std::cout << delta_v2_array_renormalize[ik][is1*ns+is2] << " ";
+    //         }std::cout << std::endl;
+    //     }std::cout << std::endl;
+    // }
 
     return;
     
