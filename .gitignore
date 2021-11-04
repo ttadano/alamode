@@ -4,6 +4,7 @@ CMakeFiles
 CMakeCache.txt
 .vscode/
 anphon/*.o
+anphon/*.sh
 anphon/anphon
 alm/Makefile
 alm/*.o

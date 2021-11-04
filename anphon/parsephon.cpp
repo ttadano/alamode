@@ -92,10 +92,13 @@ void Input::parce_input(int narg,
     parse_kpoints();
 
     if (phon->mode == "RTA") {
-        if (!locate_tag("&kappa"))
-            exit("parse_input",
-                 "&kappa entry not found in the input file");
-        parse_kappa_vars();
+        // not really essential information to read
+        const auto use_defaults_for_kappa = !locate_tag("&kappa");
+        //if (!locate_tag("&kappa"))
+        //    exit("parse_input",
+        //         "&kappa entry not found in the input file");
+        
+        parse_kappa_vars(use_defaults_for_kappa);
     }
 
     if (phon->mode == "SCPH") {
@@ -399,14 +402,15 @@ void Input::parse_general_vars()
 }
 
 
-void Input::parse_kappa_vars()
+void Input::parse_kappa_vars(const bool use_default_values)
 {
     std::string str_tmp;
     const std::vector<std::string> input_list{
           "KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", 
           "INTERPOLATOR", "LEN_BOUNDARY",
           "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC",
-          "WRITE_INTERPOL"
+          "WRITE_INTERPOL", "ADAPTIVE_FACTOR", 
+          "ITERATIVE", "MAX_CYCLE", "ITER_THRESHOLD"
     };
     
     double *isotope_factor = nullptr;
@@ -431,38 +435,41 @@ void Input::parse_kappa_vars()
     auto calculate_kappa_spec = 0;
     auto write_interpol = 0;
 
+    double adaptive_factor = 1.0;
+
+    auto iterative = false;
+    auto max_cycle = 20;
+    auto iter_threshold = 0.005; 
+
     // Assign given values
-    assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
-    assign_val(epsilon_4ph, "EPSILON_4PH", kappa_var_dict);
-    assign_val(interpolator, "INTERPOLATOR", kappa_var_dict);
-    assign_val(len_boundary, "LEN_BOUNDARY", kappa_var_dict);
-    assign_val(calc_coherent, "KAPPA_COHERENT", kappa_var_dict);
-    assign_val(include_isotope, "ISOTOPE", kappa_var_dict);
-    assign_val(calculate_kappa_spec, "KAPPA_SPEC", kappa_var_dict);
-    assign_val(write_interpol, "WRITE_INTERPOL", kappa_var_dict);
-    
-        
-    if (include_isotope) {
-
-        if (!kappa_var_dict["ISOFACT"].empty()) {
-            split_str_by_space(kappa_var_dict["ISOFACT"], isofact_v);
-
-            if (isofact_v.size() != system->nkd) {
-                exit("parse_kappa_vars",
-                     "The number of entries for ISOFACT is inconsistent with NKD");
-            } else {
-                allocate(isotope_factor, system->nkd);
-                for (auto i = 0; i < system->nkd; ++i) {
-                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
-                }
-            }
-        }
-
+    if (! use_default_values) {
+        assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
+        assign_val(epsilon_4ph, "EPSILON_4PH", kappa_var_dict);
+        assign_val(interpolator, "INTERPOLATOR", kappa_var_dict);
+        assign_val(len_boundary, "LEN_BOUNDARY", kappa_var_dict);
+        assign_val(calc_coherent, "KAPPA_COHERENT", kappa_var_dict);
+        assign_val(include_isotope, "ISOTOPE", kappa_var_dict);
+        assign_val(calculate_kappa_spec, "KAPPA_SPEC", kappa_var_dict);
+        str_tmp = kappa_var_dict["KMESH_COARSE"];
+        assign_val(adaptive_factor, "ADAPTIVE_FACTOR", kappa_var_dict);
+        assign_val(iterative, "ITERATIVE", kappa_var_dict);
+        assign_val(max_cycle, "MAX_CYCLE", kappa_var_dict);
+        assign_val(iter_threshold, "ITER_THRESHOLD", kappa_var_dict); 
     }
 
-    str_tmp = kappa_var_dict["KMESH_COARSE"];
-    std::vector<unsigned int> kmesh_v;
+    integration->epsilon_4ph = epsilon_4ph;
+    integration->ismear_4ph = ismear_4ph;
+    integration->adaptive_factor = adaptive_factor;
+    conductivity->len_boundary = len_boundary; // m
+    conductivity->calc_kappa_spec = calculate_kappa_spec;
+    conductivity->calc_coherent = calc_coherent;
 
+    iterativebte->do_iterative = iterative;
+    iterativebte->max_cycle = max_cycle;
+    iterativebte->convergence_criteria = iter_threshold; // wh
+
+    // set 4ph mesh
+    std::vector<unsigned int> kmesh_v;
     kmesh_v.clear();
     if (!str_tmp.empty()) {
 
@@ -491,6 +498,26 @@ void Input::parse_kappa_vars()
         exit("parse_general_vars",
              "INTERPOLATOR should be either linear or log-linear.");
     }
+    
+    conductivity->set_interpolator(interpolator);
+    conductivity->set_kmesh_coarse(&kmesh_v[0]);
+
+    // set isotope
+    if (include_isotope) {
+        if (!kappa_var_dict["ISOFACT"].empty()) {
+            split_str_by_space(kappa_var_dict["ISOFACT"], isofact_v);
+
+            if (isofact_v.size() != system->nkd) {
+                exit("parse_kappa_vars",
+                     "The number of entries for ISOFACT is inconsistent with NKD");
+            } else {
+                allocate(isotope_factor, system->nkd);
+                for (auto i = 0; i < system->nkd; ++i) {
+                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
+                }
+            }
+        }
+    }
 
     if (include_isotope) {
         if (!kappa_var_dict["ISOFACT"].empty()) {
@@ -503,16 +530,6 @@ void Input::parse_kappa_vars()
     if (isotope_factor) {
         deallocate(isotope_factor);
     }
-
-    conductivity->set_interpolator(interpolator);
-    conductivity->set_kmesh_coarse(&kmesh_v[0]);
-    conductivity->calc_coherent = calc_coherent;
-    conductivity->calc_kappa_spec = calculate_kappa_spec;
-    conductivity->len_boundary = len_boundary; // m
-    conductivity->write_interpolation = write_interpol;
-
-    integration->epsilon_4ph = epsilon_4ph;
-    integration->ismear_4ph = ismear_4ph;
     
     isotope->include_isotope = include_isotope;
 
@@ -722,10 +739,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     auto do_projection = false;
 
-    auto iterative = false;
-    auto max_cycle = 20;
-    auto iter_threshold = 0.005; // wh
-
     //auto fph_rta = 0;
 
     // Assign values to variables
@@ -756,10 +769,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
         //assign_val(calc_coherent, "KAPPA_COHERENT", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
         assign_val(calc_selfenergy, "SELF_ENERGY", analysis_var_dict);
-
-        assign_val(iterative, "ITERATIVE", analysis_var_dict);
-        assign_val(max_cycle, "MAX_CYCLE", analysis_var_dict);
-        assign_val(iter_threshold, "ITER_THRESHOLD", analysis_var_dict); // wh
 
         //assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
 
@@ -946,9 +955,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
 
-    iterativebte->do_iterative = iterative;
-    iterativebte->max_cycle = max_cycle;
-    iterativebte->convergence_criteria = iter_threshold; // wh
 
     //conductivity->fph_rta = fph_rta; // 4ph
     //if (fph_rta > 0) quartic_mode = 1;

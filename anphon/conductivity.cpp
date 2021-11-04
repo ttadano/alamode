@@ -122,6 +122,7 @@ void Conductivity::setup_kappa()
     MPI_Bcast(&restart_flag_3ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&restart_flag_4ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
+    // quartic_mode is boardcasted in fcs_phonon->setup
     if (anharmonic_core->quartic_mode > 0) {
         fph_rta = 1;
     } else {
@@ -338,7 +339,7 @@ void Conductivity::setup_kappa()
     if (fph_rta > 0) {
         if (!integration->adaptive_sigma4) {
             integration->adaptive_sigma4 = new AdaptiveSmearingSigma(kmesh_4ph->nk,
-                                                                     ns);
+                                                                     ns, integration->adaptive_factor);
             integration->adaptive_sigma4->setup(phonon_velocity,
                                                 kmesh_4ph,
                                                 system->lavec_p,
@@ -799,7 +800,7 @@ void Conductivity::calc_anharmonic_imagself4()
             const auto omega = dymat_4ph->get_eigenvalues()[knum][snum];
 
             if (integration->ismear_4ph == 0 || integration->ismear_4ph == 1 || integration->ismear_4ph == 2) {
-                anharmonic_core->calc_damping4_smearing(ntemp,
+                anharmonic_core->calc_damping4_smearing_batch(ntemp,
                                                         temperature,
                                                         omega,
                                                         iks / ns,

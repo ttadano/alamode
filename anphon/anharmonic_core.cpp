@@ -1130,6 +1130,250 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                                  ret);
 }
 
+
+void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
+                                            const double *temp_in,
+                                            const double omega_in,
+                                            const unsigned int ik_in,
+                                            const unsigned int is_in,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            const PhaseFactorStorage *phase_storage_in,
+                                            double *ret)
+{
+
+    const int nk = kmesh_in->nk;
+    const int ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns2 * ns;
+    unsigned int i;
+    int ik;
+    unsigned int is, js, ks;
+    unsigned int arr[4];
+
+    int k1, k2, k3;
+
+    double T_tmp;
+    double n1, n2;
+    double omega_inner[3];
+
+    double multi;
+
+    for (i = 0; i < ntemp; ++i) ret[i] = 0.0;
+
+    double **v4_arr;
+    double ***delta_arr;
+    double ret_tmp;
+
+    double f1, f2, f3;
+
+    const auto epsilon = integration->epsilon_4ph;
+
+    std::vector<KsListGroup> quartet;
+
+    kmesh_in->get_unique_quartet_k(ik_in,
+                                   symmetry->SymmList,
+                                   use_quartet_symmetry,
+                                   sym_permutation,
+                                   quartet);
+
+    unsigned int batchsize = 1e9 / (ns3 * 16); 
+    // 1e9 B ~ 1GB, the batch size will be choosen so that delta_arr will be approximately 1 GB
+    // batchsize * ns3 * 2 * 8B ~ 1GB
+
+    const unsigned int npair_uniq = quartet.size();
+
+    int num_batch = npair_uniq / batchsize;
+    if (npair_uniq > (num_batch * batchsize)) num_batch += 1;
+
+    const int knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kmesh_in->kindex_minus_xk[knum];
+
+    allocate(v4_arr, batchsize, ns3);
+    allocate(delta_arr, batchsize, ns3, 2);
+
+    for (auto ibatch = 0; ibatch < num_batch; ++ibatch) {
+        unsigned int start_k = ibatch * batchsize;
+        unsigned int end_k = start_k + batchsize;
+        end_k = std::min( end_k, npair_uniq );
+        auto nk_batch = end_k - start_k;
+
+        unsigned int ik0;
+
+#ifdef _OPENMP
+#pragma omp parallel for private(arr, k1, k2, k3, is, js, ks, omega_inner)
+#endif
+        for (ik0 = 0; ik0 < nk_batch; ++ik0) {
+
+            ik = start_k + ik0;
+
+            arr[0] = ns * knum_minus + is_in;
+            k1 = quartet[ik].group[0].ks[0];
+            k2 = quartet[ik].group[0].ks[1];
+            k3 = quartet[ik].group[0].ks[2];
+
+            for (is = 0; is < ns; ++is) {
+                arr[1] = ns * k1 + is;
+                omega_inner[0] = eval_in[k1][is];
+
+                for (js = 0; js < ns; ++js) {
+                    arr[2] = ns * k2 + js;
+                    omega_inner[1] = eval_in[k2][js];
+
+                    for (ks = 0; ks < ns; ++ks) {
+                        arr[3] = ns * k3 + ks;
+                        omega_inner[2] = eval_in[k3][ks];
+
+                        const auto jb = ns2 * is + ns * js + ks;
+
+                        if (integration->ismear_4ph == 0) {
+                            delta_arr[ik0][jb][0]
+                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
+                            delta_arr[ik0][jb][1]
+                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+                                - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                        } else if (integration->ismear_4ph == 1) {
+                            delta_arr[ik0][jb][0] = 0.0;
+                            delta_arr[ik0][jb][1] = 0.0;
+                            const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                            const auto sum_omega2 = omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                            const auto sum_omega3 = omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                            if (std::abs(sum_omega1) < 2.0 * epsilon) {
+                                delta_arr[ik0][jb][0] = delta_gauss(sum_omega1, epsilon);
+                            }
+                            if (std::abs(sum_omega2) < 2.0 * epsilon) {
+                                delta_arr[ik0][jb][1] += delta_gauss(sum_omega2, epsilon);
+                            }
+                            if (std::abs(sum_omega3) < 2.0 * epsilon) {
+                                delta_arr[ik0][jb][1] -= delta_gauss(sum_omega3, epsilon);
+                            }
+                        } else if (integration->ismear_4ph == 2) {
+                            // add adaptive smearing
+                            double epsilon2[2];
+                            integration->adaptive_sigma4->get_sigma(k1, is, k2, js, k3, ks, epsilon2);
+                            //integration->adaptive_smearing(k1, is, k2, js, k3, ks, epsilon2);
+                            delta_arr[ik0][jb][0] = 0.0;
+                            delta_arr[ik0][jb][1] = 0.0;
+                            const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                            const auto sum_omega2 = omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                            const auto sum_omega3 = omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                            if (std::abs(sum_omega1) < 2.0 * epsilon2[0]) {
+                                delta_arr[ik0][jb][0] = delta_gauss(sum_omega1, epsilon2[0]);
+                            }
+                            if (std::abs(sum_omega2) < 2.0 * epsilon2[1]) {
+                                delta_arr[ik0][jb][1] += delta_gauss(sum_omega2, epsilon2[1]);
+                            }
+                            if (std::abs(sum_omega3) < 2.0 * epsilon2[1]) {
+                                delta_arr[ik0][jb][1] -= delta_gauss(sum_omega3, epsilon2[1]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (ik0 = 0; ik0 < nk_batch; ++ik0) {
+            ik = start_k + ik0;
+
+            k1 = quartet[ik].group[0].ks[0];
+            k2 = quartet[ik].group[0].ks[1];
+            k3 = quartet[ik].group[0].ks[2];
+
+            multi = static_cast<double>(quartet[ik].group.size());
+
+            for (size_t ib = 0; ib < ns3; ++ib) {
+                is = ib / ns2;
+                js = (ib - ns2 * is) / ns;
+                ks = ib % ns;
+
+                if (delta_arr[ik0][ib][0] > 0.0 || std::abs(delta_arr[ik0][ib][1]) > 0.0) {
+
+                    arr[0] = ns * knum_minus + is_in;
+                    arr[1] = ns * k1 + is;
+                    arr[2] = ns * k2 + js;
+                    arr[3] = ns * k3 + ks;
+
+                    v4_arr[ik0][ib] = std::norm(V4(arr,
+                                                kmesh_in->xk,
+                                                eval_in,
+                                                evec_in,
+                                                phase_storage_in)) * multi;
+                    //std::cout << v4_arr[ik][ib] << std::endl;
+                } else {
+                    v4_arr[ik0][ib] = 0.0;
+                }
+            }
+        }
+
+        for (i = 0; i < ntemp; ++i) { 
+            T_tmp = temp_in[i];
+            ret_tmp = 0.0;
+#ifdef _OPENMP
+#pragma omp parallel for private(k1, k2, k3, is, js, ks, omega_inner, n1, n2, f1, f2, f3), reduction(+:ret_tmp)
+#endif
+            for (ik0 = 0; ik0 < nk_batch; ++ik0) {
+
+                ik = start_k + ik0;
+
+                k1 = quartet[ik].group[0].ks[0];
+                k2 = quartet[ik].group[0].ks[1];
+                k3 = quartet[ik].group[0].ks[2];
+
+                for (is = 0; is < ns; ++is) {
+
+                    omega_inner[0] = eval_in[k1][is];
+
+                    for (js = 0; js < ns; ++js) {
+
+                        omega_inner[1] = eval_in[k2][js];
+
+                        for (ks = 0; ks < ns; ++ks) {
+
+                            omega_inner[2] = eval_in[k3][ks];
+
+                            if (thermodynamics->classical) {
+                                f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                                f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+                                f3 = thermodynamics->fC(omega_inner[2], T_tmp);
+
+                                n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3;
+                                n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                            } else {
+                                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                                f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+                                f3 = thermodynamics->fB(omega_inner[2], T_tmp);
+
+                                n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3 + 1.0;
+                                n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                            }
+
+                            ret_tmp += v4_arr[ik0][ns2 * is + ns * js + ks]
+                                * (n1 * delta_arr[ik0][ns2 * is + ns * js + ks][0]
+                                        + n2 * delta_arr[ik0][ns2 * is + ns * js + ks][1]);
+
+                        }
+                    }
+                }
+
+            }
+
+            ret[i] += ret_tmp;
+        }
+
+    }
+
+    deallocate(v4_arr);
+    deallocate(delta_arr);
+    quartet.clear();
+    // std::pow(0.5, 5)
+    for (i = 0; i < ntemp; ++i)
+        ret[i] *= pi * std::pow(0.5, 5)
+              / (3.0 * static_cast<double>(nk * nk)); 
+}
+
 void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                                             const double *temp_in,
                                             const double omega_in,
