@@ -184,7 +184,7 @@ void Scph::exec_scph()
                  "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
-/*        if(!relax_coordinate){
+        if(!relax_coordinate){
             exec_scph_main(delta_dymat_scph);
         }
         // Calculate SCPH + structural optimization and obtain the correction to the dynamical matrix
@@ -192,9 +192,9 @@ void Scph::exec_scph()
             // exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
             exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
-*/
-        print_distance_harmonic_IFC();
-        return;
+
+        // print_distance_harmonic_IFC();
+        // return;
 
         if (mympi->my_rank == 0) {
             // write dymat for file
@@ -1486,6 +1486,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     std::complex<double> ***del_v2_strain_from_cubic;
     std::complex<double> ***del_v2_strain_from_quartic;
+    std::complex<double> ****del_v3_strain_from_quartic;
 
     // structure optimization
     int i_str_loop, i_temp_loop;
@@ -1604,14 +1605,22 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     }
 
     // compute IFC renormalization by lattice relaxation
-    std::cout << "start del_v2_strain_from_cubic" << std::endl << std::flush;
+    std::cout << "Preparing renormalization of IFCs by strain." << std::endl;;
+    std::cout << "  from cubic to harmonic IFCs ... ";
     allocate(del_v2_strain_from_cubic, 9, nk_interpolate, ns*ns);
     compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
+    std::cout << "done!" << std::endl;
 
-    std::cout << "start del_v2_strain_from_quartic" << std::endl << std::flush;
-    allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
+    std::cout << "  from quartic to harmonic IFCs ... ";
+    allocate(del_v2_strain_from_quartic, 81, nk_interpolate, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
-    std::cout << "done." << std::endl;
+    std::cout << "done!" << std::endl;
+
+    std::cout << "  from quartic to cubic IFCs ... ";
+    allocate(del_v3_strain_from_quartic, 9, nk, ns, ns*ns);
+    compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
+    std::cout << "done!" << std::endl; 
+    timer->print_elapsed();
 
     // for(int itmp1 = 0; itmp1 < 81; itmp1++){
     //     for(int itmp2 = 0; itmp2 < nk; itmp2++){
@@ -2015,6 +2024,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     deallocate(del_v2_strain_from_cubic);
     deallocate(del_v2_strain_from_quartic);
+    deallocate(del_v3_strain_from_quartic);
 
     deallocate(q0);
     deallocate(delta_q0);
@@ -2428,6 +2438,188 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
         timer->print_elapsed();
     }
 }
+
+void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
+                                               const int ngroup_v3_in,
+                                               std::vector<double> *fcs_group_v3_in,
+                                               std::vector<RelativeVector> *relvec_v3_in,
+                                               double *invmass_v3_in,
+                                               int **evec_index_v3_in,
+                                               const std::complex<double> *const *const *evec_in,
+                                               const bool self_offdiag)
+{
+
+    // double *invmass_v3_tmp;
+    // int **evec_index_v3_tmp;
+    // std::vector<double> *fcs_group_tmp;
+    // std::vector<RelativeVector> *relvec_tmp;
+    // std::complex<double> *phi3_reciprocal_tmp;
+    // Calculate the matrix elements of quartic terms in reciprocal space.
+    // This is the most expensive part of the SCPH calculation.
+
+    auto ns = dynamical->neval;
+    auto ns2 = ns * ns;
+    auto ns3 = ns * ns * ns;
+    unsigned int is, js, ks;
+    unsigned int **ind;
+    unsigned int i, j;
+    std::complex<double> ret;
+    long int ii;
+
+    const auto nk_scph = kmesh_dense->nk;
+    // const auto ngroup_v3 = anharmonic_core->get_ngroup_fcs(3);
+    // const auto ngroup_v3_in = fcs_group_v3_in.size();
+    const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
+    std::complex<double> *v3_array_at_kpair;
+    std::complex<double> ***v3_mpi;
+    std::complex<double> *phi3_reciprocal_tmp;
+    
+
+    if (mympi->my_rank == 0) {
+        if (self_offdiag) {
+            std::cout << " SELF_OFFDIAG = 1: Calculating all components of v3_array ... ";
+        } else {
+            std::cout << " SELF_OFFDIAG = 0: Calculating diagonal components of v3_array ... ";
+        }
+    }
+
+    std::cout << std::flush;
+
+    allocate(phi3_reciprocal_tmp, ngroup_v3_in);
+    allocate(v3_array_at_kpair, ngroup_v3_in);
+    allocate(ind, ngroup_v3_in, 3);
+    allocate(v3_mpi, nk_scph, ns, ns2);
+
+    std::cout << "allocating phi3_reciprocal_tmp and v3_array_at_kpair is done." << std::endl;
+
+    for (unsigned int ik = mympi->my_rank; ik < nk_scph; ik += mympi->nprocs) {
+
+        std::cout << "ik = " << ik << std::endl;
+
+        // anharmonic_core->calc_phi3_reciprocal(kmesh_dense->xk[ik],
+        //                                       kmesh_dense->xk[kmesh_dense->kindex_minus_xk[ik]],
+        //                                       phase_factor_scph,
+        //                                       phi3_reciprocal);
+
+        anharmonic_core->calc_phi3_reciprocal_for_given_IFCs(kmesh_dense->xk[ik],
+                                              kmesh_dense->xk[kmesh_dense->kindex_minus_xk[ik]],
+                                              ngroup_v3_in,
+                                              fcs_group_v3_in,
+                                              relvec_v3_in,
+                                              phase_factor_scph,
+                                              phi3_reciprocal_tmp);
+
+        
+        std::cout << "calc_phi3_reciprocal_for_given_IFCs is done." << std::endl;
+
+#ifdef _OPENMP
+#pragma omp parallel for private(j)
+#endif
+        for (ii = 0; ii < ngroup_v3_in; ++ii) {
+            v3_array_at_kpair[ii] = phi3_reciprocal_tmp[ii] * invmass_v3_in[ii];
+            for (j = 0; j < 3; ++j) ind[ii][j] = evec_index_v3_in[ii][j];
+        }
+
+#pragma omp parallel for private(is)
+        for (ii = 0; ii < ns; ++ii) {
+            for (is = 0; is < ns2; ++is) {
+                v3_mpi[ik][ii][is] = complex_zero;
+                v3_out[ik][ii][is] = complex_zero;
+            }
+        }
+
+        if (self_offdiag) {
+
+            // All matrix elements will be calculated when considering the off-diagonal
+            // elements of the phonon self-energy (i.e., when considering polarization mixing).
+
+#pragma omp parallel for private(is, js, ks, ret, i)
+            for (ii = 0; ii < ns3; ++ii) {
+                is = ii / ns2;
+                js = (ii - ns2 * is) / ns;
+                ks = ii % ns;
+
+                ret = std::complex<double>(0.0, 0.0);
+
+                for (i = 0; i < ngroup_v3_in; ++i) {
+
+                    ret += v3_array_at_kpair[i]
+                           * evec_in[0][is][ind[i][0]]
+                           * evec_in[ik][js][ind[i][1]]
+                           * std::conj(evec_in[ik][ks][ind[i][2]]);
+                }
+
+                v3_mpi[ik][is][ns * js + ks] = factor * ret;
+            }
+
+        } else {
+
+            // Only diagonal elements will be computed when neglecting the polarization mixing.
+
+            if (ik == 0) {
+#pragma omp parallel for private(is, js, ks, ret, i)
+                for (ii = 0; ii < ns3; ++ii) {
+                    is = ii / ns2;
+                    js = (ii - ns2 * is) / ns;
+                    ks = ii % ns;
+
+                    ret = std::complex<double>(0.0, 0.0);
+
+                    for (i = 0; i < ngroup_v3_in; ++i) {
+
+                        ret += v3_array_at_kpair[i]
+                               * evec_in[0][is][ind[i][0]]
+                               * evec_in[ik][js][ind[i][1]]
+                               * std::conj(evec_in[ik][ks][ind[i][2]]);
+                    }
+
+                    v3_mpi[ik][is][ns * js + ks] = factor * ret;
+                }
+            } else {
+
+#pragma omp parallel for private(is, js, ret, i)
+                for (ii = 0; ii < ns2; ++ii) {
+                    is = ii / ns;
+                    js = ii % ns;
+
+                    ret = std::complex<double>(0.0, 0.0);
+
+                    for (i = 0; i < ngroup_v3_in; ++i) {
+
+                        ret += v3_array_at_kpair[i]
+                               * evec_in[0][is][ind[i][0]]
+                               * evec_in[ik][js][ind[i][1]]
+                               * std::conj(evec_in[ik][js][ind[i][2]]);
+                    }
+
+                    v3_mpi[ik][is][(ns + 1) * js] = factor * ret;
+                }
+            }
+        }
+    }
+
+    deallocate(v3_array_at_kpair);
+    deallocate(ind);
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+    MPI_Allreduce(&v3_mpi[0][0][0], &v3_out[0][0][0],
+                  static_cast<int>(nk_scph) * ns3,
+                  MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+    MPI_Allreduce(&v3_mpi[0][0][0], &v3_out[0][0][0], static_cast<int>(nk_scph) * ns3,
+                  MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+    deallocate(v3_mpi);
+
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done !" << std::endl;
+        timer->print_elapsed();
+    }
+}
+
 
 void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                                                std::complex<double> ***evec_in,
@@ -2985,36 +3177,25 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
     MatrixXcd Dymat(ns, ns);
     MatrixXcd evec_tmp(ns, ns);
     
-    // std::cout << "start compute_del_v2_strain_from_cubic" << std::endl;
-
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             // calculate renormalization in real space
-            // std::cout << "ixyz1 = " << ixyz1 << " ixyz2 = " << ixyz2 << std::endl;
             compute_del_v_strain_in_real_space1(fcs_phonon->force_constant_with_cell[1],
                                                            delta_fcs, ixyz1, ixyz2, 1);
 
             // change format of harmonic IFCs.
             delta_fcs2.clear();
-            // std::cout << "start transformation to FcsClassExtent" << std::endl << std::flush;
+
             for (const auto &it: delta_fcs){
                 fc_extent_tmp = from_FcsArrayWithCell_to_FcsClassExtent(it);
-                // std::cout << "from_FcsArrayWithCell_to_FcsClassExtent" << std::endl << std::flush;
                 delta_fcs2.emplace_back(fc_extent_tmp);
-                // std::cout << "emplace_back" << std::endl << std::flush;
-                // std::cout << fc_extent_tmp.fcs_val << std::endl;
-
             }
-            // std::cout << "transformation to FcsClassExtent is done" << std::endl << std::flush;
-
             
             for(ik = 0; ik < nk_interpolate; ik++){
-                // std::cout << "ik = " << ik << std::endl << std::flush;
                 // Fourier transformation
                 dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
                                         delta_fcs2,
                                         mat_tmp);
-                // std::cout << "calc_analytic_k is done " << std::endl << std::flush;
                 // Unitary transformation
                 knum = kmap_interpolate_to_scph[ik];
                 for(is1 = 0; is1 < ns; is1++){
@@ -3023,9 +3204,7 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
                         evec_tmp(is1, is2) = evec_harmonic[knum][is2][is1]; // transpose
                     }
                 }
-                // std::cout << "prepare unitary tranform" << std::endl << std::flush;
                 Dymat = evec_tmp.adjoint() * Dymat * evec_tmp;
-                // std::cout << "unitary tranform done" << std::endl << std::flush;
 
                 // copy result to del_v2_strain_from_cubic
                 for(is1 = 0; is1 < ns; is1++){
@@ -3033,16 +3212,7 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
                         del_v2_strain_from_cubic[ixyz1*3 + ixyz2][ik][is1*ns+is2] = Dymat(is1, is2);
                     }
                 }
-                // std::cout << "write result to del_v2_strain_from_cubic done" << std::endl << std::flush;
             }
-            // std::cout << "ixyz1 = " << ixyz1 << " ixyz2 = " << ixyz2 << " is done" << std::endl;
-            // for(ik = 0; ik < 5; ik++){
-            //     for(is1 = 0; is1 < ns; is1++){
-            //         for(is2 = 0; is2 < ns; is2++){
-            //             std::cout << del_v2_strain_from_cubic[ixyz1*3 + ixyz2][ik][is1*ns+is2] << " ";
-            //         }std::cout << std::endl;
-            //     }std::cout << std::endl;
-            // }
         }
     }
 
@@ -3080,12 +3250,11 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
         itmp /= 3;
         ixyz12 = itmp % 3;
         ixyz11 = itmp / 3;
-        // std::cout << "ixyz = " << ixyz << std::endl << std::flush;
+
         // calculate renormalization in real space
         compute_del_v_strain_in_real_space2(fcs_phonon->force_constant_with_cell[2],
                                                         delta_fcs, ixyz11, ixyz12, ixyz21, ixyz22, 1);
 
-        // std::cout << "renormalization from quartic to harmonic IFCs in real space is done." << std::endl;
 
         // change format of harmonic IFCs.
         delta_fcs2.clear();
@@ -3121,6 +3290,130 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
     deallocate(mat_tmp);
 }
 
+}
+
+void Scph::compute_del_v3_strain_from_quartic(std::complex<double> ****del_v3_strain_from_quartic,
+                                            std::complex<double> ***evec_harmonic)
+{
+    using namespace Eigen;
+
+    const auto ns = dynamical->neval;
+    const auto nk = kmesh_dense->nk;
+    const auto nk_interpolate = kmesh_coarse->nk;
+
+    int ngroup_tmp;
+    double *invmass_v3_tmp;
+    int **evec_index_v3_tmp;
+    std::vector<double> *fcs_group_tmp;
+    std::vector<RelativeVector> *relvec_tmp;
+    std::complex<double> *phi3_reciprocal_tmp;
+
+    int i;
+    int ixyz1, ixyz2, itmp;
+    int is1, is2, ik, knum;
+
+    double *invsqrt_mass_p;
+    
+    allocate(invsqrt_mass_p, system->natmin);
+
+    for (i = 0; i < system->natmin; ++i) {
+        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
+    }
+
+
+    // calculate renormalization in real space
+
+    std::vector<FcsArrayWithCell> delta_fcs;
+
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+
+            std::cout << "ixyz1 = " << ixyz1 << "ixyz2 = " << ixyz2 << std::endl;
+
+            // deallocate variables
+            // if(fcs_group_tmp){
+            //     deallocate(fcs_group_tmp);
+            // }
+            // if(invmass_v3_tmp){
+            //     deallocate(invmass_v3_tmp);
+            // }
+            // if(evec_index_v3_tmp){
+            //     deallocate(evec_index_v3_tmp);
+            // }
+            // if(relvec_tmp){
+            //     deallocate(relvec_tmp);
+            // }
+            // if(phi3_reciprocal_tmp){
+            //     deallocate(phi3_reciprocal_tmp);
+            // }
+
+            std::cout << "deallocate done." << std::endl;
+            std::cout << "start renormalization in real space" << std::endl;
+            // calculate renormalization in real space
+            compute_del_v_strain_in_real_space1(fcs_phonon->force_constant_with_cell[2],
+                                                           delta_fcs, ixyz1, ixyz2, 1);
+
+            std::cout << "renormalization in real space is done." << std::endl;
+            
+            // prepare for the Fourier-transformation
+            std::sort(delta_fcs.begin(), delta_fcs.end());
+
+            std::cout << "delta_fcs has been sorted." << std::endl;            
+
+            anharmonic_core->prepare_group_of_force_constants(delta_fcs, 3, 
+                                                              ngroup_tmp, fcs_group_tmp);
+
+            std::cout << "prepare_group_of_force_constants is done." << std::endl;
+
+            allocate(invmass_v3_tmp, ngroup_tmp);
+            allocate(evec_index_v3_tmp, ngroup_tmp, 3);
+            allocate(relvec_tmp, ngroup_tmp);
+            allocate(phi3_reciprocal_tmp, ngroup_tmp);
+
+            anharmonic_core->prepare_relative_vector(delta_fcs,
+                                                3,
+                                                ngroup_tmp,
+                                                fcs_group_tmp,
+                                                relvec_tmp);
+
+            std::cout << "prepare_relative_vector is done." << std::endl;
+            
+            int k = 0;
+            for (i = 0; i < ngroup_tmp; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    evec_index_v3_tmp[i][j] = delta_fcs[k].pairs[j].index;
+                }
+                invmass_v3_tmp[i]
+                        = invsqrt_mass_p[evec_index_v3_tmp[i][0] / 3]
+                        * invsqrt_mass_p[evec_index_v3_tmp[i][1] / 3]
+                        * invsqrt_mass_p[evec_index_v3_tmp[i][2] / 3];
+                k += fcs_group_tmp[i].size();
+            }
+
+            std::cout << "evec_index_v3_tmp and invmass_v3_tmp is prepared." << std::endl;
+            std::cout << "start compute_V3_elements_for_given_IFCs." << std::endl;
+            
+            compute_V3_elements_for_given_IFCs(del_v3_strain_from_quartic[ixyz1*3+ixyz2],
+                                            ngroup_tmp,
+                                            fcs_group_tmp,
+                                            relvec_tmp,
+                                            invmass_v3_tmp,
+                                            evec_index_v3_tmp,
+                                            evec_harmonic,
+                                            selfenergy_offdiagonal);
+
+            deallocate(fcs_group_tmp);
+            deallocate(invmass_v3_tmp);
+            deallocate(evec_index_v3_tmp);
+            deallocate(relvec_tmp);
+            deallocate(phi3_reciprocal_tmp);
+
+        }
+    }
+
+    
+
+    deallocate(invsqrt_mass_p);
 }
 
 void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &fcs_in,
@@ -3249,18 +3542,25 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
             set_index_uniq.insert(index_with_cell);
 
             for(i = 0; i < 3; i++){
-                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-1; j++){
-                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                                    + xshift_s[it.pairs[j].cell_s][i];
+                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    //                 + xshift_s[it.pairs[j].cell_s][i];
+                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-1);
             }
 
             for (i = 0; i < 3; ++i) {
-                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                            1].tran]]
-                        [i]
+                // vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                //                                                                                             1].tran]][i]
+                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                //         - vec_origin[i]
+                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
+                vec[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                            1].tran]][i]
                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
@@ -3355,19 +3655,27 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
             }
 
             for(i = 0; i < 3; i++){
-                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-1; j++){
-                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    //                 + xshift_s[it.pairs[j].cell_s][i];
+                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-1);
             }
 
             for (i = 0; i < 3; ++i) {
-                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                            1].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                // vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                //                                                                                             1].tran]][i]
+                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                //         - vec_origin[i]
+                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
+
+                vec[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                            1].tran]][i]
+                        // - system->xr_s_no_displace[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
@@ -3381,7 +3689,7 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
         // std::cout << "index_with_cell " << std::endl;
         // for(auto index_with_cell_elements: index_with_cell){
         //     std::cout << index_with_cell_elements << " ";
-        // }std::cout << std::endl << std::flush;
+        // }std::cout << std::endl;
 
         if (std::abs(fcs_tmp) > eps15) {
 
@@ -3535,31 +3843,43 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
             set_index_uniq.insert(index_with_cell);
 
             for(i = 0; i < 3; i++){
-                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-2; j++){
-                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    //                 + xshift_s[it.pairs[j].cell_s][i];
+                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-2);
             }
 
             for (i = 0; i < 3; ++i) {
-                vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
-                                                                                                            2].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                // vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]]
+                //         [i]
+                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                //         - vec_origin[i]
+                //         + xshift_s[it.pairs[norder - 2].cell_s][i];
+
+                vec1[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]][i]
+                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 2].cell_s][i];
-                vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                            1].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                // vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                //                                                                                             1].tran]]
+                //         [i]
+                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                //         - vec_origin[i]
+                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
+
+                vec2[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran]][i]
+                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec1, vec1, system->lavec_s_anharm);
-            rotvec(vec2, vec2, system->lavec_s_anharm);
+            rotvec(vec1, vec1, system->lavec_s);
+            rotvec(vec2, vec2, system->lavec_s);
 
             fcs_tmp += it.fcs_val * vec1[ixyz12] * vec2[ixyz22];
             // xyz component of the IFC has already been checked
@@ -3648,31 +3968,49 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
             }
 
             for(i = 0; i < 3; i++){
-                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-2; j++){
-                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    //                 + xshift_s[it.pairs[j].cell_s][i];
+                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-2);
             }
 
             for (i = 0; i < 3; ++i) {
-                vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
-                                                                                                            2].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                // vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
+                //                                                                                             2].tran]]
+                //         [i]
+                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                //         - vec_origin[i]
+                //         + xshift_s[it.pairs[norder - 2].cell_s][i];
+
+                vec1[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 2].index / 3][it.pairs[norder -
+                                                                                                            2].tran]][i]
+                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 2].cell_s][i];
-                vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                            1].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+
+                // vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                //                                                                                             1].tran]]
+                //         [i]
+                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                //         - vec_origin[i]
+                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
+
+                vec2[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                            1].tran]][i]
+                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec1, vec1, system->lavec_s_anharm);
-            rotvec(vec2, vec2, system->lavec_s_anharm);
+            // rotvec(vec1, vec1, system->lavec_s_anharm);
+            // rotvec(vec2, vec2, system->lavec_s_anharm);
+            rotvec(vec1, vec1, system->lavec_s);
+            rotvec(vec2, vec2, system->lavec_s);
 
             fcs_tmp += it.fcs_val * vec1[ixyz12] * vec2[ixyz22];
             // xyz components of IFC have been checked

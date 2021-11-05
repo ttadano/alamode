@@ -192,6 +192,14 @@ public:
                               const PhaseFactorStorage *phase_storage_in,
                               std::complex<double> *ret);
 
+    void calc_phi3_reciprocal_for_given_IFCs(const double *xk1,
+                                          const double *xk2,
+                                          const int ngroup_v3_in,
+                                          std::vector<double, std::allocator<double>>  *phi3_reciprocal_in,
+                                          const std::vector<RelativeVector> *relvec_v3_in,
+                                          const PhaseFactorStorage *phase_storage_in,
+                                          std::complex<double> *ret);
+
     void calc_phi4_reciprocal(const double *xk1,
                               const double *xk2,
                               const double *xk3,

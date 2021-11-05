@@ -182,6 +182,15 @@ private:
                                              const std::complex<double> *const *const *evec_in,
                                              const bool self_offdiag);
 
+    void compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
+                                            const int ngroup_v3_in,
+                                            std::vector<double> *fcs_group_v3_in,
+                                            std::vector<RelativeVector> *relvec_v3_in,
+                                            double *invmass_v3_in,
+                                            int **evec_index_v3_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            const bool self_offdiag);
+
     void zerofill_elements_acoustic_at_gamma(double **,
                                              std::complex<double> ***,
                                              const int) const;
@@ -194,6 +203,9 @@ private:
                                           std::complex<double> ***);
     
     void compute_del_v2_strain_from_quartic(std::complex<double> ***,
+                                            std::complex<double> ***);
+
+    void compute_del_v3_strain_from_quartic(std::complex<double> ****,
                                             std::complex<double> ***);
 
     void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
