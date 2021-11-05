@@ -1693,8 +1693,6 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
                                               kmesh_dense_in->nk_i);
     interpol->setup();
 
-    bool use_improved_loglinear = true;
-
     if (interpolator == "linear") {
 
         for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
@@ -1722,7 +1720,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
             }
         }
 
-    } else if (interpolator == "log-linear") {
+    } else if (interpolator == "log-linear" || interpolator == "modified-log-linear") {
 
         double val_tmp;
         for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
@@ -1737,7 +1735,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
 
         for (auto is = 0; is < ns; ++is) {
             for (auto itemp = 0; itemp < ntemp; ++itemp) {
-                if (use_improved_loglinear){
+                if (interpolator == "modified-log-linear"){
                     interpol->interpolate_avoidgamma(damping4_coarse[is][itemp],
                                         damping4_interpolated[is][itemp], is);
                 } else {

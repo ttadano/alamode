@@ -428,7 +428,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
     // Default values
     auto ismear_4ph = 1; 
     auto epsilon_4ph = 10.0;
-    std::string interpolator = "linear";
+    std::string interpolator = "log-linear";
     double len_boundary = 0.0;
     auto include_isotope = 0;
     auto calc_coherent = 0;
@@ -446,6 +446,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
         assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
         assign_val(epsilon_4ph, "EPSILON_4PH", kappa_var_dict);
         assign_val(interpolator, "INTERPOLATOR", kappa_var_dict);
+        assign_val(write_interpol, "WRITE_INTERPOL", kappa_var_dict);
         assign_val(len_boundary, "LEN_BOUNDARY", kappa_var_dict);
         assign_val(calc_coherent, "KAPPA_COHERENT", kappa_var_dict);
         assign_val(include_isotope, "ISOTOPE", kappa_var_dict);
@@ -463,6 +464,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
     conductivity->len_boundary = len_boundary; // m
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;
+    conductivity->write_interpolation = write_interpol;
 
     iterativebte->do_iterative = iterative;
     iterativebte->max_cycle = max_cycle;
@@ -485,7 +487,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
         }
 
         if (kmesh_v.size() != 3) {
-            exit("parse_general_vars",
+            exit("parse_kappa_vars",
                  "The number of entries for KMESH_COARSE has to be 3.");
         }
     } else {
@@ -494,9 +496,11 @@ void Input::parse_kappa_vars(const bool use_default_values)
     }
 
     boost::to_lower(interpolator);
-    if (interpolator != "linear" and interpolator != "log-linear") {
-        exit("parse_general_vars",
-             "INTERPOLATOR should be either linear or log-linear.");
+    std::vector<std::string> supported_interpolator{"linear", "log-linear", "modified-log-linear"};
+    if (std::find(std::begin(supported_interpolator), std::end(supported_interpolator), interpolator) 
+        == std::end(supported_interpolator)){
+        exit("parse_kappa_vars",
+             "INTERPOLATOR is not supported.");
     }
     
     conductivity->set_interpolator(interpolator);
