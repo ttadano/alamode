@@ -271,7 +271,6 @@ void PHON::execute_RTA() const
         
         iterativebte->setup_iterative();
         iterativebte->do_iterativebte();
-        iterativebte->write_kappa();
 
     } else {
         //writes->setup_result_io();

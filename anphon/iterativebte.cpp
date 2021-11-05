@@ -201,6 +201,8 @@ void Iterativebte::do_iterativebte()
     }
     
     iterative_solver();
+
+    write_kappa_iterative();
 }
 
 
@@ -607,6 +609,12 @@ void Iterativebte::calc_Q_from_L(double **&n, double **&q1)
     deallocate(Qabsorb);
 }
 
+void Iterativebte::calc_damping4() 
+{
+    // TODO: I should call conductivity to calculate damping 4
+    //       instead of rewrite the code here again
+}
+
 void Iterativebte::calc_anharmonic_imagself4()
 {
     // TODO: merge this duplicate function to conductivity class
@@ -698,6 +706,27 @@ void Iterativebte::iterative_solver()
         deallocate(isotope_damping);
     }
 
+    double **boundary_damping_loc;
+    if (conductivity->len_boundary > eps) {
+
+        allocate(boundary_damping_loc, nklocal, ns);
+
+        double vel_norm;
+        for (auto ik = 0; ik < nklocal; ++ik) {
+            auto tmpk = nk_l[ik];
+            const int k1 = dos->kmesh_dos->kpoint_irred_all[tmpk][0].knum;  // k index in full grid
+            vel_norm = 0.0;
+            for (auto is = 0; is < ns; is++) { 
+                for (auto j = 0; j < 3; ++j) {
+                    vel_norm += vel[k1][is][j] * vel[k1][is][j];
+                }
+                
+                vel_norm = std::sqrt(vel_norm);
+                boundary_damping_loc[ik][is] += (vel_norm / conductivity->len_boundary) * time_ry ; // same unit as gamma
+            }
+        }
+    }
+
     if (conductivity->fph_rta > 0) {
         calc_anharmonic_imagself4();
     }
@@ -738,6 +767,7 @@ void Iterativebte::iterative_solver()
         ikp_absorb.push_back(counterk);
     }
 
+    int nsym = symmetry->SymmList.size();
     // start iteration
     double **Wks;
     allocate(Wks, ns, 3);
@@ -777,7 +807,7 @@ void Iterativebte::iterative_solver()
         int k1, k2, k3, k3_minus;
 
         int generating_sym;
-        int nsym = symmetry->SymmList.size();
+        bool time_reverse = false;   // keep track if we further apply time reversal symmetry
         int isym;
 
         for (auto itr = 0; itr < max_cycle; ++itr) {
@@ -808,9 +838,55 @@ void Iterativebte::iterative_solver()
                     generating_sym = -1;
                     for (isym = 0; isym < nsym; ++isym) {
                         auto krot = dos->kmesh_dos->knum_sym(kref, symmetry->SymmList[isym].rot);
-                        if (k1 == krot) generating_sym = isym;
+                        auto minuskrot = dos->kmesh_dos->kindex_minus_xk[krot];
+                        if (k1 == krot) {
+                            generating_sym = isym;
+                            time_reverse = false;
+                        } else if ( symmetry->time_reversal_sym && k1 == minuskrot) {
+                            generating_sym = isym;
+                            time_reverse = true;
+                        }
                     }
                     if (generating_sym == -1) {
+                        std::cout << std::endl;
+                        std::cout << num_equivalent << std::endl;
+                        std::cout << "   k1: ";
+                        for (int j = 0; j < 3; ++j) {
+                            std::cout << std::setw(15)
+                                      << std::scientific << dos->kmesh_dos->xk[k1][j] ;
+                        }
+                        auto minusk = dos->kmesh_dos->kindex_minus_xk[k1];
+                        std::cout << " - k1: " << minusk << " ";
+                        for (int j = 0; j < 3; ++j) {
+                            std::cout << std::setw(15)
+                                      << std::scientific << dos->kmesh_dos->xk[minusk][j] ;
+                        }
+                        std::cout << std::endl;
+                        std::cout << "ir k1: " ;
+                        auto irk1 = dos->kmesh_dos->kmap_to_irreducible[k1];
+                        for (int j = 0; j < 3; ++j) {
+                            std::cout << std::setw(15)
+                                      << std::scientific << dos->kmesh_dos->xk[irk1][j] ;
+                        }
+                        std::cout << std::endl;
+                        for (auto iieq = 0; iieq < num_equivalent; ++iieq) {
+                            auto symk = dos->kmesh_dos->kpoint_irred_all[irk1][iieq].knum;
+                            std::cout << "sym k: ";
+                            for (int j = 0; j < 3; ++j) {
+                                std::cout << std::setw(15)
+                                        << std::scientific << dos->kmesh_dos->xk[symk][j] ;
+                            }
+                            std::cout << std::endl;
+                        }
+                        for (isym = 0; isym < nsym; ++isym) {
+                            auto krot = dos->kmesh_dos->knum_sym(kref, symmetry->SymmList[isym].rot);
+                            std::cout << "rot k: ";
+                            for (int j = 0; j < 3; ++j) {
+                                std::cout << std::setw(15)
+                                        << std::scientific << dos->kmesh_dos->xk[krot][j] ;
+                            }
+                            std::cout << std::endl;
+                        }
                         exit("iterative solution", "cannot find all equivalent k");
                     }
 
@@ -833,6 +909,10 @@ void Iterativebte::iterative_solver()
                                                               symmetry->SymmList[generating_sym].rot);
                                 k3 = dos->kmesh_dos->knum_sym(pair.group[ig].ks[1],
                                                               symmetry->SymmList[generating_sym].rot);
+                                if (time_reverse) {
+                                    k2 = dos->kmesh_dos->kindex_minus_xk[k2];
+                                    k3 = dos->kmesh_dos->kindex_minus_xk[k3];
+                                }
 
                                 for (int ib = 0; ib < ns2; ++ib) {
                                     s2 = ib / ns;
@@ -861,6 +941,11 @@ void Iterativebte::iterative_solver()
                                                               symmetry->SymmList[generating_sym].rot);
                                 k3 = dos->kmesh_dos->knum_sym(pair.group[ig].ks[1],
                                                               symmetry->SymmList[generating_sym].rot);
+                                if (time_reverse) {
+                                    k2 = dos->kmesh_dos->kindex_minus_xk[k2];
+                                    k3 = dos->kmesh_dos->kindex_minus_xk[k3];
+                                }
+                                
                                 k3_minus = dos->kmesh_dos->kindex_minus_xk[k3];
 
                                 for (int ib = 0; ib < ns2; ++ib) {
@@ -888,6 +973,10 @@ void Iterativebte::iterative_solver()
                         double Q_final = Q[ik][s1];
                         if (isotope->include_isotope) {
                             Q_final += fb[k1][s1] * (fb[k1][s1] + 1.0) * 2.0 * isotope_damping_loc[ik][s1];
+                        }
+
+                        if (conductivity->len_boundary > eps) {
+                            Q_final += fb[k1][s1] * (fb[k1][s1] + 1.0) * 2.0 * boundary_damping_loc[ik][s1];
                         }
 
                         if (conductivity->fph_rta > 0) {
@@ -1142,20 +1231,27 @@ bool Iterativebte::check_convergence(double **&k_old, double **&k_new)
 }
 
 
-void Iterativebte::write_kappa()
+void Iterativebte::write_kappa_iterative()
 {
     // TODO: combine this function into write_phonons.cpp
     if (mympi->my_rank == 0) {
 
-        auto file_kappa = input->job_title + ".iterkl";
+        auto file_kappa = input->job_title + ".kl_iter";
 
         std::ofstream ofs_kl;
 
         ofs_kl.open(file_kappa.c_str(), std::ios::out);
-        if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
+        if (!ofs_kl) exit("write_kappa_iterative", "Could not open file_kappa");
 
-        ofs_kl << "# Iterative result." << std::endl;
         ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+        ofs_kl << "# Iterative result." << std::endl;
+
+        if (isotope->include_isotope) ofs_kl << "# Isotope effects are included." << std::endl;
+        if (conductivity->fph_rta > 0) ofs_kl << "# 4ph is included non-iteratively." << std::endl;
+        if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
+                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+        }
 
         for (auto itemp = 0; itemp < ntemp; ++itemp) {
             ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)

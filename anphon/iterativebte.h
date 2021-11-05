@@ -52,8 +52,6 @@ class Iterativebte : protected Pointers {
 
     void do_iterativebte();  // wrapper
 
-    void write_kappa();
-
     bool do_iterative;
     bool direct_solution;
     double *Temperature;
@@ -89,6 +87,7 @@ class Iterativebte : protected Pointers {
 
     double ***damping4; // four phonon selfenergy
     void calc_anharmonic_imagself4();
+    void calc_damping4();
 
     std::vector<std::vector<KsListGroup>> localnk_triplets_emitt;
     std::vector<std::vector<KsListGroup>> localnk_triplets_absorb;
@@ -124,6 +123,7 @@ class Iterativebte : protected Pointers {
     //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
     void write_result();
     void write_Q_dF(int, double **&, double ***&);
+    void write_kappa_iterative();
 
 };
 }
