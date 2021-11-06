@@ -5,6 +5,7 @@
 #include "dynamical.h"
 #include "error.h"
 #include "integration.h"
+#include "interpolation.h"
 #include "parsephon.h"
 #include "isotope.h"
 #include "kpoint.h"
@@ -613,6 +614,107 @@ void Iterativebte::calc_damping4()
 {
     // TODO: I should call conductivity to calculate damping 4
     //       instead of rewrite the code here again
+    conductivity->fph_rta = 1;
+
+    conductivity->setup_kappa_4ph();
+    conductivity->calc_anharmonic_imagself4();
+
+    // interpolate data
+
+    double ***damping4_ir = nullptr;
+    allocate(damping4_ir, ntemp, dos->kmesh_dos->nk_irred ,ns);
+
+    if (mympi->my_rank == 0) {
+
+        double ***damping4_coarse = nullptr;
+        double ***damping4_interpolated = nullptr;
+        allocate(damping4_interpolated, ns, ntemp, dos->kmesh_dos->nk);
+        allocate(damping4_coarse, ns, ntemp, conductivity->kmesh_4ph->nk);
+
+        auto interpol = new TriLinearInterpolator(conductivity->kmesh_4ph->nk_i,
+                                                  dos->kmesh_dos->nk_i);
+        interpol->setup();
+
+        if (conductivity->interpolator == "linear") {
+
+            for (auto ik = 0; ik < conductivity->kmesh_4ph->nk; ++ik) {
+                for (auto is = 0; is < ns; ++is) {
+                    for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                        damping4_coarse[is][itemp][ik]
+                            = conductivity->damping4[conductivity->kmesh_4ph->kmap_to_irreducible[ik] * ns + is][itemp];
+                    }
+                }
+            }
+
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    interpol->interpolate(damping4_coarse[is][itemp],
+                                          damping4_interpolated[is][itemp]);
+                }
+            }
+
+            for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
+                auto knum = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    for (auto is = 0; is < ns; ++is) {
+                        damping4_ir[itemp][ik][is] = damping4_interpolated[is][itemp][knum];
+                    }
+                }
+            }
+
+        } else if (conductivity->interpolator == "log-linear" || conductivity->interpolator == "modified-log-linear") {
+
+            double val_tmp;
+            for (auto ik = 0; ik < conductivity->kmesh_4ph->nk; ++ik) {
+                for (auto is = 0; is < ns; ++is) {
+                    for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                        val_tmp = conductivity->damping4[conductivity->kmesh_4ph->kmap_to_irreducible[ik] * ns + is][itemp];
+                        if (val_tmp < eps) val_tmp = eps; // TODO: reconsider appropriate cutoff value here.
+                        damping4_coarse[is][itemp][ik] = std::log(val_tmp);
+                    }
+                }
+            }
+
+            for (auto is = 0; is < ns; ++is) {
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    if (conductivity->interpolator == "modified-log-linear"){
+                        interpol->interpolate_avoidgamma(damping4_coarse[is][itemp],
+                                            damping4_interpolated[is][itemp], is);
+                    } else {
+                        interpol->interpolate(damping4_coarse[is][itemp],
+                                            damping4_interpolated[is][itemp]);
+                    }
+                }
+            }
+
+            for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
+                auto knum = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
+                for (auto itemp = 0; itemp < ntemp; ++itemp) {
+                    for (auto is = 0; is < ns; ++is) {
+                        damping4_ir[itemp][ik][is] = std::exp(damping4_interpolated[is][itemp][knum]);
+                    }
+                }
+            }
+        }
+
+        deallocate(damping4_coarse);
+        deallocate(damping4_interpolated);
+        delete interpol;
+    }
+
+    MPI_Bcast(&damping4_ir[0][0][0], ntemp * dos->kmesh_dos->nk_irred * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    allocate(damping4, ntemp, nklocal, ns);
+    for (auto ik = 0; ik < nklocal; ++ik) {
+        auto tmpk = nk_l[ik];
+        for (auto itemp = 0; itemp < ntemp; ++itemp) {
+            for (auto is = 0; is < ns; ++is) {
+                damping4[itemp][ik][is] = damping4_ir[itemp][tmpk][is];
+            }
+        }
+    }
+
+    deallocate(damping4_ir);
 }
 
 void Iterativebte::calc_anharmonic_imagself4()
@@ -728,7 +830,7 @@ void Iterativebte::iterative_solver()
     }
 
     if (conductivity->fph_rta > 0) {
-        calc_anharmonic_imagself4();
+        calc_damping4();
     }
 
     if (mympi->my_rank == 0) {
