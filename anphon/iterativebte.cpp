@@ -87,6 +87,8 @@ void Iterativebte::setup_iterative()
     MPI_Bcast(&max_cycle, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&convergence_criteria, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+    if (anharmonic_core->quartic_mode > 0) conductivity->fph_rta = 1;
+
     sym_permutation = false;
     use_triplet_symmetry = true;
 
@@ -616,7 +618,7 @@ void Iterativebte::calc_damping4()
     //       instead of rewrite the code here again
     conductivity->fph_rta = 1;
 
-    conductivity->setup_kappa_4ph();
+    conductivity->setup_kappa();
     conductivity->calc_anharmonic_imagself4();
 
     // interpolate data

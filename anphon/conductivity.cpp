@@ -214,6 +214,8 @@ void Conductivity::setup_kappa_4ph()
         }
     }
 
+    ns = dynamical->neval;
+    nk_3ph = dos->kmesh_dos->nk;
     MPI_Bcast(&nk_coarse[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&restart_flag_4ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
@@ -221,13 +223,20 @@ void Conductivity::setup_kappa_4ph()
     const auto nks_each_thread = nks_total / mympi->nprocs;
     const auto nrem = nks_total - nks_each_thread * mympi->nprocs;
 
+    unsigned int nkc_tmp[3] = {};
+    if (nk_coarse[0] * nk_coarse[1] * nk_coarse[2] > 0) {
+        for ( auto i = 0; i < 3; i ++ ) nkc_tmp[i] = nk_coarse[i];
+    } else {
+        for ( auto i = 0; i < 3; i ++ ) nkc_tmp[i] = dos->kmesh_dos->nk_i[i];
+    }
+
     if (mympi->my_rank == 0) {
-        std::cout << "Four-phonon scattering rate will be calculated additionally.\n"; // fph_rta is not a input parameter, therefore removed from IO
+        std::cout << " Four-phonon scattering rate will be calculated additionally.\n"; // fph_rta is not a input parameter, therefore removed from IO
 
         std::cout << "  KMESH for 4-ph:\n";
-        std::cout << "   nk1 : " << std::setw(5) << nk_coarse[0] << '\n';
-        std::cout << "   nk2 : " << std::setw(5) << nk_coarse[1] << '\n';
-        std::cout << "   nk3 : " << std::setw(5) << nk_coarse[2] << '\n';
+        std::cout << "   nk1 : " << std::setw(5) << nkc_tmp[0] << '\n';
+        std::cout << "   nk2 : " << std::setw(5) << nkc_tmp[1] << '\n';
+        std::cout << "   nk3 : " << std::setw(5) << nkc_tmp[2] << '\n';
 
     }
     if (nrem > 0) {
@@ -238,13 +247,6 @@ void Conductivity::setup_kappa_4ph()
 
     double **eval_tmp;
     std::complex<double> ***evec_tmp;
-
-    unsigned int nkc_tmp[3] = {};
-    if (nk_coarse[0] * nk_coarse[1] * nk_coarse[2] > 0) {
-        for ( auto i = 0; i < 3; i ++ ) nkc_tmp[i] = nk_coarse[i];
-    } else {
-        for ( auto i = 0; i < 3; i ++ ) nkc_tmp[i] = dos->kmesh_dos->nk_i[i];
-    }
 
     const auto neval = dynamical->neval;
 
@@ -749,7 +751,7 @@ void Conductivity::setup_result_io(const bool threeph)
             if (conductivity->restart_flag_4ph) {
 
                 std::cout << " RESTART_4PH = 1 : Restart from the interrupted run." << std::endl;
-                std::cout << "                  Phonon lifetimes will be load from file " << file_result4 << std::endl;
+                std::cout << "                   Phonon lifetimes will be load from file " << file_result4 << std::endl;
                 std::cout << "                   and check the consistency of the computational settings." << std::endl;
 
                 check_consistency_restart(fs_result4,
