@@ -146,6 +146,9 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
+    void read_elastic_constants(double **, 
+                                  double ***);
+
     void read_initial_q0(double *);
 
     void read_initial_strain(double **);
@@ -232,6 +235,15 @@ private:
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
 
+    void calculate_eta_tensor(double **, 
+                                double **);
+
+    void renormalize_v0_from_strain(double &, 
+                                    double , 
+                                    double **, 
+                                    double **, 
+                                    double ***);
+
     void renormalize_v1_array_from_strain(std::complex<double> *, 
                                             std::complex<double> *,
                                             std::complex<double> **, 
@@ -251,11 +263,13 @@ private:
 
     void renormalize_v1_array(std::complex<double> *, 
                             std::complex<double> *, 
+                            std::complex<double> **,
                             std::complex<double> ***, 
                             std::complex<double> ***,
                             double *);
 
     void renormalize_v2_array(std::complex<double> **, 
+                            std::complex<double> **,
                             std::complex<double> ***, 
                             std::complex<double> ***,  
                             double *);
@@ -268,6 +282,7 @@ private:
     void renormalize_v0(double &,
                         double ,
                         std::complex<double> *,
+                        std::complex<double> **,
                         std::complex<double> ***,
                         std::complex<double> ***,
                         double *);
