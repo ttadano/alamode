@@ -1470,19 +1470,24 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     const auto dT = system->dT;
     double ***omega2_anharm;
     std::complex<double> **delta_v2_array_renormalize;
+    std::complex<double> **delta_v2_array_with_strain;
     std::complex<double> ***evec_anharm_tmp;
     // IFC-renormalized harmonic phonon
     double ***omega2_harm_renormalize;
     std::complex<double> ***evec_harm_renormalize_tmp;
     // original and renormalized IFCs
-    std::complex<double> *v1_array_original, *v1_array_renormalized;
-    std::complex<double> ***v3_array_original, ***v3_array_renormalized;
-    std::complex<double> ***v4_array_original, ***v4_array_renormalized;
+    std::complex<double> *v1_array_original, *v1_array_renormalized, *v1_array_with_strain;
+    std::complex<double> ***v3_array_original, ***v3_array_renormalized, ***v3_array_with_strain;
+    std::complex<double> ***v4_array_original, ***v4_array_renormalized, ***v4_array_with_strain;
     double v0_original, v0_renormalized;
     v0_original = 0.0; // set original ground state energy as zero
 
     // generalized force dF/dq^{(0)}_{\lambda}
     std::complex<double> *v1_array_SCP;
+
+    std::complex<double> **del_v1_strain_from_harmonic;
+    std::complex<double> **del_v1_strain_from_cubic;
+    std::complex<double> **del_v1_strain_from_quartic;
 
     std::complex<double> ***del_v2_strain_from_cubic;
     std::complex<double> ***del_v2_strain_from_quartic;
@@ -1561,12 +1566,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(evec_anharm_tmp, nk, ns, ns);
 
     allocate(v1_array_original, ns);
+    allocate(v1_array_with_strain, ns);
     allocate(v1_array_renormalized, ns);
 
     // IFC-renormalization of harmonic dynamical matrix
     allocate(omega2_harm_renormalize, NT, nk, ns);
     allocate(evec_harm_renormalize_tmp, nk, ns, ns);   
     allocate(delta_v2_array_renormalize, nk, ns*ns);
+    allocate(delta_v2_array_with_strain, nk, ns*ns);
 
     allocate(q0, ns);
     allocate(delta_q0, ns);
@@ -1578,6 +1585,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(v4_array_original, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
     allocate(v4_array_renormalized, nk_irred_interpolate * kmesh_dense->nk,
+                     ns * ns, ns * ns);
+
+    allocate(v4_array_with_strain, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
 
     // Calculate v4 array. 
@@ -1595,6 +1605,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 */  
     allocate(v3_array_original, nk, ns, ns * ns);
     allocate(v3_array_renormalized, nk, ns, ns * ns);
+    allocate(v3_array_with_strain, nk, ns, ns * ns);
+
 /*    compute_V3_elements_mpi_over_kpoint(v3_array_original,
                                         evec_harmonic,
                                         selfenergy_offdiagonal);
@@ -1605,20 +1617,46 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     }
 
     // compute IFC renormalization by lattice relaxation
-    std::cout << "Preparing renormalization of IFCs by strain." << std::endl;;
+    std::cout << "Preparing renormalization of IFCs by strain." << std::endl;
+
+    std::cout << "  from harmonic to 1st-order IFCs ... ";
+    allocate(del_v1_strain_from_harmonic, 9, ns);
+    compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
+    for(int ihoge1 = 0; ihoge1 < 9; ihoge1++){
+        for(int ihoge2 = 0; ihoge2 < ns; ihoge2++){
+            del_v1_strain_from_harmonic[ihoge1][ihoge2] = 0.0;
+        }
+    }
+    std::cout << "done!" << std::endl;
+
+    std::cout << "  from cubic to 1st-order IFCs ... ";
+    allocate(del_v1_strain_from_cubic, 81, ns);
+    compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
+    for(int ihoge1 = 0; ihoge1 < 81; ihoge1++){
+        for(int ihoge2 = 0; ihoge2 < ns; ihoge2++){
+            del_v1_strain_from_cubic[ihoge1][ihoge2] = 0.0;
+        }
+    }
+    std::cout << "done!" << std::endl;
+
+    std::cout << "  from quartic to 1st-order IFCs ... ";
+    allocate(del_v1_strain_from_quartic, 729, ns);
+    compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
+    std::cout << "done!" << std::endl;
+
     std::cout << "  from cubic to harmonic IFCs ... ";
     allocate(del_v2_strain_from_cubic, 9, nk_interpolate, ns*ns);
-    compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
+    // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
     std::cout << "done!" << std::endl;
 
     std::cout << "  from quartic to harmonic IFCs ... ";
     allocate(del_v2_strain_from_quartic, 81, nk_interpolate, ns*ns);
-    compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
+    // compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl;
 
     std::cout << "  from quartic to cubic IFCs ... ";
     allocate(del_v3_strain_from_quartic, 9, nk, ns, ns*ns);
-    compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
+    // compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl; 
     timer->print_elapsed();
 
@@ -1783,13 +1821,32 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 std::cout << "i_str_loop = " << i_str_loop << std::endl;
 
+                // calculate IFCs under strain
+                renormalize_v1_array_from_strain(v1_array_with_strain, 
+                                                 v1_array_original,
+                                                 del_v1_strain_from_harmonic, 
+                                                 del_v1_strain_from_cubic, 
+                                                 del_v1_strain_from_quartic, 
+                                                 u_tensor);
+
+                calculate_force_in_real_space(v1_array_with_strain, force_array);
+
+                std::cout << "force by renormalization from strain" << std::endl;
+                for(is = 0; is < ns; is++){
+                    std::cout << force_array[is] << " ";
+                }std::cout << std::endl;
+
+
+                renormalize_v2_array_from_strain(delta_v2_array_with_strain, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
+                renormalize_v3_array_from_strain(v3_array_with_strain, v3_array_original, del_v3_strain_from_quartic, u_tensor);
+
                 //renormalize IFC
                 renormalize_v1_array(v1_array_renormalized, v1_array_original, v3_array_original, v4_array_original, q0);
                 renormalize_v2_array(delta_v2_array_renormalize, v3_array_original, v4_array_original, q0);
                 renormalize_v3_array(v3_array_renormalized, v3_array_original, v4_array_original, q0);
                 renormalize_v0(v0_renormalized, v0_original, v1_array_original, v3_array_original, v4_array_original, q0);
 
-                renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
+                // renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
 
                 // int ik_tmp1, istmp1, istmp2;
                 // for(ik_tmp1 = 0; ik_tmp1 < 4; ik_tmp1++){
@@ -2012,16 +2069,24 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(omega2_anharm);
     deallocate(omega2_harm_renormalize);
     deallocate(v1_array_original);
+    deallocate(v1_array_with_strain);
     deallocate(v1_array_renormalized);
     deallocate(delta_v2_array_renormalize);
+    deallocate(delta_v2_array_with_strain);
+
     deallocate(v4_array_original);
     deallocate(v4_array_renormalized);
+    deallocate(v4_array_with_strain);
     deallocate(v3_array_original);
     deallocate(v3_array_renormalized);
+    deallocate(v3_array_with_strain);
     deallocate(evec_anharm_tmp);
     deallocate(evec_harm_renormalize_tmp);
     deallocate(v1_array_SCP);
 
+    deallocate(del_v1_strain_from_harmonic);
+    deallocate(del_v1_strain_from_cubic);
+    deallocate(del_v1_strain_from_quartic);
     deallocate(del_v2_strain_from_cubic);
     deallocate(del_v2_strain_from_quartic);
     deallocate(del_v3_strain_from_quartic);
@@ -3156,6 +3221,321 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
     deallocate(is_acoustic);
 }
 
+void Scph::compute_del_v1_strain_from_harmonic(std::complex<double> **del_v1_strain_from_harmonic,
+                                               std::complex<double> ***evec_harmonic)
+{
+    // calculate renormalization in real space
+    int natmin = system->natmin;
+    int nat = system->nat;
+    int ns = dynamical->neval;
+    double **del_v1_strain_from_harmonic_in_real_space;
+    allocate(del_v1_strain_from_harmonic_in_real_space, 9, ns);
+
+    double *inv_sqrt_mass;
+
+    int i, ind1, is1;
+    int ixyz, ixyz1;
+    double vec[3];
+
+    // prepare supercell shift
+    double **xshift_s;
+    const auto ncell_s = 27;
+
+    allocate(xshift_s, ncell_s, 3);
+
+    unsigned int icell = 0;
+    int ix, iy, iz;
+    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                xshift_s[icell][0] = ix*1.0;
+                xshift_s[icell][1] = iy*1.0;
+                xshift_s[icell][2] = iz*1.0;
+
+                ++icell;
+            }
+        }
+    }
+
+    // calculate renormalization in real space
+    for(ixyz = 0; ixyz < 9; ixyz++){
+        for(i = 0; i < ns; i++){
+            del_v1_strain_from_harmonic_in_real_space[ixyz][i] = 0.0;
+        }
+    }
+
+    for(auto &it : fcs_phonon->fc2_ext){
+        ind1 = it.atm1*3 + it.xyz1;
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            vec[ixyz1] = system->xr_s_no_displace[it.atm2][ixyz1]
+                        - system->xr_s_anharm[system->map_p2s_anharm[it.atm1][0]][ixyz1]
+                        + xshift_s[it.cell_s][ixyz1];
+        }
+        rotvec(vec, vec, system->lavec_s);
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            del_v1_strain_from_harmonic_in_real_space[it.xyz2*3 + ixyz1][ind1] += it.fcs_val * vec[ixyz1];
+        }
+    }
+
+
+    // transform to Fourier space
+
+    allocate(inv_sqrt_mass, natmin);
+    for(i = 0; i < natmin; i++){
+        inv_sqrt_mass[i] = 1.0/std::sqrt(system->mass[system->map_p2s[i][0]]);
+    }
+
+    // check transformation
+    std::cout << "in real space" << std::endl;
+    for(int itmp = 0; itmp < ns; itmp++){
+        std::cout << del_v1_strain_from_harmonic_in_real_space[0][itmp] << " ";
+    }std::cout << std::endl;
+    for(int itmp = 0; itmp < ns; itmp++){
+        std::cout << del_v1_strain_from_harmonic_in_real_space[1][itmp] << " ";
+    }std::cout << std::endl;
+
+    for(ixyz = 0; ixyz < 9; ixyz++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_harmonic[ixyz][is1] = 0.0;
+            for(i = 0; i < natmin; i++){
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    del_v1_strain_from_harmonic[ixyz][is1] += evec_harmonic[0][is1][i*3+ixyz1] * inv_sqrt_mass[i] * del_v1_strain_from_harmonic_in_real_space[ixyz][i*3+ixyz1];
+                }
+            }
+        }
+    }
+
+    // debug from here
+    std::cout << "in real space again" << std::endl;
+    double *force_array_tmp;
+    allocate(force_array_tmp, ns);
+
+    calculate_force_in_real_space(del_v1_strain_from_harmonic[0], force_array_tmp);
+    for(int itmp = 0; itmp < ns; itmp++){
+        std::cout << force_array_tmp[itmp] << " ";
+    }std::cout << std::endl;
+
+    calculate_force_in_real_space(del_v1_strain_from_harmonic[1], force_array_tmp);
+    for(int itmp = 0; itmp < ns; itmp++){
+        std::cout << force_array_tmp[itmp] << " ";
+    }std::cout << std::endl;
+
+    deallocate(force_array_tmp); // debug to here
+
+
+    deallocate(del_v1_strain_from_harmonic_in_real_space);
+    deallocate(inv_sqrt_mass);
+    deallocate(xshift_s);
+
+    return;
+}
+
+void Scph::compute_del_v1_strain_from_cubic(std::complex<double> **del_v1_strain_from_cubic,
+                                               std::complex<double> ***evec_harmonic)
+{
+    // calculate renormalization in real space
+    int natmin = system->natmin;
+    int nat = system->nat;
+    int ns = dynamical->neval;
+    double **del_v1_strain_from_cubic_in_real_space;
+    allocate(del_v1_strain_from_cubic_in_real_space, 81, ns);
+
+    double *inv_sqrt_mass;
+
+    int i, ind1, is1;
+    int ixyz, ixyz1, ixyz2;
+    int ixyz_comb;
+    double vec1[3], vec2[3];
+
+    // prepare supercell shift
+    double **xshift_s;
+    const auto ncell_s = 27;
+
+    allocate(xshift_s, ncell_s, 3);
+
+    unsigned int icell = 0;
+    int ix, iy, iz;
+    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                xshift_s[icell][0] = ix*1.0;
+                xshift_s[icell][1] = iy*1.0;
+                xshift_s[icell][2] = iz*1.0;
+
+                ++icell;
+            }
+        }
+    }
+
+    // calculate renormalization in real space
+    for(ixyz = 0; ixyz < 81; ixyz++){
+        for(i = 0; i < ns; i++){
+            del_v1_strain_from_cubic_in_real_space[ixyz][i] = 0.0;
+        }
+    }
+
+    for(auto &it : fcs_phonon->force_constant_with_cell[1]){
+
+        ind1 = it.pairs[0].index;
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            vec1[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
+                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+                        + xshift_s[it.pairs[1].cell_s][ixyz1];
+            vec2[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
+                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+                        + xshift_s[it.pairs[2].cell_s][ixyz1];
+        }
+        rotvec(vec1, vec1, system->lavec_s);
+        rotvec(vec2, vec2, system->lavec_s);
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                ixyz_comb = (it.pairs[1].index%3)*27 + ixyz1*9 + (it.pairs[2].index%3)*3 + ixyz2;
+                del_v1_strain_from_cubic_in_real_space[ixyz_comb][ind1] += it.fcs_val * vec1[ixyz1] * vec2[ixyz2];
+            }
+        }
+    }
+
+    std::cout << "calculation in real space is done." << std::endl;
+
+    // transform to Fourier space
+    allocate(inv_sqrt_mass, natmin);
+    for(i = 0; i < natmin; i++){
+        inv_sqrt_mass[i] = 1.0/std::sqrt(system->mass[system->map_p2s[i][0]]);
+    }
+
+    for(ixyz = 0; ixyz < 81; ixyz++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_cubic[ixyz][is1] = 0.0;
+            for(i = 0; i < natmin; i++){
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    del_v1_strain_from_cubic[ixyz][is1] += evec_harmonic[0][is1][i*3+ixyz1] * inv_sqrt_mass[i] * del_v1_strain_from_cubic_in_real_space[ixyz][i*3+ixyz1];
+                }
+            }
+        }
+    }
+    deallocate(del_v1_strain_from_cubic_in_real_space);
+    deallocate(inv_sqrt_mass);
+    deallocate(xshift_s);
+
+    return;
+}
+
+void Scph::compute_del_v1_strain_from_quartic(std::complex<double> **del_v1_strain_from_quartic,
+                                               std::complex<double> ***evec_harmonic)
+{
+    // calculate renormalization in real space
+    int natmin = system->natmin;
+    int nat = system->nat;
+    int ns = dynamical->neval;
+    double **del_v1_strain_from_quartic_in_real_space;
+    std::cout << "allocate in real space" << std::endl;
+    allocate(del_v1_strain_from_quartic_in_real_space, 729, ns);
+
+    std::cout << "allocate done." << std::endl;
+
+    double *inv_sqrt_mass;
+
+    int i, ind1, is1;
+    int ixyz, ixyz1, ixyz2, ixyz3;
+    int ixyz_comb;
+    double vec1[3], vec2[3], vec3[3];
+
+    // prepare supercell shift
+    double **xshift_s;
+    const auto ncell_s = 27;
+
+    allocate(xshift_s, ncell_s, 3);
+
+    unsigned int icell = 0;
+    int ix, iy, iz;
+    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                xshift_s[icell][0] = ix*1.0;
+                xshift_s[icell][1] = iy*1.0;
+                xshift_s[icell][2] = iz*1.0;
+
+                ++icell;
+            }
+        }
+    }
+
+    // calculate renormalization in real space
+    for(ixyz = 0; ixyz < 729; ixyz++){
+        for(i = 0; i < ns; i++){
+            del_v1_strain_from_quartic_in_real_space[ixyz][i] = 0.0;
+        }
+    }
+
+    for(auto &it : fcs_phonon->force_constant_with_cell[2]){
+
+        ind1 = it.pairs[0].index;
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            vec1[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
+                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+                        + xshift_s[it.pairs[1].cell_s][ixyz1];
+            vec2[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
+                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+                        + xshift_s[it.pairs[2].cell_s][ixyz1];
+            vec3[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[3].index / 3][it.pairs[3].tran]][ixyz1]
+                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+                        + xshift_s[it.pairs[3].cell_s][ixyz1];
+        }
+        rotvec(vec1, vec1, system->lavec_s);
+        rotvec(vec2, vec2, system->lavec_s);
+        rotvec(vec3, vec3, system->lavec_s);
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
+                    ixyz_comb = (it.pairs[1].index%3)*243 + ixyz1*81 + (it.pairs[2].index%3)*27 + ixyz2*9 + (it.pairs[3].index%3)*3 + ixyz3;
+                    del_v1_strain_from_quartic_in_real_space[ixyz_comb][ind1] += it.fcs_val * vec1[ixyz1] * vec2[ixyz2] * vec3[ixyz3];
+                }
+            }
+        }
+    }
+
+
+    // transform to Fourier space
+
+    allocate(inv_sqrt_mass, natmin);
+    for(i = 0; i < natmin; i++){
+        inv_sqrt_mass[i] = 1.0/std::sqrt(system->mass[system->map_p2s[i][0]]);
+    }
+
+    for(ixyz = 0; ixyz < 729; ixyz++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_quartic[ixyz][is1] = 0.0;
+            for(i = 0; i < natmin; i++){
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    del_v1_strain_from_quartic[ixyz][is1] += evec_harmonic[0][is1][i*3+ixyz1] * inv_sqrt_mass[i] * del_v1_strain_from_quartic_in_real_space[ixyz][i*3+ixyz1];
+                }
+            }
+        }
+    }
+    deallocate(del_v1_strain_from_quartic_in_real_space);
+    deallocate(inv_sqrt_mass);
+    deallocate(xshift_s);
+
+    return;
+}
+
 void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strain_from_cubic,
                                             std::complex<double> ***evec_harmonic)
 {
@@ -3566,7 +3946,7 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->lavec_s_anharm);
+            rotvec(vec, vec, system->lavec_s);
 
             fcs_tmp += it.fcs_val * vec[ixyz2];
             // it.pairs[norder - 1].index % 3 == ixyz has been checked.
@@ -3680,7 +4060,7 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->lavec_s_anharm);
+            rotvec(vec, vec, system->lavec_s);
 
             fcs_tmp += it.fcs_val * vec[ixyz2];
             // it.pairs[norder - 1].index % 3 == ixyz1 has been checked.
@@ -4262,6 +4642,54 @@ void Scph::renormalize_v0(double &v0_renormalized,
 
 
 }
+void Scph::renormalize_v1_array_from_strain(std::complex<double> *v1_array_with_strain, 
+                                            std::complex<double> *v1_array_original,
+                                            std::complex<double> **del_v1_strain_from_harmonic, 
+                                            std::complex<double> **del_v1_strain_from_cubic, 
+                                            std::complex<double> **del_v1_strain_from_quartic, 
+                                            double **u_tensor)
+{
+    const auto ns = dynamical->neval;
+
+    int ixyz1, ixyz2, ixyz3, ixyz4, ixyz5, ixyz6;
+    int ixyz_comb;
+    int is;
+
+    double factor1 = 0.5;
+    double factor2 = 1.0/6.0;
+
+    for(is = 0; is < ns; is++){
+        // original 1st-order IFCs
+        v1_array_with_strain[is] = v1_array_original[is];
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                // renormalization from harmonic IFCs
+                v1_array_with_strain[is] += del_v1_strain_from_harmonic[ixyz1*3+ixyz2][is] * u_tensor[ixyz1][ixyz2];
+
+                for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
+                    for(ixyz4 = 0; ixyz4 < 3; ixyz4++){
+                        // renormalization from cubic IFCs
+                        ixyz_comb = ixyz1 * 27 + ixyz2 * 9 + ixyz3 * 3 + ixyz4;
+                        v1_array_with_strain[is] += factor1 * del_v1_strain_from_cubic[ixyz_comb][is] 
+                                                    * u_tensor[ixyz1][ixyz2] * u_tensor[ixyz3][ixyz4];
+
+                        for(ixyz5 = 0; ixyz5 < 3; ixyz5++){
+                            for(ixyz6 = 0; ixyz6 < 3; ixyz6++){
+                                // renormalization from quartic IFCs
+                                ixyz_comb = ixyz1 * 243 + ixyz2 * 81 + ixyz3 * 27 + ixyz4 * 9 + ixyz5 * 3 + ixyz6;
+                                v1_array_with_strain[is] += factor2 * del_v1_strain_from_quartic[ixyz_comb][is]
+                                                            * u_tensor[ixyz1][ixyz2] * u_tensor[ixyz3][ixyz4] * u_tensor[ixyz5][ixyz6];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return ;
+}
 
 void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_array_renormalize, 
                                             std::complex<double> ***del_v2_strain_from_cubic, 
@@ -4334,7 +4762,45 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
     return;
     
 }
-                    
+
+void Scph::renormalize_v3_array_from_strain(std::complex<double> ***v3_array_with_strain, 
+                                            std::complex<double> ***v3_array_original, 
+                                            std::complex<double> ****del_v3_strain_from_quartic,
+                                            double **u_tensor)
+{
+    const auto nk_scph = kmesh_dense->nk;
+    const auto nk_interpolate = kmesh_coarse->nk;
+    const auto ns = dynamical->neval;
+    int ik;
+    int is1, is2, is3;
+    int ixyz1, ixyz2;
+    int ixyz, ixyz11, ixyz12, ixyz21, ixyz22, itmp;
+
+    // allocate(v3_array_renormalized, nk, ns, ns * ns);
+
+    for(ik = 0; ik < nk_scph; ik++){
+        for(is1 = 0; is1 < ns; is1++){
+            for(is2 = 0; is2 < ns; is2++){
+                for(is3 = 0; is3 < ns; is3++){
+                    // original cubic IFC
+                    v3_array_with_strain[ik][is1][is2*ns+is3] = v3_array_original[ik][is1][is2*ns+is3];
+
+                    // renormalization from strain
+                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                            v3_array_with_strain[ik][is1][is2*ns+is3] +=
+                              del_v3_strain_from_quartic[ixyz1*3+ixyz2][ik][is1][is2*ns+is3] * u_tensor[ixyz1][ixyz2];
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    return;
+}
+                      
 void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormalized, 
                             std::complex<double> ***v3_array_renormalized, 
                             std::complex<double> ***cmat_convert, 

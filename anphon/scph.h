@@ -198,6 +198,14 @@ private:
     void calc_new_dymat_with_evec(std::complex<double> ***,
                                   double **,
                                   std::complex<double> ***);
+    void compute_del_v1_strain_from_harmonic(std::complex<double> **,
+                                               std::complex<double> ***);
+
+    void compute_del_v1_strain_from_cubic(std::complex<double> **,
+                                               std::complex<double> ***);
+
+    void compute_del_v1_strain_from_quartic(std::complex<double> **,
+                                               std::complex<double> ***);
 
     void compute_del_v2_strain_from_cubic(std::complex<double> ***,
                                           std::complex<double> ***);
@@ -224,9 +232,21 @@ private:
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
 
+    void renormalize_v1_array_from_strain(std::complex<double> *, 
+                                            std::complex<double> *,
+                                            std::complex<double> **, 
+                                            std::complex<double> **, 
+                                            std::complex<double> **, 
+                                            double **);
+
     void renormalize_v2_array_from_strain(std::complex<double> **, 
                                             std::complex<double> ***, 
                                             std::complex<double> ***,
+                                            double **);
+
+    void renormalize_v3_array_from_strain(std::complex<double> ***, 
+                                            std::complex<double> ***, 
+                                            std::complex<double> ****,
                                             double **);
 
     void renormalize_v1_array(std::complex<double> *, 
