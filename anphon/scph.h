@@ -235,6 +235,19 @@ private:
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
 
+    void calculate_del_v0_strain_with_strain_displace(std::complex<double> *, 
+                                               double **,
+                                               double ***,
+                                               double **,
+                                               double **,
+                                               std::complex<double> **,
+                                               std::complex<double> **,
+                                               std::complex<double> **,
+                                               std::complex<double> ***,
+                                               std::complex<double> ***,
+                                               std::complex<double> ****,
+                                               double *);
+
     void calculate_eta_tensor(double **, 
                                 double **);
 

@@ -1506,6 +1506,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::complex<double> ***del_v2_strain_from_quartic;
     std::complex<double> ****del_v3_strain_from_quartic;
 
+    std::complex<double> *del_v0_strain_with_strain_displace;
+    std::complex<double> *del_v0_strain_SCP;
+
     // structure optimization
     int i_str_loop, i_temp_loop;
     double dq0;
@@ -1550,7 +1553,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // }
 
     // debug 
-/*    if(mympi->my_rank == 0){
+    if(mympi->my_rank == 0){
         std::cout << "atomic masses : " << std::endl;
         for(int i_atm = 0; i_atm < system->natmin; i_atm++){
             std::cout << system->mass[system->map_p2s[i_atm][0]] << " ";
@@ -1570,7 +1573,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             std::cout << is << " " << system->xr_s[is][0] << " " << system->xr_s[is][1] << " " << system->xr_s[is][2] << " " << system->xr_s_no_displace[is][0] << " " << system->xr_s_no_displace[is][1] << " " << system->xr_s_no_displace[is][2] << std::endl;
         }
     }    
-*/
+
     // Compute matrix element of 4-phonon interaction
 
     allocate(v1_array_SCP, ns);
@@ -1649,12 +1652,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::cout << "done!" << std::endl;
 
     std::cout << "  from cubic to harmonic IFCs ... ";
-    allocate(del_v2_strain_from_cubic, 9, nk_interpolate, ns*ns);
+    allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
     compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
     std::cout << "done!" << std::endl;
 
     std::cout << "  from quartic to harmonic IFCs ... ";
-    allocate(del_v2_strain_from_quartic, 81, nk_interpolate, ns*ns);
+    allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl;
 
@@ -1663,6 +1666,10 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl; 
     timer->print_elapsed();
+
+    // for lattice relaxation
+    allocate(del_v0_strain_with_strain_displace, 9);
+    allocate(del_v0_strain_SCP, 9);
 
     // for(int itmp1 = 0; itmp1 < 81; itmp1++){
     //     for(int itmp2 = 0; itmp2 < nk; itmp2++){
@@ -1830,7 +1837,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 std::cout << "i_str_loop = " << i_str_loop << std::endl;
 
-                // get eta tensor // herehere
+                // get eta tensor
                 calculate_eta_tensor(eta_tensor, u_tensor);
 
                 std::cout << "eta tensor" << std::endl;
@@ -1875,7 +1882,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 renormalize_v1_array(v1_array_renormalized, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
                 renormalize_v2_array(delta_v2_array_renormalize, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
                 renormalize_v3_array(v3_array_renormalized, v3_array_with_strain, v4_array_with_strain, q0);
-                renormalize_v0(v0_renormalized, v0_original, v1_array_original, delta_v2_array_with_strain, v3_array_original, v4_array_original, q0);
+                renormalize_v0(v0_renormalized, v0_with_strain, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
+                std::cout << "v0_renormalized: " << std::endl << v0_renormalized << std::endl;
 
                 // renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
 
@@ -1890,6 +1898,27 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 // calculate PES force
                 calculate_force_in_real_space(v1_array_renormalized, force_array);
+
+                // calculate PES gradient by strain
+                calculate_del_v0_strain_with_strain_displace(del_v0_strain_with_strain_displace, 
+                                                             C2_array,
+                                                             C3_array,
+                                                             eta_tensor,
+                                                             u_tensor,
+                                                             del_v1_strain_from_harmonic,
+                                                             del_v1_strain_from_cubic,
+                                                             del_v1_strain_from_quartic,
+                                                             del_v2_strain_from_cubic,
+                                                             del_v2_strain_from_quartic,
+                                                             del_v3_strain_from_quartic,
+                                                             q0);
+
+                std::cout << "del_v0_strain_with_strain_displace" << std::endl;
+                for(is1 = 0; is1 < 3; is1++){
+                    for(is2 = 0; is2 < 3; is2++){
+                        std::cout << del_v0_strain_with_strain_displace[is1*3+is2] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
 
                 // print PES force
                 std::cout << "PES force" << std::endl;
@@ -1937,6 +1966,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 // calculate SCP force
                 compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
+
+                // calculate 
+                // compute_anharmonic_del_v0_strain(del_v0_strain_SCP, del_v0_strain_with_strain_displace, ) // herehere to be implemented
 
                 // check force
                 dFdq_q = 0.0;
@@ -2121,6 +2153,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(del_v2_strain_from_cubic);
     deallocate(del_v2_strain_from_quartic);
     deallocate(del_v3_strain_from_quartic);
+
+    deallocate(del_v0_strain_with_strain_displace);
+    deallocate(del_v0_strain_SCP);
 
     deallocate(C2_array);
     deallocate(C3_array);
@@ -3648,13 +3683,14 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
                 delta_fcs2.emplace_back(fc_extent_tmp);
             }
             
-            for(ik = 0; ik < nk_interpolate; ik++){
+            for(ik = 0; ik < nk; ik++){
                 // Fourier transformation
-                dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
+                dynamical->calc_analytic_k(kmesh_dense->xk[ik],
                                         delta_fcs2,
                                         mat_tmp);
                 // Unitary transformation
-                knum = kmap_interpolate_to_scph[ik];
+                // knum = kmap_interpolate_to_scph[ik];
+                knum = ik;
                 for(is1 = 0; is1 < ns; is1++){
                     for(is2 = 0; is2 < ns; is2++){
                         Dymat(is1, is2) = mat_tmp[is1][is2];
@@ -3721,12 +3757,13 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
             delta_fcs2.emplace_back(fc_extent_tmp);
         }
         
-        for(ik = 0; ik < nk_interpolate; ik++){
-            dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
+        for(ik = 0; ik < nk; ik++){
+            dynamical->calc_analytic_k(kmesh_dense->xk[ik],
                                     delta_fcs2,
                                     mat_tmp);
             // Unitary transformation
-            knum = kmap_interpolate_to_scph[ik];
+            // knum = kmap_interpolate_to_scph[ik];
+            knum = ik;
             for(is1 = 0; is1 < ns; is1++){
                 for(is2 = 0; is2 < ns; is2++){
                     Dymat(is1, is2) = mat_tmp[is1][is2];
@@ -4519,6 +4556,154 @@ FcsClassExtent Scph::from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithC
     return fc_out;
 }
 
+void Scph::calculate_del_v0_strain_with_strain_displace(std::complex<double> *del_v0_strain_with_strain_displace, 
+                                               double **C2_array,
+                                               double ***C3_array,
+                                               double **eta_tensor,
+                                               double **u_tensor,
+                                               std::complex<double> **del_v1_strain_from_harmonic,
+                                               std::complex<double> **del_v1_strain_from_cubic,
+                                               std::complex<double> **del_v1_strain_from_quartic,
+                                               std::complex<double> ***del_v2_strain_from_cubic,
+                                               std::complex<double> ***del_v2_strain_from_quartic,
+                                               std::complex<double> ****del_v3_strain_from_quartic,
+                                               double *q0)
+{
+/*
+    std::complex<double> **del_v1_strain_from_harmonic;
+    std::complex<double> **del_v1_strain_from_cubic;
+    std::complex<double> **del_v1_strain_from_quartic;
+
+    std::complex<double> ***del_v2_strain_from_cubic;
+    std::complex<double> ***del_v2_strain_from_quartic;
+    std::complex<double> ****del_v3_strain_from_quartic;
+
+*/
+    int ns = dynamical->neval;
+    double **del_eta_del_u;
+    double *del_v0_del_eta;
+    double *del_v0_strain_with_strain;
+
+    std::complex<double> **del_v1_strain_with_strain;
+    std::complex<double> ***del_v2_strain_with_strain;
+    // double *del_v3_strain;
+    
+    allocate(del_eta_del_u, 9, 9);
+    allocate(del_v0_del_eta, 9);
+    allocate(del_v0_strain_with_strain, 9);
+
+    allocate(del_v1_strain_with_strain, 9, ns);
+    allocate(del_v2_strain_with_strain, 9, ns, ns);
+
+    double factor = 1.0/6.0;
+    int i1, i2, i3, ixyz1, ixyz2, ixyz3, ixyz4;
+    int is1, is2, is3;
+
+    
+    
+    // calculate the derivative of eta_tensor by u_tensor
+    for(i1 = 0; i1 < 9; i1++){
+        ixyz1 = i1/3;
+        ixyz2 = i1%3;
+        for(i2 = 0; i2 < 9; i2++){
+            ixyz3 = i2/3;
+            ixyz4 = i2%3;
+
+            del_eta_del_u[i1][i2] = 0.0;
+            
+            if(ixyz1 == ixyz3 && ixyz2 == ixyz4){
+                del_eta_del_u[i1][i2] += 0.5;
+            }
+            if(ixyz2 == ixyz3 && ixyz1 == ixyz4){
+                del_eta_del_u[i1][i2] += 0.5;
+            }
+            if(ixyz1 == ixyz3){
+                del_eta_del_u[i1][i2] += 0.5 * u_tensor[ixyz2][ixyz4];
+            }
+            if(ixyz2 == ixyz3){
+                del_eta_del_u[i1][i2] += 0.5 * u_tensor[ixyz1][ixyz4];
+            }
+        }
+    }
+
+    // debug
+    std::cout << "del_eta_del_u: " << std::endl;
+    for(i1 = 0; i1 < 9; i1++){
+        for(i2 = 0; i2 < 3; i2++){
+            for(i3 = 0; i3 < 3; i3++){
+                std::cout << del_eta_del_u[i2*3+i3][i1] << " ";
+            }std::cout << std::endl;
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+
+    // calculate del_v0_del_eta
+    for(i1 = 0; i1 < 9; i1++){
+        del_v0_del_eta[i1] = 0.0;
+        for(i2 = 0; i2 < 9; i2++){
+            del_v0_del_eta[i1] += C2_array[i1][i2] * eta_tensor[i2/3][i2%3];
+            for(i3 = 0; i3 < 9; i3++){
+                del_v0_del_eta[i1] += 0.5 * C3_array[i1][i2][i3] * eta_tensor[i2/3][i2%3] * eta_tensor[i3/3][i3%3];
+            }
+        }
+    }
+
+    // calculate contribution from v0 without atomic displacements
+    for(i1 = 0; i1 < 9; i1++){
+        del_v0_strain_with_strain[i1] = 0.0;
+        for(i2 = 0; i2 < 9; i2++){
+            del_v0_strain_with_strain[i1] += del_eta_del_u[i2][i1] * del_v0_del_eta[i2];
+        }
+    }
+
+    // calculate del_v1_strain
+    for(i1 = 0; i1 < 9; i1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_with_strain[i1][is1] = del_v1_strain_from_harmonic[i1][is1];
+            for(i2 = 0; i2 < 9; i2++){
+                del_v1_strain_with_strain[i1][is1] += del_v1_strain_from_cubic[i1*9+i2][is1] * u_tensor[i2/3][i2%3];
+                for(i3 = 0; i3 < 9; i3++){
+                    del_v1_strain_with_strain[i1][is1] += 0.5 * del_v1_strain_from_quartic[i1*81+i2*9+i3][is1] * u_tensor[i2/3][i2%3] * u_tensor[i3/3][i3%3];
+                }
+            }
+        }
+    }
+    
+    // calculate del_v2_strain
+    for(i1 = 0; i1 < 9; i1++){
+        for(is1 = 0; is1 < ns; is1++){
+            for(is2 = 0; is2 < ns; is2++){
+                del_v2_strain_with_strain[i1][is1][is2] = del_v2_strain_from_cubic[i1][0][is1*ns+is2];
+                for(i2 = 0; i2 < 9; i2++){
+                    del_v2_strain_with_strain[i1][is1][is2] += del_v2_strain_from_quartic[i1*9+i2][0][is1*ns+is2] * u_tensor[i2/3][i2%3];
+                }
+            }
+        }
+    }
+
+    // calculate del_v0_strain_with_strain_displace
+    for(i1 = 0; i1 < 9; i1++){
+        del_v0_strain_with_strain_displace[i1] = del_v0_strain_with_strain[i1];
+        for(is1 = 0; is1 < ns; is1++){
+            del_v0_strain_with_strain_displace[i1] += del_v1_strain_with_strain[i1][is1] * q0[is1];
+            for(is2 = 0; is2 < ns; is2++){
+                del_v0_strain_with_strain_displace[i1] += 0.5 * del_v2_strain_with_strain[i1][is1][is2] * q0[is1] * q0[is2];
+                for(is3 = 0; is3 < ns; is3++){
+                    del_v0_strain_with_strain_displace[i1] += factor * del_v3_strain_from_quartic[i1][0][is1][is2*ns+is3] * q0[is1] * q0[is2] * q0[is3];
+                }
+            }
+        }
+    }
+
+    deallocate(del_eta_del_u);
+    deallocate(del_v0_del_eta);
+    deallocate(del_v0_strain_with_strain);
+    deallocate(del_v1_strain_with_strain);
+    deallocate(del_v2_strain_with_strain);
+
+    return;
+}
+
+
 void Scph::renormalize_v1_array(std::complex<double> *v1_array_renormalized, 
                                 std::complex<double> *v1_array_original, 
                                 std::complex<double> **delta_v2_array_original,
@@ -4844,7 +5029,7 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
     const auto nk = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
     const auto ns = dynamical->neval;
-    int ik;
+    int ik, knum;
     int is1, is2;
     int ixyz1, ixyz2;
     int ixyz, ixyz11, ixyz12, ixyz21, ixyz22, itmp;
@@ -4863,10 +5048,11 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             for(ik = 0; ik < nk_interpolate; ik++){
+                knum = kmap_interpolate_to_scph[ik];
                 for(is1 = 0; is1 < ns; is1++){
                     for(is2 = 0; is2 < ns; is2++){
                         delta_v2_array_renormalize[ik][is1*ns+is2] += 
-                          del_v2_strain_from_cubic[ixyz1*3 + ixyz2][ik][is1*ns+is2] * u_tensor[ixyz1][ixyz2];
+                          del_v2_strain_from_cubic[ixyz1*3 + ixyz2][knum][is1*ns+is2] * u_tensor[ixyz1][ixyz2];
                     }
                 }
             }
@@ -4884,10 +5070,11 @@ void Scph::renormalize_v2_array_from_strain(std::complex<double> **delta_v2_arra
         ixyz11 = itmp / 3;
 
         for(ik = 0; ik < nk_interpolate; ik++){
+            knum = kmap_interpolate_to_scph[ik];
             for(is1 = 0; is1 < ns; is1++){
                 for(is2 = 0; is2 < ns; is2++){
                     delta_v2_array_renormalize[ik][is1*ns+is2] += 
-                        0.5 * del_v2_strain_from_quartic[ixyz][ik][is1*ns+is2] * u_tensor[ixyz11][ixyz12] * u_tensor[ixyz21][ixyz22];
+                        0.5 * del_v2_strain_from_quartic[ixyz][knum][is1*ns+is2] * u_tensor[ixyz11][ixyz12] * u_tensor[ixyz21][ixyz22];
                 }
             }
         }
