@@ -307,6 +307,17 @@ private:
                                         const double ,
                                         std::complex<double> *);
 
+    void compute_anharmonic_del_v0_strain(std::complex<double> *, 
+                                            std::complex<double> *,
+                                            std::complex<double> ***,
+                                            std::complex<double> ***,
+                                            std::complex<double> ****,
+                                            double **,
+                                            double *,
+                                            std::complex<double> ***, 
+                                            double ** , 
+                                            const double);
+
     void compute_anharmonic_frequency(std::complex<double> ***,
                                         double **,
                                         std::complex<double> ***,
