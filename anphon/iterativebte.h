@@ -58,6 +58,9 @@ class Iterativebte : protected Pointers {
     unsigned int ntemp;
 
     int max_cycle;
+    int min_cycle;
+    double mixing_factor;
+
     double convergence_criteria;  // dF(i+1) - dF(i) < cc
 
     double ***kappa;
@@ -119,6 +122,7 @@ class Iterativebte : protected Pointers {
     void calc_boson(int, double **&, double **&);
 
     bool check_convergence(double **&, double **&); // check if convergence cirteria is meet
+    bool check_convergence(const std::vector<double> &);
 
     //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
     void write_result();

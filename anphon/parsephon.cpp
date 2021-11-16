@@ -410,7 +410,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
           "INTERPOLATOR", "LEN_BOUNDARY",
           "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC",
           "WRITE_INTERPOL", "ADAPTIVE_FACTOR", 
-          "ITERATIVE", "MAX_CYCLE", "ITER_THRESHOLD"
+          "ITERATIVE", "MAX_CYCLE", "MIN_CYCLE", "ITER_THRESHOLD", "IBTE_MIXING"
     };
     
     double *isotope_factor = nullptr;
@@ -438,8 +438,10 @@ void Input::parse_kappa_vars(const bool use_default_values)
     double adaptive_factor = 1.0;
 
     auto iterative = false;
-    auto max_cycle = 20;
-    auto iter_threshold = 0.005; 
+    int max_cycle = 20;
+    int min_cycle = 5;
+    auto iter_threshold = 0.02; 
+    auto iterative_mixing = 0.9;
 
     // Assign given values
     if (! use_default_values) {
@@ -455,6 +457,8 @@ void Input::parse_kappa_vars(const bool use_default_values)
         assign_val(adaptive_factor, "ADAPTIVE_FACTOR", kappa_var_dict);
         assign_val(iterative, "ITERATIVE", kappa_var_dict);
         assign_val(max_cycle, "MAX_CYCLE", kappa_var_dict);
+        assign_val(min_cycle, "MIN_CYCLE", kappa_var_dict);
+        assign_val(iterative_mixing, "IBTE_MIXING", kappa_var_dict);
         assign_val(iter_threshold, "ITER_THRESHOLD", kappa_var_dict); 
     }
 
@@ -468,6 +472,8 @@ void Input::parse_kappa_vars(const bool use_default_values)
 
     iterativebte->do_iterative = iterative;
     iterativebte->max_cycle = max_cycle;
+    iterativebte->min_cycle = min_cycle;
+    iterativebte->mixing_factor = iterative_mixing;
     iterativebte->convergence_criteria = iter_threshold; // wh
 
     // set 4ph mesh

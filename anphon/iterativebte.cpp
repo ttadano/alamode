@@ -51,8 +51,10 @@ void Iterativebte::set_default_variables()
     direct_solution = false;
     Temperature = nullptr;
     ntemp = 0;
+    min_cycle = 5;
     max_cycle = 20;
-    convergence_criteria = 0.005;
+    mixing_factor = 0.9;
+    convergence_criteria = 0.02;
     kappa = nullptr;
     use_triplet_symmetry = true;
     sym_permutation = true;
@@ -85,6 +87,8 @@ void Iterativebte::setup_iterative()
     ns2 = ns * ns;
 
     MPI_Bcast(&max_cycle, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&min_cycle, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mixing_factor, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&convergence_criteria, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (anharmonic_core->quartic_mode > 0) conductivity->fph_rta = 1;
@@ -124,17 +128,18 @@ void Iterativebte::setup_iterative()
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " distribute q point ... " << std::endl;
-        std::cout << " number of q point each process: " << std::setw(5) << nklocal << std::endl;
+        std::cout << " Iterative solution" << std::endl;
+        std::cout << " ==================" << std::endl;
+        std::cout << " MIN_CYCLE = " << min_cycle << ", MAX_CYCLE = " << max_cycle << std::endl;
+        std::cout << " ITER_THRESHOLD = " << std::setw(10) << std::right << 
+                                             std::setprecision(4) << convergence_criteria << std::endl;
         std::cout << std::endl;
-        std::cout << " Generating all k pairs ... " << std::endl;
+        std::cout << " Distribute q point ... ";
+        std::cout << " Number of q point pre process: " << std::setw(5) << nklocal << std::endl;
+        std::cout << std::endl;
     }
 
     get_triplets();
-
-    if (mympi->my_rank == 0) {
-        std::cout << "     DONE ! " << std::endl;
-    }
 
     write_result();
 }
@@ -179,9 +184,10 @@ void Iterativebte::do_iterativebte()
 {
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
-        std::cout << " Calculate once for the transition probability L(absorb) and L(emitt) ..." << std::endl;
-        std::cout << "     size of L (MB) (approx.) = " << memsize_in_MB(sizeof(double), kplength_absorb, ns, ns2)
-                  << std::endl;
+        std::cout << " Calculate once for the transition probability L(absorb) and L(emitt)" << std::endl;
+        std::cout << " Size of L (MB) (approx.) = " << memsize_in_MB(sizeof(double), kplength_absorb + kplength_emitt, ns, ns2)
+                  << " ... ";
+        /*
         if (integration->ismear == 0 || integration->ismear == 1) {
             std::cout << "     smearing will be used for the delta function" << std::endl;
         } else if (integration->ismear == 2) {
@@ -191,6 +197,7 @@ void Iterativebte::do_iterativebte()
         } else {
             exit("calc_L", "ismear other than -1, 0, 1, 2 are not supported");
         }
+        */
     }
 
     if (integration->ismear >= 0) {
@@ -783,8 +790,9 @@ void Iterativebte::calc_anharmonic_imagself4()
 
 void Iterativebte::iterative_solver()
 {
-    double mixing_factor = 0.9;   // f_new = f_new * mixing_factor + f_old * (1 - mixing_factor)
-    int min_cycle = 5;            // a minimum iteration cycle to prevent early stop
+    // f_new = f_new * mixing_factor + f_old * (1 - mixing_factor)
+    std::vector<double> convergence_history;   // store | f_n - f_{n-1} | L2 norm
+    convergence_history.empty();
 
     double **Q;
     double **kappa_new;
@@ -894,6 +902,9 @@ void Iterativebte::iterative_solver()
     double **Wks;
     allocate(Wks, ns, 3);
 
+    double norm;
+    double local_difference;
+
     for (auto itemp = 0; itemp < ntemp; ++itemp) {
 
         double beta = 1.0 / (thermodynamics->T_to_Ryd * Temperature[itemp]);
@@ -906,7 +917,7 @@ void Iterativebte::iterative_solver()
                       "    -----------------------------" << std::endl;
             std::cout << "      Kappa [W/mK]        xx          xy          xz" <<
                       "          yx          yy          yz" <<
-                      "          zx          zy          zz" << std::endl;
+                      "          zx          zy          zz    |df' - df|" << std::endl;
         }
 
         calc_Q_from_L(fb, Q);
@@ -933,6 +944,8 @@ void Iterativebte::iterative_solver()
         int isym;
 
         for (auto itr = 0; itr < max_cycle; ++itr) {
+
+            local_difference = 0.0;
 
             if (mympi->my_rank == 0) {
                 std::cout << "   -> iter " << std::setw(3) << itr << ": ";
@@ -1118,6 +1131,7 @@ void Iterativebte::iterative_solver()
                                 // unstability in convergence happens sometime at low temperature.
                                 dFnew[k1][s1][ix] =
                                       dFnew[k1][s1][ix] * mixing_factor + dFold[k1][s1][ix] * (1.0 - mixing_factor);
+                                local_difference += std::pow( dFnew[k1][s1][ix] - dFold[k1][s1][ix], 2.0);
                             }
                         }
 
@@ -1126,40 +1140,56 @@ void Iterativebte::iterative_solver()
                 } // ieq
             } // ik
 
-            // reduce dFnew to dFold
-            MPI_Allreduce(&dFnew[0][0][0],
-                          &dFold[0][0][0],
-                          nk_3ph * ns * 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            // check convergence, if converged, stop, if not, update dF and print kappa
+            norm = 0.0;
+            MPI_Allreduce(&local_difference, &norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            convergence_history.push_back(norm);
 
-            calc_kappa(itemp, dFold, kappa_new);
+            auto converged1 = false;
+            auto converged2 = false;
+            if (itr >= min_cycle) converged1 = check_convergence(convergence_history);
 
-            //print kappa
-            if (mympi->my_rank == 0) {
+            if (converged1) {
                 for (ix = 0; ix < 3; ++ix) {
                     for (iy = 0; iy < 3; ++iy) {
-                        std::cout << std::setw(12) << std::scientific
-                                  << std::setprecision(2) << kappa_new[ix][iy];
+                        kappa_new[ix][iy] = kappa_old[ix][iy];
                     }
                 }
-                std::cout << std::endl;
+            } else {
+                MPI_Allreduce(&dFnew[0][0][0],
+                            &dFold[0][0][0],
+                            nk_3ph * ns * 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+                calc_kappa(itemp, dFold, kappa_new);
+                //print kappa
+                if (mympi->my_rank == 0) {
+                    for (ix = 0; ix < 3; ++ix) {
+                        for (iy = 0; iy < 3; ++iy) {
+                            std::cout << std::setw(12) << std::scientific
+                                    << std::setprecision(2) << kappa_new[ix][iy];
+                        }
+                    }
+                    norm = std::pow(norm, 0.5);
+                    std::cout << std::setw(14) << std::scientific << std::setprecision(2) << norm << std::endl;
+                }
+                if (itr >= min_cycle) converged2 = check_convergence(kappa_old, kappa_new);
             }
 
-            auto converged = false;
-            if (itr >= min_cycle) converged = check_convergence(kappa_old, kappa_new);
-
-            if (converged) {
-                // write to final kappa
+            if (converged1 || converged2) {
                 for (ix = 0; ix < 3; ++ix) {
                     for (iy = 0; iy < 3; ++iy) {
-                        kappa[itemp][ix][iy] = kappa_new[ix][iy];
+                        kappa[itemp][ix][iy] = kappa_old[ix][iy];
                     }
                 }
                 if (mympi->my_rank == 0) {
-                    std::cout << "   -> iter   Kappa converged " << std::endl;
+                    std::cout << "   -> Converged is achieved                 "
+                              << "                                            " 
+                              << "                                    "
+                              << std::setw(14) << std::scientific << std::setprecision(2) << norm << std::endl;
                 }
                 break;
+
             } else {
-                // continue next loop
                 for (ix = 0; ix < 3; ++ix) {
                     for (iy = 0; iy < 3; ++iy) {
                         kappa_old[ix][iy] = kappa_new[ix][iy];
@@ -1341,15 +1371,24 @@ void Iterativebte::calc_kappa(int itemp, double ***&df, double **&kappa_out)
 
 bool Iterativebte::check_convergence(double **&k_old, double **&k_new)
 {
+    // check diagonal components only, since they are the most important
     double max_diff = -100;
     double diff;
     for (auto ix = 0; ix < 3; ++ix) {
-        for (auto iy = 0; iy < 3; ++iy) {
-            diff = std::abs(k_new[ix][iy] - k_old[ix][iy]) / std::abs(k_old[ix][iy]);
-            if (diff > max_diff) max_diff = diff;
-        }
+        diff = std::abs(k_new[ix][ix] - k_old[ix][ix]) / std::abs(k_old[ix][ix]);
+        if (diff > max_diff) max_diff = diff;
     }
     return max_diff < convergence_criteria;
+}
+
+bool Iterativebte::check_convergence(const std::vector<double> &history)
+{
+    auto size = history.size();
+    double last = history[size - 1];
+    double lastlast = history[size - 2];
+    if (last > lastlast) {
+        return true;
+    } else return false;
 }
 
 
@@ -1402,7 +1441,7 @@ void Iterativebte::write_result()
     double Ry_to_kayser = Hz_to_kayser / time_ry;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Writing Q and W to file ..." << std::endl;
+        std::cout << " Prepare result file ..." << std::endl;
 
         fs_result.open(conductivity->get_filename_results(3).c_str(), std::ios::out);
 
