@@ -115,6 +115,7 @@ void Conductivity::deallocate_variables()
     delete phase_storage_4ph;
 }
 
+
 void Conductivity::setup_kappa()
 {
     MPI_Bcast(&calc_coherent, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -172,7 +173,6 @@ void Conductivity::setup_kappa()
                                                         fcs_phonon->fc2_ext,
                                                         vel);
 
-
     if (mympi->my_rank == 0) {
         for (auto i = 0; i < nk_3ph; ++i) {
             for (auto j = 0; j < ns; ++j) {
@@ -196,9 +196,11 @@ void Conductivity::setup_kappa()
         }
     }
 
-    setup_result_io(true);
-    prepare_restart(true);
+    // prepare IO for 3ph only
+    setup_result_io(1);
+    prepare_restart(1);
 
+    // setting up related to setup_kappa_4ph are inside here
     if (fph_rta > 0) setup_kappa_4ph();
 
 }
@@ -214,7 +216,7 @@ void Conductivity::setup_kappa_4ph()
         }
     }
 
-    ns = dynamical->neval;
+    ns = dynamical->neval;         // it reassign values to ns and nk_3ph
     nk_3ph = dos->kmesh_dos->nk;
     MPI_Bcast(&nk_coarse[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&restart_flag_4ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
@@ -231,14 +233,13 @@ void Conductivity::setup_kappa_4ph()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << " Four-phonon scattering rate will be calculated additionally.\n"; // fph_rta is not a input parameter, therefore removed from IO
-
-        std::cout << "  KMESH for 4-ph:\n";
+        std::cout << " Four-phonon scattering rate will be calculated additionally.\n";
+        std::cout << " KMESH for 4-ph:\n";
         std::cout << "   nk1 : " << std::setw(5) << nkc_tmp[0] << '\n';
         std::cout << "   nk2 : " << std::setw(5) << nkc_tmp[1] << '\n';
         std::cout << "   nk3 : " << std::setw(5) << nkc_tmp[2] << '\n';
-
     }
+
     if (nrem > 0) {
         allocate(damping4, (nks_each_thread + 1) * mympi->nprocs, ntemp);
     } else {
@@ -327,196 +328,16 @@ void Conductivity::setup_kappa_4ph()
                                             fcs_phonon->fc2_ext);
     }
 
-    setup_result_io(false);
-    prepare_restart(false);
+    // prepare IO for four phonon
+    setup_result_io(-1);
+    prepare_restart(-1);
 
 }
 
-void Conductivity::prepare_restart()
+
+void Conductivity::prepare_restart(const int mode)
 {
-    // Write phonon frequency to result file
-    int i;
-    std::string line_tmp;
-    unsigned int nk_tmp, ns_tmp;
-    unsigned int multiplicity;
-    int nks_done = 0, *arr_done;
-
-    double vel_dummy[3];
-
-    nshift_restart = 0;
-    nshift_restart4 = 0;
-
-    vks_done.clear();
-    vks_done4.clear();
-
-    if (mympi->my_rank == 0) {
-
-        if (!restart_flag_3ph) {
-
-            fs_result3 << "##Phonon Frequency" << std::endl;
-            fs_result3 << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
-
-            for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
-                const auto ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
-                for (auto is = 0; is < dynamical->neval; ++is) {
-                    fs_result3 << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                    fs_result3 << std::setw(15)
-                               << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
-                               << std::
-                               endl;
-                }
-            }
-            fs_result3 << "##END Phonon Frequency" << std::endl << std::endl;
-            fs_result3 << "##Phonon Relaxation Time" << std::endl;
-        } else {
-            while (fs_result3 >> line_tmp) {
-
-                if (line_tmp == "#GAMMA_EACH") {
-
-                    fs_result3 >> nk_tmp >> ns_tmp;
-                    fs_result3 >> multiplicity;
-
-                    const auto nks_tmp = (nk_tmp - 1) * ns + ns_tmp - 1;
-
-                    for (i = 0; i < multiplicity; ++i) {
-                        fs_result3 >> vel_dummy[0] >> vel_dummy[1] >> vel_dummy[2];
-                    }
-
-                    for (i = 0; i < ntemp; ++i) {
-                        fs_result3 >> damping3[nks_tmp][i];
-                        damping3[nks_tmp][i] *= time_ry / Hz_to_kayser;
-                    }
-                    vks_done.push_back(nks_tmp);
-                }
-            }
-        }
-
-        fs_result3.close();
-        fs_result3.open(file_result3.c_str(), std::ios::app | std::ios::out);
-
-        if (fph_rta > 0) {
-            if (!restart_flag_4ph) {
-                fs_result4 << "##Phonon Frequency" << std::endl;
-                fs_result4 << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
-
-                for (i = 0; i < kmesh_4ph->nk_irred; ++i) {
-                    const int ik = kmesh_4ph->kpoint_irred_all[i][0].knum;
-                    for (auto is = 0; is < dynamical->neval; ++is) {
-                        fs_result4 << std::setw(6) << i + 1 << std::setw(6) << is + 1;
-                        fs_result4 << std::setw(15)
-                                   << writes->in_kayser(dymat_4ph->get_eigenvalues()[ik][is]) << std::
-                                   endl;
-                    }
-                }
-
-                fs_result4 << "##END Phonon Frequency" << std::endl << std::endl;
-                fs_result4 << "##Phonon Relaxation Time" << std::endl;
-            } else {
-                while (fs_result4 >> line_tmp) {
-
-                    if (line_tmp == "#GAMMA_EACH") {
-
-                        fs_result4 >> nk_tmp >> ns_tmp;
-                        fs_result4 >> multiplicity;
-
-                        const auto nks_tmp = (nk_tmp - 1) * ns + ns_tmp - 1;
-
-                        for (i = 0; i < multiplicity; ++i) {
-                            fs_result4 >> vel_dummy[0] >> vel_dummy[1] >> vel_dummy[2];
-                        }
-
-                        for (i = 0; i < ntemp; ++i) {
-                            fs_result4 >> damping4[nks_tmp][i];
-                            damping4[nks_tmp][i] *= time_ry / Hz_to_kayser;
-                        }
-                        vks_done4.push_back(nks_tmp);
-                    }
-                }
-            }
-            fs_result4.close();
-            fs_result4.open(file_result4.c_str(), std::ios::app | std::ios::out);
-        }
-    }
-
-    // Add vks_done, nshift_restart
-    if (mympi->my_rank == 0) {
-        nks_done = vks_done.size();
-    }
-    MPI_Bcast(&nks_done, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    nshift_restart = nks_done;
-
-    if (nks_done > 0) {
-        allocate(arr_done, nks_done);
-
-        if (mympi->my_rank == 0) {
-            for (i = 0; i < nks_done; ++i) {
-                arr_done[i] = vks_done[i];
-            }
-        }
-        MPI_Bcast(&arr_done[0], nks_done, MPI_INT, 0, MPI_COMM_WORLD);
-
-        // Remove vks_done elements from vks_job
-
-        for (i = 0; i < nks_done; ++i) {
-
-            const auto it_set = vks_job.find(arr_done[i]);
-
-            if (it_set == vks_job.end()) {
-                std::cout << " rank = " << mympi->my_rank
-                          << " arr_done = " << arr_done[i] << std::endl;
-                exit("prepare_restart", "This cannot happen");
-            } else {
-                vks_job.erase(it_set);
-            }
-        }
-        deallocate(arr_done);
-    }
-    vks_done.clear();
-
-    // vks_done4, nshift_restart4
-    if (fph_rta > 0) {
-        if (mympi->my_rank == 0) {
-            nks_done = vks_done4.size();
-        }
-        MPI_Bcast(&nks_done, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        nshift_restart4 = nks_done;
-
-        if (nks_done > 0) {
-            allocate(arr_done, nks_done);
-
-            if (mympi->my_rank == 0) {
-                for (i = 0; i < nks_done; ++i) {
-                    arr_done[i] = vks_done4[i];
-                }
-            }
-            MPI_Bcast(&arr_done[0], nks_done, MPI_INT, 0, MPI_COMM_WORLD);
-
-            // Remove vks_done elements from vks_job
-
-            for (i = 0; i < nks_done; ++i) {
-
-                const auto it_set = vks_job4.find(arr_done[i]);
-
-                if (it_set == vks_job4.end()) {
-                    std::cout << " rank = " << mympi->my_rank
-                              << " arr_done = " << arr_done[i] << std::endl;
-                    exit("prepare_restart", "This cannot happen");
-                } else {
-                    vks_job4.erase(it_set);
-                }
-            }
-            deallocate(arr_done);
-        }
-        vks_done4.clear();
-    }
-}
-
-
-void Conductivity::prepare_restart(const bool threeph)
-{
-    // similar to set_result_io
-    // Write phonon frequency to result file
-
+    // prepare restart for either 3ph or 4ph
     int i;
     std::string line_tmp;
     unsigned int nk_tmp, ns_tmp;
@@ -524,8 +345,8 @@ void Conductivity::prepare_restart(const bool threeph)
     int nks_done = 0, *arr_done;
     double vel_dummy[3];
 
-    if (threeph) {
-
+    if (mode == 1) {
+        // 3ph
         nshift_restart = 0;
         vks_done.clear();
         if (mympi->my_rank == 0) {
@@ -573,7 +394,6 @@ void Conductivity::prepare_restart(const bool threeph)
             fs_result3.open(file_result3.c_str(), std::ios::app | std::ios::out);
         }
 
-        // Add vks_done, nshift_restart
         if (mympi->my_rank == 0) {
             nks_done = vks_done.size();
         }
@@ -608,8 +428,8 @@ void Conductivity::prepare_restart(const bool threeph)
         }
         vks_done.clear();
 
-    } else {
-
+    } else if (mode == -1) {
+        // 4ph
         nshift_restart4 = 0;
         vks_done4.clear();
         if (mympi->my_rank == 0) {
@@ -688,28 +508,20 @@ void Conductivity::prepare_restart(const bool threeph)
             deallocate(arr_done);
         }
         vks_done4.clear();
+    } else {
+         exit("prepare_restart", "this could not happen");
     }
 
 }
 
 
-void Conductivity::setup_result_io(const bool threeph)
+void Conductivity::setup_result_io(const int mode)
 {
-    // I introduced a flag to control checking 3ph or 4ph
-    // threeph == True : only 3ph restart will be treated
-    //         == False  only 4ph restart will be treated
-    // this function opens the result file in the following way:
-    // if restart
-    //    fph_rta >= 0: open file_result3 -> fs_result3
-    //    fph_rta  = 1: open file_result4 -> fs_result4
-    // else
-    //    fph_rta >= 0: open file_result3 -> fs_result3 -> write header part
-    //    fph_rta  = 1: open file_result4 -> fs_result4 -> write header part
-
+    // check consistency or write header for result, for either 3ph or 4ph calculation
     if (mympi->my_rank == 0) {
 
-        if (threeph) {
-
+        if (mode == 1) {
+            // 3ph
             if (conductivity->restart_flag_3ph) {
 
                 std::cout << " RESTART = 1 : Restart from the interrupted run." << std::endl;
@@ -746,7 +558,7 @@ void Conductivity::setup_result_io(const bool threeph)
                                     system->dT,
                                     fcs_phonon->file_fcs);
             }
-        } else {
+        } else if (mode == -1) {
 
             if (conductivity->restart_flag_4ph) {
 
@@ -784,7 +596,10 @@ void Conductivity::setup_result_io(const bool threeph)
                                     system->dT,
                                     fcs_phonon->file_fcs);
             }
+        } else {
+            exit("set_up_result_io", "this could not happen");
         }
+
     }
 }
 
@@ -896,6 +711,7 @@ void Conductivity::calc_anharmonic_imagself3()
 
 }
 
+
 void Conductivity::calc_anharmonic_imagself4()
 {
     unsigned int i;
@@ -999,16 +815,13 @@ void Conductivity::calc_anharmonic_imagself4()
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart4, vel_4ph, damping4, -1);
 
-//            for (auto j = 0; j < ntemp; ++j) {
-//                std::cout << std::scientific << std::setprecision(15)
-//                << damping4[nshift_restart4 + i * mympi->nprocs][j] << std::endl;
-//            }
             std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
         }
 
     }
     deallocate(damping4_loc);
 }
+
 
 void Conductivity::calc_anharmonic_imagself()
 {
@@ -1017,6 +830,7 @@ void Conductivity::calc_anharmonic_imagself()
         calc_anharmonic_imagself4();
     }
 }
+
 
 void Conductivity::write_result_gamma(const unsigned int ik,
                                       const unsigned int nshift,
@@ -1054,6 +868,7 @@ void Conductivity::write_result_gamma(const unsigned int ik,
             }
             fs_result3 << "#END GAMMA_EACH" << std::endl;
         }
+
     } else if (mode == -1) {
         // damping 4
         for (unsigned int j = 0; j < np; ++j) {

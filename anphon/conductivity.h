@@ -21,6 +21,9 @@
 
 namespace PHON_NS {
 class Conductivity : protected Pointers {
+
+ friend class Iterativebte;
+ 
  public:
     Conductivity(class PHON *);
 
@@ -31,8 +34,6 @@ class Conductivity : protected Pointers {
     // void prepare_restart();
 
     void calc_anharmonic_imagself();
-    void calc_anharmonic_imagself4();
-    void setup_kappa_4ph();
 
     void compute_kappa();
 
@@ -50,9 +51,6 @@ class Conductivity : protected Pointers {
 
     int fph_rta;
     double len_boundary;
-
-    KpointMeshUniform *kmesh_4ph = nullptr;
-    std::string interpolator{};
 
     void set_kmesh_coarse(const unsigned int nk_in[3]);
     KpointMeshUniform *get_kmesh_coarse() const;
@@ -83,7 +81,7 @@ class Conductivity : protected Pointers {
     std::string file_coherent_elems;
 
     unsigned int nk_coarse[3] = {};
-    //KpointMeshUniform *kmesh_4ph = nullptr;
+    KpointMeshUniform *kmesh_4ph = nullptr;
     DymatEigenValue *dymat_4ph = nullptr;
     PhaseFactorStorage *phase_storage_4ph = nullptr;
 
@@ -92,12 +90,11 @@ class Conductivity : protected Pointers {
     bool restart_flag_3ph;
     bool restart_flag_4ph;
 
-    //std::string interpolator{};
+    std::string interpolator{};
 
-    void setup_result_io(const bool);
+    void setup_result_io(const int mode);
 
-    void prepare_restart();
-    void prepare_restart(const bool);
+    void prepare_restart(const int mode);
 
     void check_consistency_restart(std::fstream &fs_result,
                                    const std::string &file_result_in,
@@ -128,7 +125,8 @@ class Conductivity : protected Pointers {
                              const std::string &file_fcs_in);
 
     void calc_anharmonic_imagself3();
-    //void calc_anharmonic_imagself4();
+    void calc_anharmonic_imagself4();
+    void setup_kappa_4ph();
 
     void lifetime_from_gamma(double **&, double **&);
 

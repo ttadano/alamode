@@ -614,18 +614,35 @@ void Iterativebte::calc_Q_from_L(double **&n, double **&q1)
 
 void Iterativebte::calc_damping4() 
 {
-    // TODO: I should call conductivity to calculate damping 4
-    //       instead of rewrite the code here again
+    // call conductivity to do the 4ph part
     conductivity->fph_rta = 1;
 
-    conductivity->setup_kappa();
+    conductivity->setup_kappa_4ph();
     conductivity->calc_anharmonic_imagself4();
-
-    // interpolate data
 
     double ***damping4_ir = nullptr;
     allocate(damping4_ir, ntemp, dos->kmesh_dos->nk_irred ,ns);
 
+    if (mympi->my_rank == 0) {
+
+        double **damping4_dense = nullptr;
+        allocate(damping4_dense, dos->kmesh_dos->nk_irred * ns, ntemp);
+
+        conductivity->interpolate_data( conductivity->kmesh_4ph, dos->kmesh_dos, 
+                                        conductivity->damping4, damping4_dense);
+
+        for (auto itemp = 0; itemp < ntemp; ++itemp) {
+            for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
+                for (auto is = 0; is < ns; ++is) {
+                    damping4_ir[itemp][ik][is] = damping4_dense[ik * ns + is][itemp];
+                }
+            }
+        }
+
+        deallocate(damping4_dense);
+    }
+            
+    /*
     if (mympi->my_rank == 0) {
 
         double ***damping4_coarse = nullptr;
@@ -703,6 +720,7 @@ void Iterativebte::calc_damping4()
         deallocate(damping4_interpolated);
         delete interpol;
     }
+    */
 
     MPI_Bcast(&damping4_ir[0][0][0], ntemp * dos->kmesh_dos->nk_irred * ns, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
