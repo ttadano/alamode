@@ -161,6 +161,9 @@ private:
     //                             double &mixing_beta, 
     //                             double &dq0_threashold);
 
+    void read_cell_opt_input(double &,
+                             double &);
+
     void calculate_u0(double *, double *);
 
     // void print_force(std::complex<double> *);

@@ -1522,6 +1522,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // double alpha_steepest_decent = 1.0e4;
     // double mixing_beta = 0.4;
     double dq0_threashold = str_conv_tol;
+    
+    // cell optimization
+    double du_threshold = 1.0e-6;
+    double mixing_beta_cell = 0.3;
+    double du_tensor;
+    double *delta_u_tensor;
+    MatrixXcd C2_mat_tmp(6,6);
+    VectorXcd du_tensor_vec(6), del_v0_strain_vec(6);
+
+    int itmp1, itmp2, itmp3, itmp4, itmp5, itmp6;
 
     // coordinate
     double *q0, *delta_q0, *u0;
@@ -1551,6 +1561,10 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     //     }
     //     std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
     // }
+
+    if(mympi->my_rank == 0){
+        read_cell_opt_input(du_threshold, mixing_beta_cell);
+    }
 
     // debug 
     if(mympi->my_rank == 0){
@@ -1598,6 +1612,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     allocate(u_tensor, 3, 3);
     allocate(eta_tensor, 3, 3);
+
+    allocate(delta_u_tensor, 6);
 
     allocate(v4_array_original, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
@@ -1755,6 +1771,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         std::ofstream fout_v0;
         fout_v0.open("v0.txt");
 
+        // cell optimization
+        std::ofstream fout_u_tensor_tmp;
+        fout_u_tensor_tmp.open("u_tensor_tmp.txt");
+        std::ofstream fout_u_tensor;
+        fout_u_tensor.open("u_tensor.txt");
+
         i_temp_loop = -1;
 
         for (double temp : vec_temp) {
@@ -1799,6 +1821,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 if(i_temp_loop == 0){
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
+                    read_initial_strain(u_tensor);
+                }
+                if(u0[5] < 0.001){ // herehere
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                    converged_prev = false;
                 }
             }
             else if(set_init_str == 3){
@@ -1816,6 +1844,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             fout_q0_tmp << "temperature : " << temp << " K" << std::endl;
             fout_u0_tmp << "temperature : " << temp << " K" << std::endl;
             fout_force << "temperature : " << temp << " K" << std::endl;
+
+            fout_u_tensor_tmp << "temperature : " << temp << " K" << std::endl;
 
             std::cout << "initial q0 : " << std::endl;
             for(is = 0; is < ns; is++){
@@ -1936,7 +1966,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
 
                 // set v4_array_renormalized as zero (temporary)
-                for(ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++){
+/*                for(ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++){
                     for(is1 = 0; is1 < ns*ns; is1++){
                         for(is2 = 0; is2 < ns*ns; is2++){
                             v4_array_renormalized[ik][is1][is2] = 0.0;
@@ -1944,8 +1974,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     }
                 }
 
-                // solve SCP equation
-/*                compute_anharmonic_frequency(v4_array_renormalized,
+*/                // solve SCP equation
+                compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -1954,12 +1984,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
-*/
-                compute_renormalized_harmonic_frequency(omega2_anharm[iT],
+
+/*                compute_renormalized_harmonic_frequency(omega2_anharm[iT],
                                         evec_anharm_tmp,
                                         delta_v2_array_renormalize,
                                         writes->getVerbosity());
-
+*/
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
                                         evec_anharm_tmp);
@@ -1978,6 +2008,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             cmat_convert, 
                                             omega2_anharm[iT], 
                                             temp);
+
+                std::cout << "del_v0_strain_anharmonic" << std::endl;
+                for(is1 = 0; is1 < 3; is1++){
+                    for(is2 = 0; is2 < 3; is2++){
+                        std::cout << del_v0_strain_SCP[is1*3+is2] - del_v0_strain_with_strain_displace[is1*3+is2] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
 
 
                 // check force
@@ -2044,6 +2081,54 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
                     }
 
+                    // prepare matrix of elastic constants and vector of del_v0_strain_SCP
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                            del_v0_strain_vec(itmp1) = del_v0_strain_SCP[itmp1*3+itmp1];
+
+                            itmp2 = (itmp1+1)%3;
+                            itmp3 = (itmp1+2)%3;
+                            del_v0_strain_vec(itmp1+3) = del_v0_strain_SCP[itmp2*3+itmp3];
+                    }
+
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                        for(itmp2 = 0; itmp2 < 3; itmp2++){
+                            C2_mat_tmp(itmp1, itmp2) = C2_array[itmp1*3+itmp1][itmp2*3+itmp2];
+                        }
+                    }
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                        for(itmp2 = 0; itmp2 < 3; itmp2++){
+                            itmp3 = (itmp2+1)%3;
+                            itmp4 = (itmp2+2)%3;
+                            C2_mat_tmp(itmp1, itmp2+3) = 2.0 * C2_array[itmp1*3+itmp1][itmp3*3+itmp4];
+                            C2_mat_tmp(itmp2+3, itmp1) = C2_array[itmp3*3+itmp4][itmp1*3+itmp1];
+                        }
+                    }
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                        for(itmp2 = 0; itmp2 < 3; itmp2++){
+                            itmp3 = (itmp1+1)%3;
+                            itmp4 = (itmp1+2)%3;
+                            itmp5 = (itmp2+1)%3;
+                            itmp6 = (itmp2+2)%3;
+                            C2_mat_tmp(itmp1+3, itmp2+3) = 2.0 * C2_array[itmp3*3+itmp4][itmp5*3+itmp6];
+                        }
+                    }
+
+                    // solve linear equation
+                    du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
+
+                    // update u tensor
+                    for(is = 0; is < 6; is++){
+                        delta_u_tensor[is] = - mixing_beta_cell * du_tensor_vec(is).real();
+                        if(is < 3){
+                            u_tensor[is][is] += delta_u_tensor[is];
+                        }
+                        else{
+                            itmp1 = (is+1)%3;
+                            itmp2 = (is+2)%3;
+                            u_tensor[itmp1][itmp2] += delta_u_tensor[is];
+                            u_tensor[itmp2][itmp1] += delta_u_tensor[is];
+                        }
+                    }
                 }
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_SCP, force_array);
@@ -2065,13 +2150,27 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     fout_u0_tmp << u0[is] << " ";
                 }fout_u0_tmp << std::endl;
 
+                fout_u_tensor_tmp << i_str_loop << " ";
+                for(is = 0; is < 9; is++){
+                    fout_u_tensor_tmp << u_tensor[is/3][is%3] << " ";
+                }fout_u_tensor_tmp << std::endl;
+
+
                 // check convergence
                 dq0 = 0.0;
                 for(is = 0; is < ns; is++){
                     dq0 += delta_q0[is] * delta_q0[is];
                 }dq0 = std::sqrt(dq0);
 
-                if(dq0 < dq0_threashold){
+                du_tensor = 0.0;
+                for(is = 0; is < 6; is++){
+                    du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
+                    if(is >= 3){
+                        du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
+                    }
+                }du_tensor = std::sqrt(du_tensor);
+
+                if(dq0 < dq0_threashold && du_tensor < du_threshold){
                     std::cout << "structure optimization converged in " << i_str_loop << "-th loop." << std::endl;
                     std::cout << "break from the structure loop." << std::endl;
                     break;
@@ -2090,6 +2189,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             for(is = 0; is < ns; is++){
                 fout_u0 << u0[is] << " ";
             }fout_u0 << std::endl;
+
+            fout_u_tensor << temp << " ";
+            for(is = 0; is < 9; is++){
+                fout_u_tensor << u_tensor[is/3][is%3] << " ";
+            }fout_u_tensor << std::endl;
 
             fout_v0 << temp << " " << v0_renormalized << std::endl;
 
@@ -2177,6 +2281,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     deallocate(u_tensor);
     deallocate(eta_tensor);
+
+    deallocate(delta_u_tensor);
 }
 
 void Scph::read_elastic_constants(double **C2_array, 
@@ -2430,6 +2536,35 @@ void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
 // 
 //     return;
 // }
+
+void Scph::read_cell_opt_input(double &du_threshold,
+                               double &mixing_beta_cell)
+{
+    // herehere
+
+    std::fstream fin_cell_opt;
+    std::string str_tmp;
+    fin_str_opt.open("cell_opt.in");
+
+    if(!fin_cell_opt){
+        std::cout << "Warning in Scph::read_cell_opt_input: cell_opt.in could not open." << std::endl;
+        return ;
+    }
+
+    double dtmp;
+    
+    fin_cell_opt >> dtmp;// >> str_tmp;
+    du_threshold = dtmp;
+    std::cout << "dtmp = " << dtmp << std::endl; // debug
+
+    fin_cell_opt >> dtmp;// >> str_tmp;
+    mixing_beta_cell = dtmp;
+    std::cout << "dtmp = " << dtmp << std::endl; // debug
+
+    fin_cell_opt.close();
+
+    return;
+}
 
 void Scph::calculate_u0(double *q0, double *u0){
     int natmin = system->natmin;
