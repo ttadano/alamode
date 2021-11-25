@@ -1492,6 +1492,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     v0_original = 0.0; // set original ground state energy as zero
 
     // elastic constants
+    double *C1_array;
     double **C2_array;
     double ***C3_array;
 
@@ -1710,6 +1711,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     //     }
     // }
 
+    allocate(C1_array, 9);
     allocate(C2_array, 9, 9);
     allocate(C3_array, 9, 9, 9);
 
@@ -1751,7 +1753,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         auto converged_prev = false;
 
         // read elastic constants
+        read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
+
+        for(is = 0; is < 9; is++){
+            for(is1 = 0; is1 < 9; is1++){
+                for(is2 = 0; is2 < 9; is2++){
+                    C3_array[is][is1][is2] = 0.0;
+                }
+            }
+        }
 
         // this is for test
         std::ofstream fout_q0_tmp;
@@ -1823,11 +1834,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     calculate_u0(q0, u0);
                     read_initial_strain(u_tensor);
                 }
-                if(u0[5] < 0.001){ // herehere
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    converged_prev = false;
-                }
+                // if(u0[5] < 0.01){ // herehere
+                //     read_initial_q0(q0);
+                //     calculate_u0(q0, u0);
+                //     converged_prev = false;
+                // }
             }
             else if(set_init_str == 3){
                 // read T-dependent initial structure from u0.in
@@ -1870,6 +1881,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 // get eta tensor
                 calculate_eta_tensor(eta_tensor, u_tensor);
 
+                std::cout << "u tensor" << std::endl;
+                for(is = 0; is < 3; is++){
+                    for(is1 = 0; is1 < 3; is1++){
+                        std::cout << u_tensor[is][is1] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+
                 std::cout << "eta tensor" << std::endl;
                 for(is = 0; is < 3; is++){
                     for(is1 = 0; is1 < 3; is1++){
@@ -1878,7 +1896,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }std::cout << std::endl;
 
                 // calculate IFCs under strain
-                renormalize_v0_from_strain(v0_with_strain, v0_original, eta_tensor, C2_array, C3_array);
+                renormalize_v0_from_strain(v0_with_strain, v0_original, eta_tensor, C1_array, C2_array, C3_array);
                 
                 std::cout << "v0 with strain = " << v0_with_strain << std::endl;
 
@@ -1899,6 +1917,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 renormalize_v2_array_from_strain(delta_v2_array_with_strain, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
                 renormalize_v3_array_from_strain(v3_array_with_strain, v3_array_original, del_v3_strain_from_quartic, u_tensor);
+
+                // debug
+                if(i_str_loop == 0){
+                    std::cout << "delta_v2_array_with_strain[ik = 0]: " << std::endl;
+                    for(is = 0; is < ns; is++){
+                        for(is1 = 0; is1 < ns; is1++){
+                            std::cout << delta_v2_array_with_strain[0][is*ns+is1] << " ";
+                        }std::cout << std::endl;
+                    }std::cout << std::endl;
+                }
                 
                 for(ik = 0; ik < nk_irred_interpolate * nk; ik++){
                     for(is = 0; is < ns*ns; is++){
@@ -1931,6 +1959,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 // calculate PES gradient by strain
                 calculate_del_v0_strain_with_strain_displace(del_v0_strain_with_strain_displace, 
+                                                             C1_array,
                                                              C2_array,
                                                              C3_array,
                                                              eta_tensor,
@@ -2016,6 +2045,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     }std::cout << std::endl;
                 }std::cout << std::endl;
 
+                calculate_force_in_real_space(v1_array_SCP, force_array);
+                std::cout << "SCP force" << std::endl; // herehere
+                for(is = 0; is < ns; is++){
+                    std::cout << force_array[is] << " ";
+                }std::cout << std::endl;
+
 
                 // check force
                 dFdq_q = 0.0;
@@ -2078,6 +2113,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     dq0 = 0.0;
                     for(is = 0; is < ns-3; is++){
                         delta_q0[harm_optical_modes[is]] = - mixing_beta * dq0_vec(is).real();
+                        // delta_q0[harm_optical_modes[is]] = 0.0;
                         q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
                     }
 
@@ -2113,8 +2149,26 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         }
                     }
 
+                    std::cout << "relax cell: " << std::endl;
+                    std::cout << "C2_mat_tmp: " << std::endl;
+                    for(itmp1 = 0; itmp1 < 6; itmp1++){
+                        for(itmp2 = 0; itmp2 < 6; itmp2++){
+                            std::cout << C2_mat_tmp(itmp1, itmp2) << " ";
+                        }std::cout << std::endl;
+                    }std::cout << std::endl;
+
+                    std::cout << "del_v0_strain_vec: " << std::endl;
+                    for(itmp1 = 0; itmp1 < 6; itmp1++){
+                            std::cout << del_v0_strain_vec(itmp1)*1.0 << " ";
+                    }std::cout << std::endl;
+
                     // solve linear equation
                     du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
+
+                    std::cout << "du_tensor_vec: " << std::endl;
+                    for(itmp1 = 0; itmp1 < 6; itmp1++){
+                            std::cout << du_tensor_vec(itmp1)*1.0 << " ";
+                    }std::cout << std::endl;
 
                     // update u tensor
                     for(is = 0; is < 6; is++){
@@ -2271,6 +2325,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(del_v0_strain_with_strain_displace);
     deallocate(del_v0_strain_SCP);
 
+    deallocate(C1_array);
     deallocate(C2_array);
     deallocate(C3_array);
 
@@ -2283,6 +2338,39 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(eta_tensor);
 
     deallocate(delta_u_tensor);
+}
+
+void Scph::read_C1_array(double *C1_array)
+{
+    std::fstream fin_C1_array;
+    std::string str_tmp;
+    int natmin = system->natmin;
+    int i1, i2, i3;
+
+    // initialize elastic constants
+    for(i1 = 0; i1 < 9; i1++){
+        C1_array[i1] = 0.0;
+    }
+
+    fin_C1_array.open("C1_array.in");
+
+    if(!fin_C1_array){
+        std::cout << "Warning in Scph::read_C1_array: file C1_array.in could not open." << std::endl;
+        std::cout << "all elastic constants are set 0." << std::endl;
+        return ;
+    }
+
+    fin_C1_array >> str_tmp;
+    for(i1 = 0; i1 < 9; i1++){
+        fin_C1_array >> C1_array[i1];
+    }
+
+    std::cout << "C1_array: " << std::endl;
+    for(i1 = 0; i1 < 9; i1++){
+        std::cout << C1_array[i1] << " ";
+    }std::cout << std::endl;
+
+    return ;
 }
 
 void Scph::read_elastic_constants(double **C2_array, 
@@ -2544,7 +2632,7 @@ void Scph::read_cell_opt_input(double &du_threshold,
 
     std::fstream fin_cell_opt;
     std::string str_tmp;
-    fin_str_opt.open("cell_opt.in");
+    fin_cell_opt.open("cell_opt.in");
 
     if(!fin_cell_opt){
         std::cout << "Warning in Scph::read_cell_opt_input: cell_opt.in could not open." << std::endl;
@@ -4702,6 +4790,7 @@ FcsClassExtent Scph::from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithC
 }
 
 void Scph::calculate_del_v0_strain_with_strain_displace(std::complex<double> *del_v0_strain_with_strain_displace, 
+                                               double *C1_array,
                                                double **C2_array,
                                                double ***C3_array,
                                                double **eta_tensor,
@@ -4764,7 +4853,7 @@ void Scph::calculate_del_v0_strain_with_strain_displace(std::complex<double> *de
     }
 
     // debug
-    std::cout << "del_eta_del_u: " << std::endl;
+/*    std::cout << "del_eta_del_u: " << std::endl;
     for(i1 = 0; i1 < 9; i1++){
         for(i2 = 0; i2 < 3; i2++){
             for(i3 = 0; i3 < 3; i3++){
@@ -4772,10 +4861,11 @@ void Scph::calculate_del_v0_strain_with_strain_displace(std::complex<double> *de
             }std::cout << std::endl;
         }std::cout << std::endl;
     }std::cout << std::endl;
-
+*/
     // calculate del_v0_del_eta
     for(i1 = 0; i1 < 9; i1++){
-        del_v0_del_eta[i1] = 0.0;
+        // del_v0_del_eta[i1] = 0.0;
+        del_v0_del_eta[i1] = C1_array[i1];
         for(i2 = 0; i2 < 9; i2++){
             del_v0_del_eta[i1] += C2_array[i1][i2] * eta_tensor[i2/3][i2%3];
             for(i3 = 0; i3 < 9; i3++){
@@ -4871,14 +4961,24 @@ void Scph::renormalize_v1_array(std::complex<double> *v1_array_renormalized,
     double factor2 = 1.0/6.0 * 4.0 * kmesh_dense->nk;
     
     // renormalize v1 array
+    std::cout << "renormalize_v1_array: " << std::endl;
     for(is = 0; is < ns; is++){
+
+        std::cout << "is = " << is << std::endl;
         v1_array_renormalized[is] = v1_array_original[is];
+
+        std::cout << "v1_array_original " << v1_array_renormalized[is];
 
         v1_array_renormalized[is] += omega2_harmonic[0][is] * q0[is]; // original v2 is assumed to be diagonal
 
+        std::cout << "original harmonic " << v1_array_renormalized[is] << std::endl;
+
         for(is1 = 0; is1 < ns; is1++){
-            v1_array_original[is] += delta_v2_array_original[0][is*ns+is1] * q0[is1];
+            v1_array_renormalized[is] += delta_v2_array_original[0][is*ns+is1] * q0[is1];
+            std::cout << "is1 = " << is1 << " " << delta_v2_array_original[0][is*ns+is1] * q0[is1] << std::endl;
         }
+
+        std::cout << "all harmonic " << v1_array_renormalized[is] << std::endl;
 
         for(is1 = 0; is1 < ns; is1++){
             for(is2 = 0; is2 < ns; is2++){
@@ -5098,6 +5198,7 @@ void Scph::calculate_eta_tensor(double **eta_tensor,
 void Scph::renormalize_v0_from_strain(double &v0_with_strain, 
                                       double v0_original, 
                                       double **eta_tensor, 
+                                      double *C1_array,
                                       double **C2_array, 
                                       double ***C3_array)
 {
@@ -5110,6 +5211,7 @@ void Scph::renormalize_v0_from_strain(double &v0_with_strain,
 
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            v0_with_strain += C1_array[ixyz1*3+ixyz2] * eta_tensor[ixyz1][ixyz2];
             for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
                 for(ixyz4 = 0; ixyz4 < 3; ixyz4++){
                     v0_with_strain += factor1 * C2_array[ixyz1*3+ixyz2][ixyz3*3+ixyz4] * eta_tensor[ixyz1][ixyz2] * eta_tensor[ixyz3][ixyz4];
@@ -5414,6 +5516,9 @@ void Scph::compute_anharmonic_del_v0_strain(std::complex<double> *del_v0_strain_
                     Qtmp = 0.0;
                 }
                 else{
+                    if(omega2_anharm_T[ik][js] < 0.0){
+                        std::cout << "Warning in compute_anharmonic_del_v0_strain: squared SCP frequency is negative. ik = " << ik << std::endl;
+                    }
                     n1 = thermodynamics->fB(omega1_tmp, T_in);
                     Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
                 }

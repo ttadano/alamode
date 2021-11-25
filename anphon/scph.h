@@ -146,6 +146,8 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
+    void read_C1_array(double *);
+
     void read_elastic_constants(double **, 
                                   double ***);
 
@@ -239,6 +241,7 @@ private:
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
 
     void calculate_del_v0_strain_with_strain_displace(std::complex<double> *, 
+                                               double *,
                                                double **,
                                                double ***,
                                                double **,
@@ -257,6 +260,7 @@ private:
     void renormalize_v0_from_strain(double &, 
                                     double , 
                                     double **, 
+                                    double *,
                                     double **, 
                                     double ***);
 
