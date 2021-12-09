@@ -829,13 +829,15 @@ void Dynamical::diagonalize_dynamical_all()
         if (!projection_directions.empty()) {
             if (mympi->my_rank == 0) {
 
-                for (auto ik = 0; ik < nk; ++ik) {
+                // for (auto ik = 0; ik < nk; ++ik) {
+                    int ik = 0;
+                    std::cout << "project eigenvectors of Gamma point." << std::endl;
                     project_degenerate_eigenvectors(system->lavec_p,
                                                     fcs_phonon->fc2_ext,
                                                     kpoint->kpoint_general->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
-                }
+                // }
             }
 
             MPI_Bcast(&evec_tmp[0][0][0],
@@ -912,13 +914,15 @@ void Dynamical::diagonalize_dynamical_all()
 
         if (!projection_directions.empty()) {
             if (mympi->my_rank == 0) {
-                for (auto ik = 0; ik < nk; ++ik) {
+                // for (auto ik = 0; ik < nk; ++ik) {
+                    int ik = 0;
+                    std::cout << "project eigenvectors of Gamma point." << std::endl;
                     project_degenerate_eigenvectors(system->lavec_p,
                                                     fcs_phonon->fc2_ext,
                                                     dos->kmesh_dos->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
-                }
+                // }
             }
 
             MPI_Bcast(&evec_tmp[0][0][0],

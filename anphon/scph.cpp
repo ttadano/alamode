@@ -1467,7 +1467,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     using namespace Eigen;
 
     int ik, is, js;
-    int ik1, is1, is2;
+    int ik1, is1, is2, is3, is4;
+    int i1, i2;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
     const auto nk = kmesh_dense->nk;
@@ -1540,7 +1541,49 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     // strain
     double **u_tensor, **eta_tensor;
-    
+
+    // strain-mode coupling(temporary)
+    std::vector<std::vector<double>> B_array(9, std::vector<double>(ns*ns, 0.0));
+    // set coupling constant manually
+    B_array[0][0] = 9.81200176190E-05; // xx,xx
+    B_array[4][1*ns+1] = 9.81200176190E-05; // yy,yy
+    B_array[8][2*ns+2] = 9.81200176190E-05; // zz,zz
+
+    B_array[0][1*ns+1] = 1.35473995238E-05; // xx, yy
+    B_array[0][2*ns+2] = 1.35473995238E-05; // xx, zz
+    B_array[4][2*ns+2] = 1.35473995238E-05; // yy, zz
+    B_array[4][0*ns+0] = 1.35473995238E-05; // yy, xx
+    B_array[8][0*ns+0] = 1.35473995238E-05; // zz, xx
+    B_array[8][1*ns+1] = 1.35473995238E-05; // zz, yy
+
+    double delta_omega_tmp21 = -4.280230000E-06;
+    double delta_omega_tmp22 = 3.477880000E-06;
+    //double delta_omega_tmp23 = -3.769700000E-07;
+
+    for(itmp1 = 0; itmp1 < 3; itmp1++){
+        for(itmp2 = 0; itmp2 < 3; itmp2++){
+            if(itmp1 == itmp2){
+                continue;
+            }
+            // B_array[itmp1*3+itmp2][itmp1*ns+itmp1] = 0.5*(delta_omega_tmp21+delta_omega_tmp22);
+            // B_array[itmp1*3+itmp2][itmp2*ns+itmp2] = 0.5*(delta_omega_tmp21+delta_omega_tmp22);
+            itmp3 = 3-itmp1-itmp2;
+            
+
+            if((evec_harmonic[0][itmp1][3+itmp1]*evec_harmonic[0][itmp2][3+itmp2]).real() > 0.0){
+                // if the polarization vector in itmp1 and itmp2 direction have the same sign
+                B_array[itmp1*3+itmp2][itmp1*ns+itmp2] = 0.5*(delta_omega_tmp21-delta_omega_tmp22);
+                B_array[itmp1*3+itmp2][itmp2*ns+itmp1] = 0.5*(delta_omega_tmp21-delta_omega_tmp22);
+            }
+            else{
+                // if the polarization vector in itmp1 and itmp2 direction have the opposite sign
+                B_array[itmp1*3+itmp2][itmp1*ns+itmp2] = -0.5*(delta_omega_tmp21-delta_omega_tmp22);
+                B_array[itmp1*3+itmp2][itmp2*ns+itmp1] = -0.5*(delta_omega_tmp21-delta_omega_tmp22);
+            }
+        }
+    }
+
+
     // check
     std::complex<double> dFdq_q;
 
@@ -1586,6 +1629,19 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         std::cout << "xr_s , xr_s_no_displace: " << std::endl;
         for(is = 0; is < system->nat; is++){
             std::cout << is << " " << system->xr_s[is][0] << " " << system->xr_s[is][1] << " " << system->xr_s[is][2] << " " << system->xr_s_no_displace[is][0] << " " << system->xr_s_no_displace[is][1] << " " << system->xr_s_no_displace[is][2] << std::endl;
+        }
+    }    
+
+    // print harmonic eigenvectors for Gamma point
+    if(mympi->my_rank == 0){
+        
+        std::cout << "harmonic eigenvectors for Gamma point" << std::endl;
+        // herehere
+        for(is = 0; is < ns; is++){
+            std::cout << "is = " << is << std::endl;
+            for(is1 = 0; is1 < ns; is1++){
+                std::cout << evec_harmonic[0][is][is1] << std::endl;
+            }std::cout << std::endl;
         }
     }    
 
@@ -1756,6 +1812,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
 
+        std::cout << "set C3_aray as zero." << std::endl;
         for(is = 0; is < 9; is++){
             for(is1 = 0; is1 < 9; is1++){
                 for(is2 = 0; is2 < 9; is2++){
@@ -1763,6 +1820,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
             }
         }
+        // std::cout << "do not set C3_array as zero." << std::endl;
 
         // this is for test
         std::ofstream fout_q0_tmp;
@@ -1941,6 +1999,25 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 renormalize_v2_array(delta_v2_array_renormalize, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
                 renormalize_v3_array(v3_array_renormalized, v3_array_with_strain, v4_array_with_strain, q0);
                 renormalize_v0(v0_renormalized, v0_with_strain, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
+
+                // add mode-strain coupling (temporary)
+                for(i1 = 0; i1 < 3; i1++){
+                    for(i2 = 0; i2 < 3; i2++){
+                        for(is1 = 0; is1 < ns; is1++){
+                            for(is2 = 0; is2 < ns; is2++)
+                            v0_renormalized += 0.5 * B_array[i1*3+i2][is1*ns+is2] * u_tensor[i1][i2] * q0[is1] * q0[is2];
+                        }
+                    }
+                }
+                // add mode-strain coupling (temporary)
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns; is2++){
+                        for(i1 = 0; i1 < 9; i1++){
+                            v1_array_renormalized[is1] += B_array[i1][is1*ns+is2] * u_tensor[i1/3][i1%3] * q0[is2]; 
+                        }
+                    }
+                }
+
                 std::cout << "v0_renormalized: " << std::endl << v0_renormalized << std::endl;
 
                 // renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
@@ -1972,6 +2049,15 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                              del_v3_strain_from_quartic,
                                                              q0);
 
+                // add mode-strain coupling (temporary)
+                for(i1 = 0; i1 < 9; i1++){
+                    for(is1 = 0; is1 < ns; is1++){
+                        for(is2 = 0; is2 < ns; is2++){
+                            del_v0_strain_with_strain_displace[i1] += 0.5 * B_array[i1][is1*ns+is2] * q0[is1] * q0[is2];
+                        }
+                    }
+                }
+
                 std::cout << "del_v0_strain_with_strain_displace" << std::endl;
                 for(is1 = 0; is1 < 3; is1++){
                     for(is2 = 0; is2 < 3; is2++){
@@ -2002,8 +2088,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         }
                     }
                 }
-
-*/                // solve SCP equation
+*/
+                // solve SCP equation
                 compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
@@ -2023,6 +2109,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                         omega2_anharm[iT],
                                         evec_anharm_tmp);
 
+                // print eigenvector
+/*                std::cout << "evec_anharm_tmp[ik = 0]" << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns; is2++){
+                        std::cout << evec_anharm_tmp[0][is1][is2] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+*/
                 // calculate SCP force
                 compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
 
@@ -2173,6 +2267,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     // update u tensor
                     for(is = 0; is < 6; is++){
                         delta_u_tensor[is] = - mixing_beta_cell * du_tensor_vec(is).real();
+                        // delta_u_tensor[is] = 0.0;
                         if(is < 3){
                             u_tensor[is][is] += delta_u_tensor[is];
                         }
@@ -2382,14 +2477,14 @@ void Scph::read_elastic_constants(double **C2_array,
     int i1, i2, i3;
 
     // initialize elastic constants
-    for(i1 = 0; i1 < 9; i1++){
-        for(i2 = 0; i2 < 9; i2++){
-            C2_array[i1][i2] = 0.0;
-            for(i3 = 0; i3 < 9; i3++){
-                C3_array[i1][i2][i3] = 0.0;
-            }
-        }
-    }
+    // for(i1 = 0; i1 < 9; i1++){
+    //     for(i2 = 0; i2 < 9; i2++){
+    //         C2_array[i1][i2] = 0.0;
+    //         for(i3 = 0; i3 < 9; i3++){
+    //             C3_array[i1][i2][i3] = 0.0;
+    //         }
+    //     }
+    // }
 
     fin_elastic_constants.open("elastic_constants.in");
 
@@ -5809,6 +5904,34 @@ void Scph::setup_eigvecs()
                           omega2_harmonic[ik],
                           evec_harmonic[ik], true);
     }
+    // projection for evec at Gamma point
+
+    if (mympi->my_rank == 0) {
+        std::cout << "harmonic eigenvectors for Gamma point(before projection)" << std::endl;
+        for(int is = 0; is < ns; is++){
+            std::cout << "is = " << is << std::endl;
+            for(int is1 = 0; is1 < ns; is1++){
+                std::cout << evec_harmonic[0][is][is1] << std::endl;
+            }std::cout << std::endl;
+        }
+    }
+
+    dynamical->project_degenerate_eigenvectors(system->lavec_p,
+                                            fcs_phonon->fc2_ext,
+                                            kmesh_dense->xk[0],
+                                            dynamical->get_projection_directions(),
+                                            evec_harmonic[0]);
+
+    if (mympi->my_rank == 0) {
+        std::cout << "harmonic eigenvectors for Gamma point(after projection)" << std::endl;
+        for(int is = 0; is < ns; is++){
+            std::cout << "is = " << is << std::endl;
+            for(int is1 = 0; is1 < ns; is1++){
+                std::cout << evec_harmonic[0][is][is1] << std::endl;
+            }std::cout << std::endl;
+        }
+    }
+
 
     if (mympi->my_rank == 0) {
         std::cout << "done !" << std::endl;
