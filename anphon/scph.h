@@ -224,6 +224,11 @@ private:
     void compute_del_v3_strain_from_quartic(std::complex<double> ****,
                                             std::complex<double> ***);
 
+
+    void add_strain_mode_coupling_to_del_v2_strain(std::complex<double> ***,
+                                            std::complex<double> ***,
+                                            std::vector<std::vector<double>> &);
+
     void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
                                                std::vector<FcsArrayWithCell> &,
                                                const int,

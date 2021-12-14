@@ -1636,7 +1636,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     if(mympi->my_rank == 0){
         
         std::cout << "harmonic eigenvectors for Gamma point" << std::endl;
-        // herehere
         for(is = 0; is < ns; is++){
             std::cout << "is = " << is << std::endl;
             for(is1 = 0; is1 < ns; is1++){
@@ -1692,7 +1691,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             selfenergy_offdiagonal,
                                             relax_coordinate);
     }
-  
+
     allocate(v3_array_original, nk, ns, ns * ns);
     allocate(v3_array_renormalized, nk, ns, ns * ns);
     allocate(v3_array_with_strain, nk, ns, ns * ns);
@@ -1739,6 +1738,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl; 
     timer->print_elapsed();
+
+    // add correction from B_array to del_v2_strain_from_cubic
+    add_strain_mode_coupling_to_del_v2_strain(del_v2_strain_from_cubic, evec_harmonic, B_array);
 
     // for lattice relaxation
     allocate(del_v0_strain_with_strain_displace, 9);
@@ -1812,15 +1814,15 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
 
-        std::cout << "set C3_aray as zero." << std::endl;
-        for(is = 0; is < 9; is++){
-            for(is1 = 0; is1 < 9; is1++){
-                for(is2 = 0; is2 < 9; is2++){
-                    C3_array[is][is1][is2] = 0.0;
-                }
-            }
-        }
-        // std::cout << "do not set C3_array as zero." << std::endl;
+        // std::cout << "set C3_aray as zero." << std::endl;
+        // for(is = 0; is < 9; is++){
+        //     for(is1 = 0; is1 < 9; is1++){
+        //         for(is2 = 0; is2 < 9; is2++){
+        //             C3_array[is][is1][is2] = 0.0;
+        //         }
+        //     }
+        // }
+        std::cout << "do not set C3_array as zero." << std::endl;
 
         // this is for test
         std::ofstream fout_q0_tmp;
@@ -2000,6 +2002,17 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 renormalize_v3_array(v3_array_renormalized, v3_array_with_strain, v4_array_with_strain, q0);
                 renormalize_v0(v0_renormalized, v0_with_strain, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
 
+    /*            // add mode-strain coupling (temporary)
+                for(i1 = 0; i1 < 3; i1++){
+                    for(i2 = 0; i2 < 3; i2++){
+                        for(is1 = 0; is1 < ns; is1++){
+                            for(is2 = 0; is2 < ns; is2++){
+                                delta_v2_array_renormalize[0][is1*ns+is2] += B_array[i1*3+i2][is1*ns+is2] * u_tensor[i1][i2];
+                            }
+                        }
+                    }
+                }
+
                 // add mode-strain coupling (temporary)
                 for(i1 = 0; i1 < 3; i1++){
                     for(i2 = 0; i2 < 3; i2++){
@@ -2017,7 +2030,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         }
                     }
                 }
-
+*/
                 std::cout << "v0_renormalized: " << std::endl << v0_renormalized << std::endl;
 
                 // renormalize_v2_array_from_strain(delta_v2_array_renormalize, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
@@ -2049,7 +2062,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                              del_v3_strain_from_quartic,
                                                              q0);
 
-                // add mode-strain coupling (temporary)
+/*                // add mode-strain coupling (temporary)
                 for(i1 = 0; i1 < 9; i1++){
                     for(is1 = 0; is1 < ns; is1++){
                         for(is2 = 0; is2 < ns; is2++){
@@ -2057,7 +2070,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         }
                     }
                 }
-
+*/
                 std::cout << "del_v0_strain_with_strain_displace" << std::endl;
                 for(is1 = 0; is1 < 3; is1++){
                     for(is2 = 0; is2 < 3; is2++){
@@ -2090,7 +2103,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
 */
                 // solve SCP equation
-                compute_anharmonic_frequency(v4_array_renormalized,
+               compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
                                          evec_anharm_tmp,
                                          temp,
@@ -4236,6 +4249,147 @@ void Scph::compute_del_v3_strain_from_quartic(std::complex<double> ****del_v3_st
     
 
     deallocate(invsqrt_mass_p);
+}
+
+
+void Scph::add_strain_mode_coupling_to_del_v2_strain(std::complex<double> ***del_v2_strain_from_cubic,
+                                                    std::complex<double> ***evec_harmonic,
+                                                    std::vector<std::vector<double>> &B_array)
+{
+
+    using namespace Eigen;
+
+    std::cout << "start add_strain_mode_coupling_to_del_v2_strain" << std::endl;
+
+    int ik, jk;
+    int i1;
+    int is, js;
+    const auto nk = kmesh_dense->nk;
+    const auto nk_interpolate = kmesh_coarse->nk;
+    const auto ns = dynamical->neval;
+    unsigned int knum, knum_interpolate;
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
+    const auto nk1 = kmesh_interpolate[0];
+    const auto nk2 = kmesh_interpolate[1];
+    const auto nk3 = kmesh_interpolate[2];
+
+    std::complex<double> ***dymat_q;
+    std::complex<double> ***dymat_new;
+    std::complex<double> **mat_tmp;
+
+    allocate(dymat_q, ns, ns, nk_interpolate);
+    allocate(dymat_new, ns, ns, nk_interpolate);
+    allocate(mat_tmp, ns, ns);
+
+    MatrixXcd dymat_tmp_mode(ns, ns);
+    MatrixXcd dymat_tmp_alphamu(ns, ns);
+    MatrixXcd evec_tmp(ns, ns);
+
+    // debug variable
+    std::complex<double> ***del_v2_strain_from_cubic_correction;
+    allocate(del_v2_strain_from_cubic_correction, 9, nk, ns*ns);
+    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            for(is = 0; is < ns*ns; is++){
+                del_v2_strain_from_cubic_correction[i1][ik][is] = 0.0;
+            }
+        }
+    }
+
+    std::cout << "start calculating correction" << std::endl;
+
+    for(i1 = 0; i1 < 9; i1++){
+        for(is = 0; is < ns; is++){
+            for(js = 0; js < ns; js++){
+                for(ik = 0; ik < nk_interpolate; ik++){
+                    dymat_q[is][js][ik] = 0.0;
+                }
+            }
+        }
+
+        std::cout << "initialize dymat_q is done." << std::endl;
+        // transform B array from mode representation to (alpha, mu) representation
+        for(is = 0; is < ns; is++){
+            for(js = 0; js < ns; js++){
+                evec_tmp(is, js) = evec_harmonic[0][js][is]; // transpose
+                dymat_tmp_mode(is, js) = B_array[i1][is*ns+js];
+            }
+        }
+        dymat_tmp_alphamu = evec_tmp * dymat_tmp_mode * evec_tmp.adjoint();
+
+        std::cout << "transformation of B array is done." << std::endl;
+        
+        // add correction on Gamma point
+        for(is = 0; is < ns; is++){
+            for(js = 0; js < ns; js++){
+                dymat_q[is][js][0] = dymat_tmp_alphamu(is, js);
+            }
+        }
+
+        std::cout << "calculation of dymat_q is done." << std::endl;
+
+        // Fourier transform to real space
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
+                                                    reinterpret_cast<fftw_complex *>(dymat_q[is][js]),
+                                                    reinterpret_cast<fftw_complex *>(dymat_new[is][js]),
+                                                    FFTW_FORWARD, FFTW_ESTIMATE);
+                fftw_execute(plan);
+                fftw_destroy_plan(plan);
+
+                for (ik = 0; ik < nk_interpolate; ++ik)
+                    dymat_new[is][js][ik] /= static_cast<double>(nk_interpolate);
+            }
+        }
+
+        std::cout << "Fourier transformation is done\nstart interpolation" << std::endl;
+
+        // interpolation     
+        for(ik = 0; ik < nk; ik++){
+            r2q(kmesh_dense->xk[ik], nk1, nk2, nk3, ns, dymat_new, mat_tmp);
+
+            std::cout << "r2q is done." << std::endl;
+
+            // transform to mode-representation
+            for(is = 0; is < ns; is++){
+                for(js = 0; js < ns; js++){
+                    evec_tmp(is, js) = evec_harmonic[ik][js][is]; // transpose
+                    dymat_tmp_alphamu(is, js) = mat_tmp[is][js];
+                }
+            }
+            dymat_tmp_mode = evec_tmp.adjoint() * dymat_tmp_alphamu * evec_tmp;
+
+            std::cout << "transformation is done.\nadd correction." << std::endl;
+
+            // add correction 
+            for(is = 0; is < ns; is++){
+                for(js = 0; js < ns; js++){
+                    del_v2_strain_from_cubic[i1][ik][is*ns+js] += dymat_tmp_mode(is, js);
+                    del_v2_strain_from_cubic_correction[i1][ik][is*ns+js] = dymat_tmp_mode(is, js);
+                }
+            }
+            
+        }
+
+        // debug
+        for(ik = 0; ik < nk_interpolate; ik++){
+            knum = kmap_interpolate_to_scph[ik];
+            std::cout << "ik_interpolate = " << ik << ", i1 = " << i1 << std::endl;
+            for(is = 0; is < ns; is++){
+                for(js = 0; js < ns; js++){
+                    std::cout << del_v2_strain_from_cubic_correction[i1][knum][is*ns+js];
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }std::cout << std::endl;
+
+    }
+
+    deallocate(dymat_q);
+    deallocate(dymat_new);
+    // debug variable
+    deallocate(del_v2_strain_from_cubic_correction);
+
 }
 
 void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &fcs_in,
