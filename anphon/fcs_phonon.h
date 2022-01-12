@@ -141,6 +141,9 @@ public:
 
     bool update_fc2;
 
+    void load_fc2_xml_tmp(std::string, 
+                          std::vector<FcsClassExtent> &);
+
 private:
     bool require_cubic;
     bool require_quartic;
@@ -150,6 +153,8 @@ private:
     void deallocate_variables();
 
     void load_fc2_xml();
+
+    
 
     void load_fcs_xml() const;
 

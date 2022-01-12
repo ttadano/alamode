@@ -200,6 +200,55 @@ void Fcs_phonon::load_fc2_xml()
     pt.clear();
 }
 
+// changed load_fc2_xml so that you can read harmonic IFCs from arbitrary file 
+// and write the result to arbitrary array.
+void Fcs_phonon::load_fc2_xml_tmp(std::string xml_filename, std::vector<FcsClassExtent> &fc2_vec)
+{
+    using namespace boost::property_tree;
+
+    unsigned int atm1, atm2, xyz1, xyz2, cell_s;
+    ptree pt;
+    std::stringstream ss1, ss2;
+    FcsClassExtent fcext_tmp;
+
+    try {
+        read_xml(xml_filename, pt);
+    }
+    catch (std::exception &e) {
+        auto str_error = "Cannot open file FC2XML ( " + xml_filename + " )";
+        exit("load_fc2_xml", str_error.c_str());
+    }
+    
+    fc2_vec.clear();
+
+    BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
+                    const auto &child = child_.second;
+                    const auto str_p1 = child.get<std::string>("<xmlattr>.pair1");
+                    const auto str_p2 = child.get<std::string>("<xmlattr>.pair2");
+
+                    ss1.str("");
+                    ss2.str("");
+                    ss1.clear();
+                    ss2.clear();
+
+                    ss1 << str_p1;
+                    ss2 << str_p2;
+
+                    ss1 >> atm1 >> xyz1;
+                    ss2 >> atm2 >> xyz2 >> cell_s;
+
+                    fcext_tmp.atm1 = atm1 - 1;
+                    fcext_tmp.xyz1 = xyz1 - 1;
+                    fcext_tmp.atm2 = atm2 - 1;
+                    fcext_tmp.xyz2 = xyz2 - 1;
+                    fcext_tmp.cell_s = cell_s - 1;
+                    fcext_tmp.fcs_val = boost::lexical_cast<double>(child.data());
+
+                    fc2_vec.push_back(fcext_tmp);
+                }
+    pt.clear();
+}
+
 void Fcs_phonon::load_fcs_xml() const
 {
     using namespace boost::property_tree;

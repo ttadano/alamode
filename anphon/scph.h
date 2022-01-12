@@ -224,6 +224,13 @@ private:
     void compute_del_v3_strain_from_quartic(std::complex<double> ****,
                                             std::complex<double> ***);
 
+    void calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<double> ***,
+                                                                std::complex<double> ***);
+    
+    void make_supercell_mapping_by_symmetry_operations(int **);
+
+    void make_inverse_translation_mapping(int **);
+
 
     void add_strain_mode_coupling_to_del_v2_strain(std::complex<double> ***,
                                             std::complex<double> ***,
