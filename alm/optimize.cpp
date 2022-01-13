@@ -2971,6 +2971,11 @@ void Optimize::coordinate_descent(const int M,
         }
     } else {
         // Non-standardized version. Needs additional operations
+
+        Eigen::VectorXd inv_scale_beta(N);
+
+        for (i = 0; i < N; ++i) inv_scale_beta(i) = 1.0 / scale_beta(i);
+
         while (iloop < optcontrol.maxnum_iteration) {
             do_print_log = !((iloop + 1) % optcontrol.output_frequency) && (verbosity > 1);
 
@@ -2979,10 +2984,11 @@ void Optimize::coordinate_descent(const int M,
             }
             delta = beta;
             for (i = 0; i < N; ++i) {
-                beta(i) = shrink(Minv * grad(i) + beta(i) / scale_beta(i), alphlambda) * scale_beta(i);
+                beta(i) = shrink(Minv * grad(i) + beta(i) * inv_scale_beta(i), alphlambda) * scale_beta(i);
                 delta(i) -= beta(i);
                 if (std::abs(delta(i)) > 0.0) {
                     if (!has_prod[i]) {
+#pragma omp parallel for
                         for (j = 0; j < N; ++j) {
                             Prod(j, i) = A.col(j).dot(A.col(i));
                         }
@@ -2992,7 +2998,13 @@ void Optimize::coordinate_descent(const int M,
                 }
             }
             ++iloop;
-            diff = std::sqrt(delta.dot(delta) / static_cast<double>(N));
+            diff = 0.0;
+#pragma omp parallel for reduction(+:diff)
+            for (i = 0; i < N; ++i) {
+                diff += delta(i) * delta(i);
+            }
+            diff = std::sqrt(diff / static_cast<double>(N));
+            //diff = std::sqrt(delta.dot(delta) / static_cast<double>(N));
 
             if (diff < optcontrol.tolerance_iteration) break;
 
