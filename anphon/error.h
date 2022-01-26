@@ -17,14 +17,14 @@ namespace PHON_NS {
 inline void warn(const char *file,
                  const char *message)
 {
-    std::cout << " WARNING in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << std::endl << " WARNING in " << file << "  MESSAGE: " << message << std::endl;
 }
 
 
 inline void exit(const char *file,
                  const char *message)
 {
-    std::cout << " ERROR in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << std::endl << " ERROR in " << file << "  MESSAGE: " << message << std::endl;
     std::exit(EXIT_FAILURE);
 }
 
@@ -33,7 +33,7 @@ void exit(const char *file,
           const char *message,
           const T info)
 {
-    std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::cout << std::endl << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);
 }
 
@@ -41,7 +41,7 @@ inline void exit(const char *file,
                  const char *message,
                  const char *info)
 {
-    std::cout << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::cout << std::endl << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
     std::exit(EXIT_FAILURE);
 }
 
@@ -49,7 +49,7 @@ inline void exitall(const char *file,
                     const char *message)
 {
     MPI_Finalize();
-    std::cout << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << std::endl << "ERROR in " << file << "  MESSAGE: " << message << std::endl;
     std::exit(EXIT_FAILURE);
 }
 }
