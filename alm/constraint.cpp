@@ -897,7 +897,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             continue;
         }
 
-        if (mirror_image_conv > 0 || order == 0) {
+        if (mirror_image_conv == 0 || order == 0) {
             get_constraint_translation(supercell,
                                        symmetry,
                                        cluster,
@@ -1058,7 +1058,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
             data_vec.clear();
             // Generate data_vec that contains possible interacting clusters.
             // Each cluster contains (order + 1) atoms, and the last atom index
-            // will be treated seperately below.
+            // will be treated separately below.
             CombinationWithRepetition<int> g2(intlist.begin(), intlist.end(), order);
             do {
                 data = g2.now();
