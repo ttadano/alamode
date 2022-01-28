@@ -43,7 +43,7 @@ Improvement:
 
 namespace PHON_NS {
 class Iterativebte : protected Pointers {
- public:
+public:
     Iterativebte(class PHON *);
 
     ~Iterativebte();
@@ -68,7 +68,7 @@ class Iterativebte : protected Pointers {
 
     std::fstream fs_result;
 
- private:
+private:
 
     void set_default_variables();
 
@@ -108,7 +108,9 @@ class Iterativebte : protected Pointers {
     void get_triplets();        // set up all triplets
 
     void setup_L();
+
     void setup_L_smear();
+
     void setup_L_tetra();
 
     void calc_Q_from_L(double **&, double **&);  // calculate Q
@@ -127,6 +129,7 @@ class Iterativebte : protected Pointers {
 
     //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
     void write_result();
+
     void write_Q_dF(int, double **&, double ***&);
 };
 }

@@ -80,16 +80,18 @@ private:
 };
 
 class AdaptiveSmearingSigma {
- public:
-    AdaptiveSmearingSigma(){};
+public:
+    AdaptiveSmearingSigma() {};
 
     AdaptiveSmearingSigma(const unsigned int nk_in,
-                          const unsigned int ns_in) {
+                          const unsigned int ns_in)
+    {
 
         allocate(vel, nk_in, ns_in, 3);
     };
 
-    ~AdaptiveSmearingSigma() {
+    ~AdaptiveSmearingSigma()
+    {
         if (vel) deallocate(vel);
     };
 
@@ -118,7 +120,7 @@ class AdaptiveSmearingSigma {
                    const unsigned int s3,
                    double sigma_out[2]);
 
- private:
+private:
     double ***vel = nullptr;
     double dq[3][3];
 };

@@ -254,15 +254,15 @@ double Integration::do_tetrahedron(const double *energy,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = 3.0 * (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                  * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
-                  ((e3 - e1) * (e4 - e1));
+                                                      * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                ((e3 - e1) * (e4 - e1));
 
             I1 = frac3 * fij(e1, e4, e_ref) * g + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 -
-                  e1);
+                                                                                                                  e1);
             I2 = frac3 * fij(e2, e3, e_ref) * g + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
             I3 = frac3 * fij(e3, e2, e_ref) * g + std::pow(fij(e3, e1, e_ref), 2) * fij(e2, e3, e_ref) / (e4 - e1);
             I4 = frac3 * fij(e4, e1, e_ref) * g + fij(e4, e2, e_ref) * fij(e2, e4, e_ref) * fij(e3, e2, e_ref) / (e4 -
-                  e1);
+                                                                                                                  e1);
 
             ret += I1 * f1 + I2 * f2 + I3 * f3 + I4 * f4;
 
@@ -331,8 +331,8 @@ void Integration::calc_weight_tetrahedron(const unsigned int nk_irreducible,
 
         } else if (e2 <= e_ref && e_ref < e3) {
             g = (e2 - e1 + 2.0 * (e_ref - e2) - (e4 + e3 - e2 - e1)
-                  * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
-                  ((e3 - e1) * (e4 - e1));
+                                                * std::pow(e_ref - e2, 2) / ((e3 - e2) * (e4 - e2))) /
+                ((e3 - e1) * (e4 - e1));
 
             I1 = g * fij(e1, e4, e_ref) + fij(e1, e3, e_ref) * fij(e3, e1, e_ref) * fij(e2, e3, e_ref) / (e4 - e1);
             I2 = g * fij(e2, e3, e_ref) + std::pow(fij(e2, e4, e_ref), 2) * fij(e3, e2, e_ref) / (e4 - e1);
@@ -413,6 +413,7 @@ void Integration::insertion_sort(double *a,
         ind[j] = i;
     }
 }
+
 void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class,
                                   const KpointMeshUniform *kmesh_in,
                                   const double lavec_p_in[3][3],
@@ -512,5 +513,6 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k2,
 
     sigma_out[0] = std::max(2.0e-5, std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
     sigma_out[1] = std::max(2.0e-5,
-                        std::sqrt((parts[2] + parts[1]) / 12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
+                            std::sqrt((parts[2] + parts[1]) /
+                                      12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
 }

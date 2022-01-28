@@ -115,10 +115,10 @@ void Input::parse_general_vars()
             "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
             "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
             "VERBOSITY"
-          "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
-          "INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
-          // field in near
-          // future
+            "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
+            "INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
+            // field in near
+            // future
     };
     // added ismear_4ph to include separate choose of 3ph and 4ph
 

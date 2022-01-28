@@ -46,7 +46,6 @@ public:
                     const bool store_irreducible_only_,
                     const unsigned int nk_in,
                     const unsigned int ns_in) : nk(nk_in), ns(ns_in),
-                                                ns(ns_in),
                                                 is_stored_eigvec(stored_eigvec_),
                                                 is_irreducible_only(store_irreducible_only_)
     {
@@ -196,15 +195,6 @@ private:
 
     void detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
                                    double **eval_in);
-
-    void get_eigenvalues_dymat(const unsigned int nk_in,
-                               const double *const *xk_in,
-                               const double *const *kvec_na_in,
-                               const std::vector<FcsClassExtent> &fc2_ext_in,
-                               const std::vector<FcsClassExtent> &fc2_without_dipole_in,
-                               const bool require_evec,
-                               double **eval_ret,
-                               std::complex<double> ***evec_ret);
 
     std::vector<std::vector<double>> projection_directions;
 

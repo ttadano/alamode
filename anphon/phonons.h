@@ -56,6 +56,7 @@ public:
     class ModeAnalysis *mode_analysis;
 
     class Selfenergy *selfenergy;
+
     class Conductivity *conductivity;
 
     class Writes *writes;
@@ -77,6 +78,7 @@ public:
     class Dielec *dielec;
 
     void create_pointers();
+
     void destroy_pointers() const;
 
     std::string mode;
@@ -85,6 +87,7 @@ public:
     void execute_phonons() const;
 
     void execute_RTA() const;
+
     void execute_self_consistent_phonon() const;
 
     void setup_base() const;

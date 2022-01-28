@@ -155,7 +155,8 @@ void Conductivity::setup_kappa()
 
     if (fph_rta > 0) {
         if (mympi->my_rank == 0) {
-            std::cout << "Four-phonon scattering rate will be calculated additionally.\n"; // fph_rta is not a input parameter, therefore removed from IO
+            std::cout
+                    << "Four-phonon scattering rate will be calculated additionally.\n"; // fph_rta is not a input parameter, therefore removed from IO
 
             std::cout << "  KMESH for 4-ph:\n";
             std::cout << "   nk1 : " << std::setw(5) << nk_coarse[0] << '\n';
@@ -981,17 +982,17 @@ void Conductivity::compute_kappa()
         if (len_boundary > eps) {
             for (iks = 0; iks < dos->kmesh_dos->nk_irred * ns; ++iks) {
                 vel_norm = 0.0;
-                auto knum = dos->kmesh_dos->kpoint_irred_all[iks/ns][0].knum;
-                auto snum = iks % ns; 
+                auto knum = dos->kmesh_dos->kpoint_irred_all[iks / ns][0].knum;
+                auto snum = iks % ns;
                 for (auto j = 0; j < 3; ++j) {
                     vel_norm += vel[knum][snum][j] * vel[knum][snum][j];
                 }
                 vel_norm = std::sqrt(vel_norm);
-                
-                for (i=0; i < ntemp; ++i) {
-                    gamma_total[iks][i] += (vel_norm / len_boundary) * time_ry ; // same unit as gamma
+
+                for (i = 0; i < ntemp; ++i) {
+                    gamma_total[iks][i] += (vel_norm / len_boundary) * time_ry; // same unit as gamma
                 }
-                
+
             }
         }
 
@@ -1068,7 +1069,6 @@ void Conductivity::compute_kappa()
         deallocate(gamma_total);
     }
 }
-
 
 
 void Conductivity::average_self_energy_at_degenerate_point(const int n,
@@ -1182,12 +1182,12 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
 
                             if (thermodynamics->classical) {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                      = thermodynamics->Cv_classical(omega, temperature[i])
-                                      * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv_classical(omega, temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             } else {
                                 kappa_mode[i][3 * j + k][is][ik]
-                                      = thermodynamics->Cv(omega, temperature[i])
-                                      * vv_tmp * lifetime[ns * ik + is][i];
+                                        = thermodynamics->Cv(omega, temperature[i])
+                                          * vv_tmp * lifetime[ns * ik + is][i];
                             }
 
                             // Convert to SI unit
@@ -1280,13 +1280,13 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
                                 vv_tmp += velmat[ktmp][is][js][j] * velmat[ktmp][js][is][k];
                             }
                             auto kcelem_tmp = 2.0 * (omega1 * omega2) / (omega1 + omega2)
-                                  * (thermodynamics->Cv(omega1, temperature[i]) / omega1
-                                        + thermodynamics->Cv(omega2, temperature[i]) / omega2)
-                                  * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
-                                  / (4.0 * std::pow(omega1 - omega2, 2.0)
-                                        + 4.0 * std::pow(gamma_total[ik * ns + is][i]
-                                                               + gamma_total[ik * ns + js][i], 2.0))
-                                  * vv_tmp;
+                                              * (thermodynamics->Cv(omega1, temperature[i]) / omega1
+                                                 + thermodynamics->Cv(omega2, temperature[i]) / omega2)
+                                              * 2.0 * (gamma_total[ik * ns + is][i] + gamma_total[ik * ns + js][i])
+                                              / (4.0 * std::pow(omega1 - omega2, 2.0)
+                                                 + 4.0 * std::pow(gamma_total[ik * ns + is][i]
+                                                                  + gamma_total[ik * ns + js][i], 2.0))
+                                              * vv_tmp;
                             kappa_tmp[ib] += kcelem_tmp;
 
                             if (calc_coherent == 2 && j == k) {
@@ -1697,7 +1697,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
             for (auto is = 0; is < ns; ++is) {
                 for (auto itemp = 0; itemp < ntemp; ++itemp) {
                     damping4_coarse[is][itemp][ik]
-                          = val_coarse_in[kmesh_coarse_in->kmap_to_irreducible[ik] * ns + is][itemp];
+                            = val_coarse_in[kmesh_coarse_in->kmap_to_irreducible[ik] * ns + is][itemp];
                 }
             }
         }
@@ -1753,7 +1753,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
     delete interpol;
 }
 
-void Conductivity::lifetime_from_gamma(double **&gamma, double **&lifetime) 
+void Conductivity::lifetime_from_gamma(double **&gamma, double **&lifetime)
 {
     unsigned int i;
     double damp_tmp;

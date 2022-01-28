@@ -472,17 +472,17 @@ void Selfenergy::selfenergy_c_mod(const unsigned int N,
                     double v4_tmp = std::norm(anharmonic_core->V4(arr_quartic)) * multi;
 
                     omega_sum[0]
-                          = 1.0 / (omega_shift - omega1 - omega2 - omega3)
-                          - 1.0 / (omega_shift + omega1 + omega2 + omega3);
+                            = 1.0 / (omega_shift - omega1 - omega2 - omega3)
+                              - 1.0 / (omega_shift + omega1 + omega2 + omega3);
                     omega_sum[1]
-                          = 1.0 / (omega_shift - omega1 - omega2 + omega3)
-                          - 1.0 / (omega_shift + omega1 + omega2 - omega3);
+                            = 1.0 / (omega_shift - omega1 - omega2 + omega3)
+                              - 1.0 / (omega_shift + omega1 + omega2 - omega3);
                     omega_sum[2]
-                          = 1.0 / (omega_shift + omega1 - omega2 - omega3)
-                          - 1.0 / (omega_shift - omega1 + omega2 + omega3);
+                            = 1.0 / (omega_shift + omega1 - omega2 - omega3)
+                              - 1.0 / (omega_shift - omega1 + omega2 + omega3);
                     omega_sum[3]
-                          = 1.0 / (omega_shift - omega1 + omega2 - omega3)
-                          - 1.0 / (omega_shift + omega1 - omega2 + omega3);
+                            = 1.0 / (omega_shift - omega1 + omega2 - omega3)
+                              - 1.0 / (omega_shift + omega1 - omega2 + omega3);
 
                     for (i = 0; i < N; ++i) {
                         double T_tmp = T[i];
@@ -496,10 +496,10 @@ void Selfenergy::selfenergy_c_mod(const unsigned int N,
                         double n31 = n3 * n1;
 
                         ret_mpi[i] += v4_tmp
-                              * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
-                                    + (n31 + n23 + n3 - n12) * omega_sum[1]
-                                    + (n12 + n31 + n1 - n23) * omega_sum[2]
-                                    + (n23 + n12 + n2 - n31) * omega_sum[3]);
+                                      * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
+                                         + (n31 + n23 + n3 - n12) * omega_sum[1]
+                                         + (n12 + n31 + n1 - n23) * omega_sum[2]
+                                         + (n23 + n12 + n2 - n31) * omega_sum[3]);
                     }
                 }
             }

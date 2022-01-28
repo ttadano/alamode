@@ -1780,7 +1780,7 @@ void Writes::write_kappa() const
         } else {
             file_kappa = input->job_title + ".kl";
         }
-        
+
         auto file_kappa2 = input->job_title + ".kl_spec";
         auto file_kappa_coherent = input->job_title + ".kl_coherent";
 
@@ -1790,7 +1790,8 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_3only.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
 
-            ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]" << std::endl;
+            ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]"
+                   << std::endl;
             ofs_kl << "# three phonon part";
 
             if (isotope->include_isotope) {
@@ -1798,17 +1799,17 @@ void Writes::write_kappa() const
             }
 
             if (conductivity->len_boundary > eps) {
-                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
-                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2)
+                       << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
             }
 
             for (i = 0; i < conductivity->ntemp; ++i) {
                 ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
-                    << conductivity->temperature[i];
+                       << conductivity->temperature[i];
                 for (j = 0; j < 3; ++j) {
                     for (k = 0; k < 3; ++k) {
                         ofs_kl << std::setw(15) << std::fixed
-                            << std::setprecision(4) << conductivity->kappa_3only[i][j][k];
+                               << std::setprecision(4) << conductivity->kappa_3only[i][j][k];
                     }
                 }
                 ofs_kl << std::endl;
@@ -1826,8 +1827,8 @@ void Writes::write_kappa() const
         }
 
         if (conductivity->len_boundary > eps) {
-                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2) 
-                                    << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+            ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2)
+                   << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
         }
 
         for (i = 0; i < conductivity->ntemp; ++i) {
