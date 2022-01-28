@@ -16,7 +16,7 @@
 
 namespace PHON_NS {
 class SymmetryOperation {
- public:
+public:
     int rot[3][3];
     double tran[3];
 
@@ -62,7 +62,7 @@ class SymmetryOperation {
 };
 
 class RotationMatrix {
- public:
+public:
     int mat[3][3];
 
     RotationMatrix();
@@ -78,7 +78,7 @@ class RotationMatrix {
 };
 
 class SymmetryOperationWithMapping {
- public:
+public:
     std::vector<double> rot;            // Rotation matrix in Cartesian basis
     std::vector<double> rot_real;       // Rotation matrix in fractional basis
     std::vector<double> rot_reciprocal; // Rotation matrix in reciprocal (fractional) basis
@@ -113,7 +113,7 @@ class SymmetryOperationWithMapping {
 };
 
 class Symmetry : protected Pointers {
- public:
+public:
     Symmetry(class PHON *);
 
     ~Symmetry();
@@ -128,7 +128,7 @@ class Symmetry : protected Pointers {
 
     void setup_symmetry();
 
- private:
+private:
 
     std::string file_sym;
 
@@ -155,11 +155,11 @@ class Symmetry : protected Pointers {
                                std::vector<RotationMatrix> &) const;
 
     void find_crystal_symmetry(
-          int,
-          std::vector<unsigned int> *,
-          double **x,
-          const std::vector<RotationMatrix> &,
-          std::vector<SymmetryOperation> &) const;
+            int,
+            std::vector<unsigned int> *,
+            double **x,
+            const std::vector<RotationMatrix> &,
+            std::vector<SymmetryOperation> &) const;
 
     void broadcast_symmlist(std::vector<SymmetryOperation> &) const;
 };

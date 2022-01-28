@@ -20,7 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 namespace PHON_NS {
 
 class KsListMode {
- public:
+public:
     double xk[3]{};
     int nmode;
 
@@ -35,7 +35,7 @@ class KsListMode {
 };
 
 class KpointListWithCoordinate {
- public:
+public:
     double xk[3];
     double x, y;
     int plane;
@@ -58,7 +58,7 @@ class KpointListWithCoordinate {
 };
 
 class ModeAnalysis : protected Pointers {
- public:
+public:
     ModeAnalysis(class PHON *);
 
     ~ModeAnalysis();
@@ -80,7 +80,7 @@ class ModeAnalysis : protected Pointers {
     std::string ks_input;
     std::vector<unsigned int> kslist;
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables() const;
@@ -119,9 +119,11 @@ class ModeAnalysis : protected Pointers {
                                               double *);
 
     void print_V3_elements() const;
+
     void print_V4_elements() const;
 
     void print_Phi3_elements() const;
+
     void print_Phi4_elements() const;
 
     void calc_V3norm2(const unsigned int,

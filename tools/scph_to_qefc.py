@@ -35,9 +35,24 @@ def parse_QEfc(file_QEfc):
     with open(file_QEfc, 'r') as f:
         line = f.readline()
         header.append(line)
-        nkd, nat = [int(entry) for entry in line.strip().split()[:2]]
-        for i in range(nat + nkd + 4):
+        nkd, nat, ibrav = [int(entry) for entry in line.strip().split()[:3]]
+
+        nskip = 0
+        if ibrav == 0:
+            nskip = nat + nkd + 3
+        else:
+            nskip = nat + nkd
+
+        for i in range(nskip):
             header.append(f.readline())
+
+        line = f.readline()
+        header.append(line)
+        epsil_flag = line.strip()
+
+        if epsil_flag == 'T':
+            for i in range(3 + 4 * nat):
+                header.append(f.readline())
 
         nx, ny, nz = [int(i) for i in f.readline().split()]
         fc2 = np.zeros((3 * nat, 3 * nat, nx, ny, nz))

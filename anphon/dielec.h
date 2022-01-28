@@ -16,7 +16,7 @@
 
 namespace PHON_NS {
 class Dielec : protected Pointers {
- public:
+public:
     Dielec(class PHON *);
 
     ~Dielec();
@@ -39,7 +39,7 @@ class Dielec : protected Pointers {
 
     std::vector<std::vector<double>> get_zstar_mode() const;
 
- private:
+private:
 
     void set_default_variables();
 

@@ -19,8 +19,8 @@
 
 namespace PHON_NS {
 struct tetra_pair {
-  double e;
-  double f;
+    double e;
+    double f;
 };
 
 inline bool operator<(const tetra_pair &a,
@@ -30,8 +30,8 @@ inline bool operator<(const tetra_pair &a,
 }
 
 struct TetraWithKnum {
-  double e;
-  int knum;
+    double e;
+    int knum;
 };
 
 inline bool operator<(const TetraWithKnum &a,
@@ -41,7 +41,7 @@ inline bool operator<(const TetraWithKnum &a,
 }
 
 class TetraNodes {
- public:
+public:
     TetraNodes()
     {
         nk1 = 0;
@@ -73,7 +73,7 @@ class TetraNodes {
 
     unsigned int **get_tetras() const;
 
- private:
+private:
     unsigned int nk1, nk2, nk3;
     unsigned int ntetra;
     unsigned int **tetras;
@@ -124,7 +124,7 @@ class AdaptiveSmearingSigma {
 };
 
 class Integration : protected Pointers {
- public:
+public:
     Integration(class PHON *);
 
     ~Integration();
@@ -170,7 +170,7 @@ class Integration : protected Pointers {
 //    void adaptive_smearing(int, int, int, int,
 //                           int, int, double *);
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();

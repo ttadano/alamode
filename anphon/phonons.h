@@ -22,7 +22,7 @@
 
 namespace PHON_NS {
 class PHON {
- public:
+public:
     PHON(int,
          char **,
          MPI_Comm);

@@ -41,7 +41,7 @@ struct QuartS {
 };
 
 class RelativeVector {
- public:
+public:
     double vecs[3][3];
 
     RelativeVector();
@@ -71,7 +71,7 @@ class RelativeVector {
 };
 
 class PhaseFactorStorage {
- public:
+public:
     PhaseFactorStorage() {};
 
     PhaseFactorStorage(const unsigned int nk_grid_in[3])
@@ -99,7 +99,7 @@ class PhaseFactorStorage {
 
     std::complex<double> get_exp_type2(const double phase3_in[3]) const;
 
- private:
+private:
     int nk_represent, nk_grid[3]; // This type must NOT be changed to unsigned int
     // because these variables are used as a divisor of modulo.
     // If the type is unsigned int, the phase factor returned by get_exp_type[1,2] becomes incorrect.
@@ -111,7 +111,7 @@ class PhaseFactorStorage {
 };
 
 class AnharmonicCore : protected Pointers {
- public:
+public:
     AnharmonicCore(class PHON *);
 
     ~AnharmonicCore();
@@ -254,7 +254,8 @@ class AnharmonicCore : protected Pointers {
 
     int **get_evec_index(const unsigned int order) const;
 
- private:
+
+private:
     void set_default_variables();
 
     void deallocate_variables();

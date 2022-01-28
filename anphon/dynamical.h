@@ -21,7 +21,7 @@
 
 namespace PHON_NS {
 class DistWithCell {
- public:
+public:
     int cell;
     double dist;
 
@@ -38,14 +38,14 @@ inline bool operator<(const DistWithCell a,
 }
 
 class DymatEigenValue {
- public:
+public:
     DymatEigenValue() : nk(0), ns(0), eval(nullptr), evec(nullptr),
                         is_stored_eigvec(true), is_irreducible_only(false) {};
 
     DymatEigenValue(const bool stored_eigvec_,
                     const bool store_irreducible_only_,
                     const unsigned int nk_in,
-                    const unsigned int ns_in) : nk(nk_in),
+                    const unsigned int ns_in) : nk(nk_in), ns(ns_in),
                                                 ns(ns_in),
                                                 is_stored_eigvec(stored_eigvec_),
                                                 is_irreducible_only(store_irreducible_only_)
@@ -79,7 +79,7 @@ class DymatEigenValue {
 
     std::complex<double> ***get_eigenvectors() const;
 
- private:
+private:
     unsigned int nk, ns;
     double **eval = nullptr;
     std::complex<double> ***evec = nullptr;
@@ -88,7 +88,7 @@ class DymatEigenValue {
 };
 
 class Dynamical : protected Pointers {
- public:
+public:
     Dynamical(class PHON *);
 
     ~Dynamical();
@@ -174,7 +174,7 @@ class Dynamical : protected Pointers {
 
     void set_projection_directions(const std::vector<std::vector<double>> projections_in);
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();
@@ -196,6 +196,15 @@ class Dynamical : protected Pointers {
 
     void detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
                                    double **eval_in);
+
+    void get_eigenvalues_dymat(const unsigned int nk_in,
+                               const double *const *xk_in,
+                               const double *const *kvec_na_in,
+                               const std::vector<FcsClassExtent> &fc2_ext_in,
+                               const std::vector<FcsClassExtent> &fc2_without_dipole_in,
+                               const bool require_evec,
+                               double **eval_ret,
+                               std::complex<double> ***evec_ret);
 
     std::vector<std::vector<double>> projection_directions;
 

@@ -21,7 +21,7 @@
 
 namespace PHON_NS {
 class Conductivity : protected Pointers {
- public:
+public:
     Conductivity(class PHON *);
 
     ~Conductivity();
@@ -63,7 +63,7 @@ class Conductivity : protected Pointers {
         interpolator = interpolator_in;
     };
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();
