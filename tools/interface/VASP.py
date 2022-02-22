@@ -11,26 +11,32 @@
 #
 from __future__ import print_function
 import numpy as np
+import importlib
 
 try:
     try:
         # cElementTree on Python 2.5+
         import xml.etree.cElementTree as etree
-    except ImportError:
+    except ModuleNotFoundError:
         # ElementTree on Python 2.5+
         import xml.etree.ElementTree as etree
-except ImportError:
+except ModuleNotFoundError:
     try:
         # cElementTree
         import cElementTree as etree
-    except ImportError:
+    except ModuleNotFoundError:
         # ElementTree
         import elementtree.ElementTree as etree
 
+try:
+    import py4vasp
+except ModuleNotFoundError:
+    pass
 
 class VaspParser(object):
 
     def __init__(self):
+        self._support_h5parse = importlib.util.find_spec("py4vasp") is not None
         self._prefix = None
         self._lattice_vector = None
         self._inverse_lattice_vector = None
@@ -51,6 +57,7 @@ class VaspParser(object):
         self._print_born = False
         self._BOHR_TO_ANGSTROM = 0.5291772108
         self._RYDBERG_TO_EV = 13.60569253
+
 
     def load_initial_structure(self, file_in):
 
@@ -111,7 +118,7 @@ class VaspParser(object):
         for header, disp in zip(header_list, disp_list):
             self._generate_input(header, disp)
 
-    def parse(self, initial_poscar, xml_files, xml_file_offset, str_unit,
+    def parse(self, initial_poscar, target_files, offset_file, str_unit,
               output_flags, filter_emin=None, filter_emax=None):
 
         if not self._initial_structure_loaded:
@@ -121,17 +128,17 @@ class VaspParser(object):
         self._set_output_flags(output_flags)
 
         if self._print_disp or self._print_force:
-            self._print_displacements_and_forces(xml_files,
-                                                 xml_file_offset,
+            self._print_displacements_and_forces(target_files,
+                                                 offset_file,
                                                  filter_emin,
                                                  filter_emax)
         elif self._print_energy:
-            self._print_energies(xml_files, xml_file_offset)
+            self._print_energies(target_files, offset_file)
 
         elif self._print_born:
-            self._print_borninfo(xml_files)
+            self._print_borninfo(target_files)
 
-    def get_displacements(self, xml_files, unit="bohr"):
+    def get_displacements(self, target_files, unit="bohr"):
 
         if not self._initial_structure_loaded:
             raise RuntimeError("Please call load_initial_structure before using this method")
@@ -149,8 +156,8 @@ class VaspParser(object):
         else:
             raise RuntimeError("Invalid unit type. Valid values are 'bohr' and 'angstrom'.")
 
-        for search_target in xml_files:
-            x, _ = self._get_coordinates_and_forces_vasprunxml(search_target)
+        for search_target in target_files:
+            x, _ = self._get_coordinates_and_forces(search_target)
 
             ndata = len(x) // (3 * self._nat)
             x = np.reshape(x, (ndata, self._nat, 3))
@@ -164,7 +171,6 @@ class VaspParser(object):
             disp_merged.extend(disp)
 
         return disp_merged
-
 
     def _generate_input(self, header, disp):
 
@@ -196,7 +202,7 @@ class VaspParser(object):
 
         self._counter += 1
 
-    def _print_displacements_and_forces(self, xml_files,
+    def _print_displacements_and_forces(self, target_files,
                                         file_offset,
                                         filter_emin,
                                         filter_emax):
@@ -212,8 +218,8 @@ class VaspParser(object):
 
         else:
             x0_offset, force_offset \
-                = self._get_coordinates_and_forces_vasprunxml(file_offset)
-            epot_offset, _ = self._get_energies_vasprunxml(file_offset)
+                = self._get_coordinates_and_forces(file_offset)
+            epot_offset, _ = self._get_energies(file_offset)
             epot_offset = np.array(epot_offset, dtype=np.float)
             try:
                 x0_offset = np.reshape(x0_offset, (self._nat, 3))
@@ -230,10 +236,10 @@ class VaspParser(object):
             if len(epot_offset) > 1:
                 raise RuntimeError("File %s contains too many energy entries" % file_offset)
 
-        for search_target in xml_files:
+        for search_target in target_files:
 
-            x, force = self._get_coordinates_and_forces_vasprunxml(search_target)
-            epot, _ = self._get_energies_vasprunxml(search_target)
+            x, force = self._get_coordinates_and_forces(search_target)
+            epot, _ = self._get_energies(search_target)
 
             ndata = len(x) // (3 * self._nat)
             ndata2 = len(force) // (3 * self._nat)
@@ -303,7 +309,7 @@ class VaspParser(object):
         ekin_offset = 0.0
 
         if file_offset:
-            etot, ekin = self._get_energies_vasprunxml(file_offset)
+            etot, ekin = self._get_energies(file_offset)
             if len(etot) > 1 or len(ekin) > 1:
                 print("File %s contains too many energy entries" % file_offset)
                 exit(1)
@@ -314,7 +320,7 @@ class VaspParser(object):
 
         for search_target in xml_files:
 
-            etot, ekin = self._get_energies_vasprunxml(search_target)
+            etot, ekin = self._get_energies(search_target)
 
             for i in range(len(etot)):
                 if etot[i] != 'N/A':
@@ -329,11 +335,11 @@ class VaspParser(object):
                 else:
                     print("%s" % ekin[i])
 
-    def _print_borninfo(self, xml_files):
+    def _print_borninfo(self, target_files):
 
-        for search_target in xml_files:
+        for search_target in target_files:
 
-            dielec, borncharge = self._get_borninfo_vasprunxml(search_target)
+            dielec, borncharge = self._get_borninfo(search_target)
             nat_prim, _, _ = np.shape(borncharge)
 
             for i in range(3):
@@ -402,48 +408,6 @@ class VaspParser(object):
         return self._x_fractional
 
     @staticmethod
-    def _get_coordinates_vasprunxml(xml_file):
-
-        x = []
-
-        try:
-            xml = etree.parse(xml_file)
-            root = xml.getroot()
-
-            for elems in root.findall('calculation/structure/varray'):
-                str_coord = [elems2.text for elems2 in elems.findall('v')]
-                n = len(str_coord)
-
-                for i in range(n):
-                    x.extend([t for t in str_coord[i].split()])
-
-            return np.array(x, dtype=np.float)
-
-        except:
-            raise RuntimeError("Error in reading atomic positions from the XML file: %s" % xml_file)
-
-    @staticmethod
-    def _get_forces_vasprunxml(xml_file):
-
-        f = []
-
-        try:
-            xml = etree.parse(xml_file)
-            root = xml.getroot()
-
-            for elems in root.findall('calculation/varray'):
-                if elems.get('name') == "forces":
-                    str_force = [elems2.text for elems2 in elems.findall('v')]
-
-                    for i in range(len(str_force)):
-                        f.extend([t for t in str_force[i].split()])
-
-            return np.array(f, dtype=np.float)
-
-        except:
-            raise RuntimeError("Error in reading atomic forces from the XML file: %s" % xml_file)
-
-    @staticmethod
     def _refold(x):
         if x >= 0.5:
             return x - 1.0
@@ -452,71 +416,112 @@ class VaspParser(object):
         else:
             return x
 
+    def _get_coordinates_and_forces(self, file_to_parse):
+
+        hdf5_mode = (file_to_parse.lower().split('.')[-1] in ['h5', 'hdf5'])
+
+        if hdf5_mode:
+            # target file is HDF5 format
+
+            if not self._support_h5parse:
+                raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
+
+            try:
+                obj = py4vasp.Calculation.from_path(file_to_parse)
+                forces = obj.force[:].read()
+                x = np.ravel(forces['structure']['positions'])
+                f = np.ravel(forces['forces'])
+                return x, f
+
+            except:
+                raise RuntimeError(
+                    "Error in reading atomic positions and forces from the HDF5 file: %s" % file_to_parse)
+
+        else:
+            x = []
+            f = []
+            # assume that the target file is XML and use XML parser
+            try:
+                xml = etree.parse(file_to_parse)
+                root = xml.getroot()
+
+                for elems in root.findall('calculation/structure/varray'):
+                    str_coord = [elems2.text for elems2 in elems.findall('v')]
+                    n = len(str_coord)
+
+                    for i in range(n):
+                        x.extend([t for t in str_coord[i].split()])
+
+                for elems in root.findall('calculation/varray'):
+                    if elems.get('name') == "forces":
+                        str_force = [elems2.text for elems2 in elems.findall('v')]
+
+                        for i in range(len(str_force)):
+                            f.extend([t for t in str_force[i].split()])
+
+                return np.array(x, dtype=np.float), np.array(f, dtype=np.float)
+
+            except:
+                raise RuntimeError(
+                    "Error in reading atomic positions and forces from the XML file: %s" % file_to_parse)
+
+    def _get_energies(self, file_to_parse):
+
+        hdf5_mode = (file_to_parse.lower().split('.')[-1] in ['h5', 'hdf5'])
+
+        if hdf5_mode:
+
+            if not self._support_h5parse:
+                raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
+
+            try:
+                obj = py4vasp.Calculation.from_path(file_to_parse)
+                energy = obj.energy[:].read()
+
+                etot_array = energy['free energy    TOTEN']
+                # There are no methods to parse kinetic energy implemented in py4vasp
+                # TODO: fix here if py4vasp implements it.
+                ekin_array = ['N/A'] * len(etot_array)
+
+                return etot_array, ekin_array
+            except:
+                raise RuntimeError(
+                    "Error in reading atomic positions and forces from the HDF5 file: %s" % file_to_parse)
+
+        else:
+
+            etot_array = []
+            ekin_array = []
+
+            try:
+                xml = etree.parse(file_to_parse)
+                root = xml.getroot()
+
+                for elems in root.findall('calculation/energy'):
+                    etot = 'N/A'
+                    ekin = 'N/A'
+
+                    for elems2 in elems.findall('i'):
+                        if elems2.get('name') == "e_fr_energy":
+                            etot = elems2.text
+                        if elems2.get('name') == "kinetic":
+                            ekin = elems2.text
+
+                    etot_array.append(etot)
+                    ekin_array.append(ekin)
+
+                return etot_array, ekin_array
+            except:
+                raise RuntimeError("Error in reading energies from the XML file: %s" % file_to_parse)
+
     @staticmethod
-    def _get_coordinates_and_forces_vasprunxml(xml_file):
-
-        x = []
-        f = []
-
-        try:
-            xml = etree.parse(xml_file)
-            root = xml.getroot()
-
-            for elems in root.findall('calculation/structure/varray'):
-                str_coord = [elems2.text for elems2 in elems.findall('v')]
-                n = len(str_coord)
-
-                for i in range(n):
-                    x.extend([t for t in str_coord[i].split()])
-
-            for elems in root.findall('calculation/varray'):
-                if elems.get('name') == "forces":
-                    str_force = [elems2.text for elems2 in elems.findall('v')]
-
-                    for i in range(len(str_force)):
-                        f.extend([t for t in str_force[i].split()])
-
-            return np.array(x, dtype=np.float), np.array(f, dtype=np.float)
-
-        except:
-            raise RuntimeError(
-                "Error in reading atomic positions and forces from the XML file: %s" % xml_file)
-
-    @staticmethod
-    def _get_energies_vasprunxml(xml_file):
-
-        etot_array = []
-        ekin_array = []
-
-        try:
-            xml = etree.parse(xml_file)
-            root = xml.getroot()
-
-            for elems in root.findall('calculation/energy'):
-                etot = 'N/A'
-                ekin = 'N/A'
-
-                for elems2 in elems.findall('i'):
-                    if elems2.get('name') == "e_fr_energy":
-                        etot = elems2.text
-                    if elems2.get('name') == "kinetic":
-                        ekin = elems2.text
-
-                etot_array.append(etot)
-                ekin_array.append(ekin)
-
-            return etot_array, ekin_array
-        except:
-            raise RuntimeError("Error in reading energies from the XML file: %s" % xml_file)
-
-    @staticmethod
-    def _get_borninfo_vasprunxml(xml_file):
+    def _get_borninfo(file_to_parse):
 
         dielec = []
         borncharge = []
 
         try:
-            xml = etree.parse(xml_file)
+            xml = etree.parse(file_to_parse)
             root = xml.getroot()
 
             for elems in root.findall('calculation/varray'):
@@ -540,4 +545,4 @@ class VaspParser(object):
             borncharge = np.reshape(np.array(borncharge), (nat, 3, 3))
             return dielec, borncharge
         except:
-            raise RuntimeError("Error in reading Born charges from the XML file: %s" % xml_file)
+            raise RuntimeError("Error in reading Born charges from the XML file: %s" % file_to_parse)
