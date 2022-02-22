@@ -10,8 +10,10 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 from __future__ import print_function
-import numpy as np
+
 import importlib
+
+import numpy as np
 
 try:
     try:
@@ -32,6 +34,7 @@ try:
     import py4vasp
 except ModuleNotFoundError:
     pass
+
 
 class VaspParser(object):
 
@@ -57,7 +60,6 @@ class VaspParser(object):
         self._print_born = False
         self._BOHR_TO_ANGSTROM = 0.5291772108
         self._RYDBERG_TO_EV = 13.60569253
-
 
     def load_initial_structure(self, file_in):
 
@@ -514,35 +516,66 @@ class VaspParser(object):
             except:
                 raise RuntimeError("Error in reading energies from the XML file: %s" % file_to_parse)
 
-    @staticmethod
-    def _get_borninfo(file_to_parse):
+    def _get_borninfo(self, file_to_parse):
 
-        dielec = []
-        borncharge = []
+        hdf5_mode = (file_to_parse.lower().split('.')[-1] in ['h5', 'hdf5'])
 
-        try:
-            xml = etree.parse(file_to_parse)
-            root = xml.getroot()
+        if hdf5_mode:
+            if not self._support_h5parse:
+                raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
 
-            for elems in root.findall('calculation/varray'):
-                if elems.get('name') in ["epsilon", "epsilon_scf"]:
-                    str_tmp = [elems2.text for elems2 in elems.findall('v')]
+            try:
+                # use raw method instead of Calculation because latter raises an error
+                # when trying to parse electronic dielectric tensor alone.
+                # TODO: clean up this part when py4vasp support sole parse of epsion(∞)
+                raw = py4vasp.raw.File(file_to_parse)
+                obj = py4vasp.raw.RawDielectricTensor(raw._h5f[f"results/linear_response/electron_dielectric_tensor"],
+                                                      ion=None,
+                                                      independent_particle=None,
+                                                      method=
+                                                      raw._h5f[f"results/linear_response/method_dielectric_tensor"][()])
+                dielec_tensor_elec = obj.electron[:]
+            except:
+                raise RuntimeError(
+                    "Error in reading electronic dielectric tensor from the HDF5 file: %s" % file_to_parse)
 
-                    for i in range(len(str_tmp)):
-                        dielec.extend([float(t) for t in str_tmp[i].split()])
+            try:
+                obj = py4vasp.Calculation.from_path(file_to_parse)
+                borncharge = obj.born_effective_charge.read()['charge_tensors']
+            except:
+                raise RuntimeError(
+                    "Error in reading Born effective charges from the HDF5 file: %s" % file_to_parse)
 
-            for elems in root.findall('calculation/array'):
-                if elems.get('name') == "born_charges":
-                    for elems2 in elems.findall('set'):
-                        str_tmp = [elems3.text for elems3 in elems2.findall('v')]
+            return dielec_tensor_elec, borncharge
+
+        else:
+
+            dielec = []
+            borncharge = []
+
+            try:
+                xml = etree.parse(file_to_parse)
+                root = xml.getroot()
+
+                for elems in root.findall('calculation/varray'):
+                    if elems.get('name') in ["epsilon", "epsilon_scf"]:
+                        str_tmp = [elems2.text for elems2 in elems.findall('v')]
 
                         for i in range(len(str_tmp)):
-                            borncharge.extend([float(t)
-                                               for t in str_tmp[i].split()])
+                            dielec.extend([float(t) for t in str_tmp[i].split()])
 
-            nat = len(borncharge) // 9
-            dielec = np.reshape(np.array(dielec), (3, 3))
-            borncharge = np.reshape(np.array(borncharge), (nat, 3, 3))
-            return dielec, borncharge
-        except:
-            raise RuntimeError("Error in reading Born charges from the XML file: %s" % file_to_parse)
+                for elems in root.findall('calculation/array'):
+                    if elems.get('name') == "born_charges":
+                        for elems2 in elems.findall('set'):
+                            str_tmp = [elems3.text for elems3 in elems2.findall('v')]
+
+                            for i in range(len(str_tmp)):
+                                borncharge.extend([float(t)
+                                                   for t in str_tmp[i].split()])
+
+                nat = len(borncharge) // 9
+                dielec = np.reshape(np.array(dielec), (3, 3))
+                borncharge = np.reshape(np.array(borncharge), (nat, 3, 3))
+                return dielec, borncharge
+            except:
+                raise RuntimeError("Error in reading Born charges from the XML file: %s" % file_to_parse)
