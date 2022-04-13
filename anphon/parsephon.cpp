@@ -185,7 +185,7 @@ void Input::parse_general_vars()
 
     unsigned int nonanalytic = 0;
     auto nsym = 0;
-    auto tolerance = 1.0e-6;
+    auto tolerance = 1.0e-3;
     auto printsymmetry = false;
     //auto sym_time_reversal = false;
     auto use_triplet_symmetry = true;
