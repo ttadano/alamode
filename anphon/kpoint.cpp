@@ -197,9 +197,13 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
         for (const auto &it: kpinfo) {
             for (i = 0; i < 3; ++i) {
                 k[j][i] = std::atof(it.kpelem[i].c_str());
+                // For the manual k-point mode, we shift the kdirec vector the first BZ.
+                // With this treatment, the non-analytic correction becomes zero
+                // at arbitrary G points, e.g., q=(0,0,0), (1,0,0), (0,1,0) ....
+                kdirec[j][i] = k[j][i] - static_cast<double>(nint(k[j][i]));
             }
 
-            rotvec(kdirec[j], k[j], rlavec_p, 'T');
+            rotvec(kdirec[j], kdirec[j], rlavec_p, 'T');
 
             const auto norm = kdirec[j][0] * kdirec[j][0]
                               + kdirec[j][1] * kdirec[j][1]

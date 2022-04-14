@@ -658,8 +658,13 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
             }
         }
     }
+    // Move input xk back to the -0.5 <= xk < 0.5 range to
+    // make the phonon dispersion periodic in the reciprocal lattice.
+    for (i = 0; i < 3; ++i) {
+        xk_tmp[i] = xk_in[i] - static_cast<double>(nint(xk_in[i]));
+    }
 
-    rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
+    rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
     const auto norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
 
     const auto factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
@@ -683,7 +688,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
             rotvec(xdiff, xdiff, system->lavec_s);
             rotvec(xdiff, xdiff, system->rlavec_p);
 
-            double phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
+            double phase = xk_tmp[0] * xdiff[0] + xk_tmp[1] * xdiff[1] + xk_tmp[2] * xdiff[2];
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
