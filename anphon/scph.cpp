@@ -2638,8 +2638,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             saes.compute(Fmat);
             eval_tmp = saes.eigenvalues();
 
-            std::cout << "eval_tmp = " << eval_tmp << '\n';
-            std::cout << "omega_now = " << omega_now << '\n';
+//            std::cout << "eval_tmp = " << eval_tmp << '\n';
+//            std::cout << "omega_now = " << omega_now << '\n';
             for (is = 0; is < ns; ++is) {
 
                 double omega2_tmp = eval_tmp(is);
