@@ -20,6 +20,7 @@
 #include "files.h"
 #include "patterndisp.h"
 #include "timer.h"
+#include "writer.h"
 
 namespace ALM_NS {
 class ALM {
@@ -32,6 +33,8 @@ public:
 
     class Fcs *fcs{};
 
+    class System *system{};
+
     class Symmetry *symmetry{};
 
     class Optimize *optimize{};
@@ -43,6 +46,8 @@ public:
     class Displace *displace{};
 
     class Timer *timer{};
+
+    class Writer *writer{};
 
     void set_verbosity(int verbosity_in);
 
@@ -188,7 +193,6 @@ public:
     void init_fc_table();
 
 private:
-    class System *system{};
 
     int verbosity;
     bool structure_initialized;

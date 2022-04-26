@@ -12,7 +12,16 @@
 
 #include <string>
 #include <vector>
-#include "alm.h"
+#include "system.h"
+#include "symmetry.h"
+#include "cluster.h"
+#include "patterndisp.h"
+#include "fcs.h"
+#include "constraint.h"
+#include "optimize.h"
+#include "files.h"
+
+//#include "alm.h"
 
 namespace ALM_NS {
 class AtomProperty {
@@ -55,22 +64,64 @@ public:
 
     ~Writer();
 
-    void writeall(ALM *) const;
+    void writeall(const System *system,
+                  const Symmetry *symmetry,
+                  const Cluster *cluster,
+                  const Constraint *constraint,
+                  const Fcs *fcs,
+                  const Optimize *optimize,
+                  const Files *files,
+                  const int verbosity) const;
 
-    void write_input_vars(const ALM *alm, const std::string run_mode) const;
+    void write_input_vars(const System *system,
+                          const Symmetry *symmetry,
+                          const Cluster *cluster,
+                          const Displace *displace,
+                          const Fcs *fcs,
+                          const Constraint *constraint,
+                          const Optimize *optimize,
+                          const Files *files,
+                          const std::string run_mode) const;
 
-    void write_displacement_pattern(ALM *) const;
+    void write_displacement_pattern(const Cluster *cluster,
+                                    const Displace *displace,
+                                    const std::string prefix,
+                                    const int verbosity) const;
 
 private:
-    void write_force_constants(ALM *) const;
+    void write_force_constants(const Cluster *cluster,
+                               const Fcs *fcs,
+                               const Symmetry *symmetry,
+                               const double *fcs_vals,
+                               const int verbosity,
+                               const std::string fname_save) const;
 
-    void write_misc_xml(ALM *) const;
+    void write_misc_xml(const System *system,
+                        const Symmetry *symmetry,
+                        const Cluster *cluster,
+                        const Fcs *fcs,
+                        const Constraint *constraint,
+                        const Files *files,
+                        const double *fcs_vals,
+                        const int verbosity) const;
 
-    void write_hessian(ALM *) const;
+    void write_hessian(const System *system,
+                       const Symmetry *symmetry,
+                       const Fcs *fcs,
+                       const int verbosity,
+                       const std::string fname_out) const;
 
-    void write_in_QEformat(ALM *) const;
+    void write_in_QEformat(const System *system,
+                           const Symmetry *symmetry,
+                           const Fcs *fcs,
+                           const std::string fname_out) const;
 
-    void write_fc3_thirdorderpy_format(ALM *) const;
+    void write_fc3_thirdorderpy_format(const System *system,
+                                       const Symmetry *symmetry,
+                                       const Cluster *cluster,
+                                       const Constraint *constraint,
+                                       const Fcs *fcs,
+                                       const std::string fname_out) const;
 
     std::string easyvizint(int) const;
 

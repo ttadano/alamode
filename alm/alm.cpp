@@ -44,6 +44,7 @@ ALM::~ALM()
     delete constraint;
     delete displace;
     delete timer;
+    delete writer;
 }
 
 void ALM::init_instances()
@@ -57,6 +58,7 @@ void ALM::init_instances()
     constraint = new Constraint();
     displace = new Displace();
     timer = new Timer();
+    writer = new Writer();
 }
 
 void ALM::set_verbosity(const int verbosity_in)
