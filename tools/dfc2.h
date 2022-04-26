@@ -103,7 +103,7 @@ void load_fc2_xml(const std::string);
 
 void load_delta_fc2(const std::string, const double);
 
-void calculate_new_fc2(std::vector<FcsClassExtent>,
+void calculate_new_fc2(const std::vector<FcsClassExtent> &,
                        std::vector<DeltaFcs>,
                        std::vector<FcsClassExtent> &);
 
