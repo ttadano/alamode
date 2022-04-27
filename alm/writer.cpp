@@ -30,7 +30,8 @@
 
 using namespace ALM_NS;
 
-Writer::Writer() : output_maxorder(5) {
+Writer::Writer() : output_maxorder(5)
+{
     save_format_flags["alamode"] = 1;
     save_format_flags["shengbte"] = 0;
     save_format_flags["qefc"] = 0;
@@ -222,7 +223,7 @@ void Writer::writeall(const System *system,
                           verbosity,
                           fname_save);
 
-    for (const auto & save_format_flag : save_format_flags) {
+    for (const auto &save_format_flag: save_format_flags) {
         if (save_format_flag.second) {
             save_fcs_with_specific_format(save_format_flag.first,
                                           system,

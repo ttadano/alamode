@@ -47,8 +47,8 @@ public:
     double l1_ratio; // l1_ratio = 1 for LASSO; 0 < l1_ratio < 1 for Elastic net
     int save_solution_path;
     int stop_criterion; // If stop_criterion > 0,
-                        // the solution path calculation stops when the validation error
-                        // increases for `stop_criterion` times consecutively.
+    // the solution path calculation stops when the validation error
+    // increases for `stop_criterion` times consecutively.
 
     // convention to assign IFCs to mirror images
     int mirror_image_conv;

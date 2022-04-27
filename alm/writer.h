@@ -99,6 +99,7 @@ public:
                                        const int verbosity) const;
 
     void set_fcs_save_flag(const std::string key_str, const int val);
+
     int get_fcs_save_flag(const std::string key_str);
 
     void set_output_maxorder(const int maxorder);
