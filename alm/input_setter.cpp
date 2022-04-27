@@ -177,7 +177,7 @@ void InputSetter::set_general_vars(ALM *alm,
         is_periodic[i] = is_periodic_in[i];
     }
 
-    alm->set_print_hessian(print_hessian);
+    alm->set_fcs_save_flag("hessian", print_hessian);
     alm->set_fcs_save_flag("alamode", print_fcs_alamode);
     alm->set_fcs_save_flag("shengbte", print_fc3_shengbte);
     alm->set_fcs_save_flag("qefc", print_fc2_qefc);

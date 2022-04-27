@@ -30,10 +30,12 @@
 
 using namespace ALM_NS;
 
-Writer::Writer() {
+Writer::Writer() : output_maxorder(5) {
     save_format_flags["alamode"] = 1;
     save_format_flags["shengbte"] = 0;
     save_format_flags["qefc"] = 0;
+    save_format_flags["hessian"] = 0;
+
 }
 
 Writer::~Writer() = default;
@@ -73,11 +75,10 @@ void Writer::write_input_vars(const System *system,
     std::cout << '\n';
     std::cout << "  MAGMOM = " << system->get_str_magmom() << '\n';
     std::cout << "  FCS_ALAMODE = " << save_format_flags.at("alamode") << ';';
-    std::cout << "  NMAXSAVE = " << files->get_output_maxorder() << '\n';
+    std::cout << "  NMAXSAVE = " << get_output_maxorder() << '\n';
     std::cout << "  FC3_SHENGBTE = " << save_format_flags.at("shengbte") << '\n';
     std::cout << "  FC2_QEFC = " << save_format_flags.at("qefc") << '\n';
-
-    //std::cout << "  HESSIAN = " << alm->files->print_hessian << '\n';
+    std::cout << "  HESSIAN = " << save_format_flags.at("hessian") << '\n';
     std::cout << '\n';
 
     std::cout << " Interaction:\n";
@@ -153,14 +154,16 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                                            const int verbosity) const
 {
     if (fcs_format == "alamode") {
-        // save_fcs_alamode_oldformat breaks data in fcs.
+        const auto fname_save = files->get_prefix() + ".xml";
+
         save_fcs_alamode_oldformat(system,
                                    symmetry,
                                    cluster,
                                    fcs,
                                    constraint,
-                                   files,
                                    optimize->get_params(),
+                                   files->get_datfile_train().filename,
+                                   fname_save,
                                    verbosity);
 
     } else if (fcs_format == "shengbte") {
@@ -182,6 +185,15 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                              fcs,
                              fname_save,
                              verbosity);
+
+    } else if (fcs_format == "hessian") {
+        const auto fname_save = files->get_prefix() + ".hessian";
+
+        write_hessian(system,
+                      symmetry,
+                      fcs,
+                      fname_save,
+                      verbosity);
     }
 
 }
@@ -202,12 +214,13 @@ void Writer::writeall(const System *system,
         std::cout << " The following files are created:" << std::endl << std::endl;
     }
 
+    const auto fname_save = files->get_prefix() + ".fcs";
     write_force_constants(cluster,
                           fcs,
                           symmetry,
                           optimize->get_params(),
                           verbosity,
-                          files->file_fcs);
+                          fname_save);
 
     for (const auto & save_format_flag : save_format_flags) {
         if (save_format_flag.second) {
@@ -222,15 +235,6 @@ void Writer::writeall(const System *system,
                                           verbosity);
         }
     }
-
-    if (files->print_hessian) {
-        write_hessian(system,
-                      symmetry,
-                      fcs,
-                      files->file_hes,
-                      verbosity);
-    }
-
 
 //    alm->timer->stop_clock("writer");
 }
@@ -444,8 +448,9 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
                                         const Cluster *cluster,
                                         const Fcs *fcs,
                                         const Constraint *constraint,
-                                        const Files *files,
                                         const double *fcs_vals,
+                                        const std::string fname_dfset,
+                                        const std::string fname_fcs,
                                         const int verbosity) const
 {
     SystemInfo system_structure;
@@ -483,7 +488,8 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     std::string str_pos[3];
 
     pt.put("Data.ALM_version", ALAMODE_VERSION);
-    pt.put("Data.Optimize.DFSET", files->get_datfile_train().filename);
+//    pt.put("Data.Optimize.DFSET", files->get_datfile_train().filename);
+    pt.put("Data.Optimize.DFSET", fname_dfset);
     pt.put("Data.Optimize.Constraint", constraint->get_constraint_mode());
 
     pt.put("Data.Structure.NumberOfAtoms", system_structure.nat);
@@ -683,7 +689,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
 
     for (auto order = 1; order < cluster->get_maxorder(); ++order) {
 
-        if (order >= files->get_output_maxorder()) break;
+        if (order >= get_output_maxorder()) break;
 
         auto fc_cart_anharm = fcs->get_fc_cart()[order];
 
@@ -745,10 +751,10 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     using namespace boost::property_tree::xml_parser;
     const auto indent = 2;
 
-    const auto file_xml = files->get_prefix() + ".xml";
+    //const auto file_xml = files->get_prefix() + ".xml";
 
 #if BOOST_VERSION >= 105600
-    write_xml(file_xml, pt, std::locale(),
+    write_xml(fname_fcs, pt, std::locale(),
               xml_writer_make_settings<ptree::key_type>(' ', indent,
                                                         widen<std::string>("utf-8")));
 #else
@@ -759,7 +765,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     deallocate(pair_tmp);
 
     if (verbosity > 0) {
-        std::cout << " Input data for the phonon code ANPHON      : " << file_xml << std::endl;
+        std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << std::endl;
     }
 }
 
@@ -1107,5 +1113,15 @@ int Writer::get_fcs_save_flag(const std::string key_str)
         return save_format_flags[key_str];
     }
     return -1;
+}
+
+void Writer::set_output_maxorder(const int maxorder)
+{
+    output_maxorder = maxorder;
+}
+
+int Writer::get_output_maxorder() const
+{
+    return output_maxorder;
 }
 

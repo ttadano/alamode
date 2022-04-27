@@ -101,6 +101,9 @@ public:
     void set_fcs_save_flag(const std::string key_str, const int val);
     int get_fcs_save_flag(const std::string key_str);
 
+    void set_output_maxorder(const int maxorder);
+
+    int get_output_maxorder() const;
 
 private:
     void write_force_constants(const Cluster *cluster,
@@ -115,8 +118,9 @@ private:
                                     const Cluster *cluster,
                                     const Fcs *fcs,
                                     const Constraint *constraint,
-                                    const Files *files,
                                     const double *fcs_vals,
+                                    const std::string fname_dfset,
+                                    const std::string fname_fcs,
                                     const int verbosity) const;
 
     void write_hessian(const System *system,
@@ -145,5 +149,7 @@ private:
                               int nprec = 15) const;
 
     std::map<std::string, int> save_format_flags;
+    int output_maxorder;
+    std::string file_fcs, file_hes;
 };
 }

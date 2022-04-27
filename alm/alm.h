@@ -55,8 +55,6 @@ public:
 
     void set_output_filename_prefix(std::string prefix) const;
 
-    void set_print_hessian(bool print_hessian) const;
-
     void set_print_symmetry(int printsymmetry) const;
 
     void set_datfile_train(const DispForceFile &dat_in) const;

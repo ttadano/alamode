@@ -76,11 +76,6 @@ void ALM::set_output_filename_prefix(const std::string prefix) const // PREFIX
     files->set_prefix(prefix);
 }
 
-void ALM::set_print_hessian(const bool print_hessian) const // HESSIAN
-{
-    files->print_hessian = print_hessian;
-}
-
 void ALM::set_print_symmetry(const int printsymmetry) const // PRINTSYM
 {
     symmetry->set_print_symmetry(printsymmetry);
@@ -213,12 +208,12 @@ std::string ALM::get_forceconstant_basis() const
 
 void ALM::set_nmaxsave(const int nmaxsave) const // NMAXSAVE
 {
-    files->set_output_maxorder(nmaxsave);
+    writer->set_output_maxorder(nmaxsave);
 }
 
 int ALM::get_nmaxsave() const
 {
-    return files->get_output_maxorder();
+    return writer->get_output_maxorder();
 }
 
 void ALM::define(const int maxorder,
@@ -643,7 +638,7 @@ int ALM::run_optimize()
                                               verbosity,
                                               files->get_datfile_train(),
                                               files->get_datfile_validation(),
-                                              files->get_output_maxorder(),
+                                              writer->get_output_maxorder(),
                                               timer);
     return info;
 }
@@ -665,7 +660,6 @@ void ALM::init_fc_table()
 
     if (structure_initialized) return;
     system->init(verbosity, timer);
-    files->init();
     symmetry->init(system, verbosity, timer);
     structure_initialized = true;
 
