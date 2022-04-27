@@ -192,6 +192,11 @@ public:
 
     void init_fc_table();
 
+    void save_fc(const std::string fc_format) const;
+
+    void set_fcs_save_flag(const std::string fcs_format, const int val) const;
+    int get_fcs_save_flag(const std::string fcs_format) const;
+
 private:
 
     int verbosity;

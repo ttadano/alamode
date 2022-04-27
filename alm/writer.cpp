@@ -9,7 +9,6 @@
 */
 
 #include "writer.h"
-#include "alm.h"
 #include "constraint.h"
 #include "error.h"
 #include "fcs.h"
@@ -24,13 +23,18 @@
 #include "version.h"
 #include <iostream>
 #include <fstream>
+#include <map>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
 
 using namespace ALM_NS;
 
-Writer::Writer() = default;
+Writer::Writer() {
+    save_format_flags["alamode"] = 1;
+    save_format_flags["shengbte"] = 0;
+    save_format_flags["qefc"] = 0;
+}
 
 Writer::~Writer() = default;
 
@@ -68,7 +72,11 @@ void Writer::write_input_vars(const System *system,
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << system->get_periodicity()[i];
     std::cout << '\n';
     std::cout << "  MAGMOM = " << system->get_str_magmom() << '\n';
+    std::cout << "  FCS_ALAMODE = " << save_format_flags.at("alamode") << ';';
     std::cout << "  NMAXSAVE = " << files->get_output_maxorder() << '\n';
+    std::cout << "  FC3_SHENGBTE = " << save_format_flags.at("shengbte") << '\n';
+    std::cout << "  FC2_QEFC = " << save_format_flags.at("qefc") << '\n';
+
     //std::cout << "  HESSIAN = " << alm->files->print_hessian << '\n';
     std::cout << '\n';
 
@@ -134,6 +142,51 @@ void Writer::write_input_vars(const System *system,
     //alm->timer->stop_clock("writer");
 }
 
+void Writer::save_fcs_with_specific_format(const std::string fcs_format,
+                                           const System *system,
+                                           const Symmetry *symmetry,
+                                           const Cluster *cluster,
+                                           const Constraint *constraint,
+                                           const Fcs *fcs,
+                                           const Optimize *optimize,
+                                           const Files *files,
+                                           const int verbosity) const
+{
+    if (fcs_format == "alamode") {
+        // save_fcs_alamode_oldformat breaks data in fcs.
+        save_fcs_alamode_oldformat(system,
+                                   symmetry,
+                                   cluster,
+                                   fcs,
+                                   constraint,
+                                   files,
+                                   optimize->get_params(),
+                                   verbosity);
+
+    } else if (fcs_format == "shengbte") {
+
+        if (cluster->get_maxorder() > 1) {
+            const auto fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";
+            save_fc3_thirdorderpy_format(system,
+                                         symmetry,
+                                         cluster,
+                                         constraint,
+                                         fcs,
+                                         fname_save,
+                                         verbosity);
+        }
+    } else if (fcs_format == "qefc") {
+        const auto fname_save = files->get_prefix() + ".fc";
+        save_fc2_QEfc_format(system,
+                             symmetry,
+                             fcs,
+                             fname_save,
+                             verbosity);
+    }
+
+}
+
+
 void Writer::writeall(const System *system,
                       const Symmetry *symmetry,
                       const Cluster *cluster,
@@ -145,8 +198,9 @@ void Writer::writeall(const System *system,
 {
 //    alm->timer->start_clock("writer");
 
-    if (verbosity > 0)
+    if (verbosity > 0) {
         std::cout << " The following files are created:" << std::endl << std::endl;
+    }
 
     write_force_constants(cluster,
                           fcs,
@@ -154,34 +208,29 @@ void Writer::writeall(const System *system,
                           optimize->get_params(),
                           verbosity,
                           files->file_fcs);
-    // write_misc_xml breaks data in fcs.
-    write_misc_xml(system,
-                   symmetry,
-                   cluster,
-                   fcs,
-                   constraint,
-                   files,
-                   optimize->get_params(),
-                   verbosity);
+
+    for (const auto & save_format_flag : save_format_flags) {
+        if (save_format_flag.second) {
+            save_fcs_with_specific_format(save_format_flag.first,
+                                          system,
+                                          symmetry,
+                                          cluster,
+                                          constraint,
+                                          fcs,
+                                          optimize,
+                                          files,
+                                          verbosity);
+        }
+    }
+
     if (files->print_hessian) {
         write_hessian(system,
                       symmetry,
                       fcs,
-                      verbosity,
-                      files->file_hes);
+                      files->file_hes,
+                      verbosity);
     }
-    //   write_in_QEformat(alm);
 
-    const auto print_thirdorderpy_fc3 = false;
-    if (cluster->get_maxorder() > 1 && print_thirdorderpy_fc3) {
-        const auto fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";
-        write_fc3_thirdorderpy_format(system,
-                                      symmetry,
-                                      cluster,
-                                      constraint,
-                                      fcs,
-                                      fname_save);
-    }
 
 //    alm->timer->stop_clock("writer");
 }
@@ -390,14 +439,14 @@ void Writer::write_displacement_pattern(const Cluster *cluster,
 }
 
 
-void Writer::write_misc_xml(const System *system,
-                            const Symmetry *symmetry,
-                            const Cluster *cluster,
-                            const Fcs *fcs,
-                            const Constraint *constraint,
-                            const Files *files,
-                            const double *fcs_vals,
-                            const int verbosity) const
+void Writer::save_fcs_alamode_oldformat(const System *system,
+                                        const Symmetry *symmetry,
+                                        const Cluster *cluster,
+                                        const Fcs *fcs,
+                                        const Constraint *constraint,
+                                        const Files *files,
+                                        const double *fcs_vals,
+                                        const int verbosity) const
 {
     SystemInfo system_structure;
 
@@ -624,7 +673,7 @@ void Writer::write_misc_xml(const System *system,
                 }
             }
         } else {
-            exit("write_misc_xml", "This cannot happen.");
+            exit("save_fcs_alamode_oldformat", "This cannot happen.");
         }
     }
 
@@ -687,7 +736,7 @@ void Writer::write_misc_xml(const System *system,
                     }
                 }
             } else {
-                exit("write_misc_xml", "This cannot happen.");
+                exit("save_fcs_alamode_oldformat", "This cannot happen.");
             }
         }
         ishift += fcs->get_nequiv()[order].size();
@@ -717,8 +766,8 @@ void Writer::write_misc_xml(const System *system,
 void Writer::write_hessian(const System *system,
                            const Symmetry *symmetry,
                            const Fcs *fcs,
-                           const int verbosity,
-                           const std::string fname_out) const
+                           const std::string fname_out,
+                           const int verbosity) const
 {
     size_t i, j;
     int pair_tmp[2];
@@ -782,10 +831,11 @@ std::string Writer::double2string(const double d,
     return rt;
 }
 
-void Writer::write_in_QEformat(const System *system,
-                               const Symmetry *symmetry,
-                               const Fcs *fcs,
-                               const std::string fname_out) const
+void Writer::save_fc2_QEfc_format(const System *system,
+                                  const Symmetry *symmetry,
+                                  const Fcs *fcs,
+                                  const std::string fname_out,
+                                  const int verbosity) const
 {
     size_t i, j;
     int pair_tmp[2];
@@ -815,7 +865,7 @@ void Writer::write_in_QEformat(const System *system,
 //    auto file_fc = files->get_prefix() + ".fc";
 
     ofs_hes.open(fname_out.c_str(), std::ios::out);
-    if (!ofs_hes) exit("write_in_QEformat", "cannot create fc file");
+    if (!ofs_hes) exit("save_fc2_QEfc_format", "cannot create fc file");
 
     ofs_hes << "  1  1  1" << std::endl;
     for (auto icrd = 0; icrd < 3; ++icrd) {
@@ -836,14 +886,19 @@ void Writer::write_in_QEformat(const System *system,
     }
     ofs_hes.close();
     deallocate(hessian);
+
+    if (verbosity) {
+        std::cout << " Harmonic force constants in QE fc format     : " << fname_out << std::endl;
+    }
 }
 
-void Writer::write_fc3_thirdorderpy_format(const System *system,
-                                           const Symmetry *symmetry,
-                                           const Cluster *cluster,
-                                           const Constraint *constraint,
-                                           const Fcs *fcs,
-                                           const std::string fname_out) const
+void Writer::save_fc3_thirdorderpy_format(const System *system,
+                                          const Symmetry *symmetry,
+                                          const Cluster *cluster,
+                                          const Constraint *constraint,
+                                          const Fcs *fcs,
+                                          const std::string fname_out,
+                                          const int verbosity) const
 {
     size_t i, j, k;
     int pair_tmp[3], coord_tmp[3];
@@ -922,7 +977,7 @@ void Writer::write_fc3_thirdorderpy_format(const System *system,
     //auto file_fc3 = alm->files->get_prefix() + ".FORCE_CONSTANT_3RD";
 
     ofs_fc3.open(fname_out.c_str(), std::ios::out);
-    if (!ofs_fc3) exit("write_fc3_thirdorderpy_format", "cannot create the file");
+    if (!ofs_fc3) exit("save_fc3_thirdorderpy_format", "cannot create the file");
     ofs_fc3 << nelems << std::endl;
 
     bool swapped;
@@ -954,7 +1009,7 @@ void Writer::write_fc3_thirdorderpy_format(const System *system,
                         iter_cluster = cluster->get_interaction_cluster(1, i).find(
                                 InteractionCluster(atom_tmp, cell_dummy));
                         if (iter_cluster == cluster->get_interaction_cluster(1, i).end()) {
-                            exit("write_misc_xml", "This cannot happen.");
+                            exit("save_fcs_alamode_oldformat", "This cannot happen.");
                         }
 
                         const auto multiplicity = (*iter_cluster).cell.size();
@@ -1020,6 +1075,11 @@ void Writer::write_fc3_thirdorderpy_format(const System *system,
     ofs_fc3.close();
     deallocate(fc3);
     deallocate(has_element);
+
+
+    if (verbosity) {
+        std::cout << " Third-order FCs in ShengBTE format         : " << fname_out << std::endl;
+    }
 }
 
 std::string Writer::easyvizint(const int n) const
@@ -1032,3 +1092,20 @@ std::string Writer::easyvizint(const int n) const
 
     return str_tmp;
 }
+
+void Writer::set_fcs_save_flag(const std::string key_str,
+                               const int val)
+{
+    if (save_format_flags.find(key_str) != save_format_flags.end()) {
+        save_format_flags[key_str] = val;
+    }
+}
+
+int Writer::get_fcs_save_flag(const std::string key_str)
+{
+    if (save_format_flags.find(key_str) != save_format_flags.end()) {
+        return save_format_flags[key_str];
+    }
+    return -1;
+}
+

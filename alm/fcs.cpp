@@ -125,7 +125,6 @@ void Fcs::set_default_variables()
     fc_cart = nullptr;
     store_zeros = true;
 
-    // preferred_basis = "Cartesian";
     preferred_basis = "Lattice";
 }
 
@@ -368,7 +367,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
     // Necessary for hexagonal systems.
 
     int i;
-    // int j;
     unsigned int isym;
     int ixyz;
     int *index_tmp;
@@ -955,26 +953,6 @@ void Fcs::get_available_symmop(const size_t nat,
     // use_compatible == true returns the compatible space group (for creating fc_table)
     // use_compatible == false returnes the incompatible supace group (for creating constraint)
 
-    // int k = 0;
-    // for (const auto &it : symmetry->get_SymmData()) {
-    //     std::cout << "SYMM #" << ++k << '\n';
-    //     std::cout << "compatibility (Cart, Latt): " << it.compatible_with_cartesian << " " << it.compatible_with_lattice << '\n';
-    //     for (auto i = 0; i < 3; ++i) {
-    //         for (auto j = 0; j < 3; ++j) {
-    //             std::cout << std::setw(15) << it.rotation_cart[i][j];
-    //         }
-    //         std::cout << '\n';
-    //     }
-    //     std::cout << '\n';
-    //     for (auto i = 0; i < 3; ++i) {
-    //         for (auto j = 0; j < 3; ++j) {
-    //             std::cout << std::setw(15) << it.rotation[i][j];
-    //         }
-    //         std::cout << '\n';
-    //     }
-    //     std::cout << '\n';
-    // }
-
     int i, j;
     int counter = 0;
 
@@ -1181,7 +1159,6 @@ void Fcs::set_basis_conversion_matrix(const Cell &supercell)
                     basis_conversion_matrix(i, j) = 1.0;
                 } else {
                     basis_conversion_matrix(i, j) = 0.0;
-
                 }
             }
         }

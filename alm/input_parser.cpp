@@ -217,7 +217,7 @@ void InputParser::parse_general_vars(ALM *alm)
     int printsymmetry, is_periodic[3];
     size_t icount, ncount;
     auto trim_dispsign_for_evenfunc = true;
-    bool print_hessian;
+    int print_hessian, print_fcs_alamode, print_fc2_qefc, print_fc3_shengbte;
     int noncollinear, trevsym;
     double **magmom, magmag{0.0};
     double tolerance;
@@ -229,7 +229,7 @@ void InputParser::parse_general_vars(ALM *alm)
             "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
             "DBASIS", "TRIMEVEN", "VERBOSITY",
             "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
-            "NMAXSAVE"
+            "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
     std::map<std::string, std::string> general_var_dict;
@@ -358,9 +358,24 @@ void InputParser::parse_general_vars(ALM *alm)
         assign_val(trevsym, "TREVSYM", general_var_dict);
     }
     if (general_var_dict["HESSIAN"].empty()) {
-        print_hessian = false;
+        print_hessian = 0;
     } else {
         assign_val(print_hessian, "HESSIAN", general_var_dict);
+    }
+    if (general_var_dict["FCS_ALAMODE"].empty()) {
+        print_fcs_alamode = 1;
+    } else {
+        assign_val(print_fcs_alamode, "FCS_ALAMODE", general_var_dict);
+    }
+    if (general_var_dict["FC3_SHENGBTE"].empty()) {
+        print_fc3_shengbte = 0;
+    } else {
+        assign_val(print_fc3_shengbte, "FC3_SHENGBTE", general_var_dict);
+    }
+    if (general_var_dict["FC2_QEFC"].empty()) {
+        print_fc2_qefc = 0;
+    } else {
+        assign_val(print_fc2_qefc, "FC2_QEFC", general_var_dict);
     }
 
     if (!general_var_dict["MAGMOM"].empty()) {
@@ -468,6 +483,9 @@ void InputParser::parse_general_vars(ALM *alm)
                                    trim_dispsign_for_evenfunc,
                                    lspin,
                                    print_hessian,
+                                   print_fcs_alamode,
+                                   print_fc3_shengbte,
+                                   print_fc2_qefc,
                                    noncollinear,
                                    trevsym,
                                    kdname,

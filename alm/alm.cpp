@@ -685,3 +685,26 @@ void ALM::init_fc_table()
     // but corresponding constranits are not.
     ready_to_fit = false;
 }
+
+void ALM::save_fc(const std::string fcs_format) const
+{
+    writer->save_fcs_with_specific_format(fcs_format,
+                                          system,
+                                          symmetry,
+                                          cluster,
+                                          constraint,
+                                          fcs,
+                                          optimize,
+                                          files,
+                                          verbosity);
+}
+
+void ALM::set_fcs_save_flag(const std::string fcs_format, const int val) const
+{
+    writer->set_fcs_save_flag(fcs_format, val);
+}
+
+int ALM::get_fcs_save_flag(const std::string fcs_format) const
+{
+    return writer->get_fcs_save_flag(fcs_format);
+}

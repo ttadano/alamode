@@ -129,7 +129,10 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int is_periodic_in[3],
                                    const bool trim_dispsign_for_evenfunc,
                                    const bool lspin_in,
-                                   const bool print_hessian,
+                                   const int print_hessian,
+                                   const int print_fcs_alamode,
+                                   const int print_fc3_shengbte,
+                                   const int print_fc2_qefc,
                                    const int noncollinear_in,
                                    const int trevsym_in,
                                    const std::string *kdname_in,
@@ -175,6 +178,9 @@ void InputSetter::set_general_vars(ALM *alm,
     }
 
     alm->set_print_hessian(print_hessian);
+    alm->set_fcs_save_flag("alamode", print_fcs_alamode);
+    alm->set_fcs_save_flag("shengbte", print_fc3_shengbte);
+    alm->set_fcs_save_flag("qefc", print_fc2_qefc);
     alm->set_tolerance_constraint(tolerance_constraint);
     alm->set_forceconstant_basis(basis_force_constant);
     alm->set_nmaxsave(nmaxsave);

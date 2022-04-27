@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "system.h"
 #include "symmetry.h"
 #include "cluster.h"
@@ -21,7 +22,6 @@
 #include "optimize.h"
 #include "files.h"
 
-//#include "alm.h"
 
 namespace ALM_NS {
 class AtomProperty {
@@ -88,6 +88,20 @@ public:
                                     const std::string prefix,
                                     const int verbosity) const;
 
+    void save_fcs_with_specific_format(const std::string fcs_format,
+                                       const System *system,
+                                       const Symmetry *symmetry,
+                                       const Cluster *cluster,
+                                       const Constraint *constraint,
+                                       const Fcs *fcs,
+                                       const Optimize *optimize,
+                                       const Files *files,
+                                       const int verbosity) const;
+
+    void set_fcs_save_flag(const std::string key_str, const int val);
+    int get_fcs_save_flag(const std::string key_str);
+
+
 private:
     void write_force_constants(const Cluster *cluster,
                                const Fcs *fcs,
@@ -96,36 +110,40 @@ private:
                                const int verbosity,
                                const std::string fname_save) const;
 
-    void write_misc_xml(const System *system,
-                        const Symmetry *symmetry,
-                        const Cluster *cluster,
-                        const Fcs *fcs,
-                        const Constraint *constraint,
-                        const Files *files,
-                        const double *fcs_vals,
-                        const int verbosity) const;
+    void save_fcs_alamode_oldformat(const System *system,
+                                    const Symmetry *symmetry,
+                                    const Cluster *cluster,
+                                    const Fcs *fcs,
+                                    const Constraint *constraint,
+                                    const Files *files,
+                                    const double *fcs_vals,
+                                    const int verbosity) const;
 
     void write_hessian(const System *system,
                        const Symmetry *symmetry,
                        const Fcs *fcs,
-                       const int verbosity,
-                       const std::string fname_out) const;
+                       const std::string fname_out,
+                       const int verbosity) const;
 
-    void write_in_QEformat(const System *system,
-                           const Symmetry *symmetry,
-                           const Fcs *fcs,
-                           const std::string fname_out) const;
+    void save_fc2_QEfc_format(const System *system,
+                              const Symmetry *symmetry,
+                              const Fcs *fcs,
+                              const std::string fname_out,
+                              const int verbosity) const;
 
-    void write_fc3_thirdorderpy_format(const System *system,
-                                       const Symmetry *symmetry,
-                                       const Cluster *cluster,
-                                       const Constraint *constraint,
-                                       const Fcs *fcs,
-                                       const std::string fname_out) const;
+    void save_fc3_thirdorderpy_format(const System *system,
+                                      const Symmetry *symmetry,
+                                      const Cluster *cluster,
+                                      const Constraint *constraint,
+                                      const Fcs *fcs,
+                                      const std::string fname_out,
+                                      const int verbosity) const;
 
     std::string easyvizint(int) const;
 
     std::string double2string(double,
                               int nprec = 15) const;
+
+    std::map<std::string, int> save_format_flags;
 };
 }
