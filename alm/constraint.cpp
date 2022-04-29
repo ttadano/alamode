@@ -291,12 +291,6 @@ void Constraint::setup(const System *system,
         rref_sparse(nparam, const_self[order], tolerance_constraint);
     }
 
-    get_mapping_constraint(maxorder,
-                           fcs->get_nequiv(),
-                           const_self,
-                           const_fix,
-                           const_relate,
-                           index_bimap);
 
 #ifdef _DEBUG
     for (auto order = 0; order < maxorder; ++order) {
@@ -356,6 +350,13 @@ void Constraint::setup(const System *system,
                                                        fcs->get_nequiv(),
                                                        nparams);
     }
+
+    get_mapping_constraint(maxorder,
+                           fcs->get_nequiv(),
+                           const_self,
+                           const_fix,
+                           const_relate,
+                           index_bimap);
 
     exist_constraint
             = impose_inv_T
@@ -465,7 +466,6 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
 
     for (order = 0; order < maxorder; ++order) {
         const auto nelems = nequiv[order].size();
-
         if (const_fix[order].empty()) {
             for (auto &p: const_self[order]) {
                 for (i = 0; i < nparams; ++i) arr_tmp[i] = 0.0;
@@ -477,7 +477,6 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
         }
         nshift += nelems;
     }
-
 
     const auto nconst1 = const_total.size();
 
