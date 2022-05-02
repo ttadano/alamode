@@ -222,6 +222,7 @@ void InputParser::parse_general_vars(ALM *alm)
     double **magmom, magmag{0.0};
     double tolerance;
     double tolerance_constraint;
+    double fc_zero_threshold;
     int verbosity, nmaxsave;
 
     std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
@@ -229,7 +230,7 @@ void InputParser::parse_general_vars(ALM *alm)
             "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
             "DBASIS", "TRIMEVEN", "VERBOSITY",
             "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
-            "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE"
+            "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE", "FC_ZERO_THR"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
     std::map<std::string, std::string> general_var_dict;
@@ -377,6 +378,11 @@ void InputParser::parse_general_vars(ALM *alm)
     } else {
         assign_val(print_fc2_qefc, "FC2_QEFC", general_var_dict);
     }
+    if (general_var_dict["FC_ZERO_THR"].empty()) {
+        fc_zero_threshold = eps12;
+    } else {
+        assign_val(fc_zero_threshold, "FC_ZERO_THR", general_var_dict);
+    }
 
     if (!general_var_dict["MAGMOM"].empty()) {
         lspin = true;
@@ -493,7 +499,8 @@ void InputParser::parse_general_vars(ALM *alm)
                                    tolerance,
                                    tolerance_constraint,
                                    basis_force_constant,
-                                   nmaxsave);
+                                   nmaxsave,
+                                   fc_zero_threshold);
 
     allocate(magmom, nat, 3);
 

@@ -61,7 +61,8 @@ public:
                           double tolerance,
                           double tolerance_constraint,
                           const std::string &basis_force_constant,
-                          const int nmaxsave);
+                          const int nmaxsave,
+                          const double fc_zero_threshold);
 
     void set_optimize_vars(ALM *alm,
                            const std::vector<std::vector<double>> &u_train_in,

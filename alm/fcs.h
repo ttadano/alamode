@@ -190,6 +190,10 @@ public:
     void set_forceconstant_cartesian(const int maxorder,
                                      double *param_in);
 
+    void set_fc_zero_threshold(const int threshold_in);
+
+    double get_fc_zero_threshold() const;
+
 private:
     std::vector<size_t> *nequiv;       // stores duplicate number of irreducible force constants
     std::vector<FcProperty> *fc_table; // all force constants in preferred_basis
@@ -203,6 +207,9 @@ private:
     Eigen::Matrix3d basis_conversion_matrix;
 
     bool store_zeros;
+
+    double fc_zero_threshold; // The threshold value to judge if the force constants are treated
+                              // as nonzero or not.
 
     void set_default_variables();
 

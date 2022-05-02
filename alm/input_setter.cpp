@@ -140,7 +140,8 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const double tolerance,
                                    const double tolerance_constraint,
                                    const std::string &basis_force_constant,
-                                   const int nmaxsave)
+                                   const int nmaxsave,
+                                   const double fc_zero_threshold)
 {
     size_t i;
 
@@ -181,6 +182,7 @@ void InputSetter::set_general_vars(ALM *alm,
     alm->set_fcs_save_flag("alamode", print_fcs_alamode);
     alm->set_fcs_save_flag("shengbte", print_fc3_shengbte);
     alm->set_fcs_save_flag("qefc", print_fc2_qefc);
+    alm->set_fc_zero_threshold(fc_zero_threshold);
     alm->set_tolerance_constraint(tolerance_constraint);
     alm->set_forceconstant_basis(basis_force_constant);
     alm->set_nmaxsave(nmaxsave);

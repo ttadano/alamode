@@ -181,6 +181,10 @@ public:
 
     void set_fc(double *fc_in) const;
 
+    void set_fc_zero_threshold(const double threshold_in);
+
+    double get_fc_zero_threshold() const;
+
     void get_matrix_elements(double *amat,
                              double *bvec) const;
 

@@ -576,6 +576,16 @@ void ALM::set_fc(double *fc_in) const
                                      optimize->get_params());
 }
 
+void ALM::set_fc_zero_threshold(const double threshold_in)
+{
+    fcs->set_fc_zero_threshold(threshold_in);
+}
+
+double ALM::get_fc_zero_threshold() const
+{
+    return fcs->get_fc_zero_threshold();
+}
+
 void ALM::get_matrix_elements(double *amat,
                               double *bvec) const
 {

@@ -80,6 +80,7 @@ void Writer::write_input_vars(const System *system,
     std::cout << "  FC3_SHENGBTE = " << save_format_flags.at("shengbte") << '\n';
     std::cout << "  FC2_QEFC = " << save_format_flags.at("qefc") << '\n';
     std::cout << "  HESSIAN = " << save_format_flags.at("hessian") << '\n';
+    std::cout << "  FC_ZERO_THR = " << fcs->get_fc_zero_threshold() << '\n';
     std::cout << '\n';
 
     std::cout << " Interaction:\n";

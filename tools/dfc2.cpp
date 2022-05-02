@@ -418,17 +418,22 @@ void calculate_new_fc2(const std::vector<FcsClassExtent> &fc2_in,
     }
 
     if (detect_warnings) {
+        cout << "\n";
         cout << " If you see a warning message above, please check the following points:\n";
         cout << " 0. If the value in the last column is small enough (e.g., < 1.0e-8), \n"
                 "    the warning message usually does not signify an error of your calculation.\n";
-        cout << " 1. If the value in the last collumn is large enough, please make sure that the q-point grid "
-                "    specified by KMESH_INTERPOLATE (e.g., NxMxL) is smaller than or equal to the supercell size "
-                "    of the original FC2. If this is not the case, please change KMESH_INTERPOLATE or"
+        cout << " 1. If the value in the last collumn is large enough, please make sure that the q-point grid\n"
+                "    specified by KMESH_INTERPOLATE (e.g., NxMxL) is smaller than or equal to the supercell size\n"
+                "    of the original FC2. If this is not the case, please change KMESH_INTERPOLATE or\n"
                 "    the input XML file containing the original FC2.\n";
         cout << " 2. If the above condition 1 is satisifed but you still get a warning,\n"
                 "    please check if the ANPHON code detected the space group consistently with ALM.\n"
                 "    If not, please change TOLERANCE value and/or refine the input structure.\n";
-        cout << " 3. If the above conditions 1 and 2 are satisfied but you still see a warning,\n"
+        cout << " 3. If the harmonic force constants are extracted for a model potential where\n"
+                "    the absolute value of force constants become very small (<1.0e-12) beyond\n"
+                "    a certain cutoff radius inside ths supercell, please use a smaller FC_ZERO_THR\n"
+                "    when computing harmonic force constants. This may solve the problem.\n";
+        cout << " 4. If you still see a warning after checking the above points,\n"
                 "    please report it at https://github.com/ttadano/alamode/issues.\n";
     }
 }
