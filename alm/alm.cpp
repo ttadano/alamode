@@ -690,8 +690,12 @@ void ALM::init_fc_table()
     ready_to_fit = false;
 }
 
-void ALM::save_fc(const std::string fcs_format) const
+void ALM::save_fc(const std::string filename,
+                  const std::string fcs_format,
+                  const int maxorder_to_save) const
 {
+    writer->set_output_maxorder(maxorder_to_save);
+    writer->set_filename_fcs(filename);
     writer->save_fcs_with_specific_format(fcs_format,
                                           system,
                                           symmetry,

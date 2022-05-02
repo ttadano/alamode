@@ -102,6 +102,10 @@ public:
 
     int get_fcs_save_flag(const std::string key_str);
 
+    void set_filename_fcs(const std::string filename_in);
+
+    std::string get_filename_fcs() const;
+
     void set_output_maxorder(const int maxorder);
 
     int get_output_maxorder() const;
@@ -152,5 +156,6 @@ private:
     std::map<std::string, int> save_format_flags;
     int output_maxorder;
     std::string file_fcs, file_hes;
+    std::string filename_fcs;
 };
 }

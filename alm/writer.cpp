@@ -36,7 +36,7 @@ Writer::Writer() : output_maxorder(5)
     save_format_flags["shengbte"] = 0;
     save_format_flags["qefc"] = 0;
     save_format_flags["hessian"] = 0;
-
+    filename_fcs = "";
 }
 
 Writer::~Writer() = default;
@@ -156,7 +156,10 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                                            const int verbosity) const
 {
     if (fcs_format == "alamode") {
-        const auto fname_save = files->get_prefix() + ".xml";
+        auto fname_save = get_filename_fcs();
+        if (fname_save.empty()) {
+            fname_save = files->get_prefix() + ".xml";
+        }
 
         save_fcs_alamode_oldformat(system,
                                    symmetry,
@@ -171,7 +174,11 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
     } else if (fcs_format == "shengbte") {
 
         if (cluster->get_maxorder() > 1) {
-            const auto fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";
+            auto fname_save = get_filename_fcs();
+            if (fname_save.empty()) {
+                fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";;
+            }
+
             save_fc3_thirdorderpy_format(system,
                                          symmetry,
                                          cluster,
@@ -181,7 +188,10 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                                          verbosity);
         }
     } else if (fcs_format == "qefc") {
-        const auto fname_save = files->get_prefix() + ".fc";
+        auto fname_save = get_filename_fcs();
+        if (fname_save.empty()) {
+            fname_save = files->get_prefix() + ".fc";;
+        }
         save_fc2_QEfc_format(system,
                              symmetry,
                              fcs,
@@ -189,7 +199,10 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                              verbosity);
 
     } else if (fcs_format == "hessian") {
-        const auto fname_save = files->get_prefix() + ".hessian";
+        auto fname_save = get_filename_fcs();
+        if (fname_save.empty()) {
+            fname_save = files->get_prefix() + ".hessian";;
+        }
 
         write_hessian(system,
                       symmetry,
@@ -1125,5 +1138,15 @@ void Writer::set_output_maxorder(const int maxorder)
 int Writer::get_output_maxorder() const
 {
     return output_maxorder;
+}
+
+void Writer::set_filename_fcs(const std::string filename_in)
+{
+    filename_fcs = filename_in;
+}
+
+std::string Writer::get_filename_fcs() const
+{
+    return filename_fcs;
 }
 

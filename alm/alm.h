@@ -194,7 +194,9 @@ public:
 
     void init_fc_table();
 
-    void save_fc(const std::string fc_format) const;
+    void save_fc(const std::string filename,
+                 const std::string fc_format,
+                 const int maxorder_to_save) const;
 
     void set_fcs_save_flag(const std::string fcs_format, const int val) const;
 
