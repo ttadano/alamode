@@ -229,11 +229,11 @@ void Constraint::setup(const System *system,
                                    const_fix[1]);
     }
 
-    generate_symmetry_constraint_in_cartesian(system->get_supercell().number_of_atoms,
-                                              symmetry,
-                                              cluster,
-                                              fcs,
-                                              verbosity);
+    generate_symmetry_constraint(system->get_supercell().number_of_atoms,
+                                 symmetry,
+                                 cluster,
+                                 fcs,
+                                 verbosity);
 
 
     extra_constraint_from_symmetry = false;
