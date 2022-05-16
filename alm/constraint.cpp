@@ -229,11 +229,11 @@ void Constraint::setup(const System *system,
                                    const_fix[1]);
     }
 
-    generate_symmetry_constraint_in_cartesian(system->get_supercell().number_of_atoms,
-                                              symmetry,
-                                              cluster,
-                                              fcs,
-                                              verbosity);
+    generate_symmetry_constraint(system->get_supercell().number_of_atoms,
+                                 symmetry,
+                                 cluster,
+                                 fcs,
+                                 verbosity);
 
 
     extra_constraint_from_symmetry = false;
@@ -796,11 +796,11 @@ const boost::bimap<size_t, size_t> &Constraint::get_index_bimap(const int order)
     return index_bimap[order];
 }
 
-void Constraint::generate_symmetry_constraint_in_cartesian(const size_t nat,
-                                                           const Symmetry *symmetry,
-                                                           const Cluster *cluster,
-                                                           const Fcs *fcs,
-                                                           const int verbosity) const
+void Constraint::generate_symmetry_constraint(const size_t nat,
+                                              const Symmetry *symmetry,
+                                              const Cluster *cluster,
+                                              const Fcs *fcs,
+                                              const int verbosity) const
 {
     // Create constraint matrices arising from the crystal symmetry.
 

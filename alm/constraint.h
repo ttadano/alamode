@@ -342,11 +342,11 @@ private:
                                const double tolerance = eps12) const;
 
     // const_symmetry is updated.
-    void generate_symmetry_constraint_in_cartesian(const size_t nat,
-                                                   const Symmetry *symmetry,
-                                                   const Cluster *cluster,
-                                                   const Fcs *fcs,
-                                                   const int verbosity) const;
+    void generate_symmetry_constraint(const size_t nat,
+                                      const Symmetry *symmetry,
+                                      const Cluster *cluster,
+                                      const Fcs *fcs,
+                                      const int verbosity) const;
 
     void get_constraint_translation(const Cell &supercell,
                                     const Symmetry *symmetry,
