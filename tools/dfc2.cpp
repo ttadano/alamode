@@ -368,14 +368,13 @@ void calculate_new_fc2(const std::vector<FcsClassExtent> &fc2_in,
         arr_tmp.push_back(it.xyz2);
         for (i = 0; i < 3; ++i) arr_tmp.push_back(nint(vec[i]));
 
-        std::cout << std::setw(5) << vec[0];
-        std::cout << std::setw(5) << vec[1];
-        std::cout << std::setw(5) << vec[2];
-
-        std::cout << std::setw(5) << it.atm1 << std::setw(5) << it.xyz1;
-        std::cout << std::setw(5) << map_s2p[it.atm2].atom_num << std::setw(5) << it.xyz2;
-        std::cout << std::setw(15) << it.fcs_val << '\n';
-
+//        std::cout << std::setw(5) << vec[0];
+//        std::cout << std::setw(5) << vec[1];
+//        std::cout << std::setw(5) << vec[2];
+//
+//        std::cout << std::setw(5) << it.atm1 << std::setw(5) << it.xyz1;
+//        std::cout << std::setw(5) << map_s2p[it.atm2].atom_num << std::setw(5) << it.xyz2;
+//        std::cout << std::setw(15) << it.fcs_val << '\n';
 
         fc2_data.emplace_back(arr_tmp, icount);
         ++icount;
