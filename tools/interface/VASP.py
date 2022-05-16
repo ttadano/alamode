@@ -93,7 +93,7 @@ class VaspParser(object):
                 for j in range(3):
                     x[i][j] = float(arr[j])
 
-            if basis == "Direct" or basis == "direct" or basis == "D" or basis == "d":
+            if basis[0] == "D" or basis[0] == "d":
                 xf = x
             else:
                 xf = np.dot(x, invlavec)
