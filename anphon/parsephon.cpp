@@ -374,7 +374,7 @@ void Input::parse_scph_vars()
     unsigned int bubble = 0;
 
     // structural optimization
-    bool relax_coordinate = false;
+    int relax_coordinate = 0;
     int relax_algo = 2;
     int max_str_iter = 100;
     double str_conv_tol = 0.001;

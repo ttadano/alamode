@@ -77,7 +77,7 @@ public:
     unsigned int maxiter;
     bool print_self_consistent_fc2;
     bool selfenergy_offdiagonal;
-    bool relax_coordinate;
+    int relax_coordinate;
 
     // variables related to structural optimization
     int relax_algo;

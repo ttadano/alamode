@@ -71,7 +71,7 @@ void Scph::set_default_variables()
     selfenergy_offdiagonal = true;
 
     // variables related to the structural optimization
-    relax_coordinate = false;
+    relax_coordinate = 0;
     relax_algo = 2;
     max_str_iter = 100;
     str_conv_tol = 0.001;
@@ -136,7 +136,8 @@ void Scph::deallocate_variables()
 
 void Scph::setup_scph()
 {
-    MPI_Bcast(&relax_coordinate, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    //  MPI_Bcast(&relax_coordinate, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&relax_coordinate, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
     MPI_Bcast(&bubble, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     setup_kmesh();
@@ -184,12 +185,14 @@ void Scph::exec_scph()
                  "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
-        if(!relax_coordinate){
+        if(relax_coordinate == 0){
             exec_scph_main(delta_dymat_scph);
         }
         // Calculate SCPH + structural optimization and obtain the correction to the dynamical matrix
+        else if(relax_coordinate == 1){
+            exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
+        }
         else{
-            // exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
             exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
 
