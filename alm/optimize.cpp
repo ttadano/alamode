@@ -2069,7 +2069,7 @@ void Optimize::get_matrix_elements(const int maxorder,
         allocate(amat_orig_tmp, natmin3, ncols);
 
 #ifdef _OPENMP
-#pragma omp for schedule(guided)
+#pragma omp for
 #endif
         for (irow = 0; irow < ncycle; ++irow) {
 
@@ -2210,7 +2210,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
         allocate(amat_mod_tmp, natmin3, ncols_new);
 
 #ifdef _OPENMP
-#pragma omp for schedule(guided)
+#pragma omp for
 #endif
         for (irow = 0; irow < ncycle; ++irow) {
 
@@ -2408,7 +2408,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
         allocate(amat_mod_tmp, natmin3, ncols_new);
 
 #ifdef _OPENMP
-#pragma omp for schedule(guided)
+#pragma omp for
 #endif
         for (irow = 0; irow < ncycle; ++irow) {
 

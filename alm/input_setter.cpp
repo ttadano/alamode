@@ -237,6 +237,8 @@ void InputSetter::set_constraint_vars(ALM *alm,
     alm->set_fc_fix(2, fix_harmonic);
     alm->set_fc_file(3, fc3_file);
     alm->set_fc_fix(3, fix_cubic);
+    const auto use_algebraic_constraint = constraint_flag / 10;
+    alm->set_algebraic_constraint(use_algebraic_constraint);
 }
 
 

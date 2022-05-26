@@ -93,6 +93,8 @@ public:
 
     void set_constraint_mode(const int constraint_flag) const;
 
+    void set_algebraic_constraint(const int use_algebraic_flag) const;
+
     void set_tolerance_constraint(const double tolerance_constraint) const;
 
     void set_rotation_axis(const std::string rotation_axis) const;
@@ -100,6 +102,11 @@ public:
     void set_fc_file(const int order, const std::string fc_file) const;
 
     void set_fc_fix(const int order, const bool fc_fix) const;
+
+    bool ready_all_constraints() const;
+
+    void set_forceconstants_to_fix(const std::vector<std::vector<int>> &intpair_fix,
+                                   const std::vector<double> &values_fix) const;
 
     void set_sparse_mode(const int sparse_mode) const;
 
@@ -186,7 +193,7 @@ public:
     double get_fc_zero_threshold() const;
 
     void get_matrix_elements(double *amat,
-                             double *bvec) const;
+                             double *bvec);
 
     int run_optimize();
 
@@ -206,7 +213,7 @@ private:
 
     int verbosity;
     bool structure_initialized;
-    bool ready_to_fit;
+    bool initialized_constraint_class;
     std::ofstream *ofs_alm;
     std::streambuf *coutbuf;
 

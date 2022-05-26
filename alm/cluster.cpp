@@ -225,8 +225,6 @@ void Cluster::check_permutation_symmetry(const System *system,
 {
     const auto nat = system->get_supercell().number_of_atoms;
     int natmin = symmetry->get_nat_prim();
-    int nsym_tran = symmetry->get_symnum_tran().size();
-
 
     int isym_tran, isym;
     int j, j2;
@@ -243,7 +241,7 @@ void Cluster::check_permutation_symmetry(const System *system,
     int is_found;
     std::vector<int> is_checked;
 
-    int itmp, jtmp, xyztmp, jattmp, itmp2;
+    int itmp, jtmp, xyztmp, itmp2;
     double dtmp1;
     std::vector<double> relvec_tmp;
 
@@ -496,9 +494,6 @@ void Cluster::make_symnum_tran_to_prim(const System *system,
 
     const auto nat = system->get_supercell().number_of_atoms;
     int natmin = symmetry->get_nat_prim();
-    int nsym_tran = symmetry->get_symnum_tran().size();
-
-
     int isym_tran, isym;
     int iat, jat;
 

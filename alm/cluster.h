@@ -87,7 +87,7 @@ public:
     void make_fractional_from_cartesian(const double reciprocal_lat[3][3])
     {
 
-        int i, j, xyz, xyz2;
+        int i, xyz, xyz2;
         std::vector<double> vectmp;
 
         relvecs_fractional.clear();

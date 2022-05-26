@@ -888,7 +888,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
             {
                 std::vector<ForceConstantTable> fc_cart_omp;
 
-#pragma omp for private(prod_matrix, j), schedule(guided), nowait
+#pragma omp for private(prod_matrix, j), nowait
                 for (int igrp = 0; igrp < ngrp; ++igrp) {
                     for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
 
@@ -1205,6 +1205,52 @@ void Fcs::set_basis_conversion_matrix(const Cell &supercell)
                 } else {
                     basis_conversion_matrix(i, j) = 0.0;
                 }
+            }
+        }
+    }
+}
+
+void Fcs::translate_forceconstant_index_to_centercell(const Symmetry *symmetry,
+                                                      std::vector<std::vector<int>> &index_inout) const
+{
+    const auto map_sym = symmetry->get_map_sym();
+    const auto map_p2s = symmetry->get_map_p2s();
+    const auto symnum_tran = symmetry->get_symnum_tran();
+    const auto nfcs = index_inout.size();
+    const auto nelems = index_inout[0].size();
+    const auto natmin = symmetry->get_nat_prim();
+    std::vector<int> atoms, coords;
+    std::vector<int> atoms_tran;
+    std::vector<int> index_tran;
+
+    atoms.resize(nelems);
+    coords.resize(nelems);
+    atoms_tran.resize(nelems);
+    index_tran.resize(nelems);
+
+    for (size_t i = 0; i < nfcs; ++i) {
+        for (size_t j = 0; j < nelems; ++j) {
+            atoms[j] = index_inout[i][j] / 3;
+            coords[j] = index_inout[i][j] % 3;
+        }
+        int isym = -1;
+        if (!is_inprim(index_inout[i][0],
+                       natmin,
+                       map_p2s)) {
+            for (auto jsym = 0; jsym < symnum_tran.size(); ++jsym) {
+                index_tran[0] = 3 * map_sym[atoms[0]][symnum_tran[jsym]] + coords[0];
+                if (is_inprim(index_tran[0], natmin, map_p2s)) {
+                    isym = jsym;
+                    break;
+                }
+            }
+            if (isym == -1) {
+                exit("translate_forceconstant_index_to_centercell",
+                     "translational mapping to the center cell failed.");
+            }
+
+            for (size_t j = 0; j < nelems; ++j) {
+                index_inout[i][j] = 3 * map_sym[atoms[j]][symnum_tran[isym]] + coords[j];
             }
         }
     }

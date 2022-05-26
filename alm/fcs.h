@@ -121,6 +121,28 @@ public:
         }
     }
 
+    ForceConstantTable(const double fc_in,
+                       const std::vector<int> &flattenarray_in)
+    {
+        const auto nelems = flattenarray_in.size();
+        atoms.resize(nelems);
+        coords.resize(nelems);
+        flattenarray = flattenarray_in;
+        fc_value = fc_in;
+        for (auto i = 0; i < nelems; ++i) {
+            atoms[i] = flattenarray_in[i] / 3;
+            coords[i] = flattenarray_in[i] % 3;
+        }
+        is_ascending_order = true;
+
+        for (auto i = 1; i < nelems - 1; ++i) {
+            if (flattenarray[i] > flattenarray[i + 1]) {
+                is_ascending_order = false;
+                break;
+            }
+        }
+    }
+
     bool operator<(const ForceConstantTable &a) const
     {
         return std::lexicographical_compare(flattenarray.begin(), flattenarray.end(),
@@ -194,6 +216,9 @@ public:
 
     double get_fc_zero_threshold() const;
 
+    void translate_forceconstant_index_to_centercell(const Symmetry *symmetry,
+                                                     std::vector<std::vector<int>> &index_inout) const;
+
 private:
     std::vector<size_t> *nequiv;       // stores duplicate number of irreducible force constants
     std::vector<FcProperty> *fc_table; // all force constants in preferred_basis
@@ -209,7 +234,7 @@ private:
     bool store_zeros;
 
     double fc_zero_threshold; // The threshold value to judge if the force constants are treated
-                              // as nonzero or not.
+    // as nonzero or not.
 
     void set_default_variables();
 
