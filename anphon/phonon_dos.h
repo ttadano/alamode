@@ -31,6 +31,7 @@ public:
     bool flag_dos;
     bool compute_dos;
     bool projected_dos, two_phonon_dos;
+    bool longitudinal_projected_dos;
     int scattering_phase_space;
 
     int n_energy;
@@ -38,6 +39,7 @@ public:
     double *energy_dos;
     double *dos_phonon;
     double **pdos_phonon;
+    double *longitude_dos;
     double ***dos2_phonon;
     double total_sps3, ***sps3_mode;
     double ****sps3_with_bose;
@@ -105,5 +107,17 @@ private:
                                                     const unsigned int *k_pair,
                                                     const int smearing_method,
                                                     double **ret) const;
+
+    void calc_longitudinal_projected_dos(const unsigned int nk,
+                                 const double *const *xk_in,
+                                 const double rlavec_p[3][3],
+                                 double *const *eval,
+                                 const unsigned int n,
+                                 const double *energy,
+                                 double *ret,
+                                 const unsigned int neval,
+                                 const unsigned int natmin,
+                                 const int smearing_method,
+                                 std::complex<double> ***evec) const;
 };
 }

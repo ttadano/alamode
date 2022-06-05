@@ -609,6 +609,10 @@ void Writes::write_phonon_info()
             write_two_phonon_dos();
         }
 
+        if (dos->longitudinal_projected_dos) {
+            write_longitudinal_proj_dos();
+        }
+
         if (dos->scattering_phase_space == 1) {
             write_scattering_phase_space();
         } else if (dos->scattering_phase_space == 2) {
@@ -1015,6 +1019,29 @@ void Writes::write_scattering_phase_space() const
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_sps;
     std::cout << " : Three-phonon scattering phase space" << std::endl;
+}
+
+void Writes::write_longitudinal_proj_dos() const
+{
+    int i;
+    std::ofstream ofs_dos;
+    auto file_dos = input->job_title + ".longitudinal_dos";
+
+    ofs_dos.open(file_dos.c_str(), std::ios::out);
+    if (!ofs_dos) exit("write_longitudinal_proj_dos", "cannot open file_dos");
+
+    ofs_dos << "# Energy [cm^-1], LONGITUDINAL-PROJECTED DOS\n";
+    ofs_dos.setf(std::ios::scientific);
+
+    for (i = 0; i < dos->n_energy; ++i) {
+        ofs_dos << std::setw(15) << dos->energy_dos[i];
+        ofs_dos << std::setw(15) << dos->longitude_dos[i];
+        ofs_dos << std::endl;
+    }
+    ofs_dos.close();
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
+    std::cout << " : Longitudinal projected DOS" << std::endl;
 }
 
 void Writes::write_scattering_amplitude() const

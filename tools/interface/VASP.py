@@ -11,7 +11,7 @@
 #
 from __future__ import print_function
 
-import importlib
+from importlib.util import find_spec
 
 import numpy as np
 
@@ -39,7 +39,8 @@ except ModuleNotFoundError:
 class VaspParser(object):
 
     def __init__(self):
-        self._support_h5parse = importlib.util.find_spec("py4vasp") is not None
+        #self._support_h5parse = importlib.util.find_spec("py4vasp") is not None
+        self._support_h5parse = find_spec("py4vasp") is not None
         self._prefix = None
         self._lattice_vector = None
         self._inverse_lattice_vector = None
