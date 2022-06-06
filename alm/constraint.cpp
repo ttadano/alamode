@@ -2749,9 +2749,13 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
             mother = fcs->get_fc_table()[order][ihead].mother;
             found_element = false;
+            // sign_mother may be -1 (which is confusing and should be fixed in the future),
+            // so keep its sign so that the sign of the fixed parameter becomes consistent.
+            const auto sign_mother = fcs->get_fc_table()[order][ihead].sign;
 
             for (auto j = 0; j < fcs->get_nequiv()[order][ui]; ++j) {
                 index_tmp = fcs->get_fc_table()[order][ihead + j].elems;
+
                 it_found = std::lower_bound(fc_fix_table.begin(),
                                             fc_fix_table.end(),
                                             ForceConstantTable(0.0, index_tmp));
@@ -2765,7 +2769,7 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
             if (found_element) {
                 const_fix[order].emplace_back(ConstraintTypeFix(mother,
-                                                                sign * (*it_found).fc_value));
+                                                                sign_mother * sign * (*it_found).fc_value));
             }
             ihead += fcs->get_nequiv()[order][ui];
         }
@@ -2804,6 +2808,9 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
             mother = fcs->get_fc_table()[order][ihead].mother;
             found_element = false;
+            // sign_mother may be -1 (which is confusing and should be fixed in the future),
+            // so keep its sign so that the sign of the fixed parameter becomes consistent.
+            const auto sign_mother = fcs->get_fc_table()[order][ihead].sign;
 
             for (auto j = 0; j < fcs->get_nequiv()[order][ui]; ++j) {
                 index_tmp = fcs->get_fc_table()[order][ihead + j].elems;
@@ -2820,7 +2827,7 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
             if (found_element) {
                 const_fix[order].emplace_back(ConstraintTypeFix(mother,
-                                                                sign * (*it_found).fc_value));
+                                                                sign_mother * sign * (*it_found).fc_value));
             }
             ihead += fcs->get_nequiv()[order][ui];
         }
