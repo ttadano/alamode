@@ -1913,11 +1913,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     calculate_u0(q0, u0);
                     read_initial_strain(u_tensor);
                 }
-                // if(std::fabs(u0[5]) < 0.01){
-                //     read_initial_q0(q0);
-                //     calculate_u0(q0, u0);
-                //     converged_prev = false;
-                // }
+                if(std::fabs(u0[5]) < 0.01){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                    converged_prev = false;
+                }
             }
             else if(set_init_str == 3){
                 // read T-dependent initial structure from u0.in
