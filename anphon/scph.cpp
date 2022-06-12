@@ -1212,6 +1212,17 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     calculate_u0(q0, u0);
                 }
             }
+            else if(set_init_str == 4){ // specifically for LiReO3-type
+                if(i_temp_loop == 0){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                }
+                else if (std::fabs(u0[2]) < 0.05){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                }
+            }
+
             else if(set_init_str == 3){
                 // read T-dependent initial structure from u0.in
                 read_Tdep_initial_q0_from_u(q0, i_temp_loop);
@@ -1333,6 +1344,8 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                             //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
                             v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
+                        // This is for the robustness of the calculation
+                        v2_mat_optical(is, is) += 1.0e-6;
                     }
                     // solve linear equation
                     for(is = 0; is < ns-3; is++){
@@ -1900,7 +1913,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     calculate_u0(q0, u0);
                     read_initial_strain(u_tensor);
                 }
-                // if(u0[5] < 0.01){
+                // if(std::fabs(u0[5]) < 0.01){
                 //     read_initial_q0(q0);
                 //     calculate_u0(q0, u0);
                 //     converged_prev = false;
@@ -2217,6 +2230,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                             //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
                             v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
+                        v2_mat_optical(is, is) += 1.0e-6;
                     }
                     // solve linear equation
                     for(is = 0; is < ns-3; is++){
@@ -6282,8 +6296,13 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormaliz
                     Qtmp = 0.0;
                 }
                 else{
-                    n1 = thermodynamics->fB(omega1_tmp, T_in);
-                    Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                    if(thermodynamics->classical){
+                        Qtmp = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1_tmp * omega1_tmp), 0.0);
+                    }
+                    else{
+                        n1 = thermodynamics->fB(omega1_tmp, T_in);
+                        Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                    }
                 }
                 
                 v1_array_SCP[is] += v3mat_tmp(js, js) * Qtmp;
@@ -6370,8 +6389,13 @@ void Scph::compute_anharmonic_del_v0_strain(std::complex<double> *del_v0_strain_
                     if(omega2_anharm_T[ik][js] < 0.0){
                         std::cout << "Warning in compute_anharmonic_del_v0_strain: squared SCP frequency is negative. ik = " << ik << std::endl;
                     }
-                    n1 = thermodynamics->fB(omega1_tmp, T_in);
-                    Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                    if(thermodynamics->classical){
+                        Qtmp = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1_tmp * omega1_tmp), 0.0);
+                    }
+                    else{
+                        n1 = thermodynamics->fB(omega1_tmp, T_in);
+                        Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                    }
                 }
                 
                 del_v0_strain_SCP[i1] += factor2 * del_v2_strain_mat(js, js) * Qtmp;
