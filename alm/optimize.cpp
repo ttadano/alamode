@@ -470,7 +470,7 @@ double Optimize::crossvalidation(const std::string job_prefix,
 
     if (verbosity > 0) {
         std::vector<std::string> str_linearmodel{"Elastic-net", "Adaptive LASSO"};
-        std::cout << str_linearmodel[optcontrol.linear_model - 2];
+        std::cout << " " << str_linearmodel[optcontrol.linear_model - 2];
         std::cout << "  cross-validation with the following parameters:\n";
         std::cout << "   L1_RATIO = " << optcontrol.l1_ratio << '\n';
         std::cout << "   CV = " << std::setw(15) << optcontrol.cross_validation << '\n';
