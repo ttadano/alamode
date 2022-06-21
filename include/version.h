@@ -12,4 +12,4 @@
  
 #include <string>
 
-static const std::string ALAMODE_VERSION = "1.3.0";
+static const std::string ALAMODE_VERSION = "1.4.0";

@@ -2439,7 +2439,7 @@ void Writes::print_normalmode_borncharge() const
 
         const auto ns = dynamical->neval;
 
-        std::string file_zstar = input->job_title + ".Born_mode";
+        std::string file_zstar = input->job_title + ".zmode";
         std::ofstream ofs_zstar;
         ofs_zstar.open(file_zstar.c_str(), std::ios::out);
         if (!ofs_zstar)

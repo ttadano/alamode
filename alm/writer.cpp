@@ -893,10 +893,10 @@ void Writer::save_fc2_QEfc_format(const System *system,
         for (auto jcrd = 0; jcrd < 3; ++jcrd) {
             for (i = 0; i < system->get_supercell().number_of_atoms; ++i) {
                 for (j = 0; j < system->get_supercell().number_of_atoms; ++j) {
-                    ofs_hes << std::setw(3) << icrd + 1;
-                    ofs_hes << std::setw(3) << jcrd + 1;
-                    ofs_hes << std::setw(3) << i + 1;
-                    ofs_hes << std::setw(3) << j + 1;
+                    ofs_hes << std::setw(6) << icrd + 1;
+                    ofs_hes << std::setw(6) << jcrd + 1;
+                    ofs_hes << std::setw(6) << i + 1;
+                    ofs_hes << std::setw(6) << j + 1;
                     ofs_hes << std::endl;
                     ofs_hes << "  1  1  1 " << std::setw(20) << std::setprecision(13)
                             << std::scientific << hessian[3 * j + jcrd][3 * i + icrd];
