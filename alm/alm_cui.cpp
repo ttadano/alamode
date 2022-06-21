@@ -13,7 +13,6 @@
 #include "input_parser.h"
 #include "timer.h"
 #include "version.h"
-#include "writer.h"
 #include <iostream>
 #include <iomanip>
 
@@ -56,10 +55,16 @@ void ALMCUI::run(const int narg,
         std::cout << " Job started at " << alm->timer->DateAndTime() << std::endl;
     }
 
-    auto writer = new Writer();
-
     if (alm->get_verbosity() > 0) {
-        writer->write_input_vars(alm, run_mode);
+        alm->writer->write_input_vars(alm->system,
+                                      alm->symmetry,
+                                      alm->cluster,
+                                      alm->displace,
+                                      alm->fcs,
+                                      alm->constraint,
+                                      alm->optimize,
+                                      alm->files,
+                                      run_mode);
     }
 
     alm->init_fc_table();
@@ -69,13 +74,22 @@ void ALMCUI::run(const int narg,
         if (alm->get_optimizer_control().linear_model == 1 ||
             (alm->get_optimizer_control().linear_model >= 2
              && alm->get_optimizer_control().cross_validation == 0)) {
-            writer->writeall(alm);
+            alm->writer->writeall(alm->system,
+                                  alm->symmetry,
+                                  alm->cluster,
+                                  alm->constraint,
+                                  alm->fcs,
+                                  alm->optimize,
+                                  alm->files,
+                                  alm->get_verbosity());
         }
     } else if (run_mode == "suggest") {
         alm->run_suggest();
-        writer->write_displacement_pattern(alm);
+        alm->writer->write_displacement_pattern(alm->cluster,
+                                                alm->displace,
+                                                alm->files->get_prefix(),
+                                                alm->get_verbosity());
     }
-    delete writer;
 
     if (alm->get_verbosity() > 0) {
         std::cout << std::endl << " Job finished at "

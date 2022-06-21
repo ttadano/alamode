@@ -113,7 +113,11 @@ private:
     std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
 
     void prepare_delta_fcs(const std::vector<FcsArrayWithCell> &,
-                           std::vector<FcsArrayWithCell> &) const;
+                           std::vector<FcsArrayWithCell> &,
+                           const int) const;
+
+    // void impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &,
+    //                    int);
 
     void calc_dfc2_reciprocal(std::complex<double> **,
                               const double *);

@@ -102,6 +102,8 @@ private:
 
     void write_two_phonon_dos() const;
 
+    void write_longitudinal_proj_dos() const;
+
     void write_scattering_phase_space() const;
 
     void write_scattering_amplitude() const;

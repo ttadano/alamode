@@ -36,7 +36,7 @@ List of supported input variables
    :ref:`ANIME <anphon_anime>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`, :ref:`ISOFACT <anphon_isofact>`
    :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_COHERENT <anphon_kappa_coherent>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`, :ref:`PDOS <anphon_pdos>`, :ref:`PRINTEVEC <anphon_printevec>`
    :ref:`PRINTMSD <anphon_printmsd>`, :ref:`PRINTPR <anphon_printpr>`, :ref:`PRINTVEL <anphon_printvel>`, :ref:`PRINTXSF <anphon_printxsf>`
-   :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`
+   :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`, :ref:`UCORR <anphon_ucorr>`, :ref:`ZMODE <anphon_zmode>`
 
 
 
@@ -733,6 +733,50 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
                Here, :math:`f_{i}` is the fraction of the :math:`i`\ th isotope of an element having mass :math:`m_{i}`, 
                and :math:`\bar{m}=\sum_{i}f_{i}m_{i}` is the average mass, respectively. 
                This quantity is equivalent to :math:`g_{2}` appearing in the original paper by S. Tamura [Phys. Rev. B, 27, 858.].
+
+
+````
+
+.. _anphon_ucorr:
+
+* UCORR-tag = 0 | 1
+
+ === =========================================================================
+  0   Do nothing
+  1   | Compute the displacement-displacement correlation function.
+      | The result is stored in ``PREFIX``.ucorr
+ === =========================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: The displacement-displacement correlation function involves two atoms. The first atom is located in the primitive cell at the center (shift1=[0,0,0]) and the second atom is located in the :math:`\ell'`\  th cell. The translation vector to the :math:`\ell'`\  th cell can be specified by the ``SHIFT_UCORR`` tag. This tag is effective only when ``MODE = phonons`` and *KPMODE* = 2
+
+
+````
+
+.. _anphon_shift_ucorr:
+
+* SHIFT_UCORR-tag = l1, l2, l3
+
+ :Default: [0, 0, 0]
+ :Type: Array of integers
+ :Description: This tag specifies the translation vector used for computing the displacement-displacement (uu) correlation function. For example, if one wants to compute the uu correlation function between an atom 1 in the cell at the center and atom 2 in the neighboring cell at :math:`\boldsymbol{r}(\ell')=(1,0,0)`, ``SHIFT_UCORR`` should be set as ``SHIFT_UCORR = 1 0 0``.
+
+````
+
+.. _anphon_zmode:
+
+* ZMODE-tag = 0 | 1
+
+ === =========================================================================
+  0   Do nothing
+  1   | Compute the mode effective charges of the zone-center phonons. 
+      | The result is stored in ``PREFIX``.zmode
+ === =========================================================================
+ 
+ :Default: 0
+ :Type: Integer
+ :Description: When ``MODE = phonons`` and ``ZMODE = 1``, the mode effective charges are computed for the phonon modes at the Gamma point and saved in ``PREFIX``.zmode. The unit of the mode effective charge is :math:`e \; \text{amu}^{-1/2}`.
 
 
 ````

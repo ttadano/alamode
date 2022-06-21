@@ -85,6 +85,18 @@ To evaluate the group velocity numerically, we employ a central difference where
 If one needs to save the group velocities, please turn on the ``PRINTVEL``-tag.
 
 
+Mode effective charge
+---------------------
+
+The mode effective charge is defined as 
+
+.. math::
+    
+    Z^{*}_{j,\alpha} = \sum_{\kappa\beta}Z^{*}_{\kappa,\alpha\beta}\frac{e_{\beta}(\kappa;\boldsymbol{0}j)}{\sqrt{M_{\kappa}}}
+
+where :math:`Z^{*}_{\kappa,\alpha\beta}` is the atomic Born effective charge. To compute the mode effective charges of the zone-center modes, please set ``ZMODE = 1`` in the &analysis field and supply ``BORNINFO``.
+
+
 Thermodynamics functions
 ------------------------
 
@@ -124,25 +136,25 @@ Mean square displacement
 ------------------------
 
 
-The mean square displacement tensor of atom :math:`\kappa` is given by
+The displacement-displacement correlation function is given by
 
 .. math::
     :nowrap:
 
     \begin{align}
-     \left< u_{\mu}(\kappa)u_{\nu}(\kappa) \right> & = \frac{\hbar}{2M_{\kappa}N_{q}}\sum_{\boldsymbol{q},j}
-     \frac{1}{2\omega_{\boldsymbol{q}j}}\left(e_{\mu}(\kappa;\boldsymbol{q}j)e_{\nu}^{*}(\kappa;\boldsymbol{q}j)+ e_{\mu}^{*}(\kappa;\boldsymbol{q}j)e_{\nu}(\kappa;\boldsymbol{q}j)\right) \notag \\
-     & \hspace{25mm} \times \coth{\left(\frac{\hbar\omega_{\boldsymbol{q}j}}{2kT}\right)}.
+     \left< u_{\mu}(0\kappa)u_{\nu}(\ell'\kappa') \right> & = \frac{1}{\sqrt{M_{\kappa}M_{\kappa'}}N_{q}}\sum_{\boldsymbol{q}j}
+     \frac{\hbar (2n_{\boldsymbol{q}j}+1)}{2\omega_{\boldsymbol{q}j}}
+     \mathrm{Re}\bigg[e_{\mu}(\kappa;\boldsymbol{q}j)e_{\nu}^{*}(\kappa';\boldsymbol{q}j) e^{-i\boldsymbol{q}\cdot\boldsymbol{r}(\ell')}  \bigg],
     \end{align}
 
-When ``PRINTMSD`` is turned on, the code print the diagonal part of the mean square displacement tensor 
+where :math:`n_{\boldsymbol{q}j} = 1/(e^{\hbar\omega_{\boldsymbol{q}j}/kT}-1)` is the Bose-Einstein distribution function. When ``UCORR = 1``, the code prints the above correlation function in ``PREFIX``.ucorr. The vector :math:`\boldsymbol{r}(\ell')` is the lattice translation vector to the :math:`\ell'` \ th unit cell, which can be specified by the ``SHIFT_UCORR`` tag.
+When ``PRINTMSD`` is turned on, the code print the mean square displacements, which are the diagonal components of the correlation function:
 
 .. math::
 
-    \left< u_{\mu}^{2}(\kappa)\right> = \frac{\hbar}{M_{\kappa}N_{q}}\sum_{\boldsymbol{q},j}\frac{1}{\omega_{\boldsymbol{q}j}} |e_{\mu}(\kappa;\boldsymbol{q}j)|^{2}
-    \left(n_{\boldsymbol{q}j}+\frac{1}{2}\right),
+    \left< u_{\mu}^{2}(0\kappa)\right> = \frac{\hbar}{M_{\kappa}N_{q}}\sum_{\boldsymbol{q},j}\frac{1}{\omega_{\boldsymbol{q}j}} |e_{\mu}(\kappa;\boldsymbol{q}j)|^{2}
+    \left(n_{\boldsymbol{q}j}+\frac{1}{2}\right).
 
-where :math:`n_{\boldsymbol{q}j} = 1/(e^{\hbar\omega_{\boldsymbol{q}j}/kT}-1)` is the Bose-Einstein distribution function.
 
 Phonon DOS
 ----------

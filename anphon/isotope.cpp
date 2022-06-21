@@ -95,7 +95,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                                       const std::complex<double> *const *const *evec_in,
                                       double &ret) const
 {
-    // Compute phonon selfenergy of phonon (knum, snum) 
+    // Compute phonon selfenergy of phonon (knum, snum)
     // due to phonon-isotope scatterings.
     // Delta functions are replaced by smearing functions with width EPSILON.
 
@@ -142,7 +142,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                                             const std::complex<double> *const *const *evec_in,
                                             double &ret) const
 {
-    // Compute phonon selfenergy of phonon (knum, snum) 
+    // Compute phonon selfenergy of phonon (knum, snum)
     // due to phonon-isotope scatterings.
     // This version employs the tetrahedron method.
 

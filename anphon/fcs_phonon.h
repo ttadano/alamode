@@ -136,7 +136,6 @@ public:
     unsigned int maxorder;
     std::string file_fcs, file_fc2;
 
-    std::vector<FcsClass> *force_constant;
     std::vector<FcsArrayWithCell> *force_constant_with_cell;
     std::vector<FcsClassExtent> fc2_ext;
 

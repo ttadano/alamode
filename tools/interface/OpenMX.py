@@ -91,7 +91,7 @@ class OpenmxParser(object):
                     fpos_lavec = i
 
                 elif search_target[7] in line.lower():
-                    kgrid.extend([int(t) for t in line.strip().split()[1:]])
+                    kgrid.extend([int(t) for t in line.strip().split()[1:4]])
 
             if nat is None:
                 raise RuntimeError("Failed to extract the Atoms.Number value from the file.")

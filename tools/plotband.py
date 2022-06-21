@@ -16,7 +16,7 @@ import optparse
 import matplotlib as mpl
 from matplotlib.gridspec import GridSpec
 try:
-    mpl.use("Qt5agg")
+    mpl.use("Qt5")
 except:
     pass
 import matplotlib.pyplot as plt

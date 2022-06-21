@@ -440,7 +440,7 @@ void Dynamical::eval_k(const double *xk_in,
 
     if (eigenvectors && require_evec) {
         k = 0;
-        // Here we transpose the matrix evec_out so that 
+        // Here we transpose the matrix evec_out so that
         // evec_out[i] becomes phonon eigenvector of i-th mode.
         for (j = 0; j < neval; ++j) {
             for (i = 0; i < neval; ++i) {
@@ -474,7 +474,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
 
     calc_analytic_k(xk_in, fc2_in, dymat_k);
 
-    // Calculate Coulombic contributions including long-range interactions 
+    // Calculate Coulombic contributions including long-range interactions
     ewald->add_longrange_matrix(xk_in, kvec_in, mat_longrange);
 
     // Add calculated dynamical matrix of Coulomb parts
@@ -543,7 +543,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
 
     if (eigenvectors && require_evec) {
         k = 0;
-        // Here we transpose the matrix evec_out so that 
+        // Here we transpose the matrix evec_out so that
         // evec_out[i] becomes phonon eigenvector of i-th mode.
         for (j = 0; j < neval; ++j) {
             for (i = 0; i < neval; ++i) {
@@ -601,7 +601,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
                                    const double *kvec_na_in,
                                    std::complex<double> **dymat_na_out) const
 {
-    // Calculate the non-analytic part of dynamical matrices 
+    // Calculate the non-analytic part of dynamical matrices
     // by Parlinski's method.
 
     unsigned int i, j;
@@ -658,8 +658,13 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
             }
         }
     }
+    // Move input xk back to the -0.5 <= xk < 0.5 range to
+    // make the phonon dispersion periodic in the reciprocal lattice.
+    for (i = 0; i < 3; ++i) {
+        xk_tmp[i] = xk_in[i] - static_cast<double>(nint(xk_in[i]));
+    }
 
-    rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
+    rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
     const auto norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
 
     const auto factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
@@ -683,7 +688,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
             rotvec(xdiff, xdiff, system->lavec_s);
             rotvec(xdiff, xdiff, system->rlavec_p);
 
-            double phase = xk_in[0] * xdiff[0] + xk_in[1] * xdiff[1] + xk_in[2] * xdiff[2];
+            double phase = xk_tmp[0] * xdiff[0] + xk_tmp[1] * xdiff[1] + xk_tmp[2] * xdiff[2];
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -698,7 +703,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                                     const double *kvec_na_in,
                                     std::complex<double> **dymat_na_out) const
 {
-    // Calculate the non-analytic part of dynamical matrices 
+    // Calculate the non-analytic part of dynamical matrices
     // by the mixed-space approach.
 
     unsigned int i, j;
@@ -1034,9 +1039,9 @@ void Dynamical::modify_eigenvectors() const
     }
 
     deallocate(flag_done);
-    deallocate(evec_tmp);
-
     dos->dymat_dos->set_eigenvectors(nk, evec_tmp);
+
+    deallocate(evec_tmp);
 
     MPI_Barrier(MPI_COMM_WORLD);
     //if (mympi->my_rank == 0) {
@@ -1440,7 +1445,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
     if (flag_symmborn) {
 
-        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR 
+        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR
         // particularly for NONANALYTIC=3 (Ewald summation).
 
         int iat;

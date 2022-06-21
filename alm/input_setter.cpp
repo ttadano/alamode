@@ -129,7 +129,10 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int is_periodic_in[3],
                                    const bool trim_dispsign_for_evenfunc,
                                    const bool lspin_in,
-                                   const bool print_hessian,
+                                   const int print_hessian,
+                                   const int print_fcs_alamode,
+                                   const int print_fc3_shengbte,
+                                   const int print_fc2_qefc,
                                    const int noncollinear_in,
                                    const int trevsym_in,
                                    const std::string *kdname_in,
@@ -137,7 +140,8 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const double tolerance,
                                    const double tolerance_constraint,
                                    const std::string &basis_force_constant,
-                                   const int nmaxsave)
+                                   const int nmaxsave,
+                                   const double fc_zero_threshold)
 {
     size_t i;
 
@@ -174,7 +178,11 @@ void InputSetter::set_general_vars(ALM *alm,
         is_periodic[i] = is_periodic_in[i];
     }
 
-    alm->set_print_hessian(print_hessian);
+    alm->set_fcs_save_flag("hessian", print_hessian);
+    alm->set_fcs_save_flag("alamode", print_fcs_alamode);
+    alm->set_fcs_save_flag("shengbte", print_fc3_shengbte);
+    alm->set_fcs_save_flag("qefc", print_fc2_qefc);
+    alm->set_fc_zero_threshold(fc_zero_threshold);
     alm->set_tolerance_constraint(tolerance_constraint);
     alm->set_forceconstant_basis(basis_force_constant);
     alm->set_nmaxsave(nmaxsave);
@@ -229,6 +237,8 @@ void InputSetter::set_constraint_vars(ALM *alm,
     alm->set_fc_fix(2, fix_harmonic);
     alm->set_fc_file(3, fc3_file);
     alm->set_fc_fix(3, fix_cubic);
+    const auto use_algebraic_constraint = constraint_flag / 10;
+    alm->set_algebraic_constraint(use_algebraic_constraint);
 }
 
 

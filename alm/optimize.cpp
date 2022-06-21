@@ -470,7 +470,7 @@ double Optimize::crossvalidation(const std::string job_prefix,
 
     if (verbosity > 0) {
         std::vector<std::string> str_linearmodel{"Elastic-net", "Adaptive LASSO"};
-        std::cout << str_linearmodel[optcontrol.linear_model - 2];
+        std::cout << " " << str_linearmodel[optcontrol.linear_model - 2];
         std::cout << "  cross-validation with the following parameters:\n";
         std::cout << "   L1_RATIO = " << optcontrol.l1_ratio << '\n';
         std::cout << "   CV = " << std::setw(15) << optcontrol.cross_validation << '\n';
@@ -487,6 +487,7 @@ double Optimize::crossvalidation(const std::string job_prefix,
         std::cout << "   CV_NALPHA = " << std::setw(5) << optcontrol.num_l1_alpha << '\n';
         std::cout << "   CONV_TOL = " << std::setw(15) << optcontrol.tolerance_iteration << '\n';
         std::cout << "   MAXITER = " << std::setw(5) << optcontrol.maxnum_iteration << '\n';
+        std::cout << "   STOP_CRITERION = " << std::setw(5) << optcontrol.stop_criterion << '\n';
         std::cout << "   ENET_DNORM = " << std::setw(15) << optcontrol.displacement_normalization_factor << '\n';
         std::cout << '\n';
 
@@ -929,7 +930,7 @@ void Optimize::write_cvresult_to_file(const std::string file_out,
     ofs_cv << "# L1 ALPHA, Fitting error, Validation error, Num. zero IFCs (2nd, 3rd, ...) \n";
 
     const auto maxorder = nonzeros[0].size();
-    for (auto ialpha = 0; ialpha < alphas.size(); ++ialpha) {
+    for (auto ialpha = 0; ialpha < training_error.size(); ++ialpha) {
         ofs_cv << std::setw(15) << alphas[ialpha];
         ofs_cv << std::setw(15) << training_error[ialpha];
         ofs_cv << std::setw(15) << validation_error[ialpha];
@@ -951,6 +952,7 @@ void Optimize::write_cvscore_to_file(const std::string file_out,
                                      const size_t nsets) const
 {
     const auto nalphas = alphas.size();
+    const auto n_terr = terr_mean.size();
     std::vector<std::string> str_linearmodel{"Elastic-net", "Adaptive LASSO"};
     std::ofstream ofs_cv;
     ofs_cv.open(file_out.c_str(), std::ios::out);
@@ -963,7 +965,8 @@ void Optimize::write_cvscore_to_file(const std::string file_out,
     ofs_cv << "# " << nsets << "-fold cross-validation scores\n";
     ofs_cv << "# L1 ALPHA, Fitting error (mean, std), Validation error (mean, std) \n";
 
-    for (size_t ialpha = 0; ialpha < nalphas; ++ialpha) {
+    const auto nsize = std::min(nalphas, n_terr);
+    for (size_t ialpha = 0; ialpha < nsize; ++ialpha) {
         ofs_cv << std::setw(15) << alphas[ialpha];
         ofs_cv << std::setw(15) << terr_mean[ialpha];
         ofs_cv << std::setw(15) << terr_std[ialpha];
@@ -990,7 +993,18 @@ void Optimize::set_errors_of_cvscore(std::vector<double> &terr_mean,
     double sum_v, sum2_v;
     const auto factor = 1.0 / static_cast<double>(nsets);
 
-    for (size_t ialpha = 0; ialpha < nalphas; ++ialpha) {
+    // The length of the training_error array may be different between different subsets
+    // Let's use the shortest one to compute the mean and std.
+    auto nmax_common = nalphas;
+    for (auto iset = 0; iset < nsets; ++iset) {
+        nmax_common = std::min(nmax_common, validation_error_accum[iset].size());
+    }
+    terr_mean.resize(nmax_common);
+    terr_std.resize(nmax_common);
+    verr_mean.resize(nmax_common);
+    verr_std.resize(nmax_common);
+
+    for (size_t ialpha = 0; ialpha < nmax_common; ++ialpha) {
         sum_t = 0.0;
         sum2_t = 0.0;
         sum_v = 0.0;
@@ -1037,7 +1051,7 @@ void Optimize::solution_path(const int maxorder,
                              std::vector<std::vector<int>> &nonzeros) const
 {
     int initialize_mode;
-
+    int ncount_verr_consecutive_increase = 0;
     std::ofstream ofs_coef;
 
     std::vector<double> params_tmp;
@@ -1160,9 +1174,27 @@ void Optimize::solution_path(const int maxorder,
                 std::cout << std::setw(3);
             }
         }
+
+        if (optcontrol.stop_criterion > 0) {
+            const auto nsize_now = validation_error.size();
+            if (nsize_now > 1) {
+                if (validation_error[nsize_now - 1] > validation_error[nsize_now - 2]) {
+                    ncount_verr_consecutive_increase += 1;
+                } else {
+                    ncount_verr_consecutive_increase = 0;
+                }
+            }
+            if (ncount_verr_consecutive_increase >= optcontrol.stop_criterion) {
+                break;
+            }
+        }
     }
 
     if (verbosity == 1) std::cout << std::endl;
+
+    if (verbosity == 1 && (alphas.size() > validation_error.size())) {
+        std::cout << "  STOP_CRITERION is satisfied: The solution path calculation has stopped.\n";
+    }
 
     if (optcontrol.save_solution_path) {
         ofs_coef.close();
@@ -2037,7 +2069,7 @@ void Optimize::get_matrix_elements(const int maxorder,
         allocate(amat_orig_tmp, natmin3, ncols);
 
 #ifdef _OPENMP
-#pragma omp for schedule(guided)
+#pragma omp for
 #endif
         for (irow = 0; irow < ncycle; ++irow) {
 
@@ -2178,7 +2210,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
         allocate(amat_mod_tmp, natmin3, ncols_new);
 
 #ifdef _OPENMP
-#pragma omp for schedule(guided)
+#pragma omp for
 #endif
         for (irow = 0; irow < ncycle; ++irow) {
 
@@ -2376,7 +2408,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
         allocate(amat_mod_tmp, natmin3, ncols_new);
 
 #ifdef _OPENMP
-#pragma omp for schedule(guided)
+#pragma omp for
 #endif
         for (irow = 0; irow < ncycle; ++irow) {
 
@@ -2971,6 +3003,11 @@ void Optimize::coordinate_descent(const int M,
         }
     } else {
         // Non-standardized version. Needs additional operations
+
+        Eigen::VectorXd inv_scale_beta(N);
+
+        for (i = 0; i < N; ++i) inv_scale_beta(i) = 1.0 / scale_beta(i);
+
         while (iloop < optcontrol.maxnum_iteration) {
             do_print_log = !((iloop + 1) % optcontrol.output_frequency) && (verbosity > 1);
 
@@ -2979,10 +3016,11 @@ void Optimize::coordinate_descent(const int M,
             }
             delta = beta;
             for (i = 0; i < N; ++i) {
-                beta(i) = shrink(Minv * grad(i) + beta(i) / scale_beta(i), alphlambda) * scale_beta(i);
+                beta(i) = shrink(Minv * grad(i) + beta(i) * inv_scale_beta(i), alphlambda) * scale_beta(i);
                 delta(i) -= beta(i);
                 if (std::abs(delta(i)) > 0.0) {
                     if (!has_prod[i]) {
+#pragma omp parallel for
                         for (j = 0; j < N; ++j) {
                             Prod(j, i) = A.col(j).dot(A.col(i));
                         }
@@ -2992,7 +3030,13 @@ void Optimize::coordinate_descent(const int M,
                 }
             }
             ++iloop;
-            diff = std::sqrt(delta.dot(delta) / static_cast<double>(N));
+            diff = 0.0;
+#pragma omp parallel for reduction(+:diff)
+            for (i = 0; i < N; ++i) {
+                diff += delta(i) * delta(i);
+            }
+            diff = std::sqrt(diff / static_cast<double>(N));
+            //diff = std::sqrt(delta.dot(delta) / static_cast<double>(N));
 
             if (diff < optcontrol.tolerance_iteration) break;
 

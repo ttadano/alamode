@@ -14,6 +14,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "constants.h"
 #include "error.h"
 #include "system.h"
+#include "mathfunctions.h"
 #include "memory.h"
 #include "dynamical.h"
 #include "write_phonons.h"
@@ -22,6 +23,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <iomanip>
 #include "symmetry_core.h"
 #include "thermodynamics.h"
+#include <Eigen/Geometry>
 
 using namespace PHON_NS;
 
@@ -41,11 +43,13 @@ void Dos::set_default_variables()
     compute_dos = true;
     projected_dos = false;
     two_phonon_dos = false;
+    longitudinal_projected_dos = false;
     scattering_phase_space = 0;
     energy_dos = nullptr;
     dos_phonon = nullptr;
     pdos_phonon = nullptr;
     dos2_phonon = nullptr;
+    longitude_dos = nullptr;
     sps3_mode = nullptr;
     sps3_with_bose = nullptr;
     tetra_nodes_dos = nullptr;
@@ -64,6 +68,9 @@ void Dos::deallocate_variables()
     if (pdos_phonon) {
         deallocate(pdos_phonon);
     }
+    if (longitude_dos) {
+        deallocate(longitude_dos);
+    }
     if (dos2_phonon) {
         deallocate(dos2_phonon);
     }
@@ -81,7 +88,7 @@ void Dos::deallocate_variables()
 
 void Dos::setup()
 {
-    // This function must not be called before dynamica->setup_dynamical()
+    // This function must not be called before dynamical->setup_dynamical()
 
     MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -90,6 +97,7 @@ void Dos::setup()
     MPI_Bcast(&projected_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&two_phonon_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&scattering_phase_space, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&longitudinal_projected_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
     if (kmesh_dos) {
         flag_dos = true;
@@ -128,6 +136,10 @@ void Dos::setup()
 
         if (two_phonon_dos) {
             allocate(dos2_phonon, kmesh_dos->nk_irred, n_energy, 4);
+        }
+
+        if (longitudinal_projected_dos) {
+            allocate(longitude_dos, n_energy);
         }
 
         if (scattering_phase_space == 1) {
@@ -185,6 +197,16 @@ void Dos::calc_dos_all()
                                 integration->ismear,
                                 dymat_dos->get_eigenvectors());
     }
+
+    if (longitudinal_projected_dos) {
+        calc_longitudinal_projected_dos(nk, kmesh_dos->xk,
+                                        system->rlavec_p,
+                                        eval, n_energy, energy_dos,
+                                        longitude_dos, neval, system->natmin,
+                                        integration->ismear,
+                                        dymat_dos->get_eigenvectors());
+    }
+
     deallocate(eval);
 
     if (two_phonon_dos) {
@@ -204,6 +226,7 @@ void Dos::calc_dos_all()
                                               integration->ismear,
                                               sps3_with_bose);
     }
+
 }
 
 void Dos::calc_dos(const unsigned int nk,
@@ -332,6 +355,120 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
 
     if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
 }
+
+
+void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
+                                          const double *const *xk_in,
+                                          const double rlavec_p[3][3],
+                                          double *const *eval,
+                                          const unsigned int n,
+                                          const double *energy,
+                                          double *ret,
+                                          const unsigned int neval,
+                                          const unsigned int natmin,
+                                          const int smearing_method,
+                                          std::complex<double> ***evec) const
+{
+    // Calculate atom projected phonon-DOS
+
+    int i;
+    unsigned int *kmap_identity;
+    double *weight;
+    double **proj;
+
+    double xq_cart[3];
+
+    Eigen::Vector3d qvec;
+    Eigen::Vector3cd evec_kappa;
+
+    if (mympi->my_rank == 0)
+        std::cout << " LONGITUDE_DOS = 1 : Calculating longitudinal-mode projected phonon DOS ... ";
+
+    allocate(kmap_identity, nk);
+    allocate(proj, neval, nk);
+
+    for (i = 0; i < nk; ++i) kmap_identity[i] = i;
+
+    double dot_prod_sum;
+    double cross_prod_sum;
+
+    for (unsigned int ik = 0; ik < nk; ++ik) {
+
+        for (i = 0; i < 3; ++i) xq_cart[i] = xk_in[ik][i];
+
+        rotvec(xq_cart, xq_cart, rlavec_p, 'T');
+
+        const double norm = std::sqrt(xq_cart[0] * xq_cart[0]
+                + xq_cart[1] * xq_cart[1]
+                + xq_cart[2] * xq_cart[2]);
+
+        if (norm > eps) {
+            for (i = 0; i <3; ++i) xq_cart[i] /= norm;
+        }
+
+        for (i = 0; i < 3; ++i) qvec(i) = xq_cart[i];
+
+        for (unsigned int imode = 0; imode < neval; ++imode) {
+            dot_prod_sum = 0.0;
+            cross_prod_sum = 0.0;
+
+            for (unsigned int iat = 0; iat < natmin; ++iat) {
+
+                for (i = 0; i < 3; ++i) {
+                    evec_kappa(i) = evec[ik][imode][3 * iat + i];
+                }
+                dot_prod_sum += std::norm(evec_kappa.dot(qvec));
+                cross_prod_sum += evec_kappa.cross(qvec).squaredNorm();
+            }
+
+            double sum_weight = dot_prod_sum + cross_prod_sum;
+            if (sum_weight > eps) {
+                dot_prod_sum /= sum_weight;
+//                cross_prod_sum /= sum_weight;
+            }
+            proj[imode][ik] = dot_prod_sum;
+        }
+    }
+
+#ifdef _OPENMP
+#pragma omp parallel private (weight)
+#endif
+        {
+            allocate(weight, nk);
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (i = 0; i < n; ++i) {
+                ret[i] = 0.0;
+
+                for (unsigned int k = 0; k < neval; ++k) {
+                    if (smearing_method == -1) {
+                        integration->calc_weight_tetrahedron(nk, kmap_identity,
+                                                             eval[k], energy[i],
+                                                             tetra_nodes_dos->get_ntetra(),
+                                                             tetra_nodes_dos->get_tetras(),
+                                                             weight);
+                    } else {
+                        integration->calc_weight_smearing(nk, nk, kmap_identity,
+                                                          eval[k], energy[i],
+                                                          smearing_method,
+                                                          weight);
+                    }
+
+                    for (unsigned int j = 0; j < nk; ++j) {
+                        ret[i] += proj[k][j] * weight[j];
+                    }
+                }
+            }
+
+            deallocate(weight);
+        }
+    deallocate(proj);
+    deallocate(kmap_identity);
+
+    if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
+}
+
 
 void Dos::calc_two_phonon_dos(double *const *eval_in,
                               const unsigned int n,
