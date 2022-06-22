@@ -773,7 +773,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
               xml_writer_make_settings<ptree::key_type>(' ', indent,
                                                         widen<std::string>("utf-8")));
 #else
-    write_xml(file_fcs, pt, std::locale(),
+    write_xml(fname_fcs, pt, std::locale(),
               xml_writer_make_settings(' ', indent, widen<char>("utf-8")));
 #endif
 
