@@ -1024,13 +1024,13 @@ class QEParser(object):
         borncharge = []
 
         search_tag1 = "Dielectric constant in cartesian axis"
-
+        search_tags = ["Px", "Py", "Pz", "Ex", "Ey", "Ez"]
         f = open(phout_file, 'r')
         line = f.readline()
 
         found_tag1 = False
         found_tag2 = False
-
+        
         while line:
             if search_tag1 in line:
                 found_tag1 = True
@@ -1039,7 +1039,7 @@ class QEParser(object):
                     line = f.readline()
                     dielec.extend([float(t) for t in line.strip().split()[1:4]])
 
-            if "Px" in line or "Py" in line or "Pz" in line:
+            if any(s in line for s in search_tags):
                 found_tag2 = True
                 borncharge.extend(float(t) for t in line.strip().split()[2:5])
 
@@ -1051,9 +1051,9 @@ class QEParser(object):
                   "in %s" % phout_file, file=sys.stderr)
             return None
 
-        nat = len(borncharge) // 9
+        nat2 = len(borncharge) // 9
         dielec = np.reshape(np.array(dielec[9:]), (3, 3))
-        borncharge = np.reshape(np.array(borncharge), (nat, 3, 3))
-        return dielec, borncharge
+        borncharge = np.reshape(np.array(borncharge), (nat2, 3, 3))
+        return dielec, borncharge[:nat2 // 2, :, :]
 
 
