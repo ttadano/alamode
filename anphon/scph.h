@@ -164,6 +164,8 @@ private:
     //                             double &dq0_threashold);
 
     void read_cell_opt_input(double &,
+                             double &,
+                             double &,
                              double &);
 
     void calculate_u0(double *, double *);
@@ -264,7 +266,8 @@ private:
                                                std::complex<double> ***,
                                                std::complex<double> ***,
                                                std::complex<double> ****,
-                                               double *);
+                                               double *,
+                                               double );
 
     void calculate_eta_tensor(double **, 
                                 double **);
@@ -274,7 +277,9 @@ private:
                                     double **, 
                                     double *,
                                     double **, 
-                                    double ***);
+                                    double ***,
+                                    double **,
+                                    double);
 
     void renormalize_v1_array_from_strain(std::complex<double> *, 
                                             std::complex<double> *,

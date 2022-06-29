@@ -1542,6 +1542,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     double dq0_threashold = str_conv_tol;
     
     // cell optimization
+    double pressure_GPa = 0.0; // [GPa] (not directly used in the calculation)
+    double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
     double du_threshold = 1.0e-6;
     double mixing_beta_cell = 0.3;
     double du_tensor;
@@ -1622,7 +1624,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // }
 
     if(mympi->my_rank == 0){
-        read_cell_opt_input(du_threshold, mixing_beta_cell);
+        read_cell_opt_input(du_threshold, mixing_beta_cell, pressure_GPa, pvcell);
     }
 
     // debug 
@@ -1975,7 +1977,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }std::cout << std::endl;
 
                 // calculate IFCs under strain
-                renormalize_v0_from_strain(v0_with_strain, v0_original, eta_tensor, C1_array, C2_array, C3_array);
+                renormalize_v0_from_strain(v0_with_strain, v0_original, eta_tensor, C1_array, C2_array, C3_array, u_tensor, pvcell);
                 
                 std::cout << "v0 with strain = " << v0_with_strain << std::endl;
 
@@ -2079,7 +2081,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                              del_v2_strain_from_cubic,
                                                              del_v2_strain_from_quartic,
                                                              del_v3_strain_from_quartic,
-                                                             q0);
+                                                             q0,
+                                                             pvcell);
 
 /*                // add mode-strain coupling (temporary)
                 for(i1 = 0; i1 < 9; i1++){
@@ -2757,7 +2760,9 @@ void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
 // }
 
 void Scph::read_cell_opt_input(double &du_threshold,
-                               double &mixing_beta_cell)
+                               double &mixing_beta_cell,
+                               double &pressure,
+                               double &pvcell)
 {
 
     std::fstream fin_cell_opt;
@@ -2778,6 +2783,15 @@ void Scph::read_cell_opt_input(double &du_threshold,
     fin_cell_opt >> dtmp;// >> str_tmp;
     mixing_beta_cell = dtmp;
     std::cout << "dtmp = " << dtmp << std::endl; // debug
+
+    fin_cell_opt >> dtmp;// >> str_tmp;
+    pressure = dtmp;
+    std::cout << "pressure [GPa] = " << dtmp << std::endl; // debug
+    
+    pvcell = pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+    pvcell *= 1.0e9/Ryd; // in Ry
+
+    std::cout << "pvcell [Ry] = " << pvcell << std::endl; // debug
 
     fin_cell_opt.close();
 
@@ -5666,7 +5680,8 @@ void Scph::calculate_del_v0_strain_with_strain_displace(std::complex<double> *de
                                                std::complex<double> ***del_v2_strain_from_cubic,
                                                std::complex<double> ***del_v2_strain_from_quartic,
                                                std::complex<double> ****del_v3_strain_from_quartic,
-                                               double *q0)
+                                               double *q0,
+                                               double pvcell)
 {
 
     int ns = dynamical->neval;
@@ -5745,6 +5760,25 @@ void Scph::calculate_del_v0_strain_with_strain_displace(std::complex<double> *de
         for(i2 = 0; i2 < 9; i2++){
             del_v0_strain_with_strain[i1] += del_eta_del_u[i2][i1] * del_v0_del_eta[i2];
         }
+    }
+
+    // add pV term
+    double F_tensor[3][3]; // F_{mu nu} = delta_{mu nu} + u_{mu nu}
+    for(i1 = 0; i1 < 3; i1++){
+        for(i2 = 0; i2 < 3; i2++){
+            F_tensor[i1][i2] = u_tensor[i1][i2];
+        }
+        F_tensor[i1][i1] += 1.0;
+    }
+    for(i1 = 0; i1 < 9; i1++){
+        is1 = i1/3;
+        is2 = i1%3;
+        ixyz1 = (is1+1)%3;
+        ixyz2 = (is1+2)%3;
+        ixyz3 = (is2+1)%3;
+        ixyz4 = (is2+2)%3;
+
+        del_v0_strain_with_strain[i1] += pvcell * (F_tensor[ixyz1][ixyz3]*F_tensor[ixyz2][ixyz4] - F_tensor[ixyz1][ixyz4]*F_tensor[ixyz2][ixyz3]);
     }
 
     // calculate del_v1_strain
@@ -6065,7 +6099,9 @@ void Scph::renormalize_v0_from_strain(double &v0_with_strain,
                                       double **eta_tensor, 
                                       double *C1_array,
                                       double **C2_array, 
-                                      double ***C3_array)
+                                      double ***C3_array,
+                                      double **u_tensor,
+                                      double pvcell)
 {
     int ixyz1, ixyz2, ixyz3, ixyz4, ixyz5, ixyz6;
 
@@ -6090,6 +6126,23 @@ void Scph::renormalize_v0_from_strain(double &v0_with_strain,
             }
         }
     }
+
+    // add pV term
+    double vec_tmp1[3], vec_tmp2[3], vec_tmp3[3];
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        vec_tmp1[ixyz1] = u_tensor[0][ixyz1];
+        vec_tmp2[ixyz1] = u_tensor[1][ixyz1];
+        vec_tmp3[ixyz1] = u_tensor[2][ixyz1];
+    }
+    vec_tmp1[0] += 1.0;
+    vec_tmp2[1] += 1.0;
+    vec_tmp3[2] += 1.0;
+
+    double det_F_tensor = system->volume(vec_tmp1, vec_tmp2, vec_tmp3);
+    std::cout << "det_F_tensor = " << det_F_tensor << std::endl;
+
+    v0_with_strain += pvcell * det_F_tensor;
+
 }
 
 void Scph::renormalize_v1_array_from_strain(std::complex<double> *v1_array_with_strain, 
