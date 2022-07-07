@@ -1008,6 +1008,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     // double alpha_steepest_decent = 1.0e4;
     // double mixing_beta = 0.4;
     double dq0_threashold = coord_conv_tol;
+    double add_hess_diag_omega2;
 
     // coordinate
     double *q0, *delta_q0, *u0;
@@ -1034,6 +1035,12 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     //     }
     //     std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
     // }
+
+    double Ry_to_kayser_tmp = Hz_to_kayser / time_ry;
+    std::cout << "Ry_to_kayser_tmp = " << Ry_to_kayser_tmp << std::endl;
+    add_hess_diag_omega2 = std::pow(add_hess_diag/Ry_to_kayser_tmp, 2);
+    std::cout << "add_hess_diag_omega2 = " << add_hess_diag_omega2 << std::endl;
+
 
     // debug 
     if(mympi->my_rank == 0){
@@ -1345,7 +1352,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                             v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
                         // This is for the robustness of the calculation
-                        v2_mat_optical(is, is) += 1.0e-6;
+                        v2_mat_optical(is, is) += add_hess_diag_omega2;
                     }
                     // solve linear equation
                     for(is = 0; is < ns-3; is++){
@@ -1544,6 +1551,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // cell optimization
     double pressure_GPa = 0.0; // [GPa] (not directly used in the calculation)
     double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
+    
+    double add_hess_diag_omega2 = 0.0;
     // double du_threshold = 1.0e-6;
     // double mixing_beta_cell = 0.3;
     double du_tensor;
@@ -1628,6 +1637,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // }
     pvcell = stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9/Ryd; // in Ry
+
+    double Ry_to_kayser_tmp = Hz_to_kayser / time_ry;
+    std::cout << "Ry_to_kayser_tmp = " << Ry_to_kayser_tmp << std::endl;
+    add_hess_diag_omega2 = std::pow(add_hess_diag/Ry_to_kayser_tmp, 2);
+    std::cout << "add_hess_diag_omega2 = " << add_hess_diag_omega2 << std::endl;
 
     // debug 
     if(mympi->my_rank == 0){
@@ -2235,7 +2249,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                             //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
                             v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
-                        v2_mat_optical(is, is) += 1.0e-6;
+                        v2_mat_optical(is, is) += add_hess_diag_omega2;
                     }
                     // solve linear equation
                     for(is = 0; is < ns-3; is++){
