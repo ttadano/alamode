@@ -337,8 +337,11 @@ void Input::parse_scph_vars()
           "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
           "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
           "LOWER_TEMP", "WARMSTART", "BUBBLE",
-          "RELAX_COORDINATE", "RELAX_ALGO", "MAX_STR_ITER", "STR_CONV_TOL", "SET_INIT_STR",
-          "MIXING_BETA", "ALPHA_STEEPEST_DECENT"
+          "RELAX_COORDINATE", "RELAX_ALGO", "MAX_STR_ITER", 
+          "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STEEPEST_DECENT",
+          "CELL_CONV_TOL", "MIXBETA_CELL",
+          "SET_INIT_STR", "ADD_HESS_DIAG", "STAT_PRESSURE"
+           
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -377,10 +380,17 @@ void Input::parse_scph_vars()
     int relax_coordinate = 0;
     int relax_algo = 2;
     int max_str_iter = 100;
-    double str_conv_tol = 0.001;
-    int set_init_str = 0;
-    double mixing_beta = 0.5;
+    double coord_conv_tol = 0.001;
+    double mixbeta_coord = 0.5;
     double alpha_steepest_decent = 1.0e4; 
+
+    double cell_conv_tol = 1.0e-5;
+    double mixbeta_cell = 0.5;
+
+    int set_init_str = 0;
+
+    double add_hess_diag = 100.0; // [cm^{-1}]
+    double stat_pressure = 0.0; // [GPa]
 
     // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
@@ -402,14 +412,23 @@ void Input::parse_scph_vars()
     assign_val(relax_coordinate, "RELAX_COORDINATE", scph_var_dict);
     assign_val(relax_algo, "RELAX_ALGO", scph_var_dict);
     assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
-    assign_val(str_conv_tol, "STR_CONV_TOL", scph_var_dict);
-    assign_val(set_init_str, "SET_INIT_STR", scph_var_dict);
+    assign_val(coord_conv_tol, "COORD_CONV_TOL", scph_var_dict);
+
     if(relax_algo == 1){
         assign_val(alpha_steepest_decent, "ALPHA_STEEPEST_DECENT", scph_var_dict);
     }
     else if(relax_algo == 2){
-        assign_val(mixing_beta, "MIXING_BETA", scph_var_dict);
+        assign_val(mixbeta_coord, "MIXBETA_COORD", scph_var_dict);
     }
+
+    assign_val(cell_conv_tol, "CELL_CONV_TOL", scph_var_dict);
+    if(relax_algo == 2){
+        assign_val(mixbeta_cell, "MIXBETA_CELL", scph_var_dict);
+    }
+
+    assign_val(set_init_str, "SET_INIT_STR", scph_var_dict);
+    assign_val(add_hess_diag, "ADD_HESS_DIAG", scph_var_dict);
+    assign_val(stat_pressure, "STAT_PRESSURE", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -477,10 +496,18 @@ void Input::parse_scph_vars()
     scph->relax_coordinate = relax_coordinate;
     scph->relax_algo = relax_algo;
     scph->max_str_iter = max_str_iter;
-    scph->str_conv_tol = str_conv_tol;
-    scph->set_init_str = set_init_str;
-    scph->mixing_beta = mixing_beta;
+
+    scph->coord_conv_tol = coord_conv_tol;
+    scph->mixbeta_coord = mixbeta_coord;
     scph->alpha_steepest_decent = alpha_steepest_decent;
+
+    scph->cell_conv_tol = cell_conv_tol;
+    scph->mixbeta_cell = mixbeta_cell;
+
+    scph->set_init_str = set_init_str;
+
+    scph->add_hess_diag = add_hess_diag;
+    scph->stat_pressure = stat_pressure;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();

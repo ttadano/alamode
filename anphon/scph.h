@@ -82,10 +82,16 @@ public:
     // variables related to structural optimization
     int relax_algo;
     int max_str_iter;
-    double str_conv_tol;
-    int set_init_str;
-    double mixing_beta;
+    double coord_conv_tol;
+    double mixbeta_coord;
     double alpha_steepest_decent;
+
+    double cell_conv_tol;
+    double mixbeta_cell;
+
+    int set_init_str;
+    double add_hess_diag;
+    double stat_pressure;
 
 private:
 

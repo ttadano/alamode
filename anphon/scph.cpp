@@ -74,9 +74,9 @@ void Scph::set_default_variables()
     relax_coordinate = 0;
     relax_algo = 2;
     max_str_iter = 100;
-    str_conv_tol = 0.001;
     set_init_str = 0;
-    mixing_beta = 0.5;
+    coord_conv_tol = 0.001;
+    mixbeta_coord = 0.5;
     alpha_steepest_decent = 1.0e4; 
 
     kmap_interpolate_to_scph = nullptr;
@@ -1007,7 +1007,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     // nt max_str_loop = max_str_iter;
     // double alpha_steepest_decent = 1.0e4;
     // double mixing_beta = 0.4;
-    double dq0_threashold = str_conv_tol;
+    double dq0_threashold = coord_conv_tol;
 
     // coordinate
     double *q0, *delta_q0, *u0;
@@ -1357,7 +1357,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     // update q0
                     dq0 = 0.0;
                     for(is = 0; is < ns-3; is++){
-                        delta_q0[harm_optical_modes[is]] = - mixing_beta * dq0_vec(is).real();
+                        delta_q0[harm_optical_modes[is]] = - mixbeta_coord * dq0_vec(is).real();
                         q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
                     }
 
@@ -1539,13 +1539,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // nt max_str_loop = max_str_iter;
     // double alpha_steepest_decent = 1.0e4;
     // double mixing_beta = 0.4;
-    double dq0_threashold = str_conv_tol;
+    double dq0_threashold = coord_conv_tol;
     
     // cell optimization
     double pressure_GPa = 0.0; // [GPa] (not directly used in the calculation)
     double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
-    double du_threshold = 1.0e-6;
-    double mixing_beta_cell = 0.3;
+    // double du_threshold = 1.0e-6;
+    // double mixing_beta_cell = 0.3;
     double du_tensor;
     double *delta_u_tensor;
     MatrixXcd C2_mat_tmp(6,6);
@@ -1623,9 +1623,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     //     std::cout << "dq0_threashold = " << dq0_threashold << std::endl;
     // }
 
-    if(mympi->my_rank == 0){
-        read_cell_opt_input(du_threshold, mixing_beta_cell, pressure_GPa, pvcell);
-    }
+    // if(mympi->my_rank == 0){
+    //     read_cell_opt_input(du_threshold, mixing_beta_cell, pressure_GPa, pvcell);
+    // }
+    pvcell = stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+    pvcell *= 1.0e9/Ryd; // in Ry
 
     // debug 
     if(mympi->my_rank == 0){
@@ -2245,7 +2247,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     // update q0
                     dq0 = 0.0;
                     for(is = 0; is < ns-3; is++){
-                        delta_q0[harm_optical_modes[is]] = - mixing_beta * dq0_vec(is).real();
+                        delta_q0[harm_optical_modes[is]] = - mixbeta_coord * dq0_vec(is).real();
                         // delta_q0[harm_optical_modes[is]] = 0.0;
                         q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
                     }
@@ -2305,7 +2307,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                     // update u tensor
                     for(is = 0; is < 6; is++){
-                        delta_u_tensor[is] = - mixing_beta_cell * du_tensor_vec(is).real();
+                        delta_u_tensor[is] = - mixbeta_cell * du_tensor_vec(is).real();
                         // delta_u_tensor[is] = 0.0;
                         if(is < 3){
                             u_tensor[is][is] += delta_u_tensor[is];
@@ -2358,7 +2360,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     }
                 }du_tensor = std::sqrt(du_tensor);
 
-                if(dq0 < dq0_threashold && du_tensor < du_threshold){
+                if(dq0 < dq0_threashold && du_tensor < cell_conv_tol){
                     std::cout << "structure optimization converged in " << i_str_loop << "-th loop." << std::endl;
                     std::cout << "break from the structure loop." << std::endl;
                     break;
@@ -2759,44 +2761,44 @@ void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
 //     return;
 // }
 
-void Scph::read_cell_opt_input(double &du_threshold,
-                               double &mixing_beta_cell,
-                               double &pressure,
-                               double &pvcell)
-{
-
-    std::fstream fin_cell_opt;
-    std::string str_tmp;
-    fin_cell_opt.open("cell_opt.in");
-
-    if(!fin_cell_opt){
-        std::cout << "Warning in Scph::read_cell_opt_input: cell_opt.in could not open." << std::endl;
-        return ;
-    }
-
-    double dtmp;
-    
-    fin_cell_opt >> dtmp;// >> str_tmp;
-    du_threshold = dtmp;
-    std::cout << "dtmp = " << dtmp << std::endl; // debug
-
-    fin_cell_opt >> dtmp;// >> str_tmp;
-    mixing_beta_cell = dtmp;
-    std::cout << "dtmp = " << dtmp << std::endl; // debug
-
-    fin_cell_opt >> dtmp;// >> str_tmp;
-    pressure = dtmp;
-    std::cout << "pressure [GPa] = " << dtmp << std::endl; // debug
-    
-    pvcell = pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
-    pvcell *= 1.0e9/Ryd; // in Ry
-
-    std::cout << "pvcell [Ry] = " << pvcell << std::endl; // debug
-
-    fin_cell_opt.close();
-
-    return;
-}
+// void Scph::read_cell_opt_input(double &du_threshold,
+//                                double &mixing_beta_cell,
+//                                double &pressure,
+//                                double &pvcell)
+// {
+// 
+//     std::fstream fin_cell_opt;
+//     std::string str_tmp;
+//     fin_cell_opt.open("cell_opt.in");
+// 
+//     if(!fin_cell_opt){
+//         std::cout << "Warning in Scph::read_cell_opt_input: cell_opt.in could not open." << std::endl;
+//         return ;
+//     }
+// 
+//     double dtmp;
+//     
+//     fin_cell_opt >> dtmp;// >> str_tmp;
+//     du_threshold = dtmp;
+//     std::cout << "dtmp = " << dtmp << std::endl; // debug
+// 
+//     fin_cell_opt >> dtmp;// >> str_tmp;
+//     mixing_beta_cell = dtmp;
+//     std::cout << "dtmp = " << dtmp << std::endl; // debug
+// 
+//     fin_cell_opt >> dtmp;// >> str_tmp;
+//     pressure = dtmp;
+//     std::cout << "pressure [GPa] = " << dtmp << std::endl; // debug
+//     
+//     pvcell = pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+//     pvcell *= 1.0e9/Ryd; // in Ry
+// 
+//     std::cout << "pvcell [Ry] = " << pvcell << std::endl; // debug
+// 
+//     fin_cell_opt.close();
+// 
+//     return;
+// }
 
 void Scph::calculate_u0(double *q0, double *u0){
     int natmin = system->natmin;

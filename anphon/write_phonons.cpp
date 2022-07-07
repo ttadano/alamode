@@ -155,14 +155,21 @@ void Writes::write_input_vars()
         if(scph->relax_coordinate){
             std::cout << "  RELAX_ALGO = " << scph->relax_algo << std::endl;
             std::cout << "  MAX_STR_ITER = " << scph->max_str_iter << std::endl;
-            std::cout << "  STR_CONV_TOL = " << scph->str_conv_tol << std::endl;
-            std::cout << "  SET_INIT_STR = " << scph->set_init_str << std::endl;
+            std::cout << "  COORD_CONV_TOL = " << scph->coord_conv_tol << std::endl;
             if(scph->relax_algo == 1){
                 std::cout << "  ALPHA_STEEPEST_DECENT = " << scph->alpha_steepest_decent << std::endl;
             }
             else if(scph->relax_algo == 2){
-                std::cout << "  MIXING_BETA = " << scph->mixing_beta << std::endl;
+                std::cout << "  MIXBETA_COORD = " << scph->mixbeta_coord << std::endl;
             }
+            std::cout << "  CELL_CONV_TOL = " << scph->cell_conv_tol << std::endl;
+            std::cout << "  MIXBETA_CELL = " << scph->mixbeta_cell << std::endl;
+
+            std::cout << "  SET_INIT_STR = " << scph->set_init_str << std::endl;
+
+            std::cout << "  ADD_HESS_DIAG = " << scph->add_hess_diag << std::endl;
+            std::cout << "  STAT_PRESSURE = " << scph->stat_pressure << std::endl;
+
         }
     }
     std::cout << std::endl;
