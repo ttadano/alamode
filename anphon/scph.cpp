@@ -1039,6 +1039,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     double Ry_to_kayser_tmp = Hz_to_kayser / time_ry;
     std::cout << "Ry_to_kayser_tmp = " << Ry_to_kayser_tmp << std::endl;
     add_hess_diag_omega2 = std::pow(add_hess_diag/Ry_to_kayser_tmp, 2);
+    add_hess_diag_omega2 = 1.0e-6;
     std::cout << "add_hess_diag_omega2 = " << add_hess_diag_omega2 << std::endl;
 
 
@@ -1641,6 +1642,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     double Ry_to_kayser_tmp = Hz_to_kayser / time_ry;
     std::cout << "Ry_to_kayser_tmp = " << Ry_to_kayser_tmp << std::endl;
     add_hess_diag_omega2 = std::pow(add_hess_diag/Ry_to_kayser_tmp, 2);
+        add_hess_diag_omega2 = 1.0e-6;
+
     std::cout << "add_hess_diag_omega2 = " << add_hess_diag_omega2 << std::endl;
 
     // debug 
@@ -6755,31 +6758,31 @@ void Scph::setup_eigvecs()
     }
     // projection for evec at Gamma point
 
-    if (mympi->my_rank == 0) {
-        std::cout << "harmonic eigenvectors for Gamma point(before projection)" << std::endl;
-        for(int is = 0; is < ns; is++){
-            std::cout << "is = " << is << std::endl;
-            for(int is1 = 0; is1 < ns; is1++){
-                std::cout << evec_harmonic[0][is][is1] << std::endl;
-            }std::cout << std::endl;
-        }
-    }
-
-    dynamical->project_degenerate_eigenvectors(system->lavec_p,
-                                            fcs_phonon->fc2_ext,
-                                            kmesh_dense->xk[0],
-                                            dynamical->get_projection_directions(),
-                                            evec_harmonic[0]);
-
-    if (mympi->my_rank == 0) {
-        std::cout << "harmonic eigenvectors for Gamma point(after projection)" << std::endl;
-        for(int is = 0; is < ns; is++){
-            std::cout << "is = " << is << std::endl;
-            for(int is1 = 0; is1 < ns; is1++){
-                std::cout << evec_harmonic[0][is][is1] << std::endl;
-            }std::cout << std::endl;
-        }
-    }
+    // if (mympi->my_rank == 0) {
+    //     std::cout << "harmonic eigenvectors for Gamma point(before projection)" << std::endl;
+    //     for(int is = 0; is < ns; is++){
+    //         std::cout << "is = " << is << std::endl;
+    //         for(int is1 = 0; is1 < ns; is1++){
+    //             std::cout << evec_harmonic[0][is][is1] << std::endl;
+    //         }std::cout << std::endl;
+    //     }
+    // }
+// 
+    // dynamical->project_degenerate_eigenvectors(system->lavec_p,
+    //                                         fcs_phonon->fc2_ext,
+    //                                         kmesh_dense->xk[0],
+    //                                         dynamical->get_projection_directions(),
+    //                                         evec_harmonic[0]);
+// 
+    // if (mympi->my_rank == 0) {
+    //     std::cout << "harmonic eigenvectors for Gamma point(after projection)" << std::endl;
+    //     for(int is = 0; is < ns; is++){
+    //         std::cout << "is = " << is << std::endl;
+    //         for(int is1 = 0; is1 < ns; is1++){
+    //             std::cout << evec_harmonic[0][is][is1] << std::endl;
+    //         }std::cout << std::endl;
+    //     }
+    // }
 
 
     if (mympi->my_rank == 0) {
