@@ -85,11 +85,12 @@ public:
     double coord_conv_tol;
     double mixbeta_coord;
     double alpha_steepest_decent;
-
     double cell_conv_tol;
     double mixbeta_cell;
 
     int set_init_str;
+    int cooling_u0_index; // used if set_init_str is 3 
+    double cooling_u0_thr; // used if set_init_str is 3
     double add_hess_diag;
     double stat_pressure;
 

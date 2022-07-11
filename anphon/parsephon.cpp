@@ -340,7 +340,8 @@ void Input::parse_scph_vars()
           "RELAX_COORDINATE", "RELAX_ALGO", "MAX_STR_ITER", 
           "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STEEPEST_DECENT",
           "CELL_CONV_TOL", "MIXBETA_CELL",
-          "SET_INIT_STR", "ADD_HESS_DIAG", "STAT_PRESSURE"
+          "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
+          "ADD_HESS_DIAG", "STAT_PRESSURE"
            
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
@@ -380,14 +381,17 @@ void Input::parse_scph_vars()
     int relax_coordinate = 0;
     int relax_algo = 2;
     int max_str_iter = 100;
-    double coord_conv_tol = 0.001;
+    double coord_conv_tol = 1.0e-5;
     double mixbeta_coord = 0.5;
     double alpha_steepest_decent = 1.0e4; 
 
     double cell_conv_tol = 1.0e-5;
     double mixbeta_cell = 0.5;
 
-    int set_init_str = 0;
+    int set_init_str = 1;
+    int cooling_u0_index = 0;
+    double cooling_u0_thr = 0.001;
+
 
     double add_hess_diag = 100.0; // [cm^{-1}]
     double stat_pressure = 0.0; // [GPa]
@@ -427,6 +431,8 @@ void Input::parse_scph_vars()
     }
 
     assign_val(set_init_str, "SET_INIT_STR", scph_var_dict);
+    assign_val(cooling_u0_index, "COOLING_U0_INDEX", scph_var_dict);
+    assign_val(cooling_u0_thr, "COOLING_U0_THR", scph_var_dict);
     assign_val(add_hess_diag, "ADD_HESS_DIAG", scph_var_dict);
     assign_val(stat_pressure, "STAT_PRESSURE", scph_var_dict);
 
@@ -505,6 +511,8 @@ void Input::parse_scph_vars()
     scph->mixbeta_cell = mixbeta_cell;
 
     scph->set_init_str = set_init_str;
+    scph->cooling_u0_index = cooling_u0_index;
+    scph->cooling_u0_thr = cooling_u0_thr;
 
     scph->add_hess_diag = add_hess_diag;
     scph->stat_pressure = stat_pressure;

@@ -74,10 +74,15 @@ void Scph::set_default_variables()
     relax_coordinate = 0;
     relax_algo = 2;
     max_str_iter = 100;
-    set_init_str = 0;
-    coord_conv_tol = 0.001;
+    coord_conv_tol = 1.0e-5;
     mixbeta_coord = 0.5;
     alpha_steepest_decent = 1.0e4; 
+    cell_conv_tol = 1.0e-5;
+    mixbeta_cell = 0.5;
+
+    set_init_str = 1;
+    cooling_u0_index = 0;
+    cooling_u0_thr = 0.001;
 
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
@@ -999,7 +1004,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
     // structure optimization
     int i_str_loop, i_temp_loop;
-    double dq0;
+    double dq0, du0;
     MatrixXcd Cmat(ns, ns), v2_mat_full(ns, ns);
     MatrixXcd v2_mat_optical(ns-3, ns-3);
     VectorXcd dq0_vec(ns-3), v1_vec_SCP(ns-3);
@@ -1009,7 +1014,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     double add_hess_diag_omega2;
 
     // coordinate
-    double *q0, *delta_q0, *u0;
+    double *q0, *delta_q0, *u0, *delta_u0;
     double *force_array;
     
     // check
@@ -1045,6 +1050,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     allocate(q0, ns);
     allocate(delta_q0, ns);
     allocate(u0, ns);
+    allocate(delta_u0, ns);
     allocate(force_array, ns);
 
     allocate(v4_array_original, nk_irred_interpolate * kmesh_dense->nk,
@@ -1177,34 +1183,30 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             }
 
             if(set_init_str == 1){
-                // read displace.in
+                // read initial displacement at each temperature
                 read_initial_q0(q0);
                 calculate_u0(q0, u0);
                 converged_prev = false;
             }
             else if(set_init_str == 2){
-                // read displace.in at initial temperature
+                // read initial displacement at initial temperature
                 if(i_temp_loop == 0){
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                 }
             }
-            else if(set_init_str == 4){ // specifically for LiReO3-type
-                if(i_temp_loop == 0){
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                }
-                else if (std::fabs(u0[2]) < 0.05){
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                }
-            }
-
             else if(set_init_str == 3){
-                // read T-dependent initial structure from u0.in
-                read_Tdep_initial_q0_from_u(q0, i_temp_loop);
-                calculate_u0(q0, u0);
-                
+                if(i_temp_loop == 0){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                }
+                // read initial displacement if the structure converges to the
+                // high-symmetry structure
+                else if (std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                    converged_prev = false;
+                }
             }
 
             // structure loop
@@ -1361,14 +1363,19 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 }fout_u0_tmp << std::endl;
 
                 // check convergence
-                dq0 = 0.0;
+                du0 = 0.0;
+                calculate_u0(delta_q0, delta_u0);
                 for(is = 0; is < ns; is++){
-                    dq0 += delta_q0[is] * delta_q0[is];
-                }dq0 = std::sqrt(dq0);
+                    du0 += delta_u0[is] * delta_u0[is];
+                }du0 = std::sqrt(du0);
 
-                if(dq0 < coord_conv_tol){
-                    std::cout << "structure optimization converged in " << i_str_loop << "-th loop." << std::endl;
-                    std::cout << "break from the structure loop." << std::endl << std::endl;
+                std::cout << std::endl;
+                std::cout << " du0 =" << std::scientific << std::setw(16) << std::setprecision(6) << du0 << " [Bohr]" << std::endl << std::endl;
+
+                if(du0 < coord_conv_tol){
+                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(16) << std::setprecision(6) << coord_conv_tol << std::endl;
+                    std::cout << " Structural optimization converged in" << i_str_loop << "-th loop." << std::endl;
+                    std::cout << " break structural loop." << std::endl << std::endl;
                     break;
                 }
                 
@@ -1470,6 +1477,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     deallocate(q0);
     deallocate(delta_q0);
     deallocate(u0);
+    deallocate(delta_u0);
     deallocate(force_array);
 }
 
@@ -1528,7 +1536,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     // structure optimization
     int i_str_loop, i_temp_loop;
-    double dq0;
+    double dq0, du0;
     MatrixXcd Cmat(ns, ns), v2_mat_full(ns, ns);
     MatrixXcd v2_mat_optical(ns-3, ns-3);
     VectorXcd dq0_vec(ns-3), v1_vec_SCP(ns-3);
@@ -1542,7 +1550,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     int itmp1, itmp2, itmp3, itmp4, itmp5, itmp6;
 
     // coordinate
-    double *q0, *delta_q0, *u0;
+    double *q0, *delta_q0, *u0, *delta_u0;
     double *force_array;
 
     // strain
@@ -1588,6 +1596,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(q0, ns);
     allocate(delta_q0, ns);
     allocate(u0, ns);
+    allocate(delta_u0, ns);
     allocate(force_array, ns);
 
     allocate(u_tensor, 3, 3);
@@ -1652,7 +1661,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     timer->print_elapsed();
 
     //std::cout << "  from cubic to harmonic IFCs ... ";
-    std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... " << std::endl;
+    std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
     // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
     // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
@@ -1661,7 +1670,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
-    std::cout << "  2cd order derivatives of harmonic IFCs (from quartic IFCs) ... ";
+    std::cout << "  2nd order derivatives of harmonic IFCs (from quartic IFCs) ... ";
     allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl;
@@ -1812,7 +1821,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             }
 
             if(set_init_str == 1){
-                // read displace.in
+                // read initial structure at each temperature
                 read_initial_q0(q0);
                 calculate_u0(q0, u0);
                 // read strain.in
@@ -1820,26 +1829,27 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 converged_prev = false;
             }
             else if(set_init_str == 2){
-                // read displace.in at initial temperature
+                // read initial structure at initial temperature
                 if(i_temp_loop == 0){
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                     read_initial_strain(u_tensor);
                 }
-                if(std::fabs(u0[5]) < 0.01){
+            }
+            else if(set_init_str == 3){
+                // read initial structure at initial temperature
+                if(i_temp_loop == 0){
+                    read_initial_q0(q0);
+                    calculate_u0(q0, u0);
+                    read_initial_strain(u_tensor);
+                }
+                // read initial DISPLACEMENT if the structure converges
+                // to the high-symmetry one.
+                if(std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                     converged_prev = false;
                 }
-            }
-            else if(set_init_str == 3){
-                // read T-dependent initial structure from u0.in
-                read_Tdep_initial_q0_from_u(q0, i_temp_loop);
-                calculate_u0(q0, u0);
-                std::cout << "initial u0: " << std::endl;
-                for(is = 0; is < ns; is++){
-                    std::cout << u0[is] << " ";
-                }std::cout << std::endl;
             }
 
             // std::cout << "temperature : " << temp << " K" << std::endl;
@@ -2117,12 +2127,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     fout_u_tensor_tmp << u_tensor[is/3][is%3] << " ";
                 }fout_u_tensor_tmp << std::endl;
 
-
                 // check convergence
-                dq0 = 0.0;
+                du0 = 0.0;
+                calculate_u0(delta_q0, delta_u0);
                 for(is = 0; is < ns; is++){
-                    dq0 += delta_q0[is] * delta_q0[is];
-                }dq0 = std::sqrt(dq0);
+                    du0 += delta_u0[is] * delta_u0[is];
+                }du0 = std::sqrt(du0);
 
                 du_tensor = 0.0;
                 for(is = 0; is < 6; is++){
@@ -2132,9 +2142,15 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     }
                 }du_tensor = std::sqrt(du_tensor);
 
-                if(dq0 < dq0_threashold && du_tensor < cell_conv_tol){
-                    std::cout << "structure optimization converged in " << i_str_loop << "-th loop." << std::endl;
-                    std::cout << "break from the structure loop." << std::endl;
+                std::cout << std::endl;
+                std::cout << " du0 =" << std::scientific << std::setw(16) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
+                std::cout << " du_tensor =" << std::scientific << std::setw(16) << std::setprecision(6) << du_tensor << std::endl << std::endl;
+
+                if(du0 < coord_conv_tol && du_tensor < cell_conv_tol){
+                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(16) << std::setprecision(6) << coord_conv_tol << std::endl;
+                    std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(16) << std::setprecision(6) << cell_conv_tol << std::endl;
+                    std::cout << " Structural optimization converged in" << i_str_loop << "-th loop." << std::endl;
+                    std::cout << " break structural loop." << std::endl << std::endl;
                     break;
                 }
                 
@@ -2266,6 +2282,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(q0);
     deallocate(delta_q0);
     deallocate(u0);
+    deallocate(delta_u0);
     deallocate(force_array);
 
     deallocate(u_tensor);
@@ -2437,60 +2454,60 @@ void Scph::read_initial_strain(double **u_tensor)
 }
 
 
-void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
-{
-    std::fstream fin_displace;
-    std::string str_tmp;
-    int natmin = system->natmin;
-    int is, i_atm, ixyz, i;
-    auto ns = dynamical->neval;
-    //double unit;
-    double a[3][3];
-    double d_tmp, temp_tmp;
-    //double u_fractional[3], u_xyz[3];
-
-    std::vector<double> u_xyz;
-
-    // initialize q0
-    for(is = 0; is < ns; is++){
-        q0[is] = 0.0;
-    }
-
-    fin_displace.open("u0.in");
-
-    if(!fin_displace){
-        std::cout << "Warning in Scph::read_Tdep_initial_q0_from_u: file u0.in could not open." << std::endl;
-        std::cout << "all q0 is set 0." << std::endl;
-        return ;
-    }
-
-    // read unnecessary lines
-    for(i = 0; i < i_temp_loop; i++){
-        std::getline(fin_displace, str_tmp); 
-    }
-    fin_displace >> temp_tmp;
-    for(is = 0; is < ns; is++){
-        fin_displace >> d_tmp;
-        u_xyz.push_back(d_tmp);
-    }
-
-    for(is = 0; is < ns; is++){
-        for(i_atm = 0; i_atm < natmin; i_atm++){
-            for(ixyz = 0; ixyz < 3; ixyz++){
-                q0[is] += evec_harmonic[0][is][i_atm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[i_atm][0]]) * u_xyz[i_atm*3+ixyz]; 
-            }
-        }
-    }
-
-    std::cout << "temperature = " << temp_tmp << std::endl;
-    std::cout << "initial q0: " << std::endl;
-    for(is = 0; is < ns; is++){
-        std::cout << q0[is] << " ";
-    }std::cout << std::endl;
-    
-    fin_displace.close();
-    return ;
-}
+// void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
+// {
+//     std::fstream fin_displace;
+//     std::string str_tmp;
+//     int natmin = system->natmin;
+//     int is, i_atm, ixyz, i;
+//     auto ns = dynamical->neval;
+//     //double unit;
+//     double a[3][3];
+//     double d_tmp, temp_tmp;
+//     //double u_fractional[3], u_xyz[3];
+// 
+//     std::vector<double> u_xyz;
+// 
+//     // initialize q0
+//     for(is = 0; is < ns; is++){
+//         q0[is] = 0.0;
+//     }
+// 
+//     fin_displace.open("u0.in");
+// 
+//     if(!fin_displace){
+//         std::cout << "Warning in Scph::read_Tdep_initial_q0_from_u: file u0.in could not open." << std::endl;
+//         std::cout << "all q0 is set 0." << std::endl;
+//         return ;
+//     }
+// 
+//     // read unnecessary lines
+//     for(i = 0; i < i_temp_loop; i++){
+//         std::getline(fin_displace, str_tmp); 
+//     }
+//     fin_displace >> temp_tmp;
+//     for(is = 0; is < ns; is++){
+//         fin_displace >> d_tmp;
+//         u_xyz.push_back(d_tmp);
+//     }
+// 
+//     for(is = 0; is < ns; is++){
+//         for(i_atm = 0; i_atm < natmin; i_atm++){
+//             for(ixyz = 0; ixyz < 3; ixyz++){
+//                 q0[is] += evec_harmonic[0][is][i_atm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[i_atm][0]]) * u_xyz[i_atm*3+ixyz]; 
+//             }
+//         }
+//     }
+// 
+//     std::cout << "temperature = " << temp_tmp << std::endl;
+//     std::cout << "initial q0: " << std::endl;
+//     for(is = 0; is < ns; is++){
+//         std::cout << q0[is] << " ";
+//     }std::cout << std::endl;
+//     
+//     fin_displace.close();
+//     return ;
+// }
 
 void Scph::calculate_u0(double *q0, double *u0){
     int natmin = system->natmin;
