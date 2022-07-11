@@ -166,6 +166,8 @@ void Writes::write_input_vars()
             std::cout << "  MIXBETA_CELL = " << scph->mixbeta_cell << std::endl;
 
             std::cout << "  SET_INIT_STR = " << scph->set_init_str << std::endl;
+            std::cout << "  COOLING_U0_INDEX = " << scph->cooling_u0_index << std::endl;
+            std::cout << "  COOLING_U0_THR = " << scph->cooling_u0_thr << std::endl;
 
             std::cout << "  ADD_HESS_DIAG = " << scph->add_hess_diag << std::endl;
             std::cout << "  STAT_PRESSURE = " << scph->stat_pressure << std::endl;

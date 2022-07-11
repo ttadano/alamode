@@ -1009,17 +1009,13 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     MatrixXcd v2_mat_optical(ns-3, ns-3);
     VectorXcd dq0_vec(ns-3), v1_vec_SCP(ns-3);
     std::vector<int> harm_optical_modes(ns-3);
-    // structure optimization parameters
-    // double dq0_threashold = coord_conv_tol;
+
     double add_hess_diag_omega2;
 
     // coordinate
     double *q0, *delta_q0, *u0, *delta_u0;
     double *force_array;
     
-    // check
-    std::complex<double> dFdq_q;
-
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
@@ -1125,23 +1121,40 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
         auto converged_prev = false;
 
-        // this is for test
-        std::ofstream fout_q0_tmp;
-        fout_q0_tmp.open("q0_tmp.txt");
-        std::ofstream fout_u0_tmp;
-        fout_u0_tmp.open("u0_tmp.txt");
+        // Outpuf files of structural optimization
+        std::ofstream fout_step_q0;
+        fout_step_q0.open("step_q0.txt");
+        std::ofstream fout_step_u0;
+        fout_step_u0.open("step_u0.txt");
         std::ofstream fout_q0;
         fout_q0.open("q0.txt");
         std::ofstream fout_u0;
         fout_u0.open("u0.txt");
-        std::ofstream fout_force;
-        fout_force.open("SCP_force.txt");
-        std::ofstream fout_dFdq_q;
-        fout_dFdq_q.open("dFdq_q.txt");
-        std::ofstream fout_dFdq_q_total;
-        fout_dFdq_q_total.open("dFdq_q_total.txt");
         std::ofstream fout_v0;
         fout_v0.open("v0.txt");
+
+        // q0.txt
+        fout_q0 << "#";
+        fout_q0 << std::setw(14) << "temp [K]";
+        for(is1 = 0; is1 < ns; is1++){
+            fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+        }fout_q0 << std::endl;
+
+        // u0.txt
+        fout_u0 << "#";
+        fout_u0 << std::setw(14) << "temp [K]";
+        for(iat1 = 0; iat1 < system->natmin; iat1++){
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                get_xyz_string(ixyz1, str_tmp);
+                fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+            }
+        }fout_u0 << std::endl;
+        
+        // v0.txt
+        fout_v0 << "#";
+        fout_v0 << std::setw(14) << "temp [K]";
+        fout_v0 << std::setw(15) << "U_0 [Ry]";
+        fout_v0 << std::endl;
 
         i_temp_loop = -1;
 
@@ -1182,7 +1195,9 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 }
             }
 
+            std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
             if(set_init_str == 1){
+                std::cout << " read initial displacement from input file." << std::endl << std::endl;
                 // read initial displacement at each temperature
                 read_initial_q0(q0);
                 calculate_u0(q0, u0);
@@ -1191,29 +1206,34 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
             else if(set_init_str == 2){
                 // read initial displacement at initial temperature
                 if(i_temp_loop == 0){
+                    std::cout << " read initial displacement from input file." << std::endl << std::endl;
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
+                }
+                else{
+                    std::cout << " start from displacement from the previous temperature." << std::endl << std::endl;
                 }
             }
             else if(set_init_str == 3){
                 if(i_temp_loop == 0){
+                    std::cout << " read initial displacement from input file." << std::endl << std::endl;
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                 }
                 // read initial displacement if the structure converges to the
                 // high-symmetry structure
                 else if (std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
+                    std::cout << " u0[" << cooling_u0_index << "] < " << std::setw(15) << std::setprecision(6) << cooling_u0_thr << " is satisfied." << std::endl;
+                    std::cout << " the structure is back to the high-symmetry phase." << std::endl;
+                    std::cout << " read again initial displacement from input file." << std::endl << std::endl;
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                     converged_prev = false;
                 }
+                else{
+                    std::cout << " start from displacement at the previous temperature." << std::endl << std::endl;
+                }
             }
-
-            // structure loop
-            // std::cout << "temperature : " << temp << " K" << std::endl;
-            fout_q0_tmp << "temperature : " << temp << " K" << std::endl;
-            fout_u0_tmp << "temperature : " << temp << " K" << std::endl;
-            fout_force << "temperature : " << temp << " K" << std::endl;
 
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
@@ -1223,17 +1243,47 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     std::cout << std::setw(10) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }std::cout << " :";
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    std::cout << std::scientific << std::setw(16) << std::setprecision(6) << u0[iat1*3 + ixyz1];
+                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1*3 + ixyz1];
                 }std::cout << std::endl;
             }std::cout << std::endl;
+
+            // step_q0.txt
+            fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+            fout_step_q0 << std::setw(6) << "step";
+            for(is1 = 0; is1 < ns; is1++){
+                fout_step_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+            }fout_step_q0 << std::endl;
+
+            // initial structure
+            fout_step_q0 << std::setw(6) << 0;
+            for(is = 0; is < ns; is++){
+                fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
+            }fout_step_q0 << std::endl;
+
+            // step_u0.txt
+            fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
+            fout_step_u0 << std::setw(6) << "step";
+            for(iat1 = 0; iat1 < system->natmin; iat1++){
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    get_xyz_string(ixyz1, str_tmp);
+                    fout_step_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+                }
+            }fout_step_u0 << std::endl;
+
+            // initial displacements
+            fout_step_u0 << std::setw(6) << 0;
+            for(is = 0; is < ns; is++){
+                fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
+            }fout_step_u0 << std::endl; 
 
             std::cout << " ----------------------------------------------------------------" << std::endl;
 
             std::cout << " Start structural optimization at " << temp << " K." << std::endl;
 
+            // structure loop
             for(i_str_loop = 0; i_str_loop < max_str_iter; i_str_loop++){
 
-                std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop << std::endl;
+                std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop+1 << std::endl;
                 std::cout << " IFC renormalization ... ";
 
                 //renormalize IFC
@@ -1274,22 +1324,6 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
                 // calculate SCP force
                 compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_anharm[iT], temp, v1_array_SCP);
-
-                // check force
-                dFdq_q = 0.0;
-                for(is = 0; is < ns; is++){
-                    dFdq_q += q0[is] * (v1_array_SCP[is] - v1_array_renormalized[is]);
-                }
-                fout_dFdq_q << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
-
-                // check force
-                dFdq_q = 0.0;
-                for(is = 0; is < ns; is++){
-                    dFdq_q += q0[is] * v1_array_SCP[is];
-                    // dFdq_q += q0[is] * v1_array_renormalized[is];
-                    
-                }
-                fout_dFdq_q_total << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
 
                 // change structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -1345,22 +1379,17 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_SCP, force_array);
 
-                // print SCP force
-                fout_force << temp << " " << i_str_loop << " ";
+                // print current structure
+                fout_step_q0 << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < ns; is++){
-                    fout_force << force_array[is] << " ";
-                }fout_force << std::endl;
+                    fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
+                }fout_step_q0 << std::endl;
 
-                // print q0
-                fout_q0_tmp << i_str_loop << " ";
-                for(is = 0; is < ns; is++){
-                    fout_q0_tmp << q0[is] << " ";
-                }fout_q0_tmp << std::endl;
                 calculate_u0(q0, u0);
-                fout_u0_tmp << i_str_loop << " ";
+                fout_step_u0 << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < ns; is++){
-                    fout_u0_tmp << u0[is] << " ";
-                }fout_u0_tmp << std::endl;
+                    fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
+                }fout_step_u0 << std::endl;
 
                 // check convergence
                 du0 = 0.0;
@@ -1370,11 +1399,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                 }du0 = std::sqrt(du0);
 
                 std::cout << std::endl;
-                std::cout << " du0 =" << std::scientific << std::setw(16) << std::setprecision(6) << du0 << " [Bohr]" << std::endl << std::endl;
+                std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]" << std::endl << std::endl;
 
                 if(du0 < coord_conv_tol){
-                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(16) << std::setprecision(6) << coord_conv_tol << std::endl;
-                    std::cout << " Structural optimization converged in" << i_str_loop << "-th loop." << std::endl;
+                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15) << std::setprecision(6) << coord_conv_tol << std::endl;
+                    std::cout << " Structural optimization converged in " << i_str_loop+1 << "-th loop." << std::endl;
                     std::cout << " break structural loop." << std::endl << std::endl;
                     break;
                 }
@@ -1390,7 +1419,7 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                     std::cout << std::setw(10) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }std::cout << " :";
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    std::cout << std::scientific << std::setw(16) << std::setprecision(6) << u0[iat1*3 + ixyz1];
+                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1*3 + ixyz1];
                 }std::cout << std::endl;
             }
             if(i_temp_loop == NT-1){
@@ -1402,17 +1431,18 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
 
             // print obtained structure
             calculate_u0(q0, u0);
-            fout_q0 << temp << " ";
+
+            fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
             for(is = 0; is < ns; is++){
-                fout_q0 << q0[is] << " ";
+                fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
             }fout_q0 << std::endl;
 
-            fout_u0 << temp << " ";
+            fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
             for(is = 0; is < ns; is++){
-                fout_u0 << u0[is] << " ";
+                fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
             }fout_u0 << std::endl;
 
-            fout_v0 << temp << " " << v0_renormalized << std::endl;
+            fout_v0 << std::scientific << std::setw(15) << std::setprecision(6) << temp << std::setw(15) << v0_renormalized << std::endl;
 
             if (!warmstart_scph) converged_prev = false;
 
@@ -1443,14 +1473,11 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
                                     evec_harm_renormalize_tmp);
         }
 
-        // this is for test
-        fout_dFdq_q.close();
-        fout_dFdq_q_total.close();
-        fout_q0_tmp.close();
-        fout_u0_tmp.close();
+        // Output files of structural optimization
+        fout_step_q0.close();
+        fout_step_u0.close();
         fout_q0.close();
         fout_u0.close();
-        fout_force.close();
         fout_v0.close();
 
         deallocate(cmat_convert);
@@ -1491,7 +1518,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     int ik1, is1, is2, is3, is4;
     int i1, i2;
     int iat1, iat2, ixyz1, ixyz2;
-    std::string str_tmp;
+    std::string str_tmp, str_tmp2;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
     const auto nk = kmesh_dense->nk;
@@ -1568,9 +1595,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     pvcell = stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9/Ryd; // in Ry
-
-    // check
-    std::complex<double> dFdq_q;
 
     std::vector<double> vec_temp;
 
@@ -1689,28 +1713,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(del_v0_strain_with_strain_displace, 9);
     allocate(del_v0_strain_SCP, 9);
 
-    // for(int itmp1 = 0; itmp1 < 81; itmp1++){
-    //     for(int itmp2 = 0; itmp2 < nk; itmp2++){
-    //         for(int itmp3 = 0; itmp3 < ns*ns; itmp3++){
-    //             del_v2_strain_from_quartic[itmp1][itmp2][itmp3] = 0.0;
-    //         }
-    //     }
-    // }
-
-    // int ixyz1, ixyz2;
-    // std::cout << "compute_del_v2_strain_from_cubic is done. " << std::endl;
-    // std::cout << "ixyz1 = " << ixyz1 << " ixyz2 = " << ixyz2 << " is done" << std::endl;
-    // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-    //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-    //         for(ik = 0; ik < 5; ik++){
-    //             for(is1 = 0; is1 < ns; is1++){
-    //                 for(is2 = 0; is2 < ns; is2++){
-    //                     std::cout << del_v2_strain_from_cubic[ixyz1*3 + ixyz2][ik][is1*ns+is2] << " ";
-    //                 }std::cout << std::endl;
-    //             }std::cout << std::endl;
-    //         }
-    //     }
-    // }
 
     allocate(C1_array, 9);
     allocate(C2_array, 9, 9);
@@ -1757,29 +1759,57 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
 
-        // this is for test
-        std::ofstream fout_q0_tmp;
-        fout_q0_tmp.open("q0_tmp.txt");
-        std::ofstream fout_u0_tmp;
-        fout_u0_tmp.open("u0_tmp.txt");
+        // Output files of structural optimization
+        std::ofstream fout_step_q0;
+        fout_step_q0.open("step_q0.txt");
+        std::ofstream fout_step_u0;
+        fout_step_u0.open("step_u0.txt");
         std::ofstream fout_q0;
         fout_q0.open("q0.txt");
         std::ofstream fout_u0;
         fout_u0.open("u0.txt");
-        std::ofstream fout_force;
-        fout_force.open("SCP_force.txt");
-        std::ofstream fout_dFdq_q;
-        fout_dFdq_q.open("dFdq_q.txt");
-        std::ofstream fout_dFdq_q_total;
-        fout_dFdq_q_total.open("dFdq_q_total.txt");
         std::ofstream fout_v0;
         fout_v0.open("v0.txt");
 
         // cell optimization
-        std::ofstream fout_u_tensor_tmp;
-        fout_u_tensor_tmp.open("u_tensor_tmp.txt");
+        std::ofstream fout_step_u_tensor;
+        fout_step_u_tensor.open("step_u_tensor.txt");
         std::ofstream fout_u_tensor;
         fout_u_tensor.open("u_tensor.txt");
+
+        // q0.txt
+        fout_q0 << "#";
+        fout_q0 << std::setw(14) << "temp [K]";
+        for(is1 = 0; is1 < ns; is1++){
+            fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+        }fout_q0 << std::endl;
+
+        // u0.txt
+        fout_u0 << "#";
+        fout_u0 << std::setw(14) << "temp [K]";
+        for(iat1 = 0; iat1 < system->natmin; iat1++){
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                get_xyz_string(ixyz1, str_tmp);
+                fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+            }
+        }fout_u0 << std::endl;
+
+        // u_tensor.txt
+        fout_u_tensor << "#";
+        fout_u_tensor << std::setw(14) << "temp [K]";
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                get_xyz_string(ixyz1, str_tmp);
+                get_xyz_string(ixyz2, str_tmp2);
+                fout_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 < "}");
+            }
+        }fout_u_tensor << std::endl;
+        
+        // v0.txt
+        fout_v0 << "#";
+        fout_v0 << std::setw(14) << "temp [K]";
+        fout_v0 << std::setw(15) << "U_0 [Ry]";
+        fout_v0 << std::endl;
 
         i_temp_loop = -1;
 
@@ -1820,7 +1850,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
             }
 
+            std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
             if(set_init_str == 1){
+                std::cout << " read initial structure from input files." << std::endl << std::endl;
                 // read initial structure at each temperature
                 read_initial_q0(q0);
                 calculate_u0(q0, u0);
@@ -1831,14 +1863,21 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             else if(set_init_str == 2){
                 // read initial structure at initial temperature
                 if(i_temp_loop == 0){
+                    std::cout << " read initial structure from input files." << std::endl << std::endl;
+
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                     read_initial_strain(u_tensor);
+                }
+                else{
+                    std::cout << " start from structure from the previous temperature." << std::endl << std::endl;
                 }
             }
             else if(set_init_str == 3){
                 // read initial structure at initial temperature
                 if(i_temp_loop == 0){
+                    std::cout << " read initial structure from input files." << std::endl << std::endl;
+
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                     read_initial_strain(u_tensor);
@@ -1846,18 +1885,18 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 // read initial DISPLACEMENT if the structure converges
                 // to the high-symmetry one.
                 if(std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
+                    std::cout << " u0[" << cooling_u0_index << "] < " << std::setw(15) << std::setprecision(6) << cooling_u0_thr << " is satisfied." << std::endl;
+                    std::cout << " the structure is back to the high-symmetry phase." << std::endl;
+                    std::cout << " read again initial structure from input file." << std::endl << std::endl;
+
                     read_initial_q0(q0);
                     calculate_u0(q0, u0);
                     converged_prev = false;
                 }
+                else{
+                    std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
+                }
             }
-
-            // std::cout << "temperature : " << temp << " K" << std::endl;
-            fout_q0_tmp << "temperature : " << temp << " K" << std::endl;
-            fout_u0_tmp << "temperature : " << temp << " K" << std::endl;
-            fout_force << "temperature : " << temp << " K" << std::endl;
-
-            fout_u_tensor_tmp << "temperature : " << temp << " K" << std::endl;
 
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
@@ -1867,7 +1906,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     std::cout << std::setw(10) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }std::cout << " :";
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    std::cout << std::scientific << std::setw(16) << std::setprecision(6) << u0[iat1*3 + ixyz1];
+                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1*3 + ixyz1];
                 }std::cout << std::endl;
             }std::cout << std::endl;
 
@@ -1875,9 +1914,54 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                 std::cout << " ";
                 for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    std::cout << std::scientific << std::setw(16) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];    
+                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];    
                 }std::cout << std::endl;
             }std::cout << std::endl;
+
+            // step_q0.txt
+            fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+            fout_step_q0 << std::setw(6) << "step";
+            for(is1 = 0; is1 < ns; is1++){
+                fout_step_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+            }fout_step_q0 << std::endl;
+
+            // initial structure
+            fout_step_q0 << std::setw(6) << 0;
+            for(is = 0; is < ns; is++){
+                fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
+            }fout_step_q0 << std::endl;
+
+            // step_u0.txt
+            fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
+            fout_step_u0 << std::setw(6) << "step";
+            for(iat1 = 0; iat1 < system->natmin; iat1++){
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    get_xyz_string(ixyz1, str_tmp);
+                    fout_step_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+                }
+            }fout_step_u0 << std::endl;
+
+            // initial displacements
+            fout_step_u0 << std::setw(6) << 0;
+            for(is = 0; is < ns; is++){
+                fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
+            }fout_step_u0 << std::endl; 
+
+            // step_u_tensor.txt
+            fout_step_u_tensor << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                    get_xyz_string(ixyz1, str_tmp);
+                    get_xyz_string(ixyz2, str_tmp2);
+                    fout_step_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 < "}");
+                }
+            }fout_step_u_tensor << std::endl;
+
+            fout_step_u_tensor << std::setw(6) << 0;
+            for(i1 = 0; i1 < 9; i1++){
+                fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[i1/3][i1%3]; 
+            } 
+
 
             std::cout << " ----------------------------------------------------------------" << std::endl;
 
@@ -1885,7 +1969,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
             for(i_str_loop = 0; i_str_loop < max_str_iter; i_str_loop++){
 
-                std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop << std::endl;
+                std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop+1 << std::endl;
                 std::cout << " IFC renormalization ... ";
 
                 // get eta tensor
@@ -1982,22 +2066,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             cmat_convert, 
                                             omega2_anharm[iT], 
                                             temp);
-
-                // check force
-                dFdq_q = 0.0;
-                for(is = 0; is < ns; is++){
-                    dFdq_q += q0[is] * (v1_array_SCP[is] - v1_array_renormalized[is]);
-                }
-                fout_dFdq_q << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
-
-                // check force
-                dFdq_q = 0.0;
-                for(is = 0; is < ns; is++){
-                    dFdq_q += q0[is] * v1_array_SCP[is];
-                    // dFdq_q += q0[is] * v1_array_renormalized[is];
-                    
-                }
-                fout_dFdq_q_total << temp << " " << i_str_loop << " " << dFdq_q.real() << " " << dFdq_q.imag() << std::endl;
 
                 // change structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -2105,27 +2173,21 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_SCP, force_array);
 
-                // print SCP force
-                fout_force << temp << " " << i_str_loop << " ";
-                for(is = 0; is < ns; is++){
-                    fout_force << force_array[is] << " ";
-                }fout_force << std::endl;
-
                 // print q0
-                fout_q0_tmp << i_str_loop << " ";
+                fout_step_q0 << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < ns; is++){
-                    fout_q0_tmp << q0[is] << " ";
-                }fout_q0_tmp << std::endl;
+                    fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
+                }fout_step_q0 << std::endl;
                 calculate_u0(q0, u0);
-                fout_u0_tmp << i_str_loop << " ";
+                fout_step_u0 << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < ns; is++){
-                    fout_u0_tmp << u0[is] << " ";
-                }fout_u0_tmp << std::endl;
+                    fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
+                }fout_step_u0 << std::endl;
 
-                fout_u_tensor_tmp << i_str_loop << " ";
+                fout_step_u_tensor << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < 9; is++){
-                    fout_u_tensor_tmp << u_tensor[is/3][is%3] << " ";
-                }fout_u_tensor_tmp << std::endl;
+                    fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
+                }fout_step_u_tensor << std::endl;
 
                 // check convergence
                 du0 = 0.0;
@@ -2143,13 +2205,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }du_tensor = std::sqrt(du_tensor);
 
                 std::cout << std::endl;
-                std::cout << " du0 =" << std::scientific << std::setw(16) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
-                std::cout << " du_tensor =" << std::scientific << std::setw(16) << std::setprecision(6) << du_tensor << std::endl << std::endl;
+                std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
+                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << std::endl << std::endl;
 
                 if(du0 < coord_conv_tol && du_tensor < cell_conv_tol){
-                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(16) << std::setprecision(6) << coord_conv_tol << std::endl;
-                    std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(16) << std::setprecision(6) << cell_conv_tol << std::endl;
-                    std::cout << " Structural optimization converged in" << i_str_loop << "-th loop." << std::endl;
+                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15) << std::setprecision(6) << coord_conv_tol << std::endl;
+                    std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15) << std::setprecision(6) << cell_conv_tol << std::endl;
+                    std::cout << " Structural optimization converged in " << i_str_loop+1 << "-th loop." << std::endl;
                     std::cout << " break structural loop." << std::endl << std::endl;
                     break;
                 }
@@ -2165,7 +2227,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     std::cout << std::setw(10) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }std::cout << " :";
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    std::cout << std::scientific << std::setw(16) << std::setprecision(6) << u0[iat1*3 + ixyz1];
+                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1*3 + ixyz1];
                 }std::cout << std::endl;
             }std::cout << std::endl;
             
@@ -2173,7 +2235,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                 std::cout << " ";
                 for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    std::cout << std::scientific << std::setw(16) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];    
+                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];    
                 }std::cout << std::endl;
             }if(i_temp_loop == NT-1){
                 std::cout << " ----------------------------------------------------------------" << std::endl << std::endl;
@@ -2184,22 +2246,22 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
             // print obtained structure
             calculate_u0(q0, u0);
-            fout_q0 << temp << " ";
+            fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
             for(is = 0; is < ns; is++){
-                fout_q0 << q0[is] << " ";
+                fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
             }fout_q0 << std::endl;
 
-            fout_u0 << temp << " ";
+            fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
             for(is = 0; is < ns; is++){
-                fout_u0 << u0[is] << " ";
+                fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
             }fout_u0 << std::endl;
 
-            fout_u_tensor << temp << " ";
+            fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << temp;
             for(is = 0; is < 9; is++){
-                fout_u_tensor << u_tensor[is/3][is%3] << " ";
+                fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
             }fout_u_tensor << std::endl;
 
-            fout_v0 << temp << " " << v0_renormalized << std::endl;
+            fout_v0 << std::scientific << std::setw(15) << std::setprecision(6) << temp << std::setw(15) << v0_renormalized << std::endl;
 
             if (!warmstart_scph) converged_prev = false;
 
@@ -2230,14 +2292,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                     evec_harm_renormalize_tmp);
         }
 
-        // this is for test
-        fout_dFdq_q.close();
-        fout_dFdq_q_total.close();
-        fout_q0_tmp.close();
-        fout_u0_tmp.close();
+        // Output files of structural optimization
+        fout_step_q0.close();
+        fout_step_u0.close();
         fout_q0.close();
         fout_u0.close();
-        fout_force.close();
         fout_v0.close();
 
         deallocate(cmat_convert);
@@ -2534,13 +2593,10 @@ void Scph::calculate_u0(double *q0, double *u0){
 
 void Scph::calculate_force_in_real_space(std::complex<double> *v1_array_renormalized, double *force_array)
 {   
-    // std::ofstream fout_force;
     int natmin = system->natmin;
     auto ns = dynamical->neval;
     int is, iatm, ixyz;
     double force[3] = {0.0, 0.0, 0.0};
-
-    // fout_force.open("force.out");
 
     for(iatm = 0; iatm < natmin; iatm++){
         for(ixyz = 0; ixyz < 3; ixyz++){
@@ -2550,7 +2606,6 @@ void Scph::calculate_force_in_real_space(std::complex<double> *v1_array_renormal
             }
             force_array[iatm*3 + ixyz] = force[ixyz];
         }
-        // fout_force << force[0] << " " << force[1] << " " << force[2] << std::endl;
     }
 }
 
