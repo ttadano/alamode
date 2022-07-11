@@ -431,6 +431,8 @@ private:
                                                             const double temp_in,
                                                             const std::vector<std::complex<double>> &omegalist);
 
+    int get_xyz_string(int, std::string&);
+
 };
 
 extern "C" {

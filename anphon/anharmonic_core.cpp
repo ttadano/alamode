@@ -504,8 +504,6 @@ void AnharmonicCore::calc_phi3_reciprocal_for_given_IFCs(const double *xk1,
 
     const auto tune_type_now = phase_storage_in->get_tune_type();
 
-    std::cout << "tune_type = " << tune_type_now << std::endl << std::flush;
-
     if (tune_type_now == 1) {
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase)
