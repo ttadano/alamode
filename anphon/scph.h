@@ -153,6 +153,8 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
+    void exec_QHA_relax_main();
+
     void read_C1_array(double *);
 
     void read_elastic_constants(double **, 
@@ -433,6 +435,17 @@ private:
                                                             const std::vector<std::complex<double>> &omegalist);
 
     int get_xyz_string(int, std::string&);
+
+    // QHA
+    void compute_cmat(std::complex<double> ***, 
+                      std::complex<double> ***);
+
+    void compute_QHA_v1_array(std::complex<double> *, 
+                              std::complex<double> ***, 
+                              std::complex<double> ***, 
+                              double ** , 
+                              const double ,
+                              std::complex<double> *);
 
 };
 
