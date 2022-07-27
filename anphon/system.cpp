@@ -71,6 +71,9 @@ void System::deallocate_variables()
     if(xr_s_no_displace){
         deallocate(xr_s_no_displace);
     }
+    if(xr_s_no_disp_anharm){
+        deallocate(xr_s_no_disp_anharm);
+    }
     if (xc) {
         deallocate(xc);
     }
@@ -741,6 +744,7 @@ void System::load_xr_s_no_displace_from_XML()
     if (mympi->my_rank == 0) {
 
         int i;
+        int iat1, ixyz1;
         using namespace boost::property_tree;
         ptree pt;
 
@@ -758,7 +762,8 @@ void System::load_xr_s_no_displace_from_XML()
         // Parse atomic elements and coordinates
         std::stringstream ss;
 
-        allocate(xr_s_no_displace, nat, 3);
+        allocate(xr_s_no_displace, nat_anharm, 3);
+        allocate(xr_s_no_disp_anharm, nat_anharm, 3);
         unsigned int index;
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
@@ -780,14 +785,57 @@ void System::load_xr_s_no_displace_from_XML()
                         ss >> xr_s_no_displace[index][0] >> xr_s_no_displace[index][1] >> xr_s_no_displace[index][2];
                     }
 
+        for(iat1 = 0; iat1 < nat_anharm; iat1++){
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                xr_s_no_disp_anharm[iat1][ixyz1] = xr_s_no_displace[iat1][ixyz1];
+            }
+        }
+
+        if(fcs_phonon->update_fc2){
+            try {
+                read_xml("no_displace_harmonic.xml", pt);
+            }
+            catch (std::exception &e) {
+                std::string str_error = "Cannot open file no_displace_harmonic.xml";
+                exit("load_xr_s_no_displace_from_XML",
+                            str_error.c_str());
+            }
+
+            deallocate(xr_s_no_displace);
+            allocate(xr_s_no_displace, nat, 3);
+
+            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
+                            const auto &child = child_.second;
+                            const auto str_index = child.get<std::string>("<xmlattr>.index");
+                            const auto str_element = child.get<std::string>("<xmlattr>.element");
+
+                            ss.str("");
+                            ss.clear();
+                            ss << child.data();
+
+                            index = boost::lexical_cast<unsigned int>(str_index) - 1;
+
+                            if (index >= nat)
+                                exit("load_system_info_xml",
+                                            "index is out of range");
+
+                            // kd[index] = dict_atomic_kind[str_element];
+                            ss >> xr_s_no_displace[index][0] >> xr_s_no_displace[index][1] >> xr_s_no_displace[index][2];
+                        }
+            
+
+        }
+
 
     }
 
     if (mympi->my_rank > 0) {
         allocate(xr_s_no_displace, nat, 3);
+        allocate(xr_s_no_disp_anharm, nat_anharm, 3);
     }
 
     MPI_Bcast(&xr_s_no_displace[0][0], 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&xr_s_no_disp_anharm[0][0], 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 

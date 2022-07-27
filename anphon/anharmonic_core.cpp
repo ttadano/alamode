@@ -1604,3 +1604,69 @@ int **AnharmonicCore::get_evec_index(const unsigned int order) const
     if (order == 4) return evec_index_v4;
     return nullptr;
 }
+
+void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
+                         const std::vector<FcsArrayWithCell> &fc2_in,
+                         std::complex<double> **dymat_out) const
+{
+    int i;
+    const auto nmode = 3 * system->natmin;
+    double vec[3];
+    const std::complex<double> im(0.0, 1.0);
+
+    // prepare supercell shift
+    double **xshift_s;
+    const auto ncell_s = 27;
+
+    allocate(xshift_s, ncell_s, 3);
+
+    unsigned int icell = 0;
+    int ix, iy, iz;
+    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                xshift_s[icell][0] = ix*1.0;
+                xshift_s[icell][1] = iy*1.0;
+                xshift_s[icell][2] = iz*1.0;
+
+                ++icell;
+            }
+        }
+    }
+
+    for (i = 0; i < nmode; ++i) {
+        for (auto j = 0; j < nmode; ++j) {
+            dymat_out[i][j] = std::complex<double>(0.0, 0.0);
+        }
+    }
+
+    for (const auto &it: fc2_in) {
+
+        const auto atm1_p = it.pairs[0].index/3;
+        const auto atm2_p = it.pairs[1].index/3;
+        const auto atm1_s = system->map_p2s_anharm[atm1_p][0];
+        const auto atm2_s = system->map_p2s_anharm[atm2_p][it.pairs[1].tran];
+        const auto xyz1 = it.pairs[0].index%3;
+        const auto xyz2 = it.pairs[1].index%3;
+        const auto icell = it.pairs[1].cell_s;
+
+        for (i = 0; i < 3; ++i) {
+            vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[icell][i]
+                     - system->xr_s_anharm[system->map_p2s_anharm[atm2_p][0]][i];
+        }
+
+        rotvec(vec, vec, system->lavec_s_anharm);
+        rotvec(vec, vec, system->rlavec_p);
+
+        const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+
+        dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
+                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+    }
+
+    deallocate(xshift_s);
+}

@@ -3533,7 +3533,7 @@ void Scph::compute_del_v1_strain_from_cubic(std::complex<double> **del_v1_strain
 {
     // calculate renormalization in real space
     int natmin = system->natmin;
-    int nat = system->nat;
+    // int nat = system->nat;
     int ns = dynamical->neval;
     double **del_v1_strain_from_cubic_in_real_space;
     allocate(del_v1_strain_from_cubic_in_real_space, 81, ns);
@@ -3581,15 +3581,15 @@ void Scph::compute_del_v1_strain_from_cubic(std::complex<double> **del_v1_strain
         ind1 = it.pairs[0].index;
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            vec1[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
-                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+            vec1[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
+                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[1].cell_s][ixyz1];
-            vec2[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
-                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+            vec2[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
+                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[2].cell_s][ixyz1];
         }
-        rotvec(vec1, vec1, system->lavec_s);
-        rotvec(vec2, vec2, system->lavec_s);
+        rotvec(vec1, vec1, system->lavec_s_anharm);
+        rotvec(vec2, vec2, system->lavec_s_anharm);
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
             for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
@@ -3628,7 +3628,7 @@ void Scph::compute_del_v1_strain_from_quartic(std::complex<double> **del_v1_stra
 {
     // calculate renormalization in real space
     int natmin = system->natmin;
-    int nat = system->nat;
+    // int nat = system->nat;
     int ns = dynamical->neval;
     double **del_v1_strain_from_quartic_in_real_space;
 
@@ -3677,19 +3677,19 @@ void Scph::compute_del_v1_strain_from_quartic(std::complex<double> **del_v1_stra
         ind1 = it.pairs[0].index;
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            vec1[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
-                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+            vec1[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
+                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[1].cell_s][ixyz1];
-            vec2[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
-                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+            vec2[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
+                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[2].cell_s][ixyz1];
-            vec3[ixyz1] = system->xr_s_no_displace[system->map_p2s[it.pairs[3].index / 3][it.pairs[3].tran]][ixyz1]
-                        - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][ixyz1]
+            vec3[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[3].index / 3][it.pairs[3].tran]][ixyz1]
+                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[3].cell_s][ixyz1];
         }
-        rotvec(vec1, vec1, system->lavec_s);
-        rotvec(vec2, vec2, system->lavec_s);
-        rotvec(vec3, vec3, system->lavec_s);
+        rotvec(vec1, vec1, system->lavec_s_anharm);
+        rotvec(vec2, vec2, system->lavec_s_anharm);
+        rotvec(vec3, vec3, system->lavec_s_anharm);
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
             for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
@@ -3738,7 +3738,6 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
     int is1, is2, ik, knum;
 
     std::vector<FcsArrayWithCell> delta_fcs;
-    std::vector<FcsClassExtent> delta_fcs2;
     FcsClassExtent fc_extent_tmp;
 
     std::complex<double> **mat_tmp;
@@ -3753,19 +3752,13 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
             compute_del_v_strain_in_real_space1(fcs_phonon->force_constant_with_cell[1],
                                                            delta_fcs, ixyz1, ixyz2, 1);
 
-            // change format of harmonic IFCs.
-            delta_fcs2.clear();
-
-            for (const auto &it: delta_fcs){
-                fc_extent_tmp = from_FcsArrayWithCell_to_FcsClassExtent(it);
-                delta_fcs2.emplace_back(fc_extent_tmp);
-            }
             
             for(ik = 0; ik < nk; ik++){
                 // Fourier transformation
-                dynamical->calc_analytic_k(kmesh_dense->xk[ik],
-                                        delta_fcs2,
-                                        mat_tmp);
+                anharmonic_core->calc_analytic_k_from_FcsArrayWithCell(kmesh_dense->xk[ik],
+                                                                       delta_fcs,
+                                                                       mat_tmp);
+
                 // Unitary transformation
                 // knum = kmap_interpolate_to_scph[ik];
                 knum = ik;
@@ -3804,7 +3797,7 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
 #pragma omp parallel private(ixyz, itmp, ixyz11, ixyz12, ixyz21, ixyz22, is1, is2, ik, knum)
 {
     std::vector<FcsArrayWithCell> delta_fcs;
-    std::vector<FcsClassExtent> delta_fcs2;
+    // std::vector<FcsClassExtent> delta_fcs2;
     FcsClassExtent fc_extent_tmp;
 
     std::complex<double> **mat_tmp;
@@ -3828,17 +3821,21 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
 
 
         // change format of harmonic IFCs.
-        delta_fcs2.clear();
+        // delta_fcs2.clear();
 
-        for (const auto &it: delta_fcs){
-            fc_extent_tmp = from_FcsArrayWithCell_to_FcsClassExtent(it);
-            delta_fcs2.emplace_back(fc_extent_tmp);
-        }
+        // for (const auto &it: delta_fcs){
+        //     fc_extent_tmp = from_FcsArrayWithCell_to_FcsClassExtent(it);
+        //     delta_fcs2.emplace_back(fc_extent_tmp);
+        // }
         
         for(ik = 0; ik < nk; ik++){
-            dynamical->calc_analytic_k(kmesh_dense->xk[ik],
-                                    delta_fcs2,
-                                    mat_tmp);
+            anharmonic_core->calc_analytic_k_from_FcsArrayWithCell(kmesh_dense->xk[ik],
+                                                                   delta_fcs,
+                                                                   mat_tmp);
+            // dynamical->calc_analytic_k(kmesh_dense->xk[ik],
+            //                         delta_fcs2,
+            //                         mat_tmp);
+
             // Unitary transformation
             // knum = kmap_interpolate_to_scph[ik];
             knum = ik;
@@ -4332,7 +4329,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
 
                 for(is = 0; is < ns; is++){
                     for(js = 0; js < ns; js++){
-                        del_v2_strain_from_cubic[ixyz1*3+ixyz2][ik][is*ns+js] += dymat_tmp_mode(is, js);
+                        del_v2_strain_from_cubic[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp_mode(is, js);
                     }
                 }
             }
@@ -4812,11 +4809,11 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
 
             for(i = 0; i < 3; i++){
                 // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-1; j++){
                     // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                     //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                      + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-1);
@@ -4828,14 +4825,14 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
                 //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                 //         - vec_origin[i]
                 //         + xshift_s[it.pairs[norder - 1].cell_s][i];
-                vec[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                vec[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                             1].tran]][i]
                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->lavec_s);
+            rotvec(vec, vec, system->lavec_s_anharm);
 
             fcs_tmp += it.fcs_val * vec[ixyz2];
             // it.pairs[norder - 1].index % 3 == ixyz has been checked.
@@ -4925,11 +4922,11 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
 
             for(i = 0; i < 3; i++){
                 // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-1; j++){
                     // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                     //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-1);
@@ -4942,14 +4939,14 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
                 //         - vec_origin[i]
                 //         + xshift_s[it.pairs[norder - 1].cell_s][i];
 
-                vec[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                vec[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                             1].tran]][i]
                         // - system->xr_s_no_displace[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->lavec_s);
+            rotvec(vec, vec, system->lavec_s_anharm);
 
             fcs_tmp += it.fcs_val * vec[ixyz2];
             // it.pairs[norder - 1].index % 3 == ixyz1 has been checked.
@@ -5113,11 +5110,11 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
 
             for(i = 0; i < 3; i++){
                 // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-2; j++){
                     // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                     //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-2);
@@ -5130,7 +5127,7 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
                 //         - vec_origin[i]
                 //         + xshift_s[it.pairs[norder - 2].cell_s][i];
 
-                vec1[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]][i]
+                vec1[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]][i]
                         // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 2].cell_s][i];
@@ -5141,14 +5138,14 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
                 //         - vec_origin[i]
                 //         + xshift_s[it.pairs[norder - 1].cell_s][i];
 
-                vec2[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran]][i]
+                vec2[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran]][i]
                         // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec1, vec1, system->lavec_s);
-            rotvec(vec2, vec2, system->lavec_s);
+            rotvec(vec1, vec1, system->lavec_s_anharm);
+            rotvec(vec2, vec2, system->lavec_s_anharm);
 
             fcs_tmp += it.fcs_val * vec1[ixyz12] * vec2[ixyz22];
             // xyz component of the IFC has already been checked
@@ -5238,11 +5235,11 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
 
             for(i = 0; i < 3; i++){
                 // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-2; j++){
                     // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                     //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_displace[system->map_p2s[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-2);
@@ -5256,7 +5253,7 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
                 //         - vec_origin[i]
                 //         + xshift_s[it.pairs[norder - 2].cell_s][i];
 
-                vec1[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 2].index / 3][it.pairs[norder -
+                vec1[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
                                                                                                             2].tran]][i]
                         // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
@@ -5269,7 +5266,7 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
                 //         - vec_origin[i]
                 //         + xshift_s[it.pairs[norder - 1].cell_s][i];
 
-                vec2[i] = system->xr_s_no_displace[system->map_p2s[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                vec2[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                             1].tran]][i]
                         // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
@@ -5278,8 +5275,8 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
 
             // rotvec(vec1, vec1, system->lavec_s_anharm);
             // rotvec(vec2, vec2, system->lavec_s_anharm);
-            rotvec(vec1, vec1, system->lavec_s);
-            rotvec(vec2, vec2, system->lavec_s);
+            rotvec(vec1, vec1, system->lavec_s_anharm);
+            rotvec(vec2, vec2, system->lavec_s_anharm);
 
             fcs_tmp += it.fcs_val * vec1[ixyz12] * vec2[ixyz22];
             // xyz components of IFC have been checked

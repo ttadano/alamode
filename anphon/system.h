@@ -46,6 +46,7 @@ public:
     double lavec_s_anharm[3][3], rlavec_s_anharm[3][3];
     double **xr_p, **xr_s, **xc;
     double **xr_s_no_displace;
+    double **xr_s_no_disp_anharm;
     double **xr_s_anharm;
     double **magmom;
     double volume_p;
