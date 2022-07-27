@@ -200,7 +200,7 @@ void Scph::exec_scph()
         else{
             // exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
 
-            exec_QHA_relax_main();
+            exec_QHA_relax_main(delta_dymat_scph);
         }
 
         // print_distance_harmonic_IFC();
@@ -2353,7 +2353,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 }
 
 
-void Scph::exec_QHA_relax_main(){
+void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_renormalize){
     using namespace Eigen;
 
     int ik, is, js;
@@ -2881,6 +2881,10 @@ void Scph::exec_QHA_relax_main(){
                                         evec_harm_renormalize_tmp,
                                         delta_v2_array_renormalize,
                                         writes->getVerbosity());
+
+                calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
+                                    omega2_harm_renormalize[iT],
+                                    evec_harm_renormalize_tmp);
 
                 compute_cmat(evec_harm_renormalize_tmp, cmat_convert);
 

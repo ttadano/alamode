@@ -153,7 +153,7 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
-    void exec_QHA_relax_main();
+    void exec_QHA_relax_main(std::complex<double> ****);
 
     void read_C1_array(double *);
 
