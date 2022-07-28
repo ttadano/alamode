@@ -214,6 +214,10 @@ public:
 
     int **get_evec_index(const unsigned int order) const;
 
+    void calc_analytic_k_from_FcsArrayWithCell(const double *,
+                         const std::vector<FcsArrayWithCell> &,
+                         std::complex<double> **) const;
+
 
 private:
     void set_default_variables();
