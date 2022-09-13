@@ -2517,12 +2517,29 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::cout << "  2nd order derivatives of 1st-order IFCs (from cubic IFCs) ... ";
     allocate(del_v1_strain_from_cubic, 81, ns);
     compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
+    // set zero (temporary) from here
+/*    std::cout << "  set zero ..." << std::endl;
+    for(ixyz1 = 0; ixyz1 < 81; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_cubic[ixyz1][is1] = 0.0;
+        }    
+    }*/
+    // set zero (temporary) to here
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
     std::cout << "  3rd order derivatives of 1st-order IFCs (from quartic IFCs) ... ";
     allocate(del_v1_strain_from_quartic, 729, ns);
     compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
+    // set zero (temporary) from here
+/*    std::cout << "  set zero ..." << std::endl;
+    for(ixyz1 = 0; ixyz1 < 729; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_quartic[ixyz1][is1] = 0.0;
+        }    
+    }*/
+    // set zero (temporary) to here
+
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
@@ -2846,6 +2863,21 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 // calculate PES force
                 calculate_force_in_real_space(v1_array_renormalized, force_array);
 
+                // debug from here
+                std::cout << "v1_array_renormalized" << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    std::cout << v1_array_renormalized[is1] << " ";
+                }std::cout << std::endl << std::endl;
+
+                std::cout << "force_array" << std::endl;
+                for(is1 = 0; is1 < system->natmin; is1++){
+                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                        std::cout << force_array[is1*3 + ixyz1] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+                // debug to here
+
+
                 // calculate PES gradient by strain
                 calculate_del_v0_strain_with_strain_displace(del_v0_strain_with_strain_displace, 
                                                              C1_array,
@@ -3004,10 +3036,30 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     // solve linear equation
                     du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
 
+                    // isotropic thermal expansion from here
+/*                    double C2_tmp = 0.0;
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                        C2_tmp += C2_array[itmp1*3+itmp1][itmp1*3+itmp1];
+                    }
+                    std::complex<double> del_v0_strain_tmp;
+                    del_v0_strain_tmp = 0.0;
+
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                        del_v0_strain_tmp += del_v0_strain_QHA[itmp1*3+itmp1];
+                    }
+
+                    for(itmp1 = 0; itmp1 < 3; itmp1++){
+                        delta_u_tensor[itmp1] = - mixbeta_cell * del_v0_strain_tmp.real()/C2_tmp;
+                    }
+                    for(itmp1 = 3; itmp1 < 6; itmp1++){
+                        delta_u_tensor[itmp1] = 0.0;
+                    }
+*/
+                    // isotropic thermal expansion to here
+
                     // update u tensor
                     for(is = 0; is < 6; is++){
                         delta_u_tensor[is] = - mixbeta_cell * du_tensor_vec(is).real();
-                        // delta_u_tensor[is] = 0.0;
                         if(is < 3){
                             u_tensor[is][is] += delta_u_tensor[is];
                         }
@@ -3021,6 +3073,21 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 }
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_QHA, force_array);
+
+                // debug from here
+                std::cout << "v1_array_QHA" << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    std::cout << v1_array_QHA[is1] << " ";
+                }std::cout << std::endl << std::endl;
+
+                std::cout << "force_array" << std::endl;
+                for(is1 = 0; is1 < system->natmin; is1++){
+                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                        std::cout << force_array[is1*3 + ixyz1] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+                // debug to here
+
 
                 // print q0
                 fout_step_q0 << std::setw(6) << i_str_loop+1;
