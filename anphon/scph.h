@@ -155,6 +155,8 @@ private:
 
     void exec_QHA_relax_main(std::complex<double> ****);
 
+    void exec_perturbative_QHA();
+
     void read_C1_array(double *);
 
     void read_elastic_constants(double **, 
@@ -446,6 +448,10 @@ private:
                               double ** , 
                               const double ,
                               std::complex<double> *);
+
+    void calc_v1_array_vib(std::complex<double> *, 
+                           std::complex<double> ***,
+                           const double);
 
 };
 

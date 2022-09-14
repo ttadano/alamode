@@ -197,6 +197,7 @@ void Scph::exec_scph()
         else if(relax_coordinate == 1){
             exec_scph_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
+
         else{
             // exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
 
@@ -2518,12 +2519,12 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     allocate(del_v1_strain_from_cubic, 81, ns);
     compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
     // set zero (temporary) from here
-/*    std::cout << "  set zero ..." << std::endl;
+    std::cout << "  set zero ..." << std::endl;
     for(ixyz1 = 0; ixyz1 < 81; ixyz1++){
         for(is1 = 0; is1 < ns; is1++){
             del_v1_strain_from_cubic[ixyz1][is1] = 0.0;
         }    
-    }*/
+    }
     // set zero (temporary) to here
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
@@ -2532,12 +2533,12 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     allocate(del_v1_strain_from_quartic, 729, ns);
     compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
     // set zero (temporary) from here
-/*    std::cout << "  set zero ..." << std::endl;
+    std::cout << "  set zero ..." << std::endl;
     for(ixyz1 = 0; ixyz1 < 729; ixyz1++){
         for(is1 = 0; is1 < ns; is1++){
             del_v1_strain_from_quartic[ixyz1][is1] = 0.0;
         }    
-    }*/
+    }
     // set zero (temporary) to here
 
     std::cout << "done!" << std::endl;
@@ -3224,6 +3225,225 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
 }
 
+
+void Scph::exec_perturbative_QHA()
+{    using namespace Eigen;
+
+    int ik, is, js;
+    int ik1, is1, is2, is3, is4;
+    int i1, i2;
+    int iat1, iat2, ixyz1, ixyz2;
+    std::string str_tmp, str_tmp2;
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    const auto nk = kmesh_dense->nk;
+    const auto nk_interpolate = kmesh_coarse->nk;
+    const auto ns = dynamical->neval;
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+    // original IFCs
+    std::complex<double> *v1_array_original;
+    std::complex<double> ***v3_array_original;
+
+    // elastic constants
+    double *C1_array;
+    double **C2_array;
+    double ***C3_array;
+
+    // generalized force from vibrational free energy
+    std::complex<double> *v1_array_vib;
+
+    // IFC renormalization from strain
+    std::complex<double> **del_v1_strain_from_harmonic;
+    std::complex<double> ***del_v2_strain_from_cubic;
+    std::complex<double> *del_v0_strain_vib;
+
+    int i_temp_loop;
+    std::vector<int> harm_optical_modes(ns-3);
+
+    int itmp1, itmp2, itmp3, itmp4, itmp5, itmp6;
+
+    // coordinate
+    double *q0, *u0; 
+
+    // strain
+    double **u_tensor, **eta_tensor;
+
+    std::vector<double> vec_temp;
+
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    allocate(v1_array_vib, ns);
+
+    allocate(v1_array_original, ns);
+    allocate(q0, ns);
+    allocate(u0, ns);
+
+    allocate(u_tensor, 3, 3);
+    allocate(eta_tensor, 3, 3);
+
+    allocate(v3_array_original, nk, ns, ns * ns);
+
+    compute_V3_elements_mpi_over_kpoint(v3_array_original,
+                                        evec_harmonic,
+                                        selfenergy_offdiagonal);
+
+    // assume that the atomic forces are zero at initial structure
+    for(is = 0; is < ns; is++){
+        v1_array_original[is] = 0.0;
+    }
+    
+    // compute IFC renormalization by strain
+    std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl;
+
+    std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
+    allocate(del_v1_strain_from_harmonic, 9, ns);
+    compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
+    std::cout << "done!" << std::endl;
+    timer->print_elapsed();
+
+    std::cout << "  1st order derivatives of harmonic IFCs (from cubic IFCs) ... ";
+    allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
+    compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
+    // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
+    // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
+    //                                                         del_v2_strain_from_cubic);
+    std::cout << "done!" << std::endl;
+    timer->print_elapsed();
+
+    allocate(C1_array, 9);
+    allocate(C2_array, 9, 9);
+    allocate(C3_array, 9, 9, 9);
+
+
+    // get indices of optical modes at Gamma point
+    js = 0;
+    for(is = 0; is < ns; is++){
+        if(std::fabs(omega2_harmonic[0][is]) < eps8){
+            continue;
+        }
+        harm_optical_modes[js] = is;
+        js++;
+    }
+    
+    if(mympi->my_rank == 0){
+        std::cout << "mode indices of optical modes: " << std::endl;
+        for(is = 0; is < ns-3; is++){
+            std::cout << harm_optical_modes[is] << " ";
+        }std::cout << std::endl;
+    }
+
+    if (mympi->my_rank == 0) {
+
+        vec_temp.clear();
+
+        if (lower_temp) {
+            for (int i = NT - 1; i >= 0; --i) {
+                vec_temp.push_back(Tmin + static_cast<double>(i) * dT);
+            }
+        } else {
+            for (int i = 0; i < NT; ++i) {
+                vec_temp.push_back(Tmin + static_cast<double>(i) * dT);
+            }
+        }
+
+        // read elastic constants
+        read_C1_array(C1_array);
+        read_elastic_constants(C2_array, C3_array);
+
+        // Output files of structural optimization
+        std::ofstream fout_q0;
+        fout_q0.open("q0.txt");
+        std::ofstream fout_u0;
+        fout_u0.open("u0.txt");
+        std::ofstream fout_v0;
+        fout_v0.open("v0.txt");
+
+        // cell optimization
+        std::ofstream fout_u_tensor;
+        fout_u_tensor.open("u_tensor.txt");
+
+        // q0.txt
+        fout_q0 << "#";
+        fout_q0 << std::setw(14) << "temp [K]";
+        for(is1 = 0; is1 < ns; is1++){
+            fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+        }fout_q0 << std::endl;
+
+        // u0.txt
+        fout_u0 << "#";
+        fout_u0 << std::setw(14) << "temp [K]";
+        for(iat1 = 0; iat1 < system->natmin; iat1++){
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                get_xyz_string(ixyz1, str_tmp);
+                fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+            }
+        }fout_u0 << std::endl;
+
+        // u_tensor.txt
+        fout_u_tensor << "#";
+        fout_u_tensor << std::setw(14) << "temp [K]";
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                get_xyz_string(ixyz1, str_tmp);
+                get_xyz_string(ixyz2, str_tmp2);
+                fout_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 < "}");
+            }
+        }fout_u_tensor << std::endl;
+        
+        // v0.txt
+        fout_v0 << "#";
+        fout_v0 << std::setw(14) << "temp [K]";
+        fout_v0 << std::setw(15) << "U_0 [Ry]";
+        fout_v0 << std::endl;
+
+        i_temp_loop = -1;
+
+        std::cout << "Start QHA." << std::endl;
+        std::cout << " Internal coordinates and shape of the unit cell are calculated by lowest-order perturbation theory." << std::endl;
+
+        for (double temp : vec_temp) {
+            i_temp_loop++;
+            auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
+
+            std::cout << " ----------------------------------------------------------------" << std::endl;
+            std::cout << " Temperature = " << temp << " K" << std::endl;
+            std::cout << " temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT << std::endl << std::endl;
+
+
+            calc_v1_array_vib(v1_array_vib, v3_array_original, temp);
+            // herehere
+
+        }
+
+        fout_q0.close();
+        fout_u0.close();
+        fout_v0.close();
+        fout_u_tensor.close();
+
+
+    }
+
+
+    
+
+
+    deallocate(v1_array_vib);
+    deallocate(v1_array_original);
+    deallocate(q0);
+    deallocate(u0);
+    deallocate(u_tensor);
+    deallocate(eta_tensor);
+    deallocate(v3_array_original);
+    deallocate(del_v1_strain_from_harmonic);
+    deallocate(del_v2_strain_from_cubic);
+    deallocate(C1_array);
+    deallocate(C2_array);
+    deallocate(C3_array);
+
+}
 
 void Scph::read_C1_array(double *C1_array)
 {
@@ -9283,5 +9503,48 @@ void Scph::compute_QHA_v1_array(std::complex<double> *v1_array_renormalized,
     }
 }
 
+void Scph::calc_v1_array_vib(std::complex<double> *v1_array_vib, 
+                             std::complex<double> ***v3_array_original,
+                             const double T_in)
+{
+    const auto nk = kmesh_dense->nk;
+    const auto ns = dynamical->neval;
 
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    int is1, is2, ik;
+    std::complex<double> Qtmp;
+    double omega1_tmp, n1;
+
+
+    for(is1 = 0; is1 < ns; is1++){
+        v1_array_vib[is1] = complex_zero;
+        
+        for(is2 = 0; is2 < ns; is2++){
+            for(ik = 0; ik < nk; ik++){
+                omega1_tmp = std::sqrt(std::fabs(omega2_harmonic[ik][is2]));
+
+                if(omega2_harmonic[ik][is2] < 0 && omega1_tmp > eps8){
+                    std::cout << "Warning : Negative frequency is detected in perturbative QHA." << std::endl;
+                }
+
+                if (std::abs(omega1_tmp) < eps8) {
+                    Qtmp = 0.0;
+                }
+                else{
+                    if(thermodynamics->classical){
+                        Qtmp = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1_tmp * omega1_tmp), 0.0);
+                    }
+                    else{
+                        n1 = thermodynamics->fB(omega1_tmp, T_in);
+                        Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                    }
+                }
+
+                v1_array_vib[is1] += v3_array_original[ik][is1][is2*ns+is2] * Qtmp;
+            }       
+        }
+    }
+
+}
                             
