@@ -34,6 +34,7 @@ Writer::Writer() : output_maxorder(5)
 {
     save_format_flags["alamode"] = 1;
     save_format_flags["shengbte"] = 0;
+    save_format_flags["shengbte4"] = 0;
     save_format_flags["qefc"] = 0;
     save_format_flags["hessian"] = 0;
     filename_fcs = "";
@@ -78,6 +79,7 @@ void Writer::write_input_vars(const System *system,
     std::cout << "  FCS_ALAMODE = " << save_format_flags.at("alamode") << ';';
     std::cout << "  NMAXSAVE = " << get_output_maxorder() << '\n';
     std::cout << "  FC3_SHENGBTE = " << save_format_flags.at("shengbte") << '\n';
+    std::cout << "  FC4_SHENGBTE = " << save_format_flags.at("shengbte4") << '\n';
     std::cout << "  FC2_QEFC = " << save_format_flags.at("qefc") << '\n';
     std::cout << "  HESSIAN = " << save_format_flags.at("hessian") << '\n';
     std::cout << "  FC_ZERO_THR = " << fcs->get_fc_zero_threshold() << '\n';
@@ -179,13 +181,28 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                 fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";;
             }
 
-            save_fc3_thirdorderpy_format(system,
-                                         symmetry,
-                                         cluster,
-                                         constraint,
-                                         fcs,
-                                         fname_save,
-                                         verbosity);
+            save_fc3_shengbte_format(system,
+                                     symmetry,
+                                     cluster,
+                                     constraint,
+                                     fcs,
+                                     fname_save,
+                                     verbosity);
+        }
+    } else if (fcs_format == "shengbte4") {
+        if (cluster->get_maxorder() > 2) {
+            auto fname_save = get_filename_fcs();
+            if (fname_save.empty()) {
+                fname_save = files->get_prefix() + ".FORCE_CONSTANT_4TH";;
+            }
+
+            save_fc4_shengbte_format(system,
+                                     symmetry,
+                                     cluster,
+                                     constraint,
+                                     fcs,
+                                     fname_save,
+                                     verbosity);
         }
     } else if (fcs_format == "qefc") {
         auto fname_save = get_filename_fcs();
@@ -913,13 +930,13 @@ void Writer::save_fc2_QEfc_format(const System *system,
     }
 }
 
-void Writer::save_fc3_thirdorderpy_format(const System *system,
-                                          const Symmetry *symmetry,
-                                          const Cluster *cluster,
-                                          const Constraint *constraint,
-                                          const Fcs *fcs,
-                                          const std::string fname_out,
-                                          const int verbosity) const
+void Writer::save_fc3_shengbte_format(const System *system,
+                                      const Symmetry *symmetry,
+                                      const Cluster *cluster,
+                                      const Constraint *constraint,
+                                      const Fcs *fcs,
+                                      const std::string fname_out,
+                                      const int verbosity) const
 {
     size_t i, j, k;
     int pair_tmp[3], coord_tmp[3];
@@ -932,10 +949,11 @@ void Writer::save_fc3_thirdorderpy_format(const System *system,
     const auto nat = system->get_supercell().number_of_atoms;
     const auto ntran = symmetry->get_ntran();
 
-    std::vector<int> atom_tmp;
+    std::vector<int> atom_tmp, flatten_array;
     std::vector<std::vector<int>> cell_dummy;
     std::set<InteractionCluster>::iterator iter_cluster;
     atom_tmp.resize(2);
+    flatten_array.resize(2);
     cell_dummy.resize(2);
 
     double ***x_image = system->get_x_image();
@@ -969,40 +987,30 @@ void Writer::save_fc3_thirdorderpy_format(const System *system,
             coord_tmp[i] = it.coords[i];
         }
 
-        j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
-
-        if (pair_tmp[1] > pair_tmp[2]) {
-            atom_tmp[0] = pair_tmp[2];
-            atom_tmp[1] = pair_tmp[1];
-        } else {
-            atom_tmp[0] = pair_tmp[1];
-            atom_tmp[1] = pair_tmp[2];
+        for (i = 0; i < 2; ++i) {
+            atom_tmp[i] = pair_tmp[i + 1];
+            flatten_array[i] = it.flattenarray[i + 1];
         }
+
+        j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
         iter_cluster = cluster->get_interaction_cluster(1, j).find(InteractionCluster(atom_tmp, cell_dummy));
 
-        if (!has_element[j][pair_tmp[1]][pair_tmp[2]]) {
-            nelems += (*iter_cluster).cell.size();
-            has_element[j][pair_tmp[1]][pair_tmp[2]] = 1;
-        }
-        fc3[3 * j + coord_tmp[0]][it.flattenarray[1]][it.flattenarray[2]] = it.fc_value;
-
-        if (it.flattenarray[1] != it.flattenarray[2]) {
-            if (!has_element[j][pair_tmp[2]][pair_tmp[1]]) {
+        do {
+            if (!has_element[j][flatten_array[0] / 3][flatten_array[1] / 3]) {
                 nelems += (*iter_cluster).cell.size();
-                has_element[j][pair_tmp[2]][pair_tmp[1]] = 1;
+                has_element[j][flatten_array[0] / 3][flatten_array[1] / 3] = 1;
             }
-            fc3[3 * j + coord_tmp[0]][it.flattenarray[2]][it.flattenarray[1]] = it.fc_value;
-        }
+            fc3[3 * j + coord_tmp[0]][flatten_array[0]][flatten_array[1]] = it.fc_value;
+        } while (std::next_permutation(flatten_array.begin(), flatten_array.end()));
     }
 
-    //auto file_fc3 = alm->files->get_prefix() + ".FORCE_CONSTANT_3RD";
-
     ofs_fc3.open(fname_out.c_str(), std::ios::out);
-    if (!ofs_fc3) exit("save_fc3_thirdorderpy_format", "cannot create the file");
+    if (!ofs_fc3) exit("save_fc3_shengbte_format", "cannot create the file");
     ofs_fc3 << nelems << std::endl;
 
-    bool swapped;
-    double vec1[3], vec2[3];
+    double vecs[2][3];
+    std::vector<int> atom_tmp_orig(2), index_sort_atom(2);
+    std::vector<int> index_found(2);
     auto ielem = 0;
     const auto factor = Ryd / 1.6021766208e-19 / std::pow(Bohr_in_Angstrom, 3);
 
@@ -1017,41 +1025,48 @@ void Writer::save_fc3_thirdorderpy_format(const System *system,
 
                         if (!has_element[i][jat][kat]) continue;
 
-                        if (jat > kat) {
-                            atom_tmp[0] = kat;
-                            atom_tmp[1] = jat;
-                            swapped = true;
-                        } else {
-                            atom_tmp[0] = jat;
-                            atom_tmp[1] = kat;
-                            swapped = false;
+                        atom_tmp[0] = jat;
+                        atom_tmp[1] = kat;
+                        for (auto m = 0; m < 2; ++m) {
+                            atom_tmp_orig[m] = atom_tmp[m];
+                        }
+                        std::sort(atom_tmp.begin(), atom_tmp.end());
+                        for (auto m = 0; m < 2; ++m) index_found[m] = 0;
+                        for (auto m = 0; m < 2; ++m) {
+                            for (auto mm = 0; mm < 2; ++mm) {
+                                if (index_found[mm] == 0) {
+                                    if (atom_tmp_orig[m] == atom_tmp[mm]) {
+                                        index_sort_atom[m] = mm;
+                                        index_found[mm] = 1;
+                                        break;
+                                    }
+                                }
+                            }
                         }
 
                         iter_cluster = cluster->get_interaction_cluster(1, i).find(
                                 InteractionCluster(atom_tmp, cell_dummy));
                         if (iter_cluster == cluster->get_interaction_cluster(1, i).end()) {
-                            exit("save_fcs_alamode_oldformat", "This cannot happen.");
+                            exit("save_fc3_shengbte_format", "This cannot happen.");
                         }
 
                         const auto multiplicity = (*iter_cluster).cell.size();
 
-                        const auto jat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[0]].
-                                atom_num][0];
-                        const auto kat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[1]].
-                                atom_num][0];
+                        const auto jat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[0]].atom_num][0];
+                        const auto kat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[1]].atom_num][0];
 
                         for (size_t imult = 0; imult < multiplicity; ++imult) {
                             auto cell_now = (*iter_cluster).cell[imult];
 
                             for (auto m = 0; m < 3; ++m) {
-                                vec1[m] = (x_image[0][atom_tmp[0]][m]
-                                           - x_image[0][jat0][m]
-                                           + x_image[cell_now[0]][0][m]
-                                           - x_image[0][0][m]) * Bohr_in_Angstrom;
-                                vec2[m] = (x_image[0][atom_tmp[1]][m]
-                                           - x_image[0][kat0][m]
-                                           + x_image[cell_now[1]][0][m]
-                                           - x_image[0][0][m]) * Bohr_in_Angstrom;
+                                vecs[0][m] = (x_image[0][atom_tmp[0]][m]
+                                              - x_image[0][jat0][m]
+                                              + x_image[cell_now[0]][0][m]
+                                              - x_image[0][0][m]) * Bohr_in_Angstrom;
+                                vecs[1][m] = (x_image[0][atom_tmp[1]][m]
+                                              - x_image[0][kat0][m]
+                                              + x_image[cell_now[1]][0][m]
+                                              - x_image[0][0][m]) * Bohr_in_Angstrom;
                             }
 
                             ++ielem;
@@ -1059,17 +1074,15 @@ void Writer::save_fc3_thirdorderpy_format(const System *system,
                             ofs_fc3 << ielem << std::endl;
                             ofs_fc3 << std::scientific;
                             ofs_fc3 << std::setprecision(10);
-                            if (swapped) {
-                                ofs_fc3 << std::setw(20) << vec2[0] << std::setw(20) << vec2[1] << std::setw(20) << vec2
-                                [2] << std::endl;
-                                ofs_fc3 << std::setw(20) << vec1[0] << std::setw(20) << vec1[1] << std::setw(20) << vec1
-                                [2] << std::endl;
-                            } else {
-                                ofs_fc3 << std::setw(20) << vec1[0] << std::setw(20) << vec1[1] << std::setw(20) << vec1
-                                [2] << std::endl;
-                                ofs_fc3 << std::setw(20) << vec2[0] << std::setw(20) << vec2[1] << std::setw(20) << vec2
-                                [2] << std::endl;
+
+                            for (auto m = 0; m < 2; ++m) {
+                                const auto m_map = index_sort_atom[m];
+                                for (auto mm = 0; mm < 3; ++mm) {
+                                    ofs_fc3 << std::setw(20) << vecs[m_map][mm];
+                                }
+                                ofs_fc3 << std::endl;
                             }
+
                             ofs_fc3 << std::setw(5) << i + 1;
                             ofs_fc3 << std::setw(5) << j + 1;
                             ofs_fc3 << std::setw(5) << k + 1 << std::endl;
@@ -1100,6 +1113,219 @@ void Writer::save_fc3_thirdorderpy_format(const System *system,
 
     if (verbosity) {
         std::cout << " Third-order FCs in ShengBTE format         : " << fname_out << std::endl;
+    }
+}
+
+
+void Writer::save_fc4_shengbte_format(const System *system,
+                                      const Symmetry *symmetry,
+                                      const Cluster *cluster,
+                                      const Constraint *constraint,
+                                      const Fcs *fcs,
+                                      const std::string fname_out,
+                                      const int verbosity) const
+{
+    size_t i, j, k, l;
+    int pair_tmp[4], coord_tmp[4];
+    std::ofstream ofs_fc4;
+    double ****fc4;
+    int ****has_element;
+    size_t nelems = 0;
+    const auto nat3 = 3 * system->get_supercell().number_of_atoms;
+    const auto natmin = symmetry->get_nat_prim();
+    const auto nat = system->get_supercell().number_of_atoms;
+    const auto ntran = symmetry->get_ntran();
+
+    std::vector<int> atom_tmp, flatten_array;
+    std::vector<std::vector<int>> cell_dummy;
+    std::set<InteractionCluster>::iterator iter_cluster;
+    atom_tmp.resize(3);
+    flatten_array.resize(3);
+    cell_dummy.resize(3);
+
+    double ***x_image = system->get_x_image();
+
+    if (cluster->get_maxorder() < 3) {
+        exit("save_fc4_shengbte_format",
+             "No fourth-order terms when NORDER < 3.");
+    }
+
+    allocate(fc4, 3 * natmin, nat3, nat3, nat3);
+    allocate(has_element, natmin, nat, nat, nat);
+
+    for (i = 0; i < 3 * natmin; ++i) {
+        for (j = 0; j < nat3; ++j) {
+            for (k = 0; k < nat3; ++k) {
+                for (l = 0; l < nat3; ++l) {
+                    fc4[i][j][k][l] = 0.0;
+                }
+            }
+        }
+    }
+    for (i = 0; i < natmin; ++i) {
+        for (j = 0; j < nat; ++j) {
+            for (k = 0; k < nat; ++k) {
+                for (l = 0; l < nat; ++l) {
+                    has_element[i][j][k][l] = 0;
+                }
+            }
+        }
+    }
+
+    const auto ishift = fcs->get_nequiv()[0].size() + fcs->get_nequiv()[1].size();
+
+    for (const auto &it: fcs->get_fc_cart()[2]) {
+
+        if (!it.is_ascending_order) continue;
+
+        for (i = 0; i < 4; ++i) {
+            pair_tmp[i] = it.atoms[i];
+            coord_tmp[i] = it.coords[i];
+        }
+
+        j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
+
+        for (i = 0; i < 3; ++i) {
+            atom_tmp[i] = pair_tmp[i + 1];
+            flatten_array[i] = it.flattenarray[i + 1];
+        }
+
+        iter_cluster = cluster->get_interaction_cluster(2, j).find(InteractionCluster(atom_tmp, cell_dummy));
+
+        do {
+            if (!has_element[j][flatten_array[0] / 3][flatten_array[1] / 3][flatten_array[2] / 3]) {
+                nelems += (*iter_cluster).cell.size();
+                has_element[j][flatten_array[0] / 3][flatten_array[1] / 3][flatten_array[2] / 3] = 1;
+            }
+            fc4[3 * j + coord_tmp[0]][flatten_array[0]][flatten_array[1]][flatten_array[2]] = it.fc_value;
+
+        } while (std::next_permutation(flatten_array.begin(), flatten_array.end()));
+    }
+
+    ofs_fc4.open(fname_out.c_str(), std::ios::out);
+    if (!ofs_fc4) exit("save_fc4_shengbte_format", "cannot create the file");
+    ofs_fc4 << nelems << std::endl;
+
+    double vecs[3][3];
+    std::vector<int> atom_tmp_orig(3), index_sort_atom(3);
+    std::vector<int> index_found(3);
+    auto ielem = 0;
+    const auto factor = Ryd / 1.6021766208e-19 / std::pow(Bohr_in_Angstrom, 4);
+
+    for (i = 0; i < natmin; ++i) {
+        for (auto jtran = 0; jtran < ntran; ++jtran) {
+            for (j = 0; j < natmin; ++j) {
+                for (auto ktran = 0; ktran < ntran; ++ktran) {
+                    for (k = 0; k < natmin; ++k) {
+                        for (auto ltran = 0; ltran < ntran; ++ltran) {
+                            for (l = 0; l < natmin; ++l) {
+                                const auto jat = symmetry->get_map_p2s()[j][jtran];
+                                const auto kat = symmetry->get_map_p2s()[k][ktran];
+                                const auto lat = symmetry->get_map_p2s()[l][ltran];
+
+                                if (!has_element[i][jat][kat][lat]) continue;
+
+                                atom_tmp[0] = jat;
+                                atom_tmp[1] = kat;
+                                atom_tmp[2] = lat;
+                                for (auto m = 0; m < 3; ++m) {
+                                    atom_tmp_orig[m] = atom_tmp[m];
+                                }
+                                std::sort(atom_tmp.begin(), atom_tmp.end());
+                                for (auto m = 0; m < 3; ++m) index_found[m] = 0;
+                                for (auto m = 0; m < 3; ++m) {
+                                    for (auto mm = 0; mm < 3; ++mm) {
+                                        if (index_found[mm] == 0) {
+                                            if (atom_tmp_orig[m] == atom_tmp[mm]) {
+                                                index_sort_atom[m] = mm;
+                                                index_found[mm] = 1;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                iter_cluster = cluster->get_interaction_cluster(2, i).find(
+                                        InteractionCluster(atom_tmp, cell_dummy));
+                                if (iter_cluster == cluster->get_interaction_cluster(2, i).end()) {
+                                    exit("save_fc4_shengbte_format", "This cannot happen.");
+                                }
+
+                                const auto multiplicity = (*iter_cluster).cell.size();
+
+                                const auto jat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[0]].atom_num][0];
+                                const auto kat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[1]].atom_num][0];
+                                const auto lat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[2]].atom_num][0];
+
+                                for (size_t imult = 0; imult < multiplicity; ++imult) {
+                                    auto cell_now = (*iter_cluster).cell[imult];
+
+                                    for (auto m = 0; m < 3; ++m) {
+                                        vecs[0][m] = (x_image[0][atom_tmp[0]][m]
+                                                      - x_image[0][jat0][m]
+                                                      + x_image[cell_now[0]][0][m]
+                                                      - x_image[0][0][m]) * Bohr_in_Angstrom;
+                                        vecs[1][m] = (x_image[0][atom_tmp[1]][m]
+                                                      - x_image[0][kat0][m]
+                                                      + x_image[cell_now[1]][0][m]
+                                                      - x_image[0][0][m]) * Bohr_in_Angstrom;
+                                        vecs[2][m] = (x_image[0][lat][m]
+                                                      - x_image[0][lat0][m]
+                                                      + x_image[cell_now[2]][0][m]
+                                                      - x_image[0][0][m]) * Bohr_in_Angstrom;
+                                    }
+
+                                    ++ielem;
+                                    ofs_fc4 << std::endl;
+                                    ofs_fc4 << ielem << std::endl;
+                                    ofs_fc4 << std::scientific;
+                                    ofs_fc4 << std::setprecision(10);
+
+                                    for (auto m = 0; m < 3; ++m) {
+                                        const auto m_map = index_sort_atom[m];
+                                        for (auto mm = 0; mm < 3; ++mm) {
+                                            ofs_fc4 << std::setw(20) << vecs[m_map][mm];
+                                        }
+                                        ofs_fc4 << std::endl;
+                                    }
+
+                                    ofs_fc4 << std::setw(5) << i + 1;
+                                    ofs_fc4 << std::setw(5) << j + 1;
+                                    ofs_fc4 << std::setw(5) << k + 1;
+                                    ofs_fc4 << std::setw(5) << l + 1 << std::endl;
+
+                                    for (auto ii = 0; ii < 3; ++ii) {
+                                        for (auto jj = 0; jj < 3; ++jj) {
+                                            for (auto kk = 0; kk < 3; ++kk) {
+                                                for (auto ll = 0; ll < 3; ++ll) {
+                                                    ofs_fc4 << std::setw(2) << ii + 1;
+                                                    ofs_fc4 << std::setw(3) << jj + 1;
+                                                    ofs_fc4 << std::setw(3) << kk + 1;
+                                                    ofs_fc4 << std::setw(3) << ll + 1;
+                                                    ofs_fc4 << std::setw(20)
+                                                            << fc4[3 * i + ii][3 * jat + jj][3 * kat + kk][3 * lat + ll]
+                                                               * factor / static_cast<double>(multiplicity)
+                                                            << std::endl;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ofs_fc4.close();
+    deallocate(fc4);
+    deallocate(has_element);
+
+
+    if (verbosity) {
+        std::cout << " Fourth-order FCs in ShengBTE format        : " << fname_out << std::endl;
     }
 }
 
