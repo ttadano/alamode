@@ -1,3 +1,17 @@
+# Ver. 1.4.2 (2022-09-28)
+
+## Fixes
+
+- Fix a bug in group velocity when NONANALYTIC=3
+
+
+# Ver. 1.4.1 (2022-06-22)
+
+## Fixes
+
+- Fix a bug in xml writer in the previous version
+
+
 # Ver. 1.4.0 (2022-06-21)
 
 ## New

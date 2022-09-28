@@ -35,13 +35,11 @@ public:
 
     void get_phonon_group_velocity_mesh(const KpointMeshUniform &kmesh_in,
                                         const double lavec_p[3][3],
-                                        const std::vector<FcsClassExtent> &fc2_ext_in,
                                         const bool irreducible_only,
                                         double ***phvel3_out) const;
 
     void get_phonon_group_velocity_mesh_mpi(const KpointMeshUniform &kmesh_in,
                                             const double lavec_p[3][3],
-                                            const std::vector<FcsClassExtent> &fc2_ext_in,
                                             double ***phvel3_out) const;
 
     void calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const;
@@ -50,6 +48,7 @@ public:
                                                  const double lavec_p[3][3],
                                                  const double rlavec_p[3][3],
                                                  const std::vector<FcsClassExtent> &fc2_ext_in,
+                                                 const std::vector<FcsClassExtent> &fc2_without_dipole,
                                                  double **phvel_out) const;
 
     void velocity_matrix_analytic(const double *xk_in,
