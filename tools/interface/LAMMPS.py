@@ -380,24 +380,36 @@ class LammpsParser(object):
     @staticmethod
     def _get_coordinate_and_force_lammps(lammps_dump_file):
 
-        add_flag = False
+        add_flag = None
         ret = []
 
         with open(lammps_dump_file) as f:
             for line in f:
-                if "ITEM:" in line and "ITEM: ATOMS id xu yu zu fx fy fz" not in line:
-                    add_flag = False
+                #if "ITEM:" in line and "ITEM: ATOMS id xu yu zu fx fy fz" not in line:
+                #    add_flag = False
+                #    continue
+                if "ITEM: ATOMS id xu yu zu fx fy fz" in line:
+                    add_flag = "id.xu"
                     continue
-                elif "ITEM: ATOMS id xu yu zu fx fy fz" in line:
-                    add_flag = True
+                elif "ITEM: ATOMS element xu yu zu fx fy fz" in line:
+                    add_flag = "element.xu"
+                    id_ = 0
                     continue
 
-                if add_flag:
-                    if line.strip():
-                        entries = line.strip().split()
-                        data_atom = [int(entries[0]),
-                                     [float(t) for t in entries[1:4]],
-                                     [float(t) for t in entries[4:]]]
+                if add_flag is not None:
+                    if add_flag == "id.xu":
+                        if line.strip():
+                            entries = line.strip().split()
+                            data_atom = [int(entries[0]),
+                                        [float(t) for t in entries[1:4]],
+                                        [float(t) for t in entries[4:]]]
+                    elif add_flag == "element.xu":
+                        if line.strip():
+                            entries = line.strip().split()
+                            id_ += 1
+                            data_atom = [int(id_), 
+                                        [float(t) for t in entries[1:4]],
+                                        [float(t) for t in entries[4:]]]
 
                         ret.append(data_atom)
 
