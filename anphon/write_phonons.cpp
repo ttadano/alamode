@@ -15,6 +15,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
+#include "ewald.h"
 #include "fcs_phonon.h"
 #include "gruneisen.h"
 #include "kpoint.h"
@@ -779,6 +780,7 @@ void Writes::write_phonon_vel() const
                                                              system->lavec_p,
                                                              system->rlavec_p,
                                                              fcs_phonon->fc2_ext,
+                                                             ewald->fc2_without_dipole,
                                                              phvel_bs);
 
     ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
@@ -834,7 +836,6 @@ void Writes::write_phonon_vel_all() const
 
     phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos,
                                                     system->lavec_p,
-                                                    fcs_phonon->fc2_ext,
                                                     false,
                                                     phvel_xyz);
     unsigned int ik, is;

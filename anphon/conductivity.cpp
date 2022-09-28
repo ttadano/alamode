@@ -124,7 +124,6 @@ void Conductivity::setup_kappa()
 
     phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
                                                         system->lavec_p,
-                                                        fcs_phonon->fc2_ext,
                                                         vel);
     if (mympi->my_rank == 0) {
         for (i = 0; i < nk; ++i) {
