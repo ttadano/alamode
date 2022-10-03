@@ -94,6 +94,9 @@ public:
     double add_hess_diag;
     double stat_pressure;
 
+    // variables related to QHA
+    int qha_scheme; // temporary
+
 private:
 
     // Information of kmesh for SCPH calculation
@@ -239,7 +242,7 @@ private:
 
     void calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<double> ***,
                                                                 std::complex<double> ***);
-    
+                                                                
     void make_supercell_mapping_by_symmetry_operations(int **);
 
     void make_inverse_translation_mapping(int **);
@@ -452,6 +455,10 @@ private:
     void calc_v1_array_vib(std::complex<double> *, 
                            std::complex<double> ***,
                            const double);
+
+    void calc_del_v0_strain_vib(std::complex<double> *, 
+                                std::complex<double> ***, 
+                                double);
 
 };
 
