@@ -242,6 +242,12 @@ private:
 
     void calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<double> ***,
                                                                 std::complex<double> ***);
+
+    void calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(std::complex<double> ***,
+                                                                              std::complex<double> ***);
+
+    void calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(std::complex<double> **,
+                                                                                 std::complex<double> ***); 
                                                                 
     void make_supercell_mapping_by_symmetry_operations(int **);
 
