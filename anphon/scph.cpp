@@ -191,7 +191,7 @@ void Scph::exec_scph()
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
 
-        qha_scheme = 0; // set alculation scheme of QHA
+        qha_scheme = 2; // set alculation scheme of QHA
         if(relax_coordinate == 0){
             exec_scph_main(delta_dymat_scph);
         }
@@ -2519,9 +2519,9 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
     std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
     allocate(del_v1_strain_from_harmonic, 9, ns);
-    compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
+    // compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
     // finite difference method (in the middle of the implementation)
-    // calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
+    calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
@@ -2557,8 +2557,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::cout << "  1st order derivatives of harmonic IFCs (from cubic IFCs) ... ";
     // std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
-    // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic); // temporary
-    calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
+    compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic); // temporary
+    // calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
 
     // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
     // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
@@ -5630,13 +5630,20 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
     int natmin = system->natmin;
     auto ns = dynamical->neval;
 
-    int ixyz1, ixyz2, ixyz3, iat1;
+    int ixyz1, ixyz2, ixyz3, ixyz12, ixyz22, ixyz32, i1, i2;
+    int iat1, iat2;
+    int is1;
+    int isymm;
     double du_tmp;
     std::string str_tmp;
     std::fstream fin_strain_force_coupling;
 
+    double *inv_sqrt_mass;
+
     double **del_v1_strain_from_harmonic_in_real_space;
+    double **del_v1_strain_from_harmonic_in_real_space_symm;
     allocate(del_v1_strain_from_harmonic_in_real_space, 9, ns);
+    allocate(del_v1_strain_from_harmonic_in_real_space_symm, 9, ns);
 
     fin_strain_force_coupling.open("strain_force.in");
 
@@ -5678,24 +5685,71 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
         }
     }
 
-    deallocate(del_v1_strain_from_harmonic_in_real_space);
-
-    // herehere
-    // from here
-    /*int natmin = system->natmin;
-    auto ns = dynamical->neval;
-    int is, iatm, ixyz;
-    double force[3] = {0.0, 0.0, 0.0};
-
-    for(iatm = 0; iatm < natmin; iatm++){
-        for(ixyz = 0; ixyz < 3; ixyz++){
-            force[ixyz] = 0.0;
-            for(is = 0; is < ns; is++){
-                force[ixyz] -= evec_harmonic[0][is][iatm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[iatm][0]]) * v1_array_renormalized[is].real();
-            }
-            force_array[iatm*3 + ixyz] = force[ixyz];
+    // convert from eV/Angst to Ry/Bohr
+    double eV_to_Ry = 1.6021766208e-19/Ryd;
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_harmonic_in_real_space[ixyz1][is1] *= Bohr_in_Angstrom * eV_to_Ry;
         }
-    }*/
+    }
+
+    // symmetrize
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_harmonic_in_real_space_symm[ixyz1][is1] = 0.0;
+        }
+    }
+
+    for(isymm = 0; isymm < symmetry->SymmListWithMap.size(); isymm++){
+        for(iat1 = 0; iat1 < natmin; iat1++){
+            iat2 = symmetry->SymmListWithMap[isymm].mapping[iat1];
+            
+            for(i1 = 0; i1 < 27; i1++){
+                ixyz1 = i1/9;
+                ixyz2 = (i1%9)/3;
+                ixyz3 = i1%3;
+                for(i2 = 0; i2 < 27; i2++){
+                    ixyz12 = i2/9;
+                    ixyz22 = (i2%9)/3;
+                    ixyz32 = i2%3;
+
+                    del_v1_strain_from_harmonic_in_real_space_symm[ixyz12*3+ixyz22][iat2*3+ixyz32]
+                        += del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3]
+                           * symmetry->SymmListWithMap[isymm].rot[ixyz12*3+ixyz1]
+                           * symmetry->SymmListWithMap[isymm].rot[ixyz22*3+ixyz2]
+                           * symmetry->SymmListWithMap[isymm].rot[ixyz32*3+ixyz3];
+                }
+            }
+        }
+    }
+
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_harmonic_in_real_space_symm[ixyz1][is1] /= symmetry->SymmListWithMap.size();
+        }
+    }
+
+    // transform to real space
+
+    allocate(inv_sqrt_mass, natmin);
+    for(iat1 = 0; iat1 < natmin; iat1++){
+        inv_sqrt_mass[iat1] = 1.0/std::sqrt(system->mass[system->map_p2s[iat1][0]]);
+    }
+
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_harmonic[ixyz1][is1] = 0.0;
+            for(iat1 = 0; iat1 < natmin; iat1++){
+                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                    del_v1_strain_from_harmonic[ixyz1][is1] += evec_harmonic[0][is1][iat1*3+ixyz2] * inv_sqrt_mass[iat1] 
+                                                               * del_v1_strain_from_harmonic_in_real_space_symm[ixyz1][iat1*3+ixyz2];
+                }
+            }
+        }
+    }
+
+    deallocate(del_v1_strain_from_harmonic_in_real_space);
+    deallocate(del_v1_strain_from_harmonic_in_real_space_symm);
 
 }
 // for arbitrary crystal structures.
