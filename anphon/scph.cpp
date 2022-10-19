@@ -191,7 +191,7 @@ void Scph::exec_scph()
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
 
-        qha_scheme = 2; // set alculation scheme of QHA
+        qha_scheme = 0; // set alculation scheme of QHA
         if(relax_coordinate == 0){
             exec_scph_main(delta_dymat_scph);
         }
@@ -5664,7 +5664,7 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
             for(iat1 = 0; iat1 < natmin; iat1++){
                 for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
                     fin_strain_force_coupling >> del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3];
-                    del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3] /= du_tmp;
+                    del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3] *= -1.0/du_tmp;
                     if(ixyz1 != ixyz2){
                         del_v1_strain_from_harmonic_in_real_space[ixyz2*3+ixyz1][iat1*3+ixyz3] 
                         = del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3];
