@@ -1269,7 +1269,7 @@ void Writer::save_fc4_shengbte_format(const System *system,
                                                       - x_image[0][kat0][m]
                                                       + x_image[cell_now[1]][0][m]
                                                       - x_image[0][0][m]) * Bohr_in_Angstrom;
-                                        vecs[2][m] = (x_image[0][lat][m]
+                                        vecs[2][m] = (x_image[0][atom_tmp[2]][m]
                                                       - x_image[0][lat0][m]
                                                       + x_image[cell_now[2]][0][m]
                                                       - x_image[0][0][m]) * Bohr_in_Angstrom;
