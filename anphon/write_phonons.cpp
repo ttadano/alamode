@@ -1460,8 +1460,17 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
         for (j = 0; j < 3; ++j) xtmp[j] = system->xr_s[system->map_p2s[i][0]][j];
         rotvec(xtmp, xtmp, system->lavec_s);
         rotvec(xtmp, xtmp, system->rlavec_p);
+        for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
         for (j = 0; j < 3; ++j) {
-            xfrac_1D[counter++] = xtmp[j] / (2.0 * pi);
+            while (xtmp[j] >= 1.0) {
+                xtmp[j] -= 1.0;
+            }
+            while (xtmp[j] < 0.0) {
+                xtmp[j] += 1.0;
+            }
+        }
+        for (j = 0; j < 3; ++j) {
+            xfrac_1D[counter++] = xtmp[j];
         }
     }
     dataspace = new DataSpace(2, dims);
