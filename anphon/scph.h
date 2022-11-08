@@ -235,6 +235,9 @@ private:
 
     void calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<double> ***,
                                                                 std::complex<double> ***);
+
+    void read_del_v2_strain_from_cubic_in_kspace(std::complex<double> ***,
+                                                 std::complex<double> ***);
     
     void make_supercell_mapping_by_symmetry_operations(int **);
 

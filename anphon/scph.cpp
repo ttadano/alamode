@@ -1555,6 +1555,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::complex<double> **del_v1_strain_from_quartic;
 
     std::complex<double> ***del_v2_strain_from_cubic;
+    // std::complex<double> ***del_v2_strain_from_cubic_tmp;
     std::complex<double> ***del_v2_strain_from_quartic;
     std::complex<double> ****del_v3_strain_from_quartic;
 
@@ -1686,11 +1687,25 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     //std::cout << "  from cubic to harmonic IFCs ... ";
     std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
+    // allocate(del_v2_strain_from_cubic_tmp, 9, nk, ns*ns);
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
     // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
     // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
-    calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-                                                            del_v2_strain_from_cubic);
+    // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
+    //                                                         del_v2_strain_from_cubic_tmp);
+
+    read_del_v2_strain_from_cubic_in_kspace(evec_harmonic, del_v2_strain_from_cubic);
+
+    // std::cout << "check new code" << std::endl;
+    // for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+    //     for(ik1 = 0; ik1 < nk; ik1++){
+    //         for(is1 = 0; is1 < ns*ns; is1++){
+    //             std::cout << del_v2_strain_from_cubic_tmp[ixyz1][ik1][is1] << " ";
+    //             std::cout << del_v2_strain_from_cubic[ixyz1][ik1][is1] << std::endl;
+    //         }
+    //     }
+    // }
+
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
@@ -2047,6 +2062,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
+
+
+
+                // debug
+                /* compute_renormalized_harmonic_frequency(omega2_anharm[iT],
+                                        evec_anharm_tmp,
+                                        delta_v2_array_renormalize,
+                                        writes->getVerbosity());*/
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -4016,6 +4039,12 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
     allocate(B_array_real_space_symmetrized, 3, 3, natmin*3, nat*3);
     allocate(count_tmp, 3, 3, natmin*3, nat*3);
 
+    // temporary 
+    // (alpha,mu) representation in k-space
+    std::complex<double> ***del_v2_strain_from_cubic_alphamu;
+    allocate(del_v2_strain_from_cubic_alphamu, 9, nk, ns*ns);
+
+
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             exist_in[ixyz1][ixyz2] = 0;
@@ -4316,6 +4345,13 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
 
                 // std::cout << "r2q is done." << std::endl;
 
+                // (alpha,mu) representation in k-space (this is temporary)
+                for(is = 0; is < ns; is++){
+                    for(js = 0; js < ns; js++){
+                        del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp[is][js];
+                    }
+                }
+
                 // transform to mode-representation
                 for(is = 0; is < ns; is++){
                     for(js = 0; js < ns; js++){
@@ -4337,6 +4373,21 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
         }
     }
 
+    // write the result in k-space and (alpha,mu) representation in a file
+    std::ofstream fout_B_array_kspace;
+    fout_B_array_kspace.open("B_array_kspace.txt");
+
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            for(ik = 0; ik < nk; ik++){
+                for(is = 0; is < ns*ns; is++){
+                    fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
+                }
+            }
+        }
+    }
+    fout_B_array_kspace.close();
+
     deallocate(exist_in);
     deallocate(B_array_real_space_in);
     deallocate(B_array_real_space_symmetrized);
@@ -4346,6 +4397,142 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
     deallocate(dymat_tmp);
     deallocate(dymat_new);
 
+    // temporaray
+    deallocate(del_v2_strain_from_cubic_alphamu);
+}
+
+
+void Scph::read_del_v2_strain_from_cubic_in_kspace(std::complex<double> ***evec_harmonic,
+                                                   std::complex<double> ***del_v2_strain_from_cubic)
+{   
+    using namespace Eigen;
+
+    int natmin = system->natmin;
+    int nat = system->nat;
+    int ntran = system->ntran;
+    int nk_interpolate = kmesh_coarse->nk;
+    int nk = kmesh_dense->nk;
+    int ns = dynamical->neval;
+
+    int **symm_mapping_s;
+    int **inv_translation_mapping;
+
+
+
+    int ixyz1, ixyz2, ixyz3, ixyz4;
+    int ixyz1_2, ixyz2_2, ixyz3_2, ixyz4_2;
+    int i1, i2;
+    int iat1, iat2, iat1_2, iat2_2, iat2_2_prim;
+    int itran1, itran2, itran3;
+    int ik;
+    int is1, is2, is, js;
+    int isymm;
+
+    double re_tmp, im_tmp;
+
+    std::complex<double> ***dymat_q, **dymat_tmp;
+    std::complex<double> ***dymat_new;
+
+    const auto nk1 = kmesh_interpolate[0];
+    const auto nk2 = kmesh_interpolate[1];
+    const auto nk3 = kmesh_interpolate[2];
+    
+    MatrixXcd dymat_tmp_mode(ns, ns);
+    MatrixXcd dymat_tmp_alphamu(ns, ns);
+    MatrixXcd evec_tmp(ns, ns);
+
+    // read input 
+    std::fstream fin_strain_mode_coupling;
+    std::fstream fin_strain_mode_coupling_kspace;
+
+    // temporary 
+    // (alpha,mu) representation in k-space
+    std::complex<double> ***del_v2_strain_from_cubic_alphamu;
+    allocate(del_v2_strain_from_cubic_alphamu, 9, nk, ns*ns);
+
+    // read result
+    fin_strain_mode_coupling_kspace.open("B_array_kspace.txt");
+
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            for(ik = 0; ik < nk; ik++){
+                for(is = 0; is < ns*ns; is++){
+                    fin_strain_mode_coupling_kspace >> re_tmp >> im_tmp;         
+                    del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is] = std::complex<double>(re_tmp, im_tmp);
+                }
+            }
+        }
+    }
+
+    // Fourier transform and interpolate
+    // allocate(dymat_q, ns, ns, nk_interpolate);
+    // allocate(dymat_new, ns, ns, nk_interpolate);
+    // allocate(dymat_tmp, ns, ns);
+
+    // std::cout << "start interpolation." << std::endl;
+
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+
+            for(ik = 0; ik < nk; ik++){
+                // r2q(kmesh_dense->xk[ik], nk1, nk2, nk3, ns, dymat_new, dymat_tmp);
+
+                // std::cout << "r2q is done." << std::endl;
+
+                // (alpha,mu) representation in k-space (this is temporary)
+                // for(is = 0; is < ns; is++){
+                //     for(js = 0; js < ns; js++){
+                //         del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp[is][js];
+                //     }
+                // }
+
+                // transform to mode-representation
+                for(is = 0; is < ns; is++){
+                    for(js = 0; js < ns; js++){
+                        evec_tmp(is, js) = evec_harmonic[ik][js][is]; // transpose
+                        dymat_tmp_alphamu(is, js) = del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is*ns+js];
+                    }
+                }
+                dymat_tmp_mode = evec_tmp.adjoint() * dymat_tmp_alphamu * evec_tmp;
+
+                // std::cout << "substitute to del_v2_strain_from_cubic." << std::endl;
+
+                for(is = 0; is < ns; is++){
+                    for(js = 0; js < ns; js++){
+                        del_v2_strain_from_cubic[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp_mode(is, js);
+                    }
+                }
+            }
+
+        }
+    }
+
+    // write the result in k-space and (alpha,mu) representation in a file
+    // std::ofstream fout_B_array_kspace;
+    // fout_B_array_kspace.open("B_array_kspace.txt");
+
+    // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+    //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+    //         for(ik = 0; ik < nk; ik++){
+    //             for(is = 0; is < ns*ns; is++){
+    //                 fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
+    //             }
+    //         }
+    //     }
+    // }
+    // fout_B_array_kspace.close();
+
+    // deallocate(exist_in);
+    // deallocate(B_array_real_space_in);
+    // deallocate(B_array_real_space_symmetrized);
+    
+    // deallocate(count_tmp);
+    // deallocate(dymat_q);
+    // deallocate(dymat_tmp);
+    // deallocate(dymat_new);
+
+    // temporaray
+    deallocate(del_v2_strain_from_cubic_alphamu);
 }
 
 void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
@@ -6097,8 +6284,8 @@ void Scph::setup_kmesh()
 
     kmesh_coarse = new KpointMeshUniform(kmesh_interpolate);
     kmesh_dense = new KpointMeshUniform(kmesh_scph);
-    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p);
-    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p);
+    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p, false);
+    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p, false);
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {

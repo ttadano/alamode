@@ -937,6 +937,9 @@ void System::check_consistency_primitive_lattice() const
     // to that of FC2XML. 
     // This operation is necessary for obtaining correct computational results.
 
+    // debug
+    std::cout << "check_consistency_primitive" << std::endl;
+
     int i, j, k;
     double xdiff[3];
     double **x_harm, **x_anharm;
@@ -973,6 +976,13 @@ void System::check_consistency_primitive_lattice() const
             const auto norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
             if (norm < eps4 && kd[map_p2s[j][0]] == kd_anharm[map_p2s_anharm[i][0]]) {
                 iloc = j;
+                
+
+                // debug
+                std::cout << "i = " << i << ", j = " << j << std::endl;
+                for(int itmp = 0; itmp < 3; itmp++){
+                    std::cout << x_anharm[i][itmp] << " "<< x_harm[j][itmp] << std::endl;
+                }
                 break;
             }
         }
