@@ -1663,6 +1663,18 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         v1_array_original[is] = 0.0;
     }
 
+    // debug
+    if(mympi->my_rank == 0){
+        std::cout << "harmonic polarization vectors at Gamma point" << std::endl;
+        for(is1 = 0; is1 < ns; is1++){
+            std::cout << "mode: " << is1 << std::endl;
+            std::cout << "frequency : " << omega2_harmonic[0][is1] << std::endl;
+            for(is2 = 0; is2 < ns; is2++){
+                std::cout << evec_harmonic[0][is1][is2] << std::endl;
+            }std::cout << std::endl;
+        }std::cout << std::endl;
+    }
+
     // compute IFC renormalization by lattice relaxation
     std::cout << " RELAX_COORDINATE = " << relax_coordinate << ": ";
     std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl;
@@ -1691,10 +1703,10 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
     // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
     // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
-    // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-    //                                                         del_v2_strain_from_cubic_tmp);
+    calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
+                                                            del_v2_strain_from_cubic);
 
-    read_del_v2_strain_from_cubic_in_kspace(evec_harmonic, del_v2_strain_from_cubic);
+    // read_del_v2_strain_from_cubic_in_kspace(evec_harmonic, del_v2_strain_from_cubic);
 
     // std::cout << "check new code" << std::endl;
     // for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
@@ -1712,12 +1724,32 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::cout << "  2nd order derivatives of harmonic IFCs (from quartic IFCs) ... ";
     allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
+    // for debug
+/*    for(ixyz1 = 0; ixyz1 < 81; ixyz1++){
+        for(ik1 = 0; ik1 < nk; ik1++){
+            for(is1 = 0; is1 < ns*ns; is1++){
+                del_v2_strain_from_quartic[ixyz1][ik1][is1] = 0.0;
+            }
+        }
+    }
+*/
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
     std::cout << "  1st order derivatives of cubic IFCs (from quartic IFCs) ... ";
     allocate(del_v3_strain_from_quartic, 9, nk, ns, ns*ns);
     compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
+    // for debug
+/*    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(ik1 = 0; ik1 < nk; ik1++){
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns*ns; is2++){
+                    del_v3_strain_from_quartic[ixyz1][ik1][is1][is2] = 0.0;
+                }
+            }
+        }
+    }
+*/
     std::cout << "done!" << std::endl; 
     timer->print_elapsed();
 
@@ -2037,7 +2069,21 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                              q0,
                                                              pvcell);
 
+                // debug
+                std::cout << "PES force" << std::endl;
+                for(iat1 = 0; iat1 < system->natmin; iat1++){
+                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                        std::cout << force_array[iat1*3 + ixyz1] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
 
+                // debug
+                std::cout << "PES stress tensor" << std::endl;
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                        std::cout << del_v0_strain_with_strain_displace[ixyz1*3 + ixyz2] << std::endl;
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
 
 
                 // copy v4_array_original to v4_array_renormalized
@@ -2063,6 +2109,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
 
+                // debug 
+                std::cout << "anharm freq : " << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    std::cout << omega2_anharm[iT][0][is1] << std::endl;
+                }std::cout << std::endl;
 
 
                 // debug
@@ -2089,6 +2140,23 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             cmat_convert, 
                                             omega2_anharm[iT], 
                                             temp);
+
+                // debug
+                calculate_force_in_real_space(v1_array_SCP, force_array);
+                std::cout << "SCP force" << std::endl;
+                for(iat1 = 0; iat1 < system->natmin; iat1++){
+                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                        std::cout << force_array[iat1*3 + ixyz1] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+
+                // debug
+                std::cout << "SCP stress tensor" << std::endl;
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                        std::cout << del_v0_strain_SCP[ixyz1*3 + ixyz2] << std::endl;
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
 
                 // change structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -2132,7 +2200,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     for(is = 0; is < ns-3; is++){
                         v1_vec_SCP(is) = v1_array_SCP[harm_optical_modes[is]];
                     }
-                    
+
+                    // debug 
+                    std::cout << "v2_mat_optical" << std::endl;
+                    for(is1 = 0; is1 < ns-3; is1++){
+                        for(is2 = 0; is2 < ns-3; is2++){
+                            std::cout << v2_mat_optical(is1, is2) << " ";
+                        }std::cout << std::endl;
+                    }std::cout << std::endl;
+                    // debug to here
+
                     dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_SCP);
 
                     // update q0
@@ -2174,6 +2251,20 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                             C2_mat_tmp(itmp1+3, itmp2+3) = 2.0 * C2_array[itmp3*3+itmp4][itmp5*3+itmp6];
                         }
                     }
+
+                    // debug
+                    std::cout << "del_v0_strain_vec" << std::endl;
+                    for(ixyz1 = 0; ixyz1 < 6; ixyz1++){
+                        std::cout << del_v0_strain_vec(ixyz1) << " ";
+                    }std::cout << std::endl;
+
+                    // debug
+                    std::cout << "C2_mat_tmp" << std::endl;
+                    for(ixyz1 = 0; ixyz1 < 6; ixyz1++){
+                        for(ixyz2 = 0; ixyz2 < 6; ixyz2++){
+                            std::cout << C2_mat_tmp(ixyz1, ixyz2) << " ";
+                        }std::cout << std::endl;
+                    }std::cout << std::endl;
 
                     // solve linear equation
                     du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
@@ -6158,10 +6249,14 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_array_renormaliz
             // update v1_array_SCP
             for(js = 0; js < ns; js++){
                 omega1_tmp = std::sqrt(std::fabs(omega2_anharm_T[ik][js]));
-                if (std::abs(omega1_tmp) < eps8) {
+                if (std::abs(omega1_tmp) < eps6) { // changed!!
+                    // debug
+                    std::cout << "js = " << js << "omega1_tmp = 0" << std::endl;
                     Qtmp = 0.0;
                 }
                 else{
+                    // debug
+                    std::cout << "js = " << js << "omega1_tmp != 0" << std::endl;
                     if(thermodynamics->classical){
                         Qtmp = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1_tmp * omega1_tmp), 0.0);
                     }
@@ -6209,16 +6304,106 @@ void Scph::compute_anharmonic_del_v0_strain(std::complex<double> *del_v0_strain_
     MatrixXcd Cmat(ns, ns);
     MatrixXcd del_v2_strain_mat_original_mode(ns, ns), del_v2_strain_mat(ns, ns);
 
+    // debug
+    std::cout << "debug compute_anharmonic_del_v0_strain" << std::endl;
+    std::cout << "nk = " << nk << std::endl;
+    std::cout << "factor = " << factor << std::endl;
+    std::cout << "factor2 = " << factor2 << std::endl;
+
     // calculate del_v2_strain_with_strain_displace
+    // debug to comment out from here (tempoerary)
     for(i1 = 0; i1 < 9; i1++){
         for(ik = 0; ik < nk; ik++){
             for(is1 = 0; is1 < ns; is1++){
                 for(is2 = 0; is2 < ns; is2++){
                     del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] = del_v2_strain_from_cubic[i1][ik][is1*ns+is2];
+                    // del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] = 0.0;
                     // renormalization by strain
                     for(i2 = 0; i2 < 9; i2++){
                         del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += del_v2_strain_from_quartic[i1*9+i2][ik][is1*ns+is2] * u_tensor[i2/3][i2%3];
                     }
+                    // // renormalization by displace
+                    for(is3 = 0; is3 < ns; is3++){
+                        del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += factor * del_v3_strain_from_quartic[i1][ik][is3][is2*ns+is1] * q0[is3];
+                    }
+                }
+            }
+        }
+    }
+    // debug to comment out to here (temporary)
+
+/*    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] = del_v2_strain_from_cubic[i1][ik][is1*ns+is2];
+                    // // renormalization by strain
+                    // for(i2 = 0; i2 < 9; i2++){
+                    //     del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += del_v2_strain_from_quartic[i1*9+i2][ik][is1*ns+is2] * u_tensor[i2/3][i2%3];
+                    // }
+                    // // renormalization by displace
+                    // for(is3 = 0; is3 < ns; is3++){
+                    //     del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += factor * del_v3_strain_from_quartic[i1][ik][is3][is2*ns+is1] * q0[is3];
+                    // }
+                }
+            }
+        }
+    }
+
+    std::cout << "from del_v2_strain_from_cubic" << std::endl;
+    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            std::cout << "i1 = " << i1 << ", ik = " << ik << std::endl;
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    std::cout << del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+*/
+
+/*    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    // del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] = del_v2_strain_from_cubic[i1][ik][is1*ns+is2];
+                    // renormalization by strain
+                    for(i2 = 0; i2 < 9; i2++){
+                        del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += del_v2_strain_from_quartic[i1*9+i2][ik][is1*ns+is2] * u_tensor[i2/3][i2%3];
+                    }
+                    // // renormalization by displace
+                    // for(is3 = 0; is3 < ns; is3++){
+                    //     del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += factor * del_v3_strain_from_quartic[i1][ik][is3][is2*ns+is1] * q0[is3];
+                    // }
+                }
+            }
+        }
+    }
+
+    std::cout << "from del_v2_strain_from_quartic" << std::endl;
+    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            std::cout << "i1 = " << i1 << ", ik = " << ik << std::endl;
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    std::cout << del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+*/
+
+
+/*    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    // del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] = del_v2_strain_from_cubic[i1][ik][is1*ns+is2];
+                    // renormalization by strain
+                    // for(i2 = 0; i2 < 9; i2++){
+                    //     del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += del_v2_strain_from_quartic[i1*9+i2][ik][is1*ns+is2] * u_tensor[i2/3][i2%3];
+                    // }
                     // renormalization by displace
                     for(is3 = 0; is3 < ns; is3++){
                         del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] += factor * del_v3_strain_from_quartic[i1][ik][is3][is2*ns+is1] * q0[is3];
@@ -6227,6 +6412,19 @@ void Scph::compute_anharmonic_del_v0_strain(std::complex<double> *del_v0_strain_
             }
         }
     }
+
+    std::cout << "from del_v3_strain_from_quartic" << std::endl;
+    for(i1 = 0; i1 < 9; i1++){
+        for(ik = 0; ik < nk; ik++){
+            std::cout << "i1 = " << i1 << ", ik = " << ik << std::endl;
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    std::cout << del_v2_strain_with_strain_displace[i1][ik][is1*ns+is2] << " ";
+                }std::cout << std::endl;
+            }std::cout << std::endl;
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+*/
 
     // potential energy term
     for(i1 = 0; i1 < 9; i1++){
@@ -6248,10 +6446,15 @@ void Scph::compute_anharmonic_del_v0_strain(std::complex<double> *del_v0_strain_
             // update del_v0_strain_SCP
             for(js = 0; js < ns; js++){
                 omega1_tmp = std::sqrt(std::fabs(omega2_anharm_T[ik][js]));
-                if (std::abs(omega1_tmp) < eps8) {
+                if (std::abs(omega1_tmp) < eps6) { // changed!!
+                    // debug
+                    std::cout << "js = " << js << "omega1_tmp = 0" << std::endl;
                     Qtmp = 0.0;
                 }
                 else{
+                    // debug
+                    std::cout << "js = " << js << "omega1_tmp != 0" << std::endl;
+
                     if(omega2_anharm_T[ik][js] < 0.0){
                         std::cout << "Warning in compute_anharmonic_del_v0_strain: squared SCP frequency is negative. ik = " << ik << std::endl;
                     }
@@ -7258,7 +7461,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         for (ik = 0; ik < nk; ++ik) {
             for (is = 0; is < ns; ++is) {
                 auto omega1 = omega_now(ik, is);
-                if (std::abs(omega1) < eps8) {
+                if (std::abs(omega1) < eps6) { // changed!!
                     Qmat(is, is) = complex_zero;
                 } else {
                     // Note that the missing factor 2 in the denominator of Qmat is 
