@@ -10,8 +10,9 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 
-import numpy as np
 import math
+
+import numpy as np
 
 
 class LammpsParser(object):
@@ -212,13 +213,13 @@ class LammpsParser(object):
         ly = yhi - ylo
         lz = zhi - zlo
         a = lx
-        b = math.sqrt(ly**2 + xy**2)
-        c = math.sqrt(lz**2 + xz**2 + yz**2)
+        b = math.sqrt(ly ** 2 + xy ** 2)
+        c = math.sqrt(lz ** 2 + xz ** 2 + yz ** 2)
         cosalpha = (xy * xz + ly * yz) / (b * c)
         cosbeta = xz / c
         cosgamma = xy / b
 
-        singamma = math.sqrt(1.0 - cosgamma**2)
+        singamma = math.sqrt(1.0 - cosgamma ** 2)
 
         lavec = np.zeros((3, 3))
 
@@ -227,7 +228,7 @@ class LammpsParser(object):
         lavec[1, 1] = b * singamma
         lavec[0, 2] = c * cosbeta
         lavec[1, 2] = c * (cosalpha - cosbeta * cosgamma) / singamma
-        lavec[2, 2] = c * math.sqrt(1.0 - cosbeta**2 - ((cosalpha - cosbeta * cosgamma) / singamma)**2)
+        lavec[2, 2] = c * math.sqrt(1.0 - cosbeta ** 2 - ((cosalpha - cosbeta * cosgamma) / singamma) ** 2)
 
         return lavec
 
@@ -385,36 +386,39 @@ class LammpsParser(object):
 
         with open(lammps_dump_file) as f:
             for line in f:
-                #if "ITEM:" in line and "ITEM: ATOMS id xu yu zu fx fy fz" not in line:
-                #    add_flag = False
-                #    continue
-                if "ITEM: ATOMS id xu yu zu fx fy fz" in line:
-                    add_flag = "id.xu"
-                    continue
-                elif "ITEM: ATOMS element xu yu zu fx fy fz" in line:
-                    add_flag = "element.xu"
-                    id_ = 0
-                    continue
+                if "ITEM:" in line:
+                    if "ITEM: ATOMS id xu yu zu fx fy fz" in line:
+                        add_flag = "id.xu"
+                        continue
+                    elif "ITEM: ATOMS element xu yu zu fx fy fz" in line:
+                        add_flag = "element.xu"
+                        id_ = 0
+                        continue
+                    else:
+                        add_flag = None
+                        continue
 
                 if add_flag is not None:
                     if add_flag == "id.xu":
                         if line.strip():
                             entries = line.strip().split()
                             data_atom = [int(entries[0]),
-                                        [float(t) for t in entries[1:4]],
-                                        [float(t) for t in entries[4:]]]
+                                         [float(t) for t in entries[1:4]],
+                                         [float(t) for t in entries[4:]]]
+                            ret.append(data_atom)
+
                     elif add_flag == "element.xu":
                         if line.strip():
                             entries = line.strip().split()
                             id_ += 1
-                            data_atom = [int(id_), 
-                                        [float(t) for t in entries[1:4]],
-                                        [float(t) for t in entries[4:]]]
-
-                        ret.append(data_atom)
+                            data_atom = [int(id_),
+                                         [float(t) for t in entries[1:4]],
+                                         [float(t) for t in entries[4:]]]
+                            ret.append(data_atom)
 
         # This sort is necessary since the order atoms of LAMMPS dump files
         # may change from the input structure file.
+
         ret_sorted = sorted(ret)
         ret_x = []
         ret_f = []
