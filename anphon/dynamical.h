@@ -21,7 +21,7 @@
 
 namespace PHON_NS {
 class DistWithCell {
- public:
+public:
     int cell;
     double dist;
 
@@ -38,15 +38,14 @@ inline bool operator<(const DistWithCell a,
 }
 
 class DymatEigenValue {
- public:
+public:
     DymatEigenValue() : nk(0), ns(0), eval(nullptr), evec(nullptr),
                         is_stored_eigvec(true), is_irreducible_only(false) {};
 
     DymatEigenValue(const bool stored_eigvec_,
                     const bool store_irreducible_only_,
                     const unsigned int nk_in,
-                    const unsigned int ns_in) : nk(nk_in),
-                                                ns(ns_in),
+                    const unsigned int ns_in) : nk(nk_in), ns(ns_in),
                                                 is_stored_eigvec(stored_eigvec_),
                                                 is_irreducible_only(store_irreducible_only_)
     {
@@ -79,7 +78,7 @@ class DymatEigenValue {
 
     std::complex<double> ***get_eigenvectors() const;
 
- private:
+private:
     unsigned int nk, ns;
     double **eval = nullptr;
     std::complex<double> ***evec = nullptr;
@@ -88,7 +87,7 @@ class DymatEigenValue {
 };
 
 class Dynamical : protected Pointers {
- public:
+public:
     Dynamical(class PHON *);
 
     ~Dynamical();
@@ -174,7 +173,7 @@ class Dynamical : protected Pointers {
 
     void set_projection_directions(const std::vector<std::vector<double>> projections_in);
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();

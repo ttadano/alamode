@@ -772,35 +772,35 @@ void ModeAnalysis::calc_frequency_resolved_final_state(const unsigned int ntemp,
 
                     if (integration->ismear == 0) {
                         prod_tmp[0] = n1
-                              * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon)
-                                    - delta_lorentz(omega0 + omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_lorentz(omega0 - omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_lorentz(omega0 + omega_inner[0] + omega_inner[1], epsilon));
                         prod_tmp[1] = n2
-                              * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1], epsilon)
-                                    - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_lorentz(omega0 + omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_lorentz(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                         for (j = 0; j < nomegas; ++j) {
                             ret_mpi[i][j][0] += v3_tmp * multi
-                                  * delta_lorentz(omega[j] - omega_inner[0], epsilon)
-                                  * prod_tmp[0];
+                                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[0];
                             ret_mpi[i][j][1] += v3_tmp * multi
-                                  * delta_lorentz(omega[j] - omega_inner[0], epsilon)
-                                  * prod_tmp[1];
+                                                * delta_lorentz(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[1];
                         }
                     } else if (integration->ismear == 1) {
                         prod_tmp[0] = n1
-                              * (delta_gauss(omega0 - omega_inner[0] - omega_inner[1], epsilon)
-                                    - delta_gauss(omega0 + omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_gauss(omega0 - omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_gauss(omega0 + omega_inner[0] + omega_inner[1], epsilon));
                         prod_tmp[1] = n2
-                              * (delta_gauss(omega0 + omega_inner[0] - omega_inner[1], epsilon)
-                                    - delta_gauss(omega0 - omega_inner[0] + omega_inner[1], epsilon));
+                                      * (delta_gauss(omega0 + omega_inner[0] - omega_inner[1], epsilon)
+                                         - delta_gauss(omega0 - omega_inner[0] + omega_inner[1], epsilon));
 
                         for (j = 0; j < nomegas; ++j) {
                             ret_mpi[i][j][0] += v3_tmp * multi
-                                  * delta_gauss(omega[j] - omega_inner[0], epsilon)
-                                  * prod_tmp[0];
+                                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[0];
                             ret_mpi[i][j][1] += v3_tmp * multi
-                                  * delta_gauss(omega[j] - omega_inner[0], epsilon)
-                                  * prod_tmp[1];
+                                                * delta_gauss(omega[j] - omega_inner[0], epsilon)
+                                                * prod_tmp[1];
                         }
                     }
                 }
@@ -1092,9 +1092,9 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
         for (j = 0; j < 3; ++j) {
             xk_vec1[j] = kpoint->kp_plane_geometry[i].xk_edges[0][j]
-                  - kpoint->kp_plane_geometry[i].xk_origin[j];
+                         - kpoint->kp_plane_geometry[i].xk_origin[j];
             xk_vec2[j] = kpoint->kp_plane_geometry[i].xk_edges[1][j]
-                  - kpoint->kp_plane_geometry[i].xk_origin[j];
+                         - kpoint->kp_plane_geometry[i].xk_origin[j];
         }
 
         for (j = 0; j < 3; ++j) {
@@ -1103,8 +1103,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
         rotvec(xk_norm, xk_norm, system->rlavec_p, 'T');
         const auto norm_ref = std::sqrt(xk_norm[0] * xk_norm[0]
-                                              + xk_norm[1] * xk_norm[1]
-                                              + xk_norm[2] * xk_norm[2]);
+                                        + xk_norm[1] * xk_norm[1]
+                                        + xk_norm[2] * xk_norm[2]);
 
         allocate(xk_plane, nk_plane, 3);
         allocate(xk_plane2, nk_plane, 3);
@@ -1120,8 +1120,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < nk2_plane; ++k) {
                 for (l = 0; l < 3; ++l) {
                     xk_plane[m][l] = kpoint->kp_plane_geometry[i].xk_origin[l]
-                          + xk_vec1[l] * static_cast<double>(j) * div1
-                          + xk_vec2[l] * static_cast<double>(k) * div2;
+                                     + xk_vec1[l] * static_cast<double>(j) * div1
+                                     + xk_vec2[l] * static_cast<double>(k) * div2;
                 }
                 ++m;
             }
@@ -1133,8 +1133,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < 3; ++k) kvec_plane[j][k] = dynamical->fold(xk_plane[j][k]);
             rotvec(kvec_plane[j], kvec_plane[j], system->rlavec_p, 'T');
             norm = std::sqrt(kvec_plane[j][0] * kvec_plane[j][0]
-                                   + kvec_plane[j][1] * kvec_plane[j][1]
-                                   + kvec_plane[j][2] * kvec_plane[j][2]);
+                             + kvec_plane[j][1] * kvec_plane[j][1]
+                             + kvec_plane[j][2] * kvec_plane[j][2]);
 
             if (norm > eps) {
                 for (k = 0; k < 3; ++k) kvec_plane[j][k] /= norm;
@@ -1162,8 +1162,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < 3; ++k) kvec[k] = kslist_fstate_k[j].xk[k];
             rotvec(kvec, kvec, system->rlavec_p, 'T');
             norm = std::sqrt(kvec[0] * kvec[0]
-                                   + kvec[1] * kvec[1]
-                                   + kvec[2] * kvec[2]);
+                             + kvec[1] * kvec[1]
+                             + kvec[2] * kvec[2]);
 
             if (norm > eps) {
                 for (k = 0; k < 3; ++k) kvec[k] /= norm;
@@ -1193,8 +1193,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                 for (l = 0; l < 3; ++l) kvec_plane[k][l] = xk_plane2[k][l];
                 rotvec(kvec_plane[k], kvec_plane[k], system->rlavec_p, 'T');
                 norm = std::sqrt(kvec_plane[k][0] * kvec_plane[k][0]
-                                       + kvec_plane[k][1] * kvec_plane[k][1]
-                                       + kvec_plane[k][2] * kvec_plane[k][2]);
+                                 + kvec_plane[k][1] * kvec_plane[k][1]
+                                 + kvec_plane[k][2] * kvec_plane[k][2]);
 
                 if (norm > eps) {
                     for (l = 0; l < 3; ++l) kvec_plane[k][l] /= norm;
@@ -1226,11 +1226,11 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                         //     std::cout << "is = " << is << " js = " << js << std::endl;
                         for (k = 0; k < 3; ++k) {
                             omega_sum[k] = eval_tmp[mode]
-                                  - eval[knum_triangle[k]][is]
-                                  - eval2[knum_triangle[k]][js];
+                                           - eval[knum_triangle[k]][is]
+                                           - eval2[knum_triangle[k]][js];
                         }
                         if ((omega_sum[0] > 0.0 && omega_sum[1] > 0.0 && omega_sum[2] > 0.0) ||
-                              (omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0))
+                            (omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0))
                             continue;
 
                         if (omega_sum[0] * omega_sum[1] < 0.0) {
@@ -1240,7 +1240,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                                       + frac * xk_plane[knum_triangle[1]][k]);
+                                                 + frac * xk_plane[knum_triangle[1]][k]);
                             }
                             kplist_conserved[is][js][0].push_back(xk_vec);
                         }
@@ -1252,7 +1252,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                                       + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][0].push_back(xk_vec);
                         }
@@ -1264,7 +1264,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[1]][k]
-                                                       + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][0].push_back(xk_vec);
                         }
@@ -1273,11 +1273,11 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                         for (k = 0; k < 3; ++k) {
                             omega_sum[k] = eval_tmp[mode]
-                                  - eval[knum_triangle[k]][is]
-                                  + eval2[knum_triangle[k]][js];
+                                           - eval[knum_triangle[k]][is]
+                                           + eval2[knum_triangle[k]][js];
                         }
                         if ((omega_sum[0] > 0.0 && omega_sum[1] > 0.0 && omega_sum[2] > 0.0) ||
-                              (omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0))
+                            (omega_sum[0] < 0.0 && omega_sum[1] < 0.0 && omega_sum[2] < 0.0))
                             continue;
 
                         if (omega_sum[0] * omega_sum[1] < 0.0) {
@@ -1287,7 +1287,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                                       + frac * xk_plane[knum_triangle[1]][k]);
+                                                 + frac * xk_plane[knum_triangle[1]][k]);
                             }
                             kplist_conserved[is][js][1].push_back(xk_vec);
                         }
@@ -1299,7 +1299,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[0]][k]
-                                                       + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][1].push_back(xk_vec);
                         }
@@ -1311,7 +1311,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                             for (k = 0; k < 3; ++k) {
                                 xk_vec.push_back((1.0 - frac) * xk_plane[knum_triangle[1]][k]
-                                                       + frac * xk_plane[knum_triangle[2]][k]);
+                                                 + frac * xk_plane[knum_triangle[2]][k]);
                             }
                             kplist_conserved[is][js][1].push_back(xk_vec);
                         }

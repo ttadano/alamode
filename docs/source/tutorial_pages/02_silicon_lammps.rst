@@ -55,10 +55,9 @@ This should finish in a few seconds.
 After the force calculations are finished, displacement and force data sets 
 can be generated as follows::
 
-    .. bash::
     $ python extract.py --LAMMPS=Si222.lammps XFSET.harm1 > DFSET_harmonic
 
-    $ python extract.py --LAMMPS=Si222.lammps XFSET.cubic* > DFSET_harmonic
+    $ python extract.py --LAMMPS=Si222.lammps XFSET.cubic* > DFSET_cubic
 
 Then, using these files and following exactly the same procedure as the last tutorial section,
 you can calculate phonons and thermal conductivity of Si using the SW potential.

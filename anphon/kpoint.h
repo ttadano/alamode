@@ -19,7 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 namespace PHON_NS {
 class KpointList {
- public:
+public:
     std::vector<double> kval;
     unsigned int knum;
 
@@ -29,11 +29,11 @@ class KpointList {
 
     KpointList(const unsigned int knum_in,
                const std::vector<double> &vec)
-          : kval(vec), knum(knum_in) {};
+            : kval(vec), knum(knum_in) {};
 };
 
 class KpointInp {
- public:
+public:
     std::vector<std::string> kpelem;
 
     KpointInp() {};
@@ -42,7 +42,7 @@ class KpointInp {
 };
 
 class KpointPlaneGeometry {
- public:
+public:
     double xk_origin[3];
     double xk_edges[2][3];
     int npoints[2];
@@ -66,7 +66,7 @@ class KpointPlaneGeometry {
 };
 
 class KpointPlane {
- public:
+public:
     double k[3];
     int n[2];
 
@@ -81,7 +81,7 @@ class KpointPlane {
 };
 
 class KpointPlaneTriangle {
- public:
+public:
     int index;
     int knum[3];
 
@@ -99,7 +99,7 @@ class KpointPlaneTriangle {
 };
 
 class KsList {
- public:
+public:
     std::vector<int> ks;
     int symnum;
 
@@ -125,7 +125,7 @@ class KsList {
 };
 
 class KsListGroup {
- public:
+public:
     std::vector<KsList> group;
 
     KsListGroup();
@@ -134,7 +134,7 @@ class KsListGroup {
 };
 
 class KpointGeneral {
- public:
+public:
     KpointGeneral()
     {
         nk = 0;
@@ -178,7 +178,7 @@ class KpointGeneral {
 };
 
 class KpointMeshUniform {
- public:
+public:
     KpointMeshUniform() = default;;
 
     KpointMeshUniform(const unsigned int nk_in[3])
@@ -238,7 +238,7 @@ class KpointMeshUniform {
                               std::vector<KsListGroup> &quartet,
                               const int sign = -1) const;
 
- private:
+private:
 
     void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
                    const bool usesym,
@@ -261,7 +261,7 @@ class KpointMeshUniform {
 };
 
 class KpointBandStructure {
- public:
+public:
     KpointBandStructure()
     {
         nk = 0;
@@ -316,7 +316,7 @@ class KpointBandStructure {
 };
 
 class Kpoint : protected Pointers {
- public:
+public:
     Kpoint(class PHON *);
 
     ~Kpoint();
@@ -345,7 +345,7 @@ class Kpoint : protected Pointers {
                                   const double [3][3],
                                   std::vector<std::vector<double>> &) const;
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();

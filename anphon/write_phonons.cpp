@@ -34,7 +34,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "scph.h"
 
 #ifdef _HDF5
+
 #include "H5Cpp.h"
+
 #endif
 
 using namespace PHON_NS;
@@ -634,8 +636,8 @@ void Writes::write_phonon_vel_all() const
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
             phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
-                                            + std::pow(phvel_xyz[ik][is][1], 2)
-                                            + std::pow(phvel_xyz[ik][is][2], 2));
+                                      + std::pow(phvel_xyz[ik][is][1], 2)
+                                      + std::pow(phvel_xyz[ik][is][2], 2));
         }
     }
 
@@ -965,7 +967,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
                               << evec_in[ik][imode][3 * j + k].real()
-                                    / (std::sqrt(system->mass[m]) * norm);
+                                 / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -1112,6 +1114,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 }
 
 #ifdef _HDF5
+
 void Writes::write_eigenvectors_HDF5() const
 {
     std::string fname_evec;
@@ -1371,6 +1374,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
 
     group_kpoint.close();
 }
+
 #endif
 
 double Writes::in_kayser(const double x) const
@@ -1767,11 +1771,51 @@ void Writes::write_kappa() const
     if (mympi->my_rank == 0) {
         int i, j, k;
 
-        auto file_kappa = input->job_title + ".kl";
+        std::string file_kappa;
+        std::string file_kappa_3only;
+
+        if (conductivity->fph_rta > 0) {
+            file_kappa_3only = input->job_title + ".kl3";
+            file_kappa = input->job_title + ".kl4";
+        } else {
+            file_kappa = input->job_title + ".kl";
+        }
+
         auto file_kappa2 = input->job_title + ".kl_spec";
         auto file_kappa_coherent = input->job_title + ".kl_coherent";
 
         std::ofstream ofs_kl;
+
+        if (conductivity->fph_rta > 0) {
+            ofs_kl.open(file_kappa_3only.c_str(), std::ios::out);
+            if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
+
+            ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]"
+                   << std::endl;
+            ofs_kl << "# three phonon part";
+
+            if (isotope->include_isotope) {
+                ofs_kl << "# Isotope effects are included." << std::endl;
+            }
+
+            if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2)
+                       << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+            }
+
+            for (i = 0; i < conductivity->ntemp; ++i) {
+                ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                       << conductivity->temperature[i];
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        ofs_kl << std::setw(15) << std::fixed
+                               << std::setprecision(4) << conductivity->kappa_3only[i][j][k];
+                    }
+                }
+                ofs_kl << std::endl;
+            }
+            ofs_kl.close();
+        }
 
         ofs_kl.open(file_kappa.c_str(), std::ios::out);
         if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
@@ -1780,6 +1824,11 @@ void Writes::write_kappa() const
 
         if (isotope->include_isotope) {
             ofs_kl << "# Isotope effects are included." << std::endl;
+        }
+
+        if (conductivity->len_boundary > eps) {
+            ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2)
+                   << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
         }
 
         for (i = 0; i < conductivity->ntemp; ++i) {
@@ -1827,7 +1876,7 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK * cm]" <<
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK]" <<
                    std::endl;
 
             if (isotope->include_isotope) {
@@ -2005,8 +2054,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             for (unsigned int iz = 0; iz < ncell[2]; ++iz) {
 
                 phase_cell[icell] = 2.0 * pi * (xk_in[0] * static_cast<double>(ix)
-                      + xk_in[1] * static_cast<double>(iy)
-                      + xk_in[2] * static_cast<double>(iz));
+                                                + xk_in[1] * static_cast<double>(iy)
+                                                + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
                     xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
@@ -2119,8 +2168,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                            + disp_mag[iband][3 * j + k]
-                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                         + disp_mag[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2173,8 +2222,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                            + disp_mag[iband][3 * j + k]
-                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                         + disp_mag[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2501,8 +2550,8 @@ void Writes::write_scph_energy(const unsigned int nk_in,
     if (!ofs_energy) exit("write_scph_energy", "cannot open file_energy");
 
     ofs_energy << "# K point, mode, Temperature [K], Eigenvalues [cm^-1]" << std::endl;
-    for (unsigned int ik = 0; ik < nk_in; ++ik) {
 
+    for (unsigned int ik = 0; ik < nk_in; ++ik) {
         for (unsigned int is = 0; is < ns; ++is) {
             for (unsigned int iT = 0; iT < NT; ++iT) {
                 const auto temp = Tmin + static_cast<double>(iT) * dT;

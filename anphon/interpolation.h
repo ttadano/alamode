@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class TriLinearInterpolator {
- public:
+public:
     TriLinearInterpolator()
     = default;
 
@@ -79,6 +79,7 @@ class TriLinearInterpolator {
             }
         }
     }
+
     ~TriLinearInterpolator()
     {
         if (cubes) deallocate(cubes);
@@ -86,7 +87,7 @@ class TriLinearInterpolator {
         if (xc) deallocate(xc);
     };
 
- private:
+private:
     unsigned int grid_c[3]{};
     unsigned int grid_f[3]{};
     unsigned int ngrid_f, ngrid_c;
@@ -114,6 +115,7 @@ class TriLinearInterpolator {
             }
         }
     }
+
     void set_cubes()
     {
         int iloc[2], jloc[2], kloc[2];
@@ -164,7 +166,7 @@ class TriLinearInterpolator {
                             const T c01, const T c11)
     {
         return c00 + (c10 - c00) * tx + (c01 - c00) * ty
-              + (c11 - c01 - c10 + c00) * tx * ty;
+               + (c11 - c01 - c10 + c00) * tx * ty;
     }
 };
 

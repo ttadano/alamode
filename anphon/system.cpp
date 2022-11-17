@@ -388,7 +388,7 @@ void System::load_system_info_from_XML()
         }
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FCSXML ( "
-                  + fcs_phonon->file_fcs + " )";
+                                    + fcs_phonon->file_fcs + " )";
             exit("load_system_info_from_XML",
                  str_error.c_str());
         }
@@ -396,19 +396,19 @@ void System::load_system_info_from_XML()
         // Parse nat and ntran
 
         nat = boost::lexical_cast<unsigned int>(
-              get_value_from_xml(pt,
-                                 "Data.Structure.NumberOfAtoms"));
+                get_value_from_xml(pt,
+                                   "Data.Structure.NumberOfAtoms"));
         int nkd_tmp = boost::lexical_cast<unsigned int>(
-              get_value_from_xml(pt,
-                                 "Data.Structure.NumberOfElements"));
+                get_value_from_xml(pt,
+                                   "Data.Structure.NumberOfElements"));
 
         if (nkd != nkd_tmp)
             exit("load_system_info_from_XML",
                  "NKD in the FCSXML file is not consistent with that given in the input file.");
 
         ntran = boost::lexical_cast<unsigned int>(
-              get_value_from_xml(pt,
-                                 "Data.Symmetry.NumberOfTranslations"));
+                get_value_from_xml(pt,
+                                   "Data.Symmetry.NumberOfTranslations"));
 
         natmin = nat / ntran;
 
@@ -421,7 +421,7 @@ void System::load_system_info_from_XML()
             ss.clear();
             ss << get_value_from_xml(pt,
                                      "Data.Structure.LatticeVector.a"
-                                           + std::to_string(i + 1));
+                                     + std::to_string(i + 1));
             ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
         }
 
@@ -526,8 +526,8 @@ void System::load_system_info_from_XML()
 
             try {
                 noncollinear = boost::lexical_cast<int>(
-                      get_value_from_xml(pt,
-                                         "Data.MagneticMoments.Noncollinear"));
+                        get_value_from_xml(pt,
+                                           "Data.MagneticMoments.Noncollinear"));
             }
             catch (...) {
                 noncollinear = 0;
@@ -535,8 +535,8 @@ void System::load_system_info_from_XML()
 
             try {
                 symmetry->time_reversal_sym_from_alm = boost::lexical_cast<int>(
-                      get_value_from_xml(pt,
-                                         "Data.MagneticMoments.TimeReversalSymmetry"));
+                        get_value_from_xml(pt,
+                                           "Data.MagneticMoments.TimeReversalSymmetry"));
             }
             catch (...) {
                 symmetry->time_reversal_sym_from_alm = true;
@@ -585,7 +585,7 @@ void System::load_system_info_from_XML()
             }
             catch (std::exception &e) {
                 auto str_error = "Cannot open file FC2XML ( "
-                      + fcs_phonon->file_fc2 + " )";
+                                 + fcs_phonon->file_fc2 + " )";
                 exit("load_system_info_from_XML",
                      str_error.c_str());
             }
@@ -593,19 +593,19 @@ void System::load_system_info_from_XML()
             // Parse nat and ntran
 
             nat = boost::lexical_cast<unsigned int>(
-                  get_value_from_xml(pt,
-                                     "Data.Structure.NumberOfAtoms"));
+                    get_value_from_xml(pt,
+                                       "Data.Structure.NumberOfAtoms"));
             nkd_tmp = boost::lexical_cast<unsigned int>(
-                  get_value_from_xml(pt,
-                                     "Data.Structure.NumberOfElements"));
+                    get_value_from_xml(pt,
+                                       "Data.Structure.NumberOfElements"));
 
             if (nkd != nkd_tmp)
                 exit("load_system_info_from_XML",
                      "NKD in the FC2XML file is not consistent with that given in the input file.");
 
             ntran = boost::lexical_cast<unsigned int>(
-                  get_value_from_xml(pt,
-                                     "Data.Symmetry.NumberOfTranslations"));
+                    get_value_from_xml(pt,
+                                       "Data.Symmetry.NumberOfTranslations"));
 
             const int natmin_tmp = nat / ntran;
 
@@ -628,7 +628,7 @@ void System::load_system_info_from_XML()
                 ss.clear();
                 ss << get_value_from_xml(pt,
                                          "Data.Structure.LatticeVector.a"
-                                               + std::to_string(i + 1));
+                                         + std::to_string(i + 1));
                 ss >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
             }
 
@@ -733,11 +733,11 @@ void System::recips(double vec[3][3],
                     double inverse[3][3]) const
 {
     const auto det = vec[0][0] * vec[1][1] * vec[2][2]
-          + vec[1][0] * vec[2][1] * vec[0][2]
-          + vec[2][0] * vec[0][1] * vec[1][2]
-          - vec[0][0] * vec[2][1] * vec[1][2]
-          - vec[2][0] * vec[1][1] * vec[0][2]
-          - vec[1][0] * vec[0][1] * vec[2][2];
+                     + vec[1][0] * vec[2][1] * vec[0][2]
+                     + vec[2][0] * vec[0][1] * vec[1][2]
+                     - vec[0][0] * vec[2][1] * vec[1][2]
+                     - vec[2][0] * vec[1][1] * vec[0][2]
+                     - vec[1][0] * vec[0][1] * vec[2][2];
 
     if (std::abs(det) < eps12) {
         exit("recips", "Lattice Vector is singular");
@@ -763,8 +763,8 @@ double System::volume(const double vec1[3],
                       const double vec3[3]) const
 {
     const auto vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
-                                    + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
-                                    + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
+                              + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
+                              + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
 
     return vol;
 }
@@ -809,7 +809,7 @@ void System::setup_atomic_class(const unsigned int N,
                 }
             } else {
                 if (kd[i] == it.element &&
-                      std::abs(magmom[i][2] - it.magmom) < eps6) {
+                    std::abs(magmom[i][2] - it.magmom) < eps6) {
                     atomlist_class[count].push_back(i);
                 }
             }

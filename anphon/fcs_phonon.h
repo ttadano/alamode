@@ -17,11 +17,11 @@
 
 namespace PHON_NS {
 struct Triplet {
-  unsigned int atom, cell, xyz;
+    unsigned int atom, cell, xyz;
 };
 
 class FcsClass {
- public:
+public:
     std::vector<Triplet> elems;
     double fcs_val;
 
@@ -41,7 +41,7 @@ class FcsClass {
 
     FcsClass(const double val,
              const std::vector<Triplet> &vec)
-          : elems(vec), fcs_val(val) {};
+            : elems(vec), fcs_val(val) {};
 
     bool operator<(const FcsClass &obj) const
     {
@@ -57,7 +57,7 @@ class FcsClass {
 };
 
 class FcsClassExtent {
- public:
+public:
     unsigned int atm1, atm2;
     unsigned int xyz1, xyz2;
     unsigned int cell_s;
@@ -78,15 +78,15 @@ class FcsClassExtent {
     bool operator==(const FcsClassExtent &a) const
     {
         return (this->atm1 == a.atm1) & (this->atm2 == a.atm2)
-              & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
-              & (this->cell_s == a.cell_s);
+               & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
+               & (this->cell_s == a.cell_s);
     }
 };
 
 struct AtomCellSuper {
-  unsigned int index;
-  unsigned int tran;
-  unsigned int cell_s;
+    unsigned int index;
+    unsigned int tran;
+    unsigned int cell_s;
 };
 
 inline bool operator<(const AtomCellSuper &a,
@@ -96,7 +96,7 @@ inline bool operator<(const AtomCellSuper &a,
 }
 
 class FcsArrayWithCell {
- public:
+public:
     std::vector<AtomCellSuper> pairs;
     double fcs_val;
 
@@ -104,7 +104,7 @@ class FcsArrayWithCell {
 
     FcsArrayWithCell(const double fcs_in,
                      const std::vector<AtomCellSuper> &pairs_in)
-          : pairs(pairs_in), fcs_val(fcs_in) {};
+            : pairs(pairs_in), fcs_val(fcs_in) {};
 
     bool operator<(const FcsArrayWithCell &obj) const
     {
@@ -126,7 +126,7 @@ class FcsArrayWithCell {
 };
 
 class Fcs_phonon : protected Pointers {
- public:
+public:
     Fcs_phonon(class PHON *);
 
     ~Fcs_phonon();
@@ -142,7 +142,7 @@ class Fcs_phonon : protected Pointers {
 
     bool update_fc2;
 
- private:
+private:
     bool require_cubic;
     bool require_quartic;
 

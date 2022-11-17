@@ -69,7 +69,7 @@ void Displace::gen_displacement_pattern(const Cluster *cluster,
     // Decide preferred basis (Cartesian or Lattice)
     auto ncompat_cart = 0;
     auto ncompat_latt = 0;
-    for (const auto &it : symmetry->get_SymmData()) {
+    for (const auto &it: symmetry->get_SymmData()) {
         if (it.compatible_with_cartesian) ++ncompat_cart;
         if (it.compatible_with_lattice) ++ncompat_latt;
     }
@@ -141,7 +141,7 @@ void Displace::gen_displacement_pattern(const Cluster *cluster,
     for (order = 0; order < maxorder; ++order) {
         include_set[order].clear();
 
-        for (const auto &it : index_bimap_tmp[order]) {
+        for (const auto &it: index_bimap_tmp[order]) {
             include_set[order].insert(it.right);
         }
     }
@@ -306,7 +306,7 @@ void Displace::generate_pattern_all(const int maxorder,
             std::copy(directions.begin(), directions.end(),
                       std::back_inserter(directions_copy));
 
-            for (const auto &it2 : sign_reduced) {
+            for (const auto &it2: sign_reduced) {
                 directions.clear();
 
                 for (i = 0; i < it2.size(); ++i) {
@@ -484,7 +484,7 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
 
     sign_found.clear();
 
-    for (const auto &it : sign_in) {
+    for (const auto &it: sign_in) {
 
         // if the sign has already been found before, cycle the loop.
         // else, add the current sign pairs to the return variable.

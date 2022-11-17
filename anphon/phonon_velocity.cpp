@@ -455,15 +455,15 @@ void PhononVelocity::phonon_vel_k(const double *xk_in,
         rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
 
         auto norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
-                                    + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
-                                    + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
+                              + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
+                              + kvec_na_tmp[0][2] * kvec_na_tmp[0][2]);
 
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[0][j] /= norm;
         }
         norm = std::sqrt(kvec_na_tmp[1][0] * kvec_na_tmp[1][0]
-                               + kvec_na_tmp[1][1] * kvec_na_tmp[1][1]
-                               + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
+                         + kvec_na_tmp[1][1] * kvec_na_tmp[1][1]
+                         + kvec_na_tmp[1][2] * kvec_na_tmp[1][2]);
 
         if (norm > eps) {
             for (j = 0; j < 3; ++j) kvec_na_tmp[1][j] /= norm;
@@ -713,7 +713,7 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                  - system->xr_s[system->map_p2s[atm2_p][0]][i];
+                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -723,8 +723,8 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
 
         for (k = 0; k < 3; ++k) {
             ddyn_out[k][3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                  += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
-                  system->mass[atm1_s] * system->mass[atm2_s]);
+                    += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
+                    system->mass[atm1_s] * system->mass[atm2_s]);
         }
 
     }
@@ -811,9 +811,9 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                  - system->xr_s[system->map_p2s[atm2_p][0]][i];
+                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
             vec2[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                  - system->xr_s[atm1_s][i];
+                      - system->xr_s[atm1_s][i];
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -826,8 +826,8 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         // vec2 or vec??
         for (k = 0; k < 3; ++k) {
             ddymat[3 * atm1_p + xyz1][3 * atm2_p + xyz2][k]
-                  += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
-                  system->mass[atm1_s] * system->mass[atm2_s]);
+                    += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
+                    system->mass[atm1_s] * system->mass[atm2_s]);
         }
     }
 
@@ -839,9 +839,9 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
                 for (jj = 0; jj < nmode; ++jj) {
                     for (k = 0; k < 3; ++k) {
                         velmat_out[i][j][k]
-                              += std::conj(evec_in[i][ii])
-                              * ddymat[ii][jj][k]
-                              * evec_in[j][jj];
+                                += std::conj(evec_in[i][ii])
+                                   * ddymat[ii][jj][k]
+                                   * evec_in[j][jj];
                     }
                 }
             }

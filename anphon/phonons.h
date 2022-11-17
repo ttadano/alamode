@@ -22,7 +22,7 @@
 
 namespace PHON_NS {
 class PHON {
- public:
+public:
     PHON(int,
          char **,
          MPI_Comm);
@@ -56,6 +56,7 @@ class PHON {
     class ModeAnalysis *mode_analysis;
 
     class Selfenergy *selfenergy;
+
     class Conductivity *conductivity;
 
     class Writes *writes;
@@ -77,6 +78,7 @@ class PHON {
     class Dielec *dielec;
 
     void create_pointers();
+
     void destroy_pointers() const;
 
     std::string mode;
@@ -85,6 +87,7 @@ class PHON {
     void execute_phonons() const;
 
     void execute_RTA() const;
+
     void execute_self_consistent_phonon() const;
 
     void setup_base() const;

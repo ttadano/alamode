@@ -876,7 +876,7 @@ void Iterativebte::iterative_solver()
                                     n3 = fb[k3][s3];
                                     for (ix = 0; ix < 3; ++ix) {
                                         Wks[s1][ix] -= 0.5 * (dFold[k2][s2][ix] + dFold[k3][s3][ix]) * n1 * (n2 + 1.0)
-                                              * (n3 + 1.0) * L_emitt[kp_index][s1][ib];
+                                                       * (n3 + 1.0) * L_emitt[kp_index][s1][ib];
                                     }
                                 }
                             }
@@ -905,8 +905,8 @@ void Iterativebte::iterative_solver()
                                     n3 = fb[k3][s3];
                                     for (ix = 0; ix < 3; ++ix) {
                                         Wks[s1][ix] +=
-                                              (dFold[k2][s2][ix] - dFold[k3_minus][s3][ix]) * n1 * n2 * (n3 + 1.0)
-                                                    * L_absorb[kp_index][s1][ib];
+                                                (dFold[k2][s2][ix] - dFold[k3_minus][s3][ix]) * n1 * n2 * (n3 + 1.0)
+                                                * L_absorb[kp_index][s1][ib];
                                     }
                                 }
                             }
@@ -939,7 +939,7 @@ void Iterativebte::iterative_solver()
                                 // a mixing factor of 0.75
                                 // unstability in convergence happens sometime at low temperature.
                                 dFnew[k1][s1][ix] =
-                                      dFnew[k1][s1][ix] * mixing_factor + dFold[k1][s1][ix] * (1.0 - mixing_factor);
+                                        dFnew[k1][s1][ix] * mixing_factor + dFold[k1][s1][ix] * (1.0 - mixing_factor);
                             }
                         }
 
@@ -1302,17 +1302,17 @@ void Iterativebte::write_result()
 
         fs_result << "#KPOINT" << std::endl;
         fs_result << dos->kmesh_dos->nk_i[0] << " " << dos->kmesh_dos->nk_i[1] << " " << dos->kmesh_dos->nk_i[2]
-                          << std::endl;
+                  << std::endl;
         fs_result << dos->kmesh_dos->nk_irred << std::endl;
 
         for (int i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
             fs_result << std::setw(6) << i + 1 << ":";
             for (int j = 0; j < 3; ++j) {
                 fs_result << std::setw(15)
-                                  << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
+                          << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
             }
             fs_result << std::setw(12)
-                              << std::fixed << dos->kmesh_dos->weight_k[i] << std::endl;
+                      << std::fixed << dos->kmesh_dos->weight_k[i] << std::endl;
         }
         fs_result.unsetf(std::ios::fixed);
 
@@ -1347,8 +1347,8 @@ void Iterativebte::write_result()
                 fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
                 fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is]);
                 fs_result << std::setw(15) << vel[ik][is][0] * factor
-                                  << std::setw(15) << vel[ik][is][1] * factor
-                                  << std::setw(15) << vel[ik][is][2] * factor << std::endl;
+                          << std::setw(15) << vel[ik][is][1] * factor
+                          << std::setw(15) << vel[ik][is][2] * factor << std::endl;
             }
         }
 
@@ -1391,10 +1391,10 @@ void Iterativebte::write_Q_dF(int itemp, double **&q, double ***&df)
                 auto k1 = dos->kmesh_dos->kpoint_irred_all[ik][0].knum;
                 fs_result << std::setw(6) << ik + 1 << std::setw(6) << is + 1 << std::endl;
                 fs_result
-                      << std::setw(15) << std::scientific << std::setprecision(5) << Q_all[ik][is]
-                      << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][0]
-                      << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][1]
-                      << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][2] << std::endl;
+                        << std::setw(15) << std::scientific << std::setprecision(5) << Q_all[ik][is]
+                        << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][0]
+                        << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][1]
+                        << std::setw(15) << std::scientific << std::setprecision(5) << df[k1][is][2] << std::endl;
             }
         }
         fs_result << std::endl;

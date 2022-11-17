@@ -3,7 +3,10 @@ import os
 import collections
 import numpy as np
 import argparse
-from pymatgen import Structure
+try:
+    from pymatgen.core import Structure
+except:
+    from pymatgen import Structure
 from pymatgen.io.vasp import inputs
 from pymatgen.core.periodic_table import get_el_sp
 import seekpath

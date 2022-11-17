@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class DistList {
- public:
+public:
     unsigned int cell_s;
     double dist;
 
@@ -34,25 +34,25 @@ class DistList {
 };
 
 struct ShiftCell {
- public:
+public:
     int sx, sy, sz;
 };
 
 struct MinimumDistList {
- public:
+public:
     double dist;
     std::vector<ShiftCell> shift;
 };
 
 struct KpointSymmetry {
- public:
+public:
     unsigned int symmetry_op;
     unsigned int knum_irred_orig;
     unsigned int knum_orig;
 };
 
 class Scph : protected Pointers {
- public:
+public:
 
     Scph(class PHON *phon);
 
@@ -78,7 +78,7 @@ class Scph : protected Pointers {
     bool selfenergy_offdiagonal;
     bool relax_coordinate;
 
- private:
+private:
 
     // Information of kmesh for SCPH calculation
     KpointMeshUniform *kmesh_coarse = nullptr;

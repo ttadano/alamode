@@ -56,10 +56,12 @@ DispForceFile Files::get_datfile_validation() const
     return datfile_validation;
 }
 
-void Files::set_output_maxorder(const int maxorder) {
+void Files::set_output_maxorder(const int maxorder)
+{
     output_maxorder = maxorder;
 }
 
-int Files::get_output_maxorder() const {
+int Files::get_output_maxorder() const
+{
     return output_maxorder;
 }

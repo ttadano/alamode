@@ -18,7 +18,7 @@
 
 namespace PHON_NS {
 class FcsAlignedForGruneisen {
- public:
+public:
     std::vector<AtomCellSuper> pairs;
     double fcs_val;
 
@@ -26,7 +26,7 @@ class FcsAlignedForGruneisen {
 
     FcsAlignedForGruneisen(const double fcs_in,
                            const std::vector<AtomCellSuper> &pairs_in)
-          : pairs(pairs_in), fcs_val(fcs_in) {};
+            : pairs(pairs_in), fcs_val(fcs_in) {};
 
     bool operator<(const FcsAlignedForGruneisen &obj) const
     {
@@ -86,7 +86,7 @@ class FcsAlignedForGruneisen {
 //}
 
 class Gruneisen : protected Pointers {
- public:
+public:
     Gruneisen(class PHON *);
 
     ~Gruneisen();
@@ -104,7 +104,7 @@ class Gruneisen : protected Pointers {
 
     void write_new_fcsxml_all();
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();
@@ -113,7 +113,11 @@ class Gruneisen : protected Pointers {
     std::vector<FcsArrayWithCell> delta_fc2, delta_fc3;
 
     void prepare_delta_fcs(const std::vector<FcsArrayWithCell> &,
-                           std::vector<FcsArrayWithCell> &) const;
+                           std::vector<FcsArrayWithCell> &,
+                           const int) const;
+
+    // void impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &,
+    //                    int);
 
     void calc_dfc2_reciprocal(std::complex<double> **,
                               const double *);

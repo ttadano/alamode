@@ -110,15 +110,15 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-          "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-          "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
-          "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-          "VERBOSITY",
-          "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
-          "INTERPOLATOR" // this should be moved to &kappa
-          // field in near
-          // future
+            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
+            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+            "VERBOSITY"
+            "KMESH_COARSE", "EPSILON_4PH", "RESTART_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
+            "INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
+            // field in near
+            // future
     };
     // added ismear_4ph to include separate choose of 3ph and 4ph
 
@@ -222,6 +222,8 @@ void Input::parse_general_vars()
 
     std::string interpolator = "linear";
 
+    double len_boundary = 0.0;
+
     // Assign given values
 
     assign_val(Tmin, "TMIN", general_var_dict);
@@ -257,6 +259,7 @@ void Input::parse_general_vars()
     assign_val(verbosity, "VERBOSITY", general_var_dict);
 
     assign_val(interpolator, "INTERPOLATOR", general_var_dict);
+    assign_val(len_boundary, "LEN_BOUNDARY", general_var_dict);
 
     if (band_connection > 2) {
         exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
@@ -334,6 +337,9 @@ void Input::parse_general_vars()
                                           restart,
                                           restart_4ph);
     conductivity->set_interpolator(interpolator);
+
+    conductivity->len_boundary = len_boundary; // m
+
     symmetry->nsym = nsym;
     symmetry->tolerance = tolerance;
     symmetry->printsymmetry = printsymmetry;
@@ -391,9 +397,9 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-          "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-          "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-          "LOWER_TEMP", "WARMSTART", "BUBBLE"
+            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+            "LOWER_TEMP", "WARMSTART", "BUBBLE"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -520,14 +526,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::vector<std::string> input_list{
-          "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-          "REALPART", "ISOTOPE", "ISOFACT",
-          "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-          "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-          "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
-          "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
-          "KAPPA_COHERENT",
-          "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
+            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+            "REALPART", "ISOTOPE", "ISOFACT",
+            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+            "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
+            "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
+            "KAPPA_COHERENT",
+            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
     };
 
 #ifdef _FE_BUBBLE
@@ -591,7 +597,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     auto max_cycle = 20;
     auto iter_threshold = 0.005; // wh
 
-    auto fph_rta = 0;
+    //auto fph_rta = 0;
 
     // Assign values to variables
 
@@ -626,7 +632,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(max_cycle, "MAX_CYCLE", analysis_var_dict);
         assign_val(iter_threshold, "ITER_THRESHOLD", analysis_var_dict); // wh
 
-        assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
+        //assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -815,8 +821,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
     iterativebte->max_cycle = max_cycle;
     iterativebte->convergence_criteria = iter_threshold; // wh
 
-    conductivity->fph_rta = fph_rta; // 4ph
-    if (fph_rta > 0) quartic_mode = 1;
+    //conductivity->fph_rta = fph_rta; // 4ph
+    //if (fph_rta > 0) quartic_mode = 1;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;
@@ -1169,6 +1175,11 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
                     str_varval = my_split(str_tmp, '=');
 #endif
                     if (str_varval.size() != 2) {
+                        std::cout << " Failed to parse : ";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict",
                              "Unacceptable format");
                     }
@@ -1244,6 +1255,11 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 #endif
 
                     if (str_varval.size() != 2) {
+                        std::cout << " Failed to parse : ";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict",
                              "Unacceptable format");
                     }

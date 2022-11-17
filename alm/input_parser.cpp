@@ -242,7 +242,7 @@ void InputParser::parse_general_vars(ALM *alm)
 
     get_var_dict(input_list, general_var_dict);
 
-    for (const auto &it : no_defaults) {
+    for (const auto &it: no_defaults) {
         if (general_var_dict.find(it) == general_var_dict.end()) {
             exit("parse_general_vars",
                  "The following variable is not found in &general input region: ",
@@ -369,7 +369,7 @@ void InputParser::parse_general_vars(ALM *alm)
         if (noncollinear) {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (const auto & it : magmom_v) {
+            for (const auto &it: magmom_v) {
                 if (it.find('*') != std::string::npos) {
                     exit("parse_general_vars",
                          "Wild card '*' is not supported when NONCOLLINEAR = 1.");
@@ -390,7 +390,7 @@ void InputParser::parse_general_vars(ALM *alm)
         } else {
             icount = 0;
             split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (const auto & it : magmom_v) {
+            for (const auto &it: magmom_v) {
 
                 if (it.find('*') != std::string::npos) {
                     if (it == "*") {
@@ -594,7 +594,7 @@ void InputParser::parse_interaction_vars()
 
     get_var_dict(input_list, interaction_var_dict);
 
-    for (const auto &it : no_defaults) {
+    for (const auto &it: no_defaults) {
         if (interaction_var_dict.find(it) == interaction_var_dict.end()) {
             exit("parse_interaction_vars",
                  "The following variable is not found in &interaction input region: ",
@@ -664,7 +664,8 @@ void InputParser::parse_optimize_vars(ALM *alm)
             "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
             "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
             "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
-            "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS"
+            "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS",
+            "MIRROR_IMAGE_CONV", "STOP_CRITERION"
     };
 
     std::map<std::string, std::string> optimize_var_dict;
@@ -755,6 +756,12 @@ void InputParser::parse_optimize_vars(ALM *alm)
     }
     if (!optimize_var_dict["L1_RATIO"].empty()) {
         optcontrol.l1_ratio = boost::lexical_cast<double>(optimize_var_dict["L1_RATIO"]);
+    }
+    if (!optimize_var_dict["STOP_CRITERION"].empty()) {
+        optcontrol.stop_criterion = boost::lexical_cast<int>(optimize_var_dict["STOP_CRITERION"]);
+    }
+    if (!optimize_var_dict["MIRROR_IMAGE_CONV"].empty()) {
+        optcontrol.mirror_image_conv = boost::lexical_cast<int>(optimize_var_dict["MIRROR_IMAGE_CONV"]);
     }
 
 
@@ -1069,7 +1076,7 @@ void InputParser::parse_cutoff_radii()
     element_allowed.insert("*");
     kd_map.insert(std::map<std::string, int>::value_type("*", -1));
 
-    for (const auto &it : str_cutoff) {
+    for (const auto &it: str_cutoff) {
 
         split_str_by_space(it, cutoff_line);
 
@@ -1180,7 +1187,7 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
 
     std::set<std::string> keyword_set;
 
-    for (const auto &it : input_list) {
+    for (const auto &it: input_list) {
         keyword_set.insert(it);
     }
 
@@ -1206,7 +1213,7 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
 
             boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 
-            for (auto &it : str_entry) {
+            for (auto &it: str_entry) {
 
                 // Split the input entry by '='
 
@@ -1217,6 +1224,11 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     boost::split(str_varval, str_tmp, boost::is_any_of("="));
 
                     if (str_varval.size() != 2) {
+                        std::cout << "Failed to parse :";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict", "Unacceptable format");
                     }
 
@@ -1262,7 +1274,7 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
 
             boost::split(str_entry, line_wo_comment, boost::is_any_of(";"));
 
-            for (auto &it : str_entry) {
+            for (auto &it: str_entry) {
 
                 // Split the input entry by '='
 
@@ -1273,6 +1285,11 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     boost::split(str_varval, str_tmp, boost::is_any_of("="));
 
                     if (str_varval.size() != 2) {
+                        std::cout << " Failed to parse : ";
+                        for (auto &it2: str_varval) {
+                            std::cout << it2 << ' ';
+                        }
+                        std::cout << '\n';
                         exit("get_var_dict", "Unacceptable format");
                     }
 
@@ -1280,13 +1297,13 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     val = boost::trim_copy(str_varval[1]);
 
                     if (keyword_set.find(key) == keyword_set.end()) {
-                        std::cout << "Could not recognize the variable "
+                        std::cout << " Could not recognize the variable "
                                   << key << std::endl;
                         exit("get_var_dict", "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
-                        std::cout << "Variable " << key
+                        std::cout << " Variable " << key
                                   << " appears twice in the input file." << std::endl;
                         exit("get_var_dict", "Redundant input parameter");
                     }
@@ -1387,7 +1404,7 @@ void InputParser::split_str_by_space(const std::string str,
 
 template<typename T>
 void InputParser::assign_val(T &val,
-                             const std::string& key,
+                             const std::string &key,
                              std::map<std::string, std::string> dict)
 {
     // Assign a value to the variable "key" using the boost::lexica_cast.

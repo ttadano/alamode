@@ -15,66 +15,66 @@
 #include "alm.h"
 
 namespace ALM_NS {
-    class AtomProperty {
-    public:
-        double x, y, z;
-        int kind;
-        size_t atom, tran;
+class AtomProperty {
+public:
+    double x, y, z;
+    int kind;
+    size_t atom, tran;
 
-        AtomProperty() = default;;
+    AtomProperty() = default;;
 
-        AtomProperty(const AtomProperty &other) = default;
+    AtomProperty(const AtomProperty &other) = default;
 
-        AtomProperty(const double *pos,
-                     const int kind_in,
-                     const int atom_in,
-                     const int tran_in)
-        {
-            x = pos[0];
-            y = pos[1];
-            z = pos[2];
-            kind = kind_in;
-            atom = atom_in;
-            tran = tran_in;
-        }
-    };
+    AtomProperty(const double *pos,
+                 const int kind_in,
+                 const int atom_in,
+                 const int tran_in)
+    {
+        x = pos[0];
+        y = pos[1];
+        z = pos[2];
+        kind = kind_in;
+        atom = atom_in;
+        tran = tran_in;
+    }
+};
 
-    class SystemInfo {
-    public:
-        double lattice_vector[3][3];
-        std::vector<AtomProperty> atoms;
-        size_t nat, natmin, ntran;
-        size_t nspecies;
+class SystemInfo {
+public:
+    double lattice_vector[3][3];
+    std::vector<AtomProperty> atoms;
+    size_t nat, natmin, ntran;
+    size_t nspecies;
 
-        SystemInfo() = default;;
-    };
+    SystemInfo() = default;;
+};
 
-    class Writer {
-    public:
-        Writer();
+class Writer {
+public:
+    Writer();
 
-        ~Writer();
+    ~Writer();
 
-        void writeall(ALM *) const;
+    void writeall(ALM *) const;
 
-        void write_input_vars(const ALM *alm, const std::string run_mode) const;
+    void write_input_vars(const ALM *alm, const std::string run_mode) const;
 
-        void write_displacement_pattern(ALM *) const;
+    void write_displacement_pattern(ALM *) const;
 
-    private:
-        void write_force_constants(ALM *) const;
+private:
+    void write_force_constants(ALM *) const;
 
-        void write_misc_xml(ALM *) const;
+    void write_misc_xml(ALM *) const;
 
-        void write_hessian(ALM *) const;
+    void write_hessian(ALM *) const;
 
-        void write_in_QEformat(ALM *) const;
+    void write_in_QEformat(ALM *) const;
 
-        void write_fc3_thirdorderpy_format(ALM *) const;
+    void write_fc3_thirdorderpy_format(ALM *) const;
 
-        std::string easyvizint(int) const;
+    std::string easyvizint(int) const;
 
-        std::string double2string(double,
-                                  int nprec = 15) const;
-    };
+    std::string double2string(double,
+                              int nprec = 15) const;
+};
 }
