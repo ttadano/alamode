@@ -25,6 +25,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <algorithm>
 #include "parsephon.h"
 #include "mathfunctions.h"
+#include "niggli_wrapper.h"
+#include <Eigen/Core>
+#include <numeric>
 
 using namespace PHON_NS;
 
@@ -149,7 +152,8 @@ void Kpoint::kpoint_setups(const std::string mode)
             dos->kmesh_dos = new KpointMeshUniform(nk_tmp);
             dos->kmesh_dos->setup(symmetry->SymmList,
                                   system->rlavec_p,
-                                  symmetry->time_reversal_sym);
+                                  symmetry->time_reversal_sym,
+                                  true);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
@@ -341,11 +345,18 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 
 void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
                               const double rlavec_p[3][3],
-                              const bool time_reversal_symmetry)
+                              const bool time_reversal_symmetry,
+                              const bool niggli_reduce_in)
 {
     const bool usesym = true;
 
-    gen_kmesh(symmlist, usesym, time_reversal_symmetry);
+    niggli_reduced = niggli_reduce_in;
+
+    if (niggli_reduced) {
+        gen_kmesh_niggli(symmlist, rlavec_p, usesym, time_reversal_symmetry);
+    } else {
+        gen_kmesh(symmlist, rlavec_p, usesym, time_reversal_symmetry);
+    }
 
     for (auto i = 0; i < nk; ++i) {
         for (auto j = 0; j < 3; ++j) kvec_na[i][j] = xk[i][j];
@@ -381,15 +392,48 @@ void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
 }
 
 void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                                  const double rlavec_p[3][3],
                                   const bool usesym,
                                   const bool time_reversal_symmetry)
 {
+    // Generates the uniform grid points in the reciprocal space
+    // Search the mirror images that minimize |q+G|
+    // TODO: save all q+G having the same Euclidean distance from origin for later use
+
     unsigned int ik;
     double **xkr;
     unsigned int nsym;
+    Eigen::Matrix3d rlat;
+
+    // transpose the input matrix for reciprocal lattice
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            rlat(i, j) = rlavec_p[j][i];
+        }
+    }
+    std::vector<std::vector<int>> gvec_shift;
+    std::vector<int> gvec_tmp(3);
+
+    gvec_tmp[0] = 0;
+    gvec_tmp[1] = 0;
+    gvec_tmp[2] = 0;
+    gvec_shift.emplace_back(gvec_tmp);
+
+    for (auto ia = -1; ia <= 1; ++ia) {
+        for (auto ja = -1; ja <= 1; ++ja) {
+            for (auto ka = -1; ka <= 1; ++ka) {
+
+                if (ia == 0 && ja == 0 && ka == 0) continue;
+
+                gvec_tmp[0] = ia;
+                gvec_tmp[1] = ja;
+                gvec_tmp[2] = ka;
+                gvec_shift.emplace_back(gvec_tmp);
+            }
+        }
+    }
 
     allocate(xkr, nk, 3);
-
     for (unsigned int ix = 0; ix < nk_i[0]; ++ix) {
         for (unsigned int iy = 0; iy < nk_i[1]; ++iy) {
             for (unsigned int iz = 0; iz < nk_i[2]; ++iz) {
@@ -400,6 +444,52 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
             }
         }
     }
+
+    Eigen::MatrixXd xkr_mirror(3, 27);
+    std::vector<double> distances(27);
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto icell = 0; icell < 27; ++icell) {
+            for (auto i = 0; i < 3; ++i) {
+                xkr_mirror(i, icell) = xkr[ik][i] + static_cast<double>(gvec_shift[icell][i]);
+            }
+        }
+        xkr_mirror = rlat * xkr_mirror;
+
+        std::vector<int> idx(27);
+        std::iota(idx.begin(), idx.end(), 0);
+
+        for (auto icell = 0; icell < 27; ++icell) {
+            auto norm = std::sqrt(xkr_mirror(0, icell) * xkr_mirror(0, icell)
+                                  + xkr_mirror(1, icell) * xkr_mirror(1, icell)
+                                  + xkr_mirror(2, icell) * xkr_mirror(2, icell));
+            distances[icell] = norm;
+        }
+        // find the mirror image having the minimum distance from (0, 0, 0)
+        std::stable_sort(idx.begin(), idx.end(),
+                         [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
+
+        const auto minimum_distance = distances[idx[0]];
+//        std::cout << "ik = " << ik << '\n';
+//        std::cout << "xk = " << std::setw(15) << xkr[ik][0] << std::setw(15) << xkr[ik][1]
+//        << std::setw(15) << xkr[ik][2] << '\n';
+//        std::cout  << "icell = " << idx[0] << " distance = " << distances[idx[0]] << '\n';
+//        std::cout << " Gvec = " << gvec_shift[idx[0]][0] << " " << gvec_shift[idx[0]][1]
+//        << " " << gvec_shift[idx[0]][2] << '\n';
+//        for (auto icell = 1; icell < 27; ++icell) {
+//            if (distances[idx[icell]] - minimum_distance > eps4) {
+//                break;
+//            } else {
+//                std::cout << "icell = " << idx[icell] << " distance = " << distances[idx[icell]] << '\n';
+//                std::cout << " Gvec = " << gvec_shift[idx[icell]][0]
+//                << " " << gvec_shift[idx[icell]][1] << " " << gvec_shift[idx[icell]][2] << '\n';
+//            }
+//        }
+        // Select the first mirror image that gives the shortest |q+G|
+        for (auto i = 0; i < 3; ++i) {
+            xkr[ik][i] += static_cast<double>(gvec_shift[idx[0]][i]);
+        }
+    }
+
     if (usesym) {
         nsym = symmlist.size();
     } else {
@@ -409,17 +499,163 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
 
     for (ik = 0; ik < nk; ++ik) {
         for (unsigned int i = 0; i < 3; ++i) {
-            xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+//            xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+            xk[ik][i] = xkr[ik][i];
         }
     }
 
     deallocate(xkr);
 }
 
+void KpointMeshUniform::gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
+                                         const double rlavec_p[3][3],
+                                         const bool usesym,
+                                         const bool time_reversal_symmetry)
+{
+    // Generates the uniform grid points in the reciprocal space
+    // Search the mirror images that minimize |q+G|.
+    // Niggli reduction is done for searching Gs that minimize |q+G| exhaustively
+    // from the centering cell and the surrounding 26 mirror images.
+    // TODO: save all q+G having the same Euclidean distance from origin for later use
+
+    unsigned int ik;
+    unsigned int nsym;
+    Eigen::Matrix3d rlat, rlat_reduced, c_matrix, c_matrix_inv;
+
+    // transpose the input matrix for reciprocal lattice
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            rlat(i, j) = rlavec_p[j][i];
+        }
+    }
+    auto success = niggli_reduction(rlat, rlat_reduced, c_matrix);
+    if (!success) {
+        exit("gen_kmesh_niggli", "Niggli reduction failed");
+    }
+
+    c_matrix_inv = c_matrix.inverse();
+
+    std::vector<std::vector<int>> gvec_shift;
+    std::vector<int> gvec_tmp(3);
+
+    gvec_tmp[0] = 0;
+    gvec_tmp[1] = 0;
+    gvec_tmp[2] = 0;
+    gvec_shift.emplace_back(gvec_tmp);
+
+    for (auto ia = -1; ia <= 1; ++ia) {
+        for (auto ja = -1; ja <= 1; ++ja) {
+            for (auto ka = -1; ka <= 1; ++ka) {
+
+                if (ia == 0 && ja == 0 && ka == 0) continue;
+
+                gvec_tmp[0] = ia;
+                gvec_tmp[1] = ja;
+                gvec_tmp[2] = ka;
+                gvec_shift.emplace_back(gvec_tmp);
+            }
+        }
+    }
+
+
+    Eigen::MatrixXd xkr(3, nk);
+
+    // Generate regular mesh in the original basis
+    for (unsigned int ix = 0; ix < nk_i[0]; ++ix) {
+        for (unsigned int iy = 0; iy < nk_i[1]; ++iy) {
+            for (unsigned int iz = 0; iz < nk_i[2]; ++iz) {
+                ik = iz + iy * nk_i[2] + ix * nk_i[2] * nk_i[1];
+                xkr(0, ik) = static_cast<double>(ix) / static_cast<double>(nk_i[0]);
+                xkr(1, ik) = static_cast<double>(iy) / static_cast<double>(nk_i[1]);
+                xkr(2, ik) = static_cast<double>(iz) / static_cast<double>(nk_i[2]);
+            }
+        }
+    }
+    // Convert to the reduced basis
+    xkr = c_matrix_inv * xkr;
+
+    // Move back to the 0<=q<1 segment
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) {
+            xkr(i, ik) = std::fmod(xkr(i, ik), 1.0);
+            if (xkr(i, ik) < 0.0) xkr(i, ik) += 1.0;
+        }
+    }
+
+    // Find the G-vector that minimizes |q+G| in the reduced basis
+    Eigen::MatrixXd xkr_mirror(3, 27);
+    std::vector<double> distances(27);
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto icell = 0; icell < 27; ++icell) {
+            for (auto i = 0; i < 3; ++i) {
+                xkr_mirror(i, icell) = xkr(i, ik) + static_cast<double>(gvec_shift[icell][i]);
+            }
+        }
+        xkr_mirror = rlat_reduced * xkr_mirror;
+
+        std::vector<int> idx(27);
+        std::iota(idx.begin(), idx.end(), 0);
+
+        for (auto icell = 0; icell < 27; ++icell) {
+            auto norm = std::sqrt(xkr_mirror(0, icell) * xkr_mirror(0, icell)
+                                  + xkr_mirror(1, icell) * xkr_mirror(1, icell)
+                                  + xkr_mirror(2, icell) * xkr_mirror(2, icell));
+            distances[icell] = norm;
+        }
+        // find the mirror image having the minimum distance from (0, 0, 0)
+        std::stable_sort(idx.begin(), idx.end(),
+                         [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
+
+//        const auto minimum_distance = distances[idx[0]];
+//        std::cout << "ik = " << ik << '\n';
+//        std::cout  << "icell = " << idx[0] << " distance = " << distances[idx[0]] << '\n';
+//        for (auto icell = 1; icell < 27; ++icell) {
+//            if (distances[idx[icell]] - minimum_distance > eps4) {
+//                break;
+//            } else {
+//                std::cout << "icell = " << idx[icell] << " distance = " << distances[idx[icell]] << '\n';
+//            }
+//        }
+
+        // Select the first G that minimizes |q+G|
+        for (auto i = 0; i < 3; ++i) {
+            xkr(i, ik) += static_cast<double>(gvec_shift[idx[0]][i]);
+        }
+    }
+
+    // Move back to the original basis
+    xkr = c_matrix * xkr;
+
+    double **xkr_arr;
+    allocate(xkr_arr, nk, 3);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) {
+            xkr_arr[ik][i] = xkr(i, ik);
+        }
+    }
+
+    if (usesym) {
+        nsym = symmlist.size();
+    } else {
+        nsym = 1;
+    }
+    reduce_kpoints(nsym, symmlist, time_reversal_symmetry, xkr_arr);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (unsigned int i = 0; i < 3; ++i) {
+            // xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+            xk[ik][i] = xkr_arr[ik][i];
+        }
+    }
+
+    deallocate(xkr_arr);
+}
+
 void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
                                        const std::vector<SymmetryOperation> &symmlist,
                                        const bool time_reversal_symmetry,
-                                       double **xkr)
+                                       const double *const *xkr)
 {
     unsigned int ik;
     unsigned int i, j;
