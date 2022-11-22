@@ -2082,6 +2082,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
 
+                // temporary
+                std::cout << "anharmonic frequencies" << std::endl;
+                for(is1 = 0; is1 < ns; is1++){
+                    std::cout << omega2_anharm[iT][0][is1] << std::endl;
+                }
 
 
                 // debug
@@ -4063,16 +4068,21 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
     int ****count_tmp;
     int mapping_xyz[3];
 
+    int *is_acoustic;
+
     allocate(exist_in, 3, 3);
     allocate(B_array_real_space_in, 3, 3, natmin*3, nat*3);
     allocate(B_array_real_space_symmetrized, 3, 3, natmin*3, nat*3);
     allocate(count_tmp, 3, 3, natmin*3, nat*3);
+
+    allocate(is_acoustic, 3*natmin);
 
     // temporary 
     // (alpha,mu) representation in k-space
     std::complex<double> ***del_v2_strain_from_cubic_alphamu;
     allocate(del_v2_strain_from_cubic_alphamu, 9, nk, ns*ns);
 
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
 
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
@@ -4400,6 +4410,46 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
                 }
             }
 
+        }
+    }
+
+    // set elements of acoustic mode at Gamma point exactly zero
+
+    double threshold_acoustic = 1.0e-16;
+    int count_acoustic = 0;
+    for(is = 0; is < ns; is++){
+        if(std::fabs(omega2_harmonic[0][is]) < threshold_acoustic){
+            is_acoustic[is] = 1;
+            count_acoustic++;
+        }
+        else{
+            is_acoustic[is] = 0;
+        }
+    }
+
+    // check number of acoustic modes
+    if(count_acoustic != 3){
+        std::cout << "Warning in calculate_del_v2_strain_from_cubic_by_finite_difference: ";
+        std::cout << count_acoustic << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
+    }
+
+    // debug 
+    std::cout << "is_acoustic : " << std::endl;
+    for(is = 0; is < ns; is++){
+        std::cout << is_acoustic[is] << " ";
+    }std::cout << std::endl;
+
+    // set acoustic sum rule (ASR)
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is = 0; is < ns; is++){
+            // mode is is an acoustic mode at Gamma point
+            if(is_acoustic[is] == 0){
+                continue;
+            }
+            for(js = 0; js < ns; js++){
+                del_v2_strain_from_cubic[ixyz1][0][is*ns+js] = complex_zero;
+                del_v2_strain_from_cubic[ixyz1][0][js*ns+is] = complex_zero;
+            }
         }
     }
 
