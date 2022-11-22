@@ -1088,11 +1088,15 @@ void Scph::exec_scph_relax_main(std::complex<double> ****dymat_anharm,
     // get indices of optical modes at Gamma point
     js = 0;
     for(is = 0; is < ns; is++){
-        if(std::fabs(omega2_harmonic[0][is]) < eps8){
+        if(std::fabs(omega2_harmonic[0][is]) < eps10){
             continue;
         }
         harm_optical_modes[js] = is;
         js++;
+    }
+    if(js != ns-3){
+        std::cout << "Warning in exec_scph_relax_main : ";
+        std::cout << "The number of detected optical modes is not ns-3." << std::endl;
     }
     
     if(mympi->my_rank == 0){
@@ -1749,12 +1753,17 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // get indices of optical modes at Gamma point
     js = 0;
     for(is = 0; is < ns; is++){
-        if(std::fabs(omega2_harmonic[0][is]) < eps8){
+        if(std::fabs(omega2_harmonic[0][is]) < eps10){
             continue;
         }
         harm_optical_modes[js] = is;
         js++;
     }
+    if(js != ns-3){
+        std::cout << "Warning in exec_scph_relax_cell_coordinate_main : ";
+        std::cout << "The number of detected optical modes is not ns-3." << std::endl;
+    }
+    
     
     if(mympi->my_rank == 0){
         std::cout << "mode indices of optical modes: " << std::endl;
@@ -2049,22 +2058,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                              q0,
                                                              pvcell);
 
-                // debug
-                std::cout << "PES force" << std::endl;
-                for(iat1 = 0; iat1 < system->natmin; iat1++){
-                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                        std::cout << force_array[iat1*3 + ixyz1] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-
-                // debug
-                std::cout << "PES stress tensor" << std::endl;
-                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                        std::cout << del_v0_strain_with_strain_displace[ixyz1*3 + ixyz2] << " " << std::endl;
-                    }
-                }std::cout << std::endl << std::endl;
-
 
                 // copy v4_array_original to v4_array_renormalized
                 for(ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++){
@@ -2089,11 +2082,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
 
-                // debug 
-                std::cout << "anharm freq : " << std::endl;
-                for(is1 = 0; is1 < ns; is1++){
-                    std::cout << omega2_anharm[iT][0][is1] << std::endl;
-                }std::cout << std::endl;
 
 
                 // debug
@@ -2121,22 +2109,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             omega2_anharm[iT], 
                                             temp);
 
-                // debug
-                calculate_force_in_real_space(v1_array_SCP, force_array);
-                std::cout << "SCP force" << std::endl;
-                for(iat1 = 0; iat1 < system->natmin; iat1++){
-                    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                        std::cout << force_array[iat1*3 + ixyz1] << " ";
-                    }std::cout << std::endl;
-                }std::cout << std::endl;
-
-                // debug
-                std::cout << "SCP stress tensor" << std::endl;
-                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                        std::cout << del_v0_strain_SCP[ixyz1*3 + ixyz2] << " " << std::endl;
-                    }
-                }std::cout << std::endl << std::endl;
 
                 // change structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -2644,16 +2616,25 @@ void Scph::calculate_u0(double *q0, double *u0){
     int is, is2, i_atm, ixyz;
     auto ns = dynamical->neval;
 
+    int count_zero;
+
     for(i_atm = 0; i_atm < natmin; i_atm++){
         for(ixyz = 0; ixyz < 3; ixyz++){
             is = i_atm*3 + ixyz;
             u0[is] = 0.0;
+
+            count_zero = 0;
             for(is2 = 0; is2 < ns; is2++){
                 // skip acoustic mode
-                if(std::fabs(omega2_harmonic[0][is2]) < eps8){
+                if(std::fabs(omega2_harmonic[0][is2]) < eps10){
+                    count_zero++;
                     continue;
                 }
                 u0[is] += evec_harmonic[0][is2][is].real() * q0[is2];
+            }
+            if(count_zero != 3){
+                std::cout << "Warning in calculate_u0 : ";
+                std::cout << "The number of detected zero-frequencies at Gamma point is " << count_zero << "." << std::endl;
             }
             u0[is] /= std::sqrt(system->mass[system->map_p2s[i_atm][0]]);
         }
@@ -4313,6 +4294,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
         // write B_array_real_space_symmetrized to an output file
         std::ofstream fout_B_array;
         fout_B_array.open("B_array.txt");
+        fout_B_array << std::setprecision(15) << std::scientific;
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
             for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
@@ -7321,7 +7303,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             count_zero = 0;
             for (is = 0; is < ns; ++is) {
                 auto omega1 = omega_now(ik, is);
-                if (std::abs(omega1) < eps8) { // changed!!
+                if (std::abs(omega1) < eps8) {
                     Qmat(is, is) = complex_zero;
                     count_zero++;
                 } else {
