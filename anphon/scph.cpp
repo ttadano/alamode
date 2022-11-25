@@ -2520,7 +2520,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
     allocate(del_v1_strain_from_harmonic, 9, ns);
     // compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
-    // finite difference method (in the middle of the implementation)
+    // finite difference method
     calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
@@ -2557,8 +2557,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::cout << "  1st order derivatives of harmonic IFCs (from cubic IFCs) ... ";
     // std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
-    compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic); // temporary
-    // calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
+    // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic); // temporary
+    calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
 
     // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
     // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
@@ -6173,6 +6173,55 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
         }
     }
 
+    // Assign ASR to del_v2_strain_from_cubic from here.
+    // This is not necessary when we don't use B_array.txt with low accuracy.
+    // (Note that it is better to assign ASR explicitly)
+    // set elements of acoustic mode at Gamma point exactly zero
+
+    double threshold_acoustic = 1.0e-16;
+    int count_acoustic = 0;
+
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    int *is_acoustic;
+    allocate(is_acoustic, ns);
+
+    for(is = 0; is < ns; is++){
+        if(std::fabs(omega2_harmonic[0][is]) < threshold_acoustic){
+            is_acoustic[is] = 1;
+            count_acoustic++;
+        }
+        else{
+            is_acoustic[is] = 0;
+        }
+    }
+
+    // check number of acoustic modes
+    if(count_acoustic != 3){
+        std::cout << "Warning in calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode: ";
+        std::cout << count_acoustic << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
+    }
+
+    // debug 
+    std::cout << "is_acoustic : " << std::endl;
+    for(is = 0; is < ns; is++){
+        std::cout << is_acoustic[is] << " ";
+    }std::cout << std::endl;
+
+    // set acoustic sum rule (ASR)
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is = 0; is < ns; is++){
+            // mode is is an acoustic mode at Gamma point
+            if(is_acoustic[is] == 0){
+                continue;
+            }
+            for(js = 0; js < ns; js++){
+                del_v2_strain_from_cubic[ixyz1][0][is*ns+js] = complex_zero;
+                del_v2_strain_from_cubic[ixyz1][0][js*ns+is] = complex_zero;
+            }
+        }
+    }
+
     deallocate(exist_in);
     deallocate(B_array_real_space_in);
     deallocate(B_array_real_space_symmetrized);
@@ -6181,6 +6230,8 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     deallocate(dymat_q);
     deallocate(dymat_tmp);
     deallocate(dymat_new);
+
+    deallocate(is_acoustic);
 
 }
 
