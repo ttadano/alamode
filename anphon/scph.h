@@ -187,6 +187,8 @@ private:
     // void print_force(std::complex<double> *);
     void calculate_force_in_real_space(std::complex<double> *, double *);
 
+    void transform_to_real_space_at_Gamma(std::complex<double> *, double *);
+
     // void postprocess(std::complex<double> ****delta_dymat_scph,
     //                  std::complex<double> ****delta_dymat_scph_plus_bubble);
     void postprocess(std::complex<double> ****,
@@ -288,6 +290,17 @@ private:
                                                std::complex<double> ****,
                                                double *,
                                                double );
+
+                                            
+    void calculate_del_v1_strain_with_strain_displace(std::complex<double> **, 
+                                               double **,
+                                               std::complex<double> **,
+                                               std::complex<double> **,
+                                               std::complex<double> **,
+                                               std::complex<double> ***,
+                                               std::complex<double> ***,
+                                               std::complex<double> ****,
+                                               double *);
 
     void calculate_eta_tensor(double **, 
                                 double **);
