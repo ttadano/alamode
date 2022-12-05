@@ -7604,9 +7604,33 @@ void Scph::calculate_del_v1_strain_with_strain_displace(std::complex<double> **d
     // debug
     // std::cout << std::endl;
     // std::cout << "second order in internal coordinate" << std::endl;
-    // for(is1 = 0; is1 < ns; is1++){
-    //     std::cout << is1 << " " << del_v1_strain_with_strain_displace[0][is1] << std::endl;
-    // }
+
+    std::cout << "before symmetrize" << std::endl;
+    for(is1 = 0; is1 < ns; is1++){
+        for(i1 = 0; i1 < 9; i1++){
+            std::cout << is1 << " " << del_v1_strain_with_strain_displace[i1][is1] << " ";
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+
+    // symmetrize
+    for(is1 = 0; is1 < ns; is1++){
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = ixyz1 + 1; ixyz2 < 3; ixyz2++){
+                del_v1_strain_with_strain_displace[ixyz1*3+ixyz2][is1] = 
+                    0.5 * (del_v1_strain_with_strain_displace[ixyz1*3+ixyz2][is1] + del_v1_strain_with_strain_displace[ixyz2*3+ixyz1][is1]);
+
+                del_v1_strain_with_strain_displace[ixyz2*3+ixyz1][is1] = del_v1_strain_with_strain_displace[ixyz1*3+ixyz2][is1];
+            }
+        }
+    }
+
+    std::cout << "after symmetrize" << std::endl;
+    for(is1 = 0; is1 < ns; is1++){
+        for(i1 = 0; i1 < 9; i1++){
+            std::cout << is1 << " " << del_v1_strain_with_strain_displace[i1][is1] << " ";
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+
 
     // std::cout << "done " << std::endl;
 
