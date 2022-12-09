@@ -9,6 +9,6 @@ anphon/anphon
 alm/Makefile
 alm/*.o
 alm/alm
-tests/*
 tools/analyze_phonons
 .DS_Store
+tests/results/*

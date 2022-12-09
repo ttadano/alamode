@@ -187,17 +187,6 @@ void Iterativebte::do_iterativebte()
         std::cout << " Calculate once for the transition probability L(absorb) and L(emitt)" << std::endl;
         std::cout << " Size of L (MB) (approx.) = " << memsize_in_MB(sizeof(double), kplength_absorb + kplength_emitt, ns, ns2)
                   << " ... ";
-        /*
-        if (integration->ismear == 0 || integration->ismear == 1) {
-            std::cout << "     smearing will be used for the delta function" << std::endl;
-        } else if (integration->ismear == 2) {
-            std::cout << "     adaptive methods will be used for the delta function" << std::endl;
-        } else if (integration->ismear == -1) {
-            std::cout << "     tetrahedron method will be used for the delta function" << std::endl;
-        } else {
-            exit("calc_L", "ismear other than -1, 0, 1, 2 are not supported");
-        }
-        */
     }
 
     if (integration->ismear >= 0) {
