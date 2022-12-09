@@ -191,7 +191,7 @@ void Scph::exec_scph()
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
 
-        qha_scheme = 2; // set alculation scheme of QHA
+        qha_scheme = 5; // set alculation scheme of QHA
         if(relax_coordinate == 0){
             exec_scph_main(delta_dymat_scph);
         }
@@ -2368,7 +2368,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     int ik, is, js;
     int ik1, is1, is2, is3, is4;
     int i1, i2;
-    int iat1, iat2, ixyz1, ixyz2;
+    int iat1, iat2, ixyz1, ixyz2, ixyz3, ixyz4;
     std::string str_tmp, str_tmp2;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
@@ -2398,6 +2398,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     double **C2_array;
     double ***C3_array;
 
+    double **C2_ZSISA;
+
     // generalized force dF/dq^{(0)}_{\lambda}
     std::complex<double> *v1_array_QHA;
 
@@ -2412,11 +2414,16 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::complex<double> *del_v0_strain_with_strain_displace;
     std::complex<double> *del_v0_strain_QHA;
     std::complex<double> *del_v0_strain_ZSISA;
+    std::complex<double> *del_v0_strain_ZSIDSA;
+
 
     std::complex<double> **del_v1_strain_with_strain_displace;
 
     double *delq_delu_ZSISA_tmp;
     allocate(delq_delu_ZSISA_tmp, ns);
+
+    double **delq_delu_ZSISA;
+    allocate(delq_delu_ZSISA, ns, 9);
 
     // structure optimization
     int i_str_loop, i_temp_loop;
@@ -2456,6 +2463,18 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     pvcell = stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9/Ryd; // in Ry
 
+    // ZSIDSA
+    // double *delta_q0_ZSIDSA, 
+    double *delta_u_tensor_ZSIDSA;
+    double *del_logV_delu, *u_tilde;
+    VectorXcd del_logV_delu_vec(6), delta_u_tensor_ZSIDSA_vec(6);
+    double F_tensor[3][3]; // F_{mu nu} = delta_{mu nu} + u_{mu nu}
+    double factor_tmp;
+    double deltaF_ZSIDSA, deltaU_ZSIDSA;
+
+    double **C2_array_with_strain_displace;
+    
+
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
@@ -2487,6 +2506,13 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     allocate(eta_tensor, 3, 3);
 
     allocate(delta_u_tensor, 6);
+
+    // allocate(delta_q0_ZSIDSA, ns);
+    allocate(delta_u_tensor_ZSIDSA, 9);
+    allocate(del_logV_delu, 9);
+    allocate(u_tilde, 9);
+    allocate(C2_array_with_strain_displace, 9, 9);
+
 
     allocate(v4_array_original, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
@@ -2591,12 +2617,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     allocate(del_v0_strain_with_strain_displace, 9);
     allocate(del_v0_strain_QHA, 9);
     allocate(del_v0_strain_ZSISA, 9);
+    allocate(del_v0_strain_ZSIDSA, 9);
 
     allocate(del_v1_strain_with_strain_displace, 9, ns);
 
     allocate(C1_array, 9);
     allocate(C2_array, 9, 9);
     allocate(C3_array, 9, 9, 9);
+
+    allocate(C2_ZSISA, 9, 9);
 
 
     // get indices of optical modes at Gamma point
@@ -3006,7 +3035,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                                              del_v3_strain_from_quartic,
                                                              q0);
 
-                // add ZSISA correction to finite-temperature stress tensor
+                // calculate (dq0/du_{mu nu})_ZSISA
                 for(i1 = 0; i1 < 9; i1++){
 
                     for(is = 0; is < ns; is++){
@@ -3036,14 +3065,16 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     
                     vec_delq_delu_ZSISA = -1.0 * v2_mat_optical.colPivHouseholderQr().solve(vec_del_V1_strain);
 
-                    // debug
                     for(is = 0; is < ns; is++){
-                        delq_delu_ZSISA_tmp[is] = 0.0;
+                        delq_delu_ZSISA[is][i1] = 0.0;
                     }
                     for(is = 0; is < ns-3; is++){
-                        delq_delu_ZSISA_tmp[harm_optical_modes[is]] = vec_delq_delu_ZSISA(is).real();
+                        delq_delu_ZSISA[harm_optical_modes[is]][i1] = vec_delq_delu_ZSISA(is).real();
                     }
-                    // transform_to_real_space_at_Gamma(delq_delu_ZSISA_tmp, force_array);
+                    // debug
+                    for(is = 0; is < ns; is++){
+                        delq_delu_ZSISA_tmp[is] = delq_delu_ZSISA[is][i1];
+                    }
                     calculate_u0(delq_delu_ZSISA_tmp, force_array);
 
                     // std::cout << "delq_delu_ZSISA_tmp" << std::endl;
@@ -3056,6 +3087,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     // }std::cout << std::endl;
 
                     // std::cout << "add correction" << std::endl;
+                }
+
+                // add ZSISA correction to finite-temperature stress tensor
+                for(i1 = 0; i1 < 9; i1++){
 
                     // add correction to QHA stress tensor
                     del_v0_strain_ZSISA[i1] = del_v0_strain_QHA[i1];
@@ -3065,7 +3100,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     for(is = 0; is < ns-3; is++){
                         // std::cout << is << ": ";
                         // std::cout << harm_optical_modes[is] << std::endl;
-                        del_v0_strain_ZSISA[i1] += v1_array_QHA[harm_optical_modes[is]] * vec_delq_delu_ZSISA(is);
+                        del_v0_strain_ZSISA[i1] += v1_array_QHA[harm_optical_modes[is]] * delq_delu_ZSISA[harm_optical_modes[is]][i1];
                     }
                     // std::cout << "tmp2" << std::endl; 
                 }
@@ -3084,6 +3119,165 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     for(i1 = 0; i1 < 9; i1++){
                         // std::cout << i1 << " " << del_v0_strain_QHA[i1] << " ";
                         del_v0_strain_QHA[i1] = del_v0_strain_ZSISA[i1];
+                        // std::cout << del_v0_strain_QHA[i1] << std::cout << std::endl;
+                    }
+                }
+
+                // calculation of ZSIDSA
+
+                // calculate renormalized C2_array
+                calculate_C2_array_with_strain_displace(C2_array_with_strain_displace, 
+                                                        u_tensor,
+                                                        eta_tensor,
+                                                        C2_array,
+                                                        C3_array,
+                                                        del_v1_strain_from_cubic,
+                                                        del_v1_strain_from_quartic,
+                                                        del_v2_strain_from_quartic,
+                                                        q0);
+
+                // calculate C2_ZSISA for ZSIDSA calculation
+                for(i1 = 0; i1 < 9; i1++){
+                    for(i2 = 0; i2 < 9; i2++){
+                        C2_ZSISA[i1][i2] = C2_array_with_strain_displace[i1][i2];
+                        for(is = 0; is < ns; is++){
+                            C2_ZSISA[i1][i2] += del_v1_strain_with_strain_displace[i1][is].real() * delq_delu_ZSISA[is][i2];
+                        }
+                    }
+                }
+
+                // debug
+                std::cout << "C2_ZSISA" << std::endl;
+                for(i1 = 0; i1 < 9; i1++){
+                    for(i2 = 0; i2 < 9; i2++){
+                        std::cout << C2_ZSISA[i1][i2] << " ";
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+
+                // calculate delu_ZSIDSA 
+                
+                // calculate del_logV_delu = (d det(I+u))/(du)
+                for(i1 = 0; i1 < 3; i1++){
+                    for(i2 = 0; i2 < 3; i2++){
+                        F_tensor[i1][i2] = u_tensor[i1][i2];
+                    }
+                    F_tensor[i1][i1] += 1.0;
+                }
+                for(i1 = 0; i1 < 9; i1++){
+                    is1 = i1/3;
+                    is2 = i1%3;
+                    ixyz1 = (is1+1)%3;
+                    ixyz2 = (is1+2)%3;
+                    ixyz3 = (is2+1)%3;
+                    ixyz4 = (is2+2)%3;
+
+                    del_logV_delu[i1] += F_tensor[ixyz1][ixyz3]*F_tensor[ixyz2][ixyz4] - F_tensor[ixyz1][ixyz4]*F_tensor[ixyz2][ixyz3];
+                }
+
+                // debug
+                std::cout << "del_logV_delu" << std::endl;
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                        std::cout << del_logV_delu[ixyz1*3+ixyz2] << " "; 
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+
+                factor_tmp = 0.0;
+                for(i1 = 0; i1 < 9; i1++){
+                    factor_tmp += del_logV_delu[i1] * del_logV_delu[i1];
+                }
+                factor_tmp = 1.0/std::sqrt(factor_tmp);
+
+                for(i1 = 0; i1 < 9; i1++){
+                    u_tilde[i1] = factor_tmp * del_logV_delu[i1];
+                }
+
+                // debug
+                std::cout << "u_tilde" << std::endl;
+                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                        std::cout << u_tilde[ixyz1*3+ixyz2] << " "; 
+                    }std::cout << std::endl;
+                }std::cout << std::endl;
+
+
+                // calcualte delta_u_tensor_ZSIDSA
+                for(itmp1 = 0; itmp1 < 3; itmp1++){
+                    del_logV_delu_vec(itmp1) = del_logV_delu[itmp1*3+itmp1];
+
+                    itmp2 = (itmp1+1)%3;
+                    itmp3 = (itmp1+2)%3;
+                    del_logV_delu_vec(itmp1+3) = del_logV_delu[itmp2*3+itmp3];
+                }
+
+                for(itmp1 = 0; itmp1 < 3; itmp1++){
+                    for(itmp2 = 0; itmp2 < 3; itmp2++){
+                        C2_mat_tmp(itmp1, itmp2) = C2_ZSISA[itmp1*3+itmp1][itmp2*3+itmp2];
+                    }
+                }
+                for(itmp1 = 0; itmp1 < 3; itmp1++){
+                    for(itmp2 = 0; itmp2 < 3; itmp2++){
+                        itmp3 = (itmp2+1)%3;
+                        itmp4 = (itmp2+2)%3;
+                        C2_mat_tmp(itmp1, itmp2+3) = 2.0 * C2_ZSISA[itmp1*3+itmp1][itmp3*3+itmp4];
+                        C2_mat_tmp(itmp2+3, itmp1) = C2_ZSISA[itmp3*3+itmp4][itmp1*3+itmp1];
+                    }
+                }
+                for(itmp1 = 0; itmp1 < 3; itmp1++){
+                    for(itmp2 = 0; itmp2 < 3; itmp2++){
+                        itmp3 = (itmp1+1)%3;
+                        itmp4 = (itmp1+2)%3;
+                        itmp5 = (itmp2+1)%3;
+                        itmp6 = (itmp2+2)%3;
+                        C2_mat_tmp(itmp1+3, itmp2+3) = 2.0 * C2_ZSISA[itmp3*3+itmp4][itmp5*3+itmp6];
+                    }
+                }
+
+                // solve linear equation for delta_u_tensor_ZSIDSA
+                delta_u_tensor_ZSIDSA_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_logV_delu_vec);
+                for(itmp1 = 0; itmp1 < 3; itmp1++){
+                    itmp3 = (itmp1+1)%3;
+                    itmp4 = (itmp1+2)%3;
+                    
+                    delta_u_tensor_ZSIDSA[itmp1*3+itmp1] = delta_u_tensor_ZSIDSA_vec(itmp1).real();
+                    delta_u_tensor_ZSIDSA[itmp3*3+itmp4] = delta_u_tensor_ZSIDSA_vec(itmp1+3).real();
+                    delta_u_tensor_ZSIDSA[itmp3+itmp4*3] = delta_u_tensor_ZSIDSA_vec(itmp1+3).real();
+                }
+
+                // normalize delta_u_tensor_ZSIDSA
+                factor_tmp = 0.0;
+                for(i1 = 0; i1 < 9; i1++){
+                    factor_tmp += u_tilde[i1] * delta_u_tensor_ZSIDSA[i1];
+                }
+                factor_tmp = 1.0/factor_tmp;
+
+                for(i1 = 0; i1 < 9; i1++){
+                    delta_u_tensor_ZSIDSA[i1] *= factor_tmp;
+                }
+
+                // calculate delta_q0_ZSIDSA
+
+                deltaF_ZSIDSA = 0.0;
+                deltaU_ZSIDSA = 0.0;
+                for(i1 = 0; i1 < 9; i1++){
+                    deltaF_ZSIDSA += delta_u_tensor_ZSIDSA[i1] * del_v0_strain_ZSISA[i1].real();
+                    deltaU_ZSIDSA += u_tilde[i1] * del_v0_strain_with_strain_displace[i1].real();
+                }
+
+                for(i1 = 0; i1 < 9; i1++){
+                    del_v0_strain_ZSIDSA[i1] = del_v0_strain_with_strain_displace[i1] + u_tilde[i1] * (deltaF_ZSIDSA - deltaU_ZSIDSA);
+                }
+
+                // overwrite finite-temperature force and stress tensor
+                if(qha_scheme == 5){
+                    for(is = 0; is < ns; is++){
+                        v1_array_QHA[is] = v1_array_renormalized[is];
+                    }
+                }
+                if(qha_scheme == 5){ // ZSIDSA
+                    for(i1 = 0; i1 < 9; i1++){
+                        // std::cout << i1 << " " << del_v0_strain_QHA[i1] << " ";
+                        del_v0_strain_QHA[i1] = del_v0_strain_ZSIDSA[i1];
                         // std::cout << del_v0_strain_QHA[i1] << std::cout << std::endl;
                     }
                 }
@@ -7641,6 +7835,111 @@ void Scph::calculate_del_v1_strain_with_strain_displace(std::complex<double> **d
 
 }
 
+
+void Scph::calculate_C2_array_with_strain_displace(double **C2_array_with_strain_displace, 
+                                                   double **u_tensor,
+                                                   double **eta_tensor,
+                                                   double **C2_array,
+                                                   double ***C3_array,
+                                                   std::complex<double> **del_v1_strain_from_cubic,
+                                                   std::complex<double> **del_v1_strain_from_quartic,
+                                                   std::complex<double> ***del_v2_strain_from_quartic,
+                                                   double *q0)
+{
+    int ns = dynamical->neval;
+    // int nk = kmesh_dense->nk;
+    double **del_eta_del_u;
+    // double *del_v0_del_eta;
+    // double *del_v0_strain_with_strain;
+
+    // std::complex<double> **del_v1_strain_with_strain;
+    // std::complex<double> ***del_v2_strain_with_strain;
+    // double *del_v3_strain;
+    
+    allocate(del_eta_del_u, 9, 9);
+    // allocate(del_v0_del_eta, 9);
+    // allocate(del_v0_strain_with_strain, 9);
+
+    // allocate(del_v1_strain_with_strain, 9, ns);
+    // allocate(del_v2_strain_with_strain, 9, ns, ns);
+
+    // double factor = 1.0/6.0 * 4.0 * nk;
+    int i1, i2, i3, i4, ixyz1, ixyz2, ixyz3, ixyz4;
+    int is1, is2, is3;
+
+    double **C2_array_with_strain_eta;
+    allocate(C2_array_with_strain_eta, 9, 9);
+    
+    
+    // calculate the derivative of eta_tensor by u_tensor
+    for(i1 = 0; i1 < 9; i1++){
+        ixyz1 = i1/3;
+        ixyz2 = i1%3;
+        for(i2 = 0; i2 < 9; i2++){
+            ixyz3 = i2/3;
+            ixyz4 = i2%3;
+
+            del_eta_del_u[i1][i2] = 0.0;
+            
+            if(ixyz1 == ixyz3 && ixyz2 == ixyz4){
+                del_eta_del_u[i1][i2] += 0.5;
+            }
+            if(ixyz2 == ixyz3 && ixyz1 == ixyz4){
+                del_eta_del_u[i1][i2] += 0.5;
+            }
+            if(ixyz1 == ixyz3){
+                del_eta_del_u[i1][i2] += 0.5 * u_tensor[ixyz2][ixyz4];
+            }
+            if(ixyz2 == ixyz3){
+                del_eta_del_u[i1][i2] += 0.5 * u_tensor[ixyz1][ixyz4];
+            }
+        }
+    }
+
+    for(i1 = 0; i1 < 9; i1++){
+        for(i2 = 0; i2 < 9; i2++){
+            C2_array_with_strain_eta[i1][i2] = C2_array[i1][i2];
+            for(i3 = 0; i3 < 9; i3++){
+                C2_array_with_strain_eta[i1][i2] += C3_array[i1][i2][i3] * eta_tensor[i3/3][i3%3];
+            }
+        }
+    }
+
+    for(i1 = 0; i1 < 9; i1++){
+        for(i2 = 0; i2 < 9; i2++){
+            C2_array_with_strain_displace[i1][i2] = 0.0;
+
+            for(i3 = 0; i3 < 9; i3++){
+                for(i4 = 0; i4 < 9; i4++){
+                    C2_array_with_strain_displace[i1][i2] += C2_array_with_strain_eta[i3][i4] * del_eta_del_u[i3][i1] * del_eta_del_u[i4][i2];
+                }
+            }
+        }
+    }
+
+    for(i1 = 0; i1 < 9; i1++){
+        for(i2 = 0; i2 < 9; i2++){
+            for(is1 = 0; is1 < ns; is1++){
+                C2_array_with_strain_displace[i1][i2] += del_v1_strain_from_cubic[i1*9+i2][is1].real() * q0[is1];
+            }
+
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    C2_array_with_strain_displace[i1][i2] += 0.5 * del_v2_strain_from_quartic[i1*9+i2][0][is1*ns+is2].real() * q0[is1] * q0[is2];
+                }
+            }
+
+            for(is1 = 0; is1 < ns; is1++){
+                for(i3 = 0; i3 < 9; i3++){
+                    C2_array_with_strain_displace[i1][i2] += del_v1_strain_from_quartic[i1*81+i2*9+i3][is1].real() * q0[is1] * u_tensor[i3/3][i3%3];
+                }
+            }
+        }
+    }
+
+    deallocate(C2_array_with_strain_eta);
+    deallocate(del_eta_del_u);
+}
 
 void Scph::renormalize_v1_array(std::complex<double> *v1_array_renormalized, 
                                 std::complex<double> *v1_array_original, 

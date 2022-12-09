@@ -302,6 +302,16 @@ private:
                                                std::complex<double> ****,
                                                double *);
 
+    void calculate_C2_array_with_strain_displace(double **, 
+                                                 double **,
+                                                 double **,
+                                                 double **,
+                                                 double ***,
+                                                 std::complex<double> **,
+                                                 std::complex<double> **,
+                                                 std::complex<double> ***,
+                                                 double *);
+
     void calculate_eta_tensor(double **, 
                                 double **);
 
