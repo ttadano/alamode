@@ -55,6 +55,10 @@ void Dos::set_default_variables()
     tetra_nodes_dos = nullptr;
     kmesh_dos = nullptr;
     dymat_dos = nullptr;
+    auto_set_emin = true;
+    auto_set_emax = true;
+    emin = 0.0;
+    emax = 1000.0;
 }
 
 void Dos::deallocate_variables()
@@ -92,6 +96,8 @@ void Dos::setup()
 
     MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&auto_set_emin, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&auto_set_emax, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&compute_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&projected_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
@@ -125,41 +131,14 @@ void Dos::setup()
         } else {
             tetra_nodes_dos = new TetraNodes();
         }
-
-        if (compute_dos) {
-            allocate(dos_phonon, n_energy);
-        }
-
-        if (projected_dos) {
-            allocate(pdos_phonon, system->natmin, n_energy);
-        }
-
-        if (two_phonon_dos) {
-            allocate(dos2_phonon, kmesh_dos->nk_irred, n_energy, 4);
-        }
-
-        if (longitudinal_projected_dos) {
-            allocate(longitude_dos, n_energy);
-        }
-
-        if (scattering_phase_space == 1) {
-            allocate(sps3_mode, kmesh_dos->nk_irred,
-                     dynamical->neval, 2);
-        } else if (scattering_phase_space == 2) {
-            const auto Tmin = system->Tmin;
-            const auto Tmax = system->Tmax;
-            const auto dT = system->dT;
-            const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-
-            allocate(sps3_with_bose, kmesh_dos->nk_irred,
-                     dynamical->neval, NT, 2);
-        }
     }
 }
 
 void Dos::set_dos_energy_grid()
 {
-    n_energy = static_cast<int>((emax - emin) / delta_e);
+    n_energy = static_cast<int>((emax - emin) / delta_e) + 1;
+    if (energy_dos) deallocate(energy_dos);
+
     allocate(energy_dos, n_energy);
 
     for (auto i = 0; i < n_energy; ++i) {
@@ -181,7 +160,30 @@ void Dos::calc_dos_all()
         }
     }
 
+    if (auto_set_emin || auto_set_emax) {
+        auto emin_now = std::numeric_limits<double>::max();
+        auto emax_now = std::numeric_limits<double>::min();
+
+        for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
+            const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
+            for (size_t k = 0; k < neval; ++k) {
+                emin_now = std::min(emin_now, eval[k][j]);
+                emax_now = std::max(emax_now, eval[k][j]);
+            }
+        }
+        if (auto_set_emin) {
+            if (emin_now < 0.0) {
+                emin = emin_now;
+            } else {
+                emin = 0.0;
+            }
+        }
+        if (auto_set_emax) emax = emax_now + delta_e;
+        set_dos_energy_grid();
+    }
+
     if (compute_dos) {
+        allocate(dos_phonon, n_energy);
         calc_dos(nk, kmesh_dos->nk_irred,
                  &kmesh_dos->kmap_to_irreducible[0],
                  eval, n_energy, energy_dos,
@@ -192,6 +194,7 @@ void Dos::calc_dos_all()
     }
 
     if (projected_dos) {
+        allocate(pdos_phonon, system->natmin, n_energy);
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
                                 pdos_phonon, neval, system->natmin,
                                 integration->ismear,
@@ -199,6 +202,7 @@ void Dos::calc_dos_all()
     }
 
     if (longitudinal_projected_dos) {
+        allocate(longitude_dos, n_energy);
         calc_longitudinal_projected_dos(nk, kmesh_dos->xk,
                                         system->rlavec_p,
                                         eval, n_energy, energy_dos,
@@ -210,6 +214,7 @@ void Dos::calc_dos_all()
     deallocate(eval);
 
     if (two_phonon_dos) {
+        allocate(dos2_phonon, kmesh_dos->nk_irred, n_energy, 4);
         calc_two_phonon_dos(dymat_dos->get_eigenvalues(),
                             n_energy,
                             energy_dos,
@@ -218,10 +223,19 @@ void Dos::calc_dos_all()
     }
 
     if (scattering_phase_space == 1) {
+        allocate(sps3_mode, kmesh_dos->nk_irred,
+                 dynamical->neval, 2);
         calc_total_scattering_phase_space(dymat_dos->get_eigenvalues(),
                                           integration->ismear,
                                           sps3_mode, total_sps3);
     } else if (scattering_phase_space == 2) {
+        const auto Tmin = system->Tmin;
+        const auto Tmax = system->Tmax;
+        const auto dT = system->dT;
+        const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+        allocate(sps3_with_bose, kmesh_dos->nk_irred,
+                 dynamical->neval, NT, 2);
         calc_scattering_phase_space_with_Bose(dymat_dos->get_eigenvalues(),
                                               integration->ismear,
                                               sps3_with_bose);

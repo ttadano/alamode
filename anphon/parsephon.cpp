@@ -179,8 +179,6 @@ void Input::parse_general_vars()
     auto Tmax = 1000.0;
     auto dT = 10.0;
 
-    auto emin = 0.0;
-    auto emax = 1000.0;
     auto delta_e = 10.0;
 
     unsigned int nonanalytic = 0;
@@ -214,8 +212,19 @@ void Input::parse_general_vars()
     assign_val(Tmax, "TMAX", general_var_dict);
     assign_val(dT, "DT", general_var_dict);
 
-    assign_val(emin, "EMIN", general_var_dict);
-    assign_val(emax, "EMAX", general_var_dict);
+    if (!general_var_dict["EMIN"].empty()) {
+        auto emin = 0.0;
+        assign_val(emin, "EMIN", general_var_dict);
+        dos->emin = emin;
+        dos->auto_set_emin = false;
+    }
+    if (!general_var_dict["EMAX"].empty()) {
+        auto emax = 1000.0;
+        assign_val(emax, "EMAX", general_var_dict);
+        dos->emax = emax;
+        dos->auto_set_emax = false;
+    }
+
     assign_val(delta_e, "DELTA_E", general_var_dict);
 
     assign_val(nsym, "NSYM", general_var_dict);
@@ -307,8 +316,7 @@ void Input::parse_general_vars()
         deallocate(masskd);
     }
 
-    dos->emax = emax;
-    dos->emin = emin;
+
     dos->delta_e = delta_e;
 
     dynamical->nonanalytic = nonanalytic;

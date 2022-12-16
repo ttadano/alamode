@@ -32,6 +32,7 @@ public:
     bool compute_dos;
     bool projected_dos, two_phonon_dos;
     bool longitudinal_projected_dos;
+    bool auto_set_emin, auto_set_emax;
     int scattering_phase_space;
 
     int n_energy;
